@@ -15,6 +15,7 @@
 
 #include <Eigen/Dense>
 
+#include <algorithm>
 #include <limits>
 #include <map>
 #include <mutex>
@@ -74,6 +75,65 @@ std::vector<int64_t> combinations(int64_t m, int64_t k) {
 struct Facets {
     torch::Tensor subsets, rows, signs;
 };
+
+/// The Leibniz terms of a `k x k` determinant: the flat indices `i*k + sigma(i)` of each
+/// permutation `(k!, k)` and its sign `(k!,)`. Cached like the facet indices.
+struct Perms {
+    torch::Tensor index, signs;
+};
+
+Perms permutations(int64_t k, const torch::TensorOptions &opts) {
+    using Key = std::tuple<int64_t, int8_t, int8_t>;
+    static std::map<Key, Perms> cache;
+    static std::mutex guard;
+
+    const torch::Device dev = opts.device();
+    const Key key{k, static_cast<int8_t>(dev.type()), dev.index()};
+    const std::lock_guard<std::mutex> lock(guard);
+    if (const auto it = cache.find(key); it != cache.end()) return it->second;
+
+    std::vector<int64_t> sigma(static_cast<std::size_t>(k));
+    for (int64_t i = 0; i < k; ++i) sigma[static_cast<std::size_t>(i)] = i;
+    std::vector<int64_t> index;
+    std::vector<double> signs;
+    do {
+        for (int64_t i = 0; i < k; ++i) index.push_back(i * k + sigma[static_cast<std::size_t>(i)]);
+        int inversions = 0;
+        for (std::size_t i = 0; i < sigma.size(); ++i)
+            for (std::size_t j = i + 1; j < sigma.size(); ++j)
+                if (sigma[i] > sigma[j]) ++inversions;
+        signs.push_back(inversions % 2 == 0 ? 1.0 : -1.0);
+    } while (std::next_permutation(sigma.begin(), sigma.end()));
+
+    Perms made{
+        torch::from_blob(index.data(), {static_cast<int64_t>(index.size())},
+                         torch::TensorOptions().dtype(torch::kLong))
+            .clone()
+            .to(dev),
+        torch::from_blob(signs.data(), {static_cast<int64_t>(signs.size())},
+                         torch::TensorOptions().dtype(torch::kDouble))
+            .clone()
+            .to(opts),
+    };
+    return cache.emplace(key, std::move(made)).first->second;
+}
+
+/// Determinants of a batch of `(k, k)` matrices.
+///
+/// `linalg_det` dispatches to cuSOLVER's batched LU, which costs milliseconds on a
+/// handful of tiny matrices and dominates the facet path on a device. The facet path only
+/// ever reaches `k = n - 1 <= 4`, where the whole sum is one gather and one product.
+torch::Tensor small_det(const torch::Tensor &minors) {
+    const int64_t k = minors.size(-1);
+    if (k > 4) return torch::linalg_det(minors);
+    const Perms p = permutations(k, minors.options());
+    return minors.flatten(-2, -1)
+        .index_select(-1, p.index)
+        .unflatten(-1, {-1, k})
+        .prod(-1)
+        .mul(p.signs)
+        .sum(-1);
+}
 
 Facets facet_indices(int64_t n, int64_t m, const torch::TensorOptions &opts) {
     using Key = std::tuple<int64_t, int64_t, int8_t, int8_t>;
@@ -186,7 +246,7 @@ torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c,
                                      .permute({0, 2, 1, 3}); // (B, F, n, n-1)
         const torch::Tensor minors =
             gs.index_select(2, f.rows.reshape({-1})).reshape({b, faces, n, k, k});
-        const torch::Tensor h = torch::linalg_det(minors) * f.signs; // (B, F, n)
+        const torch::Tensor h = small_det(minors) * f.signs; // (B, F, n)
 
         const torch::Tensor reach = h.matmul(g).abs().sum(-1);
         const torch::Tensor scale = h.abs().amax({-1});       // (B, F)
@@ -220,33 +280,35 @@ torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c,
 torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
                             const torch::Tensor &p) {
     const double tol = 1000.0 * std::numeric_limits<double>::epsilon();
-    const std::vector<int64_t> last{-2, -1};
 
-    auto [q_thin, upper] = torch::linalg_qr(g.transpose(1, 2), "reduced"); // (B,m,n),(B,n,n)
-    const torch::Tensor q = q_thin.unsqueeze(1);                           // broadcast over N
-    const torch::Tensor rel = (p - c.unsqueeze(1)).unsqueeze(-1);          // (B, N, n, 1)
+    auto [q, upper] = torch::linalg_qr(g.transpose(1, 2), "reduced"); // (B,m,n),(B,n,n)
+    const torch::Tensor qt = q.transpose(-2, -1);                     // (B, n, m)
+    // The points are the columns of one matrix per set. Carrying them as `(B, N, m, 1)`
+    // instead would broadcast Q over N in every product, and torch materializes that:
+    // at 1000d the iteration reads a 1.6 GB expansion of a 160 MB tensor.
+    const torch::Tensor rel = (p - c.unsqueeze(1)).transpose(-2, -1); // (B, n, N)
     const torch::Tensor w = torch::linalg_solve_triangular(
-        upper.unsqueeze(1).transpose(-2, -1), rel, /*upper=*/false, /*left=*/true);
-    const torch::Tensor b0 = q.matmul(w); // (B, N, m, 1)
-    const torch::Tensor wnorm = w.abs().sum(last);
+        upper.transpose(-2, -1), rel, /*upper=*/false, /*left=*/true); // (B, n, N)
+    const torch::Tensor b0 = q.matmul(w);                              // (B, m, N)
+    const torch::Tensor wnorm = w.abs().sum(-2);                       // (B, N)
 
     const auto flags = torch::TensorOptions().dtype(torch::kBool).device(g.device());
-    torch::Tensor inside = torch::zeros({rel.size(0), rel.size(1)}, flags);
-    torch::Tensor outside = torch::zeros({rel.size(0), rel.size(1)}, flags);
+    torch::Tensor inside = torch::zeros({rel.size(0), rel.size(2)}, flags);
+    torch::Tensor outside = torch::zeros({rel.size(0), rel.size(2)}, flags);
     torch::Tensor x = b0;
 
     for (int it = 0; it <= kIterations; ++it) {
         const torch::Tensor a = x.clamp(-kShrink, kShrink);
         if (it % kCheckEvery == 0 || it == kIterations) {
-            inside = torch::logical_or(inside, x.abs().amax(last) <= 1.0 + tol);
-            const torch::Tensor y = q.transpose(-2, -1).matmul(x - a);
-            const torch::Tensor gap = (y * w).sum(last) - q.matmul(y).abs().sum(last);
+            inside = torch::logical_or(inside, x.abs().amax({-2}) <= 1.0 + tol);
+            const torch::Tensor y = qt.matmul(x - a); // (B, n, N)
+            const torch::Tensor gap = (y * w).sum(-2) - q.matmul(y).abs().sum(-2);
             // Relative to the terms compared, so rounding cannot fake a separation.
-            const torch::Tensor slack = y.abs().sum(last) * tol * (wnorm + 1.0);
+            const torch::Tensor slack = y.abs().sum(-2) * tol * (wnorm + 1.0);
             outside = torch::logical_or(outside, gap > slack);
             if (torch::logical_or(inside, outside).all().item<bool>()) return inside;
         }
-        x = a - q.matmul(q.transpose(-2, -1).matmul(a)) + b0;
+        x = a - q.matmul(qt.matmul(a)) + b0;
     }
     const torch::Tensor open = torch::logical_or(inside, outside).logical_not();
     return patch_by_lp(g, p - c.unsqueeze(1), inside, open, tol);

@@ -69,8 +69,10 @@ them rather than picking one. libtorch costs a fixed ~0.3–1.5 ms of dispatch p
 operation, so Eigen wins everything small — up to 130× on `supportFunc` at 10d. Above
 about 100 dimensions libtorch's kernels pull ahead on `matMul` and `minkSum` (1.3–3.5×).
 Batched `contains` is the other way round and not close: Eigen gives each set of the batch
-a thread, while the tensor path becomes `B·N` tiny matvecs, so Eigen is 13–28× faster and
-finishes two instances that libtorch cannot finish inside the catalog's 60 s.
+a thread, which suits a problem that is per-point branching more than arithmetic, and is
+two orders of magnitude faster on the batched instances — 0.11 s against 14 s at 50d over
+a hundred sets — besides finishing several that libtorch cannot finish inside the
+catalog's 60 s.
 
 **Eigen layout.** A set holds its whole batch in one matrix: an interval is `lo`/`hi` of
 size `n × B`, one set per column, a zonotope a centre `n × B` and the batch's generator
@@ -96,9 +98,11 @@ the trailing dimensions, so a batch is one call and the GPU gets work worth its 
   to every hyperthread — 160 on the competition's two-socket worker, against 80 cores —
   and at that width a region over ten sets, or a 40 MFLOP product, spends an order of
   magnitude longer gathering threads than computing. The pool is set to the physical
-  cores once, and each parallel region and each product is narrowed to what its own work
-  can use ([`src/threads.h`](src/threads.h)). On the worker that is the difference
-  between 33 s and 0.13 s on a mid-sized batched `matMul`.
+  cores once; a region either runs serially or gets the whole pool, and only a product,
+  which Eigen splits itself, is narrowed further ([`src/threads.h`](src/threads.h)). An
+  intermediate team is the worst of both, since OpenMP parks and wakes the difference
+  between one region and the next. On the worker that is 33 s against 0.13 s on a
+  mid-sized batched `matMul`, and 1.25 s against 0.011 s on a batched `randPoint`.
 
 **Automatic differentiation**, two ways.
 

@@ -5,7 +5,7 @@
 // that: the threads oversubscribe their cores, and a region over a handful of sets
 // spends milliseconds in the barrier that splits microseconds of work. Both are fixed
 // here rather than at each call site: `configure_threads` sets the pool once, and
-// `threads_for` narrows an individual region to the work it actually has.
+// `threads_for` skips a region whose work cannot pay for one.
 
 #pragma once
 
@@ -19,8 +19,13 @@ void configure_threads();
 int max_threads();
 
 /// How many threads a loop of `iterations` should use when its whole body costs about
-/// `work` scalar operations: never more than there are iterations, and one when the work
-/// is too small to pay for a fan-out.
+/// `work` scalar operations: the whole pool, or one when the work is too small to pay for
+/// a fan-out.
+///
+/// Deliberately all-or-nothing. A team narrower than the pool is not cheaper — OpenMP
+/// parks and wakes the difference, and between two regions of one repetition that costs
+/// more than either region: a batch of ten sets whose draw fans out to the pool and whose
+/// product asks for ten threads spends 1.25 s where one width spends 0.011 s.
 int threads_for(long long iterations, long long work);
 
 /// Narrows Eigen's own threading to what a product of about `work` scalar operations can
