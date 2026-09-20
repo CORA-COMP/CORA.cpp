@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
             return 0;
         }
         if (args.size() == 1 && args[0] == "check") {
-            cora::warm_up();
+            cora::warm_up_backends();
             std::cout << "all operations ran\n";
             return 0;
         }

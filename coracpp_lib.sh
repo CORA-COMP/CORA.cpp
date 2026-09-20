@@ -6,6 +6,11 @@
 # The tool scripts run under `set -u`, so nothing here may read an unset variable.
 
 : "${HERE:=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+# Where install_tool.sh found libtorch, when it did: the binary's rpath covers libtorch's
+# own directory but not the NVIDIA libraries a pip torch keeps beside it.
+if [ -s "$HERE/.libtorch-path" ]; then
+    export LD_LIBRARY_PATH="$(cat "$HERE/.libtorch-path"):${LD_LIBRARY_PATH:-}"
+fi
 CORACPP="${CORACPP_BIN:-$HERE/build/coracpp}"
 SRV_DIR="${CORACPP_SERVER_DIR:-${HOME:-/tmp}/.coracpp_server}"
 PORT="${CORACPP_PORT:-47916}"

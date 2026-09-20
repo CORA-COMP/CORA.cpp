@@ -9,22 +9,22 @@
 #include <iosfwd>
 #include <string>
 
+#include "catalog.h"
+
 namespace cora {
-
-inline constexpr const char *kOperations[] = {
-    "startup", "generateRandom", "randPoint", "supportFunc", "matMul", "minkSum", "contains"};
-
-/// Seed of every instance, so a warm daemon behaves like a fresh process.
-inline constexpr unsigned long long kSeed = 0;
 
 /// Runs the instance described by `params` and writes its verdict; returns the verdict.
 std::string run_instance(const std::string &params, const std::string &results_file,
                          std::ostream &log);
 
-/// Runs every operation once, small: the first call into a code path pays for the thread
-/// pool and the first allocations, a one-off cost of the process rather than of any
-/// instance. Throws if anything is wrong.
+/// Runs every operation once on the Eigen backend, small: the first call into a code path
+/// pays for the thread pool and the first allocations, a one-off cost of the process
+/// rather than of any instance. Throws if anything is wrong.
 void warm_up();
+
+/// `warm_up`, plus the same for libtorch when it is compiled in: every operation on every
+/// device it offers, and its gradients.
+void warm_up_backends();
 
 /// What the worker runs on.
 void print_env(std::ostream &out);

@@ -7,6 +7,7 @@
 //   make test
 
 #include "lp.h"
+#include "probes.h"
 #include "rng.h"
 #include "sets.h"
 
@@ -97,46 +98,15 @@ void zonotope_containment_is_exact() {
         const Index m = 2 * n, batch = 3, points = 12;
         const Zonotope<double> zono = random_zonotope(rng, n, m, batch);
 
-        Mat<double> near(n, points * batch), far(n, points * batch), betas(m, points * batch),
-            dirs(n, points * batch);
-        rng.uniform(betas.data(), static_cast<std::size_t>(betas.size()), -1.0, 1.0);
-        rng.normal(dirs.data(), static_cast<std::size_t>(dirs.size()), 1.0);
-
-        for (Index b = 0; b < batch; ++b) {
-            for (Index k = 0; k < points; ++k) {
-                const Index col = b * points + k;
-                // Saturate the largest coordinate, so the point sits on a facet.
-                Eigen::VectorXd beta = betas.col(col);
-                Index top = 0;
-                beta.cwiseAbs().maxCoeff(&top);
-                beta(top) = beta(top) >= 0 ? 1.0 : -1.0;
-                near.col(col) = zono.c.col(b) + zono.block(b) * (0.999 * beta);
-
-                const Eigen::VectorXd d = dirs.col(col);
-                const double reach = (zono.block(b).transpose() * d).array().abs().sum();
-                far.col(col) = zono.c.col(b) + 1.001 * reach / d.squaredNorm() * d;
-            }
-        }
-
-        const Mask in_answers = contains(zono, near, points);
+        const Mask in_answers = contains(zono, just_inside(zono, points, rng), points);
         check(std::find(in_answers.begin(), in_answers.end(), 0) == in_answers.end(),
               "n=" + std::to_string(n) + ": a point inside the set was reported outside");
-        const Mask out_answers = contains(zono, far, points);
+        const Mask out_answers = contains(zono, just_outside(zono, points, rng), points);
         check(std::find(out_answers.begin(), out_answers.end(), 1) == out_answers.end(),
               "n=" + std::to_string(n) + ": a point outside the set was reported inside");
 
         // A scatter around the set: the LP decides, and the fast path must agree.
-        Mat<double> mixed(n, points * batch), jitter(n, points * batch), offset(n, batch);
-        rng.normal(jitter.data(), static_cast<std::size_t>(jitter.size()), 0.3);
-        rng.uniform(offset.data(), static_cast<std::size_t>(offset.size()), -1.0, 1.0);
-        for (Index b = 0; b < batch; ++b) {
-            const Eigen::VectorXd reach = zono.block(b).cwiseAbs().rowwise().sum();
-            const Eigen::VectorXd corner =
-                zono.c.col(b) + reach.cwiseProduct(offset.col(b));
-            for (Index k = 0; k < points; ++k)
-                mixed.col(b * points + k) =
-                    corner + jitter.col(b * points + k).cwiseProduct(reach);
-        }
+        const Mat<double> mixed = across_the_boundary(zono, points, rng);
         const Mask answers = contains(zono, mixed, points);
         for (Index b = 0; b < batch; ++b) {
             for (Index k = 0; k < points; ++k) {

@@ -1,11 +1,13 @@
 #include "instance.h"
 
+#include "backend.h"
 #include "json.h"
 #include "lp.h"
 #include "sets.h"
 
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -35,44 +37,29 @@ void sink(double v) {
     kept += v;
 }
 
-bool known(const char *const *list, std::size_t n, const std::string &name) {
-    for (std::size_t i = 0; i < n; ++i)
-        if (name == list[i]) return true;
-    return false;
+/// Which backend runs `in`, or null when nothing here can.
+///
+/// Eigen owns the CPU, where it is the faster of the two, and libtorch owns the GPU.
+/// `CORACPP_BACKEND=torch` moves the CPU instances over as well, which is how the
+/// libtorch CPU path is measured against the Eigen one.
+const char *backend_for(const Params &in) {
+    const char *want = std::getenv("CORACPP_BACKEND");
+    const std::string forced = want != nullptr ? want : "";
+    if (in.device == "gpu") return torch_backend::supports("gpu") ? "torch" : nullptr;
+    if (in.device != "cpu") return nullptr;
+    if (forced == "torch") return torch_backend::supports("cpu") ? "torch" : nullptr;
+    return "eigen";
 }
 
-/// The fields of `params` an operation needs, resolved once.
-struct Instance {
-    std::string set, operation, kind, device;
-    Index n = 0, m = 0, points = 0, batch = 1;
-    long repetition = 1;
-
-    explicit Instance(const std::string &params) {
-        const auto text = [&](const char *key, const char *fallback) {
-            return json_string(params, key).value_or(fallback);
-        };
-        const auto num = [&](const char *key, double fallback) {
-            return static_cast<Index>(json_number(params, key).value_or(fallback));
-        };
-        set = text("set", "");
-        operation = text("operation", "");
-        kind = text("type", "standard");
-        device = text("device", "");
-        n = num("dim", 0);
-        m = num("generators", static_cast<double>(2 * n));
-        points = num("points", 0);
-        batch = num("batch_size", 1);
-        repetition = static_cast<long>(num("repetition", 1));
-    }
-};
-
 /// Why this tool does not run the instance, or an empty string.
-std::string unsupported_reason(const Instance &in) {
+std::string unsupported_reason(const Params &in) {
     if (!known(kRepresentations, 2, in.set)) return "unknown set '" + in.set + "'";
     if (!known(kOperations, 7, in.operation)) return "unknown operation '" + in.operation + "'";
-    if (in.device == "cpu") return "";
-    if (in.device == "gpu") return "this tool runs on the CPU only";
-    return "unknown device '" + in.device + "'";
+    if (in.device != "cpu" && in.device != "gpu") return "unknown device '" + in.device + "'";
+    if (backend_for(in) == nullptr)
+        return in.device == "gpu" ? "no CUDA device on this worker"
+                                  : "no backend for a cpu instance";
+    return "";
 }
 
 /// A set of either representation, so an operation is written once.
@@ -81,9 +68,9 @@ struct Set {
     Zonotope<double> zono;
     bool is_box = false;
 
-    static Set random(const Instance &in, Rng &rng) {
+    static Set random(const Params &in, Rng &rng) {
         Set s;
-        s.is_box = in.set == "interval";
+        s.is_box = in.is_interval();
         if (s.is_box) {
             s.box = random_interval(rng, in.n, in.batch);
         } else {
@@ -99,13 +86,13 @@ struct Set {
 
 /// The repeated call, with its inputs generated and bound. `run` returns the containment
 /// answers when there are any, so they can be checked once the measurement is over.
-struct Prepared {
-    const Instance &in;
+struct Prepared : Runner {
+    const Params &in;
     Rng &rng;
     Set s, other;
     Mat<double> matrix, direction, points_in;
 
-    Prepared(const Instance &i, Rng &r) : in(i), rng(r) {
+    Prepared(const Params &i, Rng &r) : in(i), rng(r) {
         if (in.operation == "startup" || in.operation == "generateRandom") return;
         s = Set::random(in, rng);
         if (in.operation == "minkSum") {
@@ -125,7 +112,7 @@ struct Prepared {
         }
     }
 
-    Mask run() {
+    Mask run() override {
         const std::string &op = in.operation;
         if (op == "startup") {
             sink(origin<double>(in.n).g.sum());
@@ -169,36 +156,45 @@ std::string fixed(double v, int digits) {
 
 } // namespace
 
+std::unique_ptr<Runner> prepare_eigen(const Params &in, Rng &rng) {
+    return std::make_unique<Prepared>(in, rng);
+}
+
 std::string run_instance(const std::string &params, const std::string &results_file,
                          std::ostream &log) {
-    const Instance in(params);
+    const Params in(params);
     if (const std::string reason = unsupported_reason(in); !reason.empty()) {
         log << "[coracpp] not run: " << reason << "\n";
         write_result(results_file, "unsupported", {});
         return "unsupported";
     }
 
+    const std::string backend = backend_for(in);
     Rng rng(kSeed);
     const auto start_generate = Clock::now();
-    Prepared prepared(in, rng);
+    std::unique_ptr<Runner> runner =
+        backend == "torch" ? torch_backend::prepare(in) : prepare_eigen(in, rng);
+    runner->sync();
     const double time_generate = seconds_since(start_generate);
 
     const auto start_operation = Clock::now();
     Mask answers;
-    for (long i = 0; i < in.repetition; ++i) answers = prepared.run();
+    for (long long i = 0; i < in.repetition; ++i) answers = runner->run();
+    runner->sync();
     const double time_operation = seconds_since(start_operation);
 
     // The points were drawn from their sets, so anything but true is a wrong answer.
     if (in.operation == "contains" && std::find(answers.begin(), answers.end(), 0) != answers.end())
         throw std::runtime_error("contains: a point drawn from a set was reported outside it");
 
-    log << "[coracpp] " << in.operation << " x" << in.repetition << " on " << in.device << ": "
-        << fixed(time_operation, 4) << "s (+" << fixed(time_generate, 4)
+    log << "[coracpp] " << in.operation << " x" << in.repetition << " on " << in.device << " ("
+        << backend << "): " << fixed(time_operation, 4) << "s (+" << fixed(time_generate, 4)
         << "s generating inputs)\n";
     write_result(results_file, "finished",
                  {{"time_generate", fixed(time_generate, 6)},
                   {"time_operation", fixed(time_operation, 6)},
-                  {"dtype", "double"}});
+                  {"dtype", "double"},
+                  {"backend", backend}});
     return "finished";
 }
 
@@ -214,10 +210,9 @@ void warm_up() {
                         + ", \"device\": \"cpu\", \"repetition\": 1, \"points\": 2"
                         + ", \"batch_size\": " + std::to_string(batch) + ", \"type\": \""
                         + (std::string(op) == "supportFunc" ? "upper" : "standard") + "\"}";
-                    const Instance in(params);
+                    const Params in(params);
                     Rng rng(kSeed);
-                    Prepared prepared(in, rng);
-                    prepared.run();
+                    Prepared(in, rng).run();
                 }
             }
         }
@@ -230,6 +225,11 @@ void warm_up() {
         throw std::runtime_error("warm-up: the containment LP answered wrongly");
 }
 
+void warm_up_backends() {
+    warm_up();
+    if (torch_backend::built()) torch_backend::warm_up();
+}
+
 void print_env(std::ostream &out) {
 #ifdef _OPENMP
     out << "openmp: " << omp_get_max_threads() << " threads\n";
@@ -238,7 +238,7 @@ void print_env(std::ostream &out) {
 #endif
     out << "eigen " << EIGEN_WORLD_VERSION << "." << EIGEN_MAJOR_VERSION << "."
         << EIGEN_MINOR_VERSION << ", element type: double\n";
-    out << "cuda: not supported — gpu instances report unsupported\n";
+    out << torch_backend::describe() << "\n";
 }
 
 void write_error(const std::string &results_file) { write_result(results_file, "error", {}); }

@@ -68,7 +68,7 @@ int serve(const std::string &srv_dir) {
         std::ofstream pid(srv_dir + "/server.pid", std::ios::trunc);
         pid << ::getpid() << "\n";
     }
-    warm_up();
+    warm_up_backends();
 
     const int listener = ::socket(AF_INET, SOCK_STREAM, 0);
     if (listener < 0) throw std::runtime_error("could not open a socket");

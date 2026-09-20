@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "catalog.h"
+#include "mask.h"
 #include "rng.h"
 
 namespace cora {
@@ -57,9 +59,6 @@ struct Zonotope {
     auto block(Eigen::Index b) const { return g.middleCols(b * m, m); }
     auto block(Eigen::Index b) { return g.middleCols(b * m, m); }
 };
-
-/// The catalog's set names.
-inline constexpr const char *kRepresentations[] = {"interval", "zonotope"};
 
 // ---- construction ----------------------------------------------------------------
 
@@ -135,10 +134,6 @@ Zonotope<T> mink_sum(const Zonotope<T> &a, const Zonotope<T> &b) {
     }
     return out;
 }
-
-/// One answer per point, `1` for inside. A byte per point rather than `vector<bool>`,
-/// whose packed bits cannot be written from several threads at once.
-using Mask = std::vector<std::uint8_t>;
 
 /// Whether each of the `points` points of each set lies in its box.
 Mask contains(const Interval<double> &s, const Mat<double> &p, Eigen::Index points);
