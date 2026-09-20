@@ -123,12 +123,14 @@ Perms permutations(int64_t k, const torch::TensorOptions &opts) {
 
 /// Determinants of a batch of `(k, k)` matrices.
 ///
-/// `linalg_det` dispatches to cuSOLVER's batched LU, which costs milliseconds on a
-/// handful of tiny matrices and dominates the facet path on a device. The facet path only
-/// ever reaches `k = n - 1 <= 4`, where the whole sum is one gather and one product.
+/// On a device `linalg_det` dispatches to cuSOLVER's batched LU, which costs milliseconds
+/// on matrices this small and dominates the facet path; the facet path never needs more
+/// than `k = n - 1 <= 4`, where the Leibniz sum is one gather and one product. On the host
+/// LAPACK wins instead — the sum materializes `k!` terms per minor, which at `k = 4` costs
+/// sixfold on a batch of a hundred 5d zonotopes.
 torch::Tensor small_det(const torch::Tensor &minors) {
     const int64_t k = minors.size(-1);
-    if (k > 4) return torch::linalg_det(minors);
+    if (k > 4 || minors.device().is_cpu()) return torch::linalg_det(minors);
     const Perms p = permutations(k, minors.options());
     return minors.flatten(-2, -1)
         .index_select(-1, p.index)
