@@ -68,11 +68,11 @@ The `backend` column of every result says which one actually ran.
 them rather than picking one. libtorch costs a fixed ~0.3–1.5 ms of dispatch per
 operation, so Eigen wins everything small — up to 130× on `supportFunc` at 10d. Above
 about 100 dimensions libtorch's kernels pull ahead on `matMul` and `minkSum` (1.3–3.5×).
-Batched `contains` is the other way round and not close: Eigen gives each set of the batch
-a thread, which suits a problem that is per-point branching more than arithmetic, and is
-two orders of magnitude faster on the batched instances — 0.11 s against 14 s at 50d over
-a hundred sets — besides finishing several that libtorch cannot finish inside the
-catalog's 60 s.
+Batched `contains` is the other way round: Eigen gives each set of the batch a thread,
+which suits a problem that is per-point branching more than arithmetic, and it stays an
+order of magnitude ahead on the batched instances — 0.11 s against 4.4 s at 50d over a
+hundred sets — besides finishing two that libtorch cannot finish inside the catalog's
+60 s. On the GPU, where Eigen cannot go at all, libtorch finishes every one of them.
 
 **Eigen layout.** A set holds its whole batch in one matrix: an interval is `lo`/`hi` of
 size `n × B`, one set per column, a zonotope a centre `n × B` and the batch's generator
@@ -132,7 +132,20 @@ handful of points:
   neither proves in 60 goes to an exact LP (GLPK).
 
 The libtorch backend runs the same two paths on tensors, the whole batch at once, with the
-LP on the host for whatever the certificates leave open.
+LP on the host for whatever the certificates leave open. Three things about it are chosen
+by what the hardware is good at rather than by the mathematics, and each is worth between
+three- and tenfold on the instances it touches:
+
+- The points are the columns of one matrix per set. Held the other way up, the set would
+  broadcast over the points in every product, and torch materializes that — at 1000d an
+  iteration read a 1.6 GB expansion of a 160 MB tensor.
+- The projector comes from a QR of `Gᵀ` on the host and from a Cholesky of `G Gᵀ` on the
+  device. Both describe the same subspace; cuSOLVER is far from peak on a batched QR that
+  large, while MKL is not, so either choice is three- to sixfold wrong on the other
+  device.
+- Where `B·m²` fits in 128 MB the projector is held as a matrix, which makes an iteration
+  one fused product instead of three calls. At small `m` these are tiny tensors over a
+  hundred repetitions, where an iteration costs almost only its dispatches.
 
 `make test` checks the operations against their definitions and both containment paths
 against the LP, on points placed just inside and just outside the boundary, plus the

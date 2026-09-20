@@ -39,6 +39,9 @@ constexpr double kShrink = 0.9;
 constexpr int kIterations = 60;
 constexpr int kCheckEvery = 4;
 
+/// Largest containment projector held as a matrix, in entries: 128 MB of `double`.
+constexpr int64_t kMaxProjectorEntries = 1 << 24;
+
 /// `C(m, k)`, stopped as soon as it is past the threshold it is compared against.
 unsigned long long binomial(int64_t m, int64_t k) {
     k = std::min(k, m - k);
@@ -285,20 +288,60 @@ torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c,
 torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
                             const torch::Tensor &p) {
     const double tol = 1000.0 * std::numeric_limits<double>::epsilon();
+    const int64_t b = g.size(0), m = g.size(2);
     const torch::Tensor gt = g.transpose(-2, -1); // (B, m, n)
 
-    auto [chol, info] = torch::linalg_cholesky_ex(g.matmul(gt), /*upper=*/false,
-                                                  /*check_errors=*/false);
-    // A Gram matrix that will not factor means `G` is not of full row rank, which leaves
-    // no projector and no facets either.
-    if (info.any().item<bool>()) return all_by_lp(g, c, p);
+    // Which factorization gives the projector, and it differs by device. cuSOLVER is far
+    // from peak on a batched QR of an `m x n` matrix, where the Gram matrix is a GEMM and
+    // the factorization only `n x n`: on an A100 that is the difference between finishing
+    // the largest batched instances and timing out. MKL's QR is not far from peak, so on
+    // the host the Gram matrix only adds arithmetic — `2 n^2 N` an iteration — besides
+    // squaring the condition number, and it costs three- to sixfold.
+    const bool gram = g.device().is_cuda();
+
+    torch::Tensor chol, q, r;
+    if (gram) {
+        auto [factor, info] = torch::linalg_cholesky_ex(g.matmul(gt), /*upper=*/false,
+                                                        /*check_errors=*/false);
+        // A Gram matrix that will not factor means `G` is not of full row rank, which
+        // leaves no projector and no facets either.
+        if (info.any().item<bool>()) return all_by_lp(g, c, p);
+        chol = factor;
+    } else {
+        auto [factor, upper] = torch::linalg_qr(gt, "reduced"); // (B,m,n), (B,n,n)
+        q = factor;
+        r = upper;
+    }
 
     // The points are the columns of one matrix per set. Carrying them as `(B, N, m, 1)`
     // instead would broadcast the set over N in every product, and torch materializes
     // that: at 1000d the iteration reads a 1.6 GB expansion of a 160 MB tensor.
     const torch::Tensor rel = (p - c.unsqueeze(1)).transpose(-2, -1); // (B, n, N)
-    const torch::Tensor z = torch::cholesky_solve(rel, chol);          // (B, n, N)
-    const torch::Tensor b0 = gt.matmul(z);                             // (B, m, N)
+    // The least-norm solution `G'(G G')^-1 (p - c)`; with the QR it is `Q R^-T (p - c)`,
+    // which skips the second solve.
+    const torch::Tensor b0 =
+        gram ? gt.matmul(torch::cholesky_solve(rel, chol))
+             : q.matmul(torch::linalg_solve_triangular(r.transpose(-2, -1), rel,
+                                                       /*upper=*/false, /*left=*/true));
+
+    // Where the whole projector fits, an iteration is one fused product instead of a
+    // product, a solve and a product. At small `m` this path runs tiny tensors over many
+    // repetitions, where an iteration costs almost only its dispatches: a batch of a
+    // hundred 10d zonotopes spends 1.3 s on 20x10 matrices. Above the bound the factored
+    // form is the only one that fits — at 1000d over a hundred sets the projector alone
+    // would be 3.2 GB.
+    const bool held = b * m * m <= kMaxProjectorEntries;
+    const torch::Tensor pi = // I - G'(G G')^-1 G, the projector onto the null space of G
+        !held ? torch::Tensor()
+        : gram ? torch::eye(m, g.options()) - gt.matmul(torch::cholesky_solve(g, chol))
+               : torch::eye(m, g.options()) - q.matmul(q.transpose(-2, -1));
+
+    /// `P t`, the component of `t` in the row space of `G`.
+    const auto row_space = [&](const torch::Tensor &t) {
+        if (held) return t - pi.matmul(t);
+        if (gram) return gt.matmul(torch::cholesky_solve(g.matmul(t), chol));
+        return q.matmul(q.transpose(-2, -1).matmul(t));
+    };
 
     const auto flags = torch::TensorOptions().dtype(torch::kBool).device(g.device());
     torch::Tensor inside = torch::zeros({rel.size(0), rel.size(2)}, flags);
@@ -309,18 +352,17 @@ torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
         const torch::Tensor a = x.clamp(-kShrink, kShrink);
         if (it % kCheckEvery == 0 || it == kIterations) {
             inside = torch::logical_or(inside, x.abs().amax({-2}) <= 1.0 + tol);
-            const torch::Tensor gu = g.matmul(x - a);                        // (B, n, N)
-            const torch::Tensor reach = gt.matmul(torch::cholesky_solve(gu, chol))
-                                            .abs()
-                                            .sum(-2); // ||G'd||_1
-            const torch::Tensor along = gu * z;       // d'(p - c), term by term
+            const torch::Tensor u = x - a;
+            const torch::Tensor reach = row_space(u).abs().sum(-2); // ||G'd||_1
+            // d'(p - c) is u'G'(G G')^-1 (p - c) = u'b0, so it needs no product.
+            const torch::Tensor along = u * b0;
             const torch::Tensor gap = along.sum(-2) - reach;
             // Relative to the terms compared, so rounding cannot fake a separation.
             const torch::Tensor slack = (along.abs().sum(-2) + reach) * tol;
             outside = torch::logical_or(outside, gap > slack);
             if (torch::logical_or(inside, outside).all().item<bool>()) return inside;
         }
-        x = a - gt.matmul(torch::cholesky_solve(g.matmul(a), chol)) + b0;
+        x = held ? torch::baddbmm(b0, pi, a) : a - row_space(a) + b0;
     }
     const torch::Tensor open = torch::logical_or(inside, outside).logical_not();
     return patch_by_lp(g, p - c.unsqueeze(1), inside, open, tol);
