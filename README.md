@@ -70,7 +70,7 @@ operation, so Eigen wins everything small — up to 130× on `supportFunc` at 10
 about 100 dimensions libtorch's kernels pull ahead on `matMul` and `minkSum` (1.3–3.5×).
 Batched `contains` is the other way round: Eigen gives each set of the batch a thread,
 which suits a problem that is per-point branching more than arithmetic, and it stays an
-order of magnitude ahead on the batched instances — 0.11 s against 4.4 s at 50d over a
+order of magnitude ahead on the batched instances — 0.11 s against 2.4 s at 50d over a
 hundred sets — besides finishing two that libtorch cannot finish inside the catalog's
 60 s. On the GPU, where Eigen cannot go at all, libtorch finishes every one of them.
 
