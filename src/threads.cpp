@@ -17,8 +17,9 @@
 namespace cora {
 namespace {
 
-/// Below this many scalar operations a region is not worth splitting at all: the barrier
-/// across a wide pool costs more than the work it divides.
+/// Scalar operations a thread needs before it pays for being gathered into a region.
+/// Since a region takes either one thread or the whole pool, the bar it has to clear is
+/// this times the pool: below that, the barrier costs more than the work it divides.
 constexpr long long kMinWorkPerThread = 1 << 12;
 
 /// The same for a product Eigen splits itself, where the bar is far higher: gathering a
@@ -74,8 +75,8 @@ EigenThreads::EigenThreads(long long work) : previous_(Eigen::nbThreads()) {
 EigenThreads::~EigenThreads() { Eigen::setNbThreads(previous_); }
 
 int threads_for(long long iterations, long long work) {
-    if (iterations <= 1 || work < kMinWorkPerThread) return 1;
-    return max_threads();
+    if (iterations <= 1) return 1;
+    return work >= kMinWorkPerThread * max_threads() ? max_threads() : 1;
 }
 
 } // namespace cora
