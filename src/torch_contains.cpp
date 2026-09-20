@@ -42,6 +42,35 @@ constexpr int kCheckEvery = 4;
 /// Largest containment projector held as a matrix, in entries: 128 MB of `double`.
 constexpr int64_t kMaxProjectorEntries = 1 << 24;
 
+/// Scalar operations a host thread needs before it pays for being gathered into one of
+/// the projection loop's products.
+constexpr int64_t kMinWorkPerHostThread = 1 << 19;
+
+/// Narrows torch's intra-op pool to what the work can use, restoring it on the way out.
+///
+/// The projection loop is a few hundred products of a few hundred thousand operations
+/// each. MKL spreads every one of them across every core, and on the competition's
+/// two-socket worker gathering eighty threads costs an order of magnitude more than the
+/// product: an unbatched 50d instance takes 1.82 s at the default width and 0.043 s at
+/// one thread. A device has no such pool and is left alone.
+class HostThreads {
+  public:
+    HostThreads(bool host, int64_t work) : previous_(host ? torch::get_num_threads() : 0) {
+        if (previous_ <= 0) return;
+        const int64_t by_work = std::max<int64_t>(1, work / kMinWorkPerHostThread);
+        torch::set_num_threads(static_cast<int>(std::min<int64_t>(by_work, previous_)));
+    }
+    ~HostThreads() {
+        if (previous_ > 0) torch::set_num_threads(previous_);
+    }
+
+    HostThreads(const HostThreads &) = delete;
+    HostThreads &operator=(const HostThreads &) = delete;
+
+  private:
+    int previous_;
+};
+
 /// `C(m, k)`, stopped as soon as it is past the threshold it is compared against.
 unsigned long long binomial(int64_t m, int64_t k) {
     k = std::min(k, m - k);
@@ -290,8 +319,9 @@ torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c,
 torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
                             const torch::Tensor &p) {
     const double tol = 1000.0 * std::numeric_limits<double>::epsilon();
-    const int64_t b = g.size(0), m = g.size(2);
+    const int64_t b = g.size(0), m = g.size(2), points = p.size(1);
     const torch::Tensor gt = g.transpose(-2, -1); // (B, m, n)
+    const HostThreads threads(!g.device().is_cuda(), b * m * m * points);
 
     // Which factorization gives the projector, and it differs by device. cuSOLVER is far
     // from peak on a batched QR of an `m x n` matrix, where the Gram matrix is a GEMM and
