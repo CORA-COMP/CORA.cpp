@@ -23,6 +23,7 @@
 #include "catalog.h"
 #include "mask.h"
 #include "rng.h"
+#include "threads.h"
 
 namespace cora {
 
@@ -97,7 +98,8 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Interval<T> &s, const Mat
 template <typename T>
 Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Zonotope<T> &s, const Mat<T> &d) {
     Eigen::Matrix<T, Eigen::Dynamic, 1> out(s.batch());
-#pragma omp parallel for schedule(static) if (s.batch() > 1)
+    const int nt = threads_for(s.batch(), s.batch() * s.dim() * s.m);
+#pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index b = 0; b < s.batch(); ++b) {
         out(b) = s.c.col(b).dot(d.col(b))
                  + (d.col(b).transpose() * s.block(b)).array().abs().sum();
@@ -108,6 +110,7 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Zonotope<T> &s, const Mat
 /// `M · S` as CORA computes it, the interval hull: centres map by `M`, radii by `|M|`.
 template <typename T>
 Interval<T> mat_mul(const Interval<T> &s, const Mat<T> &m) {
+    const EigenThreads threads(2 * s.dim() * s.dim() * s.batch());
     const Mat<T> c = m * s.center();
     const Mat<T> r = m.array().abs().matrix() * s.radius();
     return Interval<T>{c - r, c + r};
@@ -116,6 +119,7 @@ Interval<T> mat_mul(const Interval<T> &s, const Mat<T> &m) {
 /// `M · S`; `M` maps every generator of every set alike, so the batch is one product.
 template <typename T>
 Zonotope<T> mat_mul(const Zonotope<T> &s, const Mat<T> &m) {
+    const EigenThreads threads(2 * s.dim() * s.dim() * s.m * s.batch());
     return Zonotope<T>{m * s.c, m * s.g, s.m};
 }
 
@@ -127,7 +131,8 @@ Interval<T> mink_sum(const Interval<T> &a, const Interval<T> &b) {
 template <typename T>
 Zonotope<T> mink_sum(const Zonotope<T> &a, const Zonotope<T> &b) {
     Zonotope<T> out{a.c + b.c, Mat<T>(a.dim(), (a.m + b.m) * a.batch()), a.m + b.m};
-#pragma omp parallel for schedule(static) if (a.batch() > 1)
+    const int nt = threads_for(a.batch(), a.batch() * a.dim() * (a.m + b.m));
+#pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index k = 0; k < a.batch(); ++k) {
         out.g.middleCols(k * out.m, a.m) = a.block(k);
         out.g.middleCols(k * out.m + a.m, b.m) = b.block(k);

@@ -21,8 +21,8 @@ INCLUDES   = -Isrc -isystem $(EIGEN)
 LDLIBS     = -lglpk
 LDFLAGS    = -fopenmp
 
-SRC = src/rng.cpp src/json.cpp src/catalog.cpp src/sets.cpp src/contains.cpp \
-      src/lp.cpp src/instance.cpp src/server.cpp
+SRC = src/rng.cpp src/json.cpp src/catalog.cpp src/threads.cpp src/sets.cpp \
+      src/contains.cpp src/lp.cpp src/instance.cpp src/server.cpp
 
 ifeq ($(TORCH),)
 SRC += src/torch_none.cpp

@@ -1,5 +1,7 @@
 #include "sets.h"
 
+#include "threads.h"
+
 namespace cora {
 
 Interval<double> random_interval(Rng &rng, Eigen::Index n, Eigen::Index batch) {
@@ -50,9 +52,10 @@ Mat<double> rand_point(const Zonotope<double> &s, Eigen::Index points, Rng &rng)
     Mat<double> beta(m, points * batch);
     rng.uniform(beta.data(), static_cast<std::size_t>(beta.size()), -1.0, 1.0);
     Mat<double> out(n, points * batch);
-    // One set per thread while there are several; a single product gets all of them, since
-    // Eigen leaves its own threading off inside a parallel region.
-#pragma omp parallel for schedule(static) if (batch > 1)
+    // One set per thread while there are enough of them to be worth it; a single product
+    // gets all of them, since Eigen leaves its own threading off inside a parallel region.
+    const int nt = threads_for(batch, batch * points * n * m);
+#pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index b = 0; b < batch; ++b) {
         out.middleCols(b * points, points).noalias() =
             s.block(b) * beta.middleCols(b * points, points);

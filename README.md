@@ -92,6 +92,13 @@ the trailing dimensions, so a batch is one call and the GPU gets work worth its 
   compiled with `-ffast-math` so the logarithm and the sine vectorize through libmvec.
   `generateRandom` is bound by how fast numbers can be produced, not by any product.
 - A warm daemon, so no measurement pays for process start.
+- Threads matched to the work rather than to the machine. OpenMP and Eigen both default
+  to every hyperthread — 160 on the competition's two-socket worker, against 80 cores —
+  and at that width a region over ten sets, or a 40 MFLOP product, spends an order of
+  magnitude longer gathering threads than computing. The pool is set to the physical
+  cores once, and each parallel region and each product is narrowed to what its own work
+  can use ([`src/threads.h`](src/threads.h)). On the worker that is the difference
+  between 33 s and 0.13 s on a mid-sized batched `matMul`.
 
 **Automatic differentiation**, two ways.
 
@@ -192,7 +199,7 @@ All optional:
 | `LIBTORCH` | the image's Python torch | where libtorch is, when it is not found by itself |
 | `CORACPP_PYTHON` | `python3`, then `python` | the interpreter whose torch to build against |
 | `CXXFLAGS` | `-O3 -march=native -std=c++17 -fopenmp …` | the build flags |
-| `OMP_NUM_THREADS` | all cores | how many threads the operations use |
+| `OMP_NUM_THREADS` | the machine's physical cores | how many threads the operations use; set it and the tool leaves it alone |
 
 ## Running one instance locally
 

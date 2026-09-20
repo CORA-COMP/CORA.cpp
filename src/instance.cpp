@@ -4,6 +4,7 @@
 #include "json.h"
 #include "lp.h"
 #include "sets.h"
+#include "threads.h"
 
 #include <algorithm>
 #include <chrono>
@@ -13,6 +14,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <thread>
 #include <string>
 #include <vector>
 
@@ -244,7 +246,8 @@ void warm_up_backends() {
 
 void print_env(std::ostream &out) {
 #ifdef _OPENMP
-    out << "openmp: " << omp_get_max_threads() << " threads\n";
+    out << "openmp: " << omp_get_max_threads() << " threads of "
+        << std::thread::hardware_concurrency() << " the machine reports\n";
 #else
     out << "openmp: not compiled in\n";
 #endif
