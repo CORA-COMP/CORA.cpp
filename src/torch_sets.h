@@ -13,14 +13,55 @@
 
 #pragma once
 
+#include "catalog.h"
+#include "rng.h"
+
 #include <torch/torch.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace cora::tb {
+
+/// `torch::randn` or `torch::rand`, except that a large host draw goes through this
+/// tool's own generator.
+///
+/// Torch's CPU generator is one Mersenne Twister stream, so a draw runs on a single core
+/// however wide the machine is: the 200M normals a batch of a hundred 1000d zonotopes
+/// needs are nearly all of what `generateRandom` is timed doing, and on the competition's
+/// worker they take longer than the catalog allows for the whole instance. `Rng` draws
+/// the same distribution across every core at roughly ten times the rate — the catalog
+/// fixes the distribution, not the stream — and it is what the Eigen backend already
+/// uses, so the two backends now agree on more than the shape of the answer.
+///
+/// A device draw is already parallel and goes to torch untouched, as does anything small
+/// enough that setting up to split it would cost more than drawing it.
+inline torch::Tensor draw(torch::IntArrayRef shape, const torch::TensorOptions &opts,
+                          bool normal) {
+    constexpr int64_t kGrain = 1 << 16;
+
+    int64_t n = 1;
+    for (const int64_t d : shape) n *= d;
+    if (!opts.device().is_cpu() || n <= kGrain || opts.dtype() != torch::kDouble)
+        return normal ? torch::randn(shape, opts) : torch::rand(shape, opts);
+
+    // One stream for the process, so repeated draws differ; `Rng` splits each draw into
+    // fixed chunks of its own, so the numbers do not depend on the thread count.
+    static Rng rng(kSeed);
+    torch::Tensor out = torch::empty(shape, opts);
+    const auto count = static_cast<std::size_t>(n);
+    if (normal) {
+        rng.normal(out.data_ptr<double>(), count, 1.0);
+    } else {
+        rng.uniform(out.data_ptr<double>(), count, 0.0, 1.0);
+    }
+    return out;
+}
 
 /// Samples of `U[low, high)` with the dtype and device of `like`.
 inline torch::Tensor uniform(torch::IntArrayRef shape, double low, double high,
                              const torch::Tensor &like) {
-    return torch::rand(shape, like.options()) * (high - low) + low;
+    return draw(shape, like.options(), false) * (high - low) + low;
 }
 
 /// An axis-aligned box, `{x | lo <= x <= hi}` elementwise.
@@ -37,7 +78,7 @@ struct Interval {
         std::vector<int64_t> shape{3};
         shape.insert(shape.end(), batch.begin(), batch.end());
         shape.push_back(n);
-        const torch::Tensor u = torch::rand(shape, opts);
+        const torch::Tensor u = draw(shape, opts, false);
         const torch::Tensor c = u[0] * 4.0 - 2.0;
         const torch::Tensor r = u[1] * u[2] * 5.0;
         return {c - r, c + r};
@@ -91,15 +132,17 @@ struct Zonotope {
                                     const torch::TensorOptions &opts) {
         std::vector<int64_t> shape = batch.vec();
         shape.push_back(n);
-        const torch::Tensor c = torch::randn(shape, opts) * 10.0;
+        const torch::Tensor c = draw(shape, opts, true) * 10.0;
         shape.push_back(m);
-        const torch::Tensor g = torch::randn(shape, opts);
+        torch::Tensor g = draw(shape, opts, true);
         std::vector<int64_t> lengths = batch.vec();
         lengths.push_back(1);
         lengths.push_back(m);
-        const torch::Tensor length = torch::rand(lengths, opts);
+        const torch::Tensor length = draw(lengths, opts, false);
         const torch::Tensor norm = g.norm(2, {-2}, true);
-        return {c, g * (length / norm)};
+        // Scaled in place: at 1000d over a hundred sets `g` is 1.6 GB, and this operation
+        // is bound by how often that has to cross memory. Nothing here carries a gradient.
+        return {c, g.mul_(length / norm)};
     }
 
     /// `points` points per set, CORA's `standard`: `c + G b` with `b ~ U[-1, 1]^m`.

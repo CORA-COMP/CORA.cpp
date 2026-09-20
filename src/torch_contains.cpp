@@ -274,23 +274,31 @@ torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c,
 /// exact LP; in the dimensions this path serves, hardly any point lies that close to the
 /// boundary.
 ///
-/// With `G' = Q R` (thin QR, `G` of full row rank), projecting onto `A` is
-/// `b - Q Q'b + b0` with the least-norm solution `b0 = Q R^-T (p - c)`, and
-/// `d = R^-1 Q'u` gives `d'(p - c) = (Q'u)'w` and `G'd = Q Q'u` without a solve.
+/// Projecting onto `A` is `b - G'(G G')^-1 G b + b0`, with the least-norm solution
+/// `b0 = G'(G G')^-1 (p - c)`, so one Cholesky of the Gram matrix serves every iteration;
+/// `d = (G G')^-1 G u` is the separating direction, and `G'd` is the same projection
+/// again. A thin QR of `G'` would do as well and be better conditioned, but it factors an
+/// `m x n` matrix where this factors `n x n`: at 1000d over a hundred sets that is the
+/// difference between finishing inside the catalog's minute and not. The Gram matrix
+/// squares the condition number, which costs accuracy, not soundness — every answer is
+/// still certified, and a point whose certificates both fail goes to the LP.
 torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
                             const torch::Tensor &p) {
     const double tol = 1000.0 * std::numeric_limits<double>::epsilon();
+    const torch::Tensor gt = g.transpose(-2, -1); // (B, m, n)
 
-    auto [q, upper] = torch::linalg_qr(g.transpose(1, 2), "reduced"); // (B,m,n),(B,n,n)
-    const torch::Tensor qt = q.transpose(-2, -1);                     // (B, n, m)
+    auto [chol, info] = torch::linalg_cholesky_ex(g.matmul(gt), /*upper=*/false,
+                                                  /*check_errors=*/false);
+    // A Gram matrix that will not factor means `G` is not of full row rank, which leaves
+    // no projector and no facets either.
+    if (info.any().item<bool>()) return all_by_lp(g, c, p);
+
     // The points are the columns of one matrix per set. Carrying them as `(B, N, m, 1)`
-    // instead would broadcast Q over N in every product, and torch materializes that:
-    // at 1000d the iteration reads a 1.6 GB expansion of a 160 MB tensor.
+    // instead would broadcast the set over N in every product, and torch materializes
+    // that: at 1000d the iteration reads a 1.6 GB expansion of a 160 MB tensor.
     const torch::Tensor rel = (p - c.unsqueeze(1)).transpose(-2, -1); // (B, n, N)
-    const torch::Tensor w = torch::linalg_solve_triangular(
-        upper.transpose(-2, -1), rel, /*upper=*/false, /*left=*/true); // (B, n, N)
-    const torch::Tensor b0 = q.matmul(w);                              // (B, m, N)
-    const torch::Tensor wnorm = w.abs().sum(-2);                       // (B, N)
+    const torch::Tensor z = torch::cholesky_solve(rel, chol);          // (B, n, N)
+    const torch::Tensor b0 = gt.matmul(z);                             // (B, m, N)
 
     const auto flags = torch::TensorOptions().dtype(torch::kBool).device(g.device());
     torch::Tensor inside = torch::zeros({rel.size(0), rel.size(2)}, flags);
@@ -301,14 +309,18 @@ torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
         const torch::Tensor a = x.clamp(-kShrink, kShrink);
         if (it % kCheckEvery == 0 || it == kIterations) {
             inside = torch::logical_or(inside, x.abs().amax({-2}) <= 1.0 + tol);
-            const torch::Tensor y = qt.matmul(x - a); // (B, n, N)
-            const torch::Tensor gap = (y * w).sum(-2) - q.matmul(y).abs().sum(-2);
+            const torch::Tensor gu = g.matmul(x - a);                        // (B, n, N)
+            const torch::Tensor reach = gt.matmul(torch::cholesky_solve(gu, chol))
+                                            .abs()
+                                            .sum(-2); // ||G'd||_1
+            const torch::Tensor along = gu * z;       // d'(p - c), term by term
+            const torch::Tensor gap = along.sum(-2) - reach;
             // Relative to the terms compared, so rounding cannot fake a separation.
-            const torch::Tensor slack = y.abs().sum(-2) * tol * (wnorm + 1.0);
+            const torch::Tensor slack = (along.abs().sum(-2) + reach) * tol;
             outside = torch::logical_or(outside, gap > slack);
             if (torch::logical_or(inside, outside).all().item<bool>()) return inside;
         }
-        x = a - q.matmul(qt.matmul(a)) + b0;
+        x = a - gt.matmul(torch::cholesky_solve(g.matmul(a), chol)) + b0;
     }
     const torch::Tensor open = torch::logical_or(inside, outside).logical_not();
     return patch_by_lp(g, p - c.unsqueeze(1), inside, open, tol);

@@ -13,6 +13,7 @@
 
 CXX       ?= g++
 EIGEN     ?= /usr/include/eigen3
+BLAS      ?=
 TORCH     ?=
 TORCH_ABI ?= 1
 WARN       = -Wall -Wextra
@@ -37,6 +38,14 @@ LDLIBS   += -ltorch -ltorch_cpu -lc10
 ifneq ($(wildcard $(TORCH)/lib/libtorch_cuda.so),)
 LDLIBS += -Wl,--no-as-needed -ltorch_cuda -lc10_cuda -Wl,--as-needed
 endif
+endif
+
+# Eigen's own GEMM reaches about a fifth of this machine's peak; an external BLAS is
+# what the catalog's largest matMul needs to finish at all. Opt-in, since it changes
+# which library does the arithmetic.
+ifneq ($(BLAS),)
+DEFS   += -DEIGEN_USE_BLAS
+LDLIBS += -lopenblas
 endif
 
 OBJ = $(SRC:src/%.cpp=build/%.o)
