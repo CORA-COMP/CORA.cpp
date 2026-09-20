@@ -53,10 +53,24 @@ Random sets follow CORA's `generateRandom`, as the catalog specifies.
 | Batch | one matrix per batch, OpenMP across sets | leading tensor axes, one call per batch |
 | Gradients | at compile time, by substituting the scalar | at run time, through autograd |
 
-Eigen owns the CPU because it is the faster of the two there: no dispatch between an
-operation and its arithmetic, which is most of what the 1d–10d instances are.
-`CORACPP_BACKEND=torch` moves the CPU instances over as well, which is how the two get
-compared; the `backend` column of every result says which one ran.
+`CORACPP_BACKEND` pins a run to one of them, so the same commit enters the catalog twice
+and the two sets of results sit side by side:
+
+| Tool environment | CPU | GPU |
+| --- | --- | --- |
+| unset (default) | Eigen | libtorch |
+| `CORACPP_BACKEND=eigen` | Eigen | `unsupported` |
+| `CORACPP_BACKEND=torch` | libtorch | libtorch |
+
+The `backend` column of every result says which one actually ran.
+
+**Which is faster on the CPU depends on the instance**, which is why the default splits
+them rather than picking one. libtorch costs a fixed ~0.3–1.5 ms of dispatch per
+operation, so Eigen wins everything small — up to 130× on `supportFunc` at 10d. Above
+about 100 dimensions libtorch's kernels pull ahead on `matMul` and `minkSum` (1.3–3.5×).
+Batched `contains` is the other way round and not close: Eigen gives each set of the batch
+a thread, while the tensor path becomes `B·N` tiny matvecs, so Eigen is 13–28× faster and
+finishes two instances that libtorch cannot finish inside the catalog's 60 s.
 
 **Eigen layout.** A set holds its whole batch in one matrix: an interval is `lo`/`hi` of
 size `n × B`, one set per column, a zonotope a centre `n × B` and the batch's generator
@@ -168,7 +182,7 @@ All optional:
 
 | Variable | Default | |
 | --- | --- | --- |
-| `CORACPP_BACKEND` | `eigen` on the CPU | `torch` runs `cpu` instances through libtorch too |
+| `CORACPP_BACKEND` | Eigen on the CPU, libtorch on the GPU | `eigen` or `torch` pins the whole run to one backend |
 | `CORACPP_DTYPE` | `float64` | `float32` for what a GPU can do instead (libtorch only) |
 | `CORACPP_PORT` | `47916` | the daemon's localhost port |
 | `CORACPP_SERVER_DIR` | `~/.coracpp_server` | the daemon's pid file and logs |

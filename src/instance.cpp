@@ -39,12 +39,16 @@ void sink(double v) {
 
 /// Which backend runs `in`, or null when nothing here can.
 ///
-/// Eigen owns the CPU, where it is the faster of the two, and libtorch owns the GPU.
-/// `CORACPP_BACKEND=torch` moves the CPU instances over as well, which is how the
-/// libtorch CPU path is measured against the Eigen one.
+/// `CORACPP_BACKEND` picks one for the whole run, so the same commit enters the catalog
+/// as two tools whose results sit side by side:
+///
+///   unset   Eigen on the CPU, libtorch on the GPU — each where it is the faster
+///   eigen   Eigen only; gpu instances report unsupported
+///   torch   libtorch only, on both devices
 const char *backend_for(const Params &in) {
     const char *want = std::getenv("CORACPP_BACKEND");
     const std::string forced = want != nullptr ? want : "";
+    if (forced == "eigen") return in.device == "cpu" ? "eigen" : nullptr;
     if (in.device == "gpu") return torch_backend::supports("gpu") ? "torch" : nullptr;
     if (in.device != "cpu") return nullptr;
     if (forced == "torch") return torch_backend::supports("cpu") ? "torch" : nullptr;
@@ -53,12 +57,16 @@ const char *backend_for(const Params &in) {
 
 /// Why this tool does not run the instance, or an empty string.
 std::string unsupported_reason(const Params &in) {
+    const char *want = std::getenv("CORACPP_BACKEND");
+    const std::string forced = want != nullptr ? want : "";
     if (!known(kRepresentations, 2, in.set)) return "unknown set '" + in.set + "'";
     if (!known(kOperations, 7, in.operation)) return "unknown operation '" + in.operation + "'";
     if (in.device != "cpu" && in.device != "gpu") return "unknown device '" + in.device + "'";
-    if (backend_for(in) == nullptr)
-        return in.device == "gpu" ? "no CUDA device on this worker"
-                                  : "no backend for a cpu instance";
+    if (backend_for(in) == nullptr) {
+        if (in.device != "gpu") return "no backend for a cpu instance";
+        return forced == "eigen" ? "this entry runs the Eigen backend, which is CPU only"
+                                 : "no CUDA device on this worker";
+    }
     return "";
 }
 
@@ -227,6 +235,10 @@ void warm_up() {
 
 void warm_up_backends() {
     warm_up();
+    // An entry pinned to Eigen never reaches libtorch, and warming it would start a CUDA
+    // context it will not use.
+    const char *want = std::getenv("CORACPP_BACKEND");
+    if (want != nullptr && std::string(want) == "eigen") return;
     if (torch_backend::built()) torch_backend::warm_up();
 }
 
