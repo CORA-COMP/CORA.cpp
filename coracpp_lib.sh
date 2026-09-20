@@ -1,11 +1,13 @@
 #!/bin/bash
 # coracpp_lib.sh — shared by the tool scripts; builtins only in ask(), since
-# run_instance.sh calls it inside the measured region. Needs HERE, the repository.
+# run_instance.sh calls it inside the measured region.
 #
-# Sets: CORACPP (the binary), SRV_DIR, PORT; ask() sets REPLY.
+# Sets: HERE (the repository), CORACPP (the binary), SRV_DIR, PORT; ask() sets REPLY.
+# The tool scripts run under `set -u`, so nothing here may read an unset variable.
 
+: "${HERE:=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 CORACPP="${CORACPP_BIN:-$HERE/build/coracpp}"
-SRV_DIR="${CORACPP_SERVER_DIR:-$HOME/.coracpp_server}"
+SRV_DIR="${CORACPP_SERVER_DIR:-${HOME:-/tmp}/.coracpp_server}"
 PORT="${CORACPP_PORT:-47916}"
 export CORACPP_PORT="$PORT"
 

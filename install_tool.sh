@@ -22,18 +22,26 @@ command -v make >/dev/null || missing="$missing make"
 [ -f /usr/include/glpk.h ] || missing="$missing libglpk-dev"
 
 if [ -n "$missing" ]; then
-    if [ "$(id -u)" -ne 0 ]; then
-        echo "missing:$missing — install them or run the installation script as root"
+    # The platform runs the installation as the same user as the instances, so apt needs
+    # the node's passwordless sudo.
+    if [ "$(id -u)" -eq 0 ]; then
+        as_root=""
+    elif sudo -n true 2>/dev/null; then
+        as_root="sudo -n"
+    else
+        echo "missing:$missing — install them, or give the installing user root or sudo"
         exit 1
     fi
     echo "installing:$missing"
-    apt-get update -qq
+    $as_root apt-get update -qq
     # shellcheck disable=SC2086
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq $missing >/dev/null
+    $as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq $missing >/dev/null
 fi
 
 g++ --version | head -1
-make -C "$HERE" -j"$(nproc)" clean all
+# Separate invocations: in one parallel make, `clean` would race the compiles it precedes.
+make -C "$HERE" clean
+make -C "$HERE" -j"$(nproc)" all
 
 # What the worker will actually run on, and every operation once.
 "$CORACPP" env

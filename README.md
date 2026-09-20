@@ -10,8 +10,8 @@ and [CORA.rust](https://github.com/CORA-COMP/CORA.rust), which reach the GPU thr
 libtorch.
 
 Submit it like any other tool: this repository and a commit, plus a Debian- or
-Ubuntu-based image, e.g. `ubuntu:24.04`, with the installation script run as root (it
-installs `g++`, Eigen and GLPK if the image lacks them).
+Ubuntu-based image, e.g. `ubuntu:24.04`. `install_tool.sh` installs `g++`, Eigen and GLPK
+if the image lacks them, as root or through the node's passwordless `sudo`.
 
 ## What it runs
 
