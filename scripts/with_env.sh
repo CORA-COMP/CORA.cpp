@@ -47,8 +47,9 @@ fi
 cd "$ROOT"
 
 # The Python package is built into the build directory (local.mk, else ./build), so put it on
-# the path: python scripts and examples find `cora` without further setup.
-BUILD_DIR="$(sed -n 's/^BUILD *:\?= *//p' local.mk 2>/dev/null | head -1 | sed "s|\$(HOME)|$HOME|g")"
+# the path: python scripts and examples find `cora` without further setup. Without a local.mk
+# (a fresh checkout, CI) that is ./build.
+BUILD_DIR="$( { sed -n 's/^BUILD *:\?= *//p' local.mk 2>/dev/null || true; } | head -1 | sed "s|\$(HOME)|$HOME|g")"
 export CORACPP_BUILD="${BUILD_DIR:-$ROOT/build}"
 export PYTHONPATH="$CORACPP_BUILD${PYTHONPATH:+:$PYTHONPATH}"
 
