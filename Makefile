@@ -82,11 +82,11 @@ LIB_OBJ = $(LIB_SRC:%.cpp=$(BUILD)/%.o)
 # Box-Muller vectorize; everything that results depend on keeps strict IEEE arithmetic.
 $(BUILD)/src/global/rng.o: src/global/rng.cpp
 	@mkdir -p $(@D)
-	$(CXX) $(OPT) $(PIC) $(DEFS) -ffast-math $(WARN) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(OPT) $(PIC) $(DEFS) -ffast-math $(WARN) $(INCLUDES) -MMD -MP -c -o $@ $<
 
 $(BUILD)/%.o: %.cpp
 	@mkdir -p $(@D)
-	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -MMD -MP -c -o $@ $<
 
 # ---------------------------------- tests ----------------------------------------------
 # tests/ mirrors src/; a test ending in _torch needs libtorch. test_codingConventions.py checks
@@ -100,7 +100,7 @@ endif
 
 $(TESTS): $(BUILD)/tests/%: tests/%.cpp $(LIB_OBJ) tests/testing.h
 	@mkdir -p $(@D)
-	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -Itests $(LDFLAGS) -o $@ $(filter %.cpp %.o,$^) $(LDLIBS)
+	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -MMD -MP -Itests $(LDFLAGS) -o $@ $(filter %.cpp %.o,$^) $(LDLIBS)
 
 test: $(TESTS)
 	@$(PYTHON) tests/global/test_codingConventions.py
@@ -118,7 +118,7 @@ endif
 # Every example starts with the CORA START block: it is injected here, not written in each file.
 $(BUILD)/examples/cpp/%: examples/cpp/%.cpp $(LIB_OBJ) src/global/banner.h
 	@mkdir -p $(@D)
-	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -include global/banner.h -DCORACPP_PROGRAM='"$*.cpp"' $(LDFLAGS) -o $@ examples/cpp/$*.cpp $(LIB_OBJ) $(LDLIBS)
+	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -MMD -MP -include global/banner.h -DCORACPP_PROGRAM='"$*.cpp"' $(LDFLAGS) -o $@ examples/cpp/$*.cpp $(LIB_OBJ) $(LDLIBS)
 
 example: $(EXAMPLES)
 	@for e in $(EXAMPLES); do echo "== $$e"; $$e || exit 1; done
@@ -149,7 +149,7 @@ $(BUILD)/cora/%.py: src/python/cora/%.py
 $(BUILD)/cora/_cora$(PYEXT): src/python/bindings.cpp $(LIB_OBJ)
 	@test -n "$(TORCH)" || { echo "make python needs libtorch: a torch package for $(PYTHON), or TORCH=/path"; exit 1; }
 	@mkdir -p $(@D)
-	$(CXX) -shared $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -I$(PYINC) $(LDFLAGS) \
+	$(CXX) -shared $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -MMD -MP -I$(PYINC) $(LDFLAGS) \
 	    -o $@ $^ $(LDLIBS) -L$(TORCH)/lib -ltorch_python
 
 # ------------------------------ the competition ----------------------------------------
@@ -183,9 +183,12 @@ test-competition: $(COMP_TESTS)
 
 $(COMP_TESTS): $(BUILD)/tests/%: tests/%.cpp $(LIB_OBJ) $(COMP_OBJ) tests/testing.h
 	@mkdir -p $(@D)
-	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -Icompetition -Itests $(LDFLAGS) -o $@ $(filter %.cpp %.o,$^) $(LDLIBS) $(COMP_LIBS)
+	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -MMD -MP -Icompetition -Itests $(LDFLAGS) -o $@ $(filter %.cpp %.o,$^) $(LDLIBS) $(COMP_LIBS)
 
 clean:
 	rm -rf $(BUILD)
 
 .PHONY: all test test-competition clean python example
+
+# The headers each object includes (written by -MMD), so that editing one rebuilds what uses it.
+-include $(shell find $(BUILD) -name '*.d' 2>/dev/null)

@@ -4,9 +4,9 @@
 // Inputs:   identifier - "CORA:<name>[:light|:dark]"; numColors, cidx - shading of "reachSet";
 //           alpha - the mix of the ":light" and ":dark" variants
 // Outputs:  c - the RGB color
-// See also: plot/plot.h
+// See also: global/plot/plot.h
 
-#include "plot/color.h"
+#include "global/plot/color.h"
 
 #include <cstdio>
 #include <map>
@@ -67,7 +67,7 @@ Color aux_named(const std::string &name, const std::string &identifier, int numC
             return palette[i].second;
     throw std::invalid_argument("CORAcolor: not a CORA color: '" + identifier +
                                 "' is not a CORA color; see the "
-                                "list in plot/color.h");
+                                "list in global/plot/color.h");
 }
 
 } // namespace

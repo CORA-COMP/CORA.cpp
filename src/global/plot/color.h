@@ -1,7 +1,7 @@
 // color - CORA's colors, as MATLAB CORA's CORAcolor
 //
 // Syntax:   Color c = CORAcolor("CORA:reachSet");   Color c = "CORA:red";   Color c(0.2, 0.4, 0.8);
-// See also: plot/plot.h
+// See also: global/plot/plot.h
 
 #pragma once
 

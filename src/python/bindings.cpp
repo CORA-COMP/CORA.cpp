@@ -19,11 +19,14 @@
 #include "contDynamics/linearSys/linearSys.h"
 #include "contDynamics/nonlinearSys/nonlinearSys.h"
 #include "global/rng.h"
+#include "global/plot/plot.h"
 #include "specification/specification.h"
 #include "tensor/eigen.h"
 #include "tensor/torch.h"
 
+#include <optional>
 #include <pybind11/eigen.h>
+#include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <torch/extension.h>
 
@@ -66,6 +69,22 @@ py::object scalar(const Tensor &t) {
     throw std::invalid_argument("cora: a tensor of an unknown backend");
 }
 
+/// A torch tensor or numpy array from Python as a Tensor on its backend (a 1-D one is a column);
+/// nothing for anything else.
+std::optional<Tensor> asTensor(const py::object &o) {
+    py::detail::make_caster<torch::Tensor> torchCaster;
+    if (torchCaster.load(o, /*convert=*/false)) {
+        const torch::Tensor t = o.cast<torch::Tensor>();
+        return t.dim() == 1 ? column(t) : fromTorch(t);
+    }
+    if (py::isinstance<py::array>(o)) {
+        const py::array a = py::array::ensure(o);
+        if (a.ndim() == 1) return column(o.cast<Eigen::VectorXd>());
+        return fromEigen(o.cast<Eigen::MatrixXd>());
+    }
+    return std::nullopt;
+}
+
 /// The time points of a simulation as one array, the time first: (steps + 1, ..., n, N).
 py::object stack(const std::vector<Tensor> &points) {
     if (points.empty()) throw std::invalid_argument("cora: no time points");
@@ -86,6 +105,17 @@ Algorithm parseLinAlg(const std::string &linAlg) {
     throw py::value_error("unknown linAlg '" + linAlg + "'; use 'standard' or 'wrapping-free'");
 }
 
+/// A polygon as an (k, 2) array.
+py::array_t<double> polygonArray(const Polygon &polygon) {
+    py::array_t<double> out({static_cast<py::ssize_t>(polygon.size()), py::ssize_t(2)});
+    auto view = out.mutable_unchecked<2>();
+    for (std::size_t i = 0; i < polygon.size(); ++i) {
+        view(i, 0) = polygon[i][0];
+        view(i, 1) = polygon[i][1];
+    }
+    return out;
+}
+
 // --------------------------------- classes -----------------------------------------
 
 /// The operations every set has; bound once on the base class, so any set works wherever a set
@@ -95,6 +125,15 @@ void bindContSet(py::module_ &m) {
         .def("dim", &ContSet::dim)
         .def("center", [](const ContSet &S) { return vector(S.center()); })
         .def("interval", &ContSet::interval)
+        .def("vertices",
+             [](const ContSet &S) {
+                 py::list polygons;
+                 for (const Polygon &p : S.vertices()) polygons.append(polygonArray(p));
+                 return polygons;
+             },
+             "The vertices of a two-dimensional set, one (k, 2) array per batch member")
+        .def("__repr__", &ContSet::display)
+        .def("__str__", &ContSet::display)
         .def("supportFunc",
              [](const ContSet &S, const torch::Tensor &d) { return scalar(S.supportFunc(column(d))); },
              py::arg("d"), "max of d'x over the set; d (..., n)")
@@ -280,6 +319,223 @@ void bindNonlinearSys(py::module_ &m) {
              "simulate from N random points of the set X0");
 }
 
+/// The operators of the sets, as CORA writes them: `A * Z`, `s * Z`, `Z + Z2`, `Z + v`, `Z - v`, `-Z`.
+/// A torch tensor or numpy array is a matrix, or a vector when it is 1-D; what an operator does
+/// not understand it hands back to Python (NotImplemented), which raises the TypeError.
+void bindOperators(py::module_ &m) {
+    const py::object Z = m.attr("Zonotope"), I = m.attr("Interval");
+    Z.attr("__array_ufunc__") = py::none();  // numpy defers to the operators below
+    I.attr("__array_ufunc__") = py::none();
+    const auto method = [](const py::object &cls, const char *name, auto f) {
+        cls.attr(name) = py::cpp_function(f, py::is_method(cls));
+    };
+    const auto number = [](const py::object &o) {
+        return py::isinstance<py::float_>(o) || py::isinstance<py::int_>(o);
+    };
+    const auto refused = [] { return py::reinterpret_borrow<py::object>(Py_NotImplemented); };
+
+    // Zonotope
+    const auto zonotopeSum = [=](const Zonotope &A, const py::object &o) -> py::object {
+        if (py::isinstance<Zonotope>(o)) return py::cast(A + o.cast<Zonotope>());
+        if (const std::optional<Tensor> v = asTensor(o)) return py::cast(A + *v);
+        return refused();
+    };
+    method(Z, "__add__", zonotopeSum);
+    method(Z, "__radd__", zonotopeSum);
+    method(Z, "__sub__", [=](const Zonotope &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> v = asTensor(o)) return py::cast(A - *v);
+        return refused();
+    });
+    method(Z, "__neg__", [](const Zonotope &A) { return -A; });
+    method(Z, "__mul__", [=](const Zonotope &A, const py::object &o) -> py::object {
+        if (number(o)) return py::cast(A * o.cast<double>());
+        return refused();
+    });
+    const auto zonotopeProduct = [=](const Zonotope &A, const py::object &o) -> py::object {
+        if (number(o)) return py::cast(o.cast<double>() * A);
+        if (const std::optional<Tensor> M = asTensor(o)) return py::cast(*M * A);
+        return refused();
+    };
+    method(Z, "__rmul__", zonotopeProduct);
+    method(Z, "__rmatmul__", zonotopeProduct);
+
+    // Interval
+    const auto intervalSum = [=](const Interval &A, const py::object &o) -> py::object {
+        if (py::isinstance<Interval>(o)) return py::cast(A + o.cast<Interval>());
+        if (const std::optional<Tensor> v = asTensor(o)) return py::cast(A + *v);
+        return refused();
+    };
+    method(I, "__add__", intervalSum);
+    method(I, "__radd__", intervalSum);
+    method(I, "__sub__", [=](const Interval &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> v = asTensor(o)) return py::cast(A - *v);
+        return refused();
+    });
+    method(I, "__neg__", [](const Interval &A) { return -A; });
+    method(I, "__mul__", [=](const Interval &A, const py::object &o) -> py::object {
+        if (number(o)) return py::cast(A * o.cast<double>());
+        if (py::isinstance<Zonotope>(o)) return py::cast(A * o.cast<Zonotope>());
+        return refused();
+    });
+    const auto intervalProduct = [=](const Interval &A, const py::object &o) -> py::object {
+        if (number(o)) return py::cast(o.cast<double>() * A);
+        if (const std::optional<Tensor> M = asTensor(o)) return py::cast(*M * A);
+        return refused();
+    };
+    method(I, "__rmul__", intervalProduct);
+    method(I, "__rmatmul__", intervalProduct);
+}
+
+// --------------------------------- plotting -----------------------------------------
+// The plotting logic is the C++ one (plot/plot.h): a Figure collects layers with every choice
+// made, and the Python plot draws them with matplotlib.
+
+/// A color from Python: a CORA identifier ("CORA:red") or an RGB triple.
+Color colorOf(const py::handle &value) {
+    if (py::isinstance<py::str>(value)) return Color(value.cast<std::string>());
+    const std::vector<double> rgb = value.cast<std::vector<double>>();
+    if (rgb.size() != 3)
+        throw std::invalid_argument("cora.plot: a color is a CORA identifier such as "
+                                    "'CORA:red' or an (r, g, b) triple");
+    return Color(rgb[0], rgb[1], rgb[2]);
+}
+
+/// The plot options given as keyword arguments, named as in PlotOptions.
+PlotOptions optionsOf(const py::kwargs &kwargs) {
+    PlotOptions o;
+    for (const auto &item : kwargs) {
+        const std::string key = item.first.cast<std::string>();
+        if (key == "label") o.label = item.second.cast<std::string>();
+        else if (key == "color") o.color = colorOf(item.second);
+        else if (key == "facecolor") o.facecolor = colorOf(item.second);
+        else if (key == "faceAlpha") o.faceAlpha = item.second.cast<double>();
+        else if (key == "lineWidth") o.lineWidth = item.second.cast<double>();
+        else if (key == "unify") o.unify = item.second.cast<bool>();
+        else if (key == "filled") o.filled = item.second.cast<bool>();
+        else if (key == "timePoints") o.timePoints = item.second.cast<bool>();
+        else if (key == "step") o.step = item.second.cast<int>();
+        else if (key == "numColors") o.numColors = item.second.cast<int>();
+        else if (key == "cidx") o.cidx = item.second.cast<int>();
+        else
+            throw std::invalid_argument("cora.plot: unknown option '" + key + "'; the options are "
+                                        "label, color, facecolor, faceAlpha, lineWidth, unify, filled, "
+                                        "timePoints, step, numColors and cidx");
+    }
+    return o;
+}
+
+py::tuple rgb(const Color &c) { return py::make_tuple(c.r, c.g, c.b); }
+
+/// A layer of a figure as a dict, for the code that draws it.
+py::dict layerDict(const Figure::Layer &l) {
+    py::dict d;
+    switch (l.kind) {
+    case Figure::Kind::Polygons: d["kind"] = "polygons"; break;
+    case Figure::Kind::Polyline: d["kind"] = "polyline"; break;
+    case Figure::Kind::Points: d["kind"] = "points"; break;
+    case Figure::Kind::Region: d["kind"] = "region"; break;
+    }
+    py::list polygons;
+    for (const Polygon &p : l.polygons) polygons.append(polygonArray(p));
+    d["polygons"] = polygons;
+    d["edge"] = rgb(l.edge);
+    d["face"] = l.filled || l.kind == Figure::Kind::Region ? py::object(rgb(l.face)) : py::none();
+    d["unify"] = l.unify;
+    d["faceAlpha"] = l.faceAlpha;
+    d["dashed"] = l.dashed;
+    d["lineWidth"] = l.lineWidth;
+    d["radius"] = l.radius;
+    d["a"] = py::make_tuple(l.a[0], l.a[1]);
+    d["b"] = l.b;
+    d["sign"] = l.sign;
+    d["label"] = l.label;
+    d["zorder"] = l.zorder;
+    return d;
+}
+
+/// The time points of a simulation (steps, n, N) from torch or numpy as one Tensor (n, N) each.
+std::vector<Tensor> trajectories(const py::object &o) {
+    std::vector<Tensor> x;
+    py::detail::make_caster<torch::Tensor> torchCaster;
+    if (torchCaster.load(o, /*convert=*/false)) {
+        for (const torch::Tensor &t : o.cast<torch::Tensor>().unbind(0)) x.push_back(fromTorch(t));
+        return x;
+    }
+    for (const py::handle &step : o) x.push_back(fromEigen(step.cast<Eigen::MatrixXd>()));
+    return x;
+}
+
+void bindPlot(py::module_ &m) {
+    py::class_<Figure>(m, "Figure", "The layers that plot puts into it, with every choice made.")
+        .def(py::init<>())
+        .def_readwrite("title", &Figure::title)
+        .def_readwrite("xlabel", &Figure::xlabel)
+        .def_readwrite("ylabel", &Figure::ylabel)
+        .def_readwrite("equalAxes", &Figure::equalAxes)
+        .def(
+            "plot",
+            [](Figure &fig, const ContSet &S, const std::vector<int64_t> &dims,
+               const py::kwargs &kwargs) { plot(fig, S, dims, optionsOf(kwargs)); },
+            py::arg("obj"), py::arg("dims"), "Draws a set, projected onto the two dimensions dims")
+        .def(
+            "plot",
+            [](Figure &fig, const Reach &R, const std::vector<int64_t> &dims,
+               const py::kwargs &kwargs) { plot(fig, R, dims, optionsOf(kwargs)); },
+            py::arg("obj"), py::arg("dims"))
+        .def(
+            "plot",
+            [](Figure &fig, const Specification &spec, const std::vector<int64_t> &dims,
+               const py::kwargs &kwargs) { plot(fig, spec, dims, optionsOf(kwargs)); },
+            py::arg("obj"), py::arg("dims"))
+        .def(
+            "plot",
+            [](Figure &fig, const py::object &data, const std::vector<int64_t> &dims,
+               const py::kwargs &kwargs) {
+                // Points (n, N) or the time points of a simulation (steps, n, N).
+                const py::ssize_t ndim = py::hasattr(data, "ndim") ? data.attr("ndim").cast<py::ssize_t>()
+                                                                   : data.attr("dim")().cast<py::ssize_t>();
+                if (ndim == 3) plot(fig, trajectories(data), dims, optionsOf(kwargs));
+                else if (const std::optional<Tensor> points = asTensor(data))
+                    plot(fig, *points, dims, optionsOf(kwargs));
+                else
+                    throw std::invalid_argument("cora.plot: the data must be a torch tensor or a "
+                                                "numpy array");
+            },
+            py::arg("obj"), py::arg("dims"), "Draws points (n, N) or simulations (steps, n, N)")
+        .def("takeLayers",
+             [](Figure &fig) {
+                 py::list layers;
+                 for (const Figure::Layer &l : fig.takeLayers()) layers.append(layerDict(l));
+                 return layers;
+             },
+             "The layers drawn since the last call, as dicts, and forgets them")
+        .def_static(
+            "clipRegion",
+            [](const py::array_t<double, py::array::c_style | py::array::forcecast> &polygon,
+               const std::array<double, 2> &a, double b, double sign) {
+                Polygon corners;
+                auto view = polygon.unchecked<2>();
+                for (py::ssize_t i = 0; i < view.shape(0); ++i) corners.push_back({view(i, 0), view(i, 1)});
+                return polygonArray(Figure::clipRegion(corners, a, b, sign));
+            },
+            py::arg("polygon"), py::arg("a"), py::arg("b"), py::arg("sign"),
+            "The part of a polygon where sign * (a.x - b) >= 0");
+
+    m.def("useCORAcolors", &useCORAcolors, py::arg("scheme"),
+          "'CORA:default' (the next color of CORA's order for every set) or 'CORA:contDynamics'");
+    m.def(
+        "CORAcolor",
+        [](const std::string &identifier, int numColors, int cidx, double alpha) {
+            return rgb(CORAcolor(identifier, numColors, cidx, alpha));
+        },
+        py::arg("identifier"), py::arg("numColors") = 1, py::arg("cidx") = 1, py::arg("alpha") = 0.2,
+        "The RGB triple of a CORA color such as 'CORA:reachSet'");
+    m.def(
+        "CORAcolor",
+        [](int number) { return rgb(CORAcolor("CORA:color" + std::to_string(number))); },
+        py::arg("number"), "The RGB triple of the number-th color of CORA's palette");
+}
+
 void bindSpecification(py::module_ &m) {
     py::class_<Specification>(m, "Specification",
                               "Halfspaces {x | a.x <= b} a set must stay in (safeSet) or must not touch "
@@ -340,6 +596,8 @@ PYBIND11_MODULE(_cora, m) {
     bindZonotope(m);
     bindLinearSys(m);
     bindNonlinearSys(m);
+    bindOperators(m);
+    bindPlot(m);
     bindSpecification(m);
 }
 
