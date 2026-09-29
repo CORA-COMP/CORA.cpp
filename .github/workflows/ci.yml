@@ -29,6 +29,8 @@ jobs:
   # With libtorch on the CPU: batching and gradients, and the Python package with its tests.
   torch:
     runs-on: ubuntu-24.04
+    env:
+      CORACPP_ENV: none  # the tests that run scripts/with_env.sh use this Python, not a conda env
     steps:
       - uses: actions/checkout@v4
       - uses: hendrikmuhs/ccache-action@v1.2
