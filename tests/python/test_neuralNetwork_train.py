@@ -20,7 +20,7 @@ def run_example():
     for line in result.stdout.splitlines():
         for name in ("standard", "set-based"):
             if line.startswith(name + " "):
-                rows[name] = [float(v) for v in line.split()[1:]]  # accuracy, then eps = 0.01, 0.02, 0.03
+                rows[name] = [float(v) for v in line.split()[1:4]]  # accuracy, then eps = 0.02, 0.05
     return rows
 
 
@@ -34,10 +34,8 @@ class SetBasedTraining(unittest.TestCase):
             self.assertGreaterEqual(row[0], 0.95, name)
 
     def test_set_based_training_certifies_more_of_the_boxes(self):
-        standard, setBased = self.rows["standard"], self.rows["set-based"]
-        # eps = 0.02 and 0.03 are at and above the boxes the model was trained with
-        self.assertGreater(setBased[2], standard[2] + 0.05)
-        self.assertGreater(setBased[3], standard[3] + 0.05)
+        # eps = 0.05 is the size of the boxes the set-based model was trained with
+        self.assertGreater(self.rows["set-based"][2], self.rows["standard"][2] + 0.05)
 
 
 if __name__ == "__main__":

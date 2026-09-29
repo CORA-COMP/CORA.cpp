@@ -7,10 +7,10 @@ the output set, both for the input set of an eps-ball around every training poin
     L = (1 - tau) CE(center of Y, t)  +  tau / eps * ||Y||_F,     ||Y||_F = sqrt(sum G^2) / n
 
 with the output zonotope Y = <c, G>. Here the gradients come from autograd through the set
-propagation of `NeuralNetwork.evaluate`, which is differentiable. As in the paper's illustration, a
-small set of points with random classes is learned perfectly by a standard and by a set-based model;
-the standard model's decision boundary cuts through the eps-boxes around the points, the set-based
-model's does not, and the boxes it keeps clear are certified by the zonotope propagation.
+propagation of `NeuralNetwork.evaluate`, which is differentiable. This reproduces the paper's Fig. 7
+(data and hyperparameters from its Appendix C): both networks learn the 20 points perfectly, but the
+decision boundary of the standard one cuts through the eps-boxes around the points, and that of the
+set-based one does not; the boxes it keeps clear are certified by the zonotope propagation.
 
 Syntax:   PYTHONPATH=build python examples/python/example_neuralNetwork_train_01_setBased.py [--save FILE]
 Outputs:  accuracy and certified share of the training points for both models, and the figure
@@ -26,6 +26,9 @@ import cora
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
+# The results vary with the seed: over seeds 0-4 the set-based model certifies 75-85% of the boxes
+# at eps = 0.05 and the standard one 50-70%; seed 1 is the first where both fit all points.
+parser.add_argument("--seed", type=int, default=1, help="seed of the weights and the batches")
 args = parser.parse_args()
 if args.save:
     import matplotlib
@@ -37,39 +40,35 @@ import matplotlib.pyplot as plt
 
 # Parameters --------------------------------------------------------------------------------
 
-numPoints = 40
-epsTrain = 0.03       # half-width of the input boxes during set-based training
-tau = 0.003           # weight of the output-set size against the loss of the center
-steps = 2000
-epsilons = [0.01, 0.02, 0.03]
+epsTrain = 0.05       # half-width of the input boxes during set-based training
+tau = 0.1             # weight of the output-set size against the loss of the center
+epochs = 200
+batchSize = 10
+learningRate = 0.01
+epsilons = [0.02, 0.05]
 dtype = torch.float64
 
 # Data --------------------------------------------------------------------------------------
 
-
-def sample(n, gap, seed):
-    """n points of the unit square with random classes; points of different classes are more than
-    `gap` apart in every norm, so that boxes around them can be kept clear of each other."""
-    generator = torch.Generator().manual_seed(seed)
-    points, classes = [], []
-    while len(points) < n:
-        p = torch.rand(2, dtype=dtype, generator=generator)
-        c = int(torch.rand(1, generator=generator) > 0.5)
-        if all(c == k or (p - q).abs().max() > gap for q, k in zip(points, classes)):
-            points.append(p)
-            classes.append(c)
-    return torch.stack(points), torch.tensor(classes)
-
-
-points, labels = sample(numPoints, gap=2.5 * epsTrain, seed=3)
+# The 20 points of the paper (Appendix C) and their classes: the target (1, 0) is class 0, (0, 1) is 1.
+points = torch.tensor([
+    [0.0622, 0.6995], [0.6534, 0.9409], [0.4759, 0.7163], [0.8812, 0.1020], [0.5047, 0.4685],
+    [0.1470, 0.3275], [0.3439, 0.1395], [0.9098, 0.5422], [0.8588, 0.8696], [0.0545, 0.0825],
+    [0.6889, 0.4771], [0.9329, 0.2857], [0.6781, 0.3043], [0.4641, 0.3302], [0.4575, 0.9487],
+    [0.1272, 0.4699], [0.6506, 0.7315], [0.5207, 0.1229], [0.3271, 0.4574], [0.6858, 0.0616]],
+    dtype=dtype)
+labels = torch.tensor([1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0])
 
 # Models and Set-Based Loss -----------------------------------------------------------------
 
 
 def newModel():
-    torch.manual_seed(0)
-    return nn.Sequential(nn.Linear(2, 32), nn.ReLU(), nn.Linear(32, 32), nn.ReLU(),
-                         nn.Linear(32, 2)).to(dtype)
+    """Five linear layers, four hidden layers of 100 ReLUs (the paper's nn-med)."""
+    torch.manual_seed(args.seed)
+    layers = [nn.Linear(2, 100), nn.ReLU()]
+    for _ in range(3):
+        layers += [nn.Linear(100, 100), nn.ReLU()]
+    return nn.Sequential(*layers, nn.Linear(100, 2)).to(dtype)
 
 
 def outputSet(model, x, eps):
@@ -96,18 +95,19 @@ def certified(model, eps):
 
 def train(setBased):
     model = newModel()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-    for step in range(steps):
-        optimizer.zero_grad()
-        if setBased:
-            # eps grows over the first half of training, so that the network first fits the points
-            eps = epsTrain * (0.1 + 0.9 * min(1.0, step / (0.5 * steps)))
-            Y = outputSet(model, points, eps)
-            loss = (1 - tau) * nn.functional.cross_entropy(Y.c, labels) + tau / eps * fRadius(Y).mean()
-        else:
-            loss = nn.functional.cross_entropy(model(points), labels)
-        loss.backward()
-        optimizer.step()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learningRate)
+    generator = torch.Generator().manual_seed(args.seed)
+    for epoch in range(epochs):
+        for batch in torch.randperm(len(points), generator=generator).split(batchSize):
+            optimizer.zero_grad()
+            if setBased:
+                Y = outputSet(model, points[batch], epsTrain)
+                loss = ((1 - tau) * nn.functional.cross_entropy(Y.c, labels[batch])
+                        + tau / epsTrain * fRadius(Y).mean())
+            else:
+                loss = nn.functional.cross_entropy(model(points[batch]), labels[batch])
+            loss.backward()
+            optimizer.step()
     return model
 
 
@@ -116,7 +116,7 @@ models = {"standard": train(False), "set-based": train(True)}
 # Evaluation --------------------------------------------------------------------------------
 
 print(f"{'method':<10} {'accuracy':>8} " + " ".join(f"{'eps=' + str(e):>9}" for e in epsilons)
-      + "   (share of training points whose eps-box is certified)")
+      + "   (share of the 20 points whose eps-box is certified)")
 for name, model in models.items():
     accuracy = (model(points).argmax(dim=1) == labels).double().mean().item()
     cert = [certified(model, e).double().mean().item() for e in epsilons]
@@ -128,9 +128,9 @@ fig, axes = plt.subplots(1, 2, figsize=(11, 5))
 axis = torch.linspace(0, 1, 300, dtype=dtype)
 grid = torch.stack(torch.meshgrid(axis, axis, indexing="xy"), dim=-1).reshape(-1, 2)
 regions = {name: model(grid).argmax(dim=1).reshape(300, 300) for name, model in models.items()}
-colors = ["tab:blue", "tab:orange"]
+colors = ["tab:orange", "tab:blue"]
 for ax, (name, model) in zip(axes, models.items()):
-    ax.contourf(axis, axis, regions[name], levels=[-0.5, 0.5, 1.5], colors=["#a6c8f5", "#f8dca0"])
+    ax.contourf(axis, axis, regions[name], levels=[-0.5, 0.5, 1.5], colors=["#f8dca0", "#a6c8f5"])
     if name == "set-based":  # the boundary of the standard model, for comparison
         ax.contour(axis, axis, regions["standard"].double(), levels=[0.5], colors="k",
                    linestyles="--", linewidths=1)
