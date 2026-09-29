@@ -84,24 +84,41 @@ build/tests/%: tests/%.cpp $(OBJ) tests/testing.h
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -Itests $(LDFLAGS) -o $@ $(filter %.cpp %.o,$^) $(LDLIBS)
 
-build/example_%: examples/%.cpp $(OBJ)
+# Examples: one small file per topic in examples/cpp; `make example` builds and runs them all.
+# The ones that name libtorch types need it.
+EXAMPLE_SRC = $(sort $(wildcard examples/cpp/example_*.cpp))
+EXAMPLES    = $(patsubst %.cpp,build/%,$(filter-out %_torch.cpp %_gpu.cpp %_batch.cpp %_gradient.cpp,$(EXAMPLE_SRC)))
+ifneq ($(TORCH),)
+EXAMPLES = $(patsubst %.cpp,build/%,$(EXAMPLE_SRC))
+endif
+
+build/examples/cpp/%: examples/cpp/%.cpp $(OBJ)
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-example: build/example_linear_sys
+example: $(EXAMPLES)
+	@for e in $(EXAMPLES); do echo "== $$e"; ./$$e || exit 1; done
 
 test: $(TESTS)
 	@for t in $(TESTS); do echo "== $$t"; ./$$t || exit 1; done
 
-# `make python TORCH=...` builds the `coracpp` module into build/; put build/ on PYTHONPATH.
-# It needs libtorch, since torch tensors are its inputs.
+# `make python TORCH=...` builds the `coracpp` package into build/coracpp (the compiled module
+# and the Python files beside it); put build/ on PYTHONPATH. It needs libtorch, since torch
+# tensors are its inputs.
 PYEXT = $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 PYINC = $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_paths()['include'])")
 
-python: build/coracpp$(PYEXT)
+PYFILES = $(wildcard src/python/coracpp/*.py)
 
-build/coracpp$(PYEXT): src/python/bindings.cpp $(OBJ)
+python: build/coracpp/_coracpp$(PYEXT) $(PYFILES:src/python/coracpp/%=build/coracpp/%)
+
+build/coracpp/%.py: src/python/coracpp/%.py
+	@mkdir -p $(@D)
+	cp $< $@
+
+build/coracpp/_coracpp$(PYEXT): src/python/bindings.cpp $(OBJ)
 	@test -n "$(TORCH)" || { echo "make python needs TORCH=/path/to/libtorch"; exit 1; }
+	@mkdir -p $(@D)
 	$(CXX) -shared $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -I$(PYINC) $(LDFLAGS) \
 	    -o $@ $^ $(LDLIBS) -L$(TORCH)/lib -ltorch_python
 

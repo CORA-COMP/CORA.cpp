@@ -1,4 +1,5 @@
-// Python bindings: `coracpp.reach`, the reachable sets of a linear system,
+// Python bindings, the compiled half of the `coracpp` package (`_coracpp`; the plotting and the
+// colors are Python, next to this file in coracpp/): `coracpp.reach`, the reachable sets of a linear system,
 // `coracpp.simulate` and `coracpp.rand_point` for trajectories from random points of the
 // initial set, and `coracpp.Specification`, a halfspace they must stay in or out of.
 //
@@ -134,7 +135,7 @@ py::object simulate_numpy(const Eigen::MatrixXd &A, const Eigen::MatrixXd &x0, d
 
 } // namespace
 
-PYBIND11_MODULE(coracpp, m) {
+PYBIND11_MODULE(_coracpp, m) {
     m.doc() = "CORA.cpp: reachability of linear systems on Eigen (numpy) or libtorch (torch)";
 
     py::class_<PyReach>(m, "Reach")
@@ -175,6 +176,22 @@ PYBIND11_MODULE(coracpp, m) {
         .def_static("safe_set", &safe_numpy, py::arg("a"), py::arg("b"))
         .def_static("unsafe_set", &unsafe_torch, py::arg("a"), py::arg("b"))
         .def_static("unsafe_set", &unsafe_numpy, py::arg("a"), py::arg("b"))
+        .def_property_readonly(
+            "type",
+            [](const Specification &spec) {
+                return spec.type() == SpecType::SafeSet ? "safeSet" : "unsafeSet";
+            })
+        .def_property_readonly(
+            "halfspaces",
+            [](const Specification &spec) {
+                // The halfspaces {x | a.x <= b} as host numpy arrays, whatever the backend.
+                py::list out;
+                for (const Halfspace &h : spec.halfspaces()) {
+                    const std::vector<double> a = h.a.data();
+                    out.append(py::make_tuple(py::array_t<double>(a.size(), a.data()), h.b));
+                }
+                return out;
+            })
         .def(
             "check",
             [](const Specification &spec, const PyReach &r) { return spec.check(r.sets->time_int); },

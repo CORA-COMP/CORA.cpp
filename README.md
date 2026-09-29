@@ -179,7 +179,9 @@ auto x = ct::LinearSys(A).simulate_random(X0, 20, 0.05, 1.0, rng);  // x[k]: 20 
 | Custom backward | `"torch,custom_backward"` differentiates `e^A` with a hand-written pass |
 | Simulation | `rand_point` on every set (uniform, or `extreme` corners of a zonotope); `LinearSys::simulate` runs trajectories exactly through `e^{AΔt}`, `simulate_random` from random start points. Tested to stay inside both algorithms' reachable sets |
 | Specification | `safe_set` / `unsafe_set` for halfspaces (a polytope for safe sets), on any `ContSet`; `holds`, `check`, `first_violation` |
-| Python | `make python TORCH=…`; `coracpp.reach`, `simulate`, `rand_point`, `Specification`; torch tensors run on libtorch, numpy arrays on Eigen. `examples/python/linear_sys.py` runs, simulates, checks and plots; `plotting.py` draws in CORA's colors (`CORAcolor`) |
+| Python | `make python TORCH=…` builds the `coracpp` package into `build/`; `coracpp.reach`, `simulate`, `rand_point`, `Specification`; torch tensors run on libtorch, numpy arrays on Eigen |
+| Plotting | `coracpp.plot(obj, dims)` as in CORA, in CORA's colors (`CORAcolor`): reachable sets, zonotopes `(c, G)`, simulations, points, specifications; `label=` for the legend |
+| Examples | `examples/cpp/` and `examples/python/`, one small file per topic (`example_linearSys_reach_eigen`, `_torch`, `_gpu`, `_batch`, `_gradient`, `_simulate`, `_specification`, `_plot`, …); `make example` builds and runs the C++ ones, and the tests run the Python ones |
 | Reference | `tests/contDynamics/linearSys/` matches MATLAB CORA R2024b to 1e-12 on three systems |
 
 A new dynamics class or set goes in `contDynamics/` or `contSet/` and uses only `Tensor`. A new
@@ -231,7 +233,7 @@ catalog's operations.
 | `contDynamics/linearSys/` | `ct::LinearSys` |
 | `specification/` | `ct::Specification`, halfspaces |
 | `global/` | the random numbers; threads matched to the work |
-| `python/bindings.cpp` | the `coracpp` Python module |
+| `python/` | the `coracpp` Python package: `bindings.cpp` (the compiled `_coracpp`), and `coracpp/` with `plot.py` and `colors.py` |
 
 | `competition/` | |
 | --- | --- |
