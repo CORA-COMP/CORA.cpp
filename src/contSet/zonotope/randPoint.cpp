@@ -37,6 +37,7 @@ Tensor aux_factors(const Tensor &like, const Tensor &G, int64_t N, Rng &rng, boo
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Tensor Zonotope::randPoint(int64_t N, Rng &rng, const std::string &type) const {

@@ -13,6 +13,7 @@
 
 namespace cora::ct {
 
+
 // ===========================================  MAIN  =========================================== //
 
 Specification Specification::safeSet(std::vector<Halfspace> halfspaces) {

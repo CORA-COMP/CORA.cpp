@@ -31,6 +31,7 @@ Tensor aux_padGenerators(const Tensor &G, int64_t m) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Zonotope Zonotope::stack(const std::vector<Zonotope> &Zs) {

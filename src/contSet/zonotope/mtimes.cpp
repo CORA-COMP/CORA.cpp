@@ -23,6 +23,7 @@ Tensor aux_widening(const Zonotope &Z, const Interval &I) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Zonotope Zonotope::mtimes(const Tensor &M) const { return {M.matmul(c), M.matmul(G)}; }

@@ -35,6 +35,7 @@ std::vector<double> aux_generators(int64_t n, int64_t m, Rng &rng) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Zonotope Zonotope::generateRandom(int64_t n, int64_t m, Rng &rng) {

@@ -72,6 +72,7 @@ Color aux_named(const std::string &name, const std::string &identifier, int numC
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Color::Color(const char *coraColor) : Color(CORAcolor(coraColor)) {}

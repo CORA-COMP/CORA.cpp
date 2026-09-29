@@ -13,6 +13,7 @@
 
 namespace cora::ct {
 
+
 // ===========================================  MAIN  =========================================== //
 
 Interval Interval::stack(const std::vector<Interval> &Is) {

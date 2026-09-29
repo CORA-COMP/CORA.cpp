@@ -55,6 +55,7 @@ Polygon aux_polygon(const double *c, const double *G, int64_t m) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 std::vector<Polygon> Zonotope::vertices() const {

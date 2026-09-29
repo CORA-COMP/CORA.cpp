@@ -26,6 +26,7 @@ std::vector<double> aux_uniform(Rng &rng, int64_t count, double low, double high
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Interval Interval::generateRandom(int64_t n, Rng &rng) {

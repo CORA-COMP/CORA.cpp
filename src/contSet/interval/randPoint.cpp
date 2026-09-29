@@ -30,6 +30,7 @@ Tensor aux_fractions(const Tensor &like, int64_t N, Rng &rng) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Tensor Interval::randPoint(int64_t N, Rng &rng) const {

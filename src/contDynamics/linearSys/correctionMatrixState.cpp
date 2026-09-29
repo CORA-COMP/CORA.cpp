@@ -33,6 +33,7 @@ double aux_weight(int i, double dtOverFac) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 Interval LinearSys::correctionMatrixState(double timeStep, int taylorTerms) const {

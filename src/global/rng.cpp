@@ -76,6 +76,7 @@ void aux_chunked(double *out, std::size_t n, std::uint64_t base, F fill) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 void Rng::uniform(double *out, std::size_t n, double lo, double hi) {

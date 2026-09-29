@@ -35,6 +35,7 @@ bool aux_satisfied(SpecType type, double extreme, double b) {
 
 } // namespace
 
+
 // ===========================================  MAIN  =========================================== //
 
 std::vector<bool> Specification::holds(const ContSet &S) const {

@@ -13,6 +13,7 @@
 
 namespace cora::ct {
 
+
 // ===========================================  MAIN  =========================================== //
 
 std::vector<Polygon> Interval::vertices() const {
