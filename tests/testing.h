@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "contSet/contSet.h"
+#include "global/rng.h"
 #include "tensor/tensor.h"
 
 #include <algorithm>
@@ -69,6 +71,52 @@ void for_each_backend(F body) {
     }
     cora::ct::setBackend("eigen");
 }
+
+/// The column (n, 1) of the given numbers, on the current backend.
+inline cora::ct::Tensor column(const std::vector<double> &v) {
+    return cora::ct::Tensor::fromData(v, {int64_t(v.size()), 1});
+}
+
+/// A random direction in n dimensions: standard normal entries.
+inline std::vector<double> random_direction(cora::Rng &rng, int n) {
+    std::vector<double> d(n);
+    rng.normal(d.data(), d.size(), 1.0);
+    return d;
+}
+
+/// The support function of any set along the host direction d, as a number.
+inline double support(const cora::ct::ContSet &S, const std::vector<double> &d) {
+    return S.supportFunc(column(d)).data()[0];
+}
+
+/// Whether calling f throws.
+template <class F>
+bool throws(F f) {
+    try {
+        f();
+    } catch (const std::exception &) {
+        return true;
+    }
+    return false;
+}
+
+#ifdef CORACPP_TORCH
+/// Runs `body(options, name)` on libtorch on the CPU and, when there is one, on the GPU;
+/// `name` is "cpu" or "gpu" for the messages.
+template <class F>
+void for_each_device(F body) {
+    std::vector<torch::TensorOptions> options{torch::TensorOptions().dtype(torch::kDouble)};
+    std::vector<std::string> names{"cpu"};
+    if (torch::cuda::is_available()) {
+        options.push_back(torch::TensorOptions().dtype(torch::kDouble).device(torch::kCUDA, 0));
+        names.push_back("gpu");
+    }
+    cora::ct::setBackend("torch");
+    torch::manual_seed(7);
+    for (std::size_t i = 0; i < options.size(); ++i) body(options[i], names[i]);
+    cora::ct::setBackend("eigen");
+}
+#endif
 
 inline int finish(const std::string &what) {
     if (failures == 0) std::cout << "all " << what << " tests passed\n";

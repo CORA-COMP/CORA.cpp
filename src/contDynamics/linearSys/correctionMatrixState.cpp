@@ -13,12 +13,27 @@
 
 #include <cmath>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
-Tensor aux_remainder(const Tensor &Aabs, double timeStep, const Tensor &series);
-double aux_weight(int i, double dtOverFac);
+
+/// The elementwise bound W on the series past the last term: |e^{|A| dt} - series|.
+Tensor aux_remainder(const Tensor &Aabs, double timeStep, const Tensor &series) {
+    return ((Aabs * timeStep).expm() - series).abs();
+}
+
+/// The weight (i^(-i/(i-1)) - i^(-1/(i-1))) dt^i / i! of the i-th Taylor term.
+double aux_weight(int i, double dtOverFac) {
+    return (std::pow(i, -double(i) / (i - 1)) - std::pow(i, -1.0 / (i - 1))) * dtOverFac;
+}
+
 } // namespace
+
+// ===========================================  MAIN  =========================================== //
 
 Interval LinearSys::correctionMatrixState(double timeStep, int taylorTerms) const {
     const Tensor Aabs = A_.abs();
@@ -41,20 +56,6 @@ Interval LinearSys::correctionMatrixState(double timeStep, int taylorTerms) cons
     return {Fneg - W, Fpos + W};
 }
 
-// --------------------------- auxiliary functions --------------------------------
-
-namespace {
-
-/// The elementwise bound W on the series past the last term: |e^{|A| dt} - series|.
-Tensor aux_remainder(const Tensor &Aabs, double timeStep, const Tensor &series) {
-    return ((Aabs * timeStep).expm() - series).abs();
-}
-
-/// The weight (i^(-i/(i-1)) - i^(-1/(i-1))) dt^i / i! of the i-th Taylor term.
-double aux_weight(int i, double dtOverFac) {
-    return (std::pow(i, -double(i) / (i - 1)) - std::pow(i, -1.0 / (i - 1))) * dtOverFac;
-}
-
-} // namespace
-
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -7,7 +7,11 @@
 
 #include "contDynamics/linearSys/linearSys.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 std::vector<Tensor> LinearSys::simulateRandom(const ContSet &X0, int64_t N, double timeStep,
                                               double tFinal, Rng &rng) const {
@@ -15,3 +19,5 @@ std::vector<Tensor> LinearSys::simulateRandom(const ContSet &X0, int64_t N, doub
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

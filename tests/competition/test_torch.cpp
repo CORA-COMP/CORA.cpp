@@ -1,4 +1,4 @@
-// The libtorch backend: its operations against their definitions, its containment against
+// test_torch - the libtorch backend: its operations against their definitions, its containment against
 // the Eigen backend's, and its gradients against the analytic ones.
 //
 // The cross-check is the point of this file. Each backend already agrees with the LP on

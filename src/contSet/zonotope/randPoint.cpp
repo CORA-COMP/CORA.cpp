@@ -12,19 +12,11 @@
 
 #include <stdexcept>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
-namespace {
-Tensor aux_factors(const Tensor &like, const Tensor &G, int64_t N, Rng &rng, bool extreme);
-} // namespace
-
-Tensor Zonotope::randPoint(int64_t N, Rng &rng, const std::string &type) const {
-    if (type != "standard" && type != "extreme")
-        throw std::invalid_argument("Zonotope::randPoint: type is \"standard\" or \"extreme\"");
-    return c + G.matmul(aux_factors(c, G, N, rng, type == "extreme"));
-}
-
-// --------------------------- auxiliary functions --------------------------------
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,4 +37,15 @@ Tensor aux_factors(const Tensor &like, const Tensor &G, int64_t N, Rng &rng, boo
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
+Tensor Zonotope::randPoint(int64_t N, Rng &rng, const std::string &type) const {
+    if (type == "standard") return c + G.matmul(aux_factors(c, G, N, rng, false));
+    if (type == "extreme") return c + G.matmul(aux_factors(c, G, N, rng, true));
+    throw std::invalid_argument("Zonotope::randPoint: unknown type '" + type +
+                                "'; use \"standard\" or \"extreme\"");
+}
+
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

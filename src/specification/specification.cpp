@@ -9,7 +9,11 @@
 
 #include <stdexcept>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Specification Specification::safeSet(std::vector<Halfspace> halfspaces) {
     if (halfspaces.empty()) throw std::invalid_argument("Specification: no halfspace");
@@ -21,3 +25,5 @@ Specification Specification::unsafeSet(const Halfspace &halfspace) {
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

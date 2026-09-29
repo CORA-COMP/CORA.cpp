@@ -10,7 +10,11 @@
 
 #include "contDynamics/linearSys/private/priv.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Reach priv_reach_standard(const Zonotope &X0, const Tensor &eAdt, const Interval &F, int steps) {
     Reach R;
@@ -30,3 +34,5 @@ Reach priv_reach_standard(const Zonotope &X0, const Tensor &eAdt, const Interval
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

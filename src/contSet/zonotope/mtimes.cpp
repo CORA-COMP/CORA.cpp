@@ -7,21 +7,11 @@
 
 #include "contSet/zonotope/zonotope.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
-namespace {
-Tensor aux_widening(const Zonotope &Z, const Interval &I);
-} // namespace
-
-Zonotope Zonotope::mtimes(const Tensor &M) const { return {M.matmul(c), M.matmul(G)}; }
-
-Zonotope Zonotope::mtimes(const Interval &I) const {
-    const Tensor center = I.center();
-    // The center matrix maps Z; the radius adds one axis-aligned generator per dimension.
-    return {center.matmul(c), Tensor::catLast({center.matmul(G), aux_widening(*this, I).diag()})};
-}
-
-// --------------------------- auxiliary functions --------------------------------
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -33,4 +23,16 @@ Tensor aux_widening(const Zonotope &Z, const Interval &I) {
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
+Zonotope Zonotope::mtimes(const Tensor &M) const { return {M.matmul(c), M.matmul(G)}; }
+
+Zonotope Zonotope::mtimes(const Interval &I) const {
+    const Tensor center = I.center();
+    // The center matrix maps Z; the radius adds one axis-aligned generator per dimension.
+    return {center.matmul(c), Tensor::catLast({center.matmul(G), aux_widening(*this, I).diag()})};
+}
+
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

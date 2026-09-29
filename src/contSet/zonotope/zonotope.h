@@ -4,7 +4,7 @@
 //
 // Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generateRandom(n, m, rng);
 // Operations: mtimes, plus, linComb, supportFunc, interval, randPoint, generateRandom
-//             (one file each, as in CORA's @zonotope)
+//             stack, project, vertices (one file each, as in CORA's @zonotope)
 // See also:   contSet/contSet.h, contSet/interval/interval.h
 //
 // Not the competition's zonotope (competition/sets): that one is tuned for speed on one library.
@@ -13,6 +13,8 @@
 
 #include "contSet/contSet.h"
 #include "contSet/interval/interval.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::ct {
 
@@ -54,9 +56,21 @@ class Zonotope : public ContSet {
     /// The Minkowski sum: the centers add, the generators are joined.
     Zonotope plus(const Zonotope &Z2) const;
 
+    /// A batch of zonotopes of one dimension (and batch shape) as one; those with fewer generators
+    /// than the most are padded with zero generators.
+    static Zonotope stack(const std::vector<Zonotope> &Zs);
+
+    /// The projection onto `dims`: the selected rows of c and G, exact.
+    std::unique_ptr<ContSet> project(const std::vector<int64_t> &dims) const override;
+
+    /// The corners of a two-dimensional zonotope, counter-clockwise, per batch member.
+    std::vector<Polygon> vertices() const override;
+
     /// Encloses the segments between matching points of Z and Z2 = M*Z + t (same generator
     /// factors): 2m + 1 generators.
     Zonotope linComb(const Zonotope &Z2) const;
 };
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

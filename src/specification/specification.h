@@ -15,6 +15,8 @@
 
 #include <vector>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
 /// The halfspace {x | a'x <= b}; a is a column (n, 1).
@@ -67,3 +69,5 @@ class Specification {
 };
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

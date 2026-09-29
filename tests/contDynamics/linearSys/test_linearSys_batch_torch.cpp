@@ -1,5 +1,5 @@
-// Automatic batching ("vmap"): linearSys is written for one set and one system, and one call
-// over a batch of sets, of systems, or of both equals one call per member.
+// test_linearSys_batch_torch - automatic batching ("vmap"): linearSys is written for one set and
+// one system, and one call over a batch of sets, of systems, or of both equals one call per member.
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "tensor/torch.h"
@@ -66,11 +66,12 @@ void batches(const torch::TensorOptions &opts, const std::string &where) {
 void shapes(const torch::TensorOptions &opts, const std::string &where) {
     const int64_t n = 2, m = 3;
     const torch::Tensor A = torch::randn({n, n}, opts) * 0.5;
-    const Reach grid =
-        run(A, torch::randn({2, 3, n}, opts), torch::randn({2, 3, n, m}, opts), Algorithm::Standard);
+    const Reach grid = run(A, torch::randn({2, 3, n}, opts), torch::randn({2, 3, n, m}, opts),
+                           Algorithm::Standard);
     check(toTorch(grid.timeInt[0].c).sizes().vec() == std::vector<int64_t>({2, 3, n, 1}),
           where + ": two batch dimensions");
-    const Reach one = run(A, torch::randn({1, n}, opts), torch::randn({1, n, m}, opts), Algorithm::Standard);
+    const Reach one =
+        run(A, torch::randn({1, n}, opts), torch::randn({1, n, m}, opts), Algorithm::Standard);
     check(toTorch(one.timePoint[0].c).size(0) == 1, where + ": a batch of one");
 }
 

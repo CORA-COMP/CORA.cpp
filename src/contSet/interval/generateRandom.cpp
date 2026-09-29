@@ -9,11 +9,24 @@
 
 #include "global/rng.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
-std::vector<double> aux_uniform(Rng &rng, int64_t count, double low, double high);
+
+/// `count` numbers uniform in [low, high].
+std::vector<double> aux_uniform(Rng &rng, int64_t count, double low, double high) {
+    std::vector<double> values(count);
+    rng.uniform(values.data(), values.size(), low, high);
+    return values;
+}
+
 } // namespace
+
+// ===========================================  MAIN  =========================================== //
 
 Interval Interval::generateRandom(int64_t n, Rng &rng) {
     const std::vector<double> c = aux_uniform(rng, n, -2.0, 2.0);
@@ -29,17 +42,6 @@ Interval Interval::generateRandom(int64_t n, Rng &rng) {
     return {Tensor::fromData(inf, {n, 1}), Tensor::fromData(sup, {n, 1})};
 }
 
-// --------------------------- auxiliary functions --------------------------------
-
-namespace {
-
-/// `count` numbers uniform in [low, high].
-std::vector<double> aux_uniform(Rng &rng, int64_t count, double low, double high) {
-    std::vector<double> values(count);
-    rng.uniform(values.data(), values.size(), low, high);
-    return values;
-}
-
-} // namespace
-
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

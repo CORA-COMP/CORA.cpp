@@ -5,7 +5,14 @@
 
 #include "tensor/torch.h"
 
+#include <stdexcept>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// `e^A` with a hand-written backward pass: the gradient of `<G, e^A>` with respect to `A`
@@ -55,10 +62,8 @@ struct TorchTensor : Tensor::Impl {
         return wrap(host.to(t.device()));
     }
 
-    /// "gpu" is CUDA; anything else is torch spelling ("cpu", "cuda:1").
-    static torch::Device parseDevice(const std::string &name) {
-        return torch::Device(name == "gpu" ? "cuda" : name);
-    }
+    /// The device of a name, as torchDevice reads it.
+    static torch::Device parseDevice(const std::string &name) { return torchDevice(name); }
 
     Ptr add(const Impl &o) const override { return wrap(t + of(o)); }
     Ptr sub(const Impl &o) const override { return wrap(t - of(o)); }
@@ -84,6 +89,12 @@ struct TorchTensor : Tensor::Impl {
         for (const Impl *r : rest) all.push_back(of(*r));
         return wrap(torch::cat(all, -1));
     }
+
+    Ptr stack(const std::vector<const Impl *> &rest) const override {
+        std::vector<torch::Tensor> all{t};
+        for (const Impl *r : rest) all.push_back(of(*r));
+        return wrap(torch::stack(all, 0));
+    }
 };
 
 /// Makes libtorch tensors on one default device.
@@ -104,6 +115,8 @@ struct TorchBackend : Tensor::Backend {
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
 std::shared_ptr<const Tensor::Backend> torchBackend(const torch::Device &device,
                                                      bool customBackward) {
     return std::make_shared<TorchBackend>(device, customBackward);
@@ -115,4 +128,15 @@ Tensor fromTorch(const torch::Tensor &t, bool customBackward) {
 
 torch::Tensor toTorch(const Tensor &t) { return static_cast<const TorchTensor &>(t.impl()).t; }
 
+torch::Device torchDevice(const std::string &name) {
+    if (name == "gpu") return torch::Device("cuda");
+    if (name == "cpu" || name == "cuda" || name.rfind("cuda:", 0) == 0) return torch::Device(name);
+    throw std::invalid_argument("CoraTensor: unknown device '" + name +
+                                "'; use cpu, gpu, cuda or cuda:<index>");
+}
+
+bool isTorch(const Tensor &t) { return dynamic_cast<const TorchTensor *>(&t.impl()) != nullptr; }
+
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

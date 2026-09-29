@@ -1,14 +1,19 @@
-// bindings - the compiled half of the `coracpp` Python package (`_coracpp`)
+// bindings - the compiled half of the `cora` Python package (`_cora`)
 //
-// The plotting and the colors are Python, next to this file in coracpp/. Torch tensors run on
-// the libtorch backend (batched, on any device, differentiable), numpy arrays on Eigen, so a
-// call picks its backend by the type of its arguments. Names and arguments follow CORA.
+// The classes are the C++ classes, with the same names and methods, so code reads the same in
+// both languages and a batch lives in the object, not in the call:
 //
-//     R = coracpp.reach(A, c, G, timeStep=0.1, tFinal=2.0)     # A (..., n, n), c (..., n),
-//     R.timeInt_G                                                # G (..., n, m)
+//     X0  = cora.Zonotope(c, G)                 # c (..., n), G (..., n, m): one set or a batch
+//     sys = cora.LinearSys(A)                   # A (..., n, n): one system or a batch
+//     R   = sys.reach(X0, timeStep=0.1, tFinal=2.0)
+//     R.timeInt[k].c
 //
-// Results stack the steps in a leading dimension: timeInt_* has `steps` entries, timePoint_*
-// has `steps + 1`.
+// Torch tensors run on the libtorch backend (batched, on any device, differentiable), numpy
+// arrays on Eigen; an object keeps its backend and hands its numbers back the same way.
+// A vector is 1-D here, (..., n); in C++ it is a column (..., n, 1).
+//
+// Syntax:   cora.Zonotope, Interval, LinearSys, Reach, Specification, Rng, setBackend
+// See also: the C++ headers, which document every method
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "global/rng.h"
@@ -17,180 +22,229 @@
 #include "tensor/torch.h"
 
 #include <pybind11/eigen.h>
+#include <pybind11/stl.h>
 #include <torch/extension.h>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace py = pybind11;
 using namespace cora::ct;
 
 namespace {
 
-/// The reachable sets, stacked per step for Python and kept as they are for specifications.
-struct PyReach {
-    py::object timeInt_c, timeInt_G, timePoint_c, timePoint_G;
-    std::shared_ptr<Reach> sets;
-};
+// ---------------- vectors and matrices between Python and CoraTensor -------------------
+
+/// A Python vector (..., n) as a column (..., n, 1).
+Tensor column(const torch::Tensor &v) { return fromTorch(v.unsqueeze(-1)); }
+Tensor column(const Eigen::VectorXd &v) { return fromEigen(v); }
+
+/// A column (..., n, 1) as a Python vector (..., n), in the array type of its backend.
+py::object vector(const Tensor &t) {
+    if (isTorch(t)) return py::cast(toTorch(t).squeeze(-1));
+    if (isEigen(t)) return py::cast(Eigen::VectorXd(toEigen(t).col(0)));
+    throw std::invalid_argument("cora: a tensor of an unknown backend");
+}
+
+/// A matrix, or the bounds of an interval, in the array type of its backend: a column bound is
+/// a vector (..., n), a matrix bound stays (..., n, n).
+py::object matrix(const Tensor &t) {
+    if (isTorch(t)) return py::cast(toTorch(t));
+    if (isEigen(t)) return py::cast(toEigen(t));
+    throw std::invalid_argument("cora: a tensor of an unknown backend");
+}
+
+py::object bounds(const Tensor &t) {
+    return t.shape().back() == 1 ? vector(t) : matrix(t);
+}
+
+/// A (..., 1, 1) result as a scalar per batch element: a torch tensor (...) or a float.
+py::object scalar(const Tensor &t) {
+    if (isTorch(t)) return py::cast(toTorch(t).squeeze(-1).squeeze(-1));
+    if (isEigen(t)) return py::cast(toEigen(t)(0, 0));
+    throw std::invalid_argument("cora: a tensor of an unknown backend");
+}
+
+/// The time points of a simulation as one array, the time first: (steps + 1, ..., n, N).
+py::object stack(const std::vector<Tensor> &points) {
+    if (points.empty()) throw std::invalid_argument("cora: no time points");
+    if (isTorch(points[0])) {
+        std::vector<torch::Tensor> all;
+        for (const Tensor &x : points) all.push_back(toTorch(x));
+        return py::cast(torch::stack(torch::broadcast_tensors(all), 0));
+    }
+    py::list all;
+    for (const Tensor &x : points) all.append(py::cast(toEigen(x)));
+    return py::module_::import("numpy").attr("stack")(all);
+}
 
 /// CORA's linAlg: "standard" or "wrapping-free".
 Algorithm parseLinAlg(const std::string &linAlg) {
     if (linAlg == "standard") return Algorithm::Standard;
     if (linAlg == "wrapping-free") return Algorithm::WrappingFree;
-    throw py::value_error("linAlg must be 'standard' or 'wrapping-free'");
+    throw py::value_error("unknown linAlg '" + linAlg + "'; use 'standard' or 'wrapping-free'");
 }
 
-// ------------------------------- libtorch ----------------------------------------
+// --------------------------------- classes -----------------------------------------
 
-/// The steps as one tensor, the step first; they broadcast first since the batch shape of a
-/// set can differ from that of its neighbours.
-torch::Tensor stackTorch(const std::vector<Zonotope> &sets, bool center) {
-    std::vector<torch::Tensor> parts;
-    for (const Zonotope &Z : sets) {
-        const torch::Tensor t = toTorch(center ? Z.c : Z.G);
-        parts.push_back(center ? t.squeeze(-1) : t);
-    }
-    return torch::stack(torch::broadcast_tensors(parts), 0);
+/// The operations every set has; bound once on the base class, so any set works wherever a set
+/// is expected.
+void bindContSet(py::module_ &m) {
+    py::class_<ContSet>(m, "ContSet", "The abstract set: what every set answers.")
+        .def("dim", &ContSet::dim)
+        .def("center", [](const ContSet &S) { return vector(S.center()); })
+        .def("interval", &ContSet::interval)
+        .def("supportFunc",
+             [](const ContSet &S, const torch::Tensor &d) { return scalar(S.supportFunc(column(d))); },
+             py::arg("d"), "max of d'x over the set; d (..., n)")
+        .def("supportFunc",
+             [](const ContSet &S, const Eigen::VectorXd &d) { return scalar(S.supportFunc(column(d))); },
+             py::arg("d"))
+        .def("randPoint",
+             [](const ContSet &S, int64_t N, cora::Rng &rng) { return matrix(S.randPoint(N, rng)); },
+             py::arg("N"), py::arg("rng"), "N random points as columns (..., n, N)");
 }
 
-PyReach reachTorch(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
-                   double timeStep, double tFinal, int taylorTerms, const std::string &linAlg,
-                   bool customBackward) {
-    const Zonotope X0{fromTorch(c.unsqueeze(-1), customBackward), fromTorch(G, customBackward)};
-    const Reach R = LinearSys(fromTorch(A, customBackward))
-                        .reach(X0, timeStep, tFinal, taylorTerms, parseLinAlg(linAlg));
-    return {py::cast(stackTorch(R.timeInt, true)), py::cast(stackTorch(R.timeInt, false)),
-            py::cast(stackTorch(R.timePoint, true)), py::cast(stackTorch(R.timePoint, false)),
-            std::make_shared<Reach>(R)};
+void bindInterval(py::module_ &m) {
+    py::class_<Interval, ContSet>(m, "Interval", "A box, or a matrix of intervals: inf <= x <= sup.")
+        .def(py::init([](const torch::Tensor &inf, const torch::Tensor &sup) {
+                 return Interval(column(inf), column(sup));
+             }),
+             py::arg("inf"), py::arg("sup"))
+        .def(py::init([](const Eigen::VectorXd &inf, const Eigen::VectorXd &sup) {
+                 return Interval(column(inf), column(sup));
+             }),
+             py::arg("inf"), py::arg("sup"))
+        .def_static("matrix",
+                    [](const torch::Tensor &inf, const torch::Tensor &sup) {
+                        return Interval(fromTorch(inf), fromTorch(sup));
+                    },
+                    py::arg("inf"), py::arg("sup"),
+                    "An interval matrix: bounds (..., n, n) are taken as they are, not as vectors")
+        .def_static("matrix",
+                    [](const Eigen::MatrixXd &inf, const Eigen::MatrixXd &sup) {
+                        return Interval(fromEigen(inf), fromEigen(sup));
+                    },
+                    py::arg("inf"), py::arg("sup"))
+        .def_static("stack", &Interval::stack, py::arg("intervals"),
+                    "A batch of intervals as one; the batch is the leading dimension")
+        .def_static(
+            "generateRandom",
+            [](int64_t n, cora::Rng &rng) { return Interval::generateRandom(n, rng); }, py::arg("n"),
+            py::arg("rng"))
+        .def_property_readonly("inf", [](const Interval &I) { return bounds(I.inf); })
+        .def_property_readonly("sup", [](const Interval &I) { return bounds(I.sup); })
+        .def("rad", [](const Interval &I) { return bounds(I.rad()); })
+        .def("mtimes", [](const Interval &I, const torch::Tensor &M) { return I.mtimes(fromTorch(M)); },
+             py::arg("M"))
+        .def("mtimes", [](const Interval &I, const Eigen::MatrixXd &M) { return I.mtimes(fromEigen(M)); },
+             py::arg("M"))
+        .def("plus", &Interval::plus, py::arg("I2"))
+        .def("contains", [](const Interval &I, const torch::Tensor &p) { return I.contains(column(p)); },
+             py::arg("p"))
+        .def("contains", [](const Interval &I, const Eigen::VectorXd &p) { return I.contains(column(p)); },
+             py::arg("p"));
 }
 
-torch::Tensor randPointTorch(const torch::Tensor &c, const torch::Tensor &G, int64_t N,
-                             uint64_t seed, const std::string &type) {
-    cora::Rng rng(seed);
-    const Zonotope Z(fromTorch(c.unsqueeze(-1)), fromTorch(G));
-    return toTorch(Z.randPoint(N, rng, type));
+void bindZonotope(py::module_ &m) {
+    py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
+        .def(py::init([](const torch::Tensor &c, const torch::Tensor &G) {
+                 return Zonotope(column(c), fromTorch(G));
+             }),
+             py::arg("c"), py::arg("G"), "center c (..., n) and generators G (..., n, m)")
+        .def(py::init([](const Eigen::VectorXd &c, const Eigen::MatrixXd &G) {
+                 return Zonotope(column(c), fromEigen(G));
+             }),
+             py::arg("c"), py::arg("G"))
+        .def_static("stack", &Zonotope::stack, py::arg("zonotopes"),
+                    "A batch of zonotopes as one; fewer generators are padded with zeros")
+        .def_static(
+            "generateRandom",
+            [](int64_t n, int64_t m, cora::Rng &rng) { return Zonotope::generateRandom(n, m, rng); },
+            py::arg("n"), py::arg("m"), py::arg("rng"))
+        .def_property_readonly("c", [](const Zonotope &Z) { return vector(Z.c); })
+        .def_property_readonly("G", [](const Zonotope &Z) { return matrix(Z.G); })
+        .def(
+            "randPoint",
+            [](const Zonotope &Z, int64_t N, cora::Rng &rng, const std::string &type) {
+                return matrix(Z.randPoint(N, rng, type));
+            },
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as columns (..., n, N); type 'standard' or 'extreme'")
+        .def("mtimes", [](const Zonotope &Z, const torch::Tensor &M) { return Z.mtimes(fromTorch(M)); },
+             py::arg("M"), "M * Z for a matrix M (..., n, n)")
+        .def("mtimes", [](const Zonotope &Z, const Eigen::MatrixXd &M) { return Z.mtimes(fromEigen(M)); },
+             py::arg("M"))
+        .def("mtimes", [](const Zonotope &Z, const Interval &M) { return Z.mtimes(M); }, py::arg("M"),
+             "[M] * Z for an interval matrix")
+        .def("plus", &Zonotope::plus, py::arg("Z2"))
+        .def("linComb", &Zonotope::linComb, py::arg("Z2"));
 }
 
-torch::Tensor simulateTorch(const torch::Tensor &A, const torch::Tensor &x0, double timeStep,
-                            double tFinal) {
-    std::vector<torch::Tensor> points;
-    for (const Tensor &x : LinearSys(fromTorch(A)).simulate(fromTorch(x0), timeStep, tFinal))
-        points.push_back(toTorch(x));
-    return torch::stack(torch::broadcast_tensors(points), 0);
+void bindLinearSys(py::module_ &m) {
+    py::class_<Reach>(m, "Reach", "The reachable sets: lists of zonotopes.")
+        .def_readonly("timeInt", &Reach::timeInt, "timeInt[k] over [k*timeStep, (k+1)*timeStep]")
+        .def_readonly("timePoint", &Reach::timePoint, "timePoint[k] at k*timeStep");
+
+    py::class_<LinearSys>(m, "LinearSys", "The linear system x' = A x.")
+        .def(py::init([](const torch::Tensor &A, bool customBackward) {
+                 return LinearSys(fromTorch(A, customBackward));
+             }),
+             py::arg("A"), py::arg("customBackward") = false,
+             "A (..., n, n); customBackward: hand-written backward pass for the matrix exponential")
+        .def(py::init([](const Eigen::MatrixXd &A) { return LinearSys(fromEigen(A)); }), py::arg("A"))
+        .def_property_readonly("A", [](const LinearSys &sys) { return matrix(sys.A()); })
+        .def(
+            "reach",
+            [](const LinearSys &sys, const Zonotope &X0, double timeStep, double tFinal,
+               int taylorTerms, const std::string &linAlg) {
+                return sys.reach(X0, timeStep, tFinal, taylorTerms, parseLinAlg(linAlg));
+            },
+            py::arg("X0"), py::arg("timeStep"), py::arg("tFinal"), py::arg("taylorTerms") = 10,
+            py::arg("linAlg") = "standard", "The reachable sets from the zonotope X0")
+        .def(
+            "simulate",
+            [](const LinearSys &sys, const torch::Tensor &x0, double timeStep, double tFinal) {
+                return stack(sys.simulate(fromTorch(x0), timeStep, tFinal));
+            },
+            py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"),
+            "Trajectories from the points x0 (..., n, N): (steps + 1, ..., n, N), time first")
+        .def(
+            "simulate",
+            [](const LinearSys &sys, const Eigen::MatrixXd &x0, double timeStep, double tFinal) {
+                return stack(sys.simulate(fromEigen(x0), timeStep, tFinal));
+            },
+            py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"))
+        .def(
+            "simulateRandom",
+            [](const LinearSys &sys, const ContSet &X0, int64_t N, double timeStep, double tFinal,
+               cora::Rng &rng) { return stack(sys.simulateRandom(X0, N, timeStep, tFinal, rng)); },
+            py::arg("X0"), py::arg("N"), py::arg("timeStep"), py::arg("tFinal"), py::arg("rng"),
+            "simulate from N random points of the set X0")
+        .def("correctionMatrixState", &LinearSys::correctionMatrixState, py::arg("timeStep"),
+             py::arg("taylorTerms"), "The interval matrix F of the curvature enlargement");
 }
 
-torch::Tensor simulateRandomTorch(const torch::Tensor &A, const torch::Tensor &c,
-                                  const torch::Tensor &G, int64_t N, double timeStep, double tFinal,
-                                  uint64_t seed, const std::string &type) {
-    return simulateTorch(A, randPointTorch(c, G, N, seed, type), timeStep, tFinal);
-}
-
-Specification safeSetTorch(const torch::Tensor &a, double b) {
-    return Specification::safeSet(fromTorch(a.unsqueeze(-1)), b);
-}
-
-Specification unsafeSetTorch(const torch::Tensor &a, double b) {
-    return Specification::unsafeSet(fromTorch(a.unsqueeze(-1)), b);
-}
-
-// -------------------------------- Eigen ------------------------------------------
-
-py::object stackNumpy(const std::vector<Zonotope> &sets, bool center) {
-    py::list parts;
-    for (const Zonotope &Z : sets) {
-        const Eigen::MatrixXd M = toEigen(center ? Z.c : Z.G);
-        parts.append(center ? py::cast(Eigen::VectorXd(M.col(0))) : py::cast(M));
-    }
-    return py::module_::import("numpy").attr("stack")(parts);
-}
-
-PyReach reachNumpy(const Eigen::MatrixXd &A, const Eigen::VectorXd &c, const Eigen::MatrixXd &G,
-                   double timeStep, double tFinal, int taylorTerms, const std::string &linAlg) {
-    const Zonotope X0{fromEigen(c), fromEigen(G)};
-    const Reach R = LinearSys(fromEigen(A)).reach(X0, timeStep, tFinal, taylorTerms,
-                                                  parseLinAlg(linAlg));
-    return {stackNumpy(R.timeInt, true), stackNumpy(R.timeInt, false),
-            stackNumpy(R.timePoint, true), stackNumpy(R.timePoint, false),
-            std::make_shared<Reach>(R)};
-}
-
-Eigen::MatrixXd randPointNumpy(const Eigen::VectorXd &c, const Eigen::MatrixXd &G, int64_t N,
-                               uint64_t seed, const std::string &type) {
-    cora::Rng rng(seed);
-    return toEigen(Zonotope(fromEigen(c), fromEigen(G)).randPoint(N, rng, type));
-}
-
-py::object simulateNumpy(const Eigen::MatrixXd &A, const Eigen::MatrixXd &x0, double timeStep,
-                         double tFinal) {
-    py::list points;
-    for (const Tensor &x : LinearSys(fromEigen(A)).simulate(fromEigen(x0), timeStep, tFinal))
-        points.append(py::cast(toEigen(x)));
-    return py::module_::import("numpy").attr("stack")(points);
-}
-
-py::object simulateRandomNumpy(const Eigen::MatrixXd &A, const Eigen::VectorXd &c,
-                               const Eigen::MatrixXd &G, int64_t N, double timeStep, double tFinal,
-                               uint64_t seed, const std::string &type) {
-    return simulateNumpy(A, randPointNumpy(c, G, N, seed, type), timeStep, tFinal);
-}
-
-Specification safeSetNumpy(const Eigen::VectorXd &a, double b) {
-    return Specification::safeSet(fromEigen(a), b);
-}
-
-Specification unsafeSetNumpy(const Eigen::VectorXd &a, double b) {
-    return Specification::unsafeSet(fromEigen(a), b);
-}
-
-} // namespace
-
-PYBIND11_MODULE(_coracpp, m) {
-    m.doc() = "CORA.cpp: reachability of linear systems on Eigen (numpy) or libtorch (torch)";
-
-    py::class_<PyReach>(m, "Reach", "The reachable sets: timeInt_* (steps), timePoint_* (steps + 1).")
-        .def_readonly("timeInt_c", &PyReach::timeInt_c)
-        .def_readonly("timeInt_G", &PyReach::timeInt_G)
-        .def_readonly("timePoint_c", &PyReach::timePoint_c)
-        .def_readonly("timePoint_G", &PyReach::timePoint_G);
-
-    m.def("reach", &reachTorch, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("timeStep"),
-          py::arg("tFinal"), py::arg("taylorTerms") = 10, py::arg("linAlg") = "standard",
-          py::arg("customBackward") = false,
-          "Reachable sets of x' = A x from the zonotope (c, G), on libtorch. A (..., n, n), c "
-          "(..., n), G (..., n, m); leading dimensions broadcast. linAlg: 'standard' or "
-          "'wrapping-free'. customBackward: hand-written backward pass for the matrix exponential.");
-    m.def("reach", &reachNumpy, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("timeStep"),
-          py::arg("tFinal"), py::arg("taylorTerms") = 10, py::arg("linAlg") = "standard",
-          "The same for numpy arrays, on Eigen: one set, A (n, n), c (n,), G (n, m).");
-
-    m.def("randPoint", &randPointTorch, py::arg("c"), py::arg("G"), py::arg("N"),
-          py::arg("seed") = 0, py::arg("type") = "standard",
-          "N random points of the zonotope (c, G), on libtorch: c (..., n), G (..., n, m), result "
-          "(..., n, N). type: 'standard' (b in [-1, 1]^m) or 'extreme' (b in {-1, 1}^m).");
-    m.def("randPoint", &randPointNumpy, py::arg("c"), py::arg("G"), py::arg("N"),
-          py::arg("seed") = 0, py::arg("type") = "standard",
-          "The same for numpy arrays, on Eigen: c (n,), G (n, m), result (n, N).");
-
-    m.def("simulate", &simulateTorch, py::arg("A"), py::arg("x0"), py::arg("timeStep"),
-          py::arg("tFinal"),
-          "Trajectories of x' = A x from the points x0 (..., n, N), exact, on libtorch. Result "
-          "(steps + 1, ..., n, N): the time points first.");
-    m.def("simulate", &simulateNumpy, py::arg("A"), py::arg("x0"), py::arg("timeStep"),
-          py::arg("tFinal"), "The same for numpy arrays, on Eigen: x0 (n, N).");
-    m.def("simulateRandom", &simulateRandomTorch, py::arg("A"), py::arg("c"), py::arg("G"),
-          py::arg("N"), py::arg("timeStep"), py::arg("tFinal"), py::arg("seed") = 0,
-          py::arg("type") = "standard", "simulate from N random points of the zonotope (c, G).");
-    m.def("simulateRandom", &simulateRandomNumpy, py::arg("A"), py::arg("c"), py::arg("G"),
-          py::arg("N"), py::arg("timeStep"), py::arg("tFinal"), py::arg("seed") = 0,
-          py::arg("type") = "standard", "The same for numpy arrays, on Eigen.");
-
+void bindSpecification(py::module_ &m) {
     py::class_<Specification>(m, "Specification",
-                              "A halfspace {x | a.x <= b} the reachable set must stay in "
-                              "(safeSet) or must not touch (unsafeSet).")
-        .def_static("safeSet", &safeSetTorch, py::arg("a"), py::arg("b"))
-        .def_static("safeSet", &safeSetNumpy, py::arg("a"), py::arg("b"))
-        .def_static("unsafeSet", &unsafeSetTorch, py::arg("a"), py::arg("b"))
-        .def_static("unsafeSet", &unsafeSetNumpy, py::arg("a"), py::arg("b"))
+                              "Halfspaces {x | a.x <= b} a set must stay in (safeSet) or must not touch "
+                              "(unsafeSet).")
+        .def_static("safeSet",
+                    [](const torch::Tensor &a, double b) { return Specification::safeSet(column(a), b); },
+                    py::arg("a"), py::arg("b"))
+        .def_static("safeSet",
+                    [](const Eigen::VectorXd &a, double b) { return Specification::safeSet(column(a), b); },
+                    py::arg("a"), py::arg("b"))
+        .def_static("unsafeSet",
+                    [](const torch::Tensor &a, double b) { return Specification::unsafeSet(column(a), b); },
+                    py::arg("a"), py::arg("b"))
+        .def_static("unsafeSet",
+                    [](const Eigen::VectorXd &a, double b) { return Specification::unsafeSet(column(a), b); },
+                    py::arg("a"), py::arg("b"))
         .def_property_readonly("type",
                                [](const Specification &spec) {
-                                   return spec.type() == SpecType::SafeSet ? "safeSet" : "unsafeSet";
+                                   if (spec.type() == SpecType::SafeSet) return "safeSet";
+                                   if (spec.type() == SpecType::UnsafeSet) return "unsafeSet";
+                                   throw std::invalid_argument("cora: unknown specification type");
                                })
         .def_property_readonly("halfspaces",
                                [](const Specification &spec) {
@@ -203,14 +257,33 @@ PYBIND11_MODULE(_coracpp, m) {
                                    }
                                    return out;
                                })
-        .def(
-            "check",
-            [](const Specification &spec, const PyReach &R) { return spec.check(R.sets->timeInt); },
-            py::arg("reach"), "Whether every time-interval set satisfies the specification.")
-        .def(
-            "firstViolation",
-            [](const Specification &spec, const PyReach &R) {
-                return spec.firstViolation(R.sets->timeInt);
-            },
-            py::arg("reach"), "The first violating step, or -1.");
+        .def("holds", [](const Specification &spec, const ContSet &S) { return spec.holds(S); }, py::arg("S"),
+             "One flag per batch element of the set")
+        .def("check", [](const Specification &spec, const ContSet &S) { return spec.check(S); }, py::arg("S"),
+             "Whether every batch element of the set satisfies the specification")
+        .def("check", [](const Specification &spec, const std::vector<Zonotope> &sets) { return spec.check(sets); },
+             py::arg("sets"), "Whether every set of a list (such as R.timeInt) does")
+        .def("firstViolation",
+             [](const Specification &spec, const std::vector<Zonotope> &sets) { return spec.firstViolation(sets); },
+             py::arg("sets"), "The index of the first violating set, or -1");
 }
+
+} // namespace
+
+PYBIND11_MODULE(_cora, m) {
+    m.doc() = "CORA.cpp: set-based computing on Eigen (numpy) or libtorch (torch)";
+
+    py::class_<cora::Rng>(m, "Rng", "Random numbers; a seed makes a draw repeatable.")
+        .def(py::init<uint64_t>(), py::arg("seed") = 0);
+    m.def("setBackend", &setBackend, py::arg("spec"),
+          "The backend of new tensors: 'eigen', 'torch', 'torch:cuda', optionally ',customBackward'");
+    m.def("backend", [] { return backend().name(); }, "The name of the current backend");
+
+    bindContSet(m);
+    bindInterval(m);
+    bindZonotope(m);
+    bindLinearSys(m);
+    bindSpecification(m);
+}
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

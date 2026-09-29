@@ -9,7 +9,12 @@
 
 #include <unsupported/Eigen/MatrixFunctions>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 using Mat = Eigen::MatrixXd;
@@ -67,6 +72,7 @@ struct EigenTensor : Tensor::Impl {
     Ptr eyeLike() const override { return wrap(Mat::Identity(m.rows(), m.cols())); }
     Ptr zerosLike() const override { return wrap(Mat::Zero(m.rows(), m.cols())); }
 
+    // The tensors side by side: this one, then each of `rest`.
     Ptr catLast(const std::vector<const Impl *> &rest) const override {
         Eigen::Index cols = m.cols();
         for (const Impl *r : rest) cols += of(*r).cols();
@@ -78,6 +84,14 @@ struct EigenTensor : Tensor::Impl {
             at += of(*r).cols();
         }
         return wrap(std::move(out));
+    }
+
+    // Eigen tensors are single matrices: a stack of one is the tensor itself.
+    Ptr stack(const std::vector<const Impl *> &rest) const override {
+        if (!rest.empty())
+            throw std::invalid_argument("CoraTensor::stack: the eigen backend holds one set, not a "
+                                        "batch; use the torch backend");
+        return wrap(Mat(m));
     }
 };
 
@@ -95,10 +109,16 @@ struct EigenBackend : Tensor::Backend {
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
 std::shared_ptr<const Tensor::Backend> eigenBackend() { return std::make_shared<EigenBackend>(); }
 
 Tensor fromEigen(const Eigen::MatrixXd &m) { return Tensor(EigenTensor::wrap(m)); }
 
 Eigen::MatrixXd toEigen(const Tensor &t) { return static_cast<const EigenTensor &>(t.impl()).m; }
 
+bool isEigen(const Tensor &t) { return dynamic_cast<const EigenTensor *>(&t.impl()) != nullptr; }
+
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

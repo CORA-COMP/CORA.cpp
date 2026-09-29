@@ -97,7 +97,7 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Interval<T> &s, const Mat
 template <typename T>
 Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Zonotope<T> &s, const Mat<T> &d) {
     Eigen::Matrix<T, Eigen::Dynamic, 1> out(s.batch());
-    const int nt = threads_for(s.batch(), s.batch() * s.dim() * s.m);
+    const int nt = threadsFor(s.batch(), s.batch() * s.dim() * s.m);
 #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index b = 0; b < s.batch(); ++b) {
         out(b) = s.c.col(b).dot(d.col(b))
@@ -130,7 +130,7 @@ Interval<T> mink_sum(const Interval<T> &a, const Interval<T> &b) {
 template <typename T>
 Zonotope<T> mink_sum(const Zonotope<T> &a, const Zonotope<T> &b) {
     Zonotope<T> out{a.c + b.c, Mat<T>(a.dim(), (a.m + b.m) * a.batch()), a.m + b.m};
-    const int nt = threads_for(a.batch(), a.batch() * a.dim() * (a.m + b.m));
+    const int nt = threadsFor(a.batch(), a.batch() * a.dim() * (a.m + b.m));
 #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index k = 0; k < a.batch(); ++k) {
         out.g.middleCols(k * out.m, a.m) = a.block(k);

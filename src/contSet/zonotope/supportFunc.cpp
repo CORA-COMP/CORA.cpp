@@ -7,7 +7,11 @@
 
 #include "contSet/zonotope/zonotope.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Tensor Zonotope::supportFunc(const Tensor &d) const {
     const Tensor dt = d.transpose();
@@ -15,3 +19,5 @@ Tensor Zonotope::supportFunc(const Tensor &d) const {
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

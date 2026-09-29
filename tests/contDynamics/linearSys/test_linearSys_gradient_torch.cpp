@@ -1,5 +1,6 @@
-// Gradients through the whole reachability computation, with autograd and with the
-// hand-written backward pass of the matrix exponential, against central differences.
+// test_linearSys_gradient_torch - gradients through the whole reachability computation, with
+// autograd and with the hand-written backward pass of the matrix exponential, against central
+// differences.
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "specification/specification.h"
@@ -46,7 +47,8 @@ void gradients(const torch::TensorOptions &opts, const std::string &where) {
         }
         for (int i = 0; i < 3; ++i)
             check(max_diff(grads[0][i], grads[1][i]) < 1e-9,
-                  what + ": the custom backward differs from autograd (input " + std::to_string(i) + ")");
+                  what + ": the custom backward differs from autograd (input " + std::to_string(i) +
+                      ")");
 
         // Central differences over every entry of A, c and G.
         const double h = 1e-6;
@@ -64,13 +66,15 @@ void gradients(const torch::TensorOptions &opts, const std::string &where) {
                 const double got = grads[0][which].to(torch::kCPU).view({-1})[at].item<double>();
                 worst = std::max(worst, std::abs(want - got) / (1.0 + std::abs(want)));
             }
-        check(worst < 1e-5, what + ": a gradient is off from central differences by " + std::to_string(worst));
+        check(worst < 1e-5,
+              what + ": a gradient is off from central differences by " + std::to_string(worst));
     }
 }
 
 /// The margin of a specification is differentiable too: how far the enclosure sits from the
 /// wall, with respect to the system, moves the way a step in that direction says.
-void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts, const std::string &where) {
+void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts,
+                                         const std::string &where) {
     const torch::Tensor A0 = torch::tensor({{-0.2, 1.0}, {-1.0, -0.2}}, opts);
     const Halfspace wall{fromTorch(torch::tensor({{1.0}, {0.0}}, opts)), 2.0};
     auto margin = [&](const torch::Tensor &A) {

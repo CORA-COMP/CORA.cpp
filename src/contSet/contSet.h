@@ -9,6 +9,12 @@
 
 #include "tensor/tensor.h"
 
+#include <array>
+#include <memory>
+#include <vector>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora {
 class Rng;
 }
@@ -16,6 +22,10 @@ class Rng;
 namespace cora::ct {
 
 class Interval;
+
+/// A point of the plane, and a polygon as its vertices in counter-clockwise order.
+using Point = std::array<double, 2>;
+using Polygon = std::vector<Point>;
 
 class ContSet {
   public:
@@ -35,6 +45,14 @@ class ContSet {
 
     /// N random points of the set as columns (..., n, N), drawn on the host with rng.
     virtual Tensor randPoint(int64_t N, Rng &rng) const = 0;
+
+    /// The projection onto the dimensions `dims` (0-based), in that order.
+    virtual std::unique_ptr<ContSet> project(const std::vector<int64_t> &dims) const = 0;
+
+    /// The vertices of a two-dimensional set, one polygon per batch member.
+    virtual std::vector<Polygon> vertices() const = 0;
 };
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

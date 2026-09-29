@@ -1,5 +1,5 @@
-// The same code on different backends and devices gives the same answer: the algorithms are
-// written once, so this is what tells the backends apart.
+// test_linearSys_backends_torch - the same code on different backends and devices gives the same
+// answer: the algorithms are written once, so this is what tells the backends apart.
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "specification/specification.h"
@@ -45,7 +45,8 @@ int main() {
         for (const std::string &other : test::backends()) {
             if (other == "eigen") continue;
             cora::ct::setBackend(other);
-            check(max_diff(eigen, run(algorithm)) < 1e-10, name + ": eigen and " + other + " differ");
+            check(max_diff(eigen, run(algorithm)) < 1e-10,
+                  name + ": eigen and " + other + " differ");
         }
     }
 
@@ -58,7 +59,8 @@ int main() {
         answers.push_back(Specification::unsafeSet(Tensor({0.0, 1.0}), -1.4).check(R.timeInt));
     });
     for (std::size_t i = 2; i < answers.size(); ++i)
-        check(answers[i] == answers[i % 2], "a specification is answered differently on another backend");
+        check(answers[i] == answers[i % 2],
+              "a specification is answered differently on another backend");
 
     cora::ct::setBackend("eigen");
     return test::finish("linearSys backends");

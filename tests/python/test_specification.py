@@ -1,69 +1,78 @@
-"""coracpp.Specification: halfspaces checked against reachable sets, from torch and numpy."""
+"""test_specification - the Specification class in Python: halfspaces against any set."""
 import unittest
 
 import numpy as np
 import torch
 
-import coracpp
+import cora
 
-A = torch.tensor([[-0.1, 1.0], [-1.0, -0.1]], dtype=torch.float64)
-C = torch.tensor([1.0, 0.0], dtype=torch.float64)
-G = 0.1 * torch.eye(2, dtype=torch.float64)
+F64 = dict(dtype=torch.float64)
+A = torch.tensor([[-0.1, 1.0], [-1.0, -0.1]], **F64)
+X0 = cora.Zonotope(torch.tensor([1.0, 0.0], **F64), 0.1 * torch.eye(2, **F64))
 OPTIONS = dict(timeStep=0.1, tFinal=6.0, taylorTerms=8)
 
 
 def x1(value):
-    return torch.tensor([value, 0.0], dtype=torch.float64)
+    return torch.tensor([value, 0.0], **F64)
 
 
 class Specification(unittest.TestCase):
     def setUp(self):
-        self.reach = coracpp.reach(A, C, G, **OPTIONS)
+        self.R = cora.LinearSys(A).reach(X0, **OPTIONS)
 
     def test_safeSet(self):
         # The oscillator swings right to about 1.1 at the start and about 0.9 later.
-        self.assertTrue(coracpp.Specification.safeSet(x1(1.0), 1.5).check(self.reach))
-        self.assertFalse(coracpp.Specification.safeSet(x1(1.0), 1.0).check(self.reach))
+        self.assertTrue(cora.Specification.safeSet(x1(1.0), 1.5).check(self.R.timeInt))
+        self.assertFalse(cora.Specification.safeSet(x1(1.0), 1.0).check(self.R.timeInt))
 
     def test_firstViolation_is_a_step(self):
-        step = coracpp.Specification.safeSet(x1(1.0), 1.0).firstViolation(self.reach)
-        self.assertEqual(step, 0)
-        self.assertEqual(coracpp.Specification.safeSet(x1(1.0), 1.5).firstViolation(self.reach), -1)
-
+        self.assertEqual(cora.Specification.safeSet(x1(1.0), 1.0).firstViolation(self.R.timeInt), 0)
+        self.assertEqual(cora.Specification.safeSet(x1(1.0), 1.5).firstViolation(self.R.timeInt), -1)
         # The trajectory swings left of -0.5 later on: the first enclosure to touch is a late one.
-        wall = coracpp.Specification.unsafeSet(x1(1.0), -0.5)
-        late = wall.firstViolation(self.reach)
+        late = cora.Specification.unsafeSet(x1(1.0), -0.5).firstViolation(self.R.timeInt)
         self.assertGreater(late, 5)
-        self.assertLess(late, self.reach.timeInt_c.shape[0])
+        self.assertLess(late, len(self.R.timeInt))
 
     def test_unsafeSet(self):
-        self.assertTrue(coracpp.Specification.unsafeSet(x1(1.0), -3.0).check(self.reach))
-        self.assertFalse(coracpp.Specification.unsafeSet(x1(1.0), 0.5).check(self.reach))
+        self.assertTrue(cora.Specification.unsafeSet(x1(1.0), -3.0).check(self.R.timeInt))
+        self.assertFalse(cora.Specification.unsafeSet(x1(1.0), 0.5).check(self.R.timeInt))
+
+    def test_any_set_can_be_checked(self):
+        spec = cora.Specification.safeSet(x1(1.0), 1.2)
+        self.assertTrue(spec.check(X0))
+        self.assertTrue(spec.check(cora.Interval(x1(0.9), x1(1.1))))
+        self.assertFalse(spec.check(cora.Interval(x1(0.9), x1(1.3))))
+
+    def test_holds_answers_for_each_member_of_a_batch(self):
+        c = torch.tensor([[0.0, 0.0], [2.0, 0.0], [4.0, 0.0]], **F64)
+        batch = cora.Zonotope(c, torch.eye(2, **F64).expand(3, 2, 2).contiguous())
+        self.assertEqual(cora.Specification.safeSet(x1(1.0), 3.0).holds(batch), [True, True, False])
+        self.assertEqual(cora.Specification.unsafeSet(x1(1.0), 1.5).holds(batch), [False, False, True])
+
+    def test_type_and_halfspaces(self):
+        spec = cora.Specification.safeSet(x1(1.0), 1.5)
+        self.assertEqual(spec.type, "safeSet")
+        ((a, b),) = spec.halfspaces
+        np.testing.assert_allclose(a, [1.0, 0.0])
+        self.assertEqual(b, 1.5)
+        self.assertEqual(cora.Specification.unsafeSet(x1(1.0), 0.0).type, "unsafeSet")
 
     def test_numpy_runs_on_eigen(self):
-        r = coracpp.reach(A.numpy(), C.numpy(), G.numpy(), **OPTIONS)
-        safe = coracpp.Specification.safeSet(np.array([1.0, 0.0]), 1.5)
-        unsafe = coracpp.Specification.safeSet(np.array([1.0, 0.0]), 1.0)
-        self.assertTrue(safe.check(r))
-        self.assertFalse(unsafe.check(r))
-        self.assertEqual(unsafe.firstViolation(r), 0)
+        R = cora.LinearSys(A.numpy()).reach(cora.Zonotope(X0.c.numpy(), X0.G.numpy()), **OPTIONS)
+        spec = cora.Specification.safeSet(np.array([1.0, 0.0]), 1.0)
+        self.assertFalse(spec.check(R.timeInt))
+        self.assertEqual(spec.firstViolation(R.timeInt), 0)
 
     def test_the_two_backends_agree(self):
-        r = coracpp.reach(A.numpy(), C.numpy(), G.numpy(), **OPTIONS)
+        R = cora.LinearSys(A.numpy()).reach(cora.Zonotope(X0.c.numpy(), X0.G.numpy()), **OPTIONS)
         for bound in (0.8, 1.0, 1.2, 1.5):
-            torch_spec = coracpp.Specification.safeSet(x1(1.0), bound)
-            numpy_spec = coracpp.Specification.safeSet(np.array([1.0, 0.0]), bound)
-            self.assertEqual(torch_spec.firstViolation(self.reach), numpy_spec.firstViolation(r))
+            on_torch = cora.Specification.safeSet(x1(1.0), bound)
+            on_eigen = cora.Specification.safeSet(np.array([1.0, 0.0]), bound)
+            self.assertEqual(on_torch.firstViolation(self.R.timeInt), on_eigen.firstViolation(R.timeInt))
 
     def test_backends_do_not_mix(self):
         with self.assertRaises(ValueError):
-            coracpp.Specification.safeSet(np.array([1.0, 0.0]), 1.5).check(self.reach)
-
-    @unittest.skipUnless(torch.cuda.is_available(), "no CUDA device")
-    def test_gpu(self):
-        r = coracpp.reach(A.cuda(), C.cuda(), G.cuda(), **OPTIONS)
-        spec = coracpp.Specification.safeSet(x1(1.0).cuda(), 1.0)
-        self.assertEqual(spec.firstViolation(r), 0)
+            cora.Specification.safeSet(np.array([1.0, 0.0]), 1.5).check(self.R.timeInt)
 
 
 if __name__ == "__main__":

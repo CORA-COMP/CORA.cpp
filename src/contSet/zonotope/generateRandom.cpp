@@ -11,19 +11,11 @@
 
 #include <cmath>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
-namespace {
-std::vector<double> aux_generators(int64_t n, int64_t m, Rng &rng);
-} // namespace
-
-Zonotope Zonotope::generateRandom(int64_t n, int64_t m, Rng &rng) {
-    std::vector<double> c(n);
-    rng.normal(c.data(), c.size(), 10.0);
-    return {Tensor::fromData(c, {n, 1}), Tensor::fromData(aux_generators(n, m, rng), {n, m})};
-}
-
-// --------------------------- auxiliary functions --------------------------------
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -43,4 +35,14 @@ std::vector<double> aux_generators(int64_t n, int64_t m, Rng &rng) {
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
+Zonotope Zonotope::generateRandom(int64_t n, int64_t m, Rng &rng) {
+    std::vector<double> c(n);
+    rng.normal(c.data(), c.size(), 10.0);
+    return {Tensor::fromData(c, {n, 1}), Tensor::fromData(aux_generators(n, m, rng), {n, m})};
+}
+
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

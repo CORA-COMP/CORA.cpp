@@ -7,7 +7,11 @@
 
 #include "contDynamics/linearSys/private/priv.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 std::vector<Tensor> LinearSys::simulate(const Tensor &x0, double timeStep, double tFinal) const {
     const int steps = priv_numSteps(tFinal, timeStep);
@@ -24,3 +28,5 @@ std::vector<Tensor> LinearSys::simulate(const Tensor &x0, double timeStep, doubl
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

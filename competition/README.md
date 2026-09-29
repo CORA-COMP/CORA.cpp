@@ -208,7 +208,7 @@ All optional:
 | `EIGEN` | `/usr/include/eigen3` | where Eigen's headers are |
 | `LIBTORCH` | the image's Python torch | where libtorch is, when it is not found by itself |
 | `CORACPP_PYTHON` | `python3`, then `python` | the interpreter whose torch to build against |
-| `CXXFLAGS` | `-O3 -march=native -std=c++17 -fopenmp …` | the build flags |
+| `OPT` | `-O3 -march=native -std=c++17 -fopenmp …` | the compiler flags of the build (`make OPT=…`) |
 | `OMP_NUM_THREADS` | the machine's physical cores | how many threads the operations use; set it and the tool leaves it alone |
 
 ## Running one instance locally

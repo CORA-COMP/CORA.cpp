@@ -8,20 +8,39 @@
 #include "specification/specification.h"
 
 #include <algorithm>
+#include <stdexcept>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::ct {
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
-bool aux_satisfied(SpecType type, double extreme, double b);
+
+/// The direction whose support decides a halfspace: a for a safe set (the largest a'x must be at
+/// most b), -a for an unsafe one (the smallest a'x, minus the support along -a, must exceed b).
+Tensor aux_direction(SpecType type, const Tensor &a) {
+    if (type == SpecType::SafeSet) return a;
+    if (type == SpecType::UnsafeSet) return a * -1.0;
+    throw std::invalid_argument("Specification: unknown type; use SafeSet or UnsafeSet");
+}
+
+/// One halfspace: `extreme` is the support in the direction of aux_direction.
+bool aux_satisfied(SpecType type, double extreme, double b) {
+    if (type == SpecType::SafeSet) return extreme <= b;
+    if (type == SpecType::UnsafeSet) return -extreme > b;
+    throw std::invalid_argument("Specification: unknown type; use SafeSet or UnsafeSet");
+}
+
 } // namespace
+
+// ===========================================  MAIN  =========================================== //
 
 std::vector<bool> Specification::holds(const ContSet &S) const {
     std::vector<bool> ok;
     for (const Halfspace &h : halfspaces_) {
-        // Safe: the largest a'x of the set is at most b. Unsafe: its smallest a'x is above b,
-        // and the smallest is minus the support function along -a.
-        const bool safe = type_ == SpecType::SafeSet;
-        const std::vector<double> extreme = S.supportFunc(safe ? h.a : h.a * -1.0).data();
+        const std::vector<double> extreme = S.supportFunc(aux_direction(type_, h.a)).data();
         if (ok.empty()) ok.assign(extreme.size(), true);
         for (std::size_t i = 0; i < extreme.size(); ++i)
             if (!aux_satisfied(type_, extreme[i], h.b)) ok[i] = false;
@@ -34,15 +53,6 @@ bool Specification::check(const ContSet &S) const {
     return std::all_of(ok.begin(), ok.end(), [](bool v) { return v; });
 }
 
-// --------------------------- auxiliary functions --------------------------------
-
-namespace {
-
-/// One halfspace: `extreme` is the support along a (safe) or along -a (unsafe).
-bool aux_satisfied(SpecType type, double extreme, double b) {
-    return type == SpecType::SafeSet ? extreme <= b : -extreme > b;
-}
-
-} // namespace
-
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

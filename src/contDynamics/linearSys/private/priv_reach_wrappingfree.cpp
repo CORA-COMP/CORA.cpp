@@ -10,9 +10,14 @@
 
 #include "contDynamics/linearSys/private/priv.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
-Reach priv_reach_wrappingfree(const Zonotope &X0, const Tensor &eAdt, const Interval &F, int steps) {
+// ===========================================  MAIN  =========================================== //
+
+Reach priv_reach_wrappingfree(const Zonotope &X0, const Tensor &eAdt, const Interval &F,
+                              int steps) {
     Reach R;
     const Zonotope R0 = X0.linComb(X0.mtimes(eAdt)).plus(X0.mtimes(F));
 
@@ -26,3 +31,5 @@ Reach priv_reach_wrappingfree(const Zonotope &X0, const Tensor &eAdt, const Inte
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

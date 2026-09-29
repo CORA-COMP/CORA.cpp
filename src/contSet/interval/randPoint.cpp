@@ -9,18 +9,11 @@
 
 #include "global/rng.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
-namespace {
-Tensor aux_fractions(const Tensor &like, int64_t N, Rng &rng);
-} // namespace
-
-Tensor Interval::randPoint(int64_t N, Rng &rng) const {
-    // inf + diag(sup - inf) * u scales row i of the fractions u by the width of side i.
-    return inf + (sup - inf).diag().matmul(aux_fractions(inf, N, rng));
-}
-
-// --------------------------- auxiliary functions --------------------------------
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,4 +30,13 @@ Tensor aux_fractions(const Tensor &like, int64_t N, Rng &rng) {
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
+Tensor Interval::randPoint(int64_t N, Rng &rng) const {
+    // inf + diag(sup - inf) * u scales row i of the fractions u by the width of side i.
+    return inf + (sup - inf).diag().matmul(aux_fractions(inf, N, rng));
+}
+
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

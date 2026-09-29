@@ -7,10 +7,16 @@
 
 #include "contSet/zonotope/zonotope.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Zonotope Zonotope::plus(const Zonotope &Z2) const {
     return {c + Z2.c, Tensor::catLast({G, Z2.G})};
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

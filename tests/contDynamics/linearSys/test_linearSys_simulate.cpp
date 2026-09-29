@@ -1,35 +1,20 @@
-// linearSys.simulate on every backend: exact against the matrix exponential, and inside the
-// reachable sets — the sanity check every reachability tool is measured against.
+// test_linearSys_simulate - linearSys simulate: exact against the matrix exponential, and inside
+// the reachable sets
 
-#include "contDynamics/linearSys/linearSys.h"
-#include "contDynamics/linearSys/matlabReference.h"
+#include "contDynamics/linearSys/linearSysTesting.h"
 #include "global/rng.h"
 #include "testing.h"
 
-#include <unsupported/Eigen/MatrixFunctions>
+#include <algorithm>
+#include <cmath>
 
 using namespace cora::ct;
 using test::check;
 using test::close;
+using namespace test::lin;
+using matlab_reference::System;
 
 namespace {
-
-Tensor tensor_of(const Eigen::MatrixXd &M) {
-    const Eigen::Matrix<double, -1, -1, Eigen::RowMajor> rows = M;
-    return Tensor::fromData({rows.data(), rows.data() + rows.size()}, {M.rows(), M.cols()});
-}
-
-Eigen::MatrixXd host_of(const Tensor &t) {
-    const std::vector<int64_t> s = t.shape();
-    const std::vector<double> v = t.data();
-    return Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(v.data(), s[0], s[1]);
-}
-
-Eigen::MatrixXd oscillator3() {
-    Eigen::MatrixXd A(3, 3);
-    A << -0.3, 1.0, 0.0, -1.0, -0.2, 0.4, 0.0, -0.5, -0.1;
-    return A;
-}
 
 void follows_the_matrix_exponential(const std::string &b) {
     const Eigen::MatrixXd A = oscillator3();
@@ -42,7 +27,8 @@ void follows_the_matrix_exponential(const std::string &b) {
     check(close(x[0], tensor_of(x0)), b + ": the start is the start");
     double worst = 0.0;
     for (std::size_t k = 0; k < x.size(); ++k)
-        worst = std::max(worst, (host_of(x[k]) - (A * dt * double(k)).exp() * x0).cwiseAbs().maxCoeff());
+        worst = std::max(worst,
+                         (host_of(x[k]) - (A * dt * double(k)).exp() * x0).cwiseAbs().maxCoeff());
     check(worst < 1e-12, b + ": a trajectory differs from e^{A t} x0 by " + std::to_string(worst));
 }
 
@@ -51,12 +37,9 @@ void a_stable_system_decays(const std::string &b) {
     const Tensor A({{-1.0, 0.0}, {0.0, -2.0}});
     const std::vector<Tensor> x = LinearSys(A).simulate(Tensor({{1.0}, {1.0}}), 0.1, 3.0);
     const Eigen::MatrixXd last = host_of(x.back());
-    check(std::abs(last(0, 0) - std::exp(-3.0)) < 1e-12 && std::abs(last(1, 0) - std::exp(-6.0)) < 1e-12,
+    check(std::abs(last(0, 0) - std::exp(-3.0)) < 1e-12 &&
+              std::abs(last(1, 0) - std::exp(-6.0)) < 1e-12,
           b + ": x' = -x and x' = -2x decay exactly");
-}
-
-double support(const Zonotope &Z, const Eigen::VectorXd &d) {
-    return Z.supportFunc(Tensor::fromData({d.data(), d.data() + d.size()}, {d.size(), 1})).data()[0];
 }
 
 /// Simulated points lie in the reachable sets: at every time point in the time-point set, and
@@ -85,35 +68,21 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
                 for (int i = 0; i < 40; ++i) {
                     const Eigen::VectorXd d = dirs.col(i);
                     const double bound = support(R.timeInt[step], d);
-                    worst = std::min(worst, (bound - (d.transpose() * points).maxCoeff()) / d.norm());
+                    worst =
+                        std::min(worst, (bound - (d.transpose() * points).maxCoeff()) / d.norm());
                     if (j % refine == 0) {
                         const double at = support(R.timePoint[j / refine], d);
-                        worst = std::min(worst, (at - (d.transpose() * points).maxCoeff()) / d.norm());
+                        worst =
+                            std::min(worst, (at - (d.transpose() * points).maxCoeff()) / d.norm());
                     }
                 }
             }
-            check(worst >= -1e-9, b + ": " + (algorithm == Algorithm::Standard ? "standard" : "wrapping-free") +
-                                      (extreme ? ", extreme" : ", random") + ": a trajectory left the reachable set by " +
-                                      std::to_string(-worst));
+            check(worst >= -1e-9,
+                  b + ": " + (algorithm == Algorithm::Standard ? "standard" : "wrapping-free") +
+                      (extreme ? ", extreme" : ", random") +
+                      ": a trajectory left the reachable set by " + std::to_string(-worst));
         }
     }
-}
-
-/// `simulateRandom` draws from the initial set: same seed, same trajectories.
-void simulateRandom_is_seeded(const std::string &b) {
-    const Zonotope X0(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.1, 0.1}}));
-    const LinearSys sys(tensor_of(oscillator3()));
-    cora::Rng first(5), second(5), other(6);
-    const std::vector<Tensor> a = sys.simulateRandom(X0, 8, 0.1, 1.0, first);
-    const std::vector<Tensor> c = sys.simulateRandom(X0, 8, 0.1, 1.0, second);
-    const std::vector<Tensor> d = sys.simulateRandom(X0, 8, 0.1, 1.0, other);
-    check(a.size() == 11 && a[0].shape() == std::vector<int64_t>({3, 8}), b + ": shapes");
-    check(close(a.back(), c.back()), b + ": the same seed gives the same trajectories");
-    check(!close(a.back(), d.back()), b + ": another seed gives others");
-    // The initial set is an interval too: any ContSet works.
-    const Interval box(Tensor({0.9, -0.1, -0.1}), Tensor({1.1, 0.1, 0.1}));
-    cora::Rng rng(1);
-    check(sys.simulateRandom(box, 5, 0.1, 0.5, rng).size() == 6, b + ": simulateRandom from an interval");
 }
 
 } // namespace
@@ -123,7 +92,6 @@ int main() {
         follows_the_matrix_exponential(b);
         a_stable_system_decays(b);
         simulations_stay_in_the_reachable_set(b);
-        simulateRandom_is_seeded(b);
     });
     return test::finish("linearSys simulate");
 }

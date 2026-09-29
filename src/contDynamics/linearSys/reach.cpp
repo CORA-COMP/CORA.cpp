@@ -10,7 +10,13 @@
 
 #include "contDynamics/linearSys/private/priv.h"
 
+#include <stdexcept>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Reach LinearSys::reach(const Zonotope &X0, double timeStep, double tFinal, int taylorTerms,
                        Algorithm linAlg) const {
@@ -18,8 +24,12 @@ Reach LinearSys::reach(const Zonotope &X0, double timeStep, double tFinal, int t
     const Tensor eAdt = (A_ * timeStep).expm();
     const Interval F = correctionMatrixState(timeStep, taylorTerms);
 
+    if (linAlg == Algorithm::Standard) return priv_reach_standard(X0, eAdt, F, steps);
     if (linAlg == Algorithm::WrappingFree) return priv_reach_wrappingfree(X0, eAdt, F, steps);
-    return priv_reach_standard(X0, eAdt, F, steps);
+    throw std::invalid_argument(
+        "LinearSys::reach: unknown linAlg; use Algorithm::Standard or Algorithm::WrappingFree");
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

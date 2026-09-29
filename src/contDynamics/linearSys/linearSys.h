@@ -14,6 +14,8 @@
 
 #include <vector>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
 /// Which algorithm computes the reachable sets (CORA's linAlg).
@@ -56,3 +58,5 @@ class LinearSys {
 };
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

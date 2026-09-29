@@ -8,7 +8,11 @@
 
 #include "contSet/zonotope/zonotope.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Zonotope Zonotope::linComb(const Zonotope &Z2) const {
     const Tensor mean = (G + Z2.G) * 0.5;  // the shared part of matching generators
@@ -18,3 +22,5 @@ Zonotope Zonotope::linComb(const Zonotope &Z2) const {
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

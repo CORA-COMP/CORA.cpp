@@ -7,10 +7,16 @@
 
 #include "contSet/interval/interval.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Tensor Interval::supportFunc(const Tensor &d) const {
     return d.transpose().matmul(center()) + d.abs().transpose().matmul(rad());
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

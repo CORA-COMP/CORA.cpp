@@ -7,19 +7,11 @@
 
 #include "contSet/interval/interval.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
-namespace {
-Tensor aux_distanceOutside(const Interval &I, const Tensor &p);
-} // namespace
-
-bool Interval::contains(const Tensor &p) const {
-    for (const double outside : aux_distanceOutside(*this, p).data())
-        if (outside > 1e-12) return false;  // tolerance for rounding on the boundary
-    return true;
-}
-
-// --------------------------- auxiliary functions --------------------------------
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,4 +22,14 @@ Tensor aux_distanceOutside(const Interval &I, const Tensor &p) {
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
+bool Interval::contains(const Tensor &p) const {
+    for (const double outside : aux_distanceOutside(*this, p).data())
+        if (outside > 1e-12) return false;  // tolerance for rounding on the boundary
+    return true;
+}
+
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

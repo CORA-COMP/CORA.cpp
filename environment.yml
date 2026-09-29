@@ -1,0 +1,16 @@
+# The conda environment CORA.cpp builds and runs in, without root and without Docker:
+# compilers, Eigen, Python and a debugger from conda-forge. scripts/setup_local.sh creates it
+# and adds torch with pip, since the right build of torch depends on the machine's GPU.
+name: coracpp
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - gxx_linux-64  # the compiler; conda activation sets CXX to it
+  - make
+  - gdb           # debugging from VS Code
+  - eigen
+  - glpk          # only the competition needs it
+  - numpy
+  - matplotlib-base
+  - pip

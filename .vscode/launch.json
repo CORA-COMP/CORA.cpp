@@ -1,0 +1,49 @@
+{
+    // Open an example (examples/cpp/*.cpp or examples/python/*.py) and press F5 to debug it, or
+    // Ctrl+Shift+B to build and run the C++ one. Both need "WSL: Reopen Folder in WSL".
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "C++: debug current example",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${env:HOME}/.cache/coracpp/build-debug/examples/cpp/${fileBasenameNoExtension}",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build example (debug)",
+            "MIMode": "gdb",
+            "miDebuggerPath": "${env:HOME}/miniforge3/envs/coracpp/bin/gdb",
+            "environment": [
+                { "name": "LD_LIBRARY_PATH", "value": "${env:HOME}/miniforge3/envs/coracpp/lib" }
+            ],
+            "setupCommands": [
+                { "text": "-enable-pretty-printing", "ignoreFailures": true }
+            ]
+        },
+        {
+            "name": "Python: current example",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build python package",
+            "env": {
+                "PYTHONPATH": "${env:HOME}/.cache/coracpp/build",
+                "LD_LIBRARY_PATH": "${env:HOME}/miniforge3/envs/coracpp/lib"
+            }
+        },
+        {
+            "name": "Python: current test",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "unittest",
+            "args": ["-v", "${fileBasenameNoExtension}"],
+            "cwd": "${workspaceFolder}/tests/python",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${env:HOME}/.cache/coracpp/build",
+                "LD_LIBRARY_PATH": "${env:HOME}/miniforge3/envs/coracpp/lib"
+            }
+        }
+    ]
+}

@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     const std::vector<std::string> args(argv + 1, argv + argc);
     // Before anything measures: the defaults are every hyperthread, which oversubscribes
     // the cores and makes a small parallel region cost more than the work it splits.
-    cora::configure_threads();
+    cora::configureThreads();
     try {
         if (args.size() == 1 && args[0] == "env") {
             cora::print_env(std::cout);

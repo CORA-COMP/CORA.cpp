@@ -1,5 +1,5 @@
-// The correction matrix F(A, Δt, η) of linearSys against MATLAB CORA's `taylorMatrices`, and
-// the properties it has whatever the numbers.
+// test_linearSys_correctionMatrixState - the correction matrix F(A, Δt, η) of linearSys against
+// MATLAB CORA's `taylorMatrices`, and the properties it has whatever the numbers.
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "contDynamics/linearSys/matlabReference.h"
@@ -8,9 +8,9 @@
 #include <cmath>
 
 using namespace cora::ct;
+using matlab_reference::System;
 using test::check;
 using test::close;
-using matlab_reference::System;
 
 namespace {
 
@@ -61,8 +61,8 @@ void shrinks_with_the_time_step(const std::string &b) {
 void is_tighter_with_more_terms(const std::string &b) {
     const System &s = matlab_reference::three_dimensional();
     const LinearSys sys = system_of(s);
-    check(max_abs(sys.correctionMatrixState(0.2, 10).rad())
-              <= max_abs(sys.correctionMatrixState(0.2, 3).rad()),
+    check(max_abs(sys.correctionMatrixState(0.2, 10).rad()) <=
+              max_abs(sys.correctionMatrixState(0.2, 3).rad()),
           b + ": more Taylor terms widened F");
 }
 

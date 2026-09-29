@@ -208,7 +208,7 @@ Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index poin
     const auto subsets = facets && n > 1 ? combinations(m, n - 1)
                                          : std::vector<std::vector<Index>>();
 
-    const int nt = threads_for(batch, batch * points * n * m);
+    const int nt = threadsFor(batch, batch * points * n * m);
 #pragma omp parallel for schedule(dynamic) num_threads(nt) if (nt > 1)
     for (Index b = 0; b < batch; ++b) {
         const Eigen::MatrixXd r =

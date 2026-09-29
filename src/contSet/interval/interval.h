@@ -4,13 +4,15 @@
 // interval matrix is an Interval too, and Zonotope::mtimes takes it.
 //
 // Syntax:     Interval I(inf, sup);   Interval I = Interval::generateRandom(n, rng);
-// Operations: supportFunc, mtimes, randPoint, contains, generateRandom (one file each);
-//             center, rad, plus (below)
+// Operations: supportFunc, mtimes, randPoint, contains, stack, project, vertices,
+//             generateRandom (one file each); center, rad, plus (below)
 // See also:   contSet/contSet.h, contSet/zonotope/zonotope.h
 
 #pragma once
 
 #include "contSet/contSet.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::ct {
 
@@ -21,7 +23,8 @@ class Interval : public ContSet {
 
     Interval(Tensor inf, Tensor sup) : inf(std::move(inf)), sup(std::move(sup)) {}
 
-    /// A random box in n dimensions (CORA: center U[-2, 2], radius R/2*u, R ~ U[0, 10], u ~ U[0, 1]).
+    /// A random box in n dimensions (CORA: center U[-2, 2], radius R/2*u with R ~ U[0, 10],
+    /// u ~ U[0, 1]).
     static Interval generateRandom(int64_t n, Rng &rng);
 
     /// The dimension: the rows of the bounds.
@@ -48,8 +51,19 @@ class Interval : public ContSet {
     /// The Minkowski sum: the bounds add.
     Interval plus(const Interval &I2) const { return {inf + I2.inf, sup + I2.sup}; }
 
+    /// The projection onto `dims`: the selected rows of the bounds (a box, not a matrix).
+    std::unique_ptr<ContSet> project(const std::vector<int64_t> &dims) const override;
+
+    /// The four corners of a two-dimensional box, counter-clockwise, per batch member.
+    std::vector<Polygon> vertices() const override;
+
+    /// A batch of intervals of one dimension (and batch shape) as one.
+    static Interval stack(const std::vector<Interval> &Is);
+
     /// Whether the point p (..., n, 1) is in the box, boundary included; for a batch, all points.
     bool contains(const Tensor &p) const;
 };
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

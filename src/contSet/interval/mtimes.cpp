@@ -7,7 +7,11 @@
 
 #include "contSet/interval/interval.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ===========================================  MAIN  =========================================== //
 
 Interval Interval::mtimes(const Tensor &M) const {
     const Tensor c = M.matmul(center());
@@ -16,3 +20,5 @@ Interval Interval::mtimes(const Tensor &M) const {
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

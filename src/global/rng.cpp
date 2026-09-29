@@ -1,8 +1,21 @@
+// rng - the random numbers: xoshiro256++ streams per chunk, Box-Muller for the normals
+//
+// Syntax:   rng.uniform(out, n, lo, hi);   rng.normal(out, n, scale);
+// Inputs:   out - n doubles to fill; lo, hi - the range; scale - the standard deviation
+// Outputs:  -
+// See also: rng.h
+
 #include "global/rng.h"
 
+#include <algorithm>
 #include <cmath>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 // Numbers are drawn in chunks of this size, each from its own stream.
@@ -11,22 +24,22 @@ constexpr std::size_t kStream = 1 << 16;
 // Below this many numbers a thread fan-out costs more than the work.
 constexpr std::size_t kGrain = 1 << 14;
 
-// SplitMix64, to turn a counter into an uncorrelated seed.
-std::uint64_t mix(std::uint64_t z) {
+/// SplitMix64, to turn a counter into an uncorrelated seed.
+std::uint64_t aux_mix(std::uint64_t z) {
     z += 0x9e3779b97f4a7c15ULL;
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
     z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
     return z ^ (z >> 31);
 }
 
-// xoshiro256++: four multiply-free operations per number, and long enough for any
-// instance in the catalog.
+/// xoshiro256++: four multiply-free operations per number, and long enough for any
+/// instance in the catalog.
 struct Xoshiro {
     std::uint64_t s[4];
 
     explicit Xoshiro(std::uint64_t seed) {
         for (auto &v : s) {
-            seed = mix(seed);
+            seed = aux_mix(seed);
             v = seed;
         }
     }
@@ -49,29 +62,33 @@ struct Xoshiro {
     static std::uint64_t rotl(std::uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
 };
 
-// Runs `fill(stream, out, count)` over the output, chunk by chunk.
+/// Runs fill(stream, out, count) over the output, chunk by chunk.
 template <typename F>
-void chunked(double *out, std::size_t n, std::uint64_t base, F fill) {
+void aux_chunked(double *out, std::size_t n, std::uint64_t base, F fill) {
     const std::size_t chunks = (n + kStream - 1) / kStream;
 #pragma omp parallel for schedule(static) if (n >= kGrain)
     for (std::ptrdiff_t c = 0; c < static_cast<std::ptrdiff_t>(chunks); ++c) {
         const std::size_t start = static_cast<std::size_t>(c) * kStream;
-        Xoshiro stream(mix(base ^ mix(static_cast<std::uint64_t>(c))));
+        Xoshiro stream(aux_mix(base ^ aux_mix(static_cast<std::uint64_t>(c))));
         fill(stream, out + start, std::min(kStream, n - start));
     }
 }
 
 } // namespace
 
+// ===========================================  MAIN  =========================================== //
+
 void Rng::uniform(double *out, std::size_t n, double lo, double hi) {
     const double span = hi - lo;
-    chunked(out, n, mix(seed_ ^ mix(++draws_)), [=](Xoshiro &s, double *o, std::size_t k) {
+    const std::uint64_t base = aux_mix(seed_ ^ aux_mix(++draws_));
+    aux_chunked(out, n, base, [=](Xoshiro &s, double *o, std::size_t k) {
         for (std::size_t i = 0; i < k; ++i) o[i] = s.unit() * span + lo;
     });
 }
 
 void Rng::normal(double *out, std::size_t n, double scale) {
-    chunked(out, n, mix(seed_ ^ mix(++draws_)), [=](Xoshiro &s, double *o, std::size_t k) {
+    const std::uint64_t base = aux_mix(seed_ ^ aux_mix(++draws_));
+    aux_chunked(out, n, base, [=](Xoshiro &s, double *o, std::size_t k) {
         // Box–Muller over the whole chunk: the uniforms first, so the transcendentals
         // that follow sit in flat loops the vectorizer can take.
         const std::size_t pairs = k / 2;
@@ -93,3 +110,5 @@ void Rng::normal(double *out, std::size_t n, double scale) {
 }
 
 } // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

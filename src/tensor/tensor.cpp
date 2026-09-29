@@ -1,4 +1,7 @@
 // tensor - the Tensor front end: construction, the current backend, and backend selection
+//
+// Syntax:   setBackend("torch");   Tensor t({{1, 2}, {3, 4}});   Tensor z = Tensor::zeros({2, 2});
+// See also: tensor.h, eigen.cpp, torch.cpp
 
 #include "tensor/tensor.h"
 
@@ -12,18 +15,23 @@
 #include <stdexcept>
 #include <typeinfo>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// The backend new tensors are made on; empty until first used.
-std::shared_ptr<const Tensor::Backend> &current() {
+std::shared_ptr<const Tensor::Backend> &aux_current() {
     static std::shared_ptr<const Tensor::Backend> backend;
     return backend;
 }
 
 /// The backend named by spec: "eigen", "torch", "torch:cuda", "torch:cuda:1", each with an optional
 /// ",customBackward" (libtorch only).
-std::shared_ptr<const Tensor::Backend> makeBackend(const std::string &spec) {
+std::shared_ptr<const Tensor::Backend> aux_makeBackend(const std::string &spec) {
     // spec is name[:device][,customBackward]
     const std::size_t comma = spec.find(',');
     const std::string head = spec.substr(0, comma);
@@ -33,20 +41,29 @@ std::shared_ptr<const Tensor::Backend> makeBackend(const std::string &spec) {
     const std::string device = colon == std::string::npos ? "cpu" : head.substr(colon + 1);
 
     if (!option.empty() && option != "customBackward")
-        throw std::invalid_argument("CoraTensor: unknown backend option: " + option);
+        throw std::invalid_argument("CoraTensor: unknown backend option '" + option +
+                                    "'; the only option is customBackward");
+    // Eigen has neither devices nor options.
     if (name == "eigen") {
         if (colon != std::string::npos || !option.empty())
-            throw std::invalid_argument("CoraTensor: the eigen backend has no options");
+            throw std::invalid_argument("CoraTensor: the eigen backend has no device or options");
         return eigenBackend();
     }
+    // libtorch, where it is built in.
 #ifdef CORACPP_TORCH
-    if (name == "torch") return torchBackend(torch::Device(device), option == "customBackward");
+    if (name == "torch") return torchBackend(torchDevice(device), option == "customBackward");
 #endif
-    throw std::invalid_argument("CoraTensor: no backend " + name + " in this build");
+    throw std::invalid_argument("CoraTensor: no backend '" + name + "' in this build; use eigen" +
+#ifdef CORACPP_TORCH
+                                " or torch"
+#else
+                                " (this build has no libtorch)"
+#endif
+    );
 }
 
 /// The number of elements of a tensor of this shape.
-int64_t countOf(const std::vector<int64_t> &shape) {
+int64_t aux_countOf(const std::vector<int64_t> &shape) {
     int64_t count = 1;
     for (const int64_t d : shape) count *= d;
     return count;
@@ -54,32 +71,38 @@ int64_t countOf(const std::vector<int64_t> &shape) {
 
 } // namespace
 
-void setBackend(const std::string &spec) { current() = makeBackend(spec); }
+// ===========================================  MAIN  =========================================== //
 
+// Chooses the backend of new tensors; the spec is read by aux_makeBackend.
+void setBackend(const std::string &spec) { aux_current() = aux_makeBackend(spec); }
+
+// The current backend: what setBackend chose, else $CORACPP_BACKEND, else the best one built in.
 const Tensor::Backend &backend() {
-    if (!current()) {
+    if (!aux_current()) {
         const char *env = std::getenv("CORACPP_BACKEND");
 #ifdef CORACPP_TORCH
-        current() = makeBackend(env && *env ? env : "torch");
+        aux_current() = aux_makeBackend(env && *env ? env : "torch");
 #else
-        current() = makeBackend(env && *env ? env : "eigen");
+        aux_current() = aux_makeBackend(env && *env ? env : "eigen");
 #endif
     }
-    return *current();
+    return *aux_current();
 }
 
+// A column from a list of numbers.
 Tensor::Tensor(std::initializer_list<Entry> column, const std::string &device) {
     std::vector<double> data;
     for (const Entry &e : column) data.push_back(e.value);
     *this = fromData(data, {static_cast<int64_t>(data.size()), 1}, device);
 }
 
+// A matrix from a list of rows, which must all be as long as the first.
 Tensor::Tensor(std::initializer_list<std::initializer_list<double>> rows,
                const std::string &device) {
     std::vector<double> data;
     for (const auto &row : rows) {
         if (row.size() != rows.begin()->size())
-            throw std::invalid_argument("CoraTensor: the rows differ in length");
+            throw std::invalid_argument("CoraTensor: the rows of a matrix differ in length");
         data.insert(data.end(), row.begin(), row.end());
     }
     *this = fromData(
@@ -87,29 +110,32 @@ Tensor::Tensor(std::initializer_list<std::initializer_list<double>> rows,
         device);
 }
 
+// Host data of a shape, on the current backend.
 Tensor Tensor::fromData(const std::vector<double> &data, const std::vector<int64_t> &shape,
-                         const std::string &device) {
-    if (static_cast<int64_t>(data.size()) != countOf(shape))
+                        const std::string &device) {
+    if (static_cast<int64_t>(data.size()) != aux_countOf(shape))
         throw std::invalid_argument("CoraTensor: the data does not fill the shape");
     return Tensor(backend().make(data, shape, device));
 }
 
+// Host data of a shape, on the backend and device of an existing tensor.
 Tensor Tensor::like(const Tensor &like, const std::vector<double> &data,
                     const std::vector<int64_t> &shape) {
-    if (static_cast<int64_t>(data.size()) != countOf(shape))
+    if (static_cast<int64_t>(data.size()) != aux_countOf(shape))
         throw std::invalid_argument("CoraTensor: the data does not fill the shape");
     return Tensor(like.impl().like(data, shape));
 }
 
 Tensor Tensor::zeros(const std::vector<int64_t> &shape, const std::string &device) {
-    return fromData(std::vector<double>(static_cast<std::size_t>(countOf(shape)), 0.0), shape,
-                     device);
+    const std::vector<double> zeros(static_cast<std::size_t>(aux_countOf(shape)), 0.0);
+    return fromData(zeros, shape, device);
 }
 
 Tensor Tensor::eye(int64_t n, const std::string &device) {
     return zeros({n, n}, device).eyeLike();
 }
 
+// Applies a binary operation of the backend; the operands must belong to the same one.
 Tensor Tensor::binary(const Tensor &o, Impl::Ptr (Impl::*op)(const Impl &) const) const {
     if (!impl_ || !o.impl_) throw std::invalid_argument("CoraTensor: an undefined tensor");
     if (typeid(*impl_) != typeid(*o.impl_))
@@ -117,6 +143,7 @@ Tensor Tensor::binary(const Tensor &o, Impl::Ptr (Impl::*op)(const Impl &) const
     return Tensor(((*impl_).*op)(*o.impl_));
 }
 
+// Joins the parts along the last dimension; all of them on one backend.
 Tensor Tensor::catLast(const std::vector<Tensor> &parts) {
     if (parts.empty()) throw std::invalid_argument("CoraTensor: nothing to concatenate");
     std::vector<const Impl *> rest;
@@ -128,6 +155,21 @@ Tensor Tensor::catLast(const std::vector<Tensor> &parts) {
     return Tensor(parts[0].impl().catLast(rest));
 }
 
+// Stacks the parts along a new leading dimension; all of them on one backend.
+Tensor Tensor::stack(const std::vector<Tensor> &parts) {
+    if (parts.empty()) throw std::invalid_argument("CoraTensor: nothing to stack");
+    std::vector<const Impl *> rest;
+    for (std::size_t i = 1; i < parts.size(); ++i) {
+        if (typeid(parts[i].impl()) != typeid(parts[0].impl()))
+            throw std::invalid_argument("CoraTensor: operands are on different backends");
+        if (parts[i].shape() != parts[0].shape())
+            throw std::invalid_argument("CoraTensor::stack: the tensors differ in shape");
+        rest.push_back(&parts[i].impl());
+    }
+    return Tensor(parts[0].impl().stack(rest));
+}
+
+// The shape, then the values row by row.
 std::ostream &operator<<(std::ostream &out, const Tensor &t) {
     const std::vector<int64_t> shape = t.shape();
     const std::vector<double> data = t.data();
@@ -140,3 +182,5 @@ std::ostream &operator<<(std::ostream &out, const Tensor &t) {
 }
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,4 +1,4 @@
-// The operations against their definitions, and zonotope containment against the LP.
+// test_ops - the operations against their definitions, and zonotope containment against the LP.
 //
 // The containment tests are the point of this file: both fast paths — the facets and the
 // alternating projections — claim to be exact, so they are checked against the LP on

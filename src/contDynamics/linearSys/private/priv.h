@@ -1,10 +1,17 @@
-// The private functions of linearSys, as CORA's @linearSys/private: not for callers of the class.
+// priv - the private functions of linearSys, as CORA's @linearSys/private
+//
+// Not for callers of the class: reach uses them.
+//
+// Syntax:   priv_reach_standard(X0, eAdt, F, steps);   priv_numSteps(tFinal, timeStep);
+// See also: linearSys.h, reach.cpp
 
 #pragma once
 
 #include "contDynamics/linearSys/linearSys.h"
 
 #include <cmath>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::ct {
 
@@ -20,3 +27,5 @@ Reach priv_reach_standard(const Zonotope &X0, const Tensor &eAdt, const Interval
 Reach priv_reach_wrappingfree(const Zonotope &X0, const Tensor &eAdt, const Interval &F, int steps);
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

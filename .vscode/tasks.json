@@ -1,0 +1,56 @@
+{
+    // Everything runs inside the coracpp conda environment (scripts/with_env.sh); the build
+    // directory is the one of local.mk. Debug builds go to their own directory (-O0 -g).
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build example (release)",
+            "type": "shell",
+            "command": "scripts/with_env.sh make ${env:HOME}/.cache/coracpp/build/examples/cpp/${fileBasenameNoExtension}",
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "run example (release)",
+            "type": "shell",
+            "command": "scripts/with_env.sh ${env:HOME}/.cache/coracpp/build/examples/cpp/${fileBasenameNoExtension}",
+            "dependsOn": "build example (release)",
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "reveal": "always", "panel": "shared" },
+            "problemMatcher": []
+        },
+        {
+            "label": "build example (debug)",
+            "type": "shell",
+            "command": "scripts/with_env.sh make DEBUG=1 BUILD=${env:HOME}/.cache/coracpp/build-debug ${env:HOME}/.cache/coracpp/build-debug/examples/cpp/${fileBasenameNoExtension}",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "build python package",
+            "type": "shell",
+            "command": "scripts/with_env.sh make python",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "test (conventions and C++)",
+            "type": "shell",
+            "command": "scripts/with_env.sh make -j4 test",
+            "group": "test",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "test (python)",
+            "type": "shell",
+            "command": "scripts/with_env.sh env PYTHONPATH=${env:HOME}/.cache/coracpp/build python -m unittest discover -s tests/python",
+            "dependsOn": "build python package",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "conventions",
+            "type": "shell",
+            "command": "scripts/with_env.sh python tests/global/test_codingConventions.py",
+            "problemMatcher": []
+        }
+    ]
+}

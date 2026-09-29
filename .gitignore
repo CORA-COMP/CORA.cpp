@@ -1,2 +1,4 @@
 /build
 .libtorch-path
+/example_*.svg
+/local.mk

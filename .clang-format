@@ -1,0 +1,13 @@
+# The style of the C++ sources: LLVM with 4 spaces and 100 columns. VS Code's C++ extension and
+# clang-format read this file; tests/global/test_codingConventions.py checks the line length.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -2
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+NamespaceIndentation: None
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBraces: Attach

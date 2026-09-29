@@ -1,4 +1,4 @@
-// Tensor - CoraTensor, the one array type that sets and dynamics are written against
+// tensor - CoraTensor, the one array type that sets and dynamics are written against
 //
 // A Tensor wraps a matrix library (Eigen, libtorch, ...) behind the few operations the
 // algorithms need, so an algorithm is written once and runs on any of them. The backend is
@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::ct {
 
 class Tensor {
@@ -40,23 +42,44 @@ class Tensor {
         virtual std::string device() const = 0;
         /// The same values on `device` ("cpu", "gpu", "cuda", "cuda:1").
         virtual Ptr to(const std::string &device) const = 0;
-        /// A tensor of this backend and device from host values (row-major) with `shape`.
-        virtual Ptr like(const std::vector<double> &data, const std::vector<int64_t> &shape) const = 0;
+        /// A tensor of this backend and device from host values (row-major) of `shape`.
+        virtual Ptr like(const std::vector<double> &data,
+                         const std::vector<int64_t> &shape) const = 0;
 
-        virtual Ptr add(const Impl &o) const = 0;  ///< Broadcasts a column over columns.
+        /// Sum and difference; a column on either side is broadcast over the columns.
+        virtual Ptr add(const Impl &o) const = 0;
         virtual Ptr sub(const Impl &o) const = 0;
         virtual Ptr scale(double s) const = 0;
-        virtual Ptr matmul(const Impl &o) const = 0;  ///< Batched over leading dimensions.
-        virtual Ptr transpose() const = 0;            ///< Swaps the last two dimensions.
+
+        /// Matrix product, batched over the leading dimensions.
+        virtual Ptr matmul(const Impl &o) const = 0;
+
+        /// Swaps the last two dimensions.
+        virtual Ptr transpose() const = 0;
         virtual Ptr abs() const = 0;
-        virtual Ptr pos() const = 0;  ///< max(x, 0) elementwise.
-        virtual Ptr neg() const = 0;  ///< min(x, 0) elementwise.
-        virtual Ptr expm() const = 0;  ///< The matrix exponential of (..., n, n).
-        virtual Ptr sumLast() const = 0;  ///< Sums the last dimension, kept: (.., n, m) -> (.., n, 1).
-        virtual Ptr diag() const = 0;     ///< A column (.., n, 1) as a diagonal matrix (.., n, n).
-        virtual Ptr eyeLike() const = 0;  ///< The identity in the shape of this (.., n, n) tensor.
+
+        /// max(x, 0) and min(x, 0), elementwise.
+        virtual Ptr pos() const = 0;
+        virtual Ptr neg() const = 0;
+
+        /// The matrix exponential of (..., n, n).
+        virtual Ptr expm() const = 0;
+
+        /// Sums the last dimension and keeps it: (.., n, m) -> (.., n, 1).
+        virtual Ptr sumLast() const = 0;
+
+        /// A column (.., n, 1) as a diagonal matrix (.., n, n).
+        virtual Ptr diag() const = 0;
+
+        /// The identity, and zeros, in the shape of this (.., n, n) tensor.
+        virtual Ptr eyeLike() const = 0;
         virtual Ptr zerosLike() const = 0;
-        virtual Ptr catLast(const std::vector<const Impl *> &rest) const = 0;  ///< Joins along the last dimension.
+
+        /// This tensor followed by `rest`, joined along the last dimension.
+        virtual Ptr catLast(const std::vector<const Impl *> &rest) const = 0;
+
+        /// This tensor and `rest` (all of one shape) as one tensor with a new leading dimension.
+        virtual Ptr stack(const std::vector<const Impl *> &rest) const = 0;
     };
 
     /// Makes the tensors of one backend from host numbers.
@@ -81,7 +104,8 @@ class Tensor {
     Tensor(std::initializer_list<Entry> column, const std::string &device = "");
 
     /// A matrix from its rows, on the current backend.
-    Tensor(std::initializer_list<std::initializer_list<double>> rows, const std::string &device = "");
+    Tensor(std::initializer_list<std::initializer_list<double>> rows,
+           const std::string &device = "");
 
     /// Row-major `data` of `shape` on the current backend.
     static Tensor fromData(const std::vector<double> &data, const std::vector<int64_t> &shape,
@@ -96,6 +120,9 @@ class Tensor {
 
     /// Joins tensors along the last dimension.
     static Tensor catLast(const std::vector<Tensor> &parts);
+
+    /// Stacks tensors of one shape along a new leading (batch) dimension.
+    static Tensor stack(const std::vector<Tensor> &parts);
 
     const Impl &impl() const { return *impl_; }
     bool defined() const { return impl_ != nullptr; }
@@ -140,3 +167,5 @@ const Tensor::Backend &backend();
 std::ostream &operator<<(std::ostream &out, const Tensor &t);
 
 } // namespace cora::ct
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
