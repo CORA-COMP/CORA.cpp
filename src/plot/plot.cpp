@@ -131,7 +131,6 @@ void plot(const std::vector<Tensor> &x, const std::vector<int64_t> &dims,
         figure().addPolyline(std::move(line), color, options.lineWidth.value_or(0.8),
                              j == 0 ? options.label : "");
     }
-    figure().addPoints(at[0], color, 2.0, "");
 }
 
 void plot(const Tensor &points, const std::vector<int64_t> &dims, const PlotOptions &options) {

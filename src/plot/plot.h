@@ -54,7 +54,7 @@ void plot(const Specification &spec, const std::vector<int64_t> &dims = {0, 1},
           const PlotOptions &options = {});
 
 /// Trajectories as `LinearSys::simulate` returns them, x[k] the points (n, N) at time k: a line
-/// per trajectory, and a dot where each starts.
+/// per trajectory.
 void plot(const std::vector<Tensor> &x, const std::vector<int64_t> &dims = {0, 1},
           const PlotOptions &options = {});
 

@@ -70,7 +70,7 @@ void trajectories_and_points(const std::string &b) {
     plot(sys.simulateRandom(initialSet(), 3, 0.1, 1.0, rng), {0, 1}, {.label = "simulations"});
     plot(initialSet().randPoint(5, rng), {0, 1});
     const std::string svg = figure().svg();
-    check(count(svg, "<circle") >= 3 + 5, b + ": a start dot per trajectory, and the points");
+    check(count(svg, "<circle") == 5, b + ": only the points are dots, trajectories have no markers");
     check(svg.find("simulations") != std::string::npos, b + ": legend entry");
 }
 

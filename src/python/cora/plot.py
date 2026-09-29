@@ -109,10 +109,9 @@ def plot_reach(R, dims=(0, 1), ax=None, label=None, time_points=False, step=1, n
     ax.set_aspect("equal", adjustable="box")
 
 
-def plot_simulation(simulation, dims=(0, 1), ax=None, label=None, markers=True):
+def plot_simulation(simulation, dims=(0, 1), ax=None, label=None):
     """Draws simulated trajectories in CORA's simulation color. `simulation` is what
-    `LinearSys.simulate` returns for one system, `(time points, n, N)`: N trajectories, with a
-    dot where each starts."""
+    `LinearSys.simulate` returns for one system, `(time points, n, N)`: N trajectories."""
     ax = _axes(ax)
     x = to_numpy(simulation)
     d0, d1 = dims
@@ -120,8 +119,6 @@ def plot_simulation(simulation, dims=(0, 1), ax=None, label=None, markers=True):
     lines = ax.plot(x[:, d0, :], x[:, d1, :], color=color, linewidth=0.6, zorder=4)
     if label is not None:
         lines[0].set_label(label)
-    if markers:
-        ax.plot(x[0, d0, :], x[0, d1, :], ".", color=color, markersize=3, zorder=4)
     ax.autoscale_view()
     return lines
 
@@ -192,10 +189,13 @@ def plot(obj, dims=(0, 1), ax=None, label=None, **style):
         return plot_zonotope(obj, dims, ax, label, **style)
     if hasattr(obj, "inf") and hasattr(obj, "sup"):
         return plot_interval(obj, dims, ax, label, **style)
-    array = to_numpy(obj)
-    if array.ndim == 3:
+    try:
+        array = to_numpy(obj)
+    except (TypeError, ValueError):
+        array = None
+    if array is not None and array.ndim == 3:
         return plot_simulation(array, dims, ax, label, **style)
-    if array.ndim == 2:
+    if array is not None and array.ndim == 2:
         return plot_points(array, dims, ax, label, **style)
     raise TypeError(f"cora.plot does not know how to draw a {type(obj).__name__}; it draws a "
                     "Reach, Zonotope, Interval, Specification, simulations (time points, n, N) "
