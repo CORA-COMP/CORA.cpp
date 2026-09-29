@@ -4,6 +4,8 @@
 #   make test example                       the same, inside an activated environment or a container
 #   make TORCH= test                        without libtorch (Eigen only)
 #   make python                             the Python package, into $(BUILD)/cora
+#   make run-<name>                         builds and runs examples/cpp/<name>.cpp
+#   make debug-<name>                       builds it with -O0 -g into $(BUILD)-debug
 #   make DEBUG=1 <target>                   -O0 -g, for the debugger
 #   make all                                the CORA-COMP binary (see competition/README.md)
 #   make test-competition                   the competition's tests
@@ -117,6 +119,15 @@ $(BUILD)/examples/cpp/%: examples/cpp/%.cpp $(LIB_OBJ)
 
 example: $(EXAMPLES)
 	@for e in $(EXAMPLES); do echo "== $$e"; $$e || exit 1; done
+
+# One example: run-<name> builds and runs it, debug-<name> builds it for the debugger.
+DEBUG_BUILD ?= $(BUILD)-debug
+
+run-%: $(BUILD)/examples/cpp/%
+	@$<
+
+debug-%:
+	@$(MAKE) --no-print-directory DEBUG=1 BUILD=$(DEBUG_BUILD) $(DEBUG_BUILD)/examples/cpp/$*
 
 # ---------------------------------- Python ---------------------------------------------
 # The cora package: the compiled module and the Python files beside it, in $(BUILD)/cora.

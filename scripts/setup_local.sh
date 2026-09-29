@@ -64,4 +64,7 @@ case "$ROOT" in
 esac
 
 "$ROOT/scripts/with_env.sh" python -c "import torch; print('[setup] torch', torch.__version__, 'cuda', torch.cuda.is_available())"
-echo "[setup] done. Try: scripts/with_env.sh make test example"
+"$ROOT/scripts/with_env.sh" python "$ROOT/scripts/setup_vscode.py"
+
+echo "[setup] done. Try: scripts/with_env.sh make run-example_linear_reach_01_5dim"
+echo "[setup] VS Code: open this folder (in WSL: 'WSL: Reopen Folder in WSL'), open an example, press F5"

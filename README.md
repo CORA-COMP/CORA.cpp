@@ -37,13 +37,18 @@ plot(R)                                                                # dims de
 ## Install
 
 Needs a C++20 compiler and Eigen; libtorch (via `pip install torch`) adds GPU, batching,
-gradients and the Python package.
+gradients and the Python package. On Linux and WSL2 one script sets everything up:
 
 ```bash
-scripts/setup_local.sh                 # conda env `coracpp` with everything (Linux, WSL2)
-scripts/with_env.sh make test example  # run any command inside it
-scripts/with_env.sh make python        # the Python package, into build/cora
+scripts/setup_local.sh                                       # once: conda env, torch, VS Code
+scripts/with_env.sh make run-example_linear_reach_01_5dim    # build and run a C++ example
+scripts/with_env.sh make python                              # the Python package
+scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
+scripts/with_env.sh make test                                # conventions and all tests
 ```
+
+In VS Code (on Windows: `WSL: Reopen Folder in WSL` first), open an example and press `F5` to run
+or debug it, `Ctrl+Shift+B` for a C++ example without the debugger.
 
 ## Usage
 

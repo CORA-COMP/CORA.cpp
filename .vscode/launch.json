@@ -1,19 +1,18 @@
 {
-    // Open an example (examples/cpp/*.cpp or examples/python/*.py) and press F5 to debug it, or
-    // Ctrl+Shift+B to build and run the C++ one. Both need "WSL: Reopen Folder in WSL".
+    // Open an example and press F5. The paths come from .vscode/settings.json (scripts/setup_local.sh).
     "version": "0.2.0",
     "configurations": [
         {
             "name": "C++: debug current example",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${env:HOME}/.cache/coracpp/build-debug/examples/cpp/${fileBasenameNoExtension}",
+            "program": "${config:coracpp.buildDir}-debug/examples/cpp/${fileBasenameNoExtension}",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build example (debug)",
             "MIMode": "gdb",
-            "miDebuggerPath": "${env:HOME}/miniforge3/envs/coracpp/bin/gdb",
+            "miDebuggerPath": "${config:coracpp.envPrefix}/bin/gdb",
             "environment": [
-                { "name": "LD_LIBRARY_PATH", "value": "${env:HOME}/miniforge3/envs/coracpp/lib" }
+                { "name": "LD_LIBRARY_PATH", "value": "${config:coracpp.envPrefix}/lib" }
             ],
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true }
@@ -28,8 +27,8 @@
             "console": "integratedTerminal",
             "preLaunchTask": "build python package",
             "env": {
-                "PYTHONPATH": "${env:HOME}/.cache/coracpp/build",
-                "LD_LIBRARY_PATH": "${env:HOME}/miniforge3/envs/coracpp/lib"
+                "PYTHONPATH": "${config:coracpp.buildDir}",
+                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
             }
         },
         {
@@ -41,8 +40,8 @@
             "cwd": "${workspaceFolder}/tests/python",
             "console": "integratedTerminal",
             "env": {
-                "PYTHONPATH": "${env:HOME}/.cache/coracpp/build",
-                "LD_LIBRARY_PATH": "${env:HOME}/miniforge3/envs/coracpp/lib"
+                "PYTHONPATH": "${config:coracpp.buildDir}",
+                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
             }
         }
     ]

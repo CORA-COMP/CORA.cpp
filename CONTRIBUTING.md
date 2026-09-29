@@ -46,24 +46,25 @@ with `setBackend` or `CORACPP_BACKEND`; a tensor can also live on its own device
 ## Build and test
 
 ```bash
-scripts/setup_local.sh                          # once
-scripts/with_env.sh make test                   # conventions, then all C++ tests
-scripts/with_env.sh make example                # C++ examples
-scripts/with_env.sh make python
-PYTHONPATH=build scripts/with_env.sh python -m unittest discover -s tests/python
-make DEBUG=1 ...                                # -O0 -g
+scripts/setup_local.sh                                       # once
+scripts/with_env.sh make test                                # conventions, then all C++ tests
+scripts/with_env.sh make run-<example>                       # one C++ example (debug-<example>: -O0 -g)
+scripts/with_env.sh make python                              # the Python package
+scripts/with_env.sh python -m unittest discover -s tests/python
 ```
 
+`with_env.sh` enters the conda environment and puts the built `cora` package on `PYTHONPATH`.
 Variables: `TORCH` (libtorch path, auto-detected from pip torch), `BUILD`, `OPT`, `PYTHON`;
 put local overrides in `local.mk`. Tests run on every backend, and on the GPU when present;
 the `_torch` ones need libtorch.
 
 ## VS Code
 
-Install the recommended extensions, then `F1` > `WSL: Reopen Folder in WSL` (the conda
-environment lives in WSL). With an example open:
+`scripts/setup_local.sh` writes `.vscode/settings.json` and `c_cpp_properties.json` (git-ignored:
+they hold this machine's paths); `tasks.json` and `launch.json` are shared and read those paths
+(`${config:coracpp.*}`). Rerun `scripts/with_env.sh python scripts/setup_vscode.py` after moving
+the checkout or recreating the environment. On Windows, `WSL: Reopen Folder in WSL` first.
 
-- `Ctrl+Shift+B` builds and runs a C++ example; `F5` debugs it (gdb, `-O0 -g` build in
-  `~/.cache/coracpp/build-debug`) or, for a `.py` file, runs it with the `cora` package built.
-- `Terminal > Run Task` has the builds, `test (conventions and C++)`, `test (python)`.
-- The interpreter is `~/miniforge3/envs/coracpp/bin/python`; select it once if VS Code asks.
+- `F5` on an example: debug a C++ one (gdb, `-O0 -g` build) or run a Python one.
+- `Ctrl+Shift+B`: build and run the open C++ example.
+- `Terminal > Run Task`: `test (conventions and C++)`, `test (python)`, `build python package`.

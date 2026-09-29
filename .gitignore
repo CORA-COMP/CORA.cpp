@@ -2,3 +2,5 @@
 .libtorch-path
 /example_*.svg
 /local.mk
+/.vscode/settings.json
+/.vscode/c_cpp_properties.json

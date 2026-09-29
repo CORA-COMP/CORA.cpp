@@ -4,6 +4,7 @@
 # Syntax:   scripts/with_env.sh <command> [arguments...]
 # Example:  scripts/with_env.sh make test example
 #           scripts/with_env.sh make python && scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
+# It also puts the built `cora` package on PYTHONPATH.
 # The environment comes from scripts/setup_local.sh; CORACPP_ENV names another one.
 #
 # The environment is entered by hand rather than with `conda activate`: its bin first on PATH, its
@@ -41,4 +42,11 @@ export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 if [ -x "$PREFIX/bin/x86_64-conda-linux-gnu-c++" ]; then export CXX="$PREFIX/bin/x86_64-conda-linux-gnu-c++"; fi
 
 cd "$ROOT"
+
+# The Python package is built into the build directory (local.mk, else ./build), so put it on
+# the path: python scripts and examples find `cora` without further setup.
+BUILD_DIR="$(sed -n 's/^BUILD *:\?= *//p' local.mk 2>/dev/null | head -1 | sed "s|\$(HOME)|$HOME|g")"
+export CORACPP_BUILD="${BUILD_DIR:-$ROOT/build}"
+export PYTHONPATH="$CORACPP_BUILD${PYTHONPATH:+:$PYTHONPATH}"
+
 exec "$@"

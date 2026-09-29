@@ -1,28 +1,19 @@
 {
-    // Everything runs inside the coracpp conda environment (scripts/with_env.sh); the build
-    // directory is the one of local.mk. Debug builds go to their own directory (-O0 -g).
+    // The paths come from .vscode/settings.json, written by scripts/setup_local.sh.
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build example (release)",
+            "label": "run example (C++)",
             "type": "shell",
-            "command": "scripts/with_env.sh make ${env:HOME}/.cache/coracpp/build/examples/cpp/${fileBasenameNoExtension}",
-            "group": "build",
-            "problemMatcher": "$gcc"
-        },
-        {
-            "label": "run example (release)",
-            "type": "shell",
-            "command": "scripts/with_env.sh ${env:HOME}/.cache/coracpp/build/examples/cpp/${fileBasenameNoExtension}",
-            "dependsOn": "build example (release)",
+            "command": "scripts/with_env.sh make run-${fileBasenameNoExtension}",
             "group": { "kind": "build", "isDefault": true },
             "presentation": { "reveal": "always", "panel": "shared" },
-            "problemMatcher": []
+            "problemMatcher": "$gcc"
         },
         {
             "label": "build example (debug)",
             "type": "shell",
-            "command": "scripts/with_env.sh make DEBUG=1 BUILD=${env:HOME}/.cache/coracpp/build-debug ${env:HOME}/.cache/coracpp/build-debug/examples/cpp/${fileBasenameNoExtension}",
+            "command": "scripts/with_env.sh make debug-${fileBasenameNoExtension}",
             "problemMatcher": "$gcc"
         },
         {
@@ -30,6 +21,13 @@
             "type": "shell",
             "command": "scripts/with_env.sh make python",
             "problemMatcher": "$gcc"
+        },
+        {
+            "label": "run example (Python)",
+            "type": "shell",
+            "command": "scripts/with_env.sh python ${file}",
+            "dependsOn": "build python package",
+            "problemMatcher": []
         },
         {
             "label": "test (conventions and C++)",
@@ -41,7 +39,7 @@
         {
             "label": "test (python)",
             "type": "shell",
-            "command": "scripts/with_env.sh env PYTHONPATH=${env:HOME}/.cache/coracpp/build python -m unittest discover -s tests/python",
+            "command": "scripts/with_env.sh python -m unittest discover -s tests/python",
             "dependsOn": "build python package",
             "group": "test",
             "problemMatcher": []

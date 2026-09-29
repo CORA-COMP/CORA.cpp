@@ -24,12 +24,14 @@ int main() {
         std::cout << "no CUDA device: nothing to show\n";
         return 0;
     }
-    setBackend("torch");
+
+    setBackend("torch"); // gpu requires torch
+    // A device per tensor: "gpu" allocates on CUDA, "cpu" on the host.
     const std::string device = "gpu";
+
 
     // Parameters ------------------------------------------------------------------------------
 
-    // A device per tensor: "gpu" allocates on CUDA, "cpu" on the host.
     const Zonotope R0(Tensor({1.0, 0.0}, device), Tensor({{0.1, 0.0}, {0.0, 0.1}}, device));
 
     // System Dynamics -------------------------------------------------------------------------
