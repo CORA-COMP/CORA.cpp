@@ -25,17 +25,20 @@ INCLUDES   = -Isrc -Icompetition -isystem $(EIGEN)
 LDLIBS     = -lglpk
 LDFLAGS    = -fopenmp
 
-# The library: src/. The competition's harness around it: competition/.
-SRC = src/rng.cpp src/threads.cpp src/contSet/sets.cpp src/contSet/contains.cpp \
-      src/contSet/lp.cpp src/contSet/zonotope.cpp src/tensor/tensor.cpp \
-      src/tensor/eigen.cpp src/contDynamics/linear_sys.cpp \
+# The library: src/, mirroring MATLAB CORA's folders. The competition's harness and its own
+# tuned implementations of the catalog's operations: competition/.
+SRC = src/global/rng.cpp src/global/threads.cpp src/tensor/tensor.cpp src/tensor/eigen.cpp \
+      src/contSet/zonotope/zonotope.cpp src/contSet/interval/interval.cpp \
+      src/contDynamics/linearSys/linearSys.cpp src/specification/specification.cpp \
       competition/json.cpp competition/catalog.cpp competition/instance.cpp \
-      competition/server.cpp
+      competition/server.cpp competition/sets/sets.cpp competition/sets/contains.cpp \
+      competition/sets/lp.cpp
 
 ifeq ($(TORCH),)
 SRC += competition/torch_none.cpp
 else
-SRC      += competition/torch_backend.cpp src/contSet/torch_contains.cpp src/tensor/torch.cpp
+SRC      += competition/torch_backend.cpp competition/sets/torch_contains.cpp \
+            src/tensor/torch.cpp
 DEFS      = -DCORACPP_TORCH -D_GLIBCXX_USE_CXX11_ABI=$(TORCH_ABI)
 INCLUDES += -isystem $(TORCH)/include -isystem $(TORCH)/include/torch/csrc/api/include
 LDFLAGS  += -L$(TORCH)/lib -Wl,-rpath,$(TORCH)/lib
@@ -62,7 +65,7 @@ all: build/coracpp
 build/coracpp: $(OBJ) build/competition/main.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-build/src/rng.o: src/rng.cpp
+build/src/global/rng.o: src/global/rng.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) -ffast-math $(WARN) $(INCLUDES) -c -o $@ $<
 
@@ -70,14 +73,16 @@ build/%.o: %.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -c -o $@ $<
 
-TESTS = build/test_ops build/test_linear_sys
+# Tests sit in tests/ in the folders of what they test; those ending in _torch need libtorch.
+TEST_SRC = $(shell find tests -name 'test_*.cpp' | sort)
+TESTS    = $(patsubst %.cpp,build/%,$(filter-out %_torch.cpp,$(TEST_SRC)))
 ifneq ($(TORCH),)
-TESTS += build/test_torch build/test_linear_sys_torch
+TESTS += $(patsubst %.cpp,build/%,$(filter %_torch.cpp,$(TEST_SRC)))
 endif
 
-build/test_%: tests/test_%.cpp $(OBJ)
+build/tests/%: tests/%.cpp $(OBJ) tests/testing.h
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(DEFS) $(WARN) $(INCLUDES) -Itests $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -Itests $(LDFLAGS) -o $@ $(filter %.cpp %.o,$^) $(LDLIBS)
 
 build/example_%: examples/%.cpp $(OBJ)
 	@mkdir -p $(@D)

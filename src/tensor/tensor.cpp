@@ -62,10 +62,14 @@ const Tensor::Backend &backend() {
     return *current();
 }
 
-Tensor::Tensor(std::initializer_list<double> column)
-    : Tensor(from_data(std::vector<double>(column), {static_cast<int64_t>(column.size()), 1})) {}
+Tensor::Tensor(std::initializer_list<Entry> column, const std::string &device) {
+    std::vector<double> data;
+    for (const Entry &e : column) data.push_back(e.value);
+    *this = from_data(data, {static_cast<int64_t>(data.size()), 1}, device);
+}
 
-Tensor::Tensor(std::initializer_list<std::initializer_list<double>> rows) {
+Tensor::Tensor(std::initializer_list<std::initializer_list<double>> rows,
+               const std::string &device) {
     std::vector<double> data;
     for (const auto &row : rows) {
         if (row.size() != rows.begin()->size())
@@ -73,20 +77,25 @@ Tensor::Tensor(std::initializer_list<std::initializer_list<double>> rows) {
         data.insert(data.end(), row.begin(), row.end());
     }
     *this = from_data(
-        data, {static_cast<int64_t>(rows.size()), static_cast<int64_t>(rows.begin()->size())});
+        data, {static_cast<int64_t>(rows.size()), static_cast<int64_t>(rows.begin()->size())},
+        device);
 }
 
-Tensor Tensor::from_data(const std::vector<double> &data, const std::vector<int64_t> &shape) {
+Tensor Tensor::from_data(const std::vector<double> &data, const std::vector<int64_t> &shape,
+                         const std::string &device) {
     if (static_cast<int64_t>(data.size()) != count_of(shape))
         throw std::invalid_argument("CoraTensor: the data does not fill the shape");
-    return Tensor(backend().make(data, shape));
+    return Tensor(backend().make(data, shape, device));
 }
 
-Tensor Tensor::zeros(const std::vector<int64_t> &shape) {
-    return from_data(std::vector<double>(static_cast<std::size_t>(count_of(shape)), 0.0), shape);
+Tensor Tensor::zeros(const std::vector<int64_t> &shape, const std::string &device) {
+    return from_data(std::vector<double>(static_cast<std::size_t>(count_of(shape)), 0.0), shape,
+                     device);
 }
 
-Tensor Tensor::eye(int64_t n) { return zeros({n, n}).eye_like(); }
+Tensor Tensor::eye(int64_t n, const std::string &device) {
+    return zeros({n, n}, device).eye_like();
+}
 
 Tensor Tensor::binary(const Tensor &o, Impl::Ptr (Impl::*op)(const Impl &) const) const {
     if (!impl_ || !o.impl_) throw std::invalid_argument("CoraTensor: an undefined tensor");

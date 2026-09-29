@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "contSet/zonotope.h"
+#include "contSet/zonotope/zonotope.h"
 
 #include <vector>
 
@@ -38,7 +38,7 @@ class LinearSys {
     /// curvature of the trajectories between two time points — the Taylor terms `i >= 2`,
     /// each weighted by where `t^i - t` is extremal on `[0, Δt]`, plus the series' remainder
     /// past order `η`.
-    IntervalMatrix correction_matrix_state(double time_step, int taylor_terms) const;
+    Interval correction_matrix_state(double time_step, int taylor_terms) const;
 
   private:
     Tensor A_;

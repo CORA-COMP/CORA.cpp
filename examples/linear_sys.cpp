@@ -4,7 +4,7 @@
 //
 //   make TORCH=... example     then     CORACPP_BACKEND=eigen build/example_linear_sys
 
-#include "contDynamics/linear_sys.h"
+#include "contDynamics/linearSys/linearSys.h"
 
 #include <iostream>
 

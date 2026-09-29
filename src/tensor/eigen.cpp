@@ -22,6 +22,16 @@ struct EigenTensor : Tensor::Impl {
         const RowMajor rows = m;
         return std::vector<double>(rows.data(), rows.data() + rows.size());
     }
+    std::string device() const override { return "cpu"; }
+    Ptr to(const std::string &device) const override {
+        require_cpu(device);
+        return std::make_shared<EigenTensor>(m);
+    }
+
+    static void require_cpu(const std::string &device) {
+        if (!device.empty() && device != "cpu")
+            throw std::invalid_argument("CoraTensor: the eigen backend runs on the CPU only");
+    }
 
     Ptr add(const Impl &o) const override { return wrap(m + of(o)); }
     Ptr sub(const Impl &o) const override { return wrap(m - of(o)); }
@@ -53,8 +63,9 @@ struct EigenTensor : Tensor::Impl {
 
 struct EigenBackend : Tensor::Backend {
     std::string name() const override { return "eigen"; }
-    Tensor::Impl::Ptr make(const std::vector<double> &data,
-                           const std::vector<int64_t> &shape) const override {
+    Tensor::Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,
+                           const std::string &device) const override {
+        EigenTensor::require_cpu(device);
         if (shape.size() != 2)
             throw std::invalid_argument("CoraTensor: the eigen backend holds matrices only");
         return EigenTensor::wrap(Eigen::Map<const RowMajor>(data.data(), shape[0], shape[1]));

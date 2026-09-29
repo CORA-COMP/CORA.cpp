@@ -39,6 +39,13 @@ struct TorchTensor : Tensor::Impl {
         const torch::Tensor host = t.detach().to(torch::kCPU, torch::kDouble).contiguous();
         return std::vector<double>(host.data_ptr<double>(), host.data_ptr<double>() + host.numel());
     }
+    std::string device() const override { return t.device().str(); }
+    Ptr to(const std::string &device) const override { return wrap(t.to(parse_device(device))); }
+
+    /// "gpu" is CUDA; anything else is torch spelling ("cpu", "cuda:1").
+    static torch::Device parse_device(const std::string &name) {
+        return torch::Device(name == "gpu" ? "cuda" : name);
+    }
 
     Ptr add(const Impl &o) const override { return wrap(t + of(o)); }
     Ptr sub(const Impl &o) const override { return wrap(t - of(o)); }
@@ -72,11 +79,12 @@ struct TorchBackend : Tensor::Backend {
     TorchBackend(torch::Device device, bool custom) : device(device), custom_backward(custom) {}
 
     std::string name() const override { return "torch"; }
-    Tensor::Impl::Ptr make(const std::vector<double> &data,
-                           const std::vector<int64_t> &shape) const override {
+    Tensor::Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,
+                           const std::string &where) const override {
         const torch::Tensor host =
             torch::from_blob(const_cast<double *>(data.data()), shape, torch::kDouble).clone();
-        return std::make_shared<TorchTensor>(host.to(device), custom_backward);
+        const torch::Device target = where.empty() ? device : TorchTensor::parse_device(where);
+        return std::make_shared<TorchTensor>(host.to(target), custom_backward);
     }
 };
 

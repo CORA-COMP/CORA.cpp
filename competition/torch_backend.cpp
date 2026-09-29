@@ -9,7 +9,7 @@
 
 #include "backend.h"
 
-#include "contSet/torch_sets.h"
+#include "sets/torch_sets.h"
 
 #include <cstdlib>
 #include <sstream>

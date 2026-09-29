@@ -2,9 +2,9 @@
 
 #include "backend.h"
 #include "json.h"
-#include "contSet/lp.h"
-#include "contSet/sets.h"
-#include "threads.h"
+#include "sets/lp.h"
+#include "sets/sets.h"
+#include "global/threads.h"
 
 #include <algorithm>
 #include <chrono>
@@ -44,7 +44,7 @@ void sink(double v) {
 /// `CORACPP_BACKEND` picks one for the whole run, so the same commit enters the catalog
 /// as two tools whose results sit side by side:
 ///
-///   unset   Eigen on the CPU, libtorch on the GPU — each where it is the faster
+///   unset   libtorch on both devices; Eigen on the CPU when this build has no libtorch
 ///   eigen   Eigen only; gpu instances report unsupported
 ///   torch   libtorch only, on both devices
 const char *backend_for(const Params &in) {
@@ -53,8 +53,8 @@ const char *backend_for(const Params &in) {
     if (forced == "eigen") return in.device == "cpu" ? "eigen" : nullptr;
     if (in.device == "gpu") return torch_backend::supports("gpu") ? "torch" : nullptr;
     if (in.device != "cpu") return nullptr;
-    if (forced == "torch") return torch_backend::supports("cpu") ? "torch" : nullptr;
-    return "eigen";
+    if (torch_backend::supports("cpu")) return "torch";
+    return forced == "torch" ? nullptr : "eigen";
 }
 
 /// Why this tool does not run the instance, or an empty string.

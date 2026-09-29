@@ -48,7 +48,7 @@ Random sets follow CORA's `generateRandom`, as the catalog specifies.
 
 | | Eigen | libtorch |
 | --- | --- | --- |
-| Runs | `cpu` instances | `gpu` instances |
+| Runs | `cpu` instances, when pinned | `cpu` and `gpu` instances |
 | Scalar | `double`, or any differentiable Eigen scalar | `double`, `float` on request |
 | Batch | one matrix per batch, OpenMP across sets | leading tensor axes, one call per batch |
 | Gradients | at compile time, by substituting the scalar | at run time, through autograd |
@@ -58,14 +58,14 @@ and the two sets of results sit side by side:
 
 | Tool environment | CPU | GPU |
 | --- | --- | --- |
-| unset (default) | Eigen | libtorch |
+| unset (default) | libtorch (Eigen if built without libtorch) | libtorch |
 | `CORACPP_BACKEND=eigen` | Eigen | `unsupported` |
 | `CORACPP_BACKEND=torch` | libtorch | libtorch |
 
 The `backend` column of every result says which one actually ran.
 
-**Which is faster on the CPU depends on the instance**, which is why the default splits
-them rather than picking one. libtorch costs a fixed ~0.3–1.5 ms of dispatch per
+**Which is faster on the CPU depends on the instance**, so `CORACPP_BACKEND=eigen` enters
+the Eigen backend as a second tool next to the default. libtorch costs a fixed ~0.3–1.5 ms of dispatch per
 operation, so Eigen wins everything small — up to 130× on `supportFunc` at 10d. Above
 about 100 dimensions libtorch's kernels pull ahead on `matMul` and `minkSum` (1.3–3.5×).
 Batched `contains` is the other way round: Eigen gives each set of the batch a thread,
@@ -214,36 +214,30 @@ harness wall-clock:
 
 ## Layout
 
-`competition/` is everything the competition runs; `src/` is the library it and the other
-entry points build on.
-
-| `competition/` | |
-| --- | --- |
-| `install_tool.sh` | installs the dependencies, finds libtorch, builds, prints what the worker will run on |
-| `prepare_instance.sh` | starts or replaces the daemon |
-| `run_instance.sh` | the timed script: sends the instance to the daemon |
-| `coracpp_lib.sh` | the shell client of the daemon |
-| `main.cpp` | the `serve` / `run` / `env` / `check` commands |
-| `server.cpp` | the daemon |
-| `instance.cpp` | one instance: inputs, the repeated operation, the verdict |
-| `catalog.cpp`, `json.cpp` | the catalog's names and `params` |
-| `backend.h` | what the two catalog backends have in common |
-| `torch_backend.cpp` | the libtorch runner, its `env` line and its gradient check |
+`src/` is the library, in the folders of MATLAB CORA and built on `ct::Tensor`.
+`competition/` is everything the competition runs, with its own tuned implementations of the
+catalog's operations.
 
 | `src/` | |
 | --- | --- |
-| `contSet/sets.h` | the catalog's Eigen library: `Interval`, `Zonotope` and their operations, over any scalar |
-| `contSet/contains.cpp` | exact zonotope containment: facets, projections, LP |
-| `contSet/torch_sets.h` | the same representations as tensors |
-| `contSet/torch_contains.cpp` | the same containment, batched onto the device |
-| `contSet/lp.cpp` | the containment LP, on GLPK |
-| `contSet/zonotope.h` | `ct::Zonotope` and `ct::IntervalMatrix`, on CoraTensor |
-| `contDynamics/linear_sys.h` | `ct::LinearSys`, on CoraTensor |
-| `tensor/tensor.h` | `ct::Tensor`, the backend wrapper; `eigen.cpp` and `torch.cpp` are its backends |
+| `tensor/` | `ct::Tensor`, the backend wrapper; `eigen.cpp` and `torch.cpp` are its backends |
+| `contSet/` | `ct::ContSet`, the abstract set |
+| `contSet/zonotope/`, `contSet/interval/` | `ct::Zonotope`, `ct::Interval` (an interval matrix too, as in CORA) |
+| `contDynamics/linearSys/` | `ct::LinearSys` |
+| `specification/` | `ct::Specification`, halfspaces |
+| `global/` | the random numbers; threads matched to the work |
 | `python/bindings.cpp` | the `coracpp` Python module |
-| `rng.cpp`, `threads.cpp` | the random numbers; threads matched to the work |
 
-`examples/` runs the library without the harness; `tests/` checks both.
+| `competition/` | |
+| --- | --- |
+| `install_tool.sh`, `prepare_instance.sh`, `run_instance.sh`, `coracpp_lib.sh` | the scripts the harness calls |
+| `main.cpp`, `server.cpp` | the `serve` / `run` / `env` / `check` commands, and the daemon |
+| `instance.cpp`, `catalog.cpp`, `json.cpp` | one instance: inputs, the repeated operation, the verdict; the catalog's names and `params` |
+| `backend.h`, `torch_backend.cpp` | what the two catalog backends have in common; the libtorch runner |
+| `sets/` | the catalog's Eigen and libtorch sets, their exact zonotope containment, and its LP |
+
+`tests/` mirrors both: `tests/contSet/zonotope/`, `tests/contDynamics/linearSys/`, and so on;
+a test ending in `_torch` needs libtorch. `examples/` runs the library without the harness.
 
 ## Configuration
 
@@ -251,7 +245,7 @@ All optional:
 
 | Variable | Default | |
 | --- | --- | --- |
-| `CORACPP_BACKEND` | Eigen on the CPU, libtorch on the GPU | `eigen` or `torch` pins the whole run to one backend |
+| `CORACPP_BACKEND` | libtorch on both devices | `eigen` or `torch` pins the whole run to one backend |
 | `CORACPP_DTYPE` | `float64` | `float32` for what a GPU can do instead (libtorch only) |
 | `CORACPP_PORT` | `47916` | the daemon's localhost port |
 | `CORACPP_SERVER_DIR` | `~/.coracpp_server` | the daemon's pid file and logs |

@@ -6,10 +6,10 @@
 //
 //   make test
 
-#include "contSet/lp.h"
+#include "sets/lp.h"
 #include "probes.h"
-#include "rng.h"
-#include "contSet/sets.h"
+#include "global/rng.h"
+#include "sets/sets.h"
 
 #include <cmath>
 #include <cstdio>

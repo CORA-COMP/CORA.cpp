@@ -12,7 +12,7 @@
 // Results stack the steps in a leading dimension: `time_int_*` has `steps` entries,
 // `time_point_*` has `steps + 1`.
 
-#include "contDynamics/linear_sys.h"
+#include "contDynamics/linearSys/linearSys.h"
 #include "tensor/eigen.h"
 #include "tensor/torch.h"
 

@@ -1,4 +1,4 @@
-#include "contDynamics/linear_sys.h"
+#include "contDynamics/linearSys/linearSys.h"
 
 #include <cmath>
 
@@ -8,11 +8,12 @@ Reach LinearSys::reach(const Zonotope &X0, double time_step, double t_final, int
                        Algorithm algorithm) const {
     const int steps = static_cast<int>(std::ceil(t_final / time_step - 1e-9));
     const Tensor eAdt = (A_ * time_step).expm();
-    const IntervalMatrix F = correction_matrix_state(time_step, taylor_terms);
+    const Interval F = correction_matrix_state(time_step, taylor_terms);
 
     Reach out;
     if (algorithm == Algorithm::Standard) {
-        Zonotope X = X0;
+        // Mapped by the identity so that a batch of systems batches the first set too.
+        Zonotope X = X0.mtimes(A_.eye_like());
         for (int k = 0; k < steps; ++k) {
             const Zonotope Xnext = X.mtimes(eAdt); // propagate the time-point set
             const Zonotope H = X.lin_comb(Xnext);  // enclose both
@@ -34,7 +35,7 @@ Reach LinearSys::reach(const Zonotope &X0, double time_step, double t_final, int
     return out;
 }
 
-IntervalMatrix LinearSys::correction_matrix_state(double time_step, int taylor_terms) const {
+Interval LinearSys::correction_matrix_state(double time_step, int taylor_terms) const {
     const Tensor Aabs = A_.abs();
     Tensor Ai = A_, Ai_abs = Aabs; // A^i and |A|^i
     Tensor Fneg = A_.zeros_like(), Fpos = A_.zeros_like();
@@ -53,7 +54,7 @@ IntervalMatrix LinearSys::correction_matrix_state(double time_step, int taylor_t
     }
     // Elementwise bound on the series past order η: E = [-W, W].
     const Tensor W = ((Aabs * time_step).expm() - M).abs();
-    return IntervalMatrix::from_bounds(Fneg - W, Fpos + W);
+    return {Fneg - W, Fpos + W};
 }
 
 } // namespace cora::ct

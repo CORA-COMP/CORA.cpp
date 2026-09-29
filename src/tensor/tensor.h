@@ -41,6 +41,10 @@ class Tensor {
         virtual std::vector<int64_t> shape() const = 0;
         /// The values on the host, row-major.
         virtual std::vector<double> data() const = 0;
+        /// Where the values live: "cpu", or "cuda:0" and the like.
+        virtual std::string device() const = 0;
+        /// The same values on `device`: "cpu", "gpu" (or "cuda", "cuda:1").
+        virtual Ptr to(const std::string &device) const = 0;
 
         virtual Ptr add(const Impl &o) const = 0;
         virtual Ptr sub(const Impl &o) const = 0;
@@ -67,28 +71,43 @@ class Tensor {
     struct Backend {
         virtual ~Backend() = default;
         virtual std::string name() const = 0;
-        /// `data` row-major with the given shape.
-        virtual Impl::Ptr make(const std::vector<double> &data,
-                               const std::vector<int64_t> &shape) const = 0;
+        /// `data` row-major with the given shape, on `device` (empty: the backend default).
+        virtual Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,
+                               const std::string &device) const = 0;
     };
 
     Tensor() = default;
     explicit Tensor(Impl::Ptr impl) : impl_(std::move(impl)) {}
 
-    /// A column vector `(n, 1)` on the current backend.
-    Tensor(std::initializer_list<double> column);
+    /// One number of a column. A wrapper so that `{{1}, {2}}` reads as two rows rather than
+    /// two one-element columns: a braced list converts to a list of doubles as readily as to
+    /// a list of lists, and the matrix constructor must be the better match.
+    struct Entry {
+        double value;
+        Entry(double v) : value(v) {}
+    };
+
+    /// A column vector `(n, 1)` on the current backend. `device` is "cpu", "gpu" (or "cuda",
+    /// "cuda:1"); empty is the backend default. Every constructor below takes it the same
+    /// way, so a tensor is allocated where it is meant to live.
+    Tensor(std::initializer_list<Entry> column, const std::string &device = "");
     /// A matrix from its rows, on the current backend.
-    Tensor(std::initializer_list<std::initializer_list<double>> rows);
+    Tensor(std::initializer_list<std::initializer_list<double>> rows,
+           const std::string &device = "");
 
     /// `data` row-major with `shape`, on the current backend.
-    static Tensor from_data(const std::vector<double> &data, const std::vector<int64_t> &shape);
-    static Tensor zeros(const std::vector<int64_t> &shape);
-    static Tensor eye(int64_t n);
+    static Tensor from_data(const std::vector<double> &data, const std::vector<int64_t> &shape,
+                            const std::string &device = "");
+    static Tensor zeros(const std::vector<int64_t> &shape, const std::string &device = "");
+    static Tensor eye(int64_t n, const std::string &device = "");
 
     const Impl &impl() const { return *impl_; }
     bool defined() const { return impl_ != nullptr; }
     std::vector<int64_t> shape() const { return impl_->shape(); }
     std::vector<double> data() const { return impl_->data(); }
+    std::string device() const { return impl_->device(); }
+    /// The same values on `device`, as "gpu" or "cpu".
+    Tensor to(const std::string &device) const { return Tensor(impl_->to(device)); }
 
     friend Tensor operator+(const Tensor &a, const Tensor &b) { return a.binary(b, &Impl::add); }
     friend Tensor operator-(const Tensor &a, const Tensor &b) { return a.binary(b, &Impl::sub); }

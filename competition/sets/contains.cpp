@@ -8,7 +8,7 @@
 
 #include "lp.h"
 #include "sets.h"
-#include "threads.h"
+#include "global/threads.h"
 
 #include <Eigen/QR>
 

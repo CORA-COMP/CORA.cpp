@@ -7,7 +7,7 @@
 
 #include "instance.h"
 #include "server.h"
-#include "threads.h"
+#include "global/threads.h"
 
 #include <iostream>
 #include <string>

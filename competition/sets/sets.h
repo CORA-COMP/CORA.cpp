@@ -21,8 +21,8 @@
 #include <vector>
 
 #include "mask.h"
-#include "rng.h"
-#include "threads.h"
+#include "global/rng.h"
+#include "global/threads.h"
 
 namespace cora {
 

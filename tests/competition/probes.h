@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "rng.h"
-#include "contSet/sets.h"
+#include "global/rng.h"
+#include "sets/sets.h"
 
 namespace cora {
 

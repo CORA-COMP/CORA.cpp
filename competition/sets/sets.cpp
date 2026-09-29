@@ -1,6 +1,6 @@
 #include "sets.h"
 
-#include "threads.h"
+#include "global/threads.h"
 
 namespace cora {
 
