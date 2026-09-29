@@ -4,7 +4,7 @@
 //
 // Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generateRandom(n, m, rng);
 // Operations: mtimes, plus, linComb, supportFunc, interval, randPoint, generateRandom
-//             stack, project, vertices (one file each, as in CORA's @zonotope)
+//             stack, project, vertices, reduce (one file each, as in CORA's @zonotope)
 // See also:   contSet/contSet.h, contSet/interval/interval.h
 //
 // Not the competition's zonotope (competition/sets): that one is tuned for speed on one library.
@@ -65,6 +65,10 @@ class Zonotope : public ContSet {
 
     /// The corners of a two-dimensional zonotope, counter-clockwise, per batch member.
     std::vector<Polygon> vertices() const override;
+
+    /// A zonotope of at most order * n generators (n the dimension) that contains this one: the
+    /// longest generators stay, the others become a box. A single zonotope, not a batch.
+    Zonotope reduce(int order) const;
 
     /// Encloses the segments between matching points of Z and Z2 = M*Z + t (same generator
     /// factors): 2m + 1 generators.

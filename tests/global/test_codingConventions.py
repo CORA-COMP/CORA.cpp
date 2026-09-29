@@ -4,7 +4,7 @@ Syntax:   python tests/global/test_codingConventions.py
 Checks:   every file of src/ starts its docstring with its own name; an operation (a file in a
           set's, a system's or the specification's folder) has Syntax, Inputs, Outputs and See
           also blocks; the code sits between the BEGIN CODE and END OF CODE markers, auxiliary functions
-          (named aux_...) between the AUXILIARY and the MAIN marker, the operation below MAIN; no more than 25 lines run without a comment; long files have section lines; lines are at most 100
+          (named aux_...) between the AUXILIARY and the MAIN marker, the operation below MAIN, which has two empty lines above it; no more than 25 lines run without a comment; long files have section lines; lines are at most 100
           characters; public names are camelCase and types PascalCase; every option switch tests
           all its options and ends in a descriptive error; every operation has a test; every
           example has its code between BEGIN CODE and END OF CODE, split into sections.
@@ -108,6 +108,9 @@ def check_markers(path, lines, issues, needs_main=True, library=True):
     order = [x for x in (begin, aux, main, end) if x is not None]
     if order != sorted(order):
         issues.append("the markers should be in the order BEGIN CODE, AUXILIARY, MAIN, END OF CODE")
+    if main is not None and not (main > 2 and lines[main - 1] == "" and lines[main - 2] == ""
+                                 and lines[main - 3] != ""):
+        issues.append("the MAIN marker line should have exactly two empty lines above it")
     for i in [begin, end] + [x for x in (aux, main) if x is not None]:
         if (i > 0 and lines[i - 1] != "") or (i + 1 < len(lines) and lines[i + 1] != ""):
             issues.append("a marker line should have an empty line above and below")
@@ -270,7 +273,7 @@ def check_python_files(issues_by_file):
 def check_python_tests_cover_the_api(issues_by_file):
     """Every class the package exports has a Python test file: tests/python/test_<class>*.py."""
     init = "\n".join(read_lines(os.path.join(ROOT, "src/python/cora/__init__.py")))
-    for name in ("Zonotope", "Interval", "LinearSys", "Specification"):
+    for name in ("Zonotope", "Interval", "LinearSys", "NonlinearSys", "Specification"):
         if f"{name}" not in init:
             continue
         stem = name[0].lower() + name[1:]

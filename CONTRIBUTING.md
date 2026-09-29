@@ -9,8 +9,9 @@ src/
     zonotope/  interval/   the class in its header, one operation per file
   contDynamics/            contDynamics.h, the abstract dynamic system
     linearSys/             linearSys.h, reach, simulate, ...; private/ has the algorithms
+    nonlinearSys/          nonlinearSys.h, reach (linearization), simulate; dynamics are Expr
   specification/           specification.h, check.cpp
-  global/                  random numbers, threads
+  global/                  random numbers, threads, symbolic expressions (expr.h)
   python/                  bindings.cpp and the cora/ package (plot.py, colors.py, tensor.py)
 tests/  examples/          mirror src/
 competition/               the CORA-COMP entry
@@ -20,7 +21,7 @@ competition/               the CORA-COMP entry
 
 - One operation per file, named as in CORA, with a header (Syntax, Inputs, Outputs, See also);
   auxiliary functions (`aux_*`) first, under an `AUXILIARY` marker, then the operation under
-  a `MAIN` marker, all between `BEGIN CODE` and `END OF CODE`; internals in `private/priv_*`.
+  a `MAIN` marker (two empty lines above it), all between `BEGIN CODE` and `END OF CODE`; internals in `private/priv_*`.
 - camelCase operations, CORA argument names (`timeStep`, `tFinal`, `taylorTerms`, `linAlg`).
 - Inline comments are one line and say why; function docs are short and explain parameters.
 - Every option switch handles all options explicitly and throws a descriptive error otherwise,

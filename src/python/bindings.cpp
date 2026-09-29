@@ -12,10 +12,12 @@
 // arrays on Eigen; an object keeps its backend and hands its numbers back the same way.
 // A vector is 1-D here, (..., n); in C++ it is a column (..., n, 1).
 //
-// Syntax:   cora.Zonotope, Interval, LinearSys, Reach, Specification, Rng, setBackend
+// Syntax:   cora.Zonotope, Interval, LinearSys, NonlinearSys, Expr, Reach, Specification, Rng,
+//           setBackend
 // See also: the C++ headers, which document every method
 
 #include "contDynamics/linearSys/linearSys.h"
+#include "contDynamics/nonlinearSys/nonlinearSys.h"
 #include "global/rng.h"
 #include "specification/specification.h"
 #include "tensor/eigen.h"
@@ -177,7 +179,9 @@ void bindZonotope(py::module_ &m) {
         .def("mtimes", [](const Zonotope &Z, const Interval &M) { return Z.mtimes(M); }, py::arg("M"),
              "[M] * Z for an interval matrix")
         .def("plus", &Zonotope::plus, py::arg("Z2"))
-        .def("linComb", &Zonotope::linComb, py::arg("Z2"));
+        .def("linComb", &Zonotope::linComb, py::arg("Z2"))
+        .def("reduce", &Zonotope::reduce, py::arg("order"),
+             "At most order * n generators; the smallest are enclosed by a box");
 }
 
 void bindLinearSys(py::module_ &m) {
@@ -222,6 +226,58 @@ void bindLinearSys(py::module_ &m) {
             "simulate from N random points of the set X0")
         .def("correctionMatrixState", &LinearSys::correctionMatrixState, py::arg("timeStep"),
              py::arg("taylorTerms"), "The interval matrix F of the curvature enlargement");
+}
+
+/// The dynamics as symbolic expressions: `x` is a list of Expr, `f(x)` a list of Expr or numbers.
+void bindNonlinearSys(py::module_ &m) {
+    py::class_<Expr>(m, "Expr", "A symbolic expression of the states, differentiated by the system.")
+        .def(py::init<double>(), py::arg("value"))
+        .def_static("var", &Expr::var, py::arg("i"), "The i-th state")
+        .def("__add__", [](const Expr &a, const Expr &b) { return a + b; })
+        .def("__radd__", [](const Expr &a, const Expr &b) { return b + a; })
+        .def("__sub__", [](const Expr &a, const Expr &b) { return a - b; })
+        .def("__rsub__", [](const Expr &a, const Expr &b) { return b - a; })
+        .def("__mul__", [](const Expr &a, const Expr &b) { return a * b; })
+        .def("__rmul__", [](const Expr &a, const Expr &b) { return b * a; })
+        .def("__truediv__", [](const Expr &a, const Expr &b) { return a / b; })
+        .def("__rtruediv__", [](const Expr &a, const Expr &b) { return b / a; })
+        .def("__neg__", [](const Expr &a) { return -a; })
+        .def("__pow__", [](const Expr &a, int n) { return pow(a, n); }, py::arg("n"))
+        .def("diff", &Expr::diff, py::arg("i"), "The derivative with respect to the i-th state")
+        .def("eval", &Expr::eval, py::arg("x"), "The value at the point x (a list of numbers)");
+    py::implicitly_convertible<double, Expr>();
+    py::implicitly_convertible<int, Expr>();
+    m.def("sin", [](const Expr &a) { return sin(a); }, py::arg("e"));
+    m.def("cos", [](const Expr &a) { return cos(a); }, py::arg("e"));
+    m.def("exp", [](const Expr &a) { return exp(a); }, py::arg("e"));
+
+    py::class_<NonlinearSys>(m, "NonlinearSys", "The nonlinear system x' = f(x).")
+        .def(py::init([](const py::function &f, int64_t dim) {
+                 // f runs once, here, on symbolic states.
+                 return NonlinearSys(
+                     [&f](const std::vector<Expr> &x) { return f(x).cast<std::vector<Expr>>(); }, dim);
+             }),
+             py::arg("f"), py::arg("dim"), "f(x) returns the dim components of the right-hand side")
+        .def("dim", &NonlinearSys::dim)
+        .def("reach", &NonlinearSys::reach, py::arg("X0"), py::arg("timeStep"), py::arg("tFinal"),
+             py::arg("taylorTerms") = 4, py::arg("zonotopeOrder") = 50,
+             "The reachable sets from the zonotope X0 (algorithm 'lin')")
+        .def("simulate",
+             [](const NonlinearSys &sys, const torch::Tensor &x0, double timeStep, double tFinal) {
+                 return stack(sys.simulate(fromTorch(x0), timeStep, tFinal));
+             },
+             py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"),
+             "Trajectories from the points x0 (n, N): (steps + 1, n, N), time first")
+        .def("simulate",
+             [](const NonlinearSys &sys, const Eigen::MatrixXd &x0, double timeStep, double tFinal) {
+                 return stack(sys.simulate(fromEigen(x0), timeStep, tFinal));
+             },
+             py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"))
+        .def("simulateRandom",
+             [](const NonlinearSys &sys, const ContSet &X0, int64_t N, double timeStep, double tFinal,
+                cora::Rng &rng) { return stack(sys.simulateRandom(X0, N, timeStep, tFinal, rng)); },
+             py::arg("X0"), py::arg("N"), py::arg("timeStep"), py::arg("tFinal"), py::arg("rng"),
+             "simulate from N random points of the set X0");
 }
 
 void bindSpecification(py::module_ &m) {
@@ -283,6 +339,7 @@ PYBIND11_MODULE(_cora, m) {
     bindInterval(m);
     bindZonotope(m);
     bindLinearSys(m);
+    bindNonlinearSys(m);
     bindSpecification(m);
 }
 

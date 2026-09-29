@@ -63,6 +63,9 @@ current example` in the Run and Debug dropdown.
   tensors run on libtorch, numpy arrays on Eigen. `device="gpu"` places a tensor on the GPU.
 - **Gradients:** autograd works through `reach` and `simulate` on libtorch;
   `setBackend("torch,customBackward")` uses a hand-written backward pass for the matrix exponential.
+- **Nonlinear systems:** write the dynamics on symbolic states, `NonlinearSys(f, n)` derives it,
+  and `reach` linearizes step by step (CORA's `lin`); see `example_nonlinear_reach_01_vanDerPol`.
+  The remainder is of order 2, so it needs small steps and initial sets (no inputs yet).
 - **Simulation:** `sys.simulate(x0, timeStep, tFinal)`, `sys.simulateRandom(X0, n, ...)`.
 - **Plotting:** `plot(S, dims, options)` projects a set (or a `Reach`, `Specification`, simulation)
   onto two dimensions and draws it; reachable sets are drawn as their union. C++ writes SVG
