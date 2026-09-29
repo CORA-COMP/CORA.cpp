@@ -81,7 +81,9 @@ current example` in the Run and Debug dropdown.
 - **Neural networks:** `NeuralNetwork({{W1, b1}, {W2, b2}})` (Python: a list of `(W, b)`) has
   ReLU layers; `nn.evaluate(x)` maps points and `nn.evaluate(X)` a zonotope to a zonotope that
   contains all outputs (affine layers exactly, ReLUs by the tightest one-slope parallelogram). It
-  is differentiable and batched. See `example_neuralNetwork_verify_01`, which certifies a classifier.
+  is differentiable and batched. See `example_neuralNetwork_verify_01`, which certifies a classifier,
+  and `example_neuralNetwork_train_01_setBased`, which trains with the set-based loss of Koller,
+  Ladner and Althoff (loss of the output center plus the size of the output set) through autograd.
 - **Simulation:** `sys.simulate(x0, timeStep, tFinal)`, `sys.simulateRandom(X0, n, ...)`.
 - **Plotting:** `plot(S, dims, options)` projects a set (or a `Reach`, `Specification`, simulation)
   onto two dimensions and draws it; reachable sets are drawn as their union. C++ writes SVG
