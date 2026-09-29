@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "catalog.h"
 #include "mask.h"
 #include "rng.h"
 #include "threads.h"

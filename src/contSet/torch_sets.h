@@ -13,7 +13,6 @@
 
 #pragma once
 
-#include "catalog.h"
 #include "rng.h"
 
 #include <torch/torch.h>

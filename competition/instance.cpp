@@ -2,8 +2,8 @@
 
 #include "backend.h"
 #include "json.h"
-#include "lp.h"
-#include "sets.h"
+#include "contSet/lp.h"
+#include "contSet/sets.h"
 #include "threads.h"
 
 #include <algorithm>

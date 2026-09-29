@@ -16,6 +16,9 @@
 
 namespace cora {
 
+/// The seed every instance starts from, so a warm daemon behaves like a fresh process.
+inline constexpr unsigned long long kSeed = 0;
+
 class Rng {
   public:
     explicit Rng(std::uint64_t seed) : seed_(seed) {}

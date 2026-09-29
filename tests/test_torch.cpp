@@ -11,8 +11,8 @@
 
 #include "backend.h"
 #include "probes.h"
-#include "sets.h"
-#include "torch_sets.h"
+#include "contSet/sets.h"
+#include "contSet/torch_sets.h"
 
 #include <iostream>
 #include <string>

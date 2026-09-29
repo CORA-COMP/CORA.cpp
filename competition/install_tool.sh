@@ -71,22 +71,22 @@ else
 fi
 # The daemon has to find libtorch's shared objects, and the rpath covers only the
 # directory itself, not the NVIDIA libraries a pip torch keeps beside it.
-: > "$HERE/.libtorch-path"
+: > "$ROOT/.libtorch-path"
 if [ -n "$torch_dir" ]; then
-    printf '%s' "$torch_dir/lib" > "$HERE/.libtorch-path"
+    printf '%s' "$torch_dir/lib" > "$ROOT/.libtorch-path"
     for nvidia in "$torch_dir"/../nvidia/*/lib; do
-        [ -d "$nvidia" ] && printf ':%s' "$(cd "$nvidia" && pwd)" >> "$HERE/.libtorch-path"
+        [ -d "$nvidia" ] && printf ':%s' "$(cd "$nvidia" && pwd)" >> "$ROOT/.libtorch-path"
     done
 fi
 
 g++ --version | head -1
 # Separate invocations: in one parallel make, `clean` would race the compiles it precedes.
-make -C "$HERE" clean
-make -C "$HERE" -j"$(nproc)" TORCH="$torch_dir" TORCH_ABI="$torch_abi" all
+make -C "$ROOT" clean
+make -C "$ROOT" -j"$(nproc)" TORCH="$torch_dir" TORCH_ABI="$torch_abi" all
 
 # What the worker will actually run on, and every operation once.
 "$CORACPP" env
 "$CORACPP" check
 
 # The instances may run as another user than the install.
-chmod -R a+rX "$HERE"
+chmod -R a+rX "$ROOT"

@@ -10,10 +10,10 @@ the same operations with outward rounding, and a sibling of
 [CORA.rust](https://github.com/CORA-COMP/CORA.rust) and
 [CORA.jax](https://github.com/CORA-COMP/CORA.jax).
 
-Submit it like any other tool: this repository and a commit, plus a Debian- or
-Ubuntu-based image. `install_tool.sh` installs `g++`, Eigen and GLPK if the image lacks
-them, as root or through the node's passwordless `sudo`, and builds the libtorch backend
-in whenever it finds libtorch.
+Submit it like any other tool: this repository and a commit, with the script directory set
+to `competition`, plus a Debian- or Ubuntu-based image. `competition/install_tool.sh`
+installs `g++`, Eigen and GLPK if the image lacks them, as root or through the node's
+passwordless `sudo`, and builds the libtorch backend in whenever it finds libtorch.
 
 **Base image.** `pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime` gets both backends and
 the GPU; the install reuses that image's own libtorch, headers and all, rather than
@@ -154,11 +154,43 @@ moments of the random numbers. With libtorch built in it also runs the *same* se
 each backend agreeing with its own LP would not catch the two reading the catalog
 differently.
 
+## Linear systems on CoraTensor
+
+`ct::LinearSys` is CORA's `linearSys` reachability for zonotopes, both algorithms
+(`Standard`, `WrappingFree`), in the layout of MATLAB CORA (`contSet/`, `contDynamics/`). It
+and `ct::Zonotope` are written once against `ct::Tensor`, which wraps Eigen or libtorch:
+
+```cpp
+ct::set_backend("eigen");  // the only line that names a backend; or CORACPP_BACKEND=eigen
+ct::Tensor A({{-0.2, 1}, {-1, -0.2}});
+ct::Zonotope X0{ct::Tensor({1, 0.5}), ct::Tensor({{0.1, 0}, {0, 0.2}})};
+ct::Reach R = ct::LinearSys(A).reach(X0, 0.1, 1.0, 8);  // R.time_int[k], R.time_point[k]
+```
+
+| | |
+| --- | --- |
+| Backend | `set_backend("eigen")`, `"torch"`, `"torch:cuda"`; results are identical up to rounding |
+| vmap | code is written for one set and one system; libtorch broadcasts the leading dimensions of `A` `(…, n, n)` and of the set, so batches of sets, of systems or of both are the same call. Eigen holds one set |
+| Gradients | libtorch autograd through the whole computation, checked against finite differences |
+| Custom backward | `"torch,custom_backward"` differentiates `e^A` with a hand-written pass |
+| GPU | `"torch:cuda"`, checked against the CPU |
+| Python | `make python TORCH=…`; `coracpp.reach(A, c, G, …)` takes torch tensors (libtorch) or numpy arrays (Eigen) |
+| Reference | `tests/test_linear_sys.cpp` matches MATLAB CORA R2024b to 1e-12 |
+
+A new dynamics class or set goes in `contDynamics/` or `contSet/` and uses only `Tensor`. A new
+backend is one file implementing `Tensor::Impl` and `Tensor::Backend` (`tensor/eigen.cpp` is the
+model) and one line in `make_backend`. Without inputs, CORA's `standard` and `wrapping-free`
+coincide; here `Standard` applies `F` to every step's set, `WrappingFree` maps the first step's
+enclosure forward, as in the task's algorithm.
+
+`contSet/sets.h` and `torch_sets.h` remain the catalog's own implementations, laid out for
+speed on one library each.
+
 ## What is measured
 
 The harness times `run_instance.sh`. A fresh process pays for its thread pool, its first
 allocations and its page faults, so `prepare_instance.sh` (untimed) starts a daemon once
-([`src/server.cpp`](src/server.cpp)) that runs every operation once. `run_instance.sh` then
+([`competition/server.cpp`](competition/server.cpp)) that runs every operation once. `run_instance.sh` then
 only sends `params` to the daemon over a localhost socket (bash's `/dev/tcp`, no extra
 process) and waits for the verdict. The daemon runs the whole instance: generate the
 inputs, then repeat the operation.
@@ -182,23 +214,36 @@ harness wall-clock:
 
 ## Layout
 
-| File | |
+`competition/` is everything the competition runs; `src/` is the library it and the other
+entry points build on.
+
+| `competition/` | |
 | --- | --- |
 | `install_tool.sh` | installs the dependencies, finds libtorch, builds, prints what the worker will run on |
 | `prepare_instance.sh` | starts or replaces the daemon |
 | `run_instance.sh` | the timed script: sends the instance to the daemon |
 | `coracpp_lib.sh` | the shell client of the daemon |
-| `src/backend.h` | what the two backends have in common |
-| `src/sets.h` | the Eigen library: `Interval`, `Zonotope` and their operations, over any scalar |
-| `src/contains.cpp` | exact zonotope containment: facets, projections, LP |
-| `src/torch_sets.h` | the same representations as tensors |
-| `src/torch_contains.cpp` | the same containment, batched onto the device |
-| `src/torch_backend.cpp` | the libtorch runner, its `env` line and its gradient check |
-| `src/lp.cpp` | the containment LP, on GLPK |
-| `src/rng.cpp` | the random numbers |
-| `src/instance.cpp` | one instance: inputs, the repeated operation, the verdict |
-| `src/server.cpp` | the daemon |
-| `src/main.cpp` | the `serve` / `run` / `env` / `check` commands |
+| `main.cpp` | the `serve` / `run` / `env` / `check` commands |
+| `server.cpp` | the daemon |
+| `instance.cpp` | one instance: inputs, the repeated operation, the verdict |
+| `catalog.cpp`, `json.cpp` | the catalog's names and `params` |
+| `backend.h` | what the two catalog backends have in common |
+| `torch_backend.cpp` | the libtorch runner, its `env` line and its gradient check |
+
+| `src/` | |
+| --- | --- |
+| `contSet/sets.h` | the catalog's Eigen library: `Interval`, `Zonotope` and their operations, over any scalar |
+| `contSet/contains.cpp` | exact zonotope containment: facets, projections, LP |
+| `contSet/torch_sets.h` | the same representations as tensors |
+| `contSet/torch_contains.cpp` | the same containment, batched onto the device |
+| `contSet/lp.cpp` | the containment LP, on GLPK |
+| `contSet/zonotope.h` | `ct::Zonotope` and `ct::IntervalMatrix`, on CoraTensor |
+| `contDynamics/linear_sys.h` | `ct::LinearSys`, on CoraTensor |
+| `tensor/tensor.h` | `ct::Tensor`, the backend wrapper; `eigen.cpp` and `torch.cpp` are its backends |
+| `python/bindings.cpp` | the `coracpp` Python module |
+| `rng.cpp`, `threads.cpp` | the random numbers; threads matched to the work |
+
+`examples/` runs the library without the harness; `tests/` checks both.
 
 ## Configuration
 
@@ -224,8 +269,8 @@ With the tool built and this repository as the working directory:
 
 ```bash
 P='{"set": "zonotope", "operation": "contains", "dim": 100, "generators": 200, "device": "cpu", "repetition": 100, "points": 10}'
-./prepare_instance.sh v1 zonotope contains-100d-cpu "$P"
-./run_instance.sh     v1 zonotope contains-100d-cpu "$P" /tmp/result.csv
+competition/prepare_instance.sh v1 zonotope contains-100d-cpu "$P"
+competition/run_instance.sh     v1 zonotope contains-100d-cpu "$P" /tmp/result.csv
 cat /tmp/result.csv
 ```
 

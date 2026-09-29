@@ -15,9 +15,6 @@ inline constexpr const char *kRepresentations[] = {"interval", "zonotope"};
 inline constexpr const char *kOperations[] = {
     "startup", "generateRandom", "randPoint", "supportFunc", "matMul", "minkSum", "contains"};
 
-/// Seed of every instance, so a warm daemon behaves like a fresh process.
-inline constexpr unsigned long long kSeed = 0;
-
 /// The fields of an instance's `params` an operation needs, resolved once.
 struct Params {
     std::string set, operation, kind, device;

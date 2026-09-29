@@ -17,18 +17,25 @@ BLAS      ?=
 TORCH     ?=
 TORCH_ABI ?= 1
 WARN       = -Wall -Wextra
+# The Python module is a shared object, so every object it links must be relocatable.
+PIC        = -fPIC
+PYTHON    ?= python3
 CXXFLAGS  ?= -O3 -march=native -std=c++17 -fopenmp -DNDEBUG -DEIGEN_NO_DEBUG
-INCLUDES   = -Isrc -isystem $(EIGEN)
+INCLUDES   = -Isrc -Icompetition -isystem $(EIGEN)
 LDLIBS     = -lglpk
 LDFLAGS    = -fopenmp
 
-SRC = src/rng.cpp src/json.cpp src/catalog.cpp src/threads.cpp src/sets.cpp \
-      src/contains.cpp src/lp.cpp src/instance.cpp src/server.cpp
+# The library: src/. The competition's harness around it: competition/.
+SRC = src/rng.cpp src/threads.cpp src/contSet/sets.cpp src/contSet/contains.cpp \
+      src/contSet/lp.cpp src/contSet/zonotope.cpp src/tensor/tensor.cpp \
+      src/tensor/eigen.cpp src/contDynamics/linear_sys.cpp \
+      competition/json.cpp competition/catalog.cpp competition/instance.cpp \
+      competition/server.cpp
 
 ifeq ($(TORCH),)
-SRC += src/torch_none.cpp
+SRC += competition/torch_none.cpp
 else
-SRC      += src/torch_backend.cpp src/torch_contains.cpp
+SRC      += competition/torch_backend.cpp src/contSet/torch_contains.cpp src/tensor/torch.cpp
 DEFS      = -DCORACPP_TORCH -D_GLIBCXX_USE_CXX11_ABI=$(TORCH_ABI)
 INCLUDES += -isystem $(TORCH)/include -isystem $(TORCH)/include/torch/csrc/api/include
 LDFLAGS  += -L$(TORCH)/lib -Wl,-rpath,$(TORCH)/lib
@@ -48,34 +55,52 @@ DEFS   += -DEIGEN_USE_BLAS
 LDLIBS += -lopenblas
 endif
 
-OBJ = $(SRC:src/%.cpp=build/%.o)
+OBJ = $(SRC:%.cpp=build/%.o)
 
 all: build/coracpp
 
-build/coracpp: $(OBJ) build/main.o | build
+build/coracpp: $(OBJ) build/competition/main.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-build/rng.o: src/rng.cpp | build
-	$(CXX) $(CXXFLAGS) $(DEFS) -ffast-math $(WARN) $(INCLUDES) -c -o $@ $<
+build/src/rng.o: src/rng.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) -ffast-math $(WARN) $(INCLUDES) -c -o $@ $<
 
-build/%.o: src/%.cpp | build
-	$(CXX) $(CXXFLAGS) $(DEFS) $(WARN) $(INCLUDES) -c -o $@ $<
+build/%.o: %.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -c -o $@ $<
 
-TESTS = build/test_ops
+TESTS = build/test_ops build/test_linear_sys
 ifneq ($(TORCH),)
-TESTS += build/test_torch
+TESTS += build/test_torch build/test_linear_sys_torch
 endif
 
-build/test_%: tests/test_%.cpp $(OBJ) | build
+build/test_%: tests/test_%.cpp $(OBJ)
+	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(DEFS) $(WARN) $(INCLUDES) -Itests $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+build/example_%: examples/%.cpp $(OBJ)
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+example: build/example_linear_sys
 
 test: $(TESTS)
 	@for t in $(TESTS); do echo "== $$t"; ./$$t || exit 1; done
 
-build:
-	mkdir -p build
+# `make python TORCH=...` builds the `coracpp` module into build/; put build/ on PYTHONPATH.
+# It needs libtorch, since torch tensors are its inputs.
+PYEXT = $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
+PYINC = $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_paths()['include'])")
+
+python: build/coracpp$(PYEXT)
+
+build/coracpp$(PYEXT): src/python/bindings.cpp $(OBJ)
+	@test -n "$(TORCH)" || { echo "make python needs TORCH=/path/to/libtorch"; exit 1; }
+	$(CXX) -shared $(CXXFLAGS) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -I$(PYINC) $(LDFLAGS) \
+	    -o $@ $^ $(LDLIBS) -L$(TORCH)/lib -ltorch_python
 
 clean:
 	rm -rf build
 
-.PHONY: all test clean
+.PHONY: all test clean python example
