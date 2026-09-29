@@ -51,8 +51,9 @@ scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
 scripts/with_env.sh make test                                # conventions and all tests
 ```
 
-In VS Code (on Windows: `WSL: Reopen Folder in WSL` first), open an example and press `F5` to run
-or debug it, `Ctrl+Shift+B` for a C++ example without the debugger.
+In VS Code (on Windows: `WSL: Reopen Folder in WSL` first), open an example, C++ or Python, and
+press `F5`: it builds if needed and runs it. To step through C++ with gdb, choose `C++: debug
+current example` in the Run and Debug dropdown.
 
 ## Usage
 

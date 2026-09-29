@@ -1,7 +1,37 @@
 {
-    // Open an example and press F5. The paths come from .vscode/settings.json (scripts/setup_local.sh).
+    // F5 runs the first configuration: it runs the open example, C++ or Python (scripts/run_example.py).
+    // To step through C++ with gdb, choose "C++: debug current example" in the Run and Debug
+    // dropdown. The paths come from .vscode/settings.json (scripts/setup_local.sh).
     "version": "0.2.0",
     "configurations": [
+        {
+            "name": "Run current example (C++ or Python)",
+            "type": "debugpy",
+            "python": "${config:coracpp.envPrefix}/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/run_example.py",
+            "args": ["${file}"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${config:coracpp.buildDir}",
+                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
+            }
+        },
+        {
+            "name": "Python: current test",
+            "type": "debugpy",
+            "python": "${config:coracpp.envPrefix}/bin/python",
+            "request": "launch",
+            "module": "unittest",
+            "args": ["-v", "${fileBasenameNoExtension}"],
+            "cwd": "${workspaceFolder}/tests/python",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${config:coracpp.buildDir}",
+                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
+            }
+        },
         {
             "name": "C++: debug current example",
             "type": "cppdbg",
@@ -17,32 +47,6 @@
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true }
             ]
-        },
-        {
-            "name": "Python: current example",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
-            "preLaunchTask": "build python package",
-            "env": {
-                "PYTHONPATH": "${config:coracpp.buildDir}",
-                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
-            }
-        },
-        {
-            "name": "Python: current test",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "unittest",
-            "args": ["-v", "${fileBasenameNoExtension}"],
-            "cwd": "${workspaceFolder}/tests/python",
-            "console": "integratedTerminal",
-            "env": {
-                "PYTHONPATH": "${config:coracpp.buildDir}",
-                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
-            }
         }
     ]
 }

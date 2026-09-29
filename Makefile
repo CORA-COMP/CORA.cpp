@@ -19,7 +19,9 @@
 BUILD     ?= build
 CXX       ?= g++
 PYTHON    ?= python3
-WARN       = -Wall -Wextra
+# Eigen's AVX512 triangular-solve kernel makes GCC 16 report uninitialized values and out-of-bounds
+# accesses that are not there; those two are off so that a real warning is visible.
+WARN       = -Wall -Wextra -Wno-maybe-uninitialized -Wno-array-bounds
 PIC        = -fPIC  # the Python module is a shared object, so every object must be relocatable
 LDLIBS     =
 LDFLAGS    = -fopenmp
@@ -113,9 +115,10 @@ ifneq ($(TORCH),)
 EXAMPLES    = $(patsubst %.cpp,$(BUILD)/%,$(EXAMPLE_SRC))
 endif
 
-$(BUILD)/examples/cpp/%: examples/cpp/%.cpp $(LIB_OBJ)
+# Every example starts with the CORA START block: it is injected here, not written in each file.
+$(BUILD)/examples/cpp/%: examples/cpp/%.cpp $(LIB_OBJ) src/global/banner.h
 	@mkdir -p $(@D)
-	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -include global/banner.h -DCORACPP_PROGRAM='"$*"' $(LDFLAGS) -o $@ examples/cpp/$*.cpp $(LIB_OBJ) $(LDLIBS)
 
 example: $(EXAMPLES)
 	@for e in $(EXAMPLES); do echo "== $$e"; $$e || exit 1; done

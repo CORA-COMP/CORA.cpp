@@ -10,12 +10,16 @@ Arrays: cora.Tensor(data, dtype), cora.zeros/ones/eye/randn build them on the cu
 
 The classes are the C++ classes with the same methods; a batch lives in the object.
 """
+from . import banner
 from ._cora import (ContSet, Interval, LinearSys, Reach, Rng, Specification, Zonotope, backend,
                        setBackend)
 from .colors import CORAcolor
 from .tensor import Tensor, eye, ones, randn, zeros
 from .plot import (plot, plot_initial_set, plot_interval, plot_points, plot_reach,
                    plot_simulation, plot_specification, plot_zonotope, zonotope_vertices)
+
+# An example prints its CORA START block here and its CORA END block on exit.
+banner.install(backend)
 
 __all__ = [
     "CORAcolor", "ContSet", "Interval", "LinearSys", "Reach", "Rng", "Specification", "Zonotope",

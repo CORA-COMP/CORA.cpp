@@ -27,6 +27,11 @@ competition/               the CORA-COMP entry
   and a test covers each option and the error.
 - `tests/global/test_codingConventions.py` checks naming and layout; `make test` runs it first.
 
+## Examples
+
+The Makefile compiles every C++ example with `-include global/banner.h`, which prints the
+`CORA START` block before `main` and a `CORA END` block after it; an example does not include or call it.
+
 ## Adding things
 
 - **Operation:** declare it in the class, add the file to its folder; the Makefile finds sources.
@@ -65,6 +70,13 @@ they hold this machine's paths); `tasks.json` and `launch.json` are shared and r
 (`${config:coracpp.*}`). Rerun `scripts/with_env.sh python scripts/setup_vscode.py` after moving
 the checkout or recreating the environment. On Windows, `WSL: Reopen Folder in WSL` first.
 
-- `F5` on an example: debug a C++ one (gdb, `-O0 -g` build) or run a Python one.
+- `F5` runs the open example, C++ or Python, through `scripts/run_example.py` (the first entry of
+  the Run and Debug dropdown): a Python one runs under the Python debugger, so breakpoints in it
+  work; a C++ one is built and run. Choose `C++: debug current example` (gdb, `-O0 -g` build) to
+  step through C++; it needs the C/C++ extension installed *in WSL* (extensions view >
+  `Install in WSL`), else VS Code says "debug type 'cppdbg' not supported".
 - `Ctrl+Shift+B`: build and run the open C++ example.
 - `Terminal > Run Task`: `test (conventions and C++)`, `test (python)`, `build python package`.
+- The Python configurations run the environment's interpreter (`coracpp.envPrefix`), whatever the
+  editor has selected; for IntelliSense pick it once with `Python: Select Interpreter` (`coracpp`).
+  "The minimum Python version for the debugger is 3.9" means the system Python was used.
