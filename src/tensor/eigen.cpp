@@ -45,12 +45,12 @@ struct EigenTensor : Tensor::Impl {
         return wrap(Eigen::Map<const RowMajor>(data.data(), shape[0], shape[1]));
     }
 
-    /// `a + sign * b`, where a column on either side is added to every column of the other,
-    /// as libtorch broadcasts it.
-    static Mat combine(const Mat &a, const Mat &b, double sign) {
-        if (a.cols() == b.cols()) return a + sign * b;
-        if (b.cols() == 1) return (a.colwise() + sign * b.col(0)).eval();
-        if (a.cols() == 1) return (sign * b).colwise() + a.col(0);
+    /// `op(a, b)` elementwise, where a column on either side is combined with every column of the
+    /// other, as libtorch broadcasts it.
+    template <class Op> static Mat combine(const Mat &a, const Mat &b, Op op) {
+        if (a.cols() == b.cols()) return a.binaryExpr(b, op);
+        if (b.cols() == 1) return a.binaryExpr(b.col(0).replicate(1, a.cols()), op);
+        if (a.cols() == 1) return a.col(0).replicate(1, b.cols()).binaryExpr(b, op);
         throw std::invalid_argument("CoraTensor: shapes do not broadcast");
     }
 
@@ -60,9 +60,19 @@ struct EigenTensor : Tensor::Impl {
             throw std::invalid_argument("CoraTensor: the eigen backend runs on the CPU only");
     }
 
-    Ptr add(const Impl &o) const override { return wrap(combine(m, of(o), 1.0)); }
-    Ptr sub(const Impl &o) const override { return wrap(combine(m, of(o), -1.0)); }
+    Ptr add(const Impl &o) const override {
+        return wrap(combine(m, of(o), [](double a, double b) { return a + b; }));
+    }
+    Ptr sub(const Impl &o) const override {
+        return wrap(combine(m, of(o), [](double a, double b) { return a - b; }));
+    }
     Ptr scale(double s) const override { return wrap(m * s); }
+    Ptr mul(const Impl &o) const override {
+        return wrap(combine(m, of(o), [](double a, double b) { return a * b; }));
+    }
+    Ptr div(const Impl &o) const override {
+        return wrap(combine(m, of(o), [](double a, double b) { return a / b; }));
+    }
     Ptr matmul(const Impl &o) const override { return wrap(m * of(o)); }
     Ptr transpose() const override { return wrap(m.transpose()); }
     Ptr abs() const override { return wrap(m.cwiseAbs()); }
@@ -82,6 +92,12 @@ struct EigenTensor : Tensor::Impl {
         throw std::invalid_argument("CoraTensor: unknown elementwise function");
     }
     Ptr sumLast() const override { return wrap(m.rowwise().sum()); }
+    Ptr maxLast() const override { return wrap(m.rowwise().maxCoeff()); }
+    Ptr selectCols(const std::vector<int64_t> &idx) const override {
+        Mat out(m.rows(), idx.size());
+        for (std::size_t j = 0; j < idx.size(); ++j) out.col(j) = m.col(idx[j]);
+        return wrap(std::move(out));
+    }
     Ptr diag() const override { return wrap(Mat(m.col(0).asDiagonal())); }
     Ptr eyeLike() const override { return wrap(Mat::Identity(m.rows(), m.cols())); }
     Ptr zerosLike() const override { return wrap(Mat::Zero(m.rows(), m.cols())); }
@@ -96,6 +112,20 @@ struct EigenTensor : Tensor::Impl {
         for (const Impl *r : rest) {
             out.middleCols(at, of(*r).cols()) = of(*r);
             at += of(*r).cols();
+        }
+        return wrap(std::move(out));
+    }
+
+    // The tensors one below the other: this one, then each of `rest`.
+    Ptr catRows(const std::vector<const Impl *> &rest) const override {
+        Eigen::Index rows = m.rows();
+        for (const Impl *r : rest) rows += of(*r).rows();
+        Mat out(rows, m.cols());
+        out.topRows(m.rows()) = m;
+        Eigen::Index at = m.rows();
+        for (const Impl *r : rest) {
+            out.middleRows(at, of(*r).rows()) = of(*r);
+            at += of(*r).rows();
         }
         return wrap(std::move(out));
     }

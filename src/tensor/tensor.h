@@ -57,6 +57,10 @@ class Tensor {
         virtual Ptr sub(const Impl &o) const = 0;
         virtual Ptr scale(double s) const = 0;
 
+        /// Elementwise product and quotient, broadcast like add and sub.
+        virtual Ptr mul(const Impl &o) const = 0;
+        virtual Ptr div(const Impl &o) const = 0;
+
         /// Matrix product, batched over the leading dimensions.
         virtual Ptr matmul(const Impl &o) const = 0;
 
@@ -74,8 +78,12 @@ class Tensor {
         /// A function applied to every element.
         virtual Ptr unary(Unary op) const = 0;
 
-        /// Sums the last dimension and keeps it: (.., n, m) -> (.., n, 1).
+        /// Sums, or takes the largest of, the last dimension, keeping it: (.., n, m) -> (.., n, 1).
         virtual Ptr sumLast() const = 0;
+        virtual Ptr maxLast() const = 0;
+
+        /// The columns `idx` of (.., n, m), in that order: (.., n, idx.size()).
+        virtual Ptr selectCols(const std::vector<int64_t> &idx) const = 0;
 
         /// A column (.., n, 1) as a diagonal matrix (.., n, n).
         virtual Ptr diag() const = 0;
@@ -86,6 +94,9 @@ class Tensor {
 
         /// This tensor followed by `rest`, joined along the last dimension.
         virtual Ptr catLast(const std::vector<const Impl *> &rest) const = 0;
+
+        /// This tensor followed by `rest`, joined along the rows (the second to last dimension).
+        virtual Ptr catRows(const std::vector<const Impl *> &rest) const = 0;
 
         /// This tensor and `rest` (all of one shape) as one tensor with a new leading dimension.
         virtual Ptr stack(const std::vector<const Impl *> &rest) const = 0;
@@ -133,6 +144,9 @@ class Tensor {
     /// Joins tensors along the last dimension.
     static Tensor catLast(const std::vector<Tensor> &parts);
 
+    /// Joins tensors along the rows (the second to last dimension).
+    static Tensor catRows(const std::vector<Tensor> &parts);
+
     /// Stacks tensors of one shape along a new leading (batch) dimension.
     static Tensor stack(const std::vector<Tensor> &parts);
 
@@ -154,6 +168,9 @@ class Tensor {
     friend Tensor operator*(const Tensor &a, double s) { return Tensor(a.impl_->scale(s)); }
     friend Tensor operator*(double s, const Tensor &a) { return a * s; }
 
+    /// Elementwise product and quotient; shapes broadcast as in +.
+    Tensor mul(const Tensor &o) const { return binary(o, &Impl::mul); }
+    Tensor div(const Tensor &o) const { return binary(o, &Impl::div); }
     Tensor matmul(const Tensor &o) const { return binary(o, &Impl::matmul); }
     Tensor transpose() const { return Tensor(impl_->transpose()); }
     Tensor abs() const { return Tensor(impl_->abs()); }
@@ -183,6 +200,16 @@ class Tensor {
     static Tensor log(const Tensor &t) { return t.log(); }
     static Tensor sqrt(const Tensor &t) { return t.sqrt(); }
     Tensor sumLast() const { return Tensor(impl_->sumLast()); }
+    Tensor maxLast() const { return Tensor(impl_->maxLast()); }
+
+    /// The columns `idx`, in that order.
+    Tensor selectCols(const std::vector<int64_t> &idx) const {
+        return Tensor(impl_->selectCols(idx));
+    }
+
+    /// The elementwise larger and smaller of a and b.
+    static Tensor maximum(const Tensor &a, const Tensor &b) { return b + (a - b).pos(); }
+    static Tensor minimum(const Tensor &a, const Tensor &b) { return a - (a - b).pos(); }
     Tensor diag() const { return Tensor(impl_->diag()); }
     Tensor eyeLike() const { return Tensor(impl_->eyeLike()); }
     Tensor zerosLike() const { return Tensor(impl_->zerosLike()); }

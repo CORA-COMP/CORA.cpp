@@ -167,6 +167,18 @@ Tensor Tensor::catLast(const std::vector<Tensor> &parts) {
     return Tensor(parts[0].impl().catLast(rest));
 }
 
+// Joins the parts along the rows; all of them on one backend.
+Tensor Tensor::catRows(const std::vector<Tensor> &parts) {
+    if (parts.empty()) throw std::invalid_argument("CoraTensor: nothing to concatenate");
+    std::vector<const Impl *> rest;
+    for (std::size_t i = 1; i < parts.size(); ++i) {
+        if (typeid(parts[i].impl()) != typeid(parts[0].impl()))
+            throw std::invalid_argument("CoraTensor: operands are on different backends");
+        rest.push_back(&parts[i].impl());
+    }
+    return Tensor(parts[0].impl().catRows(rest));
+}
+
 // Stacks the parts along a new leading dimension; all of them on one backend.
 Tensor Tensor::stack(const std::vector<Tensor> &parts) {
     if (parts.empty()) throw std::invalid_argument("CoraTensor: nothing to stack");

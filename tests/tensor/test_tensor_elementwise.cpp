@@ -1,4 +1,5 @@
-// test_tensor_elementwise - Tensor::ones and the elementwise functions, on every backend
+// test_tensor_elementwise - Tensor::ones, the elementwise functions and the elementwise
+// product, quotient, maximum and minimum, on every backend
 
 #include "testing.h"
 
@@ -44,6 +45,26 @@ void static_functions_take_numbers_and_tensors(const std::string &b) {
           b + ": of a tensor");
 }
 
+/// Products and quotients are elementwise, and a column meets every column of a matrix.
+void products_and_quotients_are_elementwise(const std::string &b) {
+    const Tensor a = Tensor::fromData({1.0, 2.0, 3.0, 4.0}, {2, 2});
+    const Tensor c = Tensor::fromData({2.0, 4.0, 5.0, 8.0}, {2, 2});
+    check(test::close(a.mul(c), std::vector<double>{2.0, 8.0, 15.0, 32.0}), b + ": mul");
+    check(test::close(c.div(a), std::vector<double>{2.0, 2.0, 5.0 / 3.0, 2.0}), b + ": div");
+    const Tensor col = Tensor::fromData({10.0, 100.0}, {2, 1});
+    check(test::close(a.mul(col), std::vector<double>{10.0, 20.0, 300.0, 400.0}) &&
+              test::close(col.mul(a), std::vector<double>{10.0, 20.0, 300.0, 400.0}),
+          b + ": a column meets every column");
+    check(test::close(a.div(col), std::vector<double>{0.1, 0.2, 0.03, 0.04}), b + ": div by a column");
+}
+
+void maximum_and_minimum_pick_elements(const std::string &b) {
+    const Tensor a = Tensor::fromData({1.0, -2.0, 3.0, 4.0}, {2, 2});
+    const Tensor c = Tensor::fromData({0.0, 5.0, 3.0, -1.0}, {2, 2});
+    check(test::close(Tensor::maximum(a, c), std::vector<double>{1.0, 5.0, 3.0, 4.0}), b + ": maximum");
+    check(test::close(Tensor::minimum(a, c), std::vector<double>{0.0, -2.0, 3.0, -1.0}), b + ": minimum");
+}
+
 } // namespace
 
 int main() {
@@ -51,6 +72,8 @@ int main() {
         ones_fills_the_shape(b);
         functions_apply_to_every_element(b);
         static_functions_take_numbers_and_tensors(b);
+        products_and_quotients_are_elementwise(b);
+        maximum_and_minimum_pick_elements(b);
     });
     return test::finish("tensor elementwise");
 }

@@ -72,6 +72,8 @@ struct TorchTensor : Tensor::Impl {
     Ptr add(const Impl &o) const override { return wrap(t + of(o)); }
     Ptr sub(const Impl &o) const override { return wrap(t - of(o)); }
     Ptr scale(double s) const override { return wrap(t * s); }
+    Ptr mul(const Impl &o) const override { return wrap(t * of(o)); }
+    Ptr div(const Impl &o) const override { return wrap(t / of(o)); }
     Ptr matmul(const Impl &o) const override { return wrap(t.matmul(of(o))); }
     Ptr transpose() const override { return wrap(t.transpose(-2, -1)); }
     Ptr abs() const override { return wrap(t.abs()); }
@@ -93,6 +95,11 @@ struct TorchTensor : Tensor::Impl {
         throw std::invalid_argument("CoraTensor: unknown elementwise function");
     }
     Ptr sumLast() const override { return wrap(t.sum(-1, /*keepdim=*/true)); }
+    Ptr maxLast() const override { return wrap(std::get<0>(t.max(-1, /*keepdim=*/true))); }
+    Ptr selectCols(const std::vector<int64_t> &idx) const override {
+        const torch::Tensor at = torch::tensor(idx, torch::TensorOptions().device(t.device()));
+        return wrap(t.index_select(-1, at));
+    }
     Ptr diag() const override { return wrap(torch::diag_embed(t.squeeze(-1))); }
     // Broadcast to the batch, so results of a batched system all have the same shape.
     Ptr eyeLike() const override {
@@ -104,6 +111,12 @@ struct TorchTensor : Tensor::Impl {
         std::vector<torch::Tensor> all{t};
         for (const Impl *r : rest) all.push_back(of(*r));
         return wrap(torch::cat(all, -1));
+    }
+
+    Ptr catRows(const std::vector<const Impl *> &rest) const override {
+        std::vector<torch::Tensor> all{t};
+        for (const Impl *r : rest) all.push_back(of(*r));
+        return wrap(torch::cat(all, -2));
     }
 
     Ptr stack(const std::vector<const Impl *> &rest) const override {

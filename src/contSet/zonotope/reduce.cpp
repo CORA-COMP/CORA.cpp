@@ -11,28 +11,12 @@
 #include "contSet/zonotope/zonotope.h"
 
 #include <algorithm>
-#include <cmath>
 #include <numeric>
 #include <stdexcept>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::ct {
-
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-/// The Euclidean length of every column of the row-major matrix G (n, m).
-std::vector<double> aux_lengths(const std::vector<double> &G, int64_t n, int64_t m) {
-    std::vector<double> len(m, 0.0);
-    for (int64_t i = 0; i < n; ++i)
-        for (int64_t j = 0; j < m; ++j) len[j] += G[i * m + j] * G[i * m + j];
-    for (double &l : len) l = std::sqrt(l);
-    return len;
-}
-
-} // namespace
 
 
 // ===========================================  MAIN  =========================================== //
@@ -45,24 +29,19 @@ Zonotope Zonotope::reduce(int order) const {
     const int64_t n = shape[0], m = shape[1];
     if (m <= order * n) return *this;
 
-    const std::vector<double> data = G.data();
-    const std::vector<double> len = aux_lengths(data, n, m);
+    // Which generators stay is decided on their lengths; the sets are then built from tensors.
+    const std::vector<double> len = G.mul(G).transpose().sumLast().data();  // squared lengths
     std::vector<int64_t> byLength(m);
     std::iota(byLength.begin(), byLength.end(), 0);
-    std::sort(byLength.begin(), byLength.end(),
-              [&](int64_t a, int64_t b) { return len[a] > len[b]; });
+    std::stable_sort(byLength.begin(), byLength.end(),
+                     [&](int64_t a, int64_t b) { return len[a] > len[b]; });
 
     // The kept generators come first, then one box generator per dimension.
     const int64_t keep = order * n - n;
-    std::vector<double> reduced(n * (keep + n), 0.0);
-    for (int64_t j = 0; j < m; ++j) {
-        const int64_t rank = std::find(byLength.begin(), byLength.end(), j) - byLength.begin();
-        for (int64_t i = 0; i < n; ++i) {
-            if (rank < keep) reduced[i * (keep + n) + rank] = data[i * m + j];
-            else reduced[i * (keep + n) + keep + i] += std::abs(data[i * m + j]);
-        }
-    }
-    return {c, Tensor::like(G, reduced, {n, keep + n})};
+    const std::vector<int64_t> kept(byLength.begin(), byLength.begin() + keep);
+    const std::vector<int64_t> rest(byLength.begin() + keep, byLength.end());
+    const Tensor box = G.selectCols(rest).abs().sumLast().diag();
+    return {c, keep == 0 ? box : Tensor::catLast({G.selectCols(kept), box})};
 }
 
 } // namespace cora::ct

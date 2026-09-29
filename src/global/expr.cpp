@@ -1,6 +1,6 @@
 // expr - symbolic expressions of the state, the dynamics of a nonlinear system
 //
-// The trees of expressions, their derivative, and their evaluation at points and over boxes.
+// The trees of expressions, their derivative, and their evaluation at tensors and over boxes.
 //
 // Syntax:   see expr.h
 // See also: contDynamics/nonlinearSys/nonlinearSys.h
@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <type_traits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -44,50 +45,96 @@ using M = ExprMaker;
 
 const double kPi = 3.14159265358979323846;
 
+/// A tensor of the shape and backend of `like` filled with `value`; without `like`, a 1x1 one.
+Tensor aux_constant(const Tensor &like, double value) {
+    if (!like.defined()) return Tensor::fromData({value}, {1, 1});
+    int64_t count = 1;
+    for (const int64_t d : like.shape()) count *= d;
+    return Tensor::like(like, std::vector<double>(count, value), like.shape());
+}
+
+/// The mask of `like`'s shape with 1 where the flag is set: a decision made on the host values,
+/// applied as a product so that the values stay on the tensor.
+Tensor aux_mask(const Tensor &like, const std::vector<double> &flags) {
+    return Tensor::like(like, flags, like.shape());
+}
+
+/// a^n for a tensor and an integer n, by repeated squaring.
+Tensor aux_power(const Tensor &a, int n) {
+    if (n < 0) return aux_constant(a, 1.0).div(aux_power(a, -n));
+    if (n == 0) return aux_constant(a, 1.0);
+    Tensor result, base = a;
+    for (int k = n; k > 0; k >>= 1) {
+        if (k & 1) result = result.defined() ? result.mul(base) : base;
+        if (k > 1) base = base.mul(base);
+    }
+    return result;
+}
+
+// Ranges ------------------------------------------------------------------------------------------
+
 /// Whether the interval [lo, hi] contains a point of the form offset + 2 pi k.
 bool aux_hasPeak(double lo, double hi, double offset) {
     return std::ceil((lo - offset) / (2 * kPi)) <= std::floor((hi - offset) / (2 * kPi));
 }
 
-/// The range of sin (phase = 0) or cos (phase = pi/2, as cos x = sin(x + pi/2)) over [lo, hi].
-Range aux_sinRange(double lo, double hi, double phase) {
-    lo += phase;
-    hi += phase;
-    if (hi - lo >= 2 * kPi) return {-1, 1};
-    Range r{std::min(std::sin(lo), std::sin(hi)), std::max(std::sin(lo), std::sin(hi))};
-    if (aux_hasPeak(lo, hi, kPi / 2)) r.hi = 1;
-    if (aux_hasPeak(lo, hi, -kPi / 2)) r.lo = -1;
-    return r;
+/// The range of sin, or of cos (as cos x = sin(x + pi/2)), over [lo, hi]: the values at the
+/// ends, moved to +-1 where a peak lies inside.
+Range aux_trig(const Range &a, bool cosine) {
+    const std::vector<double> lo = a.lo.data(), hi = a.hi.data();
+    const double phase = cosine ? kPi / 2 : 0;
+    std::vector<double> top(lo.size()), bottom(lo.size());
+    std::vector<double> keepTop(lo.size()), keepBottom(lo.size());
+    for (std::size_t i = 0; i < lo.size(); ++i) {
+        const double l = lo[i] + phase, h = hi[i] + phase;
+        const bool wide = h - l >= 2 * kPi;
+        top[i] = wide || aux_hasPeak(l, h, kPi / 2);
+        bottom[i] = wide || aux_hasPeak(l, h, -kPi / 2);
+        keepTop[i] = 1 - top[i];
+        keepBottom[i] = 1 - bottom[i];
+    }
+    const Tensor va = cosine ? a.lo.cos() : a.lo.sin(), vb = cosine ? a.hi.cos() : a.hi.sin();
+    return {Tensor::minimum(va, vb).mul(aux_mask(a.lo, keepBottom)) - aux_mask(a.lo, bottom),
+            Tensor::maximum(va, vb).mul(aux_mask(a.lo, keepTop)) + aux_mask(a.lo, top)};
 }
 
 Range aux_div(const Range &a, const Range &b) {
-    if (b.lo <= 0 && b.hi >= 0)
-        throw std::domain_error("cora: an expression divides by a range that contains 0; "
-                                "the box is too large for this dynamics");
-    return a * Range(1 / b.hi, 1 / b.lo);
+    const std::vector<double> lo = b.lo.data(), hi = b.hi.data();
+    // A divisor range that contains 0 has no enclosure.
+    for (std::size_t i = 0; i < lo.size(); ++i)
+        if (lo[i] <= 0 && hi[i] >= 0)
+            throw std::domain_error("cora: an expression divides by a range that contains 0; "
+                                    "the box is too large for this dynamics");
+    const Tensor one = aux_constant(b.lo, 1.0);
+    return a * Range(one.div(b.hi), one.div(b.lo));
 }
 
 Range aux_pow(const Range &a, int n) {
-    if (n < 0) return aux_div(Range(1), aux_pow(a, -n));
-    if (n == 0) return Range(1);
-    const double p = std::pow(a.lo, n), q = std::pow(a.hi, n);
+    if (n < 0) return aux_div(Range(aux_constant(a.lo, 1.0)), aux_pow(a, -n));
+    if (n == 0) return Range(aux_constant(a.lo, 1.0));
+    const Tensor p = aux_power(a.lo, n), q = aux_power(a.hi, n);
     if (n % 2 == 1) return {p, q};  // odd powers grow
-    if (a.lo <= 0 && a.hi >= 0) return {0, std::max(p, q)};  // an even power dips to 0
-    return {std::min(p, q), std::max(p, q)};
+    // An even power dips to 0 where the range contains 0.
+    const std::vector<double> lo = a.lo.data(), hi = a.hi.data();
+    std::vector<double> keep(lo.size());
+    for (std::size_t i = 0; i < lo.size(); ++i) keep[i] = !(lo[i] <= 0 && hi[i] >= 0);
+    return {Tensor::minimum(p, q).mul(aux_mask(a.lo, keep)), Tensor::maximum(p, q)};
 }
 
-/// The value of a node from the values of its operands, at a point.
-double aux_apply(const Expr::Node &n, double a, double b) {
+// Evaluation --------------------------------------------------------------------------------------
+
+/// The value of a node from the values of its operands.
+Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
     switch (n.op) {
     case Op::Add: return a + b;
     case Op::Sub: return a - b;
-    case Op::Mul: return a * b;
-    case Op::Div: return a / b;
-    case Op::Neg: return -a;
-    case Op::Pow: return std::pow(a, n.index);
-    case Op::Sin: return std::sin(a);
-    case Op::Cos: return std::cos(a);
-    case Op::Exp: return std::exp(a);
+    case Op::Mul: return a.mul(b);
+    case Op::Div: return a.div(b);
+    case Op::Neg: return a * -1.0;
+    case Op::Pow: return aux_power(a, n.index);
+    case Op::Sin: return a.sin();
+    case Op::Cos: return a.cos();
+    case Op::Exp: return a.exp();
     default: break;
     }
     throw std::logic_error("cora: an expression node of an unknown operation");
@@ -100,28 +147,57 @@ Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
     case Op::Sub: return a - b;
     case Op::Mul: return a * b;
     case Op::Div: return aux_div(a, b);
-    case Op::Neg: return {-a.hi, -a.lo};
+    case Op::Neg: return {a.hi * -1.0, a.lo * -1.0};
     case Op::Pow: return aux_pow(a, n.index);
-    case Op::Sin: return aux_sinRange(a.lo, a.hi, 0);
-    case Op::Cos: return aux_sinRange(a.lo, a.hi, kPi / 2);
-    case Op::Exp: return {std::exp(a.lo), std::exp(a.hi)};
+    case Op::Sin: return aux_trig(a, false);
+    case Op::Cos: return aux_trig(a, true);
+    case Op::Exp: return {a.lo.exp(), a.hi.exp()};
     default: break;
     }
     throw std::logic_error("cora: an expression node of an unknown operation");
 }
 
-/// The value of an expression over the point or box x.
-template <class T> T aux_evaluate(const Expr &e, const std::vector<T> &x) {
-    const Expr::Node &n = M::node(e);
-    if (n.op == Op::Const) return T(n.value);
-    if (n.op == Op::Var) {
-        if (n.index >= static_cast<int>(x.size()))
-            throw std::out_of_range("cora: the expression uses a variable the point does not have");
-        return x[n.index];
+/// The value of an expression at the tensors or over the ranges x; `like` gives the constants
+/// their shape. A product or quotient with a constant is a scaling, which saves the constant.
+template <class T> struct Evaluator {
+    const std::vector<T> &x;
+    const Tensor &like;
+
+    static T scaled(const T &a, double s) { return a * s; }
+
+    T constant(double v) const {
+        if constexpr (std::is_same_v<T, Tensor>) return aux_constant(like, v);
+        else return Range(aux_constant(like, v));
     }
-    const T a = aux_evaluate(n.a, x);
-    const bool binary = n.op == Op::Add || n.op == Op::Sub || n.op == Op::Mul || n.op == Op::Div;
-    return aux_apply(n, a, binary ? aux_evaluate(n.b, x) : T(0));
+
+    T operator()(const Expr &e) const {
+        const Expr::Node &n = M::node(e);
+        if (n.op == Op::Const) return constant(n.value);
+        if (n.op == Op::Var) {
+            if (n.index >= static_cast<int>(x.size()))
+                throw std::out_of_range(
+                    "cora: the expression uses a variable the point does not have");
+            return x[n.index];
+        }
+        // Products and quotients with a constant scale their other operand.
+        const bool binary =
+            n.op == Op::Add || n.op == Op::Sub || n.op == Op::Mul || n.op == Op::Div;
+        if (n.op == Op::Mul && M::isConst(n.b))
+            return scaled((*this)(n.a), M::node(n.b).value);
+        if (n.op == Op::Mul && M::isConst(n.a))
+            return scaled((*this)(n.b), M::node(n.a).value);
+        if (n.op == Op::Div && M::isConst(n.b) && M::node(n.b).value != 0)
+            return scaled((*this)(n.a), 1 / M::node(n.b).value);
+        const T a = (*this)(n.a);
+        return aux_apply(n, a, binary ? (*this)(n.b) : a);
+    }
+};
+
+/// The prototype of the constants: the first variable, or none.
+template <class T> Tensor aux_prototype(const std::vector<T> &x) {
+    if (x.empty()) return Tensor();
+    if constexpr (std::is_same_v<T, Tensor>) return x[0];
+    else return x[0].lo;
 }
 
 } // namespace
@@ -136,8 +212,21 @@ Range operator+(const Range &a, const Range &b) { return {a.lo + b.lo, a.hi + b.
 Range operator-(const Range &a, const Range &b) { return {a.lo - b.hi, a.hi - b.lo}; }
 
 Range operator*(const Range &a, const Range &b) {
-    const double p[4] = {a.lo * b.lo, a.lo * b.hi, a.hi * b.lo, a.hi * b.hi};
-    return {*std::min_element(p, p + 4), *std::max_element(p, p + 4)};
+    const Tensor p[4] = {a.lo.mul(b.lo), a.lo.mul(b.hi), a.hi.mul(b.lo), a.hi.mul(b.hi)};
+    return {Tensor::minimum(Tensor::minimum(p[0], p[1]), Tensor::minimum(p[2], p[3])),
+            Tensor::maximum(Tensor::maximum(p[0], p[1]), Tensor::maximum(p[2], p[3]))};
+}
+
+Range operator*(const Range &a, double s) {
+    return s >= 0 ? Range(a.lo * s, a.hi * s) : Range(a.hi * s, a.lo * s);
+}
+
+Range square(const Range &a) {
+    const Tensor p = a.lo.mul(a.lo), q = a.hi.mul(a.hi);
+    // The smallest square is 0 where the range contains 0, else the smaller end: with
+    // dist = max(lo, 0) + max(-hi, 0) the distance of 0 from the range.
+    const Tensor dist = a.lo.pos() + (a.hi * -1.0).pos();
+    return {dist.mul(dist), Tensor::maximum(p, q)};
 }
 
 // Building ------------------------------------------------------------------------------------
@@ -217,9 +306,24 @@ Expr Expr::diff(int i) const {
     throw std::logic_error("cora: an expression node of an unknown operation");
 }
 
-double Expr::eval(const std::vector<double> &x) const { return aux_evaluate<double>(*this, x); }
+bool Expr::isZero() const { return M::isConst(*this, 0); }
 
-Range Expr::enclose(const std::vector<Range> &x) const { return aux_evaluate<Range>(*this, x); }
+// The first variable gives the constants their shape and backend.
+Tensor Expr::evalTensor(const std::vector<Tensor> &x) const {
+    const Tensor like = aux_prototype(x);
+    return Evaluator<Tensor>{x, like}(*this);
+}
+
+double Expr::eval(const std::vector<double> &x) const {
+    std::vector<Tensor> tensors;
+    for (const double v : x) tensors.push_back(Tensor::fromData({v}, {1, 1}));
+    return evalTensor(tensors).data()[0];
+}
+
+Range Expr::enclose(const std::vector<Range> &x) const {
+    const Tensor like = aux_prototype(x);
+    return Evaluator<Range>{x, like}(*this);
+}
 
 } // namespace cora::ct
 

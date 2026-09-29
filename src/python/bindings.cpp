@@ -283,7 +283,8 @@ void bindNonlinearSys(py::module_ &m) {
         .def("__neg__", [](const Expr &a) { return -a; })
         .def("__pow__", [](const Expr &a, int n) { return pow(a, n); }, py::arg("n"))
         .def("diff", &Expr::diff, py::arg("i"), "The derivative with respect to the i-th state")
-        .def("eval", &Expr::eval, py::arg("x"), "The value at the point x (a list of numbers)");
+        .def("eval", py::overload_cast<const std::vector<double> &>(&Expr::eval, py::const_), py::arg("x"),
+             "The value at the point x (a list of numbers)");
     py::implicitly_convertible<double, Expr>();
     py::implicitly_convertible<int, Expr>();
     m.def("sin", [](const Expr &a) { return sin(a); }, py::arg("e"));
