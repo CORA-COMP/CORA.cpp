@@ -26,7 +26,7 @@ def block(title):
 def install(backend_name):
     """Prints the START block now and registers the END block, if an example is running."""
     main = getattr(sys.modules.get("__main__"), "__file__", None)
-    program = os.path.splitext(os.path.basename(main))[0] if main else ""
+    program = os.path.basename(main) if main else ""
     if not program.startswith("example_"):
         return
     start = time.perf_counter()

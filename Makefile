@@ -118,7 +118,7 @@ endif
 # Every example starts with the CORA START block: it is injected here, not written in each file.
 $(BUILD)/examples/cpp/%: examples/cpp/%.cpp $(LIB_OBJ) src/global/banner.h
 	@mkdir -p $(@D)
-	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -include global/banner.h -DCORACPP_PROGRAM='"$*"' $(LDFLAGS) -o $@ examples/cpp/$*.cpp $(LIB_OBJ) $(LDLIBS)
+	$(CXX) $(OPT) $(PIC) $(DEFS) $(WARN) $(INCLUDES) -include global/banner.h -DCORACPP_PROGRAM='"$*.cpp"' $(LDFLAGS) -o $@ examples/cpp/$*.cpp $(LIB_OBJ) $(LDLIBS)
 
 example: $(EXAMPLES)
 	@for e in $(EXAMPLES); do echo "== $$e"; $$e || exit 1; done

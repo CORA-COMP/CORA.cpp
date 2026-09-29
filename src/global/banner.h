@@ -4,7 +4,7 @@
 // it and none can forget it: an inline variable is constructed before main and destroyed after
 // it. A program that crashes or ends on an exception prints no END block.
 //
-// Syntax:   -include global/banner.h -DCORACPP_PROGRAM='"name"'   (compiler flags)
+// Syntax:   -include global/banner.h -DCORACPP_PROGRAM='"name.cpp"'   (compiler flags)
 // Output:   ==== CORA START ==== with `CORA.cpp | <program> | default backend: <name>`;
 //           ==== CORA END ==== with `CORA.cpp | <program> | runtime: <seconds>`
 // See also: Makefile (the example rule), tensor/tensor.h
@@ -18,7 +18,7 @@
 #include <string>
 
 #ifndef CORACPP_PROGRAM
-#define CORACPP_PROGRAM "program"
+#define CORACPP_PROGRAM "program.cpp"
 #endif
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //

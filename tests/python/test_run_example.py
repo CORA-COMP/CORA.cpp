@@ -23,7 +23,7 @@ class RunExample(unittest.TestCase):
             result = run(path)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("CORA START", result.stdout)
-        self.assertIn("CORA.cpp | example_run_check | default backend:", result.stdout)
+        self.assertIn("CORA.cpp | example_run_check.py | default backend:", result.stdout)
         self.assertIn("example body", result.stdout)
         self.assertIn("CORA END", result.stdout)
 
@@ -44,7 +44,8 @@ class RunExample(unittest.TestCase):
     def test_a_cpp_example_is_built_and_run(self):
         result = run(os.path.join(ROOT, "examples", "cpp", "example_linear_reach_03_specification.cpp"))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("CORA.cpp | example_linear_reach_03_specification | default backend:", result.stdout)
+        header = "CORA.cpp | example_linear_reach_03_specification.cpp | default backend:"
+        self.assertIn(header, result.stdout)
         self.assertIn("CORA END", result.stdout)
 
 
