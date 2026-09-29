@@ -25,14 +25,14 @@ INCLUDES   = -Isrc -Icompetition -isystem $(EIGEN)
 LDLIBS     = -lglpk
 LDFLAGS    = -fopenmp
 
-# The library: src/, mirroring MATLAB CORA's folders. The competition's harness and its own
-# tuned implementations of the catalog's operations: competition/.
-SRC = src/global/rng.cpp src/global/threads.cpp src/tensor/tensor.cpp src/tensor/eigen.cpp \
-      src/contSet/zonotope/zonotope.cpp src/contSet/interval/interval.cpp \
-      src/contDynamics/linearSys/linearSys.cpp src/specification/specification.cpp \
-      competition/json.cpp competition/catalog.cpp competition/instance.cpp \
-      competition/server.cpp competition/sets/sets.cpp competition/sets/contains.cpp \
-      competition/sets/lp.cpp
+# The library in src/ mirrors MATLAB CORA's folders, one operation per file; competition/ is the
+# harness. Sources are found, so a new operation needs no edit here. The libtorch files and the
+# programs with their own main are added below.
+LIB_SRC  = $(filter-out src/python/% src/tensor/torch.cpp,$(shell find src -name '*.cpp' | sort))
+COMP_SRC = $(filter-out competition/main.cpp competition/torch_backend.cpp \
+                        competition/torch_none.cpp competition/sets/torch_contains.cpp, \
+                        $(shell find competition -name '*.cpp' | sort))
+SRC      = $(LIB_SRC) $(COMP_SRC)
 
 ifeq ($(TORCH),)
 SRC += competition/torch_none.cpp

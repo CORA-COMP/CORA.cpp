@@ -20,22 +20,22 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 
 /// A set from a centre `(..., n)` and generators `(..., n, m)`.
 Zonotope make_set(const torch::Tensor &c, const torch::Tensor &G) {
-    return {from_torch(c.unsqueeze(-1)), from_torch(G)};
+    return {fromTorch(c.unsqueeze(-1)), fromTorch(G)};
 }
 
 Reach run(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G, Algorithm a) {
-    return LinearSys(from_torch(A)).reach(make_set(c, G), 0.1, 1.0, 8, a);
+    return LinearSys(fromTorch(A)).reach(make_set(c, G), 0.1, 1.0, 8, a);
 }
 
 /// Whether member `b` of `batched` is `single`, for every step, centre and generators.
 bool member_is(const Reach &batched, int64_t b, const Reach &single) {
-    for (std::size_t k = 0; k < single.time_int.size(); ++k) {
-        if (max_diff(to_torch(batched.time_int[k].c)[b], to_torch(single.time_int[k].c)) > 1e-12 ||
-            max_diff(to_torch(batched.time_int[k].G)[b], to_torch(single.time_int[k].G)) > 1e-12)
+    for (std::size_t k = 0; k < single.timeInt.size(); ++k) {
+        if (max_diff(toTorch(batched.timeInt[k].c)[b], toTorch(single.timeInt[k].c)) > 1e-12 ||
+            max_diff(toTorch(batched.timeInt[k].G)[b], toTorch(single.timeInt[k].G)) > 1e-12)
             return false;
     }
-    for (std::size_t k = 0; k < single.time_point.size(); ++k)
-        if (max_diff(to_torch(batched.time_point[k].G)[b], to_torch(single.time_point[k].G)) > 1e-12)
+    for (std::size_t k = 0; k < single.timePoint.size(); ++k)
+        if (max_diff(toTorch(batched.timePoint[k].G)[b], toTorch(single.timePoint[k].G)) > 1e-12)
             return false;
     return true;
 }
@@ -68,10 +68,10 @@ void shapes(const torch::TensorOptions &opts, const std::string &where) {
     const torch::Tensor A = torch::randn({n, n}, opts) * 0.5;
     const Reach grid =
         run(A, torch::randn({2, 3, n}, opts), torch::randn({2, 3, n, m}, opts), Algorithm::Standard);
-    check(to_torch(grid.time_int[0].c).sizes().vec() == std::vector<int64_t>({2, 3, n, 1}),
+    check(toTorch(grid.timeInt[0].c).sizes().vec() == std::vector<int64_t>({2, 3, n, 1}),
           where + ": two batch dimensions");
     const Reach one = run(A, torch::randn({1, n}, opts), torch::randn({1, n, m}, opts), Algorithm::Standard);
-    check(to_torch(one.time_point[0].c).size(0) == 1, where + ": a batch of one");
+    check(toTorch(one.timePoint[0].c).size(0) == 1, where + ": a batch of one");
 }
 
 } // namespace
@@ -83,7 +83,7 @@ int main() {
         all.push_back(torch::TensorOptions().dtype(torch::kDouble).device(torch::kCUDA, 0));
         names.push_back("gpu");
     }
-    set_backend("torch");
+    setBackend("torch");
     torch::manual_seed(7);
     for (std::size_t i = 0; i < all.size(); ++i) {
         batches(all[i], names[i]);

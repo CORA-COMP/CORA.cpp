@@ -12,7 +12,7 @@ using test::close;
 
 namespace {
 
-Tensor column(const std::vector<double> &v) { return Tensor::from_data(v, {int64_t(v.size()), 1}); }
+Tensor column(const std::vector<double> &v) { return Tensor::fromData(v, {int64_t(v.size()), 1}); }
 
 /// `max_b dᵀ(c + G b)` over the corners `b ∈ {-1, 1}^m`, on the host.
 double brute_support(const Zonotope &Z, const std::vector<double> &d) {
@@ -39,7 +39,7 @@ std::vector<double> random_direction(cora::Rng &rng, int n) {
 }
 
 double support(const Zonotope &Z, const std::vector<double> &d) {
-    return Z.support_func(column(d)).data()[0];
+    return Z.supportFunc(column(d)).data()[0];
 }
 
 void basics(const std::string &b) {
@@ -50,10 +50,10 @@ void basics(const std::string &b) {
     check(close(Z.interval().sup, std::vector<double>{2.5, 4.5}), b + ": the hull's upper corner");
 }
 
-void support_func_matches_brute_force(const std::string &b) {
+void supportFunc_matches_brute_force(const std::string &b) {
     cora::Rng rng(1);
     for (const auto [n, m] : {std::pair{1, 2}, {2, 3}, {3, 5}, {4, 6}}) {
-        const Zonotope Z = Zonotope::generate_random(n, m, rng);
+        const Zonotope Z = Zonotope::generateRandom(n, m, rng);
         for (int i = 0; i < 5; ++i) {
             const std::vector<double> d = random_direction(rng, n);
             check(close(support(Z, d), brute_support(Z, d), 1e-10),
@@ -66,10 +66,10 @@ void support_func_matches_brute_force(const std::string &b) {
 void mtimes_by_a_matrix(const std::string &b) {
     cora::Rng rng(2);
     const int n = 3, m = 4;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generateRandom(n, m, rng);
     std::vector<double> M(n * n);
     rng.normal(M.data(), M.size(), 1.0);
-    const Zonotope MZ = Z.mtimes(Tensor::from_data(M, {n, n}));
+    const Zonotope MZ = Z.mtimes(Tensor::fromData(M, {n, n}));
     check(MZ.G.shape() == std::vector<int64_t>({n, m}), b + ": mtimes keeps the generators");
     for (int k = 0; k < 5; ++k) {
         const std::vector<double> d = random_direction(rng, n);
@@ -84,11 +84,11 @@ void mtimes_by_a_matrix(const std::string &b) {
 void mtimes_by_an_interval_matrix(const std::string &b) {
     cora::Rng rng(3);
     const int n = 3, m = 4;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generateRandom(n, m, rng);
     std::vector<double> centre(n * n), radius(n * n);
     rng.normal(centre.data(), centre.size(), 1.0);
     rng.uniform(radius.data(), radius.size(), 0.0, 0.3);
-    const Tensor C = Tensor::from_data(centre, {n, n}), R = Tensor::from_data(radius, {n, n});
+    const Tensor C = Tensor::fromData(centre, {n, n}), R = Tensor::fromData(radius, {n, n});
 
     const Zonotope point = Z.mtimes(Interval(C, C));
     const Zonotope plain = Z.mtimes(C);
@@ -105,7 +105,7 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
         std::vector<double> M = centre, u(n * n);
         rng.uniform(u.data(), u.size(), -1.0, 1.0);
         for (int i = 0; i < n * n; ++i) M[i] += radius[i] * u[i];
-        const Zonotope image = Z.mtimes(Tensor::from_data(M, {n, n}));
+        const Zonotope image = Z.mtimes(Tensor::fromData(M, {n, n}));
         for (int k = 0; k < 3; ++k) {
             const std::vector<double> d = random_direction(rng, n);
             check(support(wide, d) >= support(image, d) - 1e-10,
@@ -117,7 +117,7 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
 void plus_is_the_minkowski_sum(const std::string &b) {
     cora::Rng rng(4);
     const int n = 3;
-    const Zonotope A = Zonotope::generate_random(n, 3, rng), B = Zonotope::generate_random(n, 2, rng);
+    const Zonotope A = Zonotope::generateRandom(n, 3, rng), B = Zonotope::generateRandom(n, 2, rng);
     const Zonotope S = A.plus(B);
     check(S.G.shape() == std::vector<int64_t>({n, 5}), b + ": generators are joined");
     check(close(S.c, A.c + B.c), b + ": centres add");
@@ -128,45 +128,45 @@ void plus_is_the_minkowski_sum(const std::string &b) {
 }
 
 /// `linComb(Z, M Z + t)` has `2m + 1` generators and encloses both sets.
-void lin_comb_encloses_both(const std::string &b) {
+void linComb_encloses_both(const std::string &b) {
     cora::Rng rng(5);
     const int n = 3, m = 4;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generateRandom(n, m, rng);
     std::vector<double> M(n * n), t(n);
     rng.normal(M.data(), M.size(), 0.5);
     rng.normal(t.data(), t.size(), 1.0);
-    const Zonotope mapped = Z.mtimes(Tensor::from_data(M, {n, n}));
+    const Zonotope mapped = Z.mtimes(Tensor::fromData(M, {n, n}));
     const Zonotope Z2(mapped.c + column(t), mapped.G);
-    const Zonotope hull = Z.lin_comb(Z2);
+    const Zonotope hull = Z.linComb(Z2);
     check(hull.G.shape() == std::vector<int64_t>({n, 2 * m + 1}), b + ": 2m + 1 generators");
     for (int k = 0; k < 20; ++k) {
         const std::vector<double> d = random_direction(rng, n);
         check(support(hull, d) >= std::max(support(Z, d), support(Z2, d)) - 1e-10,
               b + ": linComb leaves one of its sets");
     }
-    check(close(Z.lin_comb(Z).interval().inf, Z.interval().inf, 1e-12), b + ": linComb(Z, Z) is Z");
+    check(close(Z.linComb(Z).interval().inf, Z.interval().inf, 1e-12), b + ": linComb(Z, Z) is Z");
 }
 
 void interval_is_the_hull(const std::string &b) {
     cora::Rng rng(6);
-    const Zonotope Z = Zonotope::generate_random(4, 6, rng);
+    const Zonotope Z = Zonotope::generateRandom(4, 6, rng);
     const Interval I = Z.interval();
     for (int i = 0; i < 4; ++i) {
         std::vector<double> e(4, 0.0), f(4, 0.0);
         e[i] = 1.0;
         f[i] = -1.0;
-        check(close(I.support_func(column(e)).data()[0], support(Z, e), 1e-12), b + ": hull, upper");
-        check(close(I.support_func(column(f)).data()[0], support(Z, f), 1e-12), b + ": hull, lower");
+        check(close(I.supportFunc(column(e)).data()[0], support(Z, e), 1e-12), b + ": hull, upper");
+        check(close(I.supportFunc(column(f)).data()[0], support(Z, f), 1e-12), b + ": hull, lower");
     }
     for (int k = 0; k < 10; ++k) {
         const std::vector<double> d = random_direction(rng, 4);
-        check(I.support_func(column(d)).data()[0] >= support(Z, d) - 1e-10, b + ": the hull contains Z");
+        check(I.supportFunc(column(d)).data()[0] >= support(Z, d) - 1e-10, b + ": the hull contains Z");
     }
 }
 
-void generate_random_follows_cora(const std::string &b) {
+void generateRandom_follows_cora(const std::string &b) {
     cora::Rng rng(7);
-    const Zonotope Z = Zonotope::generate_random(5, 8, rng);
+    const Zonotope Z = Zonotope::generateRandom(5, 8, rng);
     check(Z.c.shape() == std::vector<int64_t>({5, 1}) && Z.G.shape() == std::vector<int64_t>({5, 8}),
           b + ": shapes");
     const std::vector<double> G = Z.G.data();
@@ -177,7 +177,7 @@ void generate_random_follows_cora(const std::string &b) {
         short_enough &= std::sqrt(norm) <= 1.0 + 1e-12;
     }
     check(short_enough, b + ": generators are at most unit length");
-    check(!close(Zonotope::generate_random(5, 8, rng).c, Z.c), b + ": successive sets differ");
+    check(!close(Zonotope::generateRandom(5, 8, rng).c, Z.c), b + ": successive sets differ");
 }
 
 double dot_column(const std::vector<double> &points, int n, int N, int j, const std::vector<double> &d) {
@@ -187,12 +187,12 @@ double dot_column(const std::vector<double> &points, int n, int N, int j, const 
 }
 
 /// Random points lie in the set, spread over it, and centre on it.
-void rand_point_samples_the_set(const std::string &b) {
+void randPoint_samples_the_set(const std::string &b) {
     cora::Rng rng(8);
     const int n = 3, m = 4, N = 3000;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
-    const Tensor P = Z.rand_point(N, rng);
-    check(P.shape() == std::vector<int64_t>({n, N}), b + ": rand_point shape");
+    const Zonotope Z = Zonotope::generateRandom(n, m, rng);
+    const Tensor P = Z.randPoint(N, rng);
+    check(P.shape() == std::vector<int64_t>({n, N}), b + ": randPoint shape");
     const std::vector<double> points = P.data(), c = Z.c.data();
 
     double worst_excess = -1e9, reached = 1e9;
@@ -213,18 +213,18 @@ void rand_point_samples_the_set(const std::string &b) {
         for (int j = 0; j < N; ++j) mean[i] += points[i * N + j] / N;
         check(std::abs(mean[i] - c[i]) < 0.12, b + ": the points are not centred on the set");
     }
-    check(!close(Z.rand_point(N, rng), P), b + ": successive draws differ");
+    check(!close(Z.randPoint(N, rng), P), b + ": successive draws differ");
     cora::Rng again(8);
-    Zonotope::generate_random(n, m, again);
-    check(close(Z.rand_point(N, again), P), b + ": the same seed gives the same points");
+    Zonotope::generateRandom(n, m, again);
+    check(close(Z.randPoint(N, again), P), b + ": the same seed gives the same points");
 }
 
 /// Extreme points are corners of the generator cube: `c + G b` with every `b_j = ±1`.
 void extreme_points_are_corners(const std::string &b) {
     cora::Rng rng(9);
     const int n = 3, m = 4, N = 40;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
-    const std::vector<double> points = Z.rand_point(N, rng, true).data();
+    const Zonotope Z = Zonotope::generateRandom(n, m, rng);
+    const std::vector<double> points = Z.randPoint(N, rng, "extreme").data();
     const std::vector<double> c = Z.c.data(), G = Z.G.data();
     double worst = 0.0;
     for (int j = 0; j < N; ++j) {
@@ -248,14 +248,14 @@ void extreme_points_are_corners(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         basics(b);
-        support_func_matches_brute_force(b);
+        supportFunc_matches_brute_force(b);
         mtimes_by_a_matrix(b);
         mtimes_by_an_interval_matrix(b);
         plus_is_the_minkowski_sum(b);
-        lin_comb_encloses_both(b);
+        linComb_encloses_both(b);
         interval_is_the_hull(b);
-        generate_random_follows_cora(b);
-        rand_point_samples_the_set(b);
+        generateRandom_follows_cora(b);
+        randPoint_samples_the_set(b);
         extreme_points_are_corners(b);
     });
     return test::finish("zonotope");

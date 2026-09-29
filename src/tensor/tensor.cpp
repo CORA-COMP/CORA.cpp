@@ -18,8 +18,8 @@ std::shared_ptr<const Tensor::Backend> &current() {
     return backend;
 }
 
-std::shared_ptr<const Tensor::Backend> make_backend(const std::string &spec) {
-    // name[:device][,custom_backward]
+std::shared_ptr<const Tensor::Backend> makeBackend(const std::string &spec) {
+    // name[:device][,customBackward]
     const std::size_t comma = spec.find(',');
     const std::string head = spec.substr(0, comma);
     const std::string option = comma == std::string::npos ? "" : spec.substr(comma + 1);
@@ -27,20 +27,20 @@ std::shared_ptr<const Tensor::Backend> make_backend(const std::string &spec) {
     const std::string name = head.substr(0, colon);
     const std::string device = colon == std::string::npos ? "cpu" : head.substr(colon + 1);
 
-    if (!option.empty() && option != "custom_backward")
+    if (!option.empty() && option != "customBackward")
         throw std::invalid_argument("CoraTensor: unknown backend option: " + option);
     if (name == "eigen") {
         if (colon != std::string::npos || !option.empty())
             throw std::invalid_argument("CoraTensor: the eigen backend has no options");
-        return eigen_backend();
+        return eigenBackend();
     }
 #ifdef CORACPP_TORCH
-    if (name == "torch") return torch_backend(torch::Device(device), option == "custom_backward");
+    if (name == "torch") return torchBackend(torch::Device(device), option == "customBackward");
 #endif
     throw std::invalid_argument("CoraTensor: no backend " + name + " in this build");
 }
 
-int64_t count_of(const std::vector<int64_t> &shape) {
+int64_t countOf(const std::vector<int64_t> &shape) {
     int64_t count = 1;
     for (const int64_t d : shape) count *= d;
     return count;
@@ -48,15 +48,15 @@ int64_t count_of(const std::vector<int64_t> &shape) {
 
 } // namespace
 
-void set_backend(const std::string &spec) { current() = make_backend(spec); }
+void setBackend(const std::string &spec) { current() = makeBackend(spec); }
 
 const Tensor::Backend &backend() {
     if (!current()) {
         const char *env = std::getenv("CORACPP_BACKEND");
 #ifdef CORACPP_TORCH
-        current() = make_backend(env && *env ? env : "torch");
+        current() = makeBackend(env && *env ? env : "torch");
 #else
-        current() = make_backend(env && *env ? env : "eigen");
+        current() = makeBackend(env && *env ? env : "eigen");
 #endif
     }
     return *current();
@@ -65,7 +65,7 @@ const Tensor::Backend &backend() {
 Tensor::Tensor(std::initializer_list<Entry> column, const std::string &device) {
     std::vector<double> data;
     for (const Entry &e : column) data.push_back(e.value);
-    *this = from_data(data, {static_cast<int64_t>(data.size()), 1}, device);
+    *this = fromData(data, {static_cast<int64_t>(data.size()), 1}, device);
 }
 
 Tensor::Tensor(std::initializer_list<std::initializer_list<double>> rows,
@@ -76,32 +76,32 @@ Tensor::Tensor(std::initializer_list<std::initializer_list<double>> rows,
             throw std::invalid_argument("CoraTensor: the rows differ in length");
         data.insert(data.end(), row.begin(), row.end());
     }
-    *this = from_data(
+    *this = fromData(
         data, {static_cast<int64_t>(rows.size()), static_cast<int64_t>(rows.begin()->size())},
         device);
 }
 
-Tensor Tensor::from_data(const std::vector<double> &data, const std::vector<int64_t> &shape,
+Tensor Tensor::fromData(const std::vector<double> &data, const std::vector<int64_t> &shape,
                          const std::string &device) {
-    if (static_cast<int64_t>(data.size()) != count_of(shape))
+    if (static_cast<int64_t>(data.size()) != countOf(shape))
         throw std::invalid_argument("CoraTensor: the data does not fill the shape");
     return Tensor(backend().make(data, shape, device));
 }
 
 Tensor Tensor::like(const Tensor &like, const std::vector<double> &data,
                     const std::vector<int64_t> &shape) {
-    if (static_cast<int64_t>(data.size()) != count_of(shape))
+    if (static_cast<int64_t>(data.size()) != countOf(shape))
         throw std::invalid_argument("CoraTensor: the data does not fill the shape");
     return Tensor(like.impl().like(data, shape));
 }
 
 Tensor Tensor::zeros(const std::vector<int64_t> &shape, const std::string &device) {
-    return from_data(std::vector<double>(static_cast<std::size_t>(count_of(shape)), 0.0), shape,
+    return fromData(std::vector<double>(static_cast<std::size_t>(countOf(shape)), 0.0), shape,
                      device);
 }
 
 Tensor Tensor::eye(int64_t n, const std::string &device) {
-    return zeros({n, n}, device).eye_like();
+    return zeros({n, n}, device).eyeLike();
 }
 
 Tensor Tensor::binary(const Tensor &o, Impl::Ptr (Impl::*op)(const Impl &) const) const {
@@ -111,7 +111,7 @@ Tensor Tensor::binary(const Tensor &o, Impl::Ptr (Impl::*op)(const Impl &) const
     return Tensor(((*impl_).*op)(*o.impl_));
 }
 
-Tensor Tensor::cat_last(const std::vector<Tensor> &parts) {
+Tensor Tensor::catLast(const std::vector<Tensor> &parts) {
     if (parts.empty()) throw std::invalid_argument("CoraTensor: nothing to concatenate");
     std::vector<const Impl *> rest;
     for (std::size_t i = 1; i < parts.size(); ++i) {
@@ -119,7 +119,7 @@ Tensor Tensor::cat_last(const std::vector<Tensor> &parts) {
             throw std::invalid_argument("CoraTensor: operands are on different backends");
         rest.push_back(&parts[i].impl());
     }
-    return Tensor(parts[0].impl().cat_last(rest));
+    return Tensor(parts[0].impl().catLast(rest));
 }
 
 std::ostream &operator<<(std::ostream &out, const Tensor &t) {

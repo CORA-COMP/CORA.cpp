@@ -4,7 +4,7 @@ colors, on the current axes (or `ax`).
     coracpp.plot(R)                        a reachable set from `coracpp.reach`
     coracpp.plot((c, G))                   a zonotope, given by its center and generators
     coracpp.plot(simulation)               trajectories from `coracpp.simulate`, (time points, n, N)
-    coracpp.plot(points)                   points from `coracpp.rand_point`, (n, N)
+    coracpp.plot(points)                   points from `coracpp.randPoint`, (n, N)
     coracpp.plot(spec)                     a `coracpp.Specification`: the region it forbids
 
 `dims` picks the two dimensions to show (a zonotope is projected onto them by keeping those
@@ -91,12 +91,12 @@ def plot_reach(reach, dims=(0, 1), ax=None, label=None, time_points=False, step=
     `cidx`, as in `CORAcolor("CORA:reachSet", num_colors, cidx)`."""
     ax = _axes(ax)
     color = CORAcolor("CORA:reachSet", num_colors, cidx)
-    for k in range(0, reach.time_int_c.shape[0], step):
-        plot_zonotope(reach.time_int_c[k], reach.time_int_G[k], dims, ax,
+    for k in range(0, reach.timeInt_c.shape[0], step):
+        plot_zonotope(reach.timeInt_c[k], reach.timeInt_G[k], dims, ax,
                       label=label if k == 0 else None, facecolor=color, edgecolor="none", zorder=1)
     if time_points:
-        for k in range(0, reach.time_point_c.shape[0], step):
-            plot_zonotope(reach.time_point_c[k], reach.time_point_G[k], dims, ax,
+        for k in range(0, reach.timePoint_c.shape[0], step):
+            plot_zonotope(reach.timePoint_c[k], reach.timePoint_G[k], dims, ax,
                           edgecolor=CORAcolor("CORA:reachSet:dark"), linewidth=0.5,
                           linestyle=":", zorder=2)
     ax.set_aspect("equal", adjustable="box")
@@ -120,7 +120,7 @@ def plot_simulation(simulation, dims=(0, 1), ax=None, label=None, markers=True):
 
 
 def plot_points(points, dims=(0, 1), ax=None, label=None, **style):
-    """Draws points, `(n, N)` as `coracpp.rand_point` returns them."""
+    """Draws points, `(n, N)` as `coracpp.randPoint` returns them."""
     ax = _axes(ax)
     p = to_numpy(points)
     style.setdefault("color", CORAcolor("CORA:simulations"))
@@ -171,7 +171,7 @@ def plot_specification(spec, dims=(0, 1), ax=None, label=None):
 def plot(obj, dims=(0, 1), ax=None, label=None, **style):
     """CORA's `plot`: draws a reachable set, a zonotope `(c, G)`, simulations `(time points,
     n, N)`, points `(n, N)`, or a specification, by what it is."""
-    if hasattr(obj, "time_int_c"):
+    if hasattr(obj, "timeInt_c"):
         return plot_reach(obj, dims, ax, label, **style)
     if hasattr(obj, "halfspaces"):
         return plot_specification(obj, dims, ax, label)

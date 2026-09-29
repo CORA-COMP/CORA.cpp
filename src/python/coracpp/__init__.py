@@ -2,10 +2,10 @@
 plotting.
 
     import coracpp
-    R = coracpp.reach(A, c, G, time_step=0.1, t_final=2.0)
+    R = coracpp.reach(A, c, G, timeStep=0.1, tFinal=2.0)
     coracpp.plot(R)
 """
-from ._coracpp import Reach, Specification, rand_point, reach, simulate
+from ._coracpp import Reach, Specification, randPoint, reach, simulate, simulateRandom
 from .colors import CORAcolor
 from .plot import (plot, plot_initial_set, plot_interval, plot_points, plot_reach,
                    plot_simulation, plot_specification, plot_zonotope, zonotope_vertices)
@@ -13,5 +13,5 @@ from .plot import (plot, plot_initial_set, plot_interval, plot_points, plot_reac
 __all__ = [
     "CORAcolor", "Reach", "Specification", "plot", "plot_initial_set", "plot_interval",
     "plot_points", "plot_reach", "plot_simulation", "plot_specification", "plot_zonotope",
-    "rand_point", "reach", "simulate", "zonotope_vertices",
+    "randPoint", "reach", "simulate", "simulateRandom", "zonotope_vertices",
 ]

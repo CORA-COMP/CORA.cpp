@@ -26,11 +26,11 @@ struct ExpmFunction : torch::autograd::Function<ExpmFunction> {
 
 struct TorchTensor : Tensor::Impl {
     torch::Tensor t;
-    bool custom_backward;
-    TorchTensor(torch::Tensor t, bool custom) : t(std::move(t)), custom_backward(custom) {}
+    bool customBackward;
+    TorchTensor(torch::Tensor t, bool custom) : t(std::move(t)), customBackward(custom) {}
 
     Ptr wrap(torch::Tensor r) const {
-        return std::make_shared<TorchTensor>(std::move(r), custom_backward);
+        return std::make_shared<TorchTensor>(std::move(r), customBackward);
     }
     static const torch::Tensor &of(const Impl &o) { return static_cast<const TorchTensor &>(o).t; }
 
@@ -40,7 +40,7 @@ struct TorchTensor : Tensor::Impl {
         return std::vector<double>(host.data_ptr<double>(), host.data_ptr<double>() + host.numel());
     }
     std::string device() const override { return t.device().str(); }
-    Ptr to(const std::string &device) const override { return wrap(t.to(parse_device(device))); }
+    Ptr to(const std::string &device) const override { return wrap(t.to(parseDevice(device))); }
 
     Ptr like(const std::vector<double> &data, const std::vector<int64_t> &shape) const override {
         const torch::Tensor host =
@@ -49,7 +49,7 @@ struct TorchTensor : Tensor::Impl {
     }
 
     /// "gpu" is CUDA; anything else is torch spelling ("cpu", "cuda:1").
-    static torch::Device parse_device(const std::string &name) {
+    static torch::Device parseDevice(const std::string &name) {
         return torch::Device(name == "gpu" ? "cuda" : name);
     }
 
@@ -62,17 +62,17 @@ struct TorchTensor : Tensor::Impl {
     Ptr pos() const override { return wrap(t.clamp_min(0)); }
     Ptr neg() const override { return wrap(t.clamp_max(0)); }
     Ptr expm() const override {
-        return wrap(custom_backward ? ExpmFunction::apply(t) : torch::matrix_exp(t));
+        return wrap(customBackward ? ExpmFunction::apply(t) : torch::matrix_exp(t));
     }
-    Ptr sum_last() const override { return wrap(t.sum(-1, /*keepdim=*/true)); }
+    Ptr sumLast() const override { return wrap(t.sum(-1, /*keepdim=*/true)); }
     Ptr diag() const override { return wrap(torch::diag_embed(t.squeeze(-1))); }
     // Broadcast to the batch, so results of a batched system all have the same shape.
-    Ptr eye_like() const override {
+    Ptr eyeLike() const override {
         return wrap(torch::eye(t.size(-1), t.options()).expand_as(t).contiguous());
     }
-    Ptr zeros_like() const override { return wrap(torch::zeros_like(t)); }
+    Ptr zerosLike() const override { return wrap(torch::zeros_like(t)); }
 
-    Ptr cat_last(const std::vector<const Impl *> &rest) const override {
+    Ptr catLast(const std::vector<const Impl *> &rest) const override {
         std::vector<torch::Tensor> all{t};
         for (const Impl *r : rest) all.push_back(of(*r));
         return wrap(torch::cat(all, -1));
@@ -81,30 +81,30 @@ struct TorchTensor : Tensor::Impl {
 
 struct TorchBackend : Tensor::Backend {
     torch::Device device;
-    bool custom_backward;
-    TorchBackend(torch::Device device, bool custom) : device(device), custom_backward(custom) {}
+    bool customBackward;
+    TorchBackend(torch::Device device, bool custom) : device(device), customBackward(custom) {}
 
     std::string name() const override { return "torch"; }
     Tensor::Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,
                            const std::string &where) const override {
         const torch::Tensor host =
             torch::from_blob(const_cast<double *>(data.data()), shape, torch::kDouble).clone();
-        const torch::Device target = where.empty() ? device : TorchTensor::parse_device(where);
-        return std::make_shared<TorchTensor>(host.to(target), custom_backward);
+        const torch::Device target = where.empty() ? device : TorchTensor::parseDevice(where);
+        return std::make_shared<TorchTensor>(host.to(target), customBackward);
     }
 };
 
 } // namespace
 
-std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device,
-                                                     bool custom_backward) {
-    return std::make_shared<TorchBackend>(device, custom_backward);
+std::shared_ptr<const Tensor::Backend> torchBackend(const torch::Device &device,
+                                                     bool customBackward) {
+    return std::make_shared<TorchBackend>(device, customBackward);
 }
 
-Tensor from_torch(const torch::Tensor &t, bool custom_backward) {
-    return Tensor(std::make_shared<TorchTensor>(t, custom_backward));
+Tensor fromTorch(const torch::Tensor &t, bool customBackward) {
+    return Tensor(std::make_shared<TorchTensor>(t, customBackward));
 }
 
-torch::Tensor to_torch(const Tensor &t) { return static_cast<const TorchTensor &>(t.impl()).t; }
+torch::Tensor toTorch(const Tensor &t) { return static_cast<const TorchTensor &>(t.impl()).t; }
 
 } // namespace cora::ct

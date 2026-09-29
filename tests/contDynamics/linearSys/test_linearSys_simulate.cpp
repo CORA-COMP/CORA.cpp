@@ -16,7 +16,7 @@ namespace {
 
 Tensor tensor_of(const Eigen::MatrixXd &M) {
     const Eigen::Matrix<double, -1, -1, Eigen::RowMajor> rows = M;
-    return Tensor::from_data({rows.data(), rows.data() + rows.size()}, {M.rows(), M.cols()});
+    return Tensor::fromData({rows.data(), rows.data() + rows.size()}, {M.rows(), M.cols()});
 }
 
 Eigen::MatrixXd host_of(const Tensor &t) {
@@ -56,7 +56,7 @@ void a_stable_system_decays(const std::string &b) {
 }
 
 double support(const Zonotope &Z, const Eigen::VectorXd &d) {
-    return Z.support_func(Tensor::from_data({d.data(), d.data() + d.size()}, {d.size(), 1})).data()[0];
+    return Z.supportFunc(Tensor::fromData({d.data(), d.data() + d.size()}, {d.size(), 1})).data()[0];
 }
 
 /// Simulated points lie in the reachable sets: at every time point in the time-point set, and
@@ -65,29 +65,29 @@ double support(const Zonotope &Z, const Eigen::VectorXd &d) {
 void simulations_stay_in_the_reachable_set(const std::string &b) {
     cora::Rng rng(11);
     const int n = 3, N = 60, refine = 5;
-    const double dt = 0.2, t_final = 2.0;
+    const double dt = 0.2, tFinal = 2.0;
     const Tensor A = tensor_of(oscillator3());
-    const Zonotope X0 = Zonotope::generate_random(n, 4, rng);
+    const Zonotope X0 = Zonotope::generateRandom(n, 4, rng);
     const LinearSys sys(A);
 
     Eigen::MatrixXd dirs(n, 40);
     rng.normal(dirs.data(), dirs.size(), 1.0);
 
     for (const Algorithm algorithm : {Algorithm::Standard, Algorithm::WrappingFree}) {
-        const Reach R = sys.reach(X0, dt, t_final, 8, algorithm);
+        const Reach R = sys.reach(X0, dt, tFinal, 8, algorithm);
         for (const bool extreme : {false, true}) {
-            const Tensor start = X0.rand_point(N, rng, extreme);
-            const std::vector<Tensor> x = sys.simulate(start, dt / refine, t_final);
+            const Tensor start = X0.randPoint(N, rng, extreme ? "extreme" : "standard");
+            const std::vector<Tensor> x = sys.simulate(start, dt / refine, tFinal);
             double worst = 1e9;
             for (std::size_t j = 0; j < x.size(); ++j) {
                 const Eigen::MatrixXd points = host_of(x[j]);
-                const std::size_t step = std::min(j / refine, R.time_int.size() - 1);
+                const std::size_t step = std::min(j / refine, R.timeInt.size() - 1);
                 for (int i = 0; i < 40; ++i) {
                     const Eigen::VectorXd d = dirs.col(i);
-                    const double bound = support(R.time_int[step], d);
+                    const double bound = support(R.timeInt[step], d);
                     worst = std::min(worst, (bound - (d.transpose() * points).maxCoeff()) / d.norm());
                     if (j % refine == 0) {
-                        const double at = support(R.time_point[j / refine], d);
+                        const double at = support(R.timePoint[j / refine], d);
                         worst = std::min(worst, (at - (d.transpose() * points).maxCoeff()) / d.norm());
                     }
                 }
@@ -99,21 +99,21 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
     }
 }
 
-/// `simulate_random` draws from the initial set: same seed, same trajectories.
-void simulate_random_is_seeded(const std::string &b) {
+/// `simulateRandom` draws from the initial set: same seed, same trajectories.
+void simulateRandom_is_seeded(const std::string &b) {
     const Zonotope X0(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.1, 0.1}}));
     const LinearSys sys(tensor_of(oscillator3()));
     cora::Rng first(5), second(5), other(6);
-    const std::vector<Tensor> a = sys.simulate_random(X0, 8, 0.1, 1.0, first);
-    const std::vector<Tensor> c = sys.simulate_random(X0, 8, 0.1, 1.0, second);
-    const std::vector<Tensor> d = sys.simulate_random(X0, 8, 0.1, 1.0, other);
+    const std::vector<Tensor> a = sys.simulateRandom(X0, 8, 0.1, 1.0, first);
+    const std::vector<Tensor> c = sys.simulateRandom(X0, 8, 0.1, 1.0, second);
+    const std::vector<Tensor> d = sys.simulateRandom(X0, 8, 0.1, 1.0, other);
     check(a.size() == 11 && a[0].shape() == std::vector<int64_t>({3, 8}), b + ": shapes");
     check(close(a.back(), c.back()), b + ": the same seed gives the same trajectories");
     check(!close(a.back(), d.back()), b + ": another seed gives others");
     // The initial set is an interval too: any ContSet works.
     const Interval box(Tensor({0.9, -0.1, -0.1}), Tensor({1.1, 0.1, 0.1}));
     cora::Rng rng(1);
-    check(sys.simulate_random(box, 5, 0.1, 0.5, rng).size() == 6, b + ": simulate_random from an interval");
+    check(sys.simulateRandom(box, 5, 0.1, 0.5, rng).size() == 6, b + ": simulateRandom from an interval");
 }
 
 } // namespace
@@ -123,7 +123,7 @@ int main() {
         follows_the_matrix_exponential(b);
         a_stable_system_decays(b);
         simulations_stay_in_the_reachable_set(b);
-        simulate_random_is_seeded(b);
+        simulateRandom_is_seeded(b);
     });
     return test::finish("linearSys simulate");
 }

@@ -25,13 +25,13 @@ int main() {
     // The extent of every enclosure along x1: the support function in the direction (1, 0).
     const Tensor e1({1.0, 0.0});
     std::cout << std::fixed << std::setprecision(5) << "step   standard   wrapping-free\n";
-    for (std::size_t k = 0; k < standard.time_int.size(); ++k)
-        std::cout << std::setw(4) << k << "   " << standard.time_int[k].support_func(e1).data()[0]
-                  << "    " << wrapping_free.time_int[k].support_func(e1).data()[0] << "\n";
+    for (std::size_t k = 0; k < standard.timeInt.size(); ++k)
+        std::cout << std::setw(4) << k << "   " << standard.timeInt[k].supportFunc(e1).data()[0]
+                  << "    " << wrapping_free.timeInt[k].supportFunc(e1).data()[0] << "\n";
 
     // The time points are e^{A t} X0 either way.
-    const std::vector<double> a = standard.time_point.back().c.data(),
-                              b = wrapping_free.time_point.back().c.data();
+    const std::vector<double> a = standard.timePoint.back().c.data(),
+                              b = wrapping_free.timePoint.back().c.data();
     std::cout << "last time point, largest difference in the center: "
               << std::max(std::abs(a[0] - b[0]), std::abs(a[1] - b[1])) << "\n";
 }

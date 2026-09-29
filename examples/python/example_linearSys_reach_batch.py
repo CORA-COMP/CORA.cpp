@@ -15,12 +15,12 @@ c = torch.tensor([1.0, 0.0], **f64)
 G = 0.1 * torch.eye(2, **f64)
 
 # Three systems, one initial set.
-R = coracpp.reach(A, c, G, time_step=0.1, t_final=3.0)
-print("centers (steps, systems, n):", tuple(R.time_int_c.shape))
-print("distance from the origin at t = 3, by damping:", R.time_int_c[-1].norm(dim=-1).tolist())
+R = coracpp.reach(A, c, G, timeStep=0.1, tFinal=3.0)
+print("centers (steps, systems, n):", tuple(R.timeInt_c.shape))
+print("distance from the origin at t = 3, by damping:", R.timeInt_c[-1].norm(dim=-1).tolist())
 
 # Three initial sets, one system: give c (3, n) and G (3, n, m).
 cs = torch.stack([c, 2 * c, -c])
 Gs = G.expand(3, 2, 2)
-R = coracpp.reach(A[1], cs, Gs, time_step=0.1, t_final=3.0)
-print("three initial sets:", tuple(R.time_int_c.shape))
+R = coracpp.reach(A[1], cs, Gs, timeStep=0.1, tFinal=3.0)
+print("three initial sets:", tuple(R.timeInt_c.shape))

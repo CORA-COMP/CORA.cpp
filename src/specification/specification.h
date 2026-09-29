@@ -1,13 +1,13 @@
-// A specification on reachable sets, as CORA's `specification`, for halfspaces
-// `{x | aᵀx <= b}`. It is checked with the support function alone, so it applies to every
-// `ContSet`, on every backend.
+// specification - a specification on reachable sets, as CORA's specification (halfspaces)
 //
-//     auto spec = Specification::safe_set(Tensor({1, 0}), 3.0);   // stay in x1 <= 3
-//     bool ok = spec.check(R.time_int);                          // R from LinearSys::reach
+// A halfspace is {x | a'x <= b}. A safe set must contain the reachable sets (several
+// halfspaces form a polytope); an unsafe set must not touch them (one halfspace: for an
+// intersection of halfspaces the check needs an LP). It is checked with the support function
+// alone, so it applies to every ContSet on every backend.
 //
-// `safe_set`: the set must lie in the halfspaces (several form a polytope).
-// `unsafe_set`: the set must not touch the halfspace; one halfspace, since deciding that
-// for an intersection of halfspaces takes an LP.
+// Syntax:     Specification spec = Specification::safeSet(a, b);   spec.check(R.timeInt);
+// Operations: check, holds (check.cpp); safeSet, unsafeSet (specification.cpp)
+// See also:   contSet/contSet.h, contDynamics/linearSys/linearSys.h
 
 #pragma once
 
@@ -17,7 +17,7 @@
 
 namespace cora::ct {
 
-/// `{x | aᵀx <= b}` with `a` a column `(n, 1)`.
+/// The halfspace {x | a'x <= b}; a is a column (n, 1).
 struct Halfspace {
     Tensor a;
     double b;
@@ -27,29 +27,32 @@ enum class SpecType { SafeSet, UnsafeSet };
 
 class Specification {
   public:
-    static Specification safe_set(std::vector<Halfspace> halfspaces);
-    static Specification safe_set(const Tensor &a, double b) { return safe_set({{a, b}}); }
-    static Specification unsafe_set(const Halfspace &halfspace);
-    static Specification unsafe_set(const Tensor &a, double b) { return unsafe_set({a, b}); }
+    /// The sets must lie in all of the halfspaces.
+    static Specification safeSet(std::vector<Halfspace> halfspaces);
+    static Specification safeSet(const Tensor &a, double b) { return safeSet({{a, b}}); }
+
+    /// The sets must not touch the halfspace.
+    static Specification unsafeSet(const Halfspace &halfspace);
+    static Specification unsafeSet(const Tensor &a, double b) { return unsafeSet({a, b}); }
 
     SpecType type() const { return type_; }
     const std::vector<Halfspace> &halfspaces() const { return halfspaces_; }
 
-    /// Per batch element of `S`, whether it satisfies the specification.
+    /// Per batch element of S, whether it satisfies the specification.
     std::vector<bool> holds(const ContSet &S) const;
 
-    /// Whether every batch element of `S` satisfies the specification.
+    /// Whether every batch element of S satisfies the specification.
     bool check(const ContSet &S) const;
 
-    /// Whether every set of a reachable-set sequence does.
+    /// Whether every set of a sequence (such as Reach::timeInt) does.
     template <class S>
     bool check(const std::vector<S> &sets) const {
-        return first_violation(sets) < 0;
+        return firstViolation(sets) < 0;
     }
 
     /// The index of the first set that violates the specification, or -1.
     template <class S>
-    int first_violation(const std::vector<S> &sets) const {
+    int firstViolation(const std::vector<S> &sets) const {
         for (std::size_t k = 0; k < sets.size(); ++k)
             if (!check(sets[k])) return static_cast<int>(k);
         return -1;

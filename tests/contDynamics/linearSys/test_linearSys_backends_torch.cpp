@@ -19,7 +19,7 @@ std::vector<double> run(Algorithm algorithm) {
                       Tensor({{0.1, 0.0, 0.05}, {0.0, 0.2, 0.0}, {0.1, 0.0, 0.1}}));
     const Reach R = LinearSys(A).reach(X0, 0.1, 1.0, 8, algorithm);
     std::vector<double> all;
-    for (const auto *sets : {&R.time_int, &R.time_point})
+    for (const auto *sets : {&R.timeInt, &R.timePoint})
         for (const Zonotope &Z : *sets)
             for (const Tensor *t : {&Z.c, &Z.G}) {
                 const std::vector<double> v = t->data();
@@ -40,11 +40,11 @@ double max_diff(const std::vector<double> &a, const std::vector<double> &b) {
 int main() {
     for (const Algorithm algorithm : {Algorithm::Standard, Algorithm::WrappingFree}) {
         const std::string name = algorithm == Algorithm::Standard ? "standard" : "wrapping-free";
-        cora::ct::set_backend("eigen");
+        cora::ct::setBackend("eigen");
         const std::vector<double> eigen = run(algorithm);
         for (const std::string &other : test::backends()) {
             if (other == "eigen") continue;
-            cora::ct::set_backend(other);
+            cora::ct::setBackend(other);
             check(max_diff(eigen, run(algorithm)) < 1e-10, name + ": eigen and " + other + " differ");
         }
     }
@@ -54,12 +54,12 @@ int main() {
     test::for_each_backend([&](const std::string &) {
         const Zonotope X0(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
         const Reach R = LinearSys(Tensor({{-0.1, 1.0}, {-1.0, -0.1}})).reach(X0, 0.1, 2.0, 8);
-        answers.push_back(Specification::safe_set(Tensor({1.0, 0.0}), 1.55).check(R.time_int));
-        answers.push_back(Specification::unsafe_set(Tensor({0.0, 1.0}), -1.4).check(R.time_int));
+        answers.push_back(Specification::safeSet(Tensor({1.0, 0.0}), 1.55).check(R.timeInt));
+        answers.push_back(Specification::unsafeSet(Tensor({0.0, 1.0}), -1.4).check(R.timeInt));
     });
     for (std::size_t i = 2; i < answers.size(); ++i)
         check(answers[i] == answers[i % 2], "a specification is answered differently on another backend");
 
-    cora::ct::set_backend("eigen");
+    cora::ct::setBackend("eigen");
     return test::finish("linearSys backends");
 }

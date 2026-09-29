@@ -4,7 +4,7 @@
 // a future backend — behind the few operations the algorithms need. Which library is set
 // once, for the whole program:
 //
-//     ct::set_backend("eigen");             // or "torch", "torch:cuda"
+//     ct::setBackend("eigen");             // or "torch", "torch:cuda"
 //     ct::Tensor A({{0, 1}, {-1, 0}});      // built on that backend
 //
 // or from outside, with `CORACPP_BACKEND=eigen`, so the same binary reruns on another
@@ -59,14 +59,14 @@ class Tensor {
         virtual Ptr neg() const = 0;
         virtual Ptr expm() const = 0;
         /// Sum over the last dimension, kept: `(..., n, m)` to `(..., n, 1)`.
-        virtual Ptr sum_last() const = 0;
+        virtual Ptr sumLast() const = 0;
         /// `(..., n, 1)` to the diagonal matrix `(..., n, n)`.
         virtual Ptr diag() const = 0;
         /// The identity and zeros in the shape of a square `(..., n, n)` tensor.
-        virtual Ptr eye_like() const = 0;
-        virtual Ptr zeros_like() const = 0;
+        virtual Ptr eyeLike() const = 0;
+        virtual Ptr zerosLike() const = 0;
         /// This tensor followed by `rest`, joined along the last dimension.
-        virtual Ptr cat_last(const std::vector<const Impl *> &rest) const = 0;
+        virtual Ptr catLast(const std::vector<const Impl *> &rest) const = 0;
     };
 
     /// Makes tensors of one backend from numbers on the host.
@@ -98,7 +98,7 @@ class Tensor {
            const std::string &device = "");
 
     /// `data` row-major with `shape`, on the current backend.
-    static Tensor from_data(const std::vector<double> &data, const std::vector<int64_t> &shape,
+    static Tensor fromData(const std::vector<double> &data, const std::vector<int64_t> &shape,
                             const std::string &device = "");
     static Tensor zeros(const std::vector<int64_t> &shape, const std::string &device = "");
     /// `data` with `shape` on the backend and device of `like`, whatever backend is current:
@@ -126,13 +126,13 @@ class Tensor {
     Tensor pos() const { return Tensor(impl_->pos()); }
     Tensor neg() const { return Tensor(impl_->neg()); }
     Tensor expm() const { return Tensor(impl_->expm()); }
-    Tensor sum_last() const { return Tensor(impl_->sum_last()); }
+    Tensor sumLast() const { return Tensor(impl_->sumLast()); }
     Tensor diag() const { return Tensor(impl_->diag()); }
-    Tensor eye_like() const { return Tensor(impl_->eye_like()); }
-    Tensor zeros_like() const { return Tensor(impl_->zeros_like()); }
+    Tensor eyeLike() const { return Tensor(impl_->eyeLike()); }
+    Tensor zerosLike() const { return Tensor(impl_->zerosLike()); }
 
     /// The tensors joined along the last dimension.
-    static Tensor cat_last(const std::vector<Tensor> &parts);
+    static Tensor catLast(const std::vector<Tensor> &parts);
 
   private:
     Tensor binary(const Tensor &o, Impl::Ptr (Impl::*op)(const Impl &) const) const;
@@ -142,11 +142,11 @@ class Tensor {
 
 /// Chooses the backend that new tensors are made on: `"eigen"`, `"torch"` (CPU),
 /// `"torch:cuda"` or `"torch:cuda:1"` for a device, optionally followed by
-/// `",custom_backward"` to differentiate the matrix exponential with the hand-written
+/// `",customBackward"` to differentiate the matrix exponential with the hand-written
 /// backward pass. Tensors that already exist keep their backend.
-void set_backend(const std::string &spec);
+void setBackend(const std::string &spec);
 
-/// The backend new tensors are made on. Unless `set_backend` chose one, it is
+/// The backend new tensors are made on. Unless `setBackend` chose one, it is
 /// `$CORACPP_BACKEND`, else libtorch when it is built in, else Eigen.
 const Tensor::Backend &backend();
 

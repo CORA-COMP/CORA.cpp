@@ -14,12 +14,12 @@ int main() {
     const Tensor A({{-0.1, 1.0}, {-1.0, -0.1}});
     const Zonotope X0(Tensor({1.0, 0.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
 
-    // Ten steps of 0.1; R.time_int[k] covers [0.1 k, 0.1 (k+1)], R.time_point[k] is at 0.1 k.
-    const Reach R = LinearSys(A).reach(X0, /*time_step=*/0.1, /*t_final=*/1.0, /*taylor_terms=*/8);
+    // Ten steps of 0.1; R.timeInt[k] covers [0.1 k, 0.1 (k+1)], R.timePoint[k] is at 0.1 k.
+    const Reach R = LinearSys(A).reach(X0, /*timeStep=*/0.1, /*tFinal=*/1.0, /*taylorTerms=*/8);
 
-    const Interval box = R.time_int.back().interval();
+    const Interval box = R.timeInt.back().interval();
     std::cout << "backend: " << backend().name() << "\n"
-              << "steps: " << R.time_int.size() << "\n"
+              << "steps: " << R.timeInt.size() << "\n"
               << "last enclosure lies in the box\n  lower " << box.inf << "\n  upper " << box.sup
               << "\n";
 }

@@ -117,7 +117,7 @@ class Plot(unittest.TestCase):
 
     def test_plot_draws_a_reachable_set(self):
         A, c, G = oscillator()
-        R = coracpp.reach(A, c, G, time_step=0.1, t_final=1.0)
+        R = coracpp.reach(A, c, G, timeStep=0.1, tFinal=1.0)
         coracpp.plot(R, ax=self.ax)
         self.assertEqual(len(self.ax.patches), 10)
         self.assertEqual(tuple(self.ax.patches[0].get_facecolor()[:3]), coracpp.CORAcolor("CORA:reachSet"))
@@ -130,11 +130,11 @@ class Plot(unittest.TestCase):
     def test_plot_draws_a_zonotope_simulations_and_points(self):
         A, c, G = oscillator()
         coracpp.plot((c, G), ax=self.ax)
-        simulation = coracpp.simulate(A, coracpp.rand_point(c, G, 6, seed=0), 0.1, 1.0)
+        simulation = coracpp.simulate(A, coracpp.randPoint(c, G, 6, seed=0), 0.1, 1.0)
         coracpp.plot(simulation, ax=self.ax)
         black = [ln for ln in self.ax.lines if ln.get_color() == coracpp.CORAcolor("CORA:simulations")]
         self.assertEqual(len(black), 6 + 1)  # a line per trajectory, and the start dots
-        coracpp.plot(coracpp.rand_point(c, G, 30, seed=1), ax=self.ax)
+        coracpp.plot(coracpp.randPoint(c, G, 30, seed=1), ax=self.ax)
         self.assertEqual(len(self.ax.lines), 6 + 1 + 1)
 
     def test_plot_draws_a_specification(self):
@@ -142,8 +142,8 @@ class Plot(unittest.TestCase):
         self.ax.set_ylim(-2, 2)
         x1 = torch.tensor([1.0, 0.0], **F64)
         # Safe x1 <= 0.5 forbids x1 > 0.5; unsafe x1 <= 0.5 forbids x1 <= 0.5.
-        (safe,) = coracpp.plot(coracpp.Specification.safe_set(x1, 0.5), ax=self.ax)
-        (unsafe,) = coracpp.plot(coracpp.Specification.unsafe_set(x1, 0.5), ax=self.ax)
+        (safe,) = coracpp.plot(coracpp.Specification.safeSet(x1, 0.5), ax=self.ax)
+        (unsafe,) = coracpp.plot(coracpp.Specification.unsafeSet(x1, 0.5), ax=self.ax)
         self.assertAlmostEqual(safe.get_xy()[:, 0].min(), 0.5)
         self.assertAlmostEqual(unsafe.get_xy()[:, 0].max(), 0.5)
         self.assertEqual(tuple(safe.get_facecolor()[:3]), coracpp.CORAcolor("CORA:unsafeLight"))
@@ -152,18 +152,18 @@ class Plot(unittest.TestCase):
         self.ax.set_xlim(-2, 2)
         self.ax.set_ylim(-2, 2)
         x1 = torch.tensor([1.0, 0.0], **F64)
-        band = coracpp.Specification.safe_set(x1, 1.0)
+        band = coracpp.Specification.safeSet(x1, 1.0)
         self.assertEqual(band.type, "safeSet")
         (a, b), = band.halfspaces
         np.testing.assert_allclose(a, [1.0, 0.0])
         self.assertEqual(b, 1.0)
-        self.assertEqual(coracpp.Specification.unsafe_set(x1, 0.0).type, "unsafeSet")
+        self.assertEqual(coracpp.Specification.unsafeSet(x1, 0.0).type, "unsafeSet")
 
     def test_labels_reach_the_legend(self):
         A, c, G = oscillator()
-        coracpp.plot(coracpp.reach(A, c, G, time_step=0.1, t_final=1.0), ax=self.ax, label="reachable set")
+        coracpp.plot(coracpp.reach(A, c, G, timeStep=0.1, tFinal=1.0), ax=self.ax, label="reachable set")
         coracpp.plot_initial_set(c, G, ax=self.ax, label="initial set")
-        coracpp.plot(coracpp.simulate(A, coracpp.rand_point(c, G, 3, seed=0), 0.1, 1.0), ax=self.ax, label="simulations")
+        coracpp.plot(coracpp.simulate(A, coracpp.randPoint(c, G, 3, seed=0), 0.1, 1.0), ax=self.ax, label="simulations")
         _, labels = self.ax.get_legend_handles_labels()
         self.assertEqual(sorted(labels), ["initial set", "reachable set", "simulations"])
 

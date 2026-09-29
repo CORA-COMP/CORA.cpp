@@ -1,19 +1,14 @@
-// Python bindings, the compiled half of the `coracpp` package (`_coracpp`; the plotting and the
-// colors are Python, next to this file in coracpp/): `coracpp.reach`, the reachable sets of a linear system,
-// `coracpp.simulate` and `coracpp.rand_point` for trajectories from random points of the
-// initial set, and `coracpp.Specification`, a halfspace they must stay in or out of.
+// bindings - the compiled half of the `coracpp` Python package (`_coracpp`)
 //
-// Torch tensors run on the libtorch backend — batched over sets and systems, on any
-// device, differentiable with autograd — and numpy arrays on the Eigen backend, so the
-// same call picks the backend by what it is given. Both go through the one algorithm in
-// contDynamics/linearSys/linearSys.cpp.
+// The plotting and the colors are Python, next to this file in coracpp/. Torch tensors run on
+// the libtorch backend (batched, on any device, differentiable), numpy arrays on Eigen, so a
+// call picks its backend by the type of its arguments. Names and arguments follow CORA.
 //
-//     import torch, coracpp
-//     r = coracpp.reach(A, c, G, time_step=0.1, t_final=2.0)   # A (..., n, n), c (..., n),
-//     r.time_int_G                                              # G (..., n, m)
+//     R = coracpp.reach(A, c, G, timeStep=0.1, tFinal=2.0)     # A (..., n, n), c (..., n),
+//     R.timeInt_G                                                # G (..., n, m)
 //
-// Results stack the steps in a leading dimension: `time_int_*` has `steps` entries,
-// `time_point_*` has `steps + 1`.
+// Results stack the steps in a leading dimension: timeInt_* has `steps` entries, timePoint_*
+// has `steps + 1`.
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "global/rng.h"
@@ -31,106 +26,117 @@ namespace {
 
 /// The reachable sets, stacked per step for Python and kept as they are for specifications.
 struct PyReach {
-    py::object time_int_c, time_int_G, time_point_c, time_point_G;
+    py::object timeInt_c, timeInt_G, timePoint_c, timePoint_G;
     std::shared_ptr<Reach> sets;
 };
 
-Algorithm parse(const std::string &algorithm) {
-    if (algorithm == "standard") return Algorithm::Standard;
-    if (algorithm == "wrapping-free") return Algorithm::WrappingFree;
-    throw py::value_error("algorithm must be 'standard' or 'wrapping-free'");
+/// CORA's linAlg: "standard" or "wrapping-free".
+Algorithm parseLinAlg(const std::string &linAlg) {
+    if (linAlg == "standard") return Algorithm::Standard;
+    if (linAlg == "wrapping-free") return Algorithm::WrappingFree;
+    throw py::value_error("linAlg must be 'standard' or 'wrapping-free'");
 }
 
-/// The steps as one tensor with the step first. Steps of a run can differ in batch shape (an
-/// enclosure of a batched system next to a set that is not), so they broadcast first.
-torch::Tensor stack_torch(const std::vector<Zonotope> &sets, bool centre) {
+// ------------------------------- libtorch ----------------------------------------
+
+/// The steps as one tensor, the step first; they broadcast first since the batch shape of a
+/// set can differ from that of its neighbours.
+torch::Tensor stackTorch(const std::vector<Zonotope> &sets, bool center) {
     std::vector<torch::Tensor> parts;
     for (const Zonotope &Z : sets) {
-        const torch::Tensor t = to_torch(centre ? Z.c : Z.G);
-        parts.push_back(centre ? t.squeeze(-1) : t);
+        const torch::Tensor t = toTorch(center ? Z.c : Z.G);
+        parts.push_back(center ? t.squeeze(-1) : t);
     }
     return torch::stack(torch::broadcast_tensors(parts), 0);
 }
 
-PyReach reach_torch(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
-                    double time_step, double t_final, int taylor_terms,
-                    const std::string &algorithm, bool custom_backward) {
-    const Zonotope X0{from_torch(c.unsqueeze(-1), custom_backward), from_torch(G, custom_backward)};
-    const Reach r = LinearSys(from_torch(A, custom_backward))
-                        .reach(X0, time_step, t_final, taylor_terms, parse(algorithm));
-    return {py::cast(stack_torch(r.time_int, true)), py::cast(stack_torch(r.time_int, false)),
-            py::cast(stack_torch(r.time_point, true)), py::cast(stack_torch(r.time_point, false)),
-            std::make_shared<Reach>(r)};
+PyReach reachTorch(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
+                   double timeStep, double tFinal, int taylorTerms, const std::string &linAlg,
+                   bool customBackward) {
+    const Zonotope X0{fromTorch(c.unsqueeze(-1), customBackward), fromTorch(G, customBackward)};
+    const Reach R = LinearSys(fromTorch(A, customBackward))
+                        .reach(X0, timeStep, tFinal, taylorTerms, parseLinAlg(linAlg));
+    return {py::cast(stackTorch(R.timeInt, true)), py::cast(stackTorch(R.timeInt, false)),
+            py::cast(stackTorch(R.timePoint, true)), py::cast(stackTorch(R.timePoint, false)),
+            std::make_shared<Reach>(R)};
 }
 
-py::object stack_numpy(const std::vector<Zonotope> &sets, bool centre) {
+torch::Tensor randPointTorch(const torch::Tensor &c, const torch::Tensor &G, int64_t N,
+                             uint64_t seed, const std::string &type) {
+    cora::Rng rng(seed);
+    const Zonotope Z(fromTorch(c.unsqueeze(-1)), fromTorch(G));
+    return toTorch(Z.randPoint(N, rng, type));
+}
+
+torch::Tensor simulateTorch(const torch::Tensor &A, const torch::Tensor &x0, double timeStep,
+                            double tFinal) {
+    std::vector<torch::Tensor> points;
+    for (const Tensor &x : LinearSys(fromTorch(A)).simulate(fromTorch(x0), timeStep, tFinal))
+        points.push_back(toTorch(x));
+    return torch::stack(torch::broadcast_tensors(points), 0);
+}
+
+torch::Tensor simulateRandomTorch(const torch::Tensor &A, const torch::Tensor &c,
+                                  const torch::Tensor &G, int64_t N, double timeStep, double tFinal,
+                                  uint64_t seed, const std::string &type) {
+    return simulateTorch(A, randPointTorch(c, G, N, seed, type), timeStep, tFinal);
+}
+
+Specification safeSetTorch(const torch::Tensor &a, double b) {
+    return Specification::safeSet(fromTorch(a.unsqueeze(-1)), b);
+}
+
+Specification unsafeSetTorch(const torch::Tensor &a, double b) {
+    return Specification::unsafeSet(fromTorch(a.unsqueeze(-1)), b);
+}
+
+// -------------------------------- Eigen ------------------------------------------
+
+py::object stackNumpy(const std::vector<Zonotope> &sets, bool center) {
     py::list parts;
     for (const Zonotope &Z : sets) {
-        Eigen::MatrixXd M = to_eigen(centre ? Z.c : Z.G);
-        if (centre)
-            parts.append(py::cast(Eigen::VectorXd(M.col(0))));
-        else
-            parts.append(py::cast(M));
+        const Eigen::MatrixXd M = toEigen(center ? Z.c : Z.G);
+        parts.append(center ? py::cast(Eigen::VectorXd(M.col(0))) : py::cast(M));
     }
     return py::module_::import("numpy").attr("stack")(parts);
 }
 
-PyReach reach_numpy(const Eigen::MatrixXd &A, const Eigen::VectorXd &c, const Eigen::MatrixXd &G,
-                    double time_step, double t_final, int taylor_terms,
-                    const std::string &algorithm) {
-    const Zonotope X0{from_eigen(c), from_eigen(G)};
-    const Reach r =
-        LinearSys(from_eigen(A)).reach(X0, time_step, t_final, taylor_terms, parse(algorithm));
-    return {stack_numpy(r.time_int, true), stack_numpy(r.time_int, false),
-            stack_numpy(r.time_point, true), stack_numpy(r.time_point, false),
-            std::make_shared<Reach>(r)};
+PyReach reachNumpy(const Eigen::MatrixXd &A, const Eigen::VectorXd &c, const Eigen::MatrixXd &G,
+                   double timeStep, double tFinal, int taylorTerms, const std::string &linAlg) {
+    const Zonotope X0{fromEigen(c), fromEigen(G)};
+    const Reach R = LinearSys(fromEigen(A)).reach(X0, timeStep, tFinal, taylorTerms,
+                                                  parseLinAlg(linAlg));
+    return {stackNumpy(R.timeInt, true), stackNumpy(R.timeInt, false),
+            stackNumpy(R.timePoint, true), stackNumpy(R.timePoint, false),
+            std::make_shared<Reach>(R)};
 }
 
-/// A specification made from torch tensors or numpy arrays lives on that backend, and is
-/// checked against reachable sets from the same one.
-Specification safe_torch(const torch::Tensor &a, double b) {
-    return Specification::safe_set(from_torch(a.unsqueeze(-1)), b);
-}
-Specification unsafe_torch(const torch::Tensor &a, double b) {
-    return Specification::unsafe_set(from_torch(a.unsqueeze(-1)), b);
-}
-Specification safe_numpy(const Eigen::VectorXd &a, double b) {
-    return Specification::safe_set(from_eigen(a), b);
-}
-Specification unsafe_numpy(const Eigen::VectorXd &a, double b) {
-    return Specification::unsafe_set(from_eigen(a), b);
-}
-
-/// `N` random points of the zonotope (c, G), columns `(..., n, N)`. The seed makes a call
-/// repeatable; give a different one for a different draw.
-torch::Tensor rand_point_torch(const torch::Tensor &c, const torch::Tensor &G, int64_t N,
-                               uint64_t seed, bool extreme) {
+Eigen::MatrixXd randPointNumpy(const Eigen::VectorXd &c, const Eigen::MatrixXd &G, int64_t N,
+                               uint64_t seed, const std::string &type) {
     cora::Rng rng(seed);
-    const Zonotope Z(from_torch(c.unsqueeze(-1)), from_torch(G));
-    return to_torch(Z.rand_point(N, rng, extreme));
+    return toEigen(Zonotope(fromEigen(c), fromEigen(G)).randPoint(N, rng, type));
 }
 
-Eigen::MatrixXd rand_point_numpy(const Eigen::VectorXd &c, const Eigen::MatrixXd &G, int64_t N,
-                                 uint64_t seed, bool extreme) {
-    cora::Rng rng(seed);
-    return to_eigen(Zonotope(from_eigen(c), from_eigen(G)).rand_point(N, rng, extreme));
-}
-
-/// The trajectories from the points `x0` `(..., n, N)`, the time points stacked first.
-torch::Tensor simulate_torch(const torch::Tensor &A, const torch::Tensor &x0, double time_step,
-                             double t_final) {
-    std::vector<torch::Tensor> points;
-    for (const Tensor &x : LinearSys(from_torch(A)).simulate(from_torch(x0), time_step, t_final))
-        points.push_back(to_torch(x));
-    return torch::stack(torch::broadcast_tensors(points), 0);
-}
-
-py::object simulate_numpy(const Eigen::MatrixXd &A, const Eigen::MatrixXd &x0, double time_step,
-                          double t_final) {
+py::object simulateNumpy(const Eigen::MatrixXd &A, const Eigen::MatrixXd &x0, double timeStep,
+                         double tFinal) {
     py::list points;
-    for (const Tensor &x : LinearSys(from_eigen(A)).simulate(from_eigen(x0), time_step, t_final))
-        points.append(py::cast(to_eigen(x)));
+    for (const Tensor &x : LinearSys(fromEigen(A)).simulate(fromEigen(x0), timeStep, tFinal))
+        points.append(py::cast(toEigen(x)));
     return py::module_::import("numpy").attr("stack")(points);
+}
+
+py::object simulateRandomNumpy(const Eigen::MatrixXd &A, const Eigen::VectorXd &c,
+                               const Eigen::MatrixXd &G, int64_t N, double timeStep, double tFinal,
+                               uint64_t seed, const std::string &type) {
+    return simulateNumpy(A, randPointNumpy(c, G, N, seed, type), timeStep, tFinal);
+}
+
+Specification safeSetNumpy(const Eigen::VectorXd &a, double b) {
+    return Specification::safeSet(fromEigen(a), b);
+}
+
+Specification unsafeSetNumpy(const Eigen::VectorXd &a, double b) {
+    return Specification::unsafeSet(fromEigen(a), b);
 }
 
 } // namespace
@@ -138,68 +144,73 @@ py::object simulate_numpy(const Eigen::MatrixXd &A, const Eigen::MatrixXd &x0, d
 PYBIND11_MODULE(_coracpp, m) {
     m.doc() = "CORA.cpp: reachability of linear systems on Eigen (numpy) or libtorch (torch)";
 
-    py::class_<PyReach>(m, "Reach")
-        .def_readonly("time_int_c", &PyReach::time_int_c)
-        .def_readonly("time_int_G", &PyReach::time_int_G)
-        .def_readonly("time_point_c", &PyReach::time_point_c)
-        .def_readonly("time_point_G", &PyReach::time_point_G);
+    py::class_<PyReach>(m, "Reach", "The reachable sets: timeInt_* (steps), timePoint_* (steps + 1).")
+        .def_readonly("timeInt_c", &PyReach::timeInt_c)
+        .def_readonly("timeInt_G", &PyReach::timeInt_G)
+        .def_readonly("timePoint_c", &PyReach::timePoint_c)
+        .def_readonly("timePoint_G", &PyReach::timePoint_G);
 
-    m.def("reach", &reach_torch, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("time_step"),
-          py::arg("t_final"), py::arg("taylor_terms") = 10, py::arg("algorithm") = "standard",
-          py::arg("custom_backward") = false,
-          "Reachable sets of x' = A x from the zonotope (c, G), on libtorch. `A` (..., n, n), "
-          "`c` (..., n), `G` (..., n, m); leading dimensions broadcast. `algorithm` is "
-          "'standard' or 'wrapping-free'; `custom_backward` uses the hand-written backward "
-          "pass of the matrix exponential.");
-    m.def("reach", &reach_numpy, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("time_step"),
-          py::arg("t_final"), py::arg("taylor_terms") = 10, py::arg("algorithm") = "standard",
-          "The same for numpy arrays, on Eigen: one set, `A` (n, n), `c` (n,), `G` (n, m).");
+    m.def("reach", &reachTorch, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("timeStep"),
+          py::arg("tFinal"), py::arg("taylorTerms") = 10, py::arg("linAlg") = "standard",
+          py::arg("customBackward") = false,
+          "Reachable sets of x' = A x from the zonotope (c, G), on libtorch. A (..., n, n), c "
+          "(..., n), G (..., n, m); leading dimensions broadcast. linAlg: 'standard' or "
+          "'wrapping-free'. customBackward: hand-written backward pass for the matrix exponential.");
+    m.def("reach", &reachNumpy, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("timeStep"),
+          py::arg("tFinal"), py::arg("taylorTerms") = 10, py::arg("linAlg") = "standard",
+          "The same for numpy arrays, on Eigen: one set, A (n, n), c (n,), G (n, m).");
 
-    m.def("rand_point", &rand_point_torch, py::arg("c"), py::arg("G"), py::arg("N"),
-          py::arg("seed") = 0, py::arg("extreme") = false,
-          "N random points c + G b of the zonotope (c, G), on libtorch: `c` (..., n), `G` "
-          "(..., n, m), the result (..., n, N). With `extreme`, b is a corner of the cube.");
-    m.def("rand_point", &rand_point_numpy, py::arg("c"), py::arg("G"), py::arg("N"),
-          py::arg("seed") = 0, py::arg("extreme") = false,
-          "The same for numpy arrays, on Eigen: `c` (n,), `G` (n, m), the result (n, N).");
-    m.def("simulate", &simulate_torch, py::arg("A"), py::arg("x0"), py::arg("time_step"),
-          py::arg("t_final"),
-          "Trajectories of x' = A x from the points `x0` (..., n, N), exact through e^{A t}, on "
-          "libtorch. The result is (steps + 1, ..., n, N): the time points first.");
-    m.def("simulate", &simulate_numpy, py::arg("A"), py::arg("x0"), py::arg("time_step"),
-          py::arg("t_final"), "The same for numpy arrays, on Eigen: `x0` (n, N).");
+    m.def("randPoint", &randPointTorch, py::arg("c"), py::arg("G"), py::arg("N"),
+          py::arg("seed") = 0, py::arg("type") = "standard",
+          "N random points of the zonotope (c, G), on libtorch: c (..., n), G (..., n, m), result "
+          "(..., n, N). type: 'standard' (b in [-1, 1]^m) or 'extreme' (b in {-1, 1}^m).");
+    m.def("randPoint", &randPointNumpy, py::arg("c"), py::arg("G"), py::arg("N"),
+          py::arg("seed") = 0, py::arg("type") = "standard",
+          "The same for numpy arrays, on Eigen: c (n,), G (n, m), result (n, N).");
+
+    m.def("simulate", &simulateTorch, py::arg("A"), py::arg("x0"), py::arg("timeStep"),
+          py::arg("tFinal"),
+          "Trajectories of x' = A x from the points x0 (..., n, N), exact, on libtorch. Result "
+          "(steps + 1, ..., n, N): the time points first.");
+    m.def("simulate", &simulateNumpy, py::arg("A"), py::arg("x0"), py::arg("timeStep"),
+          py::arg("tFinal"), "The same for numpy arrays, on Eigen: x0 (n, N).");
+    m.def("simulateRandom", &simulateRandomTorch, py::arg("A"), py::arg("c"), py::arg("G"),
+          py::arg("N"), py::arg("timeStep"), py::arg("tFinal"), py::arg("seed") = 0,
+          py::arg("type") = "standard", "simulate from N random points of the zonotope (c, G).");
+    m.def("simulateRandom", &simulateRandomNumpy, py::arg("A"), py::arg("c"), py::arg("G"),
+          py::arg("N"), py::arg("timeStep"), py::arg("tFinal"), py::arg("seed") = 0,
+          py::arg("type") = "standard", "The same for numpy arrays, on Eigen.");
 
     py::class_<Specification>(m, "Specification",
                               "A halfspace {x | a.x <= b} the reachable set must stay in "
-                              "(safe_set) or must not touch (unsafe_set).")
-        .def_static("safe_set", &safe_torch, py::arg("a"), py::arg("b"))
-        .def_static("safe_set", &safe_numpy, py::arg("a"), py::arg("b"))
-        .def_static("unsafe_set", &unsafe_torch, py::arg("a"), py::arg("b"))
-        .def_static("unsafe_set", &unsafe_numpy, py::arg("a"), py::arg("b"))
-        .def_property_readonly(
-            "type",
-            [](const Specification &spec) {
-                return spec.type() == SpecType::SafeSet ? "safeSet" : "unsafeSet";
-            })
-        .def_property_readonly(
-            "halfspaces",
-            [](const Specification &spec) {
-                // The halfspaces {x | a.x <= b} as host numpy arrays, whatever the backend.
-                py::list out;
-                for (const Halfspace &h : spec.halfspaces()) {
-                    const std::vector<double> a = h.a.data();
-                    out.append(py::make_tuple(py::array_t<double>(a.size(), a.data()), h.b));
-                }
-                return out;
-            })
+                              "(safeSet) or must not touch (unsafeSet).")
+        .def_static("safeSet", &safeSetTorch, py::arg("a"), py::arg("b"))
+        .def_static("safeSet", &safeSetNumpy, py::arg("a"), py::arg("b"))
+        .def_static("unsafeSet", &unsafeSetTorch, py::arg("a"), py::arg("b"))
+        .def_static("unsafeSet", &unsafeSetNumpy, py::arg("a"), py::arg("b"))
+        .def_property_readonly("type",
+                               [](const Specification &spec) {
+                                   return spec.type() == SpecType::SafeSet ? "safeSet" : "unsafeSet";
+                               })
+        .def_property_readonly("halfspaces",
+                               [](const Specification &spec) {
+                                   // The halfspaces as host numpy arrays, whatever the backend.
+                                   py::list out;
+                                   for (const Halfspace &h : spec.halfspaces()) {
+                                       const std::vector<double> a = h.a.data();
+                                       out.append(py::make_tuple(
+                                           py::array_t<double>(a.size(), a.data()), h.b));
+                                   }
+                                   return out;
+                               })
         .def(
             "check",
-            [](const Specification &spec, const PyReach &r) { return spec.check(r.sets->time_int); },
+            [](const Specification &spec, const PyReach &R) { return spec.check(R.sets->timeInt); },
             py::arg("reach"), "Whether every time-interval set satisfies the specification.")
         .def(
-            "first_violation",
-            [](const Specification &spec, const PyReach &r) {
-                return spec.first_violation(r.sets->time_int);
+            "firstViolation",
+            [](const Specification &spec, const PyReach &R) {
+                return spec.firstViolation(R.sets->timeInt);
             },
             py::arg("reach"), "The first violating step, or -1.");
 }

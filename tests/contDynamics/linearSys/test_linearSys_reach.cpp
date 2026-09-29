@@ -22,20 +22,20 @@ const Algorithm kAlgorithms[] = {Algorithm::Standard, Algorithm::WrappingFree};
 std::string name(Algorithm a) { return a == Algorithm::Standard ? "standard" : "wrapping-free"; }
 
 Zonotope set_of(const System &s) {
-    return {Tensor::from_data(s.c, {s.n, 1}), Tensor::from_data(s.G, {s.n, s.m})};
+    return {Tensor::fromData(s.c, {s.n, 1}), Tensor::fromData(s.G, {s.n, s.m})};
 }
 
-Tensor system_matrix(const System &s) { return Tensor::from_data(s.A, {s.n, s.n}); }
+Tensor system_matrix(const System &s) { return Tensor::fromData(s.A, {s.n, s.n}); }
 
 double support(const Zonotope &Z, const Eigen::VectorXd &d) {
-    return Z.support_func(Tensor::from_data({d.data(), d.data() + d.size()}, {d.size(), 1}))
+    return Z.supportFunc(Tensor::fromData({d.data(), d.data() + d.size()}, {d.size(), 1}))
         .data()[0];
 }
 
 /// A host matrix as a tensor on the current backend.
 Tensor tensor_of(const Eigen::MatrixXd &M) {
     const Eigen::Matrix<double, -1, -1, Eigen::RowMajor> rows = M;
-    return Tensor::from_data({rows.data(), rows.data() + rows.size()}, {M.rows(), M.cols()});
+    return Tensor::fromData({rows.data(), rows.data() + rows.size()}, {M.rows(), M.cols()});
 }
 
 Eigen::MatrixXd host_matrix(const std::vector<double> &row_major, int rows, int cols) {
@@ -48,14 +48,14 @@ Eigen::MatrixXd host_matrix(const std::vector<double> &row_major, int rows, int 
 void matches_matlab_cora(const std::string &b) {
     for (const System *s : {&matlab_reference::oscillator(), &matlab_reference::three_dimensional(),
                             &matlab_reference::scalar()}) {
-        const std::size_t steps = s->time_int.size();
+        const std::size_t steps = s->timeInt.size();
         const int n = s->n;
         for (const Algorithm algorithm : kAlgorithms) {
             const Reach r = LinearSys(system_matrix(*s))
-                                .reach(set_of(*s), s->time_step, s->time_step * steps,
-                                       s->taylor_terms, algorithm);
+                                .reach(set_of(*s), s->timeStep, s->timeStep * steps,
+                                       s->taylorTerms, algorithm);
             const std::string what = b + ": " + name(algorithm) + " n=" + std::to_string(n);
-            check(r.time_int.size() == steps && r.time_point.size() == steps + 1,
+            check(r.timeInt.size() == steps && r.timePoint.size() == steps + 1,
                   what + ": the number of steps");
             double ti_err = 0.0, tp_err = 0.0;
             for (std::size_t k = 0; k < steps; ++k) {
@@ -63,13 +63,13 @@ void matches_matlab_cora(const std::string &b) {
                 if (algorithm == Algorithm::Standard && k > 0) break;
                 for (std::size_t i = 0; i < s->dirs.size() / n; ++i) {
                     const Eigen::VectorXd d = host_matrix(s->dirs, s->dirs.size() / n, n).row(i);
-                    ti_err = std::max(ti_err, std::abs(support(r.time_int[k], d) - s->time_int[k][i]));
+                    ti_err = std::max(ti_err, std::abs(support(r.timeInt[k], d) - s->timeInt[k][i]));
                 }
             }
-            for (std::size_t k = 0; k < s->time_point.size(); ++k)
+            for (std::size_t k = 0; k < s->timePoint.size(); ++k)
                 for (std::size_t i = 0; i < s->dirs.size() / n; ++i) {
                     const Eigen::VectorXd d = host_matrix(s->dirs, s->dirs.size() / n, n).row(i);
-                    tp_err = std::max(tp_err, std::abs(support(r.time_point[k], d) - s->time_point[k][i]));
+                    tp_err = std::max(tp_err, std::abs(support(r.timePoint[k], d) - s->timePoint[k][i]));
                 }
             check(ti_err < 1e-12, what + ": enclosures differ from MATLAB CORA by " + std::to_string(ti_err));
             check(tp_err < 1e-12, what + ": time points differ from MATLAB CORA by " + std::to_string(tp_err));
@@ -97,7 +97,7 @@ void encloses_the_trajectories(const std::string &b) {
     rotation(2, 2) = -0.5;
 
     for (const Case &tc : {Case{gentle, 0.1, "gentle"}, Case{rotation, 0.3, "fast rotation"}}) {
-        const Zonotope X0 = Zonotope::generate_random(n, m, rng);
+        const Zonotope X0 = Zonotope::generateRandom(n, m, rng);
         const Eigen::MatrixXd c0 = host_matrix(X0.c.data(), n, 1), g0 = host_matrix(X0.G.data(), n, m);
         const Tensor A = tensor_of(tc.A);
         for (const Algorithm algorithm : kAlgorithms) {
@@ -110,12 +110,12 @@ void encloses_the_trajectories(const std::string &b) {
             rng.normal(dirs.data(), dirs.size(), 1.0);
             rng.uniform(times.data(), times.size(), 0.0, 1.0);
             double worst = 1e9;
-            for (std::size_t k = 0; k < r.time_int.size(); ++k)
+            for (std::size_t k = 0; k < r.timeInt.size(); ++k)
                 for (int i = 0; i < samples; ++i) {
                     const Eigen::MatrixXd flow = (tc.A * (double(k) + times(i)) * tc.dt).exp();
                     const Eigen::VectorXd x = flow * (c0 + g0 * beta.col(i));
                     const Eigen::VectorXd d = dirs.col(i);
-                    worst = std::min(worst, (support(r.time_int[k], d) - d.dot(x)) / d.norm());
+                    worst = std::min(worst, (support(r.timeInt[k], d) - d.dot(x)) / d.norm());
                 }
             check(worst >= -1e-9, what + ": a trajectory left its enclosure by " + std::to_string(-worst));
         }
@@ -130,11 +130,11 @@ void time_points_are_exact(const std::string &b) {
     const Eigen::VectorXd c = Eigen::Map<const Eigen::VectorXd>(s.c.data(), 3);
     const Eigen::VectorXd d = (Eigen::VectorXd(3) << 0.3, -1.0, 0.7).finished();
     const Reach r = LinearSys(system_matrix(s)).reach(set_of(s), 0.2, 1.0, 6);
-    for (std::size_t k = 0; k < r.time_point.size(); ++k) {
+    for (std::size_t k = 0; k < r.timePoint.size(); ++k) {
         const Eigen::MatrixXd flow = (A * 0.2 * double(k)).exp();
         const Eigen::VectorXd back = flow.transpose() * d;
         const double want = back.dot(c) + (back.transpose() * G).cwiseAbs().sum();
-        check(close(support(r.time_point[k], d), want, 1e-10), b + ": time point " + std::to_string(k));
+        check(close(support(r.timePoint[k], d), want, 1e-10), b + ": time point " + std::to_string(k));
     }
 }
 
@@ -143,13 +143,13 @@ void time_points_are_exact(const std::string &b) {
 /// builds a symmetric zonotope and gives away up to `dt` on that far side.
 void is_tight_in_one_dimension(const std::string &b) {
     const System &s = matlab_reference::scalar();
-    const double dt = s.time_step;
+    const double dt = s.timeStep;
     for (const Algorithm algorithm : kAlgorithms) {
         const Reach r = LinearSys(system_matrix(s)).reach(set_of(s), dt, 1.0, 8, algorithm);
-        for (std::size_t k = 0; k < r.time_int.size(); ++k) {
+        for (std::size_t k = 0; k < r.timeInt.size(); ++k) {
             const double t0 = double(k) * dt;
-            const double hi = support(r.time_int[k], Eigen::VectorXd::Ones(1));
-            const double lo = -support(r.time_int[k], -Eigen::VectorXd::Ones(1));
+            const double hi = support(r.timeInt[k], Eigen::VectorXd::Ones(1));
+            const double lo = -support(r.timeInt[k], -Eigen::VectorXd::Ones(1));
             const std::string what = b + ": " + name(algorithm) + ": step " + std::to_string(k);
             check(hi >= 3 * std::exp(-t0) - 1e-12 && hi <= 3 * std::exp(-t0) + 1e-9 + 3 * dt * dt,
                   what + ": upper bound");
@@ -162,11 +162,11 @@ void is_tight_in_one_dimension(const std::string &b) {
 /// Without dynamics nothing moves, so every enclosure is the initial set itself.
 void a_zero_system_stays_put(const std::string &b) {
     cora::Rng rng(5);
-    const Zonotope X0 = Zonotope::generate_random(2, 3, rng);
+    const Zonotope X0 = Zonotope::generateRandom(2, 3, rng);
     const Eigen::VectorXd d = Eigen::VectorXd::Ones(2);
     for (const Algorithm algorithm : kAlgorithms) {
         const Reach r = LinearSys(Tensor::zeros({2, 2})).reach(X0, 0.5, 2.0, 5, algorithm);
-        for (const Zonotope &Z : r.time_int)
+        for (const Zonotope &Z : r.timeInt)
             check(close(support(Z, d), support(X0, d), 1e-12), b + ": a zero system's enclosure grew");
     }
 }
@@ -175,30 +175,30 @@ void a_zero_system_stays_put(const std::string &b) {
 void encloses_both_time_points(const std::string &b) {
     cora::Rng rng(7);
     const System &s = matlab_reference::three_dimensional();
-    const Zonotope X0 = Zonotope::generate_random(3, 4, rng);
+    const Zonotope X0 = Zonotope::generateRandom(3, 4, rng);
     Eigen::MatrixXd dirs(3, 40);
     rng.normal(dirs.data(), dirs.size(), 1.0);
     for (const Algorithm algorithm : kAlgorithms) {
         const Reach r = LinearSys(system_matrix(s)).reach(X0, 0.2, 1.0, 6, algorithm);
         double worst = 1e9;
-        for (std::size_t k = 0; k < r.time_int.size(); ++k)
+        for (std::size_t k = 0; k < r.timeInt.size(); ++k)
             for (int i = 0; i < 40; ++i) {
                 const Eigen::VectorXd d = dirs.col(i);
-                const double hull = support(r.time_int[k], d);
-                worst = std::min({worst, hull - support(r.time_point[k], d),
-                                  hull - support(r.time_point[k + 1], d)});
+                const double hull = support(r.timeInt[k], d);
+                worst = std::min({worst, hull - support(r.timePoint[k], d),
+                                  hull - support(r.timePoint[k + 1], d)});
             }
         check(worst >= -1e-9, b + ": " + name(algorithm) + ": a time point left its enclosure");
     }
 }
 
-/// The last step is a full one even when `t_final` is not a multiple of the step.
+/// The last step is a full one even when `tFinal` is not a multiple of the step.
 void counts_steps_up(const std::string &b) {
     const System &s = matlab_reference::scalar();
     const LinearSys sys(system_matrix(s));
-    check(sys.reach(set_of(s), 0.1, 0.25, 6).time_int.size() == 3, b + ": ceil(0.25 / 0.1)");
-    check(sys.reach(set_of(s), 0.1, 0.3, 6).time_int.size() == 3, b + ": 0.3 / 0.1 stays 3");
-    check(sys.reach(set_of(s), 0.1, 0.05, 6).time_point.size() == 2, b + ": one step");
+    check(sys.reach(set_of(s), 0.1, 0.25, 6).timeInt.size() == 3, b + ": ceil(0.25 / 0.1)");
+    check(sys.reach(set_of(s), 0.1, 0.3, 6).timeInt.size() == 3, b + ": 0.3 / 0.1 stays 3");
+    check(sys.reach(set_of(s), 0.1, 0.05, 6).timePoint.size() == 2, b + ": one step");
 }
 
 } // namespace

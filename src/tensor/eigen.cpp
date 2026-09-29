@@ -24,7 +24,7 @@ struct EigenTensor : Tensor::Impl {
     }
     std::string device() const override { return "cpu"; }
     Ptr to(const std::string &device) const override {
-        require_cpu(device);
+        requireCpu(device);
         return std::make_shared<EigenTensor>(m);
     }
 
@@ -41,7 +41,7 @@ struct EigenTensor : Tensor::Impl {
         throw std::invalid_argument("CoraTensor: shapes do not broadcast");
     }
 
-    static void require_cpu(const std::string &device) {
+    static void requireCpu(const std::string &device) {
         if (!device.empty() && device != "cpu")
             throw std::invalid_argument("CoraTensor: the eigen backend runs on the CPU only");
     }
@@ -55,12 +55,12 @@ struct EigenTensor : Tensor::Impl {
     Ptr pos() const override { return wrap(m.cwiseMax(0.0)); }
     Ptr neg() const override { return wrap(m.cwiseMin(0.0)); }
     Ptr expm() const override { return wrap(m.exp()); }
-    Ptr sum_last() const override { return wrap(m.rowwise().sum()); }
+    Ptr sumLast() const override { return wrap(m.rowwise().sum()); }
     Ptr diag() const override { return wrap(Mat(m.col(0).asDiagonal())); }
-    Ptr eye_like() const override { return wrap(Mat::Identity(m.rows(), m.cols())); }
-    Ptr zeros_like() const override { return wrap(Mat::Zero(m.rows(), m.cols())); }
+    Ptr eyeLike() const override { return wrap(Mat::Identity(m.rows(), m.cols())); }
+    Ptr zerosLike() const override { return wrap(Mat::Zero(m.rows(), m.cols())); }
 
-    Ptr cat_last(const std::vector<const Impl *> &rest) const override {
+    Ptr catLast(const std::vector<const Impl *> &rest) const override {
         Eigen::Index cols = m.cols();
         for (const Impl *r : rest) cols += of(*r).cols();
         Mat out(m.rows(), cols);
@@ -78,7 +78,7 @@ struct EigenBackend : Tensor::Backend {
     std::string name() const override { return "eigen"; }
     Tensor::Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,
                            const std::string &device) const override {
-        EigenTensor::require_cpu(device);
+        EigenTensor::requireCpu(device);
         if (shape.size() != 2)
             throw std::invalid_argument("CoraTensor: the eigen backend holds matrices only");
         return EigenTensor::wrap(Eigen::Map<const RowMajor>(data.data(), shape[0], shape[1]));
@@ -87,10 +87,10 @@ struct EigenBackend : Tensor::Backend {
 
 } // namespace
 
-std::shared_ptr<const Tensor::Backend> eigen_backend() { return std::make_shared<EigenBackend>(); }
+std::shared_ptr<const Tensor::Backend> eigenBackend() { return std::make_shared<EigenBackend>(); }
 
-Tensor from_eigen(const Eigen::MatrixXd &m) { return Tensor(EigenTensor::wrap(m)); }
+Tensor fromEigen(const Eigen::MatrixXd &m) { return Tensor(EigenTensor::wrap(m)); }
 
-Eigen::MatrixXd to_eigen(const Tensor &t) { return static_cast<const EigenTensor &>(t.impl()).m; }
+Eigen::MatrixXd toEigen(const Tensor &t) { return static_cast<const EigenTensor &>(t.impl()).m; }
 
 } // namespace cora::ct

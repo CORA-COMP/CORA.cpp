@@ -11,9 +11,9 @@ A = torch.tensor([[-0.1, 1.0], [-1.0, -0.1]], dtype=torch.float64)
 c = torch.tensor([1.0, 0.0], dtype=torch.float64)  # the initial set: center ...
 G = 0.1 * torch.eye(2, dtype=torch.float64)  # ... and generators
 
-R = coracpp.reach(A, c, G, time_step=0.1, t_final=1.0, taylor_terms=8)
+R = coracpp.reach(A, c, G, timeStep=0.1, tFinal=1.0, taylorTerms=8)
 
-# The steps are stacked in the first dimension: time_int_* has 10 (one per step), time_point_*
+# The steps are stacked in the first dimension: timeInt_* has 10 (one per step), timePoint_*
 # has 11 (the start and the end of each step).
-print("time-interval centers:", tuple(R.time_int_c.shape), " generators:", tuple(R.time_int_G.shape))
-print("center of the last enclosure:", R.time_int_c[-1].tolist())
+print("time-interval centers:", tuple(R.timeInt_c.shape), " generators:", tuple(R.timeInt_G.shape))
+print("center of the last enclosure:", R.timeInt_c[-1].tolist())

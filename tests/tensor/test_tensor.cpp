@@ -34,10 +34,10 @@ void construction(const std::string &b) {
 
     check(close(Tensor::zeros({2, 3}), std::vector<double>(6, 0.0)), b + ": zeros");
     check(close(Tensor::eye(2), std::vector<double>{1, 0, 0, 1}), b + ": eye");
-    check(close(Tensor::from_data({1, 2, 3, 4}, {2, 2}), Tensor({{1.0, 2.0}, {3.0, 4.0}})),
-          b + ": from_data");
+    check(close(Tensor::fromData({1, 2, 3, 4}, {2, 2}), Tensor({{1.0, 2.0}, {3.0, 4.0}})),
+          b + ": fromData");
 
-    check(throws([] { Tensor::from_data({1, 2, 3}, {2, 2}); }), b + ": data that misses the shape");
+    check(throws([] { Tensor::fromData({1, 2, 3}, {2, 2}); }), b + ": data that misses the shape");
     check(throws([] { Tensor({{1.0, 2.0}, {3.0}}); }), b + ": ragged rows");
 }
 
@@ -55,14 +55,14 @@ void arithmetic(const std::string &b) {
     check(close(A.neg(), std::vector<double>{0, -2, 0, 0}), b + ": negative part");
 
     const Tensor rect({{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
-    check(close(rect.sum_last(), std::vector<double>{6, 15}), b + ": sum_last");
-    check(rect.sum_last().shape() == std::vector<int64_t>({2, 1}), b + ": sum_last keeps the axis");
+    check(close(rect.sumLast(), std::vector<double>{6, 15}), b + ": sumLast");
+    check(rect.sumLast().shape() == std::vector<int64_t>({2, 1}), b + ": sumLast keeps the axis");
     check(close(Tensor({1.0, 2.0}).diag(), std::vector<double>{1, 0, 0, 2}), b + ": diag");
-    check(close(A.eye_like(), Tensor::eye(2)), b + ": eye_like");
-    check(close(rect.zeros_like(), Tensor::zeros({2, 3})), b + ": zeros_like");
-    check(close(Tensor::cat_last({A, Tensor({{9.0}, {8.0}})}),
+    check(close(A.eyeLike(), Tensor::eye(2)), b + ": eyeLike");
+    check(close(rect.zerosLike(), Tensor::zeros({2, 3})), b + ": zerosLike");
+    check(close(Tensor::catLast({A, Tensor({{9.0}, {8.0}})}),
                 std::vector<double>{1, -2, 9, 3, 4, 8}),
-          b + ": cat_last");
+          b + ": catLast");
 }
 
 void matrix_exponential(const std::string &b) {
@@ -86,10 +86,10 @@ void matrix_exponential(const std::string &b) {
 
 void the_backend_is_chosen_once(const std::string &b) {
     check(close(Tensor({1.0}).data()[0], 1.0), b + ": a backend is set");
-    check(throws([] { cora::ct::set_backend("jax"); }), b + ": an unknown backend");
-    check(throws([] { cora::ct::set_backend("eigen:cuda"); }), b + ": eigen has no device");
-    check(throws([] { cora::ct::set_backend("eigen,custom_backward"); }), b + ": eigen has no options");
-    check(throws([] { cora::ct::set_backend("torch,nonsense"); }), b + ": an unknown option");
+    check(throws([] { cora::ct::setBackend("jax"); }), b + ": an unknown backend");
+    check(throws([] { cora::ct::setBackend("eigen:cuda"); }), b + ": eigen has no device");
+    check(throws([] { cora::ct::setBackend("eigen,customBackward"); }), b + ": eigen has no options");
+    check(throws([] { cora::ct::setBackend("torch,nonsense"); }), b + ": an unknown option");
 }
 
 } // namespace

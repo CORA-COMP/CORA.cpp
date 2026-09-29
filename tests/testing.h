@@ -50,7 +50,7 @@ inline bool close(const cora::ct::Tensor &a, const std::vector<double> &values, 
     return true;
 }
 
-/// Every backend this build and this machine offer, as `set_backend` names them.
+/// Every backend this build and this machine offer, as `setBackend` names them.
 inline std::vector<std::string> backends() {
     std::vector<std::string> all{"eigen"};
 #ifdef CORACPP_TORCH
@@ -64,10 +64,10 @@ inline std::vector<std::string> backends() {
 template <class F>
 void for_each_backend(F body) {
     for (const std::string &name : backends()) {
-        cora::ct::set_backend(name);
+        cora::ct::setBackend(name);
         body(name);
     }
-    cora::ct::set_backend("eigen");
+    cora::ct::setBackend("eigen");
 }
 
 inline int finish(const std::string &what) {

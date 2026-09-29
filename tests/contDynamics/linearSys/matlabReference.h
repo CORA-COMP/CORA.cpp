@@ -15,12 +15,12 @@ namespace matlab_reference {
 struct System {
     int n, m;
     std::vector<double> A, c, G;      // row-major: n×n, n, n×m
-    double time_step;
-    int taylor_terms;
+    double timeStep;
+    int taylorTerms;
     std::vector<double> F_inf, F_sup; // n×n
     std::vector<double> dirs;         // one direction per row
     // The support along each direction: per step, and for the time points per time point.
-    std::vector<std::vector<double>> time_int, time_point;
+    std::vector<std::vector<double>> timeInt, timePoint;
 };
 
 /// A damped oscillator, step 0.1, order 8, five steps.

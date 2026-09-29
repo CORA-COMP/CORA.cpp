@@ -33,31 +33,31 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 }
 
 void batches_broadcast() {
-    set_backend("torch");
+    setBackend("torch");
     const torch::Tensor batch = torch::randn({3, 2, 2}, torch::kDouble);
     const torch::Tensor single = torch::randn({2, 2}, torch::kDouble);
-    const Tensor B = from_torch(batch), S = from_torch(single);
+    const Tensor B = fromTorch(batch), S = fromTorch(single);
 
     check(B.matmul(S).shape() == std::vector<int64_t>({3, 2, 2}), "matmul broadcasts the batch");
     check((B + S).shape() == std::vector<int64_t>({3, 2, 2}), "add broadcasts the batch");
-    check(max_diff(to_torch(B.matmul(S)), batch.matmul(single)) < 1e-14, "the batched product");
+    check(max_diff(toTorch(B.matmul(S)), batch.matmul(single)) < 1e-14, "the batched product");
     check(B.transpose().shape() == std::vector<int64_t>({3, 2, 2}), "transpose keeps the batch");
-    check(B.sum_last().shape() == std::vector<int64_t>({3, 2, 1}), "sum_last keeps the batch");
-    check(B.eye_like().shape() == std::vector<int64_t>({3, 2, 2}), "eye_like takes the batch shape");
-    check(Tensor::cat_last({B, B}).shape() == std::vector<int64_t>({3, 2, 4}), "cat_last per batch");
-    check(from_torch(torch::randn({3, 2, 1}, torch::kDouble)).diag().shape() ==
+    check(B.sumLast().shape() == std::vector<int64_t>({3, 2, 1}), "sumLast keeps the batch");
+    check(B.eyeLike().shape() == std::vector<int64_t>({3, 2, 2}), "eyeLike takes the batch shape");
+    check(Tensor::catLast({B, B}).shape() == std::vector<int64_t>({3, 2, 4}), "catLast per batch");
+    check(fromTorch(torch::randn({3, 2, 1}, torch::kDouble)).diag().shape() ==
               std::vector<int64_t>({3, 2, 2}),
           "diag per batch");
 
     // The exponential of a batch is the batch of exponentials.
-    const torch::Tensor e = to_torch(B.expm());
+    const torch::Tensor e = toTorch(B.expm());
     bool same = true;
     for (int i = 0; i < 3; ++i) same &= max_diff(e[i], torch::matrix_exp(batch[i])) < 1e-13;
     check(same, "expm per batch element");
 }
 
 void devices() {
-    set_backend("torch");
+    setBackend("torch");
     const Tensor t = Tensor::zeros({2, 2});
     check(t.device() == "cpu", "the default device is the CPU");
     check(Tensor::zeros({2, 2}, "cpu").device() == "cpu", "an explicit cpu");
@@ -77,36 +77,36 @@ void devices() {
                           Tensor({{1.0, 2.0}, {3.0, 4.0}})),
               "values read back from the gpu");
         // A backend default on the gpu allocates there without asking.
-        set_backend("torch:cuda");
+        setBackend("torch:cuda");
         check(Tensor::zeros({2, 2}).device().rfind("cuda", 0) == 0, "torch:cuda is the default device");
         check(Tensor::zeros({2, 2}, "cpu").device() == "cpu", "and a tensor can still choose the cpu");
-        set_backend("torch");
+        setBackend("torch");
     } else {
         std::cout << "no CUDA device: the gpu half of these tests did not run\n";
     }
 
-    set_backend("eigen");
+    setBackend("eigen");
     check(throws([] { Tensor::zeros({2, 2}, "gpu"); }), "eigen cannot allocate on the gpu");
     check(Tensor::zeros({2, 2}, "cpu").device() == "cpu", "eigen on the cpu");
     check(throws([] { Tensor::zeros({2, 2}).to("gpu"); }), "eigen cannot move to the gpu");
 }
 
 void backend_specs() {
-    check(!throws([] { set_backend("torch:cpu,custom_backward"); }), "device and option together");
-    check(!throws([] { set_backend("torch,custom_backward"); }), "an option alone");
-    check(throws([] { set_backend("torch,nonsense"); }), "an unknown option");
-    check(throws([] { set_backend("torch:tpu"); }), "an unknown device");
-    set_backend("eigen");
+    check(!throws([] { setBackend("torch:cpu,customBackward"); }), "device and option together");
+    check(!throws([] { setBackend("torch,customBackward"); }), "an option alone");
+    check(throws([] { setBackend("torch,nonsense"); }), "an unknown option");
+    check(throws([] { setBackend("torch:tpu"); }), "an unknown device");
+    setBackend("eigen");
     const Tensor on_eigen({1.0, 2.0});
-    set_backend("torch");
+    setBackend("torch");
     const Tensor on_torch({1.0, 2.0});
     check(throws([&] { (void)(on_eigen + on_torch); }), "tensors of two backends do not mix");
     check(throws([&] { on_eigen.matmul(on_torch.transpose()); }), "nor in a product");
-    check(throws([&] { Tensor::cat_last({on_eigen, on_torch}); }), "nor in a concatenation");
+    check(throws([&] { Tensor::catLast({on_eigen, on_torch}); }), "nor in a concatenation");
 }
 
 /// The hand-written backward pass of `e^A` equals autograd's own.
-void custom_backward_matches_autograd() {
+void customBackward_matches_autograd() {
     torch::manual_seed(1);
     for (const int64_t n : {1, 3, 5}) {
         const torch::Tensor A0 = torch::randn({2, n, n}, torch::kDouble) * 0.7;
@@ -114,7 +114,7 @@ void custom_backward_matches_autograd() {
         std::vector<torch::Tensor> grads;
         for (const bool custom : {false, true}) {
             torch::Tensor A = A0.clone().requires_grad_(true);
-            const torch::Tensor loss = (to_torch(from_torch(A, custom).expm()) * weight).sum();
+            const torch::Tensor loss = (toTorch(fromTorch(A, custom).expm()) * weight).sum();
             grads.push_back(torch::autograd::grad({loss}, {A})[0]);
         }
         check(max_diff(grads[0], grads[1]) < 1e-10,
@@ -125,19 +125,19 @@ void custom_backward_matches_autograd() {
 /// Library code makes its tensors on the backend of the ones it was given, not on the current
 /// one: an Eigen set stays on Eigen while libtorch is the default.
 void tensors_stay_on_their_own_backend() {
-    set_backend("eigen");
+    setBackend("eigen");
     const Zonotope Z(Tensor({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Interval I(Tensor({0.0, 0.0}), Tensor({1.0, 2.0}));
     const LinearSys sys(Tensor({{-0.2, 1.0}, {-1.0, -0.2}}));
-    set_backend("torch");
+    setBackend("torch");
     cora::Rng rng(1);
-    check(!throws([&] { Z.rand_point(5, rng); }), "rand_point of an eigen zonotope, torch current");
-    check(!throws([&] { Z.rand_point(5, rng, true); }), "extreme points of an eigen zonotope");
-    check(!throws([&] { I.rand_point(5, rng); }), "rand_point of an eigen interval, torch current");
-    check(!throws([&] { sys.simulate(Z.rand_point(5, rng), 0.1, 0.5); }), "simulate on eigen, torch current");
+    check(!throws([&] { Z.randPoint(5, rng); }), "randPoint of an eigen zonotope, torch current");
+    check(!throws([&] { Z.randPoint(5, rng, "extreme"); }), "extreme points of an eigen zonotope");
+    check(!throws([&] { I.randPoint(5, rng); }), "randPoint of an eigen interval, torch current");
+    check(!throws([&] { sys.simulate(Z.randPoint(5, rng), 0.1, 0.5); }), "simulate on eigen, torch current");
     check(!throws([&] { sys.reach(Z, 0.1, 0.5, 6); }), "reach on eigen, torch current");
-    check(!throws([&] { Specification::safe_set(Tensor({1.0, 0.0}), 9.0); }), "a torch spec builds");
-    set_backend("eigen");
+    check(!throws([&] { Specification::safeSet(Tensor({1.0, 0.0}), 9.0); }), "a torch spec builds");
+    setBackend("eigen");
 }
 
 } // namespace
@@ -146,8 +146,8 @@ int main() {
     batches_broadcast();
     devices();
     backend_specs();
-    custom_backward_matches_autograd();
+    customBackward_matches_autograd();
     tensors_stay_on_their_own_backend();
-    set_backend("eigen");
+    setBackend("eigen");
     return test::finish("tensor (libtorch)");
 }

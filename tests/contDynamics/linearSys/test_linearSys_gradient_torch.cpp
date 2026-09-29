@@ -21,12 +21,12 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 
 /// A scalar of the reachable tube: the support of every step's enclosure along `d`.
 torch::Tensor loss(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
-                   Algorithm algorithm, bool custom_backward, const torch::Tensor &d) {
-    const Zonotope X0(from_torch(c.unsqueeze(-1), custom_backward), from_torch(G, custom_backward));
-    const Reach r = LinearSys(from_torch(A, custom_backward)).reach(X0, 0.1, 1.0, 6, algorithm);
-    const Tensor direction = from_torch(d.unsqueeze(-1), custom_backward);
+                   Algorithm algorithm, bool customBackward, const torch::Tensor &d) {
+    const Zonotope X0(fromTorch(c.unsqueeze(-1), customBackward), fromTorch(G, customBackward));
+    const Reach r = LinearSys(fromTorch(A, customBackward)).reach(X0, 0.1, 1.0, 6, algorithm);
+    const Tensor direction = fromTorch(d.unsqueeze(-1), customBackward);
     torch::Tensor total = torch::zeros({}, A.options());
-    for (const Zonotope &Z : r.time_int) total = total + to_torch(Z.support_func(direction)).sum();
+    for (const Zonotope &Z : r.timeInt) total = total + toTorch(Z.supportFunc(direction)).sum();
     return total;
 }
 
@@ -72,13 +72,13 @@ void gradients(const torch::TensorOptions &opts, const std::string &where) {
 /// wall, with respect to the system, moves the way a step in that direction says.
 void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts, const std::string &where) {
     const torch::Tensor A0 = torch::tensor({{-0.2, 1.0}, {-1.0, -0.2}}, opts);
-    const Halfspace wall{from_torch(torch::tensor({{1.0}, {0.0}}, opts)), 2.0};
+    const Halfspace wall{fromTorch(torch::tensor({{1.0}, {0.0}}, opts)), 2.0};
     auto margin = [&](const torch::Tensor &A) {
-        const Zonotope X0(from_torch(torch::tensor({{1.0}, {0.5}}, opts)),
-                          from_torch(torch::tensor({{0.1, 0.0}, {0.0, 0.2}}, opts)));
-        const Reach r = LinearSys(from_torch(A)).reach(X0, 0.1, 0.5, 8);
+        const Zonotope X0(fromTorch(torch::tensor({{1.0}, {0.5}}, opts)),
+                          fromTorch(torch::tensor({{0.1, 0.0}, {0.0, 0.2}}, opts)));
+        const Reach r = LinearSys(fromTorch(A)).reach(X0, 0.1, 0.5, 8);
         // Distance of the last enclosure to the wall x1 <= 2.
-        return wall.b - to_torch(r.time_int.back().support_func(wall.a)).sum();
+        return wall.b - toTorch(r.timeInt.back().supportFunc(wall.a)).sum();
     };
     torch::Tensor A = A0.clone().requires_grad_(true);
     const torch::Tensor g = torch::autograd::grad({margin(A)}, {A})[0];
@@ -101,7 +101,7 @@ int main() {
         all.push_back(torch::TensorOptions().dtype(torch::kDouble).device(torch::kCUDA, 0));
         names.push_back("gpu");
     }
-    set_backend("torch");
+    setBackend("torch");
     torch::manual_seed(7);
     for (std::size_t i = 0; i < all.size(); ++i) {
         gradients(all[i], names[i]);

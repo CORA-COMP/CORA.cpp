@@ -12,13 +12,13 @@ A = torch.tensor([[-0.1, 3.0], [-3.0, -0.1]], dtype=torch.float64)
 c = torch.tensor([1.0, 0.5], dtype=torch.float64)
 G = torch.tensor([[0.15, 0.05], [-0.05, 0.1]], dtype=torch.float64)
 
-standard = coracpp.reach(A, c, G, time_step=0.3, t_final=2.4, algorithm="standard")
-wrapping_free = coracpp.reach(A, c, G, time_step=0.3, t_final=2.4, algorithm="wrapping-free")
+standard = coracpp.reach(A, c, G, timeStep=0.3, tFinal=2.4, linAlg="standard")
+wrapping_free = coracpp.reach(A, c, G, timeStep=0.3, tFinal=2.4, linAlg="wrapping-free")
 
 
 def extent_x1(R):
     """How far each enclosure reaches along x1: c_1 + the sum of |G_1j|."""
-    return R.time_int_c[:, 0] + R.time_int_G[:, 0].abs().sum(-1)
+    return R.timeInt_c[:, 0] + R.timeInt_G[:, 0].abs().sum(-1)
 
 
 print("step   standard   wrapping-free")

@@ -8,12 +8,12 @@
 
 namespace cora::ct {
 
-/// The Eigen backend, for `set_backend`.
-std::shared_ptr<const Tensor::Backend> eigen_backend();
+/// The Eigen backend, for `setBackend`.
+std::shared_ptr<const Tensor::Backend> eigenBackend();
 
-Tensor from_eigen(const Eigen::MatrixXd &m);
+Tensor fromEigen(const Eigen::MatrixXd &m);
 
-/// The matrix inside a tensor made by `from_eigen`, or by an operation on one.
-Eigen::MatrixXd to_eigen(const Tensor &t);
+/// The matrix inside a tensor made by `fromEigen`, or by an operation on one.
+Eigen::MatrixXd toEigen(const Tensor &t);
 
 } // namespace cora::ct

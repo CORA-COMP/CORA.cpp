@@ -9,15 +9,15 @@
 
 namespace cora::ct {
 
-/// The libtorch backend on `device`, for `set_backend`. `custom_backward` differentiates
+/// The libtorch backend on `device`, for `setBackend`. `customBackward` differentiates
 /// the matrix exponential with a hand-written backward pass instead of autograd's own.
-std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device,
-                                                     bool custom_backward);
+std::shared_ptr<const Tensor::Backend> torchBackend(const torch::Device &device,
+                                                     bool customBackward);
 
-/// Wraps an existing tensor; `custom_backward` carries over to every tensor made from it.
-Tensor from_torch(const torch::Tensor &t, bool custom_backward = false);
+/// Wraps an existing tensor; `customBackward` carries over to every tensor made from it.
+Tensor fromTorch(const torch::Tensor &t, bool customBackward = false);
 
-/// The tensor inside one made by `from_torch`, or by an operation on one.
-torch::Tensor to_torch(const Tensor &t);
+/// The tensor inside one made by `fromTorch`, or by an operation on one.
+torch::Tensor toTorch(const Tensor &t);
 
 } // namespace cora::ct

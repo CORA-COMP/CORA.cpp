@@ -10,7 +10,7 @@ using test::close;
 
 namespace {
 
-Tensor column(const std::vector<double> &v) { return Tensor::from_data(v, {int64_t(v.size()), 1}); }
+Tensor column(const std::vector<double> &v) { return Tensor::fromData(v, {int64_t(v.size()), 1}); }
 
 std::vector<double> random_vector(cora::Rng &rng, int n, double lo, double hi) {
     std::vector<double> v(n);
@@ -35,17 +35,17 @@ void basics(const std::string &b) {
 }
 
 /// The support of a box along `d` is the best corner, `Σ max(d_i lo_i, d_i hi_i)`.
-void support_func_matches_the_corners(const std::string &b) {
+void supportFunc_matches_the_corners(const std::string &b) {
     cora::Rng rng(1);
     for (const int n : {1, 2, 4}) {
-        const Interval I = Interval::generate_random(n, rng);
+        const Interval I = Interval::generateRandom(n, rng);
         const std::vector<double> lo = I.inf.data(), hi = I.sup.data();
         for (int k = 0; k < 5; ++k) {
             std::vector<double> d(n);
             rng.normal(d.data(), d.size(), 1.0);
             double want = 0.0;
             for (int i = 0; i < n; ++i) want += std::max(d[i] * lo[i], d[i] * hi[i]);
-            check(close(I.support_func(column(d)).data()[0], want, 1e-12),
+            check(close(I.supportFunc(column(d)).data()[0], want, 1e-12),
                   b + ": supportFunc in " + std::to_string(n) + "d");
         }
     }
@@ -56,10 +56,10 @@ void support_func_matches_the_corners(const std::string &b) {
 void mtimes_is_the_hull_of_the_image(const std::string &b) {
     cora::Rng rng(2);
     const int n = 3;
-    const Interval I = Interval::generate_random(n, rng);
+    const Interval I = Interval::generateRandom(n, rng);
     std::vector<double> M(n * n);
     rng.normal(M.data(), M.size(), 1.0);
-    const Interval image = I.mtimes(Tensor::from_data(M, {n, n}));
+    const Interval image = I.mtimes(Tensor::fromData(M, {n, n}));
 
     for (int trial = 0; trial < 50; ++trial) {
         const std::vector<double> x = point_of(I, random_vector(rng, n, 0.0, 1.0));
@@ -98,9 +98,9 @@ void bounds_can_be_matrices(const std::string &b) {
     check(M.center().shape() == std::vector<int64_t>({2, 2}), b + ": matrix shape");
 }
 
-void generate_random_follows_cora(const std::string &b) {
+void generateRandom_follows_cora(const std::string &b) {
     cora::Rng rng(3);
-    const Interval I = Interval::generate_random(6, rng);
+    const Interval I = Interval::generateRandom(6, rng);
     check(I.inf.shape() == std::vector<int64_t>({6, 1}), b + ": shape");
     bool ordered = true;
     const std::vector<double> lo = I.inf.data(), hi = I.sup.data();
@@ -114,12 +114,12 @@ void generate_random_follows_cora(const std::string &b) {
 }
 
 /// Random points fill the box: all inside, close to every side, centred.
-void rand_point_samples_the_box(const std::string &b) {
+void randPoint_samples_the_box(const std::string &b) {
     cora::Rng rng(4);
     const int n = 3, N = 2000;
-    const Interval I = Interval::generate_random(n, rng);
-    const Tensor P = I.rand_point(N, rng);
-    check(P.shape() == std::vector<int64_t>({n, N}), b + ": rand_point shape");
+    const Interval I = Interval::generateRandom(n, rng);
+    const Tensor P = I.randPoint(N, rng);
+    check(P.shape() == std::vector<int64_t>({n, N}), b + ": randPoint shape");
     const std::vector<double> points = P.data(), lo = I.inf.data(), hi = I.sup.data();
     bool inside = true;
     for (int i = 0; i < n; ++i) {
@@ -144,13 +144,13 @@ void rand_point_samples_the_box(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         basics(b);
-        support_func_matches_the_corners(b);
+        supportFunc_matches_the_corners(b);
         mtimes_is_the_hull_of_the_image(b);
         plus_is_the_minkowski_sum(b);
         contains_a_point(b);
         bounds_can_be_matrices(b);
-        rand_point_samples_the_box(b);
-        generate_random_follows_cora(b);
+        randPoint_samples_the_box(b);
+        generateRandom_follows_cora(b);
     });
     return test::finish("interval");
 }

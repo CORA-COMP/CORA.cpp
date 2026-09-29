@@ -11,7 +11,7 @@
 using namespace cora::ct;
 
 int main() {
-    set_backend("torch");
+    setBackend("torch");
 
     // Three oscillators that differ in their damping: A has shape (3, 2, 2).
     const torch::Tensor A = torch::tensor({{{-0.05, 1.0}, {-1.0, -0.05}},
@@ -21,10 +21,10 @@ int main() {
     // One initial set for all of them.
     const Zonotope X0(Tensor({1.0, 0.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
 
-    const Reach R = LinearSys(from_torch(A)).reach(X0, 0.1, 3.0, 8);
+    const Reach R = LinearSys(fromTorch(A)).reach(X0, 0.1, 3.0, 8);
 
     // Every set of the result carries the batch: centers (3, 2, 1), generators (3, 2, m).
-    const torch::Tensor c = to_torch(R.time_int.back().c);
+    const torch::Tensor c = toTorch(R.timeInt.back().c);
     std::cout << "systems: " << A.size(0) << ", last centers " << c.sizes() << "\n"
               << "distance from the origin at t = 3 (more damping, closer):\n"
               << c.squeeze(-1).norm(2, {-1}) << "\n";
