@@ -4,7 +4,7 @@ Syntax:   python tests/global/test_codingConventions.py
 Checks:   every file of src/ starts its docstring with its own name; an operation (a file in a
           set's, a system's or the specification's folder) has Syntax, Inputs, Outputs and See
           also blocks; the code sits between the BEGIN CODE and END OF CODE markers, auxiliary functions
-          (named aux_...) between the AUXILIARY and the MAIN marker, the operation below MAIN; no more than 25 lines run without a comment; lines are at most 100
+          (named aux_...) between the AUXILIARY and the MAIN marker, the operation below MAIN; no more than 25 lines run without a comment; long files have section lines; lines are at most 100
           characters; public names are camelCase and types PascalCase; every option switch tests
           all its options and ends in a descriptive error; every operation has a test; every
           example has its code between BEGIN CODE and END OF CODE, split into sections.
@@ -139,6 +139,18 @@ def check_markers(path, lines, issues, needs_main=True, library=True):
         issues.append("an AUXILIARY marker without auxiliary code; remove it")
 
 
+def check_sections(path, lines, issues):
+    """A file of 120 lines or more is split by section lines ('// Title ------...'): one more
+    than it has hundreds of lines."""
+    if len(lines) < 120:
+        return
+    sections = sum(1 for line in lines if SECTION.match(line))
+    needed = 1 + len(lines) // 100
+    if sections < needed:
+        issues.append(f"{len(lines)} lines need at least {needed} section lines "
+                      f"('// Title ---...' up to column 100), found {sections}")
+
+
 def check_comment_density(path, lines, issues):
     run = 0
     for i, line in enumerate(lines):
@@ -184,6 +196,7 @@ def check_source(path):
     check_docstring(path, lines, issues)
     check_markers(path, lines, issues)
     check_comment_density(path, lines, issues)
+    check_sections(path, lines, issues)
     check_line_length(path, lines, issues)
     check_naming(path, lines, issues)
     check_options(path, lines, issues)

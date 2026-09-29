@@ -37,7 +37,11 @@ plot(R)                                                                # dims de
 ## Install
 
 Needs a C++20 compiler and Eigen; libtorch (via `pip install torch`) adds GPU, batching,
-gradients and the Python package. On Linux and WSL2 one script sets everything up:
+gradients and the Python package. On **Linux and WSL2** (Windows: `wsl --install` in an
+administrator shell, then reopen the folder in WSL; macOS and native Windows are not supported)
+one script sets everything up. It needs `curl` and internet, installs Miniforge into
+`~/miniforge3` if there is no conda, creates the environment `coracpp` (compilers, Eigen, GLPK,
+gdb) and installs torch, the CUDA build if there is an NVIDIA GPU (`--cpu` forces the CPU one):
 
 ```bash
 scripts/setup_local.sh                                       # once: conda env, torch, VS Code

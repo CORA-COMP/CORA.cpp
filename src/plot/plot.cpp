@@ -17,6 +17,8 @@ namespace cora::ct {
 
 namespace {
 
+// Arguments ---------------------------------------------------------------------------------------
+
 // The dimensions must be two; the axes are named after them unless they already are.
 void aux_checkDims(const std::vector<int64_t> &dims) {
     if (dims.size() != 2)
@@ -66,6 +68,8 @@ Point aux_normal(const Halfspace &h, const std::vector<int64_t> &dims) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Sets and Reachable Sets -------------------------------------------------------------------------
+
 void plot(const ContSet &S, const std::vector<int64_t> &dims, const PlotOptions &options) {
     aux_checkDims(dims);
     const std::vector<Polygon> polygons = aux_polygons(S, dims);
@@ -87,6 +91,8 @@ void plot(const Reach &R, const std::vector<int64_t> &dims, const PlotOptions &o
     figure().addPolygons(std::move(polygons), color, color, options.lineWidth.value_or(1.0),
                          options.label, options.unify);
 }
+
+// Specifications and Data -------------------------------------------------------------------------
 
 void plot(const Specification &spec, const std::vector<int64_t> &dims, const PlotOptions &options) {
     aux_checkDims(dims);

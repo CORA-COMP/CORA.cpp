@@ -15,6 +15,8 @@ namespace cora::ct {
 
 namespace {
 
+// Matrix Exponential ------------------------------------------------------------------------------
+
 /// `e^A` with a hand-written backward pass: the gradient of `<G, e^A>` with respect to `A`
 /// is the upper-right block of `exp([[Aᵀ, G], [0, Aᵀ]])`, so nothing is stored per Taylor
 /// term or squaring.
@@ -35,6 +37,8 @@ struct ExpmFunction : torch::autograd::Function<ExpmFunction> {
         return {big.narrow(-2, 0, n).narrow(-1, n, n)};
     }
 };
+
+// Tensor ------------------------------------------------------------------------------------------
 
 /// A torch::Tensor; customBackward selects the hand-written backward pass of expm and is passed on
 /// to every tensor made from this one.
@@ -97,6 +101,8 @@ struct TorchTensor : Tensor::Impl {
     }
 };
 
+// Backend -----------------------------------------------------------------------------------------
+
 /// Makes libtorch tensors on one default device.
 struct TorchBackend : Tensor::Backend {
     torch::Device device;
@@ -116,6 +122,8 @@ struct TorchBackend : Tensor::Backend {
 } // namespace
 
 // ===========================================  MAIN  =========================================== //
+
+// Conversion --------------------------------------------------------------------------------------
 
 std::shared_ptr<const Tensor::Backend> torchBackend(const torch::Device &device,
                                                      bool customBackward) {

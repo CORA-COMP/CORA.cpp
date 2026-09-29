@@ -68,7 +68,7 @@ class Figure {
         bool filled = false, unify = true;
         double lineWidth = 1, radius = 2, sign = 1, b = 0;
         Point a = {0, 0};
-        std::string label;
+        std::string label = "";
     };
 
     std::vector<Layer> layers_;

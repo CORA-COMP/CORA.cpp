@@ -22,6 +22,8 @@ namespace cora::ct {
 
 namespace {
 
+// Limits ------------------------------------------------------------------------------------------
+
 struct Limits {
     double x0, x1, y0, y1;
 };
@@ -52,6 +54,8 @@ Limits aux_limits(const std::vector<Polygon> &all, bool equal, double pw, double
     }
     return l;
 }
+
+// Text and Ticks ----------------------------------------------------------------------------------
 
 // A number with up to four significant digits and no trailing zeros.
 std::string aux_num(double v) {
@@ -89,6 +93,8 @@ std::vector<double> aux_ticks(double lo, double hi) {
     return ticks;
 }
 
+// Regions -----------------------------------------------------------------------------------------
+
 // The part of the polygon where sign * (a.x - b) >= 0, cut edge by edge.
 Polygon aux_clip(const Polygon &poly, const Point &a, double b, double sign) {
     auto value = [&](const Point &p) { return sign * (a[0] * p[0] + a[1] * p[1] - b); };
@@ -108,6 +114,8 @@ Polygon aux_clip(const Polygon &poly, const Point &a, double b, double sign) {
 } // namespace
 
 // ===========================================  MAIN  =========================================== //
+
+// Layers ------------------------------------------------------------------------------------------
 
 void Figure::addPolygons(std::vector<Polygon> polygons, Color edge, std::optional<Color> face,
                          double lineWidth, const std::string &label, bool unify) {
@@ -156,6 +164,8 @@ Figure &figure() {
     static Figure current;
     return current;
 }
+
+// Writing -----------------------------------------------------------------------------------------
 
 std::string Figure::svg() const {
     const double left = 70, right = 20, top = title.empty() ? 20 : 40, bottom = 55;

@@ -20,6 +20,8 @@ namespace {
 using Mat = Eigen::MatrixXd;
 using RowMajor = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
+// Tensor ------------------------------------------------------------------------------------------
+
 /// A matrix held as an Eigen::MatrixXd; every operation returns a new tensor.
 struct EigenTensor : Tensor::Impl {
     Mat m;
@@ -95,6 +97,8 @@ struct EigenTensor : Tensor::Impl {
     }
 };
 
+// Backend -----------------------------------------------------------------------------------------
+
 /// Makes Eigen tensors; matrices only (no batch dimensions) and CPU only.
 struct EigenBackend : Tensor::Backend {
     std::string name() const override { return "eigen"; }
@@ -110,6 +114,8 @@ struct EigenBackend : Tensor::Backend {
 } // namespace
 
 // ===========================================  MAIN  =========================================== //
+
+// Conversion --------------------------------------------------------------------------------------
 
 std::shared_ptr<const Tensor::Backend> eigenBackend() { return std::make_shared<EigenBackend>(); }
 

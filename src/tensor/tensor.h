@@ -29,6 +29,8 @@ namespace cora::ct {
 
 class Tensor {
   public:
+    // Backend Interface ---------------------------------------------------------------------------
+
     /// What a backend implements. Both operands of a binary operation belong to the backend;
     /// Tensor checks that before calling in.
     struct Impl {
@@ -97,6 +99,8 @@ class Tensor {
         Entry(double v) : value(v) {}
     };
 
+    // Construction --------------------------------------------------------------------------------
+
     Tensor() = default;
     explicit Tensor(Impl::Ptr impl) : impl_(std::move(impl)) {}
 
@@ -124,6 +128,8 @@ class Tensor {
     /// Stacks tensors of one shape along a new leading (batch) dimension.
     static Tensor stack(const std::vector<Tensor> &parts);
 
+    // Access --------------------------------------------------------------------------------------
+
     const Impl &impl() const { return *impl_; }
     bool defined() const { return impl_ != nullptr; }
     std::vector<int64_t> shape() const { return impl_->shape(); }
@@ -132,6 +138,8 @@ class Tensor {
 
     /// The same values on `device` ("cpu", "gpu", "cuda:1").
     Tensor to(const std::string &device) const { return Tensor(impl_->to(device)); }
+
+    // Operations ----------------------------------------------------------------------------------
 
     friend Tensor operator+(const Tensor &a, const Tensor &b) { return a.binary(b, &Impl::add); }
     friend Tensor operator-(const Tensor &a, const Tensor &b) { return a.binary(b, &Impl::sub); }
@@ -154,6 +162,8 @@ class Tensor {
 
     Impl::Ptr impl_;
 };
+
+// Backend Selection -------------------------------------------------------------------------------
 
 /// Chooses the backend that new tensors are made on: "eigen", "torch" (CPU), "torch:cuda" or
 /// "torch:cuda:1"; append ",customBackward" for the hand-written backward pass of the matrix

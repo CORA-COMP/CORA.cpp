@@ -73,6 +73,8 @@ int64_t aux_countOf(const std::vector<int64_t> &shape) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Backend Selection -------------------------------------------------------------------------------
+
 // Chooses the backend of new tensors; the spec is read by aux_makeBackend.
 void setBackend(const std::string &spec) { aux_current() = aux_makeBackend(spec); }
 
@@ -88,6 +90,8 @@ const Tensor::Backend &backend() {
     }
     return *aux_current();
 }
+
+// Construction ------------------------------------------------------------------------------------
 
 // A column from a list of numbers.
 Tensor::Tensor(std::initializer_list<Entry> column, const std::string &device) {
@@ -135,6 +139,8 @@ Tensor Tensor::eye(int64_t n, const std::string &device) {
     return zeros({n, n}, device).eyeLike();
 }
 
+// Combining Tensors -------------------------------------------------------------------------------
+
 // Applies a binary operation of the backend; the operands must belong to the same one.
 Tensor Tensor::binary(const Tensor &o, Impl::Ptr (Impl::*op)(const Impl &) const) const {
     if (!impl_ || !o.impl_) throw std::invalid_argument("CoraTensor: an undefined tensor");
@@ -168,6 +174,8 @@ Tensor Tensor::stack(const std::vector<Tensor> &parts) {
     }
     return Tensor(parts[0].impl().stack(rest));
 }
+
+// Printing ----------------------------------------------------------------------------------------
 
 // The shape, then the values row by row.
 std::ostream &operator<<(std::ostream &out, const Tensor &t) {
