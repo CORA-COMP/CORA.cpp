@@ -67,7 +67,8 @@ current example` in the Run and Debug dropdown.
 - **Plotting:** `plot(S, dims, options)` projects a set (or a `Reach`, `Specification`, simulation)
   onto two dimensions and draws it; reachable sets are drawn as their union. C++ writes SVG
   (`plot(R, {0, 1}, {.label = "reachable set"}); figure().save("reach.svg");`), Python uses
-  matplotlib (`plot(R)`). Colors are CORA's: `{.color = "CORA:red"}`.
+  matplotlib (`plot(R)`). Colors are CORA's (`{.color = "CORA:red"}`); a plain set is drawn like CORA's initial set, white
+  with a black outline, so `plot(X0)` needs no colors (`.filled = false` / `facecolor="none"`: open).
 - **Options:** `linAlg` is `"standard"` or `"wrapping-free"`; an unknown value throws.
 
 Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.timeInt[k]`

@@ -38,6 +38,10 @@ struct PlotOptions {
 
     /// Whether the sets of a reachable set are drawn as their union.
     bool unify = true;
+
+    /// Whether a set is filled: white with a black outline unless the colors say otherwise, as CORA
+    /// draws an initial set; false leaves it open.
+    bool filled = true;
 };
 
 /// The set S projected onto the two dimensions `dims` (0-based): its outline, or its fill too.

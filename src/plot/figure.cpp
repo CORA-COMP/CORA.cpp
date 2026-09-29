@@ -156,8 +156,6 @@ void Figure::addRegion(Point a, double b, double sign, Color edge, Color face,
     layers_.push_back(std::move(l));
 }
 
-Color Figure::nextColor() { return CORAcolor("CORA:next", 1, ++colorsGiven_); }
-
 void Figure::clear() { *this = Figure(); }
 
 Figure &figure() {

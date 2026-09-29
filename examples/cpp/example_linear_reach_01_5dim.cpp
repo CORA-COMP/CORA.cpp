@@ -65,7 +65,7 @@ int main() {
 
     // The reachable set, the initial set and the simulations in the first two dimensions.
     plot(R, {0, 1}, {.label = "reachable set"});
-    plot(R0, {0, 1}, {.label = "initial set", .color = "CORA:simulations", .facecolor = "CORA:initialSet"});
+    plot(R0, {0, 1}, {.label = "initial set"});
     plot(traj, {0, 1}, {.label = "simulations"});
     figure().title = "five-dimensional system";
     figure().save("example_linear_reach_01_5dim.svg");

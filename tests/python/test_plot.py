@@ -23,6 +23,19 @@ class Plot(unittest.TestCase):
         cora.plot(x, ax=self.ax)
         self.assertEqual(len(self.ax.lines), 4)
 
+    def test_a_set_is_an_initial_set_by_default(self):
+        cora.plot(self.X0, ax=self.ax)
+        patch = self.ax.patches[0]
+        self.assertEqual(patch.get_facecolor()[:3], cora.CORAcolor("CORA:initialSet"))
+        self.assertEqual(patch.get_edgecolor()[:3], cora.CORAcolor("CORA:simulations"))
+
+    def test_a_facecolor_replaces_the_default(self):
+        cora.plot(self.X0, ax=self.ax, facecolor="none")
+        self.assertEqual(self.ax.patches[0].get_facecolor()[3], 0.0)
+
+    def test_there_is_no_special_function_for_the_initial_set(self):
+        self.assertFalse(hasattr(cora, "plot_initial_set"))
+
     def test_a_reachable_set_is_drawn_as_patches(self):
         cora.plot(self.sys.reach(self.X0, 0.1, 1.0), ax=self.ax)
         self.assertEqual(len(self.ax.patches), 10)

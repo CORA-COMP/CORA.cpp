@@ -64,7 +64,7 @@ for k, projDims in enumerate(dims, start=1):
     cora.plot(R, projDims, label="Reachable set")
 
     # plot initial set
-    cora.plot_initial_set(R0, projDims, label="Initial set")
+    cora.plot(R0, projDims, label="Initial set")
 
     # plot simulation results
     cora.plot(traj, projDims, label="Simulations")

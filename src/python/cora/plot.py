@@ -2,7 +2,8 @@
 colors, on the current axes (or `ax`).
 
     cora.plot(R)                a reachable set: the Reach of LinearSys.reach
-    cora.plot(Z)                a Zonotope, or an Interval
+    cora.plot(Z)                a Zonotope, or an Interval: white with a black outline
+                                (the initial set of CORA); facecolor="none" leaves it open
     cora.plot(simulation)       trajectories from LinearSys.simulate, (time points, n, N)
     cora.plot(points)           points from randPoint, (n, N)
     cora.plot(spec)             a Specification: the region it forbids
@@ -24,6 +25,14 @@ def _axes(ax):
         return ax
     import matplotlib.pyplot as plt
     return plt.gca()
+
+
+def _initial_set_style(style):
+    """The defaults of a set: white fill, black outline, above the reachable set."""
+    style.setdefault("facecolor", CORAcolor("CORA:initialSet"))
+    style.setdefault("edgecolor", CORAcolor("CORA:simulations"))
+    style.setdefault("linewidth", 1.0)
+    style.setdefault("zorder", 3)
 
 
 def _polygon(vertices, **style):
@@ -60,12 +69,11 @@ def zonotope_vertices(c, G):
 
 
 def plot_zonotope(Z, dims=(0, 1), ax=None, label=None, **style):
-    """Draws the Zonotope Z, projected onto `dims`, as an outline (pass `facecolor` to fill it);
-    returns the patch."""
+    """Draws the Zonotope Z, projected onto `dims`: white with a black outline, as CORA draws an
+    initial set (pass `facecolor="none"` for the outline only); returns the patch."""
     ax = _axes(ax)
     dims = list(dims)
-    style.setdefault("facecolor", "none")
-    style.setdefault("edgecolor", CORAcolor("CORA:blue"))
+    _initial_set_style(style)
     vertices = zonotope_vertices(to_numpy(Z.c)[dims], to_numpy(Z.G)[dims])
     patch = _polygon(vertices, label=label, **style)
     ax.add_patch(patch)
@@ -74,22 +82,15 @@ def plot_zonotope(Z, dims=(0, 1), ax=None, label=None, **style):
 
 
 def plot_interval(I, dims=(0, 1), ax=None, label=None, **style):
-    """Draws the box Interval I, projected onto `dims`, as an outline."""
+    """Draws the box Interval I, projected onto `dims`, in the style of `plot_zonotope`."""
     inf, sup = to_numpy(I.inf).reshape(-1), to_numpy(I.sup).reshape(-1)
     c, G = (inf + sup) / 2, np.diag((sup - inf) / 2)
     ax = _axes(ax)
-    style.setdefault("facecolor", "none")
-    style.setdefault("edgecolor", CORAcolor("CORA:blue"))
+    _initial_set_style(style)
     patch = _polygon(zonotope_vertices(c[list(dims)], G[list(dims)]), label=label, **style)
     ax.add_patch(patch)
     ax.autoscale_view()
     return patch
-
-
-def plot_initial_set(Z, dims=(0, 1), ax=None, label=None):
-    """The initial set: white with a black outline, as in CORA."""
-    return plot_zonotope(Z, dims, ax, label, facecolor=CORAcolor("CORA:initialSet"),
-                         edgecolor="black", linewidth=1.0, zorder=3)
 
 
 def plot_reach(R, dims=(0, 1), ax=None, label=None, time_points=False, step=1, num_colors=1,
@@ -104,8 +105,9 @@ def plot_reach(R, dims=(0, 1), ax=None, label=None, time_points=False, step=1, n
                       edgecolor="none", zorder=1)
     if time_points:
         for k in range(0, len(R.timePoint), step):
-            plot_zonotope(R.timePoint[k], dims, ax, edgecolor=CORAcolor("CORA:reachSet:dark"),
-                          linewidth=0.5, linestyle=":", zorder=2)
+            plot_zonotope(R.timePoint[k], dims, ax, facecolor="none",
+                          edgecolor=CORAcolor("CORA:reachSet:dark"), linewidth=0.5,
+                          linestyle=":", zorder=2)
     ax.set_aspect("equal", adjustable="box")
 
 

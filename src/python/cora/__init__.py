@@ -15,7 +15,7 @@ from ._cora import (ContSet, Interval, LinearSys, Reach, Rng, Specification, Zon
                        setBackend)
 from .colors import CORAcolor
 from .tensor import Tensor, eye, ones, randn, zeros
-from .plot import (plot, plot_initial_set, plot_interval, plot_points, plot_reach,
+from .plot import (plot, plot_interval, plot_points, plot_reach,
                    plot_simulation, plot_specification, plot_zonotope, zonotope_vertices)
 
 # An example prints its CORA START block here and its CORA END block on exit.
@@ -23,7 +23,7 @@ banner.install(backend)
 
 __all__ = [
     "CORAcolor", "ContSet", "Interval", "LinearSys", "Reach", "Rng", "Specification", "Zonotope",
-    "backend", "plot", "plot_initial_set", "plot_interval", "plot_points", "plot_reach",
+    "backend", "plot", "plot_interval", "plot_points", "plot_reach",
     "plot_simulation", "plot_specification", "plot_zonotope", "setBackend", "zonotope_vertices",
     "Tensor", "eye", "ones", "randn", "zeros",
 ]

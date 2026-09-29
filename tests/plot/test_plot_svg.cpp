@@ -24,15 +24,20 @@ std::size_t count(const std::string &text, const std::string &what) {
 // The initial set, made on the backend that is current.
 Zonotope initialSet() { return Zonotope(test::column({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})); }
 
-void a_set_is_an_outline_and_its_facecolor_a_fill(const std::string &b) {
+void a_set_is_an_initial_set_unless_told_otherwise(const std::string &b) {
     figure().clear();
     plot(initialSet(), {0, 1}, {.label = "initial set"});
-    const std::string outline = figure().svg();
-    check(outline.find("fill-rule") == std::string::npos, b + ": no fill without facecolor");
-    check(outline.find("initial set") != std::string::npos, b + ": the legend names the set");
+    const std::string set = figure().svg();
+    check(set.find("fill=\"#ffffff\"") != std::string::npos, b + ": white fill by default");
+    check(set.find("stroke=\"#000000\"") != std::string::npos, b + ": black outline by default");
+    check(set.find("initial set") != std::string::npos, b + ": the legend names the set");
     figure().clear();
-    plot(initialSet(), {0, 1}, {.facecolor = "CORA:initialSet"});
-    check(figure().svg().find("fill=\"#ffffff\"") != std::string::npos, b + ": white fill");
+    plot(initialSet(), {0, 1}, {.filled = false});
+    check(figure().svg().find("fill-rule") == std::string::npos, b + ": open when not filled");
+    figure().clear();
+    plot(initialSet(), {0, 1}, {.facecolor = "CORA:red"});
+    check(figure().svg().find(CORAcolor("CORA:red").hex()) != std::string::npos,
+          b + ": a facecolor replaces the default");
 }
 
 void a_reach_set_is_drawn_as_one_union(const std::string &b) {
@@ -113,7 +118,7 @@ void colors_are_CORA_colors() {
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        a_set_is_an_outline_and_its_facecolor_a_fill(b);
+        a_set_is_an_initial_set_unless_told_otherwise(b);
         a_reach_set_is_drawn_as_one_union(b);
         a_specification_is_shaded_up_to_the_limits(b);
         trajectories_and_points(b);

@@ -73,8 +73,11 @@ Point aux_normal(const Halfspace &h, const std::vector<int64_t> &dims) {
 void plot(const ContSet &S, const std::vector<int64_t> &dims, const PlotOptions &options) {
     aux_checkDims(dims);
     const std::vector<Polygon> polygons = aux_polygons(S, dims);
-    figure().addPolygons(polygons, options.color.value_or(figure().nextColor()), options.facecolor,
-                         options.lineWidth.value_or(1.5), options.label, options.unify);
+    // A set is drawn as CORA draws an initial set: white with a black outline.
+    std::optional<Color> face;
+    if (options.filled) face = options.facecolor.value_or(CORAcolor("CORA:initialSet"));
+    figure().addPolygons(polygons, options.color.value_or(CORAcolor("CORA:simulations")), face,
+                         options.lineWidth.value_or(1.0), options.label, options.unify);
 }
 
 void plot(const Reach &R, const std::vector<int64_t> &dims, const PlotOptions &options) {

@@ -47,9 +47,6 @@ class Figure {
     void addRegion(Point a, double b, double sign, Color edge, Color face,
                    const std::string &label);
 
-    /// The `k`-th color of the palette, k = 1, 2, ...: each call gives the next one.
-    Color nextColor();
-
     /// Removes everything.
     void clear();
 
@@ -72,7 +69,6 @@ class Figure {
     };
 
     std::vector<Layer> layers_;
-    int colorsGiven_ = 0;
 };
 
 /// The current figure, which plot() draws into.
