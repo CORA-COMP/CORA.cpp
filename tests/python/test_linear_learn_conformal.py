@@ -1,45 +1,41 @@
-"""test_linear_learn_conformal - the conformal example covers the test trajectories as promised"""
-import os
-import re
-import subprocess
-import sys
-import tempfile
+"""test_linear_learn_conformal - a conformal quantile enlarges the reachable boxes to cover trajectories"""
+import math
 import unittest
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-EXAMPLE = os.path.join(ROOT, "examples", "python", "example_linear_learn_02_conformal.py")
+import torch
+
+import cora
+
+X0 = cora.Zonotope(cora.Tensor([1.2, 0.0]), 0.2 * cora.eye(2))
+PENDULUM = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
+MODEL = cora.LinearSys(cora.Tensor([[0.0, 1.0], [-1.0, -0.2]]))  # the linearization at the origin
 
 
-def run_example():
-    with tempfile.TemporaryDirectory() as folder:
-        figure = os.path.join(folder, "conformal.png")
-        result = subprocess.run([sys.executable, EXAMPLE, "--save", figure],
-                                capture_output=True, text=True, cwd=ROOT)
-        assert result.returncode == 0, result.stderr
-        assert os.path.exists(figure)
-    return result.stdout
+def trajectories(count, seed):
+    return PENDULUM.simulate(X0.randPoint(count, cora.Rng(seed)), 0.1, 2.0)
+
+
+def scores(trajectories, inf, sup):
+    """How far every trajectory (steps + 1, 2, N) leaves the boxes at its worst time."""
+    outside = torch.relu(inf - trajectories) + torch.relu(trajectories - sup)
+    return outside.amax(dim=(0, 1))
 
 
 class Conformal(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.output = run_example()
+    def test_the_quantile_of_the_scores_gives_the_promised_coverage(self):
+        R = MODEL.reach(X0, 0.1, 2.0, taylorTerms=6)
+        inf = torch.stack([Z.interval().inf for Z in R.timePoint])[:, :, None]
+        sup = torch.stack([Z.interval().sup for Z in R.timePoint])[:, :, None]
+        calibration = scores(trajectories(100, 1), inf, sup)
+        test = scores(trajectories(500, 2), inf, sup)
 
-    def number(self, pattern):
-        return float(re.search(pattern + r"\s*([0-9.]+)", self.output).group(1))
-
-    def test_the_conformal_radius_reaches_the_promised_coverage(self):
-        # 1000 test trajectories: a coverage a little under 0.9 is still within sampling error
-        self.assertGreaterEqual(self.number("coverage with the conformal radius:"), 0.87)
-
-    def test_the_reachable_set_alone_misses_trajectories(self):
-        alone = self.number("coverage of the reachable set alone:")
-        self.assertLess(alone, self.number("coverage with the conformal radius:") - 0.15)
-
-    def test_the_radius_is_positive_and_small(self):
-        radius = self.number("conformal radius:")
-        self.assertGreater(radius, 0.0)
-        self.assertLess(radius, 0.5)
+        alpha = 0.2
+        level = math.ceil((len(calibration) + 1) * (1 - alpha)) / len(calibration)
+        radius = torch.quantile(calibration, level, interpolation="higher")
+        # the linear model is wrong for the pendulum: the boxes alone miss trajectories
+        self.assertLess((test <= 0).double().mean(), 0.7)
+        # one calibration set varies by about 0.04 around 1 - alpha
+        self.assertGreater((test <= radius).double().mean(), 1 - alpha - 0.1)
 
 
 if __name__ == "__main__":

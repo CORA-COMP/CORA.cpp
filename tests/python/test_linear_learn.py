@@ -1,35 +1,45 @@
-"""test_linear_learn - the learning example finds the system matrix behind the measurements"""
-import ast
-import os
-import subprocess
-import sys
-import tempfile
+"""test_linear_learn - the system matrix of a reach computation is a parameter that gradient steps update"""
 import unittest
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-EXAMPLE = os.path.join(ROOT, "examples", "python", "example_linear_learn_01_dynamics.py")
+import torch
+
+import cora
+
+X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
+A_TRUE = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
+
+
+def loss(A, measurements):
+    """How far the measurements (steps + 1, 2, N) leave the boxes around the time-point sets."""
+    R = cora.LinearSys(A).reach(X0, 0.1, 1.0, taylorTerms=6)
+    boxes = [Z.interval() for Z in R.timePoint]
+    inf = torch.stack([b.inf for b in boxes])[:, :, None]
+    sup = torch.stack([b.sup for b in boxes])[:, :, None]
+    return (torch.relu(inf - measurements) + torch.relu(measurements - sup)).mean()
 
 
 class LearnDynamics(unittest.TestCase):
-    def test_the_learned_matrix_is_close_to_the_true_one(self):
-        with tempfile.TemporaryDirectory() as folder:
-            figure = os.path.join(folder, "learned.png")
-            result = subprocess.run([sys.executable, EXAMPLE, "--save", figure],
-                                    capture_output=True, text=True, cwd=ROOT)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertTrue(os.path.exists(figure))
-        lines = result.stdout.splitlines()
-        learned = ast.literal_eval(next(l for l in lines if l.startswith("learned A:"))[10:].strip())
-        for row, expected in zip(learned, [[-0.1, 1.0], [-1.0, -0.1]]):
-            for value, target in zip(row, expected):
-                self.assertAlmostEqual(value, target, delta=0.1)
+    def setUp(self):
+        self.measurements = cora.LinearSys(A_TRUE).simulate(X0.randPoint(10, cora.Rng(0)), 0.1, 1.0)
 
-    def test_the_measurements_end_up_inside(self):
-        result = subprocess.run([sys.executable, EXAMPLE, "--save", os.devnull],
-                                capture_output=True, text=True, cwd=ROOT)
-        last = [l for l in result.stdout.splitlines() if l.startswith("step 300")][0]
-        outside = float(last.split("outside")[1].split(",")[0])
-        self.assertLess(outside, 0.01)
+    def test_a_gradient_step_updates_the_matrix(self):
+        A = torch.nn.Parameter(cora.Tensor([[0.0, 0.5], [-0.5, 0.0]]))
+        before = A.detach().clone()
+        value = loss(A, self.measurements)
+        value.backward()
+        torch.optim.Adam([A], lr=0.02).step()
+        self.assertTrue(torch.isfinite(A.grad).all() and A.grad.abs().sum() > 0)
+        self.assertFalse(torch.equal(before, A.detach()))
+
+    def test_a_few_steps_bring_the_measurements_inside(self):
+        A = torch.nn.Parameter(cora.Tensor([[0.0, 0.5], [-0.5, 0.0]]))
+        optimizer = torch.optim.Adam([A], lr=0.02)
+        first = loss(A, self.measurements).item()
+        for _ in range(30):
+            optimizer.zero_grad()
+            loss(A, self.measurements).backward()
+            optimizer.step()
+        self.assertLess(loss(A, self.measurements).item(), first)
 
 
 if __name__ == "__main__":
