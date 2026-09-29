@@ -1,9 +1,10 @@
-// Python bindings: `coracpp.reach`, the reachable sets of a linear system.
+// Python bindings: `coracpp.reach`, the reachable sets of a linear system, and
+// `coracpp.Specification`, a halfspace they must stay in or out of.
 //
 // Torch tensors run on the libtorch backend — batched over sets and systems, on any
 // device, differentiable with autograd — and numpy arrays on the Eigen backend, so the
 // same call picks the backend by what it is given. Both go through the one algorithm in
-// contDynamics/linear_sys.cpp.
+// contDynamics/linearSys/linearSys.cpp.
 //
 //     import torch, coracpp
 //     r = coracpp.reach(A, c, G, time_step=0.1, t_final=2.0)   # A (..., n, n), c (..., n),
@@ -13,6 +14,7 @@
 // `time_point_*` has `steps + 1`.
 
 #include "contDynamics/linearSys/linearSys.h"
+#include "specification/specification.h"
 #include "tensor/eigen.h"
 #include "tensor/torch.h"
 
@@ -24,8 +26,10 @@ using namespace cora::ct;
 
 namespace {
 
+/// The reachable sets, stacked per step for Python and kept as they are for specifications.
 struct PyReach {
     py::object time_int_c, time_int_G, time_point_c, time_point_G;
+    std::shared_ptr<Reach> sets;
 };
 
 Algorithm parse(const std::string &algorithm) {
@@ -34,8 +38,8 @@ Algorithm parse(const std::string &algorithm) {
     throw py::value_error("algorithm must be 'standard' or 'wrapping-free'");
 }
 
-/// The steps as one tensor with the step first. Steps of a run can differ in batch shape
-/// (an unbatched set under a batched system starts unbatched), so they broadcast first.
+/// The steps as one tensor with the step first. Steps of a run can differ in batch shape (an
+/// enclosure of a batched system next to a set that is not), so they broadcast first.
 torch::Tensor stack_torch(const std::vector<Zonotope> &sets, bool centre) {
     std::vector<torch::Tensor> parts;
     for (const Zonotope &Z : sets) {
@@ -52,7 +56,8 @@ PyReach reach_torch(const torch::Tensor &A, const torch::Tensor &c, const torch:
     const Reach r = LinearSys(from_torch(A, custom_backward))
                         .reach(X0, time_step, t_final, taylor_terms, parse(algorithm));
     return {py::cast(stack_torch(r.time_int, true)), py::cast(stack_torch(r.time_int, false)),
-            py::cast(stack_torch(r.time_point, true)), py::cast(stack_torch(r.time_point, false))};
+            py::cast(stack_torch(r.time_point, true)), py::cast(stack_torch(r.time_point, false)),
+            std::make_shared<Reach>(r)};
 }
 
 py::object stack_numpy(const std::vector<Zonotope> &sets, bool centre) {
@@ -74,7 +79,23 @@ PyReach reach_numpy(const Eigen::MatrixXd &A, const Eigen::VectorXd &c, const Ei
     const Reach r =
         LinearSys(from_eigen(A)).reach(X0, time_step, t_final, taylor_terms, parse(algorithm));
     return {stack_numpy(r.time_int, true), stack_numpy(r.time_int, false),
-            stack_numpy(r.time_point, true), stack_numpy(r.time_point, false)};
+            stack_numpy(r.time_point, true), stack_numpy(r.time_point, false),
+            std::make_shared<Reach>(r)};
+}
+
+/// A specification made from torch tensors or numpy arrays lives on that backend, and is
+/// checked against reachable sets from the same one.
+Specification safe_torch(const torch::Tensor &a, double b) {
+    return Specification::safe_set(from_torch(a.unsqueeze(-1)), b);
+}
+Specification unsafe_torch(const torch::Tensor &a, double b) {
+    return Specification::unsafe_set(from_torch(a.unsqueeze(-1)), b);
+}
+Specification safe_numpy(const Eigen::VectorXd &a, double b) {
+    return Specification::safe_set(from_eigen(a), b);
+}
+Specification unsafe_numpy(const Eigen::VectorXd &a, double b) {
+    return Specification::unsafe_set(from_eigen(a), b);
 }
 
 } // namespace
@@ -98,4 +119,22 @@ PYBIND11_MODULE(coracpp, m) {
     m.def("reach", &reach_numpy, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("time_step"),
           py::arg("t_final"), py::arg("taylor_terms") = 10, py::arg("algorithm") = "standard",
           "The same for numpy arrays, on Eigen: one set, `A` (n, n), `c` (n,), `G` (n, m).");
+
+    py::class_<Specification>(m, "Specification",
+                              "A halfspace {x | a.x <= b} the reachable set must stay in "
+                              "(safe_set) or must not touch (unsafe_set).")
+        .def_static("safe_set", &safe_torch, py::arg("a"), py::arg("b"))
+        .def_static("safe_set", &safe_numpy, py::arg("a"), py::arg("b"))
+        .def_static("unsafe_set", &unsafe_torch, py::arg("a"), py::arg("b"))
+        .def_static("unsafe_set", &unsafe_numpy, py::arg("a"), py::arg("b"))
+        .def(
+            "check",
+            [](const Specification &spec, const PyReach &r) { return spec.check(r.sets->time_int); },
+            py::arg("reach"), "Whether every time-interval set satisfies the specification.")
+        .def(
+            "first_violation",
+            [](const Specification &spec, const PyReach &r) {
+                return spec.first_violation(r.sets->time_int);
+            },
+            py::arg("reach"), "The first violating step, or -1.");
 }

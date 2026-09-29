@@ -157,25 +157,28 @@ differently.
 ## Linear systems on CoraTensor
 
 `ct::LinearSys` is CORA's `linearSys` reachability for zonotopes, both algorithms
-(`Standard`, `WrappingFree`), in the layout of MATLAB CORA (`contSet/`, `contDynamics/`). It
-and `ct::Zonotope` are written once against `ct::Tensor`, which wraps Eigen or libtorch:
+(`Standard`, `WrappingFree`), in the layout of MATLAB CORA. It, `ct::Zonotope`, `ct::Interval`
+and `ct::Specification` are written once against `ct::Tensor`, which wraps Eigen or libtorch:
 
 ```cpp
-ct::set_backend("eigen");  // the only line that names a backend; or CORACPP_BACKEND=eigen
+ct::set_backend("torch");  // the only line that names a backend; or CORACPP_BACKEND=eigen
 ct::Tensor A({{-0.2, 1}, {-1, -0.2}});
 ct::Zonotope X0{ct::Tensor({1, 0.5}), ct::Tensor({{0.1, 0}, {0, 0.2}})};
 ct::Reach R = ct::LinearSys(A).reach(X0, 0.1, 1.0, 8);  // R.time_int[k], R.time_point[k]
+auto spec = ct::Specification::safe_set(ct::Tensor({1, 0}), 3.0);  // x1 <= 3
+bool ok = spec.check(R.time_int);
 ```
 
 | | |
 | --- | --- |
-| Backend | `set_backend("eigen")`, `"torch"`, `"torch:cuda"`; results are identical up to rounding |
+| Backend | `set_backend("eigen")`, `"torch"` (the default when built in), `"torch:cuda"`; results are identical up to rounding |
+| Device | per tensor: `Tensor::zeros({n, n}, "gpu")`, `Tensor({1, 2}, "gpu")`, `t.to("gpu")`; Eigen is CPU only |
 | vmap | code is written for one set and one system; libtorch broadcasts the leading dimensions of `A` `(…, n, n)` and of the set, so batches of sets, of systems or of both are the same call. Eigen holds one set |
 | Gradients | libtorch autograd through the whole computation, checked against finite differences |
 | Custom backward | `"torch,custom_backward"` differentiates `e^A` with a hand-written pass |
-| GPU | `"torch:cuda"`, checked against the CPU |
-| Python | `make python TORCH=…`; `coracpp.reach(A, c, G, …)` takes torch tensors (libtorch) or numpy arrays (Eigen) |
-| Reference | `tests/test_linear_sys.cpp` matches MATLAB CORA R2024b to 1e-12 |
+| Specification | `safe_set` / `unsafe_set` for halfspaces (a polytope for safe sets), on any `ContSet`; `holds`, `check`, `first_violation` |
+| Python | `make python TORCH=…`; `coracpp.reach`, `coracpp.Specification`; torch tensors run on libtorch, numpy arrays on Eigen. `examples/python/linear_sys.py` runs, checks and plots (`plotting.py`) |
+| Reference | `tests/contDynamics/linearSys/` matches MATLAB CORA R2024b to 1e-12 on three systems |
 
 A new dynamics class or set goes in `contDynamics/` or `contSet/` and uses only `Tensor`. A new
 backend is one file implementing `Tensor::Impl` and `Tensor::Backend` (`tensor/eigen.cpp` is the
@@ -183,8 +186,8 @@ model) and one line in `make_backend`. Without inputs, CORA's `standard` and `wr
 coincide; here `Standard` applies `F` to every step's set, `WrappingFree` maps the first step's
 enclosure forward, as in the task's algorithm.
 
-`contSet/sets.h` and `torch_sets.h` remain the catalog's own implementations, laid out for
-speed on one library each.
+`competition/sets/` keeps the catalog's own implementations, laid out for speed on one library
+each.
 
 ## What is measured
 
