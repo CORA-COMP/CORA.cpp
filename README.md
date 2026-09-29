@@ -66,6 +66,8 @@ current example` in the Run and Debug dropdown.
 - **Batches:** a leading dimension in `c`, `G` or `A` is a batch; the call is the same as for one set.
 - **Backends:** `setBackend("torch" | "torch:cuda" | "eigen")` or `CORACPP_BACKEND`. In Python, torch
   tensors run on libtorch, numpy arrays on Eigen. `device="gpu"` places a tensor on the GPU.
+- **Learning:** `A` can be a parameter of a torch `nn.Module` (Python): see
+  `example_linear_learn_01_dynamics`, which learns a system matrix from measurements.
 - **Gradients:** autograd works through `reach` and `simulate` on libtorch;
   `setBackend("torch,customBackward")` uses a hand-written backward pass for the matrix exponential.
 - **Nonlinear systems:** write the dynamics on symbolic states, `NonlinearSys(f, n)` derives it,
