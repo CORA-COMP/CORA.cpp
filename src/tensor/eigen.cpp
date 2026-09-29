@@ -28,6 +28,10 @@ struct EigenTensor : Tensor::Impl {
         return std::make_shared<EigenTensor>(m);
     }
 
+    Ptr like(const std::vector<double> &data, const std::vector<int64_t> &shape) const override {
+        return wrap(Eigen::Map<const RowMajor>(data.data(), shape[0], shape[1]));
+    }
+
     /// `a + sign * b`, where a column on either side is added to every column of the other,
     /// as libtorch broadcasts it.
     static Mat combine(const Mat &a, const Mat &b, double sign) {

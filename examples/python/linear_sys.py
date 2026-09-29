@@ -1,5 +1,5 @@
-"""Reachability of a damped oscillator from Python: both algorithms, a specification, a batch
-of systems, a gradient, and a plot.
+"""Reachability of a damped oscillator from Python: both algorithms, simulations from random
+points, a specification, a batch of systems, a gradient, and a plot in CORA's colors.
 
     make python TORCH=...
     PYTHONPATH=build python examples/python/linear_sys.py [--device cuda] [--save reach.png]
@@ -15,7 +15,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).parent))
 import coracpp  # noqa: E402  (built into build/)
-from plotting import plot_halfspace, plot_reach  # noqa: E402
+from plotting import plot_halfspace, plot_initial_set, plot_reach, plot_simulation  # noqa: E402
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--device", default="cpu", help="cpu or cuda")
@@ -32,6 +32,13 @@ options = dict(time_step=0.1, t_final=6.0, taylor_terms=8)
 reach = {name: coracpp.reach(A, c, G, algorithm=name, **options)
          for name in ("standard", "wrapping-free")}
 print("steps:", reach["standard"].time_int_c.shape[0])
+
+# Simulations: 20 random points of the initial set, run through e^{A t}. Extreme points (corners
+# of the generator cube) are where a set that is too small shows it first.
+start = coracpp.rand_point(c, G, 20, seed=1)
+simulation = coracpp.simulate(A, start, options["time_step"] / 2, options["t_final"])
+print("simulation:", tuple(simulation.shape), "(time points, n, points); lowest x1 reached:",
+      float(simulation[:, 0].min()))
 
 # A specification: never touch the halfspace x1 <= -0.75 (a wall on the left). The oscillator
 # swings towards it, so `first_violation` is the step that first touches it, or -1.
@@ -65,14 +72,16 @@ import matplotlib.pyplot as plt  # noqa: E402
 fig, axes = plt.subplots(1, 2, figsize=(10, 4.5), sharex=True, sharey=True)
 for ax, (name, r) in zip(axes, reach.items()):
     plot_reach(ax, r, step=2)
+    plot_initial_set(ax, c, G)
+    plot_simulation(ax, simulation)
     plot_halfspace(ax, wall, -0.75, kind="unsafe")
     ax.set_title(name)
     ax.set_xlabel("$x_1$")
 axes[0].set_ylabel("$x_2$")
-fig.suptitle("damped oscillator: reachable sets, dotted = time points, red = unsafe")
+fig.suptitle("damped oscillator: reachable set (blue), initial set, simulations, unsafe region")
 fig.tight_layout(rect=(0, 0, 1, 0.94))
 if args.save:
-    fig.savefig(args.save, dpi=130)
+    fig.savefig(args.save, dpi=130, bbox_inches="tight")
     print("wrote", args.save)
 else:
     plt.show()

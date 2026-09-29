@@ -167,6 +167,7 @@ ct::Zonotope X0{ct::Tensor({1, 0.5}), ct::Tensor({{0.1, 0}, {0, 0.2}})};
 ct::Reach R = ct::LinearSys(A).reach(X0, 0.1, 1.0, 8);  // R.time_int[k], R.time_point[k]
 auto spec = ct::Specification::safe_set(ct::Tensor({1, 0}), 3.0);  // x1 <= 3
 bool ok = spec.check(R.time_int);
+auto x = ct::LinearSys(A).simulate_random(X0, 20, 0.05, 1.0, rng);  // x[k]: 20 points at k·0.05
 ```
 
 | | |
@@ -176,8 +177,9 @@ bool ok = spec.check(R.time_int);
 | vmap | code is written for one set and one system; libtorch broadcasts the leading dimensions of `A` `(…, n, n)` and of the set, so batches of sets, of systems or of both are the same call. Eigen holds one set |
 | Gradients | libtorch autograd through the whole computation, checked against finite differences |
 | Custom backward | `"torch,custom_backward"` differentiates `e^A` with a hand-written pass |
+| Simulation | `rand_point` on every set (uniform, or `extreme` corners of a zonotope); `LinearSys::simulate` runs trajectories exactly through `e^{AΔt}`, `simulate_random` from random start points. Tested to stay inside both algorithms' reachable sets |
 | Specification | `safe_set` / `unsafe_set` for halfspaces (a polytope for safe sets), on any `ContSet`; `holds`, `check`, `first_violation` |
-| Python | `make python TORCH=…`; `coracpp.reach`, `coracpp.Specification`; torch tensors run on libtorch, numpy arrays on Eigen. `examples/python/linear_sys.py` runs, checks and plots (`plotting.py`) |
+| Python | `make python TORCH=…`; `coracpp.reach`, `simulate`, `rand_point`, `Specification`; torch tensors run on libtorch, numpy arrays on Eigen. `examples/python/linear_sys.py` runs, simulates, checks and plots; `plotting.py` draws in CORA's colors (`CORAcolor`) |
 | Reference | `tests/contDynamics/linearSys/` matches MATLAB CORA R2024b to 1e-12 on three systems |
 
 A new dynamics class or set goes in `contDynamics/` or `contSet/` and uses only `Tensor`. A new

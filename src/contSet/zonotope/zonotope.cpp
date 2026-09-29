@@ -36,7 +36,7 @@ Tensor Zonotope::rand_point(int64_t N, Rng &rng, bool extreme) const {
     rng.uniform(b.data(), b.size(), -1.0, 1.0);
     if (extreme)
         for (double &v : b) v = v < 0.0 ? -1.0 : 1.0;
-    return c + G.matmul(Tensor::from_data(b, shape, c.device()));
+    return c + G.matmul(Tensor::like(c, b, shape));
 }
 
 Interval Zonotope::interval() const {

@@ -1,5 +1,6 @@
-// Python bindings: `coracpp.reach`, the reachable sets of a linear system, and
-// `coracpp.Specification`, a halfspace they must stay in or out of.
+// Python bindings: `coracpp.reach`, the reachable sets of a linear system,
+// `coracpp.simulate` and `coracpp.rand_point` for trajectories from random points of the
+// initial set, and `coracpp.Specification`, a halfspace they must stay in or out of.
 //
 // Torch tensors run on the libtorch backend — batched over sets and systems, on any
 // device, differentiable with autograd — and numpy arrays on the Eigen backend, so the
@@ -14,6 +15,7 @@
 // `time_point_*` has `steps + 1`.
 
 #include "contDynamics/linearSys/linearSys.h"
+#include "global/rng.h"
 #include "specification/specification.h"
 #include "tensor/eigen.h"
 #include "tensor/torch.h"
@@ -98,6 +100,38 @@ Specification unsafe_numpy(const Eigen::VectorXd &a, double b) {
     return Specification::unsafe_set(from_eigen(a), b);
 }
 
+/// `N` random points of the zonotope (c, G), columns `(..., n, N)`. The seed makes a call
+/// repeatable; give a different one for a different draw.
+torch::Tensor rand_point_torch(const torch::Tensor &c, const torch::Tensor &G, int64_t N,
+                               uint64_t seed, bool extreme) {
+    cora::Rng rng(seed);
+    const Zonotope Z(from_torch(c.unsqueeze(-1)), from_torch(G));
+    return to_torch(Z.rand_point(N, rng, extreme));
+}
+
+Eigen::MatrixXd rand_point_numpy(const Eigen::VectorXd &c, const Eigen::MatrixXd &G, int64_t N,
+                                 uint64_t seed, bool extreme) {
+    cora::Rng rng(seed);
+    return to_eigen(Zonotope(from_eigen(c), from_eigen(G)).rand_point(N, rng, extreme));
+}
+
+/// The trajectories from the points `x0` `(..., n, N)`, the time points stacked first.
+torch::Tensor simulate_torch(const torch::Tensor &A, const torch::Tensor &x0, double time_step,
+                             double t_final) {
+    std::vector<torch::Tensor> points;
+    for (const Tensor &x : LinearSys(from_torch(A)).simulate(from_torch(x0), time_step, t_final))
+        points.push_back(to_torch(x));
+    return torch::stack(torch::broadcast_tensors(points), 0);
+}
+
+py::object simulate_numpy(const Eigen::MatrixXd &A, const Eigen::MatrixXd &x0, double time_step,
+                          double t_final) {
+    py::list points;
+    for (const Tensor &x : LinearSys(from_eigen(A)).simulate(from_eigen(x0), time_step, t_final))
+        points.append(py::cast(to_eigen(x)));
+    return py::module_::import("numpy").attr("stack")(points);
+}
+
 } // namespace
 
 PYBIND11_MODULE(coracpp, m) {
@@ -119,6 +153,20 @@ PYBIND11_MODULE(coracpp, m) {
     m.def("reach", &reach_numpy, py::arg("A"), py::arg("c"), py::arg("G"), py::arg("time_step"),
           py::arg("t_final"), py::arg("taylor_terms") = 10, py::arg("algorithm") = "standard",
           "The same for numpy arrays, on Eigen: one set, `A` (n, n), `c` (n,), `G` (n, m).");
+
+    m.def("rand_point", &rand_point_torch, py::arg("c"), py::arg("G"), py::arg("N"),
+          py::arg("seed") = 0, py::arg("extreme") = false,
+          "N random points c + G b of the zonotope (c, G), on libtorch: `c` (..., n), `G` "
+          "(..., n, m), the result (..., n, N). With `extreme`, b is a corner of the cube.");
+    m.def("rand_point", &rand_point_numpy, py::arg("c"), py::arg("G"), py::arg("N"),
+          py::arg("seed") = 0, py::arg("extreme") = false,
+          "The same for numpy arrays, on Eigen: `c` (n,), `G` (n, m), the result (n, N).");
+    m.def("simulate", &simulate_torch, py::arg("A"), py::arg("x0"), py::arg("time_step"),
+          py::arg("t_final"),
+          "Trajectories of x' = A x from the points `x0` (..., n, N), exact through e^{A t}, on "
+          "libtorch. The result is (steps + 1, ..., n, N): the time points first.");
+    m.def("simulate", &simulate_numpy, py::arg("A"), py::arg("x0"), py::arg("time_step"),
+          py::arg("t_final"), "The same for numpy arrays, on Eigen: `x0` (n, N).");
 
     py::class_<Specification>(m, "Specification",
                               "A halfspace {x | a.x <= b} the reachable set must stay in "

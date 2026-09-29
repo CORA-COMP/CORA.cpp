@@ -27,7 +27,7 @@ Tensor Interval::rand_point(int64_t N, Rng &rng) const {
     for (const int64_t d : shape) count *= d;
     std::vector<double> u(count);
     rng.uniform(u.data(), u.size(), 0.0, 1.0);
-    const Tensor fraction = Tensor::from_data(u, shape, inf.device());
+    const Tensor fraction = Tensor::like(inf, u, shape);
     // diag(sup - inf) scales row i of the fractions by the width of side i.
     return inf + (sup - inf).diag().matmul(fraction);
 }

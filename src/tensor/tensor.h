@@ -45,6 +45,8 @@ class Tensor {
         virtual std::string device() const = 0;
         /// The same values on `device`: "cpu", "gpu" (or "cuda", "cuda:1").
         virtual Ptr to(const std::string &device) const = 0;
+        /// A tensor of this backend and device with the given values (row-major, host).
+        virtual Ptr like(const std::vector<double> &data, const std::vector<int64_t> &shape) const = 0;
 
         virtual Ptr add(const Impl &o) const = 0;
         virtual Ptr sub(const Impl &o) const = 0;
@@ -99,6 +101,10 @@ class Tensor {
     static Tensor from_data(const std::vector<double> &data, const std::vector<int64_t> &shape,
                             const std::string &device = "");
     static Tensor zeros(const std::vector<int64_t> &shape, const std::string &device = "");
+    /// `data` with `shape` on the backend and device of `like`, whatever backend is current:
+    /// what library code uses to make a tensor that meets one it was given.
+    static Tensor like(const Tensor &like, const std::vector<double> &data,
+                       const std::vector<int64_t> &shape);
     static Tensor eye(int64_t n, const std::string &device = "");
 
     const Impl &impl() const { return *impl_; }

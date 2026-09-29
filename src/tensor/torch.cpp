@@ -42,6 +42,12 @@ struct TorchTensor : Tensor::Impl {
     std::string device() const override { return t.device().str(); }
     Ptr to(const std::string &device) const override { return wrap(t.to(parse_device(device))); }
 
+    Ptr like(const std::vector<double> &data, const std::vector<int64_t> &shape) const override {
+        const torch::Tensor host =
+            torch::from_blob(const_cast<double *>(data.data()), shape, torch::kDouble).clone();
+        return wrap(host.to(t.device()));
+    }
+
     /// "gpu" is CUDA; anything else is torch spelling ("cpu", "cuda:1").
     static torch::Device parse_device(const std::string &name) {
         return torch::Device(name == "gpu" ? "cuda" : name);

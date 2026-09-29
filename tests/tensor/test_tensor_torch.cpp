@@ -1,6 +1,11 @@
 // What the libtorch backend of CoraTensor adds: batch dimensions, devices, backend specs,
 // and the hand-written backward pass of the matrix exponential.
 
+#include "contDynamics/linearSys/linearSys.h"
+#include "contSet/interval/interval.h"
+#include "contSet/zonotope/zonotope.h"
+#include "global/rng.h"
+#include "specification/specification.h"
 #include "tensor/eigen.h"
 #include "tensor/tensor.h"
 #include "tensor/torch.h"
@@ -117,6 +122,24 @@ void custom_backward_matches_autograd() {
     }
 }
 
+/// Library code makes its tensors on the backend of the ones it was given, not on the current
+/// one: an Eigen set stays on Eigen while libtorch is the default.
+void tensors_stay_on_their_own_backend() {
+    set_backend("eigen");
+    const Zonotope Z(Tensor({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Interval I(Tensor({0.0, 0.0}), Tensor({1.0, 2.0}));
+    const LinearSys sys(Tensor({{-0.2, 1.0}, {-1.0, -0.2}}));
+    set_backend("torch");
+    cora::Rng rng(1);
+    check(!throws([&] { Z.rand_point(5, rng); }), "rand_point of an eigen zonotope, torch current");
+    check(!throws([&] { Z.rand_point(5, rng, true); }), "extreme points of an eigen zonotope");
+    check(!throws([&] { I.rand_point(5, rng); }), "rand_point of an eigen interval, torch current");
+    check(!throws([&] { sys.simulate(Z.rand_point(5, rng), 0.1, 0.5); }), "simulate on eigen, torch current");
+    check(!throws([&] { sys.reach(Z, 0.1, 0.5, 6); }), "reach on eigen, torch current");
+    check(!throws([&] { Specification::safe_set(Tensor({1.0, 0.0}), 9.0); }), "a torch spec builds");
+    set_backend("eigen");
+}
+
 } // namespace
 
 int main() {
@@ -124,6 +147,7 @@ int main() {
     devices();
     backend_specs();
     custom_backward_matches_autograd();
+    tensors_stay_on_their_own_backend();
     set_backend("eigen");
     return test::finish("tensor (libtorch)");
 }

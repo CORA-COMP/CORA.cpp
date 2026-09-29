@@ -88,6 +88,13 @@ Tensor Tensor::from_data(const std::vector<double> &data, const std::vector<int6
     return Tensor(backend().make(data, shape, device));
 }
 
+Tensor Tensor::like(const Tensor &like, const std::vector<double> &data,
+                    const std::vector<int64_t> &shape) {
+    if (static_cast<int64_t>(data.size()) != count_of(shape))
+        throw std::invalid_argument("CoraTensor: the data does not fill the shape");
+    return Tensor(like.impl().like(data, shape));
+}
+
 Tensor Tensor::zeros(const std::vector<int64_t> &shape, const std::string &device) {
     return from_data(std::vector<double>(static_cast<std::size_t>(count_of(shape)), 0.0), shape,
                      device);
