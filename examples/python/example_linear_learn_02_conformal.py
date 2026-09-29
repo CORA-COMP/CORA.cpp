@@ -92,7 +92,8 @@ covered = (scores(test) <= radius).double().mean().item()
 plain = (scores(test) <= 0).double().mean().item()
 print(f"conformal radius: {radius:.4f}")
 print(f"coverage of the reachable set alone: {plain:.3f}")
-print(f"coverage with the conformal radius: {covered:.3f} (guaranteed at least {1 - alpha:.2f})")
+# The guarantee is on average over calibration sets: one set of 200 varies by about +-0.02.
+print(f"coverage with the conformal radius: {covered:.3f} (target {1 - alpha:.2f})")
 
 # Visualization -----------------------------------------------------------------------------
 
