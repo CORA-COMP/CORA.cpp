@@ -34,6 +34,15 @@ class LinearSys {
     Reach reach(const Zonotope &X0, double time_step, double t_final, int taylor_terms,
                 Algorithm algorithm = Algorithm::Standard) const;
 
+    /// The trajectories from the points `x0` `(..., n, N)`, one per column, at the time
+    /// points `k Δt` for `k = 0..ceil(t_final / Δt)`: `x[k] = e^{A k Δt} x0`, exact for a
+    /// linear system, so nothing here is an ODE solver's error.
+    std::vector<Tensor> simulate(const Tensor &x0, double time_step, double t_final) const;
+
+    /// CORA's `simulateRandom`: `simulate` from `N` random points of the initial set.
+    std::vector<Tensor> simulate_random(const ContSet &X0, int64_t N, double time_step,
+                                        double t_final, Rng &rng) const;
+
     /// `F(A, Δt, η)`: the interval matrix whose product with a time-point set encloses the
     /// curvature of the trajectories between two time points — the Taylor terms `i >= 2`,
     /// each weighted by where `t^i - t` is extremal on `[0, Δt]`, plus the series' remainder

@@ -35,6 +35,25 @@ Reach LinearSys::reach(const Zonotope &X0, double time_step, double t_final, int
     return out;
 }
 
+std::vector<Tensor> LinearSys::simulate(const Tensor &x0, double time_step,
+                                        double t_final) const {
+    const int steps = static_cast<int>(std::ceil(t_final / time_step - 1e-9));
+    const Tensor eAdt = (A_ * time_step).expm();
+    // Mapped by the identity so that a batch of systems batches the start too.
+    Tensor x = A_.eye_like().matmul(x0);
+    std::vector<Tensor> out{x};
+    for (int k = 0; k < steps; ++k) {
+        x = eAdt.matmul(x);
+        out.push_back(x);
+    }
+    return out;
+}
+
+std::vector<Tensor> LinearSys::simulate_random(const ContSet &X0, int64_t N, double time_step,
+                                               double t_final, Rng &rng) const {
+    return simulate(X0.rand_point(N, rng), time_step, t_final);
+}
+
 Interval LinearSys::correction_matrix_state(double time_step, int taylor_terms) const {
     const Tensor Aabs = A_.abs();
     Tensor Ai = A_, Ai_abs = Aabs; // A^i and |A|^i

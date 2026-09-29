@@ -9,10 +9,6 @@
 
 #include "contSet/contSet.h"
 
-namespace cora {
-class Rng;
-}
-
 namespace cora::ct {
 
 class Interval : public ContSet {
@@ -31,6 +27,8 @@ class Interval : public ContSet {
     Tensor center() const override { return (inf + sup) * 0.5; }
     Tensor support_func(const Tensor &d) const override;
     Interval interval() const override { return *this; }
+    /// Uniform in the box.
+    Tensor rand_point(int64_t N, Rng &rng) const override;
 
     /// The radius, of the shape of the bounds.
     Tensor rad() const { return (sup - inf) * 0.5; }

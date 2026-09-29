@@ -28,13 +28,22 @@ struct EigenTensor : Tensor::Impl {
         return std::make_shared<EigenTensor>(m);
     }
 
+    /// `a + sign * b`, where a column on either side is added to every column of the other,
+    /// as libtorch broadcasts it.
+    static Mat combine(const Mat &a, const Mat &b, double sign) {
+        if (a.cols() == b.cols()) return a + sign * b;
+        if (b.cols() == 1) return (a.colwise() + sign * b.col(0)).eval();
+        if (a.cols() == 1) return (sign * b).colwise() + a.col(0);
+        throw std::invalid_argument("CoraTensor: shapes do not broadcast");
+    }
+
     static void require_cpu(const std::string &device) {
         if (!device.empty() && device != "cpu")
             throw std::invalid_argument("CoraTensor: the eigen backend runs on the CPU only");
     }
 
-    Ptr add(const Impl &o) const override { return wrap(m + of(o)); }
-    Ptr sub(const Impl &o) const override { return wrap(m - of(o)); }
+    Ptr add(const Impl &o) const override { return wrap(combine(m, of(o), 1.0)); }
+    Ptr sub(const Impl &o) const override { return wrap(combine(m, of(o), -1.0)); }
     Ptr scale(double s) const override { return wrap(m * s); }
     Ptr matmul(const Impl &o) const override { return wrap(m * of(o)); }
     Ptr transpose() const override { return wrap(m.transpose()); }

@@ -20,6 +20,18 @@ Interval Interval::generate_random(int64_t n, Rng &rng) {
     return {Tensor::from_data(lo, {n, 1}), Tensor::from_data(hi, {n, 1})};
 }
 
+Tensor Interval::rand_point(int64_t N, Rng &rng) const {
+    std::vector<int64_t> shape = inf.shape();
+    shape.back() = N;
+    int64_t count = 1;
+    for (const int64_t d : shape) count *= d;
+    std::vector<double> u(count);
+    rng.uniform(u.data(), u.size(), 0.0, 1.0);
+    const Tensor fraction = Tensor::from_data(u, shape, inf.device());
+    // diag(sup - inf) scales row i of the fractions by the width of side i.
+    return inf + (sup - inf).diag().matmul(fraction);
+}
+
 Tensor Interval::support_func(const Tensor &d) const {
     return d.transpose().matmul(center()) + d.abs().transpose().matmul(rad());
 }

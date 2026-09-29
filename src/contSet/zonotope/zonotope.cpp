@@ -25,6 +25,20 @@ Tensor Zonotope::support_func(const Tensor &d) const {
     return dt.matmul(c) + dt.matmul(G).abs().sum_last();
 }
 
+Tensor Zonotope::rand_point(int64_t N, Rng &rng, bool extreme) const {
+    // One factor per generator and point, with the batch dimensions of G.
+    std::vector<int64_t> shape = G.shape();
+    shape[shape.size() - 2] = shape.back();
+    shape.back() = N;
+    int64_t count = 1;
+    for (const int64_t d : shape) count *= d;
+    std::vector<double> b(count);
+    rng.uniform(b.data(), b.size(), -1.0, 1.0);
+    if (extreme)
+        for (double &v : b) v = v < 0.0 ? -1.0 : 1.0;
+    return c + G.matmul(Tensor::from_data(b, shape, c.device()));
+}
+
 Interval Zonotope::interval() const {
     const Tensor r = G.abs().sum_last();
     return {c - r, c + r};

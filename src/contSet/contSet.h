@@ -8,6 +8,10 @@
 
 #include "tensor/tensor.h"
 
+namespace cora {
+class Rng;
+}
+
 namespace cora::ct {
 
 class Interval;
@@ -27,6 +31,10 @@ class ContSet {
 
     /// The smallest axis-aligned box containing the set.
     virtual Interval interval() const = 0;
+
+    /// `N` random points of the set, as CORA's `randPoint`: columns `(..., n, N)`, drawn on
+    /// the host with `rng` and placed where the set lives.
+    virtual Tensor rand_point(int64_t N, Rng &rng) const = 0;
 };
 
 } // namespace cora::ct

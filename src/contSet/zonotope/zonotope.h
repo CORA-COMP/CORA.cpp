@@ -9,10 +9,6 @@
 #include "contSet/contSet.h"
 #include "contSet/interval/interval.h"
 
-namespace cora {
-class Rng;
-}
-
 namespace cora::ct {
 
 class Zonotope : public ContSet {
@@ -31,6 +27,13 @@ class Zonotope : public ContSet {
     Tensor center() const override { return c; }
     Tensor support_func(const Tensor &d) const override;
     Interval interval() const override;
+
+    /// `c + G b` with `b` uniform in `[-1, 1]^m`, as CORA's `randPoint(Z, N, "standard")`.
+    Tensor rand_point(int64_t N, Rng &rng) const override { return rand_point(N, rng, false); }
+
+    /// With `extreme`, `b` is a corner of the cube, `b ∈ {-1, 1}^m` (CORA's `"extreme"`):
+    /// points on the boundary, where a trajectory that leaves the set leaves first.
+    Tensor rand_point(int64_t N, Rng &rng, bool extreme) const;
 
     /// `M * Z`.
     Zonotope mtimes(const Tensor &M) const;
