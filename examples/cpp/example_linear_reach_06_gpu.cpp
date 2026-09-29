@@ -10,7 +10,10 @@
 #include "contDynamics/linearSys/linearSys.h"
 #include "tensor/torch.h"
 
+#include <chrono>
 #include <iostream>
+#include <string>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +25,7 @@ int main() {
         return 0;
     }
     setBackend("torch");
-    const device = "gpu"
+    const std::string device = "gpu";
 
     // Parameters ------------------------------------------------------------------------------
 
