@@ -24,7 +24,7 @@ AUX_MARKER = "// ----------------------------------------  AUXILIARY  ----------
 MAIN_MARKER = "// ===========================================  MAIN  =========================================== //"
 SECTION = re.compile(r"^\s*(//|#) [A-Z][A-Za-z ]+ -{10,}$")
 # Directories whose .cpp files are operations, each in a folder named after its class.
-OPERATION_ROOTS = ("src/contSet", "src/contDynamics", "src/specification")
+OPERATION_ROOTS = ("src/contSet", "src/contDynamics", "src/specification", "src/nn")
 
 
 def rel(path):
@@ -273,7 +273,7 @@ def check_python_files(issues_by_file):
 def check_python_tests_cover_the_api(issues_by_file):
     """Every class the package exports has a Python test file: tests/python/test_<class>*.py."""
     init = "\n".join(read_lines(os.path.join(ROOT, "src/python/cora/__init__.py")))
-    for name in ("Zonotope", "Interval", "LinearSys", "NonlinearSys", "Specification"):
+    for name in ("Zonotope", "Interval", "LinearSys", "NonlinearSys", "NeuralNetwork", "Specification"):
         if f"{name}" not in init:
             continue
         stem = name[0].lower() + name[1:]

@@ -74,6 +74,13 @@ current example` in the Run and Debug dropdown.
   and `reach` linearizes step by step (CORA's `lin`); see `example_nonlinear_reach_01_vanDerPol`.
   The remainder is of order 2, so it needs small steps and initial sets (no inputs yet). `reach`
   and `simulate` run on tensors, so on libtorch gradients flow to the initial set.
+- **Conformal prediction:** `example_linear_learn_02_conformal` learns a linear model of a
+  nonlinear system and enlarges its reachable set by a conformal radius, so that new trajectories
+  stay inside with the promised probability.
+- **Neural networks:** `NeuralNetwork({{W1, b1}, {W2, b2}})` (Python: a list of `(W, b)`) has
+  ReLU layers; `nn.evaluate(x)` maps points and `nn.evaluate(X)` a zonotope to a zonotope that
+  contains all outputs (affine layers exactly, ReLUs by the tightest one-slope parallelogram). It
+  is differentiable and batched. See `example_neuralNetwork_verify_01`, which certifies a classifier.
 - **Simulation:** `sys.simulate(x0, timeStep, tFinal)`, `sys.simulateRandom(X0, n, ...)`.
 - **Plotting:** `plot(S, dims, options)` projects a set (or a `Reach`, `Specification`, simulation)
   onto two dimensions and draws it; reachable sets are drawn as their union. C++ writes SVG

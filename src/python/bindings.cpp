@@ -12,14 +12,15 @@
 // arrays on Eigen; an object keeps its backend and hands its numbers back the same way.
 // A vector is 1-D here, (..., n); in C++ it is a column (..., n, 1).
 //
-// Syntax:   cora.Zonotope, Interval, LinearSys, NonlinearSys, Expr, Reach, Specification, Rng,
-//           setBackend
+// Syntax:   cora.Zonotope, Interval, LinearSys, NonlinearSys, NeuralNetwork, Expr, Reach,
+//           Specification, Rng, setBackend
 // See also: the C++ headers, which document every method
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "contDynamics/nonlinearSys/nonlinearSys.h"
 #include "global/rng.h"
 #include "global/plot/plot.h"
+#include "nn/neuralNetwork/neuralNetwork.h"
 #include "specification/specification.h"
 #include "tensor/eigen.h"
 #include "tensor/torch.h"
@@ -320,6 +321,29 @@ void bindNonlinearSys(py::module_ &m) {
              "simulate from N random points of the set X0");
 }
 
+void bindNeuralNetwork(py::module_ &m) {
+    py::class_<NeuralNetwork>(m, "NeuralNetwork",
+                              "Affine layers with a ReLU after each but the last; torch tensors.")
+        .def(py::init([](const std::vector<std::pair<torch::Tensor, torch::Tensor>> &layers) {
+                 std::vector<NeuralNetwork::Layer> out;
+                 for (const auto &[W, b] : layers)
+                     out.push_back({fromTorch(W), b.dim() == 1 ? column(b) : fromTorch(b)});
+                 return NeuralNetwork(out);
+             }),
+             py::arg("layers"), "the layers as (W (out, in), b (out,)) pairs, first to last")
+        .def_property_readonly("inputDim", &NeuralNetwork::inputDim)
+        .def_property_readonly("outputDim", &NeuralNetwork::outputDim)
+        .def(
+            "evaluate",
+            [](const NeuralNetwork &nn, const torch::Tensor &x) {
+                if (x.dim() == 1) return toTorch(nn.evaluate(column(x))).squeeze(-1);
+                return toTorch(nn.evaluate(fromTorch(x)));
+            },
+            py::arg("x"), "The outputs at a point (in,) or at the columns of (in, N)")
+        .def("evaluate", [](const NeuralNetwork &nn, const Zonotope &X) { return nn.evaluate(X); },
+             py::arg("X"), "A zonotope that contains the outputs of every point of X");
+}
+
 /// The operators of the sets, as CORA writes them: `A * Z`, `s * Z`, `Z + Z2`, `Z + v`, `Z - v`, `-Z`.
 /// A torch tensor or numpy array is a matrix, or a vector when it is 1-D; what an operator does
 /// not understand it hands back to Python (NotImplemented), which raises the TypeError.
@@ -597,6 +621,7 @@ PYBIND11_MODULE(_cora, m) {
     bindZonotope(m);
     bindLinearSys(m);
     bindNonlinearSys(m);
+    bindNeuralNetwork(m);
     bindOperators(m);
     bindPlot(m);
     bindSpecification(m);

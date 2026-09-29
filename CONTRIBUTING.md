@@ -10,6 +10,7 @@ src/
   contDynamics/            contDynamics.h, the abstract dynamic system
     linearSys/             linearSys.h, reach, simulate, ...; private/ has the algorithms
     nonlinearSys/          nonlinearSys.h, reach (linearization), simulate; dynamics are Expr
+  nn/neuralNetwork/        neuralNetwork.h, evaluate (points, and sets through the layers)
   specification/           specification.h, check.cpp
   global/                  random numbers, threads, symbolic expressions (expr.h),
                            plot/ (colors, figure, plot: the plotting logic for every language)
