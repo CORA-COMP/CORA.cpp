@@ -1,3 +1,8 @@
+// eigen - the Eigen backend of Tensor: double matrices on the CPU, one matrix per tensor
+//
+// EigenTensor implements the operations of Tensor::Impl; EigenBackend makes tensors from host
+// numbers. Nothing else in the library includes Eigen for its own use.
+
 #include "tensor/eigen.h"
 
 #include <stdexcept>
@@ -10,6 +15,7 @@ namespace {
 using Mat = Eigen::MatrixXd;
 using RowMajor = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
+/// A matrix held as an Eigen::MatrixXd; every operation returns a new tensor.
 struct EigenTensor : Tensor::Impl {
     Mat m;
     explicit EigenTensor(Mat m) : m(std::move(m)) {}
@@ -41,6 +47,7 @@ struct EigenTensor : Tensor::Impl {
         throw std::invalid_argument("CoraTensor: shapes do not broadcast");
     }
 
+    /// Eigen runs on the CPU: any other device is an error.
     static void requireCpu(const std::string &device) {
         if (!device.empty() && device != "cpu")
             throw std::invalid_argument("CoraTensor: the eigen backend runs on the CPU only");
@@ -74,6 +81,7 @@ struct EigenTensor : Tensor::Impl {
     }
 };
 
+/// Makes Eigen tensors; matrices only (no batch dimensions) and CPU only.
 struct EigenBackend : Tensor::Backend {
     std::string name() const override { return "eigen"; }
     Tensor::Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,

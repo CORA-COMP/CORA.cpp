@@ -1,3 +1,5 @@
+// tensor - the Tensor front end: construction, the current backend, and backend selection
+
 #include "tensor/tensor.h"
 
 #include "tensor/eigen.h"
@@ -13,13 +15,16 @@
 namespace cora::ct {
 namespace {
 
+/// The backend new tensors are made on; empty until first used.
 std::shared_ptr<const Tensor::Backend> &current() {
     static std::shared_ptr<const Tensor::Backend> backend;
     return backend;
 }
 
+/// The backend named by spec: "eigen", "torch", "torch:cuda", "torch:cuda:1", each with an optional
+/// ",customBackward" (libtorch only).
 std::shared_ptr<const Tensor::Backend> makeBackend(const std::string &spec) {
-    // name[:device][,customBackward]
+    // spec is name[:device][,customBackward]
     const std::size_t comma = spec.find(',');
     const std::string head = spec.substr(0, comma);
     const std::string option = comma == std::string::npos ? "" : spec.substr(comma + 1);
@@ -40,6 +45,7 @@ std::shared_ptr<const Tensor::Backend> makeBackend(const std::string &spec) {
     throw std::invalid_argument("CoraTensor: no backend " + name + " in this build");
 }
 
+/// The number of elements of a tensor of this shape.
 int64_t countOf(const std::vector<int64_t> &shape) {
     int64_t count = 1;
     for (const int64_t d : shape) count *= d;

@@ -1,3 +1,8 @@
+// torch - the libtorch backend of Tensor: batched tensors on the CPU or a CUDA device
+//
+// TorchTensor implements the operations of Tensor::Impl on torch::Tensor, so autograd
+// differentiates through them; TorchBackend makes tensors from host numbers.
+
 #include "tensor/torch.h"
 
 namespace cora::ct {
@@ -24,6 +29,8 @@ struct ExpmFunction : torch::autograd::Function<ExpmFunction> {
     }
 };
 
+/// A torch::Tensor; customBackward selects the hand-written backward pass of expm and is passed on
+/// to every tensor made from this one.
 struct TorchTensor : Tensor::Impl {
     torch::Tensor t;
     bool customBackward;
@@ -79,6 +86,7 @@ struct TorchTensor : Tensor::Impl {
     }
 };
 
+/// Makes libtorch tensors on one default device.
 struct TorchBackend : Tensor::Backend {
     torch::Device device;
     bool customBackward;
