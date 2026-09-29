@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <initializer_list>
 #include <iosfwd>
@@ -30,6 +31,9 @@ namespace cora::ct {
 class Tensor {
   public:
     // Backend Interface ---------------------------------------------------------------------------
+
+    /// The elementwise functions of a tensor.
+    enum class Unary { Sin, Cos, Tan, Exp, Log, Sqrt };
 
     /// What a backend implements. Both operands of a binary operation belong to the backend;
     /// Tensor checks that before calling in.
@@ -66,6 +70,9 @@ class Tensor {
 
         /// The matrix exponential of (..., n, n).
         virtual Ptr expm() const = 0;
+
+        /// A function applied to every element.
+        virtual Ptr unary(Unary op) const = 0;
 
         /// Sums the last dimension and keeps it: (.., n, m) -> (.., n, 1).
         virtual Ptr sumLast() const = 0;
@@ -120,6 +127,7 @@ class Tensor {
                        const std::vector<int64_t> &shape);
 
     static Tensor zeros(const std::vector<int64_t> &shape, const std::string &device = "");
+    static Tensor ones(const std::vector<int64_t> &shape, const std::string &device = "");
     static Tensor eye(int64_t n, const std::string &device = "");
 
     /// Joins tensors along the last dimension.
@@ -152,6 +160,28 @@ class Tensor {
     Tensor pos() const { return Tensor(impl_->pos()); }
     Tensor neg() const { return Tensor(impl_->neg()); }
     Tensor expm() const { return Tensor(impl_->expm()); }
+    Tensor sin() const { return Tensor(impl_->unary(Unary::Sin)); }  ///< Elementwise.
+    Tensor cos() const { return Tensor(impl_->unary(Unary::Cos)); }
+    Tensor tan() const { return Tensor(impl_->unary(Unary::Tan)); }
+    Tensor exp() const { return Tensor(impl_->unary(Unary::Exp)); }
+    Tensor log() const { return Tensor(impl_->unary(Unary::Log)); }
+    Tensor sqrt() const { return Tensor(impl_->unary(Unary::Sqrt)); }
+
+    /// The same functions of a number or of a whole tensor, without `<cmath>`:
+    /// `Tensor::cos(0.2)` is a double, so `Tensor A({{Tensor::cos(phi), -Tensor::sin(phi)}, ...})`
+    /// builds a rotation matrix; `Tensor::cos(t)` is `t.cos()`.
+    static double sin(double x) { return std::sin(x); }
+    static double cos(double x) { return std::cos(x); }
+    static double tan(double x) { return std::tan(x); }
+    static double exp(double x) { return std::exp(x); }
+    static double log(double x) { return std::log(x); }
+    static double sqrt(double x) { return std::sqrt(x); }
+    static Tensor sin(const Tensor &t) { return t.sin(); }
+    static Tensor cos(const Tensor &t) { return t.cos(); }
+    static Tensor tan(const Tensor &t) { return t.tan(); }
+    static Tensor exp(const Tensor &t) { return t.exp(); }
+    static Tensor log(const Tensor &t) { return t.log(); }
+    static Tensor sqrt(const Tensor &t) { return t.sqrt(); }
     Tensor sumLast() const { return Tensor(impl_->sumLast()); }
     Tensor diag() const { return Tensor(impl_->diag()); }
     Tensor eyeLike() const { return Tensor(impl_->eyeLike()); }

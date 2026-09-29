@@ -55,6 +55,7 @@ traj = vdp.simulateRandom(R0, 10, timeStep, tFinal, rng)
 
 # Visualization -----------------------------------------------------------------------------
 
+cora.useCORAcolors("CORA:contDynamics")
 plt.figure()
 
 # plot reachable sets

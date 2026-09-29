@@ -9,7 +9,7 @@
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "global/rng.h"
-#include "plot/plot.h"
+#include "global/plot/plot.h"
 
 #include <chrono>
 #include <iostream>
@@ -64,6 +64,7 @@ int main() {
     // Visualization ---------------------------------------------------------------------------
 
     // The reachable set, the initial set and the simulations in the first two dimensions.
+    useCORAcolors("CORA:contDynamics");
     plot(R, {0, 1}, {.label = "reachable set"});
     plot(R0, {0, 1}, {.label = "initial set"});
     plot(traj, {0, 1}, {.label = "simulations"});

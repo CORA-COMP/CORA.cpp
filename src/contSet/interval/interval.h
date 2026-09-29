@@ -4,8 +4,9 @@
 // interval matrix is an Interval too, and Zonotope::mtimes takes it.
 //
 // Syntax:     Interval I(inf, sup);   Interval I = Interval::generateRandom(n, rng);
+// Operators:  I + I2, I + v, I - v, -I, s * I, M * I, as in CORA
 // Operations: supportFunc, mtimes, randPoint, contains, stack, project, vertices,
-//             generateRandom (one file each); center, rad, plus (below)
+//             generateRandom, display (one file each); center, rad, plus (below)
 // See also:   contSet/contSet.h, contSet/zonotope/zonotope.h
 
 #pragma once
@@ -57,12 +58,28 @@ class Interval : public ContSet {
     /// The four corners of a two-dimensional box, counter-clockwise, per batch member.
     std::vector<Polygon> vertices() const override;
 
+    /// The dimension and the bounds as text.
+    std::string display() const override;
+
     /// A batch of intervals of one dimension (and batch shape) as one.
     static Interval stack(const std::vector<Interval> &Is);
 
     /// Whether the point p (..., n, 1) is in the box, boundary included; for a batch, all points.
     bool contains(const Tensor &p) const;
 };
+
+// Operators, as CORA writes them: intervals add, a column v translates, a number scales (a
+// negative one swaps the bounds), and a matrix M * I is the interval hull of the image.
+inline Interval operator+(const Interval &I, const Interval &I2) { return I.plus(I2); }
+inline Interval operator+(const Interval &I, const Tensor &v) { return {I.inf + v, I.sup + v}; }
+inline Interval operator+(const Tensor &v, const Interval &I) { return I + v; }
+inline Interval operator-(const Interval &I, const Tensor &v) { return {I.inf - v, I.sup - v}; }
+inline Interval operator*(double s, const Interval &I) {
+    return s >= 0 ? Interval(I.inf * s, I.sup * s) : Interval(I.sup * s, I.inf * s);
+}
+inline Interval operator*(const Interval &I, double s) { return s * I; }
+inline Interval operator-(const Interval &I) { return -1.0 * I; }
+inline Interval operator*(const Tensor &M, const Interval &I) { return I.mtimes(M); }
 
 } // namespace cora::ct
 

@@ -69,6 +69,18 @@ struct EigenTensor : Tensor::Impl {
     Ptr pos() const override { return wrap(m.cwiseMax(0.0)); }
     Ptr neg() const override { return wrap(m.cwiseMin(0.0)); }
     Ptr expm() const override { return wrap(m.exp()); }
+    // One case per function of Tensor::Unary.
+    Ptr unary(Tensor::Unary op) const override {
+        switch (op) {
+        case Tensor::Unary::Sin: return wrap(m.array().sin().matrix());
+        case Tensor::Unary::Cos: return wrap(m.array().cos().matrix());
+        case Tensor::Unary::Tan: return wrap(m.array().tan().matrix());
+        case Tensor::Unary::Exp: return wrap(m.array().exp().matrix());
+        case Tensor::Unary::Log: return wrap(m.array().log().matrix());
+        case Tensor::Unary::Sqrt: return wrap(m.array().sqrt().matrix());
+        }
+        throw std::invalid_argument("CoraTensor: unknown elementwise function");
+    }
     Ptr sumLast() const override { return wrap(m.rowwise().sum()); }
     Ptr diag() const override { return wrap(Mat(m.col(0).asDiagonal())); }
     Ptr eyeLike() const override { return wrap(Mat::Identity(m.rows(), m.cols())); }

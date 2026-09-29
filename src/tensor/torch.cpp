@@ -80,6 +80,18 @@ struct TorchTensor : Tensor::Impl {
     Ptr expm() const override {
         return wrap(customBackward ? ExpmFunction::apply(t) : torch::matrix_exp(t));
     }
+    // One case per function of Tensor::Unary.
+    Ptr unary(Tensor::Unary op) const override {
+        switch (op) {
+        case Tensor::Unary::Sin: return wrap(t.sin());
+        case Tensor::Unary::Cos: return wrap(t.cos());
+        case Tensor::Unary::Tan: return wrap(t.tan());
+        case Tensor::Unary::Exp: return wrap(t.exp());
+        case Tensor::Unary::Log: return wrap(t.log());
+        case Tensor::Unary::Sqrt: return wrap(t.sqrt());
+        }
+        throw std::invalid_argument("CoraTensor: unknown elementwise function");
+    }
     Ptr sumLast() const override { return wrap(t.sum(-1, /*keepdim=*/true)); }
     Ptr diag() const override { return wrap(torch::diag_embed(t.squeeze(-1))); }
     // Broadcast to the batch, so results of a batched system all have the same shape.

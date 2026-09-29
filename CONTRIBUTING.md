@@ -11,8 +11,9 @@ src/
     linearSys/             linearSys.h, reach, simulate, ...; private/ has the algorithms
     nonlinearSys/          nonlinearSys.h, reach (linearization), simulate; dynamics are Expr
   specification/           specification.h, check.cpp
-  global/                  random numbers, threads, symbolic expressions (expr.h)
-  python/                  bindings.cpp and the cora/ package (plot.py, colors.py, tensor.py)
+  global/                  random numbers, threads, symbolic expressions (expr.h),
+                           plot/ (colors, figure, plot: the plotting logic for every language)
+  python/                  bindings.cpp and the cora/ package (plot.py, tensor.py)
 tests/  examples/          mirror src/
 competition/               the CORA-COMP entry
 ```
@@ -81,3 +82,11 @@ the checkout or recreating the environment. On Windows, `WSL: Reopen Folder in W
 - The Python configurations run the environment's interpreter (`coracpp.envPrefix`), whatever the
   editor has selected; for IntelliSense pick it once with `Python: Select Interpreter` (`coracpp`).
   "The minimum Python version for the debugger is 3.9" means the system Python was used.
+
+## Plotting
+
+`global/plot/plot.h` decides everything about a plot: the projection, the vertices, the color
+scheme (`useCORAcolors`), the next color of CORA's order, widths and what lies on top (`zorder`).
+It puts resolved layers into a `Figure`. `Figure::svg()` writes them for C++; `python/cora/plot.py`
+takes them out (`Figure.takeLayers()`) and draws them with matplotlib, and nothing else. A new
+frontend (or a new plot option) is added to the core, never to a wrapper.

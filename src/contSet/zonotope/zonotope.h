@@ -3,8 +3,9 @@
 // The center c is a column (..., n, 1); the generators G are (..., n, m), one per column.
 //
 // Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generateRandom(n, m, rng);
+// Operators:  M * Z (mtimes), s * Z, Z + Z2 (plus), Z + v, Z - v, -Z, as in CORA
 // Operations: mtimes, plus, linComb, supportFunc, interval, randPoint, generateRandom
-//             stack, project, vertices, reduce (one file each, as in CORA's @zonotope)
+//             stack, project, vertices, reduce, display (one file each, as in CORA's @zonotope)
 // See also:   contSet/contSet.h, contSet/interval/interval.h
 //
 // Not the competition's zonotope (competition/sets): that one is tuned for speed on one library.
@@ -66,6 +67,9 @@ class Zonotope : public ContSet {
     /// The corners of a two-dimensional zonotope, counter-clockwise, per batch member.
     std::vector<Polygon> vertices() const override;
 
+    /// The dimension, center and generators as text.
+    std::string display() const override;
+
     /// A zonotope of at most order * n generators (n the dimension) that contains this one: the
     /// longest generators stay, the others become a box. A single zonotope, not a batch.
     Zonotope reduce(int order) const;
@@ -74,6 +78,18 @@ class Zonotope : public ContSet {
     /// factors): 2m + 1 generators.
     Zonotope linComb(const Zonotope &Z2) const;
 };
+
+// Operators, as CORA writes them: a matrix M * Z is the linear map, a number s * Z scales, Z + Z2
+// is the Minkowski sum, and a column v translates.
+inline Zonotope operator*(const Tensor &M, const Zonotope &Z) { return Z.mtimes(M); }
+inline Zonotope operator*(const Interval &M, const Zonotope &Z) { return Z.mtimes(M); }
+inline Zonotope operator*(double s, const Zonotope &Z) { return {Z.c * s, Z.G * s}; }
+inline Zonotope operator*(const Zonotope &Z, double s) { return s * Z; }
+inline Zonotope operator+(const Zonotope &Z, const Zonotope &Z2) { return Z.plus(Z2); }
+inline Zonotope operator+(const Zonotope &Z, const Tensor &v) { return {Z.c + v, Z.G}; }
+inline Zonotope operator+(const Tensor &v, const Zonotope &Z) { return Z + v; }
+inline Zonotope operator-(const Zonotope &Z, const Tensor &v) { return {Z.c - v, Z.G}; }
+inline Zonotope operator-(const Zonotope &Z) { return {Z.c * -1.0, Z.G}; }
 
 } // namespace cora::ct
 

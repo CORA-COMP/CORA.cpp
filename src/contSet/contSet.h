@@ -11,6 +11,8 @@
 
 #include <array>
 #include <memory>
+#include <ostream>
+#include <string>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -51,7 +53,12 @@ class ContSet {
 
     /// The vertices of a two-dimensional set, one polygon per batch member.
     virtual std::vector<Polygon> vertices() const = 0;
+
+    /// A description of the set as text, as CORA displays it: what `std::cout << S` prints.
+    virtual std::string display() const = 0;
 };
+
+inline std::ostream &operator<<(std::ostream &out, const ContSet &S) { return out << S.display(); }
 
 } // namespace cora::ct
 

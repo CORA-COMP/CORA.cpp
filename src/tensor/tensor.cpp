@@ -136,6 +136,11 @@ Tensor Tensor::zeros(const std::vector<int64_t> &shape, const std::string &devic
     return fromData(zeros, shape, device);
 }
 
+Tensor Tensor::ones(const std::vector<int64_t> &shape, const std::string &device) {
+    const std::vector<double> ones(static_cast<std::size_t>(aux_countOf(shape)), 1.0);
+    return fromData(ones, shape, device);
+}
+
 Tensor Tensor::eye(int64_t n, const std::string &device) {
     return zeros({n, n}, device).eyeLike();
 }
@@ -187,7 +192,7 @@ std::ostream &operator<<(std::ostream &out, const Tensor &t) {
     for (std::size_t i = 0; i < shape.size(); ++i) out << (i ? ", " : "") << shape[i];
     out << "])";
     for (std::size_t i = 0; i < data.size(); ++i) out << (i % cols == 0 ? "\n  " : " ") << data[i];
-    return out;
+    return out << "\n";
 }
 
 } // namespace cora::ct

@@ -57,6 +57,7 @@ traj = fiveDimSys.simulateRandom(R0, 25, timeStep, tFinal, rng)
 # plot different projections
 dims = [(0, 1), (2, 3)]
 
+cora.useCORAcolors("CORA:contDynamics")
 for k, projDims in enumerate(dims, start=1):
     plt.figure()
 

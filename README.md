@@ -8,7 +8,7 @@ C++:
 
 ```cpp
 #include "contDynamics/linearSys/linearSys.h"
-#include "plot/plot.h"
+#include "global/plot/plot.h"
 #include "specification/specification.h"
 using namespace cora::ct;
 
@@ -58,6 +58,11 @@ current example` in the Run and Debug dropdown.
 ## Usage
 
 - **Sets:** `Zonotope(c, G)`, `Interval(inf, sup)`; any set works wherever a set is expected.
+  Operators as in CORA: `A * Z` (linear map), `2 * Z`, `Z + Z2` (Minkowski sum), `Z + v`, `-Z`;
+  `std::cout << Z` / `print(Z)` shows a set (dimension, center, generators).
+- **Tensors:** `Tensor::eye(n)`, `Tensor::ones(shape)`, `t.cos()` in C++; `Tensor.eye(n)`,
+  `Tensor.ones(2, 3)`, `Tensor.cos(x)` (also `sin`, `tan`, `exp`, `log`, `sqrt`) in Python,
+  without `math` or numpy.
 - **Batches:** a leading dimension in `c`, `G` or `A` is a batch; the call is the same as for one set.
 - **Backends:** `setBackend("torch" | "torch:cuda" | "eigen")` or `CORACPP_BACKEND`. In Python, torch
   tensors run on libtorch, numpy arrays on Eigen. `device="gpu"` places a tensor on the GPU.
@@ -70,8 +75,10 @@ current example` in the Run and Debug dropdown.
 - **Plotting:** `plot(S, dims, options)` projects a set (or a `Reach`, `Specification`, simulation)
   onto two dimensions and draws it; reachable sets are drawn as their union. C++ writes SVG
   (`plot(R, {0, 1}, {.label = "reachable set"}); figure().save("reach.svg");`), Python uses
-  matplotlib (`plot(R)`). Colors are CORA's (`{.color = "CORA:red"}`); a plain set is drawn like CORA's initial set, white
-  with a black outline, so `plot(X0)` needs no colors (`.filled = false` / `facecolor="none"`: open).
+  matplotlib (`plot(R)`). Sets are filled, each in the next color of CORA's order (blue, red,
+  yellow, ...); `useCORAcolors("CORA:contDynamics")` draws a set as an initial set and a reachable
+  set in blue, as CORA does for reachability. Options: `{.color = "CORA:red"}`, `.filled = false`
+  (Python `filled=False`), `.timePoints`, `.step`. All of this is decided in C++; Python only draws.
 - **Options:** `linAlg` is `"standard"` or `"wrapping-free"`; an unknown value throws.
 
 Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.timeInt[k]`

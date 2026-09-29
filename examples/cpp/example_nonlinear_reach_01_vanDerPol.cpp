@@ -10,7 +10,7 @@
 
 #include "contDynamics/nonlinearSys/nonlinearSys.h"
 #include "global/rng.h"
-#include "plot/plot.h"
+#include "global/plot/plot.h"
 
 #include <algorithm>
 #include <chrono>
@@ -66,6 +66,7 @@ int main() {
 
     // Visualization ---------------------------------------------------------------------------
 
+    useCORAcolors("CORA:contDynamics");
     plot(R, {0, 1}, {.label = "reachable set"});
     plot(R0, {0, 1}, {.label = "initial set"});
     plot(traj, {0, 1}, {.label = "simulations"});
