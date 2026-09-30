@@ -36,24 +36,31 @@ plot(R)                                                                # dims de
 
 ## Install
 
-Needs a C++20 compiler, CMake and Eigen (fetched if missing). The **torch backend** (GPU, batching,
-gradients, the Python package) is used whenever the Python that CMake finds has `torch`; without it
-the build is Eigen only. Linux, macOS and Windows work; build inside a virtual environment:
+**C++ only** (no Python needed): a C++20 compiler and CMake on Linux, macOS or Windows; Eigen is
+fetched if it is not installed.
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+ctest --test-dir build -j4                    # tests and C++ examples
+```
+
+**Optional: torch backend and Python package** (GPU, batching, gradients). Install torch into a
+virtual environment and build with it active; CMake uses it whenever its Python has `torch`
+(`-DCORACPP_TORCH=OFF` turns it off, `-DCORACPP_TORCH_DIR=<libtorch>` names a libtorch from
+pytorch.org instead):
 
 ```bash
 python -m venv .venv                          # or: uv venv
 source .venv/bin/activate                     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt               # torch, numpy, matplotlib (uv: uv pip install -r ...)
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
-ctest --test-dir build -j4                    # tests
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel
 PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py    # Windows: set PYTHONPATH=build
 ```
 
-Skip the first three lines for an Eigen-only build, or pass `-DCORACPP_TORCH=OFF`.
-On Linux and WSL2, `scripts/setup_local.sh` does all of this in a conda environment
-(`scripts/with_env.sh scripts/build.sh`, `scripts/with_env.sh scripts/test.sh -j4`). In VS Code, open an
-example and press `F5`.
+On Linux and WSL2, `scripts/setup_local.sh` sets up a conda environment with torch
+(`scripts/with_env.sh scripts/build.sh`, `scripts/with_env.sh scripts/test.sh -j4`). In VS Code, open
+an example and press `F5`.
 
 ## Examples
 
