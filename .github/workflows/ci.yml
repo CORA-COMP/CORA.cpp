@@ -27,8 +27,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
+      - uses: actions/checkout@v7
+      - uses: hendrikmuhs/ccache-action@v1.2.24
         if: runner.os != 'Windows'
         with:
           key: ${{ matrix.preset }}-${{ matrix.os }}
@@ -43,8 +43,8 @@ jobs:
   competition:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
+      - uses: actions/checkout@v7
+      - uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: competition
       - run: sudo apt-get update && sudo apt-get install -y libglpk-dev
