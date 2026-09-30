@@ -38,9 +38,9 @@ class Verify(unittest.TestCase):
             self.assertIsInstance(res.verified, bool)
             self.assertTrue(res.fals is None or isinstance(res.fals, cora.Falsification))
 
-    def test_the_zonotope_algorithm_is_not_there_yet(self):
-        with self.assertRaisesRegex(ValueError, "not implemented"):
-            self.sys.verify(self.params, cora.VerifyAlg.Zonotope, self.specs)
+    def test_the_zonotope_algorithm_gives_a_result(self):
+        res = self.sys.verify(self.params, cora.VerifyAlg.Zonotope, self.specs)
+        self.assertIsInstance(res, cora.VerifyResult)
 
 
 if __name__ == "__main__":
