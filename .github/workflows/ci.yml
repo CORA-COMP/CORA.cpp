@@ -18,6 +18,11 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-latest, windows-latest]
         preset: [cpp, torch, python, python-torch]
+        exclude:  # the torch presets take too long to build on the slow runners
+          - { os: macos-latest, preset: torch }
+          - { os: macos-latest, preset: python-torch }
+          - { os: windows-latest, preset: torch }
+          - { os: windows-latest, preset: python-torch }
     defaults:
       run:
         shell: bash

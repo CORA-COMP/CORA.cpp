@@ -1,3 +1,5 @@
+
+CI builds all four on Linux, and `cpp` and `python` on macOS and Windows.
 # CORA.cpp
 
 Parts of [CORA](https://cora.in.tum.de), the toolbox for set-based computing, in C++ and Python.
