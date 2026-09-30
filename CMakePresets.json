@@ -56,12 +56,13 @@
     }
   ],
   "buildPresets": [
-    { "name": "cpp", "configurePreset": "cpp", "configuration": "Release" },
-    { "name": "torch", "configurePreset": "torch", "configuration": "Release" },
-    { "name": "python", "configurePreset": "python", "configuration": "Release" },
-    { "name": "python-torch", "configurePreset": "python-torch", "configuration": "Release" },
-    { "name": "torch-cuda", "configurePreset": "torch-cuda", "configuration": "Release" },
-    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "configuration": "Release" }
+    { "name": "base", "hidden": true, "configuration": "Release", "jobs": 4 },
+    { "name": "cpp", "configurePreset": "cpp", "inherits": "base" },
+    { "name": "torch", "configurePreset": "torch", "inherits": "base" },
+    { "name": "python", "configurePreset": "python", "inherits": "base" },
+    { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
+    { "name": "torch-cuda", "configurePreset": "torch-cuda", "inherits": "base" },
+    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "inherits": "base" }
   ],
   "testPresets": [
     {

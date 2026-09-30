@@ -36,7 +36,7 @@ jobs:
         env:
           CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
         run: cmake --preset ${{ matrix.preset }} -DCORACPP_NATIVE=OFF
-      - run: cmake --build --preset ${{ matrix.preset }} --parallel
+      - run: cmake --build --preset ${{ matrix.preset }}
       - run: ctest --preset ${{ matrix.preset }}
 
   # The CORA-COMP binary and its tests.

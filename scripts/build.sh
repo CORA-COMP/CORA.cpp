@@ -35,13 +35,15 @@ if command -v ccache >/dev/null 2>&1; then LAUNCHER=(-DCMAKE_CXX_COMPILER_LAUNCH
 if [ ! -f "$BUILD/CMakeCache.txt" ] && command -v ninja >/dev/null 2>&1; then GENERATOR=(-G Ninja); fi
 
 # the configure output is shown only when it fails; the build prints its own progress
-if ! LOG="$(cmake -S "$ROOT" -B "$BUILD" "${GENERATOR[@]}" -DCMAKE_BUILD_TYPE="$TYPE" \
-        "${LAUNCHER[@]}" "${ARGS[@]}" 2>&1)"; then
+if ! LOG="$(cmake -S "$ROOT" -B "$BUILD" ${GENERATOR[@]+"${GENERATOR[@]}"} -DCMAKE_BUILD_TYPE="$TYPE" \
+        ${LAUNCHER[@]+"${LAUNCHER[@]}"} ${ARGS[@]+"${ARGS[@]}"} 2>&1)"; then
     echo "$LOG" >&2
     exit 1
 fi
+# a number of jobs: a bare --parallel means unlimited with make, and libtorch compiles run out of memory
+JOBS="${CORACPP_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 if [ ${#TARGETS[@]} -gt 0 ]; then
-    cmake --build "$BUILD" --parallel --target "${TARGETS[@]}"
+    cmake --build "$BUILD" --parallel "$JOBS" --target "${TARGETS[@]}"
 else
-    cmake --build "$BUILD" --parallel
+    cmake --build "$BUILD" --parallel "$JOBS"
 fi
