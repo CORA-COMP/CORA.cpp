@@ -42,11 +42,11 @@ if(NOT Eigen3_FOUND)
   # No installed Eigen (Windows, a bare macOS): take the release, header only.
   include(FetchContent)
   FetchContent_Declare(eigen3 URL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
-                       DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
-  set(EIGEN_BUILD_DOC OFF CACHE BOOL "" FORCE)
-  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-  set(EIGEN_BUILD_PKGCONFIG OFF CACHE BOOL "" FORCE)
+                       DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR headers-only)
   FetchContent_MakeAvailable(eigen3)
+  # only the headers: Eigen's own CMake project would add its BLAS (Fortran) and tests
+  add_library(Eigen3::Eigen INTERFACE IMPORTED)
+  target_include_directories(Eigen3::Eigen SYSTEM INTERFACE "${eigen3_SOURCE_DIR}")
 endif()
 find_package(OpenMP COMPONENTS CXX)  # optional: Apple's clang has none without libomp
 find_package(Python3 COMPONENTS Interpreter Development.Module)
