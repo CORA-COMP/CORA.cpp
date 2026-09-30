@@ -79,3 +79,34 @@ jobs:
       - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF
       - run: cmake --build build --parallel
       - run: ctest --test-dir build -j4 --output-on-failure
+
+  # The same with libtorch on the CPU: the torch backend and the Python package.
+  windows-torch:
+    runs-on: windows-latest
+    env:
+      CORACPP_ENV: none
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy matplotlib && pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - uses: ilammy/msvc-dev-cmd@v1
+      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build -j4 --output-on-failure
+
+  macos-torch:
+    runs-on: macos-latest
+    env:
+      CORACPP_ENV: none
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: brew install eigen ninja
+      - run: pip install numpy matplotlib torch
+      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build -j4 --output-on-failure
