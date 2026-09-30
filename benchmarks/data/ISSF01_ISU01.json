@@ -1,0 +1,23 @@
+{
+  "format": "cora-benchmark-1",
+  "benchmark": "Spacestation",
+  "instance": "ISSF01_ISU01",
+  "label": "ISSF01-ISU01",
+  "verifyAlg": "reachavoid:supportFunc",
+  "tFinal": 20,
+  "data": "ISSF01_ISU01.bin",
+  "matrices": {
+    "A": {"shape": [270, 270], "storage": "coo", "offset": 0, "nnz": 405},
+    "B": {"shape": [270, 3], "storage": "dense", "offset": 6480, "nnz": 810},
+    "C": {"shape": [3, 270], "storage": "dense", "offset": 12960, "nnz": 810},
+    "R0c": {"shape": [270, 1], "storage": "coo", "offset": 19440, "nnz": 0},
+    "R0G": {"shape": [270, 270], "storage": "coo", "offset": 19440, "nnz": 270},
+    "Uc": {"shape": [3, 1], "storage": "dense", "offset": 23760, "nnz": 3},
+    "UG": {"shape": [3, 3], "storage": "coo", "offset": 23784, "nnz": 3}
+  },
+  "specs": [
+    {"type": "unsafeSet", "A": [[0, 0, 1]], "b": [-0.00050000000000000001]},
+    {"type": "unsafeSet", "A": [[0, 0, -1]], "b": [-0.00050000000000000001]}
+  ],
+  "expected": {"verified": 0, "iterations": 2, "nrSteps": 500, "timeStep": 0.040000000000000008}
+}

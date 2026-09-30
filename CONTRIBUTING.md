@@ -18,6 +18,7 @@ src/
   lean/                    cora::lean: sets and dynamics computed by CORALean (needs CORACPP_ORACLE)
 tests/  examples/          mirror src/
 competition/               the CORA-COMP entry
+benchmarks/                ARCH-COMP AFF instances (data, C++ and Python programs), see its README
 ```
 
 The library is namespace `cora`; the competition entry keeps its own sets in `cora::comp`.

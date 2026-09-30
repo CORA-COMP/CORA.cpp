@@ -1,0 +1,22 @@
+{
+  "format": "cora-benchmark-1",
+  "benchmark": "Heat3D",
+  "instance": "HEAT02",
+  "label": "HEAT02",
+  "verifyAlg": "reachavoid:supportFunc",
+  "tFinal": 40,
+  "data": "HEAT02.bin",
+  "matrices": {
+    "A": {"shape": [1000, 1000], "storage": "coo", "offset": 0, "nnz": 6400},
+    "B": {"shape": [1000, 1], "storage": "coo", "offset": 102400, "nnz": 0},
+    "C": {"shape": [1, 1000], "storage": "coo", "offset": 102400, "nnz": 1},
+    "R0c": {"shape": [1000, 1], "storage": "coo", "offset": 102416, "nnz": 30},
+    "R0G": {"shape": [1000, 30], "storage": "coo", "offset": 102896, "nnz": 30},
+    "Uc": {"shape": [1, 1], "storage": "coo", "offset": 103376, "nnz": 0},
+    "UG": {"shape": [1, 0], "storage": "dense", "offset": 103376, "nnz": 0}
+  },
+  "specs": [
+    {"type": "safeSet", "A": [[1]], "b": [0.029759999999999998]}
+  ],
+  "expected": {"verified": 1, "iterations": 3, "nrSteps": 2500, "timeStep": 0.016000000000000004}
+}

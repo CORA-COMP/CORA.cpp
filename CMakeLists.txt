@@ -155,4 +155,6 @@ file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/examples")
 
 include(scripts/cmake/python.cmake)
 
+include(scripts/cmake/benchmarks.cmake)
+
 include(scripts/cmake/competition.cmake)

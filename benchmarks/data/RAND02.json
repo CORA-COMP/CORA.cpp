@@ -1,0 +1,23 @@
+{
+  "format": "cora-benchmark-1",
+  "benchmark": "Random",
+  "instance": "RAND02",
+  "label": "RAND02",
+  "verifyAlg": "reachavoid:zonotope",
+  "tFinal": 2.1085100373254217,
+  "data": "RAND02.bin",
+  "matrices": {
+    "A": {"shape": [2, 2], "storage": "dense", "offset": 0, "nnz": 4},
+    "B": {"shape": [2, 1], "storage": "dense", "offset": 32, "nnz": 2},
+    "C": {"shape": [2, 2], "storage": "dense", "offset": 48, "nnz": 4},
+    "R0c": {"shape": [2, 1], "storage": "dense", "offset": 80, "nnz": 2},
+    "R0G": {"shape": [2, 2], "storage": "dense", "offset": 96, "nnz": 4},
+    "Uc": {"shape": [1, 1], "storage": "dense", "offset": 128, "nnz": 1},
+    "UG": {"shape": [1, 1], "storage": "dense", "offset": 136, "nnz": 1}
+  },
+  "specs": [
+    {"type": "unsafeSet", "A": [[1, 0], [0, 1], [-1, -0], [-0, -1]], "b": [0.9169328405934547, 1.2718590603285376, 3.4231642934567788, 0.93525050715654323]},
+    {"type": "unsafeSet", "A": [[1, 0], [0, 1], [-1, -0], [-0, -1]], "b": [1.3912151812820812, 1.1973152756325354, 0.67874974623608941, 1.0925786681947902]}
+  ],
+  "expected": {"verified": 0}
+}
