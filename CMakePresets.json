@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
   "configurePresets": [
     {
       "name": "base",
@@ -61,5 +61,39 @@
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" }
+  ],
+  "workflowPresets": [
+    {
+      "name": "cpp",
+      "steps": [
+        { "type": "configure", "name": "cpp" },
+        { "type": "build", "name": "cpp" },
+        { "type": "test", "name": "cpp" }
+      ]
+    },
+    {
+      "name": "torch",
+      "steps": [
+        { "type": "configure", "name": "torch" },
+        { "type": "build", "name": "torch" },
+        { "type": "test", "name": "torch" }
+      ]
+    },
+    {
+      "name": "python",
+      "steps": [
+        { "type": "configure", "name": "python" },
+        { "type": "build", "name": "python" },
+        { "type": "test", "name": "python" }
+      ]
+    },
+    {
+      "name": "python-torch",
+      "steps": [
+        { "type": "configure", "name": "python-torch" },
+        { "type": "build", "name": "python-torch" },
+        { "type": "test", "name": "python-torch" }
+      ]
+    }
   ]
 }

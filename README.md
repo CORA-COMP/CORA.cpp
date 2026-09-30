@@ -36,7 +36,7 @@ plot(R)                                                                # dims de
 
 ## Install
 
-Needs a C++20 compiler and CMake 3.22 or newer, on Linux, macOS or Windows. Pick what to add:
+Needs a C++20 compiler and CMake 3.25 or newer, on Linux, macOS or Windows. Pick what to add:
 
 | preset | adds |
 | --- | --- |
@@ -46,10 +46,10 @@ Needs a C++20 compiler and CMake 3.22 or newer, on Linux, macOS or Windows. Pick
 | `python-torch` | the Python package with torch tensors (creates `.venv`, installs torch into it) |
 
 ```bash
-cmake --preset cpp                    # or: torch, python, python-torch
-cmake --build --preset cpp
-ctest --preset cpp                    # tests and examples
+cmake --workflow --preset cpp         # configure, build, test; or: torch, python, python-torch
 ```
+
+The steps alone: `cmake --preset cpp`, `cmake --build --preset cpp`, `ctest --preset cpp`.
 
 Eigen is fetched if it is not installed. The Python presets need Python 3; they run
 `pip install -r requirements-python.txt` (`requirements.txt` for torch) in `.venv` at the project
