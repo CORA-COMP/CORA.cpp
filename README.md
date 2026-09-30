@@ -41,7 +41,7 @@ plot(R)                                                                # dims de
 Needs a C++20 compiler and CMake 3.25 or newer, on Linux, macOS or Windows:
 
 ```bash
-cmake --workflow --preset cpp         # or: torch, torch-cuda, python, python-torch, python-torch-cuda
+cmake --workflow --preset cpp         # or: see table below for python, torch, cuda
 ```
 
 The same in separate steps:
