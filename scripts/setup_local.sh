@@ -3,7 +3,7 @@
 #
 # Syntax:   scripts/setup_local.sh [--cpu]
 # What it does: finds (or installs, into ~/miniforge3) conda; creates the environment `coracpp`
-#           from environment.yml; installs torch with pip (the CUDA build if there is an NVIDIA
+#           from scripts/environment.yml; installs torch with pip (the CUDA build if there is an NVIDIA
 #           GPU, else the CPU one, or --cpu to force it); and, when the repository is on a
 #           slow drive (WSL's /mnt/c), writes .coracpp-build so that objects are built elsewhere.
 # Afterwards: scripts/with_env.sh scripts/build.sh     builds inside the environment
@@ -13,6 +13,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPTS="$ROOT/scripts"
 ENV_NAME="${CORACPP_ENV:-coracpp}"
 FORCE_CPU=0
 [ "${1:-}" = "--cpu" ] && FORCE_CPU=1
@@ -39,10 +40,10 @@ echo "[setup] using $CONDA"
 # --- the environment ---------------------------------------------------------------------
 if "$CONDA" env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
     echo "[setup] updating environment $ENV_NAME"
-    "$CONDA" env update -n "$ENV_NAME" -f "$ROOT/environment.yml" --prune
+    "$CONDA" env update -n "$ENV_NAME" -f "$SCRIPTS/environment.yml" --prune
 else
     echo "[setup] creating environment $ENV_NAME"
-    "$CONDA" env create -n "$ENV_NAME" -f "$ROOT/environment.yml"
+    "$CONDA" env create -n "$ENV_NAME" -f "$SCRIPTS/environment.yml"
 fi
 
 # --- torch -------------------------------------------------------------------------------

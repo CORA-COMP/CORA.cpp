@@ -1,0 +1,5 @@
+# The Python side of CORA.cpp: torch enables the torch backend and the Python package.
+# CPU-only torch (small): pip install -r scripts/requirements-python-torch.txt --extra-index-url https://download.pytorch.org/whl/cpu
+torch
+numpy
+matplotlib
