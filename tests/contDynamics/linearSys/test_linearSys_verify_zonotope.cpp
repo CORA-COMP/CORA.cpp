@@ -191,6 +191,58 @@ void refinement_cases_match_matlab() {
     check(n1.verified && n1.iterations == 1, "large input set, unsafe box");
 }
 
+/// A three-dimensional system with three uncertain inputs and two outputs (the reduction of
+/// the particular solution of U takes place). Reference from MATLAB: A = [-1 -4 0; 4 -1 0; 0 0 -3],
+/// B = I, C = [1 1 0; 0 0 1], R0 = zonotope([1;1;1], 0.1 I), U = zonotope([0.1;0;0.2],
+/// [0.05 0.02 0; 0 0.05 0.01; 0.01 0 0.05]), tFinal 2.
+void reduction_case_matches_matlab() {
+    const LinearSys sys(mat(3, 3, {-1, -4, 0, 4, -1, 0, 0, 0, -3}),
+                        mat(3, 3, {1, 0, 0, 0, 1, 0, 0, 0, 1}), mat(2, 3, {1, 1, 0, 0, 0, 1}));
+    const VerifyParams params{zono({1, 1, 1}, {0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1}, 3),
+                              zono({0.1, 0, 0.2}, {0.05, 0.02, 0, 0, 0.05, 0.01, 0.01, 0, 0.05}, 3),
+                              2.0};
+
+    // The adaptive reachable sets of the first run (emax 4.940648 as MATLAB printed it).
+    TaylorLinSys taylor(sys.A());
+    AdaptiveSaveData savedata;
+    const AdaptiveParams ap{params.R0, params.U.G, params.U.c, sys.C(), params.tFinal};
+    const AdaptiveResult R = priv_reach_adaptive(taylor, ap, {VerifyTime({{0, 2.0}})}, 4.940648,
+                                                 true, savedata);
+    check(R.timeInt.size() == 5, "3-dim: five steps");
+    if (R.timeInt.size() == 5) {
+        const int step[4] = {0, 1, 2, 4};
+        const double tEnd[4] = {0.4375, 0.875, 1.375, 2.0};
+        const double err[4] = {4.70253455848, 3.2106884522, 2.97737397691, 0.575899210811};
+        const double inf[4][2] = {{-2.21424850989, -0.153157462114}, {-2.46217013572, -0.0683082121964},
+                                  {-2.20625153052, -0.0715683737546}, {-0.5029888848, -0.0080018621172}};
+        const double sup[4][2] = {{4.16445622063, 1.3639013812}, {1.1505687946, 0.491622670767},
+                                  {1.91667396042, 0.278266894323}, {0.629190269945, 0.146965833889}};
+        for (int i = 0; i < 4; ++i) {
+            const int k = step[i];
+            const std::string w = "3-dim step " + std::to_string(k + 1) + ": ";
+            check(test::close(R.time[k + 1], tEnd[i], 1e-9), w + "end time");
+            check(test::close(R.timeIntError[k], err[i], 1e-5), w + "error");
+            const Interval I = R.timeInt[k]->interval();
+            check(test::close(I.inf, std::vector<double>{inf[i][0], inf[i][1]}, 1e-5), w + "lower");
+            check(test::close(I.sup, std::vector<double>{sup[i][0], sup[i][1]}, 1e-5), w + "upper");
+            check(R.timeInt[k]->G.shape()[1] == 10, w + "generators");
+        }
+    }
+
+    // Verdicts and refinements: a far box, a close one (y1 >= 2.35), boxes that take 2 and 14
+    // refinements (the output at time 0 reaches y1 = 2.2), and one that is hit.
+    VerifyResult r = sys.verify(params, VerifyAlg::Zonotope, {unsafeBox(5, 6, 5, 6)});
+    check(r.verified && r.iterations == 1, "3-dim: far box");
+    r = sys.verify(params, VerifyAlg::Zonotope, {unsafeBox(2.35, 4, -1, 3)});
+    check(r.verified && r.iterations == 1, "3-dim: close box");
+    r = sys.verify(params, VerifyAlg::Zonotope, {unsafeBox(2.25, 4, -1, 3)});
+    check(r.verified && r.iterations == 2, "3-dim: box at y1 >= 2.25");
+    r = sys.verify(params, VerifyAlg::Zonotope, {unsafeBox(2.21, 4, -1, 3)});
+    check(r.verified && r.iterations == 14, "3-dim: box at y1 >= 2.21 takes 14 refinements");
+    r = sys.verify(params, VerifyAlg::Zonotope, {unsafeBox(2.01, 4, -1, 3)});
+    check(!r.verified && r.iterations == 1, "3-dim: box that is hit");
+}
+
 /// The verdicts on the two benchmark instances.
 void rand_instances() {
     // RAND01 is verified, RAND02 is falsified (specifications of the JSON files).
@@ -217,5 +269,6 @@ int main() {
     adaptive_reach_rand02_matches_matlab();
     rand_instances();
     refinement_cases_match_matlab();
+    reduction_case_matches_matlab();
     return test::finish("linearSys verify (zonotope)");
 }

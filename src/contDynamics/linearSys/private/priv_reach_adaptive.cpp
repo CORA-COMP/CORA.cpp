@@ -587,8 +587,11 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
         double maxTimeStepSpec = kInf;
         bool fc = true;
         if (timeSpecUnsat.numIntervals() > 0 &&
-            !timeSpecUnsat.timeUntilSwitch(t, maxTimeStepSpec, fc))
-            throw std::logic_error("priv_reach_adaptive: no switch of the unverified times");
+            !timeSpecUnsat.timeUntilSwitch(t, maxTimeStepSpec, fc)) {
+            // Within the tolerance of the last boundary: a sliver of the horizon remains.
+            maxTimeStepSpec = tFinal - t;
+            fc = false;
+        }
         fullcomp.push_back(fc);
         if (fc) set.startset = set.Hstartp;
         const double maxTimeStep = std::min(tFinal - t, maxTimeStepSpec);
