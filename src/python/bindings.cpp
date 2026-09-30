@@ -19,6 +19,8 @@
 #include "contDynamics/linearSys/linearSys.h"
 #include "contDynamics/nonlinearSys/nonlinearSys.h"
 #include "global/rng.h"
+#include "lean/linearSys.h"
+#include "lean/oracle.h"
 #include "global/plot/plot.h"
 #include "nn/neuralNetwork/neuralNetwork.h"
 #include "specification/specification.h"
@@ -605,6 +607,80 @@ void bindSpecification(py::module_ &m) {
              py::arg("sets"), "The index of the first violating set, or -1");
 }
 
+/// The oracle of CORALean as `cora.lean`: the same names as cora::lean; vectors are 1-D arrays.
+void bindLean(py::module_ &top) {
+    py::module_ m = top.def_submodule("lean", "Sound float sets computed by CORALean (needs CORACPP_ORACLE)");
+    m.def("setDType", &lean::setDType, py::arg("spec"),
+          "The dtype of new lean objects: 'binary64', 'ieee:<format>', 'dyadic:<p>', 'fixedpoint:<f>'");
+    m.def("dtype", &lean::dtype, "The current dtype");
+
+    py::class_<lean::Tensor>(m, "Tensor", "A matrix of exact values in a dtype")
+        .def_static("fromArray", [](const Eigen::MatrixXd &x) { return lean::Tensor::from(fromEigen(x)); },
+                    py::arg("x"), "Exact, or an error if a value is not representable in the dtype")
+        .def("gather", [](const lean::Tensor &T) { return matrix(T.gather()); },
+             "The values as an array; an error if one is not a double")
+        .def(
+            "roundTo",
+            [](const lean::Tensor &T, const std::string &dtype, const std::string &mode) {
+                auto [value, error] = T.roundTo(dtype, mode);
+                return std::make_pair(value, error);
+            },
+            py::arg("dtype"), py::arg("mode") = "nearest",
+            "(value, error): the rounded values and an interval enclosing x - value")
+        .def_property_readonly("dtype", &lean::Tensor::dtype);
+
+    py::class_<lean::Interval>(m, "Interval", "A box of lean values")
+        .def(py::init<lean::Tensor, lean::Tensor>(), py::arg("inf"), py::arg("sup"))
+        .def_static(
+            "fromArrays",
+            [](const Eigen::VectorXd &inf, const Eigen::VectorXd &sup) {
+                return lean::Interval::from(column(inf), column(sup));
+            },
+            py::arg("inf"), py::arg("sup"))
+        .def("gather",
+             [](const lean::Interval &I) {
+                 auto [inf, sup] = I.gather();
+                 return Interval(inf, sup);
+             },
+             "A cora.Interval; an error if a bound is not a double");
+
+    py::class_<lean::Zonotope>(m, "Zonotope", "A nominal zonotope plus an error box")
+        .def(py::init([](const Eigen::VectorXd &c, const Eigen::MatrixXd &G) {
+                 return lean::Zonotope(column(c), fromEigen(G));
+             }),
+             py::arg("c"), py::arg("G"), "An exact zonotope in the current dtype")
+        .def("nominal", &lean::Zonotope::nominal, "c and G with an empty error box")
+        .def("error", &lean::Zonotope::error, "The error box")
+        .def("enclosure", &lean::Zonotope::enclosure, "nominal and error as one zonotope")
+        .def("roundTo", &lean::Zonotope::roundTo, py::arg("dtype"), py::arg("mode") = "nearest")
+        .def("mtimes",
+             [](const lean::Zonotope &Z, const Eigen::MatrixXd &M) {
+                 return Z.mtimes(lean::Tensor::from(fromEigen(M)));
+             },
+             py::arg("M"))
+        .def("mtimes", py::overload_cast<const lean::Interval &>(&lean::Zonotope::mtimes, py::const_),
+             py::arg("M"))
+        .def("plus", py::overload_cast<const lean::Zonotope &>(&lean::Zonotope::plus, py::const_),
+             py::arg("Z2"))
+        .def("plus", py::overload_cast<const lean::Interval &>(&lean::Zonotope::plus, py::const_),
+             py::arg("I"))
+        .def("linComb", &lean::Zonotope::linComb, py::arg("Z2"))
+        .def("reduce", &lean::Zonotope::reduce, py::arg("order"), py::arg("method") = "girard")
+        .def("interval", &lean::Zonotope::interval)
+        .def("gather", [](const lean::Zonotope &Z) { return Z.gather(); },
+             "(cora.Zonotope, cora.Interval): the nominal part and the error, exactly");
+
+    py::class_<lean::ReachSet>(m, "ReachSet", "The reachable sets: lists of lean zonotopes")
+        .def_readonly("timeInt", &lean::ReachSet::timeInt)
+        .def_readonly("timePoint", &lean::ReachSet::timePoint);
+
+    py::class_<lean::LinearSys>(m, "LinearSys", "The linear system x' = A x, reached by CORALean")
+        .def(py::init([](const Eigen::MatrixXd &A) { return lean::LinearSys(fromEigen(A)); }),
+             py::arg("A"))
+        .def("reach", &lean::LinearSys::reach, py::arg("X0"), py::arg("timeStep"), py::arg("tFinal"),
+             py::arg("taylorTerms"), py::arg("zonotopeOrder") = 10);
+}
+
 } // namespace
 
 PYBIND11_MODULE(_cora, m) {
@@ -625,6 +701,7 @@ PYBIND11_MODULE(_cora, m) {
     bindOperators(m);
     bindPlot(m);
     bindSpecification(m);
+    bindLean(m);
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

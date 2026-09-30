@@ -13,9 +13,12 @@ Tensor.sin/cos/exp/... apply a function to every element (no math or numpy neede
 
 The classes are the C++ classes with the same methods; a batch lives in the object.
 """
+import torch  # noqa: F401  registers the tensor type that the compiled module returns
+
 from . import banner
 from ._cora import (CORAcolor, ContSet, Expr, Interval, LinearSys, NeuralNetwork, NonlinearSys,
-                    Reach, Rng, Specification, Zonotope, backend, setBackend, useCORAcolors)
+                    Reach, Rng, Specification, Zonotope, backend, lean, setBackend,
+                    useCORAcolors)
 from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
 from .plot import plot
 
@@ -24,6 +27,7 @@ banner.install(backend)
 
 __all__ = [
     "CORAcolor", "ContSet", "Expr", "Interval", "LinearSys", "NeuralNetwork", "NonlinearSys",
-    "Reach", "Rng", "Specification", "Zonotope", "backend", "plot", "setBackend", "useCORAcolors",
+    "Reach", "Rng", "Specification", "Zonotope", "backend", "lean", "plot", "setBackend",
+    "useCORAcolors",
     "Tensor", "cos", "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]
