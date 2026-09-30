@@ -1,4 +1,4 @@
-"""CORA.cpp: set-based computing on Eigen (numpy) or libtorch (torch), with CORA's names.
+"""CORA.cpp: set-based computing on Eigen (numpy), or on libtorch (torch) if installed.
 
     import cora
     X0 = cora.Zonotope(c, G)              # c (..., n), G (..., n, m): one set or a batch
@@ -13,7 +13,10 @@ Tensor.sin/cos/exp/... apply a function to every element (no math or numpy neede
 
 The classes are the C++ classes with the same methods; a batch lives in the object.
 """
-import torch  # noqa: F401  registers the tensor type that the compiled module returns
+try:
+    import torch  # noqa: F401  registers the tensor type that the compiled module returns
+except ImportError:  # numpy and Eigen only
+    pass
 
 from . import banner
 from ._cora import (CORAcolor, ContSet, Expr, Interval, LinearSys, NeuralNetwork, NonlinearSys,

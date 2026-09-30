@@ -1,8 +1,11 @@
 """test_neuralNetwork_train - a loss over the output set of a network updates its weights"""
 import unittest
 
-import torch
-from torch import nn
+try:
+    import torch
+    from torch import nn
+except ImportError:  # numpy-only build: test_numpy.py covers it
+    raise unittest.SkipTest("needs torch")
 
 import cora
 

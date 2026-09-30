@@ -14,6 +14,8 @@ def run(path):
     return subprocess.run([sys.executable, SCRIPT, path], capture_output=True, text=True, cwd=ROOT)
 
 
+
+@unittest.skipIf(sys.platform == "win32", "the helper scripts of the repository need bash")
 class RunExample(unittest.TestCase):
     def test_a_python_example_runs_with_its_blocks(self):
         with tempfile.TemporaryDirectory() as folder:

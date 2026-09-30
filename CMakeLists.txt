@@ -364,7 +364,9 @@ if(python_ok)
   else()
     set(python_path "${CMAKE_BINARY_DIR}:$ENV{PYTHONPATH}")
   endif()
-  set_property(TEST python APPEND PROPERTY ENVIRONMENT "PYTHONPATH=${python_path}")
+  # the examples the tests build and run use this build directory, in the current environment
+  set_property(TEST python APPEND PROPERTY ENVIRONMENT "PYTHONPATH=${python_path}"
+               "CORACPP_BUILD=${CMAKE_BINARY_DIR}" "CORACPP_ENV=none")
   cora_run_environment(python)
 endif()
 

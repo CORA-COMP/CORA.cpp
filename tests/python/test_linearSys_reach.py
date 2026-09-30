@@ -3,7 +3,10 @@ or numpy, with gradients and the options checked."""
 import unittest
 
 import numpy as np
-import torch
+try:
+    import torch
+except ImportError:  # numpy-only build: test_numpy.py covers it
+    raise unittest.SkipTest("needs torch")
 
 import cora
 

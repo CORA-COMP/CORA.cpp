@@ -31,7 +31,8 @@ if [ "$TYPE" = Debug ]; then BUILD="$BUILD-debug"; fi
 LAUNCHER=()
 GENERATOR=()
 if command -v ccache >/dev/null 2>&1; then LAUNCHER=(-DCMAKE_CXX_COMPILER_LAUNCHER=ccache); fi
-if command -v ninja >/dev/null 2>&1; then GENERATOR=(-G Ninja); fi  # ignored once the directory exists
+# a generator is chosen once: an existing build directory keeps its own
+if [ ! -f "$BUILD/CMakeCache.txt" ] && command -v ninja >/dev/null 2>&1; then GENERATOR=(-G Ninja); fi
 
 # the configure output is shown only when it fails; the build prints its own progress
 if ! LOG="$(cmake -S "$ROOT" -B "$BUILD" "${GENERATOR[@]}" -DCMAKE_BUILD_TYPE="$TYPE" \

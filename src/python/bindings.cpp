@@ -359,7 +359,7 @@ void bindNonlinearSys(py::module_ &m) {
 
 void bindNeuralNetwork(py::module_ &m) {
     py::class_<NeuralNetwork>(m, "NeuralNetwork",
-                              "Affine layers with a ReLU after each but the last; torch tensors.")
+                              "Affine layers with a ReLU after each but the last.")
 #ifdef CORACPP_PYTHON_TORCH
         .def(py::init([](const std::vector<std::pair<torch::Tensor, torch::Tensor>> &layers) {
                  std::vector<NeuralNetwork::Layer> out;
@@ -369,6 +369,12 @@ void bindNeuralNetwork(py::module_ &m) {
              }),
              py::arg("layers"), "the layers as (W (out, in), b (out,)) pairs, first to last")
 #endif
+        .def(py::init([](const std::vector<std::pair<Eigen::MatrixXd, Eigen::VectorXd>> &layers) {
+                 std::vector<NeuralNetwork::Layer> out;
+                 for (const auto &[W, b] : layers) out.push_back({fromEigen(W), column(b)});
+                 return NeuralNetwork(out);
+             }),
+             py::arg("layers"))
         .def_property_readonly("inputDim", &NeuralNetwork::inputDim)
         .def_property_readonly("outputDim", &NeuralNetwork::outputDim)
 #ifdef CORACPP_PYTHON_TORCH
@@ -380,6 +386,12 @@ void bindNeuralNetwork(py::module_ &m) {
             },
             py::arg("x"), "The outputs at a point (in,) or at the columns of (in, N)")
 #endif
+        .def("evaluate", [](const NeuralNetwork &nn, const Eigen::VectorXd &x) {
+                 return vector(nn.evaluate(column(x)));
+             }, py::arg("x"))
+        .def("evaluate", [](const NeuralNetwork &nn, const Eigen::MatrixXd &x) {
+                 return matrix(nn.evaluate(fromEigen(x)));
+             }, py::arg("x"))
         .def("evaluate", [](const NeuralNetwork &nn, const Zonotope &X) { return nn.evaluate(X); },
              py::arg("X"), "A zonotope that contains the outputs of every point of X");
 }
@@ -521,11 +533,13 @@ py::dict layerDict(const Figure::Layer &l) {
 /// The time points of a simulation (steps, n, N) from torch or numpy as one Tensor (n, N) each.
 std::vector<Tensor> trajectories(const py::object &o) {
     std::vector<Tensor> x;
+#ifdef CORACPP_PYTHON_TORCH
     py::detail::make_caster<torch::Tensor> torchCaster;
     if (torchCaster.load(o, /*convert=*/false)) {
         for (const torch::Tensor &t : o.cast<torch::Tensor>().unbind(0)) x.push_back(fromTorch(t));
         return x;
     }
+#endif
     for (const py::handle &step : o) x.push_back(fromEigen(step.cast<Eigen::MatrixXd>()));
     return x;
 }
@@ -563,8 +577,8 @@ void bindPlot(py::module_ &m) {
                 else if (const std::optional<Tensor> points = asTensor(data))
                     plot(fig, *points, dims, optionsOf(kwargs));
                 else
-                    throw std::invalid_argument("cora.plot: the data must be a torch tensor or a "
-                                                "numpy array");
+                    throw std::invalid_argument("cora.plot: the data must be a numpy array or a "
+                                                "torch tensor");
             },
             py::arg("obj"), py::arg("dims"), "Draws points (n, N) or simulations (steps, n, N)")
         .def("takeLayers",
@@ -726,12 +740,25 @@ void bindLean(py::module_ &top) {
 } // namespace
 
 PYBIND11_MODULE(_cora, m) {
-    m.doc() = "CORA.cpp: set-based computing on Eigen (numpy) or libtorch (torch)";
+    m.doc() = "CORA.cpp: set-based computing on Eigen (numpy), and on libtorch (torch) when built with it";
 
     py::class_<cora::Rng>(m, "Rng", "Random numbers; a seed makes a draw repeatable.")
         .def(py::init<uint64_t>(), py::arg("seed") = 0);
-    m.def("setBackend", &setBackend, py::arg("spec"),
-          "The backend of new tensors: 'eigen', 'torch', 'torch:cuda', optionally ',customBackward'");
+    m.def(
+        "setBackend",
+        [](const std::string &spec) {
+#ifndef CORACPP_PYTHON_TORCH
+            if (spec.rfind("torch", 0) == 0)
+                throw std::invalid_argument("cora: this build of the Python package has no torch; "
+                                            "use setBackend('eigen')");
+#endif
+            setBackend(spec);
+        },
+        py::arg("spec"),
+        "The backend of new tensors: 'eigen', or with torch 'torch', 'torch:cuda', optionally ',customBackward'");
+#ifndef CORACPP_PYTHON_TORCH
+    setBackend("eigen");  // the Python package has no torch tensors, whatever the library has
+#endif
     m.def("backend", [] { return backend().name(); }, "The name of the current backend");
 
     bindContSet(m);
