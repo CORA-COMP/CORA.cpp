@@ -54,3 +54,28 @@ jobs:
       - run: cmake -S . -B build $CMAKE_FLAGS -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON
       - run: cmake --build build --parallel
       - run: ctest --test-dir build -j$(nproc) --output-on-failure -L competition
+
+  # Native Windows (MSVC) and macOS (clang), Eigen only: the library, tests and examples.
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ilammy/msvc-dev-cmd@v1
+      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build -j4 --output-on-failure
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: brew install eigen ninja
+      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build -j4 --output-on-failure

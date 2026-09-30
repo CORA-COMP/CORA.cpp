@@ -36,17 +36,31 @@ plot(R)                                                                # dims de
 
 ## Install
 
-Linux or WSL2 (Windows: `wsl --install`; macOS and native Windows are not supported):
+Needs a C++20 compiler, CMake and Eigen. The **torch backend** (GPU, batching, gradients, the
+Python package) is used whenever the Python that CMake finds has `torch` installed; without it the
+build is Eigen only.
+
+**Linux / WSL2, one script** (conda environment with compiler, CMake, Eigen and torch; the CUDA
+build of torch if there is an NVIDIA GPU, `--cpu` forces the CPU one):
 
 ```bash
-scripts/setup_local.sh                                   # once: conda env with compiler, CMake, Eigen, torch
-scripts/with_env.sh scripts/build.sh                     # library, examples, Python package
-scripts/with_env.sh scripts/test.sh -j4                  # tests
+scripts/setup_local.sh
+scripts/with_env.sh scripts/build.sh            # library, examples, Python package
+scripts/with_env.sh scripts/test.sh -j4         # tests
 ```
 
-Without conda, `cmake -S . -B build && cmake --build build` needs a C++20 compiler, CMake and
-Eigen. libtorch (from `pip install torch`) adds GPU, batching, gradients and the Python package;
-`-DCORACPP_TORCH=OFF` builds Eigen only. In VS Code, open an example and press `F5`.
+**Any platform, by hand:**
+
+```bash
+pip install torch numpy matplotlib              # optional: enables the torch backend and Python package
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+ctest --test-dir build -j4
+```
+
+`-DCORACPP_TORCH=OFF` forces Eigen only, `-DCORACPP_TORCH_DIR=/path/to/site-packages/torch` names
+another torch. In Python, `PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py`.
+In VS Code, open an example and press `F5`.
 
 ## Examples
 

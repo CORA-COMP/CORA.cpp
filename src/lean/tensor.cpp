@@ -30,15 +30,13 @@ std::string aux_encode(double x) {
     return std::to_string(m) + "*2^" + std::to_string(e);
 }
 
-// A decimal m*10^e is m*5^e*2^e: multiplies m by 5^e, or needs 5^-e to divide it.
-void aux_decimalToDyadic(unsigned __int128 &m, long long e, const std::string &s) {
-    for (long long i = 0; i < std::abs(e); ++i) {
-        if (e > 0 && m > (~static_cast<unsigned __int128>(0)) / 5)
-            throw std::range_error("lean: not a double (decimal value too large): " + s);
-        if (e < 0 && m % 5 != 0)
-            throw std::range_error("lean: not a double (no finite binary expansion): " + s);
-        m = e > 0 ? m * 5 : m / 5;
-    }
+using U64 = unsigned long long;
+
+// m * factor, or an error when it does not fit 64 bits: a value that big is no double anyway.
+U64 aux_times(U64 m, U64 factor, const std::string &s) {
+    if (factor != 0 && m > ~U64(0) / factor)
+        throw std::range_error("lean: not a double (too many digits): " + s);
+    return m * factor;
 }
 
 // The double x as "m*10^e" with m not divisible by 10, as fixedpoint dtypes write values.
@@ -47,14 +45,10 @@ std::string aux_encodeDecimal(double x) {
     const std::string dyadic = aux_encode(x);
     const std::size_t star = dyadic.find('*');
     const bool negative = dyadic[0] == '-';
-    unsigned __int128 m = std::stoull(dyadic.substr(negative ? 1 : 0, star - (negative ? 1 : 0)));
+    U64 m = std::stoull(dyadic.substr(negative ? 1 : 0, star - (negative ? 1 : 0)));
     const long long e = std::stoll(dyadic.substr(star + 3));
     // 2^e with e < 0 is 5^-e * 10^e; with e >= 0 the integer m * 2^e, at 10^0
-    for (long long i = 0; i < std::abs(e); ++i) {
-        if (m > (~static_cast<unsigned __int128>(0)) / 5)
-            throw std::range_error("lean: a value has too many digits for a fixedpoint dtype");
-        m *= e < 0 ? 5 : 2;
-    }
+    for (long long i = 0; i < std::abs(e); ++i) m = aux_times(m, e < 0 ? 5 : 2, dyadic);
     long long exponent = e < 0 ? e : 0;
     while (m % 10 == 0) { m /= 10; ++exponent; }
     std::string digits;
@@ -70,20 +64,25 @@ double aux_decode(const std::string &s) {
         throw std::invalid_argument("lean: expected a value m*2^e or m*10^e, got '" + s + "'");
     const std::string digits = s.substr(0, star);
     const bool negative = !digits.empty() && digits[0] == '-';
-    // the mantissa has at most 38 digits so that it fits 128 bits
-    unsigned __int128 m = 0;
-    for (std::size_t i = negative ? 1 : 0; i < digits.size(); ++i) {
-        if (m > (~static_cast<unsigned __int128>(0)) / 20)
-            throw std::range_error("lean: not a double (mantissa too large): " + s);
-        m = m * 10 + static_cast<unsigned>(digits[i] - '0');
+    U64 m = 0;
+    for (std::size_t i = negative ? 1 : 0; i < digits.size(); ++i)
+        m = aux_times(m, 10, s) + static_cast<U64>(digits[i] - '0');
+    const long long e = std::stoll(s.substr(star + (decimal ? 4 : 3)));
+    // trailing zero bits of the mantissa move into the binary exponent
+    long long binary = decimal ? 0 : e;
+    while (m != 0 && m % 2 == 0) { m /= 2; ++binary; }
+    if (decimal) {
+        // m*10^e is m*5^e*2^e: multiply by 5^e, or 5^-e must divide m
+        binary += e;
+        for (long long i = 0; i < std::abs(e); ++i) {
+            if (e < 0 && m % 5 != 0)
+                throw std::range_error("lean: not a double (no finite binary expansion): " + s);
+            m = e > 0 ? aux_times(m, 5, s) : m / 5;
+        }
     }
-    // trailing zero bits move into the exponent, so 53 bits decide the mantissa
-    long long e = std::stoll(s.substr(star + (decimal ? 4 : 3)));
-    if (decimal) aux_decimalToDyadic(m, e, s);
-    while (m != 0 && m % 2 == 0) { m /= 2; ++e; }
     if (m >> 53)
         throw std::range_error("lean: not a double (needs over 53 bits): " + s);
-    const double x = std::ldexp(static_cast<double>(m), static_cast<int>(e));
+    const double x = std::ldexp(static_cast<double>(m), static_cast<int>(binary));
     if (!std::isfinite(x) || (m != 0 && std::abs(x) < 0x1p-1022))
         throw std::range_error("lean: not a normal double (out of range): " + s);
     return negative ? -x : x;
