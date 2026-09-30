@@ -32,16 +32,15 @@ class Verify(unittest.TestCase):
             self.sys.verify(self.params, "reachavoid:unknown", self.specs)
 
     def test_verify_takes_an_enum_or_its_name_and_gives_a_result(self):
-        # Before the algorithms land verify raises "not implemented"; afterwards it returns a result.
-        for alg in (cora.VerifyAlg.Zonotope, "reachavoid:supportFunc"):
-            try:
-                res = self.sys.verify(self.params, alg, self.specs)
-            except RuntimeError as error:
-                self.assertIn("not implemented", str(error))
-                continue
+        for alg in (cora.VerifyAlg.SupportFunc, "reachavoid:supportFunc"):
+            res = self.sys.verify(self.params, alg, self.specs)
             self.assertIsInstance(res, cora.VerifyResult)
             self.assertIsInstance(res.verified, bool)
             self.assertTrue(res.fals is None or isinstance(res.fals, cora.Falsification))
+
+    def test_the_zonotope_algorithm_is_not_there_yet(self):
+        with self.assertRaisesRegex(RuntimeError, "not implemented"):
+            self.sys.verify(self.params, cora.VerifyAlg.Zonotope, self.specs)
 
 
 if __name__ == "__main__":
