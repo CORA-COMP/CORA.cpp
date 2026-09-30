@@ -15,7 +15,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 class Interval : public ContSet {
   public:
@@ -81,6 +81,6 @@ inline Interval operator*(const Interval &I, double s) { return s * I; }
 inline Interval operator-(const Interval &I) { return -1.0 * I; }
 inline Interval operator*(const Tensor &M, const Interval &I) { return I.mtimes(M); }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

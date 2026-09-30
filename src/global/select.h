@@ -12,7 +12,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// The (k, n) matrix P with P x = (x[dims[0]], ..., x[dims[k-1]]), on the backend and device of
 /// `like`; throws if a dimension is out of 0..n-1.
@@ -29,6 +29,6 @@ inline Tensor selectDims(const Tensor &like, const std::vector<int64_t> &dims, i
     return Tensor::like(like, data, {k, n});
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

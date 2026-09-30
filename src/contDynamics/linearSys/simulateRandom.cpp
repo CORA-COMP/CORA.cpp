@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -19,6 +19,6 @@ std::vector<Tensor> LinearSys::simulateRandom(const ContSet &X0, int64_t N, doub
     return simulate(X0.randPoint(N, rng), timeStep, tFinal);
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

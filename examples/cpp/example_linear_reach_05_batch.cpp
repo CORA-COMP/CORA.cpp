@@ -16,7 +16,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-using namespace cora::ct;
+using namespace cora;
 
 int main() {
     setBackend("torch");

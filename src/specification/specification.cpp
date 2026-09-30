@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -25,6 +25,6 @@ Specification Specification::unsafeSet(const Halfspace &halfspace) {
     return {SpecType::UnsafeSet, {halfspace}};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

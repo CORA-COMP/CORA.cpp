@@ -21,9 +21,9 @@
 namespace {
 
 /// The two set types have the same name in either backend, so the test names both.
-using TensorZonotope = cora::tb::Zonotope;
-using TensorInterval = cora::tb::Interval;
-using EigenZonotope = cora::Zonotope<double>;
+using TensorZonotope = cora::comp::tb::Zonotope;
+using TensorInterval = cora::comp::tb::Interval;
+using EigenZonotope = cora::comp::Zonotope<double>;
 
 int failures = 0;
 
@@ -83,8 +83,8 @@ void the_two_backends_agree(const torch::TensorOptions &opts, const std::string 
     const Shape shapes[] = {{1, 2}, {2, 4}, {3, 6}, {5, 10}, {10, 20}, {30, 60}, {5, 2500}};
     for (const auto [n, m] : shapes) {
         const Eigen::Index batch = 3, points = 12;
-        const EigenZonotope set = cora::random_zonotope(rng, n, m, batch);
-        const cora::Mat<double> probes = cora::across_the_boundary(set, points, rng);
+        const EigenZonotope set = cora::comp::random_zonotope(rng, n, m, batch);
+        const cora::comp::Mat<double> probes = cora::comp::across_the_boundary(set, points, rng);
 
         // Eigen keeps one set per column with the generator blocks side by side; a tensor
         // wants c as (B, n), G as (B, n, m) and the points as (B, N, n).
@@ -94,7 +94,7 @@ void the_two_backends_agree(const torch::TensorOptions &opts, const std::string 
         const torch::Tensor p =
             to_tensor(probes, opts).reshape({n, batch, points}).permute({1, 2, 0}).contiguous();
 
-        const cora::Mask from_eigen = cora::contains(set, probes, points);
+        const cora::comp::Mask from_eigen = cora::comp::contains(set, probes, points);
         const torch::Tensor from_torch =
             TensorZonotope{c, g}.contains(p).to(torch::kCPU).reshape({-1}).contiguous();
         const bool *answers = from_torch.data_ptr<bool>();
@@ -120,7 +120,7 @@ int main() {
         torch::manual_seed(7);
         the_operations_match_their_definitions(opts, device);
         the_two_backends_agree(opts, device);
-        cora::torch_backend::check_gradients(device); // throws when they are wrong
+        cora::comp::torch_backend::check_gradients(device); // throws when they are wrong
     }
     if (devices.size() == 1)
         std::cout << "no CUDA device: the gpu half of these tests did not run\n";

@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace cora {
+namespace cora::comp {
 
 /// The catalog's set names.
 inline constexpr const char *kRepresentations[] = {"interval", "zonotope"};
@@ -28,4 +28,4 @@ struct Params {
 /// Whether `name` is one of the `n` names in `list`.
 bool known(const char *const *list, std::size_t n, const std::string &name);
 
-} // namespace cora
+} // namespace cora::comp

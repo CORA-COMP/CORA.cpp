@@ -19,6 +19,8 @@ tests/  examples/          mirror src/
 competition/               the CORA-COMP entry
 ```
 
+The library is namespace `cora`; the competition entry keeps its own sets in `cora::comp`.
+
 ## Conventions
 
 - One operation per file, named as in CORA, with a header (Syntax, Inputs, Outputs, See also);
@@ -44,7 +46,7 @@ The Makefile compiles every C++ example with `-include global/banner.h`, which p
 
 ## Tensor
 
-Sets and dynamics are written once against `ct::Tensor`, a runtime type-erased wrapper of Eigen
+Sets and dynamics are written once against `Tensor`, a runtime type-erased wrapper of Eigen
 (double, CPU, unbatched) or libtorch (batched, GPU, autograd). Layout is `(..., rows, cols)`;
 generic code broadcasts leading dimensions, which is the automatic batching. The backend is set
 with `setBackend` or `CORACPP_BACKEND`; a tensor can also live on its own device

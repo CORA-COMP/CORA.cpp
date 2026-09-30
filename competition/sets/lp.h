@@ -9,10 +9,10 @@
 
 #include <Eigen/Dense>
 
-namespace cora {
+namespace cora::comp {
 
 /// Whether `G b = r` has a solution with `||b||_inf <= 1 + tol`.
 bool contains_lp(const Eigen::Ref<const Eigen::MatrixXd> &g,
                  const Eigen::Ref<const Eigen::VectorXd> &r, double tol);
 
-} // namespace cora
+} // namespace cora::comp

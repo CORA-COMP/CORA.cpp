@@ -12,7 +12,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -34,6 +34,6 @@ Reach priv_reach_standard(const Zonotope &X0, const Tensor &eAdt, const Interval
     return R;
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

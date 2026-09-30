@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -31,6 +31,6 @@ bool Interval::contains(const Tensor &p) const {
     return true;
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

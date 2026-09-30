@@ -22,7 +22,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// The right-hand side of x' = f(x): the n components, given the states x[0], ..., x[n-1].
 using Dynamics = std::function<std::vector<Expr>(const std::vector<Expr> &x)>;
@@ -67,6 +67,6 @@ class NonlinearSys {
     std::vector<Expr> f_, jacobian_, hessian_;
 };
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

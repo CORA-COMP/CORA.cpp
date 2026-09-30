@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -31,6 +31,6 @@ NeuralNetwork::NeuralNetwork(std::vector<Layer> layers) : layers_(std::move(laye
     }
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

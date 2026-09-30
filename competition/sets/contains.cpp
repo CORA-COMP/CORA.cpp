@@ -15,7 +15,7 @@
 #include <limits>
 #include <vector>
 
-namespace cora {
+namespace cora::comp {
 namespace {
 
 /// Most facet normals `C(m, n-1)` for which containment goes through the facets; above it,
@@ -227,4 +227,4 @@ Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index poin
     return out;
 }
 
-} // namespace cora
+} // namespace cora::comp

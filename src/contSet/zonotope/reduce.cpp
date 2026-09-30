@@ -16,7 +16,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -44,6 +44,6 @@ Zonotope Zonotope::reduce(int order) const {
     return {c, keep == 0 ? box : Tensor::catLast({G.selectCols(kept), box})};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

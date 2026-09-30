@@ -20,7 +20,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// The interval [lo, hi] of every element of two tensors of one shape.
 struct Range {
@@ -90,6 +90,6 @@ Expr sin(const Expr &a);
 Expr cos(const Expr &a);
 Expr exp(const Expr &a);
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

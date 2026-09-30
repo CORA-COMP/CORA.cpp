@@ -2,7 +2,7 @@
 
 #include "json.h"
 
-namespace cora {
+namespace cora::comp {
 
 Params::Params(const std::string &params) {
     const auto text = [&](const char *key, const char *fallback) {
@@ -28,4 +28,4 @@ bool known(const char *const *list, std::size_t n, const std::string &name) {
     return false;
 }
 
-} // namespace cora
+} // namespace cora::comp

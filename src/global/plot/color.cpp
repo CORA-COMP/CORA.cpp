@@ -16,7 +16,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -109,6 +109,6 @@ Color CORAcolor(const std::string &identifier, int numColors, int cidx, double a
     return c;
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

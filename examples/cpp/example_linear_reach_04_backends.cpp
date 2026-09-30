@@ -17,7 +17,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-using namespace cora::ct;
+using namespace cora;
 
 /// The reachable set of a damped oscillator, on whichever backend is current.
 Reach reachOscillator() {

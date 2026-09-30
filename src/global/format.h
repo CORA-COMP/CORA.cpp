@@ -14,7 +14,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// One number with up to six significant digits.
 inline std::string formatNumber(double x) {
@@ -49,6 +49,6 @@ inline std::string formatMatrix(const Tensor &t, const std::string &indent) {
     return text;
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

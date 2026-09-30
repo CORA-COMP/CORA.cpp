@@ -24,7 +24,7 @@
 #include "global/rng.h"
 #include "global/threads.h"
 
-namespace cora {
+namespace cora::comp {
 
 template <typename T>
 using Mat = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
@@ -145,4 +145,4 @@ Mask contains(const Interval<double> &s, const Mat<double> &p, Eigen::Index poin
 /// Whether each of the `points` points of each set lies in the zonotope — exactly.
 Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index points);
 
-} // namespace cora
+} // namespace cora::comp

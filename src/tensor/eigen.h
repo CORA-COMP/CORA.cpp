@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// The Eigen backend, for `setBackend`.
 std::shared_ptr<const Tensor::Backend> eigenBackend();
@@ -25,6 +25,6 @@ Eigen::MatrixXd toEigen(const Tensor &t);
 /// Whether the tensor belongs to the Eigen backend.
 bool isEigen(const Tensor &t);
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

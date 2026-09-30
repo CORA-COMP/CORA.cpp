@@ -14,7 +14,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -47,6 +47,6 @@ Tensor Zonotope::randPoint(int64_t N, Rng &rng, const std::string &type) const {
                                 "'; use \"standard\" or \"extreme\"");
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

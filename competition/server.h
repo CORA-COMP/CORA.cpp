@@ -5,7 +5,7 @@
 #include <iosfwd>
 #include <string>
 
-namespace cora {
+namespace cora::comp {
 
 /// The daemon's localhost port.
 int port();
@@ -17,4 +17,4 @@ int serve(const std::string &srv_dir);
 std::string run_logged(const std::string &params, const std::string &results_file,
                        std::ostream &log);
 
-} // namespace cora
+} // namespace cora::comp

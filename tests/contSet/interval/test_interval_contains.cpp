@@ -4,7 +4,7 @@
 #include "global/rng.h"
 #include "testing.h"
 
-using namespace cora::ct;
+using namespace cora;
 using test::check;
 using test::close;
 using test::column;

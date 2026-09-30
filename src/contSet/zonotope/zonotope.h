@@ -17,7 +17,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 class Zonotope : public ContSet {
   public:
@@ -91,6 +91,6 @@ inline Zonotope operator+(const Tensor &v, const Zonotope &Z) { return Z + v; }
 inline Zonotope operator-(const Zonotope &Z, const Tensor &v) { return {Z.c - v, Z.G}; }
 inline Zonotope operator-(const Zonotope &Z) { return {Z.c * -1.0, Z.G}; }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

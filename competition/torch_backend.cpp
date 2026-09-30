@@ -15,7 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace cora::torch_backend {
+namespace cora::comp::torch_backend {
 namespace {
 
 using tb::Interval;
@@ -204,4 +204,4 @@ void check_gradients(const std::string &device) {
                                  + ": the gradient of supportFunc is wrong");
 }
 
-} // namespace cora::torch_backend
+} // namespace cora::comp::torch_backend

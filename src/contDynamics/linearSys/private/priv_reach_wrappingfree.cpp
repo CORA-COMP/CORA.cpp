@@ -12,7 +12,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -31,6 +31,6 @@ Reach priv_reach_wrappingfree(const Zonotope &X0, const Tensor &eAdt, const Inte
     return R;
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

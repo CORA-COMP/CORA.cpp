@@ -17,7 +17,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// The halfspace {x | a'x <= b}; a is a column (n, 1).
 struct Halfspace {
@@ -68,6 +68,6 @@ class Specification {
     std::vector<Halfspace> halfspaces_;
 };
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

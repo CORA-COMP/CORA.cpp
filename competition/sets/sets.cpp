@@ -2,7 +2,7 @@
 
 #include "global/threads.h"
 
-namespace cora {
+namespace cora::comp {
 
 Interval<double> random_interval(Rng &rng, Eigen::Index n, Eigen::Index batch) {
     Interval<double> s{Mat<double>(n, batch), Mat<double>(n, batch)};
@@ -79,4 +79,4 @@ Mask contains(const Interval<double> &s, const Mat<double> &p, Eigen::Index poin
     return out;
 }
 
-} // namespace cora
+} // namespace cora::comp

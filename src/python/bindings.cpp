@@ -34,7 +34,7 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace py = pybind11;
-using namespace cora::ct;
+using namespace cora;
 
 namespace {
 

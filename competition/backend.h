@@ -18,7 +18,7 @@
 #include "sets/mask.h"
 #include "global/rng.h"
 
-namespace cora {
+namespace cora::comp {
 
 struct Runner {
     virtual ~Runner() = default;
@@ -61,4 +61,4 @@ void check_gradients(const std::string &device);
 
 } // namespace torch_backend
 
-} // namespace cora
+} // namespace cora::comp

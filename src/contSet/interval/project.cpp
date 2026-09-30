@@ -13,7 +13,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -26,6 +26,6 @@ std::unique_ptr<ContSet> Interval::project(const std::vector<int64_t> &dims) con
     return std::make_unique<Interval>(P.matmul(inf), P.matmul(sup));
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

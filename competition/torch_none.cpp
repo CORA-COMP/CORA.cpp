@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 
-namespace cora::torch_backend {
+namespace cora::comp::torch_backend {
 
 bool built() { return false; }
 
@@ -23,4 +23,4 @@ void warm_up() {}
 
 void check_gradients(const std::string &) {}
 
-} // namespace cora::torch_backend
+} // namespace cora::comp::torch_backend

@@ -13,7 +13,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -44,6 +44,6 @@ Zonotope Zonotope::generateRandom(int64_t n, int64_t m, Rng &rng) {
     return {Tensor::fromData(c, {n, 1}), Tensor::fromData(aux_generators(n, m, rng), {n, m})};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

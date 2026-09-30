@@ -13,7 +13,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// The libtorch backend on `device`, for `setBackend`. `customBackward` differentiates
 /// the matrix exponential with a hand-written backward pass instead of autograd's own.
@@ -32,6 +32,6 @@ torch::Tensor toTorch(const Tensor &t);
 /// Whether the tensor belongs to the libtorch backend.
 bool isTorch(const Tensor &t);
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

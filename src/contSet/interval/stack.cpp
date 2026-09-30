@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -26,6 +26,6 @@ Interval Interval::stack(const std::vector<Interval> &Is) {
     return {Tensor::stack(infs), Tensor::stack(sups)};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

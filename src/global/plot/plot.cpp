@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -215,6 +215,6 @@ void plot(Figure &fig, const Tensor &points, const std::vector<int64_t> &dims,
                   options.lineWidth.value_or(2.0), options.label);
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

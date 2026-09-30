@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-using namespace cora::ct;
+using namespace cora;
 using test::check;
 using test::close;
 

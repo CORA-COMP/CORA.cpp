@@ -12,7 +12,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -54,6 +54,6 @@ bool Specification::check(const ContSet &S) const {
     return std::all_of(ok.begin(), ok.end(), [](bool v) { return v; });
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

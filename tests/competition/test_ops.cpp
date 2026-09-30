@@ -17,7 +17,8 @@
 #include <iostream>
 #include <vector>
 
-using namespace cora;
+using namespace cora::comp;
+using cora::Rng;
 using Eigen::Index;
 
 namespace {

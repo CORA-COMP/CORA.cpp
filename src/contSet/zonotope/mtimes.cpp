@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -34,6 +34,6 @@ Zonotope Zonotope::mtimes(const Interval &I) const {
     return {center.matmul(c), Tensor::catLast({center.matmul(G), aux_widening(*this, I).diag()})};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

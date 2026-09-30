@@ -10,7 +10,7 @@ C++:
 #include "contDynamics/linearSys/linearSys.h"
 #include "global/plot/plot.h"
 #include "specification/specification.h"
-using namespace cora::ct;
+using namespace cora;
 
 Tensor A({{-0.1, 1}, {-1, -0.1}});                                     // x' = A x
 Zonotope X0(Tensor({1, 0}), 0.1 * Tensor::eye(2));                     // center, generators

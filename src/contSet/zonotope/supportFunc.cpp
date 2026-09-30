@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -19,6 +19,6 @@ Tensor Zonotope::supportFunc(const Tensor &d) const {
     return dt.matmul(c) + dt.matmul(G).abs().sumLast();
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

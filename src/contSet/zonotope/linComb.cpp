@@ -10,7 +10,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -22,6 +22,6 @@ Zonotope Zonotope::linComb(const Zonotope &Z2) const {
     return {(c + Z2.c) * 0.5, Tensor::catLast({mean, spread, shift})};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

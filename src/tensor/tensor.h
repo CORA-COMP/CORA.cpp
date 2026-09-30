@@ -4,8 +4,8 @@
 // algorithms need, so an algorithm is written once and runs on any of them. The backend is
 // chosen once for the program, or from outside with CORACPP_BACKEND:
 //
-//     ct::setBackend("torch");                 // "eigen", "torch", "torch:cuda"
-//     ct::Tensor A({{0, 1}, {-1, 0}});         // built on that backend
+//     cora::setBackend("torch");                 // "eigen", "torch", "torch:cuda"
+//     cora::Tensor A({{0, 1}, {-1, 0}});         // built on that backend
 //
 // Layout: the last two dimensions are the matrix, (..., rows, cols); a vector is a column
 // (n, 1). Leading dimensions are batch dimensions where the backend has them (libtorch does,
@@ -26,7 +26,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 class Tensor {
   public:
@@ -233,6 +233,6 @@ const Tensor::Backend &backend();
 
 std::ostream &operator<<(std::ostream &out, const Tensor &t);
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

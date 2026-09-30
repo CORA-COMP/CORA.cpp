@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -18,6 +18,6 @@ Zonotope Zonotope::plus(const Zonotope &Z2) const {
     return {c + Z2.c, Tensor::catLast({G, Z2.G})};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

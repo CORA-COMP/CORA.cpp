@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-using namespace cora::ct;
+using namespace cora;
 using test::check;
 
 namespace {
@@ -40,11 +40,11 @@ double max_diff(const std::vector<double> &a, const std::vector<double> &b) {
 int main() {
     for (const Algorithm algorithm : {Algorithm::Standard, Algorithm::WrappingFree}) {
         const std::string name = algorithm == Algorithm::Standard ? "standard" : "wrapping-free";
-        cora::ct::setBackend("eigen");
+        cora::setBackend("eigen");
         const std::vector<double> eigen = run(algorithm);
         for (const std::string &other : test::backends()) {
             if (other == "eigen") continue;
-            cora::ct::setBackend(other);
+            cora::setBackend(other);
             check(max_diff(eigen, run(algorithm)) < 1e-10,
                   name + ": eigen and " + other + " differ");
         }
@@ -62,6 +62,6 @@ int main() {
         check(answers[i] == answers[i % 2],
               "a specification is answered differently on another backend");
 
-    cora::ct::setBackend("eigen");
+    cora::setBackend("eigen");
     return test::finish("linearSys backends");
 }

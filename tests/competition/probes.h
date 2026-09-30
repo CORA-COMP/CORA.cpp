@@ -9,7 +9,7 @@
 #include "global/rng.h"
 #include "sets/sets.h"
 
-namespace cora {
+namespace cora::comp {
 
 /// `points` points per set, each on a facet and pulled just inside it: `c + G(0.999 b)`
 /// with `b`'s largest coordinate saturated.
@@ -64,4 +64,4 @@ inline Mat<double> across_the_boundary(const Zonotope<double> &z, Eigen::Index p
     return out;
 }
 
-} // namespace cora
+} // namespace cora::comp

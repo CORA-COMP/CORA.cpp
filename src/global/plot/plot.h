@@ -22,7 +22,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// What a plot looks like; anything left out takes CORA's default for what is drawn.
 struct PlotOptions {
@@ -109,6 +109,6 @@ inline void plot(const Tensor &points, const std::vector<int64_t> &dims = {0, 1}
     plot(figure(), points, dims, options);
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -5,7 +5,7 @@
 #include <mutex>
 #include <stdexcept>
 
-namespace cora {
+namespace cora::comp {
 namespace {
 // GLPK keeps process-wide state, and the containment queries come from several threads.
 std::mutex glpk_lock;
@@ -70,4 +70,4 @@ bool contains_lp(const Eigen::Ref<const Eigen::MatrixXd> &g,
     return inside;
 }
 
-} // namespace cora
+} // namespace cora::comp

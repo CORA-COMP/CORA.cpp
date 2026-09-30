@@ -20,7 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace cora::tb {
+namespace cora::comp::tb {
 
 /// `torch::randn` or `torch::rand`, except that a large host draw goes through this
 /// tool's own generator.
@@ -173,4 +173,4 @@ struct Zonotope {
     torch::Tensor contains(const torch::Tensor &p) const;
 };
 
-} // namespace cora::tb
+} // namespace cora::comp::tb

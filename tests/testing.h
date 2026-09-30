@@ -1,6 +1,6 @@
 // What the tests share: a check, a tolerance, and a loop over the backends.
 //
-// A test written against `ct::Tensor` runs once per backend with `for_each_backend`, so a
+// A test written against `Tensor` runs once per backend with `for_each_backend`, so a
 // property is checked on Eigen, on libtorch, and on the GPU when there is one — the same
 // source, which is what "written once" promises.
 
@@ -36,7 +36,7 @@ inline bool close(double a, double b, double tol = 1e-9) {
 }
 
 /// Whether two tensors have the same shape and values up to `tol`.
-inline bool close(const cora::ct::Tensor &a, const cora::ct::Tensor &b, double tol = 1e-9) {
+inline bool close(const cora::Tensor &a, const cora::Tensor &b, double tol = 1e-9) {
     if (a.shape() != b.shape()) return false;
     const std::vector<double> x = a.data(), y = b.data();
     for (std::size_t i = 0; i < x.size(); ++i)
@@ -44,7 +44,7 @@ inline bool close(const cora::ct::Tensor &a, const cora::ct::Tensor &b, double t
     return true;
 }
 
-inline bool close(const cora::ct::Tensor &a, const std::vector<double> &values, double tol = 1e-9) {
+inline bool close(const cora::Tensor &a, const std::vector<double> &values, double tol = 1e-9) {
     const std::vector<double> x = a.data();
     if (x.size() != values.size()) return false;
     for (std::size_t i = 0; i < x.size(); ++i)
@@ -66,15 +66,15 @@ inline std::vector<std::string> backends() {
 template <class F>
 void for_each_backend(F body) {
     for (const std::string &name : backends()) {
-        cora::ct::setBackend(name);
+        cora::setBackend(name);
         body(name);
     }
-    cora::ct::setBackend("eigen");
+    cora::setBackend("eigen");
 }
 
 /// The column (n, 1) of the given numbers, on the current backend.
-inline cora::ct::Tensor column(const std::vector<double> &v) {
-    return cora::ct::Tensor::fromData(v, {int64_t(v.size()), 1});
+inline cora::Tensor column(const std::vector<double> &v) {
+    return cora::Tensor::fromData(v, {int64_t(v.size()), 1});
 }
 
 /// A random direction in n dimensions: standard normal entries.
@@ -85,7 +85,7 @@ inline std::vector<double> random_direction(cora::Rng &rng, int n) {
 }
 
 /// The support function of any set along the host direction d, as a number.
-inline double support(const cora::ct::ContSet &S, const std::vector<double> &d) {
+inline double support(const cora::ContSet &S, const std::vector<double> &d) {
     return S.supportFunc(column(d)).data()[0];
 }
 
@@ -111,10 +111,10 @@ void for_each_device(F body) {
         options.push_back(torch::TensorOptions().dtype(torch::kDouble).device(torch::kCUDA, 0));
         names.push_back("gpu");
     }
-    cora::ct::setBackend("torch");
+    cora::setBackend("torch");
     torch::manual_seed(7);
     for (std::size_t i = 0; i < options.size(); ++i) body(options[i], names[i]);
-    cora::ct::setBackend("eigen");
+    cora::setBackend("eigen");
 }
 #endif
 

@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -21,6 +21,6 @@ std::unique_ptr<ContSet> Zonotope::project(const std::vector<int64_t> &dims) con
     return std::make_unique<Zonotope>(P.matmul(c), P.matmul(G));
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

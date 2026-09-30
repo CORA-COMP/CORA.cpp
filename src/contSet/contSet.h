@@ -21,7 +21,7 @@ namespace cora {
 class Rng;
 }
 
-namespace cora::ct {
+namespace cora {
 
 class Interval;
 
@@ -60,6 +60,6 @@ class ContSet {
 
 inline std::ostream &operator<<(std::ostream &out, const ContSet &S) { return out << S.display(); }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

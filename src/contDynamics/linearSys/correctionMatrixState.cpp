@@ -15,7 +15,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -57,6 +57,6 @@ Interval LinearSys::correctionMatrixState(double timeStep, int taylorTerms) cons
     return {Fneg - W, Fpos + W};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -14,7 +14,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -31,6 +31,6 @@ Reach LinearSys::reach(const Zonotope &X0, double timeStep, double tFinal, int t
         "LinearSys::reach: unknown linAlg; use Algorithm::Standard or Algorithm::WrappingFree");
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

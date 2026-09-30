@@ -14,7 +14,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -53,6 +53,6 @@ std::vector<Tensor> NonlinearSys::simulate(const Tensor &x0, double timeStep, do
     return trajectory;
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

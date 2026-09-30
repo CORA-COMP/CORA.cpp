@@ -14,7 +14,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-using namespace cora::ct;
+using namespace cora;
 
 /// The total width of the enclosures for the system A: a scalar to differentiate.
 torch::Tensor totalWidth(const torch::Tensor &A, bool customBackward) {

@@ -12,7 +12,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -46,6 +46,6 @@ Zonotope Zonotope::stack(const std::vector<Zonotope> &Zs) {
     return {Tensor::stack(cs), Tensor::stack(Gs)};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

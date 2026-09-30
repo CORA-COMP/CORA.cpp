@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cmath>
 
-using namespace cora::ct;
+using namespace cora;
 using test::check;
 using test::close;
 using namespace test::lin;

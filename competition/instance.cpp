@@ -22,7 +22,7 @@
 #include <omp.h>
 #endif
 
-namespace cora {
+namespace cora::comp {
 namespace {
 
 using Index = Eigen::Index;
@@ -90,7 +90,7 @@ struct Set {
     }
 
     Mat<double> rand_point(Index points, Rng &rng) const {
-        return is_box ? cora::rand_point(box, points, rng) : cora::rand_point(zono, points, rng);
+        return is_box ? comp::rand_point(box, points, rng) : comp::rand_point(zono, points, rng);
     }
 };
 
@@ -258,4 +258,4 @@ void print_env(std::ostream &out) {
 
 void write_error(const std::string &results_file) { write_result(results_file, "error", {}); }
 
-} // namespace cora
+} // namespace cora::comp

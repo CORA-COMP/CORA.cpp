@@ -11,7 +11,7 @@
 
 namespace test::lin {
 
-using namespace cora::ct;
+using namespace cora;
 using matlab_reference::System;
 
 const Algorithm kAlgorithms[] = {Algorithm::Standard, Algorithm::WrappingFree};

@@ -10,7 +10,7 @@
 #include <fstream>
 #include <sstream>
 
-using namespace cora::ct;
+using namespace cora;
 using test::check;
 
 namespace {

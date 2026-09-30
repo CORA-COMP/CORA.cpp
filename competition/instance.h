@@ -11,7 +11,7 @@
 
 #include "catalog.h"
 
-namespace cora {
+namespace cora::comp {
 
 /// Runs the instance described by `params` and writes its verdict; returns the verdict.
 std::string run_instance(const std::string &params, const std::string &results_file,
@@ -31,4 +31,4 @@ void print_env(std::ostream &out);
 
 void write_error(const std::string &results_file);
 
-} // namespace cora
+} // namespace cora::comp

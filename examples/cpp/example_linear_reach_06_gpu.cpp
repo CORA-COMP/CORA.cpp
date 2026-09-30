@@ -17,7 +17,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-using namespace cora::ct;
+using namespace cora;
 
 int main() {
     if (!torch::cuda::is_available()) {

@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -168,6 +168,6 @@ Eigen::MatrixXd toEigen(const Tensor &t) { return static_cast<const EigenTensor 
 
 bool isEigen(const Tensor &t) { return dynamic_cast<const EigenTensor *>(&t.impl()) != nullptr; }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

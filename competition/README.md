@@ -114,7 +114,7 @@ the trailing dimensions, so a batch is one call and the GPU gets work worth its 
 - *Through the Eigen templates*, at compile time: the catalog's `Interval`, `Zonotope`, `support_func`,
   `mat_mul`, `mink_sum` and `origin` ([`sets/sets.h`](sets/sets.h)) are templates on the scalar type, so the same source
   instantiates for `Eigen::AutoDiffScalar`, [autodiff](https://autodiff.github.io)'s
-  `dual`, CoDiPack and the like; overload `cora::value_of` for the new scalar and the
+  `dual`, CoDiPack and the like; overload `cora::comp::value_of` for the new scalar and the
   non-differentiable parts keep working. `generateRandom`, `randPoint` and `contains` are
   `double` only — drawing numbers and deciding a verdict are not operations a gradient
   passes through.

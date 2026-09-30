@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -43,6 +43,6 @@ Interval Interval::generateRandom(int64_t n, Rng &rng) {
     return {Tensor::fromData(inf, {n, 1}), Tensor::fromData(sup, {n, 1})};
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

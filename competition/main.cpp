@@ -20,19 +20,19 @@ int main(int argc, char **argv) {
     cora::configureThreads();
     try {
         if (args.size() == 1 && args[0] == "env") {
-            cora::print_env(std::cout);
+            cora::comp::print_env(std::cout);
             return 0;
         }
         if (args.size() == 1 && args[0] == "check") {
-            cora::warm_up_backends();
+            cora::comp::warm_up_backends();
             std::cout << "all operations ran\n";
             return 0;
         }
         if (args.size() == 2 && args[0] == "serve") {
-            return cora::serve(args[1]);
+            return cora::comp::serve(args[1]);
         }
         if (args.size() == 3 && args[0] == "run") {
-            const std::string verdict = cora::run_logged(args[1], args[2], std::cout);
+            const std::string verdict = cora::comp::run_logged(args[1], args[2], std::cout);
             return verdict == "error" ? 1 : 0;
         }
     } catch (const std::exception &e) {

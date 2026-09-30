@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
@@ -18,6 +18,6 @@ Tensor Interval::supportFunc(const Tensor &d) const {
     return d.transpose().matmul(center()) + d.abs().transpose().matmul(rad());
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

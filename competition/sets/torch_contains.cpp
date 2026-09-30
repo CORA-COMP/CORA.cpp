@@ -22,7 +22,7 @@
 #include <tuple>
 #include <vector>
 
-namespace cora::tb {
+namespace cora::comp::tb {
 namespace {
 
 /// Most facet normals `C(m, n-1)` for which containment goes through the facets; above
@@ -425,4 +425,4 @@ torch::Tensor Zonotope::contains(const torch::Tensor &p) const {
     return inside.reshape(shape);
 }
 
-} // namespace cora::tb
+} // namespace cora::comp::tb

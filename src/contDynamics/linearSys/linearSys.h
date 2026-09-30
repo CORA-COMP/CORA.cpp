@@ -16,7 +16,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// Which algorithm computes the reachable sets (CORA's linAlg).
 enum class Algorithm {
@@ -57,6 +57,6 @@ class LinearSys {
     Tensor A_;
 };
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

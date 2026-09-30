@@ -20,7 +20,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 class Figure {
   public:
@@ -95,6 +95,6 @@ class Figure {
 /// The current figure, which plot() draws into.
 Figure &figure();
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

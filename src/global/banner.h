@@ -32,7 +32,7 @@ struct Banner {
     static constexpr std::size_t width = 70;
 
     Banner() {
-        std::cout << block("CORA START") << prefix() << "default backend: " << ct::backend().name()
+        std::cout << block("CORA START") << prefix() << "default backend: " << backend().name()
                   << "\n" << std::string(width, '=') << "\n\n";
     }
 

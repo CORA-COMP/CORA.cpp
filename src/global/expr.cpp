@@ -14,7 +14,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 enum class Op { Const, Var, Add, Sub, Mul, Div, Neg, Pow, Sin, Cos, Exp };
 
@@ -325,6 +325,6 @@ Range Expr::enclose(const std::vector<Range> &x) const {
     return Evaluator<Range>{x, like}(*this);
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

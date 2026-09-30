@@ -31,7 +31,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace cora {
+namespace cora::comp {
 namespace {
 
 std::string read_line(int fd) {
@@ -113,4 +113,4 @@ int serve(const std::string &srv_dir) {
     }
 }
 
-} // namespace cora
+} // namespace cora::comp

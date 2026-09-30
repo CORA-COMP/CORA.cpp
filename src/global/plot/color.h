@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// An RGB color, each component in [0, 1]. A CORA identifier converts to it implicitly, so
 /// options read `{.color = "CORA:red"}`.
@@ -34,6 +34,6 @@ struct Color {
 /// the lightest); "CORA:next" is the `cidx`-th color of the palette.
 Color CORAcolor(const std::string &identifier, int numColors = 1, int cidx = 1, double alpha = 0.2);
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

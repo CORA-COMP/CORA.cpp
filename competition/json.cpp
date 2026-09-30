@@ -3,7 +3,7 @@
 #include <cctype>
 #include <cstdlib>
 
-namespace cora {
+namespace cora::comp {
 namespace {
 
 /// Where the value of `key` starts, or `npos`.
@@ -50,4 +50,4 @@ std::optional<double> json_number(const std::string &doc, const std::string &key
     return value;
 }
 
-} // namespace cora
+} // namespace cora::comp

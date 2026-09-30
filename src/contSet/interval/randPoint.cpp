@@ -11,7 +11,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -38,6 +38,6 @@ Tensor Interval::randPoint(int64_t N, Rng &rng) const {
     return inf + (sup - inf).diag().matmul(aux_fractions(inf, N, rng));
 }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

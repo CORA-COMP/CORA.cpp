@@ -18,7 +18,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 class NeuralNetwork {
   public:
@@ -45,6 +45,6 @@ class NeuralNetwork {
     std::vector<Layer> layers_;
 };
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

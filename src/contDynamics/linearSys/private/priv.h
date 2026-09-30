@@ -13,7 +13,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 /// The number of steps of size timeStep that cover tFinal; a tolerance keeps 0.3 / 0.1 at 3.
 inline int priv_numSteps(double tFinal, double timeStep) {
@@ -26,6 +26,6 @@ Reach priv_reach_standard(const Zonotope &X0, const Tensor &eAdt, const Interval
 /// The algorithm "wrapping-free".
 Reach priv_reach_wrappingfree(const Zonotope &X0, const Tensor &eAdt, const Interval &F, int steps);
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -9,7 +9,7 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-namespace cora::ct {
+namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
@@ -171,6 +171,6 @@ torch::Device torchDevice(const std::string &name) {
 
 bool isTorch(const Tensor &t) { return dynamic_cast<const TorchTensor *>(&t.impl()) != nullptr; }
 
-} // namespace cora::ct
+} // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
