@@ -36,20 +36,28 @@ plot(R)                                                                # dims de
 
 ## Install
 
-Needs a C++20 compiler and CMake 3.25 or newer, on Linux, macOS or Windows. Pick what to add:
+Needs a C++20 compiler and CMake 3.25 or newer, on Linux, macOS or Windows:
+
+```bash
+cmake --workflow --preset cpp         # or: torch, python, python-torch
+```
+
+The same in separate steps:
+
+```bash
+cmake --preset cpp
+cmake --build --preset cpp
+ctest --preset cpp
+```
+
+The preset chooses what is added to the C++ library on Eigen:
 
 | preset | adds |
 | --- | --- |
-| `cpp` | nothing: the C++ library on Eigen |
+| `cpp` | nothing |
 | `torch` | libtorch for GPU, batching and gradients; it is downloaded, no Python needed |
 | `python` | the Python package on numpy (creates `.venv`) |
 | `python-torch` | the Python package with torch tensors (creates `.venv`, installs torch into it) |
-
-```bash
-cmake --workflow --preset cpp         # configure, build, test; or: torch, python, python-torch
-```
-
-The steps alone: `cmake --preset cpp`, `cmake --build --preset cpp`, `ctest --preset cpp`.
 
 Eigen is fetched if it is not installed. The Python presets need Python 3; they run
 `pip install -r requirements-python.txt` (`requirements.txt` for torch) in `.venv` at the project
