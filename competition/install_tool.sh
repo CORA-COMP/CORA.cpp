@@ -22,7 +22,8 @@ echo "Installing CORA.cpp (interface $VERSION)"
 
 missing=""
 command -v g++ >/dev/null || missing="$missing g++"
-command -v make >/dev/null || missing="$missing make"
+command -v cmake >/dev/null || missing="$missing cmake"
+command -v ninja >/dev/null || missing="$missing ninja-build"
 [ -d "${EIGEN:-/usr/include/eigen3}" ] || missing="$missing libeigen3-dev"
 [ -f /usr/include/glpk.h ] || missing="$missing libglpk-dev"
 
@@ -80,9 +81,13 @@ if [ -n "$torch_dir" ]; then
 fi
 
 g++ --version | head -1
-# Separate invocations: in one parallel make, `clean` would race the compiles it precedes.
-make -C "$ROOT" clean
-make -C "$ROOT" -j"$(nproc)" TORCH="$torch_dir" TORCH_ABI="$torch_abi" all
+rm -rf "$ROOT/build"
+torch=OFF
+[ -n "$torch_dir" ] && torch=ON
+cmake -S "$ROOT" -B "$ROOT/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCORACPP_COMPETITION=ON \
+      -DCORACPP_PYTHON=OFF -DCORACPP_TORCH="$torch" -DCORACPP_TORCH_DIR="$torch_dir" \
+      -DCORACPP_TORCH_ABI="$torch_abi" >/dev/null
+cmake --build "$ROOT/build" --parallel "$(nproc)" --target coracpp
 
 # What the worker will actually run on, and every operation once.
 "$CORACPP" env

@@ -1,7 +1,7 @@
 /build
 .libtorch-path
 /example_*.svg
-/local.mk
+/.coracpp-build
 /.vscode/settings.json
 /.vscode/c_cpp_properties.json
 __pycache__/

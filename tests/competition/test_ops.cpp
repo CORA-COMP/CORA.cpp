@@ -4,7 +4,7 @@
 // alternating projections — claim to be exact, so they are checked against the LP on
 // points placed just inside and just outside the boundary, where an approximation breaks.
 //
-//   make test
+//   ctest (with -DCORACPP_COMPETITION=ON)
 
 #include "sets/lp.h"
 #include "probes.h"

@@ -11,8 +11,7 @@ concurrency:
 
 env:
   # No -march=native: the runners differ in CPU, and a build must run on the one that tests it.
-  OPT: -O2 -std=c++20 -fopenmp -DNDEBUG -DEIGEN_NO_DEBUG
-  CXX: ccache g++
+  CMAKE_FLAGS: -G Ninja -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 jobs:
   # The library on Eigen alone: the conventions, the C++ tests, and the C++ examples.
@@ -23,8 +22,10 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: eigen
-      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
-      - run: make TORCH= -j$(nproc) test example
+      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev ninja-build
+      - run: cmake -S . -B build $CMAKE_FLAGS -DCORACPP_TORCH=OFF
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build -j$(nproc) --output-on-failure
 
   # With libtorch on the CPU: batching and gradients, and the Python package with its tests.
   torch:
@@ -39,10 +40,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
+      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev ninja-build
       - run: pip install numpy matplotlib && pip install torch --index-url https://download.pytorch.org/whl/cpu
-      - run: make -j$(nproc) test example python
-      - run: PYTHONPATH=build python -m unittest discover -s tests/python
+      - run: cmake -S . -B build $CMAKE_FLAGS
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build -j$(nproc) --output-on-failure
 
   # The CORA-COMP binary and its tests.
   competition:
@@ -52,5 +54,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: competition
-      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev libglpk-dev
-      - run: make TORCH= -j$(nproc) all test-competition
+      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev libglpk-dev ninja-build
+      - run: cmake -S . -B build $CMAKE_FLAGS -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build -j$(nproc) --output-on-failure -L competition

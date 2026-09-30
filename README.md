@@ -45,10 +45,10 @@ gdb) and installs torch, the CUDA build if there is an NVIDIA GPU (`--cpu` force
 
 ```bash
 scripts/setup_local.sh                                       # once: conda env, torch, VS Code
-scripts/with_env.sh make run-example_linear_reach_01_5dim    # build and run a C++ example
-scripts/with_env.sh make python                              # the Python package
+scripts/with_env.sh python scripts/run_example.py examples/cpp/example_linear_reach_01_5dim.cpp
+scripts/with_env.sh scripts/build.sh python                    # the Python package
 scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
-scripts/with_env.sh make test                                # conventions and all tests
+scripts/with_env.sh scripts/build.sh && scripts/with_env.sh ctest --test-dir build -j4   # build, all tests
 ```
 
 In VS Code (on Windows: `WSL: Reopen Folder in WSL` first), open an example, C++ or Python, and
@@ -101,7 +101,7 @@ sets are objects with methods (`Z.mtimes(M)`), not operators.
 ## Examples and tests
 
 `examples/cpp/` and `examples/python/`: one file per topic, sectioned like CORA's
-`example_linear_reach_01_5dim`. `make test` runs the tests, `make example` the C++ examples.
+`example_linear_reach_01_5dim`. `ctest` runs the conventions, the tests and the C++ examples (`-L test`, `-L example`).
 
 ## CORA-COMP
 

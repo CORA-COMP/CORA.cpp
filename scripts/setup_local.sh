@@ -5,8 +5,8 @@
 # What it does: finds (or installs, into ~/miniforge3) conda; creates the environment `coracpp`
 #           from environment.yml; installs torch with pip (the CUDA build if there is an NVIDIA
 #           GPU, else the CPU one, or --cpu to force it); and, when the repository is on a
-#           slow drive (WSL's /mnt/c), writes local.mk so that objects are built elsewhere.
-# Afterwards: scripts/with_env.sh make test        runs a command inside the environment
+#           slow drive (WSL's /mnt/c), writes .coracpp-build so that objects are built elsewhere.
+# Afterwards: scripts/with_env.sh scripts/build.sh     builds inside the environment
 #
 # Linux and WSL2 only. Set CORACPP_ENV to use another environment name.
 
@@ -58,13 +58,13 @@ fi
 # --- a fast build directory when the sources are on a slow drive ------------------------
 case "$ROOT" in
     /mnt/*)
-        printf 'BUILD := $(HOME)/.cache/coracpp/build\n' > "$ROOT/local.mk"
-        echo "[setup] the repository is on a Windows drive: objects go to ~/.cache/coracpp/build (local.mk)"
+        printf '%s\n' "$HOME/.cache/coracpp/build" > "$ROOT/.coracpp-build"
+        echo "[setup] the repository is on a Windows drive: objects go to ~/.cache/coracpp/build (.coracpp-build)"
         ;;
 esac
 
 "$ROOT/scripts/with_env.sh" python -c "import torch; print('[setup] torch', torch.__version__, 'cuda', torch.cuda.is_available())"
 "$ROOT/scripts/with_env.sh" python "$ROOT/scripts/setup_vscode.py"
 
-echo "[setup] done. Try: scripts/with_env.sh make run-example_linear_reach_01_5dim"
+echo "[setup] done. Try: scripts/with_env.sh scripts/build.sh example_linear_reach_01_5dim"
 echo "[setup] VS Code: open this folder (in WSL: 'WSL: Reopen Folder in WSL'), open an example, press F5"

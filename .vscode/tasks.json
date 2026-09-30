@@ -5,7 +5,7 @@
         {
             "label": "run example (C++)",
             "type": "shell",
-            "command": "scripts/with_env.sh make run-${fileBasenameNoExtension}",
+            "command": "scripts/with_env.sh python scripts/run_example.py ${file}",
             "group": { "kind": "build", "isDefault": true },
             "presentation": { "reveal": "always", "panel": "shared" },
             "problemMatcher": "$gcc"
@@ -13,13 +13,13 @@
         {
             "label": "build example (debug)",
             "type": "shell",
-            "command": "scripts/with_env.sh make debug-${fileBasenameNoExtension}",
+            "command": "scripts/with_env.sh scripts/build.sh --debug ${fileBasenameNoExtension}",
             "problemMatcher": "$gcc"
         },
         {
             "label": "build python package",
             "type": "shell",
-            "command": "scripts/with_env.sh make python",
+            "command": "scripts/with_env.sh scripts/build.sh python",
             "problemMatcher": "$gcc"
         },
         {
@@ -32,7 +32,7 @@
         {
             "label": "test (conventions and C++)",
             "type": "shell",
-            "command": "scripts/with_env.sh make -j4 test",
+            "command": "scripts/with_env.sh scripts/build.sh && scripts/with_env.sh ctest --test-dir \"${config:coracpp.buildDir}\" -j4 -LE python --output-on-failure",
             "group": "test",
             "problemMatcher": "$gcc"
         },

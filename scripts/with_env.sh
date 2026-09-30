@@ -2,8 +2,8 @@
 # with_env - runs a command inside the coracpp conda environment
 #
 # Syntax:   scripts/with_env.sh <command> [arguments...]
-# Example:  scripts/with_env.sh make test example
-#           scripts/with_env.sh make python && scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
+# Example:  scripts/with_env.sh scripts/build.sh && scripts/with_env.sh ctest --test-dir build -j4
+#           scripts/with_env.sh scripts/build.sh python && scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
 # It also puts the built `cora` package on PYTHONPATH.
 # The environment comes from scripts/setup_local.sh; CORACPP_ENV names another one, and
 # CORACPP_ENV=none runs in the current environment (CI, containers) with only the paths below set.
@@ -46,11 +46,11 @@ fi
 
 cd "$ROOT"
 
-# The Python package is built into the build directory (local.mk, else ./build), so put it on
-# the path: python scripts and examples find `cora` without further setup. Without a local.mk
-# (a fresh checkout, CI) that is ./build.
-BUILD_DIR="$( { sed -n 's/^BUILD *:\?= *//p' local.mk 2>/dev/null || true; } | head -1 | sed "s|\$(HOME)|$HOME|g")"
-export CORACPP_BUILD="${BUILD_DIR:-$ROOT/build}"
+# The build directory: CORACPP_BUILD, else the path in .coracpp-build (written by scripts/setup_local.sh
+# when the sources are on a slow drive), else ./build. The Python package is built into it, so put
+# it on the path: python scripts and examples find `cora` without further setup.
+BUILD_DIR="$(head -1 .coracpp-build 2>/dev/null || true)"
+export CORACPP_BUILD="${CORACPP_BUILD:-${BUILD_DIR:-$ROOT/build}}"
 export PYTHONPATH="$CORACPP_BUILD${PYTHONPATH:+:$PYTHONPATH}"
 
 exec "$@"

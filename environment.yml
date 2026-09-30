@@ -7,7 +7,9 @@ channels:
 dependencies:
   - python=3.12
   - gxx_linux-64  # the compiler; conda activation sets CXX to it
-  - make
+  - cmake
+  - ninja
+  - ccache        # a rebuild after a clean is cheap
   - gdb           # debugging from VS Code
   - eigen
   - glpk          # only the competition needs it

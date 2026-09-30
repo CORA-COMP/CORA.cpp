@@ -147,7 +147,7 @@ three- and tenfold on the instances it touches:
   one fused product instead of three calls. At small `m` these are tiny tensors over a
   hundred repetitions, where an iteration costs almost only its dispatches.
 
-`make test-competition` (the tests in `tests/competition/`) checks the operations against their definitions and both containment paths
+`ctest -L competition` (the tests in `tests/competition/`) checks the operations against their definitions and both containment paths
 against the LP, on points placed just inside and just outside the boundary, plus the
 moments of the random numbers. With libtorch built in it also runs the *same* sets and the
 *same* points through both backends and compares the answers, on the CPU and on the GPU:
@@ -208,7 +208,7 @@ All optional:
 | `EIGEN` | `/usr/include/eigen3` | where Eigen's headers are |
 | `LIBTORCH` | the image's Python torch | where libtorch is, when it is not found by itself |
 | `CORACPP_PYTHON` | `python3`, then `python` | the interpreter whose torch to build against |
-| `OPT` | `-O3 -march=native -std=c++17 -fopenmp …` | the compiler flags of the build (`make OPT=…`) |
+| `OPT` | `-O3 -march=native -std=c++17 -fopenmp …` | the compiler flags of the build (`-DCMAKE_CXX_FLAGS=…`) |
 | `OMP_NUM_THREADS` | the machine's physical cores | how many threads the operations use; set it and the tool leaves it alone |
 
 ## Running one instance locally

@@ -6,7 +6,7 @@
 // of the catalog; running the *same* sets through both and comparing the answers does.
 // Every test runs on the CPU and, when the worker has one, on the GPU.
 //
-// Built and run by `make test` whenever the tool was built with TORCH=...; without it
+// Built and run by `ctest` whenever the tool was built with libtorch; without it
 // this file is not compiled at all.
 
 #include "backend.h"

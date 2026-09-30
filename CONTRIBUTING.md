@@ -31,16 +31,16 @@ The library is namespace `cora`; the competition entry keeps its own sets in `co
 - Inline comments are one line and say why; function docs are short and explain parameters.
 - Every option switch handles all options explicitly and throws a descriptive error otherwise,
   and a test covers each option and the error.
-- `tests/global/test_codingConventions.py` checks naming and layout; `make test` runs it first.
+- `tests/global/test_codingConventions.py` checks naming and layout; it is the first test of `ctest`.
 
 ## Examples
 
-The Makefile compiles every C++ example with `-include global/banner.h`, which prints the
+CMake compiles every C++ example with `-include global/banner.h`, which prints the
 `CORA START` block before `main` and a `CORA END` block after it; an example does not include or call it.
 
 ## Adding things
 
-- **Operation:** declare it in the class, add the file to its folder; the Makefile finds sources.
+- **Operation:** declare it in the class, add the file to its folder; the CMake file finds sources.
 - **Set or dynamics class:** write it against `Tensor` only, then bind it in `src/python/bindings.cpp`.
 - **Backend:** implement `Tensor::Impl` and `Tensor::Backend` (`src/tensor/eigen.cpp` is the model)
   and register it in `makeBackend`.
@@ -58,15 +58,15 @@ with `setBackend` or `CORACPP_BACKEND`; a tensor can also live on its own device
 
 ```bash
 scripts/setup_local.sh                                       # once
-scripts/with_env.sh make test                                # conventions, then all C++ tests
-scripts/with_env.sh make run-<example>                       # one C++ example (debug-<example>: -O0 -g)
-scripts/with_env.sh make python                              # the Python package
+scripts/with_env.sh scripts/build.sh                          # everything (or: a target, --debug, --eigen)
+scripts/with_env.sh ctest --test-dir build -j4                # conventions, C++ tests, examples, Python
+scripts/with_env.sh scripts/build.sh example_zonotope_01      # one target, e.g. a C++ example
 scripts/with_env.sh python -m unittest discover -s tests/python
 ```
 
 `with_env.sh` enters the conda environment and puts the built `cora` package on `PYTHONPATH`.
-Variables: `TORCH` (libtorch path, auto-detected from pip torch), `BUILD`, `OPT`, `PYTHON`;
-put local overrides in `local.mk`. Tests run on every backend, and on the GPU when present;
+Options (`scripts/build.sh -D...`, see `CMakeLists.txt`): `CORACPP_TORCH`, `CORACPP_TORCH_DIR`, `CORACPP_NATIVE`,
+`CORACPP_BLAS`; `.coracpp-build` names another build directory. Tests run on every backend and the GPU;
 the `_torch` ones need libtorch.
 
 ## VS Code
