@@ -71,9 +71,10 @@ def specifications(cora, inst):
             specs += [cora.Specification.safeSet(a, bk) for a, bk in zip(A, b)]
         elif spec["type"] == "unsafeSet" and len(b) == 1:
             specs.append(cora.Specification.unsafeSet(A[0], b[0]))
+        elif spec["type"] == "unsafeSet":
+            specs.append(cora.Specification.unsafeSet(A, np.array(b)))  # the polytope {A y <= b}
         else:
-            raise ValueError("benchmark data: an unsafe set that is an intersection of halfspaces "
-                             "is not supported by Specification")
+            raise ValueError(f"benchmark data: unknown specification type {spec['type']}")
     return specs
 
 
@@ -91,6 +92,9 @@ def runInstance(name):
     params = cora.VerifyParams(zonotope(cora, mat["R0c"], mat["R0G"]),
                                zonotope(cora, mat["Uc"], mat["UG"]), inst["tFinal"])
     specs = specifications(cora, inst)
+    # what will run, before it does
+    print(f"{name}: {mat['A'].shape[0]} states, {len(specs)} specifications, "
+          f"{inst['verifyAlg']}, tFinal {inst['tFinal']}", file=sys.stderr)
 
     start = time.perf_counter()
     res = system.verify(params, algs[inst["verifyAlg"]], specs)

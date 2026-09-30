@@ -731,6 +731,15 @@ void bindSpecification(py::module_ &m) {
         .def_static("unsafeSet",
                     [](const Eigen::VectorXd &a, double b) { return Specification::unsafeSet(column(a), b); },
                     py::arg("a"), py::arg("b"))
+        .def_static("unsafeSet",
+                    [](const Eigen::MatrixXd &A, const Eigen::VectorXd &b) {
+                        // the rows of A with b: a polytope the sets must not touch
+                        std::vector<Halfspace> halfspaces;
+                        for (Eigen::Index i = 0; i < A.rows(); ++i)
+                            halfspaces.push_back({column(Eigen::VectorXd(A.row(i))), b(i)});
+                        return Specification::unsafeSet(std::move(halfspaces));
+                    },
+                    py::arg("A"), py::arg("b"))
         .def_property_readonly("type",
                                [](const Specification &spec) {
                                    if (spec.type() == SpecType::SafeSet) return "safeSet";

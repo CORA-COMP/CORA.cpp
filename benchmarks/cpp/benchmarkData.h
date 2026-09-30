@@ -189,7 +189,8 @@ inline Tensor readTensor(const Json &matrices, const std::string &bin, const std
 
 // Specifications --------------------------------------------------------------------------------
 
-/// One specification; a safe set may have several halfspaces, an unsafe set takes one.
+/// One specification; several halfspaces are a polytope (a safe set lies in it, an unsafe set
+/// must not touch it).
 inline Specification readSpec(const Json &spec) {
     std::vector<Halfspace> halfspaces;
     for (std::size_t k = 0; k < spec["A"].array.size(); ++k) {
@@ -202,10 +203,7 @@ inline Specification readSpec(const Json &spec) {
     if (spec["type"].string != "unsafeSet")
         throw std::runtime_error("benchmark data: unknown specification type "
                                  + spec["type"].string);
-    if (halfspaces.size() != 1)
-        throw std::runtime_error("benchmark data: an unsafe set that is an intersection of "
-                                 "halfspaces is not supported by Specification");
-    return Specification::unsafeSet(halfspaces[0]);
+    return Specification::unsafeSet(halfspaces);
 }
 
 /// Reads <name>.json and its binary file from benchmarks/data (or $CORACPP_BENCHMARK_DATA).
@@ -241,6 +239,11 @@ inline Instance loadInstance(const std::string &name) {
 /// steps and step size next to those of MATLAB. The time is tComp, else the wall clock.
 inline void runInstance(const std::string &name) {
     const Instance inst = loadInstance(name);
+    // what will run, before it does
+    std::cerr << name << ": " << inst.params->R0.dim() << " states, " << inst.specs.size()
+              << " specifications, "
+              << (inst.alg == VerifyAlg::Zonotope ? "zonotope" : "supportFunc")
+              << " algorithm, tFinal " << inst.params->tFinal << std::endl;
     const auto start = std::chrono::steady_clock::now();
     const VerifyResult res = inst.sys->verify(*inst.params, inst.alg, inst.specs);
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;

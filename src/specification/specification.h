@@ -1,9 +1,10 @@
 // specification - a specification on reachable sets, as CORA's specification (halfspaces)
 //
 // A halfspace is {x | a'x <= b}. A safe set must contain the reachable sets (several
-// halfspaces form a polytope); an unsafe set must not touch them (one halfspace: for an
-// intersection of halfspaces the check needs an LP). It is checked with the support function
-// alone, so it applies to every ContSet on every backend.
+// halfspaces form a polytope); an unsafe set must not touch them. An unsafe set of several
+// halfspaces is their intersection, a polytope. One halfspace is checked with the support
+// function alone, so it applies to every ContSet on every backend; for a polytope a zonotope is
+// decided exactly by a linear program, any other set conservatively (see check.cpp).
 //
 // Syntax:     Specification spec = Specification::safeSet(a, b);   spec.check(R.timeInt);
 // Operations: check, holds (check.cpp); safeSet, unsafeSet (specification.cpp)
@@ -33,9 +34,12 @@ class Specification {
     static Specification safeSet(std::vector<Halfspace> halfspaces);
     static Specification safeSet(const Tensor &a, double b) { return safeSet({{a, b}}); }
 
-    /// The sets must not touch the halfspace.
-    static Specification unsafeSet(const Halfspace &halfspace);
-    static Specification unsafeSet(const Tensor &a, double b) { return unsafeSet({a, b}); }
+    /// The sets must not touch the halfspace, or the polytope that is the intersection of several.
+    static Specification unsafeSet(const Halfspace &halfspace) {
+        return unsafeSet(std::vector<Halfspace>{halfspace});
+    }
+    static Specification unsafeSet(std::vector<Halfspace> halfspaces);
+    static Specification unsafeSet(const Tensor &a, double b) { return unsafeSet(Halfspace{a, b}); }
 
     SpecType type() const { return type_; }
     const std::vector<Halfspace> &halfspaces() const { return halfspaces_; }
