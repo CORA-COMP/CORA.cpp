@@ -28,6 +28,15 @@ def test_reach_on_a_linear_system():
     R = sys.reach(X0, 0.1, 0.5, 4)
     assert len(R.timePoint) == 6 and len(R.timeInt) == 5
 
+def test_reach_with_an_input_and_an_output():
+    sys = matlab.linearSys(matlab.tensor([[-1.0, 0.0], [0.0, -2.0]]), matlab.tensor([[1.0], [0.5]]),
+                           matlab.tensor([[1.0, 0.0]]))
+    X0 = matlab.zonotope(matlab.tensor([1.0, 1.0]), matlab.tensor([[0.1, 0.0], [0.0, 0.1]]))
+    U = matlab.zonotope(matlab.tensor(0.5), matlab.tensor(0.1))  # MATLAB passes scalars
+    R = sys.reach(X0, 0.1, 0.5, 4, "standard", U, 20)
+    assert len(R.timeInt) == 5 and sys.outputSet(R).timeInt[0].c.shape == (1,)
+
+
 def test_zonotopes_of_a_reach_set():
     sys = matlab.linearSys(matlab.tensor([[-1.0, 0.0], [0.0, -2.0]]))
     X0 = matlab.zonotope(matlab.tensor([1.0, 1.0]), matlab.tensor([[0.1, 0.0], [0.0, 0.1]]))

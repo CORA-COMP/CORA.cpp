@@ -1,13 +1,14 @@
 // linearSys - the linear system x' = A x + B u, y = C x, as CORA's linearSys
 //
 // A is a matrix (..., n, n); leading dimensions batch systems, and broadcast against those of
-// the initial set, so one call covers a batch of systems, of sets, or of both. B (n, m) and C (p, n)
-// are optional single matrices; without C the output is the state.
+// the initial set, so one call covers a batch of systems, of sets, or of both. B (n, m) and C
+// (p, n) are optional single matrices; without C the output is the state.
 //
 // Syntax:     LinearSys sys(A);   Reach R = sys.reach(X0, timeStep, tFinal, taylorTerms);
 //             LinearSys sys(A, B, C);   VerifyResult r = sys.verify(params, alg, specs);
-// Operations: reach, simulate, simulateRandom, correctionMatrixState, correctionMatrixInput,
-//             verify (one file each); the algorithms behind reach and verify are in private/
+// Operations: reach, outputSet, simulate, simulateRandom, correctionMatrixState,
+//             correctionMatrixInput, verify (one file each); the algorithms behind reach and
+//             verify are in private/
 // See also:   contSet/zonotope/zonotope.h, specification/specification.h
 
 #pragma once
@@ -22,6 +23,8 @@
 
 namespace cora {
 
+// Results and options -------------------------------------------------------------------------
+
 /// Which algorithm computes the reachable sets (CORA's linAlg).
 enum class Algorithm {
     Standard,      ///< "standard": encloses the set of every step
@@ -35,7 +38,7 @@ struct Reach {
 
 /// Which algorithm verify runs (CORA's options.verifyAlg).
 enum class VerifyAlg {
-    SupportFunc,  ///< "reachavoid:supportFunc": support function of the affine solution, adaptive step
+    SupportFunc,  ///< "reachavoid:supportFunc": support function of the affine solution, adaptive
     Zonotope,     ///< "reachavoid:zonotope": zonotope reachable sets, adaptive step
 };
 
@@ -63,6 +66,8 @@ struct VerifyResult {
     std::optional<Falsification> fals;
 };
 
+// The system ----------------------------------------------------------------------------------
+
 class LinearSys {
   public:
     /// The autonomous system x' = A x, A (..., n, n).
@@ -81,13 +86,30 @@ class LinearSys {
     Reach reach(const Zonotope &X0, double timeStep, double tFinal, int taylorTerms,
                 Algorithm linAlg = Algorithm::Standard) const;
 
+    /// The reachable states of x' = A x + B u for every u(t) in the set U (m-dimensional), as
+    /// CORA's reach with params.U; the zonotopes of the steps are reduced to zonotopeOrder.
+    Reach reach(const Zonotope &X0, const Zonotope &U, double timeStep, double tFinal,
+                int taylorTerms, Algorithm linAlg = Algorithm::Standard,
+                int zonotopeOrder = 50) const;
+
+    /// The output sets y = C x of every set of R (R itself without C), as CORA's outputSet.
+    Reach outputSet(const Reach &R) const;
+
     /// Trajectories from the points x0 (..., n, N) at the times k*timeStep, k = 0..steps:
     /// x[k] = e^{A k timeStep} x0, exact for a linear system.
     std::vector<Tensor> simulate(const Tensor &x0, double timeStep, double tFinal) const;
 
+    /// With the constant inputs u (m, N) or (m, 1), one per trajectory: x' = A x + B u, exact.
+    std::vector<Tensor> simulate(const Tensor &x0, const Tensor &u, double timeStep,
+                                 double tFinal) const;
+
     /// simulate from N random points of X0 (any set); rng makes the points repeatable.
     std::vector<Tensor> simulateRandom(const ContSet &X0, int64_t N, double timeStep, double tFinal,
                                        Rng &rng) const;
+
+    /// simulate from N random points of X0 with N random constant inputs from U.
+    std::vector<Tensor> simulateRandom(const ContSet &X0, const ContSet &U, int64_t N,
+                                       double timeStep, double tFinal, Rng &rng) const;
 
     /// The interval matrix F(A, timeStep, taylorTerms) that encloses the curvature of the
     /// trajectories between two time points when multiplied with the set at the first.

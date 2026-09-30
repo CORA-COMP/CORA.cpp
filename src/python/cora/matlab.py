@@ -17,8 +17,12 @@ def tensor(data):
 
 
 def zonotope(c, G):
-    """zonotope - the zonotope with center c (n) and generators G (n, m)."""
-    return Zonotope(c, G)
+    """zonotope - the zonotope with center c (n) and generators G (n, m).
+
+    MATLAB hands a scalar or a row for n = 1 or m = 1; the shapes are restored here.
+    """
+    c = c.reshape(-1)
+    return Zonotope(c, G.reshape(c.shape[-1], -1))
 
 
 def interval(inf, sup):
@@ -31,9 +35,9 @@ def intervalMatrix(inf, sup):
     return Interval.matrix(inf, sup)
 
 
-def linearSys(A):
-    """linearSys - the linear system x' = A x."""
-    return LinearSys(A)
+def linearSys(A, B=None, C=None):
+    """linearSys - the linear system x' = A x, or x' = A x + B u, y = C x with B (and C)."""
+    return LinearSys(A) if B is None else LinearSys(A, B, C)
 
 
 def zonotopes(sets):

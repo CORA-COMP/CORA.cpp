@@ -5,6 +5,7 @@
 //
 //     X0  = cora.Zonotope(c, G)                 # c (..., n), G (..., n, m): one set or a batch
 //     sys = cora.LinearSys(A)                   # A (..., n, n): one system or a batch
+//     sys = cora.LinearSys(A, B, C)             # x' = A x + B u, y = C x; R = sys.reach(..., U=U)
 //     R   = sys.reach(X0, timeStep=0.1, tFinal=2.0)
 //     R.timeInt[k].c
 //
@@ -13,7 +14,7 @@
 // A vector is 1-D here, (..., n); in C++ it is a column (..., n, 1).
 //
 // Syntax:   cora.Zonotope, Interval, LinearSys, NonlinearSys, NeuralNetwork, Expr, Reach,
-//           Specification, Rng, setBackend
+//           Specification, VerifyParams, VerifyAlg, VerifyResult, Rng, setBackend
 // See also: the C++ headers, which document every method
 
 #include "contDynamics/linearSys/linearSys.h"
@@ -120,6 +121,14 @@ Algorithm parseLinAlg(const std::string &linAlg) {
     if (linAlg == "standard") return Algorithm::Standard;
     if (linAlg == "wrapping-free") return Algorithm::WrappingFree;
     throw py::value_error("unknown linAlg '" + linAlg + "'; use 'standard' or 'wrapping-free'");
+}
+
+/// CORA's options.verifyAlg: "reachavoid:supportFunc" or "reachavoid:zonotope".
+VerifyAlg parseVerifyAlg(const std::string &alg) {
+    if (alg == "reachavoid:supportFunc") return VerifyAlg::SupportFunc;
+    if (alg == "reachavoid:zonotope") return VerifyAlg::Zonotope;
+    throw py::value_error("unknown alg '" + alg +
+                          "'; use 'reachavoid:supportFunc' or 'reachavoid:zonotope'");
 }
 
 /// A polygon as an (k, 2) array.
@@ -259,7 +268,7 @@ void bindLinearSys(py::module_ &m) {
         .def_readonly("timeInt", &Reach::timeInt, "timeInt[k] over [k*timeStep, (k+1)*timeStep]")
         .def_readonly("timePoint", &Reach::timePoint, "timePoint[k] at k*timeStep");
 
-    py::class_<LinearSys>(m, "LinearSys", "The linear system x' = A x.")
+    py::class_<LinearSys>(m, "LinearSys", "The linear system x' = A x + B u, y = C x.")
 #ifdef CORACPP_PYTHON_TORCH
         .def(py::init([](const torch::Tensor &A, bool customBackward) {
                  return LinearSys(fromTorch(A, customBackward));
@@ -268,38 +277,125 @@ void bindLinearSys(py::module_ &m) {
              "A (..., n, n); customBackward: hand-written backward pass for the matrix exponential")
 #endif
         .def(py::init([](const Eigen::MatrixXd &A) { return LinearSys(fromEigen(A)); }), py::arg("A"))
+#ifdef CORACPP_PYTHON_TORCH
+        .def(py::init([](const torch::Tensor &A, const torch::Tensor &B,
+                         const std::optional<torch::Tensor> &C, bool customBackward) {
+                 return LinearSys(fromTorch(A, customBackward), fromTorch(B, customBackward),
+                                  C ? std::optional<Tensor>(fromTorch(*C, customBackward))
+                                    : std::nullopt);
+             }),
+             py::arg("A"), py::arg("B"), py::arg("C") = py::none(), py::arg("customBackward") = false,
+             "x' = A x + B u, y = C x: A (n, n), B (n, m), C (p, n); without C the output is x")
+#endif
+        .def(py::init([](const Eigen::MatrixXd &A, const Eigen::MatrixXd &B,
+                         const std::optional<Eigen::MatrixXd> &C) {
+                 return LinearSys(fromEigen(A), fromEigen(B),
+                                  C ? std::optional<Tensor>(fromEigen(*C)) : std::nullopt);
+             }),
+             py::arg("A"), py::arg("B"), py::arg("C") = py::none())
         .def_property_readonly("A", [](const LinearSys &sys) { return matrix(sys.A()); })
+        .def_property_readonly("B", [](const LinearSys &sys) -> py::object {
+            return sys.B() ? matrix(*sys.B()) : py::none();
+        })
+        .def_property_readonly("C", [](const LinearSys &sys) -> py::object {
+            return sys.C() ? matrix(*sys.C()) : py::none();
+        })
         .def(
             "reach",
             [](const LinearSys &sys, const Zonotope &X0, double timeStep, double tFinal,
-               int taylorTerms, const std::string &linAlg) {
+               int taylorTerms, const std::string &linAlg, const std::optional<Zonotope> &U,
+               int zonotopeOrder) {
+                if (U) {
+                    return sys.reach(X0, *U, timeStep, tFinal, taylorTerms, parseLinAlg(linAlg),
+                                     zonotopeOrder);
+                }
                 return sys.reach(X0, timeStep, tFinal, taylorTerms, parseLinAlg(linAlg));
             },
             py::arg("X0"), py::arg("timeStep"), py::arg("tFinal"), py::arg("taylorTerms") = 10,
-            py::arg("linAlg") = "standard", "The reachable sets from the zonotope X0")
+            py::arg("linAlg") = "standard", py::arg("U") = py::none(), py::arg("zonotopeOrder") = 50,
+            "The reachable sets from the zonotope X0; with the zonotope U, of x' = A x + B u, u(t) in U")
+        .def("outputSet", &LinearSys::outputSet, py::arg("R"),
+             "The output sets y = C x of the reachable sets R")
 #ifdef CORACPP_PYTHON_TORCH
         .def(
             "simulate",
-            [](const LinearSys &sys, const torch::Tensor &x0, double timeStep, double tFinal) {
-                return stack(sys.simulate(fromTorch(x0), timeStep, tFinal));
+            [](const LinearSys &sys, const torch::Tensor &x0, double timeStep, double tFinal,
+               const py::object &u) {
+                const std::optional<Tensor> input = u.is_none() ? std::nullopt : asTensor(u);
+                return stack(input ? sys.simulate(fromTorch(x0), *input, timeStep, tFinal)
+                                   : sys.simulate(fromTorch(x0), timeStep, tFinal));
             },
-            py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"),
-            "Trajectories from the points x0 (..., n, N): (steps + 1, ..., n, N), time first")
+            py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"), py::arg("u") = py::none(),
+            "Trajectories from the points x0 (..., n, N): (steps + 1, ..., n, N), time first; "
+            "u (m, N) or (m,) is a constant input per trajectory, or one for all")
 #endif
         .def(
             "simulate",
-            [](const LinearSys &sys, const Eigen::MatrixXd &x0, double timeStep, double tFinal) {
-                return stack(sys.simulate(fromEigen(x0), timeStep, tFinal));
+            [](const LinearSys &sys, const Eigen::MatrixXd &x0, double timeStep, double tFinal,
+               const py::object &u) {
+                const std::optional<Tensor> input = u.is_none() ? std::nullopt : asTensor(u);
+                return stack(input ? sys.simulate(fromEigen(x0), *input, timeStep, tFinal)
+                                   : sys.simulate(fromEigen(x0), timeStep, tFinal));
             },
-            py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"))
+            py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"), py::arg("u") = py::none())
         .def(
             "simulateRandom",
             [](const LinearSys &sys, const ContSet &X0, int64_t N, double timeStep, double tFinal,
-               cora::Rng &rng) { return stack(sys.simulateRandom(X0, N, timeStep, tFinal, rng)); },
+               cora::Rng &rng, const ContSet *U) {
+                return stack(U ? sys.simulateRandom(X0, *U, N, timeStep, tFinal, rng)
+                               : sys.simulateRandom(X0, N, timeStep, tFinal, rng));
+            },
             py::arg("X0"), py::arg("N"), py::arg("timeStep"), py::arg("tFinal"), py::arg("rng"),
-            "simulate from N random points of the set X0")
+            py::arg("U") = nullptr,
+            "simulate from N random points of the set X0 (and N random constant inputs of the set U)")
         .def("correctionMatrixState", &LinearSys::correctionMatrixState, py::arg("timeStep"),
-             py::arg("taylorTerms"), "The interval matrix F of the curvature enlargement");
+             py::arg("taylorTerms"), "The interval matrix F of the curvature enlargement")
+        .def("correctionMatrixInput", &LinearSys::correctionMatrixInput, py::arg("timeStep"),
+             py::arg("taylorTerms"), "The interval matrix G of the curvature of the input")
+        .def(
+            "verify",
+            [](const LinearSys &sys, const VerifyParams &params, VerifyAlg alg,
+               const std::vector<Specification> &specs) { return sys.verify(params, alg, specs); },
+            py::arg("params"), py::arg("alg"), py::arg("specs"),
+            "Whether every specification holds for the outputs up to params.tFinal")
+        .def(
+            "verify",
+            [](const LinearSys &sys, const VerifyParams &params, const std::string &alg,
+               const std::vector<Specification> &specs) {
+                return sys.verify(params, parseVerifyAlg(alg), specs);
+            },
+            py::arg("params"), py::arg("alg"), py::arg("specs"),
+            "As above, with alg 'reachavoid:supportFunc' or 'reachavoid:zonotope'");
+}
+
+/// verify: its parameters, algorithms and result.
+void bindVerify(py::module_ &m) {
+    py::enum_<VerifyAlg>(m, "VerifyAlg", "Which algorithm verify runs.")
+        .value("SupportFunc", VerifyAlg::SupportFunc, "'reachavoid:supportFunc'")
+        .value("Zonotope", VerifyAlg::Zonotope, "'reachavoid:zonotope'");
+
+    py::class_<VerifyParams>(m, "VerifyParams", "What verify is given: R0, U and tFinal.")
+        .def(py::init([](const Zonotope &R0, const Zonotope &U, double tFinal) {
+                 return VerifyParams{R0, U, tFinal};
+             }),
+             py::arg("R0"), py::arg("U"), py::arg("tFinal"),
+             "initial set in the state space, input set in the input space of B, time horizon")
+        .def_readwrite("R0", &VerifyParams::R0)
+        .def_readwrite("U", &VerifyParams::U)
+        .def_readwrite("tFinal", &VerifyParams::tFinal);
+
+    py::class_<Falsification>(m, "Falsification", "A trajectory that violates a specification.")
+        .def_property_readonly("x0", [](const Falsification &f) { return vector(f.x0); },
+                               "the state at time 0")
+        .def_readonly("tFinal", &Falsification::tFinal, "the time it is violated");
+
+    py::class_<VerifyResult>(m, "VerifyResult", "The outcome of verify.")
+        .def_readonly("verified", &VerifyResult::verified)
+        .def_readonly("tComp", &VerifyResult::tComp, "seconds spent")
+        .def_readonly("iterations", &VerifyResult::iterations, "passes of the adaptive loop")
+        .def_readonly("timeStep", &VerifyResult::timeStep, "step size of the last pass")
+        .def_readonly("nrSteps", &VerifyResult::nrSteps, "number of steps of the last pass")
+        .def_readonly("fals", &VerifyResult::fals, "a Falsification, or None");
 }
 
 /// The dynamics as symbolic expressions: `x` is a list of Expr, `f(x)` a list of Expr or numbers.
@@ -770,6 +866,7 @@ PYBIND11_MODULE(_cora, m) {
     bindOperators(m);
     bindPlot(m);
     bindSpecification(m);
+    bindVerify(m);
     bindLean(m);
 }
 
