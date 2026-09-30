@@ -1,7 +1,7 @@
 # CORA.cpp - the library, its tests and examples, the Python package, the competition binary
 #
 #   scripts/with_env.sh scripts/build.sh                 configure and build everything
-#   scripts/with_env.sh ctest --test-dir build -j        conventions, C++ tests, examples, Python tests
+#   scripts/with_env.sh scripts/test.sh -j        conventions, C++ tests, examples, Python tests
 #   scripts/build.sh --eigen                             without libtorch (Eigen only)
 #   scripts/build.sh --debug <target>                    -O0 -g into build-debug
 #   cmake -S . -B build && cmake --build build --target <name>     the same without the scripts

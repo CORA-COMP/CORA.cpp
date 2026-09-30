@@ -36,24 +36,21 @@ plot(R)                                                                # dims de
 
 ## Install
 
-Needs a C++20 compiler and Eigen; libtorch (via `pip install torch`) adds GPU, batching,
-gradients and the Python package. On **Linux and WSL2** (Windows: `wsl --install` in an
-administrator shell, then reopen the folder in WSL; macOS and native Windows are not supported)
-one script sets everything up. It needs `curl` and internet, installs Miniforge into
-`~/miniforge3` if there is no conda, creates the environment `coracpp` (compilers, Eigen, GLPK,
-gdb) and installs torch, the CUDA build if there is an NVIDIA GPU (`--cpu` forces the CPU one):
+Linux or WSL2 (Windows: `wsl --install`, then `WSL: Reopen Folder in WSL` in VS Code; macOS and
+native Windows are not supported). One script creates a conda environment with the compiler,
+CMake and Eigen, and installs torch (the CUDA build if there is an NVIDIA GPU, `--cpu` forces the
+CPU one):
 
 ```bash
-scripts/setup_local.sh                                       # once: conda env, torch, VS Code
-scripts/with_env.sh python scripts/run_example.py examples/cpp/example_linear_reach_01_5dim.cpp
-scripts/with_env.sh scripts/build.sh python                    # the Python package
+scripts/setup_local.sh                                   # once
+scripts/with_env.sh scripts/build.sh                     # build the library, examples, Python package
+scripts/with_env.sh scripts/test.sh -j4                   # run the tests
 scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
-scripts/with_env.sh scripts/build.sh && scripts/with_env.sh ctest --test-dir build -j4   # build, all tests
 ```
 
-In VS Code (on Windows: `WSL: Reopen Folder in WSL` first), open an example, C++ or Python, and
-press `F5`: it builds if needed and runs it. To step through C++ with gdb, choose `C++: debug
-current example` in the Run and Debug dropdown.
+Without conda: `cmake -S . -B build && cmake --build build` needs a C++20 compiler, CMake and
+Eigen; libtorch (found through `pip install torch`) adds GPU, batching, gradients and the Python
+package, and `-DCORACPP_TORCH=OFF` builds Eigen only. In VS Code, open an example and press `F5`.
 
 ## Usage
 
@@ -101,7 +98,7 @@ sets are objects with methods (`Z.mtimes(M)`), not operators.
 ## Examples and tests
 
 `examples/cpp/` and `examples/python/`: one file per topic, sectioned like CORA's
-`example_linear_reach_01_5dim`. `ctest` runs the conventions, the tests and the C++ examples (`-L test`, `-L example`).
+`example_linear_reach_01_5dim`. `scripts/test.sh` (ctest) runs the conventions, the tests and the C++ examples (`-L test`, `-L example`).
 
 ## CORA-COMP
 

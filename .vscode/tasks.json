@@ -32,7 +32,7 @@
         {
             "label": "test (conventions and C++)",
             "type": "shell",
-            "command": "scripts/with_env.sh scripts/build.sh && scripts/with_env.sh ctest --test-dir \"${config:coracpp.buildDir}\" -j4 -LE python --output-on-failure",
+            "command": "scripts/with_env.sh scripts/build.sh && scripts/with_env.sh scripts/test.sh -j4 -LE python",
             "group": "test",
             "problemMatcher": "$gcc"
         },

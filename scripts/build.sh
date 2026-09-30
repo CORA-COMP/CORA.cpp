@@ -7,7 +7,7 @@
 #           scripts/with_env.sh scripts/build.sh --debug example_zonotope_01   -O0 -g into <build>-debug
 #           scripts/with_env.sh scripts/build.sh --eigen              without libtorch
 # The build directory is $CORACPP_BUILD (scripts/with_env.sh sets it: .coracpp-build, else ./build).
-# Run the tests with: scripts/with_env.sh ctest --test-dir "$CORACPP_BUILD" -j4 --output-on-failure
+# Run the tests with: scripts/with_env.sh scripts/test.sh -j4
 
 set -euo pipefail
 

@@ -2,7 +2,7 @@
 # with_env - runs a command inside the coracpp conda environment
 #
 # Syntax:   scripts/with_env.sh <command> [arguments...]
-# Example:  scripts/with_env.sh scripts/build.sh && scripts/with_env.sh ctest --test-dir build -j4
+# Example:  scripts/with_env.sh scripts/build.sh && scripts/with_env.sh scripts/test.sh -j4
 #           scripts/with_env.sh scripts/build.sh python && scripts/with_env.sh python examples/python/example_linear_reach_01_5dim.py
 # It also puts the built `cora` package on PYTHONPATH.
 # The environment comes from scripts/setup_local.sh; CORACPP_ENV names another one, and

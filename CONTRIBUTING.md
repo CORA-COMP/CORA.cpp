@@ -59,7 +59,7 @@ with `setBackend` or `CORACPP_BACKEND`; a tensor can also live on its own device
 ```bash
 scripts/setup_local.sh                                       # once
 scripts/with_env.sh scripts/build.sh                          # everything (or: a target, --debug, --eigen)
-scripts/with_env.sh ctest --test-dir build -j4                # conventions, C++ tests, examples, Python
+scripts/with_env.sh scripts/test.sh -j4                        # conventions, C++ tests, examples, Python
 scripts/with_env.sh scripts/build.sh example_zonotope_01      # one target, e.g. a C++ example
 scripts/with_env.sh python -m unittest discover -s tests/python
 ```
