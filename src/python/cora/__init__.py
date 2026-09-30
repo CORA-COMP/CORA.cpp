@@ -3,6 +3,7 @@
     import cora
     X0 = cora.Zonotope(c, G)              # c (..., n), G (..., n, m): one set or a batch
     sys = cora.LinearSys(A)               # A (..., n, n): one system or a batch
+    sys = cora.LinearSys(A, B, C)         # x' = A x + B u, y = C x; reach(..., U=U), outputSet(R)
     vdp = cora.NonlinearSys(lambda x: [x[1], (1 - x[0]**2) * x[1] - x[0]], 2)
     net = cora.NeuralNetwork([(W1, b1), (W2, b2)])   # Y = net.evaluate(X) encloses the outputs of X
     R = sys.reach(X0, timeStep=0.1, tFinal=2.0)
@@ -19,9 +20,9 @@ except ImportError:  # numpy and Eigen only
     pass
 
 from . import banner
-from ._cora import (CORAcolor, ContSet, Expr, Interval, LinearSys, NeuralNetwork, NonlinearSys,
-                    Reach, Rng, Specification, Zonotope, backend, lean, setBackend,
-                    useCORAcolors)
+from ._cora import (CORAcolor, ContSet, Expr, Falsification, Interval, LinearSys, NeuralNetwork,
+                    NonlinearSys, Reach, Rng, Specification, VerifyAlg, VerifyParams, VerifyResult,
+                    Zonotope, backend, lean, setBackend, useCORAcolors)
 from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
 from .plot import plot
 
@@ -29,8 +30,8 @@ from .plot import plot
 banner.install(backend)
 
 __all__ = [
-    "CORAcolor", "ContSet", "Expr", "Interval", "LinearSys", "NeuralNetwork", "NonlinearSys",
-    "Reach", "Rng", "Specification", "Zonotope", "backend", "lean", "plot", "setBackend",
-    "useCORAcolors",
+    "CORAcolor", "ContSet", "Expr", "Falsification", "Interval", "LinearSys", "NeuralNetwork",
+    "NonlinearSys", "Reach", "Rng", "Specification", "VerifyAlg", "VerifyParams", "VerifyResult",
+    "Zonotope", "backend", "lean", "plot", "setBackend", "useCORAcolors",
     "Tensor", "cos", "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]
