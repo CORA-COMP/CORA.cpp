@@ -18,10 +18,8 @@
 
 % ------------------------------ BEGIN CODE -------------------------------
 
-% folder of the python module: <CORA.cpp>/build/python unless set otherwise
-if isempty(getenv('CORACPP_PYTHONPATH'))
-    setenv('CORACPP_PYTHONPATH',fullfile(fileparts(mfilename('fullpath')),'..','..','build','python'));
-end
+% folder of the python module: <CORA.cpp>/build/python unless CORACPP_PYTHONPATH is set
+setupCoraCpp(fullfile(fileparts(mfilename('fullpath')),'..','..','build','python'));
 
 % Parameters --------------------------------------------------------------
 
