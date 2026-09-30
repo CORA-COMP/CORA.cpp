@@ -30,7 +30,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(CORACPP_NATIVE "Compile for this CPU (-march=native; not with MSVC)" ON)
 option(CORACPP_BLAS "Let Eigen call an external BLAS (changes which library does the arithmetic)" OFF)
 option(CORACPP_COMPETITION "Build the CORA-COMP binary and its tests (needs GLPK)" OFF)
-set(CORACPP_TORCH AUTO CACHE STRING "libtorch: AUTO (if the Python has torch), ON, OFF")
+set(CORACPP_TORCH AUTO CACHE STRING "libtorch: AUTO (if the Python has torch), ON, OFF, DOWNLOAD (fetch a CPU libtorch)")
+set(CORACPP_TORCH_VERSION "2.14.0" CACHE STRING "The libtorch that CORACPP_TORCH=DOWNLOAD fetches")
+set(CORACPP_TORCH_VARIANT "cpu" CACHE STRING "cpu, or a CUDA variant such as cu126 (Linux and Windows)")
+option(CORACPP_VENV "Create .venv and pip install CORACPP_VENV_REQUIREMENTS into it, and use its Python" OFF)
+set(CORACPP_VENV_REQUIREMENTS "requirements.txt" CACHE STRING "The requirements file the virtual environment gets")
 set(CORACPP_PYTHON AUTO CACHE STRING "The Python package: AUTO (if torch and Python.h are there), ON, OFF")
 set(CORACPP_TORCH_DIR "" CACHE PATH "The torch package directory (default: that of the Python found)")
 set(CORACPP_TORCH_ABI "" CACHE STRING "The C++11 ABI of that torch, 0 or 1 (default: asked of the Python)")
@@ -49,6 +53,28 @@ if(NOT Eigen3_FOUND)
   target_include_directories(Eigen3::Eigen SYSTEM INTERFACE "${eigen3_SOURCE_DIR}")
 endif()
 find_package(OpenMP COMPONENTS CXX)  # optional: Apple's clang has none without libomp
+if(CORACPP_VENV)
+  # The virtual environment of the project: created once, filled from the requirements, and the
+  # Python that the rest of the configuration uses.
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  set(venv "${CMAKE_SOURCE_DIR}/.venv")
+  if(WIN32)
+    set(venv_python "${venv}/Scripts/python.exe")
+  else()
+    set(venv_python "${venv}/bin/python")
+  endif()
+  if(NOT EXISTS "${venv_python}")
+    message(STATUS "creating ${venv}")
+    execute_process(COMMAND "${Python3_EXECUTABLE}" -m venv "${venv}" COMMAND_ERROR_IS_FATAL ANY)
+  endif()
+  message(STATUS "installing ${CORACPP_VENV_REQUIREMENTS} into ${venv}")
+  execute_process(COMMAND "${venv_python}" -m pip install -q -r "${CMAKE_SOURCE_DIR}/${CORACPP_VENV_REQUIREMENTS}"
+                          --extra-index-url https://download.pytorch.org/whl/cpu
+                  COMMAND_ERROR_IS_FATAL ANY)
+  unset(Python3_EXECUTABLE CACHE)
+  set(Python3_EXECUTABLE "${venv_python}")
+  set(Python3_FIND_VIRTUALENV ONLY)
+endif()
 find_package(Python3 COMPONENTS Interpreter Development.Module)
 
 add_library(cora_flags INTERFACE)
@@ -98,6 +124,24 @@ set(CORACPP_HAS_TORCH OFF)
 if(NOT CORACPP_TORCH STREQUAL "OFF")
   set(torch_dir "${CORACPP_TORCH_DIR}")
   set(torch_abi 1)
+  if(CORACPP_TORCH STREQUAL "DOWNLOAD" AND NOT torch_dir)
+    # the release of libtorch from pytorch.org, as the build of this machine: header and binaries only
+    set(torch_root "https://download.pytorch.org/libtorch/${CORACPP_TORCH_VARIANT}")
+    if(WIN32)
+      set(torch_url "${torch_root}/libtorch-win-shared-with-deps-${CORACPP_TORCH_VERSION}%2B${CORACPP_TORCH_VARIANT}.zip")
+    elseif(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64" AND CORACPP_TORCH_VARIANT STREQUAL "cpu")
+      set(torch_url "${torch_root}/libtorch-macos-arm64-${CORACPP_TORCH_VERSION}.zip")
+    elseif(APPLE)
+      message(FATAL_ERROR "CORACPP_TORCH=DOWNLOAD: pytorch.org offers libtorch for macOS on Apple silicon only")
+    else()
+      set(torch_url "${torch_root}/libtorch-shared-with-deps-${CORACPP_TORCH_VERSION}%2B${CORACPP_TORCH_VARIANT}.zip")
+    endif()
+    include(FetchContent)
+    message(STATUS "fetching libtorch: ${torch_url}")
+    FetchContent_Declare(libtorch URL "${torch_url}" SOURCE_SUBDIR headers-only DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    FetchContent_MakeAvailable(libtorch)
+    set(torch_dir "${libtorch_SOURCE_DIR}")
+  endif()
   if(NOT torch_dir AND Python3_EXECUTABLE)
     execute_process(
       COMMAND "${Python3_EXECUTABLE}" -c
@@ -136,8 +180,8 @@ if(NOT CORACPP_TORCH STREQUAL "OFF")
       set(CMAKE_BUILD_RPATH "${CORACPP_TORCH_LIB}")  # the executables find libtorch without LD_LIBRARY_PATH
     endif()
     message(STATUS "libtorch: ${torch_dir} (C++11 ABI ${torch_abi})")
-  elseif(CORACPP_TORCH STREQUAL "ON")
-    message(FATAL_ERROR "CORACPP_TORCH=ON, but no libtorch: give CORACPP_TORCH_DIR or a Python with torch")
+  elseif(CORACPP_TORCH STREQUAL "ON" OR CORACPP_TORCH STREQUAL "DOWNLOAD")
+    message(FATAL_ERROR "CORACPP_TORCH=${CORACPP_TORCH}, but no libtorch: give CORACPP_TORCH_DIR, a Python with torch, or use DOWNLOAD")
   else()
     message(STATUS "libtorch: not found, Eigen only")
   endif()
@@ -245,25 +289,55 @@ file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/examples")
 
 # ------------------------------------------- Python -----------------------------------------------
 # The cora package: the compiled module and the Python files beside it, in <build>/cora. Put the
-# build directory on PYTHONPATH. It needs libtorch, since torch tensors are its inputs.
-# pybind11 comes with torch (its headers are in torch/include), so the module is a plain shared library.
+# build directory on PYTHONPATH. It runs on numpy and Eigen; with the torch package of the Python it
+# also takes torch tensors (CORACPP_PYTHON_TORCH, the bindings' torch part). pybind11 comes with that
+# torch, else from the Python environment, else it is fetched.
 
 set(python_ok OFF)
-if(NOT CORACPP_PYTHON STREQUAL "OFF" AND CORACPP_HAS_TORCH AND Python3_Development.Module_FOUND)
+if(NOT CORACPP_PYTHON STREQUAL "OFF" AND Python3_Development.Module_FOUND)
   set(python_ok ON)
 endif()
 if(CORACPP_PYTHON STREQUAL "ON" AND NOT python_ok)
-  message(FATAL_ERROR "CORACPP_PYTHON=ON needs libtorch and Python with development files")
+  message(FATAL_ERROR "CORACPP_PYTHON=ON needs Python with development files")
 endif()
 
 if(python_ok)
+  # the bindings take torch tensors when the torch of the Python environment is the libtorch in use
+  set(python_torch OFF)
+  if(CORACPP_HAS_TORCH)
+    find_library(torch_python torch_python HINTS "${CORACPP_TORCH_LIB}" NO_DEFAULT_PATH)
+    if(torch_python)
+      set(python_torch ON)
+    endif()
+  endif()
+  if(NOT python_torch)
+    execute_process(COMMAND "${Python3_EXECUTABLE}" -m pybind11 --cmakedir
+                    OUTPUT_VARIABLE pybind11_dir ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+                    RESULT_VARIABLE pybind11_result)
+    if(pybind11_result EQUAL 0)
+      list(APPEND CMAKE_PREFIX_PATH "${pybind11_dir}")
+    endif()
+    find_package(pybind11 CONFIG QUIET)
+    if(NOT pybind11_FOUND)
+      include(FetchContent)
+      FetchContent_Declare(pybind11 URL https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.tar.gz
+                           DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+      FetchContent_MakeAvailable(pybind11)
+    endif()
+  endif()
+
   execute_process(COMMAND "${Python3_EXECUTABLE}" -c
                   "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
                   OUTPUT_VARIABLE extension_suffix OUTPUT_STRIP_TRAILING_WHITESPACE)
   add_library(_cora MODULE "${CMAKE_SOURCE_DIR}/src/python/bindings.cpp")
   target_link_libraries(_cora PRIVATE cora Python3::Module)
-  target_link_directories(_cora PRIVATE "${CORACPP_TORCH_LIB}")
-  target_link_libraries(_cora PRIVATE torch_python)
+  if(python_torch)
+    target_compile_definitions(_cora PRIVATE CORACPP_PYTHON_TORCH)
+    target_link_directories(_cora PRIVATE "${CORACPP_TORCH_LIB}")
+    target_link_libraries(_cora PRIVATE torch_python)
+  else()
+    target_link_libraries(_cora PRIVATE pybind11::headers)
+  endif()
   set(module_directory "${CMAKE_BINARY_DIR}/cora")
   set_target_properties(_cora PROPERTIES PREFIX "" SUFFIX "${extension_suffix}" CXX_VISIBILITY_PRESET hidden
     LIBRARY_OUTPUT_DIRECTORY "${module_directory}" RUNTIME_OUTPUT_DIRECTORY "${module_directory}"

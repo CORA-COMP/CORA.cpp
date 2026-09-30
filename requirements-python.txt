@@ -1,0 +1,3 @@
+# The Python package on numpy and Eigen, without torch (see requirements.txt for torch).
+numpy
+matplotlib
