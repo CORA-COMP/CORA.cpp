@@ -45,10 +45,18 @@ cmake --build build --parallel --config Release
 ctest --test-dir build -j4 -C Release          # tests and C++ examples
 ```
 
-**Optional: torch backend and Python package** (GPU, batching, gradients). Install torch into a
+**Optional: torch backend** (GPU, batching, gradients), **without Python**: download libtorch from
+[pytorch.org](https://pytorch.org/get-started/locally/) (LibTorch, C++), unzip it, and point CMake at it
+(on Linux pick the cxx11 ABI download, or pass `-DCORACPP_TORCH_ABI=0` for the other):
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_TORCH_DIR=/path/to/libtorch
+cmake --build build --parallel --config Release
+```
+
+**Optional: Python package** (needs torch, so it also brings the torch backend). Install torch into a
 virtual environment and build with it active; CMake uses it whenever its Python has `torch`
-(`-DCORACPP_TORCH=OFF` turns it off, `-DCORACPP_TORCH_DIR=<libtorch>` names a libtorch from
-pytorch.org instead):
+(`-DCORACPP_TORCH=OFF` turns torch off):
 
 ```bash
 python -m venv .venv                          # or: uv venv
