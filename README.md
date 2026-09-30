@@ -36,39 +36,27 @@ plot(R)                                                                # dims de
 
 ## Install
 
-**C++ only** (no Python needed): a C++20 compiler and CMake on Linux, macOS or Windows; Eigen is
-fetched if it is not installed.
+Needs a C++20 compiler and CMake 3.22 or newer, on Linux, macOS or Windows. Pick what to add:
+
+| preset | adds |
+| --- | --- |
+| `cpp` | nothing: the C++ library on Eigen |
+| `torch` | libtorch for GPU, batching and gradients; it is downloaded, no Python needed |
+| `python` | the Python package on numpy (creates `.venv`) |
+| `python-torch` | the Python package with torch tensors (creates `.venv`, installs torch into it) |
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel --config Release
-ctest --test-dir build -j4 -C Release          # tests and C++ examples
+cmake --preset cpp                    # or: torch, python, python-torch
+cmake --build --preset cpp
+ctest --preset cpp                    # tests and examples
 ```
 
-**Optional: torch backend** (GPU, batching, gradients), **without Python**: download libtorch from
-[pytorch.org](https://pytorch.org/get-started/locally/) (LibTorch, C++), unzip it, and point CMake at it
-(on Linux pick the cxx11 ABI download, or pass `-DCORACPP_TORCH_ABI=0` for the other):
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_TORCH_DIR=/path/to/libtorch
-cmake --build build --parallel --config Release
-```
-
-**Optional: Python package** (needs torch, so it also brings the torch backend). Install torch into a
-virtual environment and build with it active; CMake uses it whenever its Python has `torch`
-(`-DCORACPP_TORCH=OFF` turns torch off):
-
-```bash
-python -m venv .venv                          # or: uv venv
-source .venv/bin/activate                     # Windows: .venv\Scripts\activate
-pip install -r requirements.txt               # torch, numpy, matplotlib (uv: uv pip install -r ...)
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel --config Release
-PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py    # Windows: set PYTHONPATH=build
-```
-
-On Linux and WSL2, `scripts/setup_local.sh` sets up a conda environment with torch
-(`scripts/with_env.sh scripts/build.sh`, `scripts/with_env.sh scripts/test.sh -j4`). In VS Code, open
-an example and press `F5`.
+Eigen is fetched if it is not installed. The Python presets need Python 3; they run
+`pip install -r requirements-python.txt` (`requirements.txt` for torch) in `.venv` at the project
+root, nothing else is touched. Use the package with `PYTHONPATH=build/python` (Windows:
+`set PYTHONPATH=build\python`) and `.venv`'s Python. `-DCORACPP_TORCH_VARIANT=cu126` downloads a CUDA
+libtorch instead of the CPU one. On Linux and WSL2, `scripts/setup_local.sh` alternatively sets up a
+conda environment (`scripts/with_env.sh scripts/build.sh`). In VS Code, open an example and press `F5`.
 
 ## Examples
 

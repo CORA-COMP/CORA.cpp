@@ -8,8 +8,8 @@
 //     R   = sys.reach(X0, timeStep=0.1, tFinal=2.0)
 //     R.timeInt[k].c
 //
-// Torch tensors run on the libtorch backend (batched, on any device, differentiable), numpy
-// arrays on Eigen; an object keeps its backend and hands its numbers back the same way.
+// Torch tensors (when built against torch, CORACPP_PYTHON_TORCH) run on the libtorch backend
+// (batched, on any device, differentiable), numpy arrays on Eigen; an object keeps its backend and hands its numbers back the same way.
 // A vector is 1-D here, (..., n); in C++ it is a column (..., n, 1).
 //
 // Syntax:   cora.Zonotope, Interval, LinearSys, NonlinearSys, NeuralNetwork, Expr, Reach,
@@ -25,13 +25,15 @@
 #include "nn/neuralNetwork/neuralNetwork.h"
 #include "specification/specification.h"
 #include "tensor/eigen.h"
-#include "tensor/torch.h"
 
 #include <optional>
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+#ifdef CORACPP_PYTHON_TORCH
+#include "tensor/torch.h"
 #include <torch/extension.h>
+#endif
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,12 +45,16 @@ namespace {
 // ---------------- vectors and matrices between Python and CoraTensor -------------------
 
 /// A Python vector (..., n) as a column (..., n, 1).
+#ifdef CORACPP_PYTHON_TORCH
 Tensor column(const torch::Tensor &v) { return fromTorch(v.unsqueeze(-1)); }
+#endif
 Tensor column(const Eigen::VectorXd &v) { return fromEigen(v); }
 
 /// A column (..., n, 1) as a Python vector (..., n), in the array type of its backend.
 py::object vector(const Tensor &t) {
+#ifdef CORACPP_PYTHON_TORCH
     if (isTorch(t)) return py::cast(toTorch(t).squeeze(-1));
+#endif
     if (isEigen(t)) return py::cast(Eigen::VectorXd(toEigen(t).col(0)));
     throw std::invalid_argument("cora: a tensor of an unknown backend");
 }
@@ -56,7 +62,9 @@ py::object vector(const Tensor &t) {
 /// A matrix, or the bounds of an interval, in the array type of its backend: a column bound is
 /// a vector (..., n), a matrix bound stays (..., n, n).
 py::object matrix(const Tensor &t) {
+#ifdef CORACPP_PYTHON_TORCH
     if (isTorch(t)) return py::cast(toTorch(t));
+#endif
     if (isEigen(t)) return py::cast(toEigen(t));
     throw std::invalid_argument("cora: a tensor of an unknown backend");
 }
@@ -67,7 +75,9 @@ py::object bounds(const Tensor &t) {
 
 /// A (..., 1, 1) result as a scalar per batch element: a torch tensor (...) or a float.
 py::object scalar(const Tensor &t) {
+#ifdef CORACPP_PYTHON_TORCH
     if (isTorch(t)) return py::cast(toTorch(t).squeeze(-1).squeeze(-1));
+#endif
     if (isEigen(t)) return py::cast(toEigen(t)(0, 0));
     throw std::invalid_argument("cora: a tensor of an unknown backend");
 }
@@ -75,11 +85,13 @@ py::object scalar(const Tensor &t) {
 /// A torch tensor or numpy array from Python as a Tensor on its backend (a 1-D one is a column);
 /// nothing for anything else.
 std::optional<Tensor> asTensor(const py::object &o) {
+#ifdef CORACPP_PYTHON_TORCH
     py::detail::make_caster<torch::Tensor> torchCaster;
     if (torchCaster.load(o, /*convert=*/false)) {
         const torch::Tensor t = o.cast<torch::Tensor>();
         return t.dim() == 1 ? column(t) : fromTorch(t);
     }
+#endif
     if (py::isinstance<py::array>(o)) {
         const py::array a = py::array::ensure(o);
         if (a.ndim() == 1) return column(o.cast<Eigen::VectorXd>());
@@ -91,11 +103,13 @@ std::optional<Tensor> asTensor(const py::object &o) {
 /// The time points of a simulation as one array, the time first: (steps + 1, ..., n, N).
 py::object stack(const std::vector<Tensor> &points) {
     if (points.empty()) throw std::invalid_argument("cora: no time points");
+#ifdef CORACPP_PYTHON_TORCH
     if (isTorch(points[0])) {
         std::vector<torch::Tensor> all;
         for (const Tensor &x : points) all.push_back(toTorch(x));
         return py::cast(torch::stack(torch::broadcast_tensors(all), 0));
     }
+#endif
     py::list all;
     for (const Tensor &x : points) all.append(py::cast(toEigen(x)));
     return py::module_::import("numpy").attr("stack")(all);
@@ -137,9 +151,11 @@ void bindContSet(py::module_ &m) {
              "The vertices of a two-dimensional set, one (k, 2) array per batch member")
         .def("__repr__", &ContSet::display)
         .def("__str__", &ContSet::display)
+#ifdef CORACPP_PYTHON_TORCH
         .def("supportFunc",
              [](const ContSet &S, const torch::Tensor &d) { return scalar(S.supportFunc(column(d))); },
              py::arg("d"), "max of d'x over the set; d (..., n)")
+#endif
         .def("supportFunc",
              [](const ContSet &S, const Eigen::VectorXd &d) { return scalar(S.supportFunc(column(d))); },
              py::arg("d"))
@@ -150,20 +166,24 @@ void bindContSet(py::module_ &m) {
 
 void bindInterval(py::module_ &m) {
     py::class_<Interval, ContSet>(m, "Interval", "A box, or a matrix of intervals: inf <= x <= sup.")
+#ifdef CORACPP_PYTHON_TORCH
         .def(py::init([](const torch::Tensor &inf, const torch::Tensor &sup) {
                  return Interval(column(inf), column(sup));
              }),
              py::arg("inf"), py::arg("sup"))
+#endif
         .def(py::init([](const Eigen::VectorXd &inf, const Eigen::VectorXd &sup) {
                  return Interval(column(inf), column(sup));
              }),
              py::arg("inf"), py::arg("sup"))
+#ifdef CORACPP_PYTHON_TORCH
         .def_static("matrix",
                     [](const torch::Tensor &inf, const torch::Tensor &sup) {
                         return Interval(fromTorch(inf), fromTorch(sup));
                     },
                     py::arg("inf"), py::arg("sup"),
                     "An interval matrix: bounds (..., n, n) are taken as they are, not as vectors")
+#endif
         .def_static("matrix",
                     [](const Eigen::MatrixXd &inf, const Eigen::MatrixXd &sup) {
                         return Interval(fromEigen(inf), fromEigen(sup));
@@ -178,23 +198,29 @@ void bindInterval(py::module_ &m) {
         .def_property_readonly("inf", [](const Interval &I) { return bounds(I.inf); })
         .def_property_readonly("sup", [](const Interval &I) { return bounds(I.sup); })
         .def("rad", [](const Interval &I) { return bounds(I.rad()); })
+#ifdef CORACPP_PYTHON_TORCH
         .def("mtimes", [](const Interval &I, const torch::Tensor &M) { return I.mtimes(fromTorch(M)); },
              py::arg("M"))
+#endif
         .def("mtimes", [](const Interval &I, const Eigen::MatrixXd &M) { return I.mtimes(fromEigen(M)); },
              py::arg("M"))
         .def("plus", &Interval::plus, py::arg("I2"))
+#ifdef CORACPP_PYTHON_TORCH
         .def("contains", [](const Interval &I, const torch::Tensor &p) { return I.contains(column(p)); },
              py::arg("p"))
+#endif
         .def("contains", [](const Interval &I, const Eigen::VectorXd &p) { return I.contains(column(p)); },
              py::arg("p"));
 }
 
 void bindZonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
+#ifdef CORACPP_PYTHON_TORCH
         .def(py::init([](const torch::Tensor &c, const torch::Tensor &G) {
                  return Zonotope(column(c), fromTorch(G));
              }),
              py::arg("c"), py::arg("G"), "center c (..., n) and generators G (..., n, m)")
+#endif
         .def(py::init([](const Eigen::VectorXd &c, const Eigen::MatrixXd &G) {
                  return Zonotope(column(c), fromEigen(G));
              }),
@@ -214,8 +240,10 @@ void bindZonotope(py::module_ &m) {
             },
             py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
             "N random points as columns (..., n, N); type 'standard' or 'extreme'")
+#ifdef CORACPP_PYTHON_TORCH
         .def("mtimes", [](const Zonotope &Z, const torch::Tensor &M) { return Z.mtimes(fromTorch(M)); },
              py::arg("M"), "M * Z for a matrix M (..., n, n)")
+#endif
         .def("mtimes", [](const Zonotope &Z, const Eigen::MatrixXd &M) { return Z.mtimes(fromEigen(M)); },
              py::arg("M"))
         .def("mtimes", [](const Zonotope &Z, const Interval &M) { return Z.mtimes(M); }, py::arg("M"),
@@ -232,11 +260,13 @@ void bindLinearSys(py::module_ &m) {
         .def_readonly("timePoint", &Reach::timePoint, "timePoint[k] at k*timeStep");
 
     py::class_<LinearSys>(m, "LinearSys", "The linear system x' = A x.")
+#ifdef CORACPP_PYTHON_TORCH
         .def(py::init([](const torch::Tensor &A, bool customBackward) {
                  return LinearSys(fromTorch(A, customBackward));
              }),
              py::arg("A"), py::arg("customBackward") = false,
              "A (..., n, n); customBackward: hand-written backward pass for the matrix exponential")
+#endif
         .def(py::init([](const Eigen::MatrixXd &A) { return LinearSys(fromEigen(A)); }), py::arg("A"))
         .def_property_readonly("A", [](const LinearSys &sys) { return matrix(sys.A()); })
         .def(
@@ -247,6 +277,7 @@ void bindLinearSys(py::module_ &m) {
             },
             py::arg("X0"), py::arg("timeStep"), py::arg("tFinal"), py::arg("taylorTerms") = 10,
             py::arg("linAlg") = "standard", "The reachable sets from the zonotope X0")
+#ifdef CORACPP_PYTHON_TORCH
         .def(
             "simulate",
             [](const LinearSys &sys, const torch::Tensor &x0, double timeStep, double tFinal) {
@@ -254,6 +285,7 @@ void bindLinearSys(py::module_ &m) {
             },
             py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"),
             "Trajectories from the points x0 (..., n, N): (steps + 1, ..., n, N), time first")
+#endif
         .def(
             "simulate",
             [](const LinearSys &sys, const Eigen::MatrixXd &x0, double timeStep, double tFinal) {
@@ -305,12 +337,14 @@ void bindNonlinearSys(py::module_ &m) {
         .def("reach", &NonlinearSys::reach, py::arg("X0"), py::arg("timeStep"), py::arg("tFinal"),
              py::arg("taylorTerms") = 4, py::arg("zonotopeOrder") = 50,
              "The reachable sets from the zonotope X0 (algorithm 'lin')")
+#ifdef CORACPP_PYTHON_TORCH
         .def("simulate",
              [](const NonlinearSys &sys, const torch::Tensor &x0, double timeStep, double tFinal) {
                  return stack(sys.simulate(fromTorch(x0), timeStep, tFinal));
              },
              py::arg("x0"), py::arg("timeStep"), py::arg("tFinal"),
              "Trajectories from the points x0 (n, N): (steps + 1, n, N), time first")
+#endif
         .def("simulate",
              [](const NonlinearSys &sys, const Eigen::MatrixXd &x0, double timeStep, double tFinal) {
                  return stack(sys.simulate(fromEigen(x0), timeStep, tFinal));
@@ -326,6 +360,7 @@ void bindNonlinearSys(py::module_ &m) {
 void bindNeuralNetwork(py::module_ &m) {
     py::class_<NeuralNetwork>(m, "NeuralNetwork",
                               "Affine layers with a ReLU after each but the last; torch tensors.")
+#ifdef CORACPP_PYTHON_TORCH
         .def(py::init([](const std::vector<std::pair<torch::Tensor, torch::Tensor>> &layers) {
                  std::vector<NeuralNetwork::Layer> out;
                  for (const auto &[W, b] : layers)
@@ -333,8 +368,10 @@ void bindNeuralNetwork(py::module_ &m) {
                  return NeuralNetwork(out);
              }),
              py::arg("layers"), "the layers as (W (out, in), b (out,)) pairs, first to last")
+#endif
         .def_property_readonly("inputDim", &NeuralNetwork::inputDim)
         .def_property_readonly("outputDim", &NeuralNetwork::outputDim)
+#ifdef CORACPP_PYTHON_TORCH
         .def(
             "evaluate",
             [](const NeuralNetwork &nn, const torch::Tensor &x) {
@@ -342,6 +379,7 @@ void bindNeuralNetwork(py::module_ &m) {
                 return toTorch(nn.evaluate(fromTorch(x)));
             },
             py::arg("x"), "The outputs at a point (in,) or at the columns of (in, N)")
+#endif
         .def("evaluate", [](const NeuralNetwork &nn, const Zonotope &X) { return nn.evaluate(X); },
              py::arg("X"), "A zonotope that contains the outputs of every point of X");
 }
@@ -567,15 +605,19 @@ void bindSpecification(py::module_ &m) {
     py::class_<Specification>(m, "Specification",
                               "Halfspaces {x | a.x <= b} a set must stay in (safeSet) or must not touch "
                               "(unsafeSet).")
+#ifdef CORACPP_PYTHON_TORCH
         .def_static("safeSet",
                     [](const torch::Tensor &a, double b) { return Specification::safeSet(column(a), b); },
                     py::arg("a"), py::arg("b"))
+#endif
         .def_static("safeSet",
                     [](const Eigen::VectorXd &a, double b) { return Specification::safeSet(column(a), b); },
                     py::arg("a"), py::arg("b"))
+#ifdef CORACPP_PYTHON_TORCH
         .def_static("unsafeSet",
                     [](const torch::Tensor &a, double b) { return Specification::unsafeSet(column(a), b); },
                     py::arg("a"), py::arg("b"))
+#endif
         .def_static("unsafeSet",
                     [](const Eigen::VectorXd &a, double b) { return Specification::unsafeSet(column(a), b); },
                     py::arg("a"), py::arg("b"))

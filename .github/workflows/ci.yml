@@ -5,92 +5,34 @@ on:
     branches: [main]
   pull_request:
 
-# The install jobs run the commands of the README, with one addition: no -march=native, because the
-# runners differ in CPU and a build must run on the one that tests it.
+# The install jobs run the commands of the README (the presets) on the three platforms, with one
+# addition: no -march=native, because the runners differ in CPU and a build must run on the one
+# that tests it.
 
 jobs:
-  # README, "C++ only", on the three platforms: the library, the tests and the examples on Eigen.
-  cpp-linux:
-    runs-on: ubuntu-24.04
+  install:
+    name: ${{ matrix.preset }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+        preset: [cpp, torch, python, python-torch]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: hendrikmuhs/ccache-action@v1.2
+        if: runner.os != 'Windows'
         with:
-          key: cpp-linux
-      - run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel --config Release
-          ctest --test-dir build -j4 -C Release --output-on-failure
-
-  cpp-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: cpp-macos
-      - run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel --config Release
-          ctest --test-dir build -j4 -C Release --output-on-failure
-
-  cpp-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF
-          cmake --build build --parallel --config Release
-          ctest --test-dir build -j4 -C Release --output-on-failure
-
-  # README, "Optional: torch backend and Python package": a virtual environment, requirements.txt,
-  # then the same build; the Python tests run with the package on PYTHONPATH.
-  torch-linux:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: torch-linux
-      - run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel --config Release
-          ctest --test-dir build -j4 -C Release --output-on-failure
-          PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py
-
-  torch-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: torch-macos
-      - run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip install -r requirements.txt
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel --config Release
-          ctest --test-dir build -j4 -C Release --output-on-failure
-          PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py
-
-  torch-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - shell: pwsh
-        run: |
-          python -m venv .venv
-          .venv\Scripts\Activate.ps1
-          pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF
-          cmake --build build --parallel --config Release
-          ctest --test-dir build -j4 -C Release --output-on-failure
-          $env:PYTHONPATH = "build"
-          python examples/python/example_linear_reach_01_5dim.py
+          key: ${{ matrix.preset }}-${{ matrix.os }}
+      - name: configure
+        env:
+          CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
+        run: cmake --preset ${{ matrix.preset }} -DCORACPP_NATIVE=OFF
+      - run: cmake --build --preset ${{ matrix.preset }} --parallel
+      - run: ctest --preset ${{ matrix.preset }}
 
   # The CORA-COMP binary and its tests.
   competition:

@@ -1,0 +1,65 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "cpp",
+      "displayName": "C++ only (Eigen)",
+      "inherits": "base",
+      "cacheVariables": { "CORACPP_TORCH": "OFF", "CORACPP_PYTHON": "OFF" }
+    },
+    {
+      "name": "torch",
+      "displayName": "C++ with libtorch (downloaded, no Python)",
+      "inherits": "base",
+      "cacheVariables": { "CORACPP_TORCH": "DOWNLOAD", "CORACPP_PYTHON": "OFF" }
+    },
+    {
+      "name": "python",
+      "displayName": "C++ and the Python package on numpy (a .venv is created)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CORACPP_TORCH": "OFF",
+        "CORACPP_PYTHON": "ON",
+        "CORACPP_VENV": "ON",
+        "CORACPP_VENV_REQUIREMENTS": "requirements-python.txt"
+      }
+    },
+    {
+      "name": "python-torch",
+      "displayName": "C++ and the Python package with torch (a .venv is created)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CORACPP_TORCH": "ON",
+        "CORACPP_PYTHON": "ON",
+        "CORACPP_VENV": "ON",
+        "CORACPP_VENV_REQUIREMENTS": "requirements.txt"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "cpp", "configurePreset": "cpp", "configuration": "Release" },
+    { "name": "torch", "configurePreset": "torch", "configuration": "Release" },
+    { "name": "python", "configurePreset": "python", "configuration": "Release" },
+    { "name": "python-torch", "configurePreset": "python-torch", "configuration": "Release" }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "configuration": "Release",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4 }
+    },
+    { "name": "cpp", "configurePreset": "cpp", "inherits": "base" },
+    { "name": "torch", "configurePreset": "torch", "inherits": "base" },
+    { "name": "python", "configurePreset": "python", "inherits": "base" },
+    { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" }
+  ]
+}
