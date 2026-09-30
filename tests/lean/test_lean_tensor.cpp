@@ -72,6 +72,24 @@ int main() {
         const auto [nominal, err] = Zm.gather();
         test::check(test::close(nominal.c, std::vector<double>{0.1, 0.0}, 1e-15), "nominal center");
         test::check(err.inf.data()[0] <= 0 && err.sup.data()[0] >= 0, "the error box contains 0");
+
+        // rounding a zonotope into a coarser dtype keeps the exact set inside: [-0.2, 0.4] here
+        const lean::Zonotope W(Tensor({{0.1}}), Tensor({{0.3}}));
+        for (const std::string mode : {"nearest", "down", "up"}) {
+            const auto [lo, hi] = W.roundTo("dyadic:4", mode).interval().gather();
+            test::check(lo.data()[0] <= 0.1 - 0.3 && hi.data()[0] >= 0.1 + 0.3, "roundTo " + mode);
+        }
+
+        // the enclosure folds the error box into generators: its own error box is empty
+        const auto [fold, none] = Zm.enclosure().gather();
+        test::check(none.inf.data()[0] == 0 && none.sup.data()[0] == 0, "enclosure has no error");
+
+        // fixedpoint values are decimals: 0.25 is fixedpoint:2, 0.125 needs three digits
+        lean::setDType("fixedpoint:2");
+        const cora::Tensor quarter = lean::Tensor::from(Tensor({{0.25}})).gather();
+        test::check(test::close(quarter, std::vector<double>{0.25}, 0), "0.25 round trips");
+        test::check(throws([] { lean::Tensor::from(Tensor({{0.125}})); }), "0.125 needs 3 digits");
+        lean::setDType("binary64");
     });
     return test::finish("lean tensor");
 }
