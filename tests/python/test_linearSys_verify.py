@@ -39,7 +39,7 @@ class Verify(unittest.TestCase):
             self.assertTrue(res.fals is None or isinstance(res.fals, cora.Falsification))
 
     def test_the_zonotope_algorithm_is_not_there_yet(self):
-        with self.assertRaisesRegex(RuntimeError, "not implemented"):
+        with self.assertRaisesRegex(ValueError, "not implemented"):
             self.sys.verify(self.params, cora.VerifyAlg.Zonotope, self.specs)
 
 
