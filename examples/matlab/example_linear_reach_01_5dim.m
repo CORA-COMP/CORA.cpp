@@ -2,7 +2,8 @@
 %    converted into CORA (MATLAB) for plotting and for comparison with its own reach
 %
 % Needs CORA (MATLAB) on the path, on the branch with toPy/fromPy, and the python module of
-% CORA.cpp (preset 'python'); MATLAB and CORA.cpp have to use the same python (see pyenv).
+% CORA.cpp (preset 'python'), whose folder <CORA.cpp>/build/python is set once in the macro or the
+% environment variable CORACPP_PYTHONPATH. MATLAB and CORA.cpp have to use the same python (see pyenv).
 %
 % Syntax:
 %    pyenv(Version='<path to python>');   % once per MATLAB session, before the first python call
@@ -18,8 +19,8 @@
 
 % ------------------------------ BEGIN CODE -------------------------------
 
-% folder of the python module: <CORA.cpp>/build/python unless CORACPP_PYTHONPATH is set
-setupCoraCpp(fullfile(fileparts(mfilename('fullpath')),'..','..','build','python'));
+% python module of CORA.cpp (folder set once in the macro or environment variable CORACPP_PYTHONPATH)
+setUpCORAcpp();
 
 % Parameters --------------------------------------------------------------
 
