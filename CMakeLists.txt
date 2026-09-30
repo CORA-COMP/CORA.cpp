@@ -80,7 +80,10 @@ find_package(Python3 COMPONENTS Interpreter Development.Module)
 
 add_library(cora_flags INTERFACE)
 target_link_libraries(cora_flags INTERFACE Eigen3::Eigen)
-if(OpenMP_CXX_FOUND)
+if(MINGW)
+  # MinGW's libgomp needs libgomp-1.dll next to the module, and its static form needs dlerror.
+  message(STATUS "OpenMP: not used with MinGW, the library runs on one thread")
+elseif(OpenMP_CXX_FOUND)
   target_link_libraries(cora_flags INTERFACE OpenMP::OpenMP_CXX)
 else()
   message(STATUS "OpenMP: not found, the library runs on one thread where it would use several")

@@ -74,6 +74,9 @@ One file per topic, in [`examples/cpp`](examples/cpp) and [`examples/python`](ex
 reachability of linear and nonlinear systems, specifications, backends, batching, GPU, gradients,
 learning, conformal prediction, neural network verification, and the CORALean oracle.
 
+MATLAB: [`examples/matlab`](examples/matlab) computes in CORA.cpp and plots with CORA (`toPy`/`fromPy`,
+CORA branch `feature/coracpp-python`); it uses the `python` preset and the same Python as MATLAB.
+
 Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.timeInt[k]` covers
 `[k*timeStep, (k+1)*timeStep]` and `R.timePoint[k]` is at `k*timeStep` (0-based).
 
