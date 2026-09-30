@@ -30,11 +30,44 @@ std::string aux_encode(double x) {
     return std::to_string(m) + "*2^" + std::to_string(e);
 }
 
-// The double of "m*2^e"; throws if it is not exactly one.
+// A decimal m*10^e is m*5^e*2^e: multiplies m by 5^e, or needs 5^-e to divide it.
+void aux_decimalToDyadic(unsigned __int128 &m, long long e, const std::string &s) {
+    for (long long i = 0; i < std::abs(e); ++i) {
+        if (e > 0 && m > (~static_cast<unsigned __int128>(0)) / 5)
+            throw std::range_error("lean: not a double (decimal value too large): " + s);
+        if (e < 0 && m % 5 != 0)
+            throw std::range_error("lean: not a double (no finite binary expansion): " + s);
+        m = e > 0 ? m * 5 : m / 5;
+    }
+}
+
+// The double x as "m*10^e" with m not divisible by 10, as fixedpoint dtypes write values.
+std::string aux_encodeDecimal(double x) {
+    if (x == 0) return "0*10^0";
+    const std::string dyadic = aux_encode(x);
+    const std::size_t star = dyadic.find('*');
+    const bool negative = dyadic[0] == '-';
+    unsigned __int128 m = std::stoull(dyadic.substr(negative ? 1 : 0, star - (negative ? 1 : 0)));
+    const long long e = std::stoll(dyadic.substr(star + 3));
+    // 2^e with e < 0 is 5^-e * 10^e; with e >= 0 the integer m * 2^e, at 10^0
+    for (long long i = 0; i < std::abs(e); ++i) {
+        if (m > (~static_cast<unsigned __int128>(0)) / 5)
+            throw std::range_error("lean: a value has too many digits for a fixedpoint dtype");
+        m *= e < 0 ? 5 : 2;
+    }
+    long long exponent = e < 0 ? e : 0;
+    while (m % 10 == 0) { m /= 10; ++exponent; }
+    std::string digits;
+    for (; m > 0; m /= 10) digits.insert(0, 1, static_cast<char>('0' + static_cast<int>(m % 10)));
+    return (negative ? "-" : "") + digits + "*10^" + std::to_string(exponent);
+}
+
+// The double of "m*2^e" or (fixedpoint) "m*10^e"; throws if it is not exactly one.
 double aux_decode(const std::string &s) {
-    const std::size_t star = s.find("*2^");
-    if (star == std::string::npos)
-        throw std::invalid_argument("lean: expected a value m*2^e, got '" + s + "'");
+    const std::size_t star = s.find("*");
+    const bool decimal = star != std::string::npos && s.compare(star, 4, "*10^") == 0;
+    if (star == std::string::npos || (!decimal && s.compare(star, 3, "*2^") != 0))
+        throw std::invalid_argument("lean: expected a value m*2^e or m*10^e, got '" + s + "'");
     const std::string digits = s.substr(0, star);
     const bool negative = !digits.empty() && digits[0] == '-';
     // the mantissa has at most 38 digits so that it fits 128 bits
@@ -45,7 +78,8 @@ double aux_decode(const std::string &s) {
         m = m * 10 + static_cast<unsigned>(digits[i] - '0');
     }
     // trailing zero bits move into the exponent, so 53 bits decide the mantissa
-    long long e = std::stoll(s.substr(star + 3));
+    long long e = std::stoll(s.substr(star + (decimal ? 4 : 3)));
+    if (decimal) aux_decimalToDyadic(m, e, s);
     while (m != 0 && m % 2 == 0) { m /= 2; ++e; }
     if (m >> 53)
         throw std::range_error("lean: not a double (needs over 53 bits): " + s);
@@ -74,7 +108,9 @@ Tensor Tensor::from(const cora::Tensor &x) {
     T.dtype_ = lean::dtype();
     T.rows_ = x.shape()[0];
     T.cols_ = aux_columns(x);
-    for (const double v : x.data()) T.data_.push_back(aux_encode(v));
+    const bool decimal = T.dtype_.rfind("fixedpoint", 0) == 0;  // fixedpoint values are decimals
+    for (const double v : x.data())
+        T.data_.push_back(decimal ? aux_encodeDecimal(v) : aux_encode(v));
     if (T.dtype_ == "binary64") return T;
     Json request = Json::object();
     request.set("op", "from").set("dtype", T.dtype_).set("x", T.toJson());

@@ -34,6 +34,12 @@ int main() {
         const lean::Tensor fine = lean::Tensor::fromJson("dyadic:8", matrix(1, 1, {"3*2^-2"}));
         test::check(test::close(fine.gather(), std::vector<double>{0.75}, 0), "an exact dyadic gathers");
 
+        // a fixedpoint decimal gathers only if it is also a double
+        const lean::Tensor half = lean::Tensor::fromJson("fixedpoint:2", matrix(1, 1, {"5*10^-1"}));
+        const lean::Tensor cent = lean::Tensor::fromJson("fixedpoint:2", matrix(1, 1, {"1*10^-2"}));
+        test::check(test::close(half.gather(), std::vector<double>{0.5}, 0), "5*10^-1 is 0.5");
+        test::check(throws([&] { cent.gather(); }), "0.01 is no double");
+
         // NaN and a batch do not enter
         test::check(throws([] { lean::Tensor::from(Tensor({{std::nan("")}})); }), "NaN throws");
         test::check(throws([] { lean::Tensor::from(Tensor::zeros({2, 2, 2})); }), "a batch throws");
@@ -52,12 +58,13 @@ int main() {
 
         if (!std::getenv("CORACPP_ORACLE")) return;
 
-        // roundTo: 0.1 into dyadic:3 (multiples of 1/8); the error encloses x - value
+        // roundTo: 0.1 into dyadic:3 (3 significand bits: 0.09375); the error encloses x - value
         const lean::Tensor tenth = lean::Tensor::from(Tensor({{0.1}}));
         const auto [value, error] = tenth.roundTo("dyadic:3");
         const auto [inf, sup] = error.gather();
-        test::check(test::close(value.gather(), std::vector<double>{0.125}, 0), "0.1 rounds to 1/8");
-        test::check(inf.data()[0] <= 0.1 - 0.125 && 0.1 - 0.125 <= sup.data()[0], "the error encloses");
+        test::check(test::close(value.gather(), std::vector<double>{0.09375}, 0), "0.1 rounds to 3*2^-5");
+        const double gap = 0.1 - 0.09375;
+        test::check(inf.data()[0] <= gap && gap <= sup.data()[0], "the error encloses");
 
         // the zonotope operations enclose the exact result
         const lean::Zonotope Z(Tensor({{1.0}, {0.0}}), Tensor({{0.5, 0.0}, {0.0, 0.25}}));

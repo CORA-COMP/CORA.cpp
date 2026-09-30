@@ -87,6 +87,13 @@ the checkout or recreating the environment. On Windows, `WSL: Reopen Folder in W
   editor has selected; for IntelliSense pick it once with `Python: Select Interpreter` (`coracpp`).
   "The minimum Python version for the debugger is 3.9" means the system Python was used.
 
+## CORALean oracle
+
+`cora::lean` (and `cora.lean` in Python) computes sound float sets with the CORALean project. Build
+its `oracle` (`lake build oracle` on the `oracle` branch of CORALean) and point `CORACPP_ORACLE` at
+the executable or a shell command that starts it; the tests and examples named `*lean*` use it and
+skip without it. From WSL the Windows `oracle.exe` works over its pipes.
+
 ## Plotting
 
 `global/plot/plot.h` decides everything about a plot: the projection, the vertices, the color
