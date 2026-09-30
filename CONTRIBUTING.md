@@ -125,11 +125,11 @@ The `oracle` CI job (`.github/workflows/ci.yml`) is defined and disabled (`if: f
    the URL in `scripts/coralean.cmake` changes.
 2. CORALean CI builds `oracle` and `oracle-unsound` for Linux x86_64 and attaches them to a release
    as `oracle-linux-x86_64` and `oracle-unsound-linux-x86_64`, with their SHA-256.
-3. Put `nearest` into the unsound oracle only: `nearest` rests on a false axiom that
-   CORALean's hook allows under `Examples/Bench/` alone, so it needs an executable of its own there.
-   The branch `experiment/oracle-native-dtypes` (local, in CORALean) has the dtype code.
+3. Merge CORALean's `feat/oracle-unsound` (the `oracle-unsound` executable with `nearest`, under
+   `Examples/Bench/`, where the false axiom behind it is allowed; the sound `oracle` never reaches it).
 4. Fill `CORALEAN_VERSION` and both hashes in `scripts/coralean.cmake`, remove `if: false`.
-5. Check the oracle's `ping` version against the pinned one (not done yet), so a mismatch is refused.
+5. Compare `ping`'s `version` (CORALean's commit, with a `dirty` flag) with the pinned one in CORA.cpp
+   (not done yet), so a mismatch is refused.
 
 Later, without Lean and without a binary: CORALean releases the generated C of the oracle with
 `lean.h` and the runtime sources, and CORA.cpp compiles it as a library. It needs a JSON codec of the
