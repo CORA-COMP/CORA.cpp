@@ -6,6 +6,8 @@ functions build the objects. Data comes as python lists or numpy arrays.
     m = py.importlib.import_module('cora.matlab')
     Zpy = m.zonotope(m.tensor(c), m.tensor(G))
 """
+import numpy as np
+
 from . import Interval, LinearSys, Tensor, Zonotope
 
 
@@ -32,3 +34,14 @@ def intervalMatrix(inf, sup):
 def linearSys(A):
     """linearSys - the linear system x' = A x."""
     return LinearSys(A)
+
+
+def zonotopes(sets):
+    """zonotopes - (centers (N, n), generators (n, sum m) side by side, counts (N,)) of N zonotopes.
+
+    One call instead of a few per set: MATLAB pays for every crossing into python.
+    """
+    centers = np.stack([np.asarray(Z.c) for Z in sets])
+    generators = np.concatenate([np.asarray(Z.G) for Z in sets], axis=1)
+    counts = np.array([np.asarray(Z.G).shape[1] for Z in sets], dtype=float)
+    return centers, generators, counts

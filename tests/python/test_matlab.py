@@ -28,4 +28,13 @@ def test_reach_on_a_linear_system():
     R = sys.reach(X0, 0.1, 0.5, 4)
     assert len(R.timePoint) == 6 and len(R.timeInt) == 5
 
+def test_zonotopes_of_a_reach_set():
+    sys = matlab.linearSys(matlab.tensor([[-1.0, 0.0], [0.0, -2.0]]))
+    X0 = matlab.zonotope(matlab.tensor([1.0, 1.0]), matlab.tensor([[0.1, 0.0], [0.0, 0.1]]))
+    sets = sys.reach(X0, 0.1, 0.5, 4).timeInt
+    centers, generators, counts = matlab.zonotopes(sets)
+    assert centers.shape == (5, 2) and generators.shape == (2, counts.sum())
+    first = int(counts[0])
+    assert np.allclose(centers[0], sets[0].c) and np.allclose(generators[:, :first], sets[0].G)
+
 # ----------------------------------------  END OF CODE  ----------------------------------------- #
