@@ -1,0 +1,22 @@
+{
+  "format": "cora-benchmark-1",
+  "benchmark": "Beam",
+  "instance": "CBF02",
+  "label": "CBF02",
+  "verifyAlg": "reachavoid:supportFunc",
+  "tFinal": 0.01,
+  "data": "CBF02.bin",
+  "matrices": {
+    "A": {"shape": [1000, 1000], "storage": "coo", "offset": 0, "nnz": 3496},
+    "B": {"shape": [1000, 1000], "storage": "coo", "offset": 55936, "nnz": 1000},
+    "C": {"shape": [1, 1000], "storage": "coo", "offset": 71936, "nnz": 1},
+    "R0c": {"shape": [1000, 1], "storage": "coo", "offset": 71952, "nnz": 0},
+    "R0G": {"shape": [1000, 0], "storage": "dense", "offset": 71952, "nnz": 0},
+    "Uc": {"shape": [1000, 1], "storage": "coo", "offset": 71952, "nnz": 1},
+    "UG": {"shape": [1000, 1], "storage": "coo", "offset": 71968, "nnz": 1}
+  },
+  "specs": [
+    {"type": "safeSet", "A": [[1]], "b": [74]}
+  ],
+  "expected": {"verified": 1, "iterations": 3, "nrSteps": 2500, "timeStep": 4.0000000000000007e-06}
+}
