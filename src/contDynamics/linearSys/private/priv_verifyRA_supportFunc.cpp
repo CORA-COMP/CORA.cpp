@@ -387,6 +387,10 @@ VerifyResult priv_verifyRA_supportFunc(const LinearSys &sys, const VerifyParams 
             throw std::invalid_argument("LinearSys::verify: U must be a zonotope of dim(B.cols)");
         u = B.matmul(params.U.c);
         if (params.U.G.shape()[1] > 0) GU = B.matmul(params.U.G);
+        // Zero generators add no uncertainty; dropping them keeps the no-input path.
+        bool anyGen = false;
+        for (double v : GU.data()) anyGen = anyGen || v != 0;
+        if (!anyGen) GU = Tensor::like(A, {}, {n, 0});
     } else {
         for (double v : params.U.c.data())
             if (v != 0) throw std::invalid_argument("LinearSys::verify: U given without a B");
