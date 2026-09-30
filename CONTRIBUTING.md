@@ -95,11 +95,10 @@ encloses every rounding error, in `binary64`, `ieee:<format>`, `dyadic:<p>` or `
 computation runs in a separate process, the CORALean `oracle`, that CORA.cpp starts and talks to with
 one JSON line per request.
 
-Two executables serve it: the `oracle` (sound, every dtype above) and the `oracle-bench`, which also
-offers `float` (native binary64, sound under the hardware axioms) and `nearest` (round-to-nearest, no
-guarantees). `nearest` is what the `lean` Tensor backend (`setBackend("lean")`) must match bit for
-bit; `tests/lean/test_lean_backend.cpp` checks that. The dtypes `float` and `nearest` go to the bench
-oracle automatically.
+Two executables serve it: the `oracle` (sound, every dtype above) and the `oracle-unsound`, which
+offers `nearest` (round-to-nearest, no guarantees). `nearest` is what the `lean` Tensor backend
+(`setBackend("lean")`) must match bit for bit; `tests/lean/test_lean_backend.cpp` checks that. The
+dtype `nearest` goes to the unsound oracle automatically.
 
 Use a local build (CORALean needs Lean via elan, leanprover.github.io):
 
@@ -110,7 +109,7 @@ cmake --preset cpp -DCORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle
 cmake --build --preset cpp && ctest --preset cpp -R lean
 ```
 
-`CORACPP_ORACLE` (and `CORACPP_ORACLE_BENCH`) is OFF, `DOWNLOAD`, or the executable or a shell
+`CORACPP_ORACLE` (and `CORACPP_ORACLE_UNSOUND`) is OFF, `DOWNLOAD`, or the executable or a shell
 command that starts it (`cd /path/to/coralean && lake exe oracle`); without an oracle the tests and
 examples named `*lean*` skip. Outside CMake, set the environment variable of the same name. From WSL,
 the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pinned in
@@ -124,9 +123,9 @@ The `oracle` CI job (`.github/workflows/ci.yml`) is defined and disabled (`if: f
 
 1. Publish CORALean (public repository or public releases); CORA.cpp may move to GitLab later, only
    the URL in `scripts/coralean.cmake` changes.
-2. CORALean CI builds `oracle` and `oracle-bench` for Linux x86_64 and attaches them to a release
-   as `oracle-linux-x86_64` and `oracle-bench-linux-x86_64`, with their SHA-256.
-3. Put `float` and `nearest` into the bench oracle only: `nearest` rests on a false axiom that
+2. CORALean CI builds `oracle` and `oracle-unsound` for Linux x86_64 and attaches them to a release
+   as `oracle-linux-x86_64` and `oracle-unsound-linux-x86_64`, with their SHA-256.
+3. Put `nearest` into the unsound oracle only: `nearest` rests on a false axiom that
    CORALean's hook allows under `Examples/Bench/` alone, so it needs an executable of its own there.
    The branch `experiment/oracle-native-dtypes` (local, in CORALean) has the dtype code.
 4. Fill `CORALEAN_VERSION` and both hashes in `scripts/coralean.cmake`, remove `if: false`.

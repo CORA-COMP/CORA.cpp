@@ -63,6 +63,6 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: oracle
-      - run: cmake --preset cpp -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_BENCH=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - run: cmake --preset cpp -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - run: cmake --build --preset cpp
       - run: ctest --preset cpp -R '^lean/' --output-on-failure

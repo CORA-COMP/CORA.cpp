@@ -1,4 +1,4 @@
-// test_lean_backend - the lean Tensor backend, and with CORACPP_ORACLE_BENCH set its match with CORALean
+// test_lean_backend - the lean Tensor backend, and with CORACPP_ORACLE_UNSOUND set its match with CORALean
 //
 // The backend rounds and orders its operations as CORALean does at dtype "nearest": a zonotope
 // operation of CORA.cpp on it must give the oracle's numbers bit for bit.
@@ -44,7 +44,7 @@ int main() {
     test::check(throws([] { Tensor({{1.0}}).expm(); }), "expm is not available");
     test::check(throws([] { setBackend("lean:cuda"); }), "no devices");
 
-    if (std::getenv("CORACPP_ORACLE_BENCH")) {
+    if (std::getenv("CORACPP_ORACLE_UNSOUND")) {
         lean::setDType("nearest");
         std::mt19937_64 gen(7);
         for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 200}}) {

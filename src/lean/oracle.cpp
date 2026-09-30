@@ -38,21 +38,21 @@ struct Process {
 #endif
 };
 
-// [0] the sound oracle (CORACPP_ORACLE), [1] the bench oracle (CORACPP_ORACLE_BENCH)
+// [0] the sound oracle (CORACPP_ORACLE), [1] the unsound oracle (CORACPP_ORACLE_UNSOUND)
 Process oracles[2];
 
 const char *aux_command(int which) {
-    const char *name = which ? "CORACPP_ORACLE_BENCH" : "CORACPP_ORACLE";
+    const char *name = which ? "CORACPP_ORACLE_UNSOUND" : "CORACPP_ORACLE";
     const char *command = std::getenv(name);
     if (!command || !*command)
         throw std::runtime_error(std::string("lean: set ") + name + " to the command that starts "
-                                 "the CORALean " + (which ? "bench " : "") + "oracle, e.g. "
+                                 "the CORALean " + (which ? "unsound " : "") + "oracle, e.g. "
                                  "'cd CORALean && lake exe oracle'");
     return command;
 }
 
-// The bench oracle serves the dtypes without a soundness guarantee.
-int aux_which(const std::string &dtype) { return dtype == "float" || dtype == "nearest"; }
+// The unsound oracle serves the dtype without a soundness guarantee.
+int aux_which(const std::string &dtype) { return dtype == "nearest"; }
 
 #ifdef _WIN32
 

@@ -1,12 +1,12 @@
 # oracle - the CORALean oracle that the lean tests, examples and Python package run against
 # Included by CMakeLists.txt. CORACPP_ORACLE is OFF, DOWNLOAD (the release pinned in
 # scripts/coralean.cmake) or a command that starts the oracle; the tests skip what needs it when OFF.
-# CORACPP_ORACLE_BENCH is the same for the bench oracle (dtypes float and nearest).
+# CORACPP_ORACLE_UNSOUND is the same for the unsound oracle (dtype nearest, no guarantees).
 
 set(CORACPP_ORACLE "OFF" CACHE STRING "The CORALean oracle: OFF, DOWNLOAD, or the command that starts it")
-set(CORACPP_ORACLE_BENCH "OFF" CACHE STRING "The CORALean bench oracle: OFF, DOWNLOAD, or a command")
+set(CORACPP_ORACLE_UNSOUND "OFF" CACHE STRING "The CORALean unsound oracle: OFF, DOWNLOAD, or a command")
 
-# The command for `which` (ORACLE or ORACLE_BENCH), fetching the pinned release if asked to.
+# The command for `which` (ORACLE or ORACLE_UNSOUND), fetching the pinned release if asked to.
 function(cora_oracle_command which out)
   set(setting "${CORACPP_${which}}")
   if(setting STREQUAL "DOWNLOAD")
@@ -25,7 +25,7 @@ function(cora_oracle_command which out)
 endfunction()
 
 set(coracpp_oracle_env "")
-foreach(which ORACLE ORACLE_BENCH)
+foreach(which ORACLE ORACLE_UNSOUND)
   if(NOT CORACPP_${which} STREQUAL "OFF")
     cora_oracle_command(${which} command)
     list(APPEND coracpp_oracle_env "CORACPP_${which}=${command}")
