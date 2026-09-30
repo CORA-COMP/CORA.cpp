@@ -41,8 +41,8 @@ fetched if it is not installed.
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
-ctest --test-dir build -j4                    # tests and C++ examples
+cmake --build build --parallel --config Release
+ctest --test-dir build -j4 -C Release          # tests and C++ examples
 ```
 
 **Optional: torch backend and Python package** (GPU, batching, gradients). Install torch into a
@@ -54,7 +54,7 @@ pytorch.org instead):
 python -m venv .venv                          # or: uv venv
 source .venv/bin/activate                     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt               # torch, numpy, matplotlib (uv: uv pip install -r ...)
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel --config Release
 PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py    # Windows: set PYTHONPATH=build
 ```
 

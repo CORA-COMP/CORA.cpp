@@ -5,42 +5,92 @@ on:
     branches: [main]
   pull_request:
 
-env:
-  # No -march=native: the runners differ in CPU, and a build must run on the one that tests it.
-  CMAKE_FLAGS: -G Ninja -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+# The install jobs run the commands of the README, with one addition: no -march=native, because the
+# runners differ in CPU and a build must run on the one that tests it.
 
 jobs:
-  # The library on Eigen alone: the conventions, the C++ tests, and the C++ examples.
-  eigen:
+  # README, "C++ only", on the three platforms: the library, the tests and the examples on Eigen.
+  cpp-linux:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: eigen
-      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev ninja-build
-      - run: cmake -S . -B build $CMAKE_FLAGS -DCORACPP_TORCH=OFF
-      - run: cmake --build build --parallel
-      - run: ctest --test-dir build -j$(nproc) --output-on-failure
+          key: cpp-linux
+      - run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel --config Release
+          ctest --test-dir build -j4 -C Release --output-on-failure
 
-  # With libtorch on the CPU: batching and gradients, and the Python package with its tests.
-  torch:
-    runs-on: ubuntu-24.04
-    env:
-      CORACPP_ENV: none  # the tests that run scripts/with_env.sh use this Python, not a conda env
+  cpp-macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: torch
-      - uses: actions/setup-python@v5
+          key: cpp-macos
+      - run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel --config Release
+          ctest --test-dir build -j4 -C Release --output-on-failure
+
+  cpp-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF
+          cmake --build build --parallel --config Release
+          ctest --test-dir build -j4 -C Release --output-on-failure
+
+  # README, "Optional: torch backend and Python package": a virtual environment, requirements.txt,
+  # then the same build; the Python tests run with the package on PYTHONPATH.
+  torch-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          python-version: "3.12"
-      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev ninja-build
-      - run: pip install numpy matplotlib && pip install torch --index-url https://download.pytorch.org/whl/cpu
-      - run: cmake -S . -B build $CMAKE_FLAGS
-      - run: cmake --build build --parallel
-      - run: ctest --test-dir build -j$(nproc) --output-on-failure
+          key: torch-linux
+      - run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel --config Release
+          ctest --test-dir build -j4 -C Release --output-on-failure
+          PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py
+
+  torch-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: torch-macos
+      - run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel --config Release
+          ctest --test-dir build -j4 -C Release --output-on-failure
+          PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py
+
+  torch-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: |
+          python -m venv .venv
+          .venv\Scripts\Activate.ps1
+          pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF
+          cmake --build build --parallel --config Release
+          ctest --test-dir build -j4 -C Release --output-on-failure
+          $env:PYTHONPATH = "build"
+          python examples/python/example_linear_reach_01_5dim.py
 
   # The CORA-COMP binary and its tests.
   competition:
@@ -50,75 +100,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: competition
-      - run: sudo apt-get update && sudo apt-get install -y libeigen3-dev libglpk-dev ninja-build
-      - run: cmake -S . -B build $CMAKE_FLAGS -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON
-      - run: cmake --build build --parallel
-      - run: ctest --test-dir build -j$(nproc) --output-on-failure -L competition
-
-  # Native Windows (MSVC) and macOS (clang), Eigen only: the library, tests and examples.
-  windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: windows
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - uses: ilammy/msvc-dev-cmd@v1
-      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - run: cmake --build build --parallel
-      - run: ctest --test-dir build -j4 --output-on-failure
-
-  macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: macos
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: brew install eigen ninja
-      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - run: cmake --build build --parallel
-      - run: ctest --test-dir build -j4 --output-on-failure
-
-  # The same with libtorch on the CPU: the torch backend and the Python package.
-  windows-torch:
-    runs-on: windows-latest
-    env:
-      CORACPP_ENV: none
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: windows-torch
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install numpy matplotlib && pip install torch --index-url https://download.pytorch.org/whl/cpu
-      - uses: ilammy/msvc-dev-cmd@v1
-      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - run: cmake --build build --parallel
-      - run: ctest --test-dir build -j4 --output-on-failure
-
-  macos-torch:
-    runs-on: macos-latest
-    env:
-      CORACPP_ENV: none
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: macos-torch
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: brew install eigen ninja
-      - run: pip install numpy matplotlib torch
-      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - run: cmake --build build --parallel
-      - run: ctest --test-dir build -j4 --output-on-failure
+      - run: sudo apt-get update && sudo apt-get install -y libglpk-dev
+      - run: |
+          cmake -S . -B build -DCORACPP_NATIVE=OFF -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel
+          ctest --test-dir build -j4 --output-on-failure -L competition
