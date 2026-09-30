@@ -36,31 +36,24 @@ plot(R)                                                                # dims de
 
 ## Install
 
-Needs a C++20 compiler, CMake and Eigen. The **torch backend** (GPU, batching, gradients, the
-Python package) is used whenever the Python that CMake finds has `torch` installed; without it the
-build is Eigen only.
-
-**Linux / WSL2, one script** (conda environment with compiler, CMake, Eigen and torch; the CUDA
-build of torch if there is an NVIDIA GPU, `--cpu` forces the CPU one):
+Needs a C++20 compiler, CMake and Eigen (fetched if missing). The **torch backend** (GPU, batching,
+gradients, the Python package) is used whenever the Python that CMake finds has `torch`; without it
+the build is Eigen only. Linux, macOS and Windows work; build inside a virtual environment:
 
 ```bash
-scripts/setup_local.sh
-scripts/with_env.sh scripts/build.sh            # library, examples, Python package
-scripts/with_env.sh scripts/test.sh -j4         # tests
-```
-
-**Any platform, by hand:**
-
-```bash
-pip install torch numpy matplotlib              # optional: enables the torch backend and Python package
+python -m venv .venv                          # or: uv venv
+source .venv/bin/activate                     # Windows: .venv\Scripts\activate
+pip install -r requirements.txt               # torch, numpy, matplotlib (uv: uv pip install -r ...)
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
-ctest --test-dir build -j4
+ctest --test-dir build -j4                    # tests
+PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py    # Windows: set PYTHONPATH=build
 ```
 
-`-DCORACPP_TORCH=OFF` forces Eigen only, `-DCORACPP_TORCH_DIR=/path/to/site-packages/torch` names
-another torch. In Python, `PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py`.
-In VS Code, open an example and press `F5`.
+Skip the first three lines for an Eigen-only build, or pass `-DCORACPP_TORCH=OFF`.
+On Linux and WSL2, `scripts/setup_local.sh` does all of this in a conda environment
+(`scripts/with_env.sh scripts/build.sh`, `scripts/with_env.sh scripts/test.sh -j4`). In VS Code, open an
+example and press `F5`.
 
 ## Examples
 
