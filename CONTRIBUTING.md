@@ -89,10 +89,27 @@ the checkout or recreating the environment. On Windows, `WSL: Reopen Folder in W
 
 ## CORALean oracle
 
-`cora::lean` (and `cora.lean` in Python) computes sound float sets with the CORALean project. Build
-its `oracle` (`lake build oracle` on the `oracle` branch of CORALean) and point `CORACPP_ORACLE` at
-the executable or a shell command that starts it; the tests and examples named `*lean*` use it and
-skip without it. From WSL the Windows `oracle.exe` works over its pipes.
+`cora::lean` (C++) and `cora.lean` (Python) compute sound floating-point sets with the
+[CORALean](https://gitlab.lrz.de/cps/coralean) project: a nominal zonotope plus an error box that
+encloses every rounding error, in `binary64`, `ieee:<format>`, `dyadic:<p>` or `fixedpoint:<f>`. The
+computation runs in a separate process, the CORALean `oracle`, that CORA.cpp starts and talks to with
+one JSON line per request.
+
+Setup (not part of the install presets yet):
+
+```bash
+git clone https://gitlab.lrz.de/cps/coralean.git && cd coralean    # needs Lean via elan (leanprover.github.io)
+lake exe cache get                                                  # prebuilt Mathlib
+lake build oracle                                                   # .lake/build/bin/oracle (oracle.exe on Windows)
+export CORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle      # Windows: set CORACPP_ORACLE=...
+```
+
+`CORACPP_ORACLE` is the executable or a shell command that starts it, for example
+`cd /path/to/coralean && lake exe oracle`. From WSL, the Windows `oracle.exe` works over its pipes.
+The tests and examples named `*lean*` (`ctest -R lean`, `example_lean_reach_01_oracle`) use it and skip
+without it. Protocol and operations: `experiments/oracle/README.md` in CORALean; the C++ side is
+`src/lean/`. A dtype is set with `lean::setDType("ieee:binary32")` and values cross into CORA.cpp only
+when they are exact doubles.
 
 ## Plotting
 
