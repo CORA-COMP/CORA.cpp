@@ -9,9 +9,7 @@
 // Outputs:  F - interval matrix (..., n, n)
 // See also: reach
 
-#include "contDynamics/linearSys/linearSys.h"
-
-#include <cmath>
+#include "contDynamics/linearSys/private/priv.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,11 +22,6 @@ namespace {
 /// The elementwise bound W on the series past the last term: |e^{|A| dt} - series|.
 Tensor aux_remainder(const Tensor &Aabs, double timeStep, const Tensor &series) {
     return ((Aabs * timeStep).expm() - series).abs();
-}
-
-/// The weight (i^(-i/(i-1)) - i^(-1/(i-1))) dt^i / i! of the i-th Taylor term.
-double aux_weight(int i, double dtOverFac) {
-    return (std::pow(i, -double(i) / (i - 1)) - std::pow(i, -1.0 / (i - 1))) * dtOverFac;
 }
 
 } // namespace
@@ -49,7 +42,7 @@ Interval LinearSys::correctionMatrixState(double timeStep, int taylorTerms) cons
         dtOverFac *= timeStep / i;
         series = series + Aiabs * dtOverFac;
         // The weight is negative: the negative part of A^i bounds F from above.
-        const double weight = aux_weight(i, dtOverFac);
+        const double weight = priv_extremalWeight(i, dtOverFac);
         Fpos = Fpos + Ai.neg() * weight;
         Fneg = Fneg + Ai.pos() * weight;
     }
