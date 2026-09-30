@@ -39,7 +39,7 @@
         "CORACPP_TORCH": "ON",
         "CORACPP_PYTHON": "ON",
         "CORACPP_VENV": "ON",
-        "CORACPP_VENV_REQUIREMENTS": "requirements.txt"
+        "CORACPP_VENV_REQUIREMENTS": "requirements-python-torch.txt"
       }
     },
     {

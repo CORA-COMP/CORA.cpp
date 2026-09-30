@@ -61,7 +61,7 @@ ctest --preset cpp
 
 - Eigen is downloaded if it is not installed.
 - The Python presets create `.venv` in the project folder and install into it only
-  (`requirements-python.txt`, or `requirements.txt` for torch). They need Python 3.
+  (`requirements-python.txt`, or `requirements-python-torch.txt` for torch). They need Python 3.
 - Use the package with `.venv`'s Python and `PYTHONPATH=build/python` (Windows: `set PYTHONPATH=build\python`).
 - CI builds `cpp`, `python` on Linux, macOS and Windows, and `torch`, `python-torch` on Linux only;
   the CUDA presets (CUDA 12.6) are not built there.

@@ -34,7 +34,7 @@ set(CORACPP_TORCH AUTO CACHE STRING "libtorch: AUTO (if the Python has torch), O
 set(CORACPP_TORCH_VERSION "2.14.0" CACHE STRING "The libtorch that CORACPP_TORCH=DOWNLOAD fetches")
 set(CORACPP_TORCH_VARIANT "cpu" CACHE STRING "cpu, or a CUDA variant such as cu126 (Linux and Windows)")
 option(CORACPP_VENV "Create .venv and pip install CORACPP_VENV_REQUIREMENTS into it, and use its Python" OFF)
-set(CORACPP_VENV_REQUIREMENTS "requirements.txt" CACHE STRING "The requirements file the virtual environment gets")
+set(CORACPP_VENV_REQUIREMENTS "requirements-python-torch.txt" CACHE STRING "The requirements file the virtual environment gets")
 set(CORACPP_VENV_TORCH_INDEX "https://download.pytorch.org/whl/cpu" CACHE STRING "Where pip gets torch for the virtual environment (.../whl/cu126 for CUDA)")
 set(CORACPP_PYTHON AUTO CACHE STRING "The Python package: AUTO (if torch and Python.h are there), ON, OFF")
 set(CORACPP_TORCH_DIR "" CACHE PATH "The torch package directory (default: that of the Python found)")
