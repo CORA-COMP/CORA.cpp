@@ -1,7 +1,8 @@
 // reduce - fewer generators for a zonotope, as CORA's zonotope.reduce with method "girard"
 //
-// The longest generators stay; the others are replaced by the box that encloses them. The result
-// contains the zonotope and has at most order * n generators (n the dimension).
+// The generators that cost the most to box stay, by Girard's metric ||g||_1 - ||g||_inf (zero on an
+// axis-aligned one); the others are replaced by the box that encloses them. The result contains the
+// zonotope and has at most order * n generators (n the dimension).
 //
 // Syntax:   Zred = Z.reduce(order);
 // Inputs:   order - the largest number of generators per dimension, at least 1
@@ -29,17 +30,18 @@ Zonotope Zonotope::reduce(int order) const {
     const int64_t n = shape[0], m = shape[1];
     if (m <= order * n) return *this;
 
-    // Which generators stay is decided on their lengths; the sets are then built from tensors.
-    const std::vector<double> len = G.mul(G).transpose().sumLast().data();  // squared lengths
-    std::vector<int64_t> byLength(m);
-    std::iota(byLength.begin(), byLength.end(), 0);
-    std::stable_sort(byLength.begin(), byLength.end(),
-                     [&](int64_t a, int64_t b) { return len[a] > len[b]; });
+    // Which generators stay is decided on the metric; the sets are then built from tensors.
+    const Tensor absT = G.abs().transpose();
+    const std::vector<double> metric = (absT.sumLast() - absT.maxLast()).data();
+    std::vector<int64_t> byMetric(m);
+    std::iota(byMetric.begin(), byMetric.end(), 0);
+    std::stable_sort(byMetric.begin(), byMetric.end(),
+                     [&](int64_t a, int64_t b) { return metric[a] > metric[b]; });
 
     // The kept generators come first, then one box generator per dimension.
     const int64_t keep = order * n - n;
-    const std::vector<int64_t> kept(byLength.begin(), byLength.begin() + keep);
-    const std::vector<int64_t> rest(byLength.begin() + keep, byLength.end());
+    const std::vector<int64_t> kept(byMetric.begin(), byMetric.begin() + keep);
+    const std::vector<int64_t> rest(byMetric.begin() + keep, byMetric.end());
     const Tensor box = G.selectCols(rest).abs().sumLast().diag();
     return {c, keep == 0 ? box : Tensor::catLast({G.selectCols(kept), box})};
 }

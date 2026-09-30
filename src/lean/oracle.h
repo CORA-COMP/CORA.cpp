@@ -1,7 +1,8 @@
 // oracle - the dtype of new lean objects and the process that computes them (CORALean)
 //
 // Syntax:     lean::setDType("binary64");   Json r = lean::call(request);
-// dtypes:     "binary64", "ieee:<format>" (e.g. ieee:binary32), "dyadic:<p>", "fixedpoint:<f>"
+// dtypes:     "binary64", "ieee:<format>" (e.g. ieee:binary32), "dyadic:<p>", "fixedpoint:<f>",
+//             "float" (native binary64, sound), "nearest" (native round-to-nearest, unsound)
 // Process:    the command in CORACPP_ORACLE (run by sh -c) speaks one JSON line per request and
 //             response, e.g. "cd CORALean && lake exe oracle"; it starts on the first call
 // See also:   lean/tensor.h, lean/zonotope.h

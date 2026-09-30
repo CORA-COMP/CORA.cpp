@@ -4,7 +4,7 @@
 // algorithms need, so an algorithm is written once and runs on any of them. The backend is
 // chosen once for the program, or from outside with CORACPP_BACKEND:
 //
-//     cora::setBackend("torch");                 // "eigen", "torch", "torch:cuda"
+//     cora::setBackend("torch");                 // "eigen", "torch", "torch:cuda", "lean"
 //     cora::Tensor A({{0, 1}, {-1, 0}});         // built on that backend
 //
 // Layout: the last two dimensions are the matrix, (..., rows, cols); a vector is a column

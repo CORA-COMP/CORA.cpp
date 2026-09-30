@@ -139,11 +139,13 @@ std::string aux_readLine() {
 void setDType(const std::string &spec) {
     const std::string kind = spec.substr(0, spec.find(':'));
     const bool hasArg = spec.find(':') != std::string::npos;
-    const bool known = (spec == "binary64") || (kind == "ieee" && hasArg) ||
+    const bool known = (spec == "binary64") || spec == "float" || spec == "nearest" ||
+                       (kind == "ieee" && hasArg) ||
                        (kind == "dyadic" && hasArg) || (kind == "fixedpoint" && hasArg);
     if (!known)
         throw std::invalid_argument("lean: unknown dtype '" + spec + "'; use 'binary64', "
-                                    "'ieee:<format>', 'dyadic:<p>' or 'fixedpoint:<f>'");
+                                    "'ieee:<format>', 'dyadic:<p>', 'fixedpoint:<f>', 'float' or "
+                                    "'nearest'");
     current = spec;
 }
 

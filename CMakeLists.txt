@@ -69,6 +69,10 @@ else()
   set(fast_math -ffast-math)
 endif()
 set_source_files_properties("${CMAKE_SOURCE_DIR}/src/global/rng.cpp" PROPERTIES COMPILE_OPTIONS "${fast_math}")
+# The lean backend rounds every product and every sum, as CORALean does: no fused multiply-add.
+if(NOT MSVC)
+  set_source_files_properties("${CMAKE_SOURCE_DIR}/src/tensor/lean.cpp" PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+endif()
 
 # ------------------------------------------- tests ------------------------------------------------
 # tests/ mirrors src/; a test ending in _torch needs libtorch. test_codingConventions.py checks the

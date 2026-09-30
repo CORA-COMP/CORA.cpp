@@ -6,6 +6,7 @@
 #include "tensor/tensor.h"
 
 #include "tensor/eigen.h"
+#include "tensor/lean.h"
 #ifdef CORACPP_TORCH
 #include "tensor/torch.h"
 #endif
@@ -49,15 +50,21 @@ std::shared_ptr<const Tensor::Backend> aux_makeBackend(const std::string &spec) 
             throw std::invalid_argument("CoraTensor: the eigen backend has no device or options");
         return eigenBackend();
     }
+    // The reference backend of the CORALean oracle.
+    if (name == "lean") {
+        if (colon != std::string::npos || !option.empty())
+            throw std::invalid_argument("CoraTensor: the lean backend has no device or options");
+        return leanBackend();
+    }
     // libtorch, where it is built in.
 #ifdef CORACPP_TORCH
     if (name == "torch") return torchBackend(torchDevice(device), option == "customBackward");
 #endif
-    throw std::invalid_argument("CoraTensor: no backend '" + name + "' in this build; use eigen" +
+    throw std::invalid_argument("CoraTensor: no backend '" + name + "' in this build; use eigen, " +
 #ifdef CORACPP_TORCH
-                                " or torch"
+                                "lean or torch"
 #else
-                                " (this build has no libtorch)"
+                                "or lean (this build has no libtorch)"
 #endif
     );
 }
