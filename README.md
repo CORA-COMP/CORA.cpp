@@ -1,5 +1,3 @@
-
-CI builds `cpp`, `torch`, `python` and `python-torch` on Linux, and `cpp` and `python` on macOS and Windows; the CUDA presets are not built there (CUDA 12.6, `-DCORACPP_TORCH_VARIANT=cu128` for another).
 # CORA.cpp
 
 Parts of [CORA](https://cora.in.tum.de), the toolbox for set-based computing, in C++ and Python.
