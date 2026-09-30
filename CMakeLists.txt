@@ -67,7 +67,10 @@ if(MSVC)
 else()
   # Eigen's AVX512 triangular-solve kernel makes GCC 16 report uninitialized values and out-of-bounds
   # accesses that are not there; those two are off so that a real warning is visible.
-  target_compile_options(cora_flags INTERFACE -Wall -Wextra -Wno-maybe-uninitialized -Wno-array-bounds)
+  target_compile_options(cora_flags INTERFACE -Wall -Wextra)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(cora_flags INTERFACE -Wno-maybe-uninitialized -Wno-array-bounds)
+  endif()
   target_compile_options(cora_flags INTERFACE "$<$<CONFIG:Release>:-O3>" "$<$<CONFIG:Debug>:-O0;-g>")
   target_compile_definitions(cora_flags INTERFACE "$<$<CONFIG:Release>:NDEBUG;EIGEN_NO_DEBUG>")
   if(CORACPP_NATIVE AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")

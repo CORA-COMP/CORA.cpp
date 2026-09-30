@@ -60,11 +60,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: windows
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - uses: ilammy/msvc-dev-cmd@v1
-      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF
+      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - run: cmake --build build --parallel
       - run: ctest --test-dir build -j4 --output-on-failure
 
@@ -72,11 +75,14 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: macos
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: brew install eigen ninja
-      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF
+      - run: cmake -S . -B build -G Ninja -DCORACPP_TORCH=OFF -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - run: cmake --build build --parallel
       - run: ctest --test-dir build -j4 --output-on-failure
 
@@ -87,12 +93,15 @@ jobs:
       CORACPP_ENV: none
     steps:
       - uses: actions/checkout@v4
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: windows-torch
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install numpy matplotlib && pip install torch --index-url https://download.pytorch.org/whl/cpu
       - uses: ilammy/msvc-dev-cmd@v1
-      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF
+      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - run: cmake --build build --parallel
       - run: ctest --test-dir build -j4 --output-on-failure
 
@@ -102,11 +111,14 @@ jobs:
       CORACPP_ENV: none
     steps:
       - uses: actions/checkout@v4
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: macos-torch
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: brew install eigen ninja
       - run: pip install numpy matplotlib torch
-      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF
+      - run: cmake -S . -B build -G Ninja -DCORACPP_NATIVE=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - run: cmake --build build --parallel
       - run: ctest --test-dir build -j4 --output-on-failure
