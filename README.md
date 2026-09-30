@@ -81,4 +81,4 @@ Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.
 `[k*timeStep, (k+1)*timeStep]` and `R.timePoint[k]` is at `k*timeStep` (0-based).
 
 [`competition/`](competition/README.md) holds the CORA-COMP entry; see
-[CONTRIBUTING.md](.github/CONTRIBUTING.md) to work on the library.
+[CONTRIBUTING.md](CONTRIBUTING.md) to work on the library.
