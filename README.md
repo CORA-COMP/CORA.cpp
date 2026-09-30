@@ -41,7 +41,7 @@ plot(R)                                                                # dims de
 Needs a C++20 compiler and CMake 3.25 or newer, on Linux, macOS or Windows:
 
 ```bash
-cmake --workflow --preset cpp         # or: torch, python, python-torch
+cmake --workflow --preset cpp         # or: torch, torch-cuda, python, python-torch, python-torch-cuda
 ```
 
 The same in separate steps:
@@ -52,16 +52,14 @@ cmake --build --preset cpp
 ctest --preset cpp
 ```
 
-The preset chooses what is added to the C++ library on Eigen:
-
-| preset | adds |
+| preset | installs |
 | --- | --- |
-| `cpp` | nothing |
-| `torch` | libtorch for GPU, batching and gradients; it is downloaded, no Python needed |
-| `python` | the Python package on numpy (creates `.venv`) |
-| `python-torch` | the Python package with torch tensors (creates `.venv`, installs torch into it) |
-| `torch-cuda` | `torch` with a CUDA libtorch (large download; needs an NVIDIA driver to run) |
-| `python-torch-cuda` | `python-torch` with CUDA torch |
+| `cpp` | eigen |
+| `torch` | eigen + torch |
+| `torch-cuda` | eigen + torch + cuda |
+| `python` | eigen + python + numpy |
+| `python-torch` | eigen + python + numpy + torch |
+| `python-torch-cuda` | eigen + python + numpy + torch + cuda |
 
 - Eigen is downloaded if it is not installed.
 - The Python presets create `.venv` in the project folder and install into it only
