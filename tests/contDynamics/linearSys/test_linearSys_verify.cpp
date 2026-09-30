@@ -60,7 +60,8 @@ void matches(const char *name, const VerifyResult &r, const Expected &e) {
     check(r.fals.has_value() == (e.falsT >= 0), w + "falsification found");
     if (r.fals && e.falsT >= 0) {
         check(test::close(r.fals->tFinal, e.falsT, 1e-12), w + "falsification time");
-        check(test::close(r.fals->x0, e.x0, 1e-12), w + "falsifying initial state");
+        if (!e.x0.empty())
+            check(test::close(r.fals->x0, e.x0, 1e-12), w + "falsifying initial state");
     }
 }
 
@@ -123,6 +124,32 @@ int main() {
             {true, 1, 0.040000000000000001, 100, -1, none0});
     matches("L", sys3.verify({R03, zono({0.1}, {0.05}, 1), 4}, S, {safe({1}, 2.202)}),
             {true, 2, 0.0080000000000000002, 500, -1, none0});
+
+    // A sparse A (40-state chain, 7% nonzeros: sparse powers and expm). Reference: A = 5 (-2 I +
+    // superdiagonal + subdiagonal) with A(1,2) = 7, R0 = zonotope(e1, [0.2 e1, 0.1 e2]), C = e10'
+    // as output, B = 0 (U with a zero generator) or B = e1 with U = zonotope(0.5, 0.1), tFinal 2.
+    const int n = 40;
+    std::vector<double> Ach(n * n, 0.0), c0(n, 0.0), G0(n * 2, 0.0), Cch(n, 0.0), B1(n, 0.0);
+    for (int i = 0; i < n; ++i) {
+        Ach[i * n + i] = -10;
+        if (i + 1 < n) Ach[i * n + i + 1] = 5, Ach[(i + 1) * n + i] = 5;
+    }
+    Ach[1] = 7;
+    c0[0] = 1, G0[0] = 0.2, G0[3] = 0.1, Cch[9] = 1, B1[0] = 1;
+    const Zonotope R0ch = zono(c0, G0, 2);
+    const LinearSys chain0(mat(n, n, Ach), mat(n, 1, std::vector<double>(n, 0.0)), mat(1, n, Cch));
+    const LinearSys chain1(mat(n, n, Ach), mat(n, 1, B1), mat(1, n, Cch));
+    const Zonotope zeroGen = zono({0}, {0}, 1), u1 = zono({0.5}, {0.1}, 1);
+    matches("chain safe", chain0.verify({R0ch, zeroGen, 2}, S, {safe({1}, 0.014)}),
+            {true, 1, 0.02, 100, -1, none0});
+    matches("chain hit", chain0.verify({R0ch, zeroGen, 2}, S, {safe({1}, 0.012)}),
+            {false, 1, 0.02, 100, 1.98, none0});
+    matches("chain hit 2", chain0.verify({R0ch, zeroGen, 2}, S, {safe({1}, 0.011)}),
+            {false, 1, 0.02, 100, 1.84, none0});
+    matches("chain input", chain1.verify({R0ch, u1, 2}, S, {safe({1}, 0.005)}),
+            {false, 1, 0.02, 100, 1.16, none0});
+    matches("chain input 2", chain1.verify({R0ch, u1, 2}, S, {safe({1}, 0.001)}),
+            {false, 1, 0.02, 100, 0.72, none0});
 
     // Unsupported input is refused.
     check(test::throws([&] { osc1.verify({R0, u05, 5}, VerifyAlg::Zonotope, {safe({1, 0}, 2)}); }),

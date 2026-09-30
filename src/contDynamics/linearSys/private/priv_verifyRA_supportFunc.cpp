@@ -21,6 +21,9 @@
 #include <cmath>
 #include <limits>
 #include <optional>
+#if defined(__SSE3__)
+#include <pmmintrin.h>
+#endif
 #include <stdexcept>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -42,10 +45,29 @@ constexpr double kMinTimeStep = 1e-12;
 
 using Intervals = std::vector<std::array<double, 2>>;
 
-/// A^i / i! and its positive and negative parts, kept over the passes; A^-1 if A is invertible.
+/// Flushes denormal numbers to zero while it lives: the powers and squarings of a stiff matrix
+/// underflow through the denormal range, where every product is slow, and nothing there counts.
+struct FlushDenormals {
+#if defined(__SSE3__)
+    unsigned saved = _mm_getcsr();
+    FlushDenormals() { _mm_setcsr(saved | 0x8040); }
+    ~FlushDenormals() { _mm_setcsr(saved); }
+#endif
+};
+
+/// A matrix by rows of nonzeros.
+struct Csr {
+    std::vector<int64_t> rowPtr, colIdx;
+    std::vector<double> val;
+};
+
+/// A^i / i!, kept over the passes; A^-1 if A is invertible.
 struct Expmat {
-    std::vector<Tensor> Apower, Apos, Aneg;
+    std::vector<std::vector<double>> Apower;  // row-major (n, n), on the host
     std::optional<Tensor> Ainv;
+    // A by rows (CSR) when it is sparse: the powers then cost n nnz(A) instead of n^3.
+    bool sparseA = false;
+    Csr a;
 };
 
 /// An interval matrix as its center and radius.
@@ -113,63 +135,169 @@ std::optional<Tensor> aux_inverse(const Tensor &A) {
 
 // Taylor sums -------------------------------------------------------------------------------------
 
+/// The nonzeros of the row-major (n, n) matrix m by rows.
+Csr aux_csr(const std::vector<double> &m, int64_t n) {
+    Csr c;
+    c.rowPtr.assign(1, 0);
+    for (int64_t i = 0; i < n; ++i) {
+        for (int64_t j = 0; j < n; ++j)
+            if (m[i * n + j] != 0) {
+                c.colIdx.push_back(j);
+                c.val.push_back(m[i * n + j]);
+            }
+        c.rowPtr.push_back(static_cast<int64_t>(c.val.size()));
+    }
+    return c;
+}
+
+/// Keeps A in rows of nonzeros if fewer than a tenth of its entries are nonzero.
+void aux_initSparse(Expmat &E, const Tensor &A) {
+    const int64_t n = A.shape()[0];
+    Csr c = aux_csr(A.data(), n);
+    if (c.val.size() < 0.1 * double(n) * double(n)) {
+        E.sparseA = true;
+        E.a = std::move(c);
+    }
+}
+
+/// x B / d for a dense x (n, n) and a sparse B; B's rows skip the zero entries of x.
+std::vector<double> aux_mulCsr(const std::vector<double> &x, const Csr &B, int64_t n, double d) {
+    std::vector<double> out(n * n, 0.0);
+    for (int64_t i = 0; i < n; ++i)
+        for (int64_t k = 0; k < n; ++k) {
+            const double xik = x[i * n + k];
+            if (xik == 0) continue;
+            for (int64_t q = B.rowPtr[k]; q < B.rowPtr[k + 1]; ++q)
+                out[i * n + B.colIdx[q]] += xik * B.val[q];
+        }
+    for (double &v : out) v /= d;
+    return out;
+}
+
+/// X A / d for a dense X (n, n) on the host.
+std::vector<double> aux_timesA(
+    const Expmat &E, const Tensor &A, const std::vector<double> &x, double d) {
+    const int64_t n = A.shape()[0];
+    if (E.sparseA) return aux_mulCsr(x, E.a, n, d);
+    const Tensor X = Tensor::like(A, x, {n, n});
+    return (X.matmul(A) * (1.0 / d)).data();
+}
+
+/// The multiplications that square m are cheaper as sparse rows than as a dense product.
+bool aux_sparseSquareWins(const std::vector<double> &m, int64_t n) {
+    std::vector<double> rowCount(n, 0.0), colCount(n, 0.0);
+    for (int64_t i = 0; i < n; ++i)
+        for (int64_t j = 0; j < n; ++j)
+            if (m[i * n + j] != 0) {
+                rowCount[i] += 1;
+                colCount[j] += 1;
+            }
+    double flops = 0;
+    for (int64_t k = 0; k < n; ++k) flops += colCount[k] * rowCount[k];
+    return flops < 0.1 * double(n) * double(n) * double(n);
+}
+
+/// e^{A timeStep} by scaling and squaring with a Taylor series of the scaled A, whose terms are
+/// products with sparse A; the first squarings stay sparse too. A dense A uses the backend.
+Tensor aux_expm(const Tensor &A, const Expmat &E, double timeStep) {
+    if (!E.sparseA) return (A * timeStep).expm();
+    const int64_t n = A.shape()[0];
+    // The scaled norm the series takes: 2^k / k! is below 1e-18 at k = 27.
+    const double theta = 2.0;
+    std::vector<double> colSum(n, 0.0);
+    for (std::size_t q = 0; q < E.a.val.size(); ++q) colSum[E.a.colIdx[q]] += std::abs(E.a.val[q]);
+    const double norm1 = *std::max_element(colSum.begin(), colSum.end()) * timeStep;
+    const int s = norm1 > theta ? static_cast<int>(std::ceil(std::log2(norm1 / theta))) : 0;
+    const double h = std::ldexp(timeStep, -s);
+    // The Taylor series of e^{A h}: term_k = term_{k-1} (A h) / k, summed until it is negligible.
+    Csr X = E.a;
+    for (double &v : X.val) v *= h;
+    std::vector<double> sum(n * n, 0.0), term(n * n, 0.0);
+    for (int64_t i = 0; i < n; ++i) sum[i * n + i] = term[i * n + i] = 1.0;
+    for (int k = 1; k <= 60; ++k) {
+        term = aux_mulCsr(term, X, n, k);
+        double maxTerm = 0, maxSum = 0;
+        for (std::size_t i = 0; i < sum.size(); ++i) {
+            sum[i] += term[i];
+            maxTerm = std::max(maxTerm, std::abs(term[i]));
+            maxSum = std::max(maxSum, std::abs(sum[i]));
+        }
+        if (maxTerm <= 1e-18 * maxSum) break;
+    }
+    // Square back up to e^{A timeStep}; sparse products while they are cheaper than a dense one.
+    int squared = 0;
+    while (squared < s && aux_sparseSquareWins(sum, n)) {
+        sum = aux_mulCsr(sum, aux_csr(sum, n), n, 1.0);
+        ++squared;
+    }
+    Tensor result = Tensor::like(A, sum, {n, n});
+    for (; squared < s; ++squared) result = result.matmul(result);
+    return result;
+}
+
 /// Makes Apower hold A^i / i! up to i = eta (entry i - 1).
 void aux_getApower(Expmat &E, const Tensor &A, int eta) {
     while (static_cast<int>(E.Apower.size()) < eta) {
         const int i = static_cast<int>(E.Apower.size());
-        E.Apower.push_back(E.Apower.back().matmul(A) * (1.0 / (i + 1)));
+        E.Apower.push_back(aux_timesA(E, A, E.Apower.back(), i + 1));
     }
 }
 
-/// Makes Apos and Aneg hold the parts of A^eta / eta! (Apower must reach eta).
-void aux_getAposneg(Expmat &E, int eta) {
-    if (static_cast<int>(E.Apos.size()) < eta) {
-        E.Apos.resize(eta);
-        E.Aneg.resize(eta);
+/// A^i / i! as a tensor (Apower must reach i).
+Tensor aux_powerTensor(const Expmat &E, const Tensor &A, int i) {
+    const int64_t n = A.shape()[0];
+    return Tensor::like(A, E.Apower[i - 1], {n, n});
+}
+
+/// The sums of one Taylor term a scaled by f (f < 0) into pos (from the negative part of a) and
+/// neg (from the positive part). If the term no longer changes the sums, rad and center of the
+/// interval matrix [neg, pos] before the term are written; the return value says whether it held.
+bool aux_sumStep(
+    const std::vector<double> &a, double f, std::vector<double> &pos, std::vector<double> &neg,
+    std::vector<double> &rad, std::vector<double> &center) {
+    const std::size_t nn = a.size();
+    bool converged = true;
+    for (std::size_t i = 0; i < nn && converged; ++i)
+        converged = f * std::min(a[i], 0.0) <= kEps * pos[i] &&
+                    f * std::max(a[i], 0.0) >= kEps * neg[i];
+    for (std::size_t i = 0; i < nn; ++i) {
+        if (converged) {
+            rad[i] = 0.5 * (pos[i] - neg[i]);
+            center[i] = neg[i] + rad[i];
+        }
+        pos[i] += f * std::min(a[i], 0.0);
+        neg[i] += f * std::max(a[i], 0.0);
     }
-    if (!E.Apos[eta - 1].defined()) {
-        E.Apos[eta - 1] = E.Apower[eta - 1].pos();
-        E.Aneg[eta - 1] = E.Apower[eta - 1].neg();
-    }
+    return converged;
 }
 
 /// The interval matrices F (state) and G (input, if isu) of the curvature enlargement by Taylor
-/// series until the terms no longer change the sums; false if that takes kMaxEta terms.
+/// series until the terms no longer change the sums; false if that takes kMaxEta terms. The
+/// sums run over host arrays in one pass per term, as the terms of a large A are all of n^2.
 bool aux_intmat(const Tensor &A, bool isu, Expmat &E, double timeStep, IntMat &F, IntMat &G) {
-    Tensor posF = A.zerosLike(), negF = A.zerosLike(), posG = A.zerosLike(), negG = A.zerosLike();
+    const int64_t n = A.shape()[0];
+    const std::size_t nn = std::size_t(n) * n;
+    std::vector<double> posF(nn, 0.0), negF(nn, 0.0), radF(nn), cenF(nn);
+    std::vector<double> posG, negG, radG, cenG;
+    if (isu) posG.assign(nn, 0.0), negG.assign(nn, 0.0), radG.resize(nn), cenG.resize(nn);
     bool stopF = false, stopG = !isu;
-    if (!isu) G = {A.zerosLike(), A.zerosLike()};
     for (int eta = 2; !(stopF && stopG); ++eta) {
         aux_getApower(E, A, eta);
         const double factor = (std::pow(eta, -double(eta) / (eta - 1)) -
                                std::pow(eta, -1.0 / (eta - 1))) * std::pow(timeStep, eta);
         if (!stopF) {
-            aux_getAposneg(E, eta);
-            const Tensor addPos = E.Aneg[eta - 1] * factor, addNeg = E.Apos[eta - 1] * factor;
             if (eta == kMaxEta) return false;
-            if (aux_allLE(addPos, posF * kEps) && aux_allLE(negF * kEps, addNeg)) {
-                stopF = true;
-                F.rad = (posF - negF) * 0.5;
-                F.center = negF + F.rad;
-            }
-            posF = posF + addPos;
-            negF = negF + addNeg;
+            stopF = aux_sumStep(E.Apower[eta - 1], factor, posF, negF, radF, cenF);
         }
         if (!stopG) {
             // The stored terms carry 1/(eta-1)!, so G needs one more division by eta.
-            aux_getAposneg(E, eta - 1);
-            const Tensor addPos = E.Aneg[eta - 2] * (factor / eta);
-            const Tensor addNeg = E.Apos[eta - 2] * (factor / eta);
             if (eta == kMaxEta) return false;
-            if (aux_allLE(addPos, posG * kEps) && aux_allLE(negG * kEps, addNeg)) {
-                stopG = true;
-                G.rad = (posG - negG) * 0.5;
-                G.center = negG + G.rad;
-            }
-            posG = posG + addPos;
-            negG = negG + addNeg;
+            stopG = aux_sumStep(E.Apower[eta - 2], factor / eta, posG, negG, radG, cenG);
         }
     }
+    F = {Tensor::like(A, cenF, {n, n}), Tensor::like(A, radF, {n, n})};
+    G = isu ? IntMat{Tensor::like(A, cenG, {n, n}), Tensor::like(A, radG, {n, n})}
+            : IntMat{A.zerosLike(), A.zerosLike()};
     return true;
 }
 
@@ -181,7 +309,7 @@ std::optional<Tensor> aux_particular(
     Tensor Asum = A.eyeLike() * timeStep;
     for (int eta = 2;; ++eta) {
         aux_getApower(E, A, eta - 1);
-        const Tensor addTerm = E.Apower[eta - 2] * (std::pow(timeStep, eta) / eta);
+        const Tensor addTerm = aux_powerTensor(E, A, eta - 1) * (std::pow(timeStep, eta) / eta);
         // Too large a step size diverges; an unbounded loop would never end.
         if (std::isinf(aux_maxAll(addTerm.abs())) || eta > 1000) return std::nullopt;
         if (aux_allLE(addTerm.abs(), Asum.abs() * kEps)) break;
@@ -197,7 +325,8 @@ std::optional<Tensor> aux_overPU(const Tensor &A, const Tensor &GU, Expmat &E, d
     std::vector<double> diag = parts[0].abs().sumLast().data();
     for (int eta = 1;;) {
         aux_getApower(E, A, eta);
-        const Tensor add = E.Apower[eta - 1].matmul(GU) * (std::pow(timeStep, eta + 1) / (eta + 1));
+        const Tensor add =
+            aux_powerTensor(E, A, eta).matmul(GU) * (std::pow(timeStep, eta + 1) / (eta + 1));
         const std::vector<double> addDiag = add.abs().sumLast().data();
         bool stop = true;
         for (std::size_t i = 0; i < diag.size(); ++i) {
@@ -353,6 +482,7 @@ Pass aux_pass(
 VerifyResult priv_verifyRA_supportFunc(const LinearSys &sys, const VerifyParams &params,
                                        const std::vector<Specification> &specs) {
     const auto start = std::chrono::steady_clock::now();
+    const FlushDenormals flush;
     VerifyResult res;
     auto finish = [&]() {
         res.tComp = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
@@ -409,7 +539,8 @@ VerifyResult priv_verifyRA_supportFunc(const LinearSys &sys, const VerifyParams 
     const std::vector<double> &ds = rows.ds;
 
     Expmat E;
-    E.Apower.push_back(A);
+    E.Apower.push_back(A.data());
+    aux_initSparse(E, A);
     if (isu || isU) E.Ainv = aux_inverse(A);
 
     // Initial set ---------------------------------------------------------------------------------
@@ -437,7 +568,7 @@ VerifyResult priv_verifyRA_supportFunc(const LinearSys &sys, const VerifyParams 
         const int N = static_cast<int>(std::round(tFinal / timeStep));
         res.timeStep = timeStep;
         res.nrSteps = N;
-        const Tensor Delta = (A * timeStep).expm();
+        const Tensor Delta = aux_expm(A, E, timeStep);
 
         // The constant input solution and the interval matrices; a slow sum shrinks the step.
         Tensor Pu = u.zerosLike();
