@@ -15,6 +15,7 @@ src/
   global/                  random numbers, threads, symbolic expressions (expr.h),
                            plot/ (colors, figure, plot: the plotting logic for every language)
   python/                  bindings.cpp and the cora/ package (plot.py, tensor.py)
+  lean/                    cora::lean: sets and dynamics computed by CORALean (needs CORACPP_ORACLE)
 tests/  examples/          mirror src/
 competition/               the CORA-COMP entry
 ```
