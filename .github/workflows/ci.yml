@@ -52,3 +52,17 @@ jobs:
           cmake -S . -B build -DCORACPP_NATIVE=OFF -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel
           ctest --test-dir build -j4 --output-on-failure -L competition
+
+  # The lean tests against the CORALean oracle, fetched from the pinned release (scripts/coralean.cmake).
+  # Disabled until CORALean has a public release; CONTRIBUTING.md, "CORALean oracle", lists what is left.
+  oracle:
+    if: false
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: oracle
+      - run: cmake --preset cpp -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_BENCH=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - run: cmake --build --preset cpp
+      - run: ctest --preset cpp -R '^lean/' --output-on-failure

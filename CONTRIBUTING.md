@@ -95,21 +95,46 @@ encloses every rounding error, in `binary64`, `ieee:<format>`, `dyadic:<p>` or `
 computation runs in a separate process, the CORALean `oracle`, that CORA.cpp starts and talks to with
 one JSON line per request.
 
-Setup (not part of the install presets yet):
+Two executables serve it: the `oracle` (sound, every dtype above) and the `oracle-bench`, which also
+offers `float` (native binary64, sound under the hardware axioms) and `nearest` (round-to-nearest, no
+guarantees). `nearest` is what the `lean` Tensor backend (`setBackend("lean")`) must match bit for
+bit; `tests/lean/test_lean_backend.cpp` checks that. The dtypes `float` and `nearest` go to the bench
+oracle automatically.
+
+Use a local build (CORALean needs Lean via elan, leanprover.github.io):
 
 ```bash
-git clone https://gitlab.lrz.de/cps/coralean.git && cd coralean    # needs Lean via elan (leanprover.github.io)
-lake exe cache get                                                  # prebuilt Mathlib
-lake build oracle                                                   # .lake/build/bin/oracle (oracle.exe on Windows)
-export CORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle      # Windows: set CORACPP_ORACLE=...
+git clone https://gitlab.lrz.de/cps/coralean.git && cd coralean
+lake exe cache get && lake build oracle              # .lake/build/bin/oracle (oracle.exe on Windows)
+cmake --preset cpp -DCORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle
+cmake --build --preset cpp && ctest --preset cpp -R lean
 ```
 
-`CORACPP_ORACLE` is the executable or a shell command that starts it, for example
-`cd /path/to/coralean && lake exe oracle`. From WSL, the Windows `oracle.exe` works over its pipes.
-The tests and examples named `*lean*` (`ctest -R lean`, `example_lean_reach_01_oracle`) use it and skip
-without it. Protocol and operations: `experiments/oracle/README.md` in CORALean; the C++ side is
-`src/lean/`. A dtype is set with `lean::setDType("ieee:binary32")` and values cross into CORA.cpp only
-when they are exact doubles.
+`CORACPP_ORACLE` (and `CORACPP_ORACLE_BENCH`) is OFF, `DOWNLOAD`, or the executable or a shell
+command that starts it (`cd /path/to/coralean && lake exe oracle`); without an oracle the tests and
+examples named `*lean*` skip. Outside CMake, set the environment variable of the same name. From WSL,
+the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pinned in
+`scripts/coralean.cmake` (Linux x86_64) and checks its hash. Protocol and operations:
+`experiments/oracle/README.md` in CORALean; the C++ side is `src/lean/`. A dtype is set with
+`lean::setDType("ieee:binary32")`; values cross into CORA.cpp only when they are exact doubles.
+
+### Still to do for a fresh install
+
+The `oracle` CI job (`.github/workflows/ci.yml`) is defined and disabled (`if: false`). To enable it:
+
+1. Publish CORALean (public repository or public releases); CORA.cpp may move to GitLab later, only
+   the URL in `scripts/coralean.cmake` changes.
+2. CORALean CI builds `oracle` and `oracle-bench` for Linux x86_64 and attaches them to a release
+   as `oracle-linux-x86_64` and `oracle-bench-linux-x86_64`, with their SHA-256.
+3. Put `float` and `nearest` into the bench oracle only: `nearest` rests on a false axiom that
+   CORALean's hook allows under `Examples/Bench/` alone, so it needs an executable of its own there.
+   The branch `experiment/oracle-native-dtypes` (local, in CORALean) has the dtype code.
+4. Fill `CORALEAN_VERSION` and both hashes in `scripts/coralean.cmake`, remove `if: false`.
+5. Check the oracle's `ping` version against the pinned one (not done yet), so a mismatch is refused.
+
+Later, without Lean and without a binary: CORALean releases the generated C of the oracle with
+`lean.h` and the runtime sources, and CORA.cpp compiles it as a library. It needs a JSON codec of the
+oracle's own (`Lean.Data.Json` pulls the Lean elaborator in, 107 MB); that reaches about 5 MB.
 
 ## Plotting
 

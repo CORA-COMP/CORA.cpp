@@ -38,21 +38,27 @@ struct Process {
 #endif
 };
 
-Process oracle;
+// [0] the sound oracle (CORACPP_ORACLE), [1] the bench oracle (CORACPP_ORACLE_BENCH)
+Process oracles[2];
 
-const char *aux_command() {
-    const char *command = std::getenv("CORACPP_ORACLE");
+const char *aux_command(int which) {
+    const char *name = which ? "CORACPP_ORACLE_BENCH" : "CORACPP_ORACLE";
+    const char *command = std::getenv(name);
     if (!command || !*command)
-        throw std::runtime_error("lean: set CORACPP_ORACLE to the command that starts the "
-                                 "CORALean oracle, e.g. 'cd CORALean && lake exe oracle'");
+        throw std::runtime_error(std::string("lean: set ") + name + " to the command that starts "
+                                 "the CORALean " + (which ? "bench " : "") + "oracle, e.g. "
+                                 "'cd CORALean && lake exe oracle'");
     return command;
 }
+
+// The bench oracle serves the dtypes without a soundness guarantee.
+int aux_which(const std::string &dtype) { return dtype == "float" || dtype == "nearest"; }
 
 #ifdef _WIN32
 
 // Starts `cmd /c <command>` with its stdin and stdout on two pipes.
-void aux_start() {
-    const std::string command = std::string("cmd /s /c \"") + aux_command() + "\"";
+void aux_start(Process &oracle, int which) {
+    const std::string command = std::string("cmd /s /c \"") + aux_command(which) + "\"";
     SECURITY_ATTRIBUTES inheritable{sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE};
     HANDLE childIn, parentOut, parentIn, childOut;
     if (!CreatePipe(&childIn, &parentOut, &inheritable, 0) ||
@@ -85,7 +91,7 @@ void aux_start() {
     oracle.running = true;
 }
 
-void aux_wait() {
+void aux_wait(Process &oracle) {
     WaitForSingleObject(oracle.handle, INFINITE);
     CloseHandle(oracle.handle);
 }
@@ -93,8 +99,8 @@ void aux_wait() {
 #else
 
 // Starts `sh -c <command>` with its stdin and stdout on two pipes.
-void aux_start() {
-    const char *command = aux_command();
+void aux_start(Process &oracle, int which) {
+    const char *command = aux_command(which);
     int toChild[2], fromChild[2];
     if (pipe(toChild) || pipe(fromChild)) throw std::runtime_error("lean: cannot create pipes");
     oracle.pid = fork();
@@ -114,11 +120,11 @@ void aux_start() {
     oracle.running = true;
 }
 
-void aux_wait() { waitpid(oracle.pid, nullptr, 0); }
+void aux_wait(Process &oracle) { waitpid(oracle.pid, nullptr, 0); }
 
 #endif
 
-std::string aux_readLine() {
+std::string aux_readLine(Process &oracle) {
     std::string line;
     int ch;
     // a response is one line
@@ -155,11 +161,14 @@ std::string dtype() { return current; }
 
 // Failures of the oracle surface as exceptions with its message.
 Json call(const Json &request) {
-    if (!oracle.running) aux_start();
+    const Json *dtype = request.find("dtype");
+    const int which = dtype ? aux_which(dtype->text) : 0;
+    Process &oracle = oracles[which];
+    if (!oracle.running) aux_start(oracle, which);
     fputs((request.dump() + "\n").c_str(), oracle.out);
     fflush(oracle.out);
     // one line per request, one per response
-    const Json response = Json::parse(aux_readLine());
+    const Json response = Json::parse(aux_readLine(oracle));
     const Json *ok = response.find("ok");
     if (!ok || !ok->boolean) {
         const Json *error = response.find("error");
@@ -170,11 +179,13 @@ Json call(const Json &request) {
 }
 
 void shutdown() {
-    if (!oracle.running) return;
-    fclose(oracle.out);
-    fclose(oracle.in);
-    aux_wait();
-    oracle = Process{};
+    for (Process &oracle : oracles) {
+        if (!oracle.running) continue;
+        fclose(oracle.out);
+        fclose(oracle.in);
+        aux_wait(oracle);
+        oracle = Process{};
+    }
 }
 
 } // namespace cora::lean

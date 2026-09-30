@@ -41,6 +41,7 @@ set(CORACPP_TORCH_DIR "" CACHE PATH "The torch package directory (default: that 
 set(CORACPP_TORCH_ABI "" CACHE STRING "The C++11 ABI of that torch, 0 or 1 (default: asked of the Python)")
 
 include(scripts/cmake/dependencies.cmake)
+include(scripts/cmake/oracle.cmake)
 
 include(scripts/cmake/torch.cmake)
 
@@ -95,6 +96,10 @@ endfunction()
 function(cora_run_environment test)
   if(WIN32 AND CORACPP_HAS_TORCH)
     set_property(TEST ${test} APPEND PROPERTY ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${CORACPP_TORCH_LIB}")
+  endif()
+  # the tests that talk to CORALean find the oracle through these variables
+  if(coracpp_oracle_env)
+    set_property(TEST ${test} APPEND PROPERTY ENVIRONMENT "${coracpp_oracle_env}")
   endif()
 endfunction()
 
