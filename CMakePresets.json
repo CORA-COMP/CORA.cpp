@@ -41,13 +41,27 @@
         "CORACPP_VENV": "ON",
         "CORACPP_VENV_REQUIREMENTS": "requirements.txt"
       }
+    },
+    {
+      "name": "torch-cuda",
+      "displayName": "C++ with a CUDA libtorch (downloaded, no Python needed)",
+      "inherits": "torch",
+      "cacheVariables": { "CORACPP_TORCH_VARIANT": "cu126" }
+    },
+    {
+      "name": "python-torch-cuda",
+      "displayName": "C++ and the Python package with CUDA torch (a .venv is created)",
+      "inherits": "python-torch",
+      "cacheVariables": { "CORACPP_VENV_TORCH_INDEX": "https://download.pytorch.org/whl/cu126" }
     }
   ],
   "buildPresets": [
     { "name": "cpp", "configurePreset": "cpp", "configuration": "Release" },
     { "name": "torch", "configurePreset": "torch", "configuration": "Release" },
     { "name": "python", "configurePreset": "python", "configuration": "Release" },
-    { "name": "python-torch", "configurePreset": "python-torch", "configuration": "Release" }
+    { "name": "python-torch", "configurePreset": "python-torch", "configuration": "Release" },
+    { "name": "torch-cuda", "configurePreset": "torch-cuda", "configuration": "Release" },
+    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "configuration": "Release" }
   ],
   "testPresets": [
     {
@@ -60,7 +74,9 @@
     { "name": "cpp", "configurePreset": "cpp", "inherits": "base" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
-    { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" }
+    { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
+    { "name": "torch-cuda", "configurePreset": "torch-cuda", "inherits": "base" },
+    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "inherits": "base" }
   ],
   "workflowPresets": [
     {
@@ -93,6 +109,22 @@
         { "type": "configure", "name": "python-torch" },
         { "type": "build", "name": "python-torch" },
         { "type": "test", "name": "python-torch" }
+      ]
+    },
+    {
+      "name": "torch-cuda",
+      "steps": [
+        { "type": "configure", "name": "torch-cuda" },
+        { "type": "build", "name": "torch-cuda" },
+        { "type": "test", "name": "torch-cuda" }
+      ]
+    },
+    {
+      "name": "python-torch-cuda",
+      "steps": [
+        { "type": "configure", "name": "python-torch-cuda" },
+        { "type": "build", "name": "python-torch-cuda" },
+        { "type": "test", "name": "python-torch-cuda" }
       ]
     }
   ]

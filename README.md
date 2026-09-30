@@ -1,5 +1,5 @@
 
-CI builds all four on Linux, and `cpp` and `python` on macOS and Windows.
+CI builds `cpp`, `torch`, `python` and `python-torch` on Linux, and `cpp` and `python` on macOS and Windows; the CUDA presets are not built there (CUDA 12.6, `-DCORACPP_TORCH_VARIANT=cu128` for another).
 # CORA.cpp
 
 Parts of [CORA](https://cora.in.tum.de), the toolbox for set-based computing, in C++ and Python.
@@ -60,13 +60,17 @@ The preset chooses what is added to the C++ library on Eigen:
 | `torch` | libtorch for GPU, batching and gradients; it is downloaded, no Python needed |
 | `python` | the Python package on numpy (creates `.venv`) |
 | `python-torch` | the Python package with torch tensors (creates `.venv`, installs torch into it) |
+| `torch-cuda` | `torch` with a CUDA libtorch (large download; needs an NVIDIA driver to run) |
+| `python-torch-cuda` | `python-torch` with CUDA torch |
 
-Eigen is fetched if it is not installed. The Python presets need Python 3; they run
-`pip install -r requirements-python.txt` (`requirements.txt` for torch) in `.venv` at the project
-root, nothing else is touched. Use the package with `PYTHONPATH=build/python` (Windows:
-`set PYTHONPATH=build\python`) and `.venv`'s Python. `-DCORACPP_TORCH_VARIANT=cu126` downloads a CUDA
-libtorch instead of the CPU one. On Linux and WSL2, `scripts/setup_local.sh` alternatively sets up a
-conda environment (`scripts/with_env.sh scripts/build.sh`). In VS Code, open an example and press `F5`.
+- Eigen is downloaded if it is not installed.
+- The Python presets create `.venv` in the project folder and install into it only
+  (`requirements-python.txt`, or `requirements.txt` for torch). They need Python 3.
+- Use the package with `.venv`'s Python and `PYTHONPATH=build/python` (Windows: `set PYTHONPATH=build\python`).
+- CI builds `cpp`, `python` on Linux, macOS and Windows, and `torch`, `python-torch` on Linux only;
+  the CUDA presets (CUDA 12.6) are not built there.
+- Linux and WSL2 also have `scripts/setup_local.sh` (a conda environment). In VS Code, open an example
+  and press `F5`.
 
 ## Examples
 

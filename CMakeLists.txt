@@ -35,6 +35,7 @@ set(CORACPP_TORCH_VERSION "2.14.0" CACHE STRING "The libtorch that CORACPP_TORCH
 set(CORACPP_TORCH_VARIANT "cpu" CACHE STRING "cpu, or a CUDA variant such as cu126 (Linux and Windows)")
 option(CORACPP_VENV "Create .venv and pip install CORACPP_VENV_REQUIREMENTS into it, and use its Python" OFF)
 set(CORACPP_VENV_REQUIREMENTS "requirements.txt" CACHE STRING "The requirements file the virtual environment gets")
+set(CORACPP_VENV_TORCH_INDEX "https://download.pytorch.org/whl/cpu" CACHE STRING "Where pip gets torch for the virtual environment (.../whl/cu126 for CUDA)")
 set(CORACPP_PYTHON AUTO CACHE STRING "The Python package: AUTO (if torch and Python.h are there), ON, OFF")
 set(CORACPP_TORCH_DIR "" CACHE PATH "The torch package directory (default: that of the Python found)")
 set(CORACPP_TORCH_ABI "" CACHE STRING "The C++11 ABI of that torch, 0 or 1 (default: asked of the Python)")
@@ -69,7 +70,7 @@ if(CORACPP_VENV)
   endif()
   message(STATUS "installing ${CORACPP_VENV_REQUIREMENTS} into ${venv}")
   execute_process(COMMAND "${venv_python}" -m pip install -q -r "${CMAKE_SOURCE_DIR}/${CORACPP_VENV_REQUIREMENTS}"
-                          --extra-index-url https://download.pytorch.org/whl/cpu
+                          --extra-index-url "${CORACPP_VENV_TORCH_INDEX}"
                   COMMAND_ERROR_IS_FATAL ANY)
   unset(Python3_EXECUTABLE CACHE)
   set(Python3_EXECUTABLE "${venv_python}")
