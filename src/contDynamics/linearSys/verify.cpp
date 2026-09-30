@@ -22,8 +22,7 @@ namespace cora {
 VerifyResult LinearSys::verify(const VerifyParams &params, VerifyAlg alg,
                                const std::vector<Specification> &specs) const {
     if (alg == VerifyAlg::SupportFunc) return priv_verifyRA_supportFunc(*this, params, specs);
-    if (alg == VerifyAlg::Zonotope)
-        throw std::invalid_argument("LinearSys::verify: VerifyAlg::Zonotope is not implemented");
+    if (alg == VerifyAlg::Zonotope) return priv_verifyRA_zonotope(*this, params, specs);
     throw std::invalid_argument(
         "LinearSys::verify: unknown verifyAlg; use VerifyAlg::SupportFunc or VerifyAlg::Zonotope");
 }

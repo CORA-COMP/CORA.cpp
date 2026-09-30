@@ -24,7 +24,8 @@ namespace cora {
 
 namespace {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr double kInf =
+    std::numeric_limits<double>::infinity();
 constexpr double kPivotTol = 1e-9;     // smallest usable tableau entry in a ratio test
 constexpr double kOptTol = 1e-9;       // reduced costs above -kOptTol are optimal
 constexpr double kFeasTol = 1e-8;      // phase-1 residual (relative) below which it is feasible
@@ -45,6 +46,8 @@ struct Standard {
     std::vector<int> basis;  // slack column with +1 of the row, or -1
 };
 
+// Simplex -----------------------------------------------------------------------------------------
+
 /// Pivots the tableau T (rows of width W) on entry (row, col).
 void aux_pivot(std::vector<double> &T, int m, int W, int row, int col) {
     const double p = T[std::size_t(row) * W + col];
@@ -60,8 +63,9 @@ void aux_pivot(std::vector<double> &T, int m, int W, int row, int col) {
 
 /// Simplex pivots on the tableau for the cost `cost` over the columns allowed to enter; the
 /// return value is 0 (optimal), 1 (unbounded) or 2 (pivot limit).
-int aux_simplex(std::vector<double> &T, std::vector<int> &basis, int m, int W,
-                const std::vector<double> &cost, const std::vector<char> &allowed) {
+int aux_simplex(
+    std::vector<double> &T, std::vector<int> &basis, int m, int W, const std::vector<double> &cost,
+    const std::vector<char> &allowed) {
     const int N = W - 1;
     int stall = 0;
     for (int iter = 0; iter < kMaxPivots; ++iter) {
@@ -104,6 +108,8 @@ int aux_simplex(std::vector<double> &T, std::vector<int> &basis, int m, int W,
     }
     return 2;
 }
+
+// Standard form -----------------------------------------------------------------------------------
 
 /// The standard form of lp and the map of each original variable.
 Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
@@ -150,6 +156,7 @@ Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
         }
         s.r[row] = rhs;
     };
+    // The rows: inequalities with a slack, equalities, then the upper bounds of shifted variables.
     int row = 0;
     for (int i = 0; i < mIneq; ++i, ++row) {
         fillRow(row, &lp.Aineq[std::size_t(i) * n], lp.bineq[i]);
@@ -189,6 +196,7 @@ LinProgResult linprog(const LinProg &lp) {
     const Standard s = aux_standardForm(lp, map);
     LinProgResult result;
 
+    // Tableau ---------------------------------------------------------------------------------
     // Tableau with one artificial column per row that has no basic slack, then the rhs.
     int nArt = 0;
     for (int i = 0; i < s.m; ++i) nArt += s.basis[i] < 0;
@@ -241,7 +249,8 @@ LinProgResult linprog(const LinProg &lp) {
     std::vector<char> real(s.N + nArt, 0);
     std::fill(real.begin(), real.begin() + s.N, 1);
     const int status = aux_simplex(T, basis, s.m, W, cost, real);
-    if (status == 2) throw std::runtime_error("linprog: the simplex method did not finish (phase 2)");
+    if (status == 2)
+        throw std::runtime_error("linprog: the simplex method did not finish (phase 2)");
     if (status == 1) {
         result.status = LinProgResult::Status::Unbounded;
         return result;

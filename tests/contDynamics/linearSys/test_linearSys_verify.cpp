@@ -152,8 +152,13 @@ int main() {
             {false, 1, 0.02, 100, 0.72, none0});
 
     // Unsupported input is refused.
-    check(test::throws([&] { osc1.verify({R0, u05, 5}, VerifyAlg::Zonotope, {safe({1, 0}, 2)}); }),
-          "Zonotope algorithm is refused until implemented");
+    // The support function algorithm takes unsafe sets of one halfspace only.
+    check(test::throws([&] {
+              osc1.verify({R0, u05, 5}, S,
+                          {Specification::unsafeSet({{test::column({1, 0}), 1.0},
+                                                     {test::column({0, 1}), 1.0}})});
+          }),
+          "an unsafe set of several halfspaces is refused by the support function algorithm");
     check(test::throws([&] { osc1.verify({R0, u05, 5}, S, {}); }), "no specification");
     check(test::throws([&] { osc1.verify({R0, u05, 5}, S, {safe({1}, 2)}); }), "wrong normal size");
     check(test::throws([&] { osc1.verify({R0, u05, 0}, S, {safe({1, 0}, 2)}); }), "tFinal 0");
