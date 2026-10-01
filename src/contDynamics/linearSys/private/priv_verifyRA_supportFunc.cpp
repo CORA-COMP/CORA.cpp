@@ -21,8 +21,8 @@
 #include <cmath>
 #include <limits>
 #include <optional>
-#if defined(__SSE3__)
-#include <pmmintrin.h>
+#if defined(__SSE2__) || defined(_M_X64)
+#include <xmmintrin.h>
 #endif
 #include <stdexcept>
 
@@ -48,7 +48,7 @@ using Intervals = std::vector<std::array<double, 2>>;
 /// Flushes denormal numbers to zero while it lives: the powers and squarings of a stiff matrix
 /// underflow through the denormal range, where every product is slow, and nothing there counts.
 struct FlushDenormals {
-#if defined(__SSE3__)
+#if defined(__SSE2__) || defined(_M_X64)
     unsigned saved = _mm_getcsr();
     FlushDenormals() { _mm_setcsr(saved | 0x8040); }
     ~FlushDenormals() { _mm_setcsr(saved); }

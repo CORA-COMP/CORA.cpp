@@ -27,7 +27,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # the Python module is a shared object
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(CORACPP_NATIVE "Compile for this CPU (-march=native; not with MSVC)" ON)
+option(CORACPP_NATIVE "Compile for this CPU (-march=native; /arch:AVX2 with MSVC)" ON)
 option(CORACPP_BLAS "Let Eigen call an external BLAS (changes which library does the arithmetic)" OFF)
 option(CORACPP_COMPETITION "Build the CORA-COMP binary and its tests (needs GLPK)" OFF)
 set(CORACPP_TORCH AUTO CACHE STRING "libtorch: AUTO (if the Python has torch), ON, OFF, DOWNLOAD (fetch a CPU libtorch)")
