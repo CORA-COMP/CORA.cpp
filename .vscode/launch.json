@@ -9,6 +9,7 @@
             "type": "debugpy",
             "python": "${config:coracpp.python}",
             "request": "launch",
+            "internalConsoleOptions": "neverOpen",
             "program": "${workspaceFolder}/scripts/run_example.py",
             "args": ["${file}"],
             "cwd": "${workspaceFolder}",
@@ -24,6 +25,7 @@
             "type": "debugpy",
             "python": "${config:coracpp.python}",
             "request": "launch",
+            "internalConsoleOptions": "neverOpen",
             "module": "unittest",
             "args": ["-v", "${fileBasenameNoExtension}"],
             "cwd": "${workspaceFolder}/tests/python",
@@ -38,6 +40,7 @@
             "name": "C++: debug current example",
             "type": "cppdbg",
             "request": "launch",
+            "internalConsoleOptions": "neverOpen",
             "program": "${config:coracpp.buildDir}-debug/examples/cpp/${fileBasenameNoExtension}",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build example (debug)",
@@ -54,9 +57,11 @@
             "name": "C++ (Windows): debug current example",
             "type": "cppvsdbg",
             "request": "launch",
+            "internalConsoleOptions": "neverOpen",
             "program": "${config:coracpp.buildDir}/examples/cpp/${fileBasenameNoExtension}.exe",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build example (Windows)",
+            "console": "integratedTerminal",
             "environment": [
                 { "name": "PATH", "value": "${config:coracpp.libraryPath};${env:PATH}" }
             ]
