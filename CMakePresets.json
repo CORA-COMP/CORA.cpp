@@ -53,16 +53,37 @@
       "displayName": "C++ and the Python package with CUDA torch (a .venv is created)",
       "inherits": "python-torch",
       "cacheVariables": { "CORACPP_VENV_TORCH_INDEX": "https://download.pytorch.org/whl/cu126" }
+    },
+    {
+      "name": "msvc",
+      "hidden": true,
+      "generator": "Ninja",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "cacheVariables": { "CMAKE_C_COMPILER": "cl", "CMAKE_CXX_COMPILER": "cl" },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "msvc-cuda",
+      "displayName": "Windows (MSVC): C++ and the Python package with CUDA torch",
+      "inherits": ["msvc", "python-torch-cuda"],
+      "binaryDir": "${sourceDir}/build/python-torch-cuda"
     }
   ],
   "buildPresets": [
-    { "name": "base", "hidden": true, "configuration": "Release", "jobs": 4 },
+    {
+      "name": "base",
+      "hidden": true,
+      "configuration": "Release",
+      "jobs": 4,
+      "environment": { "NINJA_STATUS": "[%p %e s] " }
+    },
     { "name": "core", "configurePreset": "core", "inherits": "base" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
     { "name": "torch-cuda", "configurePreset": "torch-cuda", "inherits": "base" },
-    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "inherits": "base" }
+    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "inherits": "base" },
+    { "name": "msvc-cuda", "configurePreset": "msvc-cuda", "inherits": "base" }
   ],
   "testPresets": [
     {
@@ -77,7 +98,8 @@
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
     { "name": "torch-cuda", "configurePreset": "torch-cuda", "inherits": "base" },
-    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "inherits": "base" }
+    { "name": "python-torch-cuda", "configurePreset": "python-torch-cuda", "inherits": "base" },
+    { "name": "msvc-cuda", "configurePreset": "msvc-cuda", "inherits": "base" }
   ],
   "workflowPresets": [
     {

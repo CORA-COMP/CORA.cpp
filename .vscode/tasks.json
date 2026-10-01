@@ -1,11 +1,12 @@
 {
-    // The paths come from .vscode/settings.json, written by scripts/setup_local.sh.
+    // The paths come from .vscode/settings.json (scripts/setup_local.sh, or scripts/setup_vscode.py on Windows).
     "version": "2.0.0",
     "tasks": [
         {
             "label": "run example (C++)",
             "type": "shell",
             "command": "scripts/with_env.sh python scripts/run_example.py ${file}",
+            "windows": { "command": "${config:coracpp.python} scripts/run_example.py ${file}" },
             "group": { "kind": "build", "isDefault": true },
             "presentation": { "reveal": "always", "panel": "shared" },
             "problemMatcher": "$gcc"
@@ -20,12 +21,14 @@
             "label": "build python package",
             "type": "shell",
             "command": "scripts/with_env.sh scripts/build.sh python",
+            "windows": { "command": "scripts\\vsenv.cmd cmake --build ${config:coracpp.buildDir} --target python" },
             "problemMatcher": "$gcc"
         },
         {
             "label": "run example (Python)",
             "type": "shell",
             "command": "scripts/with_env.sh python ${file}",
+            "windows": { "command": "${config:coracpp.python} ${file}" },
             "dependsOn": "build python package",
             "problemMatcher": []
         },
@@ -33,6 +36,7 @@
             "label": "test (conventions and C++)",
             "type": "shell",
             "command": "scripts/with_env.sh scripts/build.sh && scripts/with_env.sh scripts/test.sh -j4 -LE python",
+            "windows": { "command": "scripts\\vsenv.cmd cmake --build ${config:coracpp.buildDir} && ctest --test-dir ${config:coracpp.buildDir} -j4 -C Release" },
             "group": "test",
             "problemMatcher": "$gcc"
         },
@@ -40,6 +44,7 @@
             "label": "test (python)",
             "type": "shell",
             "command": "scripts/with_env.sh python -m unittest discover -s tests/python",
+            "windows": { "command": "${config:coracpp.python} -m unittest discover -s tests/python" },
             "dependsOn": "build python package",
             "group": "test",
             "problemMatcher": []
@@ -48,6 +53,7 @@
             "label": "conventions",
             "type": "shell",
             "command": "scripts/with_env.sh python tests/global/test_codingConventions.py",
+            "windows": { "command": "${config:coracpp.python} tests/global/test_codingConventions.py" },
             "problemMatcher": []
         }
     ]

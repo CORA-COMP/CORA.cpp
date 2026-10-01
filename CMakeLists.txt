@@ -56,12 +56,7 @@ if(CORACPP_HAS_TORCH)
   list(APPEND lib_sources "${CMAKE_SOURCE_DIR}/src/global/backend/torch.cpp")
 endif()
 
-add_library(cora STATIC ${lib_sources})
-target_include_directories(cora PUBLIC "${CMAKE_SOURCE_DIR}/src")
-target_link_libraries(cora PUBLIC cora_flags)
-if(CORACPP_HAS_TORCH)
-  target_link_libraries(cora PUBLIC cora_torch)
-endif()
+include(scripts/cmake/library.cmake)
 # rng.cpp is the one file compiled with fast math, so the logarithm and the sine of Box-Muller
 # vectorize; everything that results depend on keeps strict IEEE arithmetic.
 if(MSVC)

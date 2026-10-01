@@ -2,6 +2,7 @@
     "recommendations": [
         "ms-vscode-remote.remote-wsl",
         "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
         "ms-python.python",
         "ms-python.debugpy"
     ]

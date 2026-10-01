@@ -7,7 +7,7 @@
         {
             "name": "Run current example (C++ or Python)",
             "type": "debugpy",
-            "python": "${config:coracpp.envPrefix}/bin/python",
+            "python": "${config:coracpp.python}",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/run_example.py",
             "args": ["${file}"],
@@ -15,13 +15,14 @@
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${config:coracpp.buildDir}",
-                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
+                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib",
+                "CORACPP_BUILD": "${config:coracpp.buildDir}"
             }
         },
         {
             "name": "Python: current test",
             "type": "debugpy",
-            "python": "${config:coracpp.envPrefix}/bin/python",
+            "python": "${config:coracpp.python}",
             "request": "launch",
             "module": "unittest",
             "args": ["-v", "${fileBasenameNoExtension}"],
@@ -29,7 +30,8 @@
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${config:coracpp.buildDir}",
-                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib"
+                "LD_LIBRARY_PATH": "${config:coracpp.envPrefix}/lib",
+                "CORACPP_BUILD": "${config:coracpp.buildDir}"
             }
         },
         {
