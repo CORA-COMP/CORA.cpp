@@ -824,6 +824,9 @@ VerifyResult priv_verifyRA_zonotope(const LinearSys &sys, const VerifyParams &pa
                 if (d > dFo) dFo = d, indFo = static_cast<int>(j);
                 if (P.fastInner && d > R.timeIntError[j]) return falsified();
                 d = aux_intersectionCheckInner(innerOf(j), P);
+                // The program returns 0 for an intersection up to its accuracy; round-off in
+                // the solver must not decide between "intersecting" and "almost".
+                if (d <= kIntersectTol) d = 0;
                 if (d < 0) return falsified();
                 if (d < dFi) dFi = d, indFi = static_cast<int>(j);
             }
