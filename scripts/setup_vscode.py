@@ -64,6 +64,7 @@ settings.update({
 })
 if WINDOWS:
     settings.update({
+        "coracpp.libraryPath": libraries,
         "terminal.integrated.env.windows": {
             "PYTHONPATH": build, "CORACPP_BUILD": build, "PATH": libraries + ";${env:PATH}"},
         "python-envs.defaultEnvManager": "ms-python.python:venv",

@@ -1,7 +1,7 @@
 {
     // F5 runs the first configuration: it runs the open example, C++ or Python (scripts/run_example.py).
-    // To step through C++ with gdb, choose "C++: debug current example" in the Run and Debug
-    // dropdown. The paths come from .vscode/settings.json (scripts/setup_local.sh).
+    // To step through C++, choose "C++: debug current example" (gdb) or, on Windows, "C++ (Windows):
+    // debug current example" in the Run and Debug dropdown. The paths come from .vscode/settings.json (scripts/setup_local.sh).
     "version": "0.2.0",
     "configurations": [
         {
@@ -48,6 +48,17 @@
             ],
             "setupCommands": [
                 { "text": "-enable-pretty-printing", "ignoreFailures": true }
+            ]
+        },
+        {
+            "name": "C++ (Windows): debug current example",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${config:coracpp.buildDir}/examples/cpp/${fileBasenameNoExtension}.exe",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build example (Windows)",
+            "environment": [
+                { "name": "PATH", "value": "${config:coracpp.libraryPath};${env:PATH}" }
             ]
         }
     ]

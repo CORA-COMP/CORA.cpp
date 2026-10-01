@@ -18,10 +18,16 @@
             "problemMatcher": "$gcc"
         },
         {
+            "label": "build example (Windows)",
+            "type": "shell",
+            "command": "scripts\\vsenv.cmd cmake --build ${config:coracpp.buildDir} --target ${fileBasenameNoExtension}",
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "build python package",
             "type": "shell",
             "command": "scripts/with_env.sh scripts/build.sh python",
-            "windows": { "command": "scripts\\vsenv.cmd cmake --build ${config:coracpp.buildDir} --target python" },
+            "windows": { "command": "scripts\\\vsenv.cmd cmake --build ${config:coracpp.buildDir} --target python" },
             "problemMatcher": "$gcc"
         },
         {
@@ -36,7 +42,7 @@
             "label": "test (conventions and C++)",
             "type": "shell",
             "command": "scripts/with_env.sh scripts/build.sh && scripts/with_env.sh scripts/test.sh -j4 -LE python",
-            "windows": { "command": "scripts\\vsenv.cmd cmake --build ${config:coracpp.buildDir} && ctest --test-dir ${config:coracpp.buildDir} -j4 -C Release" },
+            "windows": { "command": "scripts\\\vsenv.cmd cmake --build ${config:coracpp.buildDir} && ctest --test-dir ${config:coracpp.buildDir} -j4 -C Release" },
             "group": "test",
             "problemMatcher": "$gcc"
         },
