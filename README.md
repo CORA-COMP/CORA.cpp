@@ -82,5 +82,15 @@ Benchmarks: [`benchmarks`](benchmarks) runs the ARCH-COMP AFF instances of MATLA
 Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.timeInt[k]` covers
 `[k*timeStep, (k+1)*timeStep]` and `R.timePoint[k]` is at `k*timeStep` (0-based).
 
+## Connection to CORALean
+
+![CORA.cpp and CORALean](docs/coralean.svg)
+
+CORALean can serve as the ground-truth implementation of CORA.
+With the oracle set up (`CORACPP_ORACLE`, see [CONTRIBUTING.md](CONTRIBUTING.md)), an algorithm
+in C++ is validated exactly against CORALean: the `lean` backend rounds to nearest like the hardware, so
+its results match the oracle bit for bit, while the oracle's directed rounding gives the sound enclosure.
+The figure's source is [`docs/coralean.tex`](docs/coralean.tex).
+
 [`competition/`](competition/README.md) holds the CORA-COMP entry; see
 [CONTRIBUTING.md](CONTRIBUTING.md) to work on the library.
