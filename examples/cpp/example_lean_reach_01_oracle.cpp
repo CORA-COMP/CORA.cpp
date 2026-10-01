@@ -11,8 +11,8 @@
 // See also: example_linear_reach_01_5dim, lean/zonotope.h
 
 #include "contDynamics/linearSys/linearSys.h"
-#include "lean/linearSys.h"
-#include "lean/oracle.h"
+#include "global/oracle/linearSys.h"
+#include "global/oracle/oracle.h"
 
 #include <cstdlib>
 #include <iostream>

@@ -43,7 +43,7 @@ if(python_ok)
   execute_process(COMMAND "${Python3_EXECUTABLE}" -c
                   "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
                   OUTPUT_VARIABLE extension_suffix OUTPUT_STRIP_TRAILING_WHITESPACE)
-  add_library(_cora MODULE "${CMAKE_SOURCE_DIR}/src/python/bindings.cpp")
+  add_library(_cora MODULE "${CMAKE_SOURCE_DIR}/src/global/python/bindings.cpp")
   target_link_libraries(_cora PRIVATE cora Python3::Module)
   if(python_torch)
     target_compile_definitions(_cora PRIVATE CORACPP_PYTHON_TORCH)
@@ -58,7 +58,7 @@ if(python_ok)
     LIBRARY_OUTPUT_DIRECTORY_DEBUG "${module_directory}" LIBRARY_OUTPUT_DIRECTORY_RELEASE "${module_directory}"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${module_directory}" RUNTIME_OUTPUT_DIRECTORY_RELEASE "${module_directory}")
 
-  file(GLOB python_files CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/python/cora/*.py")
+  file(GLOB python_files CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/global/python/cora/*.py")
   set(copied)
   foreach(file IN LISTS python_files)
     get_filename_component(file_name "${file}" NAME)

@@ -77,7 +77,7 @@ learning, conformal prediction, neural network verification, and the CORALean or
 MATLAB: [`examples/matlab`](examples/matlab) computes in CORA.cpp and plots with CORA (`toPy`/`fromPy`,
 CORA branch `feature/coracpp-python`); it uses the `python` preset and the same Python as MATLAB.
 
-Benchmarks: [`benchmarks`](benchmarks) runs the ARCH-COMP AFF instances of MATLAB CORA in C++ and Python on the same data.
+Benchmarks: [`examples/benchmarks`](examples/benchmarks) runs the ARCH-COMP AFF instances of MATLAB CORA in C++ and Python on the same data.
 
 Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.timeInt[k]` covers
 `[k*timeStep, (k+1)*timeStep]` and `R.timePoint[k]` is at `k*timeStep` (0-based).
@@ -92,5 +92,5 @@ in C++ is validated exactly against CORALean: the `lean` backend rounds to neare
 its results match the oracle bit for bit, while the oracle's directed rounding gives the sound enclosure.
 The figure's source is [`docs/coralean.tex`](docs/coralean.tex).
 
-[`competition/`](competition/README.md) holds the CORA-COMP entry; see
+[`scripts/competition/`](scripts/competition/README.md) holds the CORA-COMP entry; see
 [CONTRIBUTING.md](CONTRIBUTING.md) to work on the library.

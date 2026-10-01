@@ -3,7 +3,7 @@
 
 #include "contSet/zonotope/zonotope.h"
 #include "global/rng.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 #include "testing.h"
 
 using namespace cora;

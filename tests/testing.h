@@ -8,7 +8,7 @@
 
 #include "contSet/contSet.h"
 #include "global/rng.h"
-#include "tensor/tensor.h"
+#include "global/tensor/tensor.h"
 
 #include <algorithm>
 #include <cmath>

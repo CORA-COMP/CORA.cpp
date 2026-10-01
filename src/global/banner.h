@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "tensor/tensor.h"
+#include "global/tensor/tensor.h"
 
 #include <chrono>
 #include <iostream>

@@ -2,25 +2,25 @@
 # Included by CMakeLists.txt; the variables and options are its.
 
 # ---------------------------------------- the competition -----------------------------------------
-# competition/ is the CORA-COMP harness and its own sets; it builds on the library and needs GLPK.
-# See competition/README.md.
+# scripts/competition/ is the CORA-COMP harness and its sets; it builds on the library, needs GLPK.
+# See scripts/competition/README.md.
 
 if(CORACPP_COMPETITION)
   find_library(GLPK_LIBRARY glpk REQUIRED)
-  file(GLOB_RECURSE comp_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/competition/*.cpp")
-  list(FILTER comp_sources EXCLUDE REGEX "/competition/(main|torch_backend|torch_none)\\.cpp$")
-  list(FILTER comp_sources EXCLUDE REGEX "/competition/sets/torch_contains\\.cpp$")
+  file(GLOB_RECURSE comp_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/scripts/competition/*.cpp")
+  list(FILTER comp_sources EXCLUDE REGEX "/scripts/competition/(main|torch_backend|torch_none)\\.cpp$")
+  list(FILTER comp_sources EXCLUDE REGEX "/scripts/competition/sets/torch_contains\\.cpp$")
   if(CORACPP_HAS_TORCH)
-    list(APPEND comp_sources "${CMAKE_SOURCE_DIR}/competition/torch_backend.cpp"
-                             "${CMAKE_SOURCE_DIR}/competition/sets/torch_contains.cpp")
+    list(APPEND comp_sources "${CMAKE_SOURCE_DIR}/scripts/competition/torch_backend.cpp"
+                             "${CMAKE_SOURCE_DIR}/scripts/competition/sets/torch_contains.cpp")
   else()
-    list(APPEND comp_sources "${CMAKE_SOURCE_DIR}/competition/torch_none.cpp")
+    list(APPEND comp_sources "${CMAKE_SOURCE_DIR}/scripts/competition/torch_none.cpp")
   endif()
   add_library(coracomp STATIC ${comp_sources})
-  target_include_directories(coracomp PUBLIC "${CMAKE_SOURCE_DIR}/competition")
+  target_include_directories(coracomp PUBLIC "${CMAKE_SOURCE_DIR}/scripts/competition")
   target_link_libraries(coracomp PUBLIC cora "${GLPK_LIBRARY}")
 
-  add_executable(coracpp "${CMAKE_SOURCE_DIR}/competition/main.cpp")
+  add_executable(coracpp "${CMAKE_SOURCE_DIR}/scripts/competition/main.cpp")
   target_link_libraries(coracpp PRIVATE coracomp)
 
   file(GLOB_RECURSE comp_tests CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/tests/competition/test_*.cpp")

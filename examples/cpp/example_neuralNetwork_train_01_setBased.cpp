@@ -16,7 +16,7 @@
 // See also: the Python example of the same name, example_neuralNetwork_verify_01
 
 #include "nn/neuralNetwork/neuralNetwork.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 
 #include <iostream>
 #include <string>

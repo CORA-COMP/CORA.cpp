@@ -2,7 +2,7 @@
 
 #include "contSet/zonotope/zonotope.h"
 #include "specification/specification.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 #include "testing.h"
 
 using namespace cora;

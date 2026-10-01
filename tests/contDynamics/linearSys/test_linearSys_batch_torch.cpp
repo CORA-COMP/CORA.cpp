@@ -2,7 +2,7 @@
 // one system, and one call over a batch of sets, of systems, or of both equals one call per member.
 
 #include "contDynamics/linearSys/linearSys.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 #include "testing.h"
 
 using namespace cora;

@@ -1,4 +1,4 @@
-"""test_benchmarkData - the ARCH-COMP AFF instance files of benchmarks/data: format and consistency."""
+"""test_benchmarkData - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency."""
 import glob
 import json
 import os
@@ -10,10 +10,10 @@ import unittest
 import numpy as np
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
-sys.path.insert(0, os.path.join(ROOT, "benchmarks", "python"))
+sys.path.insert(0, os.path.join(ROOT, "examples", "python", "benchmarks"))
 import benchmarkData  # noqa: E402
 
-DATA = os.path.join(ROOT, "benchmarks", "data")
+DATA = os.path.join(ROOT, "examples", "benchmarks", "data")
 INSTANCES = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01", "CBC01", "CBC02",
              "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02"]
 NAMES = ["A", "B", "C", "R0c", "R0G", "Uc", "UG"]
@@ -78,7 +78,7 @@ class Instances(unittest.TestCase):
         found = sorted(os.path.basename(p)[:-5] for p in glob.glob(os.path.join(DATA, "*.json")))
         self.assertTrue(set(found) <= set(INSTANCES), found)
         if not found:
-            self.skipTest("benchmarks/data is empty: run benchmarks/matlab/exportBenchmarkData.m")
+            self.skipTest("examples/benchmarks/data is empty: run exportBenchmarkData.m")
 
     def test_the_schema_and_the_dimensions_agree(self):
         for path in glob.glob(os.path.join(DATA, "*.json")):

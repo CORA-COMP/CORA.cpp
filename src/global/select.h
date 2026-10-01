@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "tensor/tensor.h"
+#include "global/tensor/tensor.h"
 
 #include <stdexcept>
 #include <string>

@@ -4,7 +4,7 @@
 
 #include "contDynamics/linearSys/linearSys.h"
 #include "specification/specification.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 #include "testing.h"
 
 using namespace cora;

@@ -253,7 +253,7 @@ def check_test_files(issues_by_file):
 
 def check_python_files(issues_by_file):
     """The Python package and its tests: a docstring naming the file (tests), and line lengths."""
-    for path in files("src/python/cora/*.py") + files("tests/python/test_*.py"):
+    for path in files("src/global/python/cora/*.py") + files("tests/python/test_*.py"):
         lines = read_lines(path)
         found = []
         stem = os.path.splitext(os.path.basename(path))[0]
@@ -272,20 +272,20 @@ def check_python_files(issues_by_file):
 
 def check_python_tests_cover_the_api(issues_by_file):
     """Every class the package exports has a Python test file: tests/python/test_<class>*.py."""
-    init = "\n".join(read_lines(os.path.join(ROOT, "src/python/cora/__init__.py")))
+    init = "\n".join(read_lines(os.path.join(ROOT, "src/global/python/cora/__init__.py")))
     for name in ("Zonotope", "Interval", "LinearSys", "NonlinearSys", "NeuralNetwork", "Specification"):
         if f"{name}" not in init:
             continue
         stem = name[0].lower() + name[1:]
         if not files(f"tests/python/test_{stem}*.py"):
-            issues_by_file.setdefault("src/python/cora/__init__.py", []).append(
+            issues_by_file.setdefault("src/global/python/cora/__init__.py", []).append(
                 f"no Python test for {name}: expected tests/python/test_{stem}*.py")
 
 
 def main():
     issues_by_file = {}
     for path in files("src/**/*.cpp") + files("src/**/*.h"):
-        if rel(path) == "src/python/bindings.cpp":
+        if rel(path) == "src/global/python/bindings.cpp":
             found = []
             check_markers(path, read_lines(path), found, needs_main=False, library=False)
         else:

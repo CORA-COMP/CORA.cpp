@@ -1,7 +1,7 @@
 // test_linearSys_simulate_torch - linearSys simulate over batches of systems and start points
 
 #include "contDynamics/linearSys/linearSys.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 #include "testing.h"
 
 #include <algorithm>

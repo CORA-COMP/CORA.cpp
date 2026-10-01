@@ -9,7 +9,7 @@
 // See also: example_linear_reach_01_5dim, example_linear_reach_06_gpu
 
 #include "contDynamics/linearSys/linearSys.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 
 #include <iostream>
 #include <vector>

@@ -2,7 +2,7 @@
 // initial set, against central differences
 
 #include "contDynamics/nonlinearSys/nonlinearSys.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 #include "testing.h"
 
 using namespace cora;

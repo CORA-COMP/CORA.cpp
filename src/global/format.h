@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "tensor/tensor.h"
+#include "global/tensor/tensor.h"
 
 #include <algorithm>
 #include <cstdio>

@@ -8,7 +8,7 @@
 // See also: example_linear_reach_05_batch
 
 #include "contDynamics/linearSys/linearSys.h"
-#include "tensor/torch.h"
+#include "global/backend/torch.h"
 
 #include <chrono>
 #include <iostream>

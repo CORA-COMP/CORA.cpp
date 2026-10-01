@@ -65,4 +65,4 @@ jobs:
           key: oracle
       - run: cmake --preset core -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - run: cmake --build --preset core
-      - run: ctest --preset core -R '^lean/' --output-on-failure
+      - run: ctest --preset core -R '^global/oracle/' --output-on-failure

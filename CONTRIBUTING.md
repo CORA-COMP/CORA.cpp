@@ -4,7 +4,6 @@
 
 ```
 src/
-  tensor/                  Tensor, the backend wrapper (eigen.cpp, torch.cpp)
   contSet/                 contSet.h, the abstract set
     zonotope/  interval/   the class in its header, one operation per file
   contDynamics/            contDynamics.h, the abstract dynamic system
@@ -12,13 +11,15 @@ src/
     nonlinearSys/          nonlinearSys.h, reach (linearization), simulate; dynamics are Expr
   nn/neuralNetwork/        neuralNetwork.h, evaluate (points, and sets through the layers)
   specification/           specification.h, check.cpp
-  global/                  random numbers, threads, symbolic expressions (expr.h),
-                           plot/ (colors, figure, plot: the plotting logic for every language)
-  python/                  bindings.cpp and the cora/ package (plot.py, tensor.py)
-  lean/                    cora::lean: sets and dynamics computed by CORALean (needs CORACPP_ORACLE)
+  global/                  random numbers, threads, symbolic expressions (expr.h), linprog
+    tensor/                Tensor, the backend wrapper
+    backend/               the Tensor backends: eigen, torch, lean
+    oracle/                cora::lean: sets and dynamics computed by CORALean (needs CORACPP_ORACLE)
+    plot/                  colors, figure, plot: the plotting logic for every language
+    python/                bindings.cpp and the cora/ package (plot.py, tensor.py)
 tests/  examples/          mirror src/
-competition/               the CORA-COMP entry
-benchmarks/                ARCH-COMP AFF instances (data, C++ and Python programs), see its README
+scripts/competition/       the CORA-COMP entry
+examples/benchmarks/       ARCH-COMP AFF instances (data, README); the programs are in examples/{cpp,python,matlab}/benchmarks
 ```
 
 The library is namespace `cora`; the competition entry keeps its own sets in `cora::comp`.
@@ -42,8 +43,8 @@ CMake compiles every C++ example with `-include global/banner.h`, which prints t
 ## Adding things
 
 - **Operation:** declare it in the class, add the file to its folder; the CMake file finds sources.
-- **Set or dynamics class:** write it against `Tensor` only, then bind it in `src/python/bindings.cpp`.
-- **Backend:** implement `Tensor::Impl` and `Tensor::Backend` (`src/tensor/eigen.cpp` is the model)
+- **Set or dynamics class:** write it against `Tensor` only, then bind it in `src/global/python/bindings.cpp`.
+- **Backend:** implement `Tensor::Impl` and `Tensor::Backend` (`src/global/backend/eigen.cpp` is the model)
   and register it in `makeBackend`.
 
 ## Tensor
@@ -98,7 +99,7 @@ one JSON line per request.
 
 Two executables serve it: the `oracle` (sound, every dtype above) and the `oracle-unsound`, which
 offers `nearest` (round-to-nearest, no guarantees). `nearest` is what the `lean` Tensor backend
-(`setBackend("lean")`) must match bit for bit; `tests/lean/test_lean_backend.cpp` checks that. The
+(`setBackend("lean")`) must match bit for bit; `tests/global/oracle/test_lean_backend.cpp` checks that. The
 dtype `nearest` goes to the unsound oracle automatically.
 
 Use a local build (CORALean needs Lean via elan, leanprover.github.io):
@@ -115,7 +116,7 @@ command that starts it (`cd /path/to/coralean && lake exe oracle`); without an o
 examples named `*lean*` skip. Outside CMake, set the environment variable of the same name. From WSL,
 the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pinned in
 `scripts/coralean.cmake` (Linux x86_64) and checks its hash. Protocol and operations:
-`experiments/oracle/README.md` in CORALean; the C++ side is `src/lean/`. A dtype is set with
+`experiments/oracle/README.md` in CORALean; the C++ side is `src/global/oracle/`. A dtype is set with
 `lean::setDType("ieee:binary32")`; values cross into CORA.cpp only when they are exact doubles.
 
 ### Still to do for a fresh install
