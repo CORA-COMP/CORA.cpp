@@ -16,8 +16,8 @@ as `savedata.tComp` in MATLAB. The MATLAB side is the original scripts, run from
 ## Run
 
 ```bash
-cmake --build --preset cpp                                   # build/cpp/benchmarks/benchmark_linear_*
-build/cpp/benchmarks/benchmark_linear_verifyFast_ARCH23_iss [ISSF01_ISS01 ...]
+cmake --build --preset core                                   # build/core/benchmarks/benchmark_linear_*
+build/core/benchmarks/benchmark_linear_verifyFast_ARCH23_iss [ISSF01_ISS01 ...]
 PYTHONPATH=build/python python benchmarks/python/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 

@@ -9,7 +9,7 @@
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     },
     {
-      "name": "cpp",
+      "name": "core",
       "displayName": "C++ only (Eigen)",
       "inherits": "base",
       "cacheVariables": { "CORACPP_TORCH": "OFF", "CORACPP_PYTHON": "OFF" }
@@ -57,7 +57,7 @@
   ],
   "buildPresets": [
     { "name": "base", "hidden": true, "configuration": "Release", "jobs": 4 },
-    { "name": "cpp", "configurePreset": "cpp", "inherits": "base" },
+    { "name": "core", "configurePreset": "core", "inherits": "base" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
@@ -72,7 +72,7 @@
       "output": { "outputOnFailure": true },
       "execution": { "jobs": 4 }
     },
-    { "name": "cpp", "configurePreset": "cpp", "inherits": "base" },
+    { "name": "core", "configurePreset": "core", "inherits": "base" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
@@ -81,11 +81,11 @@
   ],
   "workflowPresets": [
     {
-      "name": "cpp",
+      "name": "core",
       "steps": [
-        { "type": "configure", "name": "cpp" },
-        { "type": "build", "name": "cpp" },
-        { "type": "test", "name": "cpp" }
+        { "type": "configure", "name": "core" },
+        { "type": "build", "name": "core" },
+        { "type": "test", "name": "core" }
       ]
     },
     {

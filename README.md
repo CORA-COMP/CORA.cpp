@@ -39,20 +39,20 @@ plot(R)                                                                # dims de
 Needs a C++20 compiler and CMake 3.25 or newer, on Linux, macOS or Windows:
 
 ```bash
-cmake --workflow --preset cpp         # or: see table below for python, torch, cuda
+cmake --workflow --preset core        # or: see table below for python, torch, cuda
 ```
 
 The same in separate steps:
 
 ```bash
-cmake --preset cpp
-cmake --build --preset cpp
-ctest --preset cpp
+cmake --preset core
+cmake --build --preset core
+ctest --preset core
 ```
 
 | preset | installs |
 | --- | --- |
-| `cpp` | eigen |
+| `core` | eigen |
 | `torch` | eigen + torch |
 | `torch-cuda` | eigen + torch + cuda |
 | `python` | eigen + python + numpy |
@@ -63,7 +63,7 @@ ctest --preset cpp
 - The Python presets create `.venv` in the project folder and install into it only
   (`scripts/requirements-python.txt`, or `scripts/requirements-python-torch.txt` for torch). They need Python 3.
 - Use the package with `.venv`'s Python and `PYTHONPATH=build/python` (Windows: `set PYTHONPATH=build\python`).
-- CI builds `cpp`, `python` on Linux, macOS and Windows, and `torch`, `python-torch` on Linux only;
+- CI builds `core`, `python` on Linux, macOS and Windows, and `torch`, `python-torch` on Linux only;
   the CUDA presets (CUDA 12.6) are not built there.
 - Linux and WSL2 also have `scripts/setup_local.sh` (a conda environment). In VS Code, open an example
   and press `F5`.

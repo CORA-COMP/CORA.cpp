@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-latest, windows-latest]
-        preset: [cpp, torch, python, python-torch]
+        preset: [core, torch, python, python-torch]
         exclude:  # the torch presets take too long to build on the slow runners
           - { os: macos-latest, preset: torch }
           - { os: macos-latest, preset: python-torch }
@@ -63,6 +63,6 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: oracle
-      - run: cmake --preset cpp -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - run: cmake --build --preset cpp
-      - run: ctest --preset cpp -R '^lean/' --output-on-failure
+      - run: cmake --preset core -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - run: cmake --build --preset core
+      - run: ctest --preset core -R '^lean/' --output-on-failure

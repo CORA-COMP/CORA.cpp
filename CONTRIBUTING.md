@@ -106,8 +106,8 @@ Use a local build (CORALean needs Lean via elan, leanprover.github.io):
 ```bash
 git clone https://gitlab.lrz.de/cps/coralean.git && cd coralean
 lake exe cache get && lake build oracle              # .lake/build/bin/oracle (oracle.exe on Windows)
-cmake --preset cpp -DCORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle
-cmake --build --preset cpp && ctest --preset cpp -R lean
+cmake --preset core -DCORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle
+cmake --build --preset core && ctest --preset core -R lean
 ```
 
 `CORACPP_ORACLE` (and `CORACPP_ORACLE_UNSOUND`) is OFF, `DOWNLOAD`, or the executable or a shell
