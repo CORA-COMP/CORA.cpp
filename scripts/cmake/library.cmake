@@ -42,8 +42,26 @@ foreach(leaf IN LISTS group_names)
 endforeach()
 list(REMOVE_DUPLICATES top_names)
 
-# the stamps depend on each other in this order, so that the report reads as a tree whatever order
-# the objects finish in (the objects themselves do not wait for it)
+# one custom target per line of the report; each waits for the one before, so that the report reads
+# as a tree whatever order the objects finish in (the objects themselves do not wait for it)
+set(report_script "${CMAKE_SOURCE_DIR}/scripts/cmake/progress_stamp.cmake")
+# Ninja shows a step by its comment (else by its whole command); Makefiles print every comment.
+if(CMAKE_GENERATOR MATCHES "Ninja")
+  set(report_comment "reporting the build")
+else()
+  set(report_comment "")
+endif()
+function(cora_report name covers stamp label bold previous)
+  add_custom_target(${name}
+    COMMENT "${report_comment}"
+    COMMAND ${CMAKE_COMMAND} "-DCOVERS=${covers}" "-DSTAMP=${stamp}" "-DLABEL=${label}" "-DBOLD=${bold}"
+            -P "${report_script}"
+    VERBATIM)
+  if(previous)
+    add_dependencies(${name} ${previous})
+  endif()
+endfunction()
+
 list(SORT group_names)
 set(tops "")
 foreach(leaf IN LISTS group_names)
@@ -55,6 +73,7 @@ list(REMOVE_DUPLICATES tops)
 set(object_expressions "")
 set(previous "")
 foreach(top IN LISTS tops)
+  set(top_stamps "")
   foreach(leaf IN LISTS group_names)
     string(MAKE_C_IDENTIFIER "${leaf}" id)
     if(NOT group_${id}_top STREQUAL top)
@@ -77,19 +96,17 @@ foreach(top IN LISTS tops)
       set(label "  ${done_mark} ${leaf}/")
     endif()
     set(stamp "${CMAKE_BINARY_DIR}/progress/${id}.stamp")
-    add_custom_command(OUTPUT "${stamp}"
-      COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "${label}"
-      COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
-      DEPENDS $<TARGET_OBJECTS:cora_${id}> ${previous} VERBATIM)
-    set(previous "${stamp}")
+    cora_report(cora_done_${id} "$<JOIN:$<TARGET_OBJECTS:cora_${id}>,|>" "${stamp}" "${label}" OFF
+                "${previous}")
+    add_dependencies(cora_done_${id} cora_${id})
+    list(APPEND top_stamps "${stamp}")
+    set(previous cora_done_${id})
   endforeach()
   if(top IN_LIST top_names)
-    set(stamp "${CMAKE_BINARY_DIR}/progress/top_${top}.stamp")
-    add_custom_command(OUTPUT "${stamp}"
-      COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green --bold "${done_mark} ${top}/"
-      COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
-      DEPENDS ${previous} VERBATIM)
-    set(previous "${stamp}")
+    string(REPLACE ";" "|" covers "${top_stamps}")
+    cora_report(cora_done_top_${top} "${covers}" "${CMAKE_BINARY_DIR}/progress/top_${top}.stamp"
+                "${done_mark} ${top}/" ON "${previous}")
+    set(previous cora_done_top_${top})
   endif()
 endforeach()
 add_custom_target(cora_progress DEPENDS ${previous})
