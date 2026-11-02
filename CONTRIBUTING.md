@@ -223,6 +223,29 @@ the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pi
 `experiments/oracle/README.md` in CORALean; the C++ side is `src/global/oracle/`. A dtype is set with
 `lean::DTypeScope s("ieee:binary32")` (Python: `with cora.lean.dtype("ieee:binary32"):`); values cross into CORA.cpp only when they are exact doubles.
 
+### Oracle tests
+
+An operation CORALean has gets an oracle test (`// ORACLE: <path>.m`, in `tests/global/oracle/` or
+`test_lean*`). `lean::Zonotope` and `lean::Interval` have one method per oracle op, named as
+CORA.cpp names CORA's (`support_function`, `is_intersecting`). The helper `oracle_testing.h`
+(Python: `oracle_testing.py`) draws seeded operands and runs the body twice: exact (CORA.cpp on the
+lean backend against the oracle at `nearest`: the same bits) and sound (CORA.cpp on its default
+backend against the oracle at `binary64`: inside its enclosure).
+
+```cpp
+if (!test::oracle::available()) return 0;                  // skips without CORACPP_ORACLE
+test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) {
+    const Zonotope Z = rnd.zonotope(5, 30);  const Tensor d = rnd.direction(5);
+    test::oracle::check(Z.support_function(d), lean::Zonotope(Z).support_function(d));
+});
+```
+
+In Python: `@oracle_testing.needs_oracle`, `oracle_testing.run(op, body)` and
+`oracle_testing.check(a, b)`. Examples: `tests/global/oracle/test_lean_zonotope_support_function.cpp`
+and `tests/python/test_lean_oracle.py`. The coverage check requires the helper and the skip guard in
+every ORACLE test. An op without a method is one line of `ask(op, operands)` in
+`src/global/oracle/{interval,zonotope}.cpp`.
+
 ### Still to do for a fresh install
 
 The `oracle` CI job (`.github/workflows/nightly.yml`) is defined and disabled (`if: false`). To enable it:
