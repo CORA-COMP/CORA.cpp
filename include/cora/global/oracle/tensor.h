@@ -1,15 +1,19 @@
-// tensor - lean::Tensor and lean::Interval, matrices of exact values in a CORALean dtype
+// tensor - lean::Tensor, a matrix of exact values in a CORALean dtype
 //
 // Syntax:     lean::Tensor T = lean::Tensor::from(x);   auto [v, err] = T.round_to("dyadic:8");
 //             cora::Tensor y = value.gather();
 // Values:     exact rationals m*2^e, held as text; nothing converts to double unless it is exact
 // Errors:     an operation on two dtypes throws; so does a conversion that is not exact
-// See also:   lean/oracle.h, lean/zonotope.h
+// See also:   lean/oracle.h, lean/interval.h, lean/zonotope.h
 
 #pragma once
 
 #include "cora/global/oracle/json.h"
 #include "cora/global/tensor/tensor.h"
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -20,12 +24,17 @@ struct Rounded;
 /// A matrix (rows x cols) of exact values in one dtype.
 class Tensor {
   public:
+    Tensor() = default;
+
     /// From a cora::Tensor (a column or a matrix) of the current dtype; throws if a value is not
-    /// representable in it.
+    /// representable in it. Implicit, so an operation takes a cora::Tensor where it wants one.
+    Tensor(const cora::Tensor &x) : Tensor(from(x)) {}
     static Tensor from(const cora::Tensor &x);
 
-    /// The exact text "m*2^e" of a double (the wire form of a scalar).
+    /// The exact text of a double in the current dtype ("m*2^e", "m*10^e" for fixedpoint): the
+    /// wire form of a scalar. decode is its inverse; it throws if the text is not a double.
     static std::string encode(double x);
+    static double decode(const std::string &text);
 
     /// Back to a cora::Tensor (double); throws if a value is not a double.
     cora::Tensor gather() const;
@@ -46,33 +55,6 @@ class Tensor {
     std::string dtype_;
     int64_t rows_ = 0, cols_ = 0;
     std::vector<std::string> data_;  // row-major "m*2^e"
-};
-
-/// A box of lean values: inf <= x <= sup.
-class Interval {
-  public:
-    Interval(Tensor inf, Tensor sup);
-
-    const Tensor &inf() const noexcept { return inf_; }
-    const Tensor &sup() const noexcept { return sup_; }
-
-    /// The exact interval of double bounds (values in the current dtype).
-    static Interval from(const cora::Tensor &inf, const cora::Tensor &sup);
-
-    /// Back to double bounds; throws if a bound is not a double.
-    std::pair<cora::Tensor, cora::Tensor> gather() const;
-
-    Json to_json() const;
-    static Interval from_json(const std::string &dtype, const Json &j);
-
-  private:
-    Tensor inf_, sup_;
-};
-
-/// The result of round_to: the rounded values and an interval enclosing x - value.
-struct Rounded {
-    Tensor value;
-    Interval error;
 };
 
 } // namespace cora::lean

@@ -30,6 +30,7 @@
 #include "cora/global/options.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
+#include "cora/global/oracle/request.h"
 #include "cora/global/plot/color.h"
 #include "cora/global/plot/figure.h"
 #include "cora/global/plot/plot.h"
