@@ -78,6 +78,7 @@ class Zonotope : public ContSet {
     Tensor rand_point_impl(int64_t N, Rng &rng, const std::string &type) const;
     Set project_impl(const std::vector<int64_t> &dims) const override;
     std::vector<Polygon> vertices_impl() const override;
+    std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
 
   private:

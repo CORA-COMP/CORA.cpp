@@ -221,6 +221,7 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         X = aux_shifted(next.plus(Ppoint).plus(remainder), xs).reduce(zonotope_order);
     }
     R.time_point.push_back(X);
+    R.time_step = time_step;
     return R;
 }
 

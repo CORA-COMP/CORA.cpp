@@ -28,6 +28,7 @@ ReachSet LinearSys::output_set(const ReachSet &R) const {
     if (!C_) return R;
 
     ReachSet Y;
+    Y.time_step = R.time_step;
     for (const Zonotope &Z : R.time_interval) Y.time_interval.push_back(Z.linear_map(*C_));
     for (const Zonotope &Z : R.time_point) Y.time_point.push_back(Z.linear_map(*C_));
     return Y;
