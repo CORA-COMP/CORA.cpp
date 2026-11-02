@@ -1,0 +1,64 @@
+# build - configures, builds and tests one preset on one OS (called by ci.yml, merge.yml, nightly.yml)
+#
+# The install commands of the README (the presets) with one addition: no -march=native, because the
+# runners differ in CPU and a build must run on the one that tests it.
+
+name: build
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: runner label
+        type: string
+        default: ubuntu-24.04
+      preset:
+        description: configure, build and test preset of CMakePresets.json
+        type: string
+        required: true
+      tests:
+        description: ALL, or the regex of the ctest names to run (scripts/ci/affected_tests.py)
+        type: string
+        default: ALL
+      build_type:
+        description: CMAKE_BUILD_TYPE (default: the preset's)
+        type: string
+        default: ""
+      cxx_flags:
+        description: CMAKE_CXX_FLAGS, for instance the sanitizers
+        type: string
+        default: ""
+      ccache_key:
+        description: suffix of the compiler cache key
+        type: string
+        default: ""
+
+jobs:
+  build:
+    name: ${{ inputs.preset }} on ${{ inputs.os }}
+    runs-on: ${{ inputs.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hendrikmuhs/ccache-action@v1.2.24
+        if: runner.os != 'Windows'
+        with:
+          key: ${{ inputs.preset }}-${{ inputs.os }}${{ inputs.ccache_key }}
+      - name: configure
+        env:
+          CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
+          BUILD_TYPE: ${{ inputs.build_type }}
+          CXX_FLAGS: ${{ inputs.cxx_flags }}
+        run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS"
+      - run: cmake --build --preset ${{ inputs.preset }}
+      - name: test
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          if [ "$TESTS" = ALL ]; then
+            ctest --preset ${{ inputs.preset }} -j4 --output-on-failure
+          else
+            ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -R "$TESTS"
+          fi

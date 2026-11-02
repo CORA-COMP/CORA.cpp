@@ -15,6 +15,7 @@ src/                       the implementation, one operation per file, mirroring
   global/python/           bindings.cpp, convert.h and the cora/ package (no math)
 tests/  examples/          mirror src/; tests/install/consumer builds against the install tree
 scripts/competition/       the CORA-COMP entry (cora::comp, kept apart)
+scripts/ci/  benchmarks/micro/   the CI helpers (test selection, instruction counts) and the micro-benchmarks they run
 docs/                      architecture.md (the decisions), naming.md (CORA -> C++ -> Python)
 ```
 
@@ -127,6 +128,31 @@ Options (`scripts/build.sh -D...`, see `CMakeLists.txt`): `CORACPP_CHECKS` (OFF 
 `CORACPP_BLAS`; `.coracpp-build` names another build directory. Tests run on every backend and the GPU;
 the `_torch` ones need libtorch.
 
+## CI
+
+Three tiers (`.github/workflows/`); the one check to require in the ruleset is `ci-gate`.
+- **Every push to a pull request** (`ci.yml`, under 10 minutes): `checks` (format, conventions,
+  coverage when `scripts/coverage/coverage.py` exists), then `linux-core` and `linux-python`, which
+  build everything and run only the tests the change can affect, and `instructions`, which fails
+  when a micro-benchmark of `benchmarks/micro` runs more than 3% more instructions than at the base
+  commit. A documentation-only change skips the builds. A new push cancels the older run.
+- **Before a merge** (`merge.yml`, merge queue): every test of `core`, `torch`, `python`, `python-torch` on Linux.
+- **Every night** (`nightly.yml`): the full matrix of three operating systems, ASan and UBSan, the
+  competition binary; skipped when `main` has not moved since the last successful night. A failed
+  night opens an issue labelled `nightly`.
+
+Which tests a change affects, from the `#include` graph (`ALL` after a change to the tensor, the
+backends, the global headers, the build or CI; `NONE` for documentation):
+
+```bash
+python3 scripts/ci/affected_tests.py origin/main HEAD          # a regex for ctest -R
+ctest --preset core -R "$(python3 scripts/ci/affected_tests.py origin/main HEAD)"
+scripts/ci/instruction_counts.sh origin/main                    # the instruction counts (needs valgrind)
+```
+
+A full run by hand: Actions > `merge` > Run workflow (or `gh workflow run merge.yml --ref <branch>`);
+`nightly` can be started the same way and then never skips.
+
 ## VS Code
 
 `scripts/setup_local.sh` writes `.vscode/settings.json` and `c_cpp_properties.json` (git-ignored:
@@ -177,7 +203,7 @@ the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pi
 
 ### Still to do for a fresh install
 
-The `oracle` CI job (`.github/workflows/ci.yml`) is defined and disabled (`if: false`). To enable it:
+The `oracle` CI job (`.github/workflows/nightly.yml`) is defined and disabled (`if: false`). To enable it:
 
 1. Publish CORALean (public repository or public releases); CORA.cpp may move to GitLab later, only
    the URL in `scripts/coralean.cmake` changes.

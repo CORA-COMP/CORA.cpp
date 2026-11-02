@@ -1,0 +1,50 @@
+# CI, tier 2: the full test suite before a merge (GitHub merge queue), or on demand
+#
+# Every preset on Linux, every test. Start one by hand: Actions > merge > Run workflow, or
+# `gh workflow run merge.yml --ref <branch>`. Require `ci-gate` (it is also the name of the gate of
+# ci.yml, so the one required check covers the pull request and the merge group).
+
+name: merge
+
+on:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: merge-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: core
+
+  torch:
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: torch
+
+  python:
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: python
+
+  python-torch:
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: python-torch
+
+  ci-gate:
+    if: always()
+    needs: [core, torch, python, python-torch]
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          case " $RESULTS " in *" failure "*|*" cancelled "*|*" skipped "*) exit 1;; esac

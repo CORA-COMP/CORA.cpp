@@ -113,6 +113,16 @@ if(Python3_EXECUTABLE)
            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 endif()
 
+# the tests of the scripts (scripts/ci): tests/global/test_*.py, but the conventions test above
+file(GLOB_RECURSE script_tests CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/tests/global/test_*.py")
+foreach(source IN LISTS script_tests)
+  get_filename_component(name "${source}" NAME_WE)
+  if(Python3_EXECUTABLE AND NOT name STREQUAL "test_coding_conventions")
+    add_test(NAME global/${name} COMMAND "${Python3_EXECUTABLE}" "${source}")
+    set_tests_properties(global/${name} PROPERTIES LABELS test)
+  endif()
+endforeach()
+
 file(GLOB_RECURSE test_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/tests/test_*.cpp")
 foreach(source IN LISTS test_sources)
   file(RELATIVE_PATH relative "${CMAKE_SOURCE_DIR}/tests" "${source}")
