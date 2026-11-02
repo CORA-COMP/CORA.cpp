@@ -8,6 +8,8 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch")
 
 import cora
+if not cora.has_torch:  # torch is installed, but this build has no torch backend
+    raise unittest.SkipTest("needs a build with torch")
 
 X0 = cora.Zonotope(cora.Tensor([1.2, 0.0]), 0.2 * cora.eye(2))
 PENDULUM = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)

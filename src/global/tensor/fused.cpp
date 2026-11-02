@@ -33,6 +33,34 @@ void aux_require_bounds(const Tensor &inf, const Tensor &sup, const char *op) {
                   std::string("CoraTensor::") + op + ": the bounds differ in shape");
 }
 
+/// The batch axes (all but the last two) of matrices, broadcast as in numpy; no heap memory.
+Shape aux_common_batch(std::initializer_list<const Tensor *> ts, const char *op) {
+    int64_t rank = 0;
+    for (const Tensor *t : ts) rank = std::max<int64_t>(rank, t->ndim() - 2);
+    Shape out;
+    for (int64_t i = 0; i < rank; ++i) out.push_back(1);
+    for (const Tensor *t : ts) {
+        const int64_t r = t->ndim() - 2;
+        for (int64_t i = 0; i < r; ++i) {
+            int64_t &o = out[rank - r + i];
+            const int64_t d = t->shape()[i];
+            if (d != 1 && o != 1 && d != o)
+                CORA_FAIL(Error::dimension_mismatch,
+                          std::string("CoraTensor::") + op + ": the batch axes do not broadcast");
+            if (o == 1) o = d;
+        }
+    }
+    return out;
+}
+
+/// t with the batch axes `batch` before its last two, broadcast where they differ.
+Tensor aux_with_batch(const Tensor &t, const Shape &batch) {
+    Shape target = batch;
+    target.push_back(t.size(-2));
+    target.push_back(t.size(-1));
+    return t.shape() == target ? t : t.broadcast_to(target);
+}
+
 } // namespace
 
 
@@ -158,17 +186,19 @@ std::pair<Tensor, Tensor> Tensor::zonotope_linear_combination(const Tensor &c1, 
                                                               const Tensor &c2, const Tensor &G2) {
     for (const Tensor *t : {&G1, &c2, &G2})
         detail::check_pair(c1, *t, "zonotope_linear_combination");
-    if (c1.shape() != c2.shape() || G1.shape() != G2.shape())
+    for (const Tensor *t : {&c1, &G1, &c2, &G2})
+        aux_require_matrix(*t, "zonotope_linear_combination");
+    const int64_t n = G1.size(-2), m = G1.size(-1);
+    if (G2.size(-2) != n || G2.size(-1) != m || c1.size(-2) != n || c2.size(-2) != n ||
+        c1.size(-1) != 1 || c2.size(-1) != 1)
         CORA_FAIL(Error::dimension_mismatch,
-                  "CoraTensor::zonotope_linear_combination: the zonotopes differ in shape");
-    // the shift (c1 - c2)/2 becomes a generator: the center has the batch axes of the generators
-    Shape column = G1.shape();
-    column.back() = 1;
-    if (c1.shape() != column)
-        CORA_FAIL(Error::dimension_mismatch,
-                  "CoraTensor::zonotope_linear_combination: a center must be a column of the "
-                  "generators' batch and rows");
-    const auto [c, G] = c1.impl().zonotope_linear_combination(G1.impl(), c2.impl(), G2.impl());
+                  "CoraTensor::zonotope_linear_combination: needs centers (..., n, 1) and "
+                  "generators (..., n, m) alike");
+    // the shift (c1 - c2)/2 becomes a generator: all four take one batch, broadcast
+    const Shape batch = aux_common_batch({&c1, &G1, &c2, &G2}, "zonotope_linear_combination");
+    const Tensor a = aux_with_batch(c1, batch), A = aux_with_batch(G1, batch);
+    const Tensor b = aux_with_batch(c2, batch), B = aux_with_batch(G2, batch);
+    const auto [c, G] = a.impl().zonotope_linear_combination(A.impl(), b.impl(), B.impl());
     return {Tensor(c), Tensor(G)};
 }
 

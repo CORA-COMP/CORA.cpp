@@ -66,7 +66,7 @@ class ZeroCopy(unittest.TestCase):
         self.assertTrue(np.shares_memory(G, self.G) and copy.shape == self.G.shape)
         self.assertLess(per_call, per_copy / 5)
 
-    @unittest.skipUnless(torch is not None and cora.has_torch(), "needs torch")
+    @unittest.skipUnless(torch is not None and cora.has_torch, "needs torch")
     def test_a_torch_tensor_stays_itself(self):
         G = torch.randn(3, 4, dtype=torch.float64, requires_grad=True)
         Z = cora.Zonotope(torch.zeros(3, dtype=torch.float64), G)
