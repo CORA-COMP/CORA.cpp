@@ -125,6 +125,21 @@ struct, as CORA separates `params` from `options`.
   matrix.
 - Files: `include/cora/cont_set/`, `src/global/python/bindings.cpp`.
 
+**One plot core, thin front ends.** `plot` decides everything about a picture once (projection,
+vertices, CORA's colors, the union of overlapping sets, z-order) and puts it into the layers of a
+`Figure`; a `FigureGrid` is several figures.
+- The writers draw layers and decide nothing: SVG (C++, Jupyter) and pgfplots (`Figure::tikz`, one
+  `\addplot` per layer, a `groupplot` for a grid) are in the core, and matplotlib draws the same
+  layers from Python.
+- Dimensions: one is a bar, two a polygon, three the faces of the convex hull of `vertices_3d`.
+- TikZ colors are those of cora-macs by name (`CORAcolorReachSet`, ...) or explicit RGB; vertices
+  within a tolerance of the line through their neighbors are dropped, and the coordinates can go
+  to tables beside the file.
+- Snapshot tests keep the layers and the TikZ text of four figures; the Python test compiles them
+  when LaTeX is installed.
+- Files: `include/cora/global/plot/`, `src/global/plot/`, `src/global/python/cora/plot.py`,
+  `src/global/python/cora/figure.py`.
+
 **Public headers and an installable package.**
 - The public headers live in `include/cora/`. `cora/cora.h` includes all of them, and
   `cora/config.h` (written by CMake) records `CORACPP_CHECKS`. Private headers stay in `src/`.
