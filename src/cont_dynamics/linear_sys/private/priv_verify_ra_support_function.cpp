@@ -95,7 +95,7 @@ struct Pass {
 /// The largest entry of t.
 double aux_max_all(const Tensor &t) {
     double m = -std::numeric_limits<double>::infinity();
-    for (double v : t.max_last().data()) m = std::max(m, v);
+    for (double v : t.max(-1, true).data()) m = std::max(m, v);
     return m;
 }
 
@@ -292,12 +292,12 @@ std::optional<Tensor> aux_particular(const Tensor &A, const Tensor &X, Expmat &E
 /// [dt G, A dt^2/2 G, ...]; empty if the series needs kMaxEta terms.
 std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, double time_step) {
     std::vector<Tensor> parts{GU * time_step};
-    std::vector<double> diag = parts[0].abs().sum_last().data();
+    std::vector<double> diag = parts[0].abs().sum(-1, true).data();
     for (int eta = 1;;) {
         aux_get_apower(E, A, eta);
         const Tensor add =
             aux_power_tensor(E, A, eta).matmul(GU) * (std::pow(time_step, eta + 1) / (eta + 1));
-        const std::vector<double> add_diag = add.abs().sum_last().data();
+        const std::vector<double> add_diag = add.abs().sum(-1, true).data();
         bool stop = true;
         for (std::size_t i = 0; i < diag.size(); ++i) {
             stop = stop && add_diag[i] <= kEps * diag[i];
@@ -307,7 +307,7 @@ std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, 
         if (stop) break;
         if (++eta == kMaxEta) return std::nullopt;
     }
-    return Tensor::cat_last(parts);
+    return Tensor::concat(parts, -1);
 }
 
 // Specifications ----------------------------------------------------------------------------------
@@ -377,7 +377,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
     Pass pass;
     std::vector<Tensor> rows{l_t};
     for (int k = 0; k < N; ++k) rows.push_back(rows.back().matmul(Delta));
-    pass.LT = Tensor::cat_rows(rows);
+    pass.LT = Tensor::concat(rows, -2);
     const std::vector<double> ltc = pass.LT.matmul(R0.center()).data();
     pass.ltg = pass.LT.matmul(R0.generators()).data();
 
@@ -387,7 +387,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
         std::vector<Tensor> cols;
         Tensor P = Pu.zeros_like();
         for (int k = 0; k < N; ++k) cols.push_back(P = Delta.matmul(P) + Pu);
-        PuProj = l_t.matmul(Tensor::cat_last(cols)).data();
+        PuProj = l_t.matmul(Tensor::concat(cols, -1)).data();
     }
     pass.affine_tp.assign(std::size_t(N + 1) * S, 0.0);
     for (int k = 0; k <= N; ++k)
@@ -402,14 +402,14 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
     // The curvature term F R0 + G u, evaluated along l_k for k < N.
     const Tensor cx = F.center.matmul(R0.center()), G1x = F.center.matmul(R0.generators());
     const Tensor G2x =
-        F.rad.matmul(Tensor::cat_last({R0.center(), R0.generators()}).abs().sum_last());
+        F.rad.matmul(Tensor::concat({R0.center(), R0.generators()}, -1).abs().sum(-1, true));
     std::vector<Tensor> W{cx, G2x};
     if (isu) {
         W.push_back(G.center.matmul(u));
         W.push_back(G.rad.matmul(u.abs()));
     }
     const int64_t nw = W.size();
-    const std::vector<double> lw = pass.LT.matmul(Tensor::cat_last(W)).data();
+    const std::vector<double> lw = pass.LT.matmul(Tensor::concat(W, -1)).data();
     const std::vector<double> lg1 = pass.LT.matmul(G1x).data();
     pass.Cbloat.assign(std::size_t(N) * S, 0.0);
     for (std::size_t r = 0; r < pass.Cbloat.size(); ++r) {
@@ -529,8 +529,8 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
             }
             // Both sums accumulate over the steps; index k is the solution at t_k.
             std::vector<double> under_pu(std::size_t(N + 1) * S, 0.0);
-            const std::vector<double> d_under = pass.LT.matmul(*under_g).abs().sum_last().data();
-            const std::vector<double> d_over = pass.LT.matmul(*over_g).abs().sum_last().data();
+            const std::vector<double> d_under = pass.LT.matmul(*under_g).abs().sum(-1, true).data();
+            const std::vector<double> d_over = pass.LT.matmul(*over_g).abs().sum(-1, true).data();
             for (int k = 1; k <= N; ++k)
                 for (int s = 0; s < S; ++s) {
                     const std::size_t r = std::size_t(k) * S + s, prev = r - S;

@@ -20,7 +20,7 @@ namespace {
 
 /// How far the radius of I can move a point of Z along each axis: rad(I) * (|c| + sum_j |G_j|).
 Tensor aux_widening(const Zonotope &Z, const Interval &I) {
-    const Tensor reach = Z.center().abs() + Z.generators().abs().sum_last();
+    const Tensor reach = Z.center().abs() + Z.generators().abs().sum(-1, true);
     return I.rad().matmul(reach);
 }
 
@@ -49,7 +49,7 @@ Zonotope Zonotope::linear_map(const Interval &I) const {
     const Tensor center = I.center();
     // The center matrix maps Z; the radius adds one axis-aligned generator per dimension.
     return {center.matmul(c_),
-            Tensor::cat_last({center.matmul(G_), aux_widening(*this, I).diag()})};
+            Tensor::concat({center.matmul(G_), aux_widening(*this, I).diag()}, -1)};
 }
 
 } // namespace cora

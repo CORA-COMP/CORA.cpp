@@ -45,9 +45,9 @@ Tensor aux_filled(const Tensor &like, double value) {
 
 /// The entries of a column (n, 1) as n tensors of shape (1, 1).
 std::vector<Tensor> aux_entries(const Tensor &column) {
-    const Tensor row = column.transpose();
+    const Tensor row = column.matrix_transpose();
     std::vector<Tensor> out;
-    for (int64_t i = 0; i < column.shape()[0]; ++i) out.push_back(row.select_cols({i}));
+    for (int64_t i = 0; i < column.shape()[0]; ++i) out.push_back(row.slice(-1, i, i + 1));
     return out;
 }
 
@@ -60,7 +60,7 @@ Box aux_box(const Zonotope &Z) {
 
 /// The box hull of two boxes, made 10% (and a little) larger.
 Box aux_inflated_hull(const Box &a, const Box &b) {
-    const Tensor lo = Tensor::minimum(a.lo, b.lo), hi = Tensor::maximum(a.hi, b.hi);
+    const Tensor lo = a.lo.minimum(b.lo), hi = a.hi.maximum(b.hi);
     const Tensor margin = (hi - lo) * 0.1 + aux_filled(lo, 1e-10);
     return {lo - margin, hi + margin};
 }
@@ -69,7 +69,7 @@ Box aux_inflated_hull(const Box &a, const Box &b) {
 Box aux_picard(const NonlinearSys &sys, const Box &x0, const Box &guess, double dt) {
     const Box f = sys.enclosure(guess);
     // [0, dt] * [a, b] is [min(0, dt a), max(0, dt b)] for a step dt > 0.
-    return {x0.lo + (f.lo * dt).neg(), x0.hi + (f.hi * dt).pos()};
+    return {x0.lo + (f.lo * dt).minimum(0.0), x0.hi + (f.hi * dt).maximum(0.0)};
 }
 
 /// Whether the box inner lies in outer (false for a NaN).
@@ -120,7 +120,7 @@ Box aux_lagrange_remainder(const NonlinearSys &sys, const Box &box, const Tensor
         los.push_back(sum.lo);
         his.push_back(sum.hi);
     }
-    return {Tensor::cat_rows(los), Tensor::cat_rows(his)};
+    return {Tensor::concat(los, -2), Tensor::concat(his, -2)};
 }
 
 // The affine system with its input ----------------------------------------------------------------
@@ -129,7 +129,7 @@ Box aux_lagrange_remainder(const NonlinearSys &sys, const Box &box, const Tensor
 Zonotope aux_input_set(const Tensor &f0, const Box &L) { return {f0 + L.mid(), L.rad().diag()}; }
 
 /// The largest row sum of |A|, the infinity norm of the matrix, as a tensor (1, 1).
-Tensor aux_norm(const Tensor &A) { return A.abs().sum_last().transpose().max_last(); }
+Tensor aux_norm(const Tensor &A) { return A.abs().sum(-1, true).matrix_transpose().max(-1, true); }
 
 /// The bound on every entry of the input solution past the Taylor terms 0..taylor_terms:
 /// dt (|A| dt)^(q+1) / (q+2)! / (1 - |A| dt / (q+3)) with q = taylor_terms.
@@ -141,8 +141,8 @@ Tensor aux_series_remainder(const Tensor &norm_a, double dt, int taylor_terms) {
                   "cora: the time step is too large for the Taylor series of the "
                   "linearized system; use a smaller step or more taylor_terms");
     Tensor term = aux_filled(r, dt);                        // dt * r^(q+1) / (q+2)!
-    for (int i = 1; i <= q + 1; ++i) term = term.mul(r) * (1.0 / (i + 1));
-    return term.div(aux_filled(r, 1.0) - r * (1.0 / (q + 3))) * (1.0 / (q + 2));
+    for (int i = 1; i <= q + 1; ++i) term = term.multiply(r) * (1.0 / (i + 1));
+    return term.divide(aux_filled(r, 1.0) - r * (1.0 / (q + 3))) * (1.0 / (q + 2));
 }
 
 /// Z shifted by the column p.
@@ -194,7 +194,8 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
 
         // (ii) the input solution: sum_i A^i dt^{i+1}/(i+1)! U over the step, and over [0, dt]
         // where the factor t^{i+1}/(i+1)! in [0, dt^{i+1}/(i+1)!] turns U into the zonotope Ubar
-        const Zonotope Ubar(U.center() * 0.5, Tensor::cat_last({U.center() * 0.5, U.generators()}));
+        const Zonotope Ubar(U.center() * 0.5,
+                            Tensor::concat({U.center() * 0.5, U.generators()}, -1));
         Tensor Ai = A.eye_like();
         double factor = time_step; // dt^{i+1} / (i+1)!
         Zonotope Ppoint = U.linear_map(Ai * factor), Pinterval = Ubar.linear_map(Ai * factor);
@@ -207,9 +208,9 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         // The rest of the series moves every point of the input solution by at most eps |u|.
         const Tensor eps = aux_series_remainder(aux_norm(A), time_step, taylor_terms);
         const Interval hull = U.interval();
-        const Tensor abs_max = Tensor::maximum(hull.inf().abs(), hull.sup().abs());
+        const Tensor abs_max = hull.inf().abs().maximum(hull.sup().abs());
         const Tensor reach_of_u =
-            aux_filled(xs, 1.0).matmul(eps.mul(abs_max.transpose().sum_last()));
+            aux_filled(xs, 1.0).matmul(eps.multiply(abs_max.matrix_transpose().sum(-1, true)));
         const Zonotope remainder(aux_filled(xs, 0.0), reach_of_u.diag());
 
         // (iii) the sets, from the homogeneous solution of the deviation from xs

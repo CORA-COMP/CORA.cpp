@@ -53,8 +53,8 @@ Interval LinearSys::correction_matrix_state(double time_step, int taylor_terms) 
         series = series + Aiabs * dt_over_fac;
         // The weight is negative: the negative part of A^i bounds F from above.
         const double weight = priv_extremal_weight(i, dt_over_fac);
-        Fpos = Fpos + Ai.neg() * weight;
-        Fneg = Fneg + Ai.pos() * weight;
+        Fpos = Fpos + Ai.minimum(0.0) * weight;
+        Fneg = Fneg + Ai.maximum(0.0) * weight;
     }
     const Tensor W = aux_remainder(Aabs, time_step, series);
     return {Fneg - W, Fpos + W};

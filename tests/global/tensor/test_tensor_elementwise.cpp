@@ -49,20 +49,20 @@ void static_functions_take_numbers_and_tensors(const std::string &b) {
 void products_and_quotients_are_elementwise(const std::string &b) {
     const Tensor a = Tensor::from_data({1.0, 2.0, 3.0, 4.0}, {2, 2});
     const Tensor c = Tensor::from_data({2.0, 4.0, 5.0, 8.0}, {2, 2});
-    check(test::close(a.mul(c), std::vector<double>{2.0, 8.0, 15.0, 32.0}), b + ": mul");
-    check(test::close(c.div(a), std::vector<double>{2.0, 2.0, 5.0 / 3.0, 2.0}), b + ": div");
+    check(test::close(a.multiply(c), std::vector<double>{2.0, 8.0, 15.0, 32.0}), b + ": mul");
+    check(test::close(c.divide(a), std::vector<double>{2.0, 2.0, 5.0 / 3.0, 2.0}), b + ": div");
     const Tensor col = Tensor::from_data({10.0, 100.0}, {2, 1});
-    check(test::close(a.mul(col), std::vector<double>{10.0, 20.0, 300.0, 400.0}) &&
-              test::close(col.mul(a), std::vector<double>{10.0, 20.0, 300.0, 400.0}),
+    check(test::close(a.multiply(col), std::vector<double>{10.0, 20.0, 300.0, 400.0}) &&
+              test::close(col.multiply(a), std::vector<double>{10.0, 20.0, 300.0, 400.0}),
           b + ": a column meets every column");
-    check(test::close(a.div(col), std::vector<double>{0.1, 0.2, 0.03, 0.04}), b + ": div by a column");
+    check(test::close(a.divide(col), std::vector<double>{0.1, 0.2, 0.03, 0.04}), b + ": div by a column");
 }
 
 void maximum_and_minimum_pick_elements(const std::string &b) {
     const Tensor a = Tensor::from_data({1.0, -2.0, 3.0, 4.0}, {2, 2});
     const Tensor c = Tensor::from_data({0.0, 5.0, 3.0, -1.0}, {2, 2});
-    check(test::close(Tensor::maximum(a, c), std::vector<double>{1.0, 5.0, 3.0, 4.0}), b + ": maximum");
-    check(test::close(Tensor::minimum(a, c), std::vector<double>{0.0, -2.0, 3.0, -1.0}), b + ": minimum");
+    check(test::close(a.maximum(c), std::vector<double>{1.0, 5.0, 3.0, 4.0}), b + ": maximum");
+    check(test::close(a.minimum(c), std::vector<double>{0.0, -2.0, 3.0, -1.0}), b + ": minimum");
 }
 
 } // namespace

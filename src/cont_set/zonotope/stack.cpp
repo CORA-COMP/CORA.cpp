@@ -29,7 +29,7 @@ Tensor aux_pad_generators(const Tensor &G, int64_t m) {
     shape.back() = missing;
     int64_t count = 1;
     for (int64_t d : shape) count *= d;
-    return Tensor::cat_last({G, Tensor::like(G, std::vector<double>(count, 0.0), shape)});
+    return Tensor::concat({G, Tensor::like(G, std::vector<double>(count, 0.0), shape)}, -1);
 }
 
 } // namespace

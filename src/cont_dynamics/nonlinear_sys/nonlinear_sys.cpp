@@ -20,9 +20,9 @@ namespace {
 
 /// The values of the states of the columns of X (n, N): N x 1 columns, one per state.
 std::vector<Tensor> aux_columns(const Tensor &X) {
-    const Tensor rows = X.transpose();
+    const Tensor rows = X.matrix_transpose();
     std::vector<Tensor> out;
-    for (int64_t i = 0; i < X.shape()[0]; ++i) out.push_back(rows.select_cols({i}));
+    for (int64_t i = 0; i < X.shape()[0]; ++i) out.push_back(rows.slice(-1, i, i + 1));
     return out;
 }
 
@@ -79,7 +79,7 @@ Tensor NonlinearSys::dynamics(const Tensor &x) const {
     const std::vector<Tensor> states = aux_columns(x);
     std::vector<Tensor> f;
     for (const Expr &fi : f_) f.push_back(fi.eval_tensor(states));
-    return Tensor::cat_last(f).transpose();
+    return Tensor::concat(f, -1).matrix_transpose();
 }
 
 // The n x n entries at one point, joined row by row.
@@ -92,9 +92,9 @@ Tensor NonlinearSys::jacobian(const Tensor &x) const {
     for (int64_t i = 0; i < n_; ++i) {
         std::vector<Tensor> row;
         for (int64_t j = 0; j < n_; ++j) row.push_back(jacobian_[i * n_ + j].eval_tensor(states));
-        rows.push_back(Tensor::cat_last(row));
+        rows.push_back(Tensor::concat(row, -1));
     }
-    return Tensor::cat_rows(rows);
+    return Tensor::concat(rows, -2);
 }
 
 // One range per component, joined into columns.
@@ -110,7 +110,7 @@ Range NonlinearSys::enclosure(const Range &box) const {
         lo.push_back(r.lo);
         hi.push_back(r.hi);
     }
-    return {Tensor::cat_rows(lo), Tensor::cat_rows(hi)};
+    return {Tensor::concat(lo, -2), Tensor::concat(hi, -2)};
 }
 
 // The constant zeros of the Hessian are skipped: most entries of a typical system.

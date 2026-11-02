@@ -30,7 +30,7 @@ Zonotope Zonotope::linear_combination(const Zonotope &Z2) const {
     const Tensor mean = (G_ + Z2.generators()) * 0.5;   // the shared part of matching generators
     const Tensor spread = (G_ - Z2.generators()) * 0.5; // how far apart they are
     const Tensor shift = (c_ - Z2.center()) * 0.5;      // the distance of the centers
-    return {(c_ + Z2.center()) * 0.5, Tensor::cat_last({mean, spread, shift})};
+    return {(c_ + Z2.center()) * 0.5, Tensor::concat({mean, spread, shift}, -1)};
 }
 
 } // namespace cora

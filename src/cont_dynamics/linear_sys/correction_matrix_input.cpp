@@ -37,8 +37,8 @@ Interval LinearSys::correction_matrix_input(double time_step, int taylor_terms) 
         dt_over_fac *= time_step / i;
         // The weight is negative: the negative part of A^(i-1) bounds G from above.
         const double weight = priv_extremal_weight(i, dt_over_fac);
-        Gpos = Gpos + Ai.neg() * weight;
-        Gneg = Gneg + Ai.pos() * weight;
+        Gpos = Gpos + Ai.minimum(0.0) * weight;
+        Gneg = Gneg + Ai.maximum(0.0) * weight;
         Ai = Ai.matmul(A_);
     }
     const Interval E = expm_remainder(time_step, taylor_terms);

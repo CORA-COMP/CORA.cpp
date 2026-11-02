@@ -1,12 +1,13 @@
-// torch - the libtorch backend of Tensor: batched tensors on the CPU or a CUDA device
+// torch - the libtorch backend of Tensor: batched float64 or float32 tensors on the CPU or a GPU
 //
 // TorchTensor implements the operations of Tensor::Impl on torch::Tensor, so autograd
-// differentiates through them; TorchBackend makes tensors from host numbers.
+// differentiates through them; TorchBackend makes tensors from host numbers. Masks and indices
+// are tensors of the operand's dtype, as on the other backends.
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/error.h"
 
-#include <stdexcept>
+#include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -15,6 +16,13 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+using Binary = Tensor::Binary;
+using Unary = Tensor::Unary;
+using Reduce = Tensor::Reduce;
+using Norm = Tensor::Norm;
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 // Matrix Exponential ------------------------------------------------------------------------------
 
@@ -41,89 +49,218 @@ struct ExpmFunction : torch::autograd::Function<ExpmFunction> {
 
 // Tensor ------------------------------------------------------------------------------------------
 
+DType aux_dtype(const torch::Tensor &t) {
+    return t.scalar_type() == torch::kFloat ? DType::float32 : DType::float64;
+}
+
+torch::ScalarType aux_scalar(DType d) {
+    return d == DType::float32 ? torch::kFloat : torch::kDouble;
+}
+
+Device aux_device(const torch::Device &d) {
+    if (!d.is_cuda()) return {};
+    return {Device::Type::cuda, static_cast<int8_t>(d.has_index() ? d.index() : 0)};
+}
+
+/// A floating tensor: float64 and float32 stay, anything else becomes float64.
+torch::Tensor aux_floating(const torch::Tensor &t) {
+    return t.scalar_type() == torch::kDouble || t.scalar_type() == torch::kFloat
+               ? t
+               : t.to(torch::kDouble);
+}
+
 /// A torch::Tensor; custom_backward selects the hand-written backward pass of expm and is passed on
 /// to every tensor made from this one.
 struct TorchTensor : Tensor::Impl {
     torch::Tensor t;
     bool custom_backward;
-    TorchTensor(torch::Tensor t, bool custom) : t(std::move(t)), custom_backward(custom) {}
+    TorchTensor(torch::Tensor x, bool custom)
+        : Tensor::Impl(Shape(x.sizes().vec()), aux_dtype(x), aux_device(x.device()),
+                       backend_id::torch),
+          t(std::move(x)), custom_backward(custom) {}
 
     Ptr wrap(torch::Tensor r) const {
-        return std::make_shared<TorchTensor>(std::move(r), custom_backward);
+        return std::make_shared<TorchTensor>(aux_floating(r), custom_backward);
     }
     static const torch::Tensor &of(const Impl &o) { return static_cast<const TorchTensor &>(o).t; }
+    /// A mask or index result in this tensor's dtype.
+    Ptr values(const torch::Tensor &r) const { return wrap(r.to(t.scalar_type())); }
 
-    std::vector<int64_t> shape() const override { return t.sizes().vec(); }
+    // Construction and access
     std::vector<double> data() const override {
         const torch::Tensor host = t.detach().to(torch::kCPU, torch::kDouble).contiguous();
         return std::vector<double>(host.data_ptr<double>(), host.data_ptr<double>() + host.numel());
     }
-    std::string device() const override { return t.device().str(); }
-    Ptr to(const std::string &device) const override { return wrap(t.to(parse_device(device))); }
-
-    Ptr like(const std::vector<double> &data, const std::vector<int64_t> &shape) const override {
-        const torch::Tensor host =
-            torch::from_blob(const_cast<double *>(data.data()), shape, torch::kDouble).clone();
-        return wrap(host.to(t.device()));
+    Ptr to(Device d) const override {
+        return wrap(t.to(d.type == Device::Type::cpu ? torch::Device(torch::kCPU)
+                                                      : torch::Device(torch::kCUDA, d.index)));
     }
-
-    /// The device of a name, as torch_device reads it.
-    static torch::Device parse_device(const std::string &name) { return torch_device(name); }
-
-    Ptr add(const Impl &o) const override { return wrap(t + of(o)); }
-    Ptr sub(const Impl &o) const override { return wrap(t - of(o)); }
-    Ptr scale(double s) const override { return wrap(t * s); }
-    Ptr mul(const Impl &o) const override { return wrap(t * of(o)); }
-    Ptr div(const Impl &o) const override { return wrap(t / of(o)); }
-    Ptr matmul(const Impl &o) const override { return wrap(t.matmul(of(o))); }
-    Ptr transpose() const override { return wrap(t.transpose(-2, -1)); }
-    Ptr abs() const override { return wrap(t.abs()); }
-    Ptr pos() const override { return wrap(t.clamp_min(0)); }
-    Ptr neg() const override { return wrap(t.clamp_max(0)); }
-    Ptr expm() const override {
-        return wrap(custom_backward ? ExpmFunction::apply(t) : torch::matrix_exp(t));
+    Ptr to(DType d) const override { return wrap(t.to(aux_scalar(d))); }
+    Ptr like(const double *v, const Shape &s) const override {
+        const torch::Tensor host = torch::from_blob(const_cast<double *>(v),
+                                                    std::vector<int64_t>(s), torch::kDouble);
+        return wrap(host.to(t.device(), t.scalar_type(), false, true));
     }
-    // One case per function of Tensor::Unary.
-    Ptr unary(Tensor::Unary op) const override {
+    Ptr full(const Shape &s, double value) const override {
+        return wrap(torch::full(std::vector<int64_t>(s), value, t.options().requires_grad(false)));
+    }
+    Ptr arange(int64_t n) const override {
+        return wrap(torch::arange(n, t.options().requires_grad(false)));
+    }
+    bool requires_grad() const override { return t.requires_grad(); }
+    Ptr detach() const override { return t.requires_grad() ? wrap(t.detach()) : self(); }
+
+    // Elementwise
+    static torch::Tensor apply(Binary op, const torch::Tensor &a, const torch::Tensor &b) {
         switch (op) {
-        case Tensor::Unary::sin: return wrap(t.sin());
-        case Tensor::Unary::cos: return wrap(t.cos());
-        case Tensor::Unary::tan: return wrap(t.tan());
-        case Tensor::Unary::exp: return wrap(t.exp());
-        case Tensor::Unary::log: return wrap(t.log());
-        case Tensor::Unary::sqrt: return wrap(t.sqrt());
+        case Binary::add: return a + b;
+        case Binary::subtract: return a - b;
+        case Binary::multiply: return a * b;
+        case Binary::divide: return a / b;
+        case Binary::pow: return torch::pow(a, b);
+        case Binary::maximum: return torch::maximum(a, b);
+        case Binary::minimum: return torch::minimum(a, b);
+        case Binary::remainder: return torch::remainder(a, b);
+        case Binary::atan2: return torch::atan2(a, b);
+        case Binary::equal: return torch::eq(a, b).to(a.scalar_type());
+        case Binary::not_equal: return torch::ne(a, b).to(a.scalar_type());
+        case Binary::less: return torch::lt(a, b).to(a.scalar_type());
+        case Binary::less_equal: return torch::le(a, b).to(a.scalar_type());
+        case Binary::greater: return torch::gt(a, b).to(a.scalar_type());
+        case Binary::greater_equal: return torch::ge(a, b).to(a.scalar_type());
+        }
+        CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise operation");
+    }
+    Ptr binary(Binary op, const Impl &o) const override { return wrap(apply(op, t, of(o))); }
+    Ptr scalar(Binary op, double s, bool scalar_first) const override {
+        const torch::Tensor v = torch::scalar_tensor(s, t.options().requires_grad(false));
+        return wrap(scalar_first ? apply(op, v, t) : apply(op, t, v));
+    }
+    // round halves away from zero (MATLAB), torch.round to even; a zero is +0, as CORALean's
+    static torch::Tensor round(const torch::Tensor &x) {
+        const torch::Tensor whole = torch::trunc(x);
+        const torch::Tensor tie = (x - whole).abs() == 0.5;
+        return torch::where(tie, whole + torch::sign(x), torch::round(x)) + 0.0;
+    }
+    Ptr unary(Unary op) const override {
+        switch (op) {
+        case Unary::negative: return wrap(-t);
+        case Unary::abs: return wrap(t.abs());
+        case Unary::sign: return wrap(t.sign());
+        case Unary::floor: return wrap(t.floor());
+        case Unary::ceil: return wrap(t.ceil());
+        case Unary::round: return wrap(round(t));
+        case Unary::sqrt: return wrap(t.sqrt());
+        case Unary::exp: return wrap(t.exp());
+        case Unary::log: return wrap(t.log());
+        // the functions of torch, within the ulp bounds of ops.def of the C library's
+        case Unary::sin: return wrap(t.sin());
+        case Unary::cos: return wrap(t.cos());
+        case Unary::tan: return wrap(t.tan());
+        case Unary::asin: return wrap(t.asin());
+        case Unary::acos: return wrap(t.acos());
+        case Unary::atan: return wrap(t.atan());
+        case Unary::sinh: return wrap(t.sinh());
+        case Unary::cosh: return wrap(t.cosh());
+        case Unary::tanh: return wrap(t.tanh());
+        case Unary::asinh: return wrap(t.asinh());
+        case Unary::acosh: return wrap(t.acosh());
+        case Unary::atanh: return wrap(t.atanh());
+        case Unary::isnan: return values(t.isnan());
+        case Unary::isinf: return values(t.isinf());
+        case Unary::isfinite: return values(t.isfinite());
         }
         CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise function");
     }
-    Ptr sum_last() const override { return wrap(t.sum(-1, /*keepdim=*/true)); }
-    Ptr max_last() const override { return wrap(std::get<0>(t.max(-1, /*keepdim=*/true))); }
-    Ptr select_cols(const std::vector<int64_t> &idx) const override {
-        const torch::Tensor at = torch::tensor(idx, torch::TensorOptions().device(t.device()));
-        return wrap(t.index_select(-1, at));
+    Ptr where(const Impl &a, const Impl &b) const override {
+        return wrap(torch::where(t != 0, of(a), of(b)));
+    }
+
+    // Reductions
+    Ptr reduce(Reduce op, int axis, bool keepdims) const override {
+        switch (op) {
+        case Reduce::sum: return wrap(t.sum(axis, keepdims));
+        case Reduce::prod: return wrap(t.prod(axis, keepdims));
+        case Reduce::max: return wrap(std::get<0>(t.max(axis, keepdims)));
+        case Reduce::min: return wrap(std::get<0>(t.min(axis, keepdims)));
+        case Reduce::argmax: return values(t.argmax(axis, keepdims));
+        case Reduce::argmin: return values(t.argmin(axis, keepdims));
+        }
+        CORA_FAIL(Error::wrong_value, "CoraTensor: unknown reduction");
+    }
+    Ptr cumsum(int axis) const override { return wrap(t.cumsum(axis)); }
+
+    // Shape and selection
+    Ptr reshape(const Shape &s) const override { return wrap(t.reshape(std::vector<int64_t>(s))); }
+    Ptr permute_dims(const std::vector<int> &axes) const override {
+        return wrap(t.permute(std::vector<int64_t>(axes.begin(), axes.end())));
+    }
+    Ptr broadcast_to(const Shape &s) const override {
+        return wrap(t.expand(std::vector<int64_t>(s)));
+    }
+    Ptr slice(int axis, int64_t start, int64_t stop, int64_t step) const override {
+        return wrap(t.slice(axis, start, stop, step));
+    }
+    Ptr take(const Impl &idx, int axis) const override {
+        return wrap(t.index_select(axis, of(idx).to(torch::kLong)));
+    }
+    Ptr take_along_axis(const Impl &idx, int axis) const override {
+        return wrap(torch::take_along_dim(t, of(idx).to(torch::kLong), axis));
+    }
+    Ptr concat(const std::vector<const Impl *> &rest, int axis) const override {
+        std::vector<torch::Tensor> all{t};
+        for (const Impl *r : rest) all.push_back(of(*r));
+        return wrap(torch::cat(all, axis));
+    }
+    Ptr argsort(int axis, bool descending) const override {
+        return values(torch::argsort(t, /*stable=*/true, axis, descending));
+    }
+
+    // Linear algebra
+    Ptr matmul(const Impl &o) const override { return wrap(t.matmul(of(o))); }
+    Ptr solve(const Impl &b) const override { return wrap(torch::linalg_solve(t, of(b))); }
+    Ptr cholesky() const override { return wrap(torch::linalg_cholesky(t)); }
+    std::pair<Ptr, Ptr> qr() const override {
+        const auto [Q, R] = torch::linalg_qr(t, "reduced");
+        return {wrap(Q), wrap(R)};
+    }
+    std::array<Ptr, 3> svd() const override {
+        const auto [U, S, Vh] = torch::linalg_svd(t, /*full_matrices=*/false);
+        return {wrap(U), wrap(S.unsqueeze(-1)), wrap(Vh.transpose(-2, -1))};
+    }
+    std::pair<Ptr, Ptr> eigh() const override {
+        const auto [w, V] = torch::linalg_eigh(t);
+        return {wrap(w.unsqueeze(-1)), wrap(V)};
+    }
+
+    // Native versions of derived operations
+    Ptr expm() const override {
+        return wrap(custom_backward ? ExpmFunction::apply(t) : torch::matrix_exp(t));
+    }
+    Ptr sort(int axis, bool descending) const override {
+        return wrap(std::get<0>(torch::sort(t, /*stable=*/true, axis, descending)));
     }
     Ptr diag() const override { return wrap(torch::diag_embed(t.squeeze(-1))); }
-    // Broadcast to the batch, so results of a batched system all have the same shape.
-    Ptr eye_like() const override {
-        return wrap(torch::eye(t.size(-1), t.options()).expand_as(t).contiguous());
+    Ptr matrix_norm(Norm ord) const override {
+        const std::vector<int64_t> dims = {-2, -1};
+        if (ord == Norm::fro) return wrap(torch::linalg_matrix_norm(t, "fro", dims, true));
+        const double p = ord == Norm::one ? 1.0 : ord == Norm::two ? 2.0 : kInf;
+        return wrap(torch::linalg_matrix_norm(t, p, dims, true));
     }
-    Ptr zeros_like() const override { return wrap(torch::zeros_like(t)); }
-
-    Ptr cat_last(const std::vector<const Impl *> &rest) const override {
-        std::vector<torch::Tensor> all{t};
-        for (const Impl *r : rest) all.push_back(of(*r));
-        return wrap(torch::cat(all, -1));
-    }
-
-    Ptr cat_rows(const std::vector<const Impl *> &rest) const override {
-        std::vector<torch::Tensor> all{t};
-        for (const Impl *r : rest) all.push_back(of(*r));
-        return wrap(torch::cat(all, -2));
+    Ptr vector_norm(Norm ord, int axis, bool keepdims) const override {
+        const double p = ord == Norm::one ? 1.0 : ord == Norm::inf ? kInf : 2.0;
+        return wrap(torch::linalg_vector_norm(t, p, std::vector<int64_t>{axis}, keepdims));
     }
 
-    Ptr stack(const std::vector<const Impl *> &rest) const override {
-        std::vector<torch::Tensor> all{t};
-        for (const Impl *r : rest) all.push_back(of(*r));
-        return wrap(torch::stack(all, 0));
+    // Fused: CORA's sums of the smaller and larger products, by two products with M+ and M-
+    std::pair<Ptr, Ptr> interval_matmul(const Impl &sup, const Impl &M) const override {
+        const torch::Tensor mp = of(M).clamp_min(0), mn = of(M).clamp_max(0);
+        return {wrap(t.matmul(mp) + of(sup).matmul(mn)), wrap(of(sup).matmul(mp) + t.matmul(mn))};
+    }
+    std::pair<Ptr, Ptr> matmul_interval(const Impl &inf, const Impl &sup) const override {
+        const torch::Tensor mp = t.clamp_min(0), mn = t.clamp_max(0);
+        return {wrap(mp.matmul(of(inf)) + mn.matmul(of(sup))),
+                wrap(mp.matmul(of(sup)) + mn.matmul(of(inf)))};
     }
 };
 
@@ -136,12 +273,13 @@ struct TorchBackend : Tensor::Backend {
     TorchBackend(torch::Device device, bool custom) : device(device), custom_backward(custom) {}
 
     std::string name() const override { return "torch"; }
-    Tensor::Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,
-                           const std::string &where) const override {
-        const torch::Tensor host =
-            torch::from_blob(const_cast<double *>(data.data()), shape, torch::kDouble).clone();
-        const torch::Device target = where.empty() ? device : TorchTensor::parse_device(where);
-        return std::make_shared<TorchTensor>(host.to(target), custom_backward);
+    Tensor::Ptr make(const std::vector<double> &data, const Shape &shape, const std::string &where,
+                     DType dtype) const override {
+        const torch::Tensor host = torch::from_blob(const_cast<double *>(data.data()),
+                                                    std::vector<int64_t>(shape), torch::kDouble);
+        const torch::Device target = where.empty() ? device : torch_device(where);
+        return std::make_shared<TorchTensor>(host.to(target, aux_scalar(dtype), false, true),
+                                             custom_backward);
     }
 };
 
@@ -158,10 +296,13 @@ std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device
 }
 
 Tensor from_torch(const torch::Tensor &t, bool custom_backward) {
-    return Tensor(std::make_shared<TorchTensor>(t, custom_backward));
+    return Tensor(std::make_shared<TorchTensor>(aux_floating(t), custom_backward));
 }
 
-torch::Tensor to_torch(const Tensor &t) { return static_cast<const TorchTensor &>(t.impl()).t; }
+torch::Tensor to_torch(const Tensor &t) {
+    if (!is_torch(t)) CORA_FAIL(Error::wrong_value, "to_torch: not a tensor of the torch backend");
+    return static_cast<const TorchTensor &>(t.impl()).t;
+}
 
 torch::Device torch_device(const std::string &name) {
     if (name == "gpu") return torch::Device("cuda");
@@ -170,7 +311,7 @@ torch::Device torch_device(const std::string &name) {
               "CoraTensor: unknown device '" + name + "'; use cpu, gpu, cuda or cuda:<index>");
 }
 
-bool is_torch(const Tensor &t) { return dynamic_cast<const TorchTensor *>(&t.impl()) != nullptr; }
+bool is_torch(const Tensor &t) { return t.impl().backend == backend_id::torch; }
 
 } // namespace cora
 

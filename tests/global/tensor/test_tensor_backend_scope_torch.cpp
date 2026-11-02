@@ -22,8 +22,8 @@ void backend_specs() {
     set_default_backend("torch");
     const Tensor on_torch({1.0, 2.0});
     check(throws([&] { (void)(on_eigen + on_torch); }), "tensors of two backends do not mix");
-    check(throws([&] { on_eigen.matmul(on_torch.transpose()); }), "nor in a product");
-    check(throws([&] { Tensor::cat_last({on_eigen, on_torch}); }), "nor in a concatenation");
+    check(throws([&] { on_eigen.matmul(on_torch.matrix_transpose()); }), "nor in a product");
+    check(throws([&] { Tensor::concat({on_eigen, on_torch}, -1); }), "nor in a concatenation");
 }
 
 } // namespace

@@ -17,7 +17,7 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Interval Zonotope::interval_impl() const {
-    const Tensor r = G_.abs().sum_last(); // the radius: row sums of |G|
+    const Tensor r = G_.abs().sum(-1, true); // the radius: row sums of |G|
     return {c_ - r, c_ + r};
 }
 

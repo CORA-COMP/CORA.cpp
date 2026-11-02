@@ -37,11 +37,13 @@ Tensor aux_filled(const Tensor &like, double value) {
 /// one new generator per neuron (a zero one where the neuron is stable).
 Zonotope aux_relu(const Zonotope &Z) {
     const Interval range = Z.interval();
-    const Tensor upper = range.sup().pos(), lower = range.inf().neg(); // max(u, 0) and min(l, 0)
+    // max(u, 0) and min(l, 0)
+    const Tensor upper = range.sup().maximum(0.0), lower = range.inf().minimum(0.0);
     // upper - lower is 0 only for l = u = 0; the tiny term keeps the slope 0 there, not NaN.
-    const Tensor slope = upper.div(upper - lower + aux_filled(upper, 1e-300));
-    const Tensor mu = slope.mul(lower) * -0.5;
-    return {slope.mul(Z.center()) + mu, Tensor::cat_last({slope.mul(Z.generators()), mu.diag()})};
+    const Tensor slope = upper.divide(upper - lower + aux_filled(upper, 1e-300));
+    const Tensor mu = slope.multiply(lower) * -0.5;
+    return {slope.multiply(Z.center()) + mu,
+            Tensor::concat({slope.multiply(Z.generators()), mu.diag()}, -1)};
 }
 
 } // namespace
@@ -60,7 +62,7 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
     Tensor h = x;
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         h = layers_[k].W.matmul(h) + layers_[k].b;
-        if (k + 1 < layers_.size()) h = h.pos();
+        if (k + 1 < layers_.size()) h = h.maximum(0.0);
     }
     return h;
 }

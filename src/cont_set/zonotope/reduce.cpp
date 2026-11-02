@@ -40,8 +40,8 @@ Zonotope Zonotope::reduce(int order) const {
     if (m <= order * n) return *this;
 
     // Which generators stay is decided on the metric; the sets are then built from tensors.
-    const Tensor abs_t = G_.abs().transpose();
-    const std::vector<double> metric = (abs_t.sum_last() - abs_t.max_last()).data();
+    const Tensor abs_t = G_.abs().matrix_transpose();
+    const std::vector<double> metric = (abs_t.sum(-1, true) - abs_t.max(-1, true)).data();
     std::vector<int64_t> by_metric(m);
     std::iota(by_metric.begin(), by_metric.end(), 0);
     std::stable_sort(by_metric.begin(), by_metric.end(),
@@ -51,8 +51,8 @@ Zonotope Zonotope::reduce(int order) const {
     const int64_t keep = order * n - n;
     const std::vector<int64_t> kept(by_metric.begin(), by_metric.begin() + keep);
     const std::vector<int64_t> rest(by_metric.begin() + keep, by_metric.end());
-    const Tensor box = G_.select_cols(rest).abs().sum_last().diag();
-    return {c_, keep == 0 ? box : Tensor::cat_last({G_.select_cols(kept), box})};
+    const Tensor box = G_.take(rest, -1).abs().sum(-1, true).diag();
+    return {c_, keep == 0 ? box : Tensor::concat({G_.take(kept, -1), box}, -1)};
 }
 
 } // namespace cora
