@@ -21,7 +21,7 @@ on:
         type: string
         default: ALL
       build_type:
-        description: CMAKE_BUILD_TYPE (default: the preset's)
+        description: CMAKE_BUILD_TYPE, empty for the preset's
         type: string
         default: ""
       cxx_flags:
