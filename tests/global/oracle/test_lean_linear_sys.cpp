@@ -1,7 +1,7 @@
 // test_lean_linear_sys - lean::LinearSys::reach: the argument checks, and with CORACPP_ORACLE set
 // the enclosure of CORA.cpp's own reachable sets
 //
-// ORACLE: contDynamics/@linearSys/reach.m
+// CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet ORACLE)
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/oracle/linear_sys.h"

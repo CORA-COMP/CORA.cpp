@@ -27,14 +27,14 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
 |---|---|---|---|---|---|---|---|---|
 | contSet | 908 | 871 | 17 | 16 | 0 | 4 | 0 | 10 |
-| contDynamics | 159 | 144 | 5 | 9 | 0 | 1 | 0 | 6 |
+| contDynamics | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
 | hybridDynamics | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | nn | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | specification | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
 | others | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 1696 | 1639 | 23 | 29 | 0 | 5 | 0 | 20 |
+| **all** | 1696 | 1639 | 23 | 30 | 0 | 4 | 0 | 21 |
 
-3% of the 1696 CORA methods in scope have a source, 2% are tested in C++ and Python, 0% are checked against CORALean; oracle debt 20.
+3% of the 1696 CORA methods in scope have a source, 2% are tested in C++ and Python, 0% are checked against CORALean; oracle debt 21.
 
 ## Classes
 
@@ -63,7 +63,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [contDynamics/linParamSys](contDynamics/linParamSys.md) | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contDynamics/linProbSys](contDynamics/linProbSys.md) | 8 | 8 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contDynamics/linearARX](contDynamics/linearARX.md) | 7 | 7 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [contDynamics/linearSys](contDynamics/linearSys.md) | 33 | 24 | 3 | 5 | 0 | 1 | 0 | 4 |
+| [contDynamics/linearSys](contDynamics/linearSys.md) | 33 | 24 | 3 | 6 | 0 | 0 | 0 | 5 |
 | [contDynamics/linearSysDT](contDynamics/linearSysDT.md) | 17 | 17 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contDynamics/neurNetContrSys](contDynamics/neurNetContrSys.md) | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contDynamics/nonlinDASys](contDynamics/nonlinDASys.md) | 13 | 13 | 0 | 0 | 0 | 0 | 0 | 0 |

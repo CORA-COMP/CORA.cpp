@@ -1,6 +1,6 @@
 {
  "cora_commit": "904a4442e68b1dc149a34e917dd63a7d3fb49a3a",
- "oracle_debt": 20,
+ "oracle_debt": 21,
  "rows": {
   "contSet/affine/affine": "todo",
   "contSet/capsule/and_": "todo",
@@ -980,7 +980,7 @@
   "contDynamics/linearSys/particularSolution_constant": "untested",
   "contDynamics/linearSys/particularSolution_timeVarying": "untested",
   "contDynamics/linearSys/post": "todo",
-  "contDynamics/linearSys/reach": "oracle",
+  "contDynamics/linearSys/reach": "ported",
   "contDynamics/linearSys/reachBackward": "todo",
   "contDynamics/linearSys/reachInner": "todo",
   "contDynamics/linearSys/simulate": "ported",
