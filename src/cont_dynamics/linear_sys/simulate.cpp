@@ -40,9 +40,9 @@ std::vector<Tensor> aux_with_input(const Tensor &A, const Tensor &B, const Tenso
                                    const Tensor &u, double time_step, int steps) {
     const int64_t n = A.shape().back(), m = B.shape().back(), N = x0.shape().back();
     const Tensor top = Tensor::concat({A, B}, -1);
-    const Tensor zeros = Tensor::like(A, std::vector<double>(m * (n + m), 0.0), {m, n + m});
+    const Tensor zeros = A.zeros_like({m, n + m});
     const Tensor E = (Tensor::concat({top, zeros}, -2) * time_step).expm();
-    const Tensor ones = Tensor::like(A, std::vector<double>(N, 1.0), {1, N});
+    const Tensor ones = A.ones_like({1, N});
     const Tensor u_n = u.shape().back() == N ? u : u.matmul(ones);
     std::vector<int64_t> state_rows(n);
     for (int64_t i = 0; i < n; ++i) state_rows[i] = i;

@@ -27,12 +27,8 @@ namespace cora {
 
 namespace {
 
-/// Whether every number of t is zero.
-bool aux_all_zero(const Tensor &t) {
-    for (const double v : t.data())
-        if (v != 0) return false;
-    return true;
-}
+/// Whether every number of t is zero (a NaN is not): the sum of |t| is exactly zero then only.
+bool aux_all_zero(const Tensor &t) { return t.abs().sum().item() == 0; }
 
 /// Whether a halfspace normal is a nonzero column of p rows.
 bool aux_normal_ok(const Halfspace &h, int64_t p) {

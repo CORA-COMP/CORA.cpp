@@ -207,9 +207,9 @@ struct TorchTensor : Tensor::Impl {
     Ptr take_along_axis(const Impl &idx, int axis) const override {
         return wrap(torch::take_along_dim(t, of(idx).to(torch::kLong), axis));
     }
-    Ptr concat(const std::vector<const Impl *> &rest, int axis) const override {
-        std::vector<torch::Tensor> all{t};
-        for (const Impl *r : rest) all.push_back(of(*r));
+    Ptr concat(std::span<const Impl *const> parts, int axis) const override {
+        std::vector<torch::Tensor> all;
+        for (const Impl *r : parts) all.push_back(of(*r));
         return wrap(torch::cat(all, axis));
     }
     Ptr argsort(int axis, bool descending) const override {

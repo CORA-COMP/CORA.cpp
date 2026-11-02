@@ -445,8 +445,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     const int64_t p = input.p;
     const Tensor &u = input.u_trans, &GU = input.GU;
     const bool is_u = GU.shape()[1] > 0;
-    bool isu = false;
-    for (double v : u.data()) isu = isu || v != 0;
+    const bool isu = u.abs().sum().item() != 0;
 
     // The directions l = (Cs C)' of the support function evaluations, per halfspace.
     const SpecRows rows = aux_spec_rows(specs);

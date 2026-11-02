@@ -70,6 +70,15 @@ void aux_overrides(const std::string &b) {
     aux_agree(b + " zonotope_linear_map c", Mc, ref_c, aux_sum_bound(6));
     aux_agree(b + " zonotope_linear_map G", MG, ref_g, aux_sum_bound(6));
     const Tensor lo = rnd.matrix(6, 6), hi = lo + rnd.matrix(6, 6).abs();
+    const auto [Tc, TG] = Tensor::zonotope_interval_map(lo, hi, c, G);
+    const auto [ref_tc, ref_tg] = derived::zonotope_interval_map(lo, hi, c, G);
+    aux_agree(b + " zonotope_interval_map c", Tc, ref_tc, aux_sum_bound(6));
+    aux_agree(b + " zonotope_interval_map G", TG, ref_tg, aux_sum_bound(12));
+    const Tensor cb = c.broadcast_to({8, 6, 1}) + G.sum(-1, true); // a center for every member
+    const auto [mean_c, mean_g] = Tensor::zonotope_linear_combination(cb, G, cb * 0.5, G * 3.0);
+    const auto [ref_mc, ref_mg] = derived::zonotope_linear_combination(cb, G, cb * 0.5, G * 3.0);
+    aux_agree(b + " zonotope_linear_combination c", mean_c, ref_mc, 0);
+    aux_agree(b + " zonotope_linear_combination G", mean_g, ref_mg, 0);
     const auto [p, q] = Tensor::interval_matmul(lo, hi, A);
     const auto [dp, dq] = derived::interval_matmul(lo, hi, A);
     aux_agree(b + " interval_matmul inf", p, dp, aux_sum_bound(6));

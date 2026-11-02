@@ -44,6 +44,10 @@ Tensor diag(const Tensor &v);
 
 // Fused primitives
 std::pair<Tensor, Tensor> zonotope_linear_map(const Tensor &M, const Tensor &c, const Tensor &G);
+std::pair<Tensor, Tensor> zonotope_interval_map(const Tensor &inf, const Tensor &sup,
+                                                const Tensor &c, const Tensor &G);
+std::pair<Tensor, Tensor> zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
+                                                      const Tensor &c2, const Tensor &G2);
 std::pair<Tensor, Tensor> interval_matmul(const Tensor &inf, const Tensor &sup, const Tensor &M);
 std::pair<Tensor, Tensor> matmul_interval(const Tensor &M, const Tensor &inf, const Tensor &sup);
 std::pair<Tensor, Tensor> girard_split(const Tensor &G, int64_t keep);

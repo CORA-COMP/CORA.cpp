@@ -87,16 +87,27 @@ Device aux_device(const std::string &name) {
               "CoraTensor: unknown device '" + name + "'; use cpu, gpu, cuda or cuda:<index>");
 }
 
-/// The parts as backend operands: all on the place of the first.
-std::vector<const Tensor::Impl *> aux_rest_of(const std::vector<Tensor> &parts, const char *op) {
-    if (parts.empty())
-        CORA_FAIL(Error::wrong_value, std::string("CoraTensor::") + op + ": no tensors given");
-    std::vector<const Tensor::Impl *> rest;
-    for (std::size_t i = 1; i < parts.size(); ++i) {
-        detail::check_pair(parts[0], parts[i], op);
-        rest.push_back(&parts[i].impl());
+/// The parts joined along `axis`: checked to share one place and rank, passed on without a heap
+/// copy of the list when it is short.
+template <class It> Tensor aux_concat(It first, It last, int axis) {
+    const std::size_t count = static_cast<std::size_t>(last - first);
+    if (count == 0) CORA_FAIL(Error::wrong_value, "CoraTensor::concat: no tensors given");
+    const Tensor &head = *first;
+    const int a = detail::axis_of(axis, head.ndim(), "concat");
+    if (count == 1) return head;
+    constexpr std::size_t kShort = 16;
+    const Tensor::Impl *small[kShort];
+    std::vector<const Tensor::Impl *> large;
+    if (count > kShort) large.resize(count);
+    const Tensor::Impl **impls = count > kShort ? large.data() : small;
+    std::size_t i = 0;
+    for (It it = first; it != last; ++it, ++i) {
+        detail::check_pair(head, *it, "concat");
+        if (it->ndim() != head.ndim())
+            CORA_FAIL(Error::dimension_mismatch, "CoraTensor::concat: the parts differ in rank");
+        impls[i] = &it->impl();
     }
-    return rest;
+    return Tensor(head.impl().concat({impls, count}, a));
 }
 
 /// The table's operation of a comparison or a mask function: ops.def lists them in the order of
@@ -470,13 +481,11 @@ Tensor Tensor::take_along_axis(const Tensor &idx, int axis) const {
 
 // One part is itself.
 Tensor Tensor::concat(const std::vector<Tensor> &parts, int axis) {
-    const std::vector<const Impl *> rest = aux_rest_of(parts, "concat");
-    for (const Tensor &p : parts)
-        if (p.ndim() != parts[0].ndim())
-            CORA_FAIL(Error::dimension_mismatch, "CoraTensor::concat: the parts differ in rank");
-    const int a = detail::axis_of(axis, parts[0].ndim(), "concat");
-    if (rest.empty()) return parts[0];
-    return Tensor(parts[0].impl().concat(rest, a));
+    return aux_concat(parts.begin(), parts.end(), axis);
+}
+
+Tensor Tensor::concat(std::initializer_list<Tensor> parts, int axis) {
+    return aux_concat(parts.begin(), parts.end(), axis);
 }
 
 // Linear Algebra ----------------------------------------------------------------------------------

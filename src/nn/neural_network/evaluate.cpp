@@ -26,13 +26,6 @@ namespace cora {
 
 namespace {
 
-/// A tensor of the shape and backend of `like` filled with `value`.
-Tensor aux_filled(const Tensor &like, double value) {
-    int64_t count = 1;
-    for (const int64_t d : like.shape()) count *= d;
-    return Tensor::like(like, std::vector<double>(count, value), like.shape());
-}
-
 /// A zonotope that contains max(x, 0) for every x in Z: the enclosure above for every neuron, with
 /// one new generator per neuron (a zero one where the neuron is stable).
 Zonotope aux_relu(const Zonotope &Z) {
@@ -40,7 +33,7 @@ Zonotope aux_relu(const Zonotope &Z) {
     // max(u, 0) and min(l, 0)
     const Tensor upper = range.sup().maximum(0.0), lower = range.inf().minimum(0.0);
     // upper - lower is 0 only for l = u = 0; the tiny term keeps the slope 0 there, not NaN.
-    const Tensor slope = upper.divide(upper - lower + aux_filled(upper, 1e-300));
+    const Tensor slope = upper.divide(upper - lower + 1e-300);
     const Tensor mu = slope.multiply(lower) * -0.5;
     return {slope.multiply(Z.center()) + mu,
             Tensor::concat({slope.multiply(Z.generators()), mu.diag()}, -1)};

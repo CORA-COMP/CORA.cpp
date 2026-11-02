@@ -6,7 +6,7 @@ Method:   every benchmark runs under `valgrind --tool=callgrind`, counting the i
           measured region only (deterministic); without valgrind, under `perf stat -e instructions:u`
           (the whole process, noisy).
 Output:   a table of base, head and the change in percent; exit code 1 if one grew by more than the
-          threshold (percent, default 3), else 0.
+          threshold (percent, default 3), else 0. A benchmark the base does not have is listed as new.
 """
 import argparse
 import re
@@ -64,8 +64,11 @@ def compare(base, head, threshold):
     """(table lines, the names that grew by more than threshold percent) of two {name: count}."""
     lines, grown = [f"{'benchmark':28} {'base':>15} {'head':>15} {'change':>8}"], []
     for name in sorted(head):
-        change = 100.0 * (head[name] - base[name]) / base[name] if base.get(name) else float("inf")
-        lines.append(f"{name:28} {base.get(name, 0):>15,} {head[name]:>15,} {change:>+7.2f}%")
+        if name not in base:
+            lines.append(f"{name:28} {'-':>15} {head[name]:>15,} {'new':>8}")
+            continue
+        change = 100.0 * (head[name] - base[name]) / base[name] if base[name] else float("inf")
+        lines.append(f"{name:28} {base[name]:>15,} {head[name]:>15,} {change:>+7.2f}%")
         if change > threshold:
             grown.append(name)
     return lines, grown
@@ -77,8 +80,9 @@ def main():
     parser.add_argument("--head", required=True, help="the micro program built against the head commit")
     parser.add_argument("--threshold", type=float, default=3.0, help="percent of growth that fails")
     args = parser.parse_args()
-    names = names_of(args.head)
-    base = {name: count(args.base, name) for name in names}
+    names, known = names_of(args.head), set(names_of(args.base))
+    # a benchmark the base does not have yet is listed as new, not compared
+    base = {name: count(args.base, name) for name in names if name in known}
     head = {name: count(args.head, name) for name in names}
     lines, grown = compare(base, head, args.threshold)
     print("\n".join(lines))

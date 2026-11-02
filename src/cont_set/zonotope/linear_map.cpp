@@ -14,18 +14,6 @@
 
 namespace cora {
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-/// How far the radius of I can move a point of Z along each axis: rad(I) * (|c| + sum_j |G_j|).
-Tensor aux_widening(const Zonotope &Z, const Interval &I) {
-    const Tensor reach = Z.center().abs() + Z.generators().abs().sum(-1, true);
-    return I.rad().matmul(reach);
-}
-
-} // namespace
-
 
 // ===========================================  MAIN  =========================================== //
 
@@ -35,7 +23,8 @@ Zonotope Zonotope::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(dim()) +
                " columns (the dimension of Z), got the shape " + shape_text(M.shape());
     });
-    return {M.matmul(c_), M.matmul(G_)};
+    auto [c, G] = Tensor::zonotope_linear_map(M, c_, G_);
+    return {std::move(c), std::move(G)};
 }
 
 Zonotope Zonotope::linear_map(const Interval &I) const {
@@ -46,10 +35,10 @@ Zonotope Zonotope::linear_map(const Interval &I) const {
                           " columns (the dimension of Z), got the shape " +
                           shape_text(I.inf().shape());
                });
-    const Tensor center = I.center();
-    // The center matrix maps Z; the radius adds one axis-aligned generator per dimension.
-    return {center.matmul(c_),
-            Tensor::concat({center.matmul(G_), aux_widening(*this, I).diag()}, -1)};
+    // The center matrix maps Z; the radius adds one axis-aligned generator per dimension, of how
+    // far it can move a point of Z: rad(I) (|c| + sum_j |G_j|).
+    auto [c, G] = Tensor::zonotope_interval_map(I.inf(), I.sup(), c_, G_);
+    return {std::move(c), std::move(G)};
 }
 
 } // namespace cora

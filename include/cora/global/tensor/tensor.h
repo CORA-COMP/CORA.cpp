@@ -27,6 +27,7 @@
 #include <initializer_list>
 #include <iosfwd>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -217,7 +218,8 @@ class Tensor {
         /// The entries at `idx` (a 1-D tensor of indices) along `axis`.
         virtual Ptr take(const Impl &idx, int axis) const = 0;
         virtual Ptr take_along_axis(const Impl &idx, int axis) const = 0;
-        virtual Ptr concat(const std::vector<const Impl *> &rest, int axis) const = 0;
+        /// All the parts (this one first) joined along `axis`.
+        virtual Ptr concat(std::span<const Impl *const> parts, int axis) const = 0;
         virtual Ptr argsort(int axis, bool descending) const = 0;
 
         // Core: linear algebra, batched
@@ -239,6 +241,10 @@ class Tensor {
 
         // Fused: one specification each, in the lean backend's order (src/global/tensor/fused.cpp)
         virtual std::pair<Ptr, Ptr> zonotope_linear_map(const Impl &c, const Impl &G) const;
+        virtual std::pair<Ptr, Ptr> zonotope_interval_map(const Impl &sup, const Impl &c,
+                                                          const Impl &G) const;
+        virtual std::pair<Ptr, Ptr> zonotope_linear_combination(const Impl &G1, const Impl &c2,
+                                                                const Impl &G2) const;
         virtual std::pair<Ptr, Ptr> interval_matmul(const Impl &sup, const Impl &M) const;
         virtual std::pair<Ptr, Ptr> matmul_interval(const Impl &inf, const Impl &sup) const;
         virtual std::pair<Ptr, Ptr> girard_split(int64_t keep) const;
@@ -340,6 +346,18 @@ class Tensor {
         return a.scalar_op(Binary::subtract, s, true);
     }
     friend Tensor operator/(const Tensor &a, double s) { return a.scalar_op(Binary::divide, s); }
+    // an operand nobody else holds is written in place
+    friend Tensor operator+(Tensor &&a, double s) { return std::move(a).scalar_op(Binary::add, s); }
+    friend Tensor operator+(double s, Tensor &&a) { return std::move(a) + s; }
+    friend Tensor operator-(Tensor &&a, double s) {
+        return std::move(a).scalar_op(Binary::subtract, s);
+    }
+    friend Tensor operator-(double s, Tensor &&a) {
+        return std::move(a).scalar_op(Binary::subtract, s, true);
+    }
+    friend Tensor operator/(Tensor &&a, double s) {
+        return std::move(a).scalar_op(Binary::divide, s);
+    }
     friend Tensor operator/(double s, const Tensor &a) {
         return a.scalar_op(Binary::divide, s, true);
     }
@@ -466,6 +484,7 @@ class Tensor {
     }
     Tensor take_along_axis(const Tensor &idx, int axis) const;
     static Tensor concat(const std::vector<Tensor> &parts, int axis);
+    static Tensor concat(std::initializer_list<Tensor> parts, int axis);
     /// Tensors of one shape along a new axis (0: a new leading batch axis).
     static Tensor stack(const std::vector<Tensor> &parts, int axis = 0);
     Tensor matrix_transpose() const;
@@ -523,6 +542,15 @@ class Tensor {
     /// M c and M G, the linear map of the zonotope (c, G).
     static std::pair<Tensor, Tensor> zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                          const Tensor &G);
+    /// The map of the zonotope (c, G) by the interval matrix [inf, sup] = T +- S, CORA's mtimes:
+    /// T c and [T G, diag(S sum|[c G]|)], the sum along the rows.
+    static std::pair<Tensor, Tensor> zonotope_interval_map(const Tensor &inf, const Tensor &sup,
+                                                           const Tensor &c, const Tensor &G);
+    /// CORA's linComb of (c1, G1) and (c2, G2) of one shape: (c1 + c2) / 2 and
+    /// [(G1 + G2) / 2, (G1 - G2) / 2, (c1 - c2) / 2].
+    static std::pair<Tensor, Tensor> zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
+                                                                 const Tensor &c2,
+                                                                 const Tensor &G2);
     /// The bounds of I M, I = [inf, sup] an interval matrix: CORA's mtimes, each entry the sum
     /// over k of the smaller and the larger of inf_ik m_kj and sup_ik m_kj.
     static std::pair<Tensor, Tensor> interval_matmul(const Tensor &inf, const Tensor &sup,

@@ -161,9 +161,7 @@ double aux_norm2(const Tensor &M) {
 /// Taylor series up to floating-point precision.
 Tensor aux_particular_constant(TaylorLinSys &taylor, const Tensor &u, double time_step) {
     const Tensor &A = taylor.A();
-    bool nonzero = false;
-    for (double v : u.data()) nonzero = nonzero || v != 0;
-    if (!nonzero) return u.zeros_like();
+    if (u.abs().sum().item() == 0) return u.zeros_like();
     if (const std::optional<Tensor> Ainv = taylor.Ainv())
         return Ainv->matmul((taylor.e_adt(time_step) - A.eye_like()).matmul(u));
     Tensor Asum = A.eye_like() * time_step;
@@ -405,7 +403,7 @@ bool aux_errors(const Problem &P, int k, int kIter, LinErrorBound &errs, bool fu
 
         // Curvature error of the input.
         const int64_t n = taylor.A().shape()[0];
-        set.GuC[kIter] = Tensor::like(taylor.A(), std::vector<double>(n, 0.0), {n, 1});
+        set.GuC[kIter] = taylor.A().zeros_like({n, 1});
         set.GuG[kIter] = set.GuC[kIter];
         if (!P.isu) {
             aux_set(errs.idv_g, k, kIter, 0.0);
@@ -534,8 +532,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
     auto column = [&](const std::vector<double> &v) { return Tensor::like(A, v, {n, 1}); };
 
     // Initialization ------------------------------------------------------------------------------
-    Problem P{&taylor, params.GU, params.u_trans, params.GU.shape()[1] > 0, false};
-    for (double v : params.u_trans.data()) P.isu = P.isu || v != 0;
+    Problem P{&taylor, params.GU, params.u_trans, params.GU.shape()[1] > 0,
+              params.u_trans.abs().sum().item() != 0};
 
     // Times where specifications are not yet verified; the horizon ends with the last of them.
     VerifyTime time_spec_unsat;

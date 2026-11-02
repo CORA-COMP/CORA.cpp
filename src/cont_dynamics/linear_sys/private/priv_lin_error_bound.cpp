@@ -235,9 +235,7 @@ bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
 
 void LinErrorBound::compute_error_bound_reduction(const Tensor &A, const Tensor &GU) {
     // No input generators: nothing to reduce.
-    bool any = false;
-    for (double v : GU.data()) any = any || v != 0;
-    if (!any) {
+    if (GU.abs().sum().item() == 0) {
         bound_red_max = 0;
         return;
     }

@@ -47,6 +47,23 @@ std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::zonotope_linear_map(const Impl
     return {Mc.ptr(), MG.ptr()};
 }
 
+// The zonotope maps and the linear combination
+std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::zonotope_interval_map(const Impl &sup,
+                                                                        const Impl &c,
+                                                                        const Impl &G) const {
+    const auto [Tc, TG] = derived::zonotope_interval_map(Tensor(self()), Tensor(sup.self()),
+                                                         Tensor(c.self()), Tensor(G.self()));
+    return {Tc.ptr(), TG.ptr()};
+}
+
+std::pair<Tensor::Ptr, Tensor::Ptr>
+Tensor::Impl::zonotope_linear_combination(const Impl &G1, const Impl &c2, const Impl &G2) const {
+    const auto [c, G] = derived::zonotope_linear_combination(Tensor(self()), Tensor(G1.self()),
+                                                             Tensor(c2.self()), Tensor(G2.self()));
+    return {c.ptr(), G.ptr()};
+}
+
+// The interval products, both ways round
 std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::interval_matmul(const Impl &sup,
                                                                   const Impl &M) const {
     const auto [lo, hi] = derived::interval_matmul(Tensor(self()), Tensor(sup.self()),
@@ -74,6 +91,21 @@ Tensor::Ptr Tensor::Impl::abs_sum() const { return derived::abs_sum(Tensor(self(
 std::pair<Tensor, Tensor> derived::zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                        const Tensor &G) {
     return {M.matmul(c), M.matmul(G)};
+}
+
+// The center T maps the zonotope; the radius S maps the row sums of |[c G]| into one box
+// generator per dimension.
+std::pair<Tensor, Tensor> derived::zonotope_interval_map(const Tensor &inf, const Tensor &sup,
+                                                         const Tensor &c, const Tensor &G) {
+    const Tensor T = (inf + sup) * 0.5, S = (sup - inf) * 0.5;
+    const Tensor reach = c.abs() + G.abs_sum();
+    return {T.matmul(c), Tensor::concat({T.matmul(G), S.matmul(reach).diag()}, -1)};
+}
+
+std::pair<Tensor, Tensor> derived::zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
+                                                               const Tensor &c2, const Tensor &G2) {
+    const Tensor mean = (G1 + G2) * 0.5, spread = (G1 - G2) * 0.5, shift = (c1 - c2) * 0.5;
+    return {(c1 + c2) * 0.5, Tensor::concat({mean, spread, shift}, -1)};
 }
 
 // Entry (i, j) sums, over q, the smaller (inf) and the larger (sup) of inf_iq m_qj and sup_iq
@@ -113,6 +145,34 @@ std::pair<Tensor, Tensor> Tensor::zonotope_linear_map(const Tensor &M, const Ten
 }
 
 // The bounds agree in shape, the inner sizes of the product match.
+std::pair<Tensor, Tensor> Tensor::zonotope_interval_map(const Tensor &inf, const Tensor &sup,
+                                                        const Tensor &c, const Tensor &G) {
+    aux_require_bounds(inf, sup, "zonotope_interval_map");
+    detail::check_pair(inf, c, "zonotope_interval_map");
+    detail::check_pair(inf, G, "zonotope_interval_map");
+    const auto [Tc, TG] = inf.impl().zonotope_interval_map(sup.impl(), c.impl(), G.impl());
+    return {Tensor(Tc), Tensor(TG)};
+}
+
+std::pair<Tensor, Tensor> Tensor::zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
+                                                              const Tensor &c2, const Tensor &G2) {
+    for (const Tensor *t : {&G1, &c2, &G2})
+        detail::check_pair(c1, *t, "zonotope_linear_combination");
+    if (c1.shape() != c2.shape() || G1.shape() != G2.shape())
+        CORA_FAIL(Error::dimension_mismatch,
+                  "CoraTensor::zonotope_linear_combination: the zonotopes differ in shape");
+    // the shift (c1 - c2)/2 becomes a generator: the center has the batch axes of the generators
+    Shape column = G1.shape();
+    column.back() = 1;
+    if (c1.shape() != column)
+        CORA_FAIL(Error::dimension_mismatch,
+                  "CoraTensor::zonotope_linear_combination: a center must be a column of the "
+                  "generators' batch and rows");
+    const auto [c, G] = c1.impl().zonotope_linear_combination(G1.impl(), c2.impl(), G2.impl());
+    return {Tensor(c), Tensor(G)};
+}
+
+// The interval products: bounds of one shape, a real matrix M, and matching inner sizes
 std::pair<Tensor, Tensor> Tensor::interval_matmul(const Tensor &inf, const Tensor &sup,
                                                   const Tensor &M) {
     aux_require_bounds(inf, sup, "interval_matmul");

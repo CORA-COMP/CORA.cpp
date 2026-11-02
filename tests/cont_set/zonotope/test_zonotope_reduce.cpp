@@ -46,8 +46,16 @@ void wrong_arguments_are_described(const std::string &b) {
     cora::Rng rng(8);
     const Zonotope Z = Zonotope::generate_random(2, 4, rng);
     check(test::throws([&] { Z.reduce(0); }), b + ": order 0 is refused");
-    const Zonotope batch = Zonotope::stack({Z, Z});
-    check(test::throws([&] { batch.reduce(1); }) || b == "eigen", b + ": a batch is refused");
+}
+
+void a_batch_reduces_member_by_member(const std::string &b) {
+    cora::Rng rng(9);
+    const Zonotope Z1 = Zonotope::generate_random(3, 9, rng);
+    const Zonotope Z2 = Zonotope::generate_random(3, 9, rng);
+    const Zonotope batch = Zonotope::stack({Z1, Z2}).reduce(2);
+    const Tensor G = batch.generators();
+    check(test::close(G.slice(0, 0, 1).squeeze(0), Z1.reduce(2).generators(), 0), b + ": member 1");
+    check(test::close(G.slice(0, 1, 2).squeeze(0), Z2.reduce(2).generators(), 0), b + ": member 2");
 }
 
 /// An order below one is refused; with the checks off the reduction is the same.
@@ -66,7 +74,8 @@ int main() {
         reduce_limits_the_generators(b);
         reduce_encloses_the_zonotope(b);
         a_small_zonotope_stays_as_it_is(b);
-        if (b != "eigen") wrong_arguments_are_described(b);
+        wrong_arguments_are_described(b);
+        a_batch_reduces_member_by_member(b);
     });
     checks_and_their_switch();
     return test::finish("zonotope reduce");

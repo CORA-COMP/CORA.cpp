@@ -18,7 +18,7 @@ namespace cora {
 
 Tensor Zonotope::support_function_impl(const Tensor &d) const {
     const Tensor dt = d.matrix_transpose();
-    return dt.matmul(c_) + dt.matmul(G_).abs().sum(-1, true);
+    return dt.matmul(c_) + dt.matmul(G_).abs_sum();
 }
 
 } // namespace cora

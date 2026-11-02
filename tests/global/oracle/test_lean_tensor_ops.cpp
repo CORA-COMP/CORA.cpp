@@ -3,7 +3,10 @@
 // On a point interval [x, x] at dtype nearest the oracle rounds both bounds to nearest, so its
 // result is the point operation in CORALean's order. The lean backend must give it bit for bit:
 // elementwise arithmetic, sums and products along an axis, the matrix product, the rearrangements
-// and the fused interval products (CORA's mtimes of an interval matrix).
+// and the fused interval products (CORA's mtimes of an interval matrix), and with them the map
+// M I of an interval.
+//
+// ORACLE: contSet/@interval/mtimes.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -122,6 +125,9 @@ void aux_interval_products(test::oracle::Random &rnd) {
         const auto [lo2, hi2] = Tensor::matmul_interval(M, box.inf(), box.sup());
         aux_case("matmul_interval", [&] {
             check_exact("matmul_interval", Interval(lo2, hi2), lean::Interval(box).linear_map(M));
+        });
+        aux_case("Interval::linear_map", [&] {
+            check_exact("Interval::linear_map", box.linear_map(M), lean::Interval(box).linear_map(M));
         });
     }
 }

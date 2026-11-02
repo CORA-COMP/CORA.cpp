@@ -36,13 +36,6 @@ namespace {
 /// The bounds of a box, each a column (n, 1).
 using Box = Range;
 
-/// A tensor of the shape and backend of `like` filled with `value`.
-Tensor aux_filled(const Tensor &like, double value) {
-    int64_t count = 1;
-    for (const int64_t d : like.shape()) count *= d;
-    return Tensor::like(like, std::vector<double>(count, value), like.shape());
-}
-
 /// The entries of a column (n, 1) as n tensors of shape (1, 1).
 std::vector<Tensor> aux_entries(const Tensor &column) {
     const Tensor row = column.matrix_transpose();
@@ -61,7 +54,7 @@ Box aux_box(const Zonotope &Z) {
 /// The box hull of two boxes, made 10% (and a little) larger.
 Box aux_inflated_hull(const Box &a, const Box &b) {
     const Tensor lo = a.lo.minimum(b.lo), hi = a.hi.maximum(b.hi);
-    const Tensor margin = (hi - lo) * 0.1 + aux_filled(lo, 1e-10);
+    const Tensor margin = (hi - lo) * 0.1 + 1e-10;
     return {lo - margin, hi + margin};
 }
 
@@ -109,7 +102,7 @@ Box aux_lagrange_remainder(const NonlinearSys &sys, const Box &box, const Tensor
 
     std::vector<Tensor> los, his;
     for (int64_t i = 0; i < n; ++i) {
-        Range sum(aux_filled(c[0], 0.0));
+        Range sum(c[0].zeros_like());
         for (int64_t j = 0; j < n; ++j) {
             if (const auto &h = H[(i * n + j) * n + j]) sum = sum + square(delta[j]) * *h;
             for (int64_t k = j + 1; k < n; ++k)
@@ -140,9 +133,9 @@ Tensor aux_series_remainder(const Tensor &norm_a, double dt, int taylor_terms) {
         CORA_FAIL(Error::special_error,
                   "cora: the time step is too large for the Taylor series of the "
                   "linearized system; use a smaller step or more taylor_terms");
-    Tensor term = aux_filled(r, dt);                        // dt * r^(q+1) / (q+2)!
+    Tensor term = r.full_like(r.shape(), dt);               // dt * r^(q+1) / (q+2)!
     for (int i = 1; i <= q + 1; ++i) term = term.multiply(r) * (1.0 / (i + 1));
-    return term.divide(aux_filled(r, 1.0) - r * (1.0 / (q + 3))) * (1.0 / (q + 2));
+    return term.divide(1.0 - r * (1.0 / (q + 3))) * (1.0 / (q + 2));
 }
 
 /// Z shifted by the column p.
@@ -210,11 +203,11 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         const Interval hull = U.interval();
         const Tensor abs_max = hull.inf().abs().maximum(hull.sup().abs());
         const Tensor reach_of_u =
-            aux_filled(xs, 1.0).matmul(eps.multiply(abs_max.matrix_transpose().sum(-1, true)));
-        const Zonotope remainder(aux_filled(xs, 0.0), reach_of_u.diag());
+            xs.ones_like().matmul(eps.multiply(abs_max.matrix_transpose().sum(-1, true)));
+        const Zonotope remainder(xs.zeros_like(), reach_of_u.diag());
 
         // (iii) the sets, from the homogeneous solution of the deviation from xs
-        const Zonotope deviation(aux_filled(xs, 0.0), X.generators());
+        const Zonotope deviation(xs.zeros_like(), X.generators());
         const Zonotope next = deviation.linear_map(e_adt);
         const Zonotope between = deviation.linear_combination(next).plus(deviation.linear_map(F));
         R.time_interval.push_back(aux_shifted(between.plus(Pinterval).plus(remainder), xs));

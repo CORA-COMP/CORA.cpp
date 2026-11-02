@@ -44,8 +44,9 @@ void aux_products(const T *a, const Shape &sa, const T *b, const Shape &sb, T *o
                   const host::BatchPairs &bp) {
     const int64_t n = aux_rows(sa), k = sa.back(), m = sb.back();
     host::parallel_for(bp.batch.numel(), (long long)bp.batch.numel() * n * k * m, [&](int64_t z) {
+        const auto [left, right] = bp.at(z);
         Map<T>(out + z * n * m, n, m).noalias() =
-            MapC<T>(a + bp.left[z] * n * k, n, k) * MapC<T>(b + bp.right[z] * k * m, k, m);
+            MapC<T>(a + left * n * k, n, k) * MapC<T>(b + right * k * m, k, m);
     });
 }
 
@@ -56,6 +57,14 @@ host::BatchPairs aux_pairs(const Shape &a, const Shape &b, const char *op) {
         CORA_FAIL(Error::dimension_mismatch, std::string("CoraTensor::") + op +
                                                  ": the inner sizes of the product differ");
     return bp;
+}
+
+/// Memory of this thread for the temporaries of a kernel, reused from call to call so that a
+/// kernel allocates its results only.
+template <class T> T *aux_scratch(int64_t count) {
+    thread_local std::vector<T> buffer;
+    if (static_cast<int64_t>(buffer.size()) < count) buffer.resize(count);
+    return buffer.data();
 }
 
 /// Makes Eigen tensors from host numbers, on the CPU only.
@@ -114,6 +123,8 @@ template <class T> Tensor::Ptr expm(const HostTensor<T> &a) {
     return r;
 }
 
+// Fused Kernels -----------------------------------------------------------------------------------
+
 // M c and M G, two products of one call.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_linear_map(const HostTensor<T> &M,
@@ -129,32 +140,91 @@ std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
                                                     const HostTensor<T> &sup,
                                                     const HostTensor<T> &M, bool point_left) {
     const int64_t count = M.shape.numel();
-    const Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>> m(M.p, count);
-    const Eigen::Array<T, Eigen::Dynamic, 1> mp = m.max(T(0)), mn = m.min(T(0));
-    auto Mp = M.fresh(M.shape), Mn = M.fresh(M.shape);
-    std::copy_n(mp.data(), count, Mp->p);
-    std::copy_n(mn.data(), count, Mn->p);
-    const HostTensor<T> &first = point_left ? *Mp : inf;
     const BatchPairs bp = point_left ? aux_pairs(M.shape, inf.shape, "matmul_interval")
                                      : aux_pairs(inf.shape, M.shape, "interval_matmul");
     const Shape &left = point_left ? M.shape : inf.shape, &right = point_left ? inf.shape : M.shape;
     const Shape out = aux_matrix_shape(bp.batch, aux_rows(left), right.back());
-    auto lo = first.fresh(out), hi = first.fresh(out), tmp = first.fresh(out);
     const int64_t n = out.numel();
-    // lo = a1 b1 + a2 b2 and hi = a3 b3 + a4 b4 for the four products of each side
+    // M+, M- and one product in this thread's scratch memory
+    T *mp = aux_scratch<T>(2 * count + n), *mn = mp + count, *tmp = mn + count;
+    for (int64_t i = 0; i < count; ++i) {
+        mp[i] = std::max(M.p[i], T(0));
+        mn[i] = std::min(M.p[i], T(0));
+    }
+    auto lo = M.fresh(out), hi = M.fresh(out);
+    // dst = a1 b1 + a2 b2
     const auto both = [&](const T *a1, const T *b1, const T *a2, const T *b2, T *dst) {
         aux_products(a1, left, b1, right, dst, bp);
-        aux_products(a2, left, b2, right, tmp->p, bp);
-        for (int64_t i = 0; i < n; ++i) dst[i] = dst[i] + tmp->p[i];
+        aux_products(a2, left, b2, right, tmp, bp);
+        for (int64_t i = 0; i < n; ++i) dst[i] = dst[i] + tmp[i];
     };
     if (point_left) {
-        both(Mp->p, inf.p, Mn->p, sup.p, lo->p);
-        both(Mp->p, sup.p, Mn->p, inf.p, hi->p);
+        both(mp, inf.p, mn, sup.p, lo->p);
+        both(mp, sup.p, mn, inf.p, hi->p);
     } else {
-        both(inf.p, Mp->p, sup.p, Mn->p, lo->p);
-        both(sup.p, Mp->p, inf.p, Mn->p, hi->p);
+        both(inf.p, mp, sup.p, mn, lo->p);
+        both(sup.p, mp, inf.p, mn, hi->p);
     }
     return {lo, hi};
+}
+
+// T = (inf + sup) / 2 and S = (sup - inf) / 2 in scratch memory, then T c, T G and the box of
+// S times the row sums of |[c G]|, written straight into the results.
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_interval_map(const HostTensor<T> &inf,
+                                                          const HostTensor<T> &sup,
+                                                          const HostTensor<T> &c,
+                                                          const HostTensor<T> &G) {
+    const BatchPairs bp = aux_pairs(inf.shape, G.shape, "zonotope_interval_map");
+    const int64_t n = aux_rows(inf.shape), k = inf.shape.back(), m = G.shape.back();
+    const int64_t count = bp.batch.numel();
+    auto Tc = c.fresh(aux_matrix_shape(bp.batch, n, 1));
+    auto TG = G.fresh(aux_matrix_shape(bp.batch, n, m + n));
+    T *t = aux_scratch<T>(2 * n * k + k + n), *s = t + n * k, *reach = s + n * k, *box = reach + k;
+    for (int64_t z = 0; z < count; ++z) {
+        // the center T and radius S of the interval matrix of this member
+        const auto [l, r] = bp.at(z);
+        const T *lo = inf.p + l * n * k, *up = sup.p + l * n * k;
+        for (int64_t i = 0; i < n * k; ++i) {
+            t[i] = (lo[i] + up[i]) * T(0.5);
+            s[i] = (up[i] - lo[i]) * T(0.5);
+        }
+        const auto Gz = MapC<T>(G.p + r * k * m, k, m);
+        const auto cz = MapC<T>(c.p + r * k, k, 1);
+        // the box S |[c G]| 1, and T c, T G
+        Map<T>(reach, k, 1) = cz.cwiseAbs() + Gz.cwiseAbs().rowwise().sum();
+        Map<T>(box, n, 1).noalias() = MapC<T>(s, n, k) * MapC<T>(reach, k, 1);
+        Map<T>(Tc->p + z * n, n, 1).noalias() = MapC<T>(t, n, k) * cz;
+        Eigen::Map<RowMat<T>, 0, Eigen::OuterStride<>> out(TG->p + z * n * (m + n), n, m + n,
+                                                          Eigen::OuterStride<>(m + n));
+        out.leftCols(m).noalias() = MapC<T>(t, n, k) * Gz;
+        out.rightCols(n).setZero();
+        for (int64_t i = 0; i < n; ++i) out(i, m + i) = box[i];
+    }
+    return {Tc, TG};
+}
+
+// The halves of the sum and the difference, written into their blocks of the result.
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr>
+zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
+                            const HostTensor<T> &c2, const HostTensor<T> &G2) {
+    const int64_t m = G1.shape.back(), rows = G1.shape.numel() / std::max<int64_t>(m, 1);
+    Shape shape = G1.shape;
+    shape.back() = 2 * m + 1;
+    auto c = c1.fresh(c1.shape), G = G1.fresh(shape);
+    const int64_t nc = c1.shape.numel();
+    for (int64_t i = 0; i < nc; ++i) c->p[i] = (c1.p[i] + c2.p[i]) * T(0.5);
+    for (int64_t i = 0; i < rows; ++i) {
+        const T *a = G1.p + i * m, *b = G2.p + i * m;
+        T *row = G->p + i * (2 * m + 1);
+        for (int64_t j = 0; j < m; ++j) {
+            row[j] = (a[j] + b[j]) * T(0.5);
+            row[m + j] = (a[j] - b[j]) * T(0.5);
+        }
+        row[2 * m] = (c1.p[i] - c2.p[i]) * T(0.5);
+    }
+    return {c, G};
 }
 
 // The scores of all columns at once, then a stable sort per matrix.
@@ -196,6 +266,12 @@ template <class T> Tensor::Ptr abs_sum(const HostTensor<T> &a) {
     template Tensor::Ptr expm(const HostTensor<T> &);                                              \
     template std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_linear_map(                              \
         const HostTensor<T> &, const HostTensor<T> &, const HostTensor<T> &);                      \
+    template std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_interval_map(                            \
+        const HostTensor<T> &, const HostTensor<T> &, const HostTensor<T> &,                       \
+        const HostTensor<T> &);                                                                    \
+    template std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_linear_combination(                      \
+        const HostTensor<T> &, const HostTensor<T> &, const HostTensor<T> &,                       \
+        const HostTensor<T> &);                                                                    \
     template std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(                                  \
         const HostTensor<T> &, const HostTensor<T> &, const HostTensor<T> &, bool);                \
     template std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &, int64_t);     \

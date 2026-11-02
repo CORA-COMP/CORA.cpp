@@ -90,7 +90,7 @@ template <class T> struct HostTensor : Tensor::Impl {
     Ptr slice(int axis, int64_t start, int64_t stop, int64_t step) const override;
     Ptr take(const Tensor::Impl &idx, int axis) const override;
     Ptr take_along_axis(const Tensor::Impl &idx, int axis) const override;
-    Ptr concat(const std::vector<const Tensor::Impl *> &rest, int axis) const override;
+    Ptr concat(std::span<const Tensor::Impl *const> parts, int axis) const override;
     Ptr argsort(int axis, bool descending) const override;
 
     // Linear algebra: the product nested to the right; the factorizations by Eigen, per matrix
@@ -106,6 +106,10 @@ template <class T> struct HostTensor : Tensor::Impl {
     Ptr expm() const override;
     std::pair<Ptr, Ptr> zonotope_linear_map(const Tensor::Impl &c,
                                             const Tensor::Impl &G) const override;
+    std::pair<Ptr, Ptr> zonotope_interval_map(const Tensor::Impl &sup, const Tensor::Impl &c,
+                                              const Tensor::Impl &G) const override;
+    std::pair<Ptr, Ptr> zonotope_linear_combination(const Tensor::Impl &G1, const Tensor::Impl &c2,
+                                                    const Tensor::Impl &G2) const override;
     std::pair<Ptr, Ptr> interval_matmul(const Tensor::Impl &sup,
                                         const Tensor::Impl &M) const override;
     std::pair<Ptr, Ptr> matmul_interval(const Tensor::Impl &inf,
@@ -124,6 +128,15 @@ std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_linear_map(const HostTensor<T> &M,
                                                         const HostTensor<T> &c,
                                                         const HostTensor<T> &G);
 template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_interval_map(const HostTensor<T> &inf,
+                                                          const HostTensor<T> &sup,
+                                                          const HostTensor<T> &c,
+                                                          const HostTensor<T> &G);
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr>
+zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
+                            const HostTensor<T> &c2, const HostTensor<T> &G2);
+template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
                                                     const HostTensor<T> &sup,
                                                     const HostTensor<T> &M, bool point_left);
@@ -137,8 +150,18 @@ template <class T> Tensor::Ptr abs_sum(const HostTensor<T> &a);
 /// The matrices of a batched product (..., n, k) x (..., k, m), the batch axes broadcast: the
 /// batch shape of the result and, per result matrix, the index of its left and right matrix.
 struct BatchPairs {
-    Shape batch;
-    std::vector<int64_t> left, right;
+    Shape batch, left_strides, right_strides; ///< strides in matrices, zero where broadcast
+    /// The indices of the left and the right matrix of result matrix z.
+    std::pair<int64_t, int64_t> at(int64_t z) const {
+        int64_t l = 0, r = 0;
+        for (int64_t d = batch.size() - 1; d >= 0; --d) {
+            const int64_t i = z % batch[d];
+            z /= batch[d];
+            l += i * left_strides[d];
+            r += i * right_strides[d];
+        }
+        return {l, r};
+    }
 };
 BatchPairs batch_pairs(const Shape &a, const Shape &b, const char *op);
 

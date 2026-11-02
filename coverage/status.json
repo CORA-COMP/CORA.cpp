@@ -1,6 +1,6 @@
 {
  "cora_commit": "904a4442e68b1dc149a34e917dd63a7d3fb49a3a",
- "oracle_debt": 18,
+ "oracle_debt": 17,
  "rows": {
   "contSet/affine/affine": "todo",
   "contSet/capsule/and_": "todo",
@@ -415,7 +415,7 @@
   "contSet/interval/minus": "todo",
   "contSet/interval/mpower": "todo",
   "contSet/interval/mrdivide": "todo",
-  "contSet/interval/mtimes": "ported",
+  "contSet/interval/mtimes": "oracle",
   "contSet/interval/norm_": "todo",
   "contSet/interval/or": "todo",
   "contSet/interval/origin": "todo",

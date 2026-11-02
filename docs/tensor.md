@@ -36,7 +36,7 @@ must agree with the default (`tests/global/tensor/test_tensor_overrides.cpp`):
 
 | backend | native versions of derived and fused operations |
 |---|---|
-| eigen | `expm` (Eigen's Padé), `zonotope_linear_map`, `interval_matmul`, `matmul_interval` (products with M⁺ and M⁻), `girard_split`, `abs_sum`, and the sums along the last axis and `matmul` (Eigen's kernels) |
+| eigen | `expm` (Eigen's Padé), `zonotope_linear_map`, `zonotope_interval_map`, `zonotope_linear_combination`, `interval_matmul`, `matmul_interval` (products with M⁺ and M⁻), `girard_split`, `abs_sum`, and the sums along the last axis and `matmul` (Eigen's kernels) |
 | torch | `expm` (`matrix_exp`, or the hand-written backward with `,custom_backward`), `sort`, `diag`, `matrix_norm`, `vector_norm`, `interval_matmul`, `matmul_interval` |
 | lean | none: lean is the specification (`expm` is an error: CORALean's exponential is an interval series) |
 
@@ -200,6 +200,8 @@ carries over to the other backends up to these bounds of its primitives.
 | operation | kind | gradient | agreement | what it computes |
 |---|---|---|---|---|
 | `zonotope_linear_map` | fused | differentiable | sum 2 | M c and M G of a zonotope in one call |
+| `zonotope_interval_map` | fused | piecewise | sum 2 | T c and [T G, diag(S sum|[c G]|)] for the interval matrix T +- S (CORA's mtimes) |
+| `zonotope_linear_combination` | fused | differentiable | exact | (c1 + c2)/2 and [(G1 + G2)/2, (G1 - G2)/2, (c1 - c2)/2] (CORA's linComb) |
 | `interval_matmul` | fused | piecewise | sum 2 | the bounds of I M for an interval matrix I (CORA's mtimes) |
 | `matmul_interval` | fused | piecewise | sum 2 | the bounds of M I for an interval matrix I (CORA's mtimes) |
 | `girard_split` | fused | not_differentiable | exact | the generators by Girard's score |g|_1 - |g|_inf, the k kept and the rest |

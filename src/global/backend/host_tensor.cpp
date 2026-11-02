@@ -327,17 +327,8 @@ BatchPairs batch_pairs(const Shape &a, const Shape &b, const char *op) {
     aux_require_matrix(a, op, false);
     aux_require_matrix(b, op, false);
     const Shape ba = aux_batch(a), bb = aux_batch(b);
-    BatchPairs r{broadcast_shapes(ba, bb), {}, {}};
-    const int64_t count = r.batch.numel();
-    r.left.resize(count);
-    r.right.resize(count);
-    const std::array<Shape, 3> st = {aux_broadcast_strides(ba, r.batch),
-                                     aux_broadcast_strides(bb, r.batch), strides_of(r.batch)};
-    aux_walk<3>(r.batch, st, [&](int64_t ia, int64_t ib, int64_t io) {
-        r.left[io] = ia;
-        r.right[io] = ib;
-    });
-    return r;
+    const Shape batch = broadcast_shapes(ba, bb);
+    return {batch, aux_broadcast_strides(ba, batch), aux_broadcast_strides(bb, batch)};
 }
 
 // Construction ------------------------------------------------------------------------------------
@@ -626,12 +617,10 @@ Tensor::Ptr HostTensor<T>::take_along_axis(const Tensor::Impl &idx, int axis) co
 
 // The parts' blocks follow each other within every outer position.
 template <class T>
-Tensor::Ptr HostTensor<T>::concat(const std::vector<const Tensor::Impl *> &rest, int axis) const {
-    std::vector<const HostTensor *> parts{this};
-    for (const Tensor::Impl *q : rest) parts.push_back(&of(*q));
+Tensor::Ptr HostTensor<T>::concat(std::span<const Tensor::Impl *const> parts, int axis) const {
     Shape out = shape;
     out[axis] = 0;
-    for (const HostTensor *q : parts) {
+    for (const Tensor::Impl *q : parts) {
         Shape probe = q->shape;
         probe[axis] = shape[axis];
         if (probe != shape)
@@ -646,9 +635,9 @@ Tensor::Ptr HostTensor<T>::concat(const std::vector<const Tensor::Impl *> &rest,
     // per outer position, each part's block in turn
     for (int64_t o = 0; o < e.outer; ++o) {
         T *at = r->p + o * e.len * e.inner;
-        for (const HostTensor *q : parts) {
+        for (const Tensor::Impl *q : parts) {
             const int64_t block = q->shape[axis] * e.inner;
-            at = std::copy_n(q->p + o * block, block, at);
+            at = std::copy_n(of(*q).p + o * block, block, at);
         }
     }
     return r;
@@ -688,9 +677,11 @@ template <class T> Tensor::Ptr HostTensor<T>::matmul(const Tensor::Impl &o) cons
     auto r = fresh(aux_with_matrix(bp.batch, n, m));
     const T *b = of(o).p;
     parallel_for(bp.batch.numel(), (long long)bp.batch.numel() * n * k * m, [&](int64_t z) {
-        const T *A = p + bp.left[z] * n * k, *B = b + bp.right[z] * k * m;
+        const auto [left, right] = bp.at(z);
+        const T *A = p + left * n * k, *B = b + right * k * m;
         T *C = r->p + z * n * m;
         for (int64_t i = 0; i < n; ++i) {
+            // row i of C, from the last term to the first: a_iq b_qj + (the later terms)
             T *row = C + i * m;
             std::fill(row, row + m, T(0));
             for (int64_t q = k - 1; q >= 0; --q) {
@@ -714,8 +705,9 @@ template <class T> Tensor::Ptr HostTensor<T>::solve(const Tensor::Impl &rhs) con
     auto r = fresh(aux_with_matrix(bp.batch, n, m));
     const T *b = of(rhs).p;
     parallel_for(bp.batch.numel(), (long long)bp.batch.numel() * n * n * (n + m), [&](int64_t z) {
+        const auto [left, right] = bp.at(z);
         Map<T>(r->p + z * n * m, n, m) =
-            aux_matrix(p, bp.left[z], n, n).partialPivLu().solve(aux_matrix(b, bp.right[z], n, m));
+            aux_matrix(p, left, n, n).partialPivLu().solve(aux_matrix(b, right, n, m));
     });
     return r;
 }
@@ -814,7 +806,27 @@ HostTensor<T>::zonotope_linear_map(const Tensor::Impl &c, const Tensor::Impl &G)
     return Impl::zonotope_linear_map(c, G);
 }
 
-// The fused primitives: Eigen's kernels on eigen, the specification on lean.
+// The fused primitives: Eigen's kernels on eigen (for a center and generators of one batch), the
+// specification on lean.
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr>
+HostTensor<T>::zonotope_interval_map(const Tensor::Impl &sup, const Tensor::Impl &c,
+                                     const Tensor::Impl &G) const {
+    if (backend == backend_id::eigen && aux_batch(c.shape) == aux_batch(G.shape))
+        return eigen::zonotope_interval_map(*this, of(sup), of(c), of(G));
+    return Impl::zonotope_interval_map(sup, c, G);
+}
+
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr>
+HostTensor<T>::zonotope_linear_combination(const Tensor::Impl &G1, const Tensor::Impl &c2,
+                                           const Tensor::Impl &G2) const {
+    if (backend == backend_id::eigen) // the front end gave the centers the generators' batch
+        return eigen::zonotope_linear_combination(*this, of(G1), of(c2), of(G2));
+    return Impl::zonotope_linear_combination(G1, c2, G2);
+}
+
+// Both interval products are one kernel, with the interval on the left or on the right.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::interval_matmul(const Tensor::Impl &sup,
                                                                    const Tensor::Impl &M) const {

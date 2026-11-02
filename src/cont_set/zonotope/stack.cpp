@@ -27,9 +27,7 @@ Tensor aux_pad_generators(const Tensor &G, int64_t m) {
     const int64_t missing = m - shape.back();
     if (missing == 0) return G;
     shape.back() = missing;
-    int64_t count = 1;
-    for (int64_t d : shape) count *= d;
-    return Tensor::concat({G, Tensor::like(G, std::vector<double>(count, 0.0), shape)}, -1);
+    return Tensor::concat({G, G.zeros_like(shape)}, -1);
 }
 
 } // namespace

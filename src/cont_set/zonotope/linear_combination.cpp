@@ -27,10 +27,9 @@ Zonotope Zonotope::linear_combination(const Zonotope &Z2) const {
                           "), got " + shape_text(Z2.center().shape()) + " and " +
                           shape_text(Z2.generators().shape());
                });
-    const Tensor mean = (G_ + Z2.generators()) * 0.5;   // the shared part of matching generators
-    const Tensor spread = (G_ - Z2.generators()) * 0.5; // how far apart they are
-    const Tensor shift = (c_ - Z2.center()) * 0.5;      // the distance of the centers
-    return {(c_ + Z2.center()) * 0.5, Tensor::concat({mean, spread, shift}, -1)};
+    // the shared part of matching generators, how far apart they are, the distance of the centers
+    auto [c, G] = Tensor::zonotope_linear_combination(c_, G_, Z2.center(), Z2.generators());
+    return {std::move(c), std::move(G)};
 }
 
 } // namespace cora
