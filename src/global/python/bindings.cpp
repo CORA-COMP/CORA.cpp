@@ -247,6 +247,11 @@ void bind_registry(py::module_ &m) {
            const py::function &f) {
             // the function is kept alive, and freed with the GIL held
             auto fn = std::shared_ptr<py::object>(new py::object(f), [](py::object *o) {
+                if (!python_alive()) {
+                    o->release();  // the interpreter is gone (static destruction): leak it
+                    delete o;
+                    return;
+                }
                 py::gil_scoped_acquire gil;
                 delete o;
             });
@@ -290,7 +295,7 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "support_function",
             [](const ContSet &S, const py::object &d) {
-                return scalar(S.support_function(tensor_of(d, "the direction")));
+                return scalar(S.support_function(vector_of(d, "the direction")));
             },
             py::arg("d"), "max of d'x over the set; d (..., n)")
         .def("interval", &ContSet::interval, "The interval hull")
@@ -335,7 +340,7 @@ void bind_cont_set(py::module_ &m) {
         .def("__contains__", [](const py::object &S1, const py::object &S2) {
             if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
             if (py::isinstance<Interval>(S1))
-                return py::cast<const Interval &>(S1).contains(tensor_of(S2, "the point"));
+                return py::cast<const Interval &>(S1).contains(vector_of(S2, "the point"));
             CORA_FAIL(Error::not_supported, "point containment is implemented for intervals only");
         });
     bind_registry(m);
@@ -345,7 +350,7 @@ void bind_interval(py::module_ &m) {
     py::class_<Interval, ContSet>(m, "Interval",
                                   "A box, or a matrix of intervals: inf <= x <= sup.")
         .def(py::init([](const py::object &inf, const py::object &sup) {
-                 return Interval(tensor_of(inf, "inf"), tensor_of(sup, "sup"));
+                 return Interval(vector_of(inf, "inf"), vector_of(sup, "sup"));
              }),
              py::arg("inf"), py::arg("sup"), "The box of the vectors inf <= sup (..., n)")
         .def_static(
@@ -370,7 +375,7 @@ void bind_interval(py::module_ &m) {
         .def(
             "contains",
             [](const Interval &I, const py::object &p, double tol) {
-                return I.contains(tensor_of(p, "the point"), tol);
+                return I.contains(vector_of(p, "the point"), tol);
             },
             py::arg("p"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
             "Whether p is in the box enlarged by tol per coordinate");
@@ -379,7 +384,7 @@ void bind_interval(py::module_ &m) {
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
         .def(py::init([](const py::object &c, const py::object &G) {
-                 return Zonotope(tensor_of(c, "the center"), tensor_of(G, "the generators"));
+                 return Zonotope(vector_of(c, "the center"), tensor_of(G, "the generators"));
              }),
              py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
         .def_static("stack", &Zonotope::stack, py::arg("zonotopes"),
@@ -546,13 +551,19 @@ py::object run_with_kwargs(const py::object &self, const char *operation, const 
     const P problem = fill(P{}, rest);
     const std::string where = operation;
     if (std::optional<V> alg = algorithm<V>(name, rest)) {
+        // the problem, this algorithm's options and the caller's keywords are known
         std::vector<std::string> known = field_names<P>();
-        for (const std::string &f :
-             algorithm_fields<V>(std::make_index_sequence<std::variant_size_v<V>>()))
-            known.push_back(f);
+        std::visit(
+            [&](const auto &a) {
+                for (const std::string &f : field_names<std::decay_t<decltype(a)>>())
+                    known.push_back(f);
+            },
+            *alg);
         for (const std::string &k : extra) known.push_back(k);
         known.push_back("alg");
-        refuse_leftovers(rest, known, where);
+        const std::vector<std::string> others =
+            algorithm_fields<V>(std::make_index_sequence<std::variant_size_v<V>>());
+        refuse_leftovers(rest, known, where, others, name);
         return run(problem, *alg);
     }
     // an algorithm of Python: the same problem checks, then the function with the other keywords
@@ -968,14 +979,14 @@ void bind_specification(py::module_ &m) {
         .def_static(
             "safe_set",
             [](const py::object &a, double b) {
-                return Specification::safe_set(tensor_of(a, "the normal"), b);
+                return Specification::safe_set(vector_of(a, "the normal"), b);
             },
             py::arg("a"), py::arg("b"))
         .def_static(
             "unsafe_set",
             [](const py::object &a, const py::object &b) {
                 if (is_number(b))
-                    return Specification::unsafe_set(tensor_of(a, "the normal"),
+                    return Specification::unsafe_set(vector_of(a, "the normal"),
                                                      py::cast<double>(b));
                 // the rows of A with b: a polytope the sets must not touch
                 const Eigen::MatrixXd A = py::cast<Eigen::MatrixXd>(a);

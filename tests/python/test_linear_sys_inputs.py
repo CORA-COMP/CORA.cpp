@@ -110,8 +110,8 @@ class ReachWithInputs(unittest.TestCase):
     def test_trajectories_with_piecewise_constant_inputs_stay_inside(self):
         sys, rng = cora.LinearSys(A, B), cora.Rng(2)
         for lin_alg in ("standard", "wrapping_free"):
-            R = sys.reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg=lin_alg, input_set=U,
-                          zonotope_order=2)
+            order = {"zonotope_order": 2} if lin_alg == "standard" else {}  # wrapping_free has none
+            R = sys.reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg=lin_alg, input_set=U, **order)
             x = X0.rand_point(30, rng, "extreme")
             for k in range(5):
                 x = sys.simulate(x, time_step=0.2, t_final=0.2, input=U.rand_point(30, rng, "extreme"))[-1]

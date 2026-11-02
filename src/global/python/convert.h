@@ -20,6 +20,7 @@
 #include "cora/global/backend/eigen.h"
 #include "cora/global/options.h"
 
+#include <algorithm>
 #include <optional>
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
@@ -103,6 +104,26 @@ inline Tensor tensor_of(const py::handle &o, const char *what) {
               std::string("cora: ") + what + " must be a numpy array or a torch tensor");
 }
 
+/// A vector (..., n) from Python as a column (..., n, 1): a torch tensor of any batch, or a 1-D
+/// numpy array or list.
+inline Tensor vector_of(const py::handle &o, const char *what) {
+#ifdef CORACPP_PYTHON_TORCH
+    py::detail::make_caster<torch::Tensor> torch_caster;
+    if (torch_caster.load(o, /*convert=*/false)) return column(py::cast<torch::Tensor>(o));
+#endif
+    if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) || py::isinstance<py::tuple>(o)) {
+        const py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
+        if (a && a.ndim() == 1) return column(py::cast<Eigen::VectorXd>(a));
+        if (a && a.ndim() == 0) return column(Eigen::VectorXd::Constant(1, py::cast<double>(o)));
+    }
+    CORA_FAIL(Error::wrong_value, std::string("cora: ") + what +
+                                      " must be a vector: a torch tensor (..., n) or a 1-D numpy array");
+}
+
+/// Whether the GIL can still be taken: not once the interpreter is finalized (at process exit,
+/// when static objects holding Python objects are destroyed).
+inline bool python_alive() { return Py_IsInitialized() != 0; }
+
 // Sets --------------------------------------------------------------------------------------------
 
 /// Any cora set as a Set: a copy of a library set, the object itself for a Python subclass.
@@ -114,6 +135,10 @@ inline Set set_of(const py::handle &o) {
         const ContSet *S = py::cast<const ContSet *>(o);
         py::object keep = py::reinterpret_borrow<py::object>(o);
         auto release = [keep](const ContSet *) mutable {
+            if (!python_alive()) {
+                keep.release();  // the interpreter is gone: leak, as Python does at exit
+                return;
+            }
             py::gil_scoped_acquire gil;
             keep = py::object();
         };
@@ -201,11 +226,16 @@ std::optional<Variant> algorithm(const std::string &name, py::dict &kwargs) {
     }
 }
 
-/// An Error for keywords that no field took, naming the closest known name.
+/// An Error for keywords that no field took: an option of another algorithm is named so, any
+/// other keyword gets the closest known name.
 inline void refuse_leftovers(const py::dict &kwargs, const std::vector<std::string> &known,
-                             const std::string &where) {
+                             const std::string &where, const std::vector<std::string> &others = {},
+                             const std::string &alg = "") {
     for (const auto &item : kwargs) {
         const std::string key = py::cast<std::string>(item.first);
+        if (std::find(others.begin(), others.end(), key) != others.end())
+            CORA_FAIL(Error::redundant_name_value_pair,
+                      where + ": '" + key + "' is not an option of the algorithm '" + alg + "'");
         CORA_FAIL(Error::redundant_name_value_pair,
                   where + ": unknown keyword '" + key + "'" + did_you_mean(key, known));
     }
