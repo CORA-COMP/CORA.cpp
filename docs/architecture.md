@@ -172,5 +172,5 @@ struct, as CORA separates `params` from `options`.
 - The ARCH benchmarks and the 5-dimensional example are timed before and after each framework
   change. The bound is 3%.
 
-**Pull requests.** CI runs on pushes to `main` and on pull requests (`.github/workflows/ci.yml`).
+**Pull requests.** CI has three tiers (`.github/workflows/`, CONTRIBUTING.md, "CI"): the affected tests on every push to a pull request, every test before a merge, the full matrix nightly.
 Work happens on a branch, which reaches `main` through a reviewed pull request.

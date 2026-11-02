@@ -1,0 +1,130 @@
+# CI, tier 3: every night, the whole matrix and what is too slow for a pull request
+#
+# `changed` skips everything when main has not moved since the last successful nightly run (a manual
+# run never skips). A failed night opens one issue labelled `nightly` (or comments on the open one).
+#
+# Extension points, one job each: add the job below, then its name to `needs` of `report`.
+#   wheels             the Python wheels of the three platforms (cibuildwheel)
+#   docs-site          the documentation site
+#   latex-figures      the figures of the paper, regenerated
+#   benchmarks-history the ARCH-COMP benchmark times of this commit, appended to the history
+
+name: nightly
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  changed:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run: ${{ steps.compare.outputs.run }}
+    steps:
+      - id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          HEAD: ${{ github.sha }}
+        run: |
+          last=""
+          if [ "$EVENT" = schedule ]; then
+            last=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/nightly.yml/runs?status=success&event=schedule&per_page=1" \
+                   --jq '.workflow_runs[0].head_sha // ""')
+          fi
+          echo "main: $HEAD, last successful nightly: ${last:-none}"
+          if [ "$last" = "$HEAD" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+
+  install:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+        preset: [core, torch, python, python-torch]
+        exclude:  # the torch presets take too long to build on the slow runners
+          - { os: macos-latest, preset: torch }
+          - { os: macos-latest, preset: python-torch }
+          - { os: windows-latest, preset: torch }
+          - { os: windows-latest, preset: python-torch }
+    uses: ./.github/workflows/build.yml
+    with:
+      os: ${{ matrix.os }}
+      preset: ${{ matrix.preset }}
+
+  # AddressSanitizer and UndefinedBehaviorSanitizer; the first finding fails the test.
+  sanitizers:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: core
+      ccache_key: -sanitizers
+      build_type: RelWithDebInfo
+      cxx_flags: -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
+
+  # The CORA-COMP binary and its tests.
+  competition:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: competition
+      - run: sudo apt-get update && sudo apt-get install -y libglpk-dev
+      - run: |
+          cmake -S . -B build -DCORACPP_NATIVE=OFF -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --parallel
+          ctest --test-dir build -j4 --output-on-failure -L competition
+
+  # The lean tests against the CORALean oracle, fetched from the pinned release (scripts/coralean.cmake).
+  # Disabled until CORALean has a public release; CONTRIBUTING.md, "CORALean oracle", lists what is left.
+  oracle:
+    if: false
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: oracle
+      - run: cmake --preset core -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - run: cmake --build --preset core
+      - run: ctest --preset core -R '^global/oracle/' --output-on-failure
+
+  # One issue per failed night: the open `nightly` issue gets a comment instead of a second issue.
+  report:
+    if: failure() && github.event_name == 'schedule'
+    needs: [changed, install, sanitizers, competition]
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          NEEDS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          failed=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result == "failure") | "- " + .key')
+          body=$(printf 'The nightly run of %s failed: %s\n\n%s\n' "${SHA:0:10}" "$RUN_URL" "$failed")
+          gh label create nightly --color D93F0B --description "the nightly run failed" --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --label nightly --state open --json number --jq '.[0].number // ""')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --label nightly --title "Nightly run failed ($(date -u +%F))" --body "$body"
+          fi

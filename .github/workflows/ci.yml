@@ -1,68 +1,99 @@
+# CI, tier 1: every push to a pull request, fast feedback (target: under 10 minutes)
+#
+# `checks` needs no build. The Linux jobs build everything but run the tests the change can affect
+# (scripts/ci/affected_tests.py); a documentation-only change skips them. `instructions` compares
+# the instruction counts of the micro-benchmarks with the base commit's. Tier 2 (merge.yml) runs
+# everything before a merge, tier 3 (nightly.yml) the whole matrix every night. Require `ci-gate`.
+
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
 
-# The install jobs run the commands of the README (the presets) on the three platforms, with one
-# addition: no -march=native, because the runners differ in CPU and a build must run on the one
-# that tests it.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  install:
-    name: ${{ matrix.preset }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, macos-latest, windows-latest]
-        preset: [core, torch, python, python-torch]
-        exclude:  # the torch presets take too long to build on the slow runners
-          - { os: macos-latest, preset: torch }
-          - { os: macos-latest, preset: python-torch }
-          - { os: windows-latest, preset: torch }
-          - { os: windows-latest, preset: python-torch }
-    defaults:
-      run:
-        shell: bash
+  checks:
+    runs-on: ubuntu-24.04
+    outputs:
+      tests: ${{ steps.select.outputs.tests }}
+      perf: ${{ steps.select.outputs.perf }}
     steps:
       - uses: actions/checkout@v7
-      - uses: hendrikmuhs/ccache-action@v1.2.24
-        if: runner.os != 'Windows'
         with:
-          key: ${{ matrix.preset }}-${{ matrix.os }}
-      - name: configure
+          fetch-depth: 0
+      - run: python3 -m pip install --quiet pyyaml
+      - name: format
+        run: python3 scripts/ci/check_format.py
+      - name: conventions
+        run: python3 tests/global/test_coding_conventions.py
+      - name: coverage
+        run: |
+          if [ -f scripts/coverage/coverage.py ]; then python3 scripts/coverage/coverage.py --check
+          else echo "scripts/coverage/coverage.py is absent: skipped"; fi
+      - name: select the affected tests
+        id: select
         env:
-          CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
-        run: cmake --preset ${{ matrix.preset }} -DCORACPP_NATIVE=OFF
-      - run: cmake --build --preset ${{ matrix.preset }}
-      - run: ctest --preset ${{ matrix.preset }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          tests=$(python3 scripts/ci/affected_tests.py "$BASE" "$HEAD")
+          echo "selected: $tests"
+          echo "tests=$tests" >> "$GITHUB_OUTPUT"
+          # the micro-benchmarks run when the library, the build or the benchmarks changed
+          if [ "$tests" = ALL ] || git diff --name-only "$BASE...$HEAD" | grep -qE '^(src|include|benchmarks)/'; then
+            echo "perf=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "perf=false" >> "$GITHUB_OUTPUT"
+          fi
 
-  # The CORA-COMP binary and its tests.
-  competition:
+  linux-core:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: core
+      tests: ${{ needs.checks.outputs.tests }}
+
+  linux-python:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: python
+      tests: ${{ needs.checks.outputs.tests }}
+
+  instructions:
+    needs: checks
+    if: needs.checks.outputs.perf == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: hendrikmuhs/ccache-action@v1.2.24
         with:
-          key: competition
-      - run: sudo apt-get update && sudo apt-get install -y libglpk-dev
-      - run: |
-          cmake -S . -B build -DCORACPP_NATIVE=OFF -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel
-          ctest --test-dir build -j4 --output-on-failure -L competition
+          key: instructions
+      - run: sudo apt-get update && sudo apt-get install -y valgrind
+      - name: compare with the base commit
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: scripts/ci/instruction_counts.sh "$BASE"
 
-  # The lean tests against the CORALean oracle, fetched from the pinned release (scripts/coralean.cmake).
-  # Disabled until CORALean has a public release; CONTRIBUTING.md, "CORALean oracle", lists what is left.
-  oracle:
-    if: false
+  # The one check to require: success when every job above succeeded or was skipped (a
+  # documentation-only change skips the builds), a failure otherwise.
+  ci-gate:
+    if: always()
+    needs: [checks, linux-core, linux-python, instructions]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: hendrikmuhs/ccache-action@v1.2.24
-        with:
-          key: oracle
-      - run: cmake --preset core -DCORACPP_NATIVE=OFF -DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - run: cmake --build --preset core
-      - run: ctest --preset core -R '^global/oracle/' --output-on-failure
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          case " $RESULTS " in *" failure "*|*" cancelled "*) exit 1;; esac
