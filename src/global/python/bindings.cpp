@@ -26,6 +26,7 @@
 #include "cora/cont_set/registry.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
+#include "cora/global/oracle/request.h"
 #include "cora/global/plot/plot.h"
 #include "cora/global/rng.h"
 #include "cora/nn/neural_network/neural_network.h"
@@ -1206,66 +1207,208 @@ void bind_lean(py::module_ &top) {
           "The dtype of threads without a cora.lean.dtype block");
     m.def("current_dtype", &lean::dtype, "This thread's dtype");
 
-    py::class_<lean::Tensor>(m, "Tensor", "A matrix of exact values in a dtype")
+    using namespace pybind11::literals;
+    using LI = lean::Interval;
+    using LZ = lean::Zonotope;
+    using LT = lean::Tensor;
+    const auto tensor = [](const py::handle &x) { return LT::from(tensor_of(x, "x")); };
+
+    // an array (or list) is a lean tensor wherever an operation takes one, in the current dtype
+    py::class_<LT>(m, "Tensor", "A matrix of exact values in a dtype")
+        .def(py::init(tensor), py::arg("x"), "Exact, or an error if a value is not representable")
         .def_static(
-            "from_array",
-            [](const Eigen::MatrixXd &x) { return lean::Tensor::from(from_eigen(x)); },
+            "from_array", [](const Eigen::MatrixXd &x) { return LT::from(host_tensor(x)); },
             py::arg("x"), "Exact, or an error if a value is not representable in the dtype")
         .def(
-            "gather", [](const lean::Tensor &T) { return matrix(T.gather()); },
-            "The values as an array; an error if one is not a double")
+            "gather", [](const LT &T) { return bounds(T.gather()); },
+            "The values as an array (a vector if one column); an error if one is not a double")
         .def(
             "round_to",
-            [](const lean::Tensor &T, const std::string &dtype, const std::string &mode) {
+            [](const LT &T, const std::string &dtype, const std::string &mode) {
                 auto [value, error] = T.round_to(dtype, mode);
                 return std::make_pair(value, error);
             },
             py::arg("dtype"), py::arg("mode") = "nearest",
             "(value, error): the rounded values and an interval enclosing x - value")
-        .def_property_readonly("dtype", &lean::Tensor::dtype);
+        .def_property_readonly("dtype", &LT::dtype);
+    py::implicitly_convertible<py::array, LT>();
+    py::implicitly_convertible<py::list, LT>();
 
-    py::class_<lean::Interval>(m, "Interval", "A box of lean values")
-        .def(py::init<lean::Tensor, lean::Tensor>(), py::arg("inf"), py::arg("sup"))
+    py::class_<lean::Certified>(m, "Certified", "An answer of the oracle, a proof if `proved`")
+        .def_readonly("value", &lean::Certified::value)
+        .def_readonly("proved", &lean::Certified::proved);
+    py::class_<lean::Vertices>(m, "Vertices", "The vertices V (columns) and an error box E")
+        .def_readonly("V", &lean::Vertices::V)
+        .def_readonly("E", &lean::Vertices::E);
+
+    py::class_<LI>(m, "Interval", "A box of lean values and the oracle's operations on it")
+        .def(py::init<LT, LT>(), "inf"_a, "sup"_a)
+        .def(py::init<const cora::Interval &>(), "I"_a, "The exact box of a cora.Interval")
         .def_static(
             "from_arrays",
             [](const Eigen::VectorXd &inf, const Eigen::VectorXd &sup) {
-                return lean::Interval::from(column(inf), column(sup));
+                return LI::from(column(inf), column(sup));
             },
-            py::arg("inf"), py::arg("sup"))
+            "inf"_a, "sup"_a)
         .def(
             "gather",
-            [](const lean::Interval &I) {
+            [](const LI &I) {
                 auto [inf, sup] = I.gather();
                 return Interval(inf, sup);
             },
-            "A cora.Interval; an error if a bound is not a double");
+            "A cora.Interval; an error if a bound is not a double")
+        .def_property_readonly("inf", &LI::inf)
+        .def_property_readonly("sup", &LI::sup)
+        .def_static("empty", &LI::empty, "n"_a)
+        .def_static("origin", &LI::origin, "n"_a)
+        .def_static("unbounded", &LI::unbounded, "n"_a)
+        .def_static("enclose_points", &LI::enclose_points, "points"_a)
+        .def_static("interval_matrix", &LI::interval_matrix, "c"_a, "r"_a)
+        .def("abs", &LI::abs)
+        .def("uminus", &LI::uminus)
+        .def("uplus", &LI::uplus)
+        .def("sign", &LI::sign)
+        .def("round", &LI::round)
+        .def("sqrt", &LI::sqrt, "p"_a = 20)
+        .def("exp", &LI::exp, "p"_a = 20)
+        .def("sin", &LI::sin, "p"_a = 20)
+        .def("cos", &LI::cos, "p"_a = 20)
+        .def("tan", &LI::tan, "p"_a = 20)
+        .def("sinh", &LI::sinh, "p"_a = 20)
+        .def("cosh", &LI::cosh, "p"_a = 20)
+        .def("tanh", &LI::tanh, "p"_a = 20)
+        .def("log", &LI::log, "p"_a = 20, "k"_a = 20)
+        .def("asin", &LI::asin, "p"_a = 20, "k"_a = 20)
+        .def("acos", &LI::acos, "p"_a = 20, "k"_a = 20)
+        .def("atan", &LI::atan, "p"_a = 20, "k"_a = 20)
+        .def("asinh", &LI::asinh, "p"_a = 20, "k"_a = 20)
+        .def("acosh", &LI::acosh, "p"_a = 20, "k"_a = 20)
+        .def("atanh", &LI::atanh, "p"_a = 20, "k"_a = 20)
+        .def("atan2", &LI::atan2, "I2"_a, "p"_a = 20, "k"_a = 20)
+        .def("enlarge", &LI::enlarge, "factor"_a)
+        .def("power", &LI::power, "exponent"_a)
+        .def("rdivide", &LI::rdivide, "I2"_a)
+        .def("mrdivide", &LI::mrdivide, "d"_a)
+        .def("plus", &LI::plus, "I2"_a)
+        .def("minus", &LI::minus, "I2"_a)
+        .def("times", &LI::times, "I2"_a)
+        .def("unite", &LI::unite, "I2"_a)
+        .def("convex_hull", &LI::convex_hull, "I2"_a)
+        .def("mink_diff", &LI::mink_diff, "I2"_a)
+        .def("min", &LI::min, "I2"_a)
+        .def("max", &LI::max, "I2"_a)
+        .def("intersect", &LI::intersect, "I2"_a)
+        .def("enclose", &LI::enclose, "I2"_a)
+        .def("cart_prod", &LI::cart_prod, "I2"_a)
+        .def("linear_map", py::overload_cast<const LT &>(&LI::linear_map, py::const_), "M"_a)
+        .def("linear_map", py::overload_cast<const LI &>(&LI::linear_map, py::const_), "M"_a)
+        .def("quad_map", &LI::quad_map, "Q"_a)
+        .def("le", &LI::le, "I2"_a, "tol"_a = 0.0)
+        .def("lt", &LI::lt, "I2"_a, "tol"_a = 0.0)
+        .def("isequal", &LI::isequal, "I2"_a, "tol"_a = 0.0)
+        .def("is_full_dim", &LI::is_full_dim, "tol"_a = 0.0)
+        .def("is_bounded", &LI::is_bounded, "tol"_a = 0.0)
+        .def("representsa", &LI::representsa, "type"_a, "tol"_a = 0.0)
+        .def("contains", py::overload_cast<const LI &, double>(&LI::contains, py::const_), "I2"_a,
+             "tol"_a = 0.0)
+        .def("contains", py::overload_cast<const LZ &, double>(&LI::contains, py::const_), "Z"_a,
+             "tol"_a = 0.0)
+        .def("is_intersecting", py::overload_cast<const LI &, double>(&LI::is_intersecting, py::const_),
+             "I2"_a, "tol"_a = 0.0)
+        .def("is_intersecting", py::overload_cast<const LZ &, double>(&LI::is_intersecting, py::const_),
+             "Z"_a, "tol"_a = 0.0)
+        .def("center", &LI::center)
+        .def("rad", &LI::rad)
+        .def("infimum", &LI::infimum)
+        .def("supremum", &LI::supremum)
+        .def("radius", &LI::radius, "type"_a = 2, "mode"_a = "ub")
+        .def("norm", &LI::norm, "type"_a = 2, "mode"_a = "ub")
+        .def("volume", &LI::volume)
+        .def("support_function", &LI::support_function, "dir"_a, "type"_a = "upper")
+        .def("project", &LI::project, "dims"_a)
+        .def("lift", &LI::lift, "N"_a, "dims"_a)
+        .def("project_high_dim", &LI::project_high_dim, "N"_a, "dims"_a)
+        .def("split", &LI::split, "dim"_a)
+        .def("partition", &LI::partition, "splits"_a, "ind"_a)
+        .def("dirac", &LI::dirac, "n"_a)
+        .def("boundary_point", &LI::boundary_point, "dir"_a, "start"_a)
+        .def("transpose", &LI::transpose)
+        .def("ctranspose", &LI::ctranspose)
+        .def("prod", &LI::prod)
+        .def("diag", &LI::diag)
+        .def("kron", &LI::kron, "I2"_a)
+        .def("horzcat", &LI::horzcat, "I2"_a)
+        .def("vertcat", &LI::vertcat, "I2"_a)
+        .def("sum", &LI::sum, "dim"_a)
+        .def("cat", &LI::cat, "I2"_a, "dim"_a)
+        .def("mpower", &LI::mpower, "exponent"_a)
+        .def("tril", &LI::tril, "K"_a = 0)
+        .def("triu", &LI::triu, "K"_a = 0)
+        .def("reduce", &LI::reduce, "order"_a, "method"_a = "girard")
+        .def("zonotope", &LI::zonotope)
+        .def("vertices", &LI::vertices);
 
-    py::class_<lean::Zonotope>(m, "Zonotope", "A nominal zonotope plus an error box")
+    py::class_<LZ>(m, "Zonotope", "A nominal zonotope plus an error box, and the oracle's operations")
         .def(py::init([](const Eigen::VectorXd &c, const Eigen::MatrixXd &G) {
-                 return lean::Zonotope(column(c), from_eigen(G));
+                 return LZ(column(c), host_tensor(G));
              }),
-             py::arg("center"), py::arg("generators"), "An exact zonotope in the current dtype")
-        .def("nominal", &lean::Zonotope::nominal, "c and G with an empty error box")
-        .def("error", &lean::Zonotope::error, "The error box")
-        .def("enclosure", &lean::Zonotope::enclosure, "nominal and error as one zonotope")
-        .def("round_to", &lean::Zonotope::round_to, py::arg("dtype"), py::arg("mode") = "nearest")
+             "center"_a, "generators"_a, "An exact zonotope in the current dtype")
+        .def(py::init<const Zonotope &>(), "Z"_a, "The exact zonotope of a cora.Zonotope")
+        .def("nominal", &LZ::nominal, "c and G with an empty error box")
+        .def("error", &LZ::error, "The error box")
+        .def_property_readonly("center", &LZ::center)
+        .def_property_readonly("generators", &LZ::generators)
+        .def("enclosure", &LZ::enclosure, "nominal and error as one zonotope")
+        .def("round_to", &LZ::round_to, "dtype"_a, "mode"_a = "nearest")
+        .def("linear_map", py::overload_cast<const LT &>(&LZ::linear_map, py::const_), "M"_a)
+        .def("linear_map", py::overload_cast<const LI &>(&LZ::linear_map, py::const_), "M"_a)
+        .def("plus", py::overload_cast<const LZ &>(&LZ::plus, py::const_), "Z2"_a)
+        .def("plus", py::overload_cast<const LI &>(&LZ::plus, py::const_), "I"_a)
+        .def("linear_combination", &LZ::linear_combination, "Z2"_a)
+        .def("exact_plus", &LZ::exact_plus, "Z2"_a, "k"_a)
+        .def("reduce", &LZ::reduce, "order"_a, "method"_a = "girard")
+        .def("abs", &LZ::abs)
+        .def("intersect", &LZ::intersect, "Z2"_a)
+        .def("convex_hull", &LZ::convex_hull, "Z2"_a)
+        .def("enclose", &LZ::enclose, "Z2"_a)
+        .def("cart_prod", &LZ::cart_prod, "Z2"_a)
+        .def("compact", &LZ::compact, "method"_a = "zeros", "tol"_a = 0.0)
+        .def("intersect_strip", &LZ::intersect_strip, "C"_a, "phi"_a, "y"_a, "Lambda"_a)
+        .def("quad_map", &LZ::quad_map, "Q"_a)
+        .def("cub_map", &LZ::cub_map, "T"_a)
+        .def_static("enclose_many", &LZ::enclose_many, "Zs"_a, "direction"_a, "p"_a = 20)
+        .def_static("enclose_points", &LZ::enclose_points, "points"_a, "U"_a,
+                    "method"_a = "stursberg")
+        .def_static("filter_out", &LZ::filter_out, "Zs"_a)
+        .def_static("origin", &LZ::origin, "n"_a)
+        .def("project", &LZ::project, "dims"_a)
+        .def("lift", &LZ::lift, "N"_a, "dims"_a)
+        .def("project_high_dim", &LZ::project_high_dim, "N"_a, "dims"_a)
+        .def("rotate", &LZ::rotate, "p"_a, "i"_a, "j"_a, "angle"_a)
+        .def("split", &LZ::split, "gen"_a)
+        .def("split_first_gen", &LZ::split_first_gen)
+        .def("split_longest_gen", &LZ::split_longest_gen)
+        .def("constr_sat", &LZ::constr_sat, "C"_a, "d"_a)
+        .def("is_bounded", &LZ::is_bounded, "tol"_a = 0.0)
+        .def("is_full_dim", &LZ::is_full_dim, "tol"_a = 0.0)
+        .def("isequal", &LZ::isequal, "Z2"_a, "tol"_a = 0.0)
+        .def("representsa", &LZ::representsa, "type"_a, "tol"_a = 0.0)
+        .def("contains", &LZ::contains, "Z2"_a, "tol"_a = 0.0)
+        .def("is_intersecting", &LZ::is_intersecting, "Z2"_a, "tol"_a = 0.0)
+        .def("norm", &LZ::norm, "type"_a = 2, "mode"_a = "ub")
+        .def("support_function", &LZ::support_function, "dir"_a, "type"_a = "upper")
+        .def("radius", &LZ::radius, "k"_a = 20)
+        .def("minnorm", &LZ::minnorm, "p"_a = 20)
+        .def("generator_length", &LZ::generator_length, "k"_a = 20)
+        .def("dominant_directions",
+             py::overload_cast<>(&LZ::dominant_directions, py::const_))
+        .def("dominant_directions",
+             py::overload_cast<int, int>(&LZ::dominant_directions, py::const_),
+             "filter_length1"_a, "filter_length2"_a)
+        .def("vertices", &LZ::vertices)
+        .def("interval", &LZ::interval)
         .def(
-            "linear_map",
-            [](const lean::Zonotope &Z, const py::object &M) {
-                if (py::isinstance<lean::Interval>(M))
-                    return Z.linear_map(py::cast<lean::Interval>(M));
-                return Z.linear_map(lean::Tensor::from(from_eigen(py::cast<Eigen::MatrixXd>(M))));
-            },
-            py::arg("M"))
-        .def("plus", py::overload_cast<const lean::Zonotope &>(&lean::Zonotope::plus, py::const_),
-             py::arg("Z2"))
-        .def("plus", py::overload_cast<const lean::Interval &>(&lean::Zonotope::plus, py::const_),
-             py::arg("I"))
-        .def("linear_combination", &lean::Zonotope::linear_combination, py::arg("Z2"))
-        .def("reduce", &lean::Zonotope::reduce, py::arg("order"), py::arg("method") = "girard")
-        .def("interval", &lean::Zonotope::interval)
-        .def(
-            "gather", [](const lean::Zonotope &Z) { return Z.gather(); },
+            "gather", [](const LZ &Z) { return Z.gather(); },
             "(cora.Zonotope, cora.Interval): the nominal part and the error, exactly");
 
     py::class_<lean::ReachSet>(m, "ReachSet", "The reachable sets: lists of lean zonotopes")

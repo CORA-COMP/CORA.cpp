@@ -18,6 +18,7 @@
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/backend/eigen.h"
+#include "cora/global/backend/lean.h"
 #include "cora/global/options.h"
 
 #include <algorithm>
@@ -39,11 +40,29 @@ namespace py = pybind11;
 
 // Arrays ------------------------------------------------------------------------------------------
 
+/// A numpy matrix as a tensor: on Eigen, except under `with cora.backend("lean")`, where it is a
+/// lean tensor so that CORA.cpp rounds and orders its operations as the CORALean oracle does.
+inline Tensor host_tensor(const Eigen::MatrixXd &m) {
+    if (backend().name() != "lean") return from_eigen(m);
+    std::vector<double> row_major;
+    for (Eigen::Index i = 0; i < m.rows(); ++i)
+        for (Eigen::Index j = 0; j < m.cols(); ++j) row_major.push_back(m(i, j));
+    return Tensor::from_data(row_major, {m.rows(), m.cols()});
+}
+
+/// A lean tensor (a unbatched matrix) as an Eigen matrix.
+inline Eigen::MatrixXd host_matrix(const Tensor &t) {
+    const std::vector<int64_t> shape = t.shape();
+    const std::vector<double> data = t.data();
+    return Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+        data.data(), shape[0], shape[1]);
+}
+
 /// A Python vector (..., n) as a column (..., n, 1).
 #ifdef CORACPP_PYTHON_TORCH
 inline Tensor column(const torch::Tensor &v) { return from_torch(v.unsqueeze(-1)); }
 #endif
-inline Tensor column(const Eigen::VectorXd &v) { return from_eigen(v); }
+inline Tensor column(const Eigen::VectorXd &v) { return host_tensor(v); }
 
 /// A column (..., n, 1) as a Python vector (..., n), in the array type of its backend.
 inline py::object vector(const Tensor &t) {
@@ -51,8 +70,9 @@ inline py::object vector(const Tensor &t) {
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1));
 #endif
     if (is_eigen(t)) return py::cast(Eigen::VectorXd(to_eigen(t).col(0)));
-    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take (lean?); "
-                                    "use the eigen or torch backend");
+    if (is_lean(t)) return py::cast(Eigen::VectorXd(host_matrix(t).col(0)));
+    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take; "
+                                    "use the eigen, torch or lean backend");
 }
 
 /// A matrix in the array type of its backend.
@@ -61,8 +81,9 @@ inline py::object matrix(const Tensor &t) {
     if (is_torch(t)) return py::cast(to_torch(t));
 #endif
     if (is_eigen(t)) return py::cast(to_eigen(t));
-    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take (lean?); "
-                                    "use the eigen or torch backend");
+    if (is_lean(t)) return py::cast(host_matrix(t));
+    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take; "
+                                    "use the eigen, torch or lean backend");
 }
 
 /// The bounds of an interval: a column bound is a vector (..., n), a matrix bound stays.
@@ -74,7 +95,8 @@ inline py::object scalar(const Tensor &t) {
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1).squeeze(-1));
 #endif
     if (is_eigen(t)) return py::cast(to_eigen(t)(0, 0));
-    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take (lean?)");
+    if (is_lean(t)) return py::cast(t.data()[0]);
+    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take");
 }
 
 /// A torch tensor or numpy array (or a list of numbers) as a Tensor on its backend, 1-D as a
@@ -92,7 +114,7 @@ inline std::optional<Tensor> as_tensor(const py::handle &o) {
         const py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
         if (!a) return std::nullopt;
         if (a.ndim() == 1) return column(py::cast<Eigen::VectorXd>(a));
-        if (a.ndim() == 2) return from_eigen(py::cast<Eigen::MatrixXd>(a));
+        if (a.ndim() == 2) return host_tensor(py::cast<Eigen::MatrixXd>(a));
     }
     return std::nullopt;
 }

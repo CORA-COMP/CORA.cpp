@@ -1,12 +1,12 @@
 """test_lean - cora.lean: the exact crossing and the dtype rules; the oracle when CORACPP_ORACLE is set"""
 # CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet ORACLE)
 
-import os
 import unittest
 
 import numpy as np
 
 import cora
+import oracle_testing
 
 
 class Crossing(unittest.TestCase):
@@ -32,8 +32,21 @@ class Crossing(unittest.TestCase):
             Z.reduce(1, "pca")
 
 
-@unittest.skipUnless(os.environ.get("CORACPP_ORACLE"), "needs the CORALean oracle")
+@oracle_testing.needs_oracle
 class Oracle(unittest.TestCase):
+    def test_methods_take_arrays_and_return_lean_objects(self):
+        self.enterContext(cora.lean.dtype("binary64"))
+        Z = cora.lean.Zonotope(np.array([1.0, 2.0]), np.array([[1.0, 0.5, 0.0], [0.0, 1.0, 2.0]]))
+        self.assertEqual(Z.support_function(np.array([1.0, 1.0])), 7.5)
+        halves = Z.split(1)
+        self.assertEqual(len(halves), 2)
+        np.testing.assert_array_equal(Z.linear_map(np.eye(2)).gather()[0].center, [1.0, 2.0])
+        box = cora.lean.Interval(np.array([0.0, 0.0]), np.array([1.0, 2.0]))
+        self.assertEqual(box.volume(), 2.0)
+        inner = cora.lean.Interval(np.array([0.25, 0.5]), np.array([0.5, 1.0]))
+        self.assertTrue(box.contains(inner).proved)
+        self.assertIsNotNone(box.boundary_point(np.array([1.0, 1.0]), np.array([0.5, 0.5])))
+
     def test_the_lean_reach_encloses_the_double_reach(self):
         self.enterContext(cora.lean.dtype("binary64"))
         A = np.array([[0.0, 1.0], [-1.0, -0.25]])
@@ -42,11 +55,8 @@ class Oracle(unittest.TestCase):
         X0 = cora.Zonotope(cora.Tensor(c), cora.Tensor(G))
         ref = cora.LinearSys(cora.Tensor(A)).reach(X0, time_step=0.125, t_final=1.0, taylor_terms=8)
         self.assertEqual(len(R.time_point), 9)
-        for lean_set, z in zip(R.time_point, ref.time_point):
-            lo, hi = lean_set.interval().gather().inf, lean_set.interval().gather().sup
-            box = z.interval()
-            self.assertTrue(np.all(np.asarray(lo) <= np.asarray(box.inf) + 1e-9))
-            self.assertTrue(np.all(np.asarray(hi) >= np.asarray(box.sup) - 1e-9))
+        for k, (lean_set, z) in enumerate(zip(R.time_point, ref.time_point)):
+            oracle_testing.check_enclosed(f"time point {k}", z.interval(), lean_set.interval())
 
 
 if __name__ == "__main__":
