@@ -118,5 +118,6 @@ target_include_directories(cora PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/in
                            "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>" "$<INSTALL_INTERFACE:include>")
 target_link_libraries(cora PUBLIC cora_flags)
 if(CORACPP_HAS_TORCH)
-  target_link_libraries(cora PUBLIC cora_torch)
+  # installed, libtorch is CORA::torch, which CORAConfig.cmake defines from the recorded torch path
+  target_link_libraries(cora PUBLIC "$<BUILD_INTERFACE:cora_torch>" "$<INSTALL_INTERFACE:CORA::torch>")
 endif()

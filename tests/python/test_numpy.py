@@ -18,7 +18,7 @@ class NumpyOnly(unittest.TestCase):
         try:
             import torch  # noqa: F401
         except ImportError:
-            with self.assertRaisesRegex(ValueError, "no torch"):
+            with self.assertRaisesRegex(cora.errors.Install, "has no torch"):
                 with cora.backend("torch"):
                     pass
 

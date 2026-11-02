@@ -59,13 +59,12 @@ std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec)
 #ifdef CORACPP_TORCH
     if (name == "torch") return torch_backend(torch_device(device), option == "custom_backward");
 #endif
-    CORA_FAIL(Error::wrong_value, "no backend '" + name + "' in this build; use eigen, " +
 #ifdef CORACPP_TORCH
-                                      "lean or torch"
+    const std::string others = "lean or torch";
 #else
-                                      "or lean (this build has no libtorch)"
+    const std::string others = "or lean (this build has no libtorch)";
 #endif
-    );
+    CORA_FAIL(Error::wrong_value, "no backend '" + name + "' in this build; use eigen, " + others);
 }
 
 /// The process default, made on first use, and this thread's scope (none: the default).
@@ -119,10 +118,11 @@ const Tensor::Backend &backend() {
     if (current) return *current;
     const char *env = std::getenv("CORACPP_BACKEND");
 #ifdef CORACPP_TORCH
-    const Tensor::Backend &chosen = backend(env && *env ? env : "torch");
+    const std::string name = env && *env ? env : "torch";
 #else
-    const Tensor::Backend &chosen = backend(env && *env ? env : "eigen");
+    const std::string name = env && *env ? env : "eigen";
 #endif
+    const Tensor::Backend &chosen = backend(name);
     // the first thread to get here sets the default; another may have chosen the same meanwhile
     const Tensor::Backend *expected = nullptr;
     aux_default().compare_exchange_strong(expected, &chosen, std::memory_order_acq_rel);

@@ -10,7 +10,7 @@ include(CMakePackageConfigHelpers)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/cora" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         FILES_MATCHING PATTERN "*.h")
 install(FILES "${CMAKE_BINARY_DIR}/include/cora/config.h" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/cora")
-install(TARGETS cora cora_flags cora_torch EXPORT CORATargets
+install(TARGETS cora cora_flags EXPORT CORATargets
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 install(EXPORT CORATargets NAMESPACE CORA:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/CORA")
@@ -25,6 +25,13 @@ endif()
 set(CORA_HAS_OPENMP OFF)
 if(OpenMP_CXX_FOUND AND NOT MINGW)
   set(CORA_HAS_OPENMP ON)
+endif()
+
+# the usage requirements of cora_torch, written into CORAConfig.cmake (see CORA::torch there)
+if(CORACPP_HAS_TORCH)
+  get_target_property(CORA_TORCH_DEFINITIONS cora_torch INTERFACE_COMPILE_DEFINITIONS)
+  get_target_property(CORA_TORCH_INCLUDES cora_torch INTERFACE_INCLUDE_DIRECTORIES)
+  get_target_property(CORA_TORCH_LIBS cora_torch INTERFACE_LINK_LIBRARIES)
 endif()
 
 configure_package_config_file("${CMAKE_SOURCE_DIR}/scripts/cmake/CORAConfig.cmake.in"
