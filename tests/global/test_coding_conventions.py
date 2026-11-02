@@ -89,17 +89,23 @@ def header_comment(lines):
     return block
 
 
+def is_operation_file(r):
+    """Whether a file, given by its path relative to the repository, is a public operation."""
+    return r.endswith(".cpp") and r.startswith(OPERATION_ROOTS) and "/private/" not in r \
+        and os.path.splitext(os.path.basename(r))[0] != os.path.basename(os.path.dirname(r))
+
+
+def needs_cora_tag_file(r):
+    """Whether a file (relative path) names its CORA file: an operation or a class header."""
+    return is_operation_file(r) or (r.startswith(CLASS_HEADER_ROOTS) and r.endswith(".h"))
+
+
 def is_operation(path):
-    r = rel(path)
-    return path.endswith(".cpp") and r.startswith(OPERATION_ROOTS) and "/private/" not in r \
-        and os.path.splitext(os.path.basename(path))[0] != os.path.basename(os.path.dirname(path))
+    return is_operation_file(rel(path))
 
 
 def needs_cora_tag(path):
-    r = rel(path)
-    if is_operation(path):
-        return True
-    return r.startswith(CLASS_HEADER_ROOTS) and r.endswith(".h")
+    return needs_cora_tag_file(rel(path))
 
 
 def code_only(text):

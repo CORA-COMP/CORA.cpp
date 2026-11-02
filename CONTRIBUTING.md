@@ -16,6 +16,8 @@ src/                       the implementation, one operation per file, mirroring
 tests/  examples/          mirror src/; tests/install/consumer builds against the install tree
 scripts/competition/       the CORA-COMP entry (cora::comp, kept apart)
 scripts/ci/  benchmarks/micro/   the CI helpers (test selection, instruction counts) and the micro-benchmarks they run
+scripts/coverage/          the coverage tables of CORA (inventory, CORALean import, the checker)
+coverage/                  the generated tables, the inventory, status.json, out-of-scope.md
 docs/                      architecture.md (the decisions), naming.md (CORA -> C++ -> Python)
 ```
 
@@ -23,7 +25,7 @@ The library is namespace `cora`; the competition entry keeps its own sets in `co
 
 ## Conventions
 
-`tests/global/test_coding_conventions.py` checks all of these; it is the first test of `ctest`.
+`tests/global/test_coding_conventions.py` checks all of these; it runs first in `ctest`, after the coverage check.
 
 - One operation per file, named after the operation in snake_case (`rand_point.cpp` for CORA's
   `randPoint`), with a header (Syntax, Inputs, Outputs, See also; 1-3 lines per entry, no filler)
@@ -46,6 +48,26 @@ The library is namespace `cora`; the competition entry keeps its own sets in `co
 - One code path: library code never asks which backend, device or dtype it runs on (only
   `global/backend/` and `global/tensor/` do), makes new tensors `like` an input, and is not
   duplicated (the conventions test fails on a clone of 100 tokens).
+
+## Coverage
+
+`coverage/` says per CORA method how far CORA.cpp is ([README](coverage/README.md), one table per CORA
+class). It is computed from the tags and never edited: `python scripts/coverage/coverage.py` rewrites
+it, and `ctest` (`coverage`, the first test) fails when it is stale.
+
+- A source names its CORA file (`// CORA: <path>.m`; `// CORA: <path>.m:method` for a method of a
+  single-file class). The tests declare what they test with the same line (`// CORA:` in C++, `# CORA:`
+  in Python), after the first comment line.
+- Status, low to high: `todo`, `untested` (a source, but not both tests), `ported` (a C++ and a Python
+  test), `property` (`// PROPERTY:` a test of a stated property on random inputs with fixed seeds),
+  `oracle` (`// ORACLE:` a test against CORALean, in `tests/**/oracle/` or `test_lean*`), `out-of-scope`
+  (a row with its reason in `coverage/out-of-scope.md`).
+- Coverage only goes up: a row below its status in `coverage/status.json` fails the check
+  (`--accept-drop <row>` records a drop). The oracle debt, the rows that are `ported` or `property`
+  while CORALean has them (`coverage/coralean-status.json`), may not grow (`--accept-debt`).
+- `scripts/coverage/inventory.py` regenerates the rows from a CORA checkout (`~/CORA` or `CORA_DIR`);
+  `scripts/coverage/import_coralean.py <CORALean>` refreshes what CORALean has. Both run on demand.
+- `tests/global/test_coverage.py` tests the checker.
 
 ## Examples
 
