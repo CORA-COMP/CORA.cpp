@@ -1,6 +1,6 @@
 # CI, tier 2: the full test suite before a merge (GitHub merge queue), or on demand
 #
-# Every preset on Linux, every test. Start one by hand: Actions > merge > Run workflow, or
+# Every preset on Linux, and core on Windows (MSVC) and macOS, every test. Start one by hand: Actions > merge > Run workflow, or
 # `gh workflow run merge.yml --ref <branch>`. Require `ci-gate` (it is also the name of the gate of
 # ci.yml, so the one required check covers the pull request and the merge group).
 
@@ -38,9 +38,22 @@ jobs:
     with:
       preset: python-torch
 
+  # MSVC and Apple clang reject code that GCC accepts (PR #2: a directive inside a macro argument)
+  core-windows:
+    uses: ./.github/workflows/build.yml
+    with:
+      os: windows-latest
+      preset: core
+
+  core-macos:
+    uses: ./.github/workflows/build.yml
+    with:
+      os: macos-latest
+      preset: core
+
   ci-gate:
     if: always()
-    needs: [core, torch, python, python-torch]
+    needs: [core, torch, python, python-torch, core-windows, core-macos]
     runs-on: ubuntu-24.04
     steps:
       - env:
