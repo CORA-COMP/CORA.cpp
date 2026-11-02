@@ -158,6 +158,19 @@ class PyContSet : public ContSet {
         }
         return out;
     }
+    std::vector<std::vector<Point3>> vertices_3d_impl() const override {
+        py::gil_scoped_acquire gil;
+        std::vector<std::vector<Point3>> out;
+        for (const py::handle &p : call("_vertices_3d")) {
+            const auto a =
+                py::array_t<double, py::array::c_style | py::array::forcecast>::ensure(p);
+            std::vector<Point3> corners;
+            for (py::ssize_t i = 0; i < a.shape(0); ++i)
+                corners.push_back({a.at(i, 0), a.at(i, 1), a.at(i, 2)});
+            out.push_back(corners);
+        }
+        return out;
+    }
     std::string display_impl() const override {
         py::gil_scoped_acquire gil;
         const py::function f = py::get_override(static_cast<const ContSet *>(this), "_display");
@@ -191,6 +204,15 @@ py::array_t<double> polygon_array(const Polygon &polygon) {
         view(i, 0) = polygon[i][0];
         view(i, 1) = polygon[i][1];
     }
+    return out;
+}
+
+/// The points of space as an (k, 3) array.
+py::array_t<double> points3_array(const std::vector<Point3> &points) {
+    py::array_t<double> out({static_cast<py::ssize_t>(points.size()), py::ssize_t(3)});
+    auto view = out.mutable_unchecked<2>();
+    for (std::size_t i = 0; i < points.size(); ++i)
+        for (py::ssize_t k = 0; k < 3; ++k) view(i, k) = points[i][static_cast<std::size_t>(k)];
     return out;
 }
 
@@ -286,7 +308,8 @@ void bind_registry(py::module_ &m) {
 void bind_cont_set(py::module_ &m) {
     py::class_<ContSet, PyContSet>(m, "ContSet",
                                    "The abstract set; a Python subclass implements _dim, _center, "
-                                   "_support_function, _interval, _rand_point, _project, _vertices")
+                                   "_support_function, _interval, _rand_point, _project, "
+                                   "_vertices, _vertices_3d")
         .def(py::init<>())
         .def_property_readonly("dim", &ContSet::dim, "The dimension n")
         .def_property_readonly(
@@ -319,6 +342,15 @@ void bind_cont_set(py::module_ &m) {
                 return polygons;
             },
             "The vertices of a two-dimensional set, one (k, 2) array per batch member")
+        .def(
+            "vertices_3d",
+            [](const ContSet &S) {
+                py::list corners;
+                for (const std::vector<Point3> &p : S.vertices_3d())
+                    corners.append(points3_array(p));
+                return corners;
+            },
+            "The vertices of a three-dimensional set, one (k, 3) array per batch member")
         .def("display", &ContSet::display)
         .def("__repr__", &ContSet::display)
         .def("__str__", &ContSet::display)
@@ -580,11 +612,13 @@ py::object run_with_kwargs(const py::object &self, const char *operation, const 
 
 void bind_problems(py::module_ &m) {
     py::class_<ReachSet>(m, "ReachSet", "The reachable sets: lists of zonotopes.")
-        .def(py::init([](std::vector<Zonotope> time_interval, std::vector<Zonotope> time_point) {
-                 return ReachSet{std::move(time_interval), std::move(time_point)};
+        .def(py::init([](std::vector<Zonotope> time_interval, std::vector<Zonotope> time_point,
+                         double time_step) {
+                 return ReachSet{std::move(time_interval), std::move(time_point), time_step};
              }),
              py::arg("time_interval") = std::vector<Zonotope>(),
-             py::arg("time_point") = std::vector<Zonotope>())
+             py::arg("time_point") = std::vector<Zonotope>(), py::arg("time_step") = 0.0)
+        .def_readonly("time_step", &ReachSet::time_step, "the step between the sets; 0 if unknown")
         .def_readonly("time_interval", &ReachSet::time_interval,
                       "time_interval[k] over [k*time_step, (k+1)*time_step]")
         .def_readonly("time_point", &ReachSet::time_point, "time_point[k] at k*time_step");
@@ -822,17 +856,20 @@ Color color_of(const py::handle &value) {
 /// The plot options given as keyword arguments, named as in PlotOptions.
 PlotOptions options_of(const py::kwargs &kwargs) {
     PlotOptions o;
-    const std::vector<std::string> known = {"label",      "color",      "facecolor", "face_alpha",
-                                            "line_width", "unify",      "filled",    "time_points",
-                                            "step",       "num_colors", "cidx"};
+    const std::vector<std::string> known = {
+        "label",      "color",  "face_color", "edge_color", "face_alpha", "line_width",
+        "unify",      "filled", "set",        "time_points", "step",       "num_colors",
+        "cidx"};
     for (const auto &item : kwargs) {
         const std::string key = py::cast<std::string>(item.first);
         if (key == "label")
             o.label = py::cast<std::string>(item.second);
         else if (key == "color")
             o.color = color_of(item.second);
-        else if (key == "facecolor")
-            o.facecolor = color_of(item.second);
+        else if (key == "face_color")
+            o.face_color = color_of(item.second);
+        else if (key == "edge_color")
+            o.edge_color = color_of(item.second);
         else if (key == "face_alpha")
             o.face_alpha = py::cast<double>(item.second);
         else if (key == "line_width")
@@ -841,6 +878,8 @@ PlotOptions options_of(const py::kwargs &kwargs) {
             o.unify = py::cast<bool>(item.second);
         else if (key == "filled")
             o.filled = py::cast<bool>(item.second);
+        else if (key == "set")
+            o.set = py::cast<std::string>(item.second);
         else if (key == "time_points")
             o.time_points = py::cast<bool>(item.second);
         else if (key == "step")
@@ -856,6 +895,34 @@ PlotOptions options_of(const py::kwargs &kwargs) {
     return o;
 }
 
+/// The TikZ options given as keyword arguments, named as in TikzOptions.
+TikzOptions tikz_options_of(const py::kwargs &kwargs) {
+    TikzOptions o;
+    const std::vector<std::string> known = {"standalone",     "coramacs",      "thin",  "thin_tolerance",
+                                            "external_data", "width",         "height"};
+    for (const auto &item : kwargs) {
+        const std::string key = py::cast<std::string>(item.first);
+        if (key == "standalone")
+            o.standalone = py::cast<bool>(item.second);
+        else if (key == "coramacs")
+            o.coramacs = py::cast<bool>(item.second);
+        else if (key == "thin")
+            o.thin = py::cast<bool>(item.second);
+        else if (key == "thin_tolerance")
+            o.thin_tolerance = py::cast<double>(item.second);
+        else if (key == "external_data")
+            o.external_data = py::cast<bool>(item.second);
+        else if (key == "width")
+            o.width = py::cast<std::string>(item.second);
+        else if (key == "height")
+            o.height = py::cast<std::string>(item.second);
+        else
+            CORA_FAIL(Error::redundant_name_value_pair,
+                      "to_tikz: unknown option '" + key + "'" + did_you_mean(key, known));
+    }
+    return o;
+}
+
 py::tuple rgb(const Color &c) { return py::make_tuple(c.r, c.g, c.b); }
 
 /// A layer of a figure as a dict, for the code that draws it.
@@ -866,10 +933,13 @@ py::dict layer_dict(const Figure::Layer &l) {
     case Figure::Kind::polyline: d["kind"] = "polyline"; break;
     case Figure::Kind::points: d["kind"] = "points"; break;
     case Figure::Kind::region: d["kind"] = "region"; break;
+    case Figure::Kind::surface: d["kind"] = "surface"; break;
     }
-    py::list polygons;
+    py::list polygons, faces;
     for (const Polygon &p : l.polygons) polygons.append(polygon_array(p));
+    for (const std::vector<Point3> &f : l.faces) faces.append(points3_array(f));
     d["polygons"] = polygons;
+    d["faces"] = faces;
     d["edge"] = rgb(l.edge);
     d["face"] = l.filled || l.kind == Figure::Kind::region ? py::object(rgb(l.face)) : py::none();
     d["unify"] = l.unify;
@@ -901,17 +971,25 @@ std::vector<Tensor> trajectories(const py::object &o) {
 }
 
 void bind_plot(py::module_ &m) {
-    py::class_<Figure>(m, "Figure", "The layers that plot puts into it, with every choice made.")
+    py::class_<Figure>(m, "Figure", "The layers that plot puts into one axes, with every choice made.")
         .def(py::init<>())
         .def_readwrite("title", &Figure::title)
         .def_readwrite("xlabel", &Figure::xlabel)
         .def_readwrite("ylabel", &Figure::ylabel)
+        .def_readwrite("zlabel", &Figure::zlabel)
         .def_readwrite("equal_axes", &Figure::equal_axes)
+        .def_readwrite("azimuth", &Figure::azimuth)
+        .def_readwrite("elevation", &Figure::elevation)
+        .def_readwrite("xlim", &Figure::xlim)
+        .def_readwrite("ylim", &Figure::ylim)
+        .def_readwrite("zlim", &Figure::zlim)
+        .def_readonly("dimension", &Figure::dimension, "2, or 3 once a surface is drawn")
         .def(
             "plot",
             [](Figure &fig, const ContSet &S, const std::vector<int64_t> &dims,
                const py::kwargs &kwargs) { plot(fig, S, dims, options_of(kwargs)); },
-            py::arg("obj"), py::arg("dims"), "Draws a set, projected onto the two dimensions dims")
+            py::arg("obj"), py::arg("dims"),
+            "Draws a set, projected onto the one, two or three dimensions dims")
         .def(
             "plot",
             [](Figure &fig, const ReachSet &R, const std::vector<int64_t> &dims,
@@ -937,6 +1015,36 @@ void bind_plot(py::module_ &m) {
             },
             py::arg("obj"), py::arg("dims"), "Draws points (n, N) or simulations (steps, n, N)")
         .def(
+            "plot_over_time",
+            [](Figure &fig, const ReachSet &R, int64_t dim, const py::kwargs &kwargs) {
+                plot_over_time(fig, R, dim, options_of(kwargs));
+            },
+            py::arg("obj"), py::arg("dim"), "Draws a dimension of a reachable set over time")
+        .def(
+            "plot_over_time",
+            [](Figure &fig, const py::object &x, int64_t dim, double time_step,
+               const py::kwargs &kwargs) {
+                plot_over_time(fig, trajectories(x), dim, time_step, options_of(kwargs));
+            },
+            py::arg("obj"), py::arg("dim"), py::arg("time_step"),
+            "Draws a dimension of simulations (steps, n, N) over time")
+        .def(
+            "plot_rand_point",
+            [](Figure &fig, const ContSet &S, const std::vector<int64_t> &dims, int64_t N,
+               Rng &rng, const py::kwargs &kwargs) {
+                plot_rand_point(fig, S, dims, N, rng, options_of(kwargs));
+            },
+            py::arg("obj"), py::arg("dims"), py::arg("num_points"), py::arg("rng"),
+            "Draws random points of a set as dots")
+        .def(
+            "layers",
+            [](const Figure &fig) {
+                py::list layers;
+                for (const Figure::Layer &l : fig.layers()) layers.append(layer_dict(l));
+                return layers;
+            },
+            "All layers drawn, as dicts")
+        .def(
             "take_layers",
             [](Figure &fig) {
                 py::list layers;
@@ -944,6 +1052,25 @@ void bind_plot(py::module_ &m) {
                 return layers;
             },
             "The layers drawn since the last call, as dicts, and forgets them")
+        .def(
+            "limits",
+            [](const Figure &fig, double pw, double ph) {
+                const Figure::Limits l = fig.limits(pw, ph);
+                return py::make_tuple(l.x0, l.x1, l.y0, l.y1, l.z0, l.z1);
+            },
+            py::arg("pw") = 0.0, py::arg("ph") = 0.0, "The axis limits (x0, x1, y0, y1, z0, z1)")
+        .def("svg", &Figure::svg, "The figure as SVG text")
+        .def("save", &Figure::save, py::arg("path"), "Writes the figure as an SVG file")
+        .def(
+            "tikz",
+            [](const Figure &fig, const py::kwargs &kwargs) { return fig.tikz(tikz_options_of(kwargs)); },
+            "The figure as pgfplots code")
+        .def(
+            "save_tikz",
+            [](const Figure &fig, const std::string &path, const py::kwargs &kwargs) {
+                fig.save_tikz(path, tikz_options_of(kwargs));
+            },
+            py::arg("path"), "Writes the figure as pgfplots code (and tables) to path")
         .def_static(
             "clip_region",
             [](const py::array_t<double, py::array::c_style | py::array::forcecast> &polygon,
@@ -956,6 +1083,37 @@ void bind_plot(py::module_ &m) {
             },
             py::arg("polygon"), py::arg("a"), py::arg("b"), py::arg("sign"),
             "The part of a polygon where sign * (a.x - b) >= 0");
+
+    py::class_<FigureGrid>(m, "FigureGrid", "Figures in rows and columns: SVG cells or a groupplot.")
+        .def(py::init<int, int>(), py::arg("rows"), py::arg("cols"))
+        .def_readwrite("share_x", &FigureGrid::share_x)
+        .def_readwrite("share_y", &FigureGrid::share_y)
+        .def_readwrite("width", &FigureGrid::width)
+        .def_readwrite("height", &FigureGrid::height)
+        .def_property_readonly("rows", &FigureGrid::rows)
+        .def_property_readonly("cols", &FigureGrid::cols)
+        .def(
+            "at",
+            [](FigureGrid &g, int row, int col) -> Figure & { return g.at(row, col); },
+            py::arg("row"), py::arg("col"), py::return_value_policy::reference_internal,
+            "The figure in a cell")
+        .def(
+            "set", [](FigureGrid &g, int row, int col, const Figure &f) { g.at(row, col) = f; },
+            py::arg("row"), py::arg("col"), py::arg("figure"), "Puts a copy of a figure into a cell")
+        .def("svg", &FigureGrid::svg, "The grid as SVG text")
+        .def("save", &FigureGrid::save, py::arg("path"), "Writes the grid as an SVG file")
+        .def(
+            "tikz",
+            [](const FigureGrid &g, const py::kwargs &kwargs) {
+                return g.tikz(tikz_options_of(kwargs));
+            },
+            "The grid as one pgfplots groupplot")
+        .def(
+            "save_tikz",
+            [](const FigureGrid &g, const std::string &path, const py::kwargs &kwargs) {
+                g.save_tikz(path, tikz_options_of(kwargs));
+            },
+            py::arg("path"), "Writes the grid as pgfplots code (and tables) to path");
 
     m.def("use_cora_colors", &use_cora_colors, py::arg("scheme"),
           "'CORA:default' (the next color of CORA's order for every set) or 'CORA:contDynamics'");

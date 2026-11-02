@@ -7,7 +7,7 @@
     R = sys.reach(initial_set=X0, t_final=2.0, alg="standard", time_step=0.1)
     vdp = cora.NonlinearSys(lambda x: [x[1], (1 - x[0]**2) * x[1] - x[0]], 2)
     net = cora.NeuralNetwork([(W1, b1), (W2, b2)])   # Y = net.evaluate(X) encloses the outputs of X
-    cora.plot(R)
+    cora.plot(R)                           # or R.plot(); cora.subplots(2, 2).to_tikz(...)
 
 Sets are immutable values with properties (Z.center, Z.generators, Z.dim) and operators (+, @, *,
 &, |, in, -). Settings are scoped: `with cora.backend("torch"):`, `with cora.checks(False):`.
@@ -33,17 +33,19 @@ from ._cora import (ContSet, Expr, Falsification, Interval, LinearSys, NeuralNet
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
 from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
-from .plot import plot
+from .figure import Figure, subplots, to_tikz
+from .plot import plot, plot_over_time, plot_rand_point
 
 # An example prints its CORA START block here and its CORA END block on exit.
 banner.install(current_backend)
 
 __all__ = [
-    "CORAError", "CORAWarning", "ContSet", "Expr", "Falsification", "Interval", "LinearSys",
-    "NeuralNetwork", "NonlinearSys", "ReachProblem", "ReachSet", "Rng", "Specification",
-    "VerifyResult", "Zonotope", "backend", "binary_pairs", "cart_prod", "checks", "checks_enabled",
-    "contains", "convex_hull", "cora_color", "current_backend", "errors", "has_torch", "intersect",
-    "is_intersecting", "lean", "plot", "plus", "register_algorithm", "register_binary",
-    "set_checks_enabled", "set_default_backend", "unite", "use_cora_colors",
-    "Tensor", "cos", "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
+    "CORAError", "CORAWarning", "ContSet", "Expr", "Falsification", "Figure", "Interval",
+    "LinearSys", "NeuralNetwork", "NonlinearSys", "ReachProblem", "ReachSet", "Rng",
+    "Specification", "VerifyResult", "Zonotope", "backend", "binary_pairs", "cart_prod", "checks",
+    "checks_enabled", "contains", "convex_hull", "cora_color", "current_backend", "errors",
+    "has_torch", "intersect", "is_intersecting", "lean", "plot", "plot_over_time",
+    "plot_rand_point", "plus", "register_algorithm", "register_binary", "set_checks_enabled",
+    "set_default_backend", "subplots", "to_tikz", "unite", "use_cora_colors", "Tensor", "cos",
+    "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]
