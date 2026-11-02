@@ -244,7 +244,27 @@ oracle's own (`Lean.Data.Json` pulls the Lean elaborator in, 107 MB); that reach
 ## Plotting
 
 `global/plot/plot.h` decides everything about a plot: the projection, the vertices, the color
-scheme (`use_cora_colors`), the next color of CORA's order, widths and what lies on top (`zorder`).
-It puts resolved layers into a `Figure`. `Figure::svg()` writes them for C++; `python/cora/plot.py`
-takes them out (`Figure.take_layers()`) and draws them with matplotlib, and nothing else. A new
-frontend (or a new plot option) is added to the core, never to a wrapper.
+scheme (`use_cora_colors`), the next color of CORA's order, widths, the union of overlapping sets
+and what lies on top (`zorder`). It puts resolved layers into a `Figure` (one pair of axes); a
+`FigureGrid` holds several. The writers only draw what is in the layers:
+- `Figure::svg()` for C++ and Jupyter (`cora.Figure._repr_svg_`);
+- `Figure::tikz()` (pgfplots, one `\addplot` per layer, a `groupplot` for a grid), for both languages;
+- `python/cora/plot.py` takes the layers out (`Figure.layers()`) and draws them with matplotlib.
+
+A new frontend or a new plot option is added to the core, never to a wrapper.
+
+**A new set gets plotted** by implementing `project`, `interval` (one dimension), `vertices` (two)
+and `vertices_3d` (three); `plot(S, dims)` then works in 1-D, 2-D and 3-D, in a reach plot and in
+TikZ. The three-dimensional faces are the convex hull of the vertices (`hull_faces`).
+
+**A plot option** (say `{.dashed = true}`):
+1. add the field to `PlotOptions` in `plot.h` and use it in `plot.cpp`, so that it ends up in a layer;
+2. if it needs a new layer field, add it to `Figure::Layer` and write it in `svg.cpp`, `tikz.cpp` and
+   `_draw_*` of `python/cora/plot.py`;
+3. name it in `options_of` (`src/global/python/bindings.cpp`) and test it in `tests/global/plot/` and
+   `tests/python/test_plot.py`. A TikZ option goes into `TikzOptions` and `tikz_options_of`.
+
+**Snapshots** (`tests/global/plot/snapshots/`) hold the layers of four figures (geometry compared
+within 1e-9) and their TikZ text (exact). After a change that is meant, run the test with
+`CORACPP_UPDATE_SNAPSHOTS=1`, read `git diff` of the snapshots, and commit them with the change.
+`tests/python/test_tikz.py` compiles standalone files with `pdflatex` when it and pgfplots exist.

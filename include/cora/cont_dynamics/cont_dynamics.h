@@ -28,9 +28,11 @@
 namespace cora {
 
 /// The reachable sets: time_interval[k] over [k*time_step, (k+1)*time_step], time_point[k] at
-/// k*time_step (CORA's reachSet).
+/// k*time_step (CORA's reachSet, which stores these times with every set). The algorithms set
+/// `time_step`; 0 means it is unknown.
 struct ReachSet {
     std::vector<Zonotope> time_interval, time_point;
+    double time_step = 0;
 };
 
 /// What reach and verify are asked (CORA's params).

@@ -102,7 +102,12 @@ changed, and the reasons are listed below.
 | `withinTol(a, b, tol)` | `within_tol(a, b, tol)` | — |
 | `CORAcolor(identifier)` | `cora_color(identifier)` | `cora.cora_color` |
 | `useCORAcolors(scheme)` | `use_cora_colors(scheme)` | `cora.use_cora_colors` |
-| `plot(S, dims, ...)` | `plot(fig, S, dims, options)` | `cora.plot(S, dims, ...)` |
+| `plot(S, dims, ...)` | `plot(fig, S, dims, options)` | `cora.plot(S, dims, ...)`, `S.plot(dims, ...)` |
+| `plotOverTime(R, dim, ...)` | `plot_over_time(fig, R, dim, options)` | `cora.plot_over_time(R, dim, ...)` |
+| `plotRandPoint(S, dims, N)` | `plot_rand_point(fig, S, dims, N, rng, options)` | `cora.plot_rand_point(S, dims, N, rng)` |
+| `FaceColor`, `EdgeColor`, `FaceAlpha`, `LineWidth`, `Unify`, `Set` | `face_color`, `edge_color`, `face_alpha`, `line_width`, `unify`, `set` | the same keywords |
+| `vertices(S)` (3-D) | `S.vertices_3d()` | `S.vertices_3d()` |
+| `fig2tikz`, matlab2tikz | `fig.tikz(options)`, `fig.save_tikz(path, options)` | `fig.to_tikz(path, ...)`, `cora.subplots` |
 
 ## Names that differ from the rule, and why
 

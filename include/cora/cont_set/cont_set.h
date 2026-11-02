@@ -7,10 +7,11 @@
 // immutable values: an operation returns a new set. They run on every Tensor backend and
 // batch wherever the backend does; a vector is a column (..., n, 1).
 //
-// Syntax:     Tensor v = S.support_function(d);   Interval I = S.interval();   Set P =
-// S.project(d); Operations: support_function, interval, rand_point, project, vertices, display (one
-// file each
-//             in src/cont_set/cont_set/, the checks; the classes implement the _impl forms)
+// Syntax:     Tensor v = S.support_function(d);   Interval I = S.interval();
+//             Set P = S.project(d);
+// Operations: support_function, interval, rand_point, project, vertices, vertices_3d, display (one
+//             file each in src/cont_set/cont_set/, the checks; the classes implement the _impl
+//             forms)
 // See also:   cont_set/set.h, cont_set/registry.h, cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@contSet/contSet.m
@@ -36,6 +37,9 @@ class Set;
 /// A point of the plane, and a polygon as its vertices in counter-clockwise order.
 using Point = std::array<double, 2>;
 using Polygon = std::vector<Point>;
+
+/// A point of space; the vertices of a three-dimensional set are listed as such.
+using Point3 = std::array<double, 3>;
 
 // Classes -----------------------------------------------------------------------------------------
 
@@ -109,6 +113,9 @@ class ContSet {
     /// The vertices of a two-dimensional set, one polygon per batch member.
     std::vector<Polygon> vertices() const;
 
+    /// The vertices of a three-dimensional set, one list per batch member, in no particular order.
+    std::vector<std::vector<Point3>> vertices_3d() const;
+
     /// A description of the set as text, as CORA displays it: what `std::cout << S` prints.
     std::string display() const;
 
@@ -130,6 +137,7 @@ class ContSet {
     virtual Tensor rand_point_impl(int64_t N, Rng &rng) const = 0;
     virtual Set project_impl(const std::vector<int64_t> &dims) const = 0;
     virtual std::vector<Polygon> vertices_impl() const = 0;
+    virtual std::vector<std::vector<Point3>> vertices_3d_impl() const = 0;
     virtual std::string display_impl() const = 0;
 
   private:
