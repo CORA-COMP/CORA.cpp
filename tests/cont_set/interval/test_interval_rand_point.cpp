@@ -1,4 +1,6 @@
 // test_interval_rand_point - interval rand_point: points uniform in the box
+//
+// CORA: contSet/@interval/randPoint_.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"

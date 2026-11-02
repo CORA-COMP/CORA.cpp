@@ -9,6 +9,8 @@
 // ISS (benchmark_linear_verifyFast_ARCH23_iss_ISSF01_ISS01, 270 states, 2 unsafe specs): MATLAB
 // and C++ both give res = 1, 3 iterations, time_step 0.008, 2500 steps (checked by hand, the
 // model file is not part of this repository).
+//
+// CORA: contDynamics/@linearSys/verify.m
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"

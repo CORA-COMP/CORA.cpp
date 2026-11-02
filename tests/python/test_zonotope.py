@@ -1,4 +1,13 @@
 """test_zonotope - the Zonotope class in Python: one set or a batch, on torch or numpy."""
+# CORA: contSet/@contSet/linComb.m
+# CORA: contSet/@zonotope/generateRandom.m
+# CORA: contSet/@zonotope/interval.m
+# CORA: contSet/@zonotope/mtimes.m
+# CORA: contSet/@zonotope/plus.m
+# CORA: contSet/@zonotope/randPoint_.m
+# CORA: contSet/@zonotope/supportFunc_.m
+# CORA: contSet/@zonotope/zonotope.m
+
 import itertools
 import unittest
 

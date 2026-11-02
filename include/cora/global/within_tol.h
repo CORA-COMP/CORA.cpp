@@ -8,7 +8,7 @@
 // Outputs:  res - true if a and b agree up to tol
 // See also: cont_set/interval/interval.h (contains)
 //
-// CORA: global/functions/helper/sets/contSet/contSet/withinTol.m
+// CORA: global/functions/matlab/validate/check/withinTol.m
 
 #pragma once
 

@@ -2,6 +2,8 @@
 //
 // Reference: MATLAB R2025b, CORA's verifyTime: T = verifyTime([0 10]); T = setdiff(T, op) for the
 // operations below; time_until_switch, contains, is_intersecting and unify on the results.
+//
+// CORA: contDynamics/@linearSys/verify.m
 
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "testing.h"

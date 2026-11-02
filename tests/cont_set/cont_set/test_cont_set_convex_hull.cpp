@@ -1,5 +1,7 @@
 // test_cont_set_convex_hull - the convex hull of two sets: a pair without an implementation raises
 // noops
+//
+// CORA: contSet/@contSet/convHull.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

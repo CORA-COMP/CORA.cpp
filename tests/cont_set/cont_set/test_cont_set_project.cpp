@@ -1,4 +1,6 @@
 // test_cont_set_project - ContSet::project: the dimensions are checked, the result is a Set
+//
+// CORA: contSet/@contSet/project.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

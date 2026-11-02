@@ -1,5 +1,8 @@
 // test_cont_set_registry - the table of binary operations: its pairs, names, precedence and
 // registration
+//
+// CORA: contSet/@contSet/contSet.m
+// CORA: contSet/@contSet/reorder.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

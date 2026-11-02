@@ -1,4 +1,6 @@
 // test_interval_linear_map - interval linear_map: the interval hull of the image
+//
+// CORA: contSet/@interval/mtimes.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"

@@ -3,6 +3,8 @@
 //
 // The expected answers are those of MATLAB CORA's check(specification(polytope(A, b),
 // 'unsafe_set'), zonotope(c, G)): safe iff the zonotope and the polytope have no common point.
+//
+// CORA: specification/@specification/specification.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/specification/specification.h"

@@ -1,4 +1,7 @@
 // test_zonotope_operators - the operators of a zonotope, as CORA writes them
+//
+// CORA: contSet/@zonotope/mtimes.m
+// CORA: contSet/@zonotope/plus.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "testing.h"

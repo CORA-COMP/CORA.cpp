@@ -1,4 +1,6 @@
 // test_interval_support_function - interval support_function: the best corner of the box
+//
+// CORA: contSet/@interval/supportFunc_.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"

@@ -1,5 +1,7 @@
 // test_cont_set_unite - the union of two sets (CORA's or): a pair without an implementation raises
 // noops
+//
+// CORA: contSet/@contSet/or.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

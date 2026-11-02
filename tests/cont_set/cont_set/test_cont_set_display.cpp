@@ -1,4 +1,6 @@
 // test_cont_set_display - ContSet::display: the text of a set, as `std::cout << S` prints it
+//
+// CORA: contSet/@contSet/display.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

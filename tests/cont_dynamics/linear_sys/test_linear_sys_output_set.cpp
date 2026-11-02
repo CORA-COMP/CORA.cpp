@@ -1,5 +1,7 @@
 // test_linear_sys_output_set - linear_sys output_set: y = C x is exact on zonotopes, and without C
 // the output is the state
+//
+// CORA: contDynamics/@linearSys/outputSet.m
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cont_dynamics/linear_sys/matlab_reference_inputs.h"

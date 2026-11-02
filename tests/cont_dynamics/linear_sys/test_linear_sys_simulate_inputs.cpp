@@ -1,5 +1,7 @@
 // test_linear_sys_simulate_inputs - linear_sys simulate and simulate_random with constant inputs:
 // exact against the closed form, one input per trajectory, and the errors
+//
+// CORA: contDynamics/@linearSys/simulate.m
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"

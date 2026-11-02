@@ -1,4 +1,6 @@
 // test_specification_check - specification check on any set and on a reachable set
+//
+// CORA: specification/@specification/check.m
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/specification/specification.h"

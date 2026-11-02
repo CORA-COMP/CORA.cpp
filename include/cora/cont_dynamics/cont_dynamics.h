@@ -12,7 +12,7 @@
 // See also: cont_dynamics/algorithms.h, cont_dynamics/linear_sys/linear_sys.h
 //
 // CORA: contDynamics/@contDynamics/contDynamics.m
-// CORA: contSet/@reachSet/reachSet.m
+// CORA: global/classes/@reachSet/reachSet.m
 
 #pragma once
 

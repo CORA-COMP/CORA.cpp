@@ -17,7 +17,7 @@
 //           time_point[k] is the set at k*time_step
 // See also: simulate, LinearSys::reach
 //
-// CORA: contDynamics/@nonlinearSys/reach.m
+// CORA: contDynamics/@contDynamics/reach.m
 // CORA: contDynamics/@contDynamics/linReach.m
 
 #include "cont_dynamics/linear_sys/private/priv.h"

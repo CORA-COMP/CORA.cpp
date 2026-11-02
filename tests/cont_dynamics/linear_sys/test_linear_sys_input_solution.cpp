@@ -1,5 +1,8 @@
 // test_linear_sys_input_solution - what an input set adds over one step, a public building block of
 // reach
+//
+// CORA: contDynamics/@linearSys/particularSolution_constant.m
+// CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"

@@ -1,4 +1,6 @@
 // test_linear_sys_simulate_torch - linear_sys simulate over batches of systems and start points
+//
+// CORA: contDynamics/@linearSys/simulate.m
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/backend/torch.h"

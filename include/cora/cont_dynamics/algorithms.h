@@ -10,7 +10,7 @@
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA: contDynamics/@linearSys/verify.m
-// CORA: contDynamics/@nonlinearSys/reach.m
+// CORA: contDynamics/@contDynamics/reach.m
 
 #pragma once
 

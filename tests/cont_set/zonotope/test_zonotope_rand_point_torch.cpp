@@ -1,5 +1,7 @@
 // test_zonotope_rand_point_torch - zonotope rand_point over a batch of sets: each member's points
 // lie in its own set
+//
+// CORA: contSet/@zonotope/randPoint_.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/backend/torch.h"
