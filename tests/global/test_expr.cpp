@@ -1,6 +1,6 @@
 // test_expr - symbolic expressions: values, derivatives, and enclosures over boxes
 
-#include "global/expr.h"
+#include "cora/global/expr.h"
 #include "testing.h"
 
 #include <cmath>
@@ -14,7 +14,7 @@ namespace {
 
 /// The range [lo, hi] of one number, and the ends of a range of one number.
 Range span(double lo, double hi) {
-    return Range(Tensor::fromData({lo}, {1, 1}), Tensor::fromData({hi}, {1, 1}));
+    return Range(Tensor::from_data({lo}, {1, 1}), Tensor::from_data({hi}, {1, 1}));
 }
 double lower(const Range &r) { return r.lo.data()[0]; }
 double upper(const Range &r) { return r.hi.data()[0]; }
@@ -78,7 +78,8 @@ void tensors_evaluate_elementwise() {
     const Expr x = Expr::var(0), y = Expr::var(1);
     const Expr f = sin(x * y) / (1 + x * x) + 2 * pow(y, 3) - exp(x) / 3;
     const std::vector<double> xs = {0.3, -0.7, 1.1}, ys = {0.5, 0.2, -0.9};
-    const Tensor all = f.evalTensor({Tensor::fromData(xs, {3, 1}), Tensor::fromData(ys, {3, 1})});
+    const Tensor all =
+        f.eval_tensor({Tensor::from_data(xs, {3, 1}), Tensor::from_data(ys, {3, 1})});
     check(all.shape() == std::vector<int64_t>({3, 1}), "the result has the shape of the points");
     const std::vector<double> values = all.data();
     for (int i = 0; i < 3; ++i) check(close(values[i], f.eval({xs[i], ys[i]})), "point " + std::to_string(i));

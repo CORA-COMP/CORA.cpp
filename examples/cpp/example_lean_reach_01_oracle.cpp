@@ -10,9 +10,9 @@
 //           whether the lean set encloses CORA.cpp's; without an oracle a note and exit code 0
 // See also: example_linear_reach_01_5dim, lean/zonotope.h
 
-#include "contDynamics/linearSys/linearSys.h"
-#include "global/oracle/linearSys.h"
-#include "global/oracle/oracle.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/oracle/linear_sys.h"
+#include "cora/global/oracle/oracle.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -32,46 +32,52 @@ int main() {
     // every value is a dyadic number, so it is exact in binary64 and in binary32
     const Tensor A({{0.0, 1.0}, {-1.0, -0.25}});
     const Tensor c({{1.0}, {0.0}}), G({{0.25, 0.0}, {0.0, 0.25}});
-    const double timeStep = 0.125, tFinal = 2.0;  // a power of two: exact in every dtype
-    const int taylorTerms = 8, zonotopeOrder = 10;
+    const double time_step = 0.125, t_final = 2.0; // a power of two: exact in every dtype
+    const int taylor_terms = 8, zonotope_order = 10;
 
     // CORA.cpp's own result, in double without a rounding-error account
-    const Reach ref = LinearSys(A).reach(Zonotope(c, G), timeStep, tFinal, taylorTerms);
-    const Interval last = ref.timePoint.back().interval();
-    std::cout << "CORA.cpp:  x1 in [" << last.inf.data()[0] << ", " << last.sup.data()[0] << "]\n";
+    const ReachSet ref =
+        LinearSys(A).reach({.initial_set = Zonotope(c, G), .t_final = t_final},
+                           alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+    const Interval last = ref.time_point.back().interval();
+    std::cout << "CORA.cpp:  x1 in [" << last.inf().data()[0] << ", " << last.sup().data()[0]
+              << "]\n";
 
     // The Oracle ------------------------------------------------------------------------------
 
     for (const std::string dtype : {"binary64", "ieee:binary32"}) {
-        lean::setDType(dtype);  // the lean objects below are created in this dtype
-        const lean::ReachSet R = lean::LinearSys(A).reach(lean::Zonotope(c, G), timeStep, tFinal,
-                                                          taylorTerms, zonotopeOrder);
+        const lean::DTypeScope scope(dtype); // the lean objects below are created in this dtype
+        const lean::ReachSet R =
+            lean::LinearSys(A).reach(lean::Zonotope(c, G), t_final,
+                                     alg::Standard{.time_step = time_step,
+                                                   .taylor_terms = taylor_terms,
+                                                   .zonotope_order = zonotope_order});
 
         // the nominal zonotope and the error box that the sound float operations added
-        const lean::Zonotope &Z = R.timePoint.back();
+        const lean::Zonotope &Z = R.time_point.back();
         const auto [nominal, error] = Z.gather();
         const Interval hull = nominal.interval();
-        std::cout << dtype << ": x1 in [" << hull.inf.data()[0] << ", " << hull.sup.data()[0]
-                  << "], error box radius " << error.sup.data()[0] << "\n";
+        std::cout << dtype << ": x1 in [" << hull.inf().data()[0] << ", " << hull.sup().data()[0]
+                  << "], error box radius " << error.sup().data()[0] << "\n";
 
         // the enclosure (nominal plus error) must contain CORA.cpp's interval at every time
         bool encloses = true;
-        for (std::size_t k = 0; k < R.timePoint.size(); ++k) {
-            const auto [lo, hi] = R.timePoint[k].interval().gather();
-            const Interval I = ref.timePoint[k].interval();
+        for (std::size_t k = 0; k < R.time_point.size(); ++k) {
+            const auto [lo, hi] = R.time_point[k].interval().gather();
+            const Interval I = ref.time_point[k].interval();
             for (int64_t i = 0; i < 2; ++i)
-                encloses = encloses && lo.data()[i] <= I.inf.data()[i] + 1e-9 &&
-                           hi.data()[i] >= I.sup.data()[i] - 1e-9;
+                encloses = encloses && lo.data()[i] <= I.inf().data()[i] + 1e-9 &&
+                           hi.data()[i] >= I.sup().data()[i] - 1e-9;
         }
-        std::cout << "  encloses the CORA.cpp sets at all " << R.timePoint.size()
+        std::cout << "  encloses the CORA.cpp sets at all " << R.time_point.size()
                   << " time points: " << (encloses ? "yes" : "NO") << "\n";
     }
 
     // Rounding --------------------------------------------------------------------------------
 
-    // 0.1 is not a binary32 number: roundTo returns the rounded value and an enclosure of the error
-    lean::setDType("binary64");
-    const auto [value, error] = lean::Tensor::from(Tensor({{0.1}})).roundTo("ieee:binary32");
+    // 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the
+    // error
+    const auto [value, error] = lean::Tensor::from(Tensor({{0.1}})).round_to("ieee:binary32");
     const auto [inf, sup] = error.gather();
     std::cout << "0.1 in binary32 is " << value.gather().data()[0] << ", the error lies in ["
               << inf.data()[0] << ", " << sup.data()[0] << "]\n";

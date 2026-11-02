@@ -5,7 +5,7 @@
 // Outputs:  -
 // See also: rng.h
 
-#include "global/rng.h"
+#include "cora/global/rng.h"
 
 #include <algorithm>
 #include <cmath>

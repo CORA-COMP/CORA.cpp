@@ -25,15 +25,15 @@ import matplotlib.pyplot as plt
 
 # Parameters --------------------------------------------------------------------------------
 
-tFinal = 5
+t_final = 5
 R0 = cora.Zonotope(cora.Tensor([0, 0]), 0.2 * cora.eye(2))            # position, velocity
 U = cora.Zonotope(cora.Tensor([0.5]), cora.Tensor([[0.25]]))          # force in [0.25, 0.75]
 
 # Reachability Settings ---------------------------------------------------------------------
 
-timeStep = 0.05
-taylorTerms = 6
-zonotopeOrder = 20
+time_step = 0.05
+taylor_terms = 6
+zonotope_order = 20
 
 # System Dynamics ---------------------------------------------------------------------------
 
@@ -44,28 +44,28 @@ sys = cora.LinearSys(A, B, C)
 
 # Reachability Analysis ---------------------------------------------------------------------
 
-timerVal = time.perf_counter()
-R = sys.reach(R0, timeStep, tFinal, taylorTerms, U=U, zonotopeOrder=zonotopeOrder)
-Y = sys.outputSet(R)
-tComp = time.perf_counter() - timerVal
+timer_val = time.perf_counter()
+R = sys.reach(R0, time_step=time_step, t_final=t_final, taylor_terms=taylor_terms, input_set=U, zonotope_order=zonotope_order)
+Y = sys.output_set(R)
+computation_time = time.perf_counter() - timer_val
 
-print(f"computation time of reachable set: {tComp:.3f} s")
+print(f"computation time of reachable set: {computation_time:.3f} s")
 
 # Simulation --------------------------------------------------------------------------------
 
 rng = cora.Rng(0)
-traj = sys.simulateRandom(R0, 25, timeStep, tFinal, rng, U=U)
+traj = sys.simulate_random(R0, points=25, time_step=time_step, t_final=t_final, rng=rng, input_set=U)
 
 # Evaluation --------------------------------------------------------------------------------
 
 # the position over all steps, from the output sets
-lower = min(float(y.interval().inf[0]) for y in Y.timeInt)
-upper = max(float(y.interval().sup[0]) for y in Y.timeInt)
+lower = min(float(y.interval().inf[0]) for y in Y.time_interval)
+upper = max(float(y.interval().sup[0]) for y in Y.time_interval)
 print(f"the output y stays in [{lower:.4f}, {upper:.4f}]")
 
 # Visualization -----------------------------------------------------------------------------
 
-cora.useCORAcolors("CORA:contDynamics")
+cora.use_cora_colors("CORA:contDynamics")
 plt.figure()
 cora.plot(R, (0, 1), label="Reachable set")
 cora.plot(R0, (0, 1), label="Initial set")

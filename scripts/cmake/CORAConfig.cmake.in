@@ -1,0 +1,35 @@
+# CORAConfig - find_package(CORA): the target CORA::cora with the headers, the library and its
+# dependencies (Eigen, OpenMP, libtorch when CORA.cpp was built with it).
+#
+#   find_package(CORA REQUIRED)
+#   target_link_libraries(app PRIVATE CORA::cora)      #include "cora/cora.h"
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+if(@CORA_EIGEN_BUNDLED@)
+  if(NOT TARGET Eigen3::Eigen)
+    add_library(Eigen3::Eigen INTERFACE IMPORTED)
+    target_include_directories(Eigen3::Eigen SYSTEM INTERFACE "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/cora/eigen3")
+  endif()
+else()
+  find_dependency(Eigen3 NO_MODULE)
+endif()
+if(@CORA_HAS_OPENMP@)
+  find_dependency(OpenMP COMPONENTS CXX)
+endif()
+
+# libtorch where CORA.cpp was built against it: its path is recorded, not exported, as it may lie
+# in the source tree (the presets' .venv), which an export may not name
+if(@CORACPP_HAS_TORCH@ AND NOT TARGET CORA::torch)
+  add_library(CORA::torch INTERFACE IMPORTED)
+  set_target_properties(CORA::torch PROPERTIES
+    INTERFACE_COMPILE_DEFINITIONS "@CORA_TORCH_DEFINITIONS@"
+    INTERFACE_INCLUDE_DIRECTORIES "@CORA_TORCH_INCLUDES@"
+    INTERFACE_LINK_DIRECTORIES "@CORACPP_TORCH_LIB@"
+    INTERFACE_LINK_LIBRARIES "@CORA_TORCH_LIBS@")
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/CORATargets.cmake")
+set(CORA_CHECKS @CORACPP_CHECKS_VALUE@)
+set(CORA_HAS_TORCH @CORACPP_HAS_TORCH@)
+check_required_components(CORA)

@@ -3,7 +3,8 @@
 // EigenTensor implements the operations of Tensor::Impl; EigenBackend makes tensors from host
 // numbers. Nothing else in the library includes Eigen for its own use.
 
-#include "global/backend/eigen.h"
+#include "cora/global/backend/eigen.h"
+#include "cora/global/error.h"
 
 #include <stdexcept>
 
@@ -37,7 +38,7 @@ struct EigenTensor : Tensor::Impl {
     }
     std::string device() const override { return "cpu"; }
     Ptr to(const std::string &device) const override {
-        requireCpu(device);
+        require_cpu(device);
         return std::make_shared<EigenTensor>(m);
     }
 
@@ -51,13 +52,13 @@ struct EigenTensor : Tensor::Impl {
         if (a.cols() == b.cols()) return a.binaryExpr(b, op);
         if (b.cols() == 1) return a.binaryExpr(b.col(0).replicate(1, a.cols()), op);
         if (a.cols() == 1) return a.col(0).replicate(1, b.cols()).binaryExpr(b, op);
-        throw std::invalid_argument("CoraTensor: shapes do not broadcast");
+        CORA_FAIL(Error::wrong_value, "CoraTensor: shapes do not broadcast");
     }
 
     /// Eigen runs on the CPU: any other device is an error.
-    static void requireCpu(const std::string &device) {
+    static void require_cpu(const std::string &device) {
         if (!device.empty() && device != "cpu")
-            throw std::invalid_argument("CoraTensor: the eigen backend runs on the CPU only");
+            CORA_FAIL(Error::wrong_value, "CoraTensor: the eigen backend runs on the CPU only");
     }
 
     Ptr add(const Impl &o) const override {
@@ -82,28 +83,28 @@ struct EigenTensor : Tensor::Impl {
     // One case per function of Tensor::Unary.
     Ptr unary(Tensor::Unary op) const override {
         switch (op) {
-        case Tensor::Unary::Sin: return wrap(m.array().sin().matrix());
-        case Tensor::Unary::Cos: return wrap(m.array().cos().matrix());
-        case Tensor::Unary::Tan: return wrap(m.array().tan().matrix());
-        case Tensor::Unary::Exp: return wrap(m.array().exp().matrix());
-        case Tensor::Unary::Log: return wrap(m.array().log().matrix());
-        case Tensor::Unary::Sqrt: return wrap(m.array().sqrt().matrix());
+        case Tensor::Unary::sin: return wrap(m.array().sin().matrix());
+        case Tensor::Unary::cos: return wrap(m.array().cos().matrix());
+        case Tensor::Unary::tan: return wrap(m.array().tan().matrix());
+        case Tensor::Unary::exp: return wrap(m.array().exp().matrix());
+        case Tensor::Unary::log: return wrap(m.array().log().matrix());
+        case Tensor::Unary::sqrt: return wrap(m.array().sqrt().matrix());
         }
-        throw std::invalid_argument("CoraTensor: unknown elementwise function");
+        CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise function");
     }
-    Ptr sumLast() const override { return wrap(m.rowwise().sum()); }
-    Ptr maxLast() const override { return wrap(m.rowwise().maxCoeff()); }
-    Ptr selectCols(const std::vector<int64_t> &idx) const override {
+    Ptr sum_last() const override { return wrap(m.rowwise().sum()); }
+    Ptr max_last() const override { return wrap(m.rowwise().maxCoeff()); }
+    Ptr select_cols(const std::vector<int64_t> &idx) const override {
         Mat out(m.rows(), idx.size());
         for (std::size_t j = 0; j < idx.size(); ++j) out.col(j) = m.col(idx[j]);
         return wrap(std::move(out));
     }
     Ptr diag() const override { return wrap(Mat(m.col(0).asDiagonal())); }
-    Ptr eyeLike() const override { return wrap(Mat::Identity(m.rows(), m.cols())); }
-    Ptr zerosLike() const override { return wrap(Mat::Zero(m.rows(), m.cols())); }
+    Ptr eye_like() const override { return wrap(Mat::Identity(m.rows(), m.cols())); }
+    Ptr zeros_like() const override { return wrap(Mat::Zero(m.rows(), m.cols())); }
 
     // The tensors side by side: this one, then each of `rest`.
-    Ptr catLast(const std::vector<const Impl *> &rest) const override {
+    Ptr cat_last(const std::vector<const Impl *> &rest) const override {
         Eigen::Index cols = m.cols();
         for (const Impl *r : rest) cols += of(*r).cols();
         Mat out(m.rows(), cols);
@@ -117,7 +118,7 @@ struct EigenTensor : Tensor::Impl {
     }
 
     // The tensors one below the other: this one, then each of `rest`.
-    Ptr catRows(const std::vector<const Impl *> &rest) const override {
+    Ptr cat_rows(const std::vector<const Impl *> &rest) const override {
         Eigen::Index rows = m.rows();
         for (const Impl *r : rest) rows += of(*r).rows();
         Mat out(rows, m.cols());
@@ -133,8 +134,9 @@ struct EigenTensor : Tensor::Impl {
     // Eigen tensors are single matrices: a stack of one is the tensor itself.
     Ptr stack(const std::vector<const Impl *> &rest) const override {
         if (!rest.empty())
-            throw std::invalid_argument("CoraTensor::stack: the eigen backend holds one set, not a "
-                                        "batch; use the torch backend");
+            CORA_FAIL(Error::wrong_value,
+                      "CoraTensor::stack: the eigen backend holds one set, not a "
+                      "batch; use the torch backend");
         return wrap(Mat(m));
     }
 };
@@ -146,9 +148,9 @@ struct EigenBackend : Tensor::Backend {
     std::string name() const override { return "eigen"; }
     Tensor::Impl::Ptr make(const std::vector<double> &data, const std::vector<int64_t> &shape,
                            const std::string &device) const override {
-        EigenTensor::requireCpu(device);
+        EigenTensor::require_cpu(device);
         if (shape.size() != 2)
-            throw std::invalid_argument("CoraTensor: the eigen backend holds matrices only");
+            CORA_FAIL(Error::wrong_value, "CoraTensor: the eigen backend holds matrices only");
         return EigenTensor::wrap(Eigen::Map<const RowMajor>(data.data(), shape[0], shape[1]));
     }
 };
@@ -160,13 +162,13 @@ struct EigenBackend : Tensor::Backend {
 
 // Conversion --------------------------------------------------------------------------------------
 
-std::shared_ptr<const Tensor::Backend> eigenBackend() { return std::make_shared<EigenBackend>(); }
+std::shared_ptr<const Tensor::Backend> eigen_backend() { return std::make_shared<EigenBackend>(); }
 
-Tensor fromEigen(const Eigen::MatrixXd &m) { return Tensor(EigenTensor::wrap(m)); }
+Tensor from_eigen(const Eigen::MatrixXd &m) { return Tensor(EigenTensor::wrap(m)); }
 
-Eigen::MatrixXd toEigen(const Tensor &t) { return static_cast<const EigenTensor &>(t.impl()).m; }
+Eigen::MatrixXd to_eigen(const Tensor &t) { return static_cast<const EigenTensor &>(t.impl()).m; }
 
-bool isEigen(const Tensor &t) { return dynamic_cast<const EigenTensor *>(&t.impl()) != nullptr; }
+bool is_eigen(const Tensor &t) { return dynamic_cast<const EigenTensor *>(&t.impl()) != nullptr; }
 
 } // namespace cora
 

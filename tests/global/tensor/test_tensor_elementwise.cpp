@@ -17,7 +17,7 @@ void ones_fills_the_shape(const std::string &b) {
 
 void functions_apply_to_every_element(const std::string &b) {
     const std::vector<double> x = {0.5, 1.0, 2.0, 0.25};
-    const Tensor t = Tensor::fromData(x, {2, 2});
+    const Tensor t = Tensor::from_data(x, {2, 2});
     const auto apply = [&](double (*f)(double)) {
         std::vector<double> y;
         for (const double v : x) y.push_back(f(v));
@@ -40,18 +40,18 @@ void static_functions_take_numbers_and_tensors(const std::string &b) {
     check(test::close(A, std::vector<double>{std::cos(phi), std::sin(phi), -std::sin(phi),
                                              std::cos(phi)}),
           b + ": a rotation matrix");
-    const Tensor t = Tensor::fromData({0.5, 2.0}, {1, 2});
+    const Tensor t = Tensor::from_data({0.5, 2.0}, {1, 2});
     check(test::close(Tensor::exp(t), t.exp()) && test::close(Tensor::log(t), t.log()),
           b + ": of a tensor");
 }
 
 /// Products and quotients are elementwise, and a column meets every column of a matrix.
 void products_and_quotients_are_elementwise(const std::string &b) {
-    const Tensor a = Tensor::fromData({1.0, 2.0, 3.0, 4.0}, {2, 2});
-    const Tensor c = Tensor::fromData({2.0, 4.0, 5.0, 8.0}, {2, 2});
+    const Tensor a = Tensor::from_data({1.0, 2.0, 3.0, 4.0}, {2, 2});
+    const Tensor c = Tensor::from_data({2.0, 4.0, 5.0, 8.0}, {2, 2});
     check(test::close(a.mul(c), std::vector<double>{2.0, 8.0, 15.0, 32.0}), b + ": mul");
     check(test::close(c.div(a), std::vector<double>{2.0, 2.0, 5.0 / 3.0, 2.0}), b + ": div");
-    const Tensor col = Tensor::fromData({10.0, 100.0}, {2, 1});
+    const Tensor col = Tensor::from_data({10.0, 100.0}, {2, 1});
     check(test::close(a.mul(col), std::vector<double>{10.0, 20.0, 300.0, 400.0}) &&
               test::close(col.mul(a), std::vector<double>{10.0, 20.0, 300.0, 400.0}),
           b + ": a column meets every column");
@@ -59,8 +59,8 @@ void products_and_quotients_are_elementwise(const std::string &b) {
 }
 
 void maximum_and_minimum_pick_elements(const std::string &b) {
-    const Tensor a = Tensor::fromData({1.0, -2.0, 3.0, 4.0}, {2, 2});
-    const Tensor c = Tensor::fromData({0.0, 5.0, 3.0, -1.0}, {2, 2});
+    const Tensor a = Tensor::from_data({1.0, -2.0, 3.0, 4.0}, {2, 2});
+    const Tensor c = Tensor::from_data({0.0, 5.0, 3.0, -1.0}, {2, 2});
     check(test::close(Tensor::maximum(a, c), std::vector<double>{1.0, 5.0, 3.0, 4.0}), b + ": maximum");
     check(test::close(Tensor::minimum(a, c), std::vector<double>{0.0, -2.0, 3.0, -1.0}), b + ": minimum");
 }

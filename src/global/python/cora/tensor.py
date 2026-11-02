@@ -10,12 +10,12 @@ The constructors and the functions are also plain functions of the package (`cor
 """
 import numpy as np
 
-from ._cora import Expr, backend
+from ._cora import Expr, current_backend
 from ._cora import cos as _cos_expr, exp as _exp_expr, sin as _sin_expr
 
 
 def _torch():
-    if not backend().startswith("torch"):
+    if not current_backend().startswith("torch"):
         return None
     import torch
     return torch

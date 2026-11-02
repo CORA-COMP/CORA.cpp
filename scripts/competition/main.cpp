@@ -7,7 +7,7 @@
 
 #include "instance.h"
 #include "server.h"
-#include "global/threads.h"
+#include "cora/global/threads.h"
 
 #include <iostream>
 #include <string>
@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     const std::vector<std::string> args(argv + 1, argv + argc);
     // Before anything measures: the defaults are every hyperthread, which oversubscribes
     // the cores and makes a small parallel region cost more than the work it splits.
-    cora::configureThreads();
+    cora::configure_threads();
     try {
         if (args.size() == 1 && args[0] == "env") {
             cora::comp::print_env(std::cout);

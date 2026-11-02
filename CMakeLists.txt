@@ -30,6 +30,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(CORACPP_NATIVE "Compile for this CPU (-march=native; /arch:AVX2 with MSVC)" ON)
 option(CORACPP_BLAS "Let Eigen call an external BLAS (changes which library does the arithmetic)" OFF)
 option(CORACPP_COMPETITION "Build the CORA-COMP binary and its tests (needs GLPK)" OFF)
+option(CORACPP_CHECKS "Compile the input checks of the public entry points in (OFF: compiled out)" ON)
 set(CORACPP_TORCH AUTO CACHE STRING "libtorch: AUTO (if the Python has torch), ON, OFF, DOWNLOAD (fetch a CPU libtorch)")
 set(CORACPP_TORCH_VERSION "2.14.0" CACHE STRING "The libtorch that CORACPP_TORCH=DOWNLOAD fetches")
 set(CORACPP_TORCH_VARIANT "cpu" CACHE STRING "cpu, or a CUDA variant such as cu126 (Linux and Windows)")
@@ -46,8 +47,16 @@ include(scripts/cmake/oracle.cmake)
 include(scripts/cmake/torch.cmake)
 
 # ---------------------------------------- the library ---------------------------------------------
-# src/ mirrors MATLAB CORA's folders, one operation per file; sources are found, so a new
-# operation needs no edit here.
+# include/cora/ holds the public headers, src/ the implementation and the private headers; both
+# mirror MATLAB CORA's folders, one operation per file. Sources are found, so a new operation needs
+# no edit here. cora/config.h records the options that change the headers.
+
+if(CORACPP_CHECKS)
+  set(CORACPP_CHECKS_VALUE 1)
+else()
+  set(CORACPP_CHECKS_VALUE 0)
+endif()
+configure_file("${CMAKE_SOURCE_DIR}/include/cora/config.h.in" "${CMAKE_BINARY_DIR}/include/cora/config.h" @ONLY)
 
 file(GLOB_RECURSE lib_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 list(FILTER lib_sources EXCLUDE REGEX "/src/global/python/")
@@ -100,7 +109,7 @@ endfunction()
 
 if(Python3_EXECUTABLE)
   add_test(NAME conventions
-           COMMAND "${Python3_EXECUTABLE}" tests/global/test_codingConventions.py
+           COMMAND "${Python3_EXECUTABLE}" tests/global/test_coding_conventions.py
            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 endif()
 
@@ -116,7 +125,7 @@ foreach(source IN LISTS test_sources)
     continue()
   endif()
   cora_executable(${name} "${source}" "tests/${folder}")
-  target_include_directories(${name} PRIVATE "${CMAKE_SOURCE_DIR}/tests")
+  target_include_directories(${name} PRIVATE "${CMAKE_SOURCE_DIR}/tests" "${CMAKE_SOURCE_DIR}/src")
   add_test(NAME ${folder}/${name} COMMAND ${name})
   set_tests_properties(${folder}/${name} PROPERTIES LABELS test)
   cora_run_environment(${folder}/${name})
@@ -136,9 +145,9 @@ foreach(source IN LISTS example_sources)
   endif()
   cora_executable(${name} "${source}" "examples/cpp")
   if(MSVC)
-    target_compile_options(${name} PRIVATE /FI global/banner.h)
+    target_compile_options(${name} PRIVATE /FI cora/global/banner.h)
   else()
-    target_compile_options(${name} PRIVATE -include global/banner.h)
+    target_compile_options(${name} PRIVATE -include cora/global/banner.h)
   endif()
   target_compile_definitions(${name} PRIVATE "CORACPP_PROGRAM=\"${name}.cpp\"")
   # the figures an example writes go to its own folder, not into the source tree
@@ -147,6 +156,8 @@ foreach(source IN LISTS example_sources)
   cora_run_environment(examples/${name})
 endforeach()
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/examples")
+
+include(scripts/cmake/install.cmake)
 
 include(scripts/cmake/python.cmake)
 

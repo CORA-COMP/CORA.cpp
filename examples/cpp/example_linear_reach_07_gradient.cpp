@@ -7,8 +7,8 @@
 // Outputs:  the total width of the enclosures and its gradient with respect to A
 // See also: example_linear_reach_05_batch
 
-#include "contDynamics/linearSys/linearSys.h"
-#include "global/backend/torch.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/backend/torch.h"
 
 #include <iostream>
 
@@ -17,24 +17,26 @@
 using namespace cora;
 
 /// The total width of the enclosures for the system A: a scalar to differentiate.
-torch::Tensor totalWidth(const torch::Tensor &A, bool customBackward) {
+torch::Tensor total_width(const torch::Tensor &A, bool custom_backward) {
     // Parameters --------------------------------------------------------------------------
 
     const Zonotope R0(Tensor({1.0, 0.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
 
     // Reachability Analysis ---------------------------------------------------------------
 
-    const Reach R = LinearSys(fromTorch(A, customBackward)).reach(R0, 0.1, 1.0, 8);
+    const ReachSet R = LinearSys(from_torch(A, custom_backward))
+                           .reach({.initial_set = R0, .t_final = 1.0},
+                                  alg::Standard{.time_step = 0.1, .taylor_terms = 8});
 
     // Width -------------------------------------------------------------------------------
 
     torch::Tensor width = torch::zeros({}, torch::kDouble);
-    for (const Zonotope &Z : R.timeInt) width = width + toTorch(Z.G).abs().sum();
+    for (const Zonotope &Z : R.time_interval) width = width + to_torch(Z.generators()).abs().sum();
     return width;
 }
 
 int main() {
-    setBackend("torch");
+    const BackendScope backend_scope("torch");
 
     // System Dynamics -------------------------------------------------------------------------
 
@@ -43,14 +45,14 @@ int main() {
 
     // Gradient --------------------------------------------------------------------------------
 
-    torch::Tensor width = totalWidth(A, /*customBackward=*/false);
+    torch::Tensor width = total_width(A, /*custom_backward=*/false);
     width.backward();
     std::cout << "width " << width.item<double>() << ", d width / dA:\n" << A.grad() << "\n";
 
     // Custom Backward -------------------------------------------------------------------------
 
     torch::Tensor B = A.detach().clone().requires_grad_(true);
-    totalWidth(B, /*customBackward=*/true).backward();
+    total_width(B, /*custom_backward=*/true).backward();
     std::cout << "with the custom backward, the largest difference: "
               << (A.grad() - B.grad()).abs().max().item<double>() << "\n";
 

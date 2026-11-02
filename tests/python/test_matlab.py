@@ -13,7 +13,7 @@ from cora import matlab
 
 def test_constructors():
     Z = matlab.zonotope(matlab.tensor([1.0, 2.0]), matlab.tensor([[1.0, 0.0], [0.0, 2.0]]))
-    assert np.allclose(Z.c, [1, 2]) and np.allclose(Z.G, [[1, 0], [0, 2]])
+    assert np.allclose(Z.center, [1, 2]) and np.allclose(Z.generators, [[1, 0], [0, 2]])
 
     I = matlab.interval(matlab.tensor([0.0, 1.0]), matlab.tensor([2.0, 3.0]))
     assert np.allclose(I.inf, [0, 1]) and np.allclose(I.sup, [2, 3])
@@ -34,7 +34,7 @@ def test_reach_with_an_input_and_an_output():
     X0 = matlab.zonotope(matlab.tensor([1.0, 1.0]), matlab.tensor([[0.1, 0.0], [0.0, 0.1]]))
     U = matlab.zonotope(matlab.tensor(0.5), matlab.tensor(0.1))  # MATLAB passes scalars
     R = sys.reach(X0, 0.1, 0.5, 4, "standard", U, 20)
-    assert len(R.timeInt) == 5 and sys.outputSet(R).timeInt[0].c.shape == (1,)
+    assert len(R.timeInt) == 5 and sys.outputSet(R).timeInt[0].center.shape == (1,)
 
 
 def test_zonotopes_of_a_reach_set():
@@ -44,6 +44,6 @@ def test_zonotopes_of_a_reach_set():
     centers, generators, counts = matlab.zonotopes(sets)
     assert centers.shape == (5, 2) and generators.shape == (2, counts.sum())
     first = int(counts[0])
-    assert np.allclose(centers[0], sets[0].c) and np.allclose(generators[:, :first], sets[0].G)
+    assert np.allclose(centers[0], sets[0].center) and np.allclose(generators[:, :first], sets[0].generators)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

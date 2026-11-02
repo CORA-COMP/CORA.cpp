@@ -1,14 +1,18 @@
-// What the tests share: a check, a tolerance, and a loop over the backends.
+// testing - what the tests share: a check, a tolerance, a loop over the backends, the errors
 //
 // A test written against `Tensor` runs once per backend with `for_each_backend`, so a
 // property is checked on Eigen, on libtorch, and on the GPU when there is one — the same
-// source, which is what "written once" promises.
+// source, which is what "written once" promises. `raises(f, Error::dimension_mismatch)` checks
+// that a wrong input is refused with the right identifier; a `cora::ChecksScope off(false)`
+// block runs a valid call without the checks.
 
 #pragma once
 
-#include "contSet/contSet.h"
-#include "global/rng.h"
-#include "global/tensor/tensor.h"
+#include "cora/cont_set/cont_set.h"
+#include "cora/global/error.h"
+#include "cora/global/rng.h"
+#include "cora/global/settings.h"
+#include "cora/global/tensor/tensor.h"
 
 #include <algorithm>
 #include <cmath>
@@ -52,7 +56,7 @@ inline bool close(const cora::Tensor &a, const std::vector<double> &values, doub
     return true;
 }
 
-/// Every backend this build and this machine offer, as `setBackend` names them.
+/// Every backend this build and this machine offer, as `BackendScope` names them.
 inline std::vector<std::string> backends() {
     std::vector<std::string> all{"eigen"};
 #ifdef CORACPP_TORCH
@@ -66,15 +70,14 @@ inline std::vector<std::string> backends() {
 template <class F>
 void for_each_backend(F body) {
     for (const std::string &name : backends()) {
-        cora::setBackend(name);
+        const cora::BackendScope scope(name);
         body(name);
     }
-    cora::setBackend("eigen");
 }
 
 /// The column (n, 1) of the given numbers, on the current backend.
 inline cora::Tensor column(const std::vector<double> &v) {
-    return cora::Tensor::fromData(v, {int64_t(v.size()), 1});
+    return cora::Tensor::from_data(v, {int64_t(v.size()), 1});
 }
 
 /// A random direction in n dimensions: standard normal entries.
@@ -86,7 +89,7 @@ inline std::vector<double> random_direction(cora::Rng &rng, int n) {
 
 /// The support function of any set along the host direction d, as a number.
 inline double support(const cora::ContSet &S, const std::vector<double> &d) {
-    return S.supportFunc(column(d)).data()[0];
+    return S.support_function(column(d)).data()[0];
 }
 
 /// Whether calling f throws.
@@ -96,6 +99,23 @@ bool throws(F f) {
         f();
     } catch (const std::exception &) {
         return true;
+    }
+    return false;
+}
+
+/// Whether calling f raises a cora::Error with the identifier `id`.
+template <class F>
+bool raises(F f, cora::Error::Id id) {
+    try {
+        f();
+    } catch (const cora::Error &e) {
+        if (e.id() != id)
+            std::cerr << "  raised " << e.identifier() << " instead of "
+                      << cora::Error::identifier(id) << ": " << e.what() << "\n";
+        return e.id() == id;
+    } catch (const std::exception &e) {
+        std::cerr << "  raised a non-CORA error: " << e.what() << "\n";
+        return false;
     }
     return false;
 }
@@ -111,10 +131,9 @@ void for_each_device(F body) {
         options.push_back(torch::TensorOptions().dtype(torch::kDouble).device(torch::kCUDA, 0));
         names.push_back("gpu");
     }
-    cora::setBackend("torch");
+    const cora::BackendScope scope("torch");
     torch::manual_seed(7);
     for (std::size_t i = 0; i < options.size(); ++i) body(options[i], names[i]);
-    cora::setBackend("eigen");
 }
 #endif
 

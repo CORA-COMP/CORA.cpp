@@ -21,8 +21,8 @@
 #include <vector>
 
 #include "mask.h"
-#include "global/rng.h"
-#include "global/threads.h"
+#include "cora/global/rng.h"
+#include "cora/global/threads.h"
 
 namespace cora::comp {
 
@@ -62,11 +62,11 @@ struct Zonotope {
 
 // ---- construction ----------------------------------------------------------------
 
-/// CORA's `interval.generateRandom`: centre `U[-2, 2]`, radius `R/2 · u` with
+/// CORA's `interval.generate_random`: centre `U[-2, 2]`, radius `R/2 · u` with
 /// `R ~ U[0, 10]` and `u ~ U[0, 1]`.
 Interval<double> random_interval(Rng &rng, Eigen::Index n, Eigen::Index batch);
 
-/// CORA's `zonotope.generateRandom`: centre `10 · randn`, `m` generators, each a
+/// CORA's `zonotope.generate_random`: centre `10 · randn`, `m` generators, each a
 /// uniformly random unit direction with a length `~ U[0, 1]`.
 Zonotope<double> random_zonotope(Rng &rng, Eigen::Index n, Eigen::Index m,
                                  Eigen::Index batch);
@@ -97,7 +97,7 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Interval<T> &s, const Mat
 template <typename T>
 Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Zonotope<T> &s, const Mat<T> &d) {
     Eigen::Matrix<T, Eigen::Dynamic, 1> out(s.batch());
-    const int nt = threadsFor(s.batch(), s.batch() * s.dim() * s.m);
+    const int nt = threads_for(s.batch(), s.batch() * s.dim() * s.m);
 #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index b = 0; b < s.batch(); ++b) {
         out(b) = s.c.col(b).dot(d.col(b))
@@ -130,7 +130,7 @@ Interval<T> mink_sum(const Interval<T> &a, const Interval<T> &b) {
 template <typename T>
 Zonotope<T> mink_sum(const Zonotope<T> &a, const Zonotope<T> &b) {
     Zonotope<T> out{a.c + b.c, Mat<T>(a.dim(), (a.m + b.m) * a.batch()), a.m + b.m};
-    const int nt = threadsFor(a.batch(), a.batch() * a.dim() * (a.m + b.m));
+    const int nt = threads_for(a.batch(), a.batch() * a.dim() * (a.m + b.m));
 #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index k = 0; k < a.batch(); ++k) {
         out.g.middleCols(k * out.m, a.m) = a.block(k);

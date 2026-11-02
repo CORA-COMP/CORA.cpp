@@ -12,9 +12,6 @@ import cora
 
 
 class Constructors(unittest.TestCase):
-    def tearDown(self):
-        cora.setBackend("torch")
-
     def test_a_tensor_is_made_from_data_and_stays_callable(self):
         t = cora.Tensor([[1, 2], [3, 4]])
         self.assertIsInstance(t, torch.Tensor)
@@ -30,7 +27,7 @@ class Constructors(unittest.TestCase):
         torch.testing.assert_close(cora.eye(2), cora.Tensor.eye(2))
 
     def test_the_constructors_follow_the_backend(self):
-        cora.setBackend("eigen")
+        self.enterContext(cora.backend("eigen"))
         self.assertIsInstance(cora.Tensor.ones(2, 2), np.ndarray)
         self.assertIsInstance(cora.Tensor.eye(2), np.ndarray)
         self.assertIsInstance(cora.Tensor([1.0, 2.0]), np.ndarray)
@@ -42,9 +39,6 @@ class Constructors(unittest.TestCase):
 
 
 class Functions(unittest.TestCase):
-    def tearDown(self):
-        cora.setBackend("torch")
-
     def test_functions_of_numbers_and_arrays_need_no_math_or_numpy(self):
         self.assertAlmostEqual(float(cora.Tensor.cos(0.2)), math.cos(0.2))
         self.assertAlmostEqual(float(cora.Tensor.sin(0.2)), math.sin(0.2))
@@ -67,7 +61,7 @@ class Functions(unittest.TestCase):
             cora.tan(x)
 
     def test_functions_follow_the_backend(self):
-        cora.setBackend("eigen")
+        self.enterContext(cora.backend("eigen"))
         self.assertIsInstance(cora.Tensor.cos([0.0, 1.0]), np.ndarray)
 
 

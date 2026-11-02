@@ -1,7 +1,7 @@
 // test_linprog - the simplex linear program solver: known optima, statuses, random programs
 
-#include "global/linprog.h"
-#include "global/rng.h"
+#include "cora/global/linprog.h"
+#include "cora/global/rng.h"
 #include "testing.h"
 
 #include <cmath>
@@ -13,8 +13,8 @@ using Status = LinProgResult::Status;
 namespace {
 
 /// The minimum of f'x over {Ax <= b} in the plane by checking every vertex (a bounded program).
-double bruteForce(const std::vector<double> &f, const std::vector<double> &A,
-                  const std::vector<double> &b) {
+double brute_force(const std::vector<double> &f, const std::vector<double> &A,
+                   const std::vector<double> &b) {
     const int m = static_cast<int>(b.size());
     double best = 1e300;
     for (int i = 0; i < m; ++i)
@@ -39,7 +39,7 @@ void known_programs() {
     lp.bineq = {4, 6};
     lp.lb = {0, 0};
     LinProgResult r = linprog(lp);
-    check(r.status == Status::Optimal && test::close(r.fval, -2.8, 1e-9), "textbook maximum");
+    check(r.status == Status::optimal && test::close(r.fval, -2.8, 1e-9), "textbook maximum");
     check(test::close(r.x[0], 1.6) && test::close(r.x[1], 1.2), "textbook maximizer");
 
     // equality and free variables: min x s.t. x - y = 1, y = 3 (x free) -> x = 4.
@@ -49,7 +49,7 @@ void known_programs() {
     eq.Aeq = {1, -1, 0, 1};
     eq.beq = {1, 3};
     r = linprog(eq);
-    check(r.status == Status::Optimal && test::close(r.fval, 4.0), "equalities, free variables");
+    check(r.status == Status::optimal && test::close(r.fval, 4.0), "equalities, free variables");
 
     // upper bounds only: min -x s.t. x <= 2 (as a bound), x free below -> -2.
     LinProg ub;
@@ -57,7 +57,7 @@ void known_programs() {
     ub.f = {-1};
     ub.ub = {2};
     r = linprog(ub);
-    check(r.status == Status::Optimal && test::close(r.fval, -2.0), "upper bound only");
+    check(r.status == Status::optimal && test::close(r.fval, -2.0), "upper bound only");
 
     // infeasible: x >= 1 and x <= 0.
     LinProg inf;
@@ -65,14 +65,14 @@ void known_programs() {
     inf.f = {1};
     inf.Aineq = {-1, 1};
     inf.bineq = {-1, 0};
-    check(linprog(inf).status == Status::Infeasible, "infeasible program");
+    check(linprog(inf).status == Status::infeasible, "infeasible program");
 
     // unbounded: min -x, x >= 0.
     LinProg unb;
     unb.n = 1;
     unb.f = {-1};
     unb.lb = {0};
-    check(linprog(unb).status == Status::Unbounded, "unbounded program");
+    check(linprog(unb).status == Status::unbounded, "unbounded program");
 
     // a redundant equality and a degenerate vertex.
     LinProg deg;
@@ -84,7 +84,7 @@ void known_programs() {
     deg.beq = {2, 4};
     deg.lb = {0, 0};
     r = linprog(deg);
-    check(r.status == Status::Optimal && test::close(r.fval, -2.0), "redundant equality");
+    check(r.status == Status::optimal && test::close(r.fval, -2.0), "redundant equality");
 
     check(test::throws([] {
               LinProg bad;
@@ -116,8 +116,7 @@ void random_planar_programs() {
         lp.Aineq = A;
         lp.bineq = b;
         const LinProgResult r = linprog(lp);
-        check(r.status == Status::Optimal &&
-                  std::abs(r.fval - bruteForce(f, A, b)) < 1e-7,
+        check(r.status == Status::optimal && std::abs(r.fval - brute_force(f, A, b)) < 1e-7,
               "random planar program " + std::to_string(trial));
     }
 }

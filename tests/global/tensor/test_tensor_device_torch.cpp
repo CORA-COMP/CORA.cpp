@@ -1,8 +1,8 @@
 // test_tensor_device_torch - Tensor devices: allocation on cpu and gpu, moving, and what does not
 // mix
 
-#include "global/tensor/tensor.h"
-#include "global/backend/torch.h"
+#include "cora/global/backend/torch.h"
+#include "cora/global/tensor/tensor.h"
 #include "testing.h"
 
 using namespace cora;
@@ -13,7 +13,7 @@ using test::throws;
 namespace {
 
 void devices() {
-    setBackend("torch");
+    set_default_backend("torch");
     const Tensor t = Tensor::zeros({2, 2});
     check(t.device() == "cpu", "the default device is the CPU");
     check(Tensor::zeros({2, 2}, "cpu").device() == "cpu", "an explicit cpu");
@@ -36,17 +36,17 @@ void devices() {
                           Tensor({{1.0, 2.0}, {3.0, 4.0}})),
               "values read back from the gpu");
         // A backend default on the gpu allocates there without asking.
-        setBackend("torch:cuda");
+        set_default_backend("torch:cuda");
         check(Tensor::zeros({2, 2}).device().rfind("cuda", 0) == 0,
               "torch:cuda is the default device");
         check(Tensor::zeros({2, 2}, "cpu").device() == "cpu",
               "and a tensor can still choose the cpu");
-        setBackend("torch");
+        set_default_backend("torch");
     } else {
         std::cout << "no CUDA device: the gpu half of these tests did not run\n";
     }
 
-    setBackend("eigen");
+    set_default_backend("eigen");
     check(throws([] { Tensor::zeros({2, 2}, "gpu"); }), "eigen cannot allocate on the gpu");
     check(Tensor::zeros({2, 2}, "cpu").device() == "cpu", "eigen on the cpu");
     check(throws([] { Tensor::zeros({2, 2}).to("gpu"); }), "eigen cannot move to the gpu");
@@ -56,6 +56,6 @@ void devices() {
 
 int main() {
     devices();
-    setBackend("eigen");
+    set_default_backend("eigen");
     return test::finish("tensor device (libtorch)");
 }

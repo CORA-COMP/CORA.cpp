@@ -7,7 +7,7 @@
 // Outputs:  the matrix and the zonotope as text, and the figure as an SVG file
 // See also: example_zonotope_01 of the Python examples, example_linear_reach_01_5dim
 
-#include "global/plot/plot.h"
+#include "cora/global/plot/plot.h"
 
 #include <iostream>
 

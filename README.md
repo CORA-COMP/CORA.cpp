@@ -1,22 +1,22 @@
 # CORA.cpp
 
 Parts of [CORA](https://cora.in.tum.de), the toolbox for set-based computing, in C++ and Python.
-Runs on CPU and GPU, batches automatically, is differentiable. Names follow MATLAB CORA:
-`contSet/zonotope/mtimes.cpp` is `@zonotope/mtimes.m`.
+Runs on CPU and GPU, batches automatically, is differentiable. Names are those of MATLAB CORA in
+C++ and Python style: `cont_set/zonotope/support_function.cpp` is `@zonotope/supportFunc.m`, and every
+operation file names its CORA file ([docs/naming.md](docs/naming.md) has the table).
 
 C++:
 
 ```cpp
-#include "contDynamics/linearSys/linearSys.h"
-#include "global/plot/plot.h"
-#include "specification/specification.h"
+#include "cora/cora.h"
 using namespace cora;
 
 Tensor A({{-0.1, 1}, {-1, -0.1}});                                     // x' = A x
 Zonotope X0(Tensor({1, 0}), 0.1 * Tensor::eye(2));                     // center, generators
-Reach R = LinearSys(A).reach(X0, /*timeStep=*/0.1, /*tFinal=*/5.0);
-Specification spec = Specification::unsafeSet(Tensor({1, 0}), -0.75);  // stay out of x1 <= -0.75
-bool safe = spec.check(R.timeInt);
+ReachSet R = LinearSys(A).reach({.initial_set = X0, .t_final = 5.0},   // the problem
+                                alg::Standard{.time_step = 0.1});      // the algorithm
+Specification spec = Specification::unsafe_set(Tensor({1, 0}), -0.75); // stay out of x1 <= -0.75
+bool safe = spec.check(R.time_interval);
 plot(R, {0, 1});                                                       // dimensions to show
 figure().save("reach.svg");                                            // C++ writes SVG
 ```
@@ -28,9 +28,9 @@ from cora import Tensor, Zonotope, LinearSys, Specification, eye, plot
 
 A = Tensor([[-0.1, 1], [-1, -0.1]])                                    # x' = A x
 X0 = Zonotope(Tensor([1, 0]), 0.1 * eye(2))                            # center, generators
-R = LinearSys(A).reach(X0, timeStep=0.1, tFinal=5.0)
-spec = Specification.unsafeSet(Tensor([1, 0]), -0.75)                  # stay out of x1 <= -0.75
-safe = spec.check(R.timeInt)
+R = LinearSys(A).reach(X0, t_final=5.0, alg="standard", time_step=0.1)
+spec = Specification.unsafe_set(Tensor([1, 0]), -0.75)                 # stay out of x1 <= -0.75
+safe = spec.check(R.time_interval)
 plot(R)                                                                # dims default to (0, 1)
 ```
 
@@ -79,8 +79,14 @@ CORA branch `feature/coracpp-python`); it uses the `python` preset and the same 
 
 Benchmarks: [`examples/benchmarks`](examples/benchmarks) runs the ARCH-COMP AFF instances of MATLAB CORA in C++ and Python on the same data.
 
-Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.timeInt[k]` covers
-`[k*timeStep, (k+1)*timeStep]` and `R.timePoint[k]` is at `k*timeStep` (0-based).
+Differences from MATLAB: points are columns `(n, 1)` in C++ (1-D in Python); `R.time_interval[k]`
+covers `[k*time_step, (k+1)*time_step]` and `R.time_point[k]` is at `k*time_step` (0-based). Errors
+carry CORA's identifiers (`cora::Error`, `cora.errors.WrongValue` for `CORA:wrongValue`); the input
+checks can be switched off (`ChecksScope`, `with cora.checks(False):`, CMake `CORACPP_CHECKS=OFF`).
+
+Use it from another CMake project after `cmake --install build --prefix <dir>`:
+`find_package(CORA)` and `target_link_libraries(app PRIVATE CORA::cora)`. The design is in
+[docs/architecture.md](docs/architecture.md).
 
 ## Connection to CORALean
 

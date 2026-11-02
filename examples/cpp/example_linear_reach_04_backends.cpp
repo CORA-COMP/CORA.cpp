@@ -1,13 +1,13 @@
 // example_linear_reach_04_backends - the same code on Eigen and on libtorch
 //
-// The backend is chosen once, with setBackend (or CORACPP_BACKEND from outside); every tensor is
-// made on it and everything built from a tensor stays there. Nothing else in the code changes.
+// The backend is chosen once, with a BackendScope (or CORACPP_BACKEND from outside); every tensor
+// is made on it and everything built from a tensor stays there. Nothing else in the code changes.
 //
 // Syntax:   build/examples/cpp/example_linear_reach_04_backends
 // Outputs:  the last enclosure's box on each backend, and how much the two differ
 // See also: example_linear_reach_06_gpu
 
-#include "contDynamics/linearSys/linearSys.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +20,7 @@
 using namespace cora;
 
 /// The reachable set of a damped oscillator, on whichever backend is current.
-Reach reachOscillator() {
+ReachSet reach_oscillator() {
     // Parameters --------------------------------------------------------------------------
 
     const Zonotope R0(Tensor({1.0, 0.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
@@ -31,7 +31,8 @@ Reach reachOscillator() {
 
     // Reachability Analysis ---------------------------------------------------------------
 
-    return sys.reach(R0, 0.1, 1.0, 8);
+    return sys.reach({.initial_set = R0, .t_final = 1.0},
+                     alg::Standard{.time_step = 0.1, .taylor_terms = 8});
 }
 
 int main() {
@@ -46,9 +47,9 @@ int main() {
 
     std::vector<std::vector<double>> centers;
     for (const std::string &spec : backends) {
-        setBackend(spec);
-        const Reach R = reachOscillator();
-        centers.push_back(R.timeInt.back().c.data());
+        const BackendScope scope(spec);
+        const ReachSet R = reach_oscillator();
+        centers.push_back(R.time_interval.back().center().data());
         std::cout << spec << ": the last center is (" << centers.back()[0] << ", "
                   << centers.back()[1] << ")\n";
     }

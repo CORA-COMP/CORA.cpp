@@ -7,9 +7,9 @@
 // Outputs:  the run time, the range of the output, and the figure as an SVG file
 // See also: example_linear_reach_01_5dim, example_linear_simulate_01_random
 
-#include "contDynamics/linearSys/linearSys.h"
-#include "global/plot/plot.h"
-#include "global/rng.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/plot/plot.h"
+#include "cora/global/rng.h"
 
 #include <algorithm>
 #include <chrono>
@@ -22,15 +22,15 @@ using namespace cora;
 int main() {
     // Parameters ------------------------------------------------------------------------------
 
-    const double tFinal = 5;
+    const double t_final = 5;
     const Zonotope R0(Tensor({0, 0}), Tensor({{0.2, 0}, {0, 0.2}}));  // position, velocity
     const Zonotope U(Tensor({0.5}), Tensor({{0.25}}));                // force in [0.25, 0.75]
 
     // Reachability Settings -------------------------------------------------------------------
 
-    const double timeStep = 0.05;
-    const int taylorTerms = 6;
-    const int zonotopeOrder = 20;
+    const double time_step = 0.05;
+    const int taylor_terms = 6;
+    const int zonotope_order = 20;
 
     // System Dynamics -------------------------------------------------------------------------
 
@@ -41,33 +41,38 @@ int main() {
 
     // Reachability Analysis -------------------------------------------------------------------
 
-    const auto timerVal = std::chrono::steady_clock::now();
-    const Reach R = sys.reach(R0, U, timeStep, tFinal, taylorTerms, Algorithm::Standard,
-                              zonotopeOrder);
-    const Reach Y = sys.outputSet(R);
-    const std::chrono::duration<double> tComp = std::chrono::steady_clock::now() - timerVal;
+    const auto timer_val = std::chrono::steady_clock::now();
+    const ReachSet R = sys.reach({.initial_set = R0, .input_set = U, .t_final = t_final},
+                                 alg::Standard{.time_step = time_step,
+                                               .taylor_terms = taylor_terms,
+                                               .zonotope_order = zonotope_order});
+    const ReachSet Y = sys.output_set(R);
+    const std::chrono::duration<double> computation_time =
+        std::chrono::steady_clock::now() - timer_val;
 
-    std::cout << "computation time of reachable set: " << tComp.count() << " s\n";
+    std::cout << "computation time of reachable set: " << computation_time.count() << " s\n";
 
     // Simulation ------------------------------------------------------------------------------
 
     cora::Rng rng(0);
-    const std::vector<Tensor> traj = sys.simulateRandom(R0, U, 25, timeStep, tFinal, rng);
+    const std::vector<Tensor> traj =
+        sys.simulate_random({.initial_set = R0, .input_set = U, .t_final = t_final},
+                            alg::Exact{.time_step = time_step}, 25, rng);
 
     // Evaluation ------------------------------------------------------------------------------
 
     // The position over all steps, from the output sets.
     double lower = 1e9, upper = -1e9;
-    for (const Zonotope &y : Y.timeInt) {
+    for (const Zonotope &y : Y.time_interval) {
         const Interval box = y.interval();
-        lower = std::min(lower, box.inf.data()[0]);
-        upper = std::max(upper, box.sup.data()[0]);
+        lower = std::min(lower, box.inf().data()[0]);
+        upper = std::max(upper, box.sup().data()[0]);
     }
     std::cout << "the output y stays in [" << lower << ", " << upper << "]\n";
 
     // Visualization ---------------------------------------------------------------------------
 
-    useCORAcolors("CORA:contDynamics");
+    use_cora_colors("CORA:contDynamics");
     plot(R, {0, 1}, {.label = "reachable set"});
     plot(R0, {0, 1}, {.label = "initial set"});
     plot(traj, {0, 1}, {.label = "simulations"});

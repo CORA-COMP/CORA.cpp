@@ -2,9 +2,10 @@
 //
 // See also: lean/oracle.h
 
-#include "global/oracle/tensor.h"
+#include "cora/global/oracle/tensor.h"
+#include "cora/global/error.h"
 
-#include "global/oracle/oracle.h"
+#include "cora/global/oracle/oracle.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -20,7 +21,7 @@ namespace {
 // The double x as "m*2^e" with an odd mantissa (zero is "0*2^0").
 std::string aux_encode(double x) {
     if (!std::isfinite(x))
-        throw std::invalid_argument("lean: NaN and infinity are not lean values");
+        CORA_FAIL(Error::wrong_value, "lean: NaN and infinity are not lean values");
     if (x == 0) return "0*2^0";
     int e;
     const double frac = std::frexp(x, &e);  // x = frac * 2^e with 0.5 <= |frac| < 1
@@ -35,12 +36,12 @@ using U64 = unsigned long long;
 // m * factor, or an error when it does not fit 64 bits: a value that big is no double anyway.
 U64 aux_times(U64 m, U64 factor, const std::string &s) {
     if (factor != 0 && m > ~U64(0) / factor)
-        throw std::range_error("lean: not a double (too many digits): " + s);
+        CORA_FAIL(Error::out_of_domain, "lean: not a double (too many digits): " + s);
     return m * factor;
 }
 
 // The double x as "m*10^e" with m not divisible by 10, as fixedpoint dtypes write values.
-std::string aux_encodeDecimal(double x) {
+std::string aux_encode_decimal(double x) {
     if (x == 0) return "0*10^0";
     const std::string dyadic = aux_encode(x);
     const std::size_t star = dyadic.find('*');
@@ -61,7 +62,7 @@ double aux_decode(const std::string &s) {
     const std::size_t star = s.find("*");
     const bool decimal = star != std::string::npos && s.compare(star, 4, "*10^") == 0;
     if (star == std::string::npos || (!decimal && s.compare(star, 3, "*2^") != 0))
-        throw std::invalid_argument("lean: expected a value m*2^e or m*10^e, got '" + s + "'");
+        CORA_FAIL(Error::wrong_value, "lean: expected a value m*2^e or m*10^e, got '" + s + "'");
     const std::string digits = s.substr(0, star);
     const bool negative = !digits.empty() && digits[0] == '-';
     U64 m = 0;
@@ -76,22 +77,22 @@ double aux_decode(const std::string &s) {
         binary += e;
         for (long long i = 0; i < std::abs(e); ++i) {
             if (e < 0 && m % 5 != 0)
-                throw std::range_error("lean: not a double (no finite binary expansion): " + s);
+                CORA_FAIL(Error::out_of_domain,
+                          "lean: not a double (no finite binary expansion): " + s);
             m = e > 0 ? aux_times(m, 5, s) : m / 5;
         }
     }
-    if (m >> 53)
-        throw std::range_error("lean: not a double (needs over 53 bits): " + s);
+    if (m >> 53) CORA_FAIL(Error::out_of_domain, "lean: not a double (needs over 53 bits): " + s);
     const double x = std::ldexp(static_cast<double>(m), static_cast<int>(binary));
     if (!std::isfinite(x) || (m != 0 && std::abs(x) < 0x1p-1022))
-        throw std::range_error("lean: not a normal double (out of range): " + s);
+        CORA_FAIL(Error::out_of_domain, "lean: not a normal double (out of range): " + s);
     return negative ? -x : x;
 }
 
 int64_t aux_columns(const cora::Tensor &x) {
     const std::vector<int64_t> shape = x.shape();
     if (shape.size() != 2)
-        throw std::invalid_argument("lean: a lean tensor is a single matrix, not a batch");
+        CORA_FAIL(Error::wrong_value, "lean: a lean tensor is a single matrix, not a batch");
     return shape[1];
 }
 
@@ -109,10 +110,10 @@ Tensor Tensor::from(const cora::Tensor &x) {
     T.cols_ = aux_columns(x);
     const bool decimal = T.dtype_.rfind("fixedpoint", 0) == 0;  // fixedpoint values are decimals
     for (const double v : x.data())
-        T.data_.push_back(decimal ? aux_encodeDecimal(v) : aux_encode(v));
+        T.data_.push_back(decimal ? aux_encode_decimal(v) : aux_encode(v));
     if (T.dtype_ == "binary64") return T;
     Json request = Json::object();
-    request.set("op", "from").set("dtype", T.dtype_).set("x", T.toJson());
+    request.set("op", "from").set("dtype", T.dtype_).set("x", T.to_json());
     call(request);  // the oracle throws if a value is not representable
     return T;
 }
@@ -124,22 +125,22 @@ std::string Tensor::encode(double x) { return aux_encode(x); }
 cora::Tensor Tensor::gather() const {
     std::vector<double> values;
     for (const std::string &s : data_) values.push_back(aux_decode(s));
-    return cora::Tensor::fromData(values, {rows_, cols_});
+    return cora::Tensor::from_data(values, {rows_, cols_});
 }
 
-Rounded Tensor::roundTo(const std::string &target, const std::string &mode) const {
+Rounded Tensor::round_to(const std::string &target, const std::string &mode) const {
     if (mode != "nearest" && mode != "down" && mode != "up")
-        throw std::invalid_argument("lean: the rounding mode '" + mode +
-                                    "' is unknown; use 'nearest', 'down' or 'up'");
+        CORA_FAIL(Error::wrong_value, "lean: the rounding mode '" + mode +
+                                          "' is unknown; use 'nearest', 'down' or 'up'");
     Json request = Json::object();
-    request.set("op", "roundTo").set("dtype", target).set("mode", mode).set("x", toJson());
+    request.set("op", "roundTo").set("dtype", target).set("mode", mode).set("x", to_json());
     // the oracle answers the value and an enclosure of the rounding error
     const Json response = call(request);
     const Json &error = response.at("error");
-    return {fromJson(target, response.at("value")), Interval::fromJson(target, error)};
+    return {from_json(target, response.at("value")), Interval::from_json(target, error)};
 }
 
-Json Tensor::toJson() const {
+Json Tensor::to_json() const {
     Json j = Json::object(), values = Json::array();
     for (const std::string &s : data_) values.push(s);
     j.set("rows", rows_).set("cols", cols_).set("data", values);
@@ -147,22 +148,22 @@ Json Tensor::toJson() const {
 }
 
 // The wire form is row-major "m*2^e" strings.
-Tensor Tensor::fromJson(const std::string &dtype, const Json &j) {
+Tensor Tensor::from_json(const std::string &dtype, const Json &j) {
     Tensor T;
     T.dtype_ = dtype;
     T.rows_ = std::stoll(j.at("rows").text);
     T.cols_ = std::stoll(j.at("cols").text);
     for (const Json &v : j.at("data").items) T.data_.push_back(v.text);
     if (static_cast<int64_t>(T.data_.size()) != T.rows_ * T.cols_)
-        throw std::runtime_error("lean: a response matrix has the wrong number of values");
+        CORA_FAIL(Error::special_error, "lean: a response matrix has the wrong number of values");
     return T;
 }
 
 // Interval --------------------------------------------------------------------------------
 
-Interval::Interval(Tensor inf, Tensor sup) : inf(std::move(inf)), sup(std::move(sup)) {
-    if (this->inf.dtype() != this->sup.dtype())
-        throw std::invalid_argument("lean: the bounds of an interval must share one dtype");
+Interval::Interval(Tensor inf, Tensor sup) : inf_(std::move(inf)), sup_(std::move(sup)) {
+    if (inf_.dtype() != sup_.dtype())
+        CORA_FAIL(Error::wrong_value, "lean: the bounds of an interval must share one dtype");
 }
 
 Interval Interval::from(const cora::Tensor &inf, const cora::Tensor &sup) {
@@ -170,17 +171,17 @@ Interval Interval::from(const cora::Tensor &inf, const cora::Tensor &sup) {
 }
 
 std::pair<cora::Tensor, cora::Tensor> Interval::gather() const {
-    return {inf.gather(), sup.gather()};
+    return {inf_.gather(), sup_.gather()};
 }
 
-Json Interval::toJson() const {
+Json Interval::to_json() const {
     Json j = Json::object();
-    j.set("inf", inf.toJson()).set("sup", sup.toJson());
+    j.set("inf", inf_.to_json()).set("sup", sup_.to_json());
     return j;
 }
 
-Interval Interval::fromJson(const std::string &dtype, const Json &j) {
-    return {Tensor::fromJson(dtype, j.at("inf")), Tensor::fromJson(dtype, j.at("sup"))};
+Interval Interval::from_json(const std::string &dtype, const Json &j) {
+    return {Tensor::from_json(dtype, j.at("inf")), Tensor::from_json(dtype, j.at("sup"))};
 }
 
 } // namespace cora::lean

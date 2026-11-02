@@ -3,58 +3,113 @@
 ## Layout
 
 ```
-src/
-  contSet/                 contSet.h, the abstract set
-    zonotope/  interval/   the class in its header, one operation per file
-  contDynamics/            contDynamics.h, the abstract dynamic system
-    linearSys/             linearSys.h, reach, simulate, ...; private/ has the algorithms
-    nonlinearSys/          nonlinearSys.h, reach (linearization), simulate; dynamics are Expr
-  nn/neuralNetwork/        neuralNetwork.h, evaluate (points, and sets through the layers)
-  specification/           specification.h, check.cpp
-  global/                  random numbers, threads, symbolic expressions (expr.h), linprog
-    tensor/                Tensor, the backend wrapper
-    backend/               the Tensor backends: eigen, torch, lean
-    oracle/                cora::lean: sets and dynamics computed by CORALean (needs CORACPP_ORACLE)
-    plot/                  colors, figure, plot: the plotting logic for every language
-    python/                bindings.cpp and the cora/ package (plot.py, tensor.py)
-tests/  examples/          mirror src/
-scripts/competition/       the CORA-COMP entry
-examples/benchmarks/       ARCH-COMP AFF instances (data, README); the programs are in examples/{cpp,python,matlab}/benchmarks
+include/cora/              the public headers (cora/cora.h includes them all; cora/config.h is written by CMake)
+  cont_set/                cont_set.h (ContSet), set.h (Set), registry.h (the binary operations)
+    zonotope/  interval/   the class in its header
+  cont_dynamics/           cont_dynamics.h (ReachSet, the problems), algorithms.h (the alg:: structs)
+    linear_sys/  nonlinear_sys/
+  nn/neural_network/  specification/  global/ (tensor, backends, errors, settings, plot, oracle)
+src/                       the implementation, one operation per file, mirroring include/cora/
+  cont_set/cont_set/       the checked entries of ContSet and the binary registry
+  cont_set/zonotope/ ...   the _impl of each operation; private/ holds priv_* algorithms
+  global/python/           bindings.cpp, convert.h and the cora/ package (no math)
+tests/  examples/          mirror src/; tests/install/consumer builds against the install tree
+scripts/competition/       the CORA-COMP entry (cora::comp, kept apart)
+docs/                      architecture.md (the decisions), naming.md (CORA -> C++ -> Python)
 ```
 
 The library is namespace `cora`; the competition entry keeps its own sets in `cora::comp`.
 
 ## Conventions
 
-- One operation per file, named as in CORA, with a header (Syntax, Inputs, Outputs, See also);
-  auxiliary functions (`aux_*`) first, under an `AUXILIARY` marker, then the operation under
-  a `MAIN` marker (two empty lines above it), all between `BEGIN CODE` and `END OF CODE`; internals in `private/priv_*`.
-- camelCase operations, CORA argument names (`timeStep`, `tFinal`, `taylorTerms`, `linAlg`).
+`tests/global/test_coding_conventions.py` checks all of these; it is the first test of `ctest`.
+
+- One operation per file, named after the operation in snake_case (`rand_point.cpp` for CORA's
+  `randPoint`), with a header (Syntax, Inputs, Outputs, See also; 1-3 lines per entry, no filler)
+  that ends with `// CORA: <path>.m` or `// CORA.cpp only: <reason>`. Auxiliary functions
+  (`aux_*`) under an `AUXILIARY` marker, the operation under `MAIN` (two empty lines above it),
+  all between `BEGIN CODE` and `END OF CODE`; internals in `private/priv_*`.
+- Classes PascalCase; functions, arguments, variables, files snake_case; see docs/naming.md.
 - Inline comments are one line and say why; function docs are short and explain parameters.
-- Every option switch handles all options explicitly and throws a descriptive error otherwise,
-  and a test covers each option and the error.
-- `tests/global/test_codingConventions.py` checks naming and layout; it is the first test of `ctest`.
+- Every public operation starts with `detail::Entry entry;`, checks its input with `CORA_CHECK`
+  and calls an unchecked implementation (`<operation>_impl`, or private code). Never `throw`:
+  `CORA_CHECK(cond, Error::<id>, [&] { return message; })` for a wrong input, `CORA_FAIL(id, message)`
+  for a failure. An entry that needs another public operation's result for valid input calls
+  its unchecked form or checks the input itself: a nested entry does not check.
+- Every option switch handles all options and ends in `CORA_FAIL`; a test covers each option.
+- The tests of an operation call it with an invalid input (`test::raises(f, Error::<id>)`) and
+  once with the checks off (`ChecksScope off(false);`).
+- Where CORA's function has a `tol`, ours has it too, as an explicit last argument with CORA's
+  default (contains 100·eps, is_intersecting 1e-8); the docstring says in one line what it
+  relaxes, and the comparison goes through `cora::within_tol(a, b, tol)`.
+- One code path: library code never asks which backend, device or dtype it runs on (only
+  `global/backend/` and `global/tensor/` do), makes new tensors `like` an input, and is not
+  duplicated (the conventions test fails on a clone of 100 tokens).
 
 ## Examples
 
-CMake compiles every C++ example with `-include global/banner.h`, which prints the
+CMake compiles every C++ example with `-include cora/global/banner.h`, which prints the
 `CORA START` block before `main` and a `CORA END` block after it; an example does not include or call it.
 
 ## Adding things
 
-- **Operation:** declare it in the class, add the file to its folder; the CMake file finds sources.
-- **Set or dynamics class:** write it against `Tensor` only, then bind it in `src/global/python/bindings.cpp`.
-- **Backend:** implement `Tensor::Impl` and `Tensor::Backend` (`src/global/backend/eigen.cpp` is the model)
-  and register it in `makeBackend`.
+**An operation** of a set class (say `Zonotope::volume`):
+
+1. Declare the checked entry in the class header. For an operation of every set, declare the
+   non-virtual entry in `include/cora/cont_set/cont_set.h` and a protected pure
+   `volume_impl` that each class overrides.
+2. Write `src/cont_set/zonotope/volume.cpp` (or `src/cont_set/cont_set/volume.cpp` for the
+   entry of every set). The header names the CORA file. The function begins with
+   `detail::Entry entry;`, then `CORA_CHECK`s, then the computation against `Tensor`. CMake
+   finds the file.
+3. Bind it in `src/global/python/bindings.cpp` (`.def("volume", &Zonotope::volume)`).
+4. Test it in `tests/cont_set/zonotope/test_zonotope_volume.cpp`: the results, an invalid input
+   with `test::raises`, and a call under `ChecksScope off(false)`. Add a Python test if the
+   binding does more than forward.
+
+**A set class** (say `Ellipsoid`):
+
+1. Derive it from `ContSet` with `ClassId::ellipsoid` (the ids are in CORA's precedence order).
+2. Write the `_impl` overrides, one file each, and the constructor with its checks in
+   `ellipsoid.cpp`.
+3. Add it to `set_of`/`object_of` in `src/global/python/convert.h` and bind it.
+
+**A binary pair** (say `plus(Ellipsoid, Zonotope)`): write the function and add one line to
+`aux_build()` in `src/cont_set/cont_set/registry.cpp`:
+`aux_add_set<BinaryOp::plus, Ellipsoid, Zonotope>(table, [](const Ellipsoid &E, const Zonotope &Z) { ... })`.
+The lower-precedence class comes first, and a `static_assert` says so. The entry checks the
+dimensions for every pair. From Python, `cora.register_binary("plus", MySet, cora.Zonotope, fn)`
+adds a pair at run time.
+
+**An algorithm** (say a new `reach` of `LinearSys`):
+
+1. Add a struct to `include/cora/cont_dynamics/algorithms.h` with its options and CORA's
+   defaults, a `static constexpr const char *name`, `fields()` and `validate()`.
+2. Add the struct to the variant (`alg::LinearReach`).
+3. Write the algorithm in `src/cont_dynamics/linear_sys/private/` and dispatch to it in `reach.cpp`
+   with `std::visit`.
+4. Python gets it by name with its fields as keywords, with no binding code.
+
+To prototype in Python first, decorate a function with
+`@cora.register_algorithm(cora.LinearSys, "my_alg")`. `sys.reach(X0, t_final=..., alg="my_alg")`
+then checks the problem and calls it (see `src/global/python/cora/extend.py`).
+
+**A backend:** implement `Tensor::Impl` and `Tensor::Backend` (`src/global/backend/eigen.cpp` is
+the model) and register it in `aux_make_backend` (`src/global/tensor/tensor.cpp`). Only the backend and tensor
+folders may know it.
 
 ## Tensor
 
 Sets and dynamics are written once against `Tensor`, a runtime type-erased wrapper of Eigen
-(double, CPU, unbatched) or libtorch (batched, GPU, autograd). Layout is `(..., rows, cols)`;
-generic code broadcasts leading dimensions, which is the automatic batching. The backend is set
-with `setBackend` or `CORACPP_BACKEND`; a tensor can also live on its own device
-(`Tensor(data, "gpu")`, `t.to("cpu")`). Runtime dispatch costs about 17 ms over 250 steps of the
-5-dim example.
+(double, CPU, unbatched) or libtorch (batched, GPU, autograd).
+- Layout is `(..., rows, cols)`; generic code broadcasts the leading dimensions, which is the
+  automatic batching.
+- The backend of new tensors made from numbers is a per-thread scope: `BackendScope s("torch")`
+  in C++, `with cora.backend("torch"):` in Python. Otherwise it is the process default
+  (`set_default_backend`, `CORACPP_BACKEND`).
+- Everything else stays where its data is, and a tensor can live on its own device
+  (`Tensor(data, "gpu")`, `t.to("cpu")`).
+- Runtime dispatch costs about 17 ms over 250 steps of the 5-dim example.
 
 ## Build and test
 
@@ -64,10 +119,11 @@ scripts/with_env.sh scripts/build.sh                          # everything (or: 
 scripts/with_env.sh scripts/test.sh -j4                        # conventions, C++ tests, examples, Python
 scripts/with_env.sh scripts/build.sh example_zonotope_01      # one target, e.g. a C++ example
 scripts/with_env.sh python -m unittest discover -s tests/python
+scripts/with_env.sh cmake --install build --prefix /tmp/cora   # the package of find_package(CORA)
 ```
 
 `with_env.sh` enters the conda environment and puts the built `cora` package on `PYTHONPATH`.
-Options (`scripts/build.sh -D...`, see `CMakeLists.txt`): `CORACPP_TORCH`, `CORACPP_TORCH_DIR`, `CORACPP_NATIVE`,
+Options (`scripts/build.sh -D...`, see `CMakeLists.txt`): `CORACPP_CHECKS` (OFF compiles the input checks out), `CORACPP_TORCH`, `CORACPP_TORCH_DIR`, `CORACPP_NATIVE`,
 `CORACPP_BLAS`; `.coracpp-build` names another build directory. Tests run on every backend and the GPU;
 the `_torch` ones need libtorch.
 
@@ -99,7 +155,7 @@ one JSON line per request.
 
 Two executables serve it: the `oracle` (sound, every dtype above) and the `oracle-unsound`, which
 offers `nearest` (round-to-nearest, no guarantees). `nearest` is what the `lean` Tensor backend
-(`setBackend("lean")`) must match bit for bit; `tests/global/oracle/test_lean_backend.cpp` checks that. The
+(`BackendScope s("lean")`) must match bit for bit; `tests/global/oracle/test_lean_backend.cpp` checks that. The
 dtype `nearest` goes to the unsound oracle automatically.
 
 Use a local build (CORALean needs Lean via elan, leanprover.github.io):
@@ -117,7 +173,7 @@ examples named `*lean*` skip. Outside CMake, set the environment variable of the
 the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pinned in
 `scripts/coralean.cmake` (Linux x86_64) and checks its hash. Protocol and operations:
 `experiments/oracle/README.md` in CORALean; the C++ side is `src/global/oracle/`. A dtype is set with
-`lean::setDType("ieee:binary32")`; values cross into CORA.cpp only when they are exact doubles.
+`lean::DTypeScope s("ieee:binary32")` (Python: `with cora.lean.dtype("ieee:binary32"):`); values cross into CORA.cpp only when they are exact doubles.
 
 ### Still to do for a fresh install
 
@@ -140,7 +196,7 @@ oracle's own (`Lean.Data.Json` pulls the Lean elaborator in, 107 MB); that reach
 ## Plotting
 
 `global/plot/plot.h` decides everything about a plot: the projection, the vertices, the color
-scheme (`useCORAcolors`), the next color of CORA's order, widths and what lies on top (`zorder`).
+scheme (`use_cora_colors`), the next color of CORA's order, widths and what lies on top (`zorder`).
 It puts resolved layers into a `Figure`. `Figure::svg()` writes them for C++; `python/cora/plot.py`
-takes them out (`Figure.takeLayers()`) and draws them with matplotlib, and nothing else. A new
+takes them out (`Figure.take_layers()`) and draws them with matplotlib, and nothing else. A new
 frontend (or a new plot option) is added to the core, never to a wrapper.

@@ -4,7 +4,7 @@
 #include "json.h"
 #include "sets/lp.h"
 #include "sets/sets.h"
-#include "global/threads.h"
+#include "cora/global/threads.h"
 
 #include <algorithm>
 #include <chrono>

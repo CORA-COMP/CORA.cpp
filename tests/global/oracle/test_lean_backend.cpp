@@ -3,9 +3,9 @@
 // The backend rounds and orders its operations as CORALean does at dtype "nearest": a zonotope
 // operation of CORA.cpp on it must give the oracle's numbers bit for bit.
 
-#include "contSet/zonotope/zonotope.h"
-#include "global/oracle/oracle.h"
-#include "global/oracle/zonotope.h"
+#include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/oracle/oracle.h"
+#include "cora/global/oracle/zonotope.h"
 #include "testing.h"
 
 #include <cstdlib>
@@ -22,7 +22,7 @@ Tensor aux_normal(std::mt19937_64 &gen, int64_t rows, int64_t cols) {
     std::normal_distribution<double> normal;
     std::vector<double> data(rows * cols);
     for (double &x : data) x = normal(gen);
-    return Tensor::fromData(data, {rows, cols});
+    return Tensor::from_data(data, {rows, cols});
 }
 
 /// Whether two tensors hold the same bits (so -0 differs from 0).
@@ -35,17 +35,17 @@ bool aux_identical(const Tensor &a, const Tensor &b) {
 } // namespace
 
 int main() {
-    setBackend("lean");
+    const BackendScope lean_backend("lean");
 
     // sums nest to the right from zero, and the file is compiled without fused multiply-add
     const Tensor A({{1.0, 1e16, -1e16}});
     const Tensor x({{1.0}, {1.0}, {1.0}});
     test::check(A.matmul(x).data()[0] == 1.0, "1 + (1e16 + (-1e16 + 0)) keeps the one");
     test::check(throws([] { Tensor({{1.0}}).expm(); }), "expm is not available");
-    test::check(throws([] { setBackend("lean:cuda"); }), "no devices");
+    test::check(throws([] { const BackendScope s("lean:cuda"); }), "no devices");
 
     if (std::getenv("CORACPP_ORACLE_UNSOUND")) {
-        lean::setDType("nearest");
+        const lean::DTypeScope nearest("nearest");
         std::mt19937_64 gen(7);
         for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 200}}) {
             const Tensor M = aux_normal(gen, n, n), c = aux_normal(gen, n, 1);
@@ -56,22 +56,25 @@ int main() {
             const lean::Zonotope L(c, G), L2(c2, G2);
 
             // the same operation in CORA.cpp and in the oracle
-            const Zonotope mine = Z.mtimes(M);
-            const Zonotope oracle = L.mtimes(lean::Tensor::from(M)).gather().first;
-            test::check(aux_identical(mine.c, oracle.c) && aux_identical(mine.G, oracle.G),
+            const Zonotope mine = Z.linear_map(M);
+            const Zonotope oracle = L.linear_map(lean::Tensor::from(M)).gather().first;
+            test::check(aux_identical(mine.center(), oracle.center()) &&
+                            aux_identical(mine.generators(), oracle.generators()),
                         "mtimes is identical, " + size);
-            const Zonotope sum = Z.plus(Z2), sumOracle = L.plus(L2).gather().first;
-            test::check(aux_identical(sum.c, sumOracle.c) && aux_identical(sum.G, sumOracle.G),
+            const Zonotope sum = Z.plus(Z2), sum_oracle = L.plus(L2).gather().first;
+            test::check(aux_identical(sum.center(), sum_oracle.center()) &&
+                            aux_identical(sum.generators(), sum_oracle.generators()),
                         "plus is identical, " + size);
-            const Zonotope red = Z.reduce(2), redOracle = L.reduce(2).gather().first;
-            test::check(aux_identical(red.c, redOracle.c) && aux_identical(red.G, redOracle.G),
+            const Zonotope red = Z.reduce(2), red_oracle = L.reduce(2).gather().first;
+            test::check(aux_identical(red.center(), red_oracle.center()) &&
+                            aux_identical(red.generators(), red_oracle.generators()),
                         "reduce is identical, " + size);
-            const Zonotope comb = Z.linComb(Z2), combOracle = L.linComb(L2).gather().first;
-            test::check(aux_identical(comb.c, combOracle.c) && aux_identical(comb.G, combOracle.G),
+            const Zonotope comb = Z.linear_combination(Z2),
+                           comb_oracle = L.linear_combination(L2).gather().first;
+            test::check(aux_identical(comb.center(), comb_oracle.center()) &&
+                            aux_identical(comb.generators(), comb_oracle.generators()),
                         "linComb is identical, " + size);
         }
-        lean::setDType("binary64");
     }
-    setBackend("eigen");
     return test::finish("lean backend");
 }

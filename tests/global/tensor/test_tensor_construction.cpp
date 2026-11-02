@@ -1,6 +1,6 @@
 // test_tensor_construction - Tensor construction: lists, from data, zeros, eye
 
-#include "global/tensor/tensor.h"
+#include "cora/global/tensor/tensor.h"
 #include "testing.h"
 
 using namespace cora;
@@ -22,10 +22,10 @@ void construction(const std::string &b) {
 
     check(close(Tensor::zeros({2, 3}), std::vector<double>(6, 0.0)), b + ": zeros");
     check(close(Tensor::eye(2), std::vector<double>{1, 0, 0, 1}), b + ": eye");
-    check(close(Tensor::fromData({1, 2, 3, 4}, {2, 2}), Tensor({{1.0, 2.0}, {3.0, 4.0}})),
-          b + ": fromData");
+    check(close(Tensor::from_data({1, 2, 3, 4}, {2, 2}), Tensor({{1.0, 2.0}, {3.0, 4.0}})),
+          b + ": from_data");
 
-    check(throws([] { Tensor::fromData({1, 2, 3}, {2, 2}); }), b + ": data that misses the shape");
+    check(throws([] { Tensor::from_data({1, 2, 3}, {2, 2}); }), b + ": data that misses the shape");
     check(throws([] { Tensor({{1.0, 2.0}, {3.0}}); }), b + ": ragged rows");
 }
 

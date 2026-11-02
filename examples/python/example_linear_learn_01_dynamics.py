@@ -30,8 +30,8 @@ import matplotlib.pyplot as plt
 
 # Ground Truth ------------------------------------------------------------------------------
 
-timeStep = 0.1
-tFinal = 2.0
+time_step = 0.1
+t_final = 2.0
 X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
 
 # The system that produced the data, unknown to the learner.
@@ -39,8 +39,8 @@ A_true = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
 
 # Twenty noisy trajectories from the initial set: measurements[k] are the points at time k.
 torch.manual_seed(0)
-x0 = X0.randPoint(20, cora.Rng(0))
-truth = cora.LinearSys(A_true).simulate(x0, timeStep, tFinal)
+x0 = X0.rand_point(20, cora.Rng(0))
+truth = cora.LinearSys(A_true).simulate(x0, time_step=time_step, t_final=t_final)
 measurements = truth + 0.01 * torch.randn_like(truth)
 
 # Learning ----------------------------------------------------------------------------------
@@ -54,15 +54,15 @@ class LearnedSystem(nn.Module):
         self.A = nn.Parameter(cora.Tensor([[0.0, 0.5], [-0.5, 0.0]]))
 
     def forward(self, y):
-        R = cora.LinearSys(self.A).reach(X0, timeStep, tFinal, taylorTerms=6)
+        R = cora.LinearSys(self.A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
         outside, width = 0.0, 0.0
-        for k in range(1, len(R.timePoint)):
-            box = R.timePoint[k].interval()
+        for k in range(1, len(R.time_point)):
+            box = R.time_point[k].interval()
             # How far the measurements are outside the box around the set at time k, and its size.
             outside = outside + (torch.relu(y[k] - box.sup[:, None])
                                  + torch.relu(box.inf[:, None] - y[k])).mean()
             width = width + (box.sup - box.inf).mean()
-        return outside / (len(R.timePoint) - 1), width / (len(R.timePoint) - 1)
+        return outside / (len(R.time_point) - 1), width / (len(R.time_point) - 1)
 
 
 model = LearnedSystem()
@@ -85,9 +85,9 @@ print("true A:   ", A_true.numpy().round(2).tolist())
 # Visualization -----------------------------------------------------------------------------
 
 with torch.no_grad():
-    R = cora.LinearSys(model.A).reach(X0, timeStep, tFinal, taylorTerms=6)
+    R = cora.LinearSys(model.A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
 
-cora.useCORAcolors("CORA:contDynamics")
+cora.use_cora_colors("CORA:contDynamics")
 plt.figure()
 cora.plot(R, label="Learned reachable set")
 cora.plot(X0, label="Initial set")

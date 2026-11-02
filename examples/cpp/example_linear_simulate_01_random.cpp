@@ -7,8 +7,8 @@
 // Outputs:  the size of the simulation, and whether it stays in the reachable set
 // See also: example_linear_reach_01_5dim
 
-#include "contDynamics/linearSys/linearSys.h"
-#include "global/rng.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/rng.h"
 
 #include <algorithm>
 #include <iostream>
@@ -20,7 +20,7 @@ using namespace cora;
 int main() {
     // Parameters ------------------------------------------------------------------------------
 
-    const double tFinal = 1.0;
+    const double t_final = 1.0;
     const Zonotope R0(Tensor({1.0, 0.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
     cora::Rng rng(1); // a seed makes the points repeatable
 
@@ -30,28 +30,31 @@ int main() {
 
     // Reachability Analysis -------------------------------------------------------------------
 
-    const double timeStep = 0.1;
-    const Reach R = sys.reach(R0, timeStep, tFinal, 8);
+    const double time_step = 0.1;
+    const ReachSet R = sys.reach({.initial_set = R0, .t_final = t_final},
+                                 alg::Standard{.time_step = time_step, .taylor_terms = 8});
 
     // Simulation ------------------------------------------------------------------------------
 
-    // traj[k] holds the 20 points at time k * timeStep / 2; the columns are the trajectories.
-    const std::vector<Tensor> traj = sys.simulateRandom(R0, 20, timeStep / 2, tFinal, rng);
+    // traj[k] holds the 20 points at time k * time_step / 2; the columns are the trajectories.
+    const std::vector<Tensor> traj = sys.simulate_random(
+        {.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step / 2}, 20, rng);
 
     // The corners of the generator cube as start points, and their trajectories.
-    const Tensor corners = R0.randPoint(20, rng, "extreme");
-    const std::vector<Tensor> trajExtreme = sys.simulate(corners, timeStep / 2, tFinal);
+    const Tensor corners = R0.rand_point(20, rng, "extreme");
+    const std::vector<Tensor> traj_extreme = sys.simulate(
+        {.initial_state = corners, .t_final = t_final}, alg::Exact{.time_step = time_step / 2});
 
     // Verification ----------------------------------------------------------------------------
 
     // A point is in the reachable set of its step if d'x is at most the support function there.
     const Tensor d({-1.0, 0.5});
     bool inside = true;
-    for (std::size_t j = 0; j < trajExtreme.size(); ++j) {
-        const std::size_t step = std::min(j / 2, R.timeInt.size() - 1); // two points per step
-        const std::vector<double> along = d.transpose().matmul(trajExtreme[j]).data();
+    for (std::size_t j = 0; j < traj_extreme.size(); ++j) {
+        const std::size_t step = std::min(j / 2, R.time_interval.size() - 1); // two points per step
+        const std::vector<double> along = d.transpose().matmul(traj_extreme[j]).data();
         inside &= *std::max_element(along.begin(), along.end()) <=
-                  R.timeInt[step].supportFunc(d).data()[0] + 1e-9;
+                  R.time_interval[step].support_function(d).data()[0] + 1e-9;
     }
     std::cout << "time points: " << traj.size() << ", trajectories: " << traj[0].shape()[1] << "\n"
               << "trajectories from the corners stay in the reachable set: "

@@ -8,9 +8,10 @@
 // Syntax:   LinProgResult r = linprog(lp);
 // Inputs:   lp - the program: cost, inequality and equality constraints, bounds
 // Outputs:  r - status (Optimal, Infeasible, Unbounded), the minimizer x and the value fval
-// See also: contDynamics/linearSys/private/priv_verifyRA_zonotope.cpp
+// See also: contDynamics/linear_sys/private/priv_verify_ra_zonotope.cpp
 
-#include "global/linprog.h"
+#include "cora/global/linprog.h"
+#include "cora/global/error.h"
 
 #include <algorithm>
 #include <cmath>
@@ -86,23 +87,22 @@ int aux_simplex(
         if (enter < 0) return 0;
         // Ratio test; ties go to the larger pivot (Bland: the lowest basis index).
         int leave = -1;
-        double minRatio = kInf;
+        double min_ratio = kInf;
         for (int i = 0; i < m; ++i) {
             const double a = T[std::size_t(i) * W + enter];
             if (a <= kPivotTol) continue;
             const double ratio = std::max(T[std::size_t(i) * W + N], 0.0) / a;
-            if (leave < 0 || ratio < minRatio - 1e-12 * (1 + minRatio)) {
-                minRatio = ratio;
+            if (leave < 0 || ratio < min_ratio - 1e-12 * (1 + min_ratio)) {
+                min_ratio = ratio;
                 leave = i;
-            } else if (ratio <= minRatio + 1e-12 * (1 + minRatio) &&
-                       (bland ? basis[i] < basis[leave]
-                              : a > T[std::size_t(leave) * W + enter])) {
-                minRatio = std::min(ratio, minRatio);
+            } else if (ratio <= min_ratio + 1e-12 * (1 + min_ratio) &&
+                       (bland ? basis[i] < basis[leave] : a > T[std::size_t(leave) * W + enter])) {
+                min_ratio = std::min(ratio, min_ratio);
                 leave = i;
             }
         }
         if (leave < 0) return 1;
-        stall = minRatio < 1e-12 ? stall + 1 : 0;
+        stall = min_ratio < 1e-12 ? stall + 1 : 0;
         aux_pivot(T, m, W, leave, enter);
         basis[leave] = enter;
     }
@@ -112,21 +112,22 @@ int aux_simplex(
 // Standard form -----------------------------------------------------------------------------------
 
 /// The standard form of lp and the map of each original variable.
-Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
+Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
     const int n = lp.n;
-    const int mIneq = lp.Aineq.empty() ? 0 : static_cast<int>(lp.bineq.size());
-    const int mEq = lp.Aeq.empty() ? 0 : static_cast<int>(lp.beq.size());
+    const int m_ineq = lp.Aineq.empty() ? 0 : static_cast<int>(lp.bineq.size());
+    const int m_eq = lp.Aeq.empty() ? 0 : static_cast<int>(lp.beq.size());
     Standard s;
     map.assign(n, VarMap{});
     int cols = 0;
-    std::vector<std::pair<int, double>> boundRows;  // (column, upper bound of the shifted y)
+    std::vector<std::pair<int, double>> bound_rows; // (column, upper bound of the shifted y)
     for (int j = 0; j < n; ++j) {
         const double lo = lp.lb.empty() ? -kInf : lp.lb[j];
         const double hi = lp.ub.empty() ? kInf : lp.ub[j];
-        if (lo > hi) throw std::invalid_argument("linprog: a lower bound exceeds its upper bound");
+        if (lo > hi)
+            CORA_FAIL(Error::wrong_value, "linprog: a lower bound exceeds its upper bound");
         if (std::isfinite(lo)) {
             map[j] = {lo, cols, -1, 1.0, 0.0};
-            if (std::isfinite(hi)) boundRows.push_back({cols, hi - lo});
+            if (std::isfinite(hi)) bound_rows.push_back({cols, hi - lo});
             ++cols;
         } else if (std::isfinite(hi)) {
             map[j] = {hi, cols++, -1, -1.0, 0.0};
@@ -135,10 +136,10 @@ Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
             cols += 2;
         }
     }
-    const int nVar = cols;
-    s.m = mIneq + mEq + static_cast<int>(boundRows.size());
+    const int n_var = cols;
+    s.m = m_ineq + m_eq + static_cast<int>(bound_rows.size());
     // One slack per inequality and per bound row.
-    s.N = nVar + mIneq + static_cast<int>(boundRows.size());
+    s.N = n_var + m_ineq + static_cast<int>(bound_rows.size());
     s.M.assign(std::size_t(s.m) * s.N, 0.0);
     s.r.assign(s.m, 0.0);
     s.c.assign(s.N, 0.0);
@@ -148,7 +149,7 @@ Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
         if (map[j].c1 >= 0) s.c[map[j].c1] += fj * map[j].s1;
         if (map[j].c2 >= 0) s.c[map[j].c2] += fj * map[j].s2;
     }
-    auto fillRow = [&](int row, const double *a, double rhs) {
+    auto fill_row = [&](int row, const double *a, double rhs) {
         for (int j = 0; j < n; ++j) {
             if (map[j].c1 >= 0) s.M[std::size_t(row) * s.N + map[j].c1] += a[j] * map[j].s1;
             if (map[j].c2 >= 0) s.M[std::size_t(row) * s.N + map[j].c2] += a[j] * map[j].s2;
@@ -158,15 +159,15 @@ Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
     };
     // The rows: inequalities with a slack, equalities, then the upper bounds of shifted variables.
     int row = 0;
-    for (int i = 0; i < mIneq; ++i, ++row) {
-        fillRow(row, &lp.Aineq[std::size_t(i) * n], lp.bineq[i]);
-        s.M[std::size_t(row) * s.N + nVar + i] = 1.0;
+    for (int i = 0; i < m_ineq; ++i, ++row) {
+        fill_row(row, &lp.Aineq[std::size_t(i) * n], lp.bineq[i]);
+        s.M[std::size_t(row) * s.N + n_var + i] = 1.0;
     }
-    for (int i = 0; i < mEq; ++i, ++row) fillRow(row, &lp.Aeq[std::size_t(i) * n], lp.beq[i]);
-    for (std::size_t b = 0; b < boundRows.size(); ++b, ++row) {
-        s.M[std::size_t(row) * s.N + boundRows[b].first] = 1.0;
-        s.M[std::size_t(row) * s.N + nVar + mIneq + b] = 1.0;
-        s.r[row] = boundRows[b].second;
+    for (int i = 0; i < m_eq; ++i, ++row) fill_row(row, &lp.Aeq[std::size_t(i) * n], lp.beq[i]);
+    for (std::size_t b = 0; b < bound_rows.size(); ++b, ++row) {
+        s.M[std::size_t(row) * s.N + bound_rows[b].first] = 1.0;
+        s.M[std::size_t(row) * s.N + n_var + m_ineq + b] = 1.0;
+        s.r[row] = bound_rows[b].second;
     }
     // A row with a nonnegative right-hand side and its own slack starts with that slack basic.
     for (int i = 0; i < s.m; ++i) {
@@ -174,7 +175,7 @@ Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
             for (int j = 0; j < s.N; ++j) s.M[std::size_t(i) * s.N + j] *= -1;
             s.r[i] *= -1;
         }
-        for (int j = nVar; j < s.N; ++j)
+        for (int j = n_var; j < s.N; ++j)
             if (s.M[std::size_t(i) * s.N + j] == 1.0) {
                 bool unique = true;
                 for (int k = 0; k < s.m; ++k)
@@ -191,19 +192,20 @@ Standard aux_standardForm(const LinProg &lp, std::vector<VarMap> &map) {
 // ===========================================  MAIN  =========================================== //
 
 LinProgResult linprog(const LinProg &lp) {
-    if (lp.n <= 0) throw std::invalid_argument("linprog: the program needs at least one variable");
+    if (lp.n <= 0)
+        CORA_FAIL(Error::wrong_value, "linprog: the program needs at least one variable");
     std::vector<VarMap> map;
-    const Standard s = aux_standardForm(lp, map);
+    const Standard s = aux_standard_form(lp, map);
     LinProgResult result;
 
     // Tableau ---------------------------------------------------------------------------------
     // Tableau with one artificial column per row that has no basic slack, then the rhs.
-    int nArt = 0;
-    for (int i = 0; i < s.m; ++i) nArt += s.basis[i] < 0;
-    const int W = s.N + nArt + 1;
+    int n_art = 0;
+    for (int i = 0; i < s.m; ++i) n_art += s.basis[i] < 0;
+    const int W = s.N + n_art + 1;
     std::vector<double> T(std::size_t(std::max(s.m, 1)) * W, 0.0);
     std::vector<int> basis(s.m);
-    std::vector<double> phase1(s.N + nArt, 0.0);
+    std::vector<double> phase1(s.N + n_art, 0.0);
     int art = s.N;
     for (int i = 0; i < s.m; ++i) {
         for (int j = 0; j < s.N; ++j) T[std::size_t(i) * W + j] = s.M[std::size_t(i) * s.N + j];
@@ -220,10 +222,10 @@ LinProgResult linprog(const LinProg &lp) {
     for (int i = 0; i < s.m; ++i) aux_pivot(T, s.m, W, i, basis[i]);
 
     // Phase 1: drive the artificial variables to zero.
-    std::vector<char> all(s.N + nArt, 1);
-    if (nArt > 0) {
+    std::vector<char> all(s.N + n_art, 1);
+    if (n_art > 0) {
         if (aux_simplex(T, basis, s.m, W, phase1, all) == 2)
-            throw std::runtime_error("linprog: the simplex method did not finish (phase 1)");
+            CORA_FAIL(Error::special_error, "linprog: the simplex method did not finish (phase 1)");
         double infeasibility = 0, scale = 1;
         for (int i = 0; i < s.m; ++i) {
             if (basis[i] >= s.N) infeasibility += std::abs(T[std::size_t(i) * W + W - 1]);
@@ -244,20 +246,20 @@ LinProgResult linprog(const LinProg &lp) {
     }
 
     // Phase 2: the cost over the real columns only.
-    std::vector<double> cost(s.N + nArt, 0.0);
+    std::vector<double> cost(s.N + n_art, 0.0);
     std::copy(s.c.begin(), s.c.end(), cost.begin());
-    std::vector<char> real(s.N + nArt, 0);
+    std::vector<char> real(s.N + n_art, 0);
     std::fill(real.begin(), real.begin() + s.N, 1);
     const int status = aux_simplex(T, basis, s.m, W, cost, real);
     if (status == 2)
-        throw std::runtime_error("linprog: the simplex method did not finish (phase 2)");
+        CORA_FAIL(Error::special_error, "linprog: the simplex method did not finish (phase 2)");
     if (status == 1) {
-        result.status = LinProgResult::Status::Unbounded;
+        result.status = LinProgResult::Status::unbounded;
         return result;
     }
 
     // Back to the original variables.
-    std::vector<double> y(s.N + nArt, 0.0);
+    std::vector<double> y(s.N + n_art, 0.0);
     for (int i = 0; i < s.m; ++i) y[basis[i]] = std::max(T[std::size_t(i) * W + W - 1], 0.0);
     result.x.assign(lp.n, 0.0);
     result.fval = 0;
@@ -268,7 +270,7 @@ LinProgResult linprog(const LinProg &lp) {
         result.x[j] = v;
         if (!lp.f.empty()) result.fval += lp.f[j] * v;
     }
-    result.status = LinProgResult::Status::Optimal;
+    result.status = LinProgResult::Status::optimal;
     return result;
 }
 

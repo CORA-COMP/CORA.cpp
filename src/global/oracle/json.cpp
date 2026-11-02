@@ -2,7 +2,8 @@
 //
 // See also: lean/oracle.h
 
-#include "global/oracle/json.h"
+#include "cora/global/oracle/json.h"
+#include "cora/global/error.h"
 
 #include <cctype>
 #include <stdexcept>
@@ -15,7 +16,7 @@ namespace cora::lean {
 
 namespace {
 
-void aux_dumpString(const std::string &s, std::string &out) {
+void aux_dump_string(const std::string &s, std::string &out) {
     out += '"';
     for (const char ch : s) {
         if (ch == '"' || ch == '\\') out += '\\';
@@ -27,11 +28,11 @@ void aux_dumpString(const std::string &s, std::string &out) {
 
 void aux_dump(const Json &j, std::string &out) {
     switch (j.kind) {
-    case Json::Kind::Null: out += "null"; break;
-    case Json::Kind::Bool: out += j.boolean ? "true" : "false"; break;
-    case Json::Kind::Number: out += j.text; break;
-    case Json::Kind::String: aux_dumpString(j.text, out); break;
-    case Json::Kind::Array:
+    case Json::Kind::null: out += "null"; break;
+    case Json::Kind::boolean: out += j.boolean ? "true" : "false"; break;
+    case Json::Kind::number: out += j.text; break;
+    case Json::Kind::string: aux_dump_string(j.text, out); break;
+    case Json::Kind::array:
         // the items separated by commas
         out += '[';
         for (std::size_t i = 0; i < j.items.size(); ++i) {
@@ -40,12 +41,12 @@ void aux_dump(const Json &j, std::string &out) {
         }
         out += ']';
         break;
-    case Json::Kind::Object:
+    case Json::Kind::object:
         // the members as "key":value
         out += '{';
         for (std::size_t i = 0; i < j.members.size(); ++i) {
             if (i) out += ',';
-            aux_dumpString(j.members[i].first, out);
+            aux_dump_string(j.members[i].first, out);
             out += ':';
             aux_dump(j.members[i].second, out);
         }
@@ -59,8 +60,8 @@ struct Parser {
     std::size_t i = 0;
 
     [[noreturn]] void fail(const std::string &what) const {
-        throw std::runtime_error("lean: malformed JSON at offset " + std::to_string(i) +
-                                 ": " + what);
+        CORA_FAIL(Error::special_error,
+                  "lean: malformed JSON at offset " + std::to_string(i) + ": " + what);
     }
 
     void skip() {
@@ -128,7 +129,7 @@ struct Parser {
             ++i;
         if (i == start) fail("unexpected character");
         Json n;
-        n.kind = Json::Kind::Number;
+        n.kind = Json::Kind::number;
         n.text = s.substr(start, i - start);
         return n;
     }
@@ -149,7 +150,7 @@ const Json *Json::find(const std::string &key) const {
 
 const Json &Json::at(const std::string &key) const {
     const Json *j = find(key);
-    if (!j) throw std::runtime_error("lean: the response has no member '" + key + "'");
+    if (!j) CORA_FAIL(Error::special_error, "lean: the response has no member '" + key + "'");
     return *j;
 }
 

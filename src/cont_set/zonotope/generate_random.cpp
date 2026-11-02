@@ -1,0 +1,56 @@
+// generate_random - a random zonotope, as CORA's zonotope.generateRandom
+//
+// Syntax:   Zonotope Z = Zonotope::generate_random(n, m, rng);
+// Inputs:   n - dimension; m - number of generators; rng - random numbers (seedable)
+// Outputs:  Z - center 10*randn, m generators of uniformly random direction, length ~ U[0, 1]
+// See also: Interval::generate_random
+//
+// CORA: contSet/@zonotope/generateRandom.m
+
+#include "cora/cont_set/zonotope/zonotope.h"
+
+#include "cora/global/rng.h"
+
+#include <cmath>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// n x m generators (row-major): Gaussian columns scaled to a length ~ U[0, 1].
+std::vector<double> aux_generators(int64_t n, int64_t m, Rng &rng) {
+    std::vector<double> G(n * m), length(m);
+    rng.normal(G.data(), G.size(), 1.0);
+    rng.uniform(length.data(), length.size(), 0.0, 1.0);
+    for (int64_t j = 0; j < m; ++j) {
+        double norm = 0.0;
+        for (int64_t i = 0; i < n; ++i) norm += G[i * m + j] * G[i * m + j];
+        norm = std::sqrt(norm);
+        for (int64_t i = 0; i < n; ++i) G[i * m + j] *= length[j] / norm;
+    }
+    return G;
+}
+
+} // namespace
+
+
+// ===========================================  MAIN  =========================================== //
+
+Zonotope Zonotope::generate_random(int64_t n, int64_t m, Rng &rng) {
+    detail::Entry entry;
+    CORA_CHECK(n >= 1 && m >= 0, Error::wrong_value, [&] {
+        return "generate_random: needs a dimension n >= 1 and m >= 0 generators, got n = " +
+               std::to_string(n) + ", m = " + std::to_string(m);
+    });
+    std::vector<double> c(n);
+    rng.normal(c.data(), c.size(), 10.0);
+    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(aux_generators(n, m, rng), {n, m})};
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
