@@ -1,4 +1,4 @@
-// test_interval_supportFunc - interval support_function: the best corner of the box
+// test_interval_support_function - interval support_function: the best corner of the box
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -30,9 +30,21 @@ void support_function_matches_the_corners(const std::string &b) {
     }
 }
 
+/// A direction of the wrong dimension is refused; with the checks off the value is the same.
+void checks_and_their_switch() {
+    const Interval Z = Interval(test::column({0, -1}), test::column({1, 1}));
+    check(test::raises([&] { Z.support_function(test::column({1, 0, 0})); },
+                       Error::dimension_mismatch),
+          "support_function: a direction of the wrong dimension");
+    const double on = test::support(Z, {1, 0});
+    ChecksScope off(false);
+    check(test::close(test::support(Z, {1, 0}), on, 0), "support_function: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) { support_function_matches_the_corners(b); });
+    checks_and_their_switch();
     return test::finish("interval support_function");
 }

@@ -1,4 +1,4 @@
-// test_nonlinearSys_simulate - nonlinearSys simulate: exact on a linear system, and its limits
+// test_nonlinear_sys_simulate - nonlinearSys simulate: exact on a linear system, and its limits
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "testing.h"
@@ -13,7 +13,9 @@ namespace {
 /// The harmonic oscillator x' = (x2, -x1) has the solution (cos t, -sin t) from (1, 0).
 void follows_the_harmonic_oscillator(const std::string &b) {
     const NonlinearSys sys([](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
-    const std::vector<Tensor> x = sys.simulate({.initial_state = Tensor({{1.0, 0.0}, {0.0, 1.0}}), .t_final = 2.0}, alg::RungeKutta4{.time_step = 0.1});
+    const std::vector<Tensor> x =
+        sys.simulate({.initial_state = Tensor({{1.0, 0.0}, {0.0, 1.0}}), .t_final = 2.0},
+                     alg::RungeKutta4{.time_step = 0.1});
     check(x.size() == 21, b + ": ceil(2.0 / 0.1) + 1 time points");
     double worst = 0;
     for (std::size_t k = 0; k < x.size(); ++k) {
@@ -32,7 +34,9 @@ void van_der_pol_stays_on_its_limit_cycle(const std::string &b) {
             return std::vector<Expr>{x[1], (1 - x[0] * x[0]) * x[1] - x[0]};
         },
         2);
-    const std::vector<Tensor> x = sys.simulate({.initial_state = Tensor({{1.4}, {2.3}}), .t_final = 20.0}, alg::RungeKutta4{.time_step = 0.05});
+    const std::vector<Tensor> x =
+        sys.simulate({.initial_state = Tensor({{1.4}, {2.3}}), .t_final = 20.0},
+                     alg::RungeKutta4{.time_step = 0.05});
     double amplitude = 0;
     for (std::size_t k = x.size() / 2; k < x.size(); ++k)
         amplitude = std::max(amplitude, std::abs(x[k].data()[0]));
@@ -41,15 +45,44 @@ void van_der_pol_stays_on_its_limit_cycle(const std::string &b) {
 
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinearSys sys([](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
-    check(test::throws([&] { sys.simulate({.initial_state = Tensor({1.0, 0.0, 1.0}), .t_final = 1.0}, alg::RungeKutta4{.time_step = 0.1}); }),
+    check(test::throws([&] {
+              sys.simulate({.initial_state = Tensor({1.0, 0.0, 1.0}), .t_final = 1.0},
+                           alg::RungeKutta4{.time_step = 0.1});
+          }),
           b + ": a start point of the wrong dimension");
-    check(test::throws([&] { sys.simulate({.initial_state = Tensor({1.0, 0.0}), .t_final = 1.0}, alg::RungeKutta4{.time_step = 0.0}); }), b + ": time step 0");
+    check(test::throws([&] {
+              sys.simulate({.initial_state = Tensor({1.0, 0.0}), .t_final = 1.0},
+                           alg::RungeKutta4{.time_step = 0.0});
+          }),
+          b + ": time step 0");
     check(test::throws([] { NonlinearSys([](const std::vector<Expr> &x) { return x; }, 0); }),
           "no states");
     check(test::throws([] {
               NonlinearSys([](const std::vector<Expr> &x) { return std::vector<Expr>{x[0]}; }, 2);
           }),
           "too few components");
+}
+
+/// An input is refused (no inputs); with the checks off the trajectory is the same.
+void checks_and_their_switch() {
+    const NonlinearSys sys = NonlinearSys(
+        [](const std::vector<Expr> &x) {
+            { return std::vector<Expr>{{x[1], -x[0]}}; }
+        },
+        2);
+    const Tensor x0({{1.0}, {0.0}});
+    check(test::raises(
+              [&] {
+                  sys.simulate({.initial_state = x0, .input = x0, .t_final = 1},
+                               alg::RungeKutta4{.time_step = 0.1});
+              },
+              Error::not_supported),
+          "simulate: an input");
+    const SimulationProblem problem{.initial_state = x0, .t_final = 1};
+    const Tensor on = sys.simulate(problem, alg::RungeKutta4{.time_step = 0.1}).back();
+    ChecksScope off(false);
+    check(test::close(sys.simulate(problem, alg::RungeKutta4{.time_step = 0.1}).back(), on, 0),
+          "simulate: the same with the checks off");
 }
 
 } // namespace
@@ -60,5 +93,6 @@ int main() {
         van_der_pol_stays_on_its_limit_cycle(b);
         wrong_arguments_are_described(b);
     });
+    checks_and_their_switch();
     return test::finish("nonlinearSys simulate");
 }

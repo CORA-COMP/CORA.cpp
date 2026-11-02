@@ -8,7 +8,9 @@
 //
 // Syntax:     Specification spec = Specification::safe_set(a, b);   spec.check(R.time_interval);
 // Operations: check, holds (check.cpp); safe_set, unsafe_set (specification.cpp)
-// See also:   cora/cont_set/cont_set.h, contDynamics/linear_sys/linear_sys.h
+// See also:   cora/cont_set/cont_set.h, cora/cont_dynamics/linear_sys/linear_sys.h
+//
+// CORA: specification/@specification/specification.m
 
 #pragma once
 
@@ -39,7 +41,9 @@ class Specification {
         return unsafe_set(std::vector<Halfspace>{halfspace});
     }
     static Specification unsafe_set(std::vector<Halfspace> halfspaces);
-    static Specification unsafe_set(const Tensor &a, double b) { return unsafe_set(Halfspace{a, b}); }
+    static Specification unsafe_set(const Tensor &a, double b) {
+        return unsafe_set(Halfspace{a, b});
+    }
 
     SpecType type() const { return type_; }
     const std::vector<Halfspace> &halfspaces() const { return halfspaces_; }

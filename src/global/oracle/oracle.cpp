@@ -27,6 +27,8 @@ namespace cora::lean {
 
 namespace {
 
+// Dtypes ------------------------------------------------------------------------------------------
+
 /// The process default dtype (guarded by its mutex) and this thread's scope (null: the default).
 std::mutex default_mutex;
 std::string default_dtype = "binary64";
@@ -43,7 +45,8 @@ bool aux_known(const std::string &spec) {
 
 /// The message of an unknown dtype.
 std::string aux_unknown(const std::string &spec) {
-    return "lean: unknown dtype '" + spec + "'; use 'binary64', 'ieee:<format>', 'dyadic:<p>', "
+    return "lean: unknown dtype '" + spec +
+           "'; use 'binary64', 'ieee:<format>', 'dyadic:<p>', "
            "'fixedpoint:<f>', 'float' or 'nearest'";
 }
 
@@ -65,9 +68,12 @@ const char *aux_command(int which) {
     const char *name = which ? "CORACPP_ORACLE_UNSOUND" : "CORACPP_ORACLE";
     const char *command = std::getenv(name);
     if (!command || !*command)
-        CORA_FAIL(Error::special_error, std::string("lean: set ") + name + " to the command that starts "
-                                 "the CORALean " + (which ? "unsound " : "") + "oracle, e.g. "
-                                 "'cd CORALean && lake exe oracle'");
+        CORA_FAIL(Error::special_error, std::string("lean: set ") + name +
+                                            " to the command that starts "
+                                            "the CORALean " +
+                                            (which ? "unsound " : "") +
+                                            "oracle, e.g. "
+                                            "'cd CORALean && lake exe oracle'");
     return command;
 }
 
@@ -97,8 +103,8 @@ void aux_start(Process &oracle, int which) {
     // CreateProcess edits the command line in place, so it gets a mutable copy
     PROCESS_INFORMATION info{};
     std::string mutable_command = command;
-    if (!CreateProcessA(nullptr, mutable_command.data(), nullptr, nullptr, TRUE, 0, nullptr, nullptr,
-                        &startup, &info))
+    if (!CreateProcessA(nullptr, mutable_command.data(), nullptr, nullptr, TRUE, 0, nullptr,
+                        nullptr, &startup, &info))
         CORA_FAIL(Error::special_error, "lean: cannot start the oracle process: " + command);
     CloseHandle(child_in);
     CloseHandle(child_out);
@@ -106,8 +112,8 @@ void aux_start(Process &oracle, int which) {
     // the parent talks to the child through C streams on its ends of the pipes
     oracle.handle = info.hProcess;
     oracle.out = _fdopen(_open_osfhandle(reinterpret_cast<intptr_t>(parent_out), _O_BINARY), "wb");
-    oracle.in = _fdopen(_open_osfhandle(reinterpret_cast<intptr_t>(parent_in),
-                                        _O_RDONLY | _O_BINARY), "rb");
+    oracle.in = _fdopen(
+        _open_osfhandle(reinterpret_cast<intptr_t>(parent_in), _O_RDONLY | _O_BINARY), "rb");
     oracle.running = true;
 }
 
@@ -122,7 +128,8 @@ void aux_wait(Process &oracle) {
 void aux_start(Process &oracle, int which) {
     const char *command = aux_command(which);
     int to_child[2], from_child[2];
-    if (pipe(to_child) || pipe(from_child)) CORA_FAIL(Error::special_error, "lean: cannot create pipes");
+    if (pipe(to_child) || pipe(from_child))
+        CORA_FAIL(Error::special_error, "lean: cannot create pipes");
     oracle.pid = fork();
     if (oracle.pid < 0) CORA_FAIL(Error::special_error, "lean: cannot start the oracle process");
     if (oracle.pid == 0) {

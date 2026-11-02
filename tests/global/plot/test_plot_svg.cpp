@@ -30,7 +30,9 @@ bool has(const std::string &text, const std::string &what) {
 Zonotope initial_set() { return Zonotope(test::column({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})); }
 
 ReachSet oscillator() {
-    return LinearSys(Tensor({{-0.1, 1}, {-1, -0.1}})).reach({.initial_set = initial_set(), .t_final = 2.0}, alg::Standard{.time_step = 0.1, .taylor_terms = 6});
+    return LinearSys(Tensor({{-0.1, 1}, {-1, -0.1}}))
+        .reach({.initial_set = initial_set(), .t_final = 2.0},
+               alg::Standard{.time_step = 0.1, .taylor_terms = 6});
 }
 
 // A set takes the next color of CORA's order, filled: blue, red, yellow, ...
@@ -46,7 +48,7 @@ void sets_take_the_colors_of_cora_in_turn(const std::string &b) {
     check(layers.size() == 3 && layers[1].face.hex() == cora_color("CORA:red").hex() &&
               layers[2].face.hex() == cora_color("CORA:yellow").hex(),
           b + ": then red, then yellow");
-    for (int i = 0; i < 6; ++i) plot(initial_set());  // the ninth set
+    for (int i = 0; i < 6; ++i) plot(initial_set()); // the ninth set
     check(figure().layers().back().face.hex() == cora_color("CORA:red").hex(),
           b + ": the ninth set is red again: the order repeats after seven colors");
     figure().clear();
@@ -188,14 +190,17 @@ void a_specification_is_shaded_up_to_the_limits(const std::string &b) {
     figure().clear();
     plot(initial_set(), {0, 1});
     plot(Specification::safe_set(test::column({1, 0}), 1.05), {0, 1});
-    check(has(figure().svg(), cora_color("CORA:unsafe").hex()), b + ": a safe set shades the outside");
+    check(has(figure().svg(), cora_color("CORA:unsafe").hex()),
+          b + ": a safe set shades the outside");
 }
 
 void trajectories_and_points(const std::string &b) {
     figure().clear();
     const LinearSys sys(Tensor({{-0.1, 1}, {-1, -0.1}}));
     cora::Rng rng(1);
-    plot(sys.simulate_random({.initial_set = initial_set(), .t_final = 1.0}, alg::Exact{.time_step = 0.1}, 3, rng), {0, 1}, {.label = "simulations"});
+    plot(sys.simulate_random({.initial_set = initial_set(), .t_final = 1.0},
+                             alg::Exact{.time_step = 0.1}, 3, rng),
+         {0, 1}, {.label = "simulations"});
     plot(initial_set().rand_point(5, rng), {0, 1});
     const std::string svg = figure().svg();
     check(count(svg, "<circle") == 5, b + ": only the points are dots, trajectories have no markers");

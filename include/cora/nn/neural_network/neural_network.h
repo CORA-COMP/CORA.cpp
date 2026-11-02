@@ -1,4 +1,4 @@
-// neuralNetwork - a feed-forward network of affine layers and ReLUs, evaluated on points and sets
+// neural_network - a feed-forward network of affine layers and ReLUs, evaluated on points and sets
 //
 // Layer k maps h -> W_k h + b_k; every layer but the last is followed by max(., 0). A set that
 // goes through the network comes out as a zonotope that contains the outputs of all its points:
@@ -9,6 +9,8 @@
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 // Operations: evaluate (one file)
 // See also:   cora/cont_set/zonotope/zonotope.h
+//
+// CORA: nn/@neuralNetwork/neuralNetwork.m
 
 #pragma once
 

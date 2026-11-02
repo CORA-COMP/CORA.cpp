@@ -1,4 +1,4 @@
-// priv_verifyTime - time intervals where a specification is not yet verified, as CORA's verifyTime
+// priv_verify_time - time intervals where a specification is not yet verified, as CORA's verifyTime
 //
 // The methods of VerifyTime: queries on a sorted sequence of disjoint time intervals, and the
 // removal of a verified interval.

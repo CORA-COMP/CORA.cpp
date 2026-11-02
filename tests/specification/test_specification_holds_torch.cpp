@@ -1,8 +1,8 @@
 // test_specification_holds_torch - specifications over a batch of sets: one answer per member.
 
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "cora/specification/specification.h"
 #include "cora/global/backend/torch.h"
+#include "cora/specification/specification.h"
 #include "testing.h"
 
 using namespace cora;

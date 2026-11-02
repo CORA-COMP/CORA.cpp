@@ -1,9 +1,9 @@
-// test_linearSys_batch_torch - automatic batching ("vmap"): linear_sys is written for one set and
+// test_linear_sys_batch_torch - automatic batching ("vmap"): linear_sys is written for one set and
 // one system, and one call over a batch of sets, of systems, or of both equals one call per member.
 
+#include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/backend/torch.h"
-#include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "testing.h"
 
 using namespace cora;
@@ -23,19 +23,24 @@ Zonotope make_set(const torch::Tensor &c, const torch::Tensor &G) {
     return {from_torch(c.unsqueeze(-1)), from_torch(G)};
 }
 
-ReachSet run(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G, const std::string &a) {
-    return LinearSys(from_torch(A)).reach({.initial_set = make_set(c, G), .t_final = 1.0}, test::lin::algorithm(a, 0.1, 8));
+ReachSet run(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
+             const std::string &a) {
+    return LinearSys(from_torch(A))
+        .reach({.initial_set = make_set(c, G), .t_final = 1.0}, test::lin::algorithm(a, 0.1, 8));
 }
 
 /// Whether member `b` of `batched` is `single`, for every step, centre and generators.
 bool member_is(const ReachSet &batched, int64_t b, const ReachSet &single) {
     for (std::size_t k = 0; k < single.time_interval.size(); ++k) {
-        if (max_diff(to_torch(batched.time_interval[k].center())[b], to_torch(single.time_interval[k].center())) > 1e-12 ||
-            max_diff(to_torch(batched.time_interval[k].generators())[b], to_torch(single.time_interval[k].generators())) > 1e-12)
+        if (max_diff(to_torch(batched.time_interval[k].center())[b],
+                     to_torch(single.time_interval[k].center())) > 1e-12 ||
+            max_diff(to_torch(batched.time_interval[k].generators())[b],
+                     to_torch(single.time_interval[k].generators())) > 1e-12)
             return false;
     }
     for (std::size_t k = 0; k < single.time_point.size(); ++k)
-        if (max_diff(to_torch(batched.time_point[k].generators())[b], to_torch(single.time_point[k].generators())) > 1e-12)
+        if (max_diff(to_torch(batched.time_point[k].generators())[b],
+                     to_torch(single.time_point[k].generators())) > 1e-12)
             return false;
     return true;
 }
@@ -66,9 +71,10 @@ void batches(const torch::TensorOptions &opts, const std::string &where) {
 void shapes(const torch::TensorOptions &opts, const std::string &where) {
     const int64_t n = 2, m = 3;
     const torch::Tensor A = torch::randn({n, n}, opts) * 0.5;
-    const ReachSet grid = run(A, torch::randn({2, 3, n}, opts), torch::randn({2, 3, n, m}, opts),
-                           "standard");
-    check(to_torch(grid.time_interval[0].center()).sizes().vec() == std::vector<int64_t>({2, 3, n, 1}),
+    const ReachSet grid =
+        run(A, torch::randn({2, 3, n}, opts), torch::randn({2, 3, n, m}, opts), "standard");
+    check(to_torch(grid.time_interval[0].center()).sizes().vec() ==
+              std::vector<int64_t>({2, 3, n, 1}),
           where + ": two batch dimensions");
     const ReachSet one =
         run(A, torch::randn({1, n}, opts), torch::randn({1, n, m}, opts), "standard");

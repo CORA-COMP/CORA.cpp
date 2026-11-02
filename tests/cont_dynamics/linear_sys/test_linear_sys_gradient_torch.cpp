@@ -1,11 +1,11 @@
-// test_linearSys_gradient_torch - gradients through the whole reachability computation, with
+// test_linear_sys_gradient_torch - gradients through the whole reachability computation, with
 // autograd and with the hand-written backward pass of the matrix exponential, against central
 // differences.
 
-#include "cora/cont_dynamics/linear_sys/linear_sys.h"
-#include "cora/specification/specification.h"
-#include "cora/global/backend/torch.h"
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/backend/torch.h"
+#include "cora/specification/specification.h"
 #include "testing.h"
 
 using namespace cora;
@@ -24,10 +24,13 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 torch::Tensor loss(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
                    const std::string &algorithm, bool custom_backward, const torch::Tensor &d) {
     const Zonotope X0(from_torch(c.unsqueeze(-1), custom_backward), from_torch(G, custom_backward));
-    const ReachSet r = LinearSys(from_torch(A, custom_backward)).reach({.initial_set = X0, .t_final = 1.0}, test::lin::algorithm(algorithm, 0.1, 6));
+    const ReachSet r =
+        LinearSys(from_torch(A, custom_backward))
+            .reach({.initial_set = X0, .t_final = 1.0}, test::lin::algorithm(algorithm, 0.1, 6));
     const Tensor direction = from_torch(d.unsqueeze(-1), custom_backward);
     torch::Tensor total = torch::zeros({}, A.options());
-    for (const Zonotope &Z : r.time_interval) total = total + to_torch(Z.support_function(direction)).sum();
+    for (const Zonotope &Z : r.time_interval)
+        total = total + to_torch(Z.support_function(direction)).sum();
     return total;
 }
 
@@ -80,7 +83,9 @@ void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts,
     auto margin = [&](const torch::Tensor &A) {
         const Zonotope X0(from_torch(torch::tensor({{1.0}, {0.5}}, opts)),
                           from_torch(torch::tensor({{0.1, 0.0}, {0.0, 0.2}}, opts)));
-        const ReachSet r = LinearSys(from_torch(A)).reach({.initial_set = X0, .t_final = 0.5}, alg::Standard{.time_step = 0.1, .taylor_terms = 8});
+        const ReachSet r = LinearSys(from_torch(A))
+                               .reach({.initial_set = X0, .t_final = 0.5},
+                                      alg::Standard{.time_step = 0.1, .taylor_terms = 8});
         // Distance of the last enclosure to the wall x1 <= 2.
         return wall.b - to_torch(r.time_interval.back().support_function(wall.a)).sum();
     };

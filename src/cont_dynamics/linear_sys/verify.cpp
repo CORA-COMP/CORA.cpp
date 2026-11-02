@@ -48,11 +48,13 @@ bool aux_normal_ok(const Halfspace &h, int64_t p) {
 VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Specification> &specs,
                                const alg::LinearVerify &alg) const {
     detail::Entry entry;
+    // one system, one initial set and one input set of the right dimensions
     const int64_t n = dim();
     CORA_CHECK(A_.shape().size() == 2, Error::not_supported,
                [] { return std::string("verify: takes a single system, not a batch"); });
-    CORA_CHECK(problem.initial_set.has_value() && problem.input_set.has_value(), Error::wrong_value,
-               [] { return std::string("verify: the problem needs an initial_set and an input_set"); });
+    CORA_CHECK(
+        problem.initial_set.has_value() && problem.input_set.has_value(), Error::wrong_value,
+        [] { return std::string("verify: the problem needs an initial_set and an input_set"); });
     const Zonotope &R0 = *problem.initial_set, &U = *problem.input_set;
     CORA_CHECK(R0.center().shape() == std::vector<int64_t>({n, 1}) &&
                    R0.generators().shape().size() == 2,
@@ -61,8 +63,10 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
                           std::to_string(n) + ", got the center " + shape_text(R0.center().shape());
                });
     CORA_CHECK(problem.t_final > 0 && std::isfinite(problem.t_final), Error::wrong_value, [&] {
-        return "verify: t_final must be positive and finite, got " + std::to_string(problem.t_final);
+        return "verify: t_final must be positive and finite, got " +
+               std::to_string(problem.t_final);
     });
+    // the input set: of the columns of B, and zero without B
     const int64_t m = B_ ? B_->shape()[1] : U.dim();
     CORA_CHECK(U.center().shape() == std::vector<int64_t>({m, 1}) &&
                    U.generators().shape().size() == 2,
@@ -71,8 +75,9 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
                           std::to_string(m) + " of the columns of B, got the center " +
                           shape_text(U.center().shape());
                });
-    CORA_CHECK(B_ || (aux_all_zero(U.center()) && aux_all_zero(U.generators())), Error::wrong_value,
-               [] { return std::string("verify: a nonzero input set needs B; use LinearSys(A, B)"); });
+    CORA_CHECK(
+        B_ || (aux_all_zero(U.center()) && aux_all_zero(U.generators())), Error::wrong_value,
+        [] { return std::string("verify: a nonzero input set needs B; use LinearSys(A, B)"); });
     CORA_CHECK(!specs.empty(), Error::wrong_value,
                [] { return std::string("verify: give at least one specification"); });
     const int64_t p = C_ ? C_->shape()[0] : n;
@@ -80,9 +85,10 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
         for (const Halfspace &h : spec.halfspaces())
             CORA_CHECK(aux_normal_ok(h, p), Error::wrong_value, [&] {
                 return "verify: a halfspace normal must be a nonzero column of the output "
-                       "dimension " + std::to_string(p) + ", got the shape " +
-                       shape_text(h.a.shape());
+                       "dimension " +
+                       std::to_string(p) + ", got the shape " + shape_text(h.a.shape());
             });
+    // the support function algorithm decides unsafe sets of one halfspace only
     if (std::holds_alternative<alg::ReachAvoidSupportFunction>(alg))
         for (const Specification &spec : specs)
             CORA_CHECK(spec.type() != SpecType::unsafe_set || spec.halfspaces().size() == 1,

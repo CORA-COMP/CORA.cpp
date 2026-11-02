@@ -16,7 +16,8 @@ void basics(const std::string &b) {
     check(I.dim() == 3, b + ": dim");
     check(close(I.center(), std::vector<double>{1.0, 0.25, 2.0}), b + ": center");
     check(close(I.rad(), std::vector<double>{2.0, 0.25, 0.0}), b + ": radius");
-    check(close(I.interval().inf(), I.inf()) && close(I.interval().sup(), I.sup()), b + ": its own hull");
+    check(close(I.interval().inf(), I.inf()) && close(I.interval().sup(), I.sup()),
+          b + ": its own hull");
 }
 
 /// As in CORA an interval can hold matrices; centre and radius are then elementwise.

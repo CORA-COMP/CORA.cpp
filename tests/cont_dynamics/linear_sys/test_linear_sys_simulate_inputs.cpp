@@ -1,4 +1,4 @@
-// test_linearSys_simulate_inputs - linear_sys simulate and simulate_random with constant inputs:
+// test_linear_sys_simulate_inputs - linear_sys simulate and simulate_random with constant inputs:
 // exact against the closed form, one input per trajectory, and the errors
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -24,7 +24,9 @@ void follows_the_closed_form(const std::string &b) {
     u << 0.4, -1, 0, 2, -0.2, 0.5, 1, 0;
     const double dt = 0.15;
     const std::vector<Tensor> x =
-        LinearSys(tensor_of(A), tensor_of(B)).simulate({.initial_state = tensor_of(x0), .input = tensor_of(u), .t_final = 1.0}, alg::Exact{.time_step = dt});
+        LinearSys(tensor_of(A), tensor_of(B))
+            .simulate({.initial_state = tensor_of(x0), .input = tensor_of(u), .t_final = 1.0},
+                      alg::Exact{.time_step = dt});
 
     check(x.size() == 8, b + ": ceil(1.0 / 0.15) + 1 time points");
     check(close(x[0], tensor_of(x0)), b + ": the start is the start");
@@ -40,7 +42,9 @@ void follows_the_closed_form(const std::string &b) {
 /// x' = -x + u from 0 with u = 1 is 1 - e^{-t}; a single input column serves every trajectory.
 void one_input_serves_all_trajectories(const std::string &b) {
     const LinearSys sys(Tensor({{-1.0}}), Tensor({{1.0}}));
-    const std::vector<Tensor> x = sys.simulate({.initial_state = Tensor({{0.0, 0.0, 0.0}}), .input = Tensor({{1.0}}), .t_final = 2.0}, alg::Exact{.time_step = 0.5});
+    const std::vector<Tensor> x = sys.simulate(
+        {.initial_state = Tensor({{0.0, 0.0, 0.0}}), .input = Tensor({{1.0}}), .t_final = 2.0},
+        alg::Exact{.time_step = 0.5});
     for (std::size_t k = 0; k < x.size(); ++k)
         check(close(x[k], std::vector<double>(3, 1 - std::exp(-0.5 * double(k))), 1e-12),
               b + ": 1 - e^{-t} at step " + std::to_string(k));
@@ -55,10 +59,14 @@ void random_inputs_come_from_the_set(const std::string &b) {
     const Zonotope U(test::column({0.5, -0.5}), 0.2 * Tensor::eye(2));
 
     cora::Rng rng(3), same(3);
-    const std::vector<Tensor> x = sys.simulate_random({.initial_set = X0, .input_set = U, .t_final = 0.5}, alg::Exact{.time_step = 0.1}, 7, rng);
+    const std::vector<Tensor> x = sys.simulate_random(
+        {.initial_set = X0, .input_set = U, .t_final = 0.5}, alg::Exact{.time_step = 0.1}, 7, rng);
     const Tensor x0 = X0.rand_point(7, same);
-    const std::vector<Tensor> y = sys.simulate({.initial_state = x0, .input = U.rand_point(7, same), .t_final = 0.5}, alg::Exact{.time_step = 0.1});
-    check(x.size() == y.size() && close(x.back(), y.back(), 1e-14), b + ": simulate_random with inputs");
+    const std::vector<Tensor> y =
+        sys.simulate({.initial_state = x0, .input = U.rand_point(7, same), .t_final = 0.5},
+                     alg::Exact{.time_step = 0.1});
+    check(x.size() == y.size() && close(x.back(), y.back(), 1e-14),
+          b + ": simulate_random with inputs");
     check(x[0].shape() == std::vector<int64_t>({3, 7}), b + ": one trajectory per point");
 }
 
@@ -66,9 +74,17 @@ void reports_errors(const std::string &b) {
     const Tensor A = tensor_of(oscillator3());
     const Tensor B = Tensor::from_data({1, 0, 0.5, -1, 0, 0.3}, {3, 2});
     const Tensor x0 = Tensor::zeros({3, 4});
-    check(throws([&] { LinearSys(A).simulate({.initial_state = x0, .input = Tensor::zeros({2, 4}), .t_final = 0.5}, alg::Exact{.time_step = 0.1}); }),
+    check(throws([&] {
+              LinearSys(A).simulate(
+                  {.initial_state = x0, .input = Tensor::zeros({2, 4}), .t_final = 0.5},
+                  alg::Exact{.time_step = 0.1});
+          }),
           b + ": inputs without B are refused");
-    check(throws([&] { LinearSys(A, B).simulate({.initial_state = x0, .input = Tensor::zeros({2, 3}), .t_final = 0.5}, alg::Exact{.time_step = 0.1}); }),
+    check(throws([&] {
+              LinearSys(A, B).simulate(
+                  {.initial_state = x0, .input = Tensor::zeros({2, 3}), .t_final = 0.5},
+                  alg::Exact{.time_step = 0.1});
+          }),
           b + ": one input per trajectory, or one for all");
 }
 

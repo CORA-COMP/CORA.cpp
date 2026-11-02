@@ -30,6 +30,14 @@ void an_interval_matrix_shows_both_bounds(const std::string &b) {
           b + ": both bound matrices");
 }
 
+/// display takes no input to check; with the checks off the text is the same.
+void checks_and_their_switch() {
+    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const std::string on = S.display();
+    ChecksScope off(false);
+    check(S.display() == on, "display: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -37,5 +45,6 @@ int main() {
         a_box_lists_its_bounds_per_dimension(b);
         an_interval_matrix_shows_both_bounds(b);
     });
+    checks_and_their_switch();
     return test::finish("interval display");
 }

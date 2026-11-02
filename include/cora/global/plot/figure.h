@@ -34,7 +34,7 @@ class Figure {
             polygons; // Polygons: the polygons; Polyline and Points: one, the points
         Color edge, face;
         bool filled = false, unify = true, dashed = false;
-        double face_alpha = 1;  // the opacity of the fill; the outline is opaque
+        double face_alpha = 1; // the opacity of the fill; the outline is opaque
         double line_width = 1, radius = 2, sign = 1, b = 0;
         Point a = {0, 0};
         std::string label = "";
@@ -53,19 +53,19 @@ class Figure {
     /// Polygons: with `face` set they are filled, and (`unify`) drawn as their union, so that
     /// overlaps neither darken nor show inner edges; the outline follows the union's boundary.
     Layer &add_polygons(std::vector<Polygon> polygons, Color edge, std::optional<Color> face,
-                       double line_width, const std::string &label, bool unify = true);
+                        double line_width, const std::string &label, bool unify = true);
 
     /// A line through the points.
     Layer &add_polyline(std::vector<Point> points, Color color, double line_width,
-                       const std::string &label);
+                        const std::string &label);
 
     /// Dots at the points.
     Layer &add_points(std::vector<Point> points, Color color, double radius,
-                     const std::string &label);
+                      const std::string &label);
 
     /// The region {x | sign * (a'x - b) >= 0}, shaded up to the limits of the figure.
     Layer &add_region(Point a, double b, double sign, Color edge, Color face,
-                     const std::string &label);
+                      const std::string &label);
 
     /// The `k`-th color of CORA's order, k = 1, 2, ...: each call gives the next one, so
     /// successive plots differ (blue, red, yellow, ...). clear() starts again with the first.

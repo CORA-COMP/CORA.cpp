@@ -1,4 +1,4 @@
-// test_linearSys_simulate - linear_sys simulate: exact against the matrix exponential, and inside
+// test_linear_sys_simulate - linear_sys simulate: exact against the matrix exponential, and inside
 // the reachable sets
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -21,7 +21,9 @@ void follows_the_matrix_exponential(const std::string &b) {
     Eigen::MatrixXd x0(3, 4);
     x0 << 1, 0, -1, 0.5, 0, 1, 0.2, -0.5, 0.3, -0.2, 1, 0;
     const double dt = 0.15;
-    const std::vector<Tensor> x = LinearSys(tensor_of(A)).simulate({.initial_state = tensor_of(x0), .t_final = 1.0}, alg::Exact{.time_step = dt});
+    const std::vector<Tensor> x = LinearSys(tensor_of(A))
+                                      .simulate({.initial_state = tensor_of(x0), .t_final = 1.0},
+                                                alg::Exact{.time_step = dt});
 
     check(x.size() == 8, b + ": ceil(1.0 / 0.15) + 1 time points");
     check(close(x[0], tensor_of(x0)), b + ": the start is the start");
@@ -35,7 +37,8 @@ void follows_the_matrix_exponential(const std::string &b) {
 /// A stable linear system contracts: the norm of every trajectory falls.
 void a_stable_system_decays(const std::string &b) {
     const Tensor A({{-1.0, 0.0}, {0.0, -2.0}});
-    const std::vector<Tensor> x = LinearSys(A).simulate({.initial_state = Tensor({{1.0}, {1.0}}), .t_final = 3.0}, alg::Exact{.time_step = 0.1});
+    const std::vector<Tensor> x = LinearSys(A).simulate(
+        {.initial_state = Tensor({{1.0}, {1.0}}), .t_final = 3.0}, alg::Exact{.time_step = 0.1});
     const Eigen::MatrixXd last = host_of(x.back());
     check(std::abs(last(0, 0) - std::exp(-3.0)) < 1e-12 &&
               std::abs(last(1, 0) - std::exp(-6.0)) < 1e-12,
@@ -57,10 +60,12 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
     rng.normal(dirs.data(), dirs.size(), 1.0);
 
     for (const std::string &algorithm : test::lin::kAlgorithms) {
-        const ReachSet R = sys.reach({.initial_set = X0, .t_final = t_final}, test::lin::algorithm(algorithm, dt, 8));
+        const ReachSet R = sys.reach({.initial_set = X0, .t_final = t_final},
+                                     test::lin::algorithm(algorithm, dt, 8));
         for (const bool extreme : {false, true}) {
             const Tensor start = X0.rand_point(N, rng, extreme ? "extreme" : "standard");
-            const std::vector<Tensor> x = sys.simulate({.initial_state = start, .t_final = t_final}, alg::Exact{.time_step = dt / refine});
+            const std::vector<Tensor> x = sys.simulate({.initial_state = start, .t_final = t_final},
+                                                       alg::Exact{.time_step = dt / refine});
             double worst = 1e9;
             for (std::size_t j = 0; j < x.size(); ++j) {
                 const Eigen::MatrixXd points = host_of(x[j]);
@@ -77,12 +82,28 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
                     }
                 }
             }
-            check(worst >= -1e-9,
-                  b + ": " + algorithm +
-                      (extreme ? ", extreme" : ", random") +
-                      ": a trajectory left the reachable set by " + std::to_string(-worst));
+            check(worst >= -1e-9, b + ": " + algorithm + (extreme ? ", extreme" : ", random") +
+                                      ": a trajectory left the reachable set by " +
+                                      std::to_string(-worst));
         }
     }
+}
+
+/// Start points of the wrong dimension are refused; with the checks off, the same trajectory.
+void checks_and_their_switch() {
+    const LinearSys sys = LinearSys(Tensor({{-1.0, 0.5}, {-0.5, -1.0}}));
+    check(test::raises(
+              [&] {
+                  sys.simulate({.initial_state = Tensor({{1.0}, {0.0}, {0.0}}), .t_final = 1},
+                               alg::Exact{.time_step = 0.1});
+              },
+              Error::dimension_mismatch),
+          "simulate: a start point of three dimensions");
+    const SimulationProblem problem{.initial_state = Tensor({{1.0}, {0.0}}), .t_final = 1};
+    const Tensor on = sys.simulate(problem, alg::Exact{.time_step = 0.1}).back();
+    ChecksScope off(false);
+    check(test::close(sys.simulate(problem, alg::Exact{.time_step = 0.1}).back(), on, 0),
+          "simulate: the same with the checks off");
 }
 
 } // namespace
@@ -93,5 +114,6 @@ int main() {
         a_stable_system_decays(b);
         simulations_stay_in_the_reachable_set(b);
     });
+    checks_and_their_switch();
     return test::finish("linear_sys simulate");
 }

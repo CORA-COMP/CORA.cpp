@@ -1,7 +1,7 @@
 // test_zonotope_project - zonotope project: the selected dimensions, exactly
 
-#include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/cont_set/set.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
 #include "testing.h"
 
@@ -32,6 +32,17 @@ void project_rejects_unknown_dimensions(const std::string &b) {
     check(test::throws([&] { Z.project({-1, 0}); }), b + ": dimensions are not negative");
 }
 
+/// No dimension or one outside the set is refused; with the checks off the result is the same.
+void checks_and_their_switch() {
+    const Zonotope S = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    check(test::raises([&] { S.project({}); }, Error::wrong_value), "project: no dimension");
+    check(test::raises([&] { S.project({2}); }, Error::wrong_value), "project: dimension 2 of 2");
+    const Tensor on = S.project({1}).get().center();
+    ChecksScope off(false);
+    check(test::close(S.project({1}).get().center(), on, 0),
+          "project: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -39,5 +50,6 @@ int main() {
         project_selects_and_orders_dimensions(b);
         project_rejects_unknown_dimensions(b);
     });
+    checks_and_their_switch();
     return test::finish("zonotope project");
 }

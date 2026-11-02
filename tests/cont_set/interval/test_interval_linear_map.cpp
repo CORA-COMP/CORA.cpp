@@ -1,4 +1,4 @@
-// test_interval_mtimes - interval linear_map: the interval hull of the image
+// test_interval_linear_map - interval linear_map: the interval hull of the image
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -43,7 +43,8 @@ void mtimes_is_the_hull_of_the_image(const std::string &b) {
         check(image.contains(column(y)), b + ": an image point left M * I");
     }
     // For a matrix that is a permutation with signs the hull is the image itself.
-    const Interval flipped = I.linear_map(Tensor({{0.0, -1.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}}));
+    const Interval flipped =
+        I.linear_map(Tensor({{0.0, -1.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}}));
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     check(close(flipped.inf(), std::vector<double>{-hi[1], lo[0], lo[2]}),
           b + ": exact for a rotation");
@@ -51,9 +52,21 @@ void mtimes_is_the_hull_of_the_image(const std::string &b) {
           b + ": exact for a rotation");
 }
 
+/// A matrix of the wrong width is refused; with the checks off the map is the same.
+void checks_and_their_switch() {
+    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Tensor M({{1.0, 2.0}, {0.0, 1.0}}), wide({{1.0, 2.0, 3.0}});
+    check(test::raises([&] { S.linear_map(wide); }, Error::dimension_mismatch),
+          "linear_map: a matrix of three columns");
+    const Tensor on = S.linear_map(M).center();
+    ChecksScope off(false);
+    check(test::close(S.linear_map(M).center(), on, 0), "linear_map: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) { mtimes_is_the_hull_of_the_image(b); });
+    checks_and_their_switch();
     return test::finish("interval linear_map");
 }

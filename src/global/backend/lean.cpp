@@ -123,9 +123,9 @@ struct LeanTensor : Tensor::Impl {
     }
 
     Ptr expm() const override {
-        CORA_FAIL(Error::special_error, 
-            "CoraTensor: the lean backend has no expm; CORALean's exponential is an interval "
-            "Taylor series (1/i! as bounds), which no point function reproduces");
+        CORA_FAIL(Error::special_error,
+                  "CoraTensor: the lean backend has no expm; CORALean's exponential is an interval "
+                  "Taylor series (1/i! as bounds), which no point function reproduces");
     }
 
     // sqrt is exact in IEEE; the others come from the C library, which CORALean does not have.
@@ -209,8 +209,9 @@ struct LeanTensor : Tensor::Impl {
     // Lean tensors are single matrices, like the eigen ones.
     Ptr stack(const std::vector<const Impl *> &rest) const override {
         if (!rest.empty())
-            CORA_FAIL(Error::wrong_value, "CoraTensor::stack: the lean backend holds one set, not a "
-                                        "batch; use the torch backend");
+            CORA_FAIL(Error::wrong_value,
+                      "CoraTensor::stack: the lean backend holds one set, not a "
+                      "batch; use the torch backend");
         return wrap(rows, cols, v);
     }
 };

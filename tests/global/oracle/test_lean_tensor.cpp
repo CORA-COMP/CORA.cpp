@@ -29,14 +29,17 @@ int main() {
         test::check(test::close(lean::Tensor::from(x).gather(), x, 0), "gather(from(x)) == x");
 
         // a value that is not a double is not gathered
-        const lean::Tensor wide = lean::Tensor::from_json("dyadic:60", matrix(1, 1, {"9007199254740993*2^0"}));
+        const lean::Tensor wide =
+            lean::Tensor::from_json("dyadic:60", matrix(1, 1, {"9007199254740993*2^0"}));
         test::check(throws([&] { wide.gather(); }), "a 54-bit value throws");
         const lean::Tensor fine = lean::Tensor::from_json("dyadic:8", matrix(1, 1, {"3*2^-2"}));
         test::check(test::close(fine.gather(), std::vector<double>{0.75}, 0), "an exact dyadic gathers");
 
         // a fixedpoint decimal gathers only if it is also a double
-        const lean::Tensor half = lean::Tensor::from_json("fixedpoint:2", matrix(1, 1, {"5*10^-1"}));
-        const lean::Tensor cent = lean::Tensor::from_json("fixedpoint:2", matrix(1, 1, {"1*10^-2"}));
+        const lean::Tensor half =
+            lean::Tensor::from_json("fixedpoint:2", matrix(1, 1, {"5*10^-1"}));
+        const lean::Tensor cent =
+            lean::Tensor::from_json("fixedpoint:2", matrix(1, 1, {"1*10^-2"}));
         test::check(test::close(half.gather(), std::vector<double>{0.5}, 0), "5*10^-1 is 0.5");
         test::check(throws([&] { cent.gather(); }), "0.01 is no double");
 
@@ -46,7 +49,8 @@ int main() {
 
         // unknown dtypes and rounding modes are errors
         test::check(throws([] { const lean::DTypeScope s("float16"); }), "an unknown dtype throws");
-        test::check(throws([&] { fine.round_to("binary64", "sideways"); }), "an unknown mode throws");
+        test::check(throws([&] { fine.round_to("binary64", "sideways"); }),
+                    "an unknown mode throws");
 
         // two dtypes do not mix
         const lean::Tensor a = lean::Tensor::from(Tensor({{1.0}, {2.0}}));
@@ -68,10 +72,13 @@ int main() {
 
         // the zonotope operations enclose the exact result
         const lean::Zonotope Z(Tensor({{1.0}, {0.0}}), Tensor({{0.5, 0.0}, {0.0, 0.25}}));
-        const lean::Zonotope Zm = Z.linear_map(lean::Tensor::from(Tensor({{0.1, 0.0}, {0.0, 0.1}})));
+        const lean::Zonotope Zm =
+            Z.linear_map(lean::Tensor::from(Tensor({{0.1, 0.0}, {0.0, 0.1}})));
         const auto [nominal, err] = Zm.gather();
-        test::check(test::close(nominal.center(), std::vector<double>{0.1, 0.0}, 1e-15), "nominal center");
-        test::check(err.inf().data()[0] <= 0 && err.sup().data()[0] >= 0, "the error box contains 0");
+        test::check(test::close(nominal.center(), std::vector<double>{0.1, 0.0}, 1e-15),
+                    "nominal center");
+        test::check(err.inf().data()[0] <= 0 && err.sup().data()[0] >= 0,
+                    "the error box contains 0");
 
         // rounding a zonotope into a coarser dtype keeps the exact set inside: [-0.2, 0.4] here
         const lean::Zonotope W(Tensor({{0.1}}), Tensor({{0.3}}));
@@ -82,14 +89,16 @@ int main() {
 
         // the enclosure folds the error box into generators: its own error box is empty
         const auto [fold, none] = Zm.enclosure().gather();
-        test::check(none.inf().data()[0] == 0 && none.sup().data()[0] == 0, "enclosure has no error");
+        test::check(none.inf().data()[0] == 0 && none.sup().data()[0] == 0,
+                    "enclosure has no error");
 
         // fixedpoint values are decimals: 0.25 is fixedpoint:2, 0.125 needs three digits
         {
-        const lean::DTypeScope fixedpoint("fixedpoint:2");
-        const cora::Tensor quarter = lean::Tensor::from(Tensor({{0.25}})).gather();
-        test::check(test::close(quarter, std::vector<double>{0.25}, 0), "0.25 round trips");
-        test::check(throws([] { lean::Tensor::from(Tensor({{0.125}})); }), "0.125 needs 3 digits");
+            const lean::DTypeScope fixedpoint("fixedpoint:2");
+            const cora::Tensor quarter = lean::Tensor::from(Tensor({{0.25}})).gather();
+            test::check(test::close(quarter, std::vector<double>{0.25}, 0), "0.25 round trips");
+            test::check(throws([] { lean::Tensor::from(Tensor({{0.125}})); }),
+                        "0.125 needs 3 digits");
         }
     });
     return test::finish("lean tensor");

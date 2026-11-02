@@ -7,7 +7,8 @@
 //
 // Syntax:   plot(X0, {0, 1});   plot(R, {0, 1}, {.label = "reachable set"});
 //           plot(spec, {0, 1});   plot(x, {0, 1});   figure().save("figure.svg");
-//           use_cora_colors("CORA:contDynamics");   plot(fig, R, {0, 1})  (into a figure of your own)
+//           use_cora_colors("CORA:contDynamics");   plot(fig, R, {0, 1})  (into a figure of your
+//           own)
 // See also: cora/global/plot/figure.h, cora/global/plot/color.h, cora/cont_set/cont_set.h
 
 #pragma once
@@ -57,7 +58,7 @@ struct PlotOptions {
     int step = 1, num_colors = 1, cidx = 1;
 };
 
-/// Chooses the colors of everything plotted afterwards, as CORA's `use_cora_colors`:
+/// Chooses the colors of everything plotted afterwards, as CORA's `useCORAcolors`:
 ///   "CORA:default"      a set or reachable set takes the next color of CORA's order (blue, red,
 ///                       yellow, purple, green, ...), filled;
 ///   "CORA:contDynamics" a set is an initial set (white with a black outline) and a reachable

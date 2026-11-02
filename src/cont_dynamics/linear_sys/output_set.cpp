@@ -18,6 +18,13 @@ namespace cora {
 
 ReachSet LinearSys::output_set(const ReachSet &R) const {
     detail::Entry entry;
+    if (entry.check())
+        for (const auto *sets : {&R.time_interval, &R.time_point})
+            for (const Zonotope &Z : *sets)
+                CORA_CHECK(Z.dim() == dim(), Error::dimension_mismatch, [&] {
+                    return "output_set: the reachable sets need the dimension " +
+                           std::to_string(dim()) + " of the states, got " + std::to_string(Z.dim());
+                });
     if (!C_) return R;
 
     ReachSet Y;

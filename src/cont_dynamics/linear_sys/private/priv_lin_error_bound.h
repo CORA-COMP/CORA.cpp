@@ -1,4 +1,4 @@
-// priv_linErrorBound - the error bookkeeping of the adaptive reachability algorithm
+// priv_lin_error_bound - the error bookkeeping of the adaptive reachability algorithm
 //
 // As CORA's linErrorBound.
 // The adaptive algorithm keeps the Hausdorff distance of its sets to the exact ones below emax
@@ -74,7 +74,7 @@ class LinErrorBound {
     /// Whether the errors respect their bounds (false: a bug); internal_ok is false if the
     /// bookkeeping of the bounds is inconsistent.
     bool check_errors(const std::vector<double> &RoutError, const std::vector<double> &RoutTpError,
-                     bool &internal_ok) const;
+                      bool &internal_ok) const;
 
     /// The share bound_red_max of emax that the reduction error may take, by the heuristic of
     /// [1, Sec. IV.D.2], from the system matrix A (n, n) and the input generators GU (n, m).
@@ -89,11 +89,11 @@ class LinErrorBound {
     /// The next trial step size; the approximation functions are dropped for bisection if they
     /// propose a value outside the bracket.
     double estimate_time_step_size(double t, int k, int kIter, bool fullcomp, double time_step,
-                                double max_time_step, bool is_u);
+                                   double max_time_step, bool is_u);
 
   private:
     double approx_fun(double t, int k, int kIter, bool fullcomp, double time_step,
-                     double max_time_step) const;
+                      double max_time_step) const;
     double bisection(double t, int k, bool fullcomp, double time_step, double max_time_step,
                      bool is_u) const;
 };

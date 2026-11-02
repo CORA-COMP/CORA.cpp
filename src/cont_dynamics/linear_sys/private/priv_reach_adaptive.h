@@ -31,9 +31,9 @@ namespace cora {
 struct AdaptiveParams {
     Zonotope R0;                ///< initial set
     Tensor GU;                  ///< generators of the input set U (n, mU), centered; mU may be 0
-    Tensor u_trans;              ///< constant input offset (n, 1)
+    Tensor u_trans;             ///< constant input offset (n, 1)
     std::optional<Tensor> C;    ///< output matrix (p, n); empty: y = x
-    double t_final;              ///< time horizon (from time 0)
+    double t_final;             ///< time horizon (from time 0)
 };
 
 /// What a run leaves for the next one: the step sizes used and what was computed for them.
@@ -47,15 +47,15 @@ struct AdaptiveSaveData {
     std::optional<double> reductionerrorpercentage;
 };
 
-/// The output sets per step: time_interval[k] over [time[k], time[k+1]] and time_point[k] at time[k];
-/// a step where every specification is verified has no sets (error NaN), and time_point[0] is
-/// the output set of the initial set.
+/// The output sets per step: time_interval[k] over [time[k], time[k+1]] and time_point[k] at
+/// time[k]; a step where every specification is verified has no sets (error NaN), and time_point[0]
+/// is the output set of the initial set.
 struct AdaptiveResult {
     std::vector<std::optional<Zonotope>> time_interval, time_point;
     std::vector<double> time_interval_error, time_point_error;
     std::vector<double> time;       ///< the time points 0, t_1, ..., t_K
     bool res = true;                ///< false: a specification is violated (not used: always true)
-    bool internal_checks_ok = true;   ///< the error bookkeeping was consistent
+    bool internal_checks_ok = true; ///< the error bookkeeping was consistent
 };
 
 /// The reachable output sets with errors below `error` (Hausdorff distance to the exact

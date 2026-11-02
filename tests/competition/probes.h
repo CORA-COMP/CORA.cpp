@@ -1,4 +1,4 @@
-// Points placed where an approximate containment answer breaks.
+// probes - points placed where an approximate containment answer breaks.
 //
 // Shared by the Eigen and the libtorch tests so that both are judged on the same points:
 // on a facet, just past one, and scattered across the boundary where only the LP knows

@@ -1,4 +1,4 @@
-// test_zonotope_generateRandom - zonotope generate_random
+// test_zonotope_generate_random - zonotope generate_random
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -26,12 +26,25 @@ void generate_random_follows_cora(const std::string &b) {
         short_enough &= std::sqrt(norm) <= 1.0 + 1e-12;
     }
     check(short_enough, b + ": generators are at most unit length");
-    check(!close(Zonotope::generate_random(5, 8, rng).center(), Z.center()), b + ": successive sets differ");
+    check(!close(Zonotope::generate_random(5, 8, rng).center(), Z.center()),
+          b + ": successive sets differ");
+}
+
+/// A dimension below one is refused; with the checks off the draw is the same.
+void checks_and_their_switch() {
+    cora::Rng rng(4), again(4);
+    check(test::raises([&] { Zonotope::generate_random(0, 2, rng); }, Error::wrong_value),
+          "generate_random: dimension 0");
+    const Tensor on = Zonotope::generate_random(3, 2, rng).center();
+    ChecksScope off(false);
+    check(test::close(Zonotope::generate_random(3, 2, again).center(), on, 0),
+          "generate_random: the same with the checks off");
 }
 
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) { generate_random_follows_cora(b); });
+    checks_and_their_switch();
     return test::finish("zonotope generate_random");
 }

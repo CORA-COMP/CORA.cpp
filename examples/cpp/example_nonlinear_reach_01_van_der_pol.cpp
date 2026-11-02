@@ -1,4 +1,4 @@
-// example_nonlinear_reach_01_vanDerPol - reachability of the van der Pol oscillator
+// example_nonlinear_reach_01_van_der_pol - reachability of the van der Pol oscillator
 //
 // The dynamics is written once on symbolic states; the system differentiates it, and reach
 // linearizes it step by step (CORA's algorithm "lin"). The reachable set follows the limit cycle
@@ -9,8 +9,8 @@
 // See also: example_linear_reach_01_5dim, the Python example of the same name (which plots)
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
-#include "cora/global/rng.h"
 #include "cora/global/plot/plot.h"
+#include "cora/global/rng.h"
 
 #include <algorithm>
 #include <chrono>
@@ -44,15 +44,20 @@ int main() {
     // Reachability Analysis -------------------------------------------------------------------
 
     const auto timer_val = std::chrono::steady_clock::now();
-    const ReachSet R = vdp.reach({.initial_set = R0, .t_final = t_final}, alg::Linearization{.time_step = time_step, .taylor_terms = taylor_terms, .zonotope_order = zonotope_order});
-    const std::chrono::duration<double> computation_time = std::chrono::steady_clock::now() - timer_val;
+    const ReachSet R = vdp.reach({.initial_set = R0, .t_final = t_final},
+                                 alg::Linearization{.time_step = time_step,
+                                                    .taylor_terms = taylor_terms,
+                                                    .zonotope_order = zonotope_order});
+    const std::chrono::duration<double> computation_time =
+        std::chrono::steady_clock::now() - timer_val;
 
     std::cout << "computation time of reachable set: " << computation_time.count() << " s\n";
 
     // Simulation ------------------------------------------------------------------------------
 
     cora::Rng rng(0);
-    const std::vector<Tensor> traj = vdp.simulate_random({.initial_set = R0, .t_final = t_final}, alg::RungeKutta4{.time_step = time_step}, 10, rng);
+    const std::vector<Tensor> traj = vdp.simulate_random(
+        {.initial_set = R0, .t_final = t_final}, alg::RungeKutta4{.time_step = time_step}, 10, rng);
 
     // Evaluation ------------------------------------------------------------------------------
 

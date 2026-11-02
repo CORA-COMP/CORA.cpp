@@ -16,7 +16,8 @@ void reduce_limits_the_generators(const std::string &b) {
     const int n = 3;
     const Zonotope Z = Zonotope::generate_random(n, 20, rng);
     const Zonotope R = Z.reduce(2);
-    check(R.generators().shape() == std::vector<int64_t>({n, 2 * n}), b + ": order 2 leaves 2 n generators");
+    check(R.generators().shape() == std::vector<int64_t>({n, 2 * n}),
+          b + ": order 2 leaves 2 n generators");
     check(test::close(R.center(), Z.center()), b + ": the center stays");
 }
 
@@ -34,7 +35,8 @@ void reduce_encloses_the_zonotope(const std::string &b) {
 void a_small_zonotope_stays_as_it_is(const std::string &b) {
     cora::Rng rng(7);
     const Zonotope Z = Zonotope::generate_random(2, 4, rng);
-    check(Z.reduce(2).generators().shape() == Z.generators().shape(), b + ": 4 generators fit into order 2 in 2-D");
+    check(Z.reduce(2).generators().shape() == Z.generators().shape(),
+          b + ": 4 generators fit into order 2 in 2-D");
     check(test::close(Z.reduce(2).generators(), Z.generators()), b + ": and are not changed");
 }
 
@@ -46,6 +48,15 @@ void wrong_arguments_are_described(const std::string &b) {
     check(test::throws([&] { batch.reduce(1); }) || b == "eigen", b + ": a batch is refused");
 }
 
+/// An order below one is refused; with the checks off the reduction is the same.
+void checks_and_their_switch() {
+    const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    check(test::raises([&] { Z.reduce(0); }, Error::wrong_value), "reduce: order 0");
+    const Tensor on = Z.reduce(1).generators();
+    ChecksScope off(false);
+    check(test::close(Z.reduce(1).generators(), on, 0), "reduce: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -55,5 +66,6 @@ int main() {
         a_small_zonotope_stays_as_it_is(b);
         if (b != "eigen") wrong_arguments_are_described(b);
     });
+    checks_and_their_switch();
     return test::finish("zonotope reduce");
 }

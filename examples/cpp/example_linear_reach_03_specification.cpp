@@ -45,13 +45,16 @@ int main() {
 
     // Reachability Analysis -------------------------------------------------------------------
 
-    const ReachSet R = sys.reach({.initial_set = R0, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+    const ReachSet R =
+        sys.reach({.initial_set = R0, .t_final = t_final},
+                  alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
 
     // Verification ----------------------------------------------------------------------------
 
     std::cout << "stays in x1 <= 1.2: " << spec_safe.check(R.time_interval) << "\n"
               << "avoids x1 <= -0.75: " << spec_unsafe.check(R.time_interval)
-              << ", first touches it in step " << spec_unsafe.first_violation(R.time_interval) << "\n"
+              << ", first touches it in step " << spec_unsafe.first_violation(R.time_interval)
+              << "\n"
               << "stays in -1 <= x1 <= 1.2: " << spec_band.check(R.time_interval) << "\n"
               << "the initial set is safe: " << spec_safe.check(R0) << "\n";
 

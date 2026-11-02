@@ -29,6 +29,7 @@ bool aux_square(const Tensor &A) {
 
 // ===========================================  MAIN  =========================================== //
 
+/// x' = A x: A square.
 LinearSys::LinearSys(Tensor A) : A_(std::move(A)) {
     detail::Entry entry;
     CORA_CHECK(A_.defined() && aux_square(A_), Error::wrong_input_in_constructor, [&] {
@@ -40,16 +41,16 @@ LinearSys::LinearSys(Tensor A) : A_(std::move(A)) {
 LinearSys::LinearSys(Tensor A, Tensor B, std::optional<Tensor> C)
     : A_(std::move(A)), B_(std::move(B)), C_(std::move(C)) {
     detail::Entry entry;
+    // A square, B with the rows of A, C with its columns
     CORA_CHECK(A_.defined() && aux_square(A_), Error::wrong_input_in_constructor, [&] {
         return "LinearSys: A must be a square matrix (..., n, n), got the shape " +
                shape_text(A_.shape());
     });
-    CORA_CHECK(B_->shape().size() == 2 && B_->shape()[0] == dim(), Error::wrong_input_in_constructor,
-               [&] {
-                   return "LinearSys: B must be a matrix (n, m) with the n = " +
-                          std::to_string(dim()) + " rows of A, got the shape " +
-                          shape_text(B_->shape());
-               });
+    CORA_CHECK(
+        B_->shape().size() == 2 && B_->shape()[0] == dim(), Error::wrong_input_in_constructor, [&] {
+            return "LinearSys: B must be a matrix (n, m) with the n = " + std::to_string(dim()) +
+                   " rows of A, got the shape " + shape_text(B_->shape());
+        });
     CORA_CHECK(!C_ || (C_->shape().size() == 2 && C_->shape()[1] == dim()),
                Error::wrong_input_in_constructor, [&] {
                    return "LinearSys: C must be a matrix (p, n) with the n = " +

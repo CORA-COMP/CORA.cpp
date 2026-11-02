@@ -42,16 +42,22 @@ int main() {
     // Reachability Analysis -------------------------------------------------------------------
 
     const auto timer_val = std::chrono::steady_clock::now();
-    const ReachSet R = sys.reach({.initial_set = R0, .input_set = U, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms, .zonotope_order = zonotope_order});
+    const ReachSet R = sys.reach({.initial_set = R0, .input_set = U, .t_final = t_final},
+                                 alg::Standard{.time_step = time_step,
+                                               .taylor_terms = taylor_terms,
+                                               .zonotope_order = zonotope_order});
     const ReachSet Y = sys.output_set(R);
-    const std::chrono::duration<double> computation_time = std::chrono::steady_clock::now() - timer_val;
+    const std::chrono::duration<double> computation_time =
+        std::chrono::steady_clock::now() - timer_val;
 
     std::cout << "computation time of reachable set: " << computation_time.count() << " s\n";
 
     // Simulation ------------------------------------------------------------------------------
 
     cora::Rng rng(0);
-    const std::vector<Tensor> traj = sys.simulate_random({.initial_set = R0, .input_set = U, .t_final = t_final}, alg::Exact{.time_step = time_step}, 25, rng);
+    const std::vector<Tensor> traj =
+        sys.simulate_random({.initial_set = R0, .input_set = U, .t_final = t_final},
+                            alg::Exact{.time_step = time_step}, 25, rng);
 
     // Evaluation ------------------------------------------------------------------------------
 

@@ -58,16 +58,21 @@ int main() {
             // the same operation in CORA.cpp and in the oracle
             const Zonotope mine = Z.linear_map(M);
             const Zonotope oracle = L.linear_map(lean::Tensor::from(M)).gather().first;
-            test::check(aux_identical(mine.center(), oracle.center()) && aux_identical(mine.generators(), oracle.generators()),
+            test::check(aux_identical(mine.center(), oracle.center()) &&
+                            aux_identical(mine.generators(), oracle.generators()),
                         "mtimes is identical, " + size);
             const Zonotope sum = Z.plus(Z2), sum_oracle = L.plus(L2).gather().first;
-            test::check(aux_identical(sum.center(), sum_oracle.center()) && aux_identical(sum.generators(), sum_oracle.generators()),
+            test::check(aux_identical(sum.center(), sum_oracle.center()) &&
+                            aux_identical(sum.generators(), sum_oracle.generators()),
                         "plus is identical, " + size);
             const Zonotope red = Z.reduce(2), red_oracle = L.reduce(2).gather().first;
-            test::check(aux_identical(red.center(), red_oracle.center()) && aux_identical(red.generators(), red_oracle.generators()),
+            test::check(aux_identical(red.center(), red_oracle.center()) &&
+                            aux_identical(red.generators(), red_oracle.generators()),
                         "reduce is identical, " + size);
-            const Zonotope comb = Z.linear_combination(Z2), comb_oracle = L.linear_combination(L2).gather().first;
-            test::check(aux_identical(comb.center(), comb_oracle.center()) && aux_identical(comb.generators(), comb_oracle.generators()),
+            const Zonotope comb = Z.linear_combination(Z2),
+                           comb_oracle = L.linear_combination(L2).gather().first;
+            test::check(aux_identical(comb.center(), comb_oracle.center()) &&
+                            aux_identical(comb.generators(), comb_oracle.generators()),
                         "linComb is identical, " + size);
         }
     }

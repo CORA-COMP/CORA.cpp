@@ -51,8 +51,8 @@ class Set {
     template <class S>
     const S &as() const {
         if (!is<S>())
-            CORA_FAIL(Error::wrong_value, "the set is a " + class_name() +
-                                              ", not a " + cora::class_name(S::kClassId) +
+            CORA_FAIL(Error::wrong_value, "the set is a " + class_name() + ", not a " +
+                                              cora::class_name(S::kClassId) +
                                               "; ask with is<...>() first");
         return static_cast<const S &>(*set_);
     }

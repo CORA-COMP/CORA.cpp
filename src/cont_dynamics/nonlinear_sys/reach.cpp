@@ -8,7 +8,8 @@
 // and the sets in between with the enclosure of linear_sys.reach plus the analogous input terms.
 //
 // Syntax:   R = sys.reach(problem, alg);
-//           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step = 0.01});
+//           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step =
+//           0.01});
 // Inputs:   problem - initial_set (one zonotope), t_final; no input_set
 //           alg - alg::Linearization: time_step, taylor_terms (order of the Taylor series of the
 //                 linearized system), zonotope_order (a set keeps at most that times n generators)
@@ -19,8 +20,8 @@
 // CORA: contDynamics/@nonlinearSys/reach.m
 // CORA: contDynamics/@contDynamics/linReach.m
 
-#include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cont_dynamics/linear_sys/private/priv.h"
+#include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 
 #include <optional>
 
@@ -90,7 +91,8 @@ Box aux_enclosure_of_step(const NonlinearSys &sys, const Box &x0, double dt) {
         guess = aux_inflated_hull(guess, image);
     }
     CORA_FAIL(Error::special_error, "cora: no enclosure of the states of a step was found; "
-                             "the time step " + std::to_string(dt) + " is too large");
+                                    "the time step " +
+                                        std::to_string(dt) + " is too large");
 }
 
 // The linearization error -------------------------------------------------------------------------
@@ -135,15 +137,18 @@ Tensor aux_series_remainder(const Tensor &norm_a, double dt, int taylor_terms) {
     const Tensor r = norm_a * dt;
     const int q = taylor_terms;
     if (r.data()[0] >= q + 3)
-        CORA_FAIL(Error::special_error, "cora: the time step is too large for the Taylor series of the "
-                                 "linearized system; use a smaller step or more taylor_terms");
+        CORA_FAIL(Error::special_error,
+                  "cora: the time step is too large for the Taylor series of the "
+                  "linearized system; use a smaller step or more taylor_terms");
     Tensor term = aux_filled(r, dt);                        // dt * r^(q+1) / (q+2)!
     for (int i = 1; i <= q + 1; ++i) term = term.mul(r) * (1.0 / (i + 1));
     return term.div(aux_filled(r, 1.0) - r * (1.0 / (q + 3))) * (1.0 / (q + 2));
 }
 
 /// Z shifted by the column p.
-Zonotope aux_shifted(const Zonotope &Z, const Tensor &p) { return {Z.center() + p, Z.generators()}; }
+Zonotope aux_shifted(const Zonotope &Z, const Tensor &p) {
+    return {Z.center() + p, Z.generators()};
+}
 
 } // namespace
 
@@ -152,6 +157,7 @@ Zonotope aux_shifted(const Zonotope &Z, const Tensor &p) { return {Z.center() + 
 
 ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearReach &alg) const {
     detail::Entry entry;
+    // one initial zonotope of the dimension, no input, a positive horizon
     CORA_CHECK(problem.initial_set.has_value(), Error::wrong_value,
                [] { return std::string("reach: the problem needs an initial_set"); });
     const Zonotope &X0 = *problem.initial_set;
@@ -159,14 +165,17 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
                    X0.generators().shape().size() == 2,
                Error::not_supported, [&] {
                    return "reach: the initial set of a nonlinear system is one zonotope of the "
-                          "dimension " + std::to_string(n_) + "; batches are not supported";
+                          "dimension " +
+                          std::to_string(n_) + "; batches are not supported";
                });
-    CORA_CHECK(!problem.input_set.has_value(), Error::not_supported,
-               [] { return std::string("reach: a NonlinearSys has no inputs; leave input_set empty"); });
+    CORA_CHECK(!problem.input_set.has_value(), Error::not_supported, [] {
+        return std::string("reach: a NonlinearSys has no inputs; leave input_set empty");
+    });
     CORA_CHECK(problem.t_final > 0 && problem.t_final < 1e300, Error::wrong_value, [&] {
         return "reach: t_final must be positive and finite, got " + std::to_string(problem.t_final);
     });
     if (entry.check()) std::visit([](const auto &a) { a.validate(); }, alg);
+    // the options of the algorithm and the number of steps
     const alg::Linearization &options = std::get<alg::Linearization>(alg);
     const double time_step = options.time_step;
     const int taylor_terms = options.taylor_terms, zonotope_order = options.zonotope_order;
@@ -187,7 +196,7 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         // where the factor t^{i+1}/(i+1)! in [0, dt^{i+1}/(i+1)!] turns U into the zonotope Ubar
         const Zonotope Ubar(U.center() * 0.5, Tensor::cat_last({U.center() * 0.5, U.generators()}));
         Tensor Ai = A.eye_like();
-        double factor = time_step;  // dt^{i+1} / (i+1)!
+        double factor = time_step; // dt^{i+1} / (i+1)!
         Zonotope Ppoint = U.linear_map(Ai * factor), Pinterval = Ubar.linear_map(Ai * factor);
         for (int i = 1; i <= taylor_terms; ++i) {
             Ai = Ai.matmul(A);
@@ -199,7 +208,8 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         const Tensor eps = aux_series_remainder(aux_norm(A), time_step, taylor_terms);
         const Interval hull = U.interval();
         const Tensor abs_max = Tensor::maximum(hull.inf().abs(), hull.sup().abs());
-        const Tensor reach_of_u = aux_filled(xs, 1.0).matmul(eps.mul(abs_max.transpose().sum_last()));
+        const Tensor reach_of_u =
+            aux_filled(xs, 1.0).matmul(eps.mul(abs_max.transpose().sum_last()));
         const Zonotope remainder(aux_filled(xs, 0.0), reach_of_u.diag());
 
         // (iii) the sets, from the homogeneous solution of the deviation from xs

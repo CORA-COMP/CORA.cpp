@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cont_dynamics/linear_sys/matlab_reference.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"
 
 #include <unsupported/Eigen/MatrixFunctions>
@@ -24,8 +24,8 @@ inline const std::string &name(const std::string &a) { return a; }
 inline alg::LinearReach algorithm(const std::string &a, double time_step, int taylor_terms,
                                   int zonotope_order = 50) {
     if (a == "standard")
-        return alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms,
-                             .zonotope_order = zonotope_order};
+        return alg::Standard{
+            .time_step = time_step, .taylor_terms = taylor_terms, .zonotope_order = zonotope_order};
     return alg::WrappingFree{.time_step = time_step, .taylor_terms = taylor_terms};
 }
 

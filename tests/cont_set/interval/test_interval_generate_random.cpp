@@ -1,4 +1,4 @@
-// test_interval_generateRandom - interval generate_random
+// test_interval_generate_random - interval generate_random
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -27,9 +27,21 @@ void generate_random_follows_cora(const std::string &b) {
     check(in_range, b + ": centre and radius ranges");
 }
 
+/// A dimension below one is refused; with the checks off the draw is the same.
+void checks_and_their_switch() {
+    cora::Rng rng(4), again(4);
+    check(test::raises([&] { Interval::generate_random(0, rng); }, Error::wrong_value),
+          "generate_random: dimension 0");
+    const Tensor on = Interval::generate_random(3, rng).center();
+    ChecksScope off(false);
+    check(test::close(Interval::generate_random(3, again).center(), on, 0),
+          "generate_random: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) { generate_random_follows_cora(b); });
+    checks_and_their_switch();
     return test::finish("interval generate_random");
 }

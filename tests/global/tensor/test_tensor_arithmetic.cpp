@@ -28,9 +28,9 @@ void arithmetic(const std::string &b) {
     check(close(Tensor({1.0, 2.0}).diag(), std::vector<double>{1, 0, 0, 2}), b + ": diag");
     check(close(A.eye_like(), Tensor::eye(2)), b + ": eye_like");
     check(close(rect.zeros_like(), Tensor::zeros({2, 3})), b + ": zeros_like");
-    check(
-        close(Tensor::cat_last({A, Tensor({{9.0}, {8.0}})}), std::vector<double>{1, -2, 9, 3, 4, 8}),
-        b + ": cat_last");
+    check(close(Tensor::cat_last({A, Tensor({{9.0}, {8.0}})}),
+                std::vector<double>{1, -2, 9, 3, 4, 8}),
+          b + ": cat_last");
 }
 
 } // namespace

@@ -19,7 +19,8 @@ namespace cora {
 /// A shape as text, "(2, 3)", for the messages of the checks.
 inline std::string shape_text(const std::vector<int64_t> &shape) {
     std::string text = "(";
-    for (std::size_t i = 0; i < shape.size(); ++i) text += (i ? ", " : "") + std::to_string(shape[i]);
+    for (std::size_t i = 0; i < shape.size(); ++i)
+        text += (i ? ", " : "") + std::to_string(shape[i]);
     return text + ")";
 }
 

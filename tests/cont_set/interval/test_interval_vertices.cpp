@@ -20,6 +20,16 @@ void vertices_need_a_planar_box(const std::string &b) {
     check(test::throws([&] { I.vertices(); }), b + ": three dimensions have no polygon");
 }
 
+/// A set of three dimensions is refused; with the checks off the polygon is the same.
+void checks_and_their_switch() {
+    const Interval S3 = Interval(test::column({0, -1, 0}), test::column({1, 1, 2}));
+    check(test::raises([&] { S3.vertices(); }, Error::not_supported), "vertices: three dimensions");
+    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const std::size_t on = S.vertices()[0].size();
+    ChecksScope off(false);
+    check(S.vertices()[0].size() == on, "vertices: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -27,5 +37,6 @@ int main() {
         vertices_are_the_corners(b);
         vertices_need_a_planar_box(b);
     });
+    checks_and_their_switch();
     return test::finish("interval vertices");
 }

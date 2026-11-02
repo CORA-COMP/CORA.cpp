@@ -1,7 +1,7 @@
 // test_tensor_batch_torch - Tensor on libtorch: batch dimensions broadcast
 
-#include "cora/global/tensor/tensor.h"
 #include "cora/global/backend/torch.h"
+#include "cora/global/tensor/tensor.h"
 #include "testing.h"
 
 using namespace cora;
@@ -25,8 +25,10 @@ void batches_broadcast() {
     check(max_diff(to_torch(B.matmul(S)), batch.matmul(single)) < 1e-14, "the batched product");
     check(B.transpose().shape() == std::vector<int64_t>({3, 2, 2}), "transpose keeps the batch");
     check(B.sum_last().shape() == std::vector<int64_t>({3, 2, 1}), "sum_last keeps the batch");
-    check(B.eye_like().shape() == std::vector<int64_t>({3, 2, 2}), "eye_like takes the batch shape");
-    check(Tensor::cat_last({B, B}).shape() == std::vector<int64_t>({3, 2, 4}), "cat_last per batch");
+    check(B.eye_like().shape() == std::vector<int64_t>({3, 2, 2}),
+          "eye_like takes the batch shape");
+    check(Tensor::cat_last({B, B}).shape() == std::vector<int64_t>({3, 2, 4}),
+          "cat_last per batch");
     check(from_torch(torch::randn({3, 2, 1}, torch::kDouble)).diag().shape() ==
               std::vector<int64_t>({3, 2, 2}),
           "diag per batch");

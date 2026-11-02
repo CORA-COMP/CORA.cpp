@@ -8,8 +8,8 @@
 // CORA.cpp only: batching, MATLAB CORA has no batch of sets
 
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "global/format.h"
 #include "cora/global/error.h"
+#include "global/format.h"
 
 #include <algorithm>
 
@@ -43,7 +43,8 @@ Zonotope Zonotope::stack(const std::vector<Zonotope> &Zs) {
                [] { return std::string("stack: give at least one zonotope"); });
     for (const Zonotope &Z : Zs)
         CORA_CHECK(Z.center().shape() == Zs[0].center().shape(), Error::dimension_mismatch, [&] {
-            return "stack: the zonotopes must have one dimension and batch shape, got the centers " +
+            return "stack: the zonotopes must have one dimension and batch shape, got the "
+                   "centers " +
                    shape_text(Zs[0].center().shape()) + " and " + shape_text(Z.center().shape());
         });
     int64_t m = 0;

@@ -1,4 +1,4 @@
-// test_neuralNetwork_evaluate - a network on points, and its zonotope enclosure of the outputs
+// test_neural_network_evaluate - a network on points, and its zonotope enclosure of the outputs
 
 #include "cora/global/rng.h"
 #include "cora/nn/neural_network/neural_network.h"
@@ -42,7 +42,8 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
     const Zonotope X = Zonotope::generate_random(3, 4, rng);
     const Zonotope Y = nn.evaluate(X);
     const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b;
-    check(test::close(Y.center(), want.center()) && test::close(Y.generators(), want.generators()), b + ": W X + b");
+    check(test::close(Y.center(), want.center()) && test::close(Y.generators(), want.generators()),
+          b + ": W X + b");
 }
 
 /// A neuron that keeps its sign is exact: the identity for x > 0, the zero set for x < 0.
@@ -76,7 +77,7 @@ void the_enclosure_contains_the_outputs(const std::string &b) {
     const Zonotope Y = nn.evaluate(X);
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {
-        const std::vector<double> y = nn.evaluate(X.rand_point(200, rng, type)).data();  // rows 0, 1
+        const std::vector<double> y = nn.evaluate(X.rand_point(200, rng, type)).data(); // rows 0, 1
         for (int k = 0; k < 10; ++k) {
             const std::vector<double> d = test::random_direction(rng, 2);
             const double bound = test::support(Y, d);
@@ -101,6 +102,18 @@ void wrong_arguments_are_described(const std::string &b) {
           b + ": a set of another dimension");
 }
 
+/// Points of the wrong dimension are refused; with the checks off the outputs are the same.
+void checks_and_their_switch() {
+    const NeuralNetwork net({{Tensor({{1.0, -1.0}, {0.5, 2.0}}), Tensor({{0.0}, {1.0}})}});
+    check(test::raises([&] { net.evaluate(Tensor({{1.0}, {0.0}, {0.0}})); },
+                       Error::dimension_mismatch),
+          "evaluate: a point of three dimensions");
+    const Tensor x({{1.0}, {2.0}});
+    const Tensor on = net.evaluate(x);
+    ChecksScope off(false);
+    check(test::close(net.evaluate(x), on, 0), "evaluate: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -112,5 +125,6 @@ int main() {
         the_enclosure_contains_the_outputs(b);
         wrong_arguments_are_described(b);
     });
+    checks_and_their_switch();
     return test::finish("neuralNetwork evaluate");
 }

@@ -17,8 +17,7 @@ void project_keeps_the_selected_bounds(const std::string &b) {
     check(close(Ip.inf(), std::vector<double>{-1, 2}) && close(Ip.sup(), std::vector<double>{1, 5}),
           b + ": bounds of dimensions 1 and 2");
     const Set R = I.project({2, 0});
-    check(close(R.as<Interval>().inf(), std::vector<double>{2, 0}),
-          b + ": the order is kept");
+    check(close(R.as<Interval>().inf(), std::vector<double>{2, 0}), b + ": the order is kept");
 }
 
 void project_rejects_unknown_dimensions(const std::string &b) {
@@ -31,6 +30,17 @@ void project_rejects_an_interval_matrix(const std::string &b) {
     check(test::throws([&] { M.project({0}); }), b + ": a matrix is not projected");
 }
 
+/// No dimension or one outside the set is refused; with the checks off the result is the same.
+void checks_and_their_switch() {
+    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    check(test::raises([&] { S.project({}); }, Error::wrong_value), "project: no dimension");
+    check(test::raises([&] { S.project({2}); }, Error::wrong_value), "project: dimension 2 of 2");
+    const Tensor on = S.project({1}).get().center();
+    ChecksScope off(false);
+    check(test::close(S.project({1}).get().center(), on, 0),
+          "project: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -39,5 +49,6 @@ int main() {
         project_rejects_unknown_dimensions(b);
         project_rejects_an_interval_matrix(b);
     });
+    checks_and_their_switch();
     return test::finish("interval project");
 }

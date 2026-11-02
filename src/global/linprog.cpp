@@ -96,8 +96,7 @@ int aux_simplex(
                 min_ratio = ratio;
                 leave = i;
             } else if (ratio <= min_ratio + 1e-12 * (1 + min_ratio) &&
-                       (bland ? basis[i] < basis[leave]
-                              : a > T[std::size_t(leave) * W + enter])) {
+                       (bland ? basis[i] < basis[leave] : a > T[std::size_t(leave) * W + enter])) {
                 min_ratio = std::min(ratio, min_ratio);
                 leave = i;
             }
@@ -120,11 +119,12 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
     Standard s;
     map.assign(n, VarMap{});
     int cols = 0;
-    std::vector<std::pair<int, double>> bound_rows;  // (column, upper bound of the shifted y)
+    std::vector<std::pair<int, double>> bound_rows; // (column, upper bound of the shifted y)
     for (int j = 0; j < n; ++j) {
         const double lo = lp.lb.empty() ? -kInf : lp.lb[j];
         const double hi = lp.ub.empty() ? kInf : lp.ub[j];
-        if (lo > hi) CORA_FAIL(Error::wrong_value, "linprog: a lower bound exceeds its upper bound");
+        if (lo > hi)
+            CORA_FAIL(Error::wrong_value, "linprog: a lower bound exceeds its upper bound");
         if (std::isfinite(lo)) {
             map[j] = {lo, cols, -1, 1.0, 0.0};
             if (std::isfinite(hi)) bound_rows.push_back({cols, hi - lo});
@@ -192,7 +192,8 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
 // ===========================================  MAIN  =========================================== //
 
 LinProgResult linprog(const LinProg &lp) {
-    if (lp.n <= 0) CORA_FAIL(Error::wrong_value, "linprog: the program needs at least one variable");
+    if (lp.n <= 0)
+        CORA_FAIL(Error::wrong_value, "linprog: the program needs at least one variable");
     std::vector<VarMap> map;
     const Standard s = aux_standard_form(lp, map);
     LinProgResult result;

@@ -25,23 +25,24 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-InputSolution LinearSys::input_solution(const Zonotope &U, double time_step, int taylor_terms) const {
+InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
+                                        int taylor_terms) const {
     detail::Entry entry;
     CORA_CHECK(B_.has_value(), Error::wrong_value,
                [] { return std::string("input_solution: needs B; use LinearSys(A, B)"); });
     CORA_CHECK(U.center().shape() == std::vector<int64_t>({B_->shape().back(), 1}),
                Error::dimension_mismatch, [&] {
                    return "input_solution: U must be one zonotope of the dimension " +
-                          std::to_string(B_->shape().back()) + " of the columns of B, got the center " +
-                          shape_text(U.center().shape());
+                          std::to_string(B_->shape().back()) +
+                          " of the columns of B, got the center " + shape_text(U.center().shape());
                });
     CORA_CHECK(time_step > 0 && taylor_terms >= 1, Error::wrong_value, [&] {
         return "input_solution: needs time_step > 0 and taylor_terms >= 1, got " +
                std::to_string(time_step) + " and " + std::to_string(taylor_terms);
     });
     const Tensor &A = A_;
-    const Tensor BG = B_->matmul(U.generators());  // generators of B U0
-    const Tensor u = B_->matmul(U.center());        // the constant input B c
+    const Tensor BG = B_->matmul(U.generators()); // generators of B U0
+    const Tensor u = B_->matmul(U.center());      // the constant input B c
 
     // M_j = A^j dt^(j+1)/(j+1)!; the time-varying part keeps each M_j B U0 as generators.
     Tensor Apower = A.eye_like();
@@ -60,7 +61,8 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step, int
     // The constant part is the last column of e^{M dt} for M = [A Bc; 0 0], the input as a state.
     const int64_t n = A.shape().back();
     const Tensor top = Tensor::cat_last({A, u});
-    const Tensor M = Tensor::cat_rows({top, Tensor::like(A, std::vector<double>(n + 1, 0.0), {1, n + 1})});
+    const Tensor M =
+        Tensor::cat_rows({top, Tensor::like(A, std::vector<double>(n + 1, 0.0), {1, n + 1})});
     std::vector<int64_t> state_rows(n);
     for (int64_t i = 0; i < n; ++i) state_rows[i] = i;
     const Tensor input = (M * time_step).expm().select_cols({n});

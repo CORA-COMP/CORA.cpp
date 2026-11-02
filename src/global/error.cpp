@@ -21,6 +21,7 @@ struct Names {
     const char *identifier, *name;
 };
 constexpr Names kNames[Error::count] = {
+    // the identifiers of CORA's error messages (global/functions/helper/.../CORAerror.m)
     {"CORA:wrongInputInConstructor", "wrong_input_in_constructor"},
     {"CORA:noInputInSetConstructor", "no_input_in_set_constructor"},
     {"CORA:dimensionMismatch", "dimension_mismatch"},
@@ -41,6 +42,7 @@ constexpr Names kNames[Error::count] = {
     {"CORA:oddNumberInputArgs", "odd_number_input_args"},
     {"CORA:numInputArgsConstructor", "num_input_args_constructor"},
     {"CORA:redundantNameValuePair", "redundant_name_value_pair"},
+    // further identifiers of CORAerror
     {"CORA:degenerateSet", "degenerate_set"},
     {"CORA:YALMIP", "yalmip"},
     {"CORA:outOfDomain", "out_of_domain"},

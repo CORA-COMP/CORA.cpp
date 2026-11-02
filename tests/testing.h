@@ -10,8 +10,8 @@
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/global/error.h"
-#include "cora/global/settings.h"
 #include "cora/global/rng.h"
+#include "cora/global/settings.h"
 #include "cora/global/tensor/tensor.h"
 
 #include <algorithm>

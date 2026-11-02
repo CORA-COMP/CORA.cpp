@@ -21,6 +21,7 @@ namespace cora {
 
 void LinearSys::validate(const ReachProblem &problem) const {
     detail::Validation entry;
+    // the initial set of the system's dimension and a positive, finite horizon
     CORA_CHECK(problem.initial_set.has_value(), Error::wrong_value,
                [] { return std::string("reach: the problem needs an initial_set"); });
     CORA_CHECK(problem.initial_set->dim() == dim(), Error::dimension_mismatch, [&] {
@@ -31,6 +32,7 @@ void LinearSys::validate(const ReachProblem &problem) const {
         return "reach: t_final must be positive and finite, got " + std::to_string(problem.t_final);
     });
     if (!problem.input_set) return;
+    // an input set: B, the dimension of its columns, and no batch
     const Zonotope &U = *problem.input_set;
     CORA_CHECK(B_.has_value(), Error::wrong_value,
                [] { return std::string("reach: an input_set needs B; use LinearSys(A, B)"); });
@@ -39,8 +41,9 @@ void LinearSys::validate(const ReachProblem &problem) const {
                " of the columns of B, got " + std::to_string(U.dim());
     });
     CORA_CHECK(A_.shape().size() == 2 && problem.initial_set->center().shape().size() == 2,
-               Error::not_supported,
-               [] { return std::string("reach: with an input set, one system and one initial set"); });
+               Error::not_supported, [] {
+                   return std::string("reach: with an input set, one system and one initial set");
+               });
 }
 
 } // namespace cora

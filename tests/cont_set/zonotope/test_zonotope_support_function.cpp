@@ -1,5 +1,5 @@
-// test_zonotope_supportFunc - zonotope support_function: the closed form against the best corner of the
-// generator cube
+// test_zonotope_support_function - zonotope support_function: the closed form against the best
+// corner of the generator cube
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -45,9 +45,21 @@ void support_function_matches_brute_force(const std::string &b) {
     }
 }
 
+/// A direction of the wrong dimension is refused; with the checks off the value is the same.
+void checks_and_their_switch() {
+    const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    check(test::raises([&] { Z.support_function(test::column({1, 0, 0})); },
+                       Error::dimension_mismatch),
+          "support_function: a direction of the wrong dimension");
+    const double on = support(Z, {1, 0});
+    ChecksScope off(false);
+    check(test::close(support(Z, {1, 0}), on, 0), "support_function: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) { support_function_matches_brute_force(b); });
+    checks_and_their_switch();
     return test::finish("zonotope support_function");
 }

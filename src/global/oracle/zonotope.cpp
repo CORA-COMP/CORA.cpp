@@ -20,7 +20,7 @@ namespace {
 void aux_same_dtype(const std::string &a, const std::string &b) {
     if (a != b)
         CORA_FAIL(Error::wrong_value, "lean: an operation on the dtypes '" + a + "' and '" + b +
-                                    "' is not allowed; round one with roundTo first");
+                                          "' is not allowed; round one with roundTo first");
 }
 
 Interval aux_zero_box(int64_t n, const std::string &dtype) {
@@ -58,9 +58,7 @@ Zonotope::Zonotope(Tensor c, Tensor G, Interval E)
 
 Zonotope Zonotope::nominal() const { return {c_, G_, aux_zero_box(c_.rows(), c_.dtype())}; }
 
-Zonotope Zonotope::enclosure() const {
-    return aux_apply("enclosure", *this, c_.dtype(), {});
-}
+Zonotope Zonotope::enclosure() const { return aux_apply("enclosure", *this, c_.dtype(), {}); }
 
 Zonotope Zonotope::round_to(const std::string &dtype, const std::string &mode) const {
     return aux_apply("roundTo", *this, dtype, {{"mode", Json(mode)}});
@@ -98,7 +96,7 @@ Zonotope Zonotope::linear_combination(const Zonotope &Z2) const {
 Zonotope Zonotope::reduce(int order, const std::string &method) const {
     if (method != "girard" && method != "combastel")
         CORA_FAIL(Error::wrong_value, "lean: the reduction method '" + method +
-                                    "' is unknown; use 'girard' or 'combastel'");
+                                          "' is unknown; use 'girard' or 'combastel'");
     return aux_apply("reduce", *this, c_.dtype(),
                      {{"order", Json(static_cast<int64_t>(order))}, {"method", Json(method)}});
 }

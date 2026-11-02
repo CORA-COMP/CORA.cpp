@@ -1,7 +1,7 @@
 // test_tensor_backend_scope_torch - backend specs for libtorch, and backends that do not mix
 
-#include "cora/global/tensor/tensor.h"
 #include "cora/global/backend/torch.h"
+#include "cora/global/tensor/tensor.h"
 #include "testing.h"
 
 using namespace cora;
@@ -12,7 +12,8 @@ using test::throws;
 namespace {
 
 void backend_specs() {
-    check(!throws([] { set_default_backend("torch:cpu,custom_backward"); }), "device and option together");
+    check(!throws([] { set_default_backend("torch:cpu,custom_backward"); }),
+          "device and option together");
     check(!throws([] { set_default_backend("torch,custom_backward"); }), "an option alone");
     check(throws([] { set_default_backend("torch,nonsense"); }), "an unknown option");
     check(throws([] { set_default_backend("torch:tpu"); }), "an unknown device");

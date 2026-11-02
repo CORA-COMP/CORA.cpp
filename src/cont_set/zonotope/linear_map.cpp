@@ -48,7 +48,8 @@ Zonotope Zonotope::linear_map(const Interval &I) const {
                });
     const Tensor center = I.center();
     // The center matrix maps Z; the radius adds one axis-aligned generator per dimension.
-    return {center.matmul(c_), Tensor::cat_last({center.matmul(G_), aux_widening(*this, I).diag()})};
+    return {center.matmul(c_),
+            Tensor::cat_last({center.matmul(G_), aux_widening(*this, I).diag()})};
 }
 
 } // namespace cora

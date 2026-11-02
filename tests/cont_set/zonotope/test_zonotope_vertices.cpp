@@ -49,6 +49,17 @@ void vertices_need_two_dimensions(const std::string &b) {
           b + ": a three-dimensional zonotope has no polygon");
 }
 
+/// A set of three dimensions is refused; with the checks off the polygon is the same.
+void checks_and_their_switch() {
+    const Zonotope S3 =
+        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+    check(test::raises([&] { S3.vertices(); }, Error::not_supported), "vertices: three dimensions");
+    const Zonotope S = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    const std::size_t on = S.vertices()[0].size();
+    ChecksScope off(false);
+    check(S.vertices()[0].size() == on, "vertices: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -57,5 +68,6 @@ int main() {
         vertices_of_degenerate_zonotopes(b);
         vertices_need_two_dimensions(b);
     });
+    checks_and_their_switch();
     return test::finish("zonotope vertices");
 }

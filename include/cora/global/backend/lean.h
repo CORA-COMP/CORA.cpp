@@ -1,6 +1,6 @@
 // lean - the lean backend of Tensor: double matrices whose operations round and order as CORALean's
 //
-// Syntax:   set_backend("lean");   Tensor t({{1, 2}, {3, 4}});   bool b = is_lean(t);
+// Syntax:   BackendScope scope("lean");   Tensor t({{1, 2}, {3, 4}});   bool b = is_lean(t);
 // See also: tensor.h, eigen.h, lean/oracle.h
 
 #pragma once
@@ -11,7 +11,7 @@
 
 namespace cora {
 
-/// The lean backend, for `set_backend`.
+/// The lean backend, for `backend(spec)` and `BackendScope`.
 std::shared_ptr<const Tensor::Backend> lean_backend();
 
 /// Whether the tensor belongs to the lean backend.

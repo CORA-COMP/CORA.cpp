@@ -135,7 +135,7 @@ class Tensor {
 
     /// Row-major `data` of `shape` on the current backend.
     static Tensor from_data(const std::vector<double> &data, const std::vector<int64_t> &shape,
-                           const std::string &device = "");
+                            const std::string &device = "");
 
     /// Like from_data, on the backend and device of `like` (library code meeting a given tensor).
     static Tensor like(const Tensor &like, const std::vector<double> &data,
@@ -181,7 +181,7 @@ class Tensor {
     Tensor pos() const { return Tensor(impl_->pos()); }
     Tensor neg() const { return Tensor(impl_->neg()); }
     Tensor expm() const { return Tensor(impl_->expm()); }
-    Tensor sin() const { return Tensor(impl_->unary(Unary::sin)); }  ///< Elementwise.
+    Tensor sin() const { return Tensor(impl_->unary(Unary::sin)); } ///< Elementwise.
     Tensor cos() const { return Tensor(impl_->unary(Unary::cos)); }
     Tensor tan() const { return Tensor(impl_->unary(Unary::tan)); }
     Tensor exp() const { return Tensor(impl_->unary(Unary::exp)); }

@@ -37,7 +37,7 @@ Tensor aux_filled(const Tensor &like, double value) {
 /// one new generator per neuron (a zero one where the neuron is stable).
 Zonotope aux_relu(const Zonotope &Z) {
     const Interval range = Z.interval();
-    const Tensor upper = range.sup().pos(), lower = range.inf().neg();  // max(u, 0) and min(l, 0)
+    const Tensor upper = range.sup().pos(), lower = range.inf().neg(); // max(u, 0) and min(l, 0)
     // upper - lower is 0 only for l = u = 0; the tiny term keeps the slope 0 there, not NaN.
     const Tensor slope = upper.div(upper - lower + aux_filled(upper, 1e-300));
     const Tensor mu = slope.mul(lower) * -0.5;
@@ -51,10 +51,12 @@ Zonotope aux_relu(const Zonotope &Z) {
 
 Tensor NeuralNetwork::evaluate(const Tensor &x) const {
     detail::Entry entry;
-    CORA_CHECK(x.shape().size() == 2 && x.shape()[0] == input_dim(), Error::dimension_mismatch, [&] {
-        return "evaluate: the points must be columns (" + std::to_string(input_dim()) +
-               ", N), got the shape " + shape_text(x.shape());
-    });
+    CORA_CHECK(x.shape().size() == 2 && x.shape()[0] == input_dim(), Error::dimension_mismatch,
+               [&] {
+                   return "evaluate: the points must be columns (" + std::to_string(input_dim()) +
+                          ", N), got the shape " + shape_text(x.shape());
+               });
+    // an affine map per layer, a ReLU after each but the last
     Tensor h = x;
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         h = layers_[k].W.matmul(h) + layers_[k].b;
@@ -69,6 +71,7 @@ Zonotope NeuralNetwork::evaluate(const Zonotope &X) const {
         return "evaluate: the set has the dimension " + std::to_string(X.dim()) +
                ", the network takes " + std::to_string(input_dim());
     });
+    // the same layers on the set: exact affine maps, enclosed ReLUs
     Zonotope Z = X;
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         Z = Z.linear_map(layers_[k].W) + layers_[k].b;

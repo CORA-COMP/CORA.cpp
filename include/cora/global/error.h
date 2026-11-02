@@ -22,6 +22,8 @@
 
 namespace cora {
 
+// Errors ------------------------------------------------------------------------------------------
+
 /// An error of the library: one of CORA's identifiers and a message.
 class Error : public std::runtime_error {
   public:
@@ -82,7 +84,8 @@ class Error : public std::runtime_error {
 // Warnings ----------------------------------------------------------------------------------------
 
 /// What receives a warning: CORA's identifier ("CORA:deprecated", ...) and the message.
-using WarningHandler = std::function<void(const std::string &identifier, const std::string &message)>;
+using WarningHandler =
+    std::function<void(const std::string &identifier, const std::string &message)>;
 
 /// Replaces the receiver of all warnings (default: one line on stderr); an empty one silences
 /// them. Returns the previous one.
@@ -90,6 +93,8 @@ WarningHandler set_warning_handler(WarningHandler handler);
 
 /// Hands a warning to the handler.
 void warn(const std::string &identifier, const std::string &message);
+
+// Checks ------------------------------------------------------------------------------------------
 
 namespace detail {
 
@@ -105,10 +110,10 @@ inline constexpr bool checks_compiled = CORACPP_CHECKS != 0;
 /// An input check of a public entry point: throws Error(id, message()) if `cond` is false and
 /// the entry point checks (detail::Entry `entry` in scope); `message` is a callable building the
 /// text, called only on failure. Compiles to nothing with CORACPP_CHECKS=OFF.
-#define CORA_CHECK(cond, id, message)                                                             \
+#define CORA_CHECK(cond, id, message)                                                              \
     do {                                                                                           \
-        if constexpr (::cora::detail::checks_compiled) {                                          \
-            if (entry.check() && !(cond)) ::cora::detail::raise((id), (message)());               \
+        if constexpr (::cora::detail::checks_compiled) {                                           \
+            if (entry.check() && !(cond)) ::cora::detail::raise((id), (message)());                \
         }                                                                                          \
     } while (0)
 

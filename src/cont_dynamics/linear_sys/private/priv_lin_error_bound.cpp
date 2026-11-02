@@ -1,4 +1,4 @@
-// priv_linErrorBound - the error bookkeeping of the adaptive reachability algorithm
+// priv_lin_error_bound - the error bookkeeping of the adaptive reachability algorithm
 //
 // As CORA's linErrorBound.
 // The methods of LinErrorBound: bounds per step, accumulation of the committed errors, the
@@ -26,9 +26,8 @@ namespace cora {
 
 namespace {
 
-constexpr double kEps = 2.220446049250313e-16;  // as MATLAB's eps
-constexpr double kNaN =
-    std::numeric_limits<double>::quiet_NaN();
+constexpr double kEps = 2.220446049250313e-16; // as MATLAB's eps
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 /// Sets v[k][it], growing the lists as MATLAB does when an element is assigned.
 template <class T>
@@ -78,8 +77,8 @@ double aux_cond2x2(double a, double b, double c, double d) {
 }
 
 /// The solution of [a b; c d] x = r by LU with partial pivoting, as MATLAB's backslash.
-void aux_solve2x2(
-    double a, double b, double c, double d, double r1, double r2, double &x1, double &x2) {
+void aux_solve2x2(double a, double b, double c, double d, double r1, double r2, double &x1,
+                  double &x2) {
     if (std::abs(c) > std::abs(a)) {
         std::swap(a, c);
         std::swap(b, d);
@@ -150,15 +149,15 @@ void LinErrorBound::remove_redundant_values(int k, int kIter) {
 
 void LinErrorBound::full_errors(int k, double &RcontError, double &RcontTpError) const {
     // The non-accumulating error contains the accumulating error of the last step.
-    RcontError = k == 0 ? seq_nonacc[k][0] + cum_red[k]
-                        : seq_nonacc[k][0] + cum_acc[k - 1] + cum_red[k];
+    RcontError =
+        k == 0 ? seq_nonacc[k][0] + cum_red[k] : seq_nonacc[k][0] + cum_acc[k - 1] + cum_red[k];
     RcontTpError = cum_acc[k] + cum_red[k];
 }
 
 // Checks ------------------------------------------------------------------------------------------
 
 bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
-                                const std::vector<double> &RoutTpError, bool &internal_ok) const {
+                                 const std::vector<double> &RoutTpError, bool &internal_ok) const {
     bool res = true;
     internal_ok = true;
     const std::size_t K = time_steps.size();
@@ -193,8 +192,8 @@ bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
             full_nonacc.push_back(nonacc[k]);
         }
     for (const std::vector<double> *v : std::initializer_list<const std::vector<double> *>{
-             &full_err, &full_tp, &full_nonacc, &acc, &step_red,
-             &nonacc_bound, &acc_bound, &red_bound, &acc_total_bound})
+             &full_err, &full_tp, &full_nonacc, &acc, &step_red, &nonacc_bound, &acc_bound,
+             &red_bound, &acc_total_bound})
         if (aux_any_below(*v, 0.0)) res = false;
     if (aux_any_above(full_err, emax) || aux_any_above(full_tp, emax)) res = false;
 
@@ -209,7 +208,8 @@ bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
 
     // Non-accumulating errors, accumulating errors and their linearly increasing bound.
     if (aux_any_above(nonacc, emax)) res = false;
-    for (std::size_t k = 0; k < K; ++k) if (nonacc[k] > nonacc_bound[k]) internal_ok = false;
+    for (std::size_t k = 0; k < K; ++k)
+        if (nonacc[k] > nonacc_bound[k]) internal_ok = false;
     if (aux_any_above(cum_acc, emax) || aux_any_above(cum_acc, emax - bound_red_max)) res = false;
     for (std::size_t k = 0; k < K; ++k)
         if (acc[k] > cum_acc[k] || acc[k] > acc_bound[k]) internal_ok = false;
@@ -219,7 +219,8 @@ bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
     for (std::size_t k = 0; k < K; ++k) cumsum_t[k] = cum_t += t_vec[k];
     for (std::size_t k = 0; k < K; ++k) {
         const double lin_bound = final_value * cumsum_t[k] / cumsum_t[K - 1];
-        if (cum_acc[k] > lin_bound || lin_bound - acc_total_bound[k] < -10 * kEps) internal_ok = false;
+        if (cum_acc[k] > lin_bound || lin_bound - acc_total_bound[k] < -10 * kEps)
+            internal_ok = false;
     }
 
     // Reduction errors.
@@ -279,8 +280,8 @@ void LinErrorBound::compute_error_bound_reduction(const Tensor &A, const Tensor 
                 break;
             }
         const double N = 1.0 / (1.0 - pct);
-        const double final_order = idx == 0 ? N * (steps_for_error_bound + 1)
-                                           : N * (steps_for_error_bound + 1 - idx);
+        const double final_order =
+            idx == 0 ? N * (steps_for_error_bound + 1) : N * (steps_for_error_bound + 1 - idx);
         if (final_order < best_final_order) {
             best_final_order = final_order;
             // CORA takes the index into the mesh from the count of reducible sets.
@@ -317,7 +318,8 @@ void LinErrorBound::update_coefficients_approx_fun(int k, int kIter, bool fullco
     const double dt_prev = time_steps[k][kIter - 1];
     const double m11 = dt_prev * dt_prev, m12 = dt_prev, m21 = dt * dt, m22 = dt;
     if (std::abs(1 / aux_cond2x2(m11, m12, m21, m22)) < kEps)
-        CORA_FAIL(Error::special_error, "LinearSys::verify: estimation of the time step size failed");
+        CORA_FAIL(Error::special_error,
+                  "LinearSys::verify: estimation of the time step size failed");
     aux_solve2x2(m11, m12, m21, m22, idv_pu_tkplus1[k][kIter - 1], idv_pu_tkplus1[k][kIter],
                  coeff_pu_tkplus1_a, coeff_pu_tkplus1_b);
     if (fullcomp) {
@@ -398,7 +400,7 @@ void LinErrorBound::update_bisection(int k, int kIter, bool is_u, double time_st
 // Step size prediction ----------------------------------------------------------------------------
 
 double LinErrorBound::approx_fun(double t, int k, int kIter, bool fullcomp, double time_step,
-                                double max_time_step) const {
+                                 double max_time_step) const {
     // The first guess of the first step may be far too large: shrink it before predicting.
     if (k == 0 && (seq_nonacc[k][kIter] / bound_rem[k][kIter] > 1e3 ||
                    step_acc[k][kIter] / bound_acc[k][kIter] > 1e3))
@@ -416,8 +418,8 @@ double LinErrorBound::approx_fun(double t, int k, int kIter, bool fullcomp, doub
     double pred_erem = std::numeric_limits<double>::infinity();
     if (fullcomp) {
         const double a = coeff_pu_tkplus1_a + coeff_f_a + coeff_g_a;
-        const double b = coeff_pu_tkplus1_b + coeff_f_b + coeff_g_b + coeff_lin_comb_b +
-                         coeff_pu_tauk_b;
+        const double b =
+            coeff_pu_tkplus1_b + coeff_f_b + coeff_g_b + coeff_lin_comb_b + coeff_pu_tauk_b;
         const double c = -bound_rem[k][kIter];
         const double root = std::sqrt(b * b - 4 * a * c);
         pred_erem = safety_factor * aux_max({1 / (2 * a) * (-b + root), 1 / (2 * a) * (-b - root)});
@@ -438,22 +440,22 @@ double LinErrorBound::bisection(double t, int k, bool fullcomp, double time_step
             // Extrapolate the linear trend of the error up to the linear bound.
             const double bound_slope = (emax - bound_red_max) / t_final;
             slope_acc = (bisect_ub_acc - bisect_lb_acc) /
-                       (bisect_ub_time_step_acc - bisect_lb_time_step_acc);
+                        (bisect_ub_time_step_acc - bisect_lb_time_step_acc);
             if (slope_acc < bound_slope) {
                 pred_eacc = inf;
             } else {
-                const double add = (bound_slope * (t + bisect_lb_time_step_acc) - eacc_total -
-                                    bisect_lb_acc) / (slope_acc - bound_slope);
+                const double add =
+                    (bound_slope * (t + bisect_lb_time_step_acc) - eacc_total - bisect_lb_acc) /
+                    (slope_acc - bound_slope);
                 pred_eacc = bisect_lb_time_step_acc + add;
             }
         } else {
             // Bisection: the first step halves; later ones assume a quadratic decrease.
-            const double factor =
-                k == 0 ? 0.5
-                       : std::sqrt((0.95 - bisect_lb_acc_perc) /
-                                   (bisect_ub_acc_perc - bisect_lb_acc_perc));
+            const double factor = k == 0 ? 0.5
+                                         : std::sqrt((0.95 - bisect_lb_acc_perc) /
+                                                     (bisect_ub_acc_perc - bisect_lb_acc_perc));
             pred_eacc = bisect_lb_time_step_acc +
-                       factor * (bisect_ub_time_step_acc - bisect_lb_time_step_acc);
+                        factor * (bisect_ub_time_step_acc - bisect_lb_time_step_acc);
         }
     }
 
@@ -462,21 +464,21 @@ double LinErrorBound::bisection(double t, int k, bool fullcomp, double time_step
     if (fullcomp) {
         if (bisect_ub_nonaccok) {
             const double slope_nonacc = (bisect_ub_nonacc - bisect_lb_nonacc) /
-                                       (bisect_ub_time_step_nonacc - bisect_lb_time_step_nonacc);
+                                        (bisect_ub_time_step_nonacc - bisect_lb_time_step_nonacc);
             double add;
             if (is_u)
                 add = (emax - bound_red_max * t / t_final - eacc_total - bisect_lb_acc -
-                       bisect_lb_nonacc) / (slope_acc + slope_nonacc - bound_red_max / t_final);
+                       bisect_lb_nonacc) /
+                      (slope_acc + slope_nonacc - bound_red_max / t_final);
             else
                 add = (emax - bisect_lb_nonacc) / slope_nonacc;
             pred_enonacc = bisect_lb_time_step_nonacc + add;
         } else {
-            const double factor =
-                k == 0 ? 0.5
-                       : (0.95 - bisect_lb_nonacc_perc) /
-                             (bisect_ub_nonacc_perc - bisect_lb_nonacc_perc);
+            const double factor = k == 0 ? 0.5
+                                         : (0.95 - bisect_lb_nonacc_perc) /
+                                               (bisect_ub_nonacc_perc - bisect_lb_nonacc_perc);
             pred_enonacc = bisect_lb_time_step_nonacc +
-                          factor * (bisect_ub_time_step_nonacc - bisect_lb_time_step_nonacc);
+                           factor * (bisect_ub_time_step_nonacc - bisect_lb_time_step_nonacc);
         }
         // For safety if the slopes misbehave.
         if (pred_enonacc < 0) pred_enonacc = inf;
@@ -485,7 +487,7 @@ double LinErrorBound::bisection(double t, int k, bool fullcomp, double time_step
 }
 
 double LinErrorBound::estimate_time_step_size(double t, int k, int kIter, bool fullcomp,
-                                           double time_step, double max_time_step, bool is_u) {
+                                              double time_step, double max_time_step, bool is_u) {
     if (use_approx_fun) {
         time_step = approx_fun(t, k, kIter, fullcomp, time_step, max_time_step);
         // The proposal is refused if it lies below a lower bracket, above an upper bracket that

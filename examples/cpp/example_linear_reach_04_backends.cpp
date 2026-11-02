@@ -1,7 +1,7 @@
 // example_linear_reach_04_backends - the same code on Eigen and on libtorch
 //
-// The backend is chosen once, with a BackendScope (or CORACPP_BACKEND from outside); every tensor is
-// made on it and everything built from a tensor stays there. Nothing else in the code changes.
+// The backend is chosen once, with a BackendScope (or CORACPP_BACKEND from outside); every tensor
+// is made on it and everything built from a tensor stays there. Nothing else in the code changes.
 //
 // Syntax:   build/examples/cpp/example_linear_reach_04_backends
 // Outputs:  the last enclosure's box on each backend, and how much the two differ
@@ -31,7 +31,8 @@ ReachSet reach_oscillator() {
 
     // Reachability Analysis ---------------------------------------------------------------
 
-    return sys.reach({.initial_set = R0, .t_final = 1.0}, alg::Standard{.time_step = 0.1, .taylor_terms = 8});
+    return sys.reach({.initial_set = R0, .t_final = 1.0},
+                     alg::Standard{.time_step = 0.1, .taylor_terms = 8});
 }
 
 int main() {

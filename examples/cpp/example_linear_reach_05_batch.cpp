@@ -45,7 +45,9 @@ int main() {
 
     // Reachability Analysis -------------------------------------------------------------------
 
-    const ReachSet R = sys.reach({.initial_set = batch_r0, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+    const ReachSet R =
+        sys.reach({.initial_set = batch_r0, .t_final = t_final},
+                  alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
 
     // Evaluation ------------------------------------------------------------------------------
 
@@ -59,8 +61,11 @@ int main() {
 
     // Each member of the batch is what the set gives on its own.
     for (std::size_t b = 0; b < singles.size(); ++b) {
-        const ReachSet Rb = sys.reach({.initial_set = singles[b], .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
-        const double gap = (last[b] - to_torch(Rb.time_interval.back().center())).abs().max().item<double>();
+        const ReachSet Rb =
+            sys.reach({.initial_set = singles[b], .t_final = t_final},
+                      alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+        const double gap =
+            (last[b] - to_torch(Rb.time_interval.back().center())).abs().max().item<double>();
         std::cout << "set " << b << " differs from its single run by " << gap << "\n";
     }
 

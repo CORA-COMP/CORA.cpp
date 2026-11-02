@@ -1,4 +1,4 @@
-// test_specification_safeSet - specification safe_set: one halfspace and polytopes
+// test_specification_safe_set - specification safe_set: one halfspace and polytopes
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/specification/specification.h"
@@ -35,7 +35,9 @@ void safe_polytope(const std::string &b) {
     const Halfspace low_top{Tensor({0.0, 1.0}), 1.0};
     check(!Specification::safe_set({right, low_top}).check(Z), b + ": one of two fails");
     check(Specification::safe_set({right, top}).type() == SpecType::safe_set, b + ": the type");
-    check(test::raises([] { Specification::safe_set(std::vector<Halfspace>{}); }, Error::wrong_input_in_constructor), b + ": no halfspace");
+    check(test::raises([] { Specification::safe_set(std::vector<Halfspace>{}); },
+                       Error::wrong_input_in_constructor),
+          b + ": no halfspace");
 }
 
 } // namespace

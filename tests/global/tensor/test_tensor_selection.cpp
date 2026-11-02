@@ -16,7 +16,8 @@ void select_cols_takes_columns_in_order(const std::string &b) {
 }
 
 void cat_rows_stacks_below(const std::string &b) {
-    const Tensor a = Tensor::from_data({1.0, 2.0}, {1, 2}), c = Tensor::from_data({3.0, 4.0, 5.0, 6.0}, {2, 2});
+    const Tensor a = Tensor::from_data({1.0, 2.0}, {1, 2}),
+                 c = Tensor::from_data({3.0, 4.0, 5.0, 6.0}, {2, 2});
     const Tensor r = Tensor::cat_rows({a, c});
     check(r.shape() == std::vector<int64_t>({3, 2}), b + ": shape");
     check(test::close(r, std::vector<double>{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}), b + ": rows in order");

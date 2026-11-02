@@ -19,9 +19,7 @@ namespace cora::lean {
 namespace {
 
 // A double as the exact text the oracle reads (times need not be representable in the dtype).
-Json aux_number(double x) {
-    return Json(Tensor::encode(x));
-}
+Json aux_number(double x) { return Json(Tensor::encode(x)); }
 
 std::vector<Zonotope> aux_sets(const std::string &dtype, const Json &list) {
     std::vector<Zonotope> sets;
@@ -49,9 +47,9 @@ ReachSet LinearSys::reach(const Zonotope &X0, double t_final, const alg::Standar
         return std::string("lean reach: the system and the initial set must share one dtype");
     });
     const double steps = t_final / time_step;
-    CORA_CHECK(t_final > 0 && std::abs(steps - std::round(steps)) <= 1e-9 * steps,
-               Error::wrong_value,
-               [] { return std::string("lean reach: t_final must be a positive multiple of time_step"); });
+    CORA_CHECK(
+        t_final > 0 && std::abs(steps - std::round(steps)) <= 1e-9 * steps, Error::wrong_value,
+        [] { return std::string("lean reach: t_final must be a positive multiple of time_step"); });
     Json request = Json::object();
     request.set("op", "linearSysReach").set("dtype", A_.dtype());
     request.set("A", A_.to_json()).set("X0", X0.to_json());

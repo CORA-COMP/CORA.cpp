@@ -13,8 +13,8 @@
 // CORA: contSet/@zonotope/private/priv_reduceGirard.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "global/format.h"
 #include "cora/global/error.h"
+#include "global/format.h"
 
 #include <algorithm>
 #include <numeric>

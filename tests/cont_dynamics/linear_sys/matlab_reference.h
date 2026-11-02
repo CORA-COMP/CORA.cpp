@@ -1,9 +1,9 @@
-// Values computed by MATLAB CORA (R2024b, v2026.1.0) for `linear_sys`, without inputs, to
-// check against: the correction matrix `F` of `taylorMatrices`, and the support function of
-// every reachable set along fixed directions (`reach`, `lin_alg = 'wrapping-free'`; without
+// matlab_reference - values computed by MATLAB CORA (R2024b, v2026.1.0) for `linearSys`, without
+// inputs, to check against: the correction matrix `F` of `taylorMatrices`, and the support function
+// of every reachable set along fixed directions (`reach`, `linAlg = 'wrapping-free'`; without
 // inputs CORA's `standard` gives the same sets).
 //
-// Each system is the MATLAB call `linear_sys(A)`, the initial set `zonotope(c, G)`, and the
+// Each system is the MATLAB call `linearSys(A)`, the initial set `zonotope(c, G)`, and the
 // step size and Taylor order below.
 
 #pragma once

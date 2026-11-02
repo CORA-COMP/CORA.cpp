@@ -1,10 +1,10 @@
-// test_linearSys_verify - linear_sys verify (support function algorithm) against MATLAB CORA
+// test_linear_sys_verify - linear_sys verify (support function algorithm) against MATLAB CORA
 //
 // Reference numbers: MATLAB R2025b, CORA (feature/coracpp-python), verify(sys, params, options,
-// spec) with options.verifyAlg = 'reachavoid:support_function'; res, savedata.iterations, .time_step,
-// .num_steps and falsification.t_final / falsification.x0 are pasted below. R0 = zonotope([1;0], 0.1*eye(2)) and
-// A = [-0.1 1; -1 -0.1] unless a case says otherwise; "safe" is specification(polytope(a, b),
-// 'safe_set'), "unsafe" the same with 'unsafe_set'.
+// spec) with options.verifyAlg = 'reachavoid:support_function'; res, savedata.iterations,
+// .time_step, .num_steps and falsification.t_final / falsification.x0 are pasted below. R0 =
+// zonotope([1;0], 0.1*eye(2)) and A = [-0.1 1; -1 -0.1] unless a case says otherwise; "safe" is
+// specification(polytope(a, b), 'safe_set'), "unsafe" the same with 'unsafe_set'.
 //
 // ISS (benchmark_linear_verifyFast_ARCH23_iss_ISSF01_ISS01, 270 states, 2 unsafe specs): MATLAB
 // and C++ both give res = 1, 3 iterations, time_step 0.008, 2500 steps (checked by hand, the
@@ -46,7 +46,7 @@ struct Expected {
     int iterations;
     double time_step;
     int num_steps;
-    double fals_t;  // -1: no falsification
+    double fals_t; // -1: no falsification
     std::vector<double> x0;
 };
 
@@ -63,6 +63,28 @@ void matches(const char *name, const VerifyResult &r, const Expected &e) {
         if (!e.x0.empty())
             check(test::close(r.falsification->x0, e.x0, 1e-12), w + "falsifying initial state");
     }
+}
+
+/// t_final 0 and no specification are refused; with the checks off the verdict is the same.
+void checks_and_their_switch() {
+    const LinearSys sys = LinearSys(Tensor({{-1.0, 0.5}, {-0.5, -1.0}}), Tensor({{1.0}, {0.0}}));
+    const ReachProblem problem{.initial_set =
+                                   Zonotope(Tensor({1.0, 1.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}})),
+                               .input_set = Zonotope(Tensor({0.0}), Tensor({{0.1}})),
+                               .t_final = 1};
+    const std::vector<Specification> specs{Specification::safe_set(Tensor({1.0, 0.0}), 3.0)};
+    ReachProblem zero = problem;
+    zero.t_final = 0;
+    check(test::raises([&] { sys.verify(zero, specs, alg::ReachAvoidSupportFunction{}); },
+                       Error::wrong_value),
+          "verify: t_final 0");
+    check(test::raises([&] { sys.verify(problem, {}, alg::ReachAvoidSupportFunction{}); },
+                       Error::wrong_value),
+          "verify: no specification");
+    const bool on = sys.verify(problem, specs, alg::ReachAvoidSupportFunction{}).verified;
+    ChecksScope off(false);
+    check(sys.verify(problem, specs, alg::ReachAvoidSupportFunction{}).verified == on,
+          "verify: the same with the checks off");
 }
 
 } // namespace
@@ -90,10 +112,18 @@ int main() {
             {false, 0, 0, 0, 0, {1, -0.10000000000000001}});
     // Falsification: a hit of the unsafe set by the trajectory from the extreme point of R0.
     matches("C", osc0.verify({R0, none, 5}, {unsafe({1, 0}, -0.75)}, S),
-            {false, 1, 0.050000000000000003, 100, 2.5500000000000003,
+            {false,
+             1,
+             0.050000000000000003,
+             100,
+             2.5500000000000003,
              {1.1000000000000001, -0.10000000000000001}});
     matches("M2", osc0.verify({R0, none, 5}, {unsafe({0, -1}, -0.65)}, S),
-            {false, 1, 0.050000000000000003, 100, 4.2000000000000002,
+            {false,
+             1,
+             0.050000000000000003,
+             100,
+             4.2000000000000002,
              {1.1000000000000001, -0.10000000000000001}});
     matches("C2", osc0.verify({R0, none, 5}, {unsafe({1, 0}, -1.5)}, S),
             {true, 1, 0.050000000000000003, 100, -1, none0});
@@ -105,12 +135,20 @@ int main() {
     matches("K2", osc1.verify({R0, u05, 5}, {safe({0, 1}, 0.7943)}, S),
             {true, 3, 0.0020000000000000005, 2500, -1, none0});
     matches("M", osc1.verify({R0, u05, 5}, {unsafe({0, -1}, -0.75)}, S),
-            {false, 1, 0.050000000000000003, 100, 4.2000000000000002,
+            {false,
+             1,
+             0.050000000000000003,
+             100,
+             4.2000000000000002,
              {1.1000000000000001, -0.10000000000000001}});
     matches("N", osc1.verify({R0, u05, 5}, {unsafe({1, 0}, -1.0)}, S),
             {true, 1, 0.050000000000000003, 100, -1, none0});
     matches("Q", osc1.verify({R0, u05, 5}, {safe({1, 0}, 3), unsafe({0, -1}, -0.75)}, S),
-            {false, 1, 0.050000000000000003, 100, 4.2000000000000002,
+            {false,
+             1,
+             0.050000000000000003,
+             100,
+             4.2000000000000002,
              {1.1000000000000001, -0.10000000000000001}});
     matches("E", osc1.verify({R0, u05, 5}, {unsafe({0, 1}, 1.9)}, S),
             {false, 0, 0, 0, 0, {1, -0.10000000000000001}});
@@ -120,7 +158,8 @@ int main() {
     matches("G2", nil.verify({R0, u05, 2}, {unsafe({1, 0}, 5)}, S),
             {false, 0, 0, 0, 0, {0.90000000000000002, 0}});
     // An output matrix C, a three-dimensional system, several specifications.
-    matches("F", sys3.verify({R03, zono({0.1}, {0.05}, 1), 4}, {unsafe({1}, -3), unsafe({-1}, -3)}, S),
+    matches("F",
+            sys3.verify({R03, zono({0.1}, {0.05}, 1), 4}, {unsafe({1}, -3), unsafe({-1}, -3)}, S),
             {true, 1, 0.040000000000000001, 100, -1, none0});
     matches("L", sys3.verify({R03, zono({0.1}, {0.05}, 1), 4}, {safe({1}, 2.202)}, S),
             {true, 2, 0.0080000000000000002, 500, -1, none0});
@@ -154,14 +193,18 @@ int main() {
     // Unsupported input is refused.
     // The support function algorithm takes unsafe sets of one halfspace only.
     check(test::throws([&] {
-              osc1.verify({R0, u05, 5}, {Specification::unsafe_set({{test::column({1, 0}), 1.0},
-                                                     {test::column({0, 1}), 1.0}})}, S);
+              osc1.verify({R0, u05, 5},
+                          {Specification::unsafe_set(
+                              {{test::column({1, 0}), 1.0}, {test::column({0, 1}), 1.0}})},
+                          S);
           }),
           "an unsafe set of several halfspaces is refused by the support function algorithm");
     check(test::throws([&] { osc1.verify({R0, u05, 5}, {}, S); }), "no specification");
     check(test::throws([&] { osc1.verify({R0, u05, 5}, {safe({1}, 2)}, S); }), "wrong normal size");
     check(test::throws([&] { osc1.verify({R0, u05, 0}, {safe({1, 0}, 2)}, S); }), "t_final 0");
-    check(test::throws([&] { osc1.verify({R0, zono({0, 0}, {1, 0}, 1), 5}, {safe({1, 0}, 2)}, S); }),
-          "U of the wrong dimension");
+    check(
+        test::throws([&] { osc1.verify({R0, zono({0, 0}, {1, 0}, 1), 5}, {safe({1, 0}, 2)}, S); }),
+        "U of the wrong dimension");
+    checks_and_their_switch();
     return test::finish("linear_sys verify");
 }

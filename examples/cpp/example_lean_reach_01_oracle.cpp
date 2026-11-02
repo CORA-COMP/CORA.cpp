@@ -32,21 +32,26 @@ int main() {
     // every value is a dyadic number, so it is exact in binary64 and in binary32
     const Tensor A({{0.0, 1.0}, {-1.0, -0.25}});
     const Tensor c({{1.0}, {0.0}}), G({{0.25, 0.0}, {0.0, 0.25}});
-    const double time_step = 0.125, t_final = 2.0;  // a power of two: exact in every dtype
+    const double time_step = 0.125, t_final = 2.0; // a power of two: exact in every dtype
     const int taylor_terms = 8, zonotope_order = 10;
 
     // CORA.cpp's own result, in double without a rounding-error account
-    const ReachSet ref = LinearSys(A).reach({.initial_set = Zonotope(c, G), .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+    const ReachSet ref =
+        LinearSys(A).reach({.initial_set = Zonotope(c, G), .t_final = t_final},
+                           alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
     const Interval last = ref.time_point.back().interval();
-    std::cout << "CORA.cpp:  x1 in [" << last.inf().data()[0] << ", " << last.sup().data()[0] << "]\n";
+    std::cout << "CORA.cpp:  x1 in [" << last.inf().data()[0] << ", " << last.sup().data()[0]
+              << "]\n";
 
     // The Oracle ------------------------------------------------------------------------------
 
     for (const std::string dtype : {"binary64", "ieee:binary32"}) {
-        const lean::DTypeScope scope(dtype);  // the lean objects below are created in this dtype
-        const lean::ReachSet R = lean::LinearSys(A).reach(
-            lean::Zonotope(c, G), t_final,
-            alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms, .zonotope_order = zonotope_order});
+        const lean::DTypeScope scope(dtype); // the lean objects below are created in this dtype
+        const lean::ReachSet R =
+            lean::LinearSys(A).reach(lean::Zonotope(c, G), t_final,
+                                     alg::Standard{.time_step = time_step,
+                                                   .taylor_terms = taylor_terms,
+                                                   .zonotope_order = zonotope_order});
 
         // the nominal zonotope and the error box that the sound float operations added
         const lean::Zonotope &Z = R.time_point.back();
@@ -70,7 +75,8 @@ int main() {
 
     // Rounding --------------------------------------------------------------------------------
 
-    // 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the error
+    // 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the
+    // error
     const auto [value, error] = lean::Tensor::from(Tensor({{0.1}})).round_to("ieee:binary32");
     const auto [inf, sup] = error.gather();
     std::cout << "0.1 in binary32 is " << value.gather().data()[0] << ", the error lies in ["

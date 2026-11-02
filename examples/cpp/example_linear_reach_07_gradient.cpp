@@ -24,7 +24,9 @@ torch::Tensor total_width(const torch::Tensor &A, bool custom_backward) {
 
     // Reachability Analysis ---------------------------------------------------------------
 
-    const ReachSet R = LinearSys(from_torch(A, custom_backward)).reach({.initial_set = R0, .t_final = 1.0}, alg::Standard{.time_step = 0.1, .taylor_terms = 8});
+    const ReachSet R = LinearSys(from_torch(A, custom_backward))
+                           .reach({.initial_set = R0, .t_final = 1.0},
+                                  alg::Standard{.time_step = 0.1, .taylor_terms = 8});
 
     // Width -------------------------------------------------------------------------------
 

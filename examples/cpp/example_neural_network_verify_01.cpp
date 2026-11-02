@@ -1,4 +1,4 @@
-// example_neuralNetwork_verify_01 - a set of inputs propagated through a ReLU network
+// example_neural_network_verify_01 - a set of inputs propagated through a ReLU network
 //
 // Affine layers map a zonotope exactly; every ReLU whose input range crosses 0 is enclosed by the
 // tightest parallelogram of one slope and adds one generator. The output zonotope contains the

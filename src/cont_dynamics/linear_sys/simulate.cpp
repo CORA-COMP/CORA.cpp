@@ -64,6 +64,7 @@ std::vector<Tensor> aux_with_input(const Tensor &A, const Tensor &B, const Tenso
 std::vector<Tensor> LinearSys::simulate(const SimulationProblem &problem,
                                         const alg::LinearSimulate &alg) const {
     detail::Entry entry;
+    // the start points, the horizon and the algorithm
     const Tensor &x0 = problem.initial_state;
     CORA_CHECK(x0.defined() && x0.shape().size() >= 2 && x0.shape()[x0.shape().size() - 2] == dim(),
                Error::dimension_mismatch, [&] {
@@ -72,13 +73,15 @@ std::vector<Tensor> LinearSys::simulate(const SimulationProblem &problem,
                           (x0.defined() ? shape_text(x0.shape()) : std::string("(none)"));
                });
     CORA_CHECK(problem.t_final > 0 && problem.t_final < 1e300, Error::wrong_value, [&] {
-        return "simulate: t_final must be positive and finite, got " + std::to_string(problem.t_final);
+        return "simulate: t_final must be positive and finite, got " +
+               std::to_string(problem.t_final);
     });
     if (entry.check()) std::visit([](const auto &a) { a.validate(); }, alg);
     const double time_step = std::get<alg::Exact>(alg).time_step;
     const int steps = priv_num_steps(problem.t_final, time_step);
     if (!problem.input) return aux_autonomous(A_, x0, time_step, steps);
 
+    // a constant input: B, and one column per trajectory or one for all
     const Tensor &u = *problem.input;
     CORA_CHECK(B_.has_value(), Error::wrong_value,
                [] { return std::string("simulate: an input needs B; use LinearSys(A, B)"); });
@@ -86,8 +89,9 @@ std::vector<Tensor> LinearSys::simulate(const SimulationProblem &problem,
                    (u.shape().back() == x0.shape().back() || u.shape().back() == 1),
                Error::dimension_mismatch, [&] {
                    return "simulate: the input must be (m, N) or (m, 1) with m = " +
-                          std::to_string(B_->shape().back()) + " and N = " +
-                          std::to_string(x0.shape().back()) + ", got " + shape_text(u.shape());
+                          std::to_string(B_->shape().back()) +
+                          " and N = " + std::to_string(x0.shape().back()) + ", got " +
+                          shape_text(u.shape());
                });
     return aux_with_input(A_, *B_, x0, u, time_step, steps);
 }

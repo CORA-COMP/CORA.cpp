@@ -1,13 +1,14 @@
-// nonlinearSys - the nonlinear system x' = f(x), as CORA's nonlinearSys (without inputs)
+// nonlinear_sys - the nonlinear system x' = f(x), as CORA's nonlinearSys (without inputs)
 //
-// The dynamics f is written on symbolic states (cora/global/expr.h); the constructor differentiates it
-// once, so the Jacobian and the Hessian that reach needs are exact. A single system and a single
+// The dynamics f is written on symbolic states (cora/global/expr.h); the constructor differentiates
+// it once, so the Jacobian and the Hessian that reach needs are exact. A single system and a single
 // initial set: no batches. Everything is computed on tensors, so gradients flow through reach and
 // simulate with respect to the initial set; the decisions (which generators reduce keeps, when the
 // enclosure of a step has converged) are made on the values.
 //
 // Syntax:     NonlinearSys sys(f, n);
-//             ReachSet R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step = 0.01});
+//             ReachSet R = sys.reach({.initial_set = X0, .t_final = 1},
+//             alg::Linearization{.time_step = 0.01});
 // Operations: reach, simulate, simulate_random (one file each); the constructor, dynamics,
 //             jacobian, enclosure and hessian_enclosure (nonlinear_sys.cpp)
 // See also:   cora/cont_dynamics/linear_sys/linear_sys.h, cora/global/expr.h

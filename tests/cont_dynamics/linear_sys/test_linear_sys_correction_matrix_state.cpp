@@ -1,8 +1,8 @@
-// test_linearSys_correctionMatrixState - the correction matrix F(A, Δt, η) of linear_sys against
+// test_linear_sys_correction_matrix_state - the correction matrix F(A, Δt, η) of linear_sys against
 // MATLAB CORA's `taylorMatrices`, and the properties it has whatever the numbers.
 
-#include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cont_dynamics/linear_sys/matlab_reference.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"
 
 #include <cmath>
@@ -66,6 +66,19 @@ void is_tighter_with_more_terms(const std::string &b) {
           b + ": more Taylor terms widened F");
 }
 
+/// A step size of zero and no Taylor terms are refused; with the checks off F is the same.
+void checks_and_their_switch() {
+    const LinearSys sys = LinearSys(Tensor({{-1.0, 0.5}, {-0.5, -1.0}}));
+    check(test::raises([&] { sys.correction_matrix_state(0.0, 4); }, Error::wrong_value),
+          "correction_matrix_state: time_step 0");
+    check(test::raises([&] { sys.correction_matrix_state(0.1, 0); }, Error::wrong_value),
+          "correction_matrix_state: taylor_terms 0");
+    const Tensor on = sys.correction_matrix_state(0.1, 4).sup();
+    ChecksScope off(false);
+    check(test::close(sys.correction_matrix_state(0.1, 4).sup(), on, 0),
+          "correction_matrix_state: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -76,5 +89,6 @@ int main() {
         shrinks_with_the_time_step(b);
         is_tighter_with_more_terms(b);
     });
+    checks_and_their_switch();
     return test::finish("linear_sys correction_matrix_state");
 }

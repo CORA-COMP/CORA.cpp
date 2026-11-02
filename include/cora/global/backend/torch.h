@@ -2,7 +2,8 @@
 //
 // Differentiable through autograd. Only built with libtorch.
 //
-// Syntax:   set_backend("torch");   Tensor t = from_torch(x);   torch::Tensor x = to_torch(t);
+// Syntax:   BackendScope scope("torch");   Tensor t = from_torch(x);
+//           torch::Tensor x = to_torch(t);
 // See also: tensor.h, eigen.h
 
 #pragma once
@@ -15,8 +16,8 @@
 
 namespace cora {
 
-/// The libtorch backend on `device`, for `set_backend`. `custom_backward` differentiates
-/// the matrix exponential with a hand-written backward pass instead of autograd's own.
+/// The libtorch backend on `device`, for `backend(spec)` and `BackendScope`. `custom_backward`
+/// differentiates the matrix exponential with a hand-written backward pass, not autograd's own.
 std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device,
                                                      bool custom_backward);
 

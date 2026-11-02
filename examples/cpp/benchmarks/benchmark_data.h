@@ -174,7 +174,7 @@ inline std::vector<double> read_matrix(const Json &entry, const std::string &bin
 
 /// A zonotope from its center (n, 1) and generators (n, m); no generators become one zero one.
 inline Zonotope read_zonotope(const Json &matrices, const std::string &bin, const std::string &c,
-                             const std::string &G) {
+                              const std::string &G) {
     const int64_t n = matrices[c]["shape"][0].integer(), m = matrices[G]["shape"][1].integer();
     const Tensor center = Tensor::from_data(read_matrix(matrices[c], bin), {n, 1});
     if (m == 0) return Zonotope(center, Tensor::zeros({n, 1}));
@@ -184,7 +184,7 @@ inline Zonotope read_zonotope(const Json &matrices, const std::string &bin, cons
 inline Tensor read_tensor(const Json &matrices, const std::string &bin, const std::string &name) {
     const Json &entry = matrices[name];
     return Tensor::from_data(read_matrix(entry, bin),
-                            {entry["shape"][0].integer(), entry["shape"][1].integer()});
+                             {entry["shape"][0].integer(), entry["shape"][1].integer()});
 }
 
 // Specifications --------------------------------------------------------------------------------
@@ -220,14 +220,17 @@ inline Instance load_instance(const std::string &name) {
     inst.benchmark = meta["benchmark"].string;
     inst.label = meta["label"].string;
     const std::string verify_alg = meta["verifyAlg"].string;
-    if (verify_alg == "reachavoid:supportFunc") inst.alg = alg::ReachAvoidSupportFunction{};
-    else if (verify_alg == "reachavoid:zonotope") inst.alg = alg::ReachAvoidZonotope{};
-    else throw std::runtime_error("benchmark data: unknown verifyAlg " + verify_alg);
+    if (verify_alg == "reachavoid:supportFunc")
+        inst.alg = alg::ReachAvoidSupportFunction{};
+    else if (verify_alg == "reachavoid:zonotope")
+        inst.alg = alg::ReachAvoidZonotope{};
+    else
+        throw std::runtime_error("benchmark data: unknown verifyAlg " + verify_alg);
     inst.sys = std::make_unique<LinearSys>(read_tensor(mat, bin, "A"), read_tensor(mat, bin, "B"),
                                            read_tensor(mat, bin, "C"));
-    inst.params = std::make_unique<ReachProblem>(ReachProblem{
-        read_zonotope(mat, bin, "R0c", "R0G"), read_zonotope(mat, bin, "Uc", "UG"),
-        meta["tFinal"].number});
+    inst.params = std::make_unique<ReachProblem>(ReachProblem{read_zonotope(mat, bin, "R0c", "R0G"),
+                                                              read_zonotope(mat, bin, "Uc", "UG"),
+                                                              meta["tFinal"].number});
     for (const Json &spec : meta["specs"].array) inst.specs.push_back(read_spec(spec));
     inst.expected = meta["expected"];
     return inst;
@@ -241,9 +244,8 @@ inline void run_instance(const std::string &name) {
     const Instance inst = load_instance(name);
     // what will run, before it does
     std::cerr << name << ": " << inst.params->initial_set->dim() << " states, " << inst.specs.size()
-              << " specifications, "
-              << alg::name_of(inst.alg)
-              << " algorithm, t_final " << inst.params->t_final << std::endl;
+              << " specifications, " << alg::name_of(inst.alg) << " algorithm, t_final "
+              << inst.params->t_final << std::endl;
     const auto start = std::chrono::steady_clock::now();
     const VerifyResult res = inst.sys->verify(*inst.params, inst.specs, inst.alg);
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
@@ -261,7 +263,7 @@ inline void run_instance(const std::string &name) {
 
 /// The instances named on the command line, else all of the family.
 inline std::vector<std::string> instance_names(int argc, char **argv,
-                                              const std::vector<std::string> &family) {
+                                               const std::vector<std::string> &family) {
     if (argc < 2) return family;
     return std::vector<std::string>(argv + 1, argv + argc);
 }

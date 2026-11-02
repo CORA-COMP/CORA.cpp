@@ -7,8 +7,8 @@
 //
 // CORA: contSet/@contSet/interval.m
 
-#include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"
 #include "global/format.h"
 

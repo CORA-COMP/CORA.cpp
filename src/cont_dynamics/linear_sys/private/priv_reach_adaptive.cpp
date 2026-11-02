@@ -16,10 +16,10 @@
 //        outer-approximations of reachable sets", TAC, 2023.
 // See also: priv_verify_ra_zonotope
 
-#include "cont_dynamics/linear_sys/private/priv_lin_error_bound.h"
-#include "cora/global/error.h"
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
+#include "cont_dynamics/linear_sys/private/priv_lin_error_bound.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cora/global/error.h"
 
 #include <algorithm>
 #include <cmath>
@@ -179,7 +179,8 @@ Tensor aux_particular_constant(TaylorLinSys &taylor, const Tensor &u, double tim
         (void)max_sum;
         // Too large a step size diverges: the sum has not converged after 75 terms.
         if (std::isinf(max_abs) || eta == kMaxEta)
-            CORA_FAIL(Error::special_error, "LinearSys::verify: the particular solution of u diverges");
+            CORA_FAIL(Error::special_error,
+                      "LinearSys::verify: the particular solution of u diverges");
         if (small) break;
         Asum = Asum + add_term;
     }
@@ -189,9 +190,8 @@ Tensor aux_particular_constant(TaylorLinSys &taylor, const Tensor &u, double tim
 /// The particular solution of the uncertain input U over one step and the error terms of its
 /// Taylor series: G_zero = dt GU, G_infty the later terms and A_sum_error their matrix sum;
 /// false if the series does not converge.
-bool aux_pu(
-    TaylorLinSys &taylor, const Tensor &GU, double time_step, Tensor &G_zero, Tensor &G_infty,
-    Tensor &A_sum_error) {
+bool aux_pu(TaylorLinSys &taylor, const Tensor &GU, double time_step, Tensor &G_zero,
+            Tensor &G_infty, Tensor &A_sum_error) {
     G_zero = GU * time_step;
     std::vector<double> PUdiag = G_zero.abs().sum_last().data();
     std::vector<Tensor> parts;
@@ -215,14 +215,13 @@ bool aux_pu(
     return true;
 }
 
-
 // Reduction ---------------------------------------------------------------------------------------
 
 /// Propagates the particular solution of U by one step and reduces it (by the girard metric)
 /// within the reduction error bound; returns the error committed by the reduction. The box
 /// part G_PUtotal_infty takes everything that is reduced and everything axis-aligned.
-double aux_reduce(
-    TaylorLinSys &taylor, double t, SetState &set, const Chosen &ch, double err_bound_red, bool is_u) {
+double aux_reduce(TaylorLinSys &taylor, double t, SetState &set, const Chosen &ch,
+                  double err_bound_red, bool is_u) {
     if (!is_u) return 0.0;
     const int64_t n = taylor.A().shape()[0];
     const Tensor e_atk = *taylor.read_e_adt(t);
@@ -265,9 +264,9 @@ double aux_reduce(
     // The first bound: the generator of smallest girard metric alone.
     const std::size_t total = set.girard_pu_total_zero.size();
     if (total == 0) return 0.0;
-    const std::size_t min_idx = std::min_element(set.girard_pu_total_zero.begin(),
-                                                set.girard_pu_total_zero.end()) -
-                               set.girard_pu_total_zero.begin();
+    const std::size_t min_idx =
+        std::min_element(set.girard_pu_total_zero.begin(), set.girard_pu_total_zero.end()) -
+        set.girard_pu_total_zero.begin();
     if (2 * aux_vecnorm(set.Ghat_PUtotal_zero[min_idx]) > err_bound_red) return 0.0;
 
     // Reduce the generators of smallest girard metric while the error stays within the bound.
@@ -310,14 +309,13 @@ double aux_reduce(
     return err_red;
 }
 
-
 // Errors ------------------------------------------------------------------------------------------
 
 /// What the errors of a step depend on besides the step size.
 struct Problem {
     TaylorLinSys *taylor;
     Tensor GU, u;     ///< generators of U (n, mU) and the constant input offset (n, 1)
-    bool is_u, isu;    ///< whether U has generators, and whether the offset is nonzero
+    bool is_u, isu;   ///< whether U has generators, and whether the offset is nonzero
 };
 
 /// Sets list[k][it], growing the lists.
@@ -334,7 +332,8 @@ double aux_eps_f(const Interval &F, const Zonotope &startset, Tensor &box_c, Ten
     const Tensor Fc = F.center(), Frad = F.rad();
     box_c = Fc.matmul(startset.center());
     // The generators of F startset: F_c G and one axis-aligned generator per dimension.
-    const Tensor rad_part = Frad.matmul(Tensor::cat_last({startset.center(), startset.generators()}).abs().sum_last());
+    const Tensor rad_part =
+        Frad.matmul(Tensor::cat_last({startset.center(), startset.generators()}).abs().sum_last());
     box_g = Fc.matmul(startset.generators()).abs().sum_last() + rad_part;
     return 2 * aux_vecnorm((box_g + box_c.abs()).data());
 }
@@ -355,14 +354,13 @@ int aux_check_time_step(double time_step, const AdaptiveSaveData &sd) {
 
 /// All errors of the trial step size: accumulating (PU), non-accumulating (linear combination,
 /// F, G, time dependency of PU); the sets belonging to them. False if a Taylor sum diverges.
-bool aux_errors(
-    const Problem &P, int k, int kIter, LinErrorBound &errs, bool fullcomp, SetState &set, double
-    t, double time_step, int idx, const AdaptiveSaveData &sd) {
+bool aux_errors(const Problem &P, int k, int kIter, LinErrorBound &errs, bool fullcomp,
+                SetState &set, double t, double time_step, int idx, const AdaptiveSaveData &sd) {
     TaylorLinSys &taylor = *P.taylor;
     const Tensor e_adtk = taylor.e_adt(time_step);
     const std::size_t need = static_cast<std::size_t>(kIter) + 1;
-    for (std::vector<Tensor> *v : {&set.box_fc, &set.box_fg, &set.GuC, &set.GuG, &set.PUzero,
-                                   &set.PUinf, &set.PUAsum})
+    for (std::vector<Tensor> *v :
+         {&set.box_fc, &set.box_fg, &set.GuC, &set.GuG, &set.PUzero, &set.PUinf, &set.PUAsum})
         if (v->size() < need) v->resize(need);
     const Tensor e_atk = P.is_u ? taylor.e_adt(t) : Tensor();
 
@@ -375,7 +373,8 @@ bool aux_errors(
         set.PUzero[kIter] = Gz, set.PUinf[kIter] = Gi, set.PUAsum[kIter] = As;
         // The Hausdorff distance between the exact particular solution and the computed one.
         aux_set(errs.idv_pu_tkplus1, k, kIter,
-                aux_row_sum_norm(e_atk.matmul(As).matmul(P.GU)) + aux_row_sum_norm(e_atk.matmul(Gi)));
+                aux_row_sum_norm(e_atk.matmul(As).matmul(P.GU)) +
+                    aux_row_sum_norm(e_atk.matmul(Gi)));
     } else {
         // The step size was used before: read what was computed for it.
         set.PUinf[kIter] = *sd.G_PU_infty[idx - 1];
@@ -425,8 +424,9 @@ bool aux_errors(
         // The time dependency that is lost by adding the particular solution: e^{A tk} PU.
         aux_set(errs.idv_pu_tauk, k, kIter,
                 !P.is_u ? 0.0
-                       : aux_vecnorm((e_atk.matmul(set.PUzero[kIter]).abs().sum_last() +
-                                      e_atk.matmul(set.PUinf[kIter]).abs().sum_last()).data()));
+                        : aux_vecnorm((e_atk.matmul(set.PUzero[kIter]).abs().sum_last() +
+                                       e_atk.matmul(set.PUinf[kIter]).abs().sum_last())
+                                          .data()));
         aux_set(errs.seq_nonacc, k, kIter,
                 errs.idv_lin_comb[k][kIter] + errs.idv_pu_tauk[k][kIter] + errs.idv_f[k][kIter] +
                     errs.idv_g[k][kIter]);
@@ -437,14 +437,13 @@ bool aux_errors(
     return true;
 }
 
-
 // Step size ---------------------------------------------------------------------------------------
 
 /// The step size adjusted to one used before (to reuse what was computed for it): the largest
 /// used step size in (factor * time_step, time_step), else, between two used ones, their midpoint.
 /// idx is the 1-based index in the save data, 0 for none.
-double aux_adjust_time_step(
-    int k, double time_step, bool is_u, double max_time_step, const AdaptiveSaveData &sd, int &idx) {
+double aux_adjust_time_step(int k, double time_step, bool is_u, double max_time_step,
+                            const AdaptiveSaveData &sd, int &idx) {
     // The first step searches longer for a good step size.
     const double factor = k == 0 ? 0.95 : (is_u ? 0.75 : 0.80);
     int best = 0;
@@ -482,9 +481,8 @@ double aux_adjust_time_step(
 
 /// Saves what was computed for the chosen trial of a step size for later steps and runs;
 /// returns the index (1-based) of the step size in the save data.
-int aux_savedata(
-    AdaptiveSaveData &sd, int kIter, bool fullcomp, const Problem &P, const SetState &set, const
-    LinErrorBound &errs, int k, double time_step) {
+int aux_savedata(AdaptiveSaveData &sd, int kIter, bool fullcomp, const Problem &P,
+                 const SetState &set, const LinErrorBound &errs, int k, double time_step) {
     int idx = 0;
     for (std::size_t i = 0; i < sd.time_step.size(); ++i)
         if (std::abs(sd.time_step[i] - time_step) < 1e-14) {
@@ -545,7 +543,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
     if (verify) {
         time_spec_unsat = VerifyTime::unify(spec_times);
         if (time_spec_unsat.empty())
-            CORA_FAIL(Error::report_to_dev, "priv_reach_adaptive: every specification is verified already");
+            CORA_FAIL(Error::report_to_dev,
+                      "priv_reach_adaptive: every specification is verified already");
         t_final = time_spec_unsat.final_time();
     }
     double t = 0, time_step = t_final;
@@ -558,7 +557,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
     // The error bound is for the state space: the output equation scales it by ||C||.
     const double err_r2_y = params.C ? aux_norm2(*params.C) : 1.0;
     LinErrorBound errs(error / err_r2_y, t_final);
-    errs.use_approx_fun = false;  // the first step always bisects: more robust
+    errs.use_approx_fun = false; // the first step always bisects: more robust
 
     // The share of the error for the reduction of the particular solution of U.
     if (!P.is_u) {
@@ -632,7 +631,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
 
             // New step sizes are saved for later steps and runs.
             if (time_step_idx[kIter] == 0 || fc != savedata.fullcomp[time_step_idx[kIter] - 1])
-                time_step_idx[kIter] = aux_savedata(savedata, kIter, fc, P, set, errs, k, time_step);
+                time_step_idx[kIter] =
+                    aux_savedata(savedata, kIter, fc, P, set, errs, k, time_step);
             errs.update_coefficients_approx_fun(k, kIter, fc);
             aux_set(errs.bound_acc_ok, k, kIter,
                     static_cast<char>(errs.step_acc[k][kIter] < errs.bound_acc[k][kIter]));
@@ -649,8 +649,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
                 }
                 const bool acc_close = errs.step_acc[k][kIter] > 0.90 * errs.bound_acc[k][kIter];
                 const bool rem_close = errs.step_acc[k][kIter] + errs.seq_nonacc[k][kIter] -
-                                          errs.idv_pu_tkplus1[k][kIter] >
-                                      0.90 * errs.bound_rem[k][kIter];
+                                           errs.idv_pu_tkplus1[k][kIter] >
+                                       0.90 * errs.bound_rem[k][kIter];
                 if (acc_close || (fc && rem_close)) {
                     kIterChosen = kIter;
                     break;
@@ -658,10 +658,13 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             }
 
             // Predict the step size for both bounds, adjusted to ones used before.
-            time_step = errs.estimate_time_step_size(t, k, kIter, fc, time_step, max_time_step, P.is_u);
+            time_step =
+                errs.estimate_time_step_size(t, k, kIter, fc, time_step, max_time_step, P.is_u);
             int next_idx = 0;
-            time_step = aux_adjust_time_step(k, time_step, P.is_u, max_time_step, savedata, next_idx);
-            if (static_cast<int>(time_step_idx.size()) <= kIter + 1) time_step_idx.resize(kIter + 2, 0);
+            time_step =
+                aux_adjust_time_step(k, time_step, P.is_u, max_time_step, savedata, next_idx);
+            if (static_cast<int>(time_step_idx.size()) <= kIter + 1)
+                time_step_idx.resize(kIter + 2, 0);
             time_step_idx[kIter + 1] = next_idx;
             bool reuse = false;
             for (int p = 0; p <= kIter && !reuse; ++p)
@@ -746,8 +749,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
                 Gtp.push_back(map_c(infty.diag()));
             }
             Gout.push_back(map_c(boxes.diag()));
-            out.time_interval.push_back(Zonotope(map_c(set.enc->center() + ch.box_fc + ch.GuC),
-                                           Tensor::cat_last(Gout)));
+            out.time_interval.push_back(
+                Zonotope(map_c(set.enc->center() + ch.box_fc + ch.GuC), Tensor::cat_last(Gout)));
             out.time_interval_error.push_back(err_r2_y * Rc);
             out.time_point.push_back(Zonotope(map_c(set.Hstartp->center()), Tensor::cat_last(Gtp)));
             out.time_point_error.push_back(err_r2_y * Rtp);

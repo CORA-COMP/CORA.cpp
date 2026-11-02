@@ -95,9 +95,13 @@ inline Zonotope operator*(const Zonotope &Z, double s) { return s * Z; }
 inline Zonotope operator+(const Zonotope &Z, const Zonotope &Z2) { return Z.plus(Z2); }
 inline Zonotope operator+(const Zonotope &Z, const Interval &I) { return Z.plus(I); }
 inline Zonotope operator+(const Interval &I, const Zonotope &Z) { return Z.plus(I); }
-inline Zonotope operator+(const Zonotope &Z, const Tensor &v) { return {Z.center() + v, Z.generators()}; }
+inline Zonotope operator+(const Zonotope &Z, const Tensor &v) {
+    return {Z.center() + v, Z.generators()};
+}
 inline Zonotope operator+(const Tensor &v, const Zonotope &Z) { return Z + v; }
-inline Zonotope operator-(const Zonotope &Z, const Tensor &v) { return {Z.center() - v, Z.generators()}; }
+inline Zonotope operator-(const Zonotope &Z, const Tensor &v) {
+    return {Z.center() - v, Z.generators()};
+}
 inline Zonotope operator-(const Zonotope &Z) { return {Z.center() * -1.0, Z.generators()}; }
 
 } // namespace cora

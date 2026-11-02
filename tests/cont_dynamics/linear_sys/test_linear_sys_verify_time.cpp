@@ -1,4 +1,4 @@
-// test_linearSys_verifyTime - VerifyTime (the unverified times of the zonotope verification)
+// test_linear_sys_verify_time - VerifyTime (the unverified times of the zonotope verification)
 //
 // Reference: MATLAB R2025b, CORA's verifyTime: T = verifyTime([0 10]); T = setdiff(T, op) for the
 // operations below; time_until_switch, contains, is_intersecting and unify on the results.
@@ -66,7 +66,8 @@ int main() {
     const double iv[5][2] = {{0, 0.4}, {0.5, 0.6}, {2.5, 2.8}, {8, 9}, {8.2, 8.7}};
     const bool hit[5] = {false, false, false, true, true};
     for (int i = 0; i < 5; ++i)
-        check(T.is_intersecting(iv[i][0], iv[i][1]) == hit[i], "is_intersecting " + std::to_string(i));
+        check(T.is_intersecting(iv[i][0], iv[i][1]) == hit[i],
+              "is_intersecting " + std::to_string(i));
 
     // unify, and compact of touching intervals.
     const VerifyTime U = VerifyTime::unify(

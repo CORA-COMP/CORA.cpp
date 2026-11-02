@@ -41,7 +41,8 @@ Interval::Interval(Tensor inf, Tensor sup)
                           shape_text(inf_.shape()) + " and " + shape_text(sup_.shape());
                });
     CORA_CHECK(aux_ordered(inf_, sup_), Error::wrong_input_in_constructor, [] {
-        return std::string("Interval: the lower bound exceeds the upper one somewhere; give inf <= sup");
+        return std::string(
+            "Interval: the lower bound exceeds the upper one somewhere; give inf <= sup");
     });
 }
 

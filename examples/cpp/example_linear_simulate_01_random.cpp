@@ -31,16 +31,19 @@ int main() {
     // Reachability Analysis -------------------------------------------------------------------
 
     const double time_step = 0.1;
-    const ReachSet R = sys.reach({.initial_set = R0, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = 8});
+    const ReachSet R = sys.reach({.initial_set = R0, .t_final = t_final},
+                                 alg::Standard{.time_step = time_step, .taylor_terms = 8});
 
     // Simulation ------------------------------------------------------------------------------
 
     // traj[k] holds the 20 points at time k * time_step / 2; the columns are the trajectories.
-    const std::vector<Tensor> traj = sys.simulate_random({.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step / 2}, 20, rng);
+    const std::vector<Tensor> traj = sys.simulate_random(
+        {.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step / 2}, 20, rng);
 
     // The corners of the generator cube as start points, and their trajectories.
     const Tensor corners = R0.rand_point(20, rng, "extreme");
-    const std::vector<Tensor> traj_extreme = sys.simulate({.initial_state = corners, .t_final = t_final}, alg::Exact{.time_step = time_step / 2});
+    const std::vector<Tensor> traj_extreme = sys.simulate(
+        {.initial_state = corners, .t_final = t_final}, alg::Exact{.time_step = time_step / 2});
 
     // Verification ----------------------------------------------------------------------------
 

@@ -1,7 +1,8 @@
-// test_specification_unsafePolytope - an unsafe set of several halfspaces, as CORA's unsafeSet polytope
+// test_specification_unsafe_polytope - an unsafe set of several halfspaces, as CORA's unsafeSet
+// polytope
 //
-// The expected answers are those of MATLAB CORA's check(specification(polytope(A, b), 'unsafe_set'),
-// zonotope(c, G)): safe iff the zonotope and the polytope have no common point.
+// The expected answers are those of MATLAB CORA's check(specification(polytope(A, b),
+// 'unsafe_set'), zonotope(c, G)): safe iff the zonotope and the polytope have no common point.
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/specification/specification.h"
@@ -47,7 +48,9 @@ void unsafe_polytope(const std::string &b) {
     // the type, the halfspaces, and the errors
     const Specification spec = Specification::unsafe_set(box(0, 0, 1, 1));
     check(spec.type() == SpecType::unsafe_set && spec.halfspaces().size() == 4, b + ": stored");
-    check(test::raises([] { Specification::unsafe_set(std::vector<Halfspace>{}); }, Error::wrong_input_in_constructor), b + ": no halfspace is an error");
+    check(test::raises([] { Specification::unsafe_set(std::vector<Halfspace>{}); },
+                       Error::wrong_input_in_constructor),
+          b + ": no halfspace is an error");
 }
 
 } // namespace

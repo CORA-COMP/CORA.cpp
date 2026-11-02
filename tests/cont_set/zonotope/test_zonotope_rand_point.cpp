@@ -1,4 +1,4 @@
-// test_zonotope_randPoint - zonotope rand_point: standard points in the set, extreme points at its
+// test_zonotope_rand_point - zonotope rand_point: standard points in the set, extreme points at its
 // corners
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -80,6 +80,16 @@ void extreme_points_are_corners(const std::string &b) {
     check(worst < 1e-10, b + ": an extreme point is not a corner");
 }
 
+/// A negative number of points is refused; with the checks off the draw is the same.
+void checks_and_their_switch() {
+    const Zonotope S = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    cora::Rng rng(3), again(3);
+    check(test::raises([&] { S.rand_point(-1, rng); }, Error::wrong_value), "rand_point: N = -1");
+    const Tensor on = S.rand_point(4, rng);
+    ChecksScope off(false);
+    check(test::close(S.rand_point(4, again), on, 0), "rand_point: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -87,5 +97,6 @@ int main() {
         rand_point_samples_the_set(b);
         extreme_points_are_corners(b);
     });
+    checks_and_their_switch();
     return test::finish("zonotope rand_point");
 }

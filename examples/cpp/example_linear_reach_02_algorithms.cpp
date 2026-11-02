@@ -34,9 +34,12 @@ int main() {
 
     // Reachability Analysis -------------------------------------------------------------------
 
-    const ReachSet Rstandard = sys.reach({.initial_set = R0, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+    const ReachSet Rstandard =
+        sys.reach({.initial_set = R0, .t_final = t_final},
+                  alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
     const ReachSet RwrappingFree =
-        sys.reach({.initial_set = R0, .t_final = t_final}, alg::WrappingFree{.time_step = time_step, .taylor_terms = taylor_terms});
+        sys.reach({.initial_set = R0, .t_final = t_final},
+                  alg::WrappingFree{.time_step = time_step, .taylor_terms = taylor_terms});
 
     // Evaluation ------------------------------------------------------------------------------
 
@@ -44,8 +47,9 @@ int main() {
     const Tensor x1({1.0, 0.0});
     std::cout << std::fixed << std::setprecision(5) << "step   standard   wrapping-free\n";
     for (std::size_t k = 0; k < Rstandard.time_interval.size(); ++k)
-        std::cout << std::setw(4) << k << "   " << Rstandard.time_interval[k].support_function(x1).data()[0]
-                  << "    " << RwrappingFree.time_interval[k].support_function(x1).data()[0] << "\n";
+        std::cout << std::setw(4) << k << "   "
+                  << Rstandard.time_interval[k].support_function(x1).data()[0] << "    "
+                  << RwrappingFree.time_interval[k].support_function(x1).data()[0] << "\n";
 
     // example completed
     return 0;

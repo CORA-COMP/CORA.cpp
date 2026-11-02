@@ -1,4 +1,4 @@
-// test_nonlinearSys_gradient_torch - gradients through reach and simulate with respect to the
+// test_nonlinear_sys_gradient_torch - gradients through reach and simulate with respect to the
 // initial set, against central differences
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -20,17 +20,25 @@ NonlinearSys van_der_pol() {
 
 /// The support along d of every set of the reachable tube, summed.
 torch::Tensor reach_loss(const torch::Tensor &c, const torch::Tensor &G, const torch::Tensor &d) {
-    const ReachSet R = van_der_pol().reach({.initial_set = Zonotope(from_torch(c.unsqueeze(-1)), from_torch(G)), .t_final = 0.2}, alg::Linearization{.time_step = 0.02, .taylor_terms = 4});
+    const ReachSet R = van_der_pol().reach(
+        {.initial_set = Zonotope(from_torch(c.unsqueeze(-1)), from_torch(G)), .t_final = 0.2},
+        alg::Linearization{.time_step = 0.02, .taylor_terms = 4});
     const Tensor direction = from_torch(d.unsqueeze(-1));
     torch::Tensor total = torch::zeros({}, c.options());
-    for (const Zonotope &Z : R.time_point) total = total + to_torch(Z.support_function(direction)).sum();
-    for (const Zonotope &Z : R.time_interval) total = total + to_torch(Z.support_function(direction)).sum();
+    for (const Zonotope &Z : R.time_point)
+        total = total + to_torch(Z.support_function(direction)).sum();
+    for (const Zonotope &Z : R.time_interval)
+        total = total + to_torch(Z.support_function(direction)).sum();
     return total;
 }
 
 /// The first state at the end of a simulation of the start points x0 (2, N), summed.
 torch::Tensor simulate_loss(const torch::Tensor &x0) {
-    return to_torch(van_der_pol().simulate({.initial_state = from_torch(x0), .t_final = 0.5}, alg::RungeKutta4{.time_step = 0.05}).back()).sum();
+    return to_torch(van_der_pol()
+                        .simulate({.initial_state = from_torch(x0), .t_final = 0.5},
+                                  alg::RungeKutta4{.time_step = 0.05})
+                        .back())
+        .sum();
 }
 
 /// The largest relative difference between the autograd gradient of f in x0 and central differences.
@@ -58,10 +66,13 @@ void reach_is_differentiable() {
     const torch::Tensor d = torch::tensor({0.6, -0.8}, opts);
     const torch::Tensor c0 = torch::tensor({1.4, 2.3}, opts);
     const torch::Tensor G0 = torch::tensor({{0.05, 0.01}, {-0.02, 0.06}}, opts);
-    const double c_error = gradient_error([&](const torch::Tensor &c) { return reach_loss(c, G0, d); }, c0);
-    const double g_error = gradient_error([&](const torch::Tensor &G) { return reach_loss(c0, G, d); }, G0);
+    const double c_error =
+        gradient_error([&](const torch::Tensor &c) { return reach_loss(c, G0, d); }, c0);
+    const double g_error =
+        gradient_error([&](const torch::Tensor &G) { return reach_loss(c0, G, d); }, G0);
     check(c_error < 1e-5, "reach: the gradient in the center is off by " + std::to_string(c_error));
-    check(g_error < 1e-5, "reach: the gradient in the generators is off by " + std::to_string(g_error));
+    check(g_error < 1e-5,
+          "reach: the gradient in the generators is off by " + std::to_string(g_error));
 }
 
 void simulate_is_differentiable() {

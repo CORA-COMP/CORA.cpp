@@ -31,8 +31,16 @@ class Json {
     Json(std::string s) : kind(Kind::string), text(std::move(s)) {}
     Json(bool b) : kind(Kind::boolean), boolean(b) {}
     Json(int64_t n) : kind(Kind::number), text(std::to_string(n)) {}
-    static Json array() { Json j; j.kind = Kind::array; return j; }
-    static Json object() { Json j; j.kind = Kind::object; return j; }
+    static Json array() {
+        Json j;
+        j.kind = Kind::array;
+        return j;
+    }
+    static Json object() {
+        Json j;
+        j.kind = Kind::object;
+        return j;
+    }
 
     /// Appends to an array.
     Json &push(Json v) { items.insert(items.end(), std::move(v)); return *this; }

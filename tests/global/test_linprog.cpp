@@ -14,7 +14,7 @@ namespace {
 
 /// The minimum of f'x over {Ax <= b} in the plane by checking every vertex (a bounded program).
 double brute_force(const std::vector<double> &f, const std::vector<double> &A,
-                  const std::vector<double> &b) {
+                   const std::vector<double> &b) {
     const int m = static_cast<int>(b.size());
     double best = 1e300;
     for (int i = 0; i < m; ++i)
@@ -116,8 +116,7 @@ void random_planar_programs() {
         lp.Aineq = A;
         lp.bineq = b;
         const LinProgResult r = linprog(lp);
-        check(r.status == Status::optimal &&
-                  std::abs(r.fval - brute_force(f, A, b)) < 1e-7,
+        check(r.status == Status::optimal && std::abs(r.fval - brute_force(f, A, b)) < 1e-7,
               "random planar program " + std::to_string(trial));
     }
 }

@@ -7,8 +7,9 @@
 // immutable values: an operation returns a new set. They run on every Tensor backend and
 // batch wherever the backend does; a vector is a column (..., n, 1).
 //
-// Syntax:     Tensor v = S.support_function(d);   Interval I = S.interval();   Set P = S.project(d);
-// Operations: support_function, interval, rand_point, project, vertices, display (one file each
+// Syntax:     Tensor v = S.support_function(d);   Interval I = S.interval();   Set P =
+// S.project(d); Operations: support_function, interval, rand_point, project, vertices, display (one
+// file each
 //             in src/cont_set/cont_set/, the checks; the classes implement the _impl forms)
 // See also:   cont_set/set.h, cont_set/registry.h, cont_set/zonotope/zonotope.h
 //
@@ -36,6 +37,8 @@ class Set;
 using Point = std::array<double, 2>;
 using Polygon = std::vector<Point>;
 
+// Classes -----------------------------------------------------------------------------------------
+
 /// The set classes of CORA, in CORA's order of precedence (the lowest first); the binary
 /// registry is indexed by them. Not every class is implemented yet.
 enum class ClassId : unsigned char {
@@ -53,16 +56,16 @@ enum class ClassId : unsigned char {
     zono_bundle,
     zonotope,
     interval,
-    custom,  ///< a class defined outside the library (a Python subclass of ContSet)
+    custom, ///< a class defined outside the library (a Python subclass of ContSet)
     count,
 };
 
 /// The name of the class (C++ and Python, e.g. "Zonotope").
 constexpr const char *class_name(ClassId id) noexcept {
-    constexpr const char *names[] = {"EmptySet",  "Fullspace",     "Polygon",    "LevelSet",
-                                     "ConPolyZono", "SpectraShadow", "Ellipsoid", "Capsule",
-                                     "PolyZonotope", "Polytope",    "ConZonotope", "ZonoBundle",
-                                     "Zonotope",   "Interval",      "ContSet"};
+    constexpr const char *names[] = {"EmptySet",     "Fullspace",     "Polygon",     "LevelSet",
+                                     "ConPolyZono",  "SpectraShadow", "Ellipsoid",   "Capsule",
+                                     "PolyZonotope", "Polytope",      "ConZonotope", "ZonoBundle",
+                                     "Zonotope",     "Interval",      "ContSet"};
     return names[static_cast<int>(id)];
 }
 
@@ -71,6 +74,8 @@ constexpr int precedence(ClassId id) noexcept {
     constexpr int values[] = {0, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 1000};
     return values[static_cast<int>(id)];
 }
+
+// The Abstract Set --------------------------------------------------------------------------------
 
 class ContSet {
   public:

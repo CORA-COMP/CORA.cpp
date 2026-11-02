@@ -6,8 +6,9 @@
 // the problem (CORA's params) and the algorithm (CORA's options) apart.
 //
 // Syntax:     LinearSys sys(A);   LinearSys sys(A, B, C);
-//             ReachSet R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{.time_step = 0.1});
-//             VerifyResult r = sys.verify({.initial_set = X0, .input_set = U, .t_final = 2}, specs,
+//             ReachSet R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{.time_step =
+//             0.1}); VerifyResult r = sys.verify({.initial_set = X0, .input_set = U, .t_final = 2},
+//             specs,
 //                                         alg::ReachAvoidZonotope{});
 // Operations: reach, output_set, simulate, simulate_random, verify (one file each); the building
 //             blocks of reach correction_matrix_state, correction_matrix_input, expm_remainder,
@@ -31,6 +32,8 @@
 
 namespace cora {
 
+// Results -----------------------------------------------------------------------------------------
+
 /// A trajectory that violates a specification: the state at time 0 and the time it is violated.
 struct Falsification {
     Tensor x0;
@@ -40,10 +43,10 @@ struct Falsification {
 /// The outcome of verify (CORA's res, fals and savedata).
 struct VerifyResult {
     bool verified = false;
-    double computation_time = 0;  ///< seconds spent, as CORA's savedata.tComp
-    int iterations = 0;           ///< passes of the adaptive loop
-    double time_step = 0;         ///< the step size of the last pass
-    int num_steps = 0;            ///< the number of steps of the last pass
+    double computation_time = 0; ///< seconds spent, as CORA's savedata.tComp
+    int iterations = 0;          ///< passes of the adaptive loop
+    double time_step = 0;        ///< the step size of the last pass
+    int num_steps = 0;           ///< the number of steps of the last pass
     std::optional<Falsification> falsification;
 };
 
@@ -51,10 +54,12 @@ struct VerifyResult {
 /// _constant, and the curvature of the input). With U = c + U0 (U0 centered): the constant part
 /// is B c and the time-varying part B U0.
 struct InputSolution {
-    Zonotope PU;      ///< time-varying solution at t = time_step, centered at the origin
-    Tensor Pu;        ///< constant-input solution at t = time_step (n, 1)
-    Zonotope Cinput;  ///< curvature enlargement of the constant input
+    Zonotope PU;     ///< time-varying solution at t = time_step, centered at the origin
+    Tensor Pu;       ///< constant-input solution at t = time_step (n, 1)
+    Zonotope Cinput; ///< curvature enlargement of the constant input
 };
+
+// The System --------------------------------------------------------------------------------------
 
 class LinearSys {
   public:
@@ -80,7 +85,8 @@ class LinearSys {
 
     /// Trajectories from the points initial_state (..., n, N) at the times k*time_step,
     /// k = 0..steps: exact for a linear system, with the constant inputs (needs B) if given.
-    std::vector<Tensor> simulate(const SimulationProblem &problem, const alg::LinearSimulate &alg) const;
+    std::vector<Tensor> simulate(const SimulationProblem &problem,
+                                 const alg::LinearSimulate &alg) const;
 
     /// simulate from `points` random points of initial_set (any set), with as many random
     /// constant inputs of input_set if given; rng makes the points repeatable.

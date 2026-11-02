@@ -134,8 +134,9 @@ struct EigenTensor : Tensor::Impl {
     // Eigen tensors are single matrices: a stack of one is the tensor itself.
     Ptr stack(const std::vector<const Impl *> &rest) const override {
         if (!rest.empty())
-            CORA_FAIL(Error::wrong_value, "CoraTensor::stack: the eigen backend holds one set, not a "
-                                        "batch; use the torch backend");
+            CORA_FAIL(Error::wrong_value,
+                      "CoraTensor::stack: the eigen backend holds one set, not a "
+                      "batch; use the torch backend");
         return wrap(Mat(m));
     }
 };

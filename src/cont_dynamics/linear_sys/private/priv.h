@@ -31,17 +31,18 @@ inline Zonotope priv_box(const Tensor &radius) { return {radius.zeros_like(), ra
 
 /// The algorithm "standard" with inputs; reduces to zonotope_order after each step.
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
-                          const InputSolution &in, int steps, int zonotope_order);
+                             const InputSolution &in, int steps, int zonotope_order);
 
 /// The algorithm "wrapping-free" with inputs; the time-varying part is kept as a box.
 ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
-                              const InputSolution &in, int steps);
+                                 const InputSolution &in, int steps);
 
 /// The algorithm "standard". e_adt = e^{A time_step}, F the correction matrix.
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F, int steps);
 
 /// The algorithm "wrapping-free".
-ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const Interval &F, int steps);
+ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
+                                 int steps);
 
 } // namespace cora
 

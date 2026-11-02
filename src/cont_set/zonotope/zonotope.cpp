@@ -19,8 +19,9 @@ namespace cora {
 
 Zonotope::Zonotope(Tensor c, Tensor G) : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)) {
     detail::Entry entry;
-    CORA_CHECK(c_.defined() && G_.defined(), Error::wrong_input_in_constructor,
-               [] { return std::string("Zonotope: the center and the generators must be tensors"); });
+    CORA_CHECK(c_.defined() && G_.defined(), Error::wrong_input_in_constructor, [] {
+        return std::string("Zonotope: the center and the generators must be tensors");
+    });
     CORA_CHECK(c_.shape().size() >= 2 && c_.shape().back() == 1, Error::wrong_input_in_constructor,
                [&] {
                    return "Zonotope: the center must be a column (..., n, 1), got the shape " +

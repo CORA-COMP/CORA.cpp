@@ -45,6 +45,8 @@ std::string aux_column_message(const Tensor &x, int64_t n, const std::string &wh
 
 // ===========================================  MAIN  =========================================== //
 
+// Construction ------------------------------------------------------------------------------------
+
 NonlinearSys::NonlinearSys(const Dynamics &f, int64_t n) : n_(n) {
     detail::Entry entry;
     CORA_CHECK(n >= 1, Error::wrong_input_in_constructor, [&] {
@@ -66,6 +68,8 @@ NonlinearSys::NonlinearSys(const Dynamics &f, int64_t n) : n_(n) {
 }
 
 // f at the columns of x: every state is a column of N numbers, and the expressions are elementwise.
+// Evaluation --------------------------------------------------------------------------------------
+
 Tensor NonlinearSys::dynamics(const Tensor &x) const {
     detail::Entry entry;
     CORA_CHECK(x.shape().size() == 2 && x.shape()[0] == n_, Error::dimension_mismatch, [&] {

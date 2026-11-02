@@ -10,7 +10,6 @@
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/error.h"
 
-
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {

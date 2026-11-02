@@ -21,8 +21,8 @@ namespace cora {
 struct LinProg {
     int n = 0;                       ///< number of variables
     std::vector<double> f;           ///< cost (n)
-    std::vector<double> Aineq, bineq;  ///< (m_ineq, n) row-major, and (m_ineq)
-    std::vector<double> Aeq, beq;    ///< (m_eq, n) row-major, and (m_eq)
+    std::vector<double> Aineq, bineq; ///< (m_ineq, n) row-major, and (m_ineq)
+    std::vector<double> Aeq, beq;     ///< (m_eq, n) row-major, and (m_eq)
     std::vector<double> lb, ub;      ///< (n) each, or empty
 };
 

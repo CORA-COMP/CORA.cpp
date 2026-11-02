@@ -1,8 +1,8 @@
 // test_tensor_device_torch - Tensor devices: allocation on cpu and gpu, moving, and what does not
 // mix
 
-#include "cora/global/tensor/tensor.h"
 #include "cora/global/backend/torch.h"
+#include "cora/global/tensor/tensor.h"
 #include "testing.h"
 
 using namespace cora;

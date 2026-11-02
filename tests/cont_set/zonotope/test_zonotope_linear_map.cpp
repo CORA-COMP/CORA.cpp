@@ -1,4 +1,4 @@
-// test_zonotope_mtimes - zonotope linear_map: by a matrix (exact) and by an interval matrix (an
+// test_zonotope_linear_map - zonotope linear_map: by a matrix (exact) and by an interval matrix (an
 // enclosure)
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -21,7 +21,8 @@ void mtimes_by_a_matrix(const std::string &b) {
     std::vector<double> M(n * n);
     rng.normal(M.data(), M.size(), 1.0);
     const Zonotope MZ = Z.linear_map(Tensor::from_data(M, {n, n}));
-    check(MZ.generators().shape() == std::vector<int64_t>({n, m}), b + ": linear_map keeps the generators");
+    check(MZ.generators().shape() == std::vector<int64_t>({n, m}),
+          b + ": linear_map keeps the generators");
     for (int k = 0; k < 5; ++k) {
         const std::vector<double> d = random_direction(rng, n);
         std::vector<double> Mtd(n, 0.0);
@@ -43,7 +44,8 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
 
     const Zonotope point = Z.linear_map(Interval(C, C));
     const Zonotope plain = Z.linear_map(C);
-    check(close(point.center(), plain.center()) && close(point.generators().data().size(), plain.generators().data().size() + n * n),
+    check(close(point.center(), plain.center()) &&
+              close(point.generators().data().size(), plain.generators().data().size() + n * n),
           b + ": a degenerate interval matrix adds only zero generators");
     for (int k = 0; k < 5; ++k) {
         const std::vector<double> d = random_direction(rng, n);
@@ -51,7 +53,8 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
     }
 
     const Zonotope wide = Z.linear_map(Interval(C - R, C + R));
-    check(wide.generators().shape() == std::vector<int64_t>({n, m + n}), b + ": one generator per dimension");
+    check(wide.generators().shape() == std::vector<int64_t>({n, m + n}),
+          b + ": one generator per dimension");
     for (int trial = 0; trial < 20; ++trial) {
         std::vector<double> M = centre, u(n * n);
         rng.uniform(u.data(), u.size(), -1.0, 1.0);
@@ -65,6 +68,17 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
     }
 }
 
+/// A matrix of the wrong width is refused; with the checks off the map is the same.
+void checks_and_their_switch() {
+    const Zonotope S = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    const Tensor M({{1.0, 2.0}, {0.0, 1.0}}), wide({{1.0, 2.0, 3.0}});
+    check(test::raises([&] { S.linear_map(wide); }, Error::dimension_mismatch),
+          "linear_map: a matrix of three columns");
+    const Tensor on = S.linear_map(M).center();
+    ChecksScope off(false);
+    check(test::close(S.linear_map(M).center(), on, 0), "linear_map: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -72,5 +86,6 @@ int main() {
         mtimes_by_a_matrix(b);
         mtimes_by_an_interval_matrix(b);
     });
+    checks_and_their_switch();
     return test::finish("zonotope linear_map");
 }

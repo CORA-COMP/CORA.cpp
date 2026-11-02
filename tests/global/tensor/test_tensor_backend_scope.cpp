@@ -23,7 +23,8 @@ void a_scope_is_local(const std::string &b) {
 void the_backend_is_chosen_once(const std::string &b) {
     check(close(Tensor({1.0}).data()[0], 1.0), b + ": a backend is set");
     check(throws([] { const BackendScope s("jax"); }), b + ": an unknown backend");
-    check(test::raises([] { const BackendScope s("jax"); }, Error::wrong_value), b + ": wrong_value");
+    check(test::raises([] { const BackendScope s("jax"); }, Error::wrong_value),
+          b + ": wrong_value");
     check(throws([] { set_default_backend("jax"); }), b + ": an unknown default backend");
     check(throws([] { const BackendScope s("eigen:cuda"); }), b + ": eigen has no device");
     check(throws([] { const BackendScope s("eigen,custom_backward"); }),

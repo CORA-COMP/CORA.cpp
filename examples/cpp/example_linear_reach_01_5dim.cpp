@@ -8,8 +8,8 @@
 // See also: example_linear_reach_02_algorithms, the Python example of the same name (which plots)
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
-#include "cora/global/rng.h"
 #include "cora/global/plot/plot.h"
+#include "cora/global/rng.h"
 
 #include <chrono>
 #include <iostream>
@@ -36,28 +36,33 @@ int main() {
     // System Dynamics -------------------------------------------------------------------------
 
     const LinearSys five_dim_sys(Tensor({{-1, -4, 0, 0, 0},
-                                       {4, -1, 0, 0, 0},
-                                       {0, 0, -3, 1, 0},
-                                       {0, 0, -1, -3, 0},
-                                       {0, 0, 0, 0, -2}}));
+                                         {4, -1, 0, 0, 0},
+                                         {0, 0, -3, 1, 0},
+                                         {0, 0, -1, -3, 0},
+                                         {0, 0, 0, 0, -2}}));
 
     // Reachability Analysis -------------------------------------------------------------------
 
     const auto timer_val = std::chrono::steady_clock::now();
-    const ReachSet R = five_dim_sys.reach({.initial_set = R0, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
-    const std::chrono::duration<double> computation_time = std::chrono::steady_clock::now() - timer_val;
+    const ReachSet R =
+        five_dim_sys.reach({.initial_set = R0, .t_final = t_final},
+                           alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+    const std::chrono::duration<double> computation_time =
+        std::chrono::steady_clock::now() - timer_val;
 
     std::cout << "computation time of reachable set: " << computation_time.count() << " s\n";
 
     // Simulation ------------------------------------------------------------------------------
 
     cora::Rng rng(0);
-    const std::vector<Tensor> traj = five_dim_sys.simulate_random({.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step}, 25, rng);
+    const std::vector<Tensor> traj = five_dim_sys.simulate_random(
+        {.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step}, 25, rng);
 
     // Evaluation ------------------------------------------------------------------------------
 
     const Interval box = R.time_interval.back().interval();
-    std::cout << "steps: " << R.time_interval.size() << ", simulated time points: " << traj.size() << "\n"
+    std::cout << "steps: " << R.time_interval.size() << ", simulated time points: " << traj.size()
+              << "\n"
               << "the last enclosure lies in the box\n  lower " << box.inf() << "\n  upper "
               << box.sup() << "\n";
 

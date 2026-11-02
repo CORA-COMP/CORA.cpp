@@ -78,7 +78,8 @@ void tensors_evaluate_elementwise() {
     const Expr x = Expr::var(0), y = Expr::var(1);
     const Expr f = sin(x * y) / (1 + x * x) + 2 * pow(y, 3) - exp(x) / 3;
     const std::vector<double> xs = {0.3, -0.7, 1.1}, ys = {0.5, 0.2, -0.9};
-    const Tensor all = f.eval_tensor({Tensor::from_data(xs, {3, 1}), Tensor::from_data(ys, {3, 1})});
+    const Tensor all =
+        f.eval_tensor({Tensor::from_data(xs, {3, 1}), Tensor::from_data(ys, {3, 1})});
     check(all.shape() == std::vector<int64_t>({3, 1}), "the result has the shape of the points");
     const std::vector<double> values = all.data();
     for (int i = 0; i < 3; ++i) check(close(values[i], f.eval({xs[i], ys[i]})), "point " + std::to_string(i));

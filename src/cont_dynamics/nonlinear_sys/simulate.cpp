@@ -1,7 +1,8 @@
 // simulate - trajectories of x' = f(x), as CORA's nonlinearSys.simulate
 //
 // Syntax:   x = sys.simulate(problem, alg);
-//           x = sys.simulate({.initial_state = x0, .t_final = 1}, alg::RungeKutta4{.time_step = 0.1});
+//           x = sys.simulate({.initial_state = x0, .t_final = 1}, alg::RungeKutta4{.time_step =
+//           0.1});
 // Inputs:   problem - initial_state (start points, columns (n, N)), t_final; no input
 //           alg - alg::RungeKutta4: time_step (the sampling), max_step (the largest step, 1e-3)
 // Outputs:  x - x[k] holds the N points at time k*time_step, from the classical Runge-Kutta method
@@ -9,8 +10,8 @@
 //
 // CORA: contDynamics/@nonlinearSys/simulate.m
 
-#include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cont_dynamics/linear_sys/private/priv.h"
+#include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 
 #include <cmath>
 
@@ -39,18 +40,22 @@ Tensor aux_runge_kutta(const NonlinearSys &sys, const Tensor &x, double h) {
 std::vector<Tensor> NonlinearSys::simulate(const SimulationProblem &problem,
                                            const alg::NonlinearSimulate &alg) const {
     detail::Entry entry;
+    // columns of start points, no input, a positive horizon
     const Tensor &x0 = problem.initial_state;
     CORA_CHECK(x0.defined() && x0.shape().size() == 2 && x0.shape()[0] == n_, Error::not_supported,
                [&] {
                    return "simulate: the start points of a nonlinear system are columns (" +
                           std::to_string(n_) + ", N); batches are not supported";
                });
-    CORA_CHECK(!problem.input.has_value(), Error::not_supported,
-               [] { return std::string("simulate: a NonlinearSys has no inputs; leave input empty"); });
+    CORA_CHECK(!problem.input.has_value(), Error::not_supported, [] {
+        return std::string("simulate: a NonlinearSys has no inputs; leave input empty");
+    });
     CORA_CHECK(problem.t_final > 0 && problem.t_final < 1e300, Error::wrong_value, [&] {
-        return "simulate: t_final must be positive and finite, got " + std::to_string(problem.t_final);
+        return "simulate: t_final must be positive and finite, got " +
+               std::to_string(problem.t_final);
     });
     if (entry.check()) std::visit([](const auto &a) { a.validate(); }, alg);
+    // every step of time_step in substeps no longer than max_step
     const alg::RungeKutta4 &options = std::get<alg::RungeKutta4>(alg);
     const double time_step = options.time_step;
     const int steps = priv_num_steps(problem.t_final, time_step);

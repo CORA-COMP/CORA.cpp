@@ -1,6 +1,7 @@
 // eigen - the Eigen backend of Tensor: double matrices on the CPU, no batch dimensions
 //
-// Syntax:   set_backend("eigen");   Tensor t = from_eigen(m);   Eigen::MatrixXd m = to_eigen(t);
+// Syntax:   BackendScope scope("eigen");   Tensor t = from_eigen(m);
+//           Eigen::MatrixXd m = to_eigen(t);
 // See also: tensor.h, torch.h
 
 #pragma once
@@ -13,7 +14,7 @@
 
 namespace cora {
 
-/// The Eigen backend, for `set_backend`.
+/// The Eigen backend, for `backend(spec)` and `BackendScope`.
 std::shared_ptr<const Tensor::Backend> eigen_backend();
 
 /// Wraps an Eigen matrix as a tensor.

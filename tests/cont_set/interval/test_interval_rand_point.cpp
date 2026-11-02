@@ -1,4 +1,4 @@
-// test_interval_randPoint - interval rand_point: points uniform in the box
+// test_interval_rand_point - interval rand_point: points uniform in the box
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -40,9 +40,20 @@ void rand_point_samples_the_box(const std::string &b) {
     check(inside, b + ": a random point left the box");
 }
 
+/// A negative number of points is refused; with the checks off the draw is the same.
+void checks_and_their_switch() {
+    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    cora::Rng rng(3), again(3);
+    check(test::raises([&] { S.rand_point(-1, rng); }, Error::wrong_value), "rand_point: N = -1");
+    const Tensor on = S.rand_point(4, rng);
+    ChecksScope off(false);
+    check(test::close(S.rand_point(4, again), on, 0), "rand_point: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) { rand_point_samples_the_box(b); });
+    checks_and_their_switch();
     return test::finish("interval rand_point");
 }

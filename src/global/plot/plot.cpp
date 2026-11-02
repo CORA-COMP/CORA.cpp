@@ -40,7 +40,7 @@ SetColors aux_set_colors(Figure &fig, const PlotOptions &options) {
     double alpha = options.face_alpha.value_or(1.0);
     if (options.color || options.facecolor || aux_scheme() == Scheme::standard) {
         alpha = options.face_alpha.value_or(0.2);
-        const Color base = options.color ? *options.color
+        const Color base = options.color       ? *options.color
                            : options.facecolor ? *options.facecolor
                                                : fig.next_color();
         edge = options.color.value_or(options.facecolor ? cora_color("CORA:simulations") : base);
@@ -65,7 +65,7 @@ Color aux_reach_color(Figure &fig, const PlotOptions &options) {
 void aux_check_dims(Figure &fig, const std::vector<int64_t> &dims) {
     if (dims.size() != 2)
         CORA_FAIL(Error::wrong_value, "plot: dims must name two dimensions, e.g. {0, 1}, but " +
-                                    std::to_string(dims.size()) + " were given");
+                                          std::to_string(dims.size()) + " were given");
     if (fig.xlabel.empty()) fig.xlabel = "x[" + std::to_string(dims[0]) + "]";
     if (fig.ylabel.empty()) fig.ylabel = "x[" + std::to_string(dims[1]) + "]";
 }
@@ -80,12 +80,12 @@ std::vector<Point> aux_points(const Tensor &points, const std::vector<int64_t> &
     const std::vector<int64_t> shape = points.shape();
     if (shape.size() != 2)
         CORA_FAIL(Error::wrong_value, "plot: points must be a matrix (n, N) without batch "
-                                    "dimensions, but have " +
-                                    std::to_string(shape.size()) + " dimensions");
+                                      "dimensions, but have " +
+                                          std::to_string(shape.size()) + " dimensions");
     if (dims[0] >= shape[0] || dims[1] >= shape[0] || dims[0] < 0 || dims[1] < 0)
         CORA_FAIL(Error::wrong_value, "plot: the dimensions " + std::to_string(dims[0]) + " and " +
-                                    std::to_string(dims[1]) + " do not exist in " +
-                                    std::to_string(shape[0]) + "-dimensional points");
+                                          std::to_string(dims[1]) + " do not exist in " +
+                                          std::to_string(shape[0]) + "-dimensional points");
     const std::vector<double> v = points.data();
     const int64_t N = shape[1];
     std::vector<Point> out;
@@ -101,7 +101,8 @@ Point aux_normal(const Halfspace &h, const std::vector<int64_t> &dims) {
     if (dims[0] >= static_cast<int64_t>(a.size()) || dims[1] >= static_cast<int64_t>(a.size()) ||
         dims[0] < 0 || dims[1] < 0)
         CORA_FAIL(Error::wrong_value, "plot: the dimensions " + std::to_string(dims[0]) + " and " +
-                                    std::to_string(dims[1]) + " do not exist in the halfspace");
+                                          std::to_string(dims[1]) +
+                                          " do not exist in the halfspace");
     return {a[static_cast<std::size_t>(dims[0])], a[static_cast<std::size_t>(dims[1])]};
 }
 
@@ -113,11 +114,13 @@ Point aux_normal(const Halfspace &h, const std::vector<int64_t> &dims) {
 // Colors ------------------------------------------------------------------------------------------
 
 void use_cora_colors(const std::string &scheme) {
-    if (scheme == "CORA:default") aux_scheme() = Scheme::standard;
-    else if (scheme == "CORA:contDynamics") aux_scheme() = Scheme::cont_dynamics;
+    if (scheme == "CORA:default")
+        aux_scheme() = Scheme::standard;
+    else if (scheme == "CORA:contDynamics")
+        aux_scheme() = Scheme::cont_dynamics;
     else
         CORA_FAIL(Error::wrong_value, "use_cora_colors: unknown color scheme '" + scheme +
-                                    "'; use \"CORA:default\" or \"CORA:contDynamics\"");
+                                          "'; use \"CORA:default\" or \"CORA:contDynamics\"");
 }
 
 // Sets and Reachable Sets -------------------------------------------------------------------------
@@ -128,8 +131,8 @@ void plot(Figure &fig, const ContSet &S, const std::vector<int64_t> &dims,
     const std::vector<Polygon> polygons = aux_polygons(S, dims);
     const SetColors colors = aux_set_colors(fig, options);
     fig.add_polygons(polygons, colors.edge,
-                    options.filled ? std::optional<Color>(colors.face) : std::nullopt,
-                    options.line_width.value_or(1.0), options.label, options.unify)
+                     options.filled ? std::optional<Color>(colors.face) : std::nullopt,
+                     options.line_width.value_or(1.0), options.label, options.unify)
         .face_alpha = colors.alpha;
 }
 
@@ -137,8 +140,8 @@ void plot(Figure &fig, const ReachSet &R, const std::vector<int64_t> &dims,
           const PlotOptions &options) {
     aux_check_dims(fig, dims);
     if (options.step < 1)
-        CORA_FAIL(Error::wrong_value, "plot: step must be at least 1, but is " +
-                                    std::to_string(options.step));
+        CORA_FAIL(Error::wrong_value,
+                  "plot: step must be at least 1, but is " + std::to_string(options.step));
     // A reachable set is one region: its fill and its outline have the same color.
     const Color color = aux_reach_color(fig, options);
     std::vector<Polygon> polygons, points;
@@ -159,7 +162,7 @@ void plot(Figure &fig, const ReachSet &R, const std::vector<int64_t> &dims,
     // The time points lie between the reachable set and the sets on top of it.
     if (options.time_points) {
         Figure::Layer &layer = fig.add_polygons(std::move(points), cora_color("CORA:reachSet:dark"),
-                                               std::nullopt, 0.5, "", false);
+                                                std::nullopt, 0.5, "", false);
         layer.zorder = 2;
         layer.dashed = true;
     }
@@ -181,15 +184,14 @@ void plot(Figure &fig, const Specification &spec, const std::vector<int64_t> &di
         break;
     default:
         CORA_FAIL(Error::wrong_value, "plot: unknown specification type; expected SafeSet or "
-                                    "UnsafeSet");
+                                      "UnsafeSet");
     }
     // Only the first region carries the label, so the legend names the specification once.
     bool first = true;
     for (const Halfspace &h : spec.halfspaces()) {
-        fig.add_region(aux_normal(h, dims), h.b, sign,
-                      options.color.value_or(cora_color("CORA:unsafe")),
-                      options.facecolor.value_or(cora_color("CORA:unsafeLight")),
-                      first ? options.label : "");
+        fig.add_region(
+            aux_normal(h, dims), h.b, sign, options.color.value_or(cora_color("CORA:unsafe")),
+            options.facecolor.value_or(cora_color("CORA:unsafeLight")), first ? options.label : "");
         first = false;
     }
 }
@@ -205,7 +207,7 @@ void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> 
         std::vector<Point> line;
         for (const auto &points : at) line.push_back(points[j]);
         fig.add_polyline(std::move(line), color, options.line_width.value_or(0.8),
-                        j == 0 ? options.label : "");
+                         j == 0 ? options.label : "");
     }
 }
 
@@ -213,7 +215,7 @@ void plot(Figure &fig, const Tensor &points, const std::vector<int64_t> &dims,
           const PlotOptions &options) {
     aux_check_dims(fig, dims);
     fig.add_points(aux_points(points, dims), options.color.value_or(cora_color("CORA:simulations")),
-                  options.line_width.value_or(2.0), options.label);
+                   options.line_width.value_or(2.0), options.label);
 }
 
 } // namespace cora

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "cora/global/tensor/tensor.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tensor.h"
 
 #include <stdexcept>
 #include <string>
@@ -23,8 +23,8 @@ inline Tensor select_dims(const Tensor &like, const std::vector<int64_t> &dims, 
     for (int64_t i = 0; i < k; ++i) {
         if (dims[i] < 0 || dims[i] >= n)
             CORA_FAIL(Error::wrong_value, "project: the dimension " + std::to_string(dims[i]) +
-                                        " is outside 0.." + std::to_string(n - 1) +
-                                        " (dimensions are 0-based)");
+                                              " is outside 0.." + std::to_string(n - 1) +
+                                              " (dimensions are 0-based)");
         data[static_cast<std::size_t>(i * n + dims[i])] = 1.0;
     }
     return Tensor::like(like, data, {k, n});

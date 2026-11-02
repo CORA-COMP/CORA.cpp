@@ -20,9 +20,20 @@ void plus_is_the_minkowski_sum(const std::string &b) {
           b + ": bounds add");
 }
 
+/// Sets of different dimensions are refused; with the checks off the sum is the same.
+void checks_and_their_switch() {
+    const Interval S = Interval(test::column({0, -1}), test::column({1, 1})),
+                   S3 = Interval(test::column({0, -1, 0}), test::column({1, 1, 2}));
+    check(test::raises([&] { S.plus(S3); }, Error::dimension_mismatch), "plus: dimensions 2 and 3");
+    const Tensor on = S.plus(S).center();
+    ChecksScope off(false);
+    check(test::close(S.plus(S).center(), on, 0), "plus: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) { plus_is_the_minkowski_sum(b); });
+    checks_and_their_switch();
     return test::finish("interval plus");
 }

@@ -13,7 +13,6 @@
 
 #include "cora/global/rng.h"
 
-
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
@@ -33,7 +32,7 @@ Tensor aux_factors(const Tensor &like, const Tensor &G, int64_t N, Rng &rng, boo
     std::vector<double> b(count);
     rng.uniform(b.data(), b.size(), -1.0, 1.0);
     if (extreme)
-        for (double &v : b) v = v < 0.0 ? -1.0 : 1.0;  // snap to the corners
+        for (double &v : b) v = v < 0.0 ? -1.0 : 1.0; // snap to the corners
     return Tensor::like(like, b, shape);
 }
 
@@ -60,8 +59,8 @@ Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng) const {
 Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng, const std::string &type) const {
     if (type == "standard") return c_ + G_.matmul(aux_factors(c_, G_, N, rng, false));
     if (type == "extreme") return c_ + G_.matmul(aux_factors(c_, G_, N, rng, true));
-    CORA_FAIL(Error::wrong_value, "rand_point: unknown type '" + type +
-                                      "'; use \"standard\" or \"extreme\"");
+    CORA_FAIL(Error::wrong_value,
+              "rand_point: unknown type '" + type + "'; use \"standard\" or \"extreme\"");
 }
 
 } // namespace cora

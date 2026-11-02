@@ -77,12 +77,12 @@ double aux_decode(const std::string &s) {
         binary += e;
         for (long long i = 0; i < std::abs(e); ++i) {
             if (e < 0 && m % 5 != 0)
-                CORA_FAIL(Error::out_of_domain, "lean: not a double (no finite binary expansion): " + s);
+                CORA_FAIL(Error::out_of_domain,
+                          "lean: not a double (no finite binary expansion): " + s);
             m = e > 0 ? aux_times(m, 5, s) : m / 5;
         }
     }
-    if (m >> 53)
-        CORA_FAIL(Error::out_of_domain, "lean: not a double (needs over 53 bits): " + s);
+    if (m >> 53) CORA_FAIL(Error::out_of_domain, "lean: not a double (needs over 53 bits): " + s);
     const double x = std::ldexp(static_cast<double>(m), static_cast<int>(binary));
     if (!std::isfinite(x) || (m != 0 && std::abs(x) < 0x1p-1022))
         CORA_FAIL(Error::out_of_domain, "lean: not a normal double (out of range): " + s);
@@ -131,7 +131,7 @@ cora::Tensor Tensor::gather() const {
 Rounded Tensor::round_to(const std::string &target, const std::string &mode) const {
     if (mode != "nearest" && mode != "down" && mode != "up")
         CORA_FAIL(Error::wrong_value, "lean: the rounding mode '" + mode +
-                                    "' is unknown; use 'nearest', 'down' or 'up'");
+                                          "' is unknown; use 'nearest', 'down' or 'up'");
     Json request = Json::object();
     request.set("op", "roundTo").set("dtype", target).set("mode", mode).set("x", to_json());
     // the oracle answers the value and an enclosure of the rounding error

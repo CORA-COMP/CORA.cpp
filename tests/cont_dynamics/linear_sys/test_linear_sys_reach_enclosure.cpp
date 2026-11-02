@@ -1,4 +1,4 @@
-// test_linearSys_reach_enclosure - linear_sys reach encloses: the true trajectories, both time
+// test_linear_sys_reach_enclosure - linear_sys reach encloses: the true trajectories, both time
 // points of a step, and a known 1-D flow tightly
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -41,7 +41,8 @@ void encloses_the_trajectories(const std::string &b) {
                               g0 = host_matrix(X0.generators().data(), n, m);
         const Tensor A = tensor_of(tc.A);
         for (const std::string &algorithm : kAlgorithms) {
-            const ReachSet r = LinearSys(A).reach({.initial_set = X0, .t_final = 2.0}, test::lin::algorithm(algorithm, tc.dt, 10));
+            const ReachSet r = LinearSys(A).reach({.initial_set = X0, .t_final = 2.0},
+                                                  test::lin::algorithm(algorithm, tc.dt, 10));
             const std::string what = b + ": " + tc.what + ": " + name(algorithm);
 
             const int samples = 300;
@@ -71,7 +72,9 @@ void encloses_both_time_points(const std::string &b) {
     Eigen::MatrixXd dirs(3, 40);
     rng.normal(dirs.data(), dirs.size(), 1.0);
     for (const std::string &algorithm : kAlgorithms) {
-        const ReachSet r = LinearSys(system_matrix(s)).reach({.initial_set = X0, .t_final = 1.0}, test::lin::algorithm(algorithm, 0.2, 6));
+        const ReachSet r = LinearSys(system_matrix(s))
+                               .reach({.initial_set = X0, .t_final = 1.0},
+                                      test::lin::algorithm(algorithm, 0.2, 6));
         double worst = 1e9;
         for (std::size_t k = 0; k < r.time_interval.size(); ++k)
             for (int i = 0; i < 40; ++i) {
@@ -91,7 +94,9 @@ void is_tight_in_one_dimension(const std::string &b) {
     const System &s = matlab_reference::scalar();
     const double dt = s.time_step;
     for (const std::string &algorithm : kAlgorithms) {
-        const ReachSet r = LinearSys(system_matrix(s)).reach({.initial_set = set_of(s), .t_final = 1.0}, test::lin::algorithm(algorithm, dt, 8));
+        const ReachSet r = LinearSys(system_matrix(s))
+                               .reach({.initial_set = set_of(s), .t_final = 1.0},
+                                      test::lin::algorithm(algorithm, dt, 8));
         for (std::size_t k = 0; k < r.time_interval.size(); ++k) {
             const double t0 = double(k) * dt;
             const double hi = support(r.time_interval[k], Eigen::VectorXd::Ones(1));

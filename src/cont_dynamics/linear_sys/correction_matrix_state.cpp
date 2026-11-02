@@ -41,10 +41,10 @@ Interval LinearSys::correction_matrix_state(double time_step, int taylor_terms) 
                std::to_string(taylor_terms);
     });
     const Tensor Aabs = A_.abs();
-    Tensor Ai = A_, Aiabs = Aabs;                // A^i and |A|^i
+    Tensor Ai = A_, Aiabs = Aabs; // A^i and |A|^i
     Tensor Fneg = A_.zeros_like(), Fpos = A_.zeros_like();
-    Tensor series = A_.eye_like() + Aabs * time_step;  // sum_i |A|^i dt^i / i!, up to i = 1
-    double dt_over_fac = time_step;                 // dt^i / i!
+    Tensor series = A_.eye_like() + Aabs * time_step; // sum_i |A|^i dt^i / i!, up to i = 1
+    double dt_over_fac = time_step;                   // dt^i / i!
 
     for (int i = 2; i <= taylor_terms; ++i) {
         Ai = Ai.matmul(A_);

@@ -3,11 +3,11 @@
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "cora/global/rng.h"
-#include "cora/specification/specification.h"
 #include "cora/global/backend/eigen.h"
-#include "cora/global/tensor/tensor.h"
 #include "cora/global/backend/torch.h"
+#include "cora/global/rng.h"
+#include "cora/global/tensor/tensor.h"
+#include "cora/specification/specification.h"
 #include "testing.h"
 
 using namespace cora;
@@ -29,10 +29,18 @@ void tensors_stay_on_their_own_backend() {
     check(!throws([&] { Z.rand_point(5, rng); }), "rand_point of an eigen zonotope, torch current");
     check(!throws([&] { Z.rand_point(5, rng, "extreme"); }), "extreme points of an eigen zonotope");
     check(!throws([&] { I.rand_point(5, rng); }), "rand_point of an eigen interval, torch current");
-    check(!throws([&] { sys.simulate({.initial_state = Z.rand_point(5, rng), .t_final = 0.5}, alg::Exact{.time_step = 0.1}); }),
+    check(!throws([&] {
+        sys.simulate({.initial_state = Z.rand_point(5, rng), .t_final = 0.5},
+                     alg::Exact{.time_step = 0.1});
+    }),
           "simulate on eigen, torch current");
-    check(!throws([&] { sys.reach({.initial_set = Z, .t_final = 0.5}, alg::Standard{.time_step = 0.1, .taylor_terms = 6}); }), "reach on eigen, torch current");
-    check(!throws([&] { Specification::safe_set(Tensor({1.0, 0.0}), 9.0); }), "a torch spec builds");
+    check(!throws([&] {
+        sys.reach({.initial_set = Z, .t_final = 0.5},
+                  alg::Standard{.time_step = 0.1, .taylor_terms = 6});
+    }),
+          "reach on eigen, torch current");
+    check(!throws([&] { Specification::safe_set(Tensor({1.0, 0.0}), 9.0); }),
+          "a torch spec builds");
     set_default_backend("eigen");
 }
 

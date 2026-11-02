@@ -42,7 +42,7 @@ const std::vector<std::pair<std::string, Color>> &aux_palette() {
 
 Color aux_named(const std::string &name, const std::string &identifier, int num_colors, int cidx) {
     static const std::map<std::string, Color> special = {
-        {"initialSet", {1.0, 1.0, 1.0}},            {"finalSet", {0.9, 0.9, 0.9}},
+        {"initialSet", {1.0, 1.0, 1.0}},           {"finalSet", {0.9, 0.9, 0.9}},
         {"simulations", {0.0, 0.0, 0.0}},          {"unsafe", {0.9451, 0.5529, 0.5686}},
         {"unsafeLight", {0.9059, 0.7373, 0.7373}}, {"safe", {0.4706, 0.7725, 0.4980}},
         {"invariant", {0.4706, 0.7725, 0.4980}},   {"highlight1", {1.0, 0.6824, 0.2980}},
@@ -51,7 +51,7 @@ Color aux_named(const std::string &name, const std::string &identifier, int num_
     if (name == "reachSet") {
         if (cidx > num_colors)
             CORA_FAIL(Error::wrong_value, "cora_color: the color index must not exceed the number "
-                                        "of colors");
+                                          "of colors");
         if (cidx == num_colors) return main;
         if (cidx == 1) return worse;
         // In between, the shade moves linearly from the light to the full blue.
@@ -67,8 +67,8 @@ Color aux_named(const std::string &name, const std::string &identifier, int num_
         if (name == palette[i].first || name == "color" + std::to_string(i + 1))
             return palette[i].second;
     CORA_FAIL(Error::wrong_value, "cora_color: not a CORA color: '" + identifier +
-                                "' is not a CORA color; see the "
-                                "list in cora/global/plot/color.h");
+                                      "' is not a CORA color; see the "
+                                      "list in cora/global/plot/color.h");
 }
 
 } // namespace
@@ -91,9 +91,9 @@ std::string Color::hex() const {
 Color cora_color(const std::string &identifier, int num_colors, int cidx, double alpha) {
     const std::vector<std::string> parts = aux_split(identifier);
     if (parts.size() < 2 || parts[0] != "CORA")
-        CORA_FAIL(Error::wrong_value, 
-            "cora_color: not a CORA color: '" + identifier +
-            "' is not a CORA color; use \"CORA:<name>\", e.g. \"CORA:blue\"");
+        CORA_FAIL(Error::wrong_value,
+                  "cora_color: not a CORA color: '" + identifier +
+                      "' is not a CORA color; use \"CORA:<name>\", e.g. \"CORA:blue\"");
     Color c = aux_named(parts[1], identifier, num_colors, cidx);
     const std::string variant = parts.size() > 2 ? parts[2] : "none";
     auto mix = [&](double base) {
@@ -106,7 +106,7 @@ Color cora_color(const std::string &identifier, int num_colors, int cidx, double
         mix(0.0);
     else if (variant != "none")
         CORA_FAIL(Error::wrong_value, "cora_color: unknown color variant '" + variant +
-                                    "'; use \":light\" or \":dark\"");
+                                          "'; use \":light\" or \":dark\"");
     return c;
 }
 

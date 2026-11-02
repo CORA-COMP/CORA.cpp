@@ -1,4 +1,4 @@
-// priv_taylorLinSys - cache of the Taylor quantities of a linear system, as CORA's taylorLinSys
+// priv_taylor_lin_sys - cache of the Taylor quantities of a linear system, as CORA's taylorLinSys
 //
 // Holds what the adaptive algorithms recompute otherwise: the powers of A and their positive and
 // negative parts, dt^i / i!, e^{A dt} and the correction matrices F, G per time step size (a

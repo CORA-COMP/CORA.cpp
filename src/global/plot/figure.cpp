@@ -103,8 +103,8 @@ std::vector<double> aux_ticks(double lo, double hi) {
 // Layers ------------------------------------------------------------------------------------------
 
 Figure::Layer &Figure::add_polygons(std::vector<Polygon> polygons, Color edge,
-                                   std::optional<Color> face,
-                         double line_width, const std::string &label, bool unify) {
+                                    std::optional<Color> face, double line_width,
+                                    const std::string &label, bool unify) {
     Layer l{Kind::polygons, std::move(polygons), edge, face.value_or(edge)};
     l.filled = face.has_value();
     l.unify = unify;
@@ -116,7 +116,7 @@ Figure::Layer &Figure::add_polygons(std::vector<Polygon> polygons, Color edge,
 
 // A polyline is a layer with one polygon that is not closed.
 Figure::Layer &Figure::add_polyline(std::vector<Point> points, Color color, double line_width,
-                         const std::string &label) {
+                                    const std::string &label) {
     Layer l{Kind::polyline, {Polygon(points.begin(), points.end())}, color, color};
     l.line_width = line_width;
     l.label = label;
@@ -127,7 +127,7 @@ Figure::Layer &Figure::add_polyline(std::vector<Point> points, Color color, doub
 
 // Points are a layer with one polygon whose vertices are the dots.
 Figure::Layer &Figure::add_points(std::vector<Point> points, Color color, double radius,
-                                const std::string &label) {
+                                  const std::string &label) {
     Layer l{Kind::points, {Polygon(points.begin(), points.end())}, color, color};
     l.radius = radius;
     l.label = label;
@@ -138,7 +138,7 @@ Figure::Layer &Figure::add_points(std::vector<Point> points, Color color, double
 
 // A region keeps its halfspace; it is cut to the limits when the figure is written.
 Figure::Layer &Figure::add_region(Point a, double b, double sign, Color edge, Color face,
-                                const std::string &label) {
+                                  const std::string &label) {
     Layer l{Kind::region, {}, edge, face};
     l.a = a;
     l.b = b;
@@ -243,11 +243,9 @@ std::string Figure::svg() const {
                 } else {
                     out << "<path d=\"" << d << "\" fill=\""
                         << (l.filled ? l.face.hex() : std::string("none")) << "\" fill-opacity=\""
-                        << (l.filled ? l.face_alpha : 1.0) << "\" stroke=\""
-                        << l.edge.hex() << "\" stroke-width=\"" << l.line_width
-                        << "\" stroke-linejoin=\"miter\""
-                        << (l.dashed ? " stroke-dasharray=\"2 2\"" : "")
-                        << "/>\n";
+                        << (l.filled ? l.face_alpha : 1.0) << "\" stroke=\"" << l.edge.hex()
+                        << "\" stroke-width=\"" << l.line_width << "\" stroke-linejoin=\"miter\""
+                        << (l.dashed ? " stroke-dasharray=\"2 2\"" : "") << "/>\n";
                 }
                 break;
             }
@@ -263,7 +261,8 @@ std::string Figure::svg() const {
                         << "\" r=\"" << l.radius << "\" fill=\"" << l.edge.hex() << "\"/>\n";
                 break;
             default:
-                CORA_FAIL(Error::report_to_dev, "Figure::svg: unknown layer kind; this is a bug in Figure");
+                CORA_FAIL(Error::report_to_dev,
+                          "Figure::svg: unknown layer kind; this is a bug in Figure");
             }
         }
     }
@@ -299,11 +298,9 @@ std::string Figure::svg() const {
         const Color swatch = l.filled || l.kind == Kind::region ? l.face : l.edge;
         out << "<rect x=\"" << left + pw - 130 << "\" y=\"" << row - 10
             << "\" width=\"14\" height=\"10\""
-            << " fill=\"" << swatch.hex() << "\" fill-opacity=\""
-            << (l.filled ? l.face_alpha : 1.0) << "\" stroke=\"" << l.edge.hex()
-            << "\"/>\n<text x=\""
-            << left + pw - 110 << "\" y=\"" << row - 1 << "\">" << aux_escape(l.label)
-            << "</text>\n";
+            << " fill=\"" << swatch.hex() << "\" fill-opacity=\"" << (l.filled ? l.face_alpha : 1.0)
+            << "\" stroke=\"" << l.edge.hex() << "\"/>\n<text x=\"" << left + pw - 110 << "\" y=\""
+            << row - 1 << "\">" << aux_escape(l.label) << "</text>\n";
         row += 16;
     }
     out << "</svg>\n";

@@ -46,9 +46,9 @@ inline void validate_order(int value, int least, const char *what, const char *n
 
 /// CORA's linAlg "standard": the sets of every step are enclosed and propagated.
 struct Standard {
-    double time_step = 0;     ///< the step size, required
-    int taylor_terms = 10;    ///< the order of the Taylor series of the curvature enlargement
-    int zonotope_order = 50;  ///< with an input set, the order the sets are reduced to per step
+    double time_step = 0;    ///< the step size, required
+    int taylor_terms = 10;   ///< the order of the Taylor series of the curvature enlargement
+    int zonotope_order = 50; ///< with an input set, the order the sets are reduced to per step
 
     static constexpr const char *name = "standard";
     static constexpr auto fields() {
@@ -65,8 +65,8 @@ struct Standard {
 
 /// CORA's linAlg "wrapping-free": the first step is enclosed once and mapped forward.
 struct WrappingFree {
-    double time_step = 0;   ///< the step size, required
-    int taylor_terms = 10;  ///< the order of the Taylor series of the curvature enlargement
+    double time_step = 0;  ///< the step size, required
+    int taylor_terms = 10; ///< the order of the Taylor series of the curvature enlargement
 
     static constexpr const char *name = "wrapping_free";
     static constexpr auto fields() {
@@ -101,10 +101,12 @@ struct ReachAvoidZonotope {
 
 /// The exact solution of a linear system, sampled every time_step.
 struct Exact {
-    double time_step = 0;  ///< the sampling step, required
+    double time_step = 0; ///< the sampling step, required
 
     static constexpr const char *name = "exact";
-    static constexpr auto fields() { return std::make_tuple(field("time_step", &Exact::time_step)); }
+    static constexpr auto fields() {
+        return std::make_tuple(field("time_step", &Exact::time_step));
+    }
     void validate() const { validate_time_step(time_step, "Exact"); }
 };
 
@@ -129,9 +131,9 @@ struct RungeKutta4 {
 /// CORA's alg "lin": each step linearizes at the center of the set and bounds the linearization
 /// error by the Lagrange remainder over an enclosure of the step.
 struct Linearization {
-    double time_step = 0;     ///< the step size, required
-    int taylor_terms = 4;     ///< the order of the Taylor series of the linearized system
-    int zonotope_order = 50;  ///< the sets are reduced to zonotope_order * n generators
+    double time_step = 0;    ///< the step size, required
+    int taylor_terms = 4;    ///< the order of the Taylor series of the linearized system
+    int zonotope_order = 50; ///< the sets are reduced to zonotope_order * n generators
 
     static constexpr const char *name = "linearization";
     static constexpr auto fields() {

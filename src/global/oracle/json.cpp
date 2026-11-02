@@ -60,8 +60,8 @@ struct Parser {
     std::size_t i = 0;
 
     [[noreturn]] void fail(const std::string &what) const {
-        CORA_FAIL(Error::special_error, "lean: malformed JSON at offset " + std::to_string(i) +
-                                 ": " + what);
+        CORA_FAIL(Error::special_error,
+                  "lean: malformed JSON at offset " + std::to_string(i) + ": " + what);
     }
 
     void skip() {

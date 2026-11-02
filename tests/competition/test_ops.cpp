@@ -6,9 +6,9 @@
 //
 //   ctest (with -DCORACPP_COMPETITION=ON)
 
-#include "sets/lp.h"
-#include "probes.h"
 #include "cora/global/rng.h"
+#include "probes.h"
+#include "sets/lp.h"
 #include "sets/sets.h"
 
 #include <cmath>

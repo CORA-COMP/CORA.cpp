@@ -8,9 +8,8 @@
 // CORA.cpp only: batching, MATLAB CORA has no batch of sets
 
 #include "cora/cont_set/interval/interval.h"
-#include "global/format.h"
 #include "cora/global/error.h"
-
+#include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 

@@ -1,4 +1,4 @@
-// neuralNetwork - the class of feed-forward networks: construction and its checks
+// neural_network - the class of feed-forward networks: construction and its checks
 //
 // See also: neuralNetwork.h, evaluate.cpp
 

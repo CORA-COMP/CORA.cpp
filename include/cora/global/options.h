@@ -4,7 +4,8 @@
 // Its static fields() lists every member once, by name, so the Python bindings build the
 // struct from keyword arguments, and an unknown keyword is refused with the closest name.
 //
-// Syntax:   static constexpr auto fields() { return std::make_tuple(field("time_step", &S::time_step)); }
+// Syntax:   static constexpr auto fields() { return std::make_tuple(field("time_step",
+// &S::time_step)); }
 //           std::string hint = did_you_mean("time_stp", {"time_step", "t_final"});
 // See also: cont_dynamics/cont_dynamics.h, cont_dynamics/linear_sys/linear_sys.h
 //

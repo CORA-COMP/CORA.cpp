@@ -166,8 +166,8 @@ torch::Tensor to_torch(const Tensor &t) { return static_cast<const TorchTensor &
 torch::Device torch_device(const std::string &name) {
     if (name == "gpu") return torch::Device("cuda");
     if (name == "cpu" || name == "cuda" || name.rfind("cuda:", 0) == 0) return torch::Device(name);
-    CORA_FAIL(Error::wrong_value, "CoraTensor: unknown device '" + name +
-                                "'; use cpu, gpu, cuda or cuda:<index>");
+    CORA_FAIL(Error::wrong_value,
+              "CoraTensor: unknown device '" + name + "'; use cpu, gpu, cuda or cuda:<index>");
 }
 
 bool is_torch(const Tensor &t) { return dynamic_cast<const TorchTensor *>(&t.impl()) != nullptr; }

@@ -1,4 +1,4 @@
-// support_function - the support function of a set in a direction, checked, as CORA's contSet.supportFunc
+// support_function - the support of a set in a direction, checked, as CORA's supportFunc
 //
 // Syntax:   val = S.support_function(d);
 // Inputs:   d - direction, a column (..., n, 1) of the dimension n of S

@@ -24,11 +24,11 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
-                              int steps) {
+                                 int steps) {
     ReachSet R;
     const Zonotope R0 = X0.linear_combination(X0.linear_map(e_adt)).plus(X0.linear_map(F));
 
-    Tensor e_akdt = e_adt.eye_like();  // e^{A k dt}, starting at k = 0
+    Tensor e_akdt = e_adt.eye_like(); // e^{A k dt}, starting at k = 0
     for (int k = 0; k <= steps; ++k) {
         if (k < steps) R.time_interval.push_back(R0.linear_map(e_akdt));
         R.time_point.push_back(X0.linear_map(e_akdt));
@@ -38,16 +38,17 @@ ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const 
 }
 
 ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
-                              const InputSolution &in, int steps) {
+                                 const InputSolution &in, int steps) {
     ReachSet R;
-    const Zonotope X = X0.linear_map(e_adt.eye_like());  // the identity map broadcasts a batch of sets
+    const Zonotope X =
+        X0.linear_map(e_adt.eye_like()); // the identity map broadcasts a batch of sets
     if (steps < 1) return {{}, {X}};
 
     // First step: the affine solution of the time point and of the interval, without C_input.
     Zonotope Htp = X.linear_map(e_adt) + in.Pu;
     Zonotope Hti = X.linear_combination(Htp).plus(X.linear_map(F));
     Zonotope PUnext = in.PU;
-    Tensor PUrad = in.PU.interval().rad();  // the time-varying solution as a box around zero
+    Tensor PUrad = in.PU.interval().rad(); // the time-varying solution as a box around zero
     R.time_point.push_back(X);
     R.time_interval.push_back(Hti.plus(in.PU).plus(in.Cinput));
     R.time_point.push_back(Htp.plus(in.PU));

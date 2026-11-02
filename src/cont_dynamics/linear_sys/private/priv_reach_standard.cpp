@@ -21,7 +21,6 @@
 
 namespace cora {
 
-
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
@@ -36,15 +35,16 @@ Zonotope aux_reduce(const Zonotope &Z, int zonotope_order) {
 
 // ===========================================  MAIN  =========================================== //
 
-ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F, int steps) {
+ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
+                             int steps) {
     ReachSet R;
     // The identity map broadcasts X0 to a batch of systems, so every step has the batch shape.
     Zonotope X = X0.linear_map(e_adt.eye_like());
 
     for (int k = 0; k < steps; ++k) {
-        const Zonotope Xnext = X.linear_map(e_adt);  // (i) propagate the time-point set
-        const Zonotope H = X.linear_combination(Xnext);    // (ii) enclose both sets
-        const Zonotope C = X.linear_map(F);         // (iii) curvature enlargement
+        const Zonotope Xnext = X.linear_map(e_adt);     // (i) propagate the time-point set
+        const Zonotope H = X.linear_combination(Xnext); // (ii) enclose both sets
+        const Zonotope C = X.linear_map(F);             // (iii) curvature enlargement
         R.time_interval.push_back(H.plus(C));
         R.time_point.push_back(X);
         X = Xnext;
@@ -54,9 +54,10 @@ ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Inte
 }
 
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
-                          const InputSolution &in, int steps, int zonotope_order) {
+                             const InputSolution &in, int steps, int zonotope_order) {
     ReachSet R;
-    const Zonotope X = X0.linear_map(e_adt.eye_like());  // the identity map broadcasts a batch of sets
+    const Zonotope X =
+        X0.linear_map(e_adt.eye_like()); // the identity map broadcasts a batch of sets
     if (steps < 1) return {{}, {X}};
 
     // First step: the affine solution of the time point and of the interval, without C_input.

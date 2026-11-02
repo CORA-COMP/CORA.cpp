@@ -1,12 +1,14 @@
-// test_linearSys_verify_zonotope - linear_sys verify with the zonotope algorithm against MATLAB CORA
+// test_linear_sys_verify_zonotope - linear_sys verify with the zonotope algorithm against MATLAB
+// CORA
 //
-// Reference: MATLAB R2025b, CORA (feature/coracpp-python), models/Cora/ARCH/AFF/rand0{1,2}_test.json
-// loaded by json2cora_linearSys, options.verifyAlg = 'reachavoid:zonotope'. The initial error
-// bound (emax) and the steps, errors and interval hulls of the output sets of the first run of
-// the adaptive reachability algorithm are pasted from a MATLAB run of verify for RAND01.
+// Reference: MATLAB R2025b, CORA (feature/coracpp-python),
+// models/Cora/ARCH/AFF/rand0{1,2}_test.json loaded by json2cora_linearSys, options.verifyAlg =
+// 'reachavoid:zonotope'. The initial error bound (emax) and the steps, errors and interval hulls of
+// the output sets of the first run of the adaptive reachability algorithm are pasted from a MATLAB
+// run of verify for RAND01.
 
-#include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"
 
 using namespace cora;
@@ -52,12 +54,13 @@ Rand rand02() {
 
 /// The four halfspaces of a box as RAND's JSON gives them: rows (1,0), (0,1), (-1,-0), (-0,-1)
 /// with the bounds b of the file.
-std::vector<Specification> rand_specs(const std::vector<double> &b1, const std::vector<double> &b2) {
+std::vector<Specification> rand_specs(const std::vector<double> &b1,
+                                      const std::vector<double> &b2) {
     auto box = [](const std::vector<double> &b) {
         return Specification::unsafe_set({{test::column({1, 0}), b[0]},
-                                         {test::column({0, 1}), b[1]},
-                                         {test::column({-1, 0}), b[2]},
-                                         {test::column({0, -1}), b[3]}});
+                                          {test::column({0, 1}), b[1]},
+                                          {test::column({-1, 0}), b[2]},
+                                          {test::column({0, -1}), b[3]}});
     };
     return {box(b1), box(b2)};
 }
@@ -77,9 +80,9 @@ void adaptive_reach_matches_matlab() {
 
     // MATLAB: the 13 steps, their end times, the errors and the interval hulls of timeInterval.
     const double end_times[13] = {0.0412021243213, 0.0858377590026, 0.133906904044, 0.188843069806,
-                                 0.243779235567,  0.32618348421,   0.408587732852, 0.518460064376,
-                                 0.683268561661,  0.903013224707,  1.23263021928,  1.67211954537,
-                                 1.75795730437};
+                                  0.243779235567,  0.32618348421,   0.408587732852, 0.518460064376,
+                                  0.683268561661,  0.903013224707,  1.23263021928,  1.67211954537,
+                                  1.75795730437};
     const double err[13] = {0.116418803485, 0.10873047866,  0.0990897786072, 0.0985450544468,
                             0.0755378774986, 0.119107255538, 0.0801394565426, 0.0924253121711,
                             0.122136740808,  0.102749781952, 0.0950750733264, 0.0463439758994,
@@ -98,15 +101,18 @@ void adaptive_reach_matches_matlab() {
                                {0.384977114785, 0.159665583526}, {0.17630849466, 0.0724059562383},
                                {0.072513576713, 0.0386041593814}, {0.021431073673, 0.0176421651728},
                                {0.00136393850468, -0.000244395548046}};
-    check(R.time_interval.size() == 13, "the number of steps is " + std::to_string(R.time_interval.size()));
+    check(R.time_interval.size() == 13,
+          "the number of steps is " + std::to_string(R.time_interval.size()));
     if (R.time_interval.size() != 13) return;
     for (int k = 0; k < 13; ++k) {
         const std::string w = "step " + std::to_string(k + 1) + ": ";
         check(test::close(R.time[k + 1], end_times[k], 1e-9), w + "end time");
         check(test::close(R.time_interval_error[k], err[k], 1e-9), w + "error");
         const Interval I = R.time_interval[k]->interval();
-        check(test::close(I.inf(), std::vector<double>{inf[k][0], inf[k][1]}, 1e-8), w + "hull lower");
-        check(test::close(I.sup(), std::vector<double>{sup[k][0], sup[k][1]}, 1e-8), w + "hull upper");
+        check(test::close(I.inf(), std::vector<double>{inf[k][0], inf[k][1]}, 1e-8),
+              w + "hull lower");
+        check(test::close(I.sup(), std::vector<double>{sup[k][0], sup[k][1]}, 1e-8),
+              w + "hull upper");
     }
 }
 
@@ -116,16 +122,23 @@ void adaptive_reach_rand02_matches_matlab() {
     Rand r = rand02();
     TaylorLinSys taylor(r.sys.A());
     AdaptiveSaveData savedata;
-    const AdaptiveParams ap{*r.params.initial_set, r.sys.B()->matmul(r.params.input_set->generators()),
-                            r.sys.B()->matmul(r.params.input_set->center()), r.sys.C(), r.params.t_final};
+    const AdaptiveParams ap{
+        *r.params.initial_set, r.sys.B()->matmul(r.params.input_set->generators()),
+        r.sys.B()->matmul(r.params.input_set->center()), r.sys.C(), r.params.t_final};
     const AdaptiveResult R = priv_reach_adaptive(taylor, ap, {VerifyTime({{0, r.params.t_final}})},
                                                  0.0021200701252661563, true, savedata);
     check(R.internal_checks_ok, "RAND02: the error bookkeeping is consistent");
     const int step[8] = {1, 2, 10, 20, 33, 50, 65, 66};
-    const double t_start[8] = {0, 0.00463295662498, 0.0416966096248, 0.0906000406663,
-                              0.160609162999, 0.267681938332, 0.393286540165, 0.403581999332};
+    const double t_start[8] = {0,
+                               0.00463295662498,
+                               0.0416966096248,
+                               0.0906000406663,
+                               0.160609162999,
+                               0.267681938332,
+                               0.393286540165,
+                               0.403581999332};
     const double t_end[8] = {0.00463295662498, 0.00926591324997, 0.0463295662498, 0.0957477702496,
-                            0.166786438499, 0.275918305666, 0.403581999332, 0.413877458498};
+                             0.166786438499,   0.275918305666,   0.403581999332,  0.413877458498};
     const double err[8] = {0.00199542719836, 0.00196540474507, 0.00174100142285, 0.00169191394379,
                            0.00169712922754, 0.00174754257855, 0.00157413342407, 0.00152197280866};
     check(R.time_interval.size() >= 66, "RAND02: at least 66 steps");
@@ -145,8 +158,10 @@ Specification safe_halfspace(double a1, double a2, double b) {
 }
 
 Specification unsafe_box(double lo1, double hi1, double lo2, double hi2) {
-    return Specification::unsafe_set({{test::column({1, 0}), hi1}, {test::column({0, 1}), hi2},
-                                     {test::column({-1, 0}), -lo1}, {test::column({0, -1}), -lo2}});
+    return Specification::unsafe_set({{test::column({1, 0}), hi1},
+                                      {test::column({0, 1}), hi2},
+                                      {test::column({-1, 0}), -lo1},
+                                      {test::column({0, -1}), -lo2}});
 }
 
 /// Cases of the RAND01 system with MATLAB's verdict and number of refinements (the lines
@@ -205,7 +220,8 @@ void reduction_case_matches_matlab() {
     // The adaptive reachable sets of the first run (emax 4.940648 as MATLAB printed it).
     TaylorLinSys taylor(sys.A());
     AdaptiveSaveData savedata;
-    const AdaptiveParams ap{*params.initial_set, params.input_set->generators(), params.input_set->center(), sys.C(), params.t_final};
+    const AdaptiveParams ap{*params.initial_set, params.input_set->generators(),
+                            params.input_set->center(), sys.C(), params.t_final};
     const AdaptiveResult R = priv_reach_adaptive(taylor, ap, {VerifyTime({{0, 2.0}})}, 4.940648,
                                                  true, savedata);
     check(R.time_interval.size() == 5, "3-dim: five steps");
@@ -223,8 +239,10 @@ void reduction_case_matches_matlab() {
             check(test::close(R.time[k + 1], t_end[i], 1e-9), w + "end time");
             check(test::close(R.time_interval_error[k], err[i], 1e-5), w + "error");
             const Interval I = R.time_interval[k]->interval();
-            check(test::close(I.inf(), std::vector<double>{inf[i][0], inf[i][1]}, 1e-5), w + "lower");
-            check(test::close(I.sup(), std::vector<double>{sup[i][0], sup[i][1]}, 1e-5), w + "upper");
+            check(test::close(I.inf(), std::vector<double>{inf[i][0], inf[i][1]}, 1e-5),
+                  w + "lower");
+            check(test::close(I.sup(), std::vector<double>{sup[i][0], sup[i][1]}, 1e-5),
+                  w + "upper");
             check(R.time_interval[k]->generators().shape()[1] == 10, w + "generators");
         }
     }

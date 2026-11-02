@@ -1,8 +1,8 @@
 // test_interval_stack_torch - interval stack: a batch member is the interval it was made from
 
 #include "cora/cont_set/interval/interval.h"
-#include "cora/global/rng.h"
 #include "cora/global/backend/torch.h"
+#include "cora/global/rng.h"
 #include "testing.h"
 
 using namespace cora;
@@ -22,11 +22,22 @@ void stack_keeps_each_member() {
     }
 }
 
+/// An empty list is refused; with the checks off the stack is the same.
+void checks_and_their_switch() {
+    check(test::raises([] { Interval::stack({}); }, Error::wrong_value), "stack: an empty list");
+    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Tensor on = Interval::stack({S, S}).center();
+    ChecksScope off(false);
+    check(test::close(Interval::stack({S, S}).center(), on, 0),
+          "stack: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
     const BackendScope backend_scope("torch");
     stack_keeps_each_member();
     check(test::throws([] { Interval::stack({}); }), "stack: an empty list throws");
+    checks_and_their_switch();
     return test::finish("interval stack (torch)");
 }

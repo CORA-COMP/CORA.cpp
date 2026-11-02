@@ -1,4 +1,4 @@
-// example_neuralNetwork_train_01_setBased - set-based training pushes decision boundaries off the samples
+// example_neural_network_train_01_set_based - set-based training pushes decision boundaries off the samples
 //
 // The loss of set-based training (Koller, Ladner, Althoff: "Set-Based Training for Neural Network
 // Verification", TMLR 2025) combines the usual loss of the center of the output set with the size of
@@ -15,8 +15,8 @@
 // Outputs:  accuracy and certified share of the training points for both models
 // See also: the Python example of the same name, example_neuralNetwork_verify_01
 
-#include "cora/nn/neural_network/neural_network.h"
 #include "cora/global/backend/torch.h"
+#include "cora/nn/neural_network/neural_network.h"
 
 #include <iostream>
 #include <string>
@@ -53,7 +53,8 @@ NeuralNetwork as_network(const torch::nn::Sequential &model) {
 Zonotope output_set(const torch::nn::Sequential &model, const torch::Tensor &x, double eps) {
     const torch::Tensor generators =
         (eps * torch::eye(2, torch::kDouble)).expand({x.size(0), 2, 2}).contiguous();
-    return as_network(model).evaluate(Zonotope(from_torch(x.unsqueeze(-1)), from_torch(generators)));
+    return as_network(model).evaluate(
+        Zonotope(from_torch(x.unsqueeze(-1)), from_torch(generators)));
 }
 
 /// Per point whether every input of the eps-box gets its class: the largest value of
@@ -75,7 +76,7 @@ int main(int argc, char **argv) {
 
     // the Python example trains 1500 epochs; 300 already show the effect and take seconds
     const int epochs = argc > 1 ? std::stoi(argv[1]) : 300;
-    const double eps_train = 0.05;  // half-width of the input boxes during set-based training
+    const double eps_train = 0.05; // half-width of the input boxes during set-based training
     const double tau = 0.05;       // weight of the output-set size against the loss of the center
     const int64_t batch_size = 10;
     const double learning_rate = 0.01;

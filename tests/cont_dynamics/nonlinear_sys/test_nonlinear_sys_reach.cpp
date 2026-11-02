@@ -1,4 +1,4 @@
-// test_nonlinearSys_reach - nonlinearSys reach: exact on a linear system, and simulations of the
+// test_nonlinear_sys_reach - nonlinearSys reach: exact on a linear system, and simulations of the
 // van der Pol oscillator stay inside the enclosures
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -43,8 +43,11 @@ void a_linear_system_gives_the_linear_result(const std::string &b) {
         },
         2);
     const Zonotope X0(Tensor({1.0, 0.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
-    const ReachSet R = sys.reach({.initial_set = X0, .t_final = 1.0}, alg::Linearization{.time_step = 0.05, .taylor_terms = 8});
-    const ReachSet linear = LinearSys(Tensor({{-0.1, 1.0}, {-1.0, -0.1}})).reach({.initial_set = X0, .t_final = 1.0}, alg::Standard{.time_step = 0.05, .taylor_terms = 8});
+    const ReachSet R = sys.reach({.initial_set = X0, .t_final = 1.0},
+                                 alg::Linearization{.time_step = 0.05, .taylor_terms = 8});
+    const ReachSet linear = LinearSys(Tensor({{-0.1, 1.0}, {-1.0, -0.1}}))
+                                .reach({.initial_set = X0, .t_final = 1.0},
+                                       alg::Standard{.time_step = 0.05, .taylor_terms = 8});
     check(R.time_interval.size() == 20 && R.time_point.size() == 21, b + ": 20 steps");
     const std::vector<double> a = R.time_point.back().interval().sup().data();
     const std::vector<double> c = linear.time_point.back().interval().sup().data();
@@ -58,13 +61,15 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
     const double dt = 0.005;
     const NonlinearSys sys = van_der_pol();
     const Zonotope X0 = van_der_pol_start();
-    const ReachSet R = sys.reach({.initial_set = X0, .t_final = 2.0}, alg::Linearization{.time_step = dt, .taylor_terms = 4});
+    const ReachSet R = sys.reach({.initial_set = X0, .t_final = 2.0},
+                                 alg::Linearization{.time_step = dt, .taylor_terms = 4});
     check(R.time_point.size() == R.time_interval.size() + 1, b + ": a point set more than steps");
 
     cora::Rng rng(1);
     for (const std::string type : {"standard", "extreme"}) {
         const Tensor x0 = X0.rand_point(30, rng, type);
-        const std::vector<Tensor> x = sys.simulate({.initial_state = x0, .t_final = 2.0}, alg::RungeKutta4{.time_step = dt / 5});
+        const std::vector<Tensor> x = sys.simulate({.initial_state = x0, .t_final = 2.0},
+                                                   alg::RungeKutta4{.time_step = dt / 5});
         int outside = 0;
         for (std::size_t k = 0; k < x.size(); ++k) {
             const std::size_t step = std::min(k / 5, R.time_interval.size() - 1);
@@ -81,7 +86,9 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
 
 /// The enclosures are usable: over a whole period of the oscillation the box stays small.
 void the_enclosure_stays_tight(const std::string &b) {
-    const ReachSet R = van_der_pol().reach({.initial_set = van_der_pol_start(), .t_final = 6.74}, alg::Linearization{.time_step = 0.005, .taylor_terms = 4});
+    const ReachSet R =
+        van_der_pol().reach({.initial_set = van_der_pol_start(), .t_final = 6.74},
+                            alg::Linearization{.time_step = 0.005, .taylor_terms = 4});
     double widest = 0;
     for (const Zonotope &Z : R.time_interval) {
         const Interval box = Z.interval();
@@ -92,7 +99,9 @@ void the_enclosure_stays_tight(const std::string &b) {
 }
 
 void the_zonotope_order_limits_the_generators(const std::string &b) {
-    const ReachSet R = van_der_pol().reach({.initial_set = van_der_pol_start(), .t_final = 1.0}, alg::Linearization{.time_step = 0.02, .taylor_terms = 4, .zonotope_order = 3});
+    const ReachSet R = van_der_pol().reach(
+        {.initial_set = van_der_pol_start(), .t_final = 1.0},
+        alg::Linearization{.time_step = 0.02, .taylor_terms = 4, .zonotope_order = 3});
     int64_t most = 0;
     for (const Zonotope &Z : R.time_point) most = std::max(most, Z.generators().shape()[1]);
     check(most <= 3 * 2, b + ": at most order * n = 6 generators, found " + std::to_string(most));
@@ -101,11 +110,51 @@ void the_zonotope_order_limits_the_generators(const std::string &b) {
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinearSys sys = van_der_pol();
     const Zonotope X0 = van_der_pol_start();
-    check(test::throws([&] { sys.reach({.initial_set = X0, .t_final = 1.0}, alg::Linearization{.time_step = 0.0}); }), b + ": time step 0");
-    check(test::throws([&] { sys.reach({.initial_set = X0, .t_final = 10.0}, alg::Linearization{.time_step = 5.0}); }), b + ": a step that is too large");
+    check(test::throws([&] {
+              sys.reach({.initial_set = X0, .t_final = 1.0}, alg::Linearization{.time_step = 0.0});
+          }),
+          b + ": time step 0");
+    check(test::throws([&] {
+              sys.reach({.initial_set = X0, .t_final = 10.0}, alg::Linearization{.time_step = 5.0});
+          }),
+          b + ": a step that is too large");
     const Zonotope wrong_dim(Tensor({1.0, 2.0, 3.0}), Tensor::eye(3));
-    check(test::throws([&] { sys.reach({.initial_set = wrong_dim, .t_final = 1.0}, alg::Linearization{.time_step = 0.01}); }), b + ": a set of another dimension");
-    check(test::throws([&] { sys.reach({.initial_set = X0, .t_final = 1.0}, alg::Linearization{.time_step = 0.01, .taylor_terms = 4, .zonotope_order = 0}); }), b + ": zonotope order 0");
+    check(test::throws([&] {
+              sys.reach({.initial_set = wrong_dim, .t_final = 1.0},
+                        alg::Linearization{.time_step = 0.01});
+          }),
+          b + ": a set of another dimension");
+    check(test::throws([&] {
+              sys.reach(
+                  {.initial_set = X0, .t_final = 1.0},
+                  alg::Linearization{.time_step = 0.01, .taylor_terms = 4, .zonotope_order = 0});
+          }),
+          b + ": zonotope order 0");
+}
+
+/// An input set is refused (no inputs); with the checks off the sets are the same.
+void checks_and_their_switch() {
+    const NonlinearSys sys = NonlinearSys(
+        [](const std::vector<Expr> &x) {
+            { return std::vector<Expr>{{x[1], -x[0]}}; }
+        },
+        2);
+    const Zonotope X0 = Zonotope(Tensor({1.0, 1.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
+    check(test::raises(
+              [&] {
+                  sys.reach({.initial_set = X0, .input_set = X0, .t_final = 1},
+                            alg::Linearization{.time_step = 0.1});
+              },
+              Error::not_supported),
+          "reach: an input set");
+    const ReachProblem problem{.initial_set = X0, .t_final = 0.5};
+    const Tensor on =
+        sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back().center();
+    ChecksScope off(false);
+    check(test::close(
+              sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back().center(),
+              on, 0),
+          "reach: the same with the checks off");
 }
 
 } // namespace
@@ -118,5 +167,6 @@ int main() {
         the_zonotope_order_limits_the_generators(b);
         wrong_arguments_are_described(b);
     });
+    checks_and_their_switch();
     return test::finish("nonlinearSys reach");
 }

@@ -5,8 +5,10 @@
 // defaults and a field list, so C++ fills them with designated initializers and Python with
 // keyword arguments.
 //
-// Syntax:   ReachSet R = sys.reach({.initial_set = X0, .t_final = 2.0}, alg::Standard{.time_step = 0.1});
-//           auto x = sys.simulate({.initial_state = x0, .t_final = 2.0}, alg::Exact{.time_step = 0.1});
+// Syntax:   ReachSet R = sys.reach({.initial_set = X0, .t_final = 2.0}, alg::Standard{.time_step =
+// 0.1});
+//           auto x = sys.simulate({.initial_state = x0, .t_final = 2.0}, alg::Exact{.time_step =
+//           0.1});
 // See also: cont_dynamics/algorithms.h, cont_dynamics/linear_sys/linear_sys.h
 //
 // CORA: contDynamics/@contDynamics/contDynamics.m
@@ -33,9 +35,11 @@ struct ReachSet {
 
 /// What reach and verify are asked (CORA's params).
 struct ReachProblem {
-    std::optional<Zonotope> initial_set = std::nullopt;  ///< the initial set X0 (CORA's R0), required
-    std::optional<Zonotope> input_set = std::nullopt;    ///< the set U of the input u(t) (CORA's U); none: no input
-    double t_final = 0;                   ///< the time horizon, positive (CORA's tFinal)
+    std::optional<Zonotope> initial_set =
+        std::nullopt; ///< the initial set X0 (CORA's R0), required
+    std::optional<Zonotope> input_set =
+        std::nullopt;   ///< the set U of the input u(t) (CORA's U); none: no input
+    double t_final = 0; ///< the time horizon, positive (CORA's tFinal)
 
     static constexpr auto fields() {
         return std::make_tuple(field("initial_set", &ReachProblem::initial_set),
@@ -46,9 +50,10 @@ struct ReachProblem {
 
 /// What simulate is asked (CORA's params of simulate).
 struct SimulationProblem {
-    Tensor initial_state;          ///< the start points as columns (..., n, N), required (CORA's x0)
-    std::optional<Tensor> input = std::nullopt;   ///< a constant input per trajectory (m, N), or one (m, 1) (CORA's u)
-    double t_final = 0;            ///< the time horizon, positive (CORA's tFinal)
+    Tensor initial_state; ///< the start points as columns (..., n, N), required (CORA's x0)
+    std::optional<Tensor> input =
+        std::nullopt;   ///< a constant input per trajectory (m, N), or one (m, 1) (CORA's u)
+    double t_final = 0; ///< the time horizon, positive (CORA's tFinal)
 
     static constexpr auto fields() {
         return std::make_tuple(field("initial_state", &SimulationProblem::initial_state),
@@ -59,9 +64,11 @@ struct SimulationProblem {
 
 /// What simulate_random is asked: trajectories from random points of sets (CORA's params).
 struct RandomSimulationProblem {
-    std::optional<Set> initial_set = std::nullopt;  ///< the set of the start points (CORA's R0), required
-    std::optional<Set> input_set = std::nullopt;    ///< the set of the constant inputs (CORA's U); none: no input
-    double t_final = 0;              ///< the time horizon, positive (CORA's tFinal)
+    std::optional<Set> initial_set =
+        std::nullopt; ///< the set of the start points (CORA's R0), required
+    std::optional<Set> input_set =
+        std::nullopt;   ///< the set of the constant inputs (CORA's U); none: no input
+    double t_final = 0; ///< the time horizon, positive (CORA's tFinal)
 
     static constexpr auto fields() {
         return std::make_tuple(field("initial_set", &RandomSimulationProblem::initial_set),

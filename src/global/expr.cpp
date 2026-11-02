@@ -104,8 +104,9 @@ Range aux_div(const Range &a, const Range &b) {
     // A divisor range that contains 0 has no enclosure.
     for (std::size_t i = 0; i < lo.size(); ++i)
         if (lo[i] <= 0 && hi[i] >= 0)
-            CORA_FAIL(Error::out_of_domain, "cora: an expression divides by a range that contains 0; "
-                                    "the box is too large for this dynamics");
+            CORA_FAIL(Error::out_of_domain,
+                      "cora: an expression divides by a range that contains 0; "
+                      "the box is too large for this dynamics");
     const Tensor one = aux_constant(b.lo, 1.0);
     return a * Range(one.div(b.hi), one.div(b.lo));
 }
@@ -176,17 +177,15 @@ template <class T> struct Evaluator {
         if (n.op == Op::constant) return constant(n.value);
         if (n.op == Op::var) {
             if (n.index >= static_cast<int>(x.size()))
-                CORA_FAIL(Error::wrong_value, 
-                    "cora: the expression uses a variable the point does not have");
+                CORA_FAIL(Error::wrong_value,
+                          "cora: the expression uses a variable the point does not have");
             return x[n.index];
         }
         // Products and quotients with a constant scale their other operand.
         const bool binary =
             n.op == Op::add || n.op == Op::sub || n.op == Op::mul || n.op == Op::div;
-        if (n.op == Op::mul && M::is_const(n.b))
-            return scaled((*this)(n.a), M::node(n.b).value);
-        if (n.op == Op::mul && M::is_const(n.a))
-            return scaled((*this)(n.b), M::node(n.a).value);
+        if (n.op == Op::mul && M::is_const(n.b)) return scaled((*this)(n.a), M::node(n.b).value);
+        if (n.op == Op::mul && M::is_const(n.a)) return scaled((*this)(n.b), M::node(n.a).value);
         if (n.op == Op::div && M::is_const(n.b) && M::node(n.b).value != 0)
             return scaled((*this)(n.a), 1 / M::node(n.b).value);
         const T a = (*this)(n.a);
@@ -232,7 +231,8 @@ Range square(const Range &a) {
 
 // Building ------------------------------------------------------------------------------------
 
-Expr::Expr(double value) : node_(std::make_shared<const Node>(Node{Op::constant, value, 0, {}, {}})) {}
+Expr::Expr(double value)
+    : node_(std::make_shared<const Node>(Node{Op::constant, value, 0, {}, {}})) {}
 
 Expr Expr::var(int i) {
     if (i < 0) CORA_FAIL(Error::wrong_value, "cora: the index of a variable is 0, 1, 2, ...");
@@ -263,7 +263,8 @@ Expr operator*(const Expr &a, const Expr &b) {
 
 // Dividing by the constant 0 is an error here; a range around 0 is one in enclose.
 Expr operator/(const Expr &a, const Expr &b) {
-    if (M::is_const(b, 0)) CORA_FAIL(Error::out_of_domain, "cora: an expression divides by the constant 0");
+    if (M::is_const(b, 0))
+        CORA_FAIL(Error::out_of_domain, "cora: an expression divides by the constant 0");
     if (M::is_const(a, 0)) return Expr(0.0);
     if (M::is_const(b, 1)) return a;
     return M::make(Op::div, a, b);

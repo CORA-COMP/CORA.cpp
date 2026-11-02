@@ -41,8 +41,8 @@ void aux_pivot(std::vector<std::vector<double>> &T, std::vector<double> &cost, i
 // ===========================================  MAIN  =========================================== //
 
 bool priv_zonotope_meets_polytope(const std::vector<double> &c, const std::vector<double> &G, int m,
-                                const std::vector<std::vector<double>> &a,
-                                const std::vector<double> &b) {
+                                  const std::vector<std::vector<double>> &a,
+                                  const std::vector<double> &b) {
     const int n = static_cast<int>(c.size());
     const int p = static_cast<int>(a.size());
 
@@ -86,7 +86,7 @@ bool priv_zonotope_meets_polytope(const std::vector<double> &c, const std::vecto
         T[p + j][cols] = 2.0;
         basis[p + j] = m + p + j;
     }
-    if (n_art == 0) return true;  // u = 0 (the corner beta = -1) already satisfies every row
+    if (n_art == 0) return true; // u = 0 (the corner beta = -1) already satisfies every row
 
     // Simplex ------------------------------------------------------------------------------
 

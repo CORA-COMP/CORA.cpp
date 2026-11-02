@@ -27,8 +27,8 @@ Interval LinearSys::expm_remainder(double time_step, int taylor_terms) const {
                std::to_string(time_step) + " and " + std::to_string(taylor_terms);
     });
     const Tensor Aabs = A_.abs();
-    Tensor Ai = A_.eye_like(), series = A_.eye_like();  // |A|^i and the series up to i
-    double dt_over_fac = 1.0;                         // dt^i / i!
+    Tensor Ai = A_.eye_like(), series = A_.eye_like(); // |A|^i and the series up to i
+    double dt_over_fac = 1.0;                          // dt^i / i!
 
     for (int i = 1; i <= taylor_terms; ++i) {
         Ai = Ai.matmul(Aabs);

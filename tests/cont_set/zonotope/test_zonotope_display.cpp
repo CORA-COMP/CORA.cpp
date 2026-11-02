@@ -33,6 +33,14 @@ void a_batch_is_described_by_its_shape(const std::string &b) {
           b + ": the batch shape is shown");
 }
 
+/// display takes no input to check; with the checks off the text is the same.
+void checks_and_their_switch() {
+    const Zonotope S = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    const std::string on = S.display();
+    ChecksScope off(false);
+    check(S.display() == on, "display: the same with the checks off");
+}
+
 } // namespace
 
 int main() {
@@ -40,5 +48,6 @@ int main() {
         the_text_names_dimension_center_and_generators(b);
         a_batch_is_described_by_its_shape(b);
     });
+    checks_and_their_switch();
     return test::finish("zonotope display");
 }

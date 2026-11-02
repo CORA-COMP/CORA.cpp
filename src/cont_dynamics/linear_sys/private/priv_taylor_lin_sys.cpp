@@ -1,4 +1,4 @@
-// priv_taylorLinSys - cache of the Taylor quantities of a linear system, as CORA's taylorLinSys
+// priv_taylor_lin_sys - cache of the Taylor quantities of a linear system, as CORA's taylorLinSys
 //
 // The methods of TaylorLinSys, and the correction matrices of priv_correctionMatrixState and
 // priv_correctionMatrixInput for an adaptive truncation order: the series stops when a term no
