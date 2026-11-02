@@ -15,7 +15,7 @@ MODEL = cora.LinearSys(cora.Tensor([[0.0, 1.0], [-1.0, -0.2]]))  # the lineariza
 
 
 def trajectories(count, seed):
-    return PENDULUM.simulate(X0.randPoint(count, cora.Rng(seed)), 0.1, 2.0)
+    return PENDULUM.simulate(X0.rand_point(count, cora.Rng(seed)), time_step=0.1, t_final=2.0)
 
 
 def scores(trajectories, inf, sup):
@@ -26,9 +26,9 @@ def scores(trajectories, inf, sup):
 
 class Conformal(unittest.TestCase):
     def test_the_quantile_of_the_scores_gives_the_promised_coverage(self):
-        R = MODEL.reach(X0, 0.1, 2.0, taylorTerms=6)
-        inf = torch.stack([Z.interval().inf for Z in R.timePoint])[:, :, None]
-        sup = torch.stack([Z.interval().sup for Z in R.timePoint])[:, :, None]
+        R = MODEL.reach(X0, time_step=0.1, t_final=2.0, taylor_terms=6)
+        inf = torch.stack([Z.interval().inf for Z in R.time_point])[:, :, None]
+        sup = torch.stack([Z.interval().sup for Z in R.time_point])[:, :, None]
         calibration = scores(trajectories(100, 1), inf, sup)
         test = scores(trajectories(500, 2), inf, sup)
 

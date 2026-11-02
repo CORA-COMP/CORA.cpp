@@ -28,42 +28,40 @@ if not os.environ.get("CORACPP_ORACLE"):
 # every value is a dyadic number, so it is exact in binary64 and in binary32
 A = np.array([[0.0, 1.0], [-1.0, -0.25]])
 c, G = np.array([1.0, 0.0]), 0.25 * np.eye(2)
-timeStep, tFinal = 0.125, 2.0  # a power of two: exact in every dtype
-taylorTerms, zonotopeOrder = 8, 10
+time_step, t_final = 0.125, 2.0  # a power of two: exact in every dtype
+taylor_terms, zonotope_order = 8, 10
 
 # CORA.cpp's own result, in double without a rounding-error account
-ref = cora.LinearSys(cora.Tensor(A)).reach(cora.Zonotope(cora.Tensor(c), cora.Tensor(G)),
-                                           timeStep, tFinal, taylorTerms)
-last = ref.timePoint[-1].interval()
+ref = cora.LinearSys(cora.Tensor(A)).reach(cora.Zonotope(cora.Tensor(c), cora.Tensor(G)), time_step=time_step, t_final=t_final, taylor_terms=taylor_terms)
+last = ref.time_point[-1].interval()
 print(f"CORA.cpp:  x1 in [{float(last.inf[0]):.6f}, {float(last.sup[0]):.6f}]")
 
 # The Oracle --------------------------------------------------------------------------------
 
 for dtype in ("binary64", "ieee:binary32"):
-    cora.lean.setDType(dtype)  # the lean objects below are created in this dtype
-    R = cora.lean.LinearSys(A).reach(cora.lean.Zonotope(c, G), timeStep, tFinal, taylorTerms,
-                                     zonotopeOrder)
+    cora.lean.set_dtype(dtype)  # the lean objects below are created in this dtype
+    R = cora.lean.LinearSys(A).reach(cora.lean.Zonotope(c, G), t_final, time_step=time_step, taylor_terms=taylor_terms, zonotope_order=zonotope_order)
 
     # the nominal zonotope and the error box that the sound float operations added
-    nominal, error = R.timePoint[-1].gather()
+    nominal, error = R.time_point[-1].gather()
     hull = nominal.interval()
     print(f"{dtype}: x1 in [{float(hull.inf[0]):.6f}, {float(hull.sup[0]):.6f}], "
           f"error box radius {float(error.sup[0]):.3g}")
 
     # the enclosure (nominal plus error) must contain CORA.cpp's interval at every time
     encloses = True
-    for lean_set, z in zip(R.timePoint, ref.timePoint):
+    for lean_set, z in zip(R.time_point, ref.time_point):
         box, I = lean_set.interval().gather(), z.interval()
         encloses &= bool(np.all(np.asarray(box.inf) <= np.asarray(I.inf) + 1e-9)
                          and np.all(np.asarray(box.sup) >= np.asarray(I.sup) - 1e-9))
-    print(f"  encloses the CORA.cpp sets at all {len(R.timePoint)} time points: "
+    print(f"  encloses the CORA.cpp sets at all {len(R.time_point)} time points: "
           f"{'yes' if encloses else 'NO'}")
 
 # Rounding ----------------------------------------------------------------------------------
 
-# 0.1 is not a binary32 number: roundTo returns the rounded value and an enclosure of the error
-cora.lean.setDType("binary64")
-value, error = cora.lean.Tensor.fromArray(np.array([[0.1]])).roundTo("ieee:binary32")
+# 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the error
+cora.lean.set_dtype("binary64")
+value, error = cora.lean.Tensor.from_array(np.array([[0.1]])).round_to("ieee:binary32")
 inf_, sup_ = error.gather().inf, error.gather().sup
 print(f"0.1 in binary32 is {float(value.gather()[0, 0])}, "
       f"the error lies in [{float(inf_[0]):.3g}, {float(sup_[0]):.3g}]")

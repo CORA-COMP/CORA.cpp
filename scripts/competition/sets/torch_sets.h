@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "global/rng.h"
+#include "cora/global/rng.h"
 
 #include <torch/torch.h>
 
@@ -27,7 +27,7 @@ namespace cora::comp::tb {
 ///
 /// Torch's CPU generator is one Mersenne Twister stream, so a draw runs on a single core
 /// however wide the machine is: the 200M normals a batch of a hundred 1000d zonotopes
-/// needs are nearly all of what `generateRandom` is timed doing, and on the competition's
+/// needs are nearly all of what `generate_random` is timed doing, and on the competition's
 /// worker they take longer than the catalog allows for the whole instance. `Rng` draws
 /// the same distribution across every core at roughly ten times the rate — the catalog
 /// fixes the distribution, not the stream — and it is what the Eigen backend already
@@ -70,7 +70,7 @@ struct Interval {
     torch::Tensor center() const { return (hi + lo) / 2.0; }
     torch::Tensor radius() const { return (hi - lo) / 2.0; }
 
-    /// CORA's `interval.generateRandom`: centre `U[-2, 2]`, radius `R/2 · u` with
+    /// CORA's `interval.generate_random`: centre `U[-2, 2]`, radius `R/2 · u` with
     /// `R ~ U[0, 10]` and `u ~ U[0, 1]`.
     static Interval generate_random(torch::IntArrayRef batch, int64_t n,
                                     const torch::TensorOptions &opts) {
@@ -125,7 +125,7 @@ struct Zonotope {
         return {torch::zeros({n}, opts), torch::eye(n, opts)};
     }
 
-    /// CORA's `zonotope.generateRandom`: centre `10 · randn`, `m` generators, each a
+    /// CORA's `zonotope.generate_random`: centre `10 · randn`, `m` generators, each a
     /// uniformly random unit direction with a length `~ U[0, 1]`.
     static Zonotope generate_random(torch::IntArrayRef batch, int64_t n, int64_t m,
                                     const torch::TensorOptions &opts) {

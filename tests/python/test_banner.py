@@ -24,7 +24,7 @@ class Banner(unittest.TestCase):
     def test_an_example_prints_header_and_footer(self):
         out = run("example_banner_check.py", "print('body')").stdout
         self.assertIn("CORA START", out)
-        self.assertIn(f"CORA.cpp | example_banner_check.py | default backend: {cora.backend()}", out)
+        self.assertIn(f"CORA.cpp | example_banner_check.py | default backend: {cora.current_backend()}", out)
         self.assertIn("body", out)
         self.assertIn("CORA END", out)
         self.assertIn("CORA.cpp | example_banner_check.py | runtime: ", out)

@@ -27,12 +27,12 @@ sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]], device="gpu"))
 
 # Reachability Analysis ---------------------------------------------------------------------
 
-R = sys.reach(R0, timeStep=0.1, tFinal=1.0, taylorTerms=8)
+R = sys.reach(R0, time_step=0.1, t_final=1.0, taylor_terms=8)
 
 # Evaluation --------------------------------------------------------------------------------
 
-print("the result lives on", R.timeInt[-1].c.device)
-print("center of the last enclosure:", R.timeInt[-1].c.cpu().tolist())
+print("the result lives on", R.time_interval[-1].center.device)
+print("center of the last enclosure:", R.time_interval[-1].center.cpu().tolist())
 
 # example completed
 

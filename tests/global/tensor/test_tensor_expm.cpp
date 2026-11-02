@@ -1,6 +1,6 @@
 // test_tensor_expm - Tensor expm: the matrix exponential
 
-#include "global/tensor/tensor.h"
+#include "cora/global/tensor/tensor.h"
 #include "testing.h"
 
 #include <cmath>

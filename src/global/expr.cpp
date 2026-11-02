@@ -3,9 +3,10 @@
 // The trees of expressions, their derivative, and their evaluation at tensors and over boxes.
 //
 // Syntax:   see expr.h
-// See also: contDynamics/nonlinearSys/nonlinearSys.h
+// See also: cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h
 
-#include "global/expr.h"
+#include "cora/global/expr.h"
+#include "cora/global/error.h"
 
 #include <algorithm>
 #include <cmath>
@@ -16,7 +17,7 @@
 
 namespace cora {
 
-enum class Op { Const, Var, Add, Sub, Mul, Div, Neg, Pow, Sin, Cos, Exp };
+enum class Op { constant, var, add, sub, mul, div, neg, pow, sin, cos, exp };
 
 struct Expr::Node {
     Op op;
@@ -31,10 +32,10 @@ struct ExprMaker {
         return Expr(std::make_shared<const Expr::Node>(Expr::Node{op, value, index, a, b}));
     }
     static const Expr::Node &node(const Expr &e) { return *e.node_; }
-    static bool isConst(const Expr &e, double v) {
-        return e.node_->op == Op::Const && e.node_->value == v;
+    static bool is_const(const Expr &e, double v) {
+        return e.node_->op == Op::constant && e.node_->value == v;
     }
-    static bool isConst(const Expr &e) { return e.node_->op == Op::Const; }
+    static bool is_const(const Expr &e) { return e.node_->op == Op::constant; }
 };
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
@@ -47,7 +48,7 @@ const double kPi = 3.14159265358979323846;
 
 /// A tensor of the shape and backend of `like` filled with `value`; without `like`, a 1x1 one.
 Tensor aux_constant(const Tensor &like, double value) {
-    if (!like.defined()) return Tensor::fromData({value}, {1, 1});
+    if (!like.defined()) return Tensor::from_data({value}, {1, 1});
     int64_t count = 1;
     for (const int64_t d : like.shape()) count *= d;
     return Tensor::like(like, std::vector<double>(count, value), like.shape());
@@ -74,7 +75,7 @@ Tensor aux_power(const Tensor &a, int n) {
 // Ranges ------------------------------------------------------------------------------------------
 
 /// Whether the interval [lo, hi] contains a point of the form offset + 2 pi k.
-bool aux_hasPeak(double lo, double hi, double offset) {
+bool aux_has_peak(double lo, double hi, double offset) {
     return std::ceil((lo - offset) / (2 * kPi)) <= std::floor((hi - offset) / (2 * kPi));
 }
 
@@ -84,18 +85,18 @@ Range aux_trig(const Range &a, bool cosine) {
     const std::vector<double> lo = a.lo.data(), hi = a.hi.data();
     const double phase = cosine ? kPi / 2 : 0;
     std::vector<double> top(lo.size()), bottom(lo.size());
-    std::vector<double> keepTop(lo.size()), keepBottom(lo.size());
+    std::vector<double> keep_top(lo.size()), keep_bottom(lo.size());
     for (std::size_t i = 0; i < lo.size(); ++i) {
         const double l = lo[i] + phase, h = hi[i] + phase;
         const bool wide = h - l >= 2 * kPi;
-        top[i] = wide || aux_hasPeak(l, h, kPi / 2);
-        bottom[i] = wide || aux_hasPeak(l, h, -kPi / 2);
-        keepTop[i] = 1 - top[i];
-        keepBottom[i] = 1 - bottom[i];
+        top[i] = wide || aux_has_peak(l, h, kPi / 2);
+        bottom[i] = wide || aux_has_peak(l, h, -kPi / 2);
+        keep_top[i] = 1 - top[i];
+        keep_bottom[i] = 1 - bottom[i];
     }
     const Tensor va = cosine ? a.lo.cos() : a.lo.sin(), vb = cosine ? a.hi.cos() : a.hi.sin();
-    return {Tensor::minimum(va, vb).mul(aux_mask(a.lo, keepBottom)) - aux_mask(a.lo, bottom),
-            Tensor::maximum(va, vb).mul(aux_mask(a.lo, keepTop)) + aux_mask(a.lo, top)};
+    return {Tensor::minimum(va, vb).mul(aux_mask(a.lo, keep_bottom)) - aux_mask(a.lo, bottom),
+            Tensor::maximum(va, vb).mul(aux_mask(a.lo, keep_top)) + aux_mask(a.lo, top)};
 }
 
 Range aux_div(const Range &a, const Range &b) {
@@ -103,7 +104,7 @@ Range aux_div(const Range &a, const Range &b) {
     // A divisor range that contains 0 has no enclosure.
     for (std::size_t i = 0; i < lo.size(); ++i)
         if (lo[i] <= 0 && hi[i] >= 0)
-            throw std::domain_error("cora: an expression divides by a range that contains 0; "
+            CORA_FAIL(Error::out_of_domain, "cora: an expression divides by a range that contains 0; "
                                     "the box is too large for this dynamics");
     const Tensor one = aux_constant(b.lo, 1.0);
     return a * Range(one.div(b.hi), one.div(b.lo));
@@ -126,35 +127,35 @@ Range aux_pow(const Range &a, int n) {
 /// The value of a node from the values of its operands.
 Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
     switch (n.op) {
-    case Op::Add: return a + b;
-    case Op::Sub: return a - b;
-    case Op::Mul: return a.mul(b);
-    case Op::Div: return a.div(b);
-    case Op::Neg: return a * -1.0;
-    case Op::Pow: return aux_power(a, n.index);
-    case Op::Sin: return a.sin();
-    case Op::Cos: return a.cos();
-    case Op::Exp: return a.exp();
+    case Op::add: return a + b;
+    case Op::sub: return a - b;
+    case Op::mul: return a.mul(b);
+    case Op::div: return a.div(b);
+    case Op::neg: return a * -1.0;
+    case Op::pow: return aux_power(a, n.index);
+    case Op::sin: return a.sin();
+    case Op::cos: return a.cos();
+    case Op::exp: return a.exp();
     default: break;
     }
-    throw std::logic_error("cora: an expression node of an unknown operation");
+    CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
 }
 
 /// The same over boxes.
 Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
     switch (n.op) {
-    case Op::Add: return a + b;
-    case Op::Sub: return a - b;
-    case Op::Mul: return a * b;
-    case Op::Div: return aux_div(a, b);
-    case Op::Neg: return {a.hi * -1.0, a.lo * -1.0};
-    case Op::Pow: return aux_pow(a, n.index);
-    case Op::Sin: return aux_trig(a, false);
-    case Op::Cos: return aux_trig(a, true);
-    case Op::Exp: return {a.lo.exp(), a.hi.exp()};
+    case Op::add: return a + b;
+    case Op::sub: return a - b;
+    case Op::mul: return a * b;
+    case Op::div: return aux_div(a, b);
+    case Op::neg: return {a.hi * -1.0, a.lo * -1.0};
+    case Op::pow: return aux_pow(a, n.index);
+    case Op::sin: return aux_trig(a, false);
+    case Op::cos: return aux_trig(a, true);
+    case Op::exp: return {a.lo.exp(), a.hi.exp()};
     default: break;
     }
-    throw std::logic_error("cora: an expression node of an unknown operation");
+    CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
 }
 
 /// The value of an expression at the tensors or over the ranges x; `like` gives the constants
@@ -172,21 +173,21 @@ template <class T> struct Evaluator {
 
     T operator()(const Expr &e) const {
         const Expr::Node &n = M::node(e);
-        if (n.op == Op::Const) return constant(n.value);
-        if (n.op == Op::Var) {
+        if (n.op == Op::constant) return constant(n.value);
+        if (n.op == Op::var) {
             if (n.index >= static_cast<int>(x.size()))
-                throw std::out_of_range(
+                CORA_FAIL(Error::wrong_value, 
                     "cora: the expression uses a variable the point does not have");
             return x[n.index];
         }
         // Products and quotients with a constant scale their other operand.
         const bool binary =
-            n.op == Op::Add || n.op == Op::Sub || n.op == Op::Mul || n.op == Op::Div;
-        if (n.op == Op::Mul && M::isConst(n.b))
+            n.op == Op::add || n.op == Op::sub || n.op == Op::mul || n.op == Op::div;
+        if (n.op == Op::mul && M::is_const(n.b))
             return scaled((*this)(n.a), M::node(n.b).value);
-        if (n.op == Op::Mul && M::isConst(n.a))
+        if (n.op == Op::mul && M::is_const(n.a))
             return scaled((*this)(n.b), M::node(n.a).value);
-        if (n.op == Op::Div && M::isConst(n.b) && M::node(n.b).value != 0)
+        if (n.op == Op::div && M::is_const(n.b) && M::node(n.b).value != 0)
             return scaled((*this)(n.a), 1 / M::node(n.b).value);
         const T a = (*this)(n.a);
         return aux_apply(n, a, binary ? (*this)(n.b) : a);
@@ -231,93 +232,93 @@ Range square(const Range &a) {
 
 // Building ------------------------------------------------------------------------------------
 
-Expr::Expr(double value) : node_(std::make_shared<const Node>(Node{Op::Const, value, 0, {}, {}})) {}
+Expr::Expr(double value) : node_(std::make_shared<const Node>(Node{Op::constant, value, 0, {}, {}})) {}
 
 Expr Expr::var(int i) {
-    if (i < 0) throw std::invalid_argument("cora: the index of a variable is 0, 1, 2, ...");
-    return M::make(Op::Var, Expr(), Expr(), 0, i);
+    if (i < 0) CORA_FAIL(Error::wrong_value, "cora: the index of a variable is 0, 1, 2, ...");
+    return M::make(Op::var, Expr(), Expr(), 0, i);
 }
 
 // Every operation folds constants (0 + x, 1 * x, 2 * 3), which keeps derivatives small.
 Expr operator+(const Expr &a, const Expr &b) {
-    if (M::isConst(a, 0)) return b;
-    if (M::isConst(b, 0)) return a;
-    if (M::isConst(a) && M::isConst(b)) return Expr(M::node(a).value + M::node(b).value);
-    return M::make(Op::Add, a, b);
+    if (M::is_const(a, 0)) return b;
+    if (M::is_const(b, 0)) return a;
+    if (M::is_const(a) && M::is_const(b)) return Expr(M::node(a).value + M::node(b).value);
+    return M::make(Op::add, a, b);
 }
 
 Expr operator-(const Expr &a, const Expr &b) {
-    if (M::isConst(b, 0)) return a;
-    if (M::isConst(a) && M::isConst(b)) return Expr(M::node(a).value - M::node(b).value);
-    return M::make(Op::Sub, a, b);
+    if (M::is_const(b, 0)) return a;
+    if (M::is_const(a) && M::is_const(b)) return Expr(M::node(a).value - M::node(b).value);
+    return M::make(Op::sub, a, b);
 }
 
 Expr operator*(const Expr &a, const Expr &b) {
-    if (M::isConst(a, 0) || M::isConst(b, 0)) return Expr(0.0);
-    if (M::isConst(a, 1)) return b;
-    if (M::isConst(b, 1)) return a;
-    if (M::isConst(a) && M::isConst(b)) return Expr(M::node(a).value * M::node(b).value);
-    return M::make(Op::Mul, a, b);
+    if (M::is_const(a, 0) || M::is_const(b, 0)) return Expr(0.0);
+    if (M::is_const(a, 1)) return b;
+    if (M::is_const(b, 1)) return a;
+    if (M::is_const(a) && M::is_const(b)) return Expr(M::node(a).value * M::node(b).value);
+    return M::make(Op::mul, a, b);
 }
 
 // Dividing by the constant 0 is an error here; a range around 0 is one in enclose.
 Expr operator/(const Expr &a, const Expr &b) {
-    if (M::isConst(b, 0)) throw std::domain_error("cora: an expression divides by the constant 0");
-    if (M::isConst(a, 0)) return Expr(0.0);
-    if (M::isConst(b, 1)) return a;
-    return M::make(Op::Div, a, b);
+    if (M::is_const(b, 0)) CORA_FAIL(Error::out_of_domain, "cora: an expression divides by the constant 0");
+    if (M::is_const(a, 0)) return Expr(0.0);
+    if (M::is_const(b, 1)) return a;
+    return M::make(Op::div, a, b);
 }
 
 Expr operator-(const Expr &a) {
-    if (M::isConst(a)) return Expr(-M::node(a).value);
-    return M::make(Op::Neg, a);
+    if (M::is_const(a)) return Expr(-M::node(a).value);
+    return M::make(Op::neg, a);
 }
 
 Expr pow(const Expr &a, int n) {
     if (n == 0) return Expr(1.0);
     if (n == 1) return a;
-    return M::make(Op::Pow, a, M::make(Op::Const), 0, n);
+    return M::make(Op::pow, a, M::make(Op::constant), 0, n);
 }
 
 // The functions are plain nodes; diff knows their derivatives.
-Expr sin(const Expr &a) { return M::make(Op::Sin, a); }
-Expr cos(const Expr &a) { return M::make(Op::Cos, a); }
-Expr exp(const Expr &a) { return M::make(Op::Exp, a); }
+Expr sin(const Expr &a) { return M::make(Op::sin, a); }
+Expr cos(const Expr &a) { return M::make(Op::cos, a); }
+Expr exp(const Expr &a) { return M::make(Op::exp, a); }
 
 // Derivative and evaluation -------------------------------------------------------------------
 
 Expr Expr::diff(int i) const {
     const Node &n = *node_;
-    if (n.op == Op::Const) return Expr(0.0);
-    if (n.op == Op::Var) return Expr(n.index == i ? 1.0 : 0.0);
+    if (n.op == Op::constant) return Expr(0.0);
+    if (n.op == Op::var) return Expr(n.index == i ? 1.0 : 0.0);
     const Expr da = n.a.diff(i);  // the chain rule needs the inner derivative for every operation
     switch (n.op) {
-    case Op::Add: return da + n.b.diff(i);
-    case Op::Sub: return da - n.b.diff(i);
-    case Op::Mul: return da * n.b + n.a * n.b.diff(i);
-    case Op::Div: return (da * n.b - n.a * n.b.diff(i)) / (n.b * n.b);
-    case Op::Neg: return -da;
-    case Op::Pow: return Expr(double(n.index)) * pow(n.a, n.index - 1) * da;
-    case Op::Sin: return cos(n.a) * da;
-    case Op::Cos: return -(sin(n.a) * da);
-    case Op::Exp: return exp(n.a) * da;
+    case Op::add: return da + n.b.diff(i);
+    case Op::sub: return da - n.b.diff(i);
+    case Op::mul: return da * n.b + n.a * n.b.diff(i);
+    case Op::div: return (da * n.b - n.a * n.b.diff(i)) / (n.b * n.b);
+    case Op::neg: return -da;
+    case Op::pow: return Expr(double(n.index)) * pow(n.a, n.index - 1) * da;
+    case Op::sin: return cos(n.a) * da;
+    case Op::cos: return -(sin(n.a) * da);
+    case Op::exp: return exp(n.a) * da;
     default: break;
     }
-    throw std::logic_error("cora: an expression node of an unknown operation");
+    CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
 }
 
-bool Expr::isZero() const { return M::isConst(*this, 0); }
+bool Expr::is_zero() const { return M::is_const(*this, 0); }
 
 // The first variable gives the constants their shape and backend.
-Tensor Expr::evalTensor(const std::vector<Tensor> &x) const {
+Tensor Expr::eval_tensor(const std::vector<Tensor> &x) const {
     const Tensor like = aux_prototype(x);
     return Evaluator<Tensor>{x, like}(*this);
 }
 
 double Expr::eval(const std::vector<double> &x) const {
     std::vector<Tensor> tensors;
-    for (const double v : x) tensors.push_back(Tensor::fromData({v}, {1, 1}));
-    return evalTensor(tensors).data()[0];
+    for (const double v : x) tensors.push_back(Tensor::from_data({v}, {1, 1}));
+    return eval_tensor(tensors).data()[0];
 }
 
 Range Expr::enclose(const std::vector<Range> &x) const {

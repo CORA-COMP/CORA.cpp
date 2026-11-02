@@ -1,11 +1,12 @@
 // figure - a two-dimensional figure that is written as SVG
 //
-// Syntax:   figure().addPolygons(...);   figure().save("figure.svg");
+// Syntax:   figure().add_polygons(...);   figure().save("figure.svg");
 // Inputs:   the layers, in the order they are drawn: regions first, then sets, lines, points
 // Outputs:  the SVG text, or the file
-// See also: global/plot/plot.h
+// See also: cora/global/plot/plot.h
 
-#include "global/plot/figure.h"
+#include "cora/global/plot/figure.h"
+#include "cora/global/error.h"
 
 #include <algorithm>
 #include <cmath>
@@ -48,8 +49,8 @@ Limits aux_limits(const std::vector<Polygon> &all, bool equal, double pw, double
     pad(l.x0, l.x1);
     pad(l.y0, l.y1);
     if (equal) {
-        const double perPixelX = (l.x1 - l.x0) / pw, perPixelY = (l.y1 - l.y0) / ph;
-        const double s = std::max(perPixelX, perPixelY);
+        const double per_pixel_x = (l.x1 - l.x0) / pw, per_pixel_y = (l.y1 - l.y0) / ph;
+        const double s = std::max(per_pixel_x, per_pixel_y);
         const double cx = (l.x0 + l.x1) / 2, cy = (l.y0 + l.y1) / 2;
         l = {cx - s * pw / 2, cx + s * pw / 2, cy - s * ph / 2, cy + s * ph / 2};
     }
@@ -101,23 +102,23 @@ std::vector<double> aux_ticks(double lo, double hi) {
 
 // Layers ------------------------------------------------------------------------------------------
 
-Figure::Layer &Figure::addPolygons(std::vector<Polygon> polygons, Color edge,
+Figure::Layer &Figure::add_polygons(std::vector<Polygon> polygons, Color edge,
                                    std::optional<Color> face,
-                         double lineWidth, const std::string &label, bool unify) {
-    Layer l{Kind::Polygons, std::move(polygons), edge, face.value_or(edge)};
+                         double line_width, const std::string &label, bool unify) {
+    Layer l{Kind::polygons, std::move(polygons), edge, face.value_or(edge)};
     l.filled = face.has_value();
     l.unify = unify;
-    l.lineWidth = lineWidth;
+    l.line_width = line_width;
     l.label = label;
     layers_.push_back(std::move(l));
     return layers_.back();
 }
 
 // A polyline is a layer with one polygon that is not closed.
-Figure::Layer &Figure::addPolyline(std::vector<Point> points, Color color, double lineWidth,
+Figure::Layer &Figure::add_polyline(std::vector<Point> points, Color color, double line_width,
                          const std::string &label) {
-    Layer l{Kind::Polyline, {Polygon(points.begin(), points.end())}, color, color};
-    l.lineWidth = lineWidth;
+    Layer l{Kind::polyline, {Polygon(points.begin(), points.end())}, color, color};
+    l.line_width = line_width;
     l.label = label;
     l.zorder = 4;
     layers_.push_back(std::move(l));
@@ -125,9 +126,9 @@ Figure::Layer &Figure::addPolyline(std::vector<Point> points, Color color, doubl
 }
 
 // Points are a layer with one polygon whose vertices are the dots.
-Figure::Layer &Figure::addPoints(std::vector<Point> points, Color color, double radius,
+Figure::Layer &Figure::add_points(std::vector<Point> points, Color color, double radius,
                                 const std::string &label) {
-    Layer l{Kind::Points, {Polygon(points.begin(), points.end())}, color, color};
+    Layer l{Kind::points, {Polygon(points.begin(), points.end())}, color, color};
     l.radius = radius;
     l.label = label;
     l.zorder = 4;
@@ -136,9 +137,9 @@ Figure::Layer &Figure::addPoints(std::vector<Point> points, Color color, double 
 }
 
 // A region keeps its halfspace; it is cut to the limits when the figure is written.
-Figure::Layer &Figure::addRegion(Point a, double b, double sign, Color edge, Color face,
+Figure::Layer &Figure::add_region(Point a, double b, double sign, Color edge, Color face,
                                 const std::string &label) {
-    Layer l{Kind::Region, {}, edge, face};
+    Layer l{Kind::region, {}, edge, face};
     l.a = a;
     l.b = b;
     l.sign = sign;
@@ -149,12 +150,12 @@ Figure::Layer &Figure::addRegion(Point a, double b, double sign, Color edge, Col
 }
 
 // The palette of CORA repeats after its seventh color.
-Color Figure::nextColor() { return CORAcolor("CORA:next", 1, ++colorsGiven_); }
+Color Figure::next_color() { return cora_color("CORA:next", 1, ++colors_given_); }
 
-std::vector<Figure::Layer> Figure::takeLayers() { return std::exchange(layers_, {}); }
+std::vector<Figure::Layer> Figure::take_layers() { return std::exchange(layers_, {}); }
 
 // The part of the polygon where sign * (a.x - b) >= 0, cut edge by edge.
-Polygon Figure::clipRegion(const Polygon &poly, Point a, double b, double sign) {
+Polygon Figure::clip_region(const Polygon &poly, Point a, double b, double sign) {
     auto value = [&](const Point &p) { return sign * (a[0] * p[0] + a[1] * p[1] - b); };
     Polygon out;
     for (std::size_t i = 0; i < poly.size(); ++i) {
@@ -183,8 +184,8 @@ std::string Figure::svg() const {
     const double pw = width - left - right, ph = height - top - bottom;
     std::vector<Polygon> all; // everything that has an extent, for the limits
     for (const Layer &l : layers_)
-        if (l.kind != Kind::Region) all.insert(all.end(), l.polygons.begin(), l.polygons.end());
-    const Limits lim = aux_limits(all, equalAxes, pw, ph);
+        if (l.kind != Kind::region) all.insert(all.end(), l.polygons.begin(), l.polygons.end());
+    const Limits lim = aux_limits(all, equal_axes, pw, ph);
     auto X = [&](double x) { return left + (x - lim.x0) / (lim.x1 - lim.x0) * pw; };
     auto Y = [&](double y) { return top + (lim.y1 - y) / (lim.y1 - lim.y0) * ph; };
     auto path = [&](const Polygon &p, bool close) {
@@ -211,14 +212,14 @@ std::string Figure::svg() const {
         const Layer &l = *layer;
         {
             switch (l.kind) {
-            case Kind::Region: {
-                const Polygon r = clipRegion(box, l.a, l.b, l.sign);
+            case Kind::region: {
+                const Polygon r = clip_region(box, l.a, l.b, l.sign);
                 if (r.size() >= 3)
                     out << "<path d=\"" << path(r, true) << "\" fill=\"" << l.face.hex()
                         << "\" stroke=\"" << l.edge.hex() << "\" stroke-width=\"1.2\"/>\n";
                 break;
             }
-            case Kind::Polygons: {
+            case Kind::polygons: {
                 std::string d; // all polygons in one path: its fill is their union
                 for (const Polygon &p : l.polygons)
                     if (p.size() >= 2) d += path(p, true) + " ";
@@ -231,19 +232,19 @@ std::string Figure::svg() const {
                 if (l.filled && l.unify && l.polygons.size() > 1) {
                     // One union of all polygons; a translucent one is composed as a whole, so
                     // that overlaps do not darken.
-                    if (l.faceAlpha < 1) out << "<g opacity=\"" << l.faceAlpha << "\">\n";
+                    if (l.face_alpha < 1) out << "<g opacity=\"" << l.face_alpha << "\">\n";
                     // The outline under the fill: the fill covers the inner edges and half of
                     // the stroke, leaving the outside of the union's boundary.
                     out << "<path d=\"" << d << "\" fill=\"" << l.face.hex() << "\" stroke=\""
-                        << l.edge.hex() << "\" stroke-width=\"" << 2 * l.lineWidth
+                        << l.edge.hex() << "\" stroke-width=\"" << 2 * l.line_width
                         << "\" stroke-linejoin=\"miter\" fill-rule=\"nonzero\"/>\n<path d=\"" << d
                         << "\" fill=\"" << l.face.hex() << "\" fill-rule=\"nonzero\"/>\n";
-                    if (l.faceAlpha < 1) out << "</g>\n";
+                    if (l.face_alpha < 1) out << "</g>\n";
                 } else {
                     out << "<path d=\"" << d << "\" fill=\""
                         << (l.filled ? l.face.hex() : std::string("none")) << "\" fill-opacity=\""
-                        << (l.filled ? l.faceAlpha : 1.0) << "\" stroke=\""
-                        << l.edge.hex() << "\" stroke-width=\"" << l.lineWidth
+                        << (l.filled ? l.face_alpha : 1.0) << "\" stroke=\""
+                        << l.edge.hex() << "\" stroke-width=\"" << l.line_width
                         << "\" stroke-linejoin=\"miter\""
                         << (l.dashed ? " stroke-dasharray=\"2 2\"" : "")
                         << "/>\n";
@@ -251,18 +252,18 @@ std::string Figure::svg() const {
                 break;
             }
             // A line through the points, without fill.
-            case Kind::Polyline:
+            case Kind::polyline:
                 out << "<path d=\"" << path(l.polygons[0], false) << "\" fill=\"none\" stroke=\""
-                    << l.edge.hex() << "\" stroke-width=\"" << l.lineWidth << "\"/>\n";
+                    << l.edge.hex() << "\" stroke-width=\"" << l.line_width << "\"/>\n";
                 break;
             // A dot per point.
-            case Kind::Points:
+            case Kind::points:
                 for (const Point &p : l.polygons[0])
                     out << "<circle cx=\"" << aux_num(X(p[0])) << "\" cy=\"" << aux_num(Y(p[1]))
                         << "\" r=\"" << l.radius << "\" fill=\"" << l.edge.hex() << "\"/>\n";
                 break;
             default:
-                throw std::logic_error("Figure::svg: unknown layer kind; this is a bug in Figure");
+                CORA_FAIL(Error::report_to_dev, "Figure::svg: unknown layer kind; this is a bug in Figure");
             }
         }
     }
@@ -295,11 +296,11 @@ std::string Figure::svg() const {
     double row = top + 16;
     for (const Layer &l : layers_) {
         if (l.label.empty()) continue;
-        const Color swatch = l.filled || l.kind == Kind::Region ? l.face : l.edge;
+        const Color swatch = l.filled || l.kind == Kind::region ? l.face : l.edge;
         out << "<rect x=\"" << left + pw - 130 << "\" y=\"" << row - 10
             << "\" width=\"14\" height=\"10\""
             << " fill=\"" << swatch.hex() << "\" fill-opacity=\""
-            << (l.filled ? l.faceAlpha : 1.0) << "\" stroke=\"" << l.edge.hex()
+            << (l.filled ? l.face_alpha : 1.0) << "\" stroke=\"" << l.edge.hex()
             << "\"/>\n<text x=\""
             << left + pw - 110 << "\" y=\"" << row - 1 << "\">" << aux_escape(l.label)
             << "</text>\n";
@@ -311,7 +312,7 @@ std::string Figure::svg() const {
 
 void Figure::save(const std::string &path) const {
     std::ofstream file(path);
-    if (!file) throw std::runtime_error("Figure::save: cannot write '" + path + "'");
+    if (!file) CORA_FAIL(Error::special_error, "Figure::save: cannot write '" + path + "'");
     file << svg();
 }
 

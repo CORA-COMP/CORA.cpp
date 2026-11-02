@@ -1,6 +1,6 @@
 // test_tensor_arithmetic - Tensor operations: arithmetic, matmul, elementwise, joins
 
-#include "global/tensor/tensor.h"
+#include "cora/global/tensor/tensor.h"
 #include "testing.h"
 
 using namespace cora;
@@ -23,14 +23,14 @@ void arithmetic(const std::string &b) {
     check(close(A.neg(), std::vector<double>{0, -2, 0, 0}), b + ": negative part");
 
     const Tensor rect({{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
-    check(close(rect.sumLast(), std::vector<double>{6, 15}), b + ": sumLast");
-    check(rect.sumLast().shape() == std::vector<int64_t>({2, 1}), b + ": sumLast keeps the axis");
+    check(close(rect.sum_last(), std::vector<double>{6, 15}), b + ": sum_last");
+    check(rect.sum_last().shape() == std::vector<int64_t>({2, 1}), b + ": sum_last keeps the axis");
     check(close(Tensor({1.0, 2.0}).diag(), std::vector<double>{1, 0, 0, 2}), b + ": diag");
-    check(close(A.eyeLike(), Tensor::eye(2)), b + ": eyeLike");
-    check(close(rect.zerosLike(), Tensor::zeros({2, 3})), b + ": zerosLike");
+    check(close(A.eye_like(), Tensor::eye(2)), b + ": eye_like");
+    check(close(rect.zeros_like(), Tensor::zeros({2, 3})), b + ": zeros_like");
     check(
-        close(Tensor::catLast({A, Tensor({{9.0}, {8.0}})}), std::vector<double>{1, -2, 9, 3, 4, 8}),
-        b + ": catLast");
+        close(Tensor::cat_last({A, Tensor({{9.0}, {8.0}})}), std::vector<double>{1, -2, 9, 3, 4, 8}),
+        b + ": cat_last");
 }
 
 } // namespace

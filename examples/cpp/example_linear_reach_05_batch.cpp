@@ -8,8 +8,8 @@
 // Outputs:  the shape of the result, and whether each member equals its own single run
 // See also: example_linear_reach_01_5dim, example_linear_reach_06_gpu
 
-#include "contDynamics/linearSys/linearSys.h"
-#include "global/backend/torch.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/backend/torch.h"
 
 #include <iostream>
 #include <vector>
@@ -19,11 +19,11 @@
 using namespace cora;
 
 int main() {
-    setBackend("torch");
+    const BackendScope backend_scope("torch");
 
     // Parameters ------------------------------------------------------------------------------
 
-    const double tFinal = 3.0;
+    const double t_final = 3.0;
 
     // Four initial sets: different centers, and boxes of different size.
     const std::vector<Tensor> centers = {Tensor({1.0, 0.0}), Tensor({0.0, 1.0}),
@@ -32,12 +32,12 @@ int main() {
     std::vector<Zonotope> singles;
     for (std::size_t b = 0; b < centers.size(); ++b)
         singles.emplace_back(centers[b], Tensor::eye(2) * scales[b]);
-    const Zonotope batchR0 = Zonotope::stack(singles);
+    const Zonotope batch_r0 = Zonotope::stack(singles);
 
     // Reachability Settings -------------------------------------------------------------------
 
-    const double timeStep = 0.1;
-    const int taylorTerms = 8;
+    const double time_step = 0.1;
+    const int taylor_terms = 8;
 
     // System Dynamics -------------------------------------------------------------------------
 
@@ -45,12 +45,12 @@ int main() {
 
     // Reachability Analysis -------------------------------------------------------------------
 
-    const Reach R = sys.reach(batchR0, timeStep, tFinal, taylorTerms);
+    const ReachSet R = sys.reach({.initial_set = batch_r0, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
 
     // Evaluation ------------------------------------------------------------------------------
 
     // Every set of the result carries the batch: centers (4, 2, 1), generators (4, 2, m).
-    const torch::Tensor last = toTorch(R.timeInt.back().c);
+    const torch::Tensor last = to_torch(R.time_interval.back().center());
     std::cout << "sets: " << singles.size() << ", last centers " << last.sizes() << "\n"
               << "distance from the origin at t = 3, by set:\n"
               << last.squeeze(-1).norm(2, {-1}) << "\n";
@@ -59,8 +59,8 @@ int main() {
 
     // Each member of the batch is what the set gives on its own.
     for (std::size_t b = 0; b < singles.size(); ++b) {
-        const Reach Rb = sys.reach(singles[b], timeStep, tFinal, taylorTerms);
-        const double gap = (last[b] - toTorch(Rb.timeInt.back().c)).abs().max().item<double>();
+        const ReachSet Rb = sys.reach({.initial_set = singles[b], .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+        const double gap = (last[b] - to_torch(Rb.time_interval.back().center())).abs().max().item<double>();
         std::cout << "set " << b << " differs from its single run by " << gap << "\n";
     }
 

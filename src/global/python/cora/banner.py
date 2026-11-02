@@ -3,7 +3,7 @@
 `import cora` calls `install()`; when the script being run is an example (a file named
 `example_*.py`), the START block is printed at once and the END block when the interpreter exits.
 The examples contain no code for it. A script that ends on an exception prints no END block, as
-the C++ examples (src/global/banner.h) do not either.
+the C++ examples (cora/global/banner.h) do not either.
 
     ==== CORA START ====   CORA.cpp | <example> | default backend: <name>
     ==== CORA END ====     CORA.cpp | <example> | runtime: <seconds>

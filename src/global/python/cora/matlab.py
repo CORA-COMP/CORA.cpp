@@ -30,13 +30,13 @@ def interval(inf, sup):
     return Interval(inf, sup)
 
 
-def intervalMatrix(inf, sup):
-    """intervalMatrix - the matrix of intervals inf <= X <= sup."""
+def interval_matrix(inf, sup):
+    """interval_matrix - the matrix of intervals inf <= X <= sup."""
     return Interval.matrix(inf, sup)
 
 
-def linearSys(A, B=None, C=None):
-    """linearSys - the linear system x' = A x, or x' = A x + B u, y = C x with B (and C)."""
+def linear_sys(A, B=None, C=None):
+    """linear_sys - the linear system x' = A x, or x' = A x + B u, y = C x with B (and C)."""
     return LinearSys(A) if B is None else LinearSys(A, B, C)
 
 
@@ -45,7 +45,7 @@ def zonotopes(sets):
 
     One call instead of a few per set: MATLAB pays for every crossing into python.
     """
-    centers = np.stack([np.asarray(Z.c) for Z in sets])
-    generators = np.concatenate([np.asarray(Z.G) for Z in sets], axis=1)
-    counts = np.array([np.asarray(Z.G).shape[1] for Z in sets], dtype=float)
+    centers = np.stack([np.asarray(Z.center) for Z in sets])
+    generators = np.concatenate([np.asarray(Z.generators) for Z in sets], axis=1)
+    counts = np.array([np.asarray(Z.generators).shape[1] for Z in sets], dtype=float)
     return centers, generators, counts

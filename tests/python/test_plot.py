@@ -17,17 +17,17 @@ def face(collection):
 
 class Plot(unittest.TestCase):
     def setUp(self):
-        cora.useCORAcolors("CORA:default")
+        cora.use_cora_colors("CORA:default")
         self.fig, self.ax = plt.subplots()
         self.sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
         self.X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
 
     def tearDown(self):
-        cora.useCORAcolors("CORA:default")
+        cora.use_cora_colors("CORA:default")
         plt.close(self.fig)
 
     def test_a_simulation_is_one_line_per_trajectory_and_nothing_else(self):
-        x = self.sys.simulate(self.X0.randPoint(4, cora.Rng(1)), 0.1, 2.0)
+        x = self.sys.simulate(self.X0.rand_point(4, cora.Rng(1)), time_step=0.1, t_final=2.0)
         cora.plot(x, ax=self.ax)
         self.assertEqual(len(self.ax.lines), 4)
         self.assertEqual(self.ax.lines[0].get_marker(), "None")
@@ -36,18 +36,18 @@ class Plot(unittest.TestCase):
         for _ in range(3):
             cora.plot(self.X0, ax=self.ax)
         colors = [face(c) for c in self.ax.collections]
-        self.assertEqual(colors, [cora.CORAcolor(f"CORA:{n}") for n in ("blue", "red", "yellow")])
+        self.assertEqual(colors, [cora.cora_color(f"CORA:{n}") for n in ("blue", "red", "yellow")])
 
     def test_a_set_is_filled_and_an_axes_has_its_own_order(self):
         cora.plot(self.X0, ax=self.ax)
         other = self.fig.add_subplot(2, 1, 2)
         cora.plot(self.X0, ax=other)
-        self.assertEqual(face(other.collections[0]), cora.CORAcolor("CORA:blue"))
+        self.assertEqual(face(other.collections[0]), cora.cora_color("CORA:blue"))
         self.assertGreater(self.ax.collections[0].get_facecolor()[0][3], 0.0)
 
     def test_a_filled_set_is_translucent_and_its_outline_is_not(self):
         cora.plot(self.X0, ax=self.ax)
-        cora.plot(self.X0, ax=self.ax, faceAlpha=0.5)
+        cora.plot(self.X0, ax=self.ax, face_alpha=0.5)
         first, second = self.ax.collections
         self.assertAlmostEqual(float(first.get_facecolor()[0][3]), 0.2)
         self.assertAlmostEqual(float(second.get_facecolor()[0][3]), 0.5)
@@ -58,13 +58,13 @@ class Plot(unittest.TestCase):
         self.assertEqual(self.ax.collections[0].get_joinstyle(), "miter")
 
     def test_the_dynamics_scheme_gives_initial_sets_and_blue_reachable_sets(self):
-        cora.useCORAcolors("CORA:contDynamics")
+        cora.use_cora_colors("CORA:contDynamics")
         cora.plot(self.X0, ax=self.ax)
-        cora.plot(self.sys.reach(self.X0, 0.1, 1.0), ax=self.ax)
+        cora.plot(self.sys.reach(self.X0, time_step=0.1, t_final=1.0), ax=self.ax)
         initial, reach = self.ax.collections
-        self.assertEqual(face(initial), cora.CORAcolor("CORA:initialSet"))
-        self.assertEqual(tuple(initial.get_edgecolor()[0][:3]), cora.CORAcolor("CORA:simulations"))
-        self.assertEqual(face(reach), cora.CORAcolor("CORA:reachSet"))
+        self.assertEqual(face(initial), cora.cora_color("CORA:initialSet"))
+        self.assertEqual(tuple(initial.get_edgecolor()[0][:3]), cora.cora_color("CORA:simulations"))
+        self.assertEqual(face(reach), cora.cora_color("CORA:reachSet"))
         self.assertGreater(reach.get_zorder(), 0)
         self.assertLess(reach.get_zorder(), initial.get_zorder())
 
@@ -78,7 +78,7 @@ class Plot(unittest.TestCase):
         cora.plot(self.X0, ax=self.ax, color="CORA:green")
         cora.plot(self.X0, ax=self.ax, color=(0.1, 0.2, 0.3))
         cora.plot(self.X0, ax=self.ax, color="red")
-        self.assertEqual(face(self.ax.collections[0]), cora.CORAcolor("CORA:green"))
+        self.assertEqual(face(self.ax.collections[0]), cora.cora_color("CORA:green"))
         self.assertEqual(face(self.ax.collections[1]), (0.1, 0.2, 0.3))
         self.assertEqual(face(self.ax.collections[2]), (1.0, 0.0, 0.0))
 
@@ -93,13 +93,13 @@ class Plot(unittest.TestCase):
         self.assertEqual(self.ax.get_legend_handles_labels()[1], ["Initial set"])
 
     def test_a_reachable_set_is_one_region(self):
-        cora.plot(self.sys.reach(self.X0, 0.1, 1.0), ax=self.ax)
+        cora.plot(self.sys.reach(self.X0, time_step=0.1, t_final=1.0), ax=self.ax)
         self.assertEqual(len(self.ax.collections), 1)
         self.assertEqual(len(self.ax.collections[0].get_paths()), 10)
 
     def test_time_points_and_step_are_options_of_the_core(self):
-        R = self.sys.reach(self.X0, 0.1, 1.0)
-        cora.plot(R, ax=self.ax, timePoints=True, step=2)
+        R = self.sys.reach(self.X0, time_step=0.1, t_final=1.0)
+        cora.plot(R, ax=self.ax, time_points=True, step=2)
         reach, points = self.ax.collections
         self.assertEqual(len(reach.get_paths()), 5)
         self.assertEqual(len(points.get_paths()), 6)
@@ -108,7 +108,7 @@ class Plot(unittest.TestCase):
     def test_a_specification_is_a_region_up_to_the_limits(self):
         cora.plot(self.X0, ax=self.ax)
         limits = (self.ax.get_xlim(), self.ax.get_ylim())
-        cora.plot(cora.Specification.unsafeSet(cora.Tensor([1.0, 0.0]), 1.0), ax=self.ax)
+        cora.plot(cora.Specification.unsafe_set(cora.Tensor([1.0, 0.0]), 1.0), ax=self.ax)
         self.assertEqual(len(self.ax.patches), 1)
         self.assertEqual((self.ax.get_xlim(), self.ax.get_ylim()), limits)
 
@@ -119,22 +119,22 @@ class Plot(unittest.TestCase):
 
     def test_a_wrong_option_of_the_core_is_described(self):
         with self.assertRaises(ValueError) as caught:
-            cora.plot(self.X0, ax=self.ax, step=0, timePoints=True) if False else \
-                cora.plot(self.sys.reach(self.X0, 0.1, 0.5), ax=self.ax, step=0)
+            cora.plot(self.X0, ax=self.ax, step=0, time_points=True) if False else \
+                cora.plot(self.sys.reach(self.X0, time_step=0.1, t_final=0.5), ax=self.ax, step=0)
         self.assertIn("step must be at least 1", str(caught.exception))
 
 
 class Colors(unittest.TestCase):
     def test_cora_colors_come_from_the_core(self):
-        self.assertAlmostEqual(cora.CORAcolor("CORA:blue")[1], 0.4470)
-        self.assertEqual(cora.CORAcolor(2), cora.CORAcolor("CORA:red"))
-        self.assertAlmostEqual(cora.CORAcolor("CORA:reachSet", numColors=3, cidx=3)[0], 0.2706)
+        self.assertAlmostEqual(cora.cora_color("CORA:blue")[1], 0.4470)
+        self.assertEqual(cora.cora_color(2), cora.cora_color("CORA:red"))
+        self.assertAlmostEqual(cora.cora_color("CORA:reachSet", num_colors=3, cidx=3)[0], 0.2706)
 
     def test_unknown_colors_and_schemes_are_described(self):
         with self.assertRaises(ValueError):
-            cora.CORAcolor("CORA:nope")
+            cora.cora_color("CORA:nope")
         with self.assertRaises(ValueError) as caught:
-            cora.useCORAcolors("CORA:rainbow")
+            cora.use_cora_colors("CORA:rainbow")
         self.assertIn("CORA:contDynamics", str(caught.exception))
 
 

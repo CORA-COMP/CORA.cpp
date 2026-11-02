@@ -1,12 +1,12 @@
 // threads - the thread pool's width and the bar a parallel region must clear
 //
-// Syntax:   configureThreads();   int nt = threadsFor(iterations, work);
+// Syntax:   configure_threads();   int nt = threads_for(iterations, work);
 //           EigenThreads narrow(work);
 // Inputs:   iterations - the loop length; work - about how many scalar operations its body costs
 // Outputs:  nt - the threads to use: the whole pool, or 1
 // See also: threads.h
 
-#include "global/threads.h"
+#include "cora/global/threads.h"
 
 #include <Eigen/Core>
 
@@ -45,7 +45,7 @@ int configured = 0;
 /// The physical cores, counted from the kernel's topology: sibling hyperthreads share a
 /// `thread_siblings_list`, so the distinct lists are the cores. Falls back to everything
 /// the runtime reports when the topology is not readable.
-int aux_physicalCores() {
+int aux_physical_cores() {
     namespace fs = std::filesystem;
     std::set<std::string> cores;
     std::error_code ec;
@@ -65,37 +65,37 @@ int aux_physicalCores() {
 
 // ===========================================  MAIN  =========================================== //
 
-void configureThreads() {
+void configure_threads() {
     if (configured != 0) return;
     const char *asked = std::getenv("OMP_NUM_THREADS");
 #ifdef _OPENMP
-    configured = asked != nullptr ? omp_get_max_threads() : aux_physicalCores();
+    configured = asked != nullptr ? omp_get_max_threads() : aux_physical_cores();
     if (asked == nullptr) omp_set_num_threads(configured);
 #else
-    configured = asked != nullptr ? std::atoi(asked) : aux_physicalCores();
+    configured = asked != nullptr ? std::atoi(asked) : aux_physical_cores();
 #endif
     configured = std::max(1, configured);
     Eigen::setNbThreads(configured);
 }
 
-int maxThreads() {
-    configureThreads();
+int max_threads() {
+    configure_threads();
     return configured;
 }
 
 // A product gets as many threads as its work can keep busy, at most the pool.
 EigenThreads::EigenThreads(long long work) : previous_(Eigen::nbThreads()) {
     const long long by_work = std::max<long long>(1, work / kMinWorkPerEigenThread);
-    Eigen::setNbThreads(static_cast<int>(std::min<long long>(by_work, maxThreads())));
+    Eigen::setNbThreads(static_cast<int>(std::min<long long>(by_work, max_threads())));
 }
 
 // Back to the pool on the way out.
 EigenThreads::~EigenThreads() { Eigen::setNbThreads(previous_); }
 
 // The whole pool once the work clears the bar, else one thread: never a team in between.
-int threadsFor(long long iterations, long long work) {
+int threads_for(long long iterations, long long work) {
     if (iterations <= 1) return 1;
-    return work >= kMinWorkPerThread * maxThreads() ? maxThreads() : 1;
+    return work >= kMinWorkPerThread * max_threads() ? max_threads() : 1;
 }
 
 } // namespace cora

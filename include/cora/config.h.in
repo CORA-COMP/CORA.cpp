@@ -1,0 +1,13 @@
+// config - how this CORA.cpp was configured (written by CMake into the build and the install)
+//
+// Syntax:   #include "cora/config.h"   (every public header includes it)
+// See also: CMakeLists.txt (the options CORACPP_CHECKS and CORACPP_TORCH)
+
+#pragma once
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+/// 1 if the input checks are compiled in (CMake option CORACPP_CHECKS), 0 if they are compiled out.
+#define CORACPP_CHECKS @CORACPP_CHECKS_VALUE@
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

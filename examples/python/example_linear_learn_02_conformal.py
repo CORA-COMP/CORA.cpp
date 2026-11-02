@@ -32,8 +32,8 @@ import matplotlib.pyplot as plt
 
 # Parameters --------------------------------------------------------------------------------
 
-timeStep = 0.1
-tFinal = 3.0
+time_step = 0.1
+t_final = 3.0
 X0 = cora.Zonotope(cora.Tensor([1.2, 0.0]), 0.2 * cora.eye(2))
 alpha = 0.1        # the miss rate: coverage of at least 1 - alpha is guaranteed
 noise = 0.01       # standard deviation of the measurement noise
@@ -46,8 +46,8 @@ pendulum = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
 
 def measure(count, seed):
     """Noisy trajectories from `count` random points of X0: (steps + 1, 2, count)."""
-    x0 = X0.randPoint(count, cora.Rng(seed))
-    truth = pendulum.simulate(x0, timeStep, tFinal)
+    x0 = X0.rand_point(count, cora.Rng(seed))
+    truth = pendulum.simulate(x0, time_step=time_step, t_final=t_final)
     generator = torch.Generator().manual_seed(seed)
     return truth + noise * torch.randn(truth.shape, generator=generator, dtype=truth.dtype)
 
@@ -62,15 +62,15 @@ A = torch.nn.Parameter(0.1 * torch.randn(2, 2, dtype=train.dtype))
 optimizer = torch.optim.Adam([A], lr=0.02)
 for step in range(400):
     optimizer.zero_grad()
-    loss = ((cora.LinearSys(A).simulate(train[0], timeStep, tFinal) - train) ** 2).mean()
+    loss = ((cora.LinearSys(A).simulate(train[0], time_step=time_step, t_final=t_final) - train) ** 2).mean()
     loss.backward()
     optimizer.step()
 print(f"learned A: {A.detach().numpy().round(2).tolist()}, fit error {loss.item():.5f}")
 
 with torch.no_grad():
-    R = cora.LinearSys(A).reach(X0, timeStep, tFinal, taylorTerms=6)
-inf = torch.stack([Z.interval().inf for Z in R.timePoint])[:, :, None]  # (steps + 1, 2, 1)
-sup = torch.stack([Z.interval().sup for Z in R.timePoint])[:, :, None]
+    R = cora.LinearSys(A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
+inf = torch.stack([Z.interval().inf for Z in R.time_point])[:, :, None]  # (steps + 1, 2, 1)
+sup = torch.stack([Z.interval().sup for Z in R.time_point])[:, :, None]
 
 # Conformal Prediction ----------------------------------------------------------------------
 
@@ -97,14 +97,14 @@ print(f"coverage with the conformal radius: {covered:.3f} (target {1 - alpha:.2f
 
 # Visualization -----------------------------------------------------------------------------
 
-cora.useCORAcolors("CORA:contDynamics")
+cora.use_cora_colors("CORA:contDynamics")
 fig, (phase, histogram) = plt.subplots(1, 2, figsize=(11, 4.5))
 
 plt.sca(phase)
 for i in range(40):
     phase.plot(test[:, 0, i], test[:, 1, i], color="0.3", linewidth=0.6, zorder=5,
                label="Test trajectories" if i == 0 else None)
-for k in range(len(R.timePoint)):
+for k in range(len(R.time_point)):
     cora.plot(cora.Interval((inf[k, :, 0] - radius), (sup[k, :, 0] + radius)), filled=False,
               color="CORA:red", label="Enlarged by the conformal radius" if k == 0 else None)
 cora.plot(R, label="Reachable set of the learned model")

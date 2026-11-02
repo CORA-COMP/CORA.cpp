@@ -1,0 +1,48 @@
+// test_zonotope_stack_torch - zonotope stack: a batch member is the zonotope it was made from
+
+#include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/rng.h"
+#include "cora/global/backend/torch.h"
+#include "testing.h"
+
+using namespace cora;
+using test::check;
+
+namespace {
+
+/// Member b of the batch has the center and the support function of the b-th zonotope, and
+/// generators beyond its own are zero.
+void stack_keeps_each_member() {
+    cora::Rng rng(6);
+    const int64_t n = 3;
+    const std::vector<Zonotope> Zs = {Zonotope::generate_random(n, 2, rng),
+                                      Zonotope::generate_random(n, 5, rng),
+                                      Zonotope::generate_random(n, 3, rng)};
+    const Zonotope S = Zonotope::stack(Zs);
+    check(S.center().shape() == std::vector<int64_t>({3, n, 1}), "stack: center shape");
+    check(S.generators().shape() == std::vector<int64_t>({3, n, 5}), "stack: padded to the most generators");
+    const torch::Tensor c = to_torch(S.center()), G = to_torch(S.generators());
+    for (int64_t b = 0; b < 3; ++b) {
+        check(torch::allclose(c[b], to_torch(Zs[b].center())), "stack: member center");
+        const int64_t m = Zs[b].generators().shape().back();
+        check(torch::allclose(G[b].slice(-1, 0, m), to_torch(Zs[b].generators())), "stack: member generators");
+        check(G[b].slice(-1, m).abs().sum().item<double>() == 0.0, "stack: padding is zero");
+        const torch::Tensor d = torch::randn({n, 1}, torch::kDouble);
+        check(torch::allclose(to_torch(S.support_function(from_torch(d)))[b],
+                              to_torch(Zs[b].support_function(from_torch(d)))),
+              "stack: member support function");
+    }
+}
+
+void stack_of_nothing_is_described() {
+    check(test::throws([] { Zonotope::stack({}); }), "stack: an empty list throws");
+}
+
+} // namespace
+
+int main() {
+    const BackendScope backend_scope("torch");
+    stack_keeps_each_member();
+    stack_of_nothing_is_described();
+    return test::finish("zonotope stack (torch)");
+}

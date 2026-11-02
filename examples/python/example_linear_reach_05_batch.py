@@ -15,18 +15,18 @@ import cora
 
 # Parameters --------------------------------------------------------------------------------
 
-tFinal = 3.0
+t_final = 3.0
 
 # Four initial sets: different centers, and boxes of different size.
 centers = [[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, -2.0]]
 scales = [0.05, 0.1, 0.2, 0.4]
 singles = [cora.Zonotope(cora.Tensor(c), s * cora.eye(2)) for c, s in zip(centers, scales)]
-batchR0 = cora.Zonotope.stack(singles)
+batch_r0 = cora.Zonotope.stack(singles)
 
 # Reachability Settings ---------------------------------------------------------------------
 
-timeStep = 0.1
-taylorTerms = 8
+time_step = 0.1
+taylor_terms = 8
 
 # System Dynamics ---------------------------------------------------------------------------
 
@@ -34,12 +34,12 @@ sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))  # one system for
 
 # Reachability Analysis ---------------------------------------------------------------------
 
-R = sys.reach(batchR0, timeStep, tFinal, taylorTerms)
+R = sys.reach(batch_r0, time_step=time_step, t_final=t_final, taylor_terms=taylor_terms)
 
 # Evaluation --------------------------------------------------------------------------------
 
 # Every set of the result carries the batch: c has shape (4, 2), G (4, 2, m).
-last = R.timeInt[-1].c
+last = R.time_interval[-1].center
 print("sets:", len(singles), " last centers:", tuple(last.shape))
 print("distance from the origin at t = 3, by set:", last.norm(dim=-1).tolist())
 
@@ -47,8 +47,8 @@ print("distance from the origin at t = 3, by set:", last.norm(dim=-1).tolist())
 
 # Each member of the batch is what the set gives on its own.
 for b, single in enumerate(singles):
-    Rb = sys.reach(single, timeStep, tFinal, taylorTerms)
-    gap = (last[b] - Rb.timeInt[-1].c).abs().max().item()
+    Rb = sys.reach(single, time_step=time_step, t_final=t_final, taylor_terms=taylor_terms)
+    gap = (last[b] - Rb.time_interval[-1].center).abs().max().item()
     print(f"set {b} differs from its single run by {gap:.1e}")
 
 # example completed

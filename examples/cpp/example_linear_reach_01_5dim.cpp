@@ -7,9 +7,9 @@
 // Outputs:  the run time, the box around the last enclosure, and the figure as an SVG file
 // See also: example_linear_reach_02_algorithms, the Python example of the same name (which plots)
 
-#include "contDynamics/linearSys/linearSys.h"
-#include "global/rng.h"
-#include "global/plot/plot.h"
+#include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/rng.h"
+#include "cora/global/plot/plot.h"
 
 #include <chrono>
 #include <iostream>
@@ -21,7 +21,7 @@ using namespace cora;
 int main() {
     // Parameters ------------------------------------------------------------------------------
 
-    const double tFinal = 5;
+    const double t_final = 5;
     const Zonotope R0(Tensor({1, 1, 1, 1, 1}), Tensor({{0.1, 0, 0, 0, 0},
                                                        {0, 0.1, 0, 0, 0},
                                                        {0, 0, 0.1, 0, 0},
@@ -30,12 +30,12 @@ int main() {
 
     // Reachability Settings -------------------------------------------------------------------
 
-    const double timeStep = 0.02;
-    const int taylorTerms = 4;
+    const double time_step = 0.02;
+    const int taylor_terms = 4;
 
     // System Dynamics -------------------------------------------------------------------------
 
-    const LinearSys fiveDimSys(Tensor({{-1, -4, 0, 0, 0},
+    const LinearSys five_dim_sys(Tensor({{-1, -4, 0, 0, 0},
                                        {4, -1, 0, 0, 0},
                                        {0, 0, -3, 1, 0},
                                        {0, 0, -1, -3, 0},
@@ -43,28 +43,28 @@ int main() {
 
     // Reachability Analysis -------------------------------------------------------------------
 
-    const auto timerVal = std::chrono::steady_clock::now();
-    const Reach R = fiveDimSys.reach(R0, timeStep, tFinal, taylorTerms);
-    const std::chrono::duration<double> tComp = std::chrono::steady_clock::now() - timerVal;
+    const auto timer_val = std::chrono::steady_clock::now();
+    const ReachSet R = five_dim_sys.reach({.initial_set = R0, .t_final = t_final}, alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
+    const std::chrono::duration<double> computation_time = std::chrono::steady_clock::now() - timer_val;
 
-    std::cout << "computation time of reachable set: " << tComp.count() << " s\n";
+    std::cout << "computation time of reachable set: " << computation_time.count() << " s\n";
 
     // Simulation ------------------------------------------------------------------------------
 
     cora::Rng rng(0);
-    const std::vector<Tensor> traj = fiveDimSys.simulateRandom(R0, 25, timeStep, tFinal, rng);
+    const std::vector<Tensor> traj = five_dim_sys.simulate_random({.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step}, 25, rng);
 
     // Evaluation ------------------------------------------------------------------------------
 
-    const Interval box = R.timeInt.back().interval();
-    std::cout << "steps: " << R.timeInt.size() << ", simulated time points: " << traj.size() << "\n"
-              << "the last enclosure lies in the box\n  lower " << box.inf << "\n  upper "
-              << box.sup << "\n";
+    const Interval box = R.time_interval.back().interval();
+    std::cout << "steps: " << R.time_interval.size() << ", simulated time points: " << traj.size() << "\n"
+              << "the last enclosure lies in the box\n  lower " << box.inf() << "\n  upper "
+              << box.sup() << "\n";
 
     // Visualization ---------------------------------------------------------------------------
 
     // The reachable set, the initial set and the simulations in the first two dimensions.
-    useCORAcolors("CORA:contDynamics");
+    use_cora_colors("CORA:contDynamics");
     plot(R, {0, 1}, {.label = "reachable set"});
     plot(R0, {0, 1}, {.label = "initial set"});
     plot(traj, {0, 1}, {.label = "simulations"});

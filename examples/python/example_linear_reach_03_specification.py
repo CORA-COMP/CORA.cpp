@@ -14,13 +14,13 @@ import cora
 
 # Parameters --------------------------------------------------------------------------------
 
-tFinal = 6.0
+t_final = 6.0
 R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
 
 # Reachability Settings ---------------------------------------------------------------------
 
-timeStep = 0.1
-taylorTerms = 8
+time_step = 0.1
+taylor_terms = 8
 
 # System Dynamics ---------------------------------------------------------------------------
 
@@ -31,23 +31,23 @@ sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
 x1 = cora.Tensor([1.0, 0.0])
 
 # Stay in x1 <= 1.2.
-specSafe = cora.Specification.safeSet(x1, 1.2)
+spec_safe = cora.Specification.safe_set(x1, 1.2)
 
 # Never touch x1 <= -0.75, a wall on the left.
-specUnsafe = cora.Specification.unsafeSet(x1, -0.75)
+spec_unsafe = cora.Specification.unsafe_set(x1, -0.75)
 
 # Reachability Analysis ---------------------------------------------------------------------
 
-R = sys.reach(R0, timeStep, tFinal, taylorTerms)
+R = sys.reach(R0, time_step=time_step, t_final=t_final, taylor_terms=taylor_terms)
 
 # Verification ------------------------------------------------------------------------------
 
-print("stays in x1 <= 1.2:", specSafe.check(R.timeInt))
-print("avoids x1 <= -0.75:", specUnsafe.check(R.timeInt),
-      " first touches it in step", specUnsafe.firstViolation(R.timeInt))
+print("stays in x1 <= 1.2:", spec_safe.check(R.time_interval))
+print("avoids x1 <= -0.75:", spec_unsafe.check(R.time_interval),
+      " first touches it in step", spec_unsafe.first_violation(R.time_interval))
 
 # A specification answers for any set, not only reachable ones.
-print("the initial set is safe:", specSafe.check(R0))
+print("the initial set is safe:", spec_safe.check(R0))
 
 # example completed
 

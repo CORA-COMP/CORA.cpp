@@ -16,7 +16,7 @@
 
 #include "catalog.h"
 #include "sets/mask.h"
-#include "global/rng.h"
+#include "cora/global/rng.h"
 
 namespace cora::comp {
 
@@ -55,7 +55,7 @@ std::unique_ptr<Runner> prepare(const Params &in);
 /// analytic one. Throws if anything is wrong.
 void warm_up();
 
-/// Differentiates `supportFunc` on `device` and compares with the analytic gradient, so
+/// Differentiates `support_function` on `device` and compares with the analytic gradient, so
 /// that the differentiability the representations are for cannot rot unnoticed.
 void check_gradients(const std::string &device);
 
