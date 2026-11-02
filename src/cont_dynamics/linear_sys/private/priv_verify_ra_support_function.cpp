@@ -1,4 +1,4 @@
-// priv_verify_ra_support_function - reach-avoid verification of a linear system with support functions
+// priv_verify_ra_support_function - reach-avoid verification of a linear system by supports
 //
 // Quicker than reachability: the set is never computed, only its distance to each halfspace
 // C_s y <= d_s (every specification is turned into a safe set), by the support function of the
@@ -14,6 +14,7 @@
 // See also: LinearSys::verify
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/error.h"
 
 #include <algorithm>
@@ -143,8 +144,8 @@ std::vector<double> aux_mul_csr(const std::vector<double> &x, const Csr &B, int6
 }
 
 /// X A / d for a dense X (n, n) on the host.
-std::vector<double> aux_times_a(
-    const Expmat &E, const Tensor &A, const std::vector<double> &x, double d) {
+std::vector<double> aux_times_a(const Expmat &E, const Tensor &A, const std::vector<double> &x,
+                                double d) {
     const int64_t n = A.shape()[0];
     if (E.sparse_a) return aux_mul_csr(x, E.a, n, d);
     const Tensor X = Tensor::like(A, x, {n, n});
@@ -173,7 +174,8 @@ Tensor aux_expm(const Tensor &A, const Expmat &E, double time_step) {
     // The scaled norm the series takes: 2^k / k! is below 1e-18 at k = 27.
     const double theta = 2.0;
     std::vector<double> col_sum(n, 0.0);
-    for (std::size_t q = 0; q < E.a.val.size(); ++q) col_sum[E.a.col_idx[q]] += std::abs(E.a.val[q]);
+    for (std::size_t q = 0; q < E.a.val.size(); ++q)
+        col_sum[E.a.col_idx[q]] += std::abs(E.a.val[q]);
     const double norm1 = *std::max_element(col_sum.begin(), col_sum.end()) * time_step;
     const int s = norm1 > theta ? static_cast<int>(std::ceil(std::log2(norm1 / theta))) : 0;
     const double h = std::ldexp(time_step, -s);
@@ -220,9 +222,8 @@ Tensor aux_power_tensor(const Expmat &E, const Tensor &A, int i) {
 /// The sums of one Taylor term a scaled by f (f < 0) into pos (from the negative part of a) and
 /// neg (from the positive part). If the term no longer changes the sums, rad and center of the
 /// interval matrix [neg, pos] before the term are written; the return value says whether it held.
-bool aux_sum_step(
-    const std::vector<double> &a, double f, std::vector<double> &pos, std::vector<double> &neg,
-    std::vector<double> &rad, std::vector<double> &center) {
+bool aux_sum_step(const std::vector<double> &a, double f, std::vector<double> &pos,
+                  std::vector<double> &neg, std::vector<double> &rad, std::vector<double> &center) {
     const std::size_t nn = a.size();
     bool converged = true;
     for (std::size_t i = 0; i < nn && converged; ++i)
@@ -251,8 +252,9 @@ bool aux_intmat(const Tensor &A, bool isu, Expmat &E, double time_step, IntMat &
     bool stop_f = false, stop_g = !isu;
     for (int eta = 2; !(stop_f && stop_g); ++eta) {
         aux_get_apower(E, A, eta);
-        const double factor = (std::pow(eta, -double(eta) / (eta - 1)) -
-                               std::pow(eta, -1.0 / (eta - 1))) * std::pow(time_step, eta);
+        const double factor =
+            (std::pow(eta, -double(eta) / (eta - 1)) - std::pow(eta, -1.0 / (eta - 1))) *
+            std::pow(time_step, eta);
         if (!stop_f) {
             if (eta == kMaxEta) return false;
             stop_f = aux_sum_step(E.Apower[eta - 1], factor, pos_f, neg_f, rad_f, cen_f);
@@ -271,8 +273,8 @@ bool aux_intmat(const Tensor &A, bool isu, Expmat &E, double time_step, IntMat &
 
 /// The matrix X of a particular solution A^-1 (e^{A dt} - I) X, by the series
 /// sum_j A^{j-1} dt^j / j! until it stops changing if A is singular; empty if it diverges.
-std::optional<Tensor> aux_particular(
-    const Tensor &A, const Tensor &X, Expmat &E, const Tensor &Delta, double time_step) {
+std::optional<Tensor> aux_particular(const Tensor &A, const Tensor &X, Expmat &E,
+                                     const Tensor &Delta, double time_step) {
     if (E.Ainv) return E.Ainv->matmul((Delta - A.eye_like()).matmul(X));
     Tensor Asum = A.eye_like() * time_step;
     for (int eta = 2;; ++eta) {
@@ -316,7 +318,7 @@ SpecRows aux_spec_rows(const std::vector<Specification> &specs, int64_t p) {
     SpecRows rows;
     // A halfspace with a unit normal: scaling does not change which points satisfy it.
     auto add = [&](const Halfspace &h, double sign) {
-        const std::vector<double> a = h.a.data();  // a nonzero column of p rows (checked by verify)
+        const std::vector<double> a = h.a.data(); // a nonzero column of p rows (checked by verify)
         double norm = 0;
         for (double v : a) norm += v * v;
         norm = std::sqrt(norm);
@@ -331,7 +333,7 @@ SpecRows aux_spec_rows(const std::vector<Specification> &specs, int64_t p) {
             for (const Halfspace &h : spec.halfspaces()) add(h, 1.0);
             break;
         case SpecType::unsafe_set:
-            add(spec.halfspaces()[0], -1.0);  // one halfspace (checked by verify)
+            add(spec.halfspaces()[0], -1.0); // one halfspace (checked by verify)
             break;
         default:
             CORA_FAIL(Error::wrong_value, "LinearSys::verify: unknown specification type");
@@ -345,23 +347,11 @@ double aux_time_step(double time_step0, double t_final) {
     return t_final / std::ceil(t_final / time_step0);
 }
 
-/// Removes the times [t0, t1] from the unverified intervals, dropping slivers.
+/// Removes the times [t0, t1] from the unverified intervals, dropping slivers (VerifyTime).
 void aux_remove_from_unsat(Intervals &unsat, double t0, double t1) {
-    Intervals kept;
-    for (const std::array<double, 2> &iv : unsat) {
-        if (t1 <= iv[0] || t0 >= iv[1]) {
-            kept.push_back(iv);
-            continue;
-        }
-        if (iv[0] < t0) kept.push_back({iv[0], t0});
-        if (t1 < iv[1]) kept.push_back({t1, iv[1]});
-    }
-    kept.erase(std::remove_if(kept.begin(), kept.end(),
-                              [](const std::array<double, 2> &iv) {
-                                  return std::abs(iv[1] - iv[0]) < 1e-14;
-                              }),
-               kept.end());
-    unsat = std::move(kept);
+    VerifyTime times(std::move(unsat));
+    times.setdiff(t0, t1);
+    unsat = std::move(times.bounds);
 }
 
 /// The initial state c + G sign(l'G) of R0 that reaches the support value of row `row` of ltg.
@@ -379,10 +369,9 @@ Tensor aux_extreme_x0(const Zonotope &R0, const std::vector<double> &ltg, std::s
 
 /// Propagates the directions for N steps and gathers the distances of the affine solution
 /// (time points) and of the curvature enlargement (time intervals) to every halfspace.
-Pass aux_pass(
-    const Zonotope &R0, const Tensor &l_t, const std::vector<double> &ds, bool isu,
-    const Tensor &Delta, const Tensor &Pu, const Tensor &u, const IntMat &F, const IntMat &G,
-    int N) {
+Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &ds, bool isu,
+              const Tensor &Delta, const Tensor &Pu, const Tensor &u, const IntMat &F,
+              const IntMat &G, int N) {
     const int S = static_cast<int>(ds.size());
     const int64_t m0 = R0.generators().shape()[1];
     Pass pass;
@@ -412,7 +401,8 @@ Pass aux_pass(
 
     // The curvature term F R0 + G u, evaluated along l_k for k < N.
     const Tensor cx = F.center.matmul(R0.center()), G1x = F.center.matmul(R0.generators());
-    const Tensor G2x = F.rad.matmul(Tensor::cat_last({R0.center(), R0.generators()}).abs().sum_last());
+    const Tensor G2x =
+        F.rad.matmul(Tensor::cat_last({R0.center(), R0.generators()}).abs().sum_last());
     std::vector<Tensor> W{cx, G2x};
     if (isu) {
         W.push_back(G.center.matmul(u));
@@ -444,17 +434,15 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     const FlushDenormals flush;
     VerifyResult res;
     auto finish = [&]() {
-        res.computation_time =
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+        res.computation_time = priv_seconds_since(start);
         return res;
     };
 
     // The system and the input: x' = A x + u with u in B U, split into the constant
     // u_trans = B center(U) and the uncertain part GU = B generators(U).
     const Tensor &A = sys.A();
-    const int64_t n = A.shape()[0];
-    const int64_t p = sys.C() ? sys.C()->shape()[0] : n;
     const CanonicalInput input = priv_canonical_input(sys, U);
+    const int64_t n = input.n, p = input.p;
     const Tensor &u = input.u_trans, &GU = input.GU;
     const bool is_u = GU.shape()[1] > 0;
     bool isu = false;
@@ -464,7 +452,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     const SpecRows rows = aux_spec_rows(specs, p);
     const int S = rows.nr;
     Tensor CsT = Tensor::like(A, rows.Cs, {S, p});
-    const Tensor l_t = sys.C() ? CsT.matmul(*sys.C()) : CsT;  // (S, n)
+    const Tensor l_t = sys.C() ? CsT.matmul(*sys.C()) : CsT; // (S, n)
     const std::vector<double> &ds = rows.ds;
 
     Expmat E;
@@ -520,8 +508,8 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
         for (int k = 1; k <= N; ++k)
             for (int s = 0; s < S; ++s)
                 if (pass.affine_tp[std::size_t(k) * S + s] > 0) {
-                    res.falsification = Falsification{aux_extreme_x0(R0, pass.ltg, std::size_t(k) * S + s),
-                                             time_step * k};
+                    res.falsification = Falsification{
+                        aux_extreme_x0(R0, pass.ltg, std::size_t(k) * S + s), time_step * k};
                     return finish();
                 }
 
@@ -554,7 +542,8 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
                 for (int s = 0; s < S; ++s) {
                     const std::size_t r = std::size_t(k) * S + s;
                     if (pass.affine_tp[r] + under_pu[r] > 0) {
-                        res.falsification = Falsification{aux_extreme_x0(R0, pass.ltg, r), time_step * k};
+                        res.falsification =
+                            Falsification{aux_extreme_x0(R0, pass.ltg, r), time_step * k};
                         return finish();
                     }
                 }

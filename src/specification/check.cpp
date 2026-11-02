@@ -14,9 +14,9 @@
 // CORA: specification/@specification/check.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/specification/specification.h"
 #include "global/format.h"
 #include "specification/private/priv.h"
-#include "cora/specification/specification.h"
 
 #include <algorithm>
 
@@ -28,24 +28,31 @@ namespace cora {
 
 namespace {
 
+// Halfspaces --------------------------------------------------------------------------------------
+
 /// The direction whose support decides a halfspace: a for a safe set (the largest a'x must be at
 /// most b), -a for an unsafe one (the smallest a'x, minus the support along -a, must exceed b).
 Tensor aux_direction(SpecType type, const Tensor &a) {
     if (type == SpecType::safe_set) return a;
     if (type == SpecType::unsafe_set) return a * -1.0;
-    CORA_FAIL(Error::report_to_dev, "Specification: a type that is neither safe_set nor unsafe_set");
+    CORA_FAIL(Error::report_to_dev,
+              "Specification: a type that is neither safe_set nor unsafe_set");
 }
 
 /// One halfspace: `extreme` is the support in the direction of aux_direction.
 bool aux_satisfied(SpecType type, double extreme, double b) {
     if (type == SpecType::safe_set) return extreme <= b;
     if (type == SpecType::unsafe_set) return -extreme > b;
-    CORA_FAIL(Error::report_to_dev, "Specification: a type that is neither safe_set nor unsafe_set");
+    CORA_FAIL(Error::report_to_dev,
+              "Specification: a type that is neither safe_set nor unsafe_set");
 }
+
+// Polytopes ---------------------------------------------------------------------------------------
 
 /// Per batch element, whether the set is clear of the polytope (the intersection of the
 /// halfspaces): separated by one halfspace, else by the linear program for a zonotope.
-std::vector<bool> aux_clear_of_polytope(const ContSet &S, const std::vector<Halfspace> &halfspaces) {
+std::vector<bool> aux_clear_of_polytope(const ContSet &S,
+                                        const std::vector<Halfspace> &halfspaces) {
     std::vector<bool> clear;
     for (const Halfspace &h : halfspaces) {
         const std::vector<double> extreme =
@@ -80,6 +87,34 @@ std::vector<bool> aux_clear_of_polytope(const ContSet &S, const std::vector<Half
     return clear;
 }
 
+/// The first halfspace whose normal is not a column of the set's dimension, or -1.
+int aux_wrong_normal(const ContSet &S, const std::vector<Halfspace> &halfspaces) {
+    for (std::size_t k = 0; k < halfspaces.size(); ++k)
+        if (!is_column(halfspaces[k].a, S.dim())) return static_cast<int>(k);
+    return -1;
+}
+
+std::string aux_wrong_normal_message(const ContSet &S, const Halfspace &h) {
+    return "check: the set has the dimension " + std::to_string(S.dim()) +
+           ", a halfspace normal the shape " + shape_text(h.a.shape());
+}
+
+/// Per batch element, whether the specification holds for S (the inputs are valid).
+std::vector<bool> aux_holds(const ContSet &S, SpecType type,
+                            const std::vector<Halfspace> &halfspaces) {
+    // an unsafe polytope: the set must stay clear of it; else each halfspace on its own
+    if (type == SpecType::unsafe_set && halfspaces.size() > 1)
+        return aux_clear_of_polytope(S, halfspaces);
+    std::vector<bool> ok;
+    for (const Halfspace &h : halfspaces) {
+        const std::vector<double> extreme = S.support_function(aux_direction(type, h.a)).data();
+        if (ok.empty()) ok.assign(extreme.size(), true);
+        for (std::size_t i = 0; i < extreme.size(); ++i)
+            if (!aux_satisfied(type, extreme[i], h.b)) ok[i] = false;
+    }
+    return ok;
+}
+
 } // namespace
 
 
@@ -87,25 +122,23 @@ std::vector<bool> aux_clear_of_polytope(const ContSet &S, const std::vector<Half
 
 std::vector<bool> Specification::holds(const ContSet &S) const {
     detail::Entry entry;
-    for (const Halfspace &h : halfspaces_)
-        CORA_CHECK(is_column(h.a, S.dim()), Error::dimension_mismatch, [&] {
-            return "check: the set has the dimension " + std::to_string(S.dim()) +
-                   ", a halfspace normal the shape " + shape_text(h.a.shape());
-        });    if (type_ == SpecType::unsafe_set && halfspaces_.size() > 1)
-        return aux_clear_of_polytope(S, halfspaces_);
-    std::vector<bool> ok;
-    for (const Halfspace &h : halfspaces_) {
-        const std::vector<double> extreme = S.support_function(aux_direction(type_, h.a)).data();
-        if (ok.empty()) ok.assign(extreme.size(), true);
-        for (std::size_t i = 0; i < extreme.size(); ++i)
-            if (!aux_satisfied(type_, extreme[i], h.b)) ok[i] = false;
+    if (entry.check()) {
+        const int wrong = aux_wrong_normal(S, halfspaces_);
+        CORA_CHECK(wrong < 0, Error::dimension_mismatch,
+                   [&] { return aux_wrong_normal_message(S, halfspaces_[wrong]); });
     }
-    return ok;
+    return aux_holds(S, type_, halfspaces_);
 }
 
 bool Specification::check(const ContSet &S) const {
     detail::Entry entry;
-    const std::vector<bool> ok = holds(S);
+    if (entry.check()) {
+        const int wrong = aux_wrong_normal(S, halfspaces_);
+        CORA_CHECK(wrong < 0, Error::dimension_mismatch,
+                   [&] { return aux_wrong_normal_message(S, halfspaces_[wrong]); });
+    }
+    // holds for every member of a batch
+    const std::vector<bool> ok = aux_holds(S, type_, halfspaces_);
     return std::all_of(ok.begin(), ok.end(), [](bool v) { return v; });
 }
 

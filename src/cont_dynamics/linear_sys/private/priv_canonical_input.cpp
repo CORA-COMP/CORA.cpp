@@ -21,7 +21,8 @@ namespace cora {
 CanonicalInput priv_canonical_input(const LinearSys &sys, const Zonotope &U) {
     const Tensor &A = sys.A();
     const int64_t n = A.shape()[0];
-    CanonicalInput in{Tensor::like(A, std::vector<double>(n, 0.0), {n, 1}), Tensor::like(A, {}, {n, 0})};
+    CanonicalInput in{Tensor::like(A, std::vector<double>(n, 0.0), {n, 1}),
+                      Tensor::like(A, {}, {n, 0}), n, sys.C() ? sys.C()->shape()[0] : n};
     if (!sys.B()) return in;
     const Tensor &B = *sys.B();
     in.u_trans = B.matmul(U.center());

@@ -18,8 +18,8 @@
 // See also: LinearSys::verify, priv_reach_adaptive
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
-#include "cora/global/error.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cora/global/error.h"
 #include "cora/global/linprog.h"
 
 #include <algorithm>
@@ -108,7 +108,6 @@ double aux_row_dot(const Poly &P, int row, const std::vector<double> &x) {
     return v;
 }
 
-
 // Containment and intersection --------------------------------------------------------------------
 
 /// The distance of a zonotope from being inside the polytope: max(-d + C c + sum |C G|), which
@@ -123,9 +122,8 @@ double aux_containment_check_zono(const ZHost &Z, const Poly &P) {
 /// The constraints that tie the generator factors of the vertex copies of an inner set together:
 /// the same point x = c - v_k + G a_k for every vertex v_k. Variable block k of the LP starts at
 /// offset(k) and has m entries; the rows are appended to Aeq/beq (n_vars wide).
-void aux_inner_equalities(
-    const InnerSet &R, const std::vector<std::vector<double>> &V, int n_vars, const
-    std::function<int(int)> &offset, LinProg &lp) {
+void aux_inner_equalities(const InnerSet &R, const std::vector<std::vector<double>> &V, int n_vars,
+                          const std::function<int(int)> &offset, LinProg &lp) {
     const int n = R.Z.n, m = R.Z.m;
     for (std::size_t k = 1; k < V.size(); ++k)
         for (int r = 0; r < n; ++r) {
@@ -214,8 +212,8 @@ double aux_intersection_check_inner(const InnerSet &R, const Poly &P) {
 
 /// The interval hull of the intersection of a zonotope and a polytope by 2n linear programs
 /// over the generator factors; false if they do not intersect.
-bool aux_intersection_hull(
-    const ZHost &Z, const Poly &P, std::vector<double> &lo, std::vector<double> &hi) {
+bool aux_intersection_hull(const ZHost &Z, const Poly &P, std::vector<double> &lo,
+                           std::vector<double> &hi) {
     const int n = Z.n, m = Z.m;
     LinProg base;
     base.n = m;
@@ -273,7 +271,6 @@ bool aux_intersection_check_fast(const ZHost &Z, const Poly &F) {
     return d <= kIntersectTol;
 }
 
-
 // Specifications ----------------------------------------------------------------------------------
 
 /// The polytope of the halfspaces of a specification with unit normals (scaling does not change
@@ -282,7 +279,7 @@ Poly aux_polytope(const std::vector<Halfspace> &halfspaces, int64_t p, double si
     Poly P;
     P.dim = static_cast<int>(p);
     for (const Halfspace &h : halfspaces) {
-        const std::vector<double> a = h.a.data();  // a nonzero column of p rows (checked by verify)
+        const std::vector<double> a = h.a.data(); // a nonzero column of p rows (checked by verify)
         double norm = 0;
         for (double v : a) norm += v * v;
         norm = std::sqrt(norm);
@@ -319,9 +316,8 @@ bool aux_polytope_hull(Poly &P) {
 /// The safe sets and the unsafe sets of the specifications. An unsafe set of one halfspace is
 /// turned into the safe set of its complement; the others stay polytopes that must not be
 /// intersected. All are to be verified over [0, t_final].
-void aux_get_sets_from_spec(
-    const std::vector<Specification> &specs, int64_t p, double t_final, std::vector<Poly> &safe_sets,
-    std::vector<Poly> &unsafe_sets) {
+void aux_get_sets_from_spec(const std::vector<Specification> &specs, int64_t p, double t_final,
+                            std::vector<Poly> &safe_sets, std::vector<Poly> &unsafe_sets) {
     for (const Specification &spec : specs) {
         switch (spec.type()) {
         case SpecType::safe_set:
@@ -350,7 +346,6 @@ void aux_get_sets_from_spec(
         }
 }
 
-
 // Distances of points -----------------------------------------------------------------------------
 
 /// Whether the point is in the polytope (up to 1e-12).
@@ -361,6 +356,13 @@ bool aux_contains(const Poly &P, const std::vector<double> &y) {
 }
 
 /// The 1-norm distance of the point p to the interval [lo, hi], counted negative (as CORA does).
+/// The distance of a point inside P to the nearest of its halfspace boundaries.
+double aux_distance_to_boundary(const Poly &P, const std::vector<double> &y) {
+    double est = kInf;
+    for (int r = 0; r < P.rows; ++r) est = std::min(est, std::abs(aux_row_dot(P, r, y) - P.b[r]));
+    return est;
+}
+
 double aux_distance_interval_point(const Poly &P, const std::vector<double> &p) {
     double d = 0;
     for (int i = 0; i < P.dim; ++i) {
@@ -432,7 +434,6 @@ double aux_distance_poly_point(const Poly &P, const std::vector<double> &p) {
     return r.status == LinProgResult::Status::optimal ? r.fval : kNaN;
 }
 
-
 // Initial error -----------------------------------------------------------------------------------
 
 // ode45 -------------------------------------------------------------------------------------------
@@ -441,9 +442,9 @@ double aux_distance_poly_point(const Poly &P, const std::vector<double> &p) {
 /// its default options (tolerances 1e-3 and 1e-6, refinement 4): the error control of the
 /// Dormand-Prince pair decides the steps; every accepted step adds three interpolated points
 /// (its dense output) and its end.
-void aux_ode45(
-    const std::vector<double> &A, int n, const std::vector<double> &b, std::vector<double> y,
-    double t_final, std::vector<double> &times, std::vector<std::vector<double>> &states) {
+void aux_ode45(const std::vector<double> &A, int n, const std::vector<double> &b,
+               std::vector<double> y, double t_final, std::vector<double> &times,
+               std::vector<std::vector<double>> &states) {
     static const double c[7] = {0, 1.0 / 5, 3.0 / 10, 4.0 / 5, 8.0 / 9, 1, 1};
     static const double a[7][6] = {{0, 0, 0, 0, 0, 0},
                                    {1.0 / 5, 0, 0, 0, 0, 0},
@@ -564,9 +565,9 @@ double aux_scale_min(const std::vector<double> &t) {
 /// interval hull of R0, the distance of the output trajectory to the specifications, weighted
 /// to be strictest at the end of the horizon. The trajectories are exact solutions sampled at
 /// the time points of ode45 (first point) and on an equidistant grid of twice that step size.
-double aux_init_error(
-    const Tensor &A, const std::optional<Tensor> &C, const Tensor &u_offset, const Zonotope &R0,
-    const std::vector<Poly> &safe_sets, const std::vector<Poly> &unsafe_sets, double t_final) {
+double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Tensor &u_offset,
+                      const Zonotope &R0, const std::vector<Poly> &safe_sets,
+                      const std::vector<Poly> &unsafe_sets, double t_final) {
     const int n = static_cast<int>(A.shape()[0]);
     const std::vector<double> c = R0.center().data(), Gd = R0.generators().data();
     const int m0 = static_cast<int>(R0.generators().shape()[1]);
@@ -644,9 +645,7 @@ double aux_init_error(
                 if (!P.time.contains(t[j])) continue;
                 double est;
                 if (aux_contains(P, y[j])) {
-                    est = kInf;
-                    for (int r = 0; r < P.rows; ++r)
-                        est = std::min(est, std::abs(aux_row_dot(P, r, y[j]) - P.b[r]));
+                    est = aux_distance_to_boundary(P, y[j]);
                 } else if (P.is_bounded) {
                     // The distance to the interval hull is counted negative: always smaller.
                     if (!(aux_distance_interval_point(P, y[j]) < err)) continue;
@@ -664,9 +663,7 @@ double aux_init_error(
                 if (!P.time.contains(t[j])) continue;
                 double est;
                 if (aux_contains(P, y[j])) {
-                    est = kInf;
-                    for (int r = 0; r < P.rows; ++r)
-                        est = std::min(est, std::abs(aux_row_dot(P, r, y[j]) - P.b[r]));
+                    est = aux_distance_to_boundary(P, y[j]);
                 } else if (P.rows == 1) {
                     est = aux_row_dot(P, 0, y[j]) - P.b[0];
                 } else {
@@ -689,16 +686,14 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
     const auto start = std::chrono::steady_clock::now();
     VerifyResult res;
     auto finish = [&]() {
-        res.computation_time =
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+        res.computation_time = priv_seconds_since(start);
         return res;
     };
 
     // The system and the input in canonical form ------------------------------------------------
     const Tensor &A = sys.A();
-    const int64_t n = A.shape()[0];
-    const int64_t p = sys.C() ? sys.C()->shape()[0] : n;
     const CanonicalInput input = priv_canonical_input(sys, U);
+    const int64_t n = input.n, p = input.p;
     const Tensor &u_trans = input.u_trans, &GU = input.GU;
 
     std::vector<Poly> safe_sets, unsafe_sets;
@@ -715,7 +710,8 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
     while (true) {
         ++res.iterations;
         if (!(emax > 0) || !std::isfinite(emax))
-            CORA_FAIL(Error::special_error, "LinearSys::verify: the error bound left the valid range");
+            CORA_FAIL(Error::special_error,
+                      "LinearSys::verify: the error bound left the valid range");
 
         // The outer approximation of the reachable set with the error bound emax.
         std::vector<VerifyTime> times;
@@ -757,7 +753,8 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
         // The outer approximation inside the safe sets, the inner one not inside: unsafe.
         for (Poly &P : safe_sets)
             for (std::size_t j = 0; j < R.time_interval.size(); ++j) {
-                if (!R.time_interval[j] || !P.time.is_intersecting(R.time[j], R.time[j + 1])) continue;
+                if (!R.time_interval[j] || !P.time.is_intersecting(R.time[j], R.time[j + 1]))
+                    continue;
                 const ZHost Z = aux_zhost(*R.time_interval[j]);
                 const double err = R.time_interval_error[j];
                 double d = aux_containment_check_zono(Z, P);
@@ -778,7 +775,8 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
         // The outer approximation outside the unsafe sets, the inner one inside: unsafe.
         for (Poly &P : unsafe_sets)
             for (std::size_t j = 0; j < R.time_interval.size(); ++j) {
-                if (!R.time_interval[j] || !P.time.is_intersecting(R.time[j], R.time[j + 1])) continue;
+                if (!R.time_interval[j] || !P.time.is_intersecting(R.time[j], R.time[j + 1]))
+                    continue;
                 const ZHost Z = aux_zhost(*R.time_interval[j]);
                 if (!aux_intersection_check_fast(Z, P)) {
                     // No intersection: the time interval is verified for this set.
@@ -815,7 +813,8 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
         if (!unsafe_sets.empty() && d_fo != 0 && d_fo < d) d = d_fo, ind = ind_fo;
         if (!safe_sets.empty() && d_go >= 0 && d_go < d) d = d_go, ind = ind_go;
         if (ind < 0)
-            CORA_FAIL(Error::special_error, "LinearSys::verify: no step to refine the error bound by");
+            CORA_FAIL(Error::special_error,
+                      "LinearSys::verify: no step to refine the error bound by");
         emax = std::max(0.1 * emax, std::min(d * emax / R.time_interval_error[ind], 0.9 * emax));
     }
 }

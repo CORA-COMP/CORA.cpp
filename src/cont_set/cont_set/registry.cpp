@@ -30,6 +30,8 @@ namespace cora {
 
 namespace {
 
+// The Table ---------------------------------------------------------------------------------------
+
 constexpr int kClasses = static_cast<int>(ClassId::count);
 constexpr int kOps = static_cast<int>(BinaryOp::count);
 
@@ -55,14 +57,14 @@ template <BinaryOp Op, class A, class B, class F>
 constexpr void aux_add_predicate(Table &table, F) {
     static_assert(!is_commutative(Op) || precedence(A::kClassId) <= precedence(B::kClassId),
                   "a commutative pair is registered with the class of lower precedence first");
-    table.predicate[static_cast<int>(Op)][static_cast<int>(A::kClassId)]
-                   [static_cast<int>(B::kClassId)] =
-        [](const ContSet &S1, const ContSet &S2, double tol) -> bool {
+    table.predicate[static_cast<int>(Op)][static_cast<int>(A::kClassId)][static_cast<int>(
+        B::kClassId)] = [](const ContSet &S1, const ContSet &S2, double tol) -> bool {
         return F{}(static_cast<const A &>(S1), static_cast<const B &>(S2), tol);
     };
 }
 
-// The pairs ----------------------------------------------------------------------------------------
+// The pairs
+// ----------------------------------------------------------------------------------------
 
 /// Every pair that is implemented: one line each.
 constexpr Table aux_build() {
@@ -77,6 +79,8 @@ constexpr Table aux_build() {
 }
 
 constexpr Table kTable = aux_build();
+
+// Registered Pairs --------------------------------------------------------------------------------
 
 /// The pairs registered at run time, by operation and class names, and the lock that guards them.
 struct Dynamic {
@@ -121,19 +125,25 @@ std::string aux_noops(BinaryOp op, const ContSet &S1, const ContSet &S2) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Names and Pairs ---------------------------------------------------------------------------------
+
+/// The name of an operation, as in Python and in the messages.
 const char *binary_op_name(BinaryOp op) noexcept {
     constexpr const char *names[] = {"plus",      "intersect", "unite",          "convex_hull",
                                      "cart_prod", "contains",  "is_intersecting"};
     return names[static_cast<int>(op)];
 }
 
+/// The operation of a name; an error for an unknown one.
 BinaryOp binary_op(const std::string &name) {
     for (int op = 0; op < kOps; ++op)
         if (name == binary_op_name(static_cast<BinaryOp>(op))) return static_cast<BinaryOp>(op);
-    CORA_FAIL(Error::wrong_value, "unknown binary operation '" + name + "'; use plus, intersect, "
-                                  "unite, convex_hull, cart_prod, contains or is_intersecting");
+    CORA_FAIL(Error::wrong_value, "unknown binary operation '" + name +
+                                      "'; use plus, intersect, "
+                                      "unite, convex_hull, cart_prod, contains or is_intersecting");
 }
 
+/// Every implemented pair: the built-in table, then the registered ones.
 std::vector<BinaryPair> binary_pairs() {
     std::vector<BinaryPair> pairs;
     for (int op = 0; op < kOps; ++op)
@@ -145,18 +155,25 @@ std::vector<BinaryPair> binary_pairs() {
     Dynamic &dynamic = aux_dynamic();
     std::lock_guard<std::mutex> lock(dynamic.mutex);
     for (const auto &[key, f] : dynamic.set)
-        pairs.push_back({static_cast<BinaryOp>(std::get<0>(key)), std::get<1>(key), std::get<2>(key), true});
+        pairs.push_back(
+            {static_cast<BinaryOp>(std::get<0>(key)), std::get<1>(key), std::get<2>(key), true});
     for (const auto &[key, f] : dynamic.predicate)
-        pairs.push_back({static_cast<BinaryOp>(std::get<0>(key)), std::get<1>(key), std::get<2>(key), true});
+        pairs.push_back(
+            {static_cast<BinaryOp>(std::get<0>(key)), std::get<1>(key), std::get<2>(key), true});
     return pairs;
 }
 
-void register_binary(BinaryOp op, const std::string &left, const std::string &right, SetFunction f) {
+// Registration ------------------------------------------------------------------------------------
+
+/// A pair of sets registered at run time (Python), by class names.
+void register_binary(BinaryOp op, const std::string &left, const std::string &right,
+                     SetFunction f) {
     Dynamic &dynamic = aux_dynamic();
     std::lock_guard<std::mutex> lock(dynamic.mutex);
     dynamic.set[{static_cast<int>(op), left, right}] = std::move(f);
 }
 
+/// A pair of a predicate registered at run time.
 void register_binary(BinaryOp op, const std::string &left, const std::string &right,
                      PredicateFunction f) {
     Dynamic &dynamic = aux_dynamic();
@@ -164,11 +181,20 @@ void register_binary(BinaryOp op, const std::string &left, const std::string &ri
     dynamic.predicate[{static_cast<int>(op), left, right}] = std::move(f);
 }
 
+// Dispatch ----------------------------------------------------------------------------------------
+
 namespace detail {
 
 Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2) {
+    detail::Entry entry;
+    CORA_CHECK(op == BinaryOp::cart_prod || S1.dim() == S2.dim(), Error::dimension_mismatch, [&] {
+        return std::string(binary_op_name(op)) + ": the sets differ in dimension, " +
+               S1.class_name() + " of " + std::to_string(S1.dim()) + " and " + S2.class_name() +
+               " of " + std::to_string(S2.dim());
+    });
     const int o = static_cast<int>(op), a = static_cast<int>(S1.class_id()),
               b = static_cast<int>(S2.class_id());
+    // the table, by class ids: O(1), the lower precedence first
     if (const SetFn f = kTable.set[o][a][b]) return f(S1, S2);
     if (is_commutative(op))
         if (const SetFn f = kTable.set[o][b][a]) return f(S2, S1);
@@ -185,8 +211,19 @@ Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2) {
 }
 
 bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, double tol) {
+    detail::Entry entry;
+    CORA_CHECK(op == BinaryOp::cart_prod || S1.dim() == S2.dim(), Error::dimension_mismatch, [&] {
+        return std::string(binary_op_name(op)) + ": the sets differ in dimension, " +
+               S1.class_name() + " of " + std::to_string(S1.dim()) + " and " + S2.class_name() +
+               " of " + std::to_string(S2.dim());
+    });
+    CORA_CHECK(tol >= 0, Error::wrong_value, [&] {
+        return std::string(binary_op_name(op)) + ": tol must be nonnegative, got " +
+               std::to_string(tol);
+    });
     const int o = static_cast<int>(op), a = static_cast<int>(S1.class_id()),
               b = static_cast<int>(S2.class_id());
+    // the table, by class ids: O(1), the lower precedence first
     if (const PredicateFn f = kTable.predicate[o][a][b]) return f(S1, S2, tol);
     if (is_commutative(op))
         if (const PredicateFn f = kTable.predicate[o][b][a]) return f(S2, S1, tol);

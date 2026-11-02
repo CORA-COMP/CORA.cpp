@@ -17,8 +17,6 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Set cart_prod(const ContSet &S1, const ContSet &S2) {
-    detail::Entry entry;
-
     return detail::dispatch(BinaryOp::cart_prod, S1, S2);
 }
 

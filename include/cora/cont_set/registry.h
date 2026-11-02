@@ -106,7 +106,8 @@ using SetFn = Set (*)(const ContSet &S1, const ContSet &S2);
 using PredicateFn = bool (*)(const ContSet &S1, const ContSet &S2, double tol);
 
 /// op(S1, S2) by the table, operands swapped for a commutative op stored the other way round;
-/// Error::noops if the table has neither.
+/// Error::noops if the table has neither. The checked entry of every binary operation: the
+/// operands share a dimension (and tol >= 0).
 Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2);
 bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, double tol);
 
