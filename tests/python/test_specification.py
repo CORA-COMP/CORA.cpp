@@ -61,17 +61,20 @@ class Specification(unittest.TestCase):
         self.assertEqual(cora.Specification.unsafe_set(x1(1.0), 0.0).type, "unsafe_set")
 
     def test_numpy_runs_on_eigen(self):
-        R = cora.LinearSys(A.numpy()).reach(cora.Zonotope(X0.center.numpy(), X0.generators.numpy()), **OPTIONS)
+        R = cora.LinearSys(A.numpy()).reach(cora.Zonotope(X0.center.numpy(), X0.generators.numpy()),
+                                            **OPTIONS)
         spec = cora.Specification.safe_set(np.array([1.0, 0.0]), 1.0)
         self.assertFalse(spec.check(R.time_interval))
         self.assertEqual(spec.first_violation(R.time_interval), 0)
 
     def test_the_two_backends_agree(self):
-        R = cora.LinearSys(A.numpy()).reach(cora.Zonotope(X0.center.numpy(), X0.generators.numpy()), **OPTIONS)
+        R = cora.LinearSys(A.numpy()).reach(cora.Zonotope(X0.center.numpy(), X0.generators.numpy()),
+                                            **OPTIONS)
         for bound in (0.8, 1.0, 1.2, 1.5):
             on_torch = cora.Specification.safe_set(x1(1.0), bound)
             on_eigen = cora.Specification.safe_set(np.array([1.0, 0.0]), bound)
-            self.assertEqual(on_torch.first_violation(self.R.time_interval), on_eigen.first_violation(R.time_interval))
+            self.assertEqual(on_torch.first_violation(self.R.time_interval),
+                             on_eigen.first_violation(R.time_interval))
 
     def test_backends_do_not_mix(self):
         with self.assertRaises(ValueError):

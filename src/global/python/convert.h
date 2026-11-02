@@ -8,7 +8,8 @@
 // closest name. Only conversion lives here, no computation.
 //
 // Syntax:   Tensor t = tensor_of(obj);   py::object o = vector(t);   Set S = set_of(obj);
-//           ReachProblem p = fill<ReachProblem>(kwargs);   auto alg = algorithm<alg::LinearReach>("standard", kwargs);
+//           ReachProblem p = fill<ReachProblem>(kwargs);   auto alg =
+//           algorithm<alg::LinearReach>("standard", kwargs);
 // See also: bindings.cpp, cora/global/options.h
 
 #pragma once
@@ -85,7 +86,8 @@ inline std::optional<Tensor> as_tensor(const py::handle &o) {
         return t.dim() == 1 ? column(t) : from_torch(t);
     }
 #endif
-    if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) || py::isinstance<py::tuple>(o)) {
+    if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) ||
+        py::isinstance<py::tuple>(o)) {
         const py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
         if (!a) return std::nullopt;
         if (a.ndim() == 1) return column(py::cast<Eigen::VectorXd>(a));
@@ -97,8 +99,8 @@ inline std::optional<Tensor> as_tensor(const py::handle &o) {
 /// As as_tensor, an Error if it is not an array.
 inline Tensor tensor_of(const py::handle &o, const char *what) {
     if (std::optional<Tensor> t = as_tensor(o)) return *t;
-    CORA_FAIL(Error::wrong_value, std::string("cora: ") + what +
-                                      " must be a numpy array or a torch tensor");
+    CORA_FAIL(Error::wrong_value,
+              std::string("cora: ") + what + " must be a numpy array or a torch tensor");
 }
 
 // Sets --------------------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""example_neuralNetwork_train_01_setBased - set-based training pushes decision boundaries off the samples
+"""example_neural_network_train_01_set_based - set-based training pushes decision boundaries off the samples
 
 The loss of set-based training (Koller, Ladner, Althoff: "Set-Based Training for Neural Network
 Verification", TMLR 2025) combines the usual loss of the center of the output set with the size of

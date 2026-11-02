@@ -1,4 +1,4 @@
-"""test_linearSys_reach - LinearSys.reach in Python: the same call for one set or a batch, on torch
+"""test_linear_sys_reach - LinearSys.reach in Python: the same call for one set or a batch, on torch
 or numpy, with gradients and the options checked."""
 import unittest
 
@@ -27,13 +27,15 @@ class ReachSet(unittest.TestCase):
         self.assertEqual((len(R.time_interval), len(R.time_point)), (10, 11))
         self.assertIsInstance(R.time_interval[0], cora.Zonotope)
         self.assertEqual(tuple(R.time_interval[0].center.shape), (3,))
-        self.assertEqual(R.time_interval[0].generators.shape[-1], 3 * 4 + 3 + 1)  # 2m+1 from linear_combination, m+n from F
+        self.assertEqual(R.time_interval[0].generators.shape[-1],
+                         3 * 4 + 3 + 1)  # 2m+1 from linear_combination, m+n from F
 
     def test_numpy_runs_on_eigen_and_agrees_with_torch(self):
         A, c, G = system()
         for lin_alg in ALGORITHMS:
             t = cora.LinearSys(A).reach(cora.Zonotope(c, G), time_step=0.1, t_final=1.0, alg=lin_alg)
-            n = cora.LinearSys(A.numpy()).reach(cora.Zonotope(c.numpy(), G.numpy()), time_step=0.1, t_final=1.0, alg=lin_alg)
+            n = cora.LinearSys(A.numpy()).reach(cora.Zonotope(c.numpy(), G.numpy()), time_step=0.1,
+                                                t_final=1.0, alg=lin_alg)
             self.assertIsInstance(n.time_interval[0].generators, np.ndarray)
             for zt, zn in zip(t.time_interval + t.time_point, n.time_interval + n.time_point):
                 np.testing.assert_allclose(zt.center.numpy(), zn.center, atol=1e-10)
@@ -61,7 +63,8 @@ class ReachSet(unittest.TestCase):
             one = cora.LinearSys(As[b]).reach(cora.Zonotope(c[b], G[b]), time_step=0.1, t_final=0.5)
             torch.testing.assert_close(both.time_interval[-1].generators[b], one.time_interval[-1].generators)
             single = cora.LinearSys(As[b]).reach(cora.Zonotope(c[0], G[0]), time_step=0.1, t_final=0.5)
-            torch.testing.assert_close(systems.time_interval[-1].generators[b], single.time_interval[-1].generators)
+            torch.testing.assert_close(systems.time_interval[-1].generators[b],
+                                       single.time_interval[-1].generators)
 
     def test_the_algorithms_share_their_time_points(self):
         A, c, G = system()
@@ -105,7 +108,8 @@ class Gradients(unittest.TestCase):
 
                 def f(A, c, G):
                     sys = cora.LinearSys(A, custom_backward=custom)
-                    R = sys.reach(cora.Zonotope(c, G), time_step=0.2, t_final=0.6, taylor_terms=6, alg=lin_alg)
+                    R = sys.reach(cora.Zonotope(c, G), time_step=0.2, t_final=0.6, taylor_terms=6,
+                                  alg=lin_alg)
                     return sum(Z.generators.abs().sum() + Z.center.sum() for Z in R.time_interval)
 
                 self.assertTrue(torch.autograd.gradcheck(f, (A, c, G), atol=1e-5, rtol=1e-4))
@@ -114,7 +118,8 @@ class Gradients(unittest.TestCase):
         grads = []
         for custom in (False, True):
             A, c, G = (t.requires_grad_() for t in system(seed=4))
-            R = cora.LinearSys(A, custom_backward=custom).reach(cora.Zonotope(c, G), time_step=0.1, t_final=1.0)
+            R = cora.LinearSys(A, custom_backward=custom).reach(cora.Zonotope(c, G), time_step=0.1,
+                                                                t_final=1.0)
             sum(Z.generators.abs().sum() for Z in R.time_interval).backward()
             grads.append([A.grad, c.grad, G.grad])
         for a, b in zip(*grads):

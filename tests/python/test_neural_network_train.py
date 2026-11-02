@@ -1,4 +1,4 @@
-"""test_neuralNetwork_train - a loss over the output set of a network updates its weights"""
+"""test_neural_network_train - a loss over the output set of a network updates its weights"""
 import unittest
 
 try:

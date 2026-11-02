@@ -1,4 +1,4 @@
-"""test_neuralNetwork - NeuralNetwork in Python: points, the zonotope enclosure and its gradients."""
+"""test_neural_network - NeuralNetwork in Python: points, the zonotope enclosure and its gradients."""
 import unittest
 
 try:

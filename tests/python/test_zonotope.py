@@ -32,7 +32,7 @@ class Construction(unittest.TestCase):
         self.assertIsInstance(Z.generators, torch.Tensor)
         torch.testing.assert_close(Z.center, c)
         torch.testing.assert_close(Z.generators, G)
-        self.assertEqual(Z.dim(), 3)
+        self.assertEqual(Z.dim, 3)
 
     def test_numpy_arrays_stay_numpy(self):
         c, G = random_zonotope()
@@ -47,8 +47,8 @@ class Construction(unittest.TestCase):
         Z = cora.Zonotope(c, G)
         self.assertEqual(tuple(Z.center.shape), (5, 3))
         self.assertEqual(tuple(Z.generators.shape), (5, 3, 4))
-        self.assertEqual(Z.dim(), 3)
-        self.assertEqual(tuple(Z.center().shape), (5, 3))
+        self.assertEqual(Z.dim, 3)
+        self.assertEqual(tuple(Z.center.shape), (5, 3))
 
     def test_the_two_backends_do_not_mix(self):
         c, G = random_zonotope()
@@ -93,7 +93,8 @@ class Operations(unittest.TestCase):
         for _ in range(20):
             M = center + radius * (2 * torch.rand(3, 3, **F64) - 1)
             d = torch.randn(3, **F64)
-            self.assertGreaterEqual(float(wide.support_function(d)), float(Z.linear_map(M).support_function(d)) - 1e-10)
+            self.assertGreaterEqual(float(wide.support_function(d)),
+                                    float(Z.linear_map(M).support_function(d)) - 1e-10)
 
     def test_plus_is_the_minkowski_sum(self):
         (c1, G1), (c2, G2) = random_zonotope(3, 3, 1), random_zonotope(3, 2, 2)
@@ -182,7 +183,8 @@ class Stack(unittest.TestCase):
         torch.testing.assert_close(S.generators[0, :, :2], a.generators)
         self.assertEqual(float(S.generators[0, :, 2].abs().sum()), 0.0)  # padding
         d = cora.Tensor([1.0, -1.0])
-        torch.testing.assert_close(S.support_function(d), torch.stack([a.support_function(d), b.support_function(d)]))
+        torch.testing.assert_close(S.support_function(d), torch.stack([a.support_function(d),
+                                                                       b.support_function(d)]))
 
     def test_stack_of_intervals(self):
         a = cora.Interval(cora.Tensor([0.0, 0.0]), cora.Tensor([1.0, 1.0]))

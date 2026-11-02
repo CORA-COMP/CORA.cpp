@@ -1,6 +1,6 @@
 """example_linear_reach_04_backends - the same code on Eigen and on libtorch
 
-The backend is chosen once, with set_backend (or CORACPP_BACKEND from outside); cora.Tensor makes
+The backend is chosen in a `with cora.backend(...)` block (or CORACPP_BACKEND from outside); cora.Tensor makes
 numpy arrays on Eigen and torch tensors on libtorch, and everything built from them stays there.
 Nothing else in the code changes, and the results come back as the array type of the backend.
 
@@ -34,8 +34,8 @@ backends = ["eigen", "torch"]
 
 centers = {}
 for spec in backends:
-    cora.set_backend(spec)
-    R = reach_oscillator()
+    with cora.backend(spec):
+        R = reach_oscillator()
     centers[spec] = R.time_interval[-1].center
     print(f"{spec}: the last center is {centers[spec]} ({type(centers[spec]).__module__})")
 

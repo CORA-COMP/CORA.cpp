@@ -39,8 +39,8 @@ print(f"CORA.cpp:  x1 in [{float(last.inf[0]):.6f}, {float(last.sup[0]):.6f}]")
 # The Oracle --------------------------------------------------------------------------------
 
 for dtype in ("binary64", "ieee:binary32"):
-    cora.lean.set_dtype(dtype)  # the lean objects below are created in this dtype
-    R = cora.lean.LinearSys(A).reach(cora.lean.Zonotope(c, G), t_final, time_step=time_step, taylor_terms=taylor_terms, zonotope_order=zonotope_order)
+    with cora.lean.dtype(dtype):  # the lean objects in the block are created in this dtype
+        R = cora.lean.LinearSys(A).reach(cora.lean.Zonotope(c, G), t_final, time_step=time_step, taylor_terms=taylor_terms, zonotope_order=zonotope_order)
 
     # the nominal zonotope and the error box that the sound float operations added
     nominal, error = R.time_point[-1].gather()
@@ -60,7 +60,6 @@ for dtype in ("binary64", "ieee:binary32"):
 # Rounding ----------------------------------------------------------------------------------
 
 # 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the error
-cora.lean.set_dtype("binary64")
 value, error = cora.lean.Tensor.from_array(np.array([[0.1]])).round_to("ieee:binary32")
 inf_, sup_ = error.gather().inf, error.gather().sup
 print(f"0.1 in binary32 is {float(value.gather()[0, 0])}, "

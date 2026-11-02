@@ -9,7 +9,7 @@ import cora
 
 class Crossing(unittest.TestCase):
     def setUp(self):
-        cora.lean.set_dtype("binary64")
+        self.enterContext(cora.lean.dtype("binary64"))
 
     def test_a_double_crosses_exactly(self):
         x = np.array([[0.1, -2.5], [1e-300, 3.0]])
@@ -21,7 +21,8 @@ class Crossing(unittest.TestCase):
 
     def test_an_unknown_dtype_is_an_error(self):
         with self.assertRaises(ValueError):
-            cora.lean.set_dtype("float16")
+            with cora.lean.dtype("float16"):
+                pass
 
     def test_an_unknown_reduction_method_is_an_error(self):
         Z = cora.lean.Zonotope(np.array([1.0, 2.0]), np.eye(2))
@@ -32,7 +33,7 @@ class Crossing(unittest.TestCase):
 @unittest.skipUnless(os.environ.get("CORACPP_ORACLE"), "needs the CORALean oracle")
 class Oracle(unittest.TestCase):
     def test_the_lean_reach_encloses_the_double_reach(self):
-        cora.lean.set_dtype("binary64")
+        self.enterContext(cora.lean.dtype("binary64"))
         A = np.array([[0.0, 1.0], [-1.0, -0.25]])
         c, G = np.array([1.0, 0.0]), 0.25 * np.eye(2)
         R = cora.lean.LinearSys(A).reach(cora.lean.Zonotope(c, G), 1.0, time_step=0.125, taylor_terms=8)

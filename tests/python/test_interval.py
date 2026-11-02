@@ -16,9 +16,9 @@ class Interval(unittest.TestCase):
     def test_bounds_center_and_rad(self):
         I = cora.Interval(torch.tensor([-1.0, 0.0, 2.0], **F64), torch.tensor([3.0, 0.5, 2.0], **F64))
         torch.testing.assert_close(I.inf, torch.tensor([-1.0, 0.0, 2.0], **F64))
-        torch.testing.assert_close(I.center(), torch.tensor([1.0, 0.25, 2.0], **F64))
-        torch.testing.assert_close(I.rad(), torch.tensor([2.0, 0.25, 0.0], **F64))
-        self.assertEqual(I.dim(), 3)
+        torch.testing.assert_close(I.center, torch.tensor([1.0, 0.25, 2.0], **F64))
+        torch.testing.assert_close(I.rad, torch.tensor([2.0, 0.25, 0.0], **F64))
+        self.assertEqual(I.dim, 3)
 
     def test_numpy_boxes_stay_numpy(self):
         I = cora.Interval(np.array([0.0, 1.0]), np.array([2.0, 3.0]))
@@ -57,11 +57,11 @@ class Interval(unittest.TestCase):
         P = I.rand_point(2000, cora.Rng(4))
         self.assertEqual(tuple(P.shape), (2, 2000))
         self.assertTrue(bool((P.T >= I.inf).all() and (P.T <= I.sup).all()))
-        self.assertLess(float((P.mean(-1) - I.center()).abs().max()), 0.1)
+        self.assertLess(float((P.mean(-1) - I.center).abs().max()), 0.1)
 
     def test_generate_random(self):
         I = cora.Interval.generate_random(4, cora.Rng(2))
-        self.assertEqual(I.dim(), 4)
+        self.assertEqual(I.dim, 4)
         self.assertTrue(bool((I.inf <= I.sup).all()))
 
     def test_an_interval_can_be_a_matrix(self):

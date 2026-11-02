@@ -84,20 +84,21 @@ def run_instance(name):
 
     inst = load_instance(name)
     mat = inst["matrices"]
-    algs = {"reachavoid:supportFunc": cora.VerifyAlg.SupportFunc,
-            "reachavoid:zonotope": cora.VerifyAlg.Zonotope}
+    algs = {"reachavoid:supportFunc": "reach_avoid_support_function",
+            "reachavoid:zonotope": "reach_avoid_zonotope"}
     if inst["verifyAlg"] not in algs:
         raise ValueError(f"benchmark data: unknown verifyAlg {inst['verifyAlg']}")
     system = cora.LinearSys(mat["A"], mat["B"], mat["C"])
-    params = cora.VerifyParams(zonotope(cora, mat["R0c"], mat["R0G"]),
-                               zonotope(cora, mat["Uc"], mat["UG"]), inst["tFinal"])
+    initial_set = zonotope(cora, mat["R0c"], mat["R0G"])
+    input_set = zonotope(cora, mat["Uc"], mat["UG"])
     specs = specifications(cora, inst)
     # what will run, before it does
     print(f"{name}: {mat['A'].shape[0]} states, {len(specs)} specifications, "
-          f"{inst['verifyAlg']}, t_final {inst['t_final']}", file=sys.stderr)
+          f"{inst['verifyAlg']}, t_final {inst['tFinal']}", file=sys.stderr)
 
     start = time.perf_counter()
-    res = system.verify(params, algs[inst["verifyAlg"]], specs)
+    res = system.verify(initial_set, input_set=input_set, t_final=inst["tFinal"], specs=specs,
+                        alg=algs[inst["verifyAlg"]])
     wall = time.perf_counter() - start
 
     print(f"{inst['benchmark']},{inst['label']},{int(res.verified)},"
@@ -107,7 +108,7 @@ def run_instance(name):
     expected = inst["expected"]
     if expected and "nrSteps" in expected:
         detail += (f"  (MATLAB: iterations {expected['iterations']}, "
-                   f"num_steps {expected['num_steps']}, time_step {expected['time_step']:.6g})")
+                   f"num_steps {expected['nrSteps']}, time_step {expected['timeStep']:.6g})")
     print(detail, file=sys.stderr)
 
 

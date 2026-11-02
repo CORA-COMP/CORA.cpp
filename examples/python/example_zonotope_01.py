@@ -11,7 +11,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 
-from cora import Tensor, Zonotope, plot, set_backend
+from cora import Tensor, Zonotope, plot, set_default_backend
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -23,7 +23,7 @@ if args.save:
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-set_backend("torch")
+set_default_backend("torch")
 
 # Init ---------------------------------------------------------------------------------------
 

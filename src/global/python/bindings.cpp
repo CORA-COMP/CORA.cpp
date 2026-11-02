@@ -74,8 +74,13 @@ void bind_scope(py::module_ &m, const char *name, const char *doc) {
     using S = PyScope<Scope, Arg>;
     py::class_<S>(m, name, doc)
         .def(py::init([](Arg arg) { return new S{std::move(arg), std::nullopt}; }))
-        .def("__enter__", [](S &s) -> S & { s.scope.emplace(s.arg); return s; },
-             py::return_value_policy::reference)
+        .def(
+            "__enter__",
+            [](S &s) -> S & {
+                s.scope.emplace(s.arg);
+                return s;
+            },
+            py::return_value_policy::reference)
         .def("__exit__", [](S &s, const py::args &) { s.scope.reset(); });
 }
 
@@ -84,8 +89,9 @@ void bind_settings(py::module_ &m) {
     using Backend = PyScope<BackendScope, std::string>;
     bind_scope<ChecksScope, bool>(m, "_ChecksScope", "The checks on or off in a with block");
     bind_scope<BackendScope, std::string>(m, "_BackendScope", "A backend in a with block");
-    m.def("checks", [](bool enabled) { return new Checks{enabled, std::nullopt}; },
-          py::arg("enabled"), "with cora.checks(False): turns the input checks off in the block");
+    m.def(
+        "checks", [](bool enabled) { return new Checks{enabled, std::nullopt}; },
+        py::arg("enabled"), "with cora.checks(False): turns the input checks off in the block");
     m.def("set_checks_enabled", &set_checks_enabled, py::arg("enabled"),
           "The process default of the input checks (CORACPP_CHECKS=0 in the environment: off)");
     m.def("checks_enabled", &checks_enabled, "Whether this thread checks inputs");
@@ -106,7 +112,8 @@ void bind_settings(py::module_ &m) {
     m.def("current_backend", [] { return backend().name(); }, "The name of this thread's backend");
 }
 
-// Sets ---------------------------------------------------------------------------------------------
+// Sets
+// ---------------------------------------------------------------------------------------------
 
 /// A Python subclass of ContSet: the _impl layer calls the methods _dim, _center, ... of the
 /// Python object.
@@ -142,9 +149,11 @@ class PyContSet : public ContSet {
         py::gil_scoped_acquire gil;
         std::vector<Polygon> out;
         for (const py::handle &p : call("_vertices")) {
-            const auto a = py::array_t<double, py::array::c_style | py::array::forcecast>::ensure(p);
+            const auto a =
+                py::array_t<double, py::array::c_style | py::array::forcecast>::ensure(p);
             Polygon polygon;
-            for (py::ssize_t i = 0; i < a.shape(0); ++i) polygon.push_back({a.at(i, 0), a.at(i, 1)});
+            for (py::ssize_t i = 0; i < a.shape(0); ++i)
+                polygon.push_back({a.at(i, 0), a.at(i, 1)});
             out.push_back(polygon);
         }
         return out;
@@ -209,46 +218,54 @@ void bind_registry(py::module_ &m) {
     m.def("convex_hull", &binary<&convex_hull>, py::arg("S1"), py::arg("S2"),
           "An enclosure of the convex hull");
     m.def("cart_prod", &binary<&cart_prod>, py::arg("S1"), py::arg("S2"), "The Cartesian product");
-    m.def("contains",
-          [](const py::object &S1, const py::object &S2, double tol) {
-              return contains(set_of(S1), set_of(S2), tol);
-          },
-          py::arg("S1"), py::arg("S2"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
-          "Whether S2 is a subset of S1 enlarged by tol (infinity norm)");
-    m.def("is_intersecting",
-          [](const py::object &S1, const py::object &S2, double tol) {
-              return is_intersecting(set_of(S1), set_of(S2), tol);
-          },
-          py::arg("S1"), py::arg("S2"), py::arg("tol") = 1e-8, "Whether S1 and S2 intersect, up to tol");
-    m.def("binary_pairs",
-          [] {
-              py::list out;
-              for (const BinaryPair &p : binary_pairs())
-                  out.append(py::make_tuple(binary_op_name(p.op), p.left, p.right));
-              return out;
-          },
-          "The pairs of classes each binary operation is implemented for: (op, left, right)");
+    m.def(
+        "contains",
+        [](const py::object &S1, const py::object &S2, double tol) {
+            return contains(set_of(S1), set_of(S2), tol);
+        },
+        py::arg("S1"), py::arg("S2"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
+        "Whether S2 is a subset of S1 enlarged by tol (infinity norm)");
+    m.def(
+        "is_intersecting",
+        [](const py::object &S1, const py::object &S2, double tol) {
+            return is_intersecting(set_of(S1), set_of(S2), tol);
+        },
+        py::arg("S1"), py::arg("S2"), py::arg("tol") = 1e-8,
+        "Whether S1 and S2 intersect, up to tol");
+    m.def(
+        "binary_pairs",
+        [] {
+            py::list out;
+            for (const BinaryPair &p : binary_pairs())
+                out.append(py::make_tuple(binary_op_name(p.op), p.left, p.right));
+            return out;
+        },
+        "The pairs of classes each binary operation is implemented for: (op, left, right)");
     m.def(
         "register_binary",
-        [](const std::string &op, const py::type &left, const py::type &right, const py::function &f) {
+        [](const std::string &op, const py::type &left, const py::type &right,
+           const py::function &f) {
             // the function is kept alive, and freed with the GIL held
             auto fn = std::shared_ptr<py::object>(new py::object(f), [](py::object *o) {
                 py::gil_scoped_acquire gil;
                 delete o;
             });
             const BinaryOp o = binary_op(op);
-            const std::string l = py::str(left.attr("__name__")), r = py::str(right.attr("__name__"));
+            const std::string l = py::str(left.attr("__name__")),
+                              r = py::str(right.attr("__name__"));
             const auto ref = [](const ContSet &S) {
                 return py::cast(&S, py::return_value_policy::reference);
             };
             if (o == BinaryOp::contains || o == BinaryOp::is_intersecting) {
-                register_binary(o, l, r,
-                                PredicateFunction([fn, ref](const ContSet &S1, const ContSet &S2, double tol) {
-                                    py::gil_scoped_acquire gil;
-                                    return py::cast<bool>((*fn)(ref(S1), ref(S2), tol));
-                                }));
+                register_binary(
+                    o, l, r,
+                    PredicateFunction([fn, ref](const ContSet &S1, const ContSet &S2, double tol) {
+                        py::gil_scoped_acquire gil;
+                        return py::cast<bool>((*fn)(ref(S1), ref(S2), tol));
+                    }));
             } else {
-                register_binary(o, l, r, SetFunction([fn, ref](const ContSet &S1, const ContSet &S2) {
+                register_binary(o, l, r,
+                                SetFunction([fn, ref](const ContSet &S1, const ContSet &S2) {
                                     py::gil_scoped_acquire gil;
                                     return set_of((*fn)(ref(S1), ref(S2)));
                                 }));
@@ -267,43 +284,54 @@ void bind_cont_set(py::module_ &m) {
                                    "_support_function, _interval, _rand_point, _project, _vertices")
         .def(py::init<>())
         .def_property_readonly("dim", &ContSet::dim, "The dimension n")
-        .def_property_readonly("center", [](const ContSet &S) { return bounds(S.center()); },
-                               "The center (..., n)")
+        .def_property_readonly(
+            "center", [](const ContSet &S) { return bounds(S.center()); }, "The center (..., n)")
         .def_property_readonly("class_name", &ContSet::class_name)
-        .def("support_function",
-             [](const ContSet &S, const py::object &d) {
-                 return scalar(S.support_function(tensor_of(d, "the direction")));
-             },
-             py::arg("d"), "max of d'x over the set; d (..., n)")
+        .def(
+            "support_function",
+            [](const ContSet &S, const py::object &d) {
+                return scalar(S.support_function(tensor_of(d, "the direction")));
+            },
+            py::arg("d"), "max of d'x over the set; d (..., n)")
         .def("interval", &ContSet::interval, "The interval hull")
-        .def("rand_point",
-             [](const ContSet &S, int64_t N, cora::Rng &rng) { return matrix(S.rand_point(N, rng)); },
-             py::arg("N"), py::arg("rng"), "N random points as columns (..., n, N)")
-        .def("project",
-             [](const ContSet &S, const std::vector<int64_t> &dims) { return object_of(S.project(dims)); },
-             py::arg("dims"), "The projection onto the dimensions dims (0-based)")
-        .def("vertices",
-             [](const ContSet &S) {
-                 py::list polygons;
-                 for (const Polygon &p : S.vertices()) polygons.append(polygon_array(p));
-                 return polygons;
-             },
-             "The vertices of a two-dimensional set, one (k, 2) array per batch member")
+        .def(
+            "rand_point",
+            [](const ContSet &S, int64_t N, cora::Rng &rng) {
+                return matrix(S.rand_point(N, rng));
+            },
+            py::arg("N"), py::arg("rng"), "N random points as columns (..., n, N)")
+        .def(
+            "project",
+            [](const ContSet &S, const std::vector<int64_t> &dims) {
+                return object_of(S.project(dims));
+            },
+            py::arg("dims"), "The projection onto the dimensions dims (0-based)")
+        .def(
+            "vertices",
+            [](const ContSet &S) {
+                py::list polygons;
+                for (const Polygon &p : S.vertices()) polygons.append(polygon_array(p));
+                return polygons;
+            },
+            "The vertices of a two-dimensional set, one (k, 2) array per batch member")
         .def("display", &ContSet::display)
         .def("__repr__", &ContSet::display)
         .def("__str__", &ContSet::display)
-        .def("__add__", [](const py::object &S1, const py::object &S2) -> py::object {
-            if (!py::isinstance<ContSet>(S2)) return not_implemented();
-            return binary<&plus>(S1, S2);
-        })
-        .def("__and__", [](const py::object &S1, const py::object &S2) -> py::object {
-            if (!py::isinstance<ContSet>(S2)) return not_implemented();
-            return binary<&intersect>(S1, S2);
-        })
-        .def("__or__", [](const py::object &S1, const py::object &S2) -> py::object {
-            if (!py::isinstance<ContSet>(S2)) return not_implemented();
-            return binary<&unite>(S1, S2);
-        })
+        .def("__add__",
+             [](const py::object &S1, const py::object &S2) -> py::object {
+                 if (!py::isinstance<ContSet>(S2)) return not_implemented();
+                 return binary<&plus>(S1, S2);
+             })
+        .def("__and__",
+             [](const py::object &S1, const py::object &S2) -> py::object {
+                 if (!py::isinstance<ContSet>(S2)) return not_implemented();
+                 return binary<&intersect>(S1, S2);
+             })
+        .def("__or__",
+             [](const py::object &S1, const py::object &S2) -> py::object {
+                 if (!py::isinstance<ContSet>(S2)) return not_implemented();
+                 return binary<&unite>(S1, S2);
+             })
         .def("__contains__", [](const py::object &S1, const py::object &S2) {
             if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
             if (py::isinstance<Interval>(S1))
@@ -314,32 +342,38 @@ void bind_cont_set(py::module_ &m) {
 }
 
 void bind_interval(py::module_ &m) {
-    py::class_<Interval, ContSet>(m, "Interval", "A box, or a matrix of intervals: inf <= x <= sup.")
+    py::class_<Interval, ContSet>(m, "Interval",
+                                  "A box, or a matrix of intervals: inf <= x <= sup.")
         .def(py::init([](const py::object &inf, const py::object &sup) {
                  return Interval(tensor_of(inf, "inf"), tensor_of(sup, "sup"));
              }),
              py::arg("inf"), py::arg("sup"), "The box of the vectors inf <= sup (..., n)")
-        .def_static("matrix",
-                    [](const py::object &inf, const py::object &sup) {
-                        return Interval(tensor_of(inf, "inf"), tensor_of(sup, "sup"));
-                    },
-                    py::arg("inf"), py::arg("sup"), "An interval matrix: bounds (..., n, k)")
+        .def_static(
+            "matrix",
+            [](const py::object &inf, const py::object &sup) {
+                return Interval(tensor_of(inf, "inf"), tensor_of(sup, "sup"));
+            },
+            py::arg("inf"), py::arg("sup"), "An interval matrix: bounds (..., n, k)")
         .def_static("stack", &Interval::stack, py::arg("intervals"),
                     "A batch of intervals as one; the batch is the leading dimension")
         .def_static("generate_random", &Interval::generate_random, py::arg("n"), py::arg("rng"))
         .def_property_readonly("inf", [](const Interval &I) { return bounds(I.inf()); })
         .def_property_readonly("sup", [](const Interval &I) { return bounds(I.sup()); })
         .def_property_readonly("rad", [](const Interval &I) { return bounds(I.rad()); })
-        .def("linear_map",
-             [](const Interval &I, const py::object &M) { return I.linear_map(tensor_of(M, "the matrix")); },
-             py::arg("M"), "M I enclosed by its interval hull")
+        .def(
+            "linear_map",
+            [](const Interval &I, const py::object &M) {
+                return I.linear_map(tensor_of(M, "the matrix"));
+            },
+            py::arg("M"), "M I enclosed by its interval hull")
         .def("plus", &Interval::plus, py::arg("I2"))
-        .def("contains",
-             [](const Interval &I, const py::object &p, double tol) {
-                 return I.contains(tensor_of(p, "the point"), tol);
-             },
-             py::arg("p"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
-             "Whether p is in the box enlarged by tol per coordinate");
+        .def(
+            "contains",
+            [](const Interval &I, const py::object &p, double tol) {
+                return I.contains(tensor_of(p, "the point"), tol);
+            },
+            py::arg("p"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
+            "Whether p is in the box enlarged by tol per coordinate");
 }
 
 void bind_zonotope(py::module_ &m) {
@@ -353,20 +387,24 @@ void bind_zonotope(py::module_ &m) {
         .def_static("generate_random", &Zonotope::generate_random, py::arg("n"), py::arg("m"),
                     py::arg("rng"))
         .def_property_readonly("center", [](const Zonotope &Z) { return vector(Z.center()); })
-        .def_property_readonly("generators", [](const Zonotope &Z) { return matrix(Z.generators()); })
-        .def("rand_point",
-             [](const Zonotope &Z, int64_t N, cora::Rng &rng, const std::string &type) {
-                 return matrix(Z.rand_point(N, rng, type));
-             },
-             py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
-             "N random points as columns (..., n, N); type 'standard' or 'extreme'")
-        .def("linear_map",
-             [](const Zonotope &Z, const py::object &M) {
-                 if (py::isinstance<Interval>(M)) return Z.linear_map(py::cast<Interval>(M));
-                 return Z.linear_map(tensor_of(M, "the matrix"));
-             },
-             py::arg("M"), "M Z for a matrix (..., k, n), or an interval matrix")
-        .def("plus", py::overload_cast<const Zonotope &>(&Zonotope::plus, py::const_), py::arg("Z2"))
+        .def_property_readonly("generators",
+                               [](const Zonotope &Z) { return matrix(Z.generators()); })
+        .def(
+            "rand_point",
+            [](const Zonotope &Z, int64_t N, cora::Rng &rng, const std::string &type) {
+                return matrix(Z.rand_point(N, rng, type));
+            },
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as columns (..., n, N); type 'standard' or 'extreme'")
+        .def(
+            "linear_map",
+            [](const Zonotope &Z, const py::object &M) {
+                if (py::isinstance<Interval>(M)) return Z.linear_map(py::cast<Interval>(M));
+                return Z.linear_map(tensor_of(M, "the matrix"));
+            },
+            py::arg("M"), "M Z for a matrix (..., k, n), or an interval matrix")
+        .def("plus", py::overload_cast<const Zonotope &>(&Zonotope::plus, py::const_),
+             py::arg("Z2"))
         .def("plus", py::overload_cast<const Interval &>(&Zonotope::plus, py::const_), py::arg("I"))
         .def("linear_combination", &Zonotope::linear_combination, py::arg("Z2"))
         .def("reduce", &Zonotope::reduce, py::arg("order"),
@@ -378,7 +416,7 @@ void bind_zonotope(py::module_ &m) {
 /// (NotImplemented), which raises the TypeError.
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval");
-    Z.attr("__array_ufunc__") = py::none();  // numpy defers to the operators below
+    Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     const auto method = [](const py::object &cls, const char *name, auto f) {
         cls.attr(name) = py::cpp_function(f, py::is_method(cls));
@@ -464,9 +502,7 @@ std::string pop_alg(py::dict &kwargs, const std::string &fallback) {
 }
 
 /// The algorithms registered from Python, {(system, operation, name): function}.
-py::dict registered_algorithms() {
-    return py::module_::import("cora.extend").attr("ALGORITHMS");
-}
+py::dict registered_algorithms() { return py::module_::import("cora.extend").attr("ALGORITHMS"); }
 
 /// The names of the algorithms registered from Python for (system, operation).
 std::vector<std::string> registered_names(const char *system, const char *operation) {
@@ -482,7 +518,8 @@ std::vector<std::string> registered_names(const char *system, const char *operat
 /// The keyword `key` of an operation, which must be given.
 py::object required(const py::kwargs &kwargs, const char *key, const char *operation) {
     if (!kwargs.contains(key))
-        CORA_FAIL(Error::wrong_value, std::string(operation) + ": the keyword '" + key + "' is missing");
+        CORA_FAIL(Error::wrong_value,
+                  std::string(operation) + ": the keyword '" + key + "' is missing");
     return kwargs[key];
 }
 
@@ -495,7 +532,7 @@ py::object run_with_kwargs(const py::object &self, const char *operation, const 
                            const std::function<void(const P &)> &validate = {}) {
     const std::string system_name = py::str(py::type::of(self).attr("__name__"));
     const char *system = system_name.c_str();
-    py::dict rest;  // a copy: the keys used are removed
+    py::dict rest; // a copy: the keys used are removed
     for (const auto &item : kwargs) rest[item.first] = item.second;
     const char *first = std::get<0>(P::fields()).name;
     if (args.size() > 1 || (args.size() == 1 && kwargs.contains(first)))
@@ -547,8 +584,8 @@ void bind_problems(py::module_ &m) {
         .def_readonly("t_final", &ReachProblem::t_final);
 
     py::class_<Falsification>(m, "Falsification", "A trajectory that violates a specification.")
-        .def_property_readonly("x0", [](const Falsification &f) { return vector(f.x0); },
-                               "the state at time 0")
+        .def_property_readonly(
+            "x0", [](const Falsification &f) { return vector(f.x0); }, "the state at time 0")
         .def_readonly("time", &Falsification::time, "the time it is violated");
 
     py::class_<VerifyResult>(m, "VerifyResult", "The outcome of verify.")
@@ -579,14 +616,17 @@ void bind_linear_sys(py::module_ &m) {
              }),
              py::arg("A"), py::arg("B") = py::none(), py::arg("C") = py::none(),
              py::arg("custom_backward") = false,
-             "x' = A x (+ B u), y = C x: A (..., n, n), B (n, m), C (p, n); without C the output is x")
+             "x' = A x (+ B u), y = C x: A (..., n, n), B (n, m), C (p, n); without C the output "
+             "is x")
         .def_property_readonly("A", [](const LinearSys &sys) { return matrix(sys.A()); })
-        .def_property_readonly("B", [](const LinearSys &sys) -> py::object {
-            return sys.B() ? matrix(*sys.B()) : py::none();
-        })
-        .def_property_readonly("C", [](const LinearSys &sys) -> py::object {
-            return sys.C() ? matrix(*sys.C()) : py::none();
-        })
+        .def_property_readonly("B",
+                               [](const LinearSys &sys) -> py::object {
+                                   return sys.B() ? matrix(*sys.B()) : py::none();
+                               })
+        .def_property_readonly("C",
+                               [](const LinearSys &sys) -> py::object {
+                                   return sys.C() ? matrix(*sys.C()) : py::none();
+                               })
         .def_property_readonly("dim", &LinearSys::dim)
         .def(
             "reach",
@@ -620,7 +660,8 @@ void bind_linear_sys(py::module_ &m) {
             "simulate_random",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
                 const LinearSys &sys = py::cast<const LinearSys &>(self);
-                const int64_t points = py::cast<int64_t>(required(kwargs, "points", "simulate_random"));
+                const int64_t points =
+                    py::cast<int64_t>(required(kwargs, "points", "simulate_random"));
                 cora::Rng &rng = py::cast<cora::Rng &>(required(kwargs, "rng", "simulate_random"));
                 return run_with_kwargs<RandomSimulationProblem, alg::LinearSimulate>(
                     self, "simulate_random", args, kwargs, {"points", "rng"},
@@ -715,7 +756,8 @@ void bind_nonlinear_sys(py::module_ &m) {
             "simulate_random",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
                 const NonlinearSys &sys = py::cast<const NonlinearSys &>(self);
-                const int64_t points = py::cast<int64_t>(required(kwargs, "points", "simulate_random"));
+                const int64_t points =
+                    py::cast<int64_t>(required(kwargs, "points", "simulate_random"));
                 cora::Rng &rng = py::cast<cora::Rng &>(required(kwargs, "rng", "simulate_random"));
                 return run_with_kwargs<RandomSimulationProblem, alg::NonlinearSimulate>(
                     self, "simulate_random", args, kwargs, {"points", "rng"},
@@ -727,7 +769,8 @@ void bind_nonlinear_sys(py::module_ &m) {
 }
 
 void bind_neural_network(py::module_ &m) {
-    py::class_<NeuralNetwork>(m, "NeuralNetwork", "Affine layers with a ReLU after each but the last.")
+    py::class_<NeuralNetwork>(m, "NeuralNetwork",
+                              "Affine layers with a ReLU after each but the last.")
         .def(py::init([](const std::vector<std::pair<py::object, py::object>> &layers) {
                  std::vector<NeuralNetwork::Layer> out;
                  for (const auto &[W, b] : layers)
@@ -740,13 +783,15 @@ void bind_neural_network(py::module_ &m) {
         .def(
             "evaluate",
             [](const NeuralNetwork &nn, const py::object &x) -> py::object {
-                if (py::isinstance<Zonotope>(x)) return py::cast(nn.evaluate(py::cast<Zonotope>(x)));
+                if (py::isinstance<Zonotope>(x))
+                    return py::cast(nn.evaluate(py::cast<Zonotope>(x)));
                 const Tensor y = nn.evaluate(tensor_of(x, "the points"));
                 const bool one = py::hasattr(x, "ndim") && py::cast<int>(x.attr("ndim")) == 1;
                 return one ? vector(y) : matrix(y);
             },
-            py::arg("x"), "The outputs at a point (in,) or the columns of (in, N); for a zonotope, "
-                          "a zonotope that contains the outputs of every point");
+            py::arg("x"),
+            "The outputs at a point (in,) or the columns of (in, N); for a zonotope, "
+            "a zonotope that contains the outputs of every point");
 }
 
 // Plotting ------------------------------------------------------------------------------------
@@ -766,22 +811,33 @@ Color color_of(const py::handle &value) {
 /// The plot options given as keyword arguments, named as in PlotOptions.
 PlotOptions options_of(const py::kwargs &kwargs) {
     PlotOptions o;
-    const std::vector<std::string> known = {"label",  "color",       "facecolor", "face_alpha",
-                                            "line_width", "unify",   "filled",    "time_points",
-                                            "step",   "num_colors",  "cidx"};
+    const std::vector<std::string> known = {"label",      "color",      "facecolor", "face_alpha",
+                                            "line_width", "unify",      "filled",    "time_points",
+                                            "step",       "num_colors", "cidx"};
     for (const auto &item : kwargs) {
         const std::string key = py::cast<std::string>(item.first);
-        if (key == "label") o.label = py::cast<std::string>(item.second);
-        else if (key == "color") o.color = color_of(item.second);
-        else if (key == "facecolor") o.facecolor = color_of(item.second);
-        else if (key == "face_alpha") o.face_alpha = py::cast<double>(item.second);
-        else if (key == "line_width") o.line_width = py::cast<double>(item.second);
-        else if (key == "unify") o.unify = py::cast<bool>(item.second);
-        else if (key == "filled") o.filled = py::cast<bool>(item.second);
-        else if (key == "time_points") o.time_points = py::cast<bool>(item.second);
-        else if (key == "step") o.step = py::cast<int>(item.second);
-        else if (key == "num_colors") o.num_colors = py::cast<int>(item.second);
-        else if (key == "cidx") o.cidx = py::cast<int>(item.second);
+        if (key == "label")
+            o.label = py::cast<std::string>(item.second);
+        else if (key == "color")
+            o.color = color_of(item.second);
+        else if (key == "facecolor")
+            o.facecolor = color_of(item.second);
+        else if (key == "face_alpha")
+            o.face_alpha = py::cast<double>(item.second);
+        else if (key == "line_width")
+            o.line_width = py::cast<double>(item.second);
+        else if (key == "unify")
+            o.unify = py::cast<bool>(item.second);
+        else if (key == "filled")
+            o.filled = py::cast<bool>(item.second);
+        else if (key == "time_points")
+            o.time_points = py::cast<bool>(item.second);
+        else if (key == "step")
+            o.step = py::cast<int>(item.second);
+        else if (key == "num_colors")
+            o.num_colors = py::cast<int>(item.second);
+        else if (key == "cidx")
+            o.cidx = py::cast<int>(item.second);
         else
             CORA_FAIL(Error::redundant_name_value_pair,
                       "cora.plot: unknown option '" + key + "'" + did_you_mean(key, known));
@@ -824,7 +880,8 @@ std::vector<Tensor> trajectories(const py::object &o) {
 #ifdef CORACPP_PYTHON_TORCH
     py::detail::make_caster<torch::Tensor> torch_caster;
     if (torch_caster.load(o, /*convert=*/false)) {
-        for (const torch::Tensor &t : py::cast<torch::Tensor>(o).unbind(0)) x.push_back(from_torch(t));
+        for (const torch::Tensor &t : py::cast<torch::Tensor>(o).unbind(0))
+            x.push_back(from_torch(t));
         return x;
     }
 #endif
@@ -862,24 +919,28 @@ void bind_plot(py::module_ &m) {
                 const py::ssize_t ndim = py::hasattr(data, "ndim")
                                              ? py::cast<py::ssize_t>(data.attr("ndim"))
                                              : py::cast<py::ssize_t>(data.attr("dim")());
-                if (ndim == 3) plot(fig, trajectories(data), dims, options_of(kwargs));
-                else plot(fig, tensor_of(data, "the points"), dims, options_of(kwargs));
+                if (ndim == 3)
+                    plot(fig, trajectories(data), dims, options_of(kwargs));
+                else
+                    plot(fig, tensor_of(data, "the points"), dims, options_of(kwargs));
             },
             py::arg("obj"), py::arg("dims"), "Draws points (n, N) or simulations (steps, n, N)")
-        .def("take_layers",
-             [](Figure &fig) {
-                 py::list layers;
-                 for (const Figure::Layer &l : fig.take_layers()) layers.append(layer_dict(l));
-                 return layers;
-             },
-             "The layers drawn since the last call, as dicts, and forgets them")
+        .def(
+            "take_layers",
+            [](Figure &fig) {
+                py::list layers;
+                for (const Figure::Layer &l : fig.take_layers()) layers.append(layer_dict(l));
+                return layers;
+            },
+            "The layers drawn since the last call, as dicts, and forgets them")
         .def_static(
             "clip_region",
             [](const py::array_t<double, py::array::c_style | py::array::forcecast> &polygon,
                const std::array<double, 2> &a, double b, double sign) {
                 Polygon corners;
                 auto view = polygon.unchecked<2>();
-                for (py::ssize_t i = 0; i < view.shape(0); ++i) corners.push_back({view(i, 0), view(i, 1)});
+                for (py::ssize_t i = 0; i < view.shape(0); ++i)
+                    corners.push_back({view(i, 0), view(i, 1)});
                 return polygon_array(Figure::clip_region(corners, a, b, sign));
             },
             py::arg("polygon"), py::arg("a"), py::arg("b"), py::arg("sign"),
@@ -892,8 +953,8 @@ void bind_plot(py::module_ &m) {
         [](const std::string &identifier, int num_colors, int cidx, double alpha) {
             return rgb(cora_color(identifier, num_colors, cidx, alpha));
         },
-        py::arg("identifier"), py::arg("num_colors") = 1, py::arg("cidx") = 1, py::arg("alpha") = 0.2,
-        "The RGB triple of a CORA color such as 'CORA:reachSet'");
+        py::arg("identifier"), py::arg("num_colors") = 1, py::arg("cidx") = 1,
+        py::arg("alpha") = 0.2, "The RGB triple of a CORA color such as 'CORA:reachSet'");
     m.def(
         "cora_color",
         [](int number) { return rgb(cora_color("CORA:color" + std::to_string(number))); },
@@ -904,28 +965,32 @@ void bind_specification(py::module_ &m) {
     py::class_<Specification>(m, "Specification",
                               "Halfspaces {x | a.x <= b} a set must stay in (safe_set) or must not "
                               "touch (unsafe_set).")
-        .def_static("safe_set",
-                    [](const py::object &a, double b) {
-                        return Specification::safe_set(tensor_of(a, "the normal"), b);
-                    },
-                    py::arg("a"), py::arg("b"))
-        .def_static("unsafe_set",
-                    [](const py::object &a, const py::object &b) {
-                        if (is_number(b))
-                            return Specification::unsafe_set(tensor_of(a, "the normal"), py::cast<double>(b));
-                        // the rows of A with b: a polytope the sets must not touch
-                        const Eigen::MatrixXd A = py::cast<Eigen::MatrixXd>(a);
-                        const Eigen::VectorXd bs = py::cast<Eigen::VectorXd>(b);
-                        std::vector<Halfspace> halfspaces;
-                        for (Eigen::Index i = 0; i < A.rows(); ++i)
-                            halfspaces.push_back({column(Eigen::VectorXd(A.row(i))), bs(i)});
-                        return Specification::unsafe_set(std::move(halfspaces));
-                    },
-                    py::arg("a"), py::arg("b"),
-                    "One halfspace a.x <= b, or a polytope A x <= b (A a matrix, b a vector)")
+        .def_static(
+            "safe_set",
+            [](const py::object &a, double b) {
+                return Specification::safe_set(tensor_of(a, "the normal"), b);
+            },
+            py::arg("a"), py::arg("b"))
+        .def_static(
+            "unsafe_set",
+            [](const py::object &a, const py::object &b) {
+                if (is_number(b))
+                    return Specification::unsafe_set(tensor_of(a, "the normal"),
+                                                     py::cast<double>(b));
+                // the rows of A with b: a polytope the sets must not touch
+                const Eigen::MatrixXd A = py::cast<Eigen::MatrixXd>(a);
+                const Eigen::VectorXd bs = py::cast<Eigen::VectorXd>(b);
+                std::vector<Halfspace> halfspaces;
+                for (Eigen::Index i = 0; i < A.rows(); ++i)
+                    halfspaces.push_back({column(Eigen::VectorXd(A.row(i))), bs(i)});
+                return Specification::unsafe_set(std::move(halfspaces));
+            },
+            py::arg("a"), py::arg("b"),
+            "One halfspace a.x <= b, or a polytope A x <= b (A a matrix, b a vector)")
         .def_property_readonly("type",
                                [](const Specification &spec) {
-                                   return spec.type() == SpecType::safe_set ? "safe_set" : "unsafe_set";
+                                   return spec.type() == SpecType::safe_set ? "safe_set"
+                                                                            : "unsafe_set";
                                })
         .def_property_readonly("halfspaces",
                                [](const Specification &spec) {
@@ -938,18 +1003,24 @@ void bind_specification(py::module_ &m) {
                                    }
                                    return out;
                                })
-        .def("holds", [](const Specification &spec, const ContSet &S) { return spec.holds(S); },
-             py::arg("S"), "One flag per batch element of the set")
-        .def("check", [](const Specification &spec, const ContSet &S) { return spec.check(S); },
-             py::arg("S"), "Whether every batch element of the set satisfies the specification")
-        .def("check",
-             [](const Specification &spec, const std::vector<Zonotope> &sets) { return spec.check(sets); },
-             py::arg("sets"), "Whether every set of a list (such as R.time_interval) does")
-        .def("first_violation",
-             [](const Specification &spec, const std::vector<Zonotope> &sets) {
-                 return spec.first_violation(sets);
-             },
-             py::arg("sets"), "The index of the first violating set, or -1");
+        .def(
+            "holds", [](const Specification &spec, const ContSet &S) { return spec.holds(S); },
+            py::arg("S"), "One flag per batch element of the set")
+        .def(
+            "check", [](const Specification &spec, const ContSet &S) { return spec.check(S); },
+            py::arg("S"), "Whether every batch element of the set satisfies the specification")
+        .def(
+            "check",
+            [](const Specification &spec, const std::vector<Zonotope> &sets) {
+                return spec.check(sets);
+            },
+            py::arg("sets"), "Whether every set of a list (such as R.time_interval) does")
+        .def(
+            "first_violation",
+            [](const Specification &spec, const std::vector<Zonotope> &sets) {
+                return spec.first_violation(sets);
+            },
+            py::arg("sets"), "The index of the first violating set, or -1");
 }
 
 /// The oracle of CORALean as `cora.lean`: the same names as cora::lean; vectors are 1-D arrays.
@@ -957,19 +1028,23 @@ void bind_lean(py::module_ &top) {
     using DType = PyScope<lean::DTypeScope, std::string>;
     py::module_ m = top.def_submodule("lean", "Sound float sets computed by CORALean (needs CORACPP_ORACLE)");
     bind_scope<lean::DTypeScope, std::string>(m, "_DTypeScope", "A dtype in a with block");
-    m.def("dtype", [](const std::string &spec) { return new DType{spec, std::nullopt}; },
-          py::arg("spec"),
-          "with cora.lean.dtype('ieee:binary32'): new lean objects in that dtype in the block; "
-          "'binary64', 'ieee:<format>', 'dyadic:<p>', 'fixedpoint:<f>', 'float', 'nearest'");
+    m.def(
+        "dtype", [](const std::string &spec) { return new DType{spec, std::nullopt}; },
+        py::arg("spec"),
+        "with cora.lean.dtype('ieee:binary32'): new lean objects in that dtype in the block; "
+        "'binary64', 'ieee:<format>', 'dyadic:<p>', 'fixedpoint:<f>', 'float', 'nearest'");
     m.def("set_default_dtype", &lean::set_default_dtype, py::arg("spec"),
           "The dtype of threads without a cora.lean.dtype block");
     m.def("current_dtype", &lean::dtype, "This thread's dtype");
 
     py::class_<lean::Tensor>(m, "Tensor", "A matrix of exact values in a dtype")
-        .def_static("from_array", [](const Eigen::MatrixXd &x) { return lean::Tensor::from(from_eigen(x)); },
-                    py::arg("x"), "Exact, or an error if a value is not representable in the dtype")
-        .def("gather", [](const lean::Tensor &T) { return matrix(T.gather()); },
-             "The values as an array; an error if one is not a double")
+        .def_static(
+            "from_array",
+            [](const Eigen::MatrixXd &x) { return lean::Tensor::from(from_eigen(x)); },
+            py::arg("x"), "Exact, or an error if a value is not representable in the dtype")
+        .def(
+            "gather", [](const lean::Tensor &T) { return matrix(T.gather()); },
+            "The values as an array; an error if one is not a double")
         .def(
             "round_to",
             [](const lean::Tensor &T, const std::string &dtype, const std::string &mode) {
@@ -988,12 +1063,13 @@ void bind_lean(py::module_ &top) {
                 return lean::Interval::from(column(inf), column(sup));
             },
             py::arg("inf"), py::arg("sup"))
-        .def("gather",
-             [](const lean::Interval &I) {
-                 auto [inf, sup] = I.gather();
-                 return Interval(inf, sup);
-             },
-             "A cora.Interval; an error if a bound is not a double");
+        .def(
+            "gather",
+            [](const lean::Interval &I) {
+                auto [inf, sup] = I.gather();
+                return Interval(inf, sup);
+            },
+            "A cora.Interval; an error if a bound is not a double");
 
     py::class_<lean::Zonotope>(m, "Zonotope", "A nominal zonotope plus an error box")
         .def(py::init([](const Eigen::VectorXd &c, const Eigen::MatrixXd &G) {
@@ -1004,12 +1080,14 @@ void bind_lean(py::module_ &top) {
         .def("error", &lean::Zonotope::error, "The error box")
         .def("enclosure", &lean::Zonotope::enclosure, "nominal and error as one zonotope")
         .def("round_to", &lean::Zonotope::round_to, py::arg("dtype"), py::arg("mode") = "nearest")
-        .def("linear_map",
-             [](const lean::Zonotope &Z, const py::object &M) {
-                 if (py::isinstance<lean::Interval>(M)) return Z.linear_map(py::cast<lean::Interval>(M));
-                 return Z.linear_map(lean::Tensor::from(from_eigen(py::cast<Eigen::MatrixXd>(M))));
-             },
-             py::arg("M"))
+        .def(
+            "linear_map",
+            [](const lean::Zonotope &Z, const py::object &M) {
+                if (py::isinstance<lean::Interval>(M))
+                    return Z.linear_map(py::cast<lean::Interval>(M));
+                return Z.linear_map(lean::Tensor::from(from_eigen(py::cast<Eigen::MatrixXd>(M))));
+            },
+            py::arg("M"))
         .def("plus", py::overload_cast<const lean::Zonotope &>(&lean::Zonotope::plus, py::const_),
              py::arg("Z2"))
         .def("plus", py::overload_cast<const lean::Interval &>(&lean::Zonotope::plus, py::const_),
@@ -1017,8 +1095,9 @@ void bind_lean(py::module_ &top) {
         .def("linear_combination", &lean::Zonotope::linear_combination, py::arg("Z2"))
         .def("reduce", &lean::Zonotope::reduce, py::arg("order"), py::arg("method") = "girard")
         .def("interval", &lean::Zonotope::interval)
-        .def("gather", [](const lean::Zonotope &Z) { return Z.gather(); },
-             "(cora.Zonotope, cora.Interval): the nominal part and the error, exactly");
+        .def(
+            "gather", [](const lean::Zonotope &Z) { return Z.gather(); },
+            "(cora.Zonotope, cora.Interval): the nominal part and the error, exactly");
 
     py::class_<lean::ReachSet>(m, "ReachSet", "The reachable sets: lists of lean zonotopes")
         .def_readonly("time_interval", &lean::ReachSet::time_interval)
@@ -1054,7 +1133,8 @@ PYBIND11_MODULE(_cora, m) {
     m.attr("has_torch") = true;
 #else
     m.attr("has_torch") = false;
-    set_default_backend("eigen");  // the Python package has no torch tensors, whatever the library has
+    set_default_backend(
+        "eigen"); // the Python package has no torch tensors, whatever the library has
 #endif
     m.def("_warn", &warn, py::arg("identifier"), py::arg("message"),
           "Hands a warning to the hook (for the tests of the hook)");

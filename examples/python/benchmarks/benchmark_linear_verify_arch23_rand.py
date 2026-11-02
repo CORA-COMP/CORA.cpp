@@ -1,4 +1,4 @@
-"""benchmark_linear_verify_ARCH23_rand - random benchmark of ARCH 2023
+"""benchmark_linear_verify_arch23_rand - random benchmark of ARCH 2023
 
 The instances of MATLAB CORA's benchmark_linear_verify_ARCH23_rand_<instance>.m, read from
 benchmarks/data and verified with LinearSys.verify.

@@ -1,4 +1,4 @@
-"""test_linearSys_inputs - LinearSys(A, B, C) in Python: reach with an input set U against MATLAB CORA
+"""test_linear_sys_inputs - LinearSys(A, B, C) in Python: reach with an input set U against MATLAB CORA
 (R2025b), output_set, correction_matrix_input, simulate with inputs, and the errors."""
 import unittest
 
@@ -6,7 +6,7 @@ import numpy as np
 
 import cora
 
-# The system of the MATLAB call linear_sys(A, B, [], C), reach with params.U, step 0.2, order 6.
+# The system of the MATLAB call linearSys(A, B, [], C), reach with params.U, step 0.2, order 6.
 A = np.array([[-0.3, 1, 0], [-1, -0.2, 0.4], [0, -0.5, -0.1]])
 B = np.array([[1, 0], [0.5, -1], [0, 0.3]])
 C = np.array([[1, 0, -1], [0, 1, 0.5]])
@@ -110,7 +110,8 @@ class ReachWithInputs(unittest.TestCase):
     def test_trajectories_with_piecewise_constant_inputs_stay_inside(self):
         sys, rng = cora.LinearSys(A, B), cora.Rng(2)
         for lin_alg in ("standard", "wrapping_free"):
-            R = sys.reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg=lin_alg, input_set=U, zonotope_order=2)
+            R = sys.reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg=lin_alg, input_set=U,
+                          zonotope_order=2)
             x = X0.rand_point(30, rng, "extreme")
             for k in range(5):
                 x = sys.simulate(x, time_step=0.2, t_final=0.2, input=U.rand_point(30, rng, "extreme"))[-1]
@@ -127,7 +128,8 @@ class ReachWithInputs(unittest.TestCase):
         np.testing.assert_allclose(Y.time_interval[1].center, C @ R.time_interval[1].center)
         self.assertEqual(Y.time_point[0].center.shape, (2,))
         # without C the output is the state
-        np.testing.assert_array_equal(cora.LinearSys(A, B).output_set(R).time_interval[2].generators, R.time_interval[2].generators)
+        np.testing.assert_array_equal(cora.LinearSys(A, B).output_set(R).time_interval[2].generators,
+                                      R.time_interval[2].generators)
 
     def test_simulate_with_inputs_follows_the_closed_form(self):
         x0 = np.array([[1.0, 0.0], [0.0, 1.0], [0.5, -0.5]])
@@ -139,20 +141,25 @@ class ReachWithInputs(unittest.TestCase):
             np.testing.assert_allclose(x[k], E @ x0 + np.linalg.inv(A) @ (E - np.eye(3)) @ B @ u,
                                        atol=1e-12)
         one = cora.LinearSys(A, B).simulate(x0, time_step=0.15, t_final=1.0, input=np.array([0.4, -0.2]))
-        both = cora.LinearSys(A, B).simulate(x0, time_step=0.15, t_final=1.0, input=np.tile([[0.4], [-0.2]], (1, 2)))
+        both = cora.LinearSys(A, B).simulate(x0, time_step=0.15, t_final=1.0, input=np.tile([[0.4], [-0.2]],
+                                                                                            (1, 2)))
         np.testing.assert_allclose(one, both, atol=1e-14)
 
     def test_simulate_random_draws_the_inputs_from_the_set(self):
-        x = cora.LinearSys(A, B).simulate_random(X0, points=6, time_step=0.1, t_final=0.5, rng=cora.Rng(4), input_set=U)
+        x = cora.LinearSys(A, B).simulate_random(X0, points=6, time_step=0.1, t_final=0.5, rng=cora.Rng(4),
+                                                 input_set=U)
         self.assertEqual(x.shape, (6, 3, 6))
 
     def test_errors(self):
         with self.assertRaises(Exception):
-            cora.LinearSys(A).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, input_set=U)            # U needs B
+            cora.LinearSys(A).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6,
+                                    input_set=U)            # U needs B
         with self.assertRaises(Exception):
-            cora.LinearSys(A, B).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, input_set=X0)        # U of the wrong dimension
+            cora.LinearSys(A, B).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6,
+                                       input_set=X0)        # U of the wrong dimension
         with self.assertRaises(ValueError):
-            cora.LinearSys(A, B).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg="unknown", input_set=U)
+            cora.LinearSys(A, B).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg="unknown",
+                                       input_set=U)
         with self.assertRaises(Exception):
             cora.LinearSys(A).simulate(np.zeros((3, 2)), time_step=0.1, t_final=0.5, input=np.zeros((2, 2)))
 

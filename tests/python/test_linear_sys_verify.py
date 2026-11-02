@@ -1,5 +1,5 @@
-"""test_linearSys_verify - the verify API in Python: VerifyParams, VerifyAlg, VerifyResult,
-Falsification and LinearSys.verify (the algorithms themselves are tested in C++)."""
+"""test_linear_sys_verify - the verify API in Python: keywords, the algorithm names, VerifyResult
+and Falsification (the algorithms themselves are tested in C++)."""
 import unittest
 
 import numpy as np
@@ -11,35 +11,28 @@ class Verify(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
         self.sys = cora.LinearSys(np.array([[-1.0]]), np.array([[1.0]]))
-        self.params = cora.VerifyParams(cora.Zonotope(np.array([1.0]), np.array([[0.1]])),
-                                        cora.Zonotope(np.array([0.0]), np.array([[0.1]])), 1.0)
+        self.problem = dict(initial_set=cora.Zonotope(np.array([1.0]), np.array([[0.1]])),
+                            input_set=cora.Zonotope(np.array([0.0]), np.array([[0.1]])), t_final=1.0)
         self.specs = [cora.Specification.safe_set(np.array([1.0]), 5.0)]
 
-    def test_the_parameters_are_read_and_written(self):
-        self.assertEqual(self.params.t_final, 1.0)
-        self.params.t_final = 2.0
-        self.assertEqual(self.params.t_final, 2.0)
-        np.testing.assert_array_equal(self.params.R0.center, [1.0])
-        self.params.U = cora.Zonotope(np.array([1.0]), np.array([[0.0]]))
-        np.testing.assert_array_equal(self.params.U.center, [1.0])
+    def test_an_unknown_algorithm_is_refused_with_the_known_names(self):
+        with self.assertRaisesRegex(ValueError, "reach_avoid_zonotope"):
+            self.sys.verify(**self.problem, specs=self.specs, alg="reach_avoid_unknown")
 
-    def test_the_algorithms_are_named_as_in_cora(self):
-        self.assertNotEqual(cora.VerifyAlg.SupportFunc, cora.VerifyAlg.Zonotope)
+    def test_an_unknown_keyword_is_refused_with_the_closest_name(self):
+        with self.assertRaisesRegex(cora.errors.RedundantNameValuePair, "t_final"):
+            self.sys.verify(**self.problem, specs=self.specs, t_finl=2.0)
 
-    def test_an_unknown_algorithm_is_refused(self):
-        with self.assertRaisesRegex(ValueError, "reachavoid:zonotope"):
-            self.sys.verify(self.params, "reachavoid:unknown", self.specs)
-
-    def test_verify_takes_an_enum_or_its_name_and_gives_a_result(self):
-        for alg in (cora.VerifyAlg.SupportFunc, "reachavoid:support_function"):
-            res = self.sys.verify(self.params, alg, self.specs)
+    def test_verify_gives_a_result(self):
+        for alg in ("reach_avoid_support_function", "reach_avoid_zonotope"):
+            res = self.sys.verify(**self.problem, specs=self.specs, alg=alg)
             self.assertIsInstance(res, cora.VerifyResult)
             self.assertIsInstance(res.verified, bool)
             self.assertTrue(res.falsification is None or isinstance(res.falsification, cora.Falsification))
 
-    def test_the_zonotope_algorithm_gives_a_result(self):
-        res = self.sys.verify(self.params, cora.VerifyAlg.Zonotope, self.specs)
-        self.assertIsInstance(res, cora.VerifyResult)
+    def test_a_missing_specification_list_is_described(self):
+        with self.assertRaisesRegex(ValueError, "specs"):
+            self.sys.verify(**self.problem)
 
 
 if __name__ == "__main__":

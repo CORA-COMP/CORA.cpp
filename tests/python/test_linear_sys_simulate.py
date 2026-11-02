@@ -1,4 +1,4 @@
-"""test_linearSys_simulate - LinearSys.simulate and simulate_random in Python."""
+"""test_linear_sys_simulate - LinearSys.simulate and simulate_random in Python."""
 import unittest
 
 import numpy as np
@@ -32,7 +32,8 @@ class Simulate(unittest.TestCase):
         x0 = cora.Zonotope(c, G).rand_point(5, cora.Rng(1))
         on_eigen = cora.LinearSys(A.numpy()).simulate(x0.numpy(), time_step=0.1, t_final=1.0)
         self.assertIsInstance(on_eigen, np.ndarray)
-        np.testing.assert_allclose(on_eigen, cora.LinearSys(A).simulate(x0, time_step=0.1, t_final=1.0).numpy(), atol=1e-12)
+        np.testing.assert_allclose(on_eigen, cora.LinearSys(A).simulate(x0, time_step=0.1,
+                                                                        t_final=1.0).numpy(), atol=1e-12)
 
     def test_a_batch_of_systems(self):
         A, c, G = system()
@@ -41,7 +42,8 @@ class Simulate(unittest.TestCase):
         x = cora.LinearSys(As).simulate(x0, time_step=0.1, t_final=0.5)
         self.assertEqual(tuple(x.shape), (6, 3, 3, 4))
         for b in range(3):
-            torch.testing.assert_close(x[:, b], cora.LinearSys(As[b]).simulate(x0, time_step=0.1, t_final=0.5))
+            torch.testing.assert_close(x[:, b], cora.LinearSys(As[b]).simulate(x0, time_step=0.1,
+                                                                               t_final=0.5))
 
     def test_a_batch_of_sets(self):
         A, _, _ = system()
@@ -54,7 +56,8 @@ class Simulate(unittest.TestCase):
         A, c, G = system(n=2, m=2)
         x0 = cora.Zonotope(c, G).rand_point(3, cora.Rng(1))
         self.assertTrue(torch.autograd.gradcheck(
-            lambda M: cora.LinearSys(M).simulate(x0, time_step=0.2, t_final=0.6).pow(2).sum(), (A.clone().requires_grad_(),)))
+            lambda M: cora.LinearSys(M).simulate(x0, time_step=0.2,
+                                                 t_final=0.6).pow(2).sum(), (A.clone().requires_grad_(),)))
 
     def test_simulations_stay_in_the_reachable_set(self):
         # The check every reachability tool is measured against, between time points too.
@@ -81,7 +84,8 @@ class SimulateRandom(unittest.TestCase):
         b = sys.simulate_random(Z, points=8, time_step=0.1, t_final=1.0, rng=cora.Rng(5))
         self.assertEqual(tuple(a.shape), (11, 3, 8))
         self.assertTrue(torch.equal(a, b))
-        self.assertFalse(torch.equal(a, sys.simulate_random(Z, points=8, time_step=0.1, t_final=1.0, rng=cora.Rng(6))))
+        self.assertFalse(torch.equal(a, sys.simulate_random(Z, points=8, time_step=0.1, t_final=1.0,
+                                                            rng=cora.Rng(6))))
 
     def test_any_set_is_a_start(self):
         A, _, _ = system()

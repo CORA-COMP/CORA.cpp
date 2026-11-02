@@ -1,7 +1,10 @@
-"""matlab - constructors for MATLAB CORA (toPy, fromPy), which cannot call pybind11 classes
+"""matlab - the bridge for MATLAB CORA (toPy, fromPy), which cannot call pybind11 classes
 
 MATLAB cannot take a pybind11 class itself (cora.Zonotope) but works with its instances, so these
-functions build the objects. Data comes as python lists or numpy arrays.
+functions build the objects. Data comes as python lists or numpy arrays. The names and the
+positional calls are the ones MATLAB CORA's toPy/fromPy and examples/matlab use (CORA's names:
+intervalMatrix, linearSys, reach(X0, timeStep, tFinal, ...), outputSet, timeInt, timePoint); they
+map onto the keyword API of the package and compute nothing themselves.
 
     m = py.importlib.import_module('cora.matlab')
     Zpy = m.zonotope(m.tensor(c), m.tensor(G))
@@ -30,14 +33,43 @@ def interval(inf, sup):
     return Interval(inf, sup)
 
 
-def interval_matrix(inf, sup):
-    """interval_matrix - the matrix of intervals inf <= X <= sup."""
+def intervalMatrix(inf, sup):
+    """intervalMatrix - the matrix of intervals inf <= X <= sup."""
     return Interval.matrix(inf, sup)
 
 
-def linear_sys(A, B=None, C=None):
-    """linear_sys - the linear system x' = A x, or x' = A x + B u, y = C x with B (and C)."""
-    return LinearSys(A) if B is None else LinearSys(A, B, C)
+class ReachSet:
+    """ReachSet - the reachable sets under CORA's field names: timeInt and timePoint."""
+
+    def __init__(self, R):
+        self.result = R
+        self.timeInt = R.time_interval
+        self.timePoint = R.time_point
+
+
+class _LinearSys:
+    """The linear system with CORA's positional reach and outputSet."""
+
+    def __init__(self, sys):
+        self.sys = sys
+
+    def reach(self, X0, timeStep, tFinal, taylorTerms=10, linAlg="standard", U=None,
+              zonotopeOrder=50):
+        """reach - the reachable sets, as CORA's reach(sys, params, options) with these options."""
+        names = {"wrapping-free": "wrapping_free", "wrappingFree": "wrapping_free"}
+        alg = names.get(linAlg, linAlg)
+        return ReachSet(self.sys.reach(X0, input_set=U, t_final=float(tFinal), alg=alg,
+                                       time_step=float(timeStep), taylor_terms=int(taylorTerms),
+                                       zonotope_order=int(zonotopeOrder)))
+
+    def outputSet(self, R):
+        """outputSet - the output sets y = C x of the reachable sets R."""
+        return ReachSet(self.sys.output_set(R.result))
+
+
+def linearSys(A, B=None, C=None):
+    """linearSys - the linear system x' = A x, or x' = A x + B u, y = C x with B (and C)."""
+    return _LinearSys(LinearSys(A) if B is None else LinearSys(A, B, C))
 
 
 def zonotopes(sets):

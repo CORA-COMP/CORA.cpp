@@ -1,4 +1,4 @@
-"""benchmark_linear_verifyFast_ARCH23_heat3D - heat3d benchmark of ARCH 2023
+"""benchmark_linear_verify_fast_arch23_heat3d - heat3d benchmark of ARCH 2023
 
 The instances of MATLAB CORA's benchmark_linear_verifyFast_ARCH23_heat3D_<instance>.m, read from
 benchmarks/data and verified with LinearSys.verify.

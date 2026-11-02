@@ -1,4 +1,4 @@
-"""example_nonlinear_reach_01_vanDerPol - reachability of the van der Pol oscillator
+"""example_nonlinear_reach_01_van_der_pol - reachability of the van der Pol oscillator
 
 The dynamics is written once on symbolic states; the system differentiates it, and reach
 linearizes it step by step (CORA's algorithm "lin"). The reachable set follows the limit cycle

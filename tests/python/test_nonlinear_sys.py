@@ -1,4 +1,4 @@
-"""test_nonlinearSys - NonlinearSys, Expr and Zonotope.reduce in Python."""
+"""test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python."""
 import unittest
 
 import numpy as np
@@ -66,7 +66,8 @@ class Simulate(unittest.TestCase):
 class ReachSet(unittest.TestCase):
     def test_simulations_stay_in_the_enclosures(self):
         R = van_der_pol().reach(start(), time_step=0.005, t_final=1.0)
-        x = np.asarray(van_der_pol().simulate_random(start(), points=20, time_step=0.005, t_final=1.0, rng=cora.Rng(3)))
+        x = np.asarray(van_der_pol().simulate_random(start(), points=20, time_step=0.005, t_final=1.0,
+                                                     rng=cora.Rng(3)))
         self.assertEqual(len(R.time_point), len(R.time_interval) + 1)
         for k, Z in enumerate(R.time_point):
             box = Z.interval()

@@ -1,4 +1,4 @@
-"""test_benchmarkData - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency."""
+"""test_benchmark_data - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency."""
 import glob
 import json
 import os

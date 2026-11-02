@@ -31,7 +31,7 @@ class NumpyOnly(unittest.TestCase):
         np.testing.assert_allclose((M @ Z).center, [2.0, -1.0])
         np.testing.assert_allclose((Z + np.array([1.0, 1.0])).center, [2.0, 3.0])
         I = cora.Interval(np.array([-1.0, 0.0]), np.array([1.0, 2.0]))
-        np.testing.assert_allclose(I.rad(), [1.0, 1.0])
+        np.testing.assert_allclose(I.rad, [1.0, 1.0])
         self.assertTrue(I.contains(np.array([0.0, 1.0])))
 
     def test_linear_reach_and_simulate(self):
@@ -49,7 +49,8 @@ class NumpyOnly(unittest.TestCase):
         sys = cora.NonlinearSys(lambda x: [x[1], -x[0]], 2)
         X0 = cora.Zonotope(np.array([1.0, 0.0]), 0.05 * np.eye(2))
         self.assertEqual(len(sys.reach(X0, time_step=0.05, t_final=0.5).time_interval), 10)
-        self.assertEqual(sys.simulate(np.array([[1.0], [0.0]]), time_step=0.05, t_final=0.5).shape, (11, 2, 1))
+        self.assertEqual(sys.simulate(np.array([[1.0], [0.0]]), time_step=0.05, t_final=0.5).shape, (11, 2,
+                                                                                                     1))
 
     def test_neural_network_and_specification(self):
         W, b = np.array([[1.0, -1.0], [0.5, 2.0]]), np.array([0.1, -0.2])

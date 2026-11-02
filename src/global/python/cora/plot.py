@@ -1,7 +1,7 @@
-"""Plotting in the style of MATLAB CORA: `plot(obj, dims)` draws what it is given on the current
-axes (or `ax`) with matplotlib.
+"""plot - plotting in the style of MATLAB CORA: `plot(obj, dims)` draws what it is given on the
+current axes (or `ax`) with matplotlib.
 
-    cora.plot(R)                a reachable set: the ReachSet of LinearSys.reach or NonlinearSys.reach
+    cora.plot(R)                a reachable set: the ReachSet of LinearSys/NonlinearSys.reach
     cora.plot(Z)                a Zonotope or an Interval: filled, in the next color of CORA's
                                 order (blue, red, yellow, ...); filled=False leaves it open
     cora.plot(simulation)       trajectories from simulate, (time points, n, N)

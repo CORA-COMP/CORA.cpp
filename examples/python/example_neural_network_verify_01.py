@@ -1,4 +1,4 @@
-"""example_neuralNetwork_verify_01 - certify a classifier against perturbations of its input
+"""example_neural_network_verify_01 - certify a classifier against perturbations of its input
 
 A small ReLU network is trained to tell the inside of a circle from the outside. A perturbation of
 size eps around a test point is a zonotope; it goes through the network as a zonotope (affine layers
