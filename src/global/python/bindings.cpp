@@ -111,6 +111,29 @@ void bind_settings(py::module_ &m) {
     m.def("set_default_backend", &set_default_backend, py::arg("spec"),
           "The backend of threads without a cora.backend block");
     m.def("current_backend", [] { return backend().name(); }, "The name of this thread's backend");
+    using Strict = PyScope<GradientsScope, bool>;
+    bind_scope<GradientsScope, bool>(m, "_GradientsScope", "Strict gradients in a with block");
+    m.def(
+        "strict_gradients", [](bool strict) { return new Strict{strict, std::nullopt}; },
+        py::arg("strict") = true,
+        "with cora.strict_gradients(): a not differentiable operation given tensors that need "
+        "gradients is an error in the block, not a warning");
+    m.def(
+        "tensor_ops",
+        [] {
+            static const char *kinds[] = {"core", "derived", "fused"};
+            static const char *grads[] = {"differentiable", "piecewise", "not_differentiable"};
+            static const char *agree[] = {"exact", "ulp", "sum", "norm"};
+            py::list out;
+            for (const OpInfo &op : tensor_ops())
+                out.append(py::dict(py::arg("name") = op.name,
+                                    py::arg("kind") = kinds[static_cast<int>(op.kind)],
+                                    py::arg("gradient") = grads[static_cast<int>(op.gradient)],
+                                    py::arg("agreement") = agree[static_cast<int>(op.agreement)],
+                                    py::arg("k") = op.k, py::arg("summary") = op.summary));
+            return out;
+        },
+        "The Tensor operations (ops.def): name, kind, gradient tag, agreement with lean, summary");
 }
 
 // Sets
@@ -527,7 +550,7 @@ py::object stack_time(const std::vector<Tensor> &points) {
     }
 #endif
     py::list all;
-    for (const Tensor &x : points) all.append(py::cast(to_eigen(x)));
+    for (const Tensor &x : points) all.append(matrix(x));
     return py::module_::import("numpy").attr("stack")(all);
 }
 
@@ -967,7 +990,7 @@ std::vector<Tensor> trajectories(const py::object &o) {
         return x;
     }
 #endif
-    for (const py::handle &step : o) x.push_back(from_eigen(py::cast<Eigen::MatrixXd>(step)));
+    for (const py::handle &step : o) x.push_back(host_tensor(step, false));
     return x;
 }
 
@@ -1148,11 +1171,11 @@ void bind_specification(py::module_ &m) {
                     return Specification::unsafe_set(vector_of(a, "the normal"),
                                                      py::cast<double>(b));
                 // the rows of A with b: a polytope the sets must not touch
-                const Eigen::MatrixXd A = py::cast<Eigen::MatrixXd>(a);
-                const Eigen::VectorXd bs = py::cast<Eigen::VectorXd>(b);
+                const Tensor A = host_tensor(a, false);
+                const std::vector<double> bs = py::cast<std::vector<double>>(b);
                 std::vector<Halfspace> halfspaces;
-                for (Eigen::Index i = 0; i < A.rows(); ++i)
-                    halfspaces.push_back({column(Eigen::VectorXd(A.row(i))), bs(i)});
+                for (int64_t i = 0; i < A.size(-2); ++i)
+                    halfspaces.push_back({A.slice(-2, i, i + 1).matrix_transpose(), bs[i]});
                 return Specification::unsafe_set(std::move(halfspaces));
             },
             py::arg("a"), py::arg("b"),
@@ -1217,7 +1240,7 @@ void bind_lean(py::module_ &top) {
     py::class_<LT>(m, "Tensor", "A matrix of exact values in a dtype")
         .def(py::init(tensor), py::arg("x"), "Exact, or an error if a value is not representable")
         .def_static(
-            "from_array", [](const Eigen::MatrixXd &x) { return LT::from(host_tensor(x)); },
+            "from_array", [](const py::object &x) { return LT::from(host_tensor(x, true)); },
             py::arg("x"), "Exact, or an error if a value is not representable in the dtype")
         .def(
             "gather", [](const LT &T) { return bounds(T.gather()); },
@@ -1246,8 +1269,8 @@ void bind_lean(py::module_ &top) {
         .def(py::init<const cora::Interval &>(), "I"_a, "The exact box of a cora.Interval")
         .def_static(
             "from_arrays",
-            [](const Eigen::VectorXd &inf, const Eigen::VectorXd &sup) {
-                return LI::from(column(inf), column(sup));
+            [](const py::object &inf, const py::object &sup) {
+                return LI::from(host_tensor(inf, true), host_tensor(sup, true));
             },
             "inf"_a, "sup"_a)
         .def(
@@ -1349,8 +1372,8 @@ void bind_lean(py::module_ &top) {
         .def("vertices", &LI::vertices);
 
     py::class_<LZ>(m, "Zonotope", "A nominal zonotope plus an error box, and the oracle's operations")
-        .def(py::init([](const Eigen::VectorXd &c, const Eigen::MatrixXd &G) {
-                 return LZ(column(c), host_tensor(G));
+        .def(py::init([](const py::object &c, const py::object &G) {
+                 return LZ(host_tensor(c, true), host_tensor(G, true));
              }),
              "center"_a, "generators"_a, "An exact zonotope in the current dtype")
         .def(py::init<const Zonotope &>(), "Z"_a, "The exact zonotope of a cora.Zonotope")
@@ -1416,7 +1439,7 @@ void bind_lean(py::module_ &top) {
         .def_readonly("time_point", &lean::ReachSet::time_point);
 
     py::class_<lean::LinearSys>(m, "LinearSys", "The linear system x' = A x, reached by CORALean")
-        .def(py::init([](const Eigen::MatrixXd &A) { return lean::LinearSys(from_eigen(A)); }),
+        .def(py::init([](const py::object &A) { return lean::LinearSys(host_tensor(A, true)); }),
              py::arg("A"))
         .def(
             "reach",

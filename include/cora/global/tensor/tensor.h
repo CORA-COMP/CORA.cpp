@@ -33,6 +33,11 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
+/// Marks a raw-number entry point: a function that makes tensors from host numbers on the current
+/// backend (Tensor::zeros, from_data, Tensor({...})) because no tensor is there to follow, as a
+/// random set or an oracle's answer. The conventions test allows that only in functions so marked.
+#define CORA_FROM_NUMBERS
+
 namespace cora {
 
 // Shape, DType, Device ----------------------------------------------------------------------------

@@ -17,7 +17,12 @@ Checks:   layout - every file starts its docstring with its own name; an operati
           (test::raises with the identifier) and with the checks off (ChecksScope); every
           example has its code between BEGIN CODE and END OF CODE, split into sections;
           one code path - no branch on the backend outside global/backend and global/tensor, and
-          no duplicated code (token clones of CLONE_TOKENS tokens or more).
+          no duplicated code (token clones of CLONE_TOKENS tokens or more);
+          the data decides - library code makes tensors from raw numbers on the current backend
+          (Tensor::zeros, from_data, Tensor({...})) only in a raw-number entry point, a function
+          marked CORA_FROM_NUMBERS, or in the tensor, backend and binding folders;
+          tensor operations - every operation of ops.def that passes gradients has a gradcheck
+          test, and docs/tensor.md lists every operation with the tags of ops.def.
 Exit code: 0 if all conventions hold, else 1, with the files and what is wrong.
 """
 import glob
@@ -365,9 +370,31 @@ def check_one_code_path(path, code_lines, issues):
         return
     for i, code in enumerate(code_lines):
         if re.search(r"#\s*if(def|ndef)?\s.*CORACPP_(TORCH|PYTHON_TORCH)\b", code) or \
-                re.search(r"\bis_(torch|eigen|lean)\s*\(", code):
-            issues.append(f"line {i + 1}: a branch on the backend; the data decides the backend "
+                re.search(r"\bis_(torch|eigen|lean|host)\s*\(|\.backend_name\s*\(|\bDType::", code):
+            issues.append(f"line {i + 1}: a branch on the backend or dtype; the data decides "
                           "(only global/backend and global/tensor ask)")
+
+
+# A tensor made from raw numbers on the current backend, not like an operand.
+FACTORY = re.compile(r"\bTensor::(zeros|ones|eye|from_data)\s*\(|\bTensor\s*\(\s*\{"
+                     r"|\bTensor\s+\w+\s*[({]\s*\{|\bbackend\s*\(\s*\)\s*\.\s*make\s*\(")
+# The attribute of a raw-number entry point (random sets, constants without a context).
+FROM_NUMBERS = "CORA_FROM_NUMBERS"
+
+
+def check_factories(path, code_lines, issues):
+    """Library code makes tensors like an operand; only a function marked CORA_FROM_NUMBERS (and
+    the tensor, backend and binding folders) makes them from raw numbers."""
+    if rel(path).startswith(BACKEND_FOLDERS):
+        return
+    marked = set()
+    for _, first, last in functions(code_lines):
+        if code_lines[first].startswith(FROM_NUMBERS):
+            marked.update(range(first, last + 1))
+    for i, code in enumerate(code_lines):
+        if FACTORY.search(code) and i not in marked:
+            issues.append(f"line {i + 1}: a tensor from raw numbers on the current backend; make it "
+                          f"like an operand (zeros_like, Tensor::like) or mark the function {FROM_NUMBERS}")
 
 
 def check_source(path):
@@ -384,6 +411,7 @@ def check_source(path):
     check_checks(path, code_lines, issues)
     check_options(path, lines, issues)
     check_one_code_path(path, code_lines, issues)
+    check_factories(path, code_lines, issues)
     return issues
 
 
@@ -498,6 +526,49 @@ def check_python_tests_cover_the_api(issues_by_file):
                 f"no Python test for {name}: expected tests/python/test_{stem}*.py")
 
 
+# --------------------------------------------------------------- tensor operations
+
+OPS_DEF = "include/cora/global/tensor/ops.def"
+OP_ROW = re.compile(r'^CORA_TENSOR_OP\((\w+), (\w+), (\w+), (\w+), (\d+), "(.*)"\)$')
+GRADCHECK_TEST = "tests/global/tensor/test_tensor_gradcheck_torch.cpp"
+TENSOR_DOC = "docs/tensor.md"
+DOC_ROW = re.compile(r"^\| `(\w+)` \| (\w+) \| (\w+) \| (\w+)(?: (\d+))? \|")
+
+
+def tensor_ops():
+    """The rows of ops.def: name, kind, gradient, agreement, k."""
+    rows = []
+    for line in read_lines(os.path.join(ROOT, OPS_DEF)):
+        m = OP_ROW.match(line)
+        if m:
+            rows.append(m.groups()[:5])
+    return rows
+
+
+def check_tensor_ops(issues_by_file):
+    """A gradcheck per operation that passes gradients; docs/tensor.md lists every operation with
+    the kind, gradient tag and agreement of ops.def, and no other."""
+    rows = tensor_ops()
+    test = "\n".join(read_lines(os.path.join(ROOT, GRADCHECK_TEST)))
+    for name, _, gradient, _, _ in rows:
+        if gradient != "not_differentiable" and f'gradcheck("{name}"' not in test:
+            issues_by_file.setdefault(GRADCHECK_TEST, []).append(
+                f"no gradcheck(\"{name}\", ...): {name} is {gradient} in ops.def")
+    doc = {}
+    for line in read_lines(os.path.join(ROOT, TENSOR_DOC)):
+        m = DOC_ROW.match(line)
+        if m:
+            name, kind, gradient, agreement, k = m.groups()
+            doc[name] = (kind, gradient, agreement, k or "0")
+    for name, kind, gradient, agreement, k in rows:
+        if doc.pop(name, None) != (kind, gradient, agreement, k):
+            issues_by_file.setdefault(TENSOR_DOC, []).append(
+                f"the row of `{name}` should read: | `{name}` | {kind} | {gradient} | "
+                f"{agreement}{'' if agreement == 'exact' else ' ' + k} |")
+    for name in doc:
+        issues_by_file.setdefault(TENSOR_DOC, []).append(f"`{name}` is not an operation of ops.def")
+
+
 # --------------------------------------------------------------- duplicated code
 
 # Tables whose rows look alike, with why.
@@ -570,6 +641,7 @@ def main():
     check_python_files(issues_by_file)
     check_python_tests_cover_the_api(issues_by_file)
     check_clones(issues_by_file)
+    check_tensor_ops(issues_by_file)
     for path in files("examples/cpp/**/*.cpp") + files("examples/python/example_*.py"):
         if "/benchmarks/" in rel(path):
             found = []

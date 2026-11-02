@@ -46,12 +46,11 @@ using M = ExprMaker;
 
 const double kPi = 3.14159265358979323846;
 
-/// A tensor of the shape and backend of `like` filled with `value`; without `like`, a 1x1 one.
-Tensor aux_constant(const Tensor &like, double value) {
+/// A tensor of the shape and backend of `like` filled with `value`; without `like` (a constant
+/// with no state to follow), a 1x1 one on the current backend.
+CORA_FROM_NUMBERS Tensor aux_constant(const Tensor &like, double value) {
     if (!like.defined()) return Tensor::from_data({value}, {1, 1});
-    int64_t count = 1;
-    for (const int64_t d : like.shape()) count *= d;
-    return Tensor::like(like, std::vector<double>(count, value), like.shape());
+    return like.full_like(like.shape(), value);
 }
 
 /// The mask of `like`'s shape with 1 where the flag is set: a decision made on the host values,
@@ -317,7 +316,7 @@ Tensor Expr::eval_tensor(const std::vector<Tensor> &x) const {
     return Evaluator<Tensor>{x, like}(*this);
 }
 
-double Expr::eval(const std::vector<double> &x) const {
+CORA_FROM_NUMBERS double Expr::eval(const std::vector<double> &x) const {
     std::vector<Tensor> tensors;
     for (const double v : x) tensors.push_back(Tensor::from_data({v}, {1, 1}));
     return eval_tensor(tensors).data()[0];

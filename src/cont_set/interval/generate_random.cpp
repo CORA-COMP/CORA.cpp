@@ -31,7 +31,7 @@ std::vector<double> aux_uniform(Rng &rng, int64_t count, double low, double high
 
 // ===========================================  MAIN  =========================================== //
 
-Interval Interval::generate_random(int64_t n, Rng &rng) {
+CORA_FROM_NUMBERS Interval Interval::generate_random(int64_t n, Rng &rng) {
     detail::Entry entry;
     CORA_CHECK(n >= 1, Error::wrong_value, [&] {
         return "generate_random: needs a dimension n >= 1, got " + std::to_string(n);
