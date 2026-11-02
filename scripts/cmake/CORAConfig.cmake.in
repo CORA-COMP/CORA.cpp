@@ -19,6 +19,16 @@ if(@CORA_HAS_OPENMP@)
   find_dependency(OpenMP COMPONENTS CXX)
 endif()
 
+# libtorch where CORA.cpp was built against it: its path is recorded, not exported, as it may lie
+# in the source tree (the presets' .venv), which an export may not name
+if(@CORACPP_HAS_TORCH@ AND NOT TARGET CORA::torch)
+  add_library(CORA::torch INTERFACE IMPORTED)
+  set_target_properties(CORA::torch PROPERTIES
+    INTERFACE_COMPILE_DEFINITIONS "@CORA_TORCH_DEFINITIONS@"
+    INTERFACE_INCLUDE_DIRECTORIES "@CORA_TORCH_INCLUDES@"
+    INTERFACE_LINK_DIRECTORIES "@CORACPP_TORCH_LIB@"
+    INTERFACE_LINK_LIBRARIES "@CORA_TORCH_LIBS@")
+endif()
 include("${CMAKE_CURRENT_LIST_DIR}/CORATargets.cmake")
 set(CORA_CHECKS @CORACPP_CHECKS_VALUE@)
 set(CORA_HAS_TORCH @CORACPP_HAS_TORCH@)

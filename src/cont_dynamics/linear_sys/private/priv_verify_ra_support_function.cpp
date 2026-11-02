@@ -314,7 +314,7 @@ std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, 
 
 /// The halfspaces of the specifications as safe sets C y <= d with unit normals: an unsafe
 /// set a'y <= b is the safe set -a'y <= -b.
-SpecRows aux_spec_rows(const std::vector<Specification> &specs, int64_t p) {
+SpecRows aux_spec_rows(const std::vector<Specification> &specs) {
     SpecRows rows;
     // A halfspace with a unit normal: scaling does not change which points satisfy it.
     auto add = [&](const Halfspace &h, double sign) {
@@ -442,14 +442,14 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     // u_trans = B center(U) and the uncertain part GU = B generators(U).
     const Tensor &A = sys.A();
     const CanonicalInput input = priv_canonical_input(sys, U);
-    const int64_t n = input.n, p = input.p;
+    const int64_t p = input.p;
     const Tensor &u = input.u_trans, &GU = input.GU;
     const bool is_u = GU.shape()[1] > 0;
     bool isu = false;
     for (double v : u.data()) isu = isu || v != 0;
 
     // The directions l = (Cs C)' of the support function evaluations, per halfspace.
-    const SpecRows rows = aux_spec_rows(specs, p);
+    const SpecRows rows = aux_spec_rows(specs);
     const int S = rows.nr;
     Tensor CsT = Tensor::like(A, rows.Cs, {S, p});
     const Tensor l_t = sys.C() ? CsT.matmul(*sys.C()) : CsT; // (S, n)
