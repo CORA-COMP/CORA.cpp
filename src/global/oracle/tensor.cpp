@@ -1,13 +1,15 @@
-// tensor - lean::Tensor and lean::Interval, matrices of exact values in a CORALean dtype
+// tensor - lean::Tensor, a matrix of exact values in a CORALean dtype
 //
 // See also: lean/oracle.h
 
 #include "cora/global/oracle/tensor.h"
 #include "cora/global/error.h"
 
+#include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/oracle.h"
 
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -57,8 +59,12 @@ std::string aux_encode_decimal(double x) {
     return (negative ? "-" : "") + digits + "*10^" + std::to_string(exponent);
 }
 
-// The double of "m*2^e" or (fixedpoint) "m*10^e"; throws if it is not exactly one.
+// The double of "m*2^e" or (fixedpoint) "m*10^e"; throws if it is not exactly one. The oracle
+// prints an unbounded side of a box as "-inf" or "inf".
 double aux_decode(const std::string &s) {
+    if (s == "inf" || s == "-inf")
+        return s[0] == '-' ? -std::numeric_limits<double>::infinity()
+                           : std::numeric_limits<double>::infinity();
     const std::size_t star = s.find("*");
     const bool decimal = star != std::string::npos && s.compare(star, 4, "*10^") == 0;
     if (star == std::string::npos || (!decimal && s.compare(star, 3, "*2^") != 0))
@@ -108,9 +114,7 @@ Tensor Tensor::from(const cora::Tensor &x) {
     T.dtype_ = lean::dtype();
     T.rows_ = x.shape()[0];
     T.cols_ = aux_columns(x);
-    const bool decimal = T.dtype_.rfind("fixedpoint", 0) == 0;  // fixedpoint values are decimals
-    for (const double v : x.data())
-        T.data_.push_back(decimal ? aux_encode_decimal(v) : aux_encode(v));
+    for (const double v : x.data()) T.data_.push_back(encode(v));
     if (T.dtype_ == "binary64") return T;
     Json request = Json::object();
     request.set("op", "from").set("dtype", T.dtype_).set("x", T.to_json());
@@ -120,7 +124,12 @@ Tensor Tensor::from(const cora::Tensor &x) {
 
 // Crossing -----------------------------------------------------------------------------------
 
-std::string Tensor::encode(double x) { return aux_encode(x); }
+// fixedpoint values are decimals
+std::string Tensor::encode(double x) {
+    return lean::dtype().rfind("fixedpoint", 0) == 0 ? aux_encode_decimal(x) : aux_encode(x);
+}
+
+double Tensor::decode(const std::string &text) { return aux_decode(text); }
 
 cora::Tensor Tensor::gather() const {
     std::vector<double> values;
@@ -157,31 +166,6 @@ Tensor Tensor::from_json(const std::string &dtype, const Json &j) {
     if (static_cast<int64_t>(T.data_.size()) != T.rows_ * T.cols_)
         CORA_FAIL(Error::special_error, "lean: a response matrix has the wrong number of values");
     return T;
-}
-
-// Interval --------------------------------------------------------------------------------
-
-Interval::Interval(Tensor inf, Tensor sup) : inf_(std::move(inf)), sup_(std::move(sup)) {
-    if (inf_.dtype() != sup_.dtype())
-        CORA_FAIL(Error::wrong_value, "lean: the bounds of an interval must share one dtype");
-}
-
-Interval Interval::from(const cora::Tensor &inf, const cora::Tensor &sup) {
-    return {Tensor::from(inf), Tensor::from(sup)};
-}
-
-std::pair<cora::Tensor, cora::Tensor> Interval::gather() const {
-    return {inf_.gather(), sup_.gather()};
-}
-
-Json Interval::to_json() const {
-    Json j = Json::object();
-    j.set("inf", inf_.to_json()).set("sup", sup_.to_json());
-    return j;
-}
-
-Interval Interval::from_json(const std::string &dtype, const Json &j) {
-    return {Tensor::from_json(dtype, j.at("inf")), Tensor::from_json(dtype, j.at("sup"))};
 }
 
 } // namespace cora::lean

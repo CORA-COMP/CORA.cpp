@@ -187,5 +187,16 @@ vertices, CORA's colors, the union of overlapping sets, z-order) and puts it int
 - The ARCH benchmarks and the 5-dimensional example are timed before and after each framework
   change. The bound is 3%.
 
+**The oracle client.** `lean::ask(op, operands)` (`oracle/request.h`) is the one place that writes
+an oracle request and reads its response.
+- `Wire` encodes every operand type (scalar, indices, `Tensor`, `Interval`, `Zonotope`, lists) and
+  takes the request's dtype from the lean operands.
+- `Reply::get<T>(key)` decodes a result; a certified answer is `Certified{value, proved}`.
+- A method of `lean::Interval` or `lean::Zonotope` is one line of `ask`, so all ops share the
+  encoders, and Python binds them with no logic of its own.
+- The tests share one helper (`tests/global/oracle/oracle_testing.h`, `tests/python/oracle_testing.py`):
+  seeded operands, an exact and an enclosed check.
+- Files: `include/cora/global/oracle/`, `src/global/oracle/`.
+
 **Pull requests.** CI has three tiers (`.github/workflows/`, CONTRIBUTING.md, "CI"): the affected tests on every push to a pull request, every test before a merge, the full matrix nightly.
 Work happens on a branch, which reaches `main` through a reviewed pull request.

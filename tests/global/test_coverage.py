@@ -4,7 +4,8 @@ Syntax:   python tests/global/test_coverage.py
 Checks:   on a small fake tree (two CORA methods, a source, a C++ and a Python test): the clean tree
           passes; a tag to a nonexistent row, a stale table, an operation without a tag, a status
           drop, a growing oracle debt, a test of an unimplemented row, a property test without a
-          seed and an out-of-scope row that is implemented each fail with a clear message.
+          seed, an oracle test without the helper and an out-of-scope row that is implemented each
+          fail with a clear message.
 Exit code: 0 if all pass.
 """
 import json
@@ -28,7 +29,7 @@ CENTER = SOURCE.replace("plus", "center").replace("Z, W", "Z")
 CPP_TEST = "// test_zonotope_plus - the sum\n//\n// CORA: contSet/@zonotope/plus.m\n\nint main() {}\n"
 PY_TEST = '"""test_zonotope - the class"""\n# CORA: contSet/@zonotope/plus.m\n'
 ORACLE_TEST = ("// test_lean_plus - against CORALean\n//\n// ORACLE: contSet/@zonotope/plus.m\n"
-               "\nint main() {}\n")
+               '\n#include "oracle_testing.h"\n\nint main() { if (!test::oracle::available()) return 0; }\n')
 
 
 def write(root, name, text):
@@ -143,6 +144,14 @@ class Checker(unittest.TestCase):
     def test_an_oracle_test_lives_in_an_oracle_folder(self):
         write(self.root, "tests/python/test_zonotope.py", PY_TEST + "# ORACLE: contSet/@zonotope/plus.m\n")
         self.assert_fails("an ORACLE test is in a folder `oracle/`")
+
+    def test_an_oracle_test_uses_the_helper_and_skips_without_an_oracle(self):
+        write(self.root, "tests/global/oracle/test_lean_plus.cpp",
+              ORACLE_TEST.replace("oracle_testing", "testing"))
+        self.assert_fails("an ORACLE test uses the helper `oracle_testing`")
+        write(self.root, "tests/global/oracle/test_lean_plus.cpp",
+              ORACLE_TEST.replace("available()", "ready()"))
+        self.assert_fails("skips without an oracle")
 
     def test_an_implemented_row_is_not_out_of_scope(self):
         write(self.root, "coverage/out-of-scope.md",

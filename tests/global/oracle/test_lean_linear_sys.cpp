@@ -1,14 +1,13 @@
-// test_lean_linear_sys - lean::LinearSys::reach: the argument checks, and with CORACPP_ORACLE set
-// the enclosure of CORA.cpp's own reachable sets
+// test_lean_linear_sys - lean::LinearSys::reach: the argument checks, and with the oracle set the
+// enclosure of CORA.cpp's own reachable sets
 //
 // CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet ORACLE)
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
+#include "oracle_testing.h"
 #include "testing.h"
-
-#include <cstdlib>
 
 using namespace cora;
 using test::throws;
@@ -37,7 +36,7 @@ int main() {
                     }),
                     "timeStep");
 
-        if (!std::getenv("CORACPP_ORACLE")) return;
+        if (!test::oracle::available()) return;
 
         // the lean sets enclose the intervals of CORA.cpp's reach at every time point
         const double time_step = 0.125, t_final = 1.0;
@@ -48,13 +47,10 @@ int main() {
         const auto ref =
             LinearSys(A).reach({.initial_set = Zonotope(c, G), .t_final = t_final},
                                alg::Standard{.time_step = time_step, .taylor_terms = 8});
-        for (std::size_t k = 0; k < R.time_point.size(); ++k) {
-            const auto [lo, hi] = R.time_point[k].interval().gather();
-            const Interval I = ref.time_point[k].interval();
-            const bool encloses = lo.data()[0] <= I.inf().data()[0] + 1e-9 &&
-                                  hi.data()[0] >= I.sup().data()[0] - 1e-9;
-            test::check(encloses, "time point " + std::to_string(k) + " encloses");
-        }
+        for (std::size_t k = 0; k < R.time_point.size(); ++k)
+            test::oracle::check_enclosed("time point " + std::to_string(k),
+                                         ref.time_point[k].interval(),
+                                         R.time_point[k].interval());
     });
     return test::finish("lean linearSys");
 }
