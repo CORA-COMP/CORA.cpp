@@ -157,6 +157,8 @@ foreach(source IN LISTS example_sources)
 endforeach()
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/examples")
 
+include(scripts/cmake/install.cmake)
+
 include(scripts/cmake/python.cmake)
 
 include(scripts/cmake/benchmarks.cmake)

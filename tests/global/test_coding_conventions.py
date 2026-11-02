@@ -49,7 +49,8 @@ CORA_TAG = re.compile(r"^// (CORA: \S+\.m\b|CORA\.cpp only: \S)")
 CORA_NAMED_PYTHON = {"src/global/python/cora/matlab.py"}
 # Where code may ask which backend, device or dtype a tensor has.
 BACKEND_FOLDERS = ("src/global/backend/", "src/global/tensor/", "include/cora/global/backend/",
-                   "include/cora/global/tensor/", "src/global/python/")
+                   "include/cora/global/tensor/", "src/global/python/",
+                   "include/cora/cora.h")  # the umbrella header includes the torch backend
 # camelCase names of libraries the code calls (Eigen, libtorch, pybind11, the standard library).
 FOREIGN_NAMES = {
     "cwiseAbs", "cwiseMax", "cwiseMin", "cwiseProduct", "rowwise", "colwise", "setZero", "setOnes",
