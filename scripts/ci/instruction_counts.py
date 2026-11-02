@@ -2,7 +2,7 @@
 
 Syntax:   python scripts/ci/instruction_counts.py --base <micro> --head <micro> [--threshold 3]
 Inputs:   two builds of benchmarks/micro (the program `micro`), one per commit, built in the same job
-Method:   every benchmark runs under `valgrind --tool=cachegrind`, counting the instructions of its
+Method:   every benchmark runs under `valgrind --tool=callgrind`, counting the instructions of its
           measured region only (deterministic); without valgrind, under `perf stat -e instructions:u`
           (the whole process, noisy).
 Output:   a table of base, head and the change in percent; exit code 1 if one grew by more than the
@@ -15,15 +15,15 @@ import subprocess
 import sys
 
 REGION = "micro_measured_region"
-VALGRIND_COUNT = re.compile(r"I\s+refs:\s+([\d,]+)")
+VALGRIND_COUNT = re.compile(r"Collected\s*:\s*(\d+)")
 PERF_COUNT = re.compile(r"^\s*(\d+),[^,]*,instructions", re.M)
 
 
 def parse_valgrind(text):
-    """The instruction count of cachegrind's summary."""
+    """The instruction count of callgrind's summary (events collected inside the measured region)."""
     found = VALGRIND_COUNT.search(text)
     if not found:
-        raise ValueError("no 'I refs' line in the output of cachegrind")
+        raise ValueError("no 'Collected' line in the output of callgrind")
     return int(found.group(1).replace(",", ""))
 
 
@@ -38,8 +38,8 @@ def parse_perf(text):
 def command(program, name):
     """The profiling command and the parser of its output."""
     if shutil.which("valgrind"):
-        return ["valgrind", "--tool=cachegrind", "--cache-sim=no", "--cachegrind-out-file=/dev/null",
-                f"--toggle-collect={REGION}*", program, name], parse_valgrind
+        return ["valgrind", "--tool=callgrind", "--callgrind-out-file=/dev/null",
+                f"--toggle-collect={REGION}", program, name], parse_valgrind
     if shutil.which("perf"):
         return ["perf", "stat", "-x,", "-e", "instructions:u", program, name], parse_perf
     raise SystemExit("instruction_counts: neither valgrind nor perf is installed")

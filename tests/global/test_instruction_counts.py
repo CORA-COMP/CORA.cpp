@@ -1,7 +1,7 @@
 """test_instruction_counts - checks the parsing and the comparison of scripts/ci/instruction_counts.py.
 
 Syntax:   python tests/global/test_instruction_counts.py
-Checks:   the counts of cachegrind's and perf's output are read; growth above the threshold is
+Checks:   the counts of callgrind's and perf's output are read; growth above the threshold is
           reported, a decrease or growth below it is not.
 Exit code: 0 if all checks pass, else 1.
 """
@@ -14,8 +14,8 @@ import instruction_counts as ic  # noqa: E402
 
 
 class InstructionCountsTest(unittest.TestCase):
-    def test_cachegrind_output(self):
-        text = "==12== Collected : 1,234,567\n==12==\n==12== I   refs:      1,234,567\n"
+    def test_callgrind_output(self):
+        text = "==12== Events    : Ir\n==12== Collected : 1234567\n==12==\n==12== I   refs:      1,234,567\n"
         self.assertEqual(ic.parse_valgrind(text), 1234567)
 
     def test_perf_output(self):
