@@ -1,0 +1,38 @@
+% pgfplots; CORA's colors and `plot filled` are those of cora-macs
+\begin{tikzpicture}
+\begin{axis}[
+  xlabel={$x_1$},
+  ylabel={$x_2$},
+  zlabel={$x_3$},
+  xmin=-1.65, xmax=1.65,
+  ymin=-1.65, ymax=1.65,
+  zmin=-1.1, zmax=1.1,
+  view={-35}{30},
+]
+  \addplot3[plot filled=CORAcolorBlue] coordinates {
+    (-1.5,0.5,-1) (-0.5,1.5,1) (1.5,1.5,1) (0.5,0.5,-1)
+    (-1.5,0.5,-1)
+  };
+  \addlegendentry{Z}
+  \addplot3[plot filled=CORAcolorBlue, forget plot] coordinates {
+    (1.5,1.5,1) (1.5,-0.5,1) (0.5,-1.5,-1) (0.5,0.5,-1)
+    (1.5,1.5,1)
+  };
+  \addplot3[plot filled=CORAcolorBlue, forget plot] coordinates {
+    (1.5,1.5,1) (-0.5,1.5,1) (-0.5,-0.5,1) (1.5,-0.5,1)
+    (1.5,1.5,1)
+  };
+  \addplot3[plot filled=CORAcolorBlue, forget plot] coordinates {
+    (0.5,-1.5,-1) (-1.5,-1.5,-1) (-1.5,0.5,-1) (0.5,0.5,-1)
+    (0.5,-1.5,-1)
+  };
+  \addplot3[plot filled=CORAcolorBlue, forget plot] coordinates {
+    (-1.5,-1.5,-1) (-0.5,-0.5,1) (-0.5,1.5,1) (-1.5,0.5,-1)
+    (-1.5,-1.5,-1)
+  };
+  \addplot3[plot filled=CORAcolorBlue, forget plot] coordinates {
+    (1.5,-0.5,1) (-0.5,-0.5,1) (-1.5,-1.5,-1) (0.5,-1.5,-1)
+    (1.5,-0.5,1)
+  };
+\end{axis}
+\end{tikzpicture}

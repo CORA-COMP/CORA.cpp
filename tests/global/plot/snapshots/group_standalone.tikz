@@ -1,0 +1,92 @@
+\documentclass{article}
+\usepackage[margin=1cm]{geometry}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+\pagestyle{empty}
+\definecolor{CORAcolorInitialSet}{rgb}{1,1,1}
+\definecolor{CORAcolorReachSet}{rgb}{0.2706,0.5882,1}
+\definecolor{CORAcolorSimulations}{rgb}{0,0,0}
+\definecolor{CORAcolorUnsafe}{rgb}{0.9451,0.5529,0.5686}
+\definecolor{CORAcolorUnsafeLight}{rgb}{0.9882,0.9098,0.9137}
+\pgfplotsset{plot filled/.style={area legend, draw=#1, fill=#1, fill opacity=0.2}}
+\begin{document}
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={
+    group size=2 by 2,
+    horizontal sep=1.6cm, vertical sep=1.6cm,
+    x descriptions at=edge bottom
+  },
+  width=5cm,
+  height=4cm,
+]
+\nextgroupplot[
+  title={phase plane},
+  ylabel={$x_2$},
+  xmin=-0.05, xmax=1.16399,
+  ymin=-0.95818, ymax=0.17148,
+  axis equal image,
+]
+  \addplot[draw=CORAcolorUnsafe, fill=CORAcolorUnsafeLight, area legend] coordinates {
+    (1.1,-0.95818) (1.16399,-0.95818) (1.16399,0.17148) (1.1,0.17148)
+    (1.1,-0.95818)
+  };
+  \addlegendentry{unsafe}
+  \addplot[draw=CORAcolorReachSet, fill=CORAcolorReachSet, area legend] coordinates {
+    (1.05637,-0.31635) (1.06232,-0.31587) (1.1056,-0.10167) (1.12507,0.09658)
+    (1.10512,0.10066) (0.90325,0.12013) (0.85983,-0.09455) (0.85477,-0.14556)
+    (0.80717,-0.25827) (0.79234,-0.30639) (0.72471,-0.40538) (0.70093,-0.44903)
+    (0.61689,-0.53072) (0.58542,-0.56816) (0.48894,-0.63019) (0.34658,-0.7434)
+    (0.34658,-0.74864) (0.35671,-0.76447) (0.46991,-0.90683) (0.47549,-0.90662)
+    (0.64064,-0.80043) (0.65287,-0.81071) (0.65853,-0.81071) (0.80317,-0.67012)
+    (0.81647,-0.67737) (0.82242,-0.67737) (0.93924,-0.50644) (0.95321,-0.51075)
+    (0.95921,-0.51075) (1.0419,-0.31491) (1.05637,-0.31635)
+  };
+  \addlegendentry{reachable set}
+  \addplot[draw=CORAcolorSimulations, fill=CORAcolorInitialSet, area legend] coordinates {
+    (0.9,-0.1) (1.1,-0.1) (1.1,0.1) (0.9,0.1)
+    (0.9,-0.1)
+  };
+  \addlegendentry{initial set}
+\nextgroupplot[
+  ylabel={$x_1$},
+  xmin=-0.05, xmax=1.16399,
+  ymin=0.307655, ymax=1.163994,
+]
+  \addplot[draw=CORAcolorReachSet, fill=CORAcolorReachSet] coordinates {
+    (0,0.840358) (0.2,0.840358) (0.2,0.750281) (0.4,0.750281)
+    (0.4,0.634122) (0.6,0.634122) (0.6,0.49749) (0.8,0.49749)
+    (0.8,0.346579) (1,0.346579) (1,0.787532) (0.8,0.787532)
+    (0.8,0.92584) (0.6,0.92584) (0.6,1.031759) (0.4,1.031759)
+    (0.4,1.099616) (0.2,1.099616) (0.2,1.125069) (0,1.125069)
+    (0,0.840358)
+  };
+\nextgroupplot[
+  xlabel={$t$},
+  ylabel={$x_2$},
+  xmin=-0.05, xmax=1.16399,
+  ymin=-0.95818, ymax=0.17148,
+]
+  \addplot[draw=CORAcolorReachSet, fill=CORAcolorReachSet] coordinates {
+    (0,-0.31635) (0.2,-0.31635) (0.2,-0.51075) (0.4,-0.51075)
+    (0.4,-0.67737) (0.6,-0.67737) (0.6,-0.81071) (0.8,-0.81071)
+    (0.8,-0.90683) (1,-0.90683) (1,-0.52088) (0.8,-0.52088)
+    (0.8,-0.38694) (0.6,-0.38694) (0.6,-0.23164) (0.4,-0.23164)
+    (0.4,-0.06049) (0.2,-0.06049) (0.2,0.12013) (0,0.12013)
+    (0,-0.31635)
+  };
+\nextgroupplot[
+  xlabel={$t$},
+  ylabel={$x_1$},
+  xmin=-0.05, xmax=1.16399,
+  ymin=0.46333, ymax=1.025556,
+]
+  \addplot[draw=CORAcolorSimulations, line width=0.32pt] coordinates {
+    (0,1) (0.2,0.96066) (0.4,0.884946) (0.6,0.777272)
+    (0.8,0.643141) (1,0.488886)
+  };
+  \addlegendentry{simulation}
+\end{groupplot}
+\end{tikzpicture}
+\end{document}

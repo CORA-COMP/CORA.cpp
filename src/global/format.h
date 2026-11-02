@@ -5,10 +5,12 @@
 
 #pragma once
 
+#include "cora/global/error.h"
 #include "cora/global/tensor/tensor.h"
 
 #include <algorithm>
 #include <cstdio>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -35,6 +37,14 @@ inline std::string format_number(double x) {
     char buffer[32];
     std::snprintf(buffer, sizeof buffer, "%.6g", x);
     return buffer;
+}
+
+/// Writes `text` to the file `path`; `who` names the caller in the error.
+inline void write_text_file(const std::string &path, const std::string &text,
+                            const std::string &who) {
+    std::ofstream file(path);
+    if (!file) CORA_FAIL(Error::special_error, who + ": cannot write '" + path + "'");
+    file << text;
 }
 
 /// The matrix (rows, cols) row by row, the numbers right-aligned in columns and every row

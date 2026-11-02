@@ -1,0 +1,19 @@
+% pgfplots; CORA's colors and `plot filled` are those of cora-macs
+\begin{tikzpicture}
+\begin{axis}[
+  xlabel={$t$},
+  ylabel={$x_1$},
+  xmin=-0.05, xmax=1.05,
+  ymin=0.307655, ymax=1.163994,
+]
+  \addplot[draw=CORAcolorReachSet, fill=CORAcolorReachSet, area legend] coordinates {
+    (0,0.840358) (0.2,0.840358) (0.2,0.750281) (0.4,0.750281)
+    (0.4,0.634122) (0.6,0.634122) (0.6,0.49749) (0.8,0.49749)
+    (0.8,0.346579) (1,0.346579) (1,0.787532) (0.8,0.787532)
+    (0.8,0.92584) (0.6,0.92584) (0.6,1.031759) (0.4,1.031759)
+    (0.4,1.099616) (0.2,1.099616) (0.2,1.125069) (0,1.125069)
+    (0,0.840358)
+  };
+  \addlegendentry{reachable set}
+\end{axis}
+\end{tikzpicture}

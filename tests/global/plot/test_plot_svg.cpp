@@ -69,7 +69,7 @@ void a_set_is_filled_unless_told_otherwise(const std::string &b) {
               both.face.hex() == cora_color("CORA:red").hex(),
           b + ": a color is the outline and the fill");
     figure().clear();
-    plot(initial_set(), {0, 1}, {.facecolor = "CORA:red"});
+    plot(initial_set(), {0, 1}, {.face_color = "CORA:red"});
     const Figure::Layer &fill = figure().layers()[0];
     check(fill.face.hex() == cora_color("CORA:red").hex() &&
               fill.edge.hex() == cora_color("CORA:simulations").hex(),
@@ -104,14 +104,16 @@ void a_reach_set_is_drawn_as_one_union(const std::string &b) {
     figure().clear();
     const ReachSet R = oscillator();
     plot(R, {0, 1}, {.label = "reachable set"});
-    // The union is one path for the outline and one for the fill, however many sets there are.
-    check(count(figure().svg(), "fill-rule=\"nonzero\"") == 2, b + ": one region for all intervals");
+    // The core has united the sets: one loop and one path, however many intervals there are.
+    check(figure().layers()[0].polygons.size() == 1 && count(figure().svg(), "<path") == 1,
+          b + ": one region for all intervals");
     check(figure().equal_axes, b + ": a reach plot has equal axes");
     check(figure().layers()[0].face.hex() == cora_color("CORA:blue").hex(),
           b + ": in the default scheme it takes the next color");
     figure().clear();
     plot(R, {0, 1}, {.unify = false});
-    check(count(figure().svg(), "<path") >= 1, b + ": not unified still draws");
+    check(figure().layers()[0].polygons.size() == R.time_interval.size(),
+          b + ": not unified keeps every set");
 }
 
 void reach_options_choose_what_is_drawn(const std::string &b) {
@@ -158,7 +160,7 @@ void filled_sets_are_translucent(const std::string &b) {
     check(figure().layers()[0].face_alpha == 0.5, b + ": face_alpha chooses it");
     figure().clear();
     plot(oscillator(), {0, 1}, {.face_alpha = 0.3});
-    check(has(figure().svg(), "<g opacity=\"0.3\">"), b + ": a translucent union is composed whole");
+    check(has(figure().svg(), "fill-opacity=\"0.3\""), b + ": a translucent union is one fill");
     figure().clear();
     plot(oscillator());
     check(figure().layers()[0].face_alpha == 1, b + ": a reachable set is opaque");
@@ -227,7 +229,8 @@ void a_wrapper_takes_the_layers_out(const std::string &b) {
 
 void plot_rejects_bad_dimensions(const std::string &b) {
     figure().clear();
-    check(test::throws([] { plot(initial_set(), {0}); }), b + ": one dimension is not a plot");
+    check(test::throws([] { plot(initial_set(), {0, 1, 2, 3}); }), b + ": four dimensions");
+    check(test::throws([] { plot(initial_set(), {}); }), b + ": no dimension");
     check(test::throws([] { plot(initial_set(), {0, 2}); }), b + ": dimension 2 does not exist");
     check(test::throws([] { plot(Tensor({{1, 2}, {3, 4}}), {0, 5}); }), b + ": points too");
 }
