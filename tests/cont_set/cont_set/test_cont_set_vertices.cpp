@@ -1,4 +1,6 @@
 // test_cont_set_vertices - ContSet::vertices: two-dimensional sets only
+//
+// CORA: contSet/@contSet/vertices.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

@@ -1,4 +1,7 @@
 """test_specification_polytope - an unsafe set of several halfspaces in Python (numpy, as MATLAB CORA)."""
+# CORA: specification/@specification/check.m
+# CORA: specification/@specification/specification.m
+
 import unittest
 
 import numpy as np

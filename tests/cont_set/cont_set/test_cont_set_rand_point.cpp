@@ -1,4 +1,6 @@
 // test_cont_set_rand_point - ContSet::rand_point: the number of points is checked
+//
+// CORA: contSet/@contSet/randPoint.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

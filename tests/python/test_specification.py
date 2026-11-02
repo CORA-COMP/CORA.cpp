@@ -1,4 +1,7 @@
 """test_specification - the Specification class in Python: halfspaces against any set."""
+# CORA: specification/@specification/check.m
+# CORA: specification/@specification/specification.m
+
 import unittest
 
 import numpy as np

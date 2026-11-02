@@ -1,4 +1,6 @@
 // test_interval_rand_point_torch - interval rand_point over a batch of boxes
+//
+// CORA: contSet/@interval/randPoint_.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/backend/torch.h"

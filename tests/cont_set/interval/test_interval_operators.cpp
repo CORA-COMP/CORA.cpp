@@ -1,4 +1,7 @@
 // test_interval_operators - the operators of an interval, as CORA writes them
+//
+// CORA: contSet/@interval/mtimes.m
+// CORA: contSet/@interval/plus.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"

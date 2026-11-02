@@ -1,5 +1,7 @@
 // test_cont_set_intersect - the intersection of two sets (CORA's and): no pair yet raises noops
 // implementation raises noops
+//
+// CORA: contSet/@contSet/and.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

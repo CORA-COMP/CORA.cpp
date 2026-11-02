@@ -1,5 +1,7 @@
 // test_zonotope_linear_map - zonotope linear_map: by a matrix (exact) and by an interval matrix (an
 // enclosure)
+//
+// CORA: contSet/@zonotope/mtimes.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"

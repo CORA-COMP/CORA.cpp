@@ -1,4 +1,6 @@
 // test_interval_generate_random - interval generate_random
+//
+// CORA: contSet/@interval/generateRandom.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"

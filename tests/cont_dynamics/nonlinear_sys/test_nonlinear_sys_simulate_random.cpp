@@ -1,4 +1,6 @@
 // test_nonlinear_sys_simulate_random - nonlinearSys simulate_random: points of the set, repeatable
+//
+// CORA: contDynamics/@contDynamics/simulateRandom.m
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/global/rng.h"

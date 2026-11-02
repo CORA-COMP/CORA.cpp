@@ -88,6 +88,25 @@ Use it from another CMake project after `cmake --install build --prefix <dir>`:
 `find_package(CORA)` and `target_link_libraries(app PRIVATE CORA::cora)`. The design is in
 [docs/architecture.md](docs/architecture.md).
 
+## Coverage
+
+How much of CORA this has, and how much of it is checked against CORALean, per CORA method
+([the tables](coverage/README.md), generated from the tree and enforced by `ctest`):
+
+<!-- coverage:begin -->
+| Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
+|---|---|---|---|---|---|---|---|---|
+| [contSet](coverage/contSet/) | 908 | 871 | 17 | 16 | 0 | 4 | 0 | 10 |
+| [contDynamics](coverage/contDynamics/) | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
+| [hybridDynamics](coverage/hybridDynamics/) | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
+| [nn](coverage/nn/) | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
+| [specification](coverage/specification/) | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
+| [others](coverage/others/) | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
+| **all** | 1696 | 1639 | 23 | 30 | 0 | 4 | 0 | 21 |
+
+3% of the 1696 CORA methods in scope have a source, 2% are tested in C++ and Python, 0% are checked against CORALean; oracle debt 21.
+<!-- coverage:end -->
+
 ## Connection to CORALean
 
 ![CORA.cpp and CORALean](docs/coralean.svg)

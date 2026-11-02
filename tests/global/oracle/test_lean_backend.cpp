@@ -2,6 +2,11 @@
 //
 // The backend rounds and orders its operations as CORALean does at dtype "nearest": a zonotope
 // operation of CORA.cpp on it must give the oracle's numbers bit for bit.
+//
+// ORACLE: contSet/@zonotope/mtimes.m
+// ORACLE: contSet/@zonotope/plus.m
+// ORACLE: contSet/@zonotope/reduce.m
+// ORACLE: contSet/@contSet/linComb.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/oracle.h"

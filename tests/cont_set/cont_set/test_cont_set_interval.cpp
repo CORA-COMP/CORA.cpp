@@ -1,4 +1,6 @@
 // test_cont_set_interval - ContSet::interval: the box of any set
+//
+// CORA: contSet/@contSet/interval.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

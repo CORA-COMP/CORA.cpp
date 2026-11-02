@@ -1,4 +1,6 @@
 // test_cont_set_plus - plus of two sets: the registry picks the pair, operands in CORA's order
+//
+// CORA: contSet/@contSet/plus.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

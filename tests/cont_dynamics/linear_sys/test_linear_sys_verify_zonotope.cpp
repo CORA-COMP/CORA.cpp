@@ -6,6 +6,8 @@
 // 'reachavoid:zonotope'. The initial error bound (emax) and the steps, errors and interval hulls of
 // the output sets of the first run of the adaptive reachability algorithm are pasted from a MATLAB
 // run of verify for RAND01.
+//
+// CORA: contDynamics/@linearSys/verify.m
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"

@@ -1,4 +1,6 @@
 """test_lean - cora.lean: the exact crossing and the dtype rules; the oracle when CORACPP_ORACLE is set"""
+# CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet ORACLE)
+
 import os
 import unittest
 

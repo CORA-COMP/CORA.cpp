@@ -1,4 +1,6 @@
 // test_zonotope_interval - zonotope interval: the smallest box around a zonotope
+//
+// CORA: contSet/@zonotope/interval.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"

@@ -1,4 +1,7 @@
 """test_linear_sys_simulate - LinearSys.simulate and simulate_random in Python."""
+# CORA: contDynamics/@contDynamics/simulateRandom.m
+# CORA: contDynamics/@linearSys/simulate.m
+
 import unittest
 
 import numpy as np

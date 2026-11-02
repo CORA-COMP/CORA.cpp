@@ -1,6 +1,11 @@
 """test_extension - prototyping in Python: a ContSet subclass, a registered pair and a registered
 algorithm run through the checked entries, the registry, plotting and reach like the built-in ones;
 errors, warnings and the scoped settings."""
+# CORA: contSet/@contSet/contSet.m
+# CORA: contSet/@contSet/plus.m
+# CORA: contSet/@contSet/project.m
+# CORA: contSet/@contSet/vertices.m
+
 import unittest
 import warnings
 

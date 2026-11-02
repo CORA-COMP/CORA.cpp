@@ -1,5 +1,11 @@
 """test_linear_sys_inputs - LinearSys(A, B, C) in Python: reach with an input set U against MATLAB CORA
 (R2025b), output_set, correction_matrix_input, simulate with inputs, and the errors."""
+# CORA: contDynamics/@contDynamics/simulateRandom.m
+# CORA: contDynamics/@linearSys/outputSet.m
+# CORA: contDynamics/@linearSys/reach.m
+# CORA: contDynamics/@linearSys/simulate.m
+# CORA: contDynamics/@linearSys/taylorMatrices.m
+
 import unittest
 
 import numpy as np

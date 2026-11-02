@@ -1,5 +1,7 @@
 // test_zonotope_rand_point - zonotope rand_point: standard points in the set, extreme points at its
 // corners
+//
+// CORA: contSet/@zonotope/randPoint_.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"

@@ -1,4 +1,6 @@
 // test_interval_vertices - interval vertices: the four corners of a planar box
+//
+// CORA: contSet/@interval/vertices_.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"

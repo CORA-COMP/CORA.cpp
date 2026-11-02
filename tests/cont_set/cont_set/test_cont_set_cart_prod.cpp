@@ -1,5 +1,7 @@
 // test_cont_set_cart_prod - the Cartesian product of two sets: any dimensions; no pair yet (noops)
 // implementation raises noops
+//
+// CORA: contSet/@contSet/cartProd.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

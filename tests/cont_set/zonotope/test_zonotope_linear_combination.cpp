@@ -1,5 +1,7 @@
 // test_zonotope_linear_combination - zonotope linear_combination: the enclosure of the segments
 // between two zonotopes
+//
+// CORA: contSet/@contSet/linComb.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"

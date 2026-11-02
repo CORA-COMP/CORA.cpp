@@ -13,7 +13,7 @@
 // See also: cora/nn/neural_network/neural_network.h, Zonotope::interval
 //
 // CORA: nn/@neuralNetwork/evaluate.m
-// CORA: nn/layers/nonlinear/@nnReLULayer/nnReLULayer.m
+// CORA: nn/layers/nonlinear/nnReLULayer.m
 
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"

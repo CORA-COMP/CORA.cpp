@@ -1,5 +1,7 @@
 // test_cont_set_contains - contains of two sets with a tolerance: tol and the dimensions are
 // checked
+//
+// CORA: contSet/@contSet/contains.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

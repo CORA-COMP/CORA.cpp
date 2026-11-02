@@ -81,7 +81,7 @@ endif()
 
 # ------------------------------------------- tests ------------------------------------------------
 # tests/ mirrors src/; a test ending in _torch needs libtorch. test_codingConventions.py checks the
-# conventions of the sources, and runs first.
+# conventions of the sources, and coverage.py --check (the tags, the coverage tables, the ratchet) run first.
 
 enable_testing()
 
@@ -108,6 +108,12 @@ function(cora_run_environment test)
 endfunction()
 
 if(Python3_EXECUTABLE)
+  add_test(NAME coverage
+           COMMAND "${Python3_EXECUTABLE}" scripts/coverage/coverage.py --check
+           WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+  add_test(NAME coverage/checker
+           COMMAND "${Python3_EXECUTABLE}" tests/global/test_coverage.py
+           WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
   add_test(NAME conventions
            COMMAND "${Python3_EXECUTABLE}" tests/global/test_coding_conventions.py
            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

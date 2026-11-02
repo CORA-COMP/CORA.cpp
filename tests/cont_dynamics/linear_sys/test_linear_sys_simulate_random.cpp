@@ -1,5 +1,7 @@
 // test_linear_sys_simulate_random - linear_sys simulate_random: seeded trajectories from any
 // initial set
+//
+// CORA: contDynamics/@contDynamics/simulateRandom.m
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"

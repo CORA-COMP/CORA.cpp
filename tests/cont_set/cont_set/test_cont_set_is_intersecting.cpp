@@ -1,5 +1,7 @@
 // test_cont_set_is_intersecting - is_intersecting of two sets: tol and the dimensions are checked
 // dimensions are checked
+//
+// CORA: contSet/@contSet/isIntersecting.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

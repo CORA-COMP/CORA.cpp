@@ -1,4 +1,9 @@
 """test_operators - the operators of Zonotope and Interval in Python, as CORA writes them."""
+# CORA: contSet/@interval/mtimes.m
+# CORA: contSet/@interval/plus.m
+# CORA: contSet/@zonotope/mtimes.m
+# CORA: contSet/@zonotope/plus.m
+
 import unittest
 
 import numpy as np
