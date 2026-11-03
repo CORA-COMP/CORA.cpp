@@ -1,11 +1,14 @@
 // support_function - the support of a set in a direction, checked, as CORA's supportFunc
 //
+// The class's support_function_impl is CORA's supportFunc_.
+//
 // Syntax:   val = S.support_function(d);
 // Inputs:   d - direction, a column (..., n, 1) of the dimension n of S
 // Outputs:  val - max_{x in S} d'x, (..., 1, 1)
 // See also: interval, Zonotope::support_function_impl
 //
 // CORA: contSet/@contSet/supportFunc.m
+// CORA: contSet/@contSet/supportFunc_.m
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"

@@ -21,6 +21,8 @@ Interval Interval::uminus() const {
     return {-sup_, -inf_};
 }
 
+Set Interval::uminus_impl() const { return uminus(); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

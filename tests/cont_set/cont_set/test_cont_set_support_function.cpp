@@ -1,6 +1,7 @@
 // test_cont_set_support_function - ContSet::support_function: the checked entry of every set class
 //
 // CORA: contSet/@contSet/supportFunc.m
+// CORA: contSet/@contSet/supportFunc_.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

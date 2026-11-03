@@ -21,6 +21,11 @@
 // ORACLE: contSet/@contSet/and_.m
 // ORACLE: contSet/@contSet/contains_.m
 // ORACLE: contSet/@contSet/isIntersecting_.m
+// ORACLE: contSet/@contSet/supportFunc.m
+// ORACLE: contSet/@contSet/supportFunc_.m
+// ORACLE: contSet/@contSet/uminus.m
+// ORACLE: contSet/@contSet/uplus.m
+// ORACLE: contSet/@contSet/times.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -224,6 +229,46 @@ int main() {
             for (const Interval *S : {&J, &K, &I})
                 oracle::check(cora::detail::is_intersecting_impl(I, *S, 0.0),
                               lean::Interval(I).is_intersecting(lean::Interval(*S), 0.0));
+        }
+    });
+
+    oracle::run("supportFunc", [&](oracle::Random &rnd) {
+        for (const auto [n, m] : sizes) {
+            const Interval I = rnd.box(n);
+            const Tensor d = rnd.direction(n);
+            oracle::check(aux_set(I).support_function(d), lean::Interval(I).support_function(d));
+            const Zonotope Z = rnd.zonotope(n, m);
+            oracle::check(aux_set(Z).support_function(d), lean::Zonotope(Z).support_function(d));
+        }
+    });
+
+    // -S is the matrix -I times S (a box: its own negation), S .* f the matrix diag(f) times S
+    oracle::run("uminus", [&](oracle::Random &rnd) {
+        for (const auto [n, m] : sizes) {
+            const Interval I = rnd.box(n);
+            oracle::check(aux_set(I).uminus().as<Interval>(), lean::Interval(I).uminus());
+            const Zonotope Z = rnd.zonotope(n, m);
+            const Tensor M = rnd.vector(n).eye_like(n) * -1.0;
+            aux_check_set(aux_set(Z).uminus().as<Zonotope>(), lean::Zonotope(Z).linear_map(M));
+        }
+    });
+
+    oracle::run("uplus", [&](oracle::Random &rnd) {
+        for (const int n : {2, 5, 20}) {
+            const Interval I = rnd.box(n);
+            oracle::check(aux_set(I).uplus().as<Interval>(), lean::Interval(I).uplus());
+        }
+    });
+
+    oracle::run("times", [&](oracle::Random &rnd) {
+        for (const auto [n, m] : sizes) {
+            const Tensor f = rnd.vector(n);
+            const Interval I = rnd.box(n);
+            oracle::check(aux_set(I).times(f).as<Interval>(),
+                          lean::Interval(I).times(lean::Interval(Interval(f, f))));
+            const Zonotope Z = rnd.zonotope(n, m);
+            aux_check_set(aux_set(Z).times(f).as<Zonotope>(),
+                          lean::Zonotope(Z).linear_map(f.diag()));
         }
     });
 

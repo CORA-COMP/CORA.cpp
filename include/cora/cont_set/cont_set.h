@@ -12,8 +12,9 @@
 // Operations: support_function, interval, rand_point, project, vertices, vertices_3d, display,
 //             center, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
 //             minkowski_difference, decompose, project_high_dim, project_on_hyperplane,
-//             generate_random (one file each in src/cont_set/cont_set/, the checks; the classes
-//             implement the _impl forms, and a class that does not gets CORA's noops)
+//             uminus, uplus, times, compact, generate_random (one file each in
+//             src/cont_set/cont_set/, the checks; the classes implement the _impl forms, and a
+//             class that does not gets CORA's noops)
 // See also:   cont_set/set.h, cont_set/registry.h, cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@contSet/contSet.m
@@ -151,6 +152,24 @@ class ContSet {
     Set minus(const Tensor &p) const;
     static Set minus(const Tensor &p, const ContSet &S);
 
+    /// -S, in the class of S (CORA's uminus: -1 * S).
+    Set uminus() const;
+
+    /// S itself (CORA's uplus).
+    Set uplus() const;
+
+    /// The set scaled coordinate by coordinate, diag(factor) * S (CORA's times, S .* factor):
+    /// factor is a number or a column (..., n, 1).
+    Set times(const Tensor &factor) const;
+    Set times(double factor) const;
+
+    /// The set without redundancy (CORA's compact): method names a variant of the class (default:
+    /// the class's own; a zonotope: "zeros", "all", "aligned"), tol relaxes "is zero" and "is
+    /// parallel" (default: the repository tolerance). A box, the empty set and the whole space
+    /// are returned as they are; Error::noops for a class without it.
+    Set compact(const std::optional<std::string> &method = std::nullopt,
+                Tol tol = std::nullopt) const;
+
     /// The Minkowski difference {x | x + S2 in this set} (CORA's minkDiff); type picks the
     /// algorithm of the class (default: the class's own), Error::noops for a pair without one.
     Set minkowski_difference(const ContSet &S2,
@@ -202,6 +221,18 @@ class ContSet {
     virtual Set linear_map_impl(const Tensor &M) const;
     /// The set translated by v (..., n, 1): the plus of a set and a vector.
     virtual Set translate_impl(const Tensor &v) const;
+    /// CORA's uminus: -1 * S, which a class with its own negation overrides.
+    virtual Set uminus_impl() const;
+    /// CORA's uplus: S translated by -0, which leaves every number as it is.
+    virtual Set uplus_impl() const;
+    /// CORA's times: diag(factor) * S for factor (..., n, 1), which a class with its own
+    /// product overrides.
+    virtual Set times_impl(const Tensor &factor) const;
+    /// The methods of the class's compact, which the entry checks together with tol; none: the
+    /// class returns itself whatever the arguments (CORA returns before reading them).
+    virtual std::optional<std::vector<std::string>> compact_methods_impl() const;
+    /// CORA's compact_ of the class, with the method and tolerance as given by the caller.
+    virtual Set compact_impl(const std::optional<std::string> &method, Tol tol) const;
     /// CORA's enlarge: the generic formula, which a class with a cheaper one overrides.
     virtual Set enlarge_impl(const Tensor &factor) const;
     virtual Set minkowski_difference_impl(const ContSet &S2,

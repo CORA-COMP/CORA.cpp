@@ -6,6 +6,7 @@
 // See also: registry, unite
 //
 // CORA: contSet/@contSet/convHull.m
+// CORA: contSet/@contSet/convHull_.m
 
 #include "cora/cont_set/registry.h"
 

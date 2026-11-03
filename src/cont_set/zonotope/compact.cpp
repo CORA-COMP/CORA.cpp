@@ -11,6 +11,7 @@
 // See also: reduce, box
 //
 // CORA: contSet/@zonotope/compact_.m
+// CORA: contSet/@contSet/compact.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cont_set/zonotope/private/priv.h"
@@ -84,13 +85,21 @@ Zonotope Zonotope::compact(const std::string &method, Tol tol_arg) const {
     CORA_CHECK(method == "zeros" || method == "all" || method == "aligned", Error::wrong_value,
                [&] { return "compact: the method must be 'zeros', 'all' or 'aligned', got '" +
                             method + "'"; });
-    CORA_CHECK(method != "all" || G_.ndim() == 2, Error::not_supported, [] {
-        return std::string("compact: method 'all' merges generators member by member; "
-                           "it supports a single zonotope, not a batch");
-    });
     if (method == "aligned") return *this;
     if (method == "zeros") return {c_, aux_nonzero_filter(G_, tol)};
+    if (G_.ndim() != 2)
+        CORA_FAIL(Error::not_supported, "compact: method 'all' merges generators member by "
+                                        "member; it supports a single zonotope, not a batch");
     return {c_, aux_delete_aligned(G_, tol)};
+}
+
+std::optional<std::vector<std::string>> Zonotope::compact_methods_impl() const {
+    return std::vector<std::string>{"zeros", "all", "aligned"};
+}
+
+/// The generic entry has checked the method and tol; the default method is "zeros".
+Set Zonotope::compact_impl(const std::optional<std::string> &method, Tol tol) const {
+    return compact(method.value_or("zeros"), tol);
 }
 
 } // namespace cora

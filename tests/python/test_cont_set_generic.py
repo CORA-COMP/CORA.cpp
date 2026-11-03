@@ -22,6 +22,15 @@ generate_random and the unchecked and_, contains_ and isIntersecting_ forms."""
 # CORA: contSet/@contSet/and_.m
 # CORA: contSet/@contSet/contains_.m
 # CORA: contSet/@contSet/isIntersecting_.m
+# CORA: contSet/@contSet/supportFunc.m
+# CORA: contSet/@contSet/supportFunc_.m
+# CORA: contSet/@contSet/uminus.m
+# CORA: contSet/@contSet/uplus.m
+# CORA: contSet/@contSet/times.m
+# CORA: contSet/@contSet/compact.m
+# CORA: contSet/@contSet/compact_.m
+# CORA: contSet/@contSet/cartProd_.m
+# CORA: contSet/@contSet/convHull_.m
 # PROPERTY: contSet/@contSet/projectOnHyperplane.m
 
 import unittest
@@ -145,6 +154,57 @@ class Generic(unittest.TestCase):
         self.assertFalse(cora.contains(Z, J))
         self.assertTrue(cora.is_intersecting(self.I, J))
         self.assertIn(("isequal", "Zonotope", "Interval"), cora.binary_pairs())
+
+    def test_support_function(self):
+        d = np.array([1.0, -1.0])
+        self.assertEqual(cora.ContSet.support_function(self.I, d), 1.0)
+        self.assertEqual(cora.ContSet.support_function(self.Z, d), 2.0)
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            cora.ContSet.support_function(self.I, np.ones(3))
+
+    def test_uminus_uplus_and_times(self):
+        N = cora.ContSet.__neg__(self.Z)
+        self.assertEqual(N.center.tolist(), [-1.0, 0.0])
+        self.assertEqual(N.generators.tolist(), [[-0.5, 0.0], [0.0, -0.5]])
+        self.assertEqual((-self.I).sup.tolist(), [1.0, 0.0])
+        P = +self.Z
+        self.assertEqual(P.center.tolist(), self.Z.center.tolist())
+        self.assertEqual(P.generators.tolist(), self.Z.generators.tolist())
+        T = cora.ContSet.times(self.Z, np.array([2.0, -1.0]))
+        self.assertEqual(T.center.tolist(), [2.0, 0.0])
+        self.assertEqual(T.generators.tolist(), [[1.0, 0.0], [0.0, -0.5]])
+        self.assertEqual(cora.ContSet.times(self.Z, 3.0).center.tolist(), [3.0, 0.0])
+        for E in (cora.EmptySet(2), cora.Fullspace(2)):
+            self.assertEqual(type(-E), type(E))
+            self.assertEqual(type(+E), type(E))
+            self.assertEqual(type(cora.ContSet.times(E, np.array([1.0, 2.0]))), type(E))
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            cora.ContSet.times(self.I, np.ones(3))
+        with self.assertRaises(cora.errors.Noops):
+            -Custom()
+        with cora.checks(False):
+            self.assertEqual(cora.ContSet.times(self.I, np.ones(2)).sup.tolist(), [1.0, 2.0])
+
+    def test_compact(self):
+        Z = zonotope([0.0, 0.0], [[1.0, 0.0, 2.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
+        self.assertEqual(np.asarray(cora.ContSet.compact(Z).generators).shape, (2, 3))
+        self.assertEqual(np.asarray(cora.ContSet.compact(Z, "all").generators).shape, (2, 2))
+        self.assertEqual(np.asarray(cora.ContSet.compact(Z, "aligned").generators).shape, (2, 4))
+        self.assertEqual(np.asarray(cora.ContSet.compact(Z, "zeros", 1.5).generators).shape, (2, 1))
+        self.assertEqual(cora.ContSet.compact(self.I, "anything", -1.0).sup.tolist(), [1.0, 2.0])
+        self.assertIsInstance(cora.ContSet.compact(cora.EmptySet(2)), cora.EmptySet)
+        self.assertIsInstance(cora.ContSet.compact(cora.Fullspace(2)), cora.Fullspace)
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.ContSet.compact(Z, "nonsense")
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.ContSet.compact(Z, "zeros", -1.0)
+        with self.assertRaises(cora.errors.Noops):
+            Custom().compact()
+
+    def test_a_pair_without_an_entry_is_noops(self):
+        for operation in (cora.cart_prod, cora.convex_hull):
+            with self.assertRaises(cora.errors.Noops):
+                operation(self.Z, Custom())
 
     def test_a_python_set_has_no_operation(self):
         C = Custom()

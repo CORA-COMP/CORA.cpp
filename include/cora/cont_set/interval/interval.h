@@ -392,6 +392,10 @@ class Interval : public ContSet {
     Set linear_map_impl(const Tensor &M) const override;
     Set translate_impl(const Tensor &v) const override;
     Set enlarge_impl(const Tensor &factor) const override;
+    Set uminus_impl() const override;
+    Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
+    Set uplus_impl() const override;
+    Set times_impl(const Tensor &factor) const override;
     Set minkowski_difference_impl(const ContSet &S2,
                                   const std::optional<std::string> &type) const override;
     Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;

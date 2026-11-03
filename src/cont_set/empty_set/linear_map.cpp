@@ -39,6 +39,11 @@ EmptySet EmptySet::linear_map(double) const {
     return *this;
 }
 
+Set EmptySet::linear_map_impl(const Tensor &M) const { return linear_map(M); }
+
+/// A translation leaves the empty set empty.
+Set EmptySet::translate_impl(const Tensor &) const { return *this; }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
