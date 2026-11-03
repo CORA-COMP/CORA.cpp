@@ -123,7 +123,7 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
             CORA_FAIL(Error::wrong_value, "linprog: a lower bound exceeds its upper bound");
         if (std::isfinite(lo)) {
             map[j] = {lo, cols, -1, 1.0, 0.0};
-            if (std::isfinite(hi)) bound_rows.push_back({cols, hi - lo});
+            if (std::isfinite(hi)) bound_rows.emplace_back(cols, hi - lo);
             ++cols;
         } else if (std::isfinite(hi)) {
             map[j] = {hi, cols++, -1, -1.0, 0.0};

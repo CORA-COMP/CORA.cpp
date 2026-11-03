@@ -41,6 +41,7 @@ using Box = Range;
 std::vector<Tensor> aux_entries(const Tensor &column) {
     const Tensor row = column.matrix_transpose();
     std::vector<Tensor> out;
+    out.reserve(column.shape()[0]);
     for (int64_t i = 0; i < column.shape()[0]; ++i) out.push_back(row.slice(-1, i, i + 1));
     return out;
 }
@@ -99,6 +100,7 @@ Box aux_lagrange_remainder(const NonlinearSys &sys, const Box &box, const Tensor
     const std::vector<Tensor> lo = aux_entries(box.lo), hi = aux_entries(box.hi);
     const std::vector<Tensor> c = aux_entries(xs);
     std::vector<Range> delta;
+    delta.reserve(n);
     for (int64_t j = 0; j < n; ++j) delta.emplace_back(lo[j] - c[j], hi[j] - c[j]);
 
     std::vector<Tensor> los, his;

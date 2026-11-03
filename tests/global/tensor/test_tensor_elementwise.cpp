@@ -20,6 +20,7 @@ void functions_apply_to_every_element(const std::string &b) {
     const Tensor t = Tensor::from_data(x, {2, 2});
     const auto apply = [&](double (*f)(double)) {
         std::vector<double> y;
+        y.reserve(x.size());
         for (const double v : x) y.push_back(f(v));
         return y;
     };

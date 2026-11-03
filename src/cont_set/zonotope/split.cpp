@@ -83,6 +83,7 @@ std::vector<std::pair<Zonotope, Zonotope>> Zonotope::split() const {
     detail::Entry entry;
     const Zonotope box = aux_box(*this);
     std::vector<std::pair<Zonotope, Zonotope>> pieces;
+    pieces.reserve(dim());
     for (int64_t N = 0; N < dim(); ++N) pieces.push_back(priv_split_generator(box, N));
     return pieces;
 }

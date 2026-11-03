@@ -385,6 +385,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
     if (isu && N > 0) {
         std::vector<Tensor> cols;
         Tensor P = Pu.zeros_like();
+        cols.reserve(N);
         for (int k = 0; k < N; ++k) cols.push_back(P = Delta.matmul(P) + Pu);
         PuProj = l_t.matmul(Tensor::concat(cols, -1)).data();
     }

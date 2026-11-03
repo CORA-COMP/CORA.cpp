@@ -368,7 +368,7 @@ bool is_host(const Tensor &t) {
 }
 
 Tensor host_borrow(const void *data, DType dtype, const Shape &shape,
-                   std::shared_ptr<const void> owner, uint8_t backend) {
+                   const std::shared_ptr<const void> &owner, uint8_t backend) {
     if (backend == backend_id::lean && dtype != DType::float64)
         CORA_FAIL(Error::not_supported, "CoraTensor: the lean backend computes in float64 only");
     if (dtype == DType::float32)

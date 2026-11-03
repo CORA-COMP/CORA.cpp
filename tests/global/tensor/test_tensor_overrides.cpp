@@ -99,7 +99,7 @@ void aux_overrides(const std::string &b) {
 
 int main() {
     std::vector<std::string> all = test::backends();
-    all.push_back("lean");
+    all.emplace_back("lean");
     for (const std::string &b : all) {
         const BackendScope scope(b);
         aux_overrides(b);

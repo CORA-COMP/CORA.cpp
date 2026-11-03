@@ -234,6 +234,7 @@ Tensor Tensor::stack(const std::vector<Tensor> &parts, int axis) {
 Tensor Tensor::matrix_transpose() const {
     aux_require_matrix(*this, "matrix_transpose");
     std::vector<int> axes;
+    axes.reserve(ndim());
     for (int d = 0; d < ndim(); ++d) axes.push_back(d);
     std::swap(axes[ndim() - 1], axes[ndim() - 2]);
     return permute_dims(axes);

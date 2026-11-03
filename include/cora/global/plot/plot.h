@@ -36,7 +36,7 @@ namespace cora {
 /// Set).
 struct PlotOptions {
     /// Legend entry; none if empty.
-    std::string label = "";
+    std::string label;
 
     /// The color of a set: its outline and, unless `face_color` is given, its fill; of trajectories
     /// their lines; of a reachable set its fill. A CORA color converts implicitly, e.g.

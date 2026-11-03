@@ -15,7 +15,7 @@ using test::column;
 
 namespace {
 
-Zonotope square(double radius, std::vector<double> c = {0.0, 0.0}) {
+Zonotope square(double radius, const std::vector<double> &c = {0.0, 0.0}) {
     return Zonotope(column(c), Tensor({{radius, 0.0}, {0.0, radius}}));
 }
 

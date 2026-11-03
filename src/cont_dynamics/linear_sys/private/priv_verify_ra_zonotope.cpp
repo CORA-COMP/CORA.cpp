@@ -201,7 +201,7 @@ double aux_intersection_check_inner(const InnerSet &R, const Poly &P) {
             lp.bineq.push_back(-s * (R.Z.c[r] - V[0][r]));
         }
     if (n_v > 1) {
-        const std::vector<std::vector<double>> all = V;
+        const std::vector<std::vector<double>> &all = V;
         aux_inner_equalities(R, all, n_vars, [&](int k) { return n + k * m; }, lp);
     }
     const LinProgResult r = linprog(lp);
@@ -636,6 +636,7 @@ double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Ten
         }
         const double scale_min = aux_scale_min(t);
         std::vector<std::vector<double>> y;
+        y.reserve(t.size());
         for (std::size_t j = 0; j < t.size(); ++j)
             y.push_back(i == 0 ? to_output(x0states[j]) : output_at(points[i], t[j]));
 
@@ -715,6 +716,7 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
 
         // The outer approximation of the reachable set with the error bound emax.
         std::vector<VerifyTime> times;
+        times.reserve(unsafe_sets.size());
         for (const Poly &P : unsafe_sets) times.push_back(P.time);
         for (const Poly &P : safe_sets) times.push_back(P.time);
         const AdaptiveResult R = priv_reach_adaptive(taylor, ap, times, emax, true, savedata);

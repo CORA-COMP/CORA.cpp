@@ -99,7 +99,7 @@ int main() {
     oracle::run("zonotope.compact", [&](oracle::Random &rnd) {
         for (const auto [n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            const Tensor G = Z.generators();
+            const Tensor &G = Z.generators();
             // a generator of zeros in the middle and at the end
             const Tensor zero = G.slice(-1, 0, 1).zeros_like();
             const Zonotope Zz(
@@ -151,7 +151,7 @@ int main() {
             for (std::size_t i = 0; i < 2; ++i)
                 for (int k = 0; k < n; ++k) {
                     T[i].push_back(rnd.matrix(n, n));
-                    theirs_T[i].push_back(T[i].back());
+                    theirs_T[i].emplace_back(T[i].back());
                 }
             aux_check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
         }

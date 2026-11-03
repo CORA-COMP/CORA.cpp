@@ -36,7 +36,7 @@ struct TikzOptions {
 
     /// The size of each axes: a TeX length, e.g. "6cm" or "0.9\\linewidth"; empty is pgfplots's
     /// (in a group plot 5cm by 4cm).
-    std::string width = "", height = "";
+    std::string width, height;
 };
 
 } // namespace cora

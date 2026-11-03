@@ -44,10 +44,10 @@ class Rng;
 class IntervalMatrix {
   public:
     /// The matrices C +- |D|, entrywise [C - |D|, C + |D|]; C and D are (..., rows, cols).
-    IntervalMatrix(Tensor center, Tensor delta);
+    IntervalMatrix(const Tensor &center, const Tensor &delta);
 
     /// The point matrix C.
-    explicit IntervalMatrix(Tensor center);
+    explicit IntervalMatrix(const Tensor &center);
 
     /// The interval matrix of the bounds of I (CORA writes `intMat.int = I`).
     explicit IntervalMatrix(Interval bounds);

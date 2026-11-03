@@ -38,7 +38,7 @@ void radius_bounds_the_distance(const std::string &b) {
         double farthest = 0;
         for (const double d : distances) farthest = std::max(farthest, d);
         check(farthest <= r * (1 + 1e-12), b + ": the sampled points are within the radius");
-        const Tensor corner = I.sup();
+        const Tensor &corner = I.sup();
         check(close((corner - c).square().sum().sqrt().data()[0], r), b + ": a corner attains it");
     }
 }

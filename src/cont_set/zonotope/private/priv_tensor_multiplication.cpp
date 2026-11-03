@@ -35,6 +35,7 @@ Shape aux_shape(const Tensor &like, std::initializer_list<int64_t> tail) {
 /// The entries of column `k` of the triples of `perm`, as column indices of G.
 std::vector<int64_t> aux_column(const std::vector<std::vector<int64_t>> &perm, std::size_t k) {
     std::vector<int64_t> out;
+    out.reserve(perm.size());
     for (const auto &triple : perm) out.push_back(triple[k]);
     return out;
 }

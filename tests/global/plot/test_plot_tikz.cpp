@@ -90,7 +90,7 @@ void standalone_documents() {
     check(!has(fig.tikz({.standalone = true, .coramacs = false}), "plot filled/.style"),
           "no style without cora-macs");
     check(!has(doc, "groupplots"), "no group library for one axes");
-    check(fig.tikz().rfind("%", 0) == 0 && !has(fig.tikz(), "\\documentclass"), "not a document");
+    check(fig.tikz().rfind('%', 0) == 0 && !has(fig.tikz(), "\\documentclass"), "not a document");
 }
 
 void thinning_and_numbers() {

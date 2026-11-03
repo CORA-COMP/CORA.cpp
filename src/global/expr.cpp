@@ -12,6 +12,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,7 +30,8 @@ struct Expr::Node {
 /// Builds the nodes, and folds constants so that derivatives stay small.
 struct ExprMaker {
     static Expr make(Op op, Expr a = Expr(), Expr b = Expr(), double value = 0, int index = 0) {
-        return Expr(std::make_shared<const Expr::Node>(Expr::Node{op, value, index, a, b}));
+        return Expr(std::make_shared<const Expr::Node>(
+            Expr::Node{op, value, index, std::move(a), std::move(b)}));
     }
     static const Expr::Node &node(const Expr &e) { return *e.node_; }
     static bool is_const(const Expr &e, double v) {
@@ -357,6 +359,7 @@ Tensor Expr::eval_tensor(const std::vector<Tensor> &x) const {
 
 CORA_FROM_NUMBERS double Expr::eval(const std::vector<double> &x) const {
     std::vector<Tensor> tensors;
+    tensors.reserve(x.size());
     for (const double v : x) tensors.push_back(Tensor::from_data({v}, {1, 1}));
     return eval_tensor(tensors).data()[0];
 }

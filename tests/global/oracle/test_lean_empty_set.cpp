@@ -119,6 +119,7 @@ int main() {
         }));
     test::oracle::run("emptySet.lift", each_dimension([](Random &, int64_t n) {
                           std::vector<int64_t> dims;
+                          dims.reserve(n);
                           for (int64_t i = 0; i < n; ++i)
                               dims.push_back(n + 2 - 1 - i); // a permutation into n + 2
                           check(EmptySet(n).lift(n + 2, dims).dim(),
@@ -132,6 +133,7 @@ int main() {
                       }));
     test::oracle::run("emptySet.projectHighDim", each_dimension([](Random &, int64_t n) {
                           std::vector<int64_t> dims;
+                          dims.reserve(n);
                           for (int64_t i = 0; i < n; ++i) dims.push_back(n + 2 - 1 - i);
                           check(EmptySet(n).project_high_dim(n + 2, dims).dim(),
                                 lean::EmptySet(n).project_high_dim(n + 2, dims).dim());

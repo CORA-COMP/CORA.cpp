@@ -101,6 +101,7 @@ std::vector<Polygon> aux_polygons(const ContSet &S, const std::vector<int64_t> &
     const Interval box = S.project(dims)->interval();
     const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
     std::vector<Polygon> bars;
+    bars.reserve(lo.size());
     for (std::size_t b = 0; b < lo.size(); ++b)
         bars.push_back(lo[b] == hi[b] ? Polygon{{lo[b], 0}} : Polygon{{lo[b], 0}, {hi[b], 0}});
     return bars;
@@ -128,6 +129,7 @@ std::vector<Point> aux_points(const Tensor &points, const std::vector<int64_t> &
     const std::vector<double> v = points.data();
     const int64_t N = shape[1];
     std::vector<Point> out;
+    out.reserve(N);
     for (int64_t j = 0; j < N; ++j)
         out.push_back({v[static_cast<std::size_t>(dims[0] * N + j)],
                        v[static_cast<std::size_t>(dims[1] * N + j)]});
@@ -306,10 +308,12 @@ void plot_over_time(Figure &fig, const std::vector<Tensor> &x, int64_t dim, doub
         CORA_FAIL(Error::wrong_value, "plot_over_time: time_step must be positive, but is " +
                                           std::to_string(time_step));
     std::vector<std::vector<Point>> at; // the values at each time
+    at.reserve(x.size());
     for (const Tensor &xk : x) at.push_back(aux_points(xk, {dim, dim}));
     const Color color = options.color.value_or(cora_color("CORA:simulations"));
     for (std::size_t j = 0; j < at[0].size(); ++j) {
         std::vector<Point> line;
+        line.reserve(at.size());
         for (std::size_t k = 0; k < at.size(); ++k)
             line.push_back({static_cast<double>(k) * time_step, at[k][j][0]});
         fig.add_polyline(std::move(line), color, options.line_width.value_or(0.8),
@@ -356,10 +360,12 @@ void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> 
     aux_check_dims(fig, dims);
     if (x.empty()) CORA_FAIL(Error::wrong_value, "plot: no trajectory points given");
     std::vector<std::vector<Point>> at; // the points at each time, as plane points
+    at.reserve(x.size());
     for (const Tensor &xk : x) at.push_back(aux_points(xk, dims));
     const Color color = options.color.value_or(cora_color("CORA:simulations"));
     for (std::size_t j = 0; j < at[0].size(); ++j) {
         std::vector<Point> line;
+        line.reserve(at.size());
         for (const auto &points : at) line.push_back(points[j]);
         fig.add_polyline(std::move(line), color, options.line_width.value_or(0.8),
                          j == 0 ? options.label : "");

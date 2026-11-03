@@ -42,8 +42,8 @@ void aux_simplify(const std::vector<Point> &pts, const std::vector<std::size_t> 
         }
         if (at == 0) continue;
         keep[idx[at]] = true;
-        stack.push_back({lo, at});
-        stack.push_back({at, hi});
+        stack.emplace_back(lo, at);
+        stack.emplace_back(at, hi);
     }
 }
 
@@ -86,6 +86,7 @@ std::vector<Point3> aux_planar_hull(const std::vector<Point3> &pts, const Point3
                                     const Point3 &n, const Point3 &e1, double eps) {
     const Point3 e2 = cross(n, e1);
     std::vector<std::pair<Point, Point3>> q;
+    q.reserve(pts.size());
     for (const Point3 &p : pts) q.push_back({{dot(sub(p, o), e1), dot(sub(p, o), e2)}, p});
     std::sort(q.begin(), q.end(), [](const auto &x, const auto &y) { return x.first < y.first; });
     std::vector<std::pair<Point, Point3>> h(2 * q.size());
@@ -94,9 +95,9 @@ std::vector<Point3> aux_planar_hull(const std::vector<Point3> &pts, const Point3
         const Point ab = sub(h[j].first, h[i].first);
         return cross(ab, sub(c, h[i].first)) - eps * norm(ab); // positive: a left turn
     };
-    for (std::size_t i = 0; i < q.size(); ++i) { // lower chain
-        while (k >= 2 && turn(k - 2, k - 1, q[i].first) <= 0) --k;
-        h[k++] = q[i];
+    for (auto &i : q) { // lower chain
+        while (k >= 2 && turn(k - 2, k - 1, i.first) <= 0) --k;
+        h[k++] = i;
     }
     for (std::size_t i = q.size() - 1, t = k + 1; i > 0; --i) { // upper chain
         while (k >= t && turn(k - 2, k - 1, q[i - 1].first) <= 0) --k;

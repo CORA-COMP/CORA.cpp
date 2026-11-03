@@ -67,6 +67,7 @@ std::vector<Polygon> Zonotope::vertices_impl() const {
     const int64_t m = G_.shape().back();
     const std::size_t batch = cs.size() / 2;
     std::vector<Polygon> out;
+    out.reserve(batch);
     for (std::size_t b = 0; b < batch; ++b)
         out.push_back(aux_polygon(&cs[2 * b], &Gs[static_cast<std::size_t>(2 * m) * b], m));
     return out;

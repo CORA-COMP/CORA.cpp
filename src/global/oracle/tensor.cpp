@@ -71,7 +71,7 @@ double aux_decode(const std::string &s) {
     if (s == "inf" || s == "-inf")
         return s[0] == '-' ? -std::numeric_limits<double>::infinity()
                            : std::numeric_limits<double>::infinity();
-    const std::size_t star = s.find("*");
+    const std::size_t star = s.find('*');
     const bool decimal = star != std::string::npos && s.compare(star, 4, "*10^") == 0;
     if (star == std::string::npos || (!decimal && s.compare(star, 3, "*2^") != 0))
         CORA_FAIL(Error::wrong_value, "lean: expected a value m*2^e or m*10^e, got '" + s + "'");
@@ -142,6 +142,7 @@ double Tensor::decode(const std::string &text) { return aux_decode(text); }
 
 CORA_FROM_NUMBERS cora::Tensor Tensor::gather() const {
     std::vector<double> values;
+    values.reserve(data_.size());
     for (const std::string &s : data_) values.push_back(aux_decode(s));
     return cora::Tensor::from_data(values, {rows_, cols_});
 }

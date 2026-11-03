@@ -23,7 +23,7 @@ bool is_host(const Tensor &t);
 /// A host tensor of the backend `backend` (backend_id::eigen or lean) over row-major `data`;
 /// `owner` keeps the memory alive. No copy.
 Tensor host_borrow(const void *data, DType dtype, const Shape &shape,
-                   std::shared_ptr<const void> owner, uint8_t backend);
+                   const std::shared_ptr<const void> &owner, uint8_t backend);
 
 /// The memory of a host tensor: row-major entries, and what keeps them alive.
 struct HostView {

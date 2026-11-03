@@ -38,9 +38,10 @@ Interval aux_box(const Tensor &C, const Tensor &D) {
 
 // ===========================================  MAIN  =========================================== //
 
-IntervalMatrix::IntervalMatrix(Tensor center, Tensor delta) : int_(aux_box(center, delta)) {}
+IntervalMatrix::IntervalMatrix(const Tensor &center, const Tensor &delta)
+    : int_(aux_box(center, delta)) {}
 
-IntervalMatrix::IntervalMatrix(Tensor center) : int_(center, center) {}
+IntervalMatrix::IntervalMatrix(const Tensor &center) : int_(center, center) {}
 
 IntervalMatrix::IntervalMatrix(Interval bounds) : int_(std::move(bounds)) {}
 

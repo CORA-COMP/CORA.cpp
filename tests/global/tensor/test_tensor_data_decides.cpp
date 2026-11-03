@@ -84,7 +84,7 @@ int main() {
     stays_where_it_lives();
     mixing_is_an_error();
     std::vector<std::string> all = test::backends();
-    all.push_back("lean");
+    all.emplace_back("lean");
     for (const std::string &b : all) {
         const BackendScope scope(b);
         float32_follows_the_data(b);

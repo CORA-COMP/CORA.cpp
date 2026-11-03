@@ -47,7 +47,7 @@ void batches_are_their_members(const std::string &name) {
 
 int main() {
     std::vector<std::string> all = test::backends();
-    all.push_back("lean");
+    all.emplace_back("lean");
     for (const std::string &b : all) {
         const BackendScope scope(b);
         batches_are_their_members(b);

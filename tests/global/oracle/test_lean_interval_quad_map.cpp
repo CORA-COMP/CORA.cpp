@@ -19,6 +19,7 @@ int main() {
             const Interval I = rnd.box(n);
             const std::vector<Tensor> Q{rnd.matrix(n, n), rnd.matrix(n, n)};
             std::vector<lean::Tensor> LQ;
+            LQ.reserve(Q.size());
             for (const Tensor &M : Q) LQ.push_back(lean::Tensor::from(M));
             test::oracle::check_enclosed("interval.quadMap", I.quad_map(Q),
                                          lean::Interval(I).quad_map(LQ));

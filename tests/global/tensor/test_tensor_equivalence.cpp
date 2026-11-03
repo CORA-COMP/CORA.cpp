@@ -121,7 +121,7 @@ std::map<std::string, Case> aux_cases() {
                      return V{Tensor::like(x, x.data(), x.shape())};
                  }};
     // elementwise, with broadcasting and a batch
-    const auto binary = [](std::function<Tensor(const Tensor &, const Tensor &)> f) {
+    const auto binary = [](const std::function<Tensor(const Tensor &, const Tensor &)> &f) {
         return Case{1, [f](O &o) {
                         const Tensor a = o.matrix(3, 4), b = o.matrix(3, 1), z = o.batch(2, 3, 4);
                         const Tensor w = o.matrix(3, 4);
@@ -149,7 +149,7 @@ std::map<std::string, Case> aux_cases() {
                     const Tensor base = o.within(3, 4, 0.1, 3.0), p = o.matrix(3, 4);
                     return V{base.pow(p), base.pow(2.5)};
                 }};
-    const auto unary = [](std::function<Tensor(const Tensor &)> f, double lo, double hi) {
+    const auto unary = [](const std::function<Tensor(const Tensor &)> &f, double lo, double hi) {
         return Case{1, [f, lo, hi](O &o) { return V{f(o.within(4, 5, lo, hi))}; }};
     };
     c["negative"] = unary([](const Tensor &x) { return x.negative(); }, -3, 3);
@@ -176,7 +176,7 @@ std::map<std::string, Case> aux_cases() {
     c["square"] = unary([](const Tensor &x) { return x.square(); }, -3, 3);
     c["sigmoid"] = unary([](const Tensor &x) { return x.sigmoid(); }, -6, 6);
     c["clip"] = unary([](const Tensor &x) { return x.clip(-1, 0.5); }, -3, 3);
-    const auto special = [](std::function<Tensor(const Tensor &)> f) {
+    const auto special = [](const std::function<Tensor(const Tensor &)> &f) {
         return Case{1, [f](O &o) {
                         const Tensor x = o.matrix(1, 4);
                         const double inf = std::numeric_limits<double>::infinity();
@@ -192,7 +192,7 @@ std::map<std::string, Case> aux_cases() {
                       return V{Tensor::where(m.scalar_op(Tensor::Binary::greater, 0.0), a, b)};
                   }};
     // reductions along every axis of a batch
-    const auto along = [](std::function<Tensor(const Tensor &, int)> f) {
+    const auto along = [](const std::function<Tensor(const Tensor &, int)> &f) {
         return Case{6, [f](O &o) {
                         const Tensor x = o.batch(3, 4, 6);
                         return V{f(x, 0), f(x, 1), f(x, -1)};
@@ -207,7 +207,7 @@ std::map<std::string, Case> aux_cases() {
     c["cumsum"] = along([](const Tensor &x, int a) { return x.cumsum(a); });
     c["mean"] = along([](const Tensor &x, int a) { return x.mean(a); });
     c["softmax"] = along([](const Tensor &x, int a) { return x.softmax(a); });
-    const auto counting = [](std::function<Tensor(const Tensor &, int)> f) {
+    const auto counting = [](const std::function<Tensor(const Tensor &, int)> &f) {
         return Case{1, [f](O &o) {
                         const Tensor x = o.batch(3, 4, 6).scalar_op(Tensor::Binary::greater, 0.5);
                         return V{f(x, 0), f(x, 1), f(x, -1)};

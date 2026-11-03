@@ -136,6 +136,7 @@ Zonotope aux_from_rows(const std::vector<std::vector<Tensor>> &T,
                        const std::vector<std::vector<int64_t>> &ind, F row) {
     const auto indices = aux_indices(T, ind);
     std::vector<Tensor> rows;
+    rows.reserve(T.size());
     for (std::size_t i = 0; i < T.size(); ++i) rows.push_back(row(T[i], indices[i]));
     const Tensor all = Tensor::concat(rows, -2);
     return {all.slice(-1, 0, 1), all.slice(-1, 1, all.shape().back())};

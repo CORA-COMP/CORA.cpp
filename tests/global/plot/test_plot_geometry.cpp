@@ -143,6 +143,7 @@ void thinning_removes_needless_vertices() {
 
 std::vector<Point3> cube_corners() {
     std::vector<Point3> p;
+    p.reserve(8);
     for (int k = 0; k < 8; ++k)
         p.push_back({double(k & 1), double((k >> 1) & 1), double((k >> 2) & 1)});
     return p;
