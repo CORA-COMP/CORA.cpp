@@ -79,8 +79,9 @@ Tensor aux_delete_aligned(const Tensor &G_in, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-Zonotope Zonotope::compact(const std::string &method, Tol tol_arg) const {
+Zonotope Zonotope::compact(const std::optional<std::string> &method_arg, Tol tol_arg) const {
     detail::Entry entry;
+    const std::string method = method_arg.value_or("zeros");
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "compact");
     CORA_CHECK(method == "zeros" || method == "all" || method == "aligned", Error::wrong_value,
                [&] { return "compact: the method must be 'zeros', 'all' or 'aligned', got '" +
@@ -99,7 +100,7 @@ std::optional<std::vector<std::string>> Zonotope::compact_methods_impl() const {
 
 /// The generic entry has checked the method and tol; the default method is "zeros".
 Set Zonotope::compact_impl(const std::optional<std::string> &method, Tol tol) const {
-    return compact(method.value_or("zeros"), tol);
+    return compact(method, tol);
 }
 
 } // namespace cora

@@ -49,8 +49,8 @@ class Fullspace : public detail::DimensionSet {
     Fullspace box() const;
 
     /// The whole space of dimension n, or of a random dimension in 1..10 (CORA's randi(10)) from
-    /// rng if n is not given (CORA's generateRandom).
-    static Fullspace generate_random(Rng &rng, std::optional<int64_t> n = std::nullopt);
+    /// rng if dimension is not given (CORA's generateRandom).
+    static Fullspace generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt);
 
     // Combining with other sets -----------------------------------------------------------------
 
@@ -81,9 +81,6 @@ class Fullspace : public detail::DimensionSet {
 
     /// Whether the set is bounded: only in R^0.
     bool is_bounded() const;
-
-    /// Whether the set has a nonempty interior: always.
-    bool is_full_dim() const;
 
     /// The radius of the smallest ball around the set: Inf, NaN in R^0 (CORA's radius).
     double radius() const;
@@ -135,6 +132,7 @@ class Fullspace : public detail::DimensionSet {
     Set linear_map_impl(const Tensor &M) const override;
     Set translate_impl(const Tensor &v) const override;
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
+    bool is_full_dim_impl(Tol tol) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
 
 };

@@ -270,6 +270,13 @@ bool is_number(const py::handle &o) {
     return py::isinstance<py::float_>(o) || py::isinstance<py::int_>(o);
 }
 
+/// An optional vector argument: None stays empty, a number is a 1 x 1 array (one value for all).
+std::optional<Tensor> optional_vector(const py::object &o, const char *what) {
+    if (o.is_none()) return std::nullopt;
+    if (is_number(o)) return Tensor::from_data({py::cast<double>(o)}, {1, 1});
+    return vector_of(o, what);
+}
+
 py::object not_implemented() { return py::reinterpret_borrow<py::object>(Py_NotImplemented); }
 
 /// A binary operation of two Python sets through the registry, as the object of its class.
@@ -367,6 +374,16 @@ Tensor::Norm norm_of(const py::object &type);
 /// What every set has; bound on the base class, so any set works wherever a set is expected,
 /// including the operators between sets of any classes (through the registry).
 void bind_cont_set(py::module_ &m) {
+    m.def(
+        "generate_random",
+        [](cora::Rng &rng, std::optional<int64_t> dimension,
+           const std::optional<std::vector<std::string>> &admissible) {
+            return object_of(admissible ? ContSet::generate_random(rng, dimension, *admissible)
+                                        : ContSet::generate_random(rng, dimension));
+        },
+        py::arg("rng"), py::arg("dimension") = py::none(), py::arg("admissible") = py::none(),
+        "A random set of one of the admissible classes ('interval', 'zonotope'); the class's own "
+        "generate_random takes its options");
     py::class_<ContSet, PyContSet>(m, "ContSet",
                                    "The abstract set; a Python subclass implements _dim, _center, "
                                    "_support_function, _interval, _rand_point, _project, "
@@ -508,16 +525,6 @@ void bind_cont_set(py::module_ &m) {
             },
             py::arg("c"), py::arg("d"),
             "The orthogonal projection onto the hyperplane {x | c'x = d}")
-        .def_static(
-            "generate_random",
-            [](cora::Rng &rng, std::optional<int64_t> n,
-               const std::optional<std::vector<std::string>> &admissible) {
-                return object_of(
-                    admissible ? ContSet::generate_random(rng, n, *admissible)
-                               : ContSet::generate_random(rng, n));
-            },
-            py::arg("rng"), py::arg("n") = py::none(), py::arg("admissible") = py::none(),
-            "A random set of one of the admissible classes ('interval', 'zonotope')")
         .def("__eq__",
              [](const py::object &S1, const py::object &S2) -> py::object {
                  if (!py::isinstance<ContSet>(S2)) return not_implemented();
@@ -636,7 +643,6 @@ void bind_fullspace(py::module_ &m) {
             py::arg("S"), py::arg("tol") = py::none(),
             "Whether S is the whole space of the same dimension")
         .def("is_bounded", &Fullspace::is_bounded, "Whether the set is bounded: only in R^0")
-        .def("is_full_dim", &Fullspace::is_full_dim, "Whether the set has a nonempty interior")
         .def_static(
             "enclose_points",
             [](const py::object &points) {
@@ -646,8 +652,8 @@ void bind_fullspace(py::module_ &m) {
         .def("project_high_dim", &Fullspace::project_high_dim, py::arg("N"), py::arg("proj"),
              "The whole space again, for N = dim; any other N is refused (CORA: not_defined)")
         .def_static("generate_random", &Fullspace::generate_random, py::arg("rng"),
-                    py::arg("n") = py::none(),
-                    "The whole space of n dimensions, or of a random one in 1..10")
+                    py::arg("dimension") = py::none(),
+                    "The whole space of the dimension, or of a random one in 1..10")
         .def("radius", &Fullspace::radius, "The radius of the smallest ball around it: Inf")
         .def("volume", &Fullspace::volume, "The volume: Inf")
         .def("complement", &Fullspace::complement, "The complement: the empty set")
@@ -692,8 +698,17 @@ void bind_interval(py::module_ &m) {
             py::arg("inf"), py::arg("sup"), "An interval matrix: bounds (..., n, k)")
         .def_static("stack", &Interval::stack, py::arg("intervals"),
                     "A batch of intervals as one; the batch is the leading dimension")
-        .def_static("generate_random", &Interval::generate_random, py::arg("n"), py::arg("rng"),
-                "A random box of n dimensions")
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, const std::optional<int64_t> &dimension, const py::object &center,
+               const py::object &max_radius) {
+                return Interval::generate_random(rng, dimension, optional_vector(center, "center"),
+                                                 optional_vector(max_radius, "max_radius"));
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("max_radius") = py::none(),
+            "A random box: the dimension (default that of center or max_radius, else random in "
+            "1..10), a center and the maximum radii (a vector or one number)")
         .def_property_readonly("inf", [](const Interval &I) { return bounds(I.inf()); },
                 "The lower bounds (..., n)")
         .def_property_readonly("sup", [](const Interval &I) { return bounds(I.sup()); },
@@ -1321,7 +1336,6 @@ void bind_empty_set(py::module_ &m) {
              py::arg("n") = py::none(), "The empty set of n >= 0 dimensions")
         .def_static("empty", &EmptySet::empty, py::arg("n") = 0, "The empty set of n dimensions")
         .def("is_bounded", &EmptySet::is_bounded, "Whether the set is bounded: always")
-        .def("is_full_dim", &EmptySet::is_full_dim, "Whether the interior is nonempty: never")
         .def("intersect", &EmptySet::intersect, py::arg("S"), "The intersection with S: empty")
         .def(
             "plus",
@@ -1359,8 +1373,8 @@ void bind_empty_set(py::module_ &m) {
         .def("project_high_dim", &EmptySet::project_high_dim, py::arg("N"), py::arg("proj"),
              "The empty set in N dimensions, with the checks of lift")
         .def_static("generate_random", &EmptySet::generate_random, py::arg("rng"),
-                    py::arg("n") = py::none(),
-                    "The empty set of n dimensions, or of a random one in 1..10")
+                    py::arg("dimension") = py::none(),
+                    "The empty set of the dimension, or of a random one in 1..10")
         .def("radius", &EmptySet::radius, "The radius of the smallest ball around it: 0")
         .def("volume", &EmptySet::volume, "The volume: 0")
         .def("complement", &EmptySet::complement, "The complement: the whole space")
@@ -1389,9 +1403,18 @@ void bind_zonotope(py::module_ &m) {
              py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
         .def_static("stack", &Zonotope::stack, py::arg("zonotopes"),
                     "A batch of zonotopes as one; fewer generators are padded with zeros")
-        .def_static("generate_random", &Zonotope::generate_random, py::arg("n"), py::arg("m"),
-                    py::arg("rng"),
-                "A random zonotope of n dimensions and m generators")
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, const std::optional<int64_t> &dimension, const py::object &center,
+               const std::optional<int64_t> &nr_generators, const std::string &distribution) {
+                return Zonotope::generate_random(rng, dimension, optional_vector(center, "center"),
+                                                 nr_generators, distribution);
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("nr_generators") = py::none(), py::arg("distribution") = "uniform",
+            "A random zonotope: the dimension (default that of center, else random in 1..10), a "
+            "center, the number of generators (default 2 * dimension) and the distribution of "
+            "their lengths ('uniform', 'exp' or 'gamma')")
         .def_property_readonly("center", [](const Zonotope &Z) { return vector(Z.center()); },
                 "The center c (..., n)")
         .def_property_readonly("generators",
@@ -1418,11 +1441,11 @@ void bind_zonotope(py::module_ &m) {
                 "The Minkowski sum with a zonotope or a box")
         .def("linear_combination", &Zonotope::linear_combination, py::arg("Z2"),
                 "The zonotope of the convex combinations of this one and Z2")
-        .def("reduce", &Zonotope::reduce, py::arg("order"),
+        .def("reduce", &Zonotope::reduce, py::arg("order") = 1,
              "At most order * n generators; the smallest are enclosed by a box (Girard)")
         .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
         .def("box", &Zonotope::box, "The box around the zonotope, as a zonotope")
-        .def("compact", &Zonotope::compact, py::arg("method") = "zeros",
+        .def("compact", &Zonotope::compact, py::arg("method") = py::none(),
              py::arg("tol") = py::none(),
              "Without zero generators ('zeros'); 'all' also merges aligned ones; 'aligned': as is")
         .def(

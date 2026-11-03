@@ -208,7 +208,7 @@ class ContSet {
 
     /// A random set of one of the admissible classes (CORA names: "interval", "zonotope"), of
     /// dimension n (default: uniform in 1..10), drawn with rng.
-    static Set generate_random(Rng &rng, std::optional<int64_t> n = std::nullopt,
+    static Set generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
                                const std::vector<std::string> &admissible = {"interval",
                                                                              "zonotope"});
 

@@ -34,8 +34,8 @@ from ._cora import (ConZonotope, ContSet, EmptySet, Expr, ExpmMixedResult, ExpmR
                     NonlinearSys, ReachProblem,
                     ReachSet, Rng, Specification, VerifyResult, Zonotope, backend, binary_pairs,
                     cart_prod, checks, checks_enabled, contains, convex_hull, cora_color,
-                    current_backend, current_tolerance, has_torch, intersect, is_intersecting,
-                    isequal, lean, num_threads, plus, register_binary, set_checks_enabled,
+                    current_backend, current_tolerance, generate_random, has_torch, intersect,
+                    is_intersecting, isequal, lean, num_threads, plus, register_binary, set_checks_enabled,
                     set_default_backend, set_default_tolerance, set_num_threads, strict_gradients,
                     tensor_ops, tolerance, unite, use_cora_colors)
 from .errors import CORAError, CORAWarning
@@ -56,7 +56,7 @@ __all__ = [
     "NeuralNetwork", "NonlinearSys", "ReachProblem", "ReachSet", "Rng",
     "Specification", "VerifyResult", "Zonotope", "backend", "binary_pairs", "cart_prod", "checks",
     "checks_enabled", "contains", "convex_hull", "cora_color", "current_backend",
-    "current_tolerance", "default_tol", "errors",
+    "current_tolerance", "default_tol", "errors", "generate_random",
     "has_torch", "intersect", "is_intersecting", "isequal", "lean", "num_threads", "plot",
     "plot_over_time", "plot_rand_point", "plus", "register_algorithm", "register_binary",
     "set_checks_enabled",

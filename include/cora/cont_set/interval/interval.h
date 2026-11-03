@@ -4,7 +4,7 @@
 // interval matrix is an Interval too, and Zonotope::linear_map takes it. Immutable: every
 // operation returns a new interval.
 //
-// Syntax:     Interval I(inf, sup);   Interval I = Interval::generate_random(n, rng);
+// Syntax:     Interval I(inf, sup);   Interval I = Interval::generate_random(rng);
 // Operators:  I + I2, I + v, I - I2, I - v, v - I, -I, +I, s * I, M * I, I / s, I <= I2, I < I2, as
 //             in CORA
 // Operations: support_function, linear_map, plus, rand_point, contains, stack, project, vertices,
@@ -48,9 +48,13 @@ class Interval : public ContSet {
     /// interval matrix.
     Interval(Tensor inf, Tensor sup);
 
-    /// A random box in n dimensions (CORA: center U[-2, 2], radius R/2*u with R ~ U[0, 10],
-    /// u ~ U[0, 1]).
-    static Interval generate_random(int64_t n, Rng &rng);
+    /// A random box, as CORA's generateRandom: dimension (default that of center or max_radius,
+    /// else random in 1..10), center (default U[-2, 2] per entry), max_radius (radii >= 0: a vector,
+    /// or a 1 x 1 tensor for all; default U[0, 10] per entry); the radius is max_radius/2*u,
+    /// u ~ U[0, 1].
+    static Interval generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
+                                    const std::optional<Tensor> &center = std::nullopt,
+                                    const std::optional<Tensor> &max_radius = std::nullopt);
 
     /// The lower and the upper bounds.
     const Tensor &inf() const noexcept { return inf_; }
