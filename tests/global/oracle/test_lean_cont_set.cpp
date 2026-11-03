@@ -53,9 +53,10 @@ void aux_check_set(const A &mine, const B &theirs) {
 /// A projection onto a hyperplane: CORALean takes the product with the interval matrix I - c c' and
 /// adds the box d c, which leaves n + n zero generators after the m of the set at nearest. So at
 /// nearest the center and the first m generators are CORA.cpp's, bit for bit, and the others are
-/// zero; in the sound mode the result lies in the enclosure, by the interval hulls.
+/// zero; in the sound mode the interval hulls agree to a relative 1e-13 (the oracle encloses the real
+/// image, CORA.cpp's sums round to nearest in the order of the backend).
 void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
-    if (oracle::mode() == oracle::Mode::sound) return aux_check_set(mine, theirs);
+    if (oracle::mode() == oracle::Mode::sound) return oracle::check_hull(mine, theirs, 1e-13);
     const Zonotope other = theirs.gather().first;
     const int64_t m = mine.generators().shape().back(), total = other.generators().shape().back();
     test::check(total >= m, "projectOnHyperplane: the generators of the set stay");
@@ -64,6 +65,21 @@ void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
     oracle::check(mine.generators(), other.generators().slice(-1, 0, m));
     test::check(total == m || other.generators().slice(-1, m, total).abs().max().item() == 0,
                 "projectOnHyperplane: the other generators are zero at nearest");
+}
+
+/// A projection of a box: the same bits at nearest. In the sound mode the oracle encloses the real
+/// image, and CORA.cpp's sums, rounded to nearest in the order of the backend, may leave it by an
+/// ulp or two, so the bounds agree to a relative 1e-14.
+void aux_check_projected(const Interval &mine, const lean::Interval &theirs) {
+    if (oracle::mode() == oracle::Mode::exact) return oracle::check(mine, theirs);
+    const auto [inf, sup] = theirs.gather();
+    bool ok = true;
+    for (const auto &[a, b] : {std::pair{mine.inf(), inf}, {mine.sup(), sup}}) {
+        const std::vector<double> x = a.data(), y = b.data();
+        for (std::size_t i = 0; i < x.size(); ++i)
+            ok = ok && std::abs(x[i] - y[i]) <= 1e-14 * (1 + std::abs(y[i]));
+    }
+    test::check(ok, oracle::op_name() + ": the bounds of the oracle's projection");
 }
 
 const ContSet &aux_set(const Interval &I) { return I; }
@@ -193,8 +209,8 @@ int main() {
     oracle::run("interval.projectOnHyperplane", [](oracle::Random &rnd) {
         for (const auto &[I, c] : aux_normals<Interval>([&](int n) { return rnd.box(n); })) {
             const Tensor d = rnd.vector(1);
-            oracle::check(aux_set(I).project_on_hyperplane(c, d).as<Interval>(),
-                          lean::Interval(I).project_on_hyperplane(c, d.item()));
+            aux_check_projected(aux_set(I).project_on_hyperplane(c, d).as<Interval>(),
+                                lean::Interval(I).project_on_hyperplane(c, d.item()));
         }
     });
     oracle::run("zonotope.projectOnHyperplane", [](oracle::Random &rnd) {
