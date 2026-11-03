@@ -56,9 +56,17 @@ bool priv_containment_vertex_enumeration(const HostZonotope &inner, const HostZo
 /// in the scaling of `outer` about its center if that is at most 1; by a linear program.
 double priv_containment_sadraddini_tedrake(const HostZonotope &inner, const HostZonotope &outer);
 
+/// The two halves of Z along generator j (centers c -+ g_j/2, that generator halved): lower first
+/// (CORA's aux_splitOneDim). A batch splits member by member.
+std::pair<Zonotope, Zonotope> priv_split_generator(const Zonotope &Z, int64_t j);
+
 /// The unit normals of the facets of a full-dimensional zonotope as rows (k, n), in CORA's order
 /// (the first half of polytope(Z).A); a single zonotope without zero generators.
 Tensor priv_zonotope_facet_normals(const Zonotope &Z);
+
+/// The halfspaces C x <= d (C (k, n), d (k, 1)) whose intersection is the single zonotope Z,
+/// including a degenerate one (CORA's exact polytope(Z), without the polytope class).
+std::pair<Tensor, Tensor> priv_zonotope_halfspaces(const Zonotope &Z);
 
 } // namespace cora
 

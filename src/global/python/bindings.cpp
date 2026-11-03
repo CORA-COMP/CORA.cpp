@@ -515,6 +515,13 @@ void bind_cont_set(py::module_ &m) {
     bind_registry(m);
 }
 
+/// The matrices of a Python list of arrays, for quad_map.
+std::vector<Tensor> matrix_list_of(const py::list &Q) {
+    std::vector<Tensor> out;
+    for (const py::handle &M : Q) out.push_back(tensor_of(M, "a matrix of Q"));
+    return out;
+}
+
 /// A Python number or array as the operand of a box: a number is a 1 x 1 array, else a column.
 Tensor operand(const Interval &I, const py::object &o, const char *what) {
     if (is_number(o)) return I.inf().full_like({1, 1}, py::cast<double>(o));
@@ -787,6 +794,16 @@ void bind_interval(py::module_ &m) {
         .def("lift", &Interval::lift, py::arg("N"), py::arg("dims"),
              "The box in N dimensions at the coordinates dims (0-based), unbounded elsewhere")
         .def_static("origin", &Interval::origin, py::arg("n"), "The box {0} of n dimensions")
+        .def(
+            "quad_map",
+            [](const Interval &I, const py::list &Q) { return I.quad_map(matrix_list_of(Q)); },
+            py::arg("Q"), "The box around (x' Q[i] x) for x in the box; Q[i] are (n, n) matrices")
+        .def(
+            "quad_map",
+            [](const Interval &I, const Interval &I2, const py::list &Q) {
+                return I.quad_map(I2, matrix_list_of(Q));
+            },
+            py::arg("I2"), py::arg("Q"), "The box around (x1' Q[i] x2) for x1 in the box, x2 in I2")
         .def("log", &Interval::log, "The image under the natural logarithm")
         .def("sin", &Interval::sin, "The image under the sine (CORA: cos(I - pi/2))")
         .def("sinh", &Interval::sinh, "The image under the hyperbolic sine")
@@ -1142,7 +1159,79 @@ void bind_zonotope(py::module_ &m) {
             },
             py::arg("S"), py::arg("method") = "approx",
             "The Minkowski difference with a zonotope, a box or a point; methods: approx, inner, "
-            "exact, outer, outer:coarse");
+            "exact, outer, outer:coarse")
+        .def_static("origin", &Zonotope::origin, py::arg("n"), "The zonotope {0} of n dimensions")
+        .def(
+            "radius", [](const Zonotope &Z) { return scalar(Z.radius()); },
+            "A bound on the distance from the center: the norm of the radius of the box")
+        .def("rank", &Zonotope::rank, py::arg("tol") = py::none(),
+             "The rank of the generators; singular values up to tol count as zero")
+        .def("representsa", &Zonotope::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the zonotope is also a set of the CORA type ('origin', 'point', 'interval', "
+             "'parallelotope', 'capsule', 'zonotope', ...)")
+        .def("project_high_dim", &Zonotope::project_high_dim, py::arg("N"), py::arg("dims"),
+             "In N dimensions, with state i at position dims[i] and zeros elsewhere")
+        .def("rotate", &Zonotope::rotate, py::arg("dims"), py::arg("angle"),
+             "Turned by angle (radians) in the plane of the two states dims")
+        .def(
+            "quad_map",
+            [](const Zonotope &Z, const py::list &Q) { return Z.quad_map(matrix_list_of(Q)); },
+            py::arg("Q"), "An enclosure of (x' Q[i] x) for x in Z; Q[i] are (n, n) matrices")
+        .def(
+            "quad_map",
+            [](const Zonotope &Z, const Zonotope &Z2, const py::list &Q) {
+                return Z.quad_map(Z2, matrix_list_of(Q));
+            },
+            py::arg("Z2"), py::arg("Q"), "An enclosure of (x1' Q[i] x2) for x1 in Z, x2 in Z2")
+        .def("split", py::overload_cast<>(&Zonotope::split, py::const_),
+             "One pair of halves of the box around Z per coordinate")
+        .def("split", py::overload_cast<int64_t>(&Zonotope::split, py::const_), py::arg("N"),
+             "The halves of the box around Z cut at the center of coordinate N")
+        .def("split", py::overload_cast<int64_t, int>(&Zonotope::split, py::const_), py::arg("N"),
+             py::arg("max_order"),
+             "The halves along generator N of Z reduced to max_order")
+        .def(
+            "split",
+            [](const Zonotope &Z, const py::object &dir) {
+                return Z.split(vector_of(dir, "dir"));
+            },
+            py::arg("dir"), "The halves cut by a plane through the center normal to dir")
+        // the number overload first: an object parameter would take it as aux_dir
+        .def(
+            "split",
+            [](const Zonotope &Z, const py::object &a, double d) {
+                return Z.split(vector_of(a, "a"), d);
+            },
+            py::arg("a"), py::arg("d"),
+            "The pieces on the two sides of the plane a'x = d, or Z alone if the plane misses it")
+        .def(
+            "split",
+            [](const Zonotope &Z, const py::object &orig_dir, const py::object &aux_dir) {
+                return Z.split(vector_of(orig_dir, "orig_dir"), vector_of(aux_dir, "aux_dir"));
+            },
+            py::arg("orig_dir"), py::arg("aux_dir"),
+            "The halves cut normal to aux_dir without its part along orig_dir")
+        .def("split_first_gen", &Zonotope::split_first_gen,
+             "The halves along the generator of the largest sum |g_j' g_k|")
+        .def("split_longest_gen", &Zonotope::split_longest_gen,
+             "The halves along the longest generator, c + g/2 first")
+        .def("reduce_under_approx", &Zonotope::reduce_under_approx, py::arg("method"),
+             py::arg("order"),
+             "A zonotope inside Z with at most order * n generators: 'yang', 'raghuraman', "
+             "'kochdumper'")
+        .def(
+            "unite",
+            [](const Zonotope &Z, const py::object &S, const std::string &method,
+               const std::optional<int> &order) {
+                if (py::isinstance<Zonotope>(S)) return Z.unite(py::cast<Zonotope>(S), method, order);
+                if (py::isinstance<Interval>(S)) return Z.unite(py::cast<Interval>(S), method, order);
+                if (py::isinstance<py::list>(S) || py::isinstance<py::tuple>(S))
+                    return Z.unite(py::cast<std::vector<Zonotope>>(S), method, order);
+                return Z.unite(vector_of(S, "the point"), method, order);
+            },
+            py::arg("S"), py::arg("method") = "linprog", py::arg("order") = py::none(),
+            "A zonotope that contains the union with S (a zonotope, a box, a point or a list of "
+            "zonotopes); methods linprog, iterative, parallelotope");
 }
 
 /// The operators with numbers and arrays, as CORA writes them: s * S, M * S and M @ S (the linear

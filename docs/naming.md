@@ -110,6 +110,17 @@ changed, and the reasons are listed below.
 | `and(E, S)`, `plus(E, S)`, `convHull(E, S)` | `E.intersect(S)`, `E.plus(S)`, `E.convex_hull(S)` | the same |
 | `contains(E, S, type, tol)`, `isIntersecting(E, S, type, tol)`, `isequal(E, S, tol)` | `E.contains(S, tol)`, `E.is_intersecting(S, tol)`, `E.isequal(S, tol)` | the same |
 | `mtimes(M, E)`, `lift(E, N, dims)` | `E.linear_map(M)`, `M * E`, `E.lift(N, dims)` | `E.linear_map(M)`, `M @ E`, `E.lift(N, dims)` |
+| `zonotope.origin(n)` | `Zonotope::origin(n)` | `cora.Zonotope.origin(n)` |
+| `radius(Z)`, `rank(Z, tol)` | `Z.radius()`, `Z.rank(tol)` | `Z.radius()`, `Z.rank(tol)` |
+| `representsa(Z, type, tol)` | `Z.representsa(type, tol)` | `Z.representsa(type, tol)` |
+| `projectHighDim(Z, N, proj)` | `Z.project_high_dim(N, dims)` | `Z.project_high_dim(N, dims)` |
+| `rotate(Z, dims, angle)` | `Z.rotate(dims, angle)` | `Z.rotate(dims, angle)` |
+| `quadMap(Z, Q)`, `quadMap(Z, Z2, Q)` | `Z.quad_map(Q)`, `Z.quad_map(Z2, Q)` | `Z.quad_map(Q)`, `Z.quad_map(Z2, Q)` |
+| `quadMap(I, Q)` | `I.quad_map(Q)`, `I.quad_map(I2, Q)` | `I.quad_map(Q)`, `I.quad_map(I2, Q)` |
+| `split(Z)`, `split(Z, N)`, `split(Z, N, maxOrder)`, `split(Z, dir)`, `split(Z, hs)` | `Z.split()`, `Z.split(N)`, `Z.split(N, max_order)`, `Z.split(dir)`, `Z.split(a, d)` | the same |
+| `splitFirstGen(Z)`, `splitLongestGen(Z)` | `Z.split_first_gen()`, `Z.split_longest_gen()` | the same |
+| `reduceUnderApprox(Z, method, order)` | `Z.reduce_under_approx(method, order)` | `Z.reduce_under_approx(method, order)` |
+| `or(Z, S, alg, order)` | `Z.unite(S, method, order)` | `Z.unite(S, method, order)`, `Z \| S` |
 | `intervalMatrix(I)` | `I.interval_matrix()` | `I.interval_matrix()` |
 | `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |

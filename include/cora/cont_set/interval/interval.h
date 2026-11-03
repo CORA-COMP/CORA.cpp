@@ -14,8 +14,8 @@
 //             dirac, infimum, interval_matrix, is_bounded, is_full_dim, is_intersecting, isequal,
 //             kron, less_equal, less, lift, log, max, min, minkowski_difference, minus,
 //             matrix_power, divide, norm, unite, origin, rad, radius, sign, round, sin, sinh,
-//             power, rdivide, prod, partition, project_high_dim, reduce, representsa (one file
-//             each); the constructor checks its input (interval.cpp)
+//             power, rdivide, prod, partition, project_high_dim, reduce, representsa, quad_map (one
+//             file each); the constructor checks its input (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@interval/interval.m
@@ -306,6 +306,13 @@ class Interval : public ContSet {
     /// sinh: [sinh(inf), sinh(sup)].
     Interval sin() const;
     Interval sinh() const;
+
+    /// The box around the image of the quadratic map x -> (x' Q_i x)_i over this box (CORA's
+    /// quadMap): the box of Zonotope::quad_map of its zonotope. With I2, x1' Q_i x2 for x1 in
+    /// this box and x2 in I2. Q[i] are the (n, n) matrices of the outputs; the boxes must be
+    /// bounded.
+    Interval quad_map(const std::vector<Tensor> &Q) const;
+    Interval quad_map(const Interval &I2, const std::vector<Tensor> &Q) const;
 
     /// The hull of atan2(y, x) at the four corners, y from this interval and x from I2, as CORA
     /// (not an enclosure where the box meets the branch cut of atan2).
