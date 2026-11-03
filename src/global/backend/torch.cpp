@@ -124,6 +124,7 @@ struct TorchTensor : Tensor::Impl {
             return a / b;
         case Binary::pow:
             return torch::pow(a, b);
+        // the extrema, the remainder and atan2
         case Binary::maximum:
             return torch::maximum(a, b);
         case Binary::minimum:
@@ -132,6 +133,7 @@ struct TorchTensor : Tensor::Impl {
             return torch::remainder(a, b);
         case Binary::atan2:
             return torch::atan2(a, b);
+        // the comparisons give 1 or 0 of the operand type
         case Binary::equal:
             return torch::eq(a, b).to(a.scalar_type());
         case Binary::not_equal:
@@ -191,6 +193,7 @@ struct TorchTensor : Tensor::Impl {
             return wrap(t.acos());
         case Unary::atan:
             return wrap(t.atan());
+        // the hyperbolic functions, then the tests
         case Unary::sinh:
             return wrap(t.sinh());
         case Unary::cosh:

@@ -84,6 +84,7 @@ auto aux_with_binary(Binary op, G &&g) {
         return g([](T a, T b) { return a / b; });
     case Binary::pow:
         return g([](T a, T b) { return std::pow(a, b); });
+    // the extrema, the remainder and atan2
     case Binary::maximum:
         return g([](T a, T b) { return aux_max(a, b); });
     case Binary::minimum:
@@ -92,6 +93,7 @@ auto aux_with_binary(Binary op, G &&g) {
         return g([](T a, T b) { return aux_remainder(a, b); });
     case Binary::atan2:
         return g([](T a, T b) { return std::atan2(a, b); });
+    // the comparisons give 1 or 0 of the operand type
     case Binary::equal:
         return g([](T a, T b) { return T(a == b); });
     case Binary::not_equal:
@@ -573,6 +575,7 @@ Tensor::Ptr HostTensor<T>::reduce(Reduce op, int axis, bool keepdims) const {
     case Reduce::prod:
         aux_fold_right(p, e, T(1), r->p, [](T x, T acc) { return x * acc; });
         break;
+    // the extrema and their indices
     case Reduce::max:
         aux_select(p, e, r->p, none, above);
         break;

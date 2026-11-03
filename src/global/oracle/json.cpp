@@ -36,6 +36,7 @@ void aux_dump(const Json &j, std::string &out) {
     case Json::Kind::boolean:
         out += j.boolean ? "true" : "false";
         break;
+    // the scalars
     case Json::Kind::number:
         out += j.text;
         break;

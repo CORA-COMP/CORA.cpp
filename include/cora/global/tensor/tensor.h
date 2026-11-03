@@ -194,6 +194,7 @@ class Tensor {
         sqrt,
         exp,
         log,
+        // the trigonometric and hyperbolic functions
         sin,
         cos,
         tan,

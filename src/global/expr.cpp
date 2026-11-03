@@ -135,6 +135,7 @@ Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
         return a.multiply(b);
     case Op::div:
         return a.divide(b);
+    // the unary operations
     case Op::neg:
         return a * -1.0;
     case Op::pow:
@@ -162,6 +163,7 @@ Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
         return a * b;
     case Op::div:
         return aux_div(a, b);
+    // the unary operations
     case Op::neg:
         return {a.hi * -1.0, a.lo * -1.0};
     case Op::pow:
@@ -328,6 +330,7 @@ Expr Expr::diff(int i) const {
         return da * n.b + n.a * n.b.diff(i);
     case Op::div:
         return (da * n.b - n.a * n.b.diff(i)) / (n.b * n.b);
+    // the unary operations
     case Op::neg:
         return -da;
     case Op::pow:

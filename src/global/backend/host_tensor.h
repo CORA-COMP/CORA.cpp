@@ -134,6 +134,7 @@ template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const HostTensor<T> &c,
                       const HostTensor<T> &G);
+// the set kernels: the maps and the sum of zonotopes
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,

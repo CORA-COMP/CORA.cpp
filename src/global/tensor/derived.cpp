@@ -154,6 +154,7 @@ Tensor derived::matrix_norm(const Tensor &A, Norm ord) {
     CORA_FAIL(Error::wrong_value, "CoraTensor::matrix_norm: unknown norm");
 }
 
+// 1: the sum of |x|; inf: the largest |x|; 2 and fro: the square root of the sum of squares.
 Tensor derived::vector_norm(const Tensor &x, Norm ord, int axis, bool keepdims) {
     switch (ord) {
     case Norm::one:
