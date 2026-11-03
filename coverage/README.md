@@ -26,15 +26,15 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 
 | Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
 |---|---|---|---|---|---|---|---|---|
-| contSet | 908 | 795 | 19 | 12 | 17 | 51 | 14 | 23 |
+| contSet | 908 | 780 | 21 | 12 | 22 | 59 | 14 | 28 |
 | contDynamics | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
 | hybridDynamics | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | nn | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | specification | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
 | others | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 1696 | 1563 | 25 | 26 | 17 | 51 | 14 | 34 |
+| **all** | 1696 | 1548 | 27 | 26 | 22 | 59 | 14 | 39 |
 
-7% of the 1682 CORA methods in scope have a source, 6% are tested in C++ and Python, 3% are checked against CORALean; oracle debt 34.
+8% of the 1682 CORA methods in scope have a source, 6% are tested in C++ and Python, 4% are checked against CORALean; oracle debt 39.
 
 ## Classes
 
@@ -44,7 +44,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [contSet/capsule](contSet/capsule.md) | 39 | 39 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/conPolyZono](contSet/conPolyZono.md) | 47 | 47 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/conZonotope](contSet/conZonotope.md) | 50 | 49 | 0 | 0 | 0 | 0 | 1 | 0 |
-| [contSet/contSet](contSet/contSet.md) | 101 | 76 | 11 | 4 | 0 | 1 | 9 | 2 |
+| [contSet/contSet](contSet/contSet.md) | 101 | 75 | 12 | 4 | 0 | 1 | 9 | 2 |
 | [contSet/ellipsoid](contSet/ellipsoid.md) | 50 | 50 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/emptySet](contSet/emptySet.md) | 30 | 30 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/fullspace](contSet/fullspace.md) | 33 | 33 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -57,7 +57,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [contSet/spectraShadow](contSet/spectraShadow.md) | 33 | 33 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/taylm](contSet/taylm.md) | 51 | 51 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/zonoBundle](contSet/zonoBundle.md) | 44 | 44 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [contSet/zonotope](contSet/zonotope.md) | 80 | 51 | 5 | 3 | 5 | 14 | 2 | 6 |
+| [contSet/zonotope](contSet/zonotope.md) | 80 | 37 | 6 | 3 | 10 | 22 | 2 | 11 |
 | [contSet/zoo](contSet/zoo.md) | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contDynamics/contDynamics](contDynamics/contDynamics.md) | 19 | 15 | 2 | 2 | 0 | 0 | 0 | 1 |
 | [contDynamics/linParamSys](contDynamics/linParamSys.md) | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
