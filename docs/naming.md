@@ -129,6 +129,10 @@ changed, and the reasons are listed below.
 | `splitFirstGen(Z)`, `splitLongestGen(Z)` | `Z.split_first_gen()`, `Z.split_longest_gen()` | the same |
 | `reduceUnderApprox(Z, method, order)` | `Z.reduce_under_approx(method, order)` | `Z.reduce_under_approx(method, order)` |
 | `or(Z, S, alg, order)` | `Z.unite(S, method, order)` | `Z.unite(S, method, order)`, `Z \| S` |
+| `not(E)`, `not(fs)` | `E.complement()`, `F.complement()` | `E.complement()`, `F.complement()` |
+| `radius(E)`, `volume_(E)`, and the same of `fullspace` | `E.radius()`, `E.volume()` (a double) | `E.radius()`, `E.volume()` |
+| `representsa_(E, type, tol)` | `E.representsa(type, tol)` (`Fullspace` the same) | `E.representsa(type, tol)` |
+| `projectHighDim_(E, N, proj)`, `generateRandom('Dimension', n)` | `E.project_high_dim(N, proj)`, `EmptySet::generate_random(rng, n)` | `E.project_high_dim(N, proj)`, `cora.EmptySet.generate_random(rng, n=None)` |
 | `intervalMatrix(I)` | `I.interval_matrix()` | `I.interval_matrix()` |
 | `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |
@@ -189,6 +193,9 @@ changed, and the reasons are listed below.
     the constraint of the hyperplane (a normal and an offset), as CORA.cpp has no hyperplane class.
   - `mtimes` is MATLAB's name of an operator, so it is `linear_map` for a set under a matrix and
     `matmul` for the product of matrices (`IntervalMatrix`).
+  - `mtimes` is MATLAB's name of an operator, so it is `linear_map`.
+  - `not` is a keyword of C++ (an alternative token), so the complement of `emptySet` and
+    `fullspace` is `complement`.
   - `interval.Inf` is `unbounded`, because `inf` is the lower bound.
   - `linComb` is `linear_combination` and `convHull` is `convex_hull`: words, not
     abbreviations. So are `constrSat` (`constraints_satisfied`), `cubMap` (`cubic_map`) and `dH2box`

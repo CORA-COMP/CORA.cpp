@@ -7,9 +7,10 @@
 // Syntax:     EmptySet E(n);   EmptySet E = EmptySet::empty(n);   EmptySet F = M * E;
 // Operators:  M * E (linear_map), s * E, as in CORA
 // Operations: intersect, plus, convex_hull, contains, is_intersecting, isequal, is_bounded,
-//             is_full_dim, linear_map, lift, empty, center, support_function, interval,
-//             rand_point, project, vertices, vertices_3d, display (one file each); the
-//             constructor checks its input (empty_set.cpp)
+//             is_full_dim, linear_map, lift, project_high_dim, complement, radius, volume,
+//             representsa, generate_random, empty, center, support_function, interval, rand_point,
+//             project, vertices, vertices_3d, display (one file each); the constructor checks its
+//             input (empty_set.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@emptySet/emptySet.m
@@ -22,11 +23,16 @@
 #include "cora/cont_set/set.h"
 #include "cora/global/tensor/tolerance.h"
 
+#include <optional>
+#include <string>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+class Fullspace;
+class Rng;
 
 class EmptySet : public detail::DimensionSet {
   public:
@@ -43,6 +49,27 @@ class EmptySet : public detail::DimensionSet {
 
     /// Whether the set has a nonempty interior: never.
     bool is_full_dim() const;
+
+    /// The empty set of dimension n, drawn as CORA's generateRandom does: n is given, or a random
+    /// integer in 1..10 (CORA's randi(10)) taken from rng.
+    static EmptySet generate_random(Rng &rng, std::optional<int64_t> n = std::nullopt);
+
+    /// The radius of the smallest ball around the set: 0, the supremum over no point (CORA's
+    /// radius).
+    double radius() const;
+
+    /// The volume: 0 (CORA's volume_).
+    double volume() const;
+
+    /// The complement (CORA's not; `not` is a C++ keyword): the whole space of the dimension.
+    Fullspace complement() const;
+
+    /// Whether the set is also a set of CORA's type ("origin", "zonotope", "fullspace", ...)
+    /// (CORA's representsa_): false for "origin", "point", "halfspace", "hyperplane",
+    /// "parallelotope", "probZonotope" and "fullspace", true for the others. "levelSet" and
+    /// "polygon" are Error::not_supported. tol is checked and relaxes nothing; default: the
+    /// repository tolerance (docs/architecture.md).
+    bool representsa(const std::string &type, Tol tol = std::nullopt) const;
 
     // Combining with other sets -------------------------------------------------------------------
 
@@ -79,6 +106,9 @@ class EmptySet : public detail::DimensionSet {
     /// The empty set in N dimensions (CORA's lift_); dims are the coordinates of this set's
     /// dimensions in the larger space, 0-based.
     EmptySet lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// The empty set in N dimensions (CORA's projectHighDim_), with the checks of lift.
+    EmptySet project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
 
   protected:
     Tensor center_impl() const override;

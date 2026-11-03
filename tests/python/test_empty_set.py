@@ -3,6 +3,7 @@
 # CORA: contSet/@emptySet/center.m
 # CORA: contSet/@emptySet/contains_.m
 # CORA: contSet/@emptySet/convHull_.m
+# CORA: contSet/@emptySet/dim.m
 # CORA: contSet/@emptySet/display.m
 # CORA: contSet/@emptySet/empty.m
 # CORA: contSet/@emptySet/emptySet.m
@@ -11,13 +12,21 @@
 # CORA: contSet/@emptySet/isFullDim.m
 # CORA: contSet/@emptySet/isIntersecting_.m
 # CORA: contSet/@emptySet/isequal.m
+# CORA: contSet/@emptySet/generateRandom.m
 # CORA: contSet/@emptySet/lift_.m
 # CORA: contSet/@emptySet/mtimes.m
+# CORA: contSet/@emptySet/not.m
 # CORA: contSet/@emptySet/plus.m
 # CORA: contSet/@emptySet/project.m
+# CORA: contSet/@emptySet/projectHighDim_.m
+# CORA: contSet/@emptySet/radius.m
 # CORA: contSet/@emptySet/randPoint_.m
+# CORA: contSet/@emptySet/representsa_.m
 # CORA: contSet/@emptySet/supportFunc_.m
 # CORA: contSet/@emptySet/vertices_.m
+# CORA: contSet/@emptySet/volume_.m
+# PROPERTY: contSet/@emptySet/representsa_.m
+# PROPERTY: contSet/@emptySet/supportFunc_.m
 
 import unittest
 
@@ -125,6 +134,60 @@ class EmptySet(unittest.TestCase):
         self.assertEqual((cora.Interval.matrix(0.5 * M, 2 * M) @ E).dim, 2)
         with self.assertRaises(cora.errors.DimensionMismatch):
             E.linear_map(np.ones((2, 2)))
+
+    def test_project_high_dim_radius_volume_and_complement(self):
+        E = cora.EmptySet(2)
+        self.assertEqual(E.project_high_dim(5, [3, 0]).dim, 5)
+        with self.assertRaises(cora.errors.WrongValue):
+            E.project_high_dim(1, [0, 0])
+        self.assertEqual((E.radius(), E.volume()), (0.0, 0.0))
+        F = E.complement()
+        self.assertIsInstance(F, cora.Fullspace)
+        self.assertEqual(F.dim, 2)
+        self.assertIsInstance(F.complement(), cora.EmptySet)
+
+    def test_representsa(self):
+        for type_ in ("zonotope", "interval", "polytope", "emptySet", "convexSet", "capsule"):
+            self.assertTrue(self.E.representsa(type_), type_)
+        for type_ in ("origin", "point", "fullspace", "halfspace", "hyperplane", "parallelotope"):
+            self.assertFalse(self.E.representsa(type_), type_)
+        with self.assertRaises(cora.errors.WrongValue):
+            self.E.representsa("circle")
+        with self.assertRaises(cora.errors.WrongValue):
+            self.E.representsa("zonotope", tol=-1.0)
+        with self.assertRaises(cora.errors.NotSupported):
+            self.E.representsa("levelSet")
+        with self.assertRaises(cora.errors.NotSupported):
+            self.E.representsa("polygon")
+
+    def test_support_function_lies_below_every_set(self):
+        gen = np.random.default_rng(11)
+        for n in (1, 2, 3):
+            Z = cora.Zonotope(gen.standard_normal(n), gen.standard_normal((n, 3)))
+            for _ in range(5):
+                d = gen.standard_normal(n)
+                rho = float(cora.EmptySet(n).support_function(d))
+                self.assertEqual(rho, -INF)
+                self.assertLessEqual(rho, float(Z.support_function(d)))
+
+    def test_generate_random(self):
+        rng = cora.Rng(5)
+        self.assertEqual(cora.EmptySet.generate_random(rng, n=4).dim, 4)
+        drawn = {cora.EmptySet.generate_random(rng).dim for _ in range(200)}
+        self.assertEqual(drawn, set(range(1, 11)))
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.EmptySet.generate_random(rng, n=-1)
+
+    def test_pairs_with_the_whole_space(self):
+        F = cora.Fullspace(2)
+        self.assertIsInstance(self.E + F, cora.EmptySet)
+        self.assertIsInstance(F + self.E, cora.EmptySet)
+        self.assertIsInstance(self.E & F, cora.EmptySet)
+        self.assertIsInstance(cora.convex_hull(self.E, F), cora.Fullspace)
+        self.assertFalse(cora.contains(self.E, F))
+        self.assertTrue(cora.contains(F, self.E))
+        self.assertFalse(cora.is_intersecting(F, self.E))
+        self.assertIn(("plus", "EmptySet", "Fullspace"), set(cora.binary_pairs()))
 
     def test_plotting_draws_nothing(self):
         fig, ax = plt.subplots()

@@ -164,6 +164,21 @@ constexpr Table aux_build() {
         t, [](const EmptySet &E, const Zonotope &Z, Tol tol) {
             return E.is_intersecting(Z, tol);
         });
+    // the pairs of the empty set with the whole space, the empty set first
+    aux_add_set<BinaryOp::plus, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F) { return E.plus(F); });
+    aux_add_set<BinaryOp::intersect, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F) { return E.intersect(F); });
+    aux_add_set<BinaryOp::convex_hull, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F) { return E.convex_hull(Set(F)); });
+    aux_add_predicate<BinaryOp::contains, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F, Tol tol) { return E.contains(F, tol); });
+    aux_add_predicate<BinaryOp::contains, Fullspace, EmptySet>(
+        t, [](const Fullspace &F, const EmptySet &E, Tol tol) { return F.contains(E, tol); });
+    aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F, Tol tol) {
+            return E.is_intersecting(F, tol);
+        });
     // the whole space is of the lowest precedence of these classes: it comes first
     aux_add_set<BinaryOp::plus, Fullspace, Fullspace>(
         t, [](const Fullspace &F1, const Fullspace &F2) { return F1.plus(F2); });

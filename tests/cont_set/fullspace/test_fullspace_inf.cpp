@@ -1,6 +1,7 @@
 // test_fullspace_inf - fullspace inf: the whole space of n dimensions, and the constructor
 //
 // CORA: contSet/@fullspace/Inf.m
+// CORA: contSet/@fullspace/dim.m
 // CORA: contSet/@fullspace/fullspace.m
 
 #include "cora/cont_set/fullspace/fullspace.h"

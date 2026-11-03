@@ -6,10 +6,10 @@
 //
 // Syntax:     Fullspace F(n);   Fullspace F = Fullspace::inf(n);   Set R = M * F;
 // Operations: inf, box, intersect, plus, convex_hull, contains, is_intersecting, isequal,
-//             is_bounded, is_full_dim, enclose_points, lift, linear_map, center, interval (one
-//             file each); the constructor checks its input (fullspace.cpp), which also holds what
-//             ContSet needs of every class (support_function, rand_point, project, vertices,
-//             display)
+//             is_bounded, is_full_dim, enclose_points, lift, project_high_dim, linear_map,
+//             complement, radius, volume, representsa, generate_random, center, interval,
+//             support_function, rand_point, project, vertices, vertices_3d, display (one file
+//             each); the constructor checks its input (fullspace.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@fullspace/fullspace.m
@@ -30,9 +30,14 @@
 
 namespace cora {
 
+class EmptySet;
+class Rng;
+
 class Fullspace : public detail::DimensionSet {
   public:
     static constexpr ClassId kClassId = ClassId::fullspace;
+
+    // Construction ------------------------------------------------------------------------------
 
     /// The whole space of n >= 0 dimensions.
     explicit Fullspace(int64_t n);
@@ -43,12 +48,18 @@ class Fullspace : public detail::DimensionSet {
     /// The smallest box around the set (CORA's box): the set itself.
     Fullspace box() const;
 
+    /// The whole space of dimension n, or of a random dimension in 1..10 (CORA's randi(10)) from
+    /// rng if n is not given (CORA's generateRandom).
+    static Fullspace generate_random(Rng &rng, std::optional<int64_t> n = std::nullopt);
+
+    // Combining with other sets -----------------------------------------------------------------
+
     /// The intersection with S (CORA's and_): S.
     Set intersect(const Set &S) const;
 
-    /// The Minkowski sum with S: the whole space. An empty interval S is Error::not_supported,
-    /// as the sum would be an empty set and there is no such class yet.
-    Fullspace plus(const ContSet &S) const;
+    /// The Minkowski sum with S: the whole space, or the empty set of the dimension if S is empty
+    /// (an EmptySet or an empty interval). Error::not_supported in R^0, unless S is an EmptySet.
+    Set plus(const ContSet &S) const;
 
     /// The convex hull with S: the whole space.
     Fullspace convex_hull(const ContSet &S) const;
@@ -66,11 +77,31 @@ class Fullspace : public detail::DimensionSet {
     /// as contains.
     bool isequal(const ContSet &S, Tol tol = std::nullopt) const;
 
+    // Properties --------------------------------------------------------------------------------
+
     /// Whether the set is bounded: only in R^0.
     bool is_bounded() const;
 
     /// Whether the set has a nonempty interior: always.
     bool is_full_dim() const;
+
+    /// The radius of the smallest ball around the set: Inf, NaN in R^0 (CORA's radius).
+    double radius() const;
+
+    /// The volume: Inf, NaN in R^0 (CORA's volume_).
+    double volume() const;
+
+    /// The complement (CORA's not; `not` is a C++ keyword): the empty set of the dimension.
+    EmptySet complement() const;
+
+    /// Whether the set is also a set of CORA's type (CORA's representsa_): true for "interval",
+    /// "convexSet" and "fullspace", false for the others; "levelSet" and "polygon" are
+    /// Error::not_supported. In R^0 CORA's emptyObject rule holds: false for "origin", "point" and
+    /// "parallelotope", true for every other type. tol is checked and relaxes nothing; default: the
+    /// repository tolerance (docs/architecture.md).
+    bool representsa(const std::string &type, Tol tol = std::nullopt) const;
+
+    // Maps and embeddings -----------------------------------------------------------------------
 
     /// The whole space of the dimension of the points (..., n, N) (CORA's enclosePoints).
     static Fullspace enclose_points(const Tensor &points);
@@ -78,6 +109,11 @@ class Fullspace : public detail::DimensionSet {
     /// The set in N >= n dimensions, the new ones unbounded (CORA's lift_): the whole space of N
     /// dimensions. dims (0-based, one position per dimension) is checked and otherwise unused.
     Fullspace lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// The set in N dimensions with the new ones at 0 (CORA's projectHighDim_), the whole space
+    /// again: so only N = n, as CORA, which refuses every other N with Error::not_defined ("cannot
+    /// bound new dimensions at 0"). proj is checked as the dims of lift.
+    Fullspace project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
 
     /// The image under a matrix M (CORA's mtimes): the whole space of dimension m for M with m
     /// rows and no zero row, an interval with the zero rows at 0 and the others unbounded if M

@@ -4,6 +4,7 @@
 
 #include "cora/global/oracle/empty_set.h"
 
+#include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/request.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -95,6 +96,19 @@ EmptySet EmptySet::lift(int64_t N, const std::vector<int64_t> &dims) const {
 
 EmptySet EmptySet::project(const std::vector<int64_t> &dims) const {
     return aux_set("emptySet.project", {{"n", n_}, {"dims", dims}});
+}
+
+EmptySet EmptySet::project_high_dim(int64_t N, const std::vector<int64_t> &proj) const {
+    return aux_set("emptySet.projectHighDim", {{"n", n_}, {"N", N}, {"dims", proj}});
+}
+
+// The radius and the volume are numbers, the complement a set of the other class.
+double EmptySet::radius() const { return ask("emptySet.radius", {{"n", n_}}).get<double>("value"); }
+
+double EmptySet::volume() const { return ask("emptySet.volume", {{"n", n_}}).get<double>("value"); }
+
+Fullspace EmptySet::complement() const {
+    return ask("emptySet.not", {{"n", n_}}).get<Fullspace>("F");
 }
 
 } // namespace cora::lean

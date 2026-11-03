@@ -563,8 +563,11 @@ void bind_fullspace(py::module_ &m) {
             py::arg("S"), "The intersection with a set: that set")
         .def(
             "plus",
-            [](const Fullspace &F, const py::object &S) { return F.plus(operand_set(S).get()); },
-            py::arg("S"), "The Minkowski sum with a set or a point: the whole space")
+            [](const Fullspace &F, const py::object &S) {
+                return object_of(F.plus(operand_set(S).get()));
+            },
+            py::arg("S"),
+            "The Minkowski sum with a set or a point: the whole space, the empty set for an empty S")
         .def(
             "convex_hull",
             [](const Fullspace &F, const py::object &S) { return F.convex_hull(set_of(S).get()); },
@@ -598,6 +601,16 @@ void bind_fullspace(py::module_ &m) {
             py::arg("points"), "The whole space of the dimension of the points (n, N)")
         .def("lift", &Fullspace::lift, py::arg("N"), py::arg("dims"),
              "The whole space of N dimensions; dims (0-based) is checked")
+        .def("project_high_dim", &Fullspace::project_high_dim, py::arg("N"), py::arg("proj"),
+             "The whole space again, for N = dim; any other N is refused (CORA: not_defined)")
+        .def_static("generate_random", &Fullspace::generate_random, py::arg("rng"),
+                    py::arg("n") = py::none(),
+                    "The whole space of n dimensions, or of a random one in 1..10")
+        .def("radius", &Fullspace::radius, "The radius of the smallest ball around it: Inf")
+        .def("volume", &Fullspace::volume, "The volume: Inf")
+        .def("complement", &Fullspace::complement, "The complement: the empty set")
+        .def("representsa", &Fullspace::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the set is also a set of CORA's type: 'interval', 'convexSet', 'fullspace'")
         .def(
             "linear_map",
             [](const Fullspace &F, const py::object &M) {
@@ -1079,7 +1092,17 @@ void bind_empty_set(py::module_ &m) {
             },
             py::arg("M"), "The image under a matrix, an interval matrix or a number: empty")
         .def("lift", &EmptySet::lift, py::arg("N"), py::arg("dims"),
-             "The empty set in N dimensions");
+             "The empty set in N dimensions")
+        .def("project_high_dim", &EmptySet::project_high_dim, py::arg("N"), py::arg("proj"),
+             "The empty set in N dimensions, with the checks of lift")
+        .def_static("generate_random", &EmptySet::generate_random, py::arg("rng"),
+                    py::arg("n") = py::none(),
+                    "The empty set of n dimensions, or of a random one in 1..10")
+        .def("radius", &EmptySet::radius, "The radius of the smallest ball around it: 0")
+        .def("volume", &EmptySet::volume, "The volume: 0")
+        .def("complement", &EmptySet::complement, "The complement: the whole space")
+        .def("representsa", &EmptySet::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the set is also a set of CORA's type: true for all that have an empty member");
 }
 
 /// The matrices of a cubic map T[i][k] from Python: a list of rows, each a list of arrays.
@@ -1561,7 +1584,7 @@ void bind_operators(py::module_ &m) {
     // Fullspace: a point shifts it, a number or matrix maps it
     const auto fullspace_sum = [](const Fullspace &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
-        if (as_tensor(o)) return py::cast(A.plus(operand_set(o).get()));
+        if (as_tensor(o)) return object_of(A.plus(operand_set(o).get()));
         return not_implemented();
     };
     method(F, "__add__", fullspace_sum);
@@ -2443,7 +2466,11 @@ void bind_lean(py::module_ &top) {
         .def("interval", &LE::interval)
         .def("vertices", &LE::vertices)
         .def("lift", &LE::lift, "N"_a, "dims"_a)
-        .def("project", &LE::project, "dims"_a);
+        .def("project", &LE::project, "dims"_a)
+        .def("project_high_dim", &LE::project_high_dim, "N"_a, "proj"_a)
+        .def("radius", &LE::radius)
+        .def("volume", &LE::volume)
+        .def("complement", &LE::complement);
 
     py::class_<LZ>(m, "Zonotope", "A nominal zonotope plus an error box, and the oracle's operations")
         .def(py::init([](const py::object &c, const py::object &G) {
@@ -2529,7 +2556,12 @@ void bind_lean(py::module_ &top) {
         .def("is_full_dim", &lean::Fullspace::is_full_dim)
         .def("center", &lean::Fullspace::center)
         .def_static("enclose_points", &lean::Fullspace::enclose_points, "points"_a)
-        .def("lift", &lean::Fullspace::lift, "N"_a, "dims"_a);
+        .def("lift", &lean::Fullspace::lift, "N"_a, "dims"_a)
+        .def("project", &lean::Fullspace::project, "dims"_a)
+        .def("project_high_dim", &lean::Fullspace::project_high_dim, "N"_a, "proj"_a)
+        .def("radius", &lean::Fullspace::radius)
+        .def("volume", &lean::Fullspace::volume)
+        .def("complement", &lean::Fullspace::complement);
 
     py::class_<lean::ReachSet>(m, "ReachSet", "The reachable sets: lists of lean zonotopes")
         .def_readonly("time_interval", &lean::ReachSet::time_interval)

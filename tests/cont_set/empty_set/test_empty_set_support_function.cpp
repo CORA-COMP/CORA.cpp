@@ -1,8 +1,10 @@
 // test_empty_set_support_function - EmptySet support_function: -Inf, the supremum over no point
 //
 // CORA: contSet/@emptySet/supportFunc_.m
+// PROPERTY: contSet/@emptySet/supportFunc_.m
 
 #include "cora/cont_set/empty_set/empty_set.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "testing.h"
 
 #include <limits>
@@ -26,6 +28,20 @@ void the_support_function_is_minus_infinity(const std::string &b) {
           b + ": dimension 0");
 }
 
+/// The empty set lies in every set, so its support function bounds nothing above that of any set
+/// (random zonotopes and directions of a fixed seed), and it is -Inf in each direction.
+void the_empty_set_lies_below_every_set(const std::string &b) {
+    Rng rng(11);
+    for (int trial = 0; trial < 20; ++trial) {
+        const int n = 1 + trial % 4;
+        const Zonotope Z = Zonotope::generate_random(n, 3, rng);
+        const std::vector<double> d = test::random_direction(rng, n);
+        check(test::support(EmptySet(n), d) <= test::support(Z, d) &&
+                  test::support(EmptySet(n), d) == -kInf,
+              b + ": at most the support function of a zonotope, dimension " + std::to_string(n));
+    }
+}
+
 /// A direction of the wrong dimension is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const EmptySet E(2);
@@ -40,6 +56,7 @@ void checks_and_their_switch() {
 
 int main() {
     test::for_each_backend(the_support_function_is_minus_infinity);
+    test::for_each_backend(the_empty_set_lies_below_every_set);
     checks_and_their_switch();
     return test::finish("empty_set support_function");
 }

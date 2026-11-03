@@ -13,7 +13,12 @@
 # ORACLE: contSet/@fullspace/isIntersecting_.m
 # ORACLE: contSet/@fullspace/isequal.m
 # ORACLE: contSet/@fullspace/lift_.m
+# ORACLE: contSet/@fullspace/not.m
 # ORACLE: contSet/@fullspace/plus.m
+# ORACLE: contSet/@fullspace/project.m
+# ORACLE: contSet/@fullspace/projectHighDim_.m
+# ORACLE: contSet/@fullspace/radius.m
+# ORACLE: contSet/@fullspace/volume_.m
 
 import unittest
 
@@ -54,6 +59,21 @@ class Oracle(unittest.TestCase):
                 oracle.check(cora.Fullspace.enclose_points(rnd.matrix(n, 3)),
                              cora.lean.Fullspace.enclose_points(rnd.matrix(n, 3)))
         oracle.run("fullspace.predicates", body)
+
+    def test_projections_measures_and_complement(self):
+        def body(rnd):
+            F, L = cora.Fullspace(3), cora.lean.Fullspace(3)
+            oracle.check(F.project([2, 0]), L.project([2, 0]))
+            # at N = n CORA and CORALean agree; for a larger N CORALean gives R^N, CORA refuses
+            oracle.check(F.project_high_dim(3, [1, 0, 2]), L.project_high_dim(3, [1, 0, 2]))
+            # R^0 is left out: CORA answers NaN for the radius and the volume, CORALean Inf
+            for n in (1, 2, 5):
+                oracle.check(cora.Fullspace(n).radius(), cora.lean.Fullspace(n).radius())
+                oracle.check(cora.Fullspace(n).volume(), cora.lean.Fullspace(n).volume())
+            for n in (0, 1, 5):
+                oracle.check(cora.Fullspace(n).complement().dim == n,
+                             cora.lean.Fullspace(n).complement().dim == n)
+        oracle.run("fullspace.projections", body)
 
 
 if __name__ == "__main__":

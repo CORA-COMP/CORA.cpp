@@ -11,9 +11,13 @@
 # ORACLE: contSet/@emptySet/isIntersecting_.m
 # ORACLE: contSet/@emptySet/isequal.m
 # ORACLE: contSet/@emptySet/lift_.m
+# ORACLE: contSet/@emptySet/not.m
 # ORACLE: contSet/@emptySet/plus.m
 # ORACLE: contSet/@emptySet/project.m
+# ORACLE: contSet/@emptySet/projectHighDim_.m
+# ORACLE: contSet/@emptySet/radius.m
 # ORACLE: contSet/@emptySet/vertices_.m
+# ORACLE: contSet/@emptySet/volume_.m
 
 import unittest
 
@@ -113,6 +117,19 @@ class Oracle(unittest.TestCase):
             dims = list(range(0, n, 2))
             same_dimension(cora.EmptySet(n).project(dims), cora.lean.EmptySet(n).project(dims))
         self.each("emptySet.project", project)
+
+    def test_project_high_dim_radius_volume_and_complement(self):
+        def high_dim(rnd, n):
+            proj = [n + 1 - i for i in range(n)]
+            same_dimension(cora.EmptySet(n).project_high_dim(n + 2, proj),
+                           cora.lean.EmptySet(n).project_high_dim(n + 2, proj))
+        self.each("emptySet.projectHighDim", high_dim)
+        self.each("emptySet.radius", lambda rnd, n: oracle.check(
+            cora.EmptySet(n).radius(), cora.lean.EmptySet(n).radius()))
+        self.each("emptySet.volume", lambda rnd, n: oracle.check(
+            cora.EmptySet(n).volume(), cora.lean.EmptySet(n).volume()))
+        self.each("emptySet.not", lambda rnd, n: oracle.check(
+            cora.EmptySet(n).complement(), cora.lean.EmptySet(n).complement()))
 
 
 if __name__ == "__main__":
