@@ -1,4 +1,4 @@
-// test_lean_interval_functions - exp, cos, cosh, acos, asin, atan, acosh, asinh, atanh and atan2
+// test_lean_interval_functions - exp, log, cos, cosh, acos, asin, atan, acosh, asinh, atanh and atan2
 // against the CORALean oracle, as agreement within a bound
 //
 // The oracle's floats are a tuned sound enclosure (bisection with k steps, series with p terms),
@@ -7,8 +7,9 @@
 // most kAgree, relative, at p = 20, k = 24, in both modes (measured: 1e-6 at k = 24). The oracle's
 // acosh, asinh and atanh go through a logarithm whose bound is loose (up to 0.3 relative at p = k =
 // 20, and not better for larger p), so for these, and for asin and atan (kept short for the run
-// time), only the enclosure is checked. exp and cosh differ from the oracle by at most kLooseAgree,
-// relative, at p = 20 (measured: 3e-5, the series of the oracle is looser than libm); the oracle's
+// time), only the enclosure is checked. exp, log and cosh differ from the oracle by at most
+// kLooseAgree, relative, at p = 20 (measured: 3e-5 for exp, 1e-5 for log on [1, 40]; the oracle is
+// looser than libm); the oracle's
 // cos is the midpoint form where the box reaches an extremum, far wider than the range (0.63
 // against 0.70 in a bound), so for cos only the enclosure is checked.
 
@@ -81,6 +82,10 @@ int main() {
     aux_function(
         "exp", kLooseAgree, -5, 5, [](const Interval &I) { return I.exp(); },
         [](const lean::Interval &I) { return I.exp(kTerms); });
+    // the oracle's log needs 1 <= inf <= 2^p / 2
+    aux_function(
+        "log", kLooseAgree, 1, 40, [](const Interval &I) { return I.log(); },
+        [](const lean::Interval &I) { return I.log(kTerms, kSteps); });
     aux_function(
         "cos", 0, -6, 6, [](const Interval &I) { return I.cos(); },
         [](const lean::Interval &I) { return I.cos(kTerms); });

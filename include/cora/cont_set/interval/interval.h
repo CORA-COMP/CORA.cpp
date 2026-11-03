@@ -5,12 +5,15 @@
 // operation returns a new interval.
 //
 // Syntax:     Interval I(inf, sup);   Interval I = Interval::generate_random(n, rng);
-// Operators:  I + I2, I + v, I - v, -I, s * I, M * I, as in CORA
+// Operators:  I + I2, I + v, I - I2, I - v, v - I, -I, s * I, M * I, I / s, I <= I2, I < I2, as
+//             in CORA
 // Operations: support_function, linear_map, plus, rand_point, contains, stack, project, vertices,
 //             generate_random, display, center, abs, intersect, cart_prod, cat, unbounded,
 //             boundary_point, acos, asin, atan, atan2, acosh, asinh, atanh, cos, cosh, exp,
 //             convex_hull, enclose, enclose_points, enlarge, empty, horzcat, ctranspose, diag,
-//             dirac, infimum, interval_matrix, is_bounded (one file each); rad (below); the
+//             dirac, infimum, interval_matrix, is_bounded, is_full_dim, is_intersecting, isequal,
+//             kron, less_equal, less, lift, log, max, min, minkowski_difference, minus,
+//             matrix_power, divide, norm, unite, origin (one file each); rad (below); the
 //             constructor checks its input (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
@@ -20,9 +23,11 @@
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"
+#include "cora/global/within_tol.h"
 
 #include <limits>
 #include <optional>
+#include <string>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -128,6 +133,95 @@ class Interval : public ContSet {
     /// Whether no bound is infinite (an empty interval is bounded); for a batch, whether all are.
     bool is_bounded() const;
 
+    // Comparison and predicates -------------------------------------------------------------------
+
+    /// Whether no coordinate has a width within 1e-8 of zero (CORA's withinTol); false for an
+    /// empty interval; for a batch, whether all members are.
+    bool is_full_dim() const;
+
+    /// Whether the boxes meet (CORA's isIntersecting_): per coordinate the bounds overlap, up to
+    /// tol as within_tol; false if one is empty. With a point p, whether p is in the box. For a
+    /// batch, whether all members do.
+    bool is_intersecting(const Interval &I2, double tol = kWithinTol) const;
+    bool is_intersecting(const Tensor &p, double tol = kWithinTol) const;
+
+    /// Whether the boxes have the same bounds, up to tol as within_tol (CORA's default eps);
+    /// infinite bounds must agree exactly. Boxes of different shape are not equal. A point p is
+    /// the box [p, p].
+    bool isequal(const Interval &I2, double tol = std::numeric_limits<double>::epsilon()) const;
+    bool isequal(const Tensor &p, double tol = std::numeric_limits<double>::epsilon()) const;
+
+    /// Whether this box lies in I2 (CORA's le, I <= I2): inf2 <= inf and sup <= sup2 everywhere.
+    bool less_equal(const Interval &I2) const;
+
+    /// Whether this box lies strictly in I2 (CORA's lt, I < I2): inf2 < inf and sup < sup2.
+    bool less(const Interval &I2) const;
+
+    // Arithmetic ----------------------------------------------------------------------------------
+
+    /// The difference of two boxes, [inf - sup2, sup - inf2]; with a column v, the box shifted by
+    /// -v, and v - I the box [v - sup, v - inf] (CORA's minus).
+    Interval minus(const Interval &I2) const;
+    Interval minus(const Tensor &v) const;
+    static Interval minus(const Tensor &v, const Interval &I);
+
+    /// The box divided by a number d: the hull of the quotients of the bounds. d = 0 gives
+    /// (-Inf, Inf); Error::out_of_domain if a quotient is NaN (CORA's mrdivide).
+    Interval divide(double d) const;
+
+    /// The Kronecker product, as the hull of the products at the corners (CORA's kron).
+    Interval kron(const Interval &I2) const;
+    Interval kron(const Tensor &B) const;
+    static Interval kron(const Tensor &A, const Interval &I);
+
+    /// The k-th power of a square interval matrix (CORA's mpower): the identity for k = 0, else
+    /// the product A (A (... A)) of k factors, each entry the sum of the corner hulls. A 1 x 1
+    /// base is Error::not_supported (CORA's power).
+    Interval matrix_power(int64_t exponent) const;
+
+    /// The elementwise larger (smaller) of two boxes: [max(inf, inf2), max(sup, sup2)] (CORA's
+    /// max and min). Y is a box or any set (its interval hull), or a number or array of the
+    /// shape of the bounds. Without an argument, the upper (lower) bound.
+    Interval max(const ContSet &Y) const;
+    Interval max(const Tensor &Y) const;
+    Interval min(const ContSet &Y) const;
+    Interval min(const Tensor &Y) const;
+    Tensor max() const;
+    Tensor min() const;
+
+    /// The Minkowski difference {x | x + S in I}: [inf - inf2, sup - sup2] for a box S, a shift
+    /// for a point S, and for another set the support function in the coordinate directions.
+    /// An empty difference (a bound would cross) is the empty interval. type "exact" is refused
+    /// for another set (Error::no_exact_alg); "inner" and the default compute the same.
+    Interval minkowski_difference(const Interval &S) const;
+    Interval minkowski_difference(const Tensor &p) const;
+    Interval minkowski_difference(const ContSet &S,
+                                  const std::optional<std::string> &type = std::nullopt) const;
+
+    /// The smallest box around this and I2 (CORA's or); an empty operand returns the other. With
+    /// a point p, the box grown to contain p.
+    Interval unite(const Interval &I2) const;
+    Interval unite(const Tensor &p) const;
+
+    /// The norm of the largest member in absolute value: for type two, the 2-norm of
+    /// max(|inf|, |sup|) (the spectral norm for a matrix); else the norm of |center| + rad
+    /// (one, inf, fro). -Inf for an empty interval. Returns (..., 1, 1).
+    Tensor norm(Tensor::Norm type = Tensor::Norm::two) const;
+
+    // Embedding -----------------------------------------------------------------------------------
+
+    /// The box in n dimensions with coordinate dims[j] (0-based) the j-th coordinate of this box
+    /// and (-Inf, Inf) elsewhere (CORA's lift_); a repeated entry of dims keeps the last. An
+    /// empty interval is Error::not_supported.
+    Interval lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// The origin {0} in n dimensions, n >= 1 (CORA's interval.origin).
+    static Interval origin(int64_t n);
+
+    /// The image under log, elementwise: [log(inf), log(sup)]; log(0) is -Inf, and a negative
+    /// bound is Error::out_of_domain.
+    Interval log() const;
+
     // Points and functions ------------------------------------------------------------------------
 
     /// The point where the ray start + s dir, s >= 0, leaves the box; start defaults to the
@@ -175,7 +269,12 @@ class Interval : public ContSet {
 inline Interval operator+(const Interval &I, const Interval &I2) { return I.plus(I2); }
 inline Interval operator+(const Interval &I, const Tensor &v) { return {I.inf() + v, I.sup() + v}; }
 inline Interval operator+(const Tensor &v, const Interval &I) { return I + v; }
-inline Interval operator-(const Interval &I, const Tensor &v) { return {I.inf() - v, I.sup() - v}; }
+inline Interval operator-(const Interval &I, const Interval &I2) { return I.minus(I2); }
+inline Interval operator-(const Interval &I, const Tensor &v) { return I.minus(v); }
+inline Interval operator-(const Tensor &v, const Interval &I) { return Interval::minus(v, I); }
+inline Interval operator/(const Interval &I, double d) { return I.divide(d); }
+inline bool operator<=(const Interval &I, const Interval &I2) { return I.less_equal(I2); }
+inline bool operator<(const Interval &I, const Interval &I2) { return I.less(I2); }
 inline Interval operator*(double s, const Interval &I) {
     return s >= 0 ? Interval(I.inf() * s, I.sup() * s) : Interval(I.sup() * s, I.inf() * s);
 }

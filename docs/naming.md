@@ -78,6 +78,21 @@ changed, and the reasons are listed below.
 | `horzcat(I1, I2)` | `Interval::horzcat({I1, I2})` | `cora.Interval.horzcat([I1, I2])` |
 | `interval.empty(n)` | `Interval::empty(n)` | `cora.Interval.empty(n)` |
 | `interval.enclosePoints(P)` | `Interval::enclose_points(P)` | `cora.Interval.enclose_points(P)` |
+| `isFullDim(I)` | `I.is_full_dim()` | `I.is_full_dim()` |
+| `isequal(I, S, tol)` | `I.isequal(S, tol)` | `I.isequal(S, tol)` |
+| `le(I1, I2)`, `I1 <= I2` | `I.less_equal(I2)`, `I <= I2` | `I.less_equal(I2)`, `I <= I2` |
+| `lt(I1, I2)`, `I1 < I2` | `I.less(I2)`, `I < I2` | `I.less(I2)`, `I < I2` |
+| `minus(I, S)`, `I - S` | `I.minus(S)`, `I - S`, `v - I` | `I.minus(S)`, `I - S`, `v - I` |
+| `mrdivide(I, d)`, `I / d` | `I.divide(d)`, `I / d` | `I.divide(d)`, `I / d` |
+| `kron(I1, I2)` | `I.kron(I2)`, `Interval::kron(A, I)` | `I.kron(I2)`, `I.kron(A, left=True)` |
+| `mpower(I, k)` | `I.matrix_power(k)` | `I.matrix_power(k)` |
+| `max(I, Y)`, `min(I, Y)` | `I.max(Y)`, `I.min(Y)`, `I.max()` (the bound) | the same |
+| `minkDiff(I, S, type)` | `I.minkowski_difference(S, type)` | `I.minkowski_difference(S, type)` |
+| `or(I, S)` | `I.unite(S)` | `I.unite(S)` |
+| `norm_(I, type)` | `I.norm(type)` | `I.norm(type)` |
+| `lift_(I, N, proj)` | `I.lift(N, dims)` | `I.lift(N, dims)` |
+| `interval.origin(n)` | `Interval::origin(n)` | `cora.Interval.origin(n)` |
+| `log(I)` | `I.log()` | `I.log()` |
 | `intervalMatrix(I)` | `I.interval_matrix()` | `I.interval_matrix()` |
 | `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |
@@ -138,6 +153,9 @@ changed, and the reasons are listed below.
   - `linComb` is `linear_combination` and `convHull` is `convex_hull`: words, not
     abbreviations. So are `constrSat` (`constraints_satisfied`), `cubMap` (`cubic_map`) and `dH2box`
     (`hausdorff_distance_to_box`).
+  - `le` and `lt` (operators of MATLAB) are `less_equal` and `less`, as Tensor names them;
+    `mrdivide` (the division by a number) is `divide`, `mpower` is `matrix_power`, and `minkDiff`
+    is `minkowski_difference`: words, not abbreviations.
   - `timeInt` is `time_interval`, `tComp` is `computation_time`, `nrSteps` is `num_steps` and
     `fals` is `falsification`, for the same reason.
   - `Reach` is `ReachSet`, as CORA's `reachSet`.

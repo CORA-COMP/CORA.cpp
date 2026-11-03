@@ -81,6 +81,12 @@ constexpr Table aux_build() {
         t, [](const Interval &I1, const Interval &I2) { return I1.cart_prod(I2); });
     aux_add_set<BinaryOp::convex_hull, Interval, Interval>(
         t, [](const Interval &I1, const Interval &I2) { return I1.convex_hull(I2); });
+    aux_add_set<BinaryOp::unite, Interval, Interval>(
+        t, [](const Interval &I1, const Interval &I2) { return I1.unite(I2); });
+    aux_add_predicate<BinaryOp::is_intersecting, Interval, Interval>(
+        t, [](const Interval &I1, const Interval &I2, double tol) {
+            return I1.is_intersecting(I2, tol);
+        });
     // the zonotope pairs: intersection, convex hull, containment and Cartesian product
     aux_add_set<BinaryOp::intersect, Zonotope, Zonotope>(
         t, [](const Zonotope &Z1, const Zonotope &Z2) { return Z1.intersect(Z2); });
