@@ -6,8 +6,11 @@
 // Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generate_random(n, m, rng);
 // Operators:  M * Z (linear_map), s * Z, Z + Z2 and Z + I (plus), Z + v, Z - v, -Z, as in CORA
 // Operations: linear_map, plus, linear_combination, support_function, interval, rand_point,
-//             generate_random, stack, project, vertices, reduce, display (one file each, as in
-//             CORA's @zonotope); the constructor checks its input (zonotope.cpp)
+//             generate_random, stack, project, vertices, reduce, display, abs, box, center,
+//             compact, cart_prod, enclose, convex_hull, intersect, constraints_satisfied,
+//             cubic_map, hausdorff_distance_to_box, dominant_directions, contains,
+//             boundary_point (one file each, as in CORA's @zonotope); the constructor checks its
+//             input (zonotope.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@zonotope/zonotope.m
@@ -19,6 +22,9 @@
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
+
+#include <limits>
+#include <optional>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -35,6 +41,8 @@ class Zonotope : public ContSet {
     /// uniformly random direction and length ~ U[0, 1]).
     static Zonotope generate_random(int64_t n, int64_t m, Rng &rng);
 
+    // Construction --------------------------------------------------------------------------------
+
     /// The center c and the generators G.
     const Tensor &center() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
@@ -44,6 +52,8 @@ class Zonotope : public ContSet {
     /// N random points c + G b, columns (..., n, N): b ~ U[-1, 1]^m for type "standard", b from
     /// the corners {-1, 1}^m (points on the boundary) for "extreme".
     Tensor rand_point(int64_t N, Rng &rng, const std::string &type) const;
+
+    // Linear and set operations -------------------------------------------------------------------
 
     /// M * Z for a matrix M (..., k, n): exact, c -> Mc and G -> MG.
     Zonotope linear_map(const Tensor &M) const;
@@ -69,9 +79,90 @@ class Zonotope : public ContSet {
     /// factors): 2m + 1 generators.
     Zonotope linear_combination(const Zonotope &Z2) const;
 
+    /// |c| and |G| entrywise, as CORA computes it: not the image of the set under abs.
+    Zonotope abs() const;
+
+    /// The box around the zonotope as a zonotope: the same center, one axis generator per
+    /// dimension with the radius of that dimension.
+    Zonotope box() const;
+
+    /// Without the generators of norm <= tol (method "zeros"); "all" also merges the generators
+    /// that are parallel up to tol, "aligned" leaves the set as it is (as CORA). A batch drops
+    /// what every member drops; "all" is not for a batch.
+    Zonotope compact(const std::string &method = "zeros",
+                     double tol = std::numeric_limits<double>::epsilon()) const;
+
+    // Combining with other sets -------------------------------------------------------------------
+
+    /// The Cartesian product with a zonotope, a box or a point (n2, 1): centers stack,
+    /// generators go on the block diagonal.
+    Zonotope cart_prod(const Zonotope &Z2) const;
+    Zonotope cart_prod(const Interval &I) const;
+    Zonotope cart_prod(const Tensor &p) const;
+
+    /// The Cartesian product of a point p (n1, 1) with a zonotope.
+    static Zonotope cart_prod(const Tensor &p, const Zonotope &Z);
+
+    /// A zonotope that encloses both (CORA's enclose): the generators in common are combined
+    /// as in linear_combination, the others of the longer one are kept.
+    Zonotope enclose(const Zonotope &Z2) const;
+
+    /// A zonotope that encloses the convex hull of the zonotope and a zonotope, a box or a point.
+    Zonotope convex_hull(const Zonotope &Z2) const;
+    Zonotope convex_hull(const Interval &I) const;
+    Zonotope convex_hull(const Tensor &p) const;
+
+    /// A zonotope that encloses the intersection with a zonotope. Two boxes intersect exactly (an
+    /// error if they do not meet, as the empty set is not a class yet). Otherwise "averaging"
+    /// weights the generators of both; "conZonotope" (CORA's default) needs ConZonotope.
+    Zonotope intersect(const Zonotope &Z2, const std::string &method = "conZonotope") const;
+    Zonotope intersect(const Interval &I, const std::string &method = "conZonotope") const;
+
+    /// Whether C x < d for every x in the zonotope (sufficient: false says nothing); C (k, n)
+    /// and d (k, 1). For a batch, whether it holds for every member.
+    bool constraints_satisfied(const Tensor &C, const Tensor &d) const;
+
+    /// An enclosure of {(x' T_i x) x | x in Z}: T[i][k] are the (n, n) matrices of output i,
+    /// z_i = sum_k x_k (x' T[i][k] x); ind[i] lists the k that enter output i (empty: all).
+    Zonotope cubic_map(const std::vector<std::vector<Tensor>> &T,
+                       const std::vector<std::vector<int64_t>> &ind = {}) const;
+
+    /// An enclosure of {(x1' T_i x2) x3 | x1 in Z, x2 in Z2, x3 in Z3}, with z_i as above.
+    Zonotope cubic_map(const Zonotope &Z2, const Zonotope &Z3,
+                       const std::vector<std::vector<Tensor>> &T,
+                       const std::vector<std::vector<int64_t>> &ind = {}) const;
+
+    /// A bound on the Euclidean Hausdorff distance between the zonotope and its box, (..., 1, 1):
+    /// method "exact" (sampled directions, CORA's default for n <= 3), "naive" (the norm of the
+    /// radius, the default above), "wgreedy" or "wopt". "ell" is not supported.
+    Tensor hausdorff_distance_to_box(const std::optional<std::string> &method = std::nullopt) const;
+
+    /// n generators (as columns, (n, n)) that span a parallelotope of small volume around the
+    /// zonotope: of the filter_length1 longest generators, the n-subsets of the filter_length2
+    /// largest determinants, and of them the least volume (CORA: n + 5 and n + 3). Not a batch.
+    Tensor dominant_directions(std::optional<int> filter_length1 = std::nullopt,
+                               std::optional<int> filter_length2 = std::nullopt) const;
+
+    /// Whether the zonotope contains the points p (n, N) (all of them), a zonotope or a box, up to
+    /// tol (the norm of the zonotope, relaxed as within_tol). method: "exact" and "exact:venum"
+    /// (a linear program per point; a search over the vertices for a set); "approx" and
+    /// "approx:st" (a sufficient test of Sadraddini and Tedrake for a set); "exact:polymax"
+    /// needs Polytope, "approx:stDual", "sampling" and "opt" are not supported. Not a batch.
+    bool contains(const Tensor &p, const std::string &method = "exact",
+                  double tol = 100 * std::numeric_limits<double>::epsilon()) const;
+    bool contains(const Zonotope &S, const std::string &method = "exact",
+                  double tol = 100 * std::numeric_limits<double>::epsilon()) const;
+    bool contains(const Interval &I, const std::string &method = "exact",
+                  double tol = 100 * std::numeric_limits<double>::epsilon()) const;
+
+    /// The point where the ray from `start` (a point of the zonotope; default: the center) in
+    /// direction dir leaves the zonotope, a column (n, 1). Not a batch.
+    Tensor boundary_point(const Tensor &dir) const;
+    Tensor boundary_point(const Tensor &dir, const Tensor &start) const;
+
   protected:
     int64_t dim_impl() const override { return c_.shape()[c_.shape().size() - 2]; }
-    Tensor center_impl() const override { return c_; }
+    Tensor center_impl() const override;
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override;
     Tensor rand_point_impl(int64_t N, Rng &rng) const override;

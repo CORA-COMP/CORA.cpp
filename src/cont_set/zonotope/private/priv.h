@@ -1,0 +1,58 @@
+// priv - the private functions of zonotope, as CORA's @zonotope/private
+//
+// Not for callers of the class: the operations that mix zonotopes with other sets use them.
+//
+// Syntax:   Zonotope Z = priv_zonotope_of_interval(I);
+// See also: zonotope.h
+
+#pragma once
+
+#include "cora/cont_set/zonotope/zonotope.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+/// The zonotope of a box, as CORA's zonotope(interval): its center, and an axis generator of its
+/// radius for every dimension whose radius is not zero (in some member of a batch).
+Zonotope priv_zonotope_of_interval(const Interval &I);
+
+/// The given columns of G (..., n, m), in that order; none is allowed.
+Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns);
+
+/// The zonotope of a point p (..., n, 1), as CORA's zonotope(p): center p and no generator.
+Zonotope priv_zonotope_of_point(const Tensor &p);
+
+/// Whether the generators of Z have at most one entry beyond tol each (CORA's
+/// representsa_(Z, 'interval', tol)): Z is a box; of a batch, every member.
+bool priv_is_box(const Zonotope &Z, double tol);
+
+/// A zonotope on the host: the center (n) and the generators (n x m, row-major).
+struct HostZonotope {
+    int64_t n = 0, m = 0;
+    std::vector<double> c, G;
+};
+
+/// The values of a single (unbatched) zonotope on the host.
+HostZonotope priv_host_zonotope(const Zonotope &Z);
+
+/// The norm of the point p (n values) w.r.t. the generators of Z (its center is ignored):
+/// min s such that G beta = p, |beta|_inf <= s, by a linear program; infinity if there is none
+/// (CORA's zonotopeNorm).
+double priv_zonotope_norm(const HostZonotope &Z, const std::vector<double> &p);
+
+/// Whether the zonotope `inner` lies in `outer` (plus tol in the norm of outer), by the
+/// depth-first search over the vertices of `inner` (CORA's venum search, Kulmburg et al. 2024).
+bool priv_containment_vertex_enumeration(const HostZonotope &inner, const HostZonotope &outer,
+                                         double tol);
+
+/// The scaling of the sufficient test of Sadraddini and Tedrake (CDC 2019, Thm. 3): `inner` lies
+/// in the scaling of `outer` about its center if that is at most 1; by a linear program.
+double priv_containment_sadraddini_tedrake(const HostZonotope &inner, const HostZonotope &outer);
+
+/// within_tol(x, b, tol) for every entry of x and a finite number b: 1 where it holds, else 0.
+Tensor priv_within_tol(const Tensor &x, double b, double tol);
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

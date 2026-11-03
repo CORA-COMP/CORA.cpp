@@ -164,6 +164,14 @@ class Checker(unittest.TestCase):
         self.assert_fails("`contSet/zonotope/center` needs a reason")
         self.assert_fails("`contSet/zonotope/x` is no CORA row")
 
+    def test_the_oracle_classes_do_not_hide_the_sets(self):
+        write(self.root, "src/global/python/bindings.cpp",
+              'using LZ = lean::Zonotope;\n'
+              'py::class_<Zonotope, ContSet>(m, "Zonotope").def("box", &Zonotope::box);\n'
+              'py::class_<LZ>(m, "Zonotope").def("constr_sat", &LZ::constr_sat);\n')
+        members, _, _ = cov.python_names(self.root)
+        self.assertEqual(members["Zonotope"], {"box"})
+
     def test_a_missing_inventory_fails(self):
         (self.root / "coverage/cora-inventory.json").unlink()
         self.assert_fails("coverage/cora-inventory.json: missing")

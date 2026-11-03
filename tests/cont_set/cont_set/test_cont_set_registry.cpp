@@ -9,6 +9,7 @@
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
 #include "testing.h"
+#include "unregistered_set.h"
 
 using namespace cora;
 using test::check;
@@ -31,14 +32,14 @@ void the_table_lists_its_pairs() {
 /// A pair registered at run time is used, and listed; the checks off reach it too.
 void a_registered_pair_is_used() {
     register_binary(
-        BinaryOp::intersect, "Zonotope", "Interval",
+        BinaryOp::intersect, "Zonotope", "UnregisteredSet",
         SetFunction([](const ContSet &S1, const ContSet &) { return Set(S1.interval()); }));
     const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
-    const Interval I = Interval(test::column({0, -1}), test::column({1, 1}));
-    check(intersect(Z, I).is<Interval>(), "the registered function");
-    check(intersect(I, Z).is<Interval>(), "and the other way round (commutative)");
+    const test::UnregisteredSet U;
+    check(intersect(Z, U).is<Interval>(), "the registered function");
+    check(intersect(U, Z).is<Interval>(), "and the other way round (commutative)");
     ChecksScope off(false);
-    check(intersect(Z, I).is<Interval>(), "the checks off");
+    check(intersect(Z, U).is<Interval>(), "the checks off");
 }
 
 } // namespace

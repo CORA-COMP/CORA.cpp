@@ -261,11 +261,12 @@ def python_names(root):
     """`({class: {name}}, {class: base}, {module-level name})` of the pybind11 bindings."""
     path = root / "src" / "global" / "python" / "bindings.cpp"
     text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    oracle_aliases = set(re.findall(r"\busing\s+(\w+)\s*=\s*lean::", text))  # cora.lean's classes
     members, bases, module, current, cpp = {}, {}, set(), None, {}
     events = sorted([(m.start(), "class", m) for m in CLASS_RE.finditer(text)]
                     + [(m.start(), "def", m) for m in DEF_RE.finditer(text)], key=lambda e: e[0])
     for _, kind, m in events:
-        if kind == "class" and "::" in m.group(1):
+        if kind == "class" and ("::" in m.group(1) or m.group(1) in oracle_aliases):
             current = None  # a class of another namespace (cora.lean) has its own names
         elif kind == "class":
             current = m.group(3)

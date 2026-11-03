@@ -425,6 +425,11 @@ def operation_tests(path):
     return pattern, files(pattern)
 
 
+def declares_no_input(path):
+    """Whether the header of an operation says `Inputs:   -`: it takes no input to get wrong."""
+    return any(re.match(r"^// Inputs:\s+-\s*$", line) for line in header_comment(read_lines(path)))
+
+
 def check_tests_exist(issues_by_file):
     for path in files("src/**/*.cpp"):
         if not is_operation(path):
@@ -436,7 +441,8 @@ def check_tests_exist(issues_by_file):
             continue
         text = "\n".join("\n".join(read_lines(f)) for f in found)
         op = os.path.splitext(os.path.basename(path))[0]
-        if op not in NO_INPUT_OPERATIONS and not re.search(r"\braises\(", text):
+        if op not in NO_INPUT_OPERATIONS and not declares_no_input(path) \
+                and not re.search(r"\braises\(", text):
             issues.append(f"its tests ({pattern}) call it with no invalid input: "
                           "test::raises(f, Error::<identifier>)")
         if "ChecksScope" not in text:

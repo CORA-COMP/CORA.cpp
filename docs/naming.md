@@ -58,6 +58,18 @@ changed, and the reasons are listed below.
 | `contains(S1, S2, type, tol)` | `contains(S1, S2, tol)`, `I.contains(p, tol)` | `cora.contains`, `p in I` |
 | `isIntersecting(S1, S2, type, tol)` | `is_intersecting(S1, S2, tol)` | `cora.is_intersecting` |
 | `reduce(Z, 'girard', order)` | `Z.reduce(order)` | `Z.reduce(order)` |
+| `abs(Z)`, `box(Z)` | `Z.abs()`, `Z.box()` | `Z.abs()`, `Z.box()` |
+| `compact(Z, method, tol)` | `Z.compact(method, tol)` | `Z.compact(method, tol)` |
+| `cartProd(Z, S)` | `Z.cart_prod(S)`, `Zonotope::cart_prod(p, Z)` | `Z.cart_prod(S)` |
+| `enclose(Z, Z2)` | `Z.enclose(Z2)` | `Z.enclose(Z2)` |
+| `convHull(Z, S)` | `Z.convex_hull(S)` | `Z.convex_hull(S)` |
+| `and(Z, S, method)` | `Z.intersect(S, method)` | `Z.intersect(S, method)` |
+| `constrSat(Z, C, d)` | `Z.constraints_satisfied(C, d)` | `Z.constraints_satisfied(C, d)` |
+| `cubMap(Z, T, ind)`, `cubMap(Z, Z2, Z3, T, ind)` | `Z.cubic_map(T, ind)`, `Z.cubic_map(Z2, Z3, T, ind)` | `Z.cubic_map(...)` |
+| `dH2box(Z, method)` | `Z.hausdorff_distance_to_box(method)` | `Z.hausdorff_distance_to_box(method)` |
+| `dominantDirections(Z, l1, l2)` | `Z.dominant_directions(l1, l2)` | `Z.dominant_directions(l1, l2)` |
+| `contains(Z, S, method, tol)` | `Z.contains(S, method, tol)` | `Z.contains(S, method, tol)`, `p in Z` |
+| `boundaryPoint(Z, dir, start)` | `Z.boundary_point(dir, start)` | `Z.boundary_point(dir, start)` |
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
 | `zonotope.generateRandom` | `Zonotope::generate_random(n, m, rng)` | `cora.Zonotope.generate_random` |
 | `interval.generateRandom` | `Interval::generate_random(n, rng)` | `cora.Interval.generate_random` |
@@ -120,7 +132,8 @@ changed, and the reasons are listed below.
   - `mtimes` is MATLAB's name of an operator, so it is `linear_map`.
   - `interval.Inf` is `unbounded`, because `inf` is the lower bound.
   - `linComb` is `linear_combination` and `convHull` is `convex_hull`: words, not
-    abbreviations.
+    abbreviations. So are `constrSat` (`constraints_satisfied`), `cubMap` (`cubic_map`) and `dH2box`
+    (`hausdorff_distance_to_box`).
   - `timeInt` is `time_interval`, `tComp` is `computation_time`, `nrSteps` is `num_steps` and
     `fals` is `falsification`, for the same reason.
   - `Reach` is `ReachSet`, as CORA's `reachSet`.
