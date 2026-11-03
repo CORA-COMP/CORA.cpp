@@ -629,6 +629,58 @@ void bind_interval(py::module_ &m) {
              "The box in N dimensions at the coordinates dims (0-based), unbounded elsewhere")
         .def_static("origin", &Interval::origin, py::arg("n"), "The box {0} of n dimensions")
         .def("log", &Interval::log, "The image under the natural logarithm")
+        .def("sin", &Interval::sin, "The image under the sine (CORA: cos(I - pi/2))")
+        .def("sinh", &Interval::sinh, "The image under the hyperbolic sine")
+        .def("sign", &Interval::sign, "The hull of the sign of the bounds")
+        .def(
+            "round",
+            [](const Interval &I, int64_t digits, const std::string &type) {
+                return I.round(digits, type);
+            },
+            py::arg("digits") = 0, py::arg("type") = "decimals",
+            "The bounds rounded to digits decimals, halves away from zero")
+        .def(
+            "radius", [](const Interval &I) { return scalar(I.radius()); },
+            "The 2-norm of the radius over all entries")
+        .def(
+            "power",
+            [](const Interval &I, const py::object &e) {
+                if (py::isinstance<Interval>(e)) return I.power(py::cast<Interval>(e));
+                if (is_number(e)) return I.power(py::cast<double>(e));
+                return I.power(tensor_of(e, "the exponent"));
+            },
+            py::arg("exponent"),
+            "The elementwise power: exponent a number, an array of the shape of the bounds or a box")
+        .def_static(
+            "power_of",
+            [](const py::object &base, const Interval &exponent) {
+                return Interval::power(operand(exponent, base, "the base"), exponent);
+            },
+            py::arg("base"), py::arg("exponent"), "Numbers to the power of a box")
+        .def(
+            "rdivide",
+            [](const Interval &I, const py::object &other) {
+                if (py::isinstance<Interval>(other)) return I.rdivide(py::cast<Interval>(other));
+                return I.rdivide(operand(I, other, "the denominator"));
+            },
+            py::arg("denominator"), "The entrywise quotient with a box or numbers (CORA's ./)")
+        .def_static(
+            "rdivide_of",
+            [](const py::object &numerator, const Interval &denominator) {
+                return Interval::rdivide(operand(denominator, numerator, "the numerator"),
+                                         denominator);
+            },
+            py::arg("numerator"), py::arg("denominator"), "Numbers over a box, entrywise")
+        .def("prod", &Interval::prod, py::arg("dim") = py::none(),
+             "The product of the rows (dim=1) or the columns (dim=2) of an interval matrix")
+        .def("partition", &Interval::partition, py::arg("splits"),
+             "The splits^n boxes of an equal grid cut of the box")
+        .def("project_high_dim", &Interval::project_high_dim, py::arg("N"), py::arg("proj"),
+             "The box in N dimensions at the coordinates proj (0-based), [0, 0] elsewhere")
+        .def("reduce", &Interval::reduce, py::arg("order") = 1,
+             "The box itself: an interval has no generators to reduce")
+        .def("representsa", &Interval::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the box is also a set of the CORA type, e.g. 'point', 'origin', 'zonotope'")
         .def(
             "contains",
             [](const Interval &I, const py::object &p, Tol tol) {
@@ -938,6 +990,22 @@ void bind_operators(py::module_ &m) {
     });
     method(I, "__truediv__", [](const Interval &A, const py::object &o) -> py::object {
         if (is_number(o)) return py::cast(A / py::cast<double>(o));
+        return not_implemented();
+    });
+    method(I, "__rtruediv__", [](const Interval &A, const py::object &o) -> py::object {
+        if (is_number(o) || as_tensor(o))
+            return py::cast(Interval::rdivide(operand(A, o, "the numerator"), A));
+        return not_implemented();
+    });
+    method(I, "__pow__", [](const Interval &A, const py::object &o) -> py::object {
+        if (py::isinstance<Interval>(o)) return py::cast(A.power(py::cast<Interval>(o)));
+        if (is_number(o)) return py::cast(A.power(py::cast<double>(o)));
+        if (const std::optional<Tensor> e = as_tensor(o)) return py::cast(A.power(*e));
+        return not_implemented();
+    });
+    method(I, "__rpow__", [](const Interval &A, const py::object &o) -> py::object {
+        if (is_number(o) || as_tensor(o))
+            return py::cast(Interval::power(operand(A, o, "the base"), A));
         return not_implemented();
     });
     method(I, "__le__", [](const Interval &A, const py::object &o) -> py::object {

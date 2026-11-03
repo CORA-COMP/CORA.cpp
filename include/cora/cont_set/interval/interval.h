@@ -13,8 +13,9 @@
 //             convex_hull, enclose, enclose_points, enlarge, empty, horzcat, ctranspose, diag,
 //             dirac, infimum, interval_matrix, is_bounded, is_full_dim, is_intersecting, isequal,
 //             kron, less_equal, less, lift, log, max, min, minkowski_difference, minus,
-//             matrix_power, divide, norm, unite, origin (one file each); rad (below); the
-//             constructor checks its input (interval.cpp)
+//             matrix_power, divide, norm, unite, origin, rad, radius, sign, round, sin, sinh,
+//             power, rdivide, prod, partition, project_high_dim, reduce, representsa (one file
+//             each); the constructor checks its input (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@interval/interval.m
@@ -54,7 +55,7 @@ class Interval : public ContSet {
     bool is_empty() const { return inf_.shape().back() == 0; }
 
     /// (sup - inf) / 2, elementwise, of the shape of the bounds.
-    Tensor rad() const { return (sup_ - inf_) * 0.5; }
+    Tensor rad() const;
 
     /// M * I enclosed by its interval hull: the center maps by M, the radius by |M|.
     Interval linear_map(const Tensor &M) const;
@@ -223,6 +224,61 @@ class Interval : public ContSet {
     /// bound is Error::out_of_domain.
     Interval log() const;
 
+    /// The 2-norm of the radius over all entries, (..., 1, 1) (CORA's radius).
+    Tensor radius() const;
+
+    // Powers, quotients and products --------------------------------------------------------------
+
+    /// The elementwise power (CORA's power): the exponent is a number, numbers of the shape of the
+    /// bounds (or any shape when the box is one number), or a box; the base may be numbers and the
+    /// exponent a box. Integer exponents take the hull of the end powers (0 below an even power
+    /// over a sign change), negative ones the power of the reciprocal; the others are
+    /// [inf^e, sup^e]. Error::out_of_domain if a bound is NaN.
+    Interval power(double exponent) const;
+    Interval power(const Tensor &exponent) const;
+    Interval power(const Interval &exponent) const;
+    static Interval power(const Tensor &base, const Interval &exponent);
+
+    /// The entrywise quotient (CORA's rdivide): a box over numbers (the hull of the quotients,
+    /// the whole line where the number is 0), numbers over a box (the hull, the whole line over a
+    /// box with 0 inside, the ray past n/inf at sup = 0), and a box over a box (I .* (1 ./ D)).
+    /// Error::out_of_domain over [0, 0] or if a quotient is NaN.
+    Interval rdivide(const Tensor &denominator) const;
+    Interval rdivide(const Interval &denominator) const;
+    static Interval rdivide(const Tensor &numerator, const Interval &denominator);
+
+    /// The product of the rows (dim 1, a row result) or the columns (dim 2, a column) of an
+    /// interval matrix, folded from the last factor (CORA's prod); default dim: 1, or 2 for a row.
+    Interval prod(std::optional<int> dim = std::nullopt) const;
+
+    // Embedding and cutting -----------------------------------------------------------------------
+
+    /// The boxes of the equal grid cut: splits per coordinate, splits^n boxes in the order of
+    /// nested loops (the first coordinate slowest), neighbours touching or overlapping (CORA's
+    /// partition).
+    std::vector<Interval> partition(int64_t splits) const;
+
+    /// The box in N dimensions with coordinate proj[j] (0-based) the j-th coordinate of this box
+    /// and [0, 0] elsewhere (CORA's projectHighDim_); the empty interval stays empty.
+    Interval project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
+
+    /// The box itself (CORA's reduce of an interval); order must be at least 1.
+    Interval reduce(int order = 1) const;
+
+    // Rounding and signs --------------------------------------------------------------------------
+
+    /// The bounds rounded to digits decimals, halves away from zero (CORA's round); type
+    /// "significant" is refused (Error::not_supported).
+    Interval round(int64_t digits = 0, const std::string &type = "decimals") const;
+
+    /// The hull of the sign of the bounds: [sign(inf), sign(sup)].
+    Interval sign() const;
+
+    /// Whether the box is also a set of the CORA type (CORA's representsa_): "origin", "point",
+    /// "emptySet", "fullspace", "interval", "zonotope", "capsule", ... ; for a batch whether all
+    /// members are. tol default: the repository tolerance. Not a returned set: convert instead.
+    bool representsa(const std::string &type, Tol tol = std::nullopt) const;
+
     // Points and functions ------------------------------------------------------------------------
 
     /// The point where the ray start + s dir, s >= 0, leaves the box; start defaults to the
@@ -245,6 +301,11 @@ class Interval : public ContSet {
     Interval cos() const;
     Interval cosh() const;
     Interval exp() const;
+
+    /// The image under sin, as CORA computes it: cos(I - pi/2) (the case analysis of cos), and
+    /// sinh: [sinh(inf), sinh(sup)].
+    Interval sin() const;
+    Interval sinh() const;
 
     /// The hull of atan2(y, x) at the four corners, y from this interval and x from I2, as CORA
     /// (not an enclosure where the box meets the branch cut of atan2).

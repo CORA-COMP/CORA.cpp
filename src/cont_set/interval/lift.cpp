@@ -9,6 +9,7 @@
 //
 // CORA: contSet/@interval/lift_.m
 
+#include "cont_set/interval/private/priv_embed.h"
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
 
@@ -39,16 +40,8 @@ Interval Interval::lift(int64_t N, const std::vector<int64_t> &dims) const {
     CORA_CHECK(!is_empty(), Error::not_supported, [] {
         return std::string("lift: the operation is not supported for empty intervals");
     });
-    // row j of the bounds goes to coordinate dims[j]; the extra row m is the unbounded one
-    const int64_t m = dim();
-    std::vector<int64_t> source(N, m);
-    for (int64_t j = 0; j < m; ++j) source[dims[j]] = j;
-    std::vector<int64_t> shape = inf_.shape();
-    shape[shape.size() - 2] = 1;
     const double kInf = std::numeric_limits<double>::infinity();
-    const Tensor lower = Tensor::concat({inf_, inf_.full_like(shape, -kInf)}, -2);
-    const Tensor upper = Tensor::concat({sup_, sup_.full_like(shape, kInf)}, -2);
-    return {lower.take(source, -2), upper.take(source, -2)};
+    return priv_embed(*this, N, dims, -kInf, kInf);
 }
 
 } // namespace cora
