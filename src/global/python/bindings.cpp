@@ -926,6 +926,15 @@ py::object interval_matrix_product(const IntervalMatrix &A, const py::object &o)
     return not_implemented();
 }
 
+/// The sum of an interval matrix with what Python offers: another interval matrix, a matrix or a
+/// number; NotImplemented for anything else.
+py::object interval_matrix_sum(const IntervalMatrix &A, const py::object &o) {
+    if (py::isinstance<IntervalMatrix>(o)) return py::cast(A.plus(py::cast<IntervalMatrix>(o)));
+    if (is_number(o)) return py::cast(A.plus(py::cast<double>(o)));
+    if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.plus(*M));
+    return not_implemented();
+}
+
 /// The series of expm as the object Python reads: the enclosure, the powers, their first order and
 /// the remainder.
 void bind_expm_results(py::module_ &m) {
@@ -960,8 +969,43 @@ void bind_interval_matrix(py::module_ &m) {
                                "The center matrix (inf + sup) / 2")
         .def_property_readonly("infimum", [](const IntervalMatrix &A) { return matrix(A.infimum()); },
                                "The lower bound matrix")
+        .def_property_readonly("supremum", [](const IntervalMatrix &A) { return matrix(A.supremum()); },
+                               "The upper bound matrix")
+        .def_property_readonly("rad", [](const IntervalMatrix &A) { return matrix(A.rad()); },
+                               "The radius matrix (sup - inf) / 2")
         .def("abs", [](const IntervalMatrix &A) { return matrix(A.abs()); },
              "The entrywise largest absolute value max(|inf|, |sup|)")
+        .def("representsa", &IntervalMatrix::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the entries, stacked into a vector, are a set of the CORA type, e.g. 'point'")
+        .def("volume", [](const IntervalMatrix &A) { return scalar(A.volume()); },
+             "The product of the entry widths (0 if one is 0)")
+        .def(
+            "vertices",
+            [](const IntervalMatrix &A) {
+                py::list matrices;
+                for (const Tensor &V : A.vertices()) matrices.append(matrix(V));
+                return matrices;
+            },
+            "The distinct vertex matrices, one (K, rows, cols) array per batch member")
+        .def("plus", &interval_matrix_sum, py::arg("other"),
+             "The sum with an interval matrix, a matrix or a number")
+        .def("__add__", &interval_matrix_sum, py::is_operator())
+        .def("__radd__", &interval_matrix_sum, py::is_operator())
+        .def(
+            "powers",
+            [](const IntervalMatrix &A, int64_t max_order, std::optional<int64_t> initial_order,
+               const std::optional<IntervalMatrix> &initial_power) {
+                if (initial_order || initial_power) {
+                    if (!initial_order || !initial_power)
+                        CORA_FAIL(Error::wrong_value,
+                                  "powers: give initial_order and initial_power together");
+                    return A.powers(max_order, *initial_order, *initial_power);
+                }
+                return A.powers(max_order);
+            },
+            py::arg("max_order"), py::arg("initial_order") = py::none(),
+            py::arg("initial_power") = py::none(),
+            "The powers from order initial_order (default 1) to max_order, each times A from the right")
         .def(
             "contains",
             [](const IntervalMatrix &A, const py::object &M, const std::string &type, Tol tol) {
@@ -2578,11 +2622,21 @@ void bind_lean(py::module_ &top) {
         .def("vertices", &LI::vertices);
 
     using LM = lean::IntervalMatrix;
+    py::class_<lean::MatrixVertices>(m, "MatrixVertices", "The vertex matrices V and an error box E")
+        .def_readonly("V", &lean::MatrixVertices::V)
+        .def_readonly("E", &lean::MatrixVertices::E);
     py::class_<LM>(m, "IntervalMatrix", "An interval matrix of lean values and the oracle's operations")
         .def(py::init<LI>(), "bounds"_a)
         .def_property_readonly("interval", &LM::interval)
         .def("abs", &LM::abs)
         .def("infimum", &LM::infimum)
+        .def("supremum", &LM::supremum)
+        .def("rad", &LM::rad)
+        .def("plus", &LM::plus, "B"_a)
+        .def("representsa", &LM::representsa, "type"_a, "tol"_a = 0.0)
+        .def("vertices", &LM::vertices)
+        .def("volume", &LM::volume)
+        .def("powers", &LM::powers, "P"_a, "k"_a)
         .def("center", &LM::center)
         .def("contains", &LM::contains, "M"_a, "tol"_a = 0.0)
         .def("exact_square", &LM::exact_square)

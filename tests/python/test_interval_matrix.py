@@ -1,5 +1,5 @@
-"""test_interval_matrix - cora.IntervalMatrix: the constructors, the bounds, the norms, the
-squares and the matrix exponential."""
+"""test_interval_matrix - cora.IntervalMatrix: the constructors, the bounds, the sums, the norms, the
+squares, the powers and the matrix exponential."""
 # CORA: matrixSet/@intervalMatrix/abs.m
 # CORA: matrixSet/@intervalMatrix/center.m
 # CORA: matrixSet/@intervalMatrix/contains.m
@@ -15,6 +15,13 @@ squares and the matrix exponential."""
 # CORA: matrixSet/@intervalMatrix/mpower.m
 # CORA: matrixSet/@intervalMatrix/mtimes.m
 # CORA: matrixSet/@intervalMatrix/norm.m
+# CORA: matrixSet/@intervalMatrix/plus.m
+# CORA: matrixSet/@intervalMatrix/powers.m
+# CORA: matrixSet/@intervalMatrix/rad.m
+# CORA: matrixSet/@intervalMatrix/representsa.m
+# CORA: matrixSet/@intervalMatrix/supremum.m
+# CORA: matrixSet/@intervalMatrix/vertices.m
+# CORA: matrixSet/@intervalMatrix/volume.m
 # PROPERTY: matrixSet/@intervalMatrix/abs.m
 # PROPERTY: matrixSet/@intervalMatrix/center.m
 # PROPERTY: matrixSet/@intervalMatrix/contains.m
@@ -30,6 +37,13 @@ squares and the matrix exponential."""
 # PROPERTY: matrixSet/@intervalMatrix/mpower.m
 # PROPERTY: matrixSet/@intervalMatrix/mtimes.m
 # PROPERTY: matrixSet/@intervalMatrix/norm.m
+# PROPERTY: matrixSet/@intervalMatrix/plus.m
+# PROPERTY: matrixSet/@intervalMatrix/powers.m
+# PROPERTY: matrixSet/@intervalMatrix/rad.m
+# PROPERTY: matrixSet/@intervalMatrix/representsa.m
+# PROPERTY: matrixSet/@intervalMatrix/supremum.m
+# PROPERTY: matrixSet/@intervalMatrix/vertices.m
+# PROPERTY: matrixSet/@intervalMatrix/volume.m
 
 import unittest
 
@@ -212,6 +226,80 @@ class Exponential(unittest.TestCase):
             A.expm_mixed(1.0, 1, 9)
 
 
+class SumsAndQueries(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("eigen"))
+
+    def test_plus(self):
+        M = np.array([[1.0, 2.0], [3.0, 4.0]])
+        S = EXAMPLE + EXAMPLE
+        np.testing.assert_allclose(S.interval.inf, [[2, -2], [0, 4]])
+        np.testing.assert_allclose(S.interval.sup, [[4, 2], [6, 4]])
+        for T in (EXAMPLE + M, M + EXAMPLE, EXAMPLE.plus(M)):
+            np.testing.assert_allclose(T.interval.inf, [[2, 1], [3, 6]])
+            np.testing.assert_allclose(T.interval.sup, [[3, 3], [6, 6]])
+        np.testing.assert_allclose((1.0 + EXAMPLE).interval.inf, [[2, 0], [1, 3]])
+        np.testing.assert_allclose((EXAMPLE + 1.0).interval.sup, [[3, 2], [4, 3]])
+        rng = np.random.default_rng(12)
+        A, B = random_matrix(rng, 3, 1.0), random_matrix(rng, 3, 0.5)
+        self.assertTrue(all((A + B).contains(member(A, rng) + member(B, rng), tol=1e-12) for _ in range(20)))
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            EXAMPLE + np.ones((1, 3))
+        with self.assertRaises(TypeError):
+            EXAMPLE + "x"
+
+    def test_powers(self):
+        P = EXAMPLE.powers(3)
+        self.assertEqual(len(P), 3)
+        np.testing.assert_allclose(P[0].interval.inf, EXAMPLE.interval.inf)
+        np.testing.assert_allclose(P[1].interval.inf, [[-2, -4], [0, 1]])
+        np.testing.assert_allclose(P[1].interval.sup, [[7, 4], [12, 7]])
+        np.testing.assert_allclose(P[2].interval.sup, (P[1] @ EXAMPLE).interval.sup)
+        Q = EXAMPLE.powers(5, initial_order=3, initial_power=P[1])
+        self.assertEqual(len(Q), 3)
+        np.testing.assert_allclose(Q[1].interval.inf, (P[1] @ EXAMPLE).interval.inf)
+        with self.assertRaises(cora.errors.WrongValue):
+            EXAMPLE.powers(3, initial_order=0, initial_power=EXAMPLE)
+        with self.assertRaises(cora.errors.WrongValue):
+            EXAMPLE.powers(3, initial_order=2)
+
+    def test_rad_and_supremum(self):
+        np.testing.assert_allclose(EXAMPLE.rad, [[0.5, 1], [1.5, 0]])
+        np.testing.assert_allclose(EXAMPLE.supremum, [[2, 1], [3, 2]])
+        A = cora.IntervalMatrix(np.array([[1.0, -2.0]]), np.array([[0.5, -1.0]]))
+        np.testing.assert_allclose(A.rad, [[0.5, 1.0]])
+
+    def test_representsa(self):
+        point = cora.IntervalMatrix(np.array([[1.0, 2.0], [3.0, 4.0]]))
+        zero = cora.IntervalMatrix(np.zeros((2, 2)))
+        self.assertTrue(point.representsa("point") and zero.representsa("origin"))
+        self.assertFalse(EXAMPLE.representsa("point") or point.representsa("origin"))
+        self.assertTrue(EXAMPLE.representsa("interval"))
+        thin = cora.IntervalMatrix(point.center, np.full((2, 2), 1e-6))
+        self.assertFalse(thin.representsa("point", tol=1e-9))
+        self.assertTrue(thin.representsa("point", tol=1e-5))
+        with self.assertRaises(cora.errors.WrongValue):
+            EXAMPLE.representsa("nothing")
+        with self.assertRaises(cora.errors.NotSupported):
+            EXAMPLE.representsa("polygon")
+
+    def test_volume(self):
+        box = cora.IntervalMatrix(cora.Interval.matrix(np.zeros((2, 2)), np.array([[1.0, 2.0], [3.0, 4.0]])))
+        self.assertEqual(box.volume(), 24.0)
+        self.assertEqual(EXAMPLE.volume(), 0.0)
+
+    def test_vertices(self):
+        V = EXAMPLE.vertices()
+        self.assertEqual(len(V), 1)
+        self.assertEqual(V[0].shape, (8, 2, 2))
+        np.testing.assert_allclose(V[0][0], [[1, -1], [0, 2]])
+        np.testing.assert_allclose(V[0][1], [[1, 1], [0, 2]])
+        np.testing.assert_allclose(V[0][7], [[2, 1], [3, 2]])
+        self.assertTrue(all(EXAMPLE.contains(v, tol=0.0) for v in V[0]))
+        with self.assertRaises(cora.errors.NotSupported):
+            cora.IntervalMatrix(np.zeros((5, 5)), np.ones((5, 5))).vertices()
+
+
 class Gradients(unittest.TestCase):
     """Autograd through the operations equals central differences (piecewise ones off their kinks)."""
 
@@ -246,6 +334,12 @@ class Gradients(unittest.TestCase):
         self.check(lambda A: A @ A, center, delta)
         self.check(lambda A: A.dependent_terms(0.5)[1], center, delta)
         self.check(lambda A: A.expm(6).enclosure, center, delta)
+        self.check(lambda A: A + A, center, delta)
+        self.check(lambda A: A + 1.5, center, delta)
+        self.check(lambda A: A.powers(4)[3], center, delta)
+        self.check(lambda A: A.rad, center, delta)
+        self.check(lambda A: A.supremum, center, delta)
+        self.check(lambda A: A.volume(), center, delta)
 
 
 if __name__ == "__main__":

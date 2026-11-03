@@ -6,10 +6,12 @@
 // Immutable: every operation returns a new set. Leading dimensions are batches.
 //
 // Syntax:     IntervalMatrix A(C, D);   IntervalMatrix A(C);   IntervalMatrix A(I);
-// Operators:  A * B, A * M, M * A, s * A, A * s, A * Z (matmul), as CORA's mtimes
+// Operators:  A * B, A * M, M * A, s * A, A * s, A * Z (matmul), as CORA's mtimes;
+//             A + B, A + M, M + A, A + s, s + A (plus)
 // Operations: abs, center, contains, dependent_terms, exact_square, expm, expm_independent,
 //             expm_mixed, exponential_remainder, infimum, infinity_norm, matrix_power, matmul,
-//             norm (one file each); the constructor checks its input (interval_matrix.cpp)
+//             norm, plus, powers, rad, representsa, supremum, vertices, volume (one file each);
+//             the constructor checks its input (interval_matrix.cpp)
 // See also:   cora/cont_set/interval/interval.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: matrixSet/@intervalMatrix/intervalMatrix.m
@@ -54,8 +56,14 @@ class IntervalMatrix {
     /// The lower bound matrix.
     Tensor infimum() const;
 
+    /// The upper bound matrix.
+    Tensor supremum() const;
+
     /// The center matrix (inf + sup) / 2.
     Tensor center() const;
+
+    /// The radius matrix (sup - inf) / 2.
+    Tensor rad() const;
 
     /// The largest absolute value of each entry over the matrices: max(|inf|, |sup|).
     Tensor abs() const;
@@ -64,6 +72,24 @@ class IntervalMatrix {
     /// within_tol). type "exact" and "approx" give the same answer for a matrix of numbers, as in
     /// CORA. CORA's default tol is 1e-12, here the repository tolerance (docs/architecture.md).
     bool contains(const Tensor &M, const std::string &type = "exact", Tol tol = std::nullopt) const;
+
+    /// Whether the set is also a set of another type (an Interval::representsa type), decided on
+    /// the entries stacked into one vector, as CORA does; tol as there.
+    bool representsa(const std::string &type, Tol tol = std::nullopt) const;
+
+    /// The product of the entry widths, (..., 1, 1): the volume of the box of the entries.
+    Tensor volume() const;
+
+    /// The distinct matrices with every entry at an end of its interval, one (K, rows, cols)
+    /// tensor per batch member (the batch flattened); at most 20 entries.
+    std::vector<Tensor> vertices() const;
+
+    // Sums ----------------------------------------------------------------------------------------
+
+    /// The Minkowski sum with an interval matrix, a matrix of numbers or a number: the bounds add.
+    IntervalMatrix plus(const IntervalMatrix &B) const;
+    IntervalMatrix plus(const Tensor &M) const;
+    IntervalMatrix plus(double s) const;
 
     // Squares and exponentials -------------------------------------------------------------------
 
@@ -116,6 +142,12 @@ class IntervalMatrix {
     /// matrix is a product too, not an elementwise power.
     IntervalMatrix matrix_power(int64_t exponent) const;
 
+    /// The powers [A]^i from order initial_order (default 1, A) to max_order, each the previous
+    /// times A from the right as CORA's powers; powers[k] is of order initial_order + k.
+    std::vector<IntervalMatrix> powers(int64_t max_order) const;
+    std::vector<IntervalMatrix> powers(int64_t max_order, int64_t initial_order,
+                                       const IntervalMatrix &initial_power) const;
+
     // Products (CORA's mtimes) --------------------------------------------------------------------
 
     /// [A] * [B] by the sum of the hulls of the corner products; [A] * M and M * [A] for a matrix
@@ -151,6 +183,13 @@ struct ExpmMixedResult {
     IntervalMatrix remainder;
 };
 
+inline IntervalMatrix operator+(const IntervalMatrix &A, const IntervalMatrix &B) {
+    return A.plus(B);
+}
+inline IntervalMatrix operator+(const IntervalMatrix &A, const Tensor &M) { return A.plus(M); }
+inline IntervalMatrix operator+(const Tensor &M, const IntervalMatrix &A) { return A.plus(M); }
+inline IntervalMatrix operator+(const IntervalMatrix &A, double s) { return A.plus(s); }
+inline IntervalMatrix operator+(double s, const IntervalMatrix &A) { return A.plus(s); }
 inline IntervalMatrix operator*(const IntervalMatrix &A, const IntervalMatrix &B) {
     return A.matmul(B);
 }

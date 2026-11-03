@@ -15,10 +15,7 @@ namespace cora {
 ExpmResult priv_expm_series(const IntervalMatrix &A, const IntervalMatrix &start,
                             int64_t first_order, const IntervalMatrix &first_power,
                             int64_t loop_from, int64_t max_order) {
-    // CORA's powers: pow{i} = pow{i-1} * A from the first one
-    std::vector<IntervalMatrix> powers{first_power};
-    for (int64_t order = first_order + 1; order <= max_order; ++order)
-        powers.push_back(powers.back().matmul(A));
+    std::vector<IntervalMatrix> powers = A.powers(max_order, first_order, first_power);
     IntervalMatrix sum = start;
     for (int64_t order = loop_from; order <= max_order; ++order)
         sum = priv_sum(sum, powers[order - first_order] * (1.0 / priv_factorial(order)));
