@@ -137,7 +137,8 @@ def check_tidy(files, everything, fix, build_dir, jobs):
     def analyse(unit):
         # GCC's flags the compile database holds, and OpenMP (clang-tidy has no omp.h), are dropped
         extra = ["-extra-arg=-Wno-unknown-warning-option", "-extra-arg=-fno-openmp"]
-        result = run([exe, "-p", build_dir, "--quiet", *extra, *(["--fix"] if fix else []), unit])
+        repair = ["--fix", "--warnings-as-errors=-*"] if fix else []  # a fix is not applied to an error
+        result = run([exe, "-p", build_dir, "--quiet", *extra, *repair, unit])
         return unit, result.returncode, result.stdout
 
     findings = {}  # deduplicated: a header finding repeats in every source that includes it
