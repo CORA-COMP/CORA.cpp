@@ -29,6 +29,10 @@ Zonotope priv_zonotope_of_point(const Tensor &p);
 /// representsa_(Z, 'interval', tol)): Z is a box; of a batch, every member.
 bool priv_is_box(const Zonotope &Z, double tol);
 
+/// What is wrong with the matrices Q of a quadratic map of sets of dimension n (CORA's quadMap
+/// checks), or an empty text if nothing.
+std::string priv_quad_map_problem(const std::vector<Tensor> &Q, int64_t n);
+
 /// A zonotope on the host: the center (n) and the generators (n x m, row-major).
 struct HostZonotope {
     int64_t n = 0, m = 0;

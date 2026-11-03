@@ -12,8 +12,8 @@
 //
 // CORA: contSet/@zonotope/quadMap.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -39,16 +39,6 @@ Shape aux_shape(const Tensor &like, int64_t rows, int64_t cols) {
 
 /// Whether any entry of the matrix is nonzero (CORA's any(Q{i}(:))).
 bool aux_nonempty(const Tensor &Q) { return Q.abs().sum().item() != 0; }
-
-/// What is wrong with Q for sets of dimension n, or an empty text if nothing.
-std::string aux_problem(const std::vector<Tensor> &Q, int64_t n) {
-    if (Q.empty()) return "Q needs at least one matrix";
-    for (const Tensor &M : Q)
-        if (M.shape() != Shape{n, n})
-            return "every matrix of Q must be (" + std::to_string(n) + ", " + std::to_string(n) +
-                   "), got the shape " + shape_text(M.shape());
-    return "";
-}
 
 // The rows of the outputs -------------------------------------------------------------------------
 
@@ -105,7 +95,7 @@ Zonotope aux_outputs(const Tensor &like, int64_t width, const std::vector<Tensor
 
 Zonotope Zonotope::quad_map(const std::vector<Tensor> &Q) const {
     detail::Entry entry;
-    const std::string problem = aux_problem(Q, dim());
+    const std::string problem = priv_quad_map_problem(Q, dim());
     CORA_CHECK(problem.empty(), Error::dimension_mismatch, [&] { return "quad_map: " + problem; });
     // M = [c G]' Q [c G] for every output; the squares and mixed terms are its entries
     const Tensor full = aux_full(*this), full_t = full.matrix_transpose();
@@ -117,7 +107,7 @@ Zonotope Zonotope::quad_map(const std::vector<Tensor> &Q) const {
 
 Zonotope Zonotope::quad_map(const Zonotope &Z2, const std::vector<Tensor> &Q) const {
     detail::Entry entry;
-    const std::string problem = aux_problem(Q, dim());
+    const std::string problem = priv_quad_map_problem(Q, dim());
     CORA_CHECK(problem.empty(), Error::dimension_mismatch, [&] { return "quad_map: " + problem; });
     CORA_CHECK(Z2.dim() == dim(), Error::dimension_mismatch, [&] {
         return "quad_map: the zonotopes differ in dimension, " + std::to_string(dim()) + " and " +
