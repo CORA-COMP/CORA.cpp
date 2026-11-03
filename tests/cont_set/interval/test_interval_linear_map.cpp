@@ -32,7 +32,7 @@ std::vector<double> point_of(const Interval &I, const std::vector<double> &t) {
 void mtimes_is_the_hull_of_the_image(const std::string &b) {
     cora::Rng rng(2);
     const int n = 3;
-    const Interval I = Interval::generate_random(n, rng);
+    const Interval I = Interval::generate_random(rng, n);
     std::vector<double> M(n * n);
     rng.normal(M.data(), M.size(), 1.0);
     const Interval image = I.linear_map(Tensor::from_data(M, {n, n}));

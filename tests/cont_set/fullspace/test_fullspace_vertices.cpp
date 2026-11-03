@@ -32,7 +32,7 @@ void the_corners_are_those_of_the_box(const std::string &b) {
     check(Fullspace(2).vertices() == Fullspace(2).interval().vertices(), b + ": as interval(fs)");
     Rng rng(13);
     for (int trial = 0; trial < 10; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(2, 4, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
         for (const Polygon &polygon : Z.vertices())
             for (const Point &p : polygon)
                 check(Fullspace(2).contains(Interval(test::column({p[0], p[1]}),

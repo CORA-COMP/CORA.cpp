@@ -177,10 +177,10 @@ class RandomSets(unittest.TestCase):
 
     def test_generate_random_follows_the_current_backend(self):
         with cora.backend("eigen"):
-            Z = cora.Zonotope.generate_random(3, 4, cora.Rng(0))
+            Z = cora.Zonotope.generate_random(cora.Rng(0), 3, nr_generators=4)
             self.assertIsInstance(Z.center, np.ndarray)
             self.assertEqual(Z.generators.shape, (3, 4))
-        self.assertIsInstance(cora.Zonotope.generate_random(3, 4, cora.Rng(0)).center, torch.Tensor)
+        self.assertIsInstance(cora.Zonotope.generate_random(cora.Rng(0), 3, nr_generators=4).center, torch.Tensor)
 
 
 class Stack(unittest.TestCase):

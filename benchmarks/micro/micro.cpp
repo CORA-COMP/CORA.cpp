@@ -46,7 +46,7 @@ template <class F> Work aux_repeat(int calls, F f) {
 void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
     const auto matrix = [](int64_t n, int64_t m, uint64_t seed) {
         Rng rng(seed);
-        return Zonotope::generate_random(n, m, rng).generators();
+        return Zonotope::generate_random(rng, n, std::nullopt, m).generators();
     };
     table["tensor_matmul_5x5"] = [=] {
         const Tensor A = matrix(5, 5, 5), B = matrix(5, 5, 6);
@@ -116,8 +116,8 @@ const std::map<std::string, Benchmark> &benchmarks() {
     std::map<std::string, Benchmark> sets = {
         {"zonotope_linear_map", [] {
              Rng rng(1);
-             const Zonotope Z = Zonotope::generate_random(10, 40, rng);
-             const Tensor M = Zonotope::generate_random(10, 10, rng).generators();
+             const Zonotope Z = Zonotope::generate_random(rng, 10, std::nullopt, 40);
+             const Tensor M = Zonotope::generate_random(rng, 10, std::nullopt, 10).generators();
              return Work([=] {
                  double s = 0;
                  for (int k = 0; k < 2000; ++k) s += sum_of(Z.linear_map(M).generators());
@@ -126,8 +126,8 @@ const std::map<std::string, Benchmark> &benchmarks() {
          }},
         {"zonotope_plus", [] {
              Rng rng(2);
-             const Zonotope A = Zonotope::generate_random(10, 40, rng),
-                            B = Zonotope::generate_random(10, 40, rng);
+             const Zonotope A = Zonotope::generate_random(rng, 10, std::nullopt, 40),
+                            B = Zonotope::generate_random(rng, 10, std::nullopt, 40);
              return Work([=] {
                  double s = 0;
                  for (int k = 0; k < 20000; ++k) s += sum_of(A.plus(B).generators());
@@ -136,7 +136,7 @@ const std::map<std::string, Benchmark> &benchmarks() {
          }},
         {"zonotope_reduce", [] {
              Rng rng(3);
-             const Zonotope Z = Zonotope::generate_random(10, 100, rng);
+             const Zonotope Z = Zonotope::generate_random(rng, 10, std::nullopt, 100);
              return Work([=] {
                  double s = 0;
                  for (int k = 0; k < 1000; ++k) s += sum_of(Z.reduce(2).generators());
@@ -159,8 +159,8 @@ const std::map<std::string, Benchmark> &benchmarks() {
          }},
         {"interval_matrix_product", [] {
              Rng rng(4);
-             const Tensor M = Zonotope::generate_random(20, 20, rng).generators(),
-                          C = Zonotope::generate_random(20, 20, rng).generators();
+             const Tensor M = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators(),
+                          C = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators();
              const Tensor w = 0.1 * Tensor::ones({20, 20});
              const Interval I(C - w, C + w);
              return Work([=] {

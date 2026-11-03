@@ -36,7 +36,7 @@ void longest_generator_by_hand(const std::string &b) {
 /// length.
 void halves_cover_the_set(const std::string &b) {
     cora::Rng rng(111);
-    const Zonotope Z = Zonotope::generate_random(3, 5, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     const auto [first, second] = Z.split_longest_gen();
     const Tensor length = Z.generator_length();
     const auto [lower, upper] = Z.split(int64_t(length.argmax(-1).item()), 100);

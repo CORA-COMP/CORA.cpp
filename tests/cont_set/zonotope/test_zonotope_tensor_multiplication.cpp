@@ -30,7 +30,7 @@ void one_dimension_by_hand(const std::string &b) {
 void the_image_of_the_set_is_enclosed(const std::string &b) {
     cora::Rng rng(31);
     const int n = 3, m = 3;
-    const Zonotope Z(column({0.0, 0.0, 0.0}), Zonotope::generate_random(n, m, rng).generators());
+    const Zonotope Z(column({0.0, 0.0, 0.0}), Zonotope::generate_random(rng, n, std::nullopt, m).generators());
     const Tensor M = test::random_tensor(rng, n);
     const Lists list = test::triples(m);
     const Zonotope R = Z.tensor_multiplication(M, list);

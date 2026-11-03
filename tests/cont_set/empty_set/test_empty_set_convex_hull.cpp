@@ -22,7 +22,7 @@ void the_hull_is_the_other_set(const std::string &b) {
     // random zonotopes come back with the same center and generators, through the registry too
     Rng rng(13);
     for (int trial = 0; trial < 10; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(2, 4, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
         for (const Set &H : {E.convex_hull(Set(Z)), convex_hull(E, Z), convex_hull(Z, E)}) {
             check(H.is<Zonotope>() && test::close(H.as<Zonotope>().center(), Z.center(), 0) &&
                       test::close(H.as<Zonotope>().generators(), Z.generators(), 0),

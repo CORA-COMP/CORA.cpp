@@ -34,7 +34,7 @@ void the_empty_set_lies_below_every_set(const std::string &b) {
     Rng rng(11);
     for (int trial = 0; trial < 20; ++trial) {
         const int n = 1 + trial % 4;
-        const Zonotope Z = Zonotope::generate_random(n, 3, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 3);
         const std::vector<double> d = test::random_direction(rng, n);
         check(test::support(EmptySet(n), d) <= test::support(Z, d) &&
                   test::support(EmptySet(n), d) == -kInf,

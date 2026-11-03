@@ -65,9 +65,9 @@ void mink_diff_known_3d(const std::string &b) {
 void mink_diff_property(const std::string &b) {
     cora::Rng rng(50);
     for (int k = 0; k < 10; ++k) {
-        const Zonotope M = Zonotope::generate_random(2, 4, rng) * 2.0;
-        const Zonotope S = Zonotope::generate_random(2, 2, rng) * 0.1 -
-                           Zonotope::generate_random(2, 2, rng).center();
+        const Zonotope M = Zonotope::generate_random(rng, 2, std::nullopt, 4) * 2.0;
+        const Zonotope S = Zonotope::generate_random(rng, 2, std::nullopt, 2) * 0.1 -
+                           Zonotope::generate_random(rng, 2, std::nullopt, 2).center();
         const Zonotope inner = M.mink_diff(S, "inner");
         for (int j = 0; j < 40; ++j) {
             const std::vector<double> d = test::random_direction(rng, 2);

@@ -16,7 +16,7 @@ namespace {
 
 void generate_random_follows_cora(const std::string &b) {
     cora::Rng rng(3);
-    const Interval I = Interval::generate_random(6, rng);
+    const Interval I = Interval::generate_random(rng, 6);
     check(I.inf().shape() == std::vector<int64_t>({6, 1}), b + ": shape");
     bool ordered = true;
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
@@ -32,11 +32,11 @@ void generate_random_follows_cora(const std::string &b) {
 /// A dimension below one is refused; with the checks off the draw is the same.
 void checks_and_their_switch() {
     cora::Rng rng(4), again(4);
-    check(test::raises([&] { Interval::generate_random(0, rng); }, Error::wrong_value),
+    check(test::raises([&] { Interval::generate_random(rng, 0); }, Error::wrong_value),
           "generate_random: dimension 0");
-    const Tensor on = Interval::generate_random(3, rng).center();
+    const Tensor on = Interval::generate_random(rng, 3).center();
     ChecksScope off(false);
-    check(test::close(Interval::generate_random(3, again).center(), on, 0),
+    check(test::close(Interval::generate_random(again, 3).center(), on, 0),
           "generate_random: the same with the checks off");
 }
 

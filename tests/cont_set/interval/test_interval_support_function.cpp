@@ -19,7 +19,7 @@ namespace {
 void support_function_matches_the_corners(const std::string &b) {
     cora::Rng rng(1);
     for (const int n : {1, 2, 4}) {
-        const Interval I = Interval::generate_random(n, rng);
+        const Interval I = Interval::generate_random(rng, n);
         const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
         for (int k = 0; k < 5; ++k) {
             std::vector<double> d(n);

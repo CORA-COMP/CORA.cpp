@@ -19,7 +19,7 @@ namespace {
 /// itself; a box stays the same box.
 void reduce_keeps_the_class_and_encloses(const std::string &b) {
     Rng rng(5);
-    const Zonotope Z = Zonotope::generate_random(2, 7, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 7);
     const ContSet &S = Z;
     const Set R = S.reduce(1);
     check(R.is<Zonotope>() && R.as<Zonotope>().generators().shape().back() == 2,

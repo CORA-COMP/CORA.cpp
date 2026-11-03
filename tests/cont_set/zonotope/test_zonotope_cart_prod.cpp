@@ -44,8 +44,8 @@ void cart_prod_of_known_sets(const std::string &b) {
 /// A batch of products, member by member.
 void cart_prod_of_batches(const std::string &b) {
     cora::Rng rng(15);
-    const Zonotope A1 = Zonotope::generate_random(2, 3, rng), A2 = Zonotope::generate_random(2, 3, rng);
-    const Zonotope B1 = Zonotope::generate_random(3, 2, rng), B2 = Zonotope::generate_random(3, 2, rng);
+    const Zonotope A1 = Zonotope::generate_random(rng, 2, std::nullopt, 3), A2 = Zonotope::generate_random(rng, 2, std::nullopt, 3);
+    const Zonotope B1 = Zonotope::generate_random(rng, 3, std::nullopt, 2), B2 = Zonotope::generate_random(rng, 3, std::nullopt, 2);
     const Zonotope P = Zonotope::stack({A1, A2}).cart_prod(Zonotope::stack({B1, B2}));
     check(P.generators().shape() == std::vector<int64_t>({2, 5, 5}), b + ": batch shape");
     check(close(P.generators().slice(0, 1, 2).squeeze(0), A2.cart_prod(B2).generators(), 0),
@@ -55,7 +55,7 @@ void cart_prod_of_batches(const std::string &b) {
 /// Stated property: the support function of the product along (d1; d2) is the sum of the parts.
 void support_function_adds(const std::string &b) {
     cora::Rng rng(16);
-    const Zonotope Z = Zonotope::generate_random(2, 4, rng), Z2 = Zonotope::generate_random(3, 5, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4), Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     const Zonotope P = Z.cart_prod(Z2);
     for (int k = 0; k < 20; ++k) {
         const std::vector<double> d = test::random_direction(rng, 5);

@@ -32,7 +32,7 @@ void interval_matrix_is_center_plus_minus_radius(const std::string &b) {
 void interval_matrix_is_the_interval_up_to_rounding(const std::string &b) {
     cora::Rng rng(35);
     for (int trial = 0; trial < 20; ++trial) {
-        const Interval I = Interval::generate_random(4, rng);
+        const Interval I = Interval::generate_random(rng, 4);
         const Interval R = I.interval_matrix();
         check(close(R.inf(), I.inf(), 1e-15) && close(R.sup(), I.sup(), 1e-15),
               b + ": equal up to rounding");

@@ -63,7 +63,7 @@ void special_cases(const std::string &b) {
 void the_map_of_the_set_is_enclosed(const std::string &b) {
     cora::Rng rng(61);
     const int n = 3;
-    const Zonotope Z = Zonotope::generate_random(n, 3, rng), Z2 = Zonotope::generate_random(n, 2, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 3), Z2 = Zonotope::generate_random(rng, n, std::nullopt, 2);
     std::vector<Tensor> Q;
     for (int i = 0; i < 2; ++i) {
         std::vector<double> data(n * n);

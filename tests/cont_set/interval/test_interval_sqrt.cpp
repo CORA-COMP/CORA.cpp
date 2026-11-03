@@ -33,7 +33,7 @@ void sqrt_maps_the_bounds(const std::string &b) {
 void sqrt_encloses_the_image(const std::string &b) {
     cora::Rng rng(81);
     for (int trial = 0; trial < 20; ++trial) {
-        const Interval I = Interval::generate_random(3, rng).abs(), R = I.sqrt();
+        const Interval I = Interval::generate_random(rng, 3).abs(), R = I.sqrt();
         const Tensor x = I.rand_point(20, rng);
         bool inside = true;
         for (int k = 0; k < 20; ++k) inside = inside && R.contains(x.slice(-1, k, k + 1).sqrt());

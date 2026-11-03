@@ -27,7 +27,7 @@ void box_of_a_known_zonotope(const std::string &b) {
 /// Stated property: the box has the interval hull of the zonotope, contains it, and is a box.
 void box_has_the_interval_hull(const std::string &b) {
     cora::Rng rng(12);
-    const Zonotope Z = Zonotope::generate_random(4, 7, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 4, std::nullopt, 7);
     const Zonotope B = Z.box();
     check(close(B.interval().inf(), Z.interval().inf(), 0) &&
               close(B.interval().sup(), Z.interval().sup(), 0),

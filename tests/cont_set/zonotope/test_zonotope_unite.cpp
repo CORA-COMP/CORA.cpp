@@ -71,7 +71,7 @@ void union_contains_the_sets(const std::string &b) {
     cora::Rng rng(131);
     for (const auto [n, m] : {std::pair{2, 3}, {3, 4}}) {
         std::vector<Zonotope> Zs;
-        for (int k = 0; k < 3; ++k) Zs.push_back(Zonotope::generate_random(n, m, rng));
+        for (int k = 0; k < 3; ++k) Zs.push_back(Zonotope::generate_random(rng, n, std::nullopt, m));
         for (const char *method : {"linprog", "iterative", "parallelotope"}) {
             const Zonotope U = Zs[0].unite(std::vector<Zonotope>{Zs[1], Zs[2]}, method);
             for (const Zonotope &Z : Zs)

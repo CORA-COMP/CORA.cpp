@@ -15,9 +15,9 @@ namespace {
 void stack_keeps_each_member() {
     cora::Rng rng(6);
     const int64_t n = 3;
-    const std::vector<Zonotope> Zs = {Zonotope::generate_random(n, 2, rng),
-                                      Zonotope::generate_random(n, 5, rng),
-                                      Zonotope::generate_random(n, 3, rng)};
+    const std::vector<Zonotope> Zs = {Zonotope::generate_random(rng, n, std::nullopt, 2),
+                                      Zonotope::generate_random(rng, n, std::nullopt, 5),
+                                      Zonotope::generate_random(rng, n, std::nullopt, 3)};
     const Zonotope S = Zonotope::stack(Zs);
     check(S.center().shape() == std::vector<int64_t>({3, n, 1}), "stack: center shape");
     check(S.generators().shape() == std::vector<int64_t>({3, n, 5}),

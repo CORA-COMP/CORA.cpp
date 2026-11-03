@@ -16,7 +16,7 @@ namespace {
 
 void generate_random_follows_cora(const std::string &b) {
     cora::Rng rng(7);
-    const Zonotope Z = Zonotope::generate_random(5, 8, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 5, std::nullopt, 8);
     check(Z.center().shape() == std::vector<int64_t>({5, 1}) &&
               Z.generators().shape() == std::vector<int64_t>({5, 8}),
           b + ": shapes");
@@ -28,18 +28,18 @@ void generate_random_follows_cora(const std::string &b) {
         short_enough &= std::sqrt(norm) <= 1.0 + 1e-12;
     }
     check(short_enough, b + ": generators are at most unit length");
-    check(!close(Zonotope::generate_random(5, 8, rng).center(), Z.center()),
+    check(!close(Zonotope::generate_random(rng, 5, std::nullopt, 8).center(), Z.center()),
           b + ": successive sets differ");
 }
 
 /// A dimension below one is refused; with the checks off the draw is the same.
 void checks_and_their_switch() {
     cora::Rng rng(4), again(4);
-    check(test::raises([&] { Zonotope::generate_random(0, 2, rng); }, Error::wrong_value),
+    check(test::raises([&] { Zonotope::generate_random(rng, 0, std::nullopt, 2); }, Error::wrong_value),
           "generate_random: dimension 0");
-    const Tensor on = Zonotope::generate_random(3, 2, rng).center();
+    const Tensor on = Zonotope::generate_random(rng, 3, std::nullopt, 2).center();
     ChecksScope off(false);
-    check(test::close(Zonotope::generate_random(3, 2, again).center(), on, 0),
+    check(test::close(Zonotope::generate_random(again, 3, std::nullopt, 2).center(), on, 0),
           "generate_random: the same with the checks off");
 }
 

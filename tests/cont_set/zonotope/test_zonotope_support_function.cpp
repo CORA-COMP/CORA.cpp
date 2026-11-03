@@ -38,7 +38,7 @@ double brute_support(const Zonotope &Z, const std::vector<double> &d) {
 void support_function_matches_brute_force(const std::string &b) {
     cora::Rng rng(1);
     for (const auto [n, m] : {std::pair{1, 2}, {2, 3}, {3, 5}, {4, 6}}) {
-        const Zonotope Z = Zonotope::generate_random(n, m, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
         for (int i = 0; i < 5; ++i) {
             const std::vector<double> d = random_direction(rng, n);
             check(close(support(Z, d), brute_support(Z, d), 1e-10),

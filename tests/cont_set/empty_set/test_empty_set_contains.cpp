@@ -24,7 +24,7 @@ void only_the_empty_set_is_contained(const std::string &b) {
     // random nonempty sets are never contained, also through the registry
     Rng rng(14);
     for (int trial = 0; trial < 10; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(2, 3, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 3);
         check(!E.contains(Z) && !contains(E, Z), b + ": random zonotope");
         check(!E.contains(Interval::stack({Z.interval(), Z.interval()})), b + ": a batch of boxes");
     }

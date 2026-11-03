@@ -99,7 +99,7 @@ class Interval(unittest.TestCase):
         self.assertLess(float((P.mean(-1) - I.center).abs().max()), 0.1)
 
     def test_generate_random(self):
-        I = cora.Interval.generate_random(4, cora.Rng(2))
+        I = cora.Interval.generate_random(cora.Rng(2), 4)
         self.assertEqual(I.dim, 4)
         self.assertTrue(bool((I.inf <= I.sup).all()))
 

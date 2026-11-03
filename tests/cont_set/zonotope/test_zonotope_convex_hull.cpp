@@ -19,8 +19,8 @@ namespace {
 void convex_hull_with_each_kind_of_set(const std::string &b) {
     cora::Rng rng(19);
     const int n = 3;
-    const Zonotope Z = Zonotope::generate_random(n, 4, rng), Z2 = Zonotope::generate_random(n, 4, rng);
-    const Interval I = Interval::generate_random(n, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 4), Z2 = Zonotope::generate_random(rng, n, std::nullopt, 4);
+    const Interval I = Interval::generate_random(rng, n);
     const Tensor p = Z2.center();
     check(close(Z.convex_hull(Z2).generators(), Z.enclose(Z2).generators(), 0),
           b + ": zonotope: enclose");

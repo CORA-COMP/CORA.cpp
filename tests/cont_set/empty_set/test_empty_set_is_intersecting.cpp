@@ -19,7 +19,7 @@ void nothing_meets_the_empty_set(const std::string &b) {
     check(!E.is_intersecting(Interval::unbounded(2)), b + ": the whole plane");
     Rng rng(15);
     for (int trial = 0; trial < 10; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(2, 3, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 3);
         check(!E.is_intersecting(Z) && !is_intersecting(E, Z) && !is_intersecting(Z, E),
               b + ": random zonotope");
         check(!E.is_intersecting(Z, 1e3), b + ": not even with a large tol");

@@ -34,7 +34,7 @@ void radius_known(const std::string &b) {
 void radius_bounds_the_set(const std::string &b) {
     cora::Rng rng(31);
     for (const auto [n, m] : {std::pair{2, 3}, {4, 6}, {3, 1}}) {
-        const Zonotope Z = Zonotope::generate_random(n, m, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
         const double r = Z.radius().item();
         check(r <= Z.generator_length().sum().item() + 1e-12, b + ": at most the sum of the lengths");
         const Tensor points = Z.rand_point(200, rng, "extreme") - Z.center();

@@ -31,7 +31,7 @@ void sinh_maps_the_bounds(const std::string &b) {
 void sinh_encloses_the_image(const std::string &b) {
     cora::Rng rng(21);
     for (int trial = 0; trial < 20; ++trial) {
-        const Interval I = Interval::generate_random(3, rng), R = I.sinh();
+        const Interval I = Interval::generate_random(rng, 3), R = I.sinh();
         const Tensor x = I.rand_point(20, rng);
         bool inside = true;
         for (int k = 0; k < 20; ++k) inside = inside && R.contains(x.slice(-1, k, k + 1).sinh());

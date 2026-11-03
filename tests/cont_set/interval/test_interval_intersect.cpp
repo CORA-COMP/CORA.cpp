@@ -61,8 +61,8 @@ void intersect_of_a_batch(const std::string &b) {
 void intersect_is_the_set_intersection(const std::string &b) {
     cora::Rng rng(5);
     for (int trial = 0; trial < 20; ++trial) {
-        const Interval I1 = Interval::generate_random(3, rng),
-                       I2 = Interval::generate_random(3, rng);
+        const Interval I1 = Interval::generate_random(rng, 3),
+                       I2 = Interval::generate_random(rng, 3);
         const Interval R = I1.intersect(I2);
         const Tensor x = I1.rand_point(10, rng);
         for (int k = 0; k < 10; ++k) {

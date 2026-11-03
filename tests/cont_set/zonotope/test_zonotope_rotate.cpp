@@ -37,7 +37,7 @@ void rotation_known(const std::string &b) {
 /// undoes a rotation by a.
 void rotation_is_orthogonal(const std::string &b) {
     cora::Rng rng(81);
-    const Zonotope Z = Zonotope::generate_random(4, 5, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 4, std::nullopt, 5);
     const double a = 1.1;
     const Zonotope R = Z.rotate({1, 3}, a);
     for (int k = 0; k < 20; ++k) {

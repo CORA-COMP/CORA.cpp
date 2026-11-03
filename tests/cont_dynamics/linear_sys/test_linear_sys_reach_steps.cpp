@@ -37,7 +37,7 @@ void time_points_are_exact(const std::string &b) {
 /// Without dynamics nothing moves, so every enclosure is the initial set itself.
 void a_zero_system_stays_put(const std::string &b) {
     cora::Rng rng(5);
-    const Zonotope X0 = Zonotope::generate_random(2, 3, rng);
+    const Zonotope X0 = Zonotope::generate_random(rng, 2, std::nullopt, 3);
     const Eigen::VectorXd d = Eigen::VectorXd::Ones(2);
     for (const std::string &algorithm : kAlgorithms) {
         const ReachSet r = LinearSys(Tensor::zeros({2, 2}))

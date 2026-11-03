@@ -33,7 +33,7 @@ void true_is_sound(const std::string &b) {
     cora::Rng rng(17);
     int accepted = 0;
     for (int trial = 0; trial < 30; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(3, 4, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
         std::vector<double> data(6), rhs(2);
         rng.normal(data.data(), data.size(), 1.0);
         rng.normal(rhs.data(), rhs.size(), 8.0);

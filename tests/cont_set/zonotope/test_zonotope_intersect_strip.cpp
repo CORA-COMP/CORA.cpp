@@ -52,7 +52,7 @@ void strip_known(const std::string &b) {
 /// Stated property: for every gain the points of Z inside the strips are in the result.
 void strip_encloses_the_intersection(const std::string &b) {
     cora::Rng rng(33);
-    const Zonotope Z = Zonotope::generate_random(3, 5, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     const Tensor C = Tensor({{1.0, 0.5, 0.0}, {0.0, -1.0, 2.0}});
     const Tensor phi = column({0.8, 1.5}), y = C.matmul(Z.center()) + column({0.3, -0.2});
     const Tensor points = Z.rand_point(3000, rng);

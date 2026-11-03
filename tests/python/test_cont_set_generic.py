@@ -99,7 +99,7 @@ class Generic(unittest.TestCase):
             cora.ContSet.linear_map(self.I, np.ones((1, 3)))
 
     def test_reduce_decompose_and_embedding(self):
-        Z = cora.Zonotope.generate_random(2, 7, cora.Rng(5))
+        Z = cora.Zonotope.generate_random(cora.Rng(5), 2, nr_generators=7)
         R = cora.ContSet.reduce(Z, 1)
         self.assertEqual(np.asarray(R.generators).shape[1], 2)
         self.assertEqual(cora.ContSet.reduce(self.I, 3).sup.tolist(), self.I.sup.tolist())
@@ -141,14 +141,14 @@ class Generic(unittest.TestCase):
 
     def test_generate_random(self):
         rng = cora.Rng(3)
-        S = cora.ContSet.generate_random(rng, 3, ["interval"])
+        S = cora.generate_random(rng, 3, ["interval"])
         self.assertTrue(isinstance(S, cora.Interval) and S.dim == 3)
-        Z = cora.ContSet.generate_random(rng, 4, ["zonotope"])
+        Z = cora.generate_random(rng, 4, ["zonotope"])
         self.assertEqual(np.asarray(Z.generators).shape, (4, 8))
-        classes = {type(cora.ContSet.generate_random(rng)) for _ in range(40)}
+        classes = {type(cora.generate_random(rng)) for _ in range(40)}
         self.assertEqual(classes, {cora.Interval, cora.Zonotope})
         with self.assertRaises(cora.errors.NotSupported):
-            cora.ContSet.generate_random(rng, 2, ["polytope"])
+            cora.generate_random(rng, 2, ["polytope"])
 
     def test_unchecked_forms_and_pairs(self):
         J = box([0.5, 1.0], [3.0, 3.0])

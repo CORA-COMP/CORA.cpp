@@ -37,7 +37,7 @@ void zonotope_has_the_radius_as_generators(const std::string &b) {
 void zonotope_is_the_box(const std::string &b) {
     cora::Rng rng(121);
     for (int trial = 0; trial < 10; ++trial) {
-        const Interval I = Interval::generate_random(4, rng);
+        const Interval I = Interval::generate_random(rng, 4);
         const Zonotope Z = I.zonotope();
         const Interval H = Z.interval();
         check(close(H.inf(), I.inf(), 1e-12) && close(H.sup(), I.sup(), 1e-12),

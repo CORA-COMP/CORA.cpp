@@ -206,7 +206,7 @@ void the_hull_of_a_tetrahedron_and_flat_sets() {
 void the_hull_of_a_zonotope() {
     Rng rng(4);
     for (int m : {3, 5, 8}) {
-        const Zonotope Z = Zonotope::generate_random(3, m, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, m);
         const std::vector<Point3> corners = Z.vertices_3d()[0];
         const std::vector<std::vector<Point3>> faces = hull_faces(corners);
         std::size_t edges = 0;

@@ -25,7 +25,7 @@ void hull_of_a_known_zonotope(const std::string &b) {
 
 void interval_is_the_hull(const std::string &b) {
     cora::Rng rng(6);
-    const Zonotope Z = Zonotope::generate_random(4, 6, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 4, std::nullopt, 6);
     const Interval I = Z.interval();
     for (int i = 0; i < 4; ++i) {
         std::vector<double> e(4, 0.0), f(4, 0.0);

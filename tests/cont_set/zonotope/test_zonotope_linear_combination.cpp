@@ -22,7 +22,7 @@ namespace {
 void linear_combination_encloses_both(const std::string &b) {
     cora::Rng rng(5);
     const int n = 3, m = 4;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     std::vector<double> M(n * n), t(n);
     rng.normal(M.data(), M.size(), 0.5);
     rng.normal(t.data(), t.size(), 1.0);

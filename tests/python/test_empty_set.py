@@ -172,11 +172,11 @@ class EmptySet(unittest.TestCase):
 
     def test_generate_random(self):
         rng = cora.Rng(5)
-        self.assertEqual(cora.EmptySet.generate_random(rng, n=4).dim, 4)
+        self.assertEqual(cora.EmptySet.generate_random(rng, dimension=4).dim, 4)
         drawn = {cora.EmptySet.generate_random(rng).dim for _ in range(200)}
         self.assertEqual(drawn, set(range(1, 11)))
         with self.assertRaises(cora.errors.WrongValue):
-            cora.EmptySet.generate_random(rng, n=-1)
+            cora.EmptySet.generate_random(rng, dimension=-1)
 
     def test_pairs_with_the_whole_space(self):
         F = cora.Fullspace(2)

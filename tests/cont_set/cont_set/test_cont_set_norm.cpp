@@ -46,7 +46,7 @@ void norms_of_a_box_and_a_zonotope(const std::string &b) {
 void the_bound_holds_for_random_points(const std::string &b) {
     cora::Rng rng(21);
     for (int trial = 0; trial < 10; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(3, 4, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
         const std::vector<double> x = Z.rand_point(25, rng).data(); // (3, 25), row-major
         for (const N type : {N::one, N::two, N::inf}) {
             const double bound = static_cast<const ContSet &>(Z).norm(type).data()[0];

@@ -19,7 +19,7 @@ namespace {
 void mtimes_by_a_matrix(const std::string &b) {
     cora::Rng rng(2);
     const int n = 3, m = 4;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     std::vector<double> M(n * n);
     rng.normal(M.data(), M.size(), 1.0);
     const Zonotope MZ = Z.linear_map(Tensor::from_data(M, {n, n}));
@@ -38,7 +38,7 @@ void mtimes_by_a_matrix(const std::string &b) {
 void mtimes_by_an_interval_matrix(const std::string &b) {
     cora::Rng rng(3);
     const int n = 3, m = 4;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     std::vector<double> centre(n * n), radius(n * n);
     rng.normal(centre.data(), centre.size(), 1.0);
     rng.uniform(radius.data(), radius.size(), 0.0, 0.3);

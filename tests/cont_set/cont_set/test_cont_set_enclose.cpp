@@ -27,7 +27,7 @@ void enclose_by_class(const std::string &b) {
           b + ": the hull of two boxes");
 
     cora::Rng rng(5);
-    const Zonotope Z1 = Zonotope::generate_random(3, 4, rng), Z2 = Zonotope::generate_random(3, 2, rng);
+    const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 4), Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 2);
     const Set E = static_cast<const ContSet &>(Z1).enclose(Z2);
     check(E.is<Zonotope>() && E.as<Zonotope>().isequal(Z1.enclose(Z2)), b + ": a zonotope");
     for (int k = 0; k < 20; ++k) {
@@ -38,7 +38,7 @@ void enclose_by_class(const std::string &b) {
     }
 
     const Tensor M = Tensor::from_data({1.0, 2.0, 0.0, 0.5, -1.0, 1.0, 0.0, 0.0, 2.0}, {3, 3});
-    const Zonotope Zplus = Zonotope::generate_random(3, 2, rng);
+    const Zonotope Zplus = Zonotope::generate_random(rng, 3, std::nullopt, 2);
     check(Z1.enclose(M, Zplus).isequal(Z1.enclose(Z1.linear_map(M) + Zplus)),
           b + ": enclose(M, Zplus)");
 }

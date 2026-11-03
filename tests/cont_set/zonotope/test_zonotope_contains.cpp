@@ -68,7 +68,7 @@ void sets_in_the_diamond(const std::string &b) {
 void scaled_copies(const std::string &b) {
     cora::Rng rng(26);
     for (int trial = 0; trial < 6; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(3, 5, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
         const Tensor c = Z.center();
         const Zonotope inside(c, Z.generators() * 0.9), outside(c, Z.generators() * 1.1);
         for (const std::string method : {"exact", "approx"}) {

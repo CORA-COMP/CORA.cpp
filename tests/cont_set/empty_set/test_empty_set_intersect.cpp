@@ -22,7 +22,7 @@ void the_intersection_is_empty(const std::string &b) {
     // random sets: the result is the empty set of the same dimension, also through the registry
     Rng rng(11);
     for (int trial = 0; trial < 10; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(2, 4, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
         const Set R = intersect(E, Z);
         check(R.is<EmptySet>() && R.as<EmptySet>().dim() == 2, b + ": random zonotope");
         check(intersect(Z, E).is<EmptySet>(), b + ": the other order of the operands");

@@ -30,7 +30,7 @@ void lengths_known(const std::string &b) {
 /// |x - c|_2 <= sum of the lengths, and the support function along a unit d is at most their sum.
 void lengths_bound_the_set(const std::string &b) {
     cora::Rng rng(5);
-    const Zonotope Z = Zonotope::generate_random(4, 6, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 4, std::nullopt, 6);
     const double total = Z.generator_length().sum().item();
     for (int k = 0; k < 40; ++k) {
         std::vector<double> d = test::random_direction(rng, 4);
