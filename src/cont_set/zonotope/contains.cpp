@@ -161,7 +161,7 @@ bool Zonotope::contains(const Interval &I, const std::string &method, Tol tol_ar
     const auto refusal = aux_refusal(c_.ndim() != 2 || I.inf().ndim() != 2, method, false);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a box is the zonotope of its axes
-    return aux_contains_zonotope(*this, priv_zonotope_of_interval(I), method, tol);
+    return aux_contains_zonotope(*this, I.zonotope(), method, tol);
 }
 
 } // namespace cora

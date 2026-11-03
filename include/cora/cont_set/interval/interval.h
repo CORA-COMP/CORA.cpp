@@ -308,8 +308,8 @@ class Interval : public ContSet {
     Interval triu(int64_t K = 0) const;
 
     /// The zonotope with the center c and the generators diag(r), r the radius reaching both ends
-    /// from c (CORA's zonotope); the columns of zero radius are dropped, except for a batch,
-    /// which keeps all n (the same set).
+    /// from c (CORA's zonotope); the columns of zero radius are dropped (those of zero radius in
+    /// every member of a batch).
     Zonotope zonotope() const;
 
     // Rounding and signs --------------------------------------------------------------------------

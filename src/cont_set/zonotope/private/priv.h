@@ -2,7 +2,7 @@
 //
 // Not for callers of the class: the operations that mix zonotopes with other sets use them.
 //
-// Syntax:   Zonotope Z = priv_zonotope_of_interval(I);
+// Syntax:   Tensor Gs = priv_select_generators(G, columns);
 // See also: zonotope.h
 
 #pragma once
@@ -15,10 +15,6 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
-
-/// The zonotope of a box, as CORA's zonotope(interval): its center, and an axis generator of its
-/// radius for every dimension whose radius is not zero (in some member of a batch).
-Zonotope priv_zonotope_of_interval(const Interval &I);
 
 /// Why an input is refused, if it is: the identifier and the text, for CORA_CHECK in the entry.
 using Refusal = std::optional<std::pair<Error::Id, std::string>>;

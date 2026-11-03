@@ -86,7 +86,7 @@ bool Zonotope::is_intersecting(const Interval &I, const std::string &type, Tol t
     const Refusal refusal = aux_refusal(type, c_, I.inf());
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     if (I.is_empty()) return false;
-    return type == "exact" ? aux_overlap_exact(*this, priv_zonotope_of_interval(I), tol)
+    return type == "exact" ? aux_overlap_exact(*this, I.zonotope(), tol)
                            : aux_boxes_overlap(*this, I, tol);
 }
 

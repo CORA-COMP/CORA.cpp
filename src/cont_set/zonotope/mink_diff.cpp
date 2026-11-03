@@ -197,7 +197,7 @@ Zonotope aux_mink_diff(const Zonotope &minuend, const Zonotope &subtrahend,
 /// The subtrahend as a zonotope, warning when a box has to be enclosed.
 Zonotope aux_subtrahend_of_box(const Interval &I) {
     warn("CORA:contSet", "mink_diff: the subtrahend is not a zonotope; enclosing it with one");
-    return priv_zonotope_of_interval(I);
+    return I.zonotope();
 }
 
 } // namespace

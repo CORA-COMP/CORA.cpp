@@ -35,7 +35,7 @@ Zonotope aux_intersect_boxes(const Zonotope &Z1, const Zonotope &Z2) {
     if ((lower - upper).detach().max().item() > resolve_tol({}, Z1.center().dtype()))
         CORA_FAIL(Error::empty_set,
                   "intersect: the boxes do not intersect and CORA.cpp has no empty set yet");
-    return priv_zonotope_of_interval({lower.minimum(upper), lower.maximum(upper)});
+    return Interval(lower.minimum(upper), lower.maximum(upper)).zonotope();
 }
 
 /// The weighted average of the zonotopes (CORA's priv_andAveraging, 'normGen' in closed form):
@@ -89,7 +89,7 @@ Zonotope Zonotope::intersect(const Interval &I, const std::string &method) const
     CORA_CHECK(method == "conZonotope" || method == "averaging", Error::wrong_value, [&] {
         return "intersect: the method must be 'conZonotope' or 'averaging', got '" + method + "'";
     });
-    return aux_intersect(*this, priv_zonotope_of_interval(I), method);
+    return aux_intersect(*this, I.zonotope(), method);
 }
 
 } // namespace cora

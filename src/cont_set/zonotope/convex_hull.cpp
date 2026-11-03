@@ -35,7 +35,7 @@ Zonotope Zonotope::convex_hull(const Interval &I) const {
                shape_text(I.inf().shape());
     });
     // a box is the zonotope of its axis generators
-    return enclose(priv_zonotope_of_interval(I));
+    return enclose(I.zonotope());
 }
 
 Zonotope Zonotope::convex_hull(const Tensor &p) const {

@@ -63,7 +63,7 @@ class Structure(unittest.TestCase):
     def test_sum_and_triangles(self):
         M = matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
         np.testing.assert_array_equal(M.sum(1).inf, [[5.0, 7.0, 9.0]])
-        np.testing.assert_array_equal(M.sum(dim=2).sup, [[9.0], [18.0]])
+        np.testing.assert_array_equal(M.sum(dim=2).sup, [9.0, 18.0])
         self.assertEqual(box([1.0, 2.0], [2.0, 3.0]).sum().sup.tolist(), [5.0])
         with self.assertRaises(cora.errors.WrongValue):
             M.sum(3)
