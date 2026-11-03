@@ -53,7 +53,7 @@ class TensorMultiplication(unittest.TestCase):
             b = rng.uniform(-1, 1, m)
             x = G @ b
             image = np.einsum("ijkl,j,k,l->i", M, x, x, x)
-            beta = np.array([b[a] * b[c] * d for a, c, d in comb])
+            beta = np.array([b[i] * b[j] * b[k] for i, j, k in comb])
             np.testing.assert_allclose(H @ beta, image, atol=1e-9)
 
     def test_errors(self):
