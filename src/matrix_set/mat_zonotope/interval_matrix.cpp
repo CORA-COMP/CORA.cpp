@@ -1,0 +1,27 @@
+// interval_matrix - the box around a matrix zonotope as an interval matrix, as CORA's
+//
+// Syntax:   IntervalMatrix B = A.interval_matrix();
+// Inputs:   -
+// Outputs:  B - the interval matrix [C - D, C + D] with D the sum of the absolute generators: the
+//           smallest box around the set
+// See also: norm, zonotope
+//
+// CORA: matrixSet/@matZonotope/intervalMatrix.m
+
+#include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+
+// ===========================================  MAIN  =========================================== //
+
+IntervalMatrix MatZonotope::interval_matrix() const {
+    detail::Entry entry;
+    return IntervalMatrix(C_, G_.abs().sum(-3));
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
