@@ -46,7 +46,7 @@ bool Interval::contains(const Tensor &p, double tol) const {
     CORA_CHECK(tol >= 0, Error::wrong_value,
                [&] { return "contains: tol must be nonnegative, got " + std::to_string(tol); });
     // the bounds and the points broadcast to one shape (a batch of boxes, or of points)
-    const Tensor zero = (p - p) + (inf_ - inf_);
+    const Tensor zero = p.zeros_like() + inf_.zeros_like();
     return aux_all_inside((inf_ + zero).data(), (p + zero).data(), (sup_ + zero).data(), tol);
 }
 
