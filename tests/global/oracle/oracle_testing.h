@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/zonotope.h"
@@ -147,6 +148,14 @@ inline bool same_bits(const std::string &what, const cora::Interval &a, const le
     return same_bits(what + ".inf", a.inf(), b.inf()) & same_bits(what + ".sup", a.sup(), b.sup());
 }
 
+/// A whole space is its dimension: the same one.
+inline bool same_bits(const std::string &what, const cora::Fullspace &a, const lean::Fullspace &b) {
+    if (a.dim() != b.dim())
+        std::cerr << "  " << what << ": R^" << a.dim() << " in CORA.cpp, R^" << b.dim()
+                  << " in the oracle\n";
+    return a.dim() == b.dim();
+}
+
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).
 inline bool same_bits(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
     return same_bits(what + ".c", a.center(), b.center()) &
@@ -220,6 +229,11 @@ inline bool enclosed(const std::string &what, const cora::Interval &a, const lea
             return false;
         }
     return true;
+}
+
+/// The whole space has no enclosure but itself.
+inline bool enclosed(const std::string &what, const cora::Fullspace &a, const lean::Fullspace &b) {
+    return same_bits(what, a, b);
 }
 
 /// Inside nominal + error box: the oracle proves the containment, or else (when it cannot) the

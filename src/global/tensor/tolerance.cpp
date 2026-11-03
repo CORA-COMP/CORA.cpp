@@ -61,6 +61,10 @@ double resolve_tol(const detail::Entry &entry, Tol tol, DType dtype, const char 
     return resolved;
 }
 
+double resolve_tol(const detail::Entry &entry, Tol tol, const char *operation) {
+    return resolve_tol(entry, tol, DType::float64, operation);
+}
+
 ToleranceScope::ToleranceScope(double tol) noexcept : previous_(aux_scope) { aux_scope = tol; }
 
 ToleranceScope::~ToleranceScope() { aux_scope = previous_; }

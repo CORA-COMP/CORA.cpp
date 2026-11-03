@@ -51,6 +51,13 @@ template <>
 struct Decode<Interval> {
     static Interval of(const std::string &dt, const Json &j) { return Interval::from_json(dt, j); }
 };
+// A whole space is its dimension, {n}.
+template <>
+struct Decode<Fullspace> {
+    static Fullspace of(const std::string &dt, const Json &j) {
+        return Fullspace::from_json(dt, j);
+    }
+};
 template <>
 struct Decode<Zonotope> {
     static Zonotope of(const std::string &dt, const Json &j) { return Zonotope::from_json(dt, j); }
@@ -101,6 +108,7 @@ Wire::Wire(const char *s) : json(s) {}
 Wire::Wire(const std::string &s) : json(s) {}
 Wire::Wire(const Tensor &T) : json(T.to_json()), dtype(T.dtype()) {}
 Wire::Wire(const Interval &I) : json(I.to_json()), dtype(I.inf().dtype()) {}
+Wire::Wire(const Fullspace &F) : json(F.to_json()) {}
 Wire::Wire(const Zonotope &Z) : json(Z.to_json()), dtype(Z.center().dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
@@ -140,6 +148,7 @@ template double Reply::get<double>(const char *) const;
 template bool Reply::get<bool>(const char *) const;
 template Tensor Reply::get<Tensor>(const char *) const;
 template Interval Reply::get<Interval>(const char *) const;
+template Fullspace Reply::get<Fullspace>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;

@@ -448,6 +448,71 @@ Tensor::Norm norm_of(const py::object &type) {
     CORA_FAIL(Error::wrong_value, "cora: the norm type must be 1, 2, inf or 'fro'");
 }
 
+/// A set, or points as the interval [p, p], as the operand of a whole space.
+Set operand_set(const py::object &o) {
+    if (py::isinstance<ContSet>(o)) return set_of(o);
+    const Tensor p = tensor_of(o, "the point");
+    return Set(Interval(p, p));
+}
+
+void bind_fullspace(py::module_ &m) {
+    py::class_<Fullspace, ContSet>(m, "Fullspace", "The whole space R^n.")
+        .def(py::init<int64_t>(), py::arg("n"), "R^n, n >= 0")
+        .def_static("inf", &Fullspace::inf, py::arg("n"), "R^n (CORA's fullspace.Inf)")
+        .def("box", &Fullspace::box, "The smallest box around the set: the set itself")
+        .def(
+            "intersect",
+            [](const Fullspace &F, const py::object &S) {
+                return object_of(F.intersect(set_of(S)));
+            },
+            py::arg("S"), "The intersection with a set: that set")
+        .def(
+            "plus",
+            [](const Fullspace &F, const py::object &S) { return F.plus(operand_set(S).get()); },
+            py::arg("S"), "The Minkowski sum with a set or a point: the whole space")
+        .def(
+            "convex_hull",
+            [](const Fullspace &F, const py::object &S) { return F.convex_hull(set_of(S).get()); },
+            py::arg("S"), "The convex hull with a set: the whole space")
+        .def(
+            "contains",
+            [](const Fullspace &F, const py::object &S, Tol tol) {
+                return F.contains(operand_set(S).get(), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(), "Whether the set contains S: always")
+        .def(
+            "is_intersecting",
+            [](const Fullspace &F, const py::object &S, Tol tol) {
+                return F.is_intersecting(operand_set(S).get(), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(), "Whether the set meets S: unless S is empty")
+        .def(
+            "isequal",
+            [](const Fullspace &F, const py::object &S, Tol tol) {
+                return F.isequal(operand_set(S).get(), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether S is the whole space of the same dimension")
+        .def("is_bounded", &Fullspace::is_bounded, "Whether the set is bounded: only in R^0")
+        .def("is_full_dim", &Fullspace::is_full_dim, "Whether the set has a nonempty interior")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points) {
+                return Fullspace::enclose_points(tensor_of(points, "the points"));
+            },
+            py::arg("points"), "The whole space of the dimension of the points (n, N)")
+        .def("lift", &Fullspace::lift, py::arg("N"), py::arg("dims"),
+             "The whole space of N dimensions; dims (0-based) is checked")
+        .def(
+            "linear_map",
+            [](const Fullspace &F, const py::object &M) {
+                if (py::isinstance<Interval>(M))
+                    return object_of(F.linear_map(py::cast<Interval>(M)));
+                return object_of(F.linear_map(tensor_of(M, "the matrix")));
+            },
+            py::arg("M"), "The image under a matrix, an enclosure when M lacks full row rank");
+}
+
 void bind_interval(py::module_ &m) {
     py::class_<Interval, ContSet>(m, "Interval",
                                   "A box, or a matrix of intervals: inf <= x <= sup.")
@@ -997,10 +1062,12 @@ void bind_zonotope(py::module_ &m) {
 /// map), S + v, S - v, -S. What an operator does not understand it hands back to Python
 /// (NotImplemented), which raises the TypeError.
 void bind_operators(py::module_ &m) {
-    const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet");
+    const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
+                     F = m.attr("Fullspace");
     Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
+    F.attr("__array_ufunc__") = py::none();
     const auto method = [](const py::object &cls, const char *name, auto f) {
         cls.attr(name) = py::cpp_function(f, py::is_method(cls));
     };
@@ -1100,6 +1167,22 @@ void bind_operators(py::module_ &m) {
     };
     method(E, "__rmul__", empty_set_product);
     method(E, "__rmatmul__", empty_set_product);
+    // Fullspace: a point shifts it, a number or matrix maps it
+    const auto fullspace_sum = [](const Fullspace &A, const py::object &o) -> py::object {
+        if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
+        if (as_tensor(o)) return py::cast(A.plus(operand_set(o).get()));
+        return not_implemented();
+    };
+    method(F, "__add__", fullspace_sum);
+    method(F, "__radd__", fullspace_sum);
+    const auto fullspace_product = [](const Fullspace &A, const py::object &o) -> py::object {
+        if (is_number(o))
+            return object_of(A.linear_map(Tensor::from_data({py::cast<double>(o)}, {1, 1})));
+        if (const std::optional<Tensor> M = as_tensor(o)) return object_of(*M * A);
+        return not_implemented();
+    };
+    method(F, "__rmul__", fullspace_product);
+    method(F, "__rmatmul__", fullspace_product);
 }
 
 // Dynamics ---------------------------------------------------------------------------------------
@@ -2019,6 +2102,29 @@ void bind_lean(py::module_ &top) {
             "gather", [](const LZ &Z) { return Z.gather(); },
             "(cora.Zonotope, cora.Interval): the nominal part and the error, exactly");
 
+    py::class_<lean::Fullspace>(m, "Fullspace", "The whole space R^n and the oracle's operations")
+        .def(py::init<int64_t>(), "n"_a)
+        .def(py::init<const cora::Fullspace &>(), "F"_a, "The whole space of a cora.Fullspace")
+        .def_property_readonly("dim", &lean::Fullspace::dim)
+        .def_static("inf", &lean::Fullspace::inf, "n"_a)
+        .def("box", &lean::Fullspace::box)
+        .def("interval", &lean::Fullspace::interval)
+        .def("intersect",
+             py::overload_cast<const lean::Fullspace &>(&lean::Fullspace::intersect, py::const_),
+             "F2"_a)
+        .def("intersect", py::overload_cast<const LI &>(&lean::Fullspace::intersect, py::const_),
+             "I"_a)
+        .def("plus", &lean::Fullspace::plus, "F2"_a)
+        .def("convex_hull", &lean::Fullspace::convex_hull, "F2"_a)
+        .def("contains", &lean::Fullspace::contains, "I"_a)
+        .def("is_intersecting", &lean::Fullspace::is_intersecting, "I"_a)
+        .def("isequal", &lean::Fullspace::isequal, "F2"_a, "tol"_a = 0.0)
+        .def("is_bounded", &lean::Fullspace::is_bounded)
+        .def("is_full_dim", &lean::Fullspace::is_full_dim)
+        .def("center", &lean::Fullspace::center)
+        .def_static("enclose_points", &lean::Fullspace::enclose_points, "points"_a)
+        .def("lift", &lean::Fullspace::lift, "N"_a, "dims"_a);
+
     py::class_<lean::ReachSet>(m, "ReachSet", "The reachable sets: lists of lean zonotopes")
         .def_readonly("time_interval", &lean::ReachSet::time_interval)
         .def_readonly("time_point", &lean::ReachSet::time_point);
@@ -2065,6 +2171,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_cont_set(m);
     bind_interval(m);
     bind_empty_set(m);
+    bind_fullspace(m);
     bind_zonotope(m);
     bind_operators(m);
     bind_problems(m);
