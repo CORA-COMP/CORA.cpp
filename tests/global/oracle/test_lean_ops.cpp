@@ -84,7 +84,7 @@ int main() {
     test::check(aux_shape(lower, 2, 1) && aux_shape(upper, 2, 1), "split");
     test::check(I.boundary_point(d, aux_matrix(2, 1, {2, 1})).has_value(), "boundary_point");
     test::check(aux_shape(A.transpose(), 2, 2) && aux_shape(A.ctranspose(), 2, 2) &&
-                    aux_shape(A.prod(), 2, 1) && aux_shape(I.diag(), 2, 2) &&
+                    (aux_shape(A.prod(), 1, 2) || aux_shape(A.prod(), 2, 1)) && aux_shape(I.diag(), 2, 2) &&
                     aux_shape(A.kron(I), 4, 2) && aux_shape(A.horzcat(A), 2, 4) &&
                     aux_shape(A.vertcat(A), 4, 2) && aux_shape(A.sum(1), 2, 1) &&
                     aux_shape(A.cat(A, 1), 4, 2) && aux_shape(A.mpower(3), 2, 2) &&

@@ -1,6 +1,7 @@
 // test_lean_interval_prod - Interval::prod against the CORALean oracle (its `prod`)
 //
-// The oracle gives the product of the rows of an interval matrix as a column, CORA.cpp as a row.
+// The product of the rows of an interval matrix is a row, in the oracle (from batch 5) and in CORA.cpp.
+// The oracles before gave a column; with them the matrix is not compared.
 //
 // ORACLE: contSet/@interval/prod.m
 
@@ -19,9 +20,9 @@ int main() {
         }
         const Tensor c = rnd.matrix(6, 3), r = Tensor::from_data({0.5, 0.25, 1.0}, {1, 3});
         const Interval M(c - r, c + r);
-        const Interval row = M.prod(1);
-        test::oracle::check(Interval(row.inf().matrix_transpose(), row.sup().matrix_transpose()),
-                            lean::Interval(M).prod());
+        const lean::Interval theirs = lean::Interval(M).prod();
+        if (theirs.inf().rows() == 1) test::oracle::check(M.prod(1), theirs);
+        else test::oracle::skipped("the oracle's interval.prod of a matrix is a column (older oracle)");
     });
     return test::finish("lean interval prod");
 }

@@ -6,6 +6,8 @@
 #           scripts/with_env.sh scripts/build.sh example_zonotope_01 one target (a test, an example, python)
 #           scripts/with_env.sh scripts/build.sh --debug example_zonotope_01   -O0 -g into <build>-debug
 #           scripts/with_env.sh scripts/build.sh --eigen              without libtorch
+#           scripts/with_env.sh scripts/build.sh -DCORACPP_ORACLE=<dir>/oracle -DCORACPP_ORACLE_UNSOUND=<dir>/oracle-unsound
+#                                                         the tests against another CORALean oracle (CONTRIBUTING.md)
 # The build directory is $CORACPP_BUILD (scripts/with_env.sh sets it: .coracpp-build, else ./build).
 # Run the tests with: scripts/with_env.sh scripts/test.sh -j4
 

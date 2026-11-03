@@ -35,6 +35,7 @@ RANK = {name: i for i, name in enumerate(STATUSES + (OUT,))}
 LEAN_HAS = ("proved", "float", "bound")
 GROUP_ORDER = cora_rows.GROUPS
 ORACLE_HELPER = re.compile(r"oracle_testing")
+INEXACT_TEST = re.compile(r"_(agreement|enclosure|bound)$")
 ORACLE_SKIP = re.compile(r"\bavailable\(\)|\bneeds_oracle\b")
 TAG = re.compile(r"^(?://|#) (CORA|PROPERTY|ORACLE): (\S+)\s*$")
 ONLY = re.compile(r"^// CORA\.cpp only: \S")
@@ -189,6 +190,9 @@ def check_test_tag(root, file, kind, number):
     if kind == "ORACLE" and "/oracle/" not in "/" + file.relative_to(root).as_posix() \
             and not file.name.startswith("test_lean"):
         return [f"{where}: an ORACLE test is in a folder `oracle/` or named `test_lean*`"]
+    if kind == "ORACLE" and INEXACT_TEST.search(file.stem):
+        return [f"{where}: an ORACLE test is bit-exact at nearest; `*_agreement`, `*_enclosure` and `*_bound` "
+                "tests compare in another order or by enclosure"]
     if kind == "ORACLE" and not (ORACLE_HELPER.search(text) and ORACLE_SKIP.search(text)):
         return [f"{where}: an ORACLE test uses the helper `oracle_testing` and skips without an oracle "
                 "(`test::oracle::available()` in C++, `@needs_oracle` in Python)"]

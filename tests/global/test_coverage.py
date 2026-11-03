@@ -4,7 +4,8 @@ Syntax:   python tests/global/test_coverage.py
 Checks:   on a small fake tree (two CORA methods, a source, a C++ and a Python test): the clean tree
           passes; a tag to a nonexistent row, a stale table, an operation without a tag, a status
           drop, a row becoming oracle debt, a test of an unimplemented row, a property test without a
-          seed, an oracle test without the helper and an out-of-scope row that is implemented each
+          seed, an oracle test without the helper, an oracle test of an enclosure and an
+          out-of-scope row that is implemented each
           fail with a clear message.
 Exit code: 0 if all pass.
 """
@@ -158,6 +159,11 @@ class Checker(unittest.TestCase):
         write(self.root, "tests/global/oracle/test_lean_plus.cpp",
               ORACLE_TEST.replace("available()", "ready()"))
         self.assert_fails("skips without an oracle")
+
+    def test_an_oracle_test_is_bit_exact(self):
+        write(self.root, "tests/global/oracle/test_lean_plus.cpp", ORACLE_TEST)
+        write(self.root, "tests/global/oracle/test_lean_plus_bound.cpp", ORACLE_TEST)
+        self.assert_fails("an ORACLE test is bit-exact at nearest")
 
     def test_an_implemented_row_is_not_out_of_scope(self):
         write(self.root, "coverage/out-of-scope.md",

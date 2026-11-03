@@ -9,11 +9,13 @@
 // ORACLE: contSet/@fullspace/enclosePoints.m
 // ORACLE: contSet/@fullspace/interval.m
 // ORACLE: contSet/@fullspace/lift_.m
+// ORACLE: contSet/@fullspace/mtimes.m
 // ORACLE: contSet/@fullspace/not.m
 // ORACLE: contSet/@fullspace/plus.m
 // ORACLE: contSet/@fullspace/project.m
 // ORACLE: contSet/@fullspace/projectHighDim_.m
 // ORACLE: contSet/@fullspace/radius.m
+// ORACLE: contSet/@fullspace/supportFunc_.m
 // ORACLE: contSet/@fullspace/volume_.m
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -72,6 +74,28 @@ int main() {
         const std::vector<int64_t> proj{1, 0, 2};
         test::oracle::check(Fullspace(3).project_high_dim(3, proj),
                             lean::Fullspace(3).project_high_dim(3, proj));
+    });
+    // the image of R^n under a matrix of full row rank is the whole space of its rows; CORALean
+    // gives that for every matrix, CORA a box where M has a zero row (see the next op)
+    test::oracle::run("fullspace.mtimes", [](test::oracle::Random &rnd) {
+        for (const int64_t m : {1, 3, 7}) {
+            const Tensor M = rnd.matrix(m, 3);
+            test::oracle::check(Fullspace(3).linear_map(M).as<Fullspace>(),
+                                lean::Fullspace(3).linear_map(M));
+        }
+        // a zero row: the box with that coordinate at 0 is inside the whole space of the oracle
+        const Tensor M = Tensor::concat({rnd.matrix(2, 3), Tensor::zeros({1, 3})}, -2);
+        test::oracle::check((*Fullspace(3).linear_map(M)).dim(), lean::Fullspace(3).linear_map(M).dim());
+    });
+    // Inf in every direction but the zero one, where the support function is 0
+    test::oracle::run("fullspace.supportFunc", [](test::oracle::Random &rnd) {
+        for (const int n : {1, 3, 5}) {
+            const Tensor dir = rnd.direction(n), zero = dir.zeros_like();
+            test::oracle::check(Fullspace(n).support_function(dir),
+                                lean::Fullspace(n).support_function(dir));
+            test::oracle::check(Fullspace(n).support_function(zero),
+                                lean::Fullspace(n).support_function(zero));
+        }
     });
     // R^0 is left out: CORA answers NaN there, CORALean Inf
     test::oracle::run("fullspace.radius", [](test::oracle::Random &) {

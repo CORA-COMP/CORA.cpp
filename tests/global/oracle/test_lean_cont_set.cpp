@@ -2,11 +2,13 @@
 // CORALean oracle
 //
 // The oracle serves them per class (`interval.*`, `zonotope.*`); the generic entry of CORA.cpp must
-// give the same numbers as the class's own. It has no `zonotope.enlarge`, `zonotope.minus`,
-// `zonotope.minkDiff` or `projectOnHyperplane`: the property tests of tests/cont_set/cont_set
-// cover those.
+// give the same numbers as the class's own. The oracle has no `zonotope.minkDiff`: the property
+// tests of tests/cont_set/cont_set cover it. `zonotope.enlarge`, `zonotope.minus` and the two
+// `projectOnHyperplane` come with the oracles of batch 5; an older oracle skips them.
 //
 // ORACLE: contSet/@contSet/center.m
+// ORACLE: contSet/@zonotope/center.m
+// ORACLE: contSet/@interval/contains_.m
 // ORACLE: contSet/@contSet/isBounded.m
 // ORACLE: contSet/@contSet/isFullDim.m
 // ORACLE: contSet/@contSet/reduce.m
@@ -14,6 +16,7 @@
 // ORACLE: contSet/@contSet/enlarge.m
 // ORACLE: contSet/@contSet/minus.m
 // ORACLE: contSet/@contSet/minkDiff.m
+// ORACLE: contSet/@contSet/projectOnHyperplane.m
 // ORACLE: contSet/@contSet/eq.m
 // ORACLE: contSet/@contSet/ne.m
 // ORACLE: contSet/@contSet/decompose.m
@@ -47,8 +50,35 @@ void aux_check_set(const A &mine, const B &theirs) {
     oracle::check(mine.interval(), theirs.enclosure().interval());
 }
 
+/// A projection onto a hyperplane: CORALean takes the product with the interval matrix I - c c' and
+/// adds the box d c, which leaves n + n zero generators after the m of the set at nearest. So at
+/// nearest the center and the first m generators are CORA.cpp's, bit for bit, and the others are
+/// zero; in the sound mode the result lies in the enclosure, by the interval hulls.
+void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
+    if (oracle::mode() == oracle::Mode::sound) return aux_check_set(mine, theirs);
+    const Zonotope other = theirs.gather().first;
+    const int64_t m = mine.generators().shape().back(), total = other.generators().shape().back();
+    test::check(total >= m, "projectOnHyperplane: the generators of the set stay");
+    if (total < m) return;
+    oracle::check(mine.center(), other.center());
+    oracle::check(mine.generators(), other.generators().slice(-1, 0, m));
+    test::check(total == m || other.generators().slice(-1, m, total).abs().max().item() == 0,
+                "projectOnHyperplane: the other generators are zero at nearest");
+}
+
 const ContSet &aux_set(const Interval &I) { return I; }
 const ContSet &aux_set(const Zonotope &Z) { return Z; }
+
+/// Sets of 4 dimensions (from `make`) with unit normals: the axes, and (1/2, 1/2, 1/2, 1/2) in
+/// which the sum of squares is exact.
+template <class S, class F>
+std::vector<std::pair<S, Tensor>> aux_normals(F make) {
+    std::vector<std::pair<S, Tensor>> pairs;
+    for (const std::vector<double> &c : {std::vector<double>{1, 0, 0, 0}, {0, 0, -1, 0},
+                                         {0.5, 0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5, 0.5}})
+        pairs.emplace_back(make(4), Tensor::from_data(c, {4, 1}));
+    return pairs;
+}
 
 } // namespace
 
@@ -139,6 +169,42 @@ int main() {
         }
     });
 
+    oracle::run("zonotope.enlarge", [](oracle::Random &rnd) {
+        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
+            const Zonotope Z = rnd.zonotope(n, m);
+            for (const double factor : {0.0, 0.5, 1.0, 2.5})
+                aux_check_set(aux_set(Z).enlarge(factor).as<Zonotope>(),
+                              lean::Zonotope(Z).enlarge(factor));
+            // a factor per coordinate
+            const Tensor column = rnd.vector(n).abs();
+            aux_check_set(aux_set(Z).enlarge(column).as<Zonotope>(), lean::Zonotope(Z).enlarge(column));
+        }
+    });
+
+    oracle::run("zonotope.minus", [](oracle::Random &rnd) {
+        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
+            const Zonotope Z = rnd.zonotope(n, m);
+            const Tensor p = rnd.vector(n);
+            aux_check_set(aux_set(Z).minus(p).as<Zonotope>(), lean::Zonotope(Z).minus(p));
+        }
+    });
+
+    // the normals are of length 1 exactly: an axis, and (1/2, 1/2, 1/2, 1/2)
+    oracle::run("interval.projectOnHyperplane", [](oracle::Random &rnd) {
+        for (const auto &[I, c] : aux_normals<Interval>([&](int n) { return rnd.box(n); })) {
+            const Tensor d = rnd.vector(1);
+            oracle::check(aux_set(I).project_on_hyperplane(c, d).as<Interval>(),
+                          lean::Interval(I).project_on_hyperplane(c, d.item()));
+        }
+    });
+    oracle::run("zonotope.projectOnHyperplane", [](oracle::Random &rnd) {
+        for (const auto &[Z, c] : aux_normals<Zonotope>([&](int n) { return rnd.zonotope(n, 8); })) {
+            const Tensor d = rnd.vector(1);
+            aux_check_projected(aux_set(Z).project_on_hyperplane(c, d).as<Zonotope>(),
+                                lean::Zonotope(Z).project_on_hyperplane(c, d.item()));
+        }
+    });
+
     oracle::run("interval.minkDiff", [](oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             // S narrower than I, so the difference is not empty
@@ -221,6 +287,17 @@ int main() {
             for (const Zonotope *S : {&inner, &outer})
                 oracle::check(cora::detail::contains_impl(Z, *S, 0.0),
                               lean::Zonotope(Z).contains(lean::Zonotope(*S), 0.0));
+        }
+    });
+
+    // CORA.cpp's box contains points; the oracle's containment of a box is asked for the point box
+    oracle::run("interval.contains", [](oracle::Random &rnd) {
+        for (const int n : {2, 5, 20}) {
+            const Interval I = rnd.box(n);
+            const Tensor inside = I.center(), corner = I.inf(), outside = rnd.vector(n) * 3.0;
+            for (const Tensor &p : {inside, corner, outside})
+                oracle::check(I.contains(p, 0.0),
+                              lean::Interval(I).contains(lean::Interval(Interval(p, p)), 0.0));
         }
     });
 
