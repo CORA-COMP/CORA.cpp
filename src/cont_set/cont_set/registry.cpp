@@ -142,21 +142,21 @@ constexpr Table aux_build() {
         t, [](const EmptySet &E, const Zonotope &Z) { return E.convex_hull(Set(Z)); });
     // nothing but an empty set is contained in it, and nothing meets it
     aux_add_predicate<BinaryOp::contains, EmptySet, EmptySet>(
-        t, [](const EmptySet &E, const EmptySet &S, double tol) { return E.contains(S, tol); });
+        t, [](const EmptySet &E, const EmptySet &S, Tol tol) { return E.contains(S, tol); });
     aux_add_predicate<BinaryOp::contains, EmptySet, Interval>(
-        t, [](const EmptySet &E, const Interval &I, double tol) { return E.contains(I, tol); });
+        t, [](const EmptySet &E, const Interval &I, Tol tol) { return E.contains(I, tol); });
     aux_add_predicate<BinaryOp::contains, EmptySet, Zonotope>(
-        t, [](const EmptySet &E, const Zonotope &Z, double tol) { return E.contains(Z, tol); });
+        t, [](const EmptySet &E, const Zonotope &Z, Tol tol) { return E.contains(Z, tol); });
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, EmptySet>(
-        t, [](const EmptySet &E, const EmptySet &S, double tol) {
+        t, [](const EmptySet &E, const EmptySet &S, Tol tol) {
             return E.is_intersecting(S, tol);
         });
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Interval>(
-        t, [](const EmptySet &E, const Interval &I, double tol) {
+        t, [](const EmptySet &E, const Interval &I, Tol tol) {
             return E.is_intersecting(I, tol);
         });
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Zonotope>(
-        t, [](const EmptySet &E, const Zonotope &Z, double tol) {
+        t, [](const EmptySet &E, const Zonotope &Z, Tol tol) {
             return E.is_intersecting(Z, tol);
         });
     return t;

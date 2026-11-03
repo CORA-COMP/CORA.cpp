@@ -726,16 +726,15 @@ void bind_empty_set(py::module_ &m) {
             py::arg("S"), "The convex hull with S: S itself")
         .def(
             "contains",
-            [](const EmptySet &E, const py::object &S, double tol) {
+            [](const EmptySet &E, const py::object &S, Tol tol) {
                 if (py::isinstance<ContSet>(S)) return E.contains(py::cast<const ContSet &>(S), tol);
                 return E.contains(tensor_of(S, "the points"), tol);
             },
-            py::arg("S"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
+            py::arg("S"), py::arg("tol") = py::none(),
             "Whether S (a set, or points (n, N)) is contained: only if it is empty")
-        .def("is_intersecting", &EmptySet::is_intersecting, py::arg("S"), py::arg("tol") = kWithinTol,
+        .def("is_intersecting", &EmptySet::is_intersecting, py::arg("S"), py::arg("tol") = py::none(),
              "Whether S meets the set: never")
-        .def("isequal", &EmptySet::isequal, py::arg("S"),
-             py::arg("tol") = std::numeric_limits<double>::epsilon(),
+        .def("isequal", &EmptySet::isequal, py::arg("S"), py::arg("tol") = py::none(),
              "Whether S is the empty set of the same dimension")
         .def(
             "linear_map",

@@ -19,9 +19,8 @@
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
-#include "cora/global/within_tol.h"
+#include "cora/global/tensor/tolerance.h"
 
-#include <limits>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -58,16 +57,15 @@ class EmptySet : public ContSet {
 
     /// Whether the set contains S: true exactly if S is empty (a set without center columns), up
     /// to tol as CORA passes it on. A point matrix p (n, N) is contained if it has no columns.
-    static constexpr double kContainsTol = 100 * std::numeric_limits<double>::epsilon();
-    bool contains(const ContSet &S, double tol = kContainsTol) const;
-    bool contains(const Tensor &p, double tol = kContainsTol) const;
+    bool contains(const ContSet &S, Tol tol = std::nullopt) const;
+    bool contains(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether S meets the set (CORA's isIntersecting_): never.
-    bool is_intersecting(const ContSet &S, double tol = kWithinTol) const;
+    bool is_intersecting(const ContSet &S, Tol tol = std::nullopt) const;
 
     /// Whether S is the empty set of this dimension (a set without center columns); tol is CORA's
-    /// argument, eps by default, and relaxes nothing here.
-    bool isequal(const ContSet &S, double tol = std::numeric_limits<double>::epsilon()) const;
+    /// argument (default: the repository tolerance) and relaxes nothing here.
+    bool isequal(const ContSet &S, Tol tol = std::nullopt) const;
 
     // Maps and embeddings -------------------------------------------------------------------------
 
