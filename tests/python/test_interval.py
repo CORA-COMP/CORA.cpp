@@ -1,4 +1,18 @@
 """test_interval - the Interval class in Python: a box, or a matrix of intervals."""
+# CORA: contSet/@interval/Inf.m
+# CORA: contSet/@interval/abs.m
+# CORA: contSet/@interval/acos.m
+# CORA: contSet/@interval/acosh.m
+# CORA: contSet/@interval/and_.m
+# CORA: contSet/@interval/asin.m
+# CORA: contSet/@interval/asinh.m
+# CORA: contSet/@interval/atan.m
+# CORA: contSet/@interval/atan2.m
+# CORA: contSet/@interval/atanh.m
+# CORA: contSet/@interval/boundaryPoint.m
+# CORA: contSet/@interval/cartProd_.m
+# CORA: contSet/@interval/cat.m
+# CORA: contSet/@interval/center.m
 # CORA: contSet/@interval/contains_.m
 # CORA: contSet/@interval/generateRandom.m
 # CORA: contSet/@interval/interval.m
@@ -82,6 +96,123 @@ class Interval(unittest.TestCase):
         self.assertTrue(bool((F.inf <= F.sup).all()))
         # MATLAB CORA's taylorMatrices gives F.sup(1, 1) = 0.0012000413732381331 for this system.
         self.assertAlmostEqual(float(F.sup[0, 0]), 0.0012000413732381331, places=14)
+
+
+def box(lo, hi):
+    return cora.Interval(torch.tensor(lo, **F64), torch.tensor(hi, **F64))
+
+
+class IntervalMethods(unittest.TestCase):
+    def test_center_of_unbounded_and_empty_boxes(self):
+        inf = float("inf")
+        self.assertTrue(bool(torch.isnan(box([0.0, -inf], [inf, 2.0]).center).all()))
+        self.assertEqual(box([-inf], [inf]).center.tolist(), [0.0])
+        self.assertEqual(cora.Interval.unbounded(2).center.tolist(), [0.0, 0.0])
+
+    def test_unbounded(self):
+        I = cora.Interval.unbounded(3)
+        self.assertEqual(I.inf.tolist(), [-float("inf")] * 3)
+        self.assertEqual(I.sup.tolist(), [float("inf")] * 3)
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.Interval.unbounded(-1)
+
+    def test_abs(self):
+        A = box([-3.0, -2.0, 1.0], [-1.0, 4.0, 2.0]).abs()
+        self.assertEqual(A.inf.tolist(), [1.0, 0.0, 1.0])
+        self.assertEqual(abs(box([-3.0], [-1.0])).sup.tolist(), [3.0])
+
+    def test_intersect(self):
+        I, J = box([1.0, -1.0], [2.0, 1.0]), box([1.5, -2.0], [2.5, 0.0])
+        self.assertEqual((I & J).inf.tolist(), [1.5, -1.0])
+        self.assertEqual(I.intersect(J).sup.tolist(), [2.0, 0.0])
+        empty = I.intersect(box([5.0, 5.0], [6.0, 6.0]))
+        self.assertEqual(tuple(empty.inf.shape), (2, 0))
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            I.intersect(box([0.0], [1.0]))
+
+    def test_cart_prod_and_cat(self):
+        I, J = box([-1.0, -3.0], [1.0, 6.0]), box([-2.0], [4.0])
+        self.assertEqual(I.cart_prod(J).inf.tolist(), [-1.0, -3.0, -2.0])
+        self.assertEqual(cora.cart_prod(I, J).sup.tolist(), [1.0, 6.0, 4.0])
+        self.assertEqual(I.cart_prod(torch.tensor([7.0], **F64)).sup.tolist(), [1.0, 6.0, 7.0])
+        self.assertEqual(cora.Interval.cat(1, [I, J]).inf.tolist(), [-1.0, -3.0, -2.0])
+        joined = cora.Interval.cat(2, [I, I])
+        self.assertEqual(tuple(joined.inf.shape), (2, 2))
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.Interval.cat(0, [I])
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            cora.Interval.cat(2, [I, J])
+
+    def test_boundary_point(self):
+        I = box([1.0, -1.0], [4.0, 3.0])
+        torch.testing.assert_close(I.boundary_point(torch.tensor([1.0, 1.0], **F64)),
+                                   torch.tensor([4.0, 2.5], **F64))
+        x = I.boundary_point(torch.tensor([-2.0, -1.0], **F64), start=torch.tensor([3.0, 2.0], **F64))
+        torch.testing.assert_close(x, torch.tensor([1.0, 1.0], **F64))
+        with self.assertRaises(cora.errors.WrongValue):
+            I.boundary_point(torch.zeros(2, **F64))
+
+    def test_inverse_functions(self):
+        cases = {"acos": ([0.0, -1.0], [0.5, 1.0]), "asin": ([0.0, -1.0], [0.5, 1.0]),
+                 "atan": ([-1.0, 0.0], [1.0, 3.0]), "acosh": ([1.0, 2.0], [2.0, 10.0]),
+                 "asinh": ([-1.0, 0.0], [1.0, 2.0]), "atanh": ([-0.5, 0.0], [0.5, 0.5])}
+        for name, (lo, hi) in cases.items():
+            R = getattr(box(lo, hi), name)()
+            f = getattr(torch, name)
+            values = torch.stack([f(torch.tensor(lo, **F64)), f(torch.tensor(hi, **F64))])
+            torch.testing.assert_close(R.inf, values.min(0).values, msg=name)
+            torch.testing.assert_close(R.sup, values.max(0).values, msg=name)
+        for name, bad in (("acos", ([-1.5], [0.0])), ("asin", ([0.0], [1.5])),
+                          ("atanh", ([0.0], [1.5])), ("acosh", ([0.5], [2.0]))):
+            with self.assertRaises(cora.errors.OutOfDomain, msg=name):
+                getattr(box(*bad), name)()
+
+    def test_atan2_is_the_hull_of_the_corners(self):
+        Y, X = box([1.0], [2.0]), box([1.0], [2.0])
+        R = Y.atan2(X)
+        self.assertAlmostEqual(float(R.inf[0]), 0.4636476090008061, places=14)
+        self.assertAlmostEqual(float(R.sup[0]), 1.1071487177940904, places=14)
+        cut = box([-1.0], [1.0]).atan2(box([-2.0], [-1.0]))  # misses pi, as CORA does
+        self.assertAlmostEqual(float(cut.sup[0]), 2.677945044588987, places=14)
+
+    def test_batches(self):
+        I = cora.Interval(torch.tensor([[-1.0, 0.5], [0.0, 2.0]], **F64),
+                          torch.tensor([[1.0, 1.0], [3.0, 4.0]], **F64))
+        self.assertEqual(tuple(I.abs().sup.shape), (2, 2))
+        self.assertEqual(tuple(I.cart_prod(I).inf.shape), (2, 4))
+        self.assertEqual(tuple(I.atan().inf.shape), (2, 2))
+        self.assertEqual(tuple(I.center.shape), (2, 2))
+
+
+class IntervalGradients(unittest.TestCase):
+    """Autograd through the operations equals central differences (piecewise ones off their kinks)."""
+
+    def check(self, f, lo, hi):
+        lo = torch.tensor(lo, requires_grad=True, **F64)
+        hi = torch.tensor(hi, requires_grad=True, **F64)
+
+        def bounds(a, b):
+            R = f(cora.Interval(a, b))
+            return torch.stack([R.inf, R.sup])
+
+        self.assertTrue(torch.autograd.gradcheck(bounds, (lo, hi), atol=1e-5, rtol=1e-4))
+
+    def test_gradients(self):
+        lo, hi = [0.1, -0.6, 0.3], [0.7, 0.4, 0.9]
+        for name in ("acos", "asin", "atan", "asinh", "atanh", "abs"):
+            with self.subTest(name):
+                self.check(lambda I, name=name: getattr(I, name)(), lo, hi)
+        self.check(lambda I: I.acosh(), [1.2, 2.0], [3.0, 5.0])
+        self.check(lambda I: I.atan2(I.abs() + torch.ones(3, **F64)), lo, hi)
+        self.check(lambda I: I.intersect(I + torch.tensor([0.1, 0.1, 0.1], **F64)), lo, hi)
+        self.check(lambda I: I.cart_prod(I), lo, hi)
+        self.check(lambda I: cora.Interval.cat(1, [I, I]), lo, hi)
+        self.check(lambda I: cora.Interval(I.center, I.center + 1.0), lo, hi)
+        # off the kink where two faces are reached at once
+        direction = torch.tensor([1.0, 0.5, -1.0], **F64)
+        self.check(lambda I: cora.Interval(I.boundary_point(direction),
+                                           I.boundary_point(direction) + 1.0),
+                   [0.1, -0.6, 0.2], hi)
 
 
 if __name__ == "__main__":

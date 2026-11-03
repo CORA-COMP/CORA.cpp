@@ -428,6 +428,38 @@ void bind_interval(py::module_ &m) {
             },
             py::arg("M"), "M I enclosed by its interval hull")
         .def("plus", &Interval::plus, py::arg("I2"))
+        .def_static("unbounded", &Interval::unbounded, py::arg("n"),
+                    "The box (-Inf, Inf)^n (CORA: interval.Inf)")
+        .def("abs", &Interval::abs, "The image under the elementwise absolute value")
+        .def("__abs__", &Interval::abs)
+        .def("intersect", &Interval::intersect, py::arg("I2"),
+             "The intersection; bounds without columns if empty")
+        .def(
+            "cart_prod",
+            [](const Interval &I, const py::object &other) {
+                if (py::isinstance<Interval>(other)) return I.cart_prod(py::cast<Interval>(other));
+                return I.cart_prod(vector_of(other, "the point"));
+            },
+            py::arg("other"), "The Cartesian product with an interval or a point")
+        .def_static("cat", &Interval::cat, py::arg("dim"), py::arg("intervals"),
+                    "The intervals joined along dim (1: stacked, 2: side by side)")
+        .def(
+            "boundary_point",
+            [](const Interval &I, const py::object &dir, const py::object &start) {
+                std::optional<Tensor> from;
+                if (!start.is_none()) from = vector_of(start, "the start point");
+                return bounds(I.boundary_point(vector_of(dir, "dir"), from));
+            },
+            py::arg("dir"), py::arg("start") = py::none(),
+            "The point where the ray from start (default: the center) along dir leaves the box")
+        .def("acos", &Interval::acos, "The image under the arccosine")
+        .def("asin", &Interval::asin, "The image under the arcsine")
+        .def("atan", &Interval::atan, "The image under the arctangent")
+        .def("acosh", &Interval::acosh, "The image under the inverse hyperbolic cosine")
+        .def("asinh", &Interval::asinh, "The image under the inverse hyperbolic sine")
+        .def("atanh", &Interval::atanh, "The image under the inverse hyperbolic tangent")
+        .def("atan2", &Interval::atan2, py::arg("I2"),
+             "The hull of atan2(y, x) at the four corners, y from this interval, x from I2")
         .def(
             "contains",
             [](const Interval &I, const py::object &p, double tol) {

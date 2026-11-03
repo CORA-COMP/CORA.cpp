@@ -75,6 +75,10 @@ constexpr Table aux_build() {
         t, [](const Zonotope &Z, const Interval &I) { return Z.plus(I); });
     aux_add_set<BinaryOp::plus, Interval, Interval>(
         t, [](const Interval &I1, const Interval &I2) { return I1.plus(I2); });
+    aux_add_set<BinaryOp::intersect, Interval, Interval>(
+        t, [](const Interval &I1, const Interval &I2) { return I1.intersect(I2); });
+    aux_add_set<BinaryOp::cart_prod, Interval, Interval>(
+        t, [](const Interval &I1, const Interval &I2) { return I1.cart_prod(I2); });
     return t;
 }
 

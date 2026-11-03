@@ -61,6 +61,9 @@ changed, and the reasons are listed below.
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
 | `zonotope.generateRandom` | `Zonotope::generate_random(n, m, rng)` | `cora.Zonotope.generate_random` |
 | `interval.generateRandom` | `Interval::generate_random(n, rng)` | `cora.Interval.generate_random` |
+| `interval.Inf(n)` | `Interval::unbounded(n)` | `cora.Interval.unbounded(n)` |
+| `cat(dim, I1, I2)` | `Interval::cat(dim, {I1, I2})` | `cora.Interval.cat(dim, [I1, I2])` |
+| `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |
 | `nonlinearSys(f)` | `NonlinearSys(f, n)` | `cora.NonlinearSys(f, n)` |
 | `neuralNetwork` | `NeuralNetwork` | `cora.NeuralNetwork` |
@@ -115,6 +118,7 @@ changed, and the reasons are listed below.
   - `and` and `or` are keywords of C++ (alternative tokens), so they are `intersect` and
     `unite`. The operators `&` and `|` stay.
   - `mtimes` is MATLAB's name of an operator, so it is `linear_map`.
+  - `interval.Inf` is `unbounded`, because `inf` is the lower bound.
   - `linComb` is `linear_combination` and `convHull` is `convex_hull`: words, not
     abbreviations.
   - `timeInt` is `time_interval`, `tComp` is `computation_time`, `nrSteps` is `num_steps` and

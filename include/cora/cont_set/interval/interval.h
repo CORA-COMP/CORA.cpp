@@ -7,8 +7,9 @@
 // Syntax:     Interval I(inf, sup);   Interval I = Interval::generate_random(n, rng);
 // Operators:  I + I2, I + v, I - v, -I, s * I, M * I, as in CORA
 // Operations: support_function, linear_map, plus, rand_point, contains, stack, project, vertices,
-//             generate_random, display (one file each); center, rad (below); the constructor
-//             checks its input (interval.cpp)
+//             generate_random, display, center, abs, intersect, cart_prod, cat, unbounded,
+//             boundary_point, acos, asin, atan, atan2, acosh, asinh, atanh (one file each); rad
+//             (below); the constructor checks its input (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@interval/interval.m
@@ -19,6 +20,8 @@
 #include "cora/cont_set/set.h"
 
 #include <limits>
+#include <optional>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -40,8 +43,8 @@ class Interval : public ContSet {
     const Tensor &inf() const noexcept { return inf_; }
     const Tensor &sup() const noexcept { return sup_; }
 
-    /// (inf + sup) / 2, elementwise, of the shape of the bounds.
-    Tensor center() const { return (inf_ + sup_) * 0.5; }
+    /// Whether the interval is empty: bounds without columns, as CORA's interval.empty.
+    bool is_empty() const { return inf_.shape().back() == 0; }
 
     /// (sup - inf) / 2, elementwise, of the shape of the bounds.
     Tensor rad() const { return (sup_ - inf_) * 0.5; }
@@ -59,9 +62,51 @@ class Interval : public ContSet {
     /// or relative to the bound, as within_tol); for a batch, whether all points are.
     bool contains(const Tensor &p, double tol = 100 * std::numeric_limits<double>::epsilon()) const;
 
+    // Construction and combination ----------------------------------------------------------------
+
+    /// The box (-Inf, Inf)^n of n dimensions (CORA: interval.Inf).
+    static Interval unbounded(int64_t n);
+
+    /// The image of the elementwise absolute value: [max(0, inf, -sup), max(-inf, sup)].
+    Interval abs() const;
+
+    /// The intersection with I2 (CORA's and): empty (bounds with no columns) if the boxes are
+    /// disjoint by more than eps.
+    Interval intersect(const Interval &I2) const;
+
+    /// The Cartesian product: the columns stacked, or for rows the rows joined side by side; an
+    /// empty operand returns the other. A number (a point) p is the box [p, p].
+    Interval cart_prod(const Interval &I2) const;
+    Interval cart_prod(const Tensor &p) const;
+    static Interval cart_prod(const Tensor &p, const Interval &I);
+
+    /// The intervals joined along dim (1: stacked, 2: side by side), as CORA's cat.
+    static Interval cat(int dim, const std::vector<Interval> &Is);
+
+    // Points and functions ------------------------------------------------------------------------
+
+    /// The point where the ray start + s dir, s >= 0, leaves the box; start defaults to the
+    /// center. An unbounded ray ends at +-Inf in the coordinates of dir.
+    Tensor boundary_point(const Tensor &dir,
+                          const std::optional<Tensor> &start = std::nullopt) const;
+
+    /// The image under the function, elementwise: an interval hull of the images of the bounds.
+    /// acos, asin, atanh need the bounds in [-1, 1] and acosh at least 1, else
+    /// Error::out_of_domain.
+    Interval acos() const;
+    Interval asin() const;
+    Interval atan() const;
+    Interval acosh() const;
+    Interval asinh() const;
+    Interval atanh() const;
+
+    /// The hull of atan2(y, x) at the four corners, y from this interval and x from I2, as CORA
+    /// (not an enclosure where the box meets the branch cut of atan2).
+    Interval atan2(const Interval &I2) const;
+
   protected:
     int64_t dim_impl() const override { return inf_.shape()[inf_.shape().size() - 2]; }
-    Tensor center_impl() const override { return center(); }
+    Tensor center_impl() const override;
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override { return *this; }
     Tensor rand_point_impl(int64_t N, Rng &rng) const override;

@@ -45,7 +45,7 @@ OPERATION_ROOTS = ("src/cont_set/", "src/cont_dynamics/", "src/specification/", 
 CLASS_HEADER_ROOTS = ("include/cora/cont_set/", "include/cora/cont_dynamics/",
                       "include/cora/specification/", "include/cora/nn/")
 # Operations that take no input, so no test can give them an invalid one.
-NO_INPUT_OPERATIONS = {"display", "interval"}
+NO_INPUT_OPERATIONS = {"display", "interval", "abs", "asinh", "atan", "center"}
 # Not an operation of a class: the table of the binary operations.
 NOT_OPERATIONS = {"src/cont_set/cont_set/registry.cpp"}
 CORA_TAG = re.compile(r"^// (CORA: \S+\.m\b|CORA\.cpp only: \S)")
