@@ -59,6 +59,16 @@ changed, and the reasons are listed below.
 | `contains(S1, S2, type, tol)` | `contains(S1, S2, tol)`, `I.contains(p, tol)` | `cora.contains`, `p in I` |
 | `isIntersecting(S1, S2, type, tol)` | `is_intersecting(S1, S2, tol)` | `cora.is_intersecting` |
 | `reduce(Z, 'girard', order)` | `Z.reduce(order)` | `Z.reduce(order)` |
+| `isBounded(S)`, `isFullDim(S, tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` |
+| `enlarge(S, factor)` | `S.enlarge(factor)` | `S.enlarge(factor)` |
+| `minus(S, p)`, `minus(p, S)` | `S.minus(p)`, `ContSet::minus(p, S)` | `S.minus(p)` |
+| `minkDiff(S, S2, type)` | `S.minkowski_difference(S2, type)` | `S.minkowski_difference(S2, type)` |
+| `isequal(S1, S2, tol)`, `eq`, `ne` | `isequal(S1, S2, tol)`, `eq`, `ne`, `S1 == S2` | `cora.isequal`, `cora.eq`, `cora.ne`, `S1 == S2` |
+| `decompose(S, blocks)` | `S.decompose(blocks)` (0-based, inclusive) | `S.decompose(blocks)` |
+| `projectHighDim(S, N, proj)` | `S.project_high_dim(N, proj)` | `S.project_high_dim(N, proj)` |
+| `projectOnHyperplane(S, hyp)` | `S.project_on_hyperplane(c, d)` (the constraint) | `S.project_on_hyperplane(c, d)` |
+| `contSet.generateRandom(...)` | `ContSet::generate_random(rng, n, admissible)` | `cora.ContSet.generate_random(rng, n, admissible)` |
+| `and_`, `contains_`, `isIntersecting_` | `detail::intersect_impl`, `contains_impl`, `is_intersecting_impl` | - |
 | `abs(Z)`, `box(Z)` | `Z.abs()`, `Z.box()` | `Z.abs()`, `Z.box()` |
 | `compact(Z, method, tol)` | `Z.compact(method, tol)` | `Z.compact(method, tol)` |
 | `cartProd(Z, S)` | `Z.cart_prod(S)`, `Zonotope::cart_prod(p, Z)` | `Z.cart_prod(S)` |
@@ -156,7 +166,8 @@ changed, and the reasons are listed below.
 - **Changed beyond snake_case:**
   - `and` and `or` are keywords of C++ (alternative tokens), so they are `intersect` and
     `unite`. The operators `&` and `|` stay.
-  - `mtimes` is MATLAB's name of an operator, so it is `linear_map`.
+  - `mtimes` is MATLAB's name of an operator, so it is `linear_map`; `projectOnHyperplane` takes
+    the constraint of the hyperplane (a normal and an offset), as CORA.cpp has no hyperplane class.
   - `interval.Inf` is `unbounded`, because `inf` is the lower bound.
   - `linComb` is `linear_combination` and `convHull` is `convex_hull`: words, not
     abbreviations. So are `constrSat` (`constraints_satisfied`), `cubMap` (`cubic_map`) and `dH2box`

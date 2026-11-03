@@ -137,9 +137,9 @@ class Interval : public ContSet {
 
     // Comparison and predicates -------------------------------------------------------------------
 
-    /// Whether no coordinate has a width within the repository tolerance of zero (as within_tol);
-    /// false for an empty interval; for a batch, whether all members are.
-    bool is_full_dim() const;
+    /// Whether no coordinate has a width within tol of zero (as within_tol); false for an empty
+    /// interval; for a batch, whether all members are. tol default: the repository tolerance.
+    bool is_full_dim(Tol tol = std::nullopt) const;
 
     /// Whether the boxes meet (CORA's isIntersecting_): per coordinate the bounds overlap, up to
     /// tol as within_tol; false if one is empty. With a point p, whether p is in the box. For a
@@ -321,6 +321,17 @@ class Interval : public ContSet {
     std::vector<Polygon> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
+
+    // The generic operations of ContSet, which a box answers by its own (defined beside them).
+    bool is_bounded_impl() const override;
+    bool is_full_dim_impl(Tol tol) const override;
+    Set reduce_impl(int order) const override;
+    Set linear_map_impl(const Tensor &M) const override;
+    Set translate_impl(const Tensor &v) const override;
+    Set enlarge_impl(const Tensor &factor) const override;
+    Set minkowski_difference_impl(const ContSet &S2,
+                                  const std::optional<std::string> &type) const override;
+    Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
 
   private:
     Tensor inf_, sup_;

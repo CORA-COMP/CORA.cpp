@@ -254,6 +254,17 @@ Zonotope Zonotope::mink_diff(const Tensor &p, const std::string &method) const {
     return *this - p;
 }
 
+Set Zonotope::minkowski_difference_impl(const ContSet &S2,
+                                        const std::optional<std::string> &type) const {
+    const std::string method = type.value_or("approx");
+    if (S2.class_id() == ClassId::zonotope)
+        return mink_diff(static_cast<const Zonotope &>(S2), method);
+    if (S2.class_id() == ClassId::interval)
+        return mink_diff(static_cast<const Interval &>(S2), method);
+    CORA_FAIL(Error::noops, "minkowski_difference is not implemented for Zonotope and " +
+                                S2.class_name());
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

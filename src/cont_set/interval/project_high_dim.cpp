@@ -12,7 +12,6 @@
 
 #include "cont_set/interval/private/priv_embed.h"
 #include "cora/cont_set/interval/interval.h"
-#include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,19 +22,12 @@ namespace cora {
 
 Interval Interval::project_high_dim(int64_t N, const std::vector<int64_t> &proj) const {
     detail::Entry entry;
-    CORA_CHECK(N >= dim(), Error::wrong_value, [&] {
-        return "project_high_dim: the space of " + std::to_string(N) +
-               " dimensions must not be smaller than the interval of " + std::to_string(dim());
-    });
-    CORA_CHECK(static_cast<int64_t>(proj.size()) == dim(), Error::wrong_value, [&] {
-        return "project_high_dim: one coordinate per dimension of the interval is needed, got " +
-               std::to_string(proj.size()) + " for " + std::to_string(dim());
-    });
-    for (const int64_t d : proj)
-        CORA_CHECK(d >= 0 && d < N, Error::wrong_value, [&] {
-            return "project_high_dim: the coordinate " + std::to_string(d) + " is not in [0, " +
-                   std::to_string(N) + ")";
-        });
+    const detail::Refusal r = detail::project_high_dim_refusal(dim(), N, proj);
+    CORA_CHECK(!r, r->first, [&] { return r->second; });
+    return project_high_dim_impl(N, proj).as<Interval>();
+}
+
+Set Interval::project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const {
     if (is_empty()) return Interval::empty(N);
     return priv_embed(*this, N, proj, 0.0, 0.0);
 }

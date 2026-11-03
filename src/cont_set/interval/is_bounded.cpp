@@ -23,6 +23,8 @@ bool Interval::is_bounded() const {
     return inf_.isinf().maximum(sup_.isinf()).max().item() == 0;
 }
 
+bool Interval::is_bounded_impl() const { return is_bounded(); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -40,6 +40,8 @@ Zonotope Zonotope::reduce(int order) const {
     return {c_, keep == 0 ? box : Tensor::concat({G_.take_along_axis(kept, -1), box}, -1)};
 }
 
+Set Zonotope::reduce_impl(int order) const { return reduce(order); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

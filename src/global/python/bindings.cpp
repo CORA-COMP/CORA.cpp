@@ -302,6 +302,25 @@ void bind_registry(py::module_ &m) {
         py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(),
         "Whether S1 and S2 intersect, up to tol (None: the repository tolerance)");
     m.def(
+        "isequal",
+        [](const py::object &S1, const py::object &S2, Tol tol) {
+            return isequal(set_of(S1), set_of(S2), tol);
+        },
+        py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(),
+        "Whether two sets are equal, up to tol (None: the repository tolerance)");
+    m.def(
+        "eq",
+        [](const py::object &S1, const py::object &S2, Tol tol) {
+            return eq(set_of(S1), set_of(S2), tol);
+        },
+        py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(), "isequal, as CORA's eq");
+    m.def(
+        "ne",
+        [](const py::object &S1, const py::object &S2, Tol tol) {
+            return ne(set_of(S1), set_of(S2), tol);
+        },
+        py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(), "Not isequal, as CORA's ne");
+    m.def(
         "binary_pairs",
         [] {
             py::list out;
@@ -330,7 +349,8 @@ void bind_registry(py::module_ &m) {
             const auto ref = [](const ContSet &S) {
                 return py::cast(&S, py::return_value_policy::reference);
             };
-            if (o == BinaryOp::contains || o == BinaryOp::is_intersecting) {
+            if (o == BinaryOp::contains || o == BinaryOp::is_intersecting ||
+                o == BinaryOp::isequal) {
                 register_binary(
                     o, l, r,
                     PredicateFunction([fn, ref](const ContSet &S1, const ContSet &S2, Tol tol) {
@@ -399,6 +419,84 @@ void bind_cont_set(py::module_ &m) {
                 return corners;
             },
             "The vertices of a three-dimensional set, one (k, 3) array per batch member")
+        .def("is_bounded", &ContSet::is_bounded, "Whether the set is bounded")
+        .def("is_full_dim", &ContSet::is_full_dim, py::arg("tol") = py::none(),
+             "Whether the set has a nonempty interior; tol=None: the repository tolerance")
+        .def(
+            "reduce", [](const ContSet &S, int order) { return object_of(S.reduce(order)); },
+            py::arg("order") = 1, "A set with at most order * dim generators that encloses S")
+        .def(
+            "linear_map",
+            [](const ContSet &S, const py::object &M) {
+                return object_of(S.linear_map(tensor_of(M, "the matrix")));
+            },
+            py::arg("M"), "The image under the matrix M (..., m, n)")
+        .def(
+            "enlarge",
+            [](const ContSet &S, const py::object &factor) {
+                if (is_number(factor)) return object_of(S.enlarge(py::cast<double>(factor)));
+                return object_of(S.enlarge(vector_of(factor, "the factor")));
+            },
+            py::arg("factor"), "The set scaled about its center by a number or per dimension")
+        .def(
+            "minus",
+            [](const ContSet &S, const py::object &p) {
+                return object_of(S.minus(vector_of(p, "the vector")));
+            },
+            py::arg("p"), "The set shifted by -p")
+        .def(
+            "minkowski_difference",
+            [](const ContSet &S, const py::object &S2, const std::optional<std::string> &type) {
+                return object_of(S.minkowski_difference(set_of(S2), type));
+            },
+            py::arg("S2"), py::arg("type") = py::none(),
+            "The Minkowski difference {x | x + S2 in S}")
+        .def(
+            "decompose",
+            [](const ContSet &S, const std::vector<std::array<int64_t, 2>> &blocks) {
+                py::list parts;
+                for (const Set &part : S.decompose(blocks)) parts.append(object_of(part));
+                return parts;
+            },
+            py::arg("blocks"),
+            "The projections onto blocks [first, last] of coordinates (0-based, inclusive)")
+        .def(
+            "project_high_dim",
+            [](const ContSet &S, int64_t N, const std::vector<int64_t> &proj) {
+                return object_of(S.project_high_dim(N, proj));
+            },
+            py::arg("N"), py::arg("proj"), "The set in N dimensions, coordinate j placed at proj[j]")
+        .def(
+            "project_on_hyperplane",
+            [](const ContSet &S, const py::object &c, const py::object &d) {
+                const Tensor normal = vector_of(c, "the normal");
+                const Tensor offset =
+                    is_number(d) ? normal.full_like({1, 1}, py::cast<double>(d))
+                                 : tensor_of(d, "the offset");
+                return object_of(S.project_on_hyperplane(normal, offset));
+            },
+            py::arg("c"), py::arg("d"),
+            "The orthogonal projection onto the hyperplane {x | c'x = d}")
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, std::optional<int64_t> n,
+               const std::optional<std::vector<std::string>> &admissible) {
+                return object_of(
+                    admissible ? ContSet::generate_random(rng, n, *admissible)
+                               : ContSet::generate_random(rng, n));
+            },
+            py::arg("rng"), py::arg("n") = py::none(), py::arg("admissible") = py::none(),
+            "A random set of one of the admissible classes ('interval', 'zonotope')")
+        .def("__eq__",
+             [](const py::object &S1, const py::object &S2) -> py::object {
+                 if (!py::isinstance<ContSet>(S2)) return not_implemented();
+                 return py::cast(eq(set_of(S1), set_of(S2)));
+             })
+        .def("__ne__",
+             [](const py::object &S1, const py::object &S2) -> py::object {
+                 if (!py::isinstance<ContSet>(S2)) return not_implemented();
+                 return py::cast(ne(set_of(S1), set_of(S2)));
+             })
         .def("display", &ContSet::display)
         .def("__repr__", &ContSet::display)
         .def("__str__", &ContSet::display)
@@ -616,7 +714,8 @@ void bind_interval(py::module_ &m) {
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
         .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
-        .def("is_full_dim", &Interval::is_full_dim, "Whether the box has a nonempty interior")
+        .def("is_full_dim", &Interval::is_full_dim, py::arg("tol") = py::none(),
+             "Whether the box has a nonempty interior; tol=None: the repository tolerance")
         .def(
             "is_intersecting",
             [](const Interval &I, const py::object &other, Tol tol) {

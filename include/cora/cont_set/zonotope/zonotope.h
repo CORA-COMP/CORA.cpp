@@ -259,6 +259,15 @@ class Zonotope : public ContSet {
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
 
+    // The generic operations of ContSet, which a zonotope answers by its own (defined beside them).
+    Set translate_impl(const Tensor &v) const override;
+    Set minkowski_difference_impl(const ContSet &S2,
+                                  const std::optional<std::string> &type) const override;
+    bool is_bounded_impl() const override;
+    bool is_full_dim_impl(Tol tol) const override;
+    Set reduce_impl(int order) const override;
+    Set linear_map_impl(const Tensor &M) const override;
+
   private:
     Tensor c_, G_;
 };

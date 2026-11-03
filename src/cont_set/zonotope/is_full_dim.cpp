@@ -56,6 +56,8 @@ std::pair<bool, Tensor> Zonotope::is_full_dim_subspace(Tol tol_arg) const {
     return {false, G_.svd()[0].slice(-1, 0, rank)};
 }
 
+bool Zonotope::is_full_dim_impl(Tol tol) const { return is_full_dim(tol); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -9,21 +9,27 @@
 //
 // Syntax:     Tensor v = S.support_function(d);   Interval I = S.interval();
 //             Set P = S.project(d);
-// Operations: support_function, interval, rand_point, project, vertices, vertices_3d, display (one
-//             file each in src/cont_set/cont_set/, the checks; the classes implement the _impl
-//             forms)
+// Operations: support_function, interval, rand_point, project, vertices, vertices_3d, display,
+//             center, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
+//             minkowski_difference, decompose, project_high_dim, project_on_hyperplane,
+//             generate_random (one file each in src/cont_set/cont_set/, the checks; the classes
+//             implement the _impl forms, and a class that does not gets CORA's noops)
 // See also:   cont_set/set.h, cont_set/registry.h, cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@contSet/contSet.m
+// CORA: contSet/@contSet/dim.m
 
 #pragma once
 
 #include "cora/global/settings.h"
 #include "cora/global/tensor/tensor.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <array>
+#include <optional>
 #include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -96,7 +102,7 @@ class ContSet {
     int64_t dim() const { return dim_impl(); }
 
     /// The center, a column (..., n, 1).
-    Tensor center() const { return center_impl(); }
+    Tensor center() const;
 
     /// max_{x in S} d'x for a direction d (..., n, 1); returns (..., 1, 1).
     Tensor support_function(const Tensor &d) const;
@@ -119,6 +125,55 @@ class ContSet {
     /// A description of the set as text, as CORA displays it: what `std::cout << S` prints.
     std::string display() const;
 
+    // Queries and maps ----------------------------------------------------------------------------
+
+    /// Whether the set is bounded; for a batch, whether every member is.
+    bool is_bounded() const;
+
+    /// Whether the set has a nonempty interior (is not in a lower-dimensional subspace). tol
+    /// relaxes the rank or width test; default: the repository tolerance (docs/architecture.md).
+    bool is_full_dim(Tol tol = std::nullopt) const;
+
+    /// A set of at most `order` times the dimension generators that encloses the set (Girard's
+    /// method, CORA's default); order >= 1.
+    Set reduce(int order = 1) const;
+
+    /// The image under the matrix M (..., m, n) (CORA's mtimes(M, S)), in the class of the set.
+    Set linear_map(const Tensor &M) const;
+
+    /// The set scaled about its center by factor, a number or a column (..., n, 1): the center
+    /// is subtracted, the set scaled coordinate by coordinate and the center added back.
+    Set enlarge(const Tensor &factor) const;
+    Set enlarge(double factor) const;
+
+    /// The set shifted by -p for a column p (..., n, 1), and for the static form -S + p (CORA's
+    /// minus with a vector); the Minkowski difference is minkowski_difference.
+    Set minus(const Tensor &p) const;
+    static Set minus(const Tensor &p, const ContSet &S);
+
+    /// The Minkowski difference {x | x + S2 in this set} (CORA's minkDiff); type picks the
+    /// algorithm of the class (default: the class's own), Error::noops for a pair without one.
+    Set minkowski_difference(const ContSet &S2,
+                             const std::optional<std::string> &type = std::nullopt) const;
+
+    /// The projections onto the blocks of coordinates [first, last] (0-based, both inclusive),
+    /// one set per block, as CORA's decompose.
+    std::vector<Set> decompose(const std::vector<std::array<int64_t, 2>> &blocks) const;
+
+    /// The set in N dimensions with coordinate proj[j] (0-based) the j-th coordinate of this set
+    /// and 0 elsewhere (CORA's projectHighDim_: I(:, proj) * S).
+    Set project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
+
+    /// The orthogonal projection onto the hyperplane {x | c'x = d} for a normal c (..., n, 1) of
+    /// any length and an offset d (..., 1, 1): (I - c c') S + d c with c normalized.
+    Set project_on_hyperplane(const Tensor &c, const Tensor &d) const;
+
+    /// A random set of one of the admissible classes (CORA names: "interval", "zonotope"), of
+    /// dimension n (default: uniform in 1..10), drawn with rng.
+    static Set generate_random(Rng &rng, std::optional<int64_t> n = std::nullopt,
+                               const std::vector<std::string> &admissible = {"interval",
+                                                                             "zonotope"});
+
   protected:
     explicit ContSet(ClassId id) noexcept : id_(id) {}
     ContSet(const ContSet &) = default;
@@ -140,11 +195,36 @@ class ContSet {
     virtual std::vector<std::vector<Point3>> vertices_3d_impl() const = 0;
     virtual std::string display_impl() const = 0;
 
+    // The unchecked forms that a class may implement; CORA's contSet raises noops for the rest.
+    virtual bool is_bounded_impl() const;
+    virtual bool is_full_dim_impl(Tol tol) const;
+    virtual Set reduce_impl(int order) const;
+    virtual Set linear_map_impl(const Tensor &M) const;
+    /// The set translated by v (..., n, 1): the plus of a set and a vector.
+    virtual Set translate_impl(const Tensor &v) const;
+    /// CORA's enlarge: the generic formula, which a class with a cheaper one overrides.
+    virtual Set enlarge_impl(const Tensor &factor) const;
+    virtual Set minkowski_difference_impl(const ContSet &S2,
+                                          const std::optional<std::string> &type) const;
+    /// CORA's projectHighDim_: I(:, proj) * S, which a class with a cheaper one overrides.
+    virtual Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const;
+
   private:
     ClassId id_;
 };
 
 inline std::ostream &operator<<(std::ostream &out, const ContSet &S) { return out << S.display(); }
+
+namespace detail {
+
+/// What an entry refuses: the identifier and the message, or nothing.
+using Refusal = std::optional<std::pair<Error::Id, std::string>>;
+
+/// The refusal of project_high_dim(N, proj) for a set of dimension n; the entries of every set
+/// class that has the operation raise it with CORA_CHECK.
+Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj);
+
+} // namespace detail
 
 } // namespace cora
 

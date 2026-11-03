@@ -26,6 +26,8 @@ Interval Interval::plus(const Interval &I2) const {
     return {inf_ + I2.inf(), sup_ + I2.sup()};
 }
 
+Set Interval::translate_impl(const Tensor &v) const { return Interval(inf_ + v, sup_ + v); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -21,6 +21,8 @@ bool Zonotope::is_bounded() const {
     return true;
 }
 
+bool Zonotope::is_bounded_impl() const { return is_bounded(); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
