@@ -153,34 +153,13 @@ std::string aux_text(const Shape &s) {
 
 // Shape, DType, Device ----------------------------------------------------------------------------
 
-Shape::Shape(std::initializer_list<int64_t> sizes) {
-    for (const int64_t d : sizes) push_back(d);
+void Shape::aux_too_many_axes() {
+    CORA_FAIL(Error::not_supported,
+              "CoraTensor: at most " + std::to_string(kMaxRank) + " axes are supported");
 }
 
-Shape::Shape(const std::vector<int64_t> &sizes) {
-    for (const int64_t d : sizes) push_back(d);
-}
-
-void Shape::push_back(int64_t v) {
-    if (rank_ == kMaxRank)
-        CORA_FAIL(Error::not_supported,
-                  "CoraTensor: at most " + std::to_string(kMaxRank) + " axes are supported");
-    d_[rank_++] = v;
-}
-
-int64_t Shape::numel() const {
-    int64_t n = 1;
-    for (int64_t i = 0; i < rank_; ++i) n *= d_[i];
-    return n;
-}
 
 // The same rank and sizes.
-bool operator==(const Shape &a, const Shape &b) {
-    if (a.rank_ != b.rank_) return false;
-    for (int64_t i = 0; i < a.rank_; ++i)
-        if (a.d_[i] != b.d_[i]) return false;
-    return true;
-}
 
 const char *dtype_name(DType dtype) { return dtype == DType::float32 ? "float32" : "float64"; }
 

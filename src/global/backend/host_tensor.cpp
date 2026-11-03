@@ -326,6 +326,7 @@ Shape broadcast_shapes(const Shape &a, const Shape &b) {
 BatchPairs batch_pairs(const Shape &a, const Shape &b, const char *op) {
     aux_require_matrix(a, op, false);
     aux_require_matrix(b, op, false);
+    if (a.size() == 2 && b.size() == 2) return {}; // two matrices: one pair, nothing to broadcast
     const Shape ba = aux_batch(a), bb = aux_batch(b);
     const Shape batch = broadcast_shapes(ba, bb);
     return {batch, aux_broadcast_strides(ba, batch), aux_broadcast_strides(bb, batch)};

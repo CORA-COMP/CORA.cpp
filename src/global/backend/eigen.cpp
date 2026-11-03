@@ -7,10 +7,12 @@
 #include "cora/global/backend/eigen.h"
 #include "cora/global/backend/host.h"
 #include "cora/global/error.h"
+#include "cora/global/threads.h"
 #include "global/backend/host_tensor.h"
 
 #include <algorithm>
 #include <numeric>
+#include <optional>
 
 #include <unsupported/Eigen/MatrixFunctions>
 
@@ -38,16 +40,47 @@ Shape aux_matrix_shape(const Shape &batch, int64_t rows, int64_t cols) {
     return s;
 }
 
-/// out = a x b for every pair of the batch, each one Eigen product.
+/// Below this many multiplications a product is a plain loop: Eigen's setup costs more.
+constexpr int64_t kSmallProduct = 512;
+/// Below this much work (multiplications) Eigen keeps a product on one thread: 2 x its 50000 task.
+constexpr long long kSerialWork = 100000;
+
+/// C = A B of one pair, (n, k) times (k, m). A small product is a plain loop over the rows of B
+/// weighted by a row of A: no setup cost.
+template <class T> void aux_product(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t m) {
+    if (n * k * m > kSmallProduct) {
+        Map<T>(C, n, m).noalias() = MapC<T>(A, n, k) * MapC<T>(B, k, m);
+        return;
+    }
+    for (int64_t i = 0; i < n; ++i) {
+        T *row = C + i * m;
+        std::fill(row, row + m, T(0));
+        for (int64_t q = 0; q < k; ++q) {
+            const T aiq = A[i * k + q];
+            for (int64_t j = 0; j < m; ++j) row[j] += aiq * B[q * m + j];
+        }
+    }
+}
+
+/// out = a x b for every pair of the batch, each one Eigen product. Eigen gets the threads the
+/// work can keep busy: on row-major maps it would split even a (2, 200) x (200, 200) product.
 template <class T>
 void aux_products(const T *a, const Shape &sa, const T *b, const Shape &sb, T *out,
                   const host::BatchPairs &bp) {
     const int64_t n = aux_rows(sa), k = sa.back(), m = sb.back();
-    host::parallel_for(bp.batch.numel(), (long long)bp.batch.numel() * n * k * m, [&](int64_t z) {
+    const long long work = (long long)bp.batch.numel() * n * k * m;
+    const auto product = [&](int64_t z) {
         const auto [left, right] = bp.at(z);
-        Map<T>(out + z * n * m, n, m).noalias() =
-            MapC<T>(a + left * n * k, n, k) * MapC<T>(b + right * k * m, k, m);
-    });
+        aux_product(a + left * n * k, b + right * k * m, out + z * n * m, n, k, m);
+    };
+    // work Eigen would not split anyway runs here, without asking for threads (the first ask reads
+    // the CPU topology)
+    if (work < kSerialWork) {
+        for (int64_t z = 0; z < bp.batch.numel(); ++z) product(z);
+        return;
+    }
+    const EigenThreads narrow(work);
+    host::parallel_for(bp.batch.numel(), work, product);
 }
 
 /// The batch pairs of a product, with its inner sizes checked.
@@ -95,6 +128,13 @@ struct EigenBackend : Tensor::Backend {
 namespace host::eigen {
 
 template <class T> Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b) {
+    // two small matrices, the common case: no batch to pair, no threads to ask for
+    if (a.shape.size() == 2 && b.shape.size() == 2 && a.shape[1] == b.shape[0] &&
+        a.shape[0] * a.shape[1] * b.shape[1] < kSerialWork) {
+        auto r = a.fresh({a.shape[0], b.shape[1]});
+        aux_product(a.p, b.p, r->p, a.shape[0], a.shape[1], b.shape[1]);
+        return r;
+    }
     const BatchPairs bp = aux_pairs(a.shape, b.shape, "matmul");
     auto r = a.fresh(aux_matrix_shape(bp.batch, aux_rows(a.shape), b.shape.back()));
     aux_products(a.p, a.shape, b.p, b.shape, r->p, bp);
@@ -116,8 +156,9 @@ template <class T> Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims) {
 template <class T> Tensor::Ptr expm(const HostTensor<T> &a) {
     const int64_t n = a.shape.back(), count = a.shape.numel() / std::max<int64_t>(n * n, 1);
     auto r = a.fresh(a.shape);
+    // in column-major storage, where Eigen's Pade solve is quicker than on row-major matrices
     for (int64_t z = 0; z < count; ++z) {
-        const RowMat<T> m = MapC<T>(a.p + z * n * n, n, n);
+        const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m = MapC<T>(a.p + z * n * n, n, n);
         Map<T>(r->p + z * n * n, n, n) = m.exp();
     }
     return r;
@@ -181,6 +222,9 @@ std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_interval_map(const HostTensor<T> &i
     auto Tc = c.fresh(aux_matrix_shape(bp.batch, n, 1));
     auto TG = G.fresh(aux_matrix_shape(bp.batch, n, m + n));
     T *t = aux_scratch<T>(2 * n * k + k + n), *s = t + n * k, *reach = s + n * k, *box = reach + k;
+    const long long work = (long long)count * n * k * (m + 2);
+    std::optional<EigenThreads> narrow;
+    if (work >= kSerialWork) narrow.emplace(work);
     for (int64_t z = 0; z < count; ++z) {
         // the center T and radius S of the interval matrix of this member
         const auto [l, r] = bp.at(z);

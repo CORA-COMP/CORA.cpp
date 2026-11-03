@@ -49,8 +49,12 @@ class Shape {
     static constexpr int kMaxRank = 8;
 
     Shape() = default;
-    Shape(std::initializer_list<int64_t> sizes);
-    Shape(const std::vector<int64_t> &sizes);
+    Shape(std::initializer_list<int64_t> sizes) {
+        for (const int64_t d : sizes) push_back(d);
+    }
+    Shape(const std::vector<int64_t> &sizes) {
+        for (const int64_t d : sizes) push_back(d);
+    }
 
     int64_t size() const { return rank_; }
     bool empty() const { return rank_ == 0; }
@@ -60,17 +64,30 @@ class Shape {
     int64_t &back() { return d_[rank_ - 1]; }
     const int64_t *begin() const { return d_; }
     const int64_t *end() const { return d_ + rank_; }
-    void push_back(int64_t v);
+    void push_back(int64_t v) {
+        if (rank_ == kMaxRank) aux_too_many_axes();
+        d_[rank_++] = v;
+    }
     /// The product of the sizes: the number of entries.
-    int64_t numel() const;
+    int64_t numel() const {
+        int64_t n = 1;
+        for (int64_t i = 0; i < rank_; ++i) n *= d_[i];
+        return n;
+    }
 
     operator std::vector<int64_t>() const { return {begin(), end()}; }
-    friend bool operator==(const Shape &a, const Shape &b);
+    friend bool operator==(const Shape &a, const Shape &b) {
+        if (a.rank_ != b.rank_) return false;
+        for (int64_t i = 0; i < a.rank_; ++i)
+            if (a.d_[i] != b.d_[i]) return false;
+        return true;
+    }
     friend bool operator!=(const Shape &a, const Shape &b) { return !(a == b); }
     friend bool operator==(const Shape &a, const std::vector<int64_t> &b) { return a == Shape(b); }
     friend bool operator!=(const Shape &a, const std::vector<int64_t> &b) { return !(a == b); }
 
   private:
+    [[noreturn]] static void aux_too_many_axes();
     int64_t d_[kMaxRank] = {};
     int64_t rank_ = 0;
 };
