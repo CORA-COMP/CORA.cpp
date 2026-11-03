@@ -18,8 +18,11 @@
 
 namespace cora {
 
+/// CORA's default tolerance of withinTol and of isIntersecting.
+inline constexpr double kWithinTol = 1e-8;
+
 /// |a - b| <= tol, absolutely or relative to the smaller magnitude; equal infinities agree.
-inline bool within_tol(double a, double b, double tol = 1e-8) noexcept {
+inline bool within_tol(double a, double b, double tol = kWithinTol) noexcept {
     const double difference = std::abs(a - b);
     if (difference <= tol) return true;
     if (difference <= tol * std::fmin(std::abs(a), std::abs(b))) return true;

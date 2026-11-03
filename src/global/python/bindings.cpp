@@ -405,6 +405,25 @@ void bind_cont_set(py::module_ &m) {
     bind_registry(m);
 }
 
+/// A Python number or array as the operand of a box: a number is a 1 x 1 array, else a column.
+Tensor operand(const Interval &I, const py::object &o, const char *what) {
+    if (is_number(o)) return I.inf().full_like({1, 1}, py::cast<double>(o));
+    return vector_of(o, what);
+}
+
+/// The norm of a Python value: 1, 2, inf or "fro".
+Tensor::Norm norm_of(const py::object &type) {
+    if (py::isinstance<py::str>(type)) {
+        if (py::cast<std::string>(type) == "fro") return Tensor::Norm::fro;
+    } else if (is_number(type)) {
+        const double p = py::cast<double>(type);
+        if (p == 1) return Tensor::Norm::one;
+        if (p == 2) return Tensor::Norm::two;
+        if (std::isinf(p) && p > 0) return Tensor::Norm::inf;
+    }
+    CORA_FAIL(Error::wrong_value, "cora: the norm type must be 1, 2, inf or 'fro'");
+}
+
 void bind_interval(py::module_ &m) {
     py::class_<Interval, ContSet>(m, "Interval",
                                   "A box, or a matrix of intervals: inf <= x <= sup.")
@@ -508,6 +527,91 @@ void bind_interval(py::module_ &m) {
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
         .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
+        .def("is_full_dim", &Interval::is_full_dim, "Whether the box has a nonempty interior")
+        .def(
+            "is_intersecting",
+            [](const Interval &I, const py::object &other, double tol) {
+                if (py::isinstance<Interval>(other))
+                    return I.is_intersecting(py::cast<Interval>(other), tol);
+                return I.is_intersecting(vector_of(other, "the point"), tol);
+            },
+            py::arg("other"), py::arg("tol") = kWithinTol,
+            "Whether the box meets another box or contains a point, up to tol")
+        .def(
+            "isequal",
+            [](const Interval &I, const py::object &other, double tol) {
+                if (py::isinstance<Interval>(other)) return I.isequal(py::cast<Interval>(other), tol);
+                return I.isequal(tensor_of(other, "the point"), tol);
+            },
+            py::arg("other"), py::arg("tol") = std::numeric_limits<double>::epsilon(),
+            "Whether the bounds agree up to tol; infinite bounds must be the same")
+        .def("less_equal", &Interval::less_equal, py::arg("I2"), "Whether the box lies in I2")
+        .def("less", &Interval::less, py::arg("I2"), "Whether the box lies strictly in I2")
+        .def(
+            "minus",
+            [](const Interval &I, const py::object &other) {
+                if (py::isinstance<Interval>(other)) return I.minus(py::cast<Interval>(other));
+                return I.minus(operand(I, other, "the subtrahend"));
+            },
+            py::arg("other"), "The difference with a box, a number or a column")
+        .def("divide", &Interval::divide, py::arg("d"),
+             "The box divided by a number (CORA's mrdivide); d = 0 gives the whole line")
+        .def(
+            "kron",
+            [](const Interval &I, const py::object &other, bool left) {
+                if (py::isinstance<Interval>(other)) return I.kron(py::cast<Interval>(other));
+                const Tensor A = tensor_of(other, "the factor");
+                return left ? Interval::kron(A, I) : I.kron(A);
+            },
+            py::arg("other"), py::arg("left") = false,
+            "The Kronecker product with a box or a matrix; left=True puts the matrix first")
+        .def("matrix_power", &Interval::matrix_power, py::arg("exponent"),
+             "The power of a square interval matrix")
+        .def(
+            "max",
+            [](const Interval &I, const py::object &other) -> py::object {
+                if (other.is_none()) return bounds(I.max());
+                if (py::isinstance<ContSet>(other)) return py::cast(I.max(py::cast<const ContSet &>(other)));
+                return py::cast(I.max(operand(I, other, "the operand")));
+            },
+            py::arg("other") = py::none(),
+            "The elementwise larger of two boxes; without an argument the upper bound")
+        .def(
+            "min",
+            [](const Interval &I, const py::object &other) -> py::object {
+                if (other.is_none()) return bounds(I.min());
+                if (py::isinstance<ContSet>(other)) return py::cast(I.min(py::cast<const ContSet &>(other)));
+                return py::cast(I.min(operand(I, other, "the operand")));
+            },
+            py::arg("other") = py::none(),
+            "The elementwise smaller of two boxes; without an argument the lower bound")
+        .def(
+            "minkowski_difference",
+            [](const Interval &I, const py::object &S, const std::optional<std::string> &type) {
+                if (py::isinstance<Interval>(S)) return I.minkowski_difference(py::cast<Interval>(S));
+                if (py::isinstance<ContSet>(S))
+                    return I.minkowski_difference(py::cast<const ContSet &>(S), type);
+                return I.minkowski_difference(vector_of(S, "the point"));
+            },
+            py::arg("S"), py::arg("type") = py::none(),
+            "The box of x with x + S in the box; empty if there is none")
+        .def(
+            "unite",
+            [](const Interval &I, const py::object &other) {
+                if (py::isinstance<Interval>(other)) return I.unite(py::cast<Interval>(other));
+                return I.unite(vector_of(other, "the point"));
+            },
+            py::arg("other"), "The smallest box around the box and a box or a point")
+        .def(
+            "norm",
+            [](const Interval &I, const py::object &type) {
+                return scalar(I.norm(norm_of(type)));
+            },
+            py::arg("type") = 2, "The norm of the largest member: 2 (default), 1, inf or 'fro'")
+        .def("lift", &Interval::lift, py::arg("N"), py::arg("dims"),
+             "The box in N dimensions at the coordinates dims (0-based), unbounded elsewhere")
+        .def_static("origin", &Interval::origin, py::arg("n"), "The box {0} of n dimensions")
+        .def("log", &Interval::log, "The image under the natural logarithm")
         .def(
             "contains",
             [](const Interval &I, const py::object &p, double tol) {
@@ -695,7 +799,24 @@ void bind_operators(py::module_ &m) {
     method(I, "__add__", interval_sum);
     method(I, "__radd__", interval_sum);
     method(I, "__sub__", [](const Interval &A, const py::object &o) -> py::object {
+        if (py::isinstance<Interval>(o)) return py::cast(A - py::cast<Interval>(o));
         if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A - *v);
+        return not_implemented();
+    });
+    method(I, "__rsub__", [](const Interval &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(*v - A);
+        return not_implemented();
+    });
+    method(I, "__truediv__", [](const Interval &A, const py::object &o) -> py::object {
+        if (is_number(o)) return py::cast(A / py::cast<double>(o));
+        return not_implemented();
+    });
+    method(I, "__le__", [](const Interval &A, const py::object &o) -> py::object {
+        if (py::isinstance<Interval>(o)) return py::cast(A <= py::cast<Interval>(o));
+        return not_implemented();
+    });
+    method(I, "__lt__", [](const Interval &A, const py::object &o) -> py::object {
+        if (py::isinstance<Interval>(o)) return py::cast(A < py::cast<Interval>(o));
         return not_implemented();
     });
     method(I, "__neg__", [](const Interval &A) { return -A; });
