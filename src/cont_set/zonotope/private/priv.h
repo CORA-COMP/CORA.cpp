@@ -32,6 +32,7 @@ bool priv_is_box(const Zonotope &Z, double tol);
 /// What is wrong with the matrices Q of a quadratic map of sets of dimension n (CORA's quadMap
 /// checks), or an empty text if nothing.
 std::string priv_quad_map_problem(const std::vector<Tensor> &Q, int64_t n);
+
 /// The n-subsets of {0, ..., total - 1} in lexicographic order, produced in blocks (CORA's
 /// batchCombinator): next(count) returns up to `count` subsets as one flat list, empty when done.
 class Combinations {
