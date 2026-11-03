@@ -987,6 +987,48 @@ void bind_interval_matrix(py::module_ &m) {
                 return matrices;
             },
             "The distinct vertex matrices, one (K, rows, cols) array per batch member")
+        .def(
+            "dim",
+            [](const IntervalMatrix &A, std::optional<int> rc) -> py::object {
+                if (rc) return py::cast(A.dim(*rc));
+                return py::make_tuple(A.rows(), A.cols());
+            },
+            py::arg("rc") = py::none(),
+            "(rows, cols); with rc = 1 the rows, with rc = 2 the columns")
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, const std::optional<std::array<int64_t, 2>> &dimension,
+               const py::object &center, const py::object &max_radius) {
+                std::optional<Tensor> c, r;
+                if (!center.is_none()) c = tensor_of(center, "center");
+                if (!max_radius.is_none())
+                    r = is_number(max_radius) ? Tensor::from_data({py::cast<double>(max_radius)}, {1, 1})
+                                              : tensor_of(max_radius, "max_radius");
+                return IntervalMatrix::generate_random(rng, dimension, c, r);
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("max_radius") = py::none(),
+            "A random interval matrix: the dimension (rows, cols), a center and the radii")
+        .def(
+            "expm_taylor_horner_scaling", &IntervalMatrix::expm_taylor_horner_scaling,
+            py::arg("max_order"), py::arg("style"), py::arg("scaling_exponent") = 1,
+            "The exponential by the Taylor series (style 0), Horner (1) or scaling and squaring (2); None "
+            "where the series does not converge")
+        .def(
+            "expm_different_algorithms", &IntervalMatrix::expm_different_algorithms,
+            py::arg("max_order"), py::arg("style"), py::arg("scaling_exponent") = 1,
+            "As expm_taylor_horner_scaling, and style 4: expm at the step 1")
+        .def("expm_independent_mixed", &IntervalMatrix::expm_independent_mixed,
+             py::arg("intermediate_order"), py::arg("max_order"),
+             "The independent-power series in two parts, up to and beyond intermediate_order")
+        .def(
+            "expm_norm_infinity",
+            [](const IntervalMatrix &A, double t) { return scalar(A.expm_norm_infinity(t)); },
+            py::arg("t"), "CORA's closed-form bound of the exponential's remainder norm")
+        .def(
+            "expm_absolute_bound",
+            [](const IntervalMatrix &A, double t) { return matrix(A.expm_absolute_bound(t)); },
+            py::arg("t"), "CORA's matrix bound of the absolute value of the exponential")
         .def("plus", &interval_matrix_sum, py::arg("other"),
              "The sum with an interval matrix, a matrix or a number")
         .def("__add__", &interval_matrix_sum, py::is_operator())
@@ -1083,9 +1125,7 @@ void bind_interval_matrix(py::module_ &m) {
                 return not_implemented();
             },
             py::is_operator())
-        .def("__repr__", [](const IntervalMatrix &A) {
-            return "IntervalMatrix(" + A.interval().display() + ")";
-        });
+        .def("__repr__", &IntervalMatrix::display);
     m.attr("IntervalMatrix").attr("__array_ufunc__") = py::none(); // numpy defers to the operators
 }
 

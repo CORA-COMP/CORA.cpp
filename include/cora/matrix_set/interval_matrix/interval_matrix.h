@@ -10,11 +10,14 @@
 //             A + B, A + M, M + A, A + s, s + A (plus)
 // Operations: abs, center, contains, dependent_terms, exact_square, expm, expm_independent,
 //             expm_mixed, exponential_remainder, infimum, infinity_norm, matrix_power, matmul,
-//             norm, plus, powers, rad, representsa, supremum, vertices, volume (one file each);
+//             norm, plus, powers, rad, representsa, supremum, vertices, volume, dim, display,
+//             generate_random, expm_absolute_bound, expm_independent_mixed, expm_norm_infinity,
+//             expm_taylor_horner_scaling, expm_different_algorithms (one file each);
 //             the constructor checks its input (interval_matrix.cpp)
 // See also:   cora/cont_set/interval/interval.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: matrixSet/@intervalMatrix/intervalMatrix.m
+// CORA: matrixSet/@intervalMatrix/interval.m
 
 #pragma once
 
@@ -22,6 +25,9 @@
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 
+#include <array>
+#include <optional>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -32,6 +38,8 @@ namespace cora {
 
 struct ExpmResult;
 struct ExpmMixedResult;
+
+class Rng;
 
 class IntervalMatrix {
   public:
@@ -46,12 +54,29 @@ class IntervalMatrix {
 
     // Bounds and matrices of the set -------------------------------------------------------------
 
-    /// The bounds, an Interval of matrix bounds.
+    /// The bounds, an Interval of matrix bounds (CORA's interval(A)).
     const Interval &interval() const noexcept { return int_; }
 
     /// The number of rows and of columns.
     int64_t rows() const { return int_.inf().size(-2); }
     int64_t cols() const { return int_.inf().size(-1); }
+
+    /// {rows, cols}, CORA's dim(A); dim(rc) is one of them, rc = 1 for the rows and 2 for the
+    /// columns, as CORA's dim(A, rc).
+    std::array<int64_t, 2> dim() const;
+    int64_t dim(int rc) const;
+
+    /// The set as text, as CORA displays it: what `std::cout << A` prints.
+    std::string display() const;
+
+    /// A random interval matrix, as CORA's generateRandom: dimension {rows, cols} (default the
+    /// shape of center or max_radius, else each random in 1..10), center (default 10 N(0, 1) per
+    /// entry), max_radius (radii >= 0: a matrix, or a 1 x 1 tensor for all; default 10 U[0, 1]).
+    using Dimension = std::optional<std::array<int64_t, 2>>;
+    using Matrix = std::optional<Tensor>;
+    static IntervalMatrix generate_random(Rng &rng, Dimension dimension = std::nullopt,
+                                          const Matrix &center = std::nullopt,
+                                          const Matrix &max_radius = std::nullopt);
 
     /// The lower bound matrix.
     Tensor infimum() const;
@@ -128,6 +153,30 @@ class IntervalMatrix {
     /// the rest of it up to max_order with the remainder.
     ExpmMixedResult expm_mixed(double r, int64_t intermediate_order, int64_t max_order) const;
 
+    /// The exponential by CORA's other algorithms, for the order max_order (>= 1, or >= 0 for
+    /// style 0): style 0 the Taylor series, 1 Horner's scheme, 2 Horner on [A] / 2^p squared p
+    /// times (p = scaling_exponent in 0..20). Nothing (CORA's []) where the infinity norm of A is
+    /// not below max_order + 2 (below (max_order + 2) 2^p for style 2), for a batch where it is
+    /// not for one member. The remainder box is [-f, f] also for a point matrix, where CORA's is
+    /// the point f (docs/cora-differences.md). Another style is refused (CORA gives []).
+    std::optional<IntervalMatrix> expm_taylor_horner_scaling(int64_t max_order, int64_t style,
+                                                             int64_t scaling_exponent = 1) const;
+
+    /// The same, and style 4: the enclosure of expm at the step 1.
+    std::optional<IntervalMatrix> expm_different_algorithms(int64_t max_order, int64_t style,
+                                                            int64_t scaling_exponent = 1) const;
+
+    /// The series in two parts with independent powers: the sum to intermediate_order >= 1, and
+    /// the rest of it up to max_order with the remainder (CORA's expmIndMixed).
+    ExpmMixedResult expm_independent_mixed(int64_t intermediate_order, int64_t max_order) const;
+
+    /// CORA's closed-form bound (..., 1, 1) of the infinity norm of the exponential's remainder
+    /// at the time t (expmNormInf), and its matrix bound (..., n, n) of the absolute value
+    /// (expmAbsoluteBound); the latter for square A with the spectral radii of |C| t / 2 and
+    /// (|C| + S) t / 2 below 1, C the center and S the radius.
+    Tensor expm_norm_infinity(double t) const;
+    Tensor expm_absolute_bound(double t) const;
+
     // Norms and powers ----------------------------------------------------------------------------
 
     /// The largest absolute row sum of the matrices of the set: norm(abs(A), Inf).
@@ -163,6 +212,10 @@ class IntervalMatrix {
     EmptySet matmul(const EmptySet &E) const;
 
   private:
+    /// The checks of the two expm algorithm entries (style 4 only if allow_expm).
+    void check_series_input(int64_t max_order, int64_t style, int64_t scaling_exponent,
+                            bool allow_expm) const;
+
     Interval int_;
 };
 
@@ -183,6 +236,10 @@ struct ExpmMixedResult {
     IntervalMatrix remainder;
 };
 
+// the text of a set, and CORA's plus and mtimes as operators
+inline std::ostream &operator<<(std::ostream &out, const IntervalMatrix &A) {
+    return out << A.display();
+}
 inline IntervalMatrix operator+(const IntervalMatrix &A, const IntervalMatrix &B) {
     return A.plus(B);
 }
