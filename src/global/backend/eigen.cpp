@@ -143,11 +143,12 @@ template <class T> Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T
 
 // All rows of all matrices at once: one Eigen row sum.
 template <class T> Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims) {
-    const int64_t len = a.shape.back(), rows = a.shape.numel() / std::max<int64_t>(len, 1);
+    const int64_t len = a.shape.back();
     Shape out = a.shape;
     if (keepdims) out.back() = 1;
     else out = Shape(std::vector<int64_t>(a.shape.begin(), a.shape.end() - 1));
     auto r = a.fresh(out);
+    const int64_t rows = out.numel(); // an empty axis has no entries, so count the outputs
     if (len == 0) std::fill(r->p, r->p + rows, T(0));
     else Map<T>(r->p, rows, 1) = MapC<T>(a.p, rows, len).rowwise().sum();
     return r;
@@ -294,10 +295,11 @@ std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t
 
 // All rows of all matrices at once: one Eigen row sum of |a|.
 template <class T> Tensor::Ptr abs_sum(const HostTensor<T> &a) {
-    const int64_t len = a.shape.back(), rows = a.shape.numel() / std::max<int64_t>(len, 1);
+    const int64_t len = a.shape.back();
     Shape out = a.shape;
     out.back() = 1;
     auto r = a.fresh(out);
+    const int64_t rows = out.numel(); // an empty axis has no entries, so count the outputs
     if (len == 0) std::fill(r->p, r->p + rows, T(0));
     else Map<T>(r->p, rows, 1) = MapC<T>(a.p, rows, len).cwiseAbs().rowwise().sum();
     return r;
