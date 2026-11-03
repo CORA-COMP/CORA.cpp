@@ -155,16 +155,17 @@ the `_torch` ones need libtorch.
 
 ## CI
 
-Three tiers (`.github/workflows/`); the one check to require in the ruleset is `ci-gate`.
-- **Every push to a pull request** (`ci.yml`, under 10 minutes): `checks` (format, conventions,
+Two tiers (`.github/workflows/`); the one check to require in the ruleset is `ci-gate`.
+- **Every push to a pull request, and the merge queue** (`ci.yml`, under 10 minutes): `checks` (format, conventions,
   coverage when `scripts/coverage/coverage.py` exists), then `linux-core` and `linux-python`, which
   build everything and run only the tests the change can affect, and `instructions`, which fails
   when a micro-benchmark of `benchmarks/micro` runs more than 3% more instructions than at the base
-  commit. A documentation-only change skips the builds. A new push cancels the older run.
-- **Before a merge** (`merge.yml`, merge queue): every test of `core`, `torch`, `python`, `python-torch` on Linux.
+  commit. A documentation-only change skips the builds. A new push cancels the older run. In the
+  merge queue the same jobs test the group on the `main` it lands on (no `instructions`).
 - **Every night** (`nightly.yml`): the full matrix of three operating systems, ASan and UBSan, the
   competition binary; skipped when `main` has not moved since the last successful night. A failed
-  night opens an issue labelled `nightly`.
+  night opens an issue labelled `nightly`. A breakage that only another platform or preset shows
+  lands on `main` and is fixed from that issue the next day.
 
 Which tests a change affects, from the `#include` graph (`ALL` after a change to the tensor, the
 backends, the global headers, the build or CI; `NONE` for documentation):
@@ -175,7 +176,7 @@ ctest --preset core -R "$(python3 scripts/ci/affected_tests.py origin/main HEAD)
 scripts/ci/instruction_counts.sh origin/main                    # the instruction counts (needs valgrind)
 ```
 
-A full run by hand: Actions > `merge` > Run workflow (or `gh workflow run merge.yml --ref <branch>`);
+A full run by hand, for a change to the build or a platform fix: Actions > `merge` > Run workflow (or `gh workflow run merge.yml --ref <branch>`);
 `nightly` can be started the same way and then never skips.
 
 ## VS Code

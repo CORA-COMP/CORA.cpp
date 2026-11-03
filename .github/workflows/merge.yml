@@ -1,13 +1,13 @@
-# CI, tier 2: the full test suite before a merge (GitHub merge queue), or on demand
+# CI on demand: the full test suite of a branch
 #
-# Every preset on Linux, and core on Windows (MSVC) and macOS, every test. Start one by hand: Actions > merge > Run workflow, or
-# `gh workflow run merge.yml --ref <branch>`. Require `ci-gate` (it is also the name of the gate of
-# ci.yml, so the one required check covers the pull request and the merge group).
+# Every preset on Linux, and core on Windows (MSVC) and macOS, every test: the matrix of the
+# nightly, for a branch that needs it before a merge (a change to the build, a platform fix).
+# Start one by hand: Actions > merge > Run workflow, or `gh workflow run merge.yml --ref <branch>`.
+# The merge queue runs ci.yml (tier 1); the whole matrix runs every night (nightly.yml).
 
 name: merge
 
 on:
-  merge_group:
   workflow_dispatch:
 
 concurrency:
