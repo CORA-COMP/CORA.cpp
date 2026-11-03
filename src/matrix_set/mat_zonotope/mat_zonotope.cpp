@@ -21,8 +21,10 @@ namespace cora {
 
 namespace {
 
-/// Whether t has no NaN entry.
-bool aux_without_nan(const Tensor &t) { return t.numel() == 0 || t.isnan().max().item() == 0; }
+/// Whether t has no NaN entry (detached: the test carries no gradient).
+bool aux_without_nan(const Tensor &t) {
+    return t.numel() == 0 || t.detach().isnan().max().item() == 0;
+}
 
 } // namespace
 
