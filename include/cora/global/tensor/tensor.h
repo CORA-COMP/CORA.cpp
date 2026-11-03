@@ -129,7 +129,8 @@ enum class TensorOp : uint16_t {
 
 /// The number of operations.
 inline constexpr std::size_t kOpCount = 0
-#define CORA_TENSOR_OP(name, kind, gradient, agreement, k, summary) (+1)
+// NOLINTNEXTLINE(bugprone-macro-parentheses): +1 is a term of the sum over ops.def, not an operand
+#define CORA_TENSOR_OP(name, kind, gradient, agreement, k, summary) +1
 #include "cora/global/tensor/ops.def"
 #undef CORA_TENSOR_OP
     ;

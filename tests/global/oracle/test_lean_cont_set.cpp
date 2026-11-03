@@ -81,8 +81,8 @@ int main() {
         oracle::check(aux_set(I).is_full_dim(0.0), lean::Interval(I).is_full_dim(0.0));
         if (oracle::mode() == oracle::Mode::sound) {
             // a flat box: the first coordinate has no width
-            const Tensor lo = I.inf(),
-                         hi = Tensor::concat({lo.slice(-2, 0, 1), I.sup().slice(-2, 1, 4)}, -2);
+            const Tensor &lo = I.inf();
+            const Tensor hi = Tensor::concat({lo.slice(-2, 0, 1), I.sup().slice(-2, 1, 4)}, -2);
             const Interval flat(lo, hi);
             oracle::check(aux_set(flat).is_full_dim(0.0), lean::Interval(flat).is_full_dim(0.0));
         }

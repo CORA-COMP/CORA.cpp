@@ -280,7 +280,8 @@ void plot_over_time(Figure &fig, const ReachSet &R, int64_t dim, const PlotOptio
     const std::size_t batch = sets.empty() ? 1 : ranges.size() / sets.size();
     for (std::size_t i = 0; i < ranges.size();
          i += batch * static_cast<std::size_t>(options.step)) {
-        const double t0 = static_cast<double>(i / batch) * dt, t1 = t0 + dt;
+        const std::size_t step = i / batch;
+        const double t0 = static_cast<double>(step) * dt, t1 = t0 + dt;
         for (std::size_t b = 0; b < batch; ++b) {
             const double lo = ranges[i + b][0], hi = ranges[i + b][1];
             if (intervals)

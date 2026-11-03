@@ -163,6 +163,7 @@ bool same_bits(const std::string &what, const A &cora_result, const B &lean_resu
         return false;
     }
     for (std::size_t i = 0; i < x.size(); ++i)
+        // NOLINTNEXTLINE(bugprone-suspicious-memory-comparison): the bits are the point (NaN, -0)
         if (std::memcmp(&x[i], &y[i], sizeof(double)) != 0) {
             std::cerr << "  " << what << " [" << i << "]: " << detail::bits(x[i])
                       << " in CORA.cpp, " << detail::bits(y[i]) << " in the oracle\n";

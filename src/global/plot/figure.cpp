@@ -206,7 +206,8 @@ const Figure &FigureGrid::at(int row, int col) const {
         CORA_FAIL(Error::wrong_value, "FigureGrid: the cell (" + std::to_string(row) + ", " +
                                           std::to_string(col) + ") does not exist in " +
                                           std::to_string(rows_) + " x " + std::to_string(cols_));
-    return cells_[static_cast<std::size_t>(row * cols_ + col)];
+    return cells_[static_cast<std::size_t>(row) * static_cast<std::size_t>(cols_) +
+                  static_cast<std::size_t>(col)];
 }
 
 Figure &FigureGrid::at(int row, int col) {

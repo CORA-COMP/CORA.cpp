@@ -202,12 +202,12 @@ void refinement_cases_match_matlab() {
 
     // Without an input set, and with a larger uncertain input.
     const LinearSys no_input(r.sys.A(), mat(2, 1, {0, 0}), r.sys.C());
-    const ReachProblem p0{*r.params.initial_set, zono({0}, {}, 0), r.params.t_final};
+    const ReachProblem p0{r.params.initial_set, zono({0}, {}, 0), r.params.t_final};
     VerifyResult n1 = no_input.verify(p0, {safe_halfspace(1, 0, 4.98)}, alg::ReachAvoidZonotope{});
     check(n1.verified && n1.iterations == 2, "no input, safe y1 <= 4.98");
     n1 = no_input.verify(p0, {unsafe_box(4.6, 5.5, 2.4695, 3)}, alg::ReachAvoidZonotope{});
     check(n1.verified && n1.iterations == 2, "no input, unsafe box close");
-    const ReachProblem p2{*r.params.initial_set, zono({0}, {0.3}, 1), r.params.t_final};
+    const ReachProblem p2{r.params.initial_set, zono({0}, {0.3}, 1), r.params.t_final};
     n1 = r.sys.verify(p2, {safe_halfspace(1, 0, 5.3)}, alg::ReachAvoidZonotope{});
     check(n1.verified && n1.iterations == 2, "large input set, safe y1 <= 5.3");
     n1 = r.sys.verify(p2, {unsafe_box(4.6, 5.6, 2.6, 3)}, alg::ReachAvoidZonotope{});

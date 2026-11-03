@@ -15,6 +15,7 @@ void less_is_strict_containment(const std::string &b) {
     const Interval small(column({0.0, 1.0}), column({1.0, 2.0})),
         big(column({-1.0, 0.0}), column({3.0, 3.0}));
     check(small.less(big) && small < big, b + ": a box strictly inside");
+    // NOLINTNEXTLINE(misc-redundant-expression): the test is that a box is not less than itself
     check(!small.less(small) && !(small < small), b + ": not in itself");
     check(!small.less(Interval(column({0.0, 0.0}), column({3.0, 3.0}))),
           b + ": a shared lower bound is not strict");

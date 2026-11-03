@@ -18,7 +18,7 @@ using matlab_reference::System;
 /// The reach algorithms of a linear system, by their names.
 inline const std::vector<std::string> kAlgorithms = {"standard", "wrapping_free"};
 
-inline const std::string &name(const std::string &a) { return a; }
+inline std::string name(const std::string &a) { return a; }
 
 /// The algorithm `a` ("standard" or "wrapping_free") with these options.
 inline alg::LinearReach algorithm(const std::string &a, double time_step, int taylor_terms,

@@ -7,7 +7,6 @@
 
 using namespace cora;
 using test::check;
-using test::close;
 
 namespace {
 

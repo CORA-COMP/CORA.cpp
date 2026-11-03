@@ -13,7 +13,6 @@
 
 using namespace cora;
 using test::check;
-using test::close;
 using test::throws;
 using namespace test::lin;
 using matlab_reference::InputSystem;

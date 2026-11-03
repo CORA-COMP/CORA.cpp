@@ -40,7 +40,6 @@ std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec)
     const std::string option = comma == std::string::npos ? "" : spec.substr(comma + 1);
     const std::size_t colon = head.find(':');
     const std::string name = head.substr(0, colon);
-    const std::string device = colon == std::string::npos ? "cpu" : head.substr(colon + 1);
 
     if (!option.empty() && option != "custom_backward")
         CORA_FAIL(Error::wrong_value,
@@ -60,7 +59,10 @@ std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec)
     }
     // libtorch, where it is built in.
 #ifdef CORACPP_TORCH
-    if (name == "torch") return torch_backend(torch_device(device), option == "custom_backward");
+    if (name == "torch") {
+        const std::string device = colon == std::string::npos ? "cpu" : head.substr(colon + 1);
+        return torch_backend(torch_device(device), option == "custom_backward");
+    }
 #endif
 #ifdef CORACPP_TORCH
     const std::string others = "lean or torch";

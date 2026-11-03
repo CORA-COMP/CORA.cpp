@@ -38,7 +38,8 @@ void the_point_is_on_the_boundary(const std::string &b) {
     for (int trial = 0; trial < 8; ++trial) {
         const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
         const std::vector<double> dir = test::random_direction(rng, 3);
-        const Tensor d = column(dir), c = Z.center();
+        const Tensor d = column(dir);
+        const Tensor &c = Z.center();
         const Tensor start = c + (Z.rand_point(1, rng) - c) * 0.5; // an interior point
         for (const Tensor &s : {c, start}) {
             const Tensor x = Z.boundary_point(d, s);
