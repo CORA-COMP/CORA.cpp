@@ -31,10 +31,10 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | hybridDynamics | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | nn | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | specification | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
-| others | 212 | 197 | 0 | 0 | 5 | 10 | 0 | 5 |
-| **all** | 1696 | 1413 | 25 | 40 | 53 | 151 | 14 | 70 |
+| others | 212 | 180 | 0 | 0 | 22 | 10 | 0 | 22 |
+| **all** | 1696 | 1396 | 25 | 40 | 70 | 151 | 14 | 87 |
 
-16% of the 1682 CORA methods in scope have a source, 15% are tested in C++ and Python, 9% are checked against CORALean; oracle debt 70.
+17% of the 1682 CORA methods in scope have a source, 16% are tested in C++ and Python, 9% are checked against CORALean; oracle debt 87.
 
 ## Classes
 
@@ -107,7 +107,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [others/intervalMatrix](others/intervalMatrix.md) | 39 | 24 | 0 | 0 | 5 | 10 | 0 | 5 |
 | [others/markovchain](others/markovchain.md) | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/matPolytope](others/matPolytope.md) | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [others/matZonotope](others/matZonotope.md) | 33 | 33 | 0 | 0 | 0 | 0 | 0 | 0 |
+| [others/matZonotope](others/matZonotope.md) | 33 | 16 | 0 | 0 | 17 | 0 | 0 | 17 |
 | [others/matrixSet](others/matrixSet.md) | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/neuralnetwork2cora](others/neuralnetwork2cora.md) | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/partition](others/partition.md) | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |

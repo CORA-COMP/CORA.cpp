@@ -101,10 +101,10 @@ How much of CORA this has, and how much of it is checked against CORALean, per C
 | [hybridDynamics](coverage/hybridDynamics/) | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [nn](coverage/nn/) | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | [specification](coverage/specification/) | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
-| [others](coverage/others/) | 212 | 197 | 0 | 0 | 5 | 10 | 0 | 5 |
-| **all** | 1696 | 1413 | 25 | 40 | 53 | 151 | 14 | 70 |
+| [others](coverage/others/) | 212 | 180 | 0 | 0 | 22 | 10 | 0 | 22 |
+| **all** | 1696 | 1396 | 25 | 40 | 70 | 151 | 14 | 87 |
 
-16% of the 1682 CORA methods in scope have a source, 15% are tested in C++ and Python, 9% are checked against CORALean; oracle debt 70.
+17% of the 1682 CORA methods in scope have a source, 16% are tested in C++ and Python, 9% are checked against CORALean; oracle debt 87.
 <!-- coverage:end -->
 
 ## Connection to CORALean
