@@ -201,7 +201,7 @@ int main() {
             const Interval I = rnd.box(n);
             const Tensor shift = (I.sup() - I.inf()) * 0.3;
             const Interval J(I.inf() + shift, I.sup() + shift);
-            oracle::check(detail::intersect_impl(I, J).as<Interval>(),
+            oracle::check(cora::detail::intersect_impl(I, J).as<Interval>(),
                           lean::Interval(I).intersect(lean::Interval(J)));
         }
     });
@@ -213,7 +213,7 @@ int main() {
             const Zonotope inner(Z.center(), Z.generators() * 0.1),
                 outer(Z.center(), Z.generators() * 3.0);
             for (const Zonotope *S : {&inner, &outer})
-                oracle::check(detail::contains_impl(Z, *S, 0.0),
+                oracle::check(cora::detail::contains_impl(Z, *S, 0.0),
                               lean::Zonotope(Z).contains(lean::Zonotope(*S), 0.0));
         }
     });
@@ -222,7 +222,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n), J = rnd.box(n), K = I.enlarge(0.5);
             for (const Interval *S : {&J, &K, &I})
-                oracle::check(detail::is_intersecting_impl(I, *S, 0.0),
+                oracle::check(cora::detail::is_intersecting_impl(I, *S, 0.0),
                               lean::Interval(I).is_intersecting(lean::Interval(*S), 0.0));
         }
     });

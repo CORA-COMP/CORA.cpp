@@ -22,25 +22,25 @@ void is_intersecting_impl_agrees_with_the_entry(const std::string &b) {
     for (const ContSet *A : {static_cast<const ContSet *>(&I), static_cast<const ContSet *>(&Z)})
         for (const ContSet *B : {static_cast<const ContSet *>(&J), static_cast<const ContSet *>(&K),
                                  static_cast<const ContSet *>(&Z)})
-            check(detail::is_intersecting_impl(*A, *B, std::nullopt) == is_intersecting(*A, *B),
+            check(cora::detail::is_intersecting_impl(*A, *B, std::nullopt) == is_intersecting(*A, *B),
                   b + ": as the entry");
-    check(detail::is_intersecting_impl(I, J, std::nullopt) &&
-              detail::is_intersecting_impl(I, K, std::nullopt),
+    check(cora::detail::is_intersecting_impl(I, J, std::nullopt) &&
+              cora::detail::is_intersecting_impl(I, K, std::nullopt),
           b + ": the boxes meet");
     const Interval far(column({5.0, 5.0}), column({6.0, 6.0}));
-    check(!detail::is_intersecting_impl(I, far, std::nullopt), b + ": far boxes do not");
+    check(!cora::detail::is_intersecting_impl(I, far, std::nullopt), b + ": far boxes do not");
 }
 
 /// A pair without an entry is noops; the entry checks the dimensions.
 void a_pair_without_an_entry() {
     const Interval I(column({0.0, 0.0}), column({1.0, 1.0})), I1(column({0.0}), column({1.0}));
-    check(test::raises([&] { detail::is_intersecting_impl(test::UnregisteredSet(), I, std::nullopt); },
+    check(test::raises([&] { cora::detail::is_intersecting_impl(test::UnregisteredSet(), I, std::nullopt); },
                        Error::noops),
           "isIntersecting_: no pair");
     check(test::raises([&] { is_intersecting(I, I1); }, Error::dimension_mismatch),
           "the entry checks the dimensions");
     ChecksScope off(false);
-    check(detail::is_intersecting_impl(I, I, std::nullopt), "the checks off");
+    check(cora::detail::is_intersecting_impl(I, I, std::nullopt), "the checks off");
 }
 
 } // namespace
