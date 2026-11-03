@@ -1,0 +1,37 @@
+// compact - fewer rows and generators for the same constrained zonotope, as CORA's compact_
+//
+// Syntax:   cZres = cz.compact();   cZres = cz.compact("all", tol);
+// Inputs:   method - "zeros" (default) and "all" drop the constraint rows 0 = 0 and the generators
+//                    that are zero in G and in A; "aligned" leaves the set as it is
+//           tol - checked only: CORA's compact_ drops exact zeros; default: the repository
+//                 tolerance (docs/architecture.md)
+// Outputs:  cZres - the set without them; a batch drops what every member drops
+// See also: Zonotope::compact, intersect
+//
+// CORA: contSet/@conZonotope/compact_.m
+
+#include "cont_set/con_zonotope/private/priv.h"
+#include "cora/global/tensor/tolerance.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+
+// ===========================================  MAIN  =========================================== //
+
+ConZonotope ConZonotope::compact(const std::string &method, Tol tol_arg) const {
+    detail::Entry entry;
+    static_cast<void>(resolve_tol(entry, tol_arg, c_.dtype(), "compact"));
+    CORA_CHECK(
+        method == "zeros" || method == "all" || method == "aligned", Error::wrong_value, [&] {
+            return "compact: the method must be 'zeros', 'all' or 'aligned', got '" + method + "'";
+        });
+    // 'all' is 'zeros' in CORA
+    if (method == "aligned") return *this;
+    return priv_compact(*this);
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -110,47 +110,6 @@ Zonotope aux_bravo(const Zonotope &Z, const Tensor &C, const Tensor &phi, const 
     return best;
 }
 
-// Checks ------------------------------------------------------------------------------------------
-
-/// Why the strips are refused, if they are: C (k, n), phi and y (k, 1).
-Refusal aux_refusal(const Zonotope &Z, const Tensor &C, const Tensor &phi, const Tensor &y) {
-    if (C.ndim() != 2 || C.shape()[1] != Z.dim())
-        return std::pair{Error::dimension_mismatch,
-                         "C must be a matrix (k, " + std::to_string(Z.dim()) + "), got the shape " +
-                             shape_text(C.shape())};
-    const int64_t k = C.shape()[0];
-    if (phi.ndim() != 2 || !is_column(phi, k))
-        return std::pair{Error::dimension_mismatch,
-                         "phi must be a column (" + std::to_string(k) +
-                             ", 1), one width per strip, got the shape " + shape_text(phi.shape())};
-    if (y.ndim() != 2 || !is_column(y, k))
-        return std::pair{Error::dimension_mismatch,
-                         "y must be a column (" + std::to_string(k) +
-                             ", 1), one center per strip, got the shape " + shape_text(y.shape())};
-    return std::nullopt;
-}
-
-/// Why the gain is refused, if it is: one row per dimension and one column per strip.
-Refusal aux_gain_refusal(const Zonotope &Z, const Tensor &C, const Tensor &lambda) {
-    if (lambda.ndim() == 2 && lambda.shape()[0] == Z.dim() && lambda.shape()[1] == C.shape()[0])
-        return std::nullopt;
-    return std::pair{Error::dimension_mismatch,
-                     "the gain must be a matrix (" + std::to_string(Z.dim()) + ", " +
-                         std::to_string(C.shape()[0]) + "), got the shape " +
-                         shape_text(lambda.shape())};
-}
-
-/// Why the observer is refused, if it is: A (n, n), E (n, .), C (p, n) and F (p, .).
-Refusal aux_observer_refusal(int64_t n, const Zonotope::StripObserver &aux) {
-    const auto rows = [](const Tensor &T) { return T.ndim() == 2 ? T.shape()[0] : -1; };
-    const auto cols = [](const Tensor &T) { return T.ndim() == 2 ? T.shape()[1] : -1; };
-    if (rows(aux.A) == n && cols(aux.A) == n && rows(aux.E) == n && cols(aux.C) == n &&
-        rows(aux.F) == rows(aux.C) && rows(aux.F) >= 0)
-        return std::nullopt;
-    return std::pair{Error::dimension_mismatch,
-                     std::string("the observer needs A (n, n), E (n, .), C (p, n) and F (p, .)")};
-}
-
 } // namespace
 
 
@@ -159,7 +118,7 @@ Refusal aux_observer_refusal(int64_t n, const Zonotope::StripObserver &aux) {
 Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
                                    const std::string &method) const {
     detail::Entry entry;
-    const Refusal refusal = aux_refusal(*this, C, phi, y);
+    const Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
     // the methods CORA has, and which of them are supported
     const bool known = method == "normGen" || method == "svd" || method == "radius" ||
@@ -198,8 +157,8 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
                                    const Tensor &lambda) const {
     detail::Entry entry;
     // a given gain: any matrix of the right size gives an enclosure
-    Refusal refusal = aux_refusal(*this, C, phi, y);
-    if (!refusal) refusal = aux_gain_refusal(*this, C, lambda);
+    Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
+    if (!refusal) refusal = priv_gain_refusal(dim(), C, lambda);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
     return aux_from_lambda(*this, phi, C, y, lambda);
 }
@@ -208,11 +167,11 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
                                    const StripObserver &aux) const {
     detail::Entry entry;
     // the gain of "wang-FRad" from the observer's matrices
-    Refusal refusal = aux_refusal(*this, C, phi, y);
-    if (!refusal) refusal = aux_observer_refusal(dim(), aux);
+    Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
+    if (!refusal) refusal = priv_observer_refusal(dim(), aux);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
     const Tensor lambda = aux_gain_wang_frad(*this, aux);
-    const Refusal gain = aux_gain_refusal(*this, C, lambda);
+    const Refusal gain = priv_gain_refusal(dim(), C, lambda);
     CORA_CHECK(!gain, gain->first, [&] { return "intersect_strip: " + gain->second; });
     return aux_from_lambda(*this, phi, C, y, lambda);
 }

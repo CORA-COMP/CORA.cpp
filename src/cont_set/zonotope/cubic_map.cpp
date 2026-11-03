@@ -12,6 +12,7 @@
 // CORA: contSet/@zonotope/cubMap.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cont_set/zonotope/private/priv.h"
 #include "global/format.h"
 
 #include <algorithm>
@@ -142,31 +143,6 @@ Zonotope aux_from_rows(const std::vector<std::vector<Tensor>> &T,
     return {all.slice(-1, 0, 1), all.slice(-1, 1, all.shape().back())};
 }
 
-// Checks ------------------------------------------------------------------------------------------
-
-/// What is wrong with T and ind for zonotopes of dimension n, or an empty text if nothing.
-std::string aux_problem(const std::vector<std::vector<Tensor>> &T,
-                        const std::vector<std::vector<int64_t>> &ind, int64_t n) {
-    if (T.empty() || T.front().empty())
-        return "T needs at least one row and one column of matrices";
-    for (const auto &row : T) {
-        if (row.size() != T.front().size()) return "the rows of T must have the same length";
-        for (const Tensor &M : row)
-            if (M.shape() != Shape{n, n})
-                return "every matrix of T must be (" + std::to_string(n) + ", " +
-                       std::to_string(n) + "), got the shape " + shape_text(M.shape());
-    }
-    if (ind.empty()) return "";
-    if (ind.size() != T.size()) return "ind needs one list per row of T";
-    const int64_t columns = std::min<int64_t>(int64_t(T.front().size()), n);
-    for (const auto &list : ind)
-        for (const int64_t k : list)
-            if (k < 0 || k >= columns)
-                return "ind has the entry " + std::to_string(k) + ", outside [0, " +
-                       std::to_string(columns) + ")";
-    return "";
-}
-
 } // namespace
 
 
@@ -175,7 +151,7 @@ std::string aux_problem(const std::vector<std::vector<Tensor>> &T,
 Zonotope Zonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
                              const std::vector<std::vector<int64_t>> &ind) const {
     detail::Entry entry;
-    const std::string problem = aux_problem(T, ind, dim());
+    const std::string problem = priv_cubic_map_problem(T, ind, dim());
     CORA_CHECK(problem.empty(), Error::wrong_value, [&] { return "cubic_map: " + problem; });
     const Tensor full = aux_full(*this);
     // output i of the map for the matrices of row i
@@ -188,7 +164,7 @@ Zonotope Zonotope::cubic_map(const Zonotope &Z2, const Zonotope &Z3,
                              const std::vector<std::vector<Tensor>> &T,
                              const std::vector<std::vector<int64_t>> &ind) const {
     detail::Entry entry;
-    const std::string problem = aux_problem(T, ind, dim());
+    const std::string problem = priv_cubic_map_problem(T, ind, dim());
     CORA_CHECK(problem.empty(), Error::wrong_value, [&] { return "cubic_map: " + problem; });
     CORA_CHECK(Z2.dim() == dim() && Z3.dim() == dim(), Error::dimension_mismatch, [&] {
         return "cubic_map: the zonotopes differ in dimension, " + std::to_string(dim()) + ", " +

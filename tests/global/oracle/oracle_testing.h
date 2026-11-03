@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "cora/global/oracle/con_zonotope.h"
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/interval_matrix.h"
@@ -80,6 +81,23 @@ class Random {
     cora::Tensor direction(int64_t n) { return vector(n); }
 
     cora::Zonotope zonotope(int64_t n, int64_t m) { return {vector(n), matrix(n, m)}; }
+
+    /// A constrained zonotope of n dimensions and m generators with p constraints [I B] x = b; b is
+    /// the image of a factor vector inside the box, so the set is not empty.
+    cora::ConZonotope con_zonotope(int64_t n, int64_t m, int64_t p) {
+        std::vector<double> A(p * m, 0.0), xi(m), b(p, 0.0);
+        for (double &x : xi) x = uniform(-0.5, 0.5);
+        for (int64_t i = 0; i < p; ++i) {
+            A[i * m + i] = 1.0;
+            b[i] = xi[i];
+            for (int64_t j = p; j < m; ++j) {
+                A[i * m + j] = 0.3 * scalar();
+                b[i] += A[i * m + j] * xi[j];
+            }
+        }
+        return {vector(n), matrix(n, m), cora::Tensor::from_data(A, {p, m}),
+                cora::Tensor::from_data(b, {p, 1})};
+    }
 
     /// A box of n dimensions: a center and a radius in [0, 1].
     cora::Interval box(int64_t n) {
@@ -178,6 +196,14 @@ inline bool same_bits(const std::string &what, const cora::Zonotope &a, const le
            same_bits(what + ".G", a.generators(), b.generators());
 }
 
+/// The nominal part of the oracle's set (c, G and the equalities); its error boxes are not compared.
+inline bool same_bits(const std::string &what, const cora::ConZonotope &a, const lean::ConZonotope &b) {
+    const cora::ConZonotope other = b.nominal();
+    return same_bits(what + ".c", a.c(), other.c()) &
+           same_bits(what + ".G", a.generators(), other.generators()) &
+           same_bits(what + ".A", a.A(), other.A()) & same_bits(what + ".b", a.b(), other.b());
+}
+
 /// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
@@ -267,6 +293,11 @@ inline bool enclosed(const std::string &what, const cora::Zonotope &a, const lea
     const lean::Zonotope mine(a), hull = b.enclosure();
     if (hull.contains(mine).proved) return true;
     return enclosed(what + " (hull)", a.interval(), hull.interval());
+}
+
+/// The interval hull of CORA.cpp's set inside the hull of the oracle's enclosure.
+inline bool enclosed(const std::string &what, const cora::ConZonotope &a, const lean::ConZonotope &b) {
+    return enclosed(what + " (hull)", a.interval(), b.interval());
 }
 
 /// A certified answer must not be contradicted: if the oracle proves it, CORA.cpp says the same.

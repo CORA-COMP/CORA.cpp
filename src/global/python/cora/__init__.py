@@ -28,9 +28,10 @@ except ImportError:  # numpy and Eigen only
     pass
 
 from . import banner, errors
-from ._cora import (ContSet, EmptySet, Expr, ExpmMixedResult, ExpmResult, Falsification, Fullspace,
-                    Interval, IntervalMatrix, LinearSys, MatZonotope, MatZonotopeExpmMixedResult,
-                    MatZonotopeExpmOneParamResult, NeuralNetwork, NonlinearSys, ReachProblem,
+from ._cora import (ConZonotope, ContSet, EmptySet, Expr, ExpmMixedResult, ExpmResult,
+                    Falsification, Fullspace, Interval, IntervalMatrix, LinearSys, MatZonotope,
+                    MatZonotopeExpmMixedResult, MatZonotopeExpmOneParamResult, NeuralNetwork,
+                    NonlinearSys, ReachProblem,
                     ReachSet, Rng, Specification, VerifyResult, Zonotope, backend, binary_pairs,
                     cart_prod, checks, checks_enabled, contains, convex_hull, cora_color,
                     current_backend, current_tolerance, has_torch, intersect, is_intersecting,
@@ -48,7 +49,8 @@ from .plot import plot, plot_over_time, plot_rand_point
 banner.install(current_backend)
 
 __all__ = [
-    "CORAError", "CORAWarning", "ContSet", "EmptySet", "Expr", "ExpmMixedResult", "ExpmResult",
+    "CORAError", "CORAWarning", "ConZonotope", "ContSet", "EmptySet", "Expr", "ExpmMixedResult",
+    "ExpmResult",
     "Falsification", "Figure", "Fullspace", "Interval", "IntervalMatrix", "LinearSys",
     "MatZonotope", "MatZonotopeExpmMixedResult", "MatZonotopeExpmOneParamResult",
     "NeuralNetwork", "NonlinearSys", "ReachProblem", "ReachSet", "Rng",
