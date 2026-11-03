@@ -1,0 +1,33 @@
+// test_zonotope_compact_torch - zonotope compact: gradients through torch
+
+#include "zonotope_gradients.h"
+
+using namespace cora;
+using test::Inputs;
+
+namespace {
+
+/// The choice of generators is made on detached values: the gradient flows to the ones that stay.
+void compact_gradient() {
+    // the differences step by 1e-6: tol 1e-3 keeps the tiny generator dropped and the
+    // antiparallel one (column 4 = -2 * column 0) merged when "all" asks for it
+    const double tol = 1e-3;
+    std::vector<torch::Tensor> Z = test::random_zonotope(3, 5);
+    Z[1].index_put_({torch::indexing::Slice(), 2}, 1e-9);
+    Z[1].index_put_({torch::indexing::Slice(), 4}, -2 * Z[1].index({torch::indexing::Slice(), 0}));
+    for (const std::string method : {"zeros", "all"})
+        test::gradcheck("compact " + method,
+                        [&](const Inputs &x) {
+                            return test::parts(Zonotope(x[0], x[1]).compact(method, tol));
+                        },
+                        Z);
+}
+
+} // namespace
+
+int main() {
+    const BackendScope backend_scope("torch");
+    torch::manual_seed(38);
+    compact_gradient();
+    return test::finish("zonotope compact (torch)");
+}

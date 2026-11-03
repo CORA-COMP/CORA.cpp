@@ -148,6 +148,11 @@ def enclosed(what, a, b):
     # a point-valued result (a tensor, indices) has no enclosure
 
 
+def mode():
+    """The mode of the running `run`: exact or sound."""
+    return _state["mode"]
+
+
 def check_exact(op, cora_result, lean_result):
     """CORA.cpp's result equals the oracle's bit for bit (run it on the lean backend at nearest)."""
     same_bits(op, cora_result, lean_result)

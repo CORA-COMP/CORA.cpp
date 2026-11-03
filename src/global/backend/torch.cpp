@@ -218,7 +218,12 @@ struct TorchTensor : Tensor::Impl {
 
     // Linear algebra
     Ptr matmul(const Impl &o) const override { return wrap(t.matmul(of(o))); }
-    Ptr solve(const Impl &b) const override { return wrap(torch::linalg_solve(t, of(b))); }
+    Ptr solve(const Impl &b) const override {
+        // torch reads a right-hand side one dimension short of t as a batch of vectors, which is
+        // wrong when its shape happens to be that of t's batch and rows; it is a matrix here
+        const torch::Tensor &rhs = of(b);
+        return wrap(torch::linalg_solve(t, rhs.dim() + 1 == t.dim() ? rhs.unsqueeze(0) : rhs));
+    }
     Ptr cholesky() const override { return wrap(torch::linalg_cholesky(t)); }
     std::pair<Ptr, Ptr> qr() const override {
         const auto [Q, R] = torch::linalg_qr(t, "reduced");

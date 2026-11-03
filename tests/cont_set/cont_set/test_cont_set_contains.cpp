@@ -8,13 +8,14 @@
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
 #include "testing.h"
+#include "unregistered_set.h"
 
 using namespace cora;
 using test::check;
 
 namespace {
 
-/// A negative tol and different dimensions are refused; no pair implements it yet.
+/// A negative tol and different dimensions are refused; a pair without an entry is noops.
 void the_tolerance_is_checked() {
     const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}})),
                    Z3 = Zonotope(Tensor({1.0, 0.0, 0.0}),
@@ -22,9 +23,10 @@ void the_tolerance_is_checked() {
     const Interval I = Interval(test::column({0, -1}), test::column({1, 1}));
     check(test::raises([&] { contains(Z, I, -1.0); }, Error::wrong_value), "tol -1");
     check(test::raises([&] { contains(Z, Z3); }, Error::dimension_mismatch), "dimensions 2 and 3");
-    check(test::raises([&] { contains(Z, I); }, Error::noops), "no pair: noops");
+    const test::UnregisteredSet U;
+    check(test::raises([&] { contains(Z, U); }, Error::noops), "no pair: noops");
     ChecksScope off(false);
-    check(test::raises([&] { contains(Z, I, -1.0); }, Error::noops), "the checks off skip tol");
+    check(test::raises([&] { contains(Z, U, -1.0); }, Error::noops), "the checks off skip tol");
 }
 
 } // namespace

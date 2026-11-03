@@ -397,7 +397,10 @@ void bind_cont_set(py::module_ &m) {
             if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
             if (py::isinstance<Interval>(S1))
                 return py::cast<const Interval &>(S1).contains(vector_of(S2, "the point"));
-            CORA_FAIL(Error::not_supported, "point containment is implemented for intervals only");
+            if (py::isinstance<Zonotope>(S1))
+                return py::cast<const Zonotope &>(S1).contains(tensor_of(S2, "the points"));
+            CORA_FAIL(Error::not_supported,
+                      "point containment is implemented for intervals and zonotopes only");
         });
     bind_registry(m);
 }
@@ -469,6 +472,19 @@ void bind_interval(py::module_ &m) {
             "Whether p is in the box enlarged by tol per coordinate");
 }
 
+/// The matrices of a cubic map T[i][k] from Python: a list of rows, each a list of arrays.
+std::vector<std::vector<Tensor>> matrices_of(const py::list &T) {
+    std::vector<std::vector<Tensor>> out;
+    for (const py::handle &row : T) {
+        out.emplace_back();
+        for (const py::handle &M : py::reinterpret_borrow<py::sequence>(row))
+            out.back().push_back(tensor_of(M, "a matrix of T"));
+    }
+    return out;
+}
+
+using Indices = std::vector<std::vector<int64_t>>;
+
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
         .def(py::init([](const py::object &c, const py::object &G) {
@@ -501,7 +517,92 @@ void bind_zonotope(py::module_ &m) {
         .def("plus", py::overload_cast<const Interval &>(&Zonotope::plus, py::const_), py::arg("I"))
         .def("linear_combination", &Zonotope::linear_combination, py::arg("Z2"))
         .def("reduce", &Zonotope::reduce, py::arg("order"),
-             "At most order * n generators; the smallest are enclosed by a box (Girard)");
+             "At most order * n generators; the smallest are enclosed by a box (Girard)")
+        .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
+        .def("box", &Zonotope::box, "The box around the zonotope, as a zonotope")
+        .def("compact", &Zonotope::compact, py::arg("method") = "zeros",
+             py::arg("tol") = std::numeric_limits<double>::epsilon(),
+             "Without zero generators ('zeros'); 'all' also merges aligned ones; 'aligned': as is")
+        .def(
+            "cart_prod",
+            [](const Zonotope &Z, const py::object &S) {
+                if (py::isinstance<Zonotope>(S)) return Z.cart_prod(py::cast<Zonotope>(S));
+                if (py::isinstance<Interval>(S)) return Z.cart_prod(py::cast<Interval>(S));
+                return Z.cart_prod(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The Cartesian product with a zonotope, a box or a point")
+        .def("enclose", &Zonotope::enclose, py::arg("Z2"), "A zonotope that encloses both")
+        .def(
+            "convex_hull",
+            [](const Zonotope &Z, const py::object &S) {
+                if (py::isinstance<Zonotope>(S)) return Z.convex_hull(py::cast<Zonotope>(S));
+                if (py::isinstance<Interval>(S)) return Z.convex_hull(py::cast<Interval>(S));
+                return Z.convex_hull(vector_of(S, "the point"));
+            },
+            py::arg("S"), "A zonotope that encloses the convex hull with a zonotope, box or point")
+        .def(
+            "intersect",
+            [](const Zonotope &Z, const py::object &S, const std::string &method) {
+                if (py::isinstance<Interval>(S)) return Z.intersect(py::cast<Interval>(S), method);
+                return Z.intersect(py::cast<Zonotope>(S), method);
+            },
+            py::arg("S"), py::arg("method") = "conZonotope",
+            "A zonotope that encloses the intersection: boxes exactly, else method 'averaging'")
+        .def(
+            "constraints_satisfied",
+            [](const Zonotope &Z, const py::object &C, const py::object &d) {
+                return Z.constraints_satisfied(tensor_of(C, "C"), vector_of(d, "d"));
+            },
+            py::arg("C"), py::arg("d"), "True if C x < d is certain for the whole zonotope")
+        .def(
+            "cubic_map",
+            [](const Zonotope &Z, const py::list &T, const std::optional<Indices> &ind) {
+                return Z.cubic_map(matrices_of(T), ind.value_or(Indices{}));
+            },
+            py::arg("T"), py::arg("ind") = py::none(),
+            "An enclosure of z_i = sum_k x_k (x' T[i][k] x); ind[i] lists the k of output i")
+        .def(
+            "cubic_map",
+            [](const Zonotope &Z, const Zonotope &Z2, const Zonotope &Z3, const py::list &T,
+               const std::optional<Indices> &ind) {
+                return Z.cubic_map(Z2, Z3, matrices_of(T), ind.value_or(Indices{}));
+            },
+            py::arg("Z2"), py::arg("Z3"), py::arg("T"), py::arg("ind") = py::none(),
+            "An enclosure of (x1' T[i] x2) x3 for x1 in Z, x2 in Z2, x3 in Z3")
+        .def(
+            "hausdorff_distance_to_box",
+            [](const Zonotope &Z, const std::optional<std::string> &method) {
+                return scalar(Z.hausdorff_distance_to_box(method));
+            },
+            py::arg("method") = py::none(),
+            "A bound on the Hausdorff distance to the box: 'exact' (n <= 3), 'naive', 'wgreedy', "
+            "'wopt'")
+        .def(
+            "dominant_directions",
+            [](const Zonotope &Z, const std::optional<int> &filter_length1,
+               const std::optional<int> &filter_length2) {
+                return matrix(Z.dominant_directions(filter_length1, filter_length2));
+            },
+            py::arg("filter_length1") = py::none(), py::arg("filter_length2") = py::none(),
+            "n generators (columns) that span a tight parallelotope around the zonotope")
+        .def(
+            "contains",
+            [](const Zonotope &Z, const py::object &S, const std::string &method, double tol) {
+                if (py::isinstance<Zonotope>(S)) return Z.contains(py::cast<Zonotope>(S), method, tol);
+                if (py::isinstance<Interval>(S)) return Z.contains(py::cast<Interval>(S), method, tol);
+                return Z.contains(tensor_of(S, "the points"), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact",
+            py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
+            "Whether the zonotope contains the point(s) (n,) or (n, N), a zonotope or a box")
+        .def(
+            "boundary_point",
+            [](const Zonotope &Z, const py::object &dir, const std::optional<py::object> &start) {
+                return vector(start ? Z.boundary_point(vector_of(dir, "dir"), vector_of(*start, "start"))
+                                    : Z.boundary_point(vector_of(dir, "dir")));
+            },
+            py::arg("dir"), py::arg("start") = py::none(),
+            "Where the ray from start (default: the center) in direction dir leaves the zonotope");
 }
 
 /// The operators with numbers and arrays, as CORA writes them: s * S, M * S and M @ S (the linear

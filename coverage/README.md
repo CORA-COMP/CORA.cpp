@@ -26,15 +26,15 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 
 | Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
 |---|---|---|---|---|---|---|---|---|
-| contSet | 908 | 843 | 17 | 12 | 7 | 15 | 14 | 13 |
+| contSet | 908 | 827 | 19 | 12 | 12 | 24 | 14 | 18 |
 | contDynamics | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
 | hybridDynamics | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | nn | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | specification | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
 | others | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 1696 | 1611 | 23 | 26 | 7 | 15 | 14 | 24 |
+| **all** | 1696 | 1595 | 25 | 26 | 12 | 24 | 14 | 29 |
 
-4% of the 1682 CORA methods in scope have a source, 3% are tested in C++ and Python, 1% are checked against CORALean; oracle debt 24.
+5% of the 1682 CORA methods in scope have a source, 4% are tested in C++ and Python, 1% are checked against CORALean; oracle debt 29.
 
 ## Classes
 
@@ -57,7 +57,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [contSet/spectraShadow](contSet/spectraShadow.md) | 33 | 33 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/taylm](contSet/taylm.md) | 51 | 51 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/zonoBundle](contSet/zonoBundle.md) | 44 | 44 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [contSet/zonotope](contSet/zonotope.md) | 80 | 67 | 3 | 3 | 0 | 5 | 2 | 1 |
+| [contSet/zonotope](contSet/zonotope.md) | 80 | 51 | 5 | 3 | 5 | 14 | 2 | 6 |
 | [contSet/zoo](contSet/zoo.md) | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contDynamics/contDynamics](contDynamics/contDynamics.md) | 19 | 15 | 2 | 2 | 0 | 0 | 0 | 1 |
 | [contDynamics/linParamSys](contDynamics/linParamSys.md) | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
