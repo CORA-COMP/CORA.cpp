@@ -68,7 +68,20 @@ if(python_ok)
                        DEPENDS "${file}")
     list(APPEND copied "${CMAKE_BINARY_DIR}/cora/${file_name}")
   endforeach()
-  add_custom_target(python ALL DEPENDS _cora ${copied})
+
+  # the type stubs, written from the signatures of the module just built (scripts/stubs.py), and
+  # py.typed (PEP 561) beside them: the editor completes and type-checks `cora`
+  set(stub_files "${module_directory}/_cora/__init__.pyi" "${module_directory}/_cora/lean.pyi"
+                 "${module_directory}/py.typed")
+  add_custom_command(OUTPUT ${stub_files}
+                     COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=${CMAKE_BINARY_DIR}"
+                             "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/stubs.py" --out "${module_directory}"
+                     DEPENDS _cora ${copied} "${CMAKE_SOURCE_DIR}/scripts/stubs.py"
+                     COMMENT "Generating cora/_cora/*.pyi")
+  add_custom_target(python ALL DEPENDS _cora ${copied} ${stub_files})
+
+  # the package, stubs included, for the install tree (put <prefix>/python on PYTHONPATH)
+  install(DIRECTORY "${module_directory}/" DESTINATION python/cora PATTERN "__pycache__" EXCLUDE)
 
   add_test(NAME python
            COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s tests/python

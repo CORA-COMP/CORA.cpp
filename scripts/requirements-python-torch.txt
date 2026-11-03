@@ -3,3 +3,4 @@
 torch
 numpy
 matplotlib
+mypy  # type-checks the examples against the stubs (tests/python/test_stubs.py)

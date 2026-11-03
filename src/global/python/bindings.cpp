@@ -375,7 +375,8 @@ void bind_cont_set(py::module_ &m) {
         .def_property_readonly("dim", &ContSet::dim, "The dimension n")
         .def_property_readonly(
             "center", [](const ContSet &S) { return bounds(S.center()); }, "The center (..., n)")
-        .def_property_readonly("class_name", &ContSet::class_name)
+        .def_property_readonly("class_name", &ContSet::class_name,
+                "The name of the class: 'Zonotope', 'Interval', ...")
         .def(
             "support_function",
             [](const ContSet &S, const py::object &d) {
@@ -527,7 +528,8 @@ void bind_cont_set(py::module_ &m) {
                  if (!py::isinstance<ContSet>(S2)) return not_implemented();
                  return py::cast(ne(set_of(S1), set_of(S2)));
              })
-        .def("display", &ContSet::display)
+        .def("display", &ContSet::display,
+                "The text that `print(S)` shows, as CORA displays the set")
         .def("__repr__", &ContSet::display)
         .def("__str__", &ContSet::display)
         .def("__add__",
@@ -678,29 +680,33 @@ std::vector<Interval> intervals_of(const py::list &items) {
 void bind_interval(py::module_ &m) {
     py::class_<Interval, ContSet>(m, "Interval",
                                   "A box, or a matrix of intervals: inf <= x <= sup.")
-        .def(py::init([](const py::object &inf, const py::object &sup) {
+        .def(py::init([](const Array &inf, const Array &sup) {
                  return Interval(vector_of(inf, "inf"), vector_of(sup, "sup"));
              }),
              py::arg("inf"), py::arg("sup"), "The box of the vectors inf <= sup (..., n)")
         .def_static(
             "matrix",
-            [](const py::object &inf, const py::object &sup) {
+            [](const Array &inf, const Array &sup) {
                 return Interval(tensor_of(inf, "inf"), tensor_of(sup, "sup"));
             },
             py::arg("inf"), py::arg("sup"), "An interval matrix: bounds (..., n, k)")
         .def_static("stack", &Interval::stack, py::arg("intervals"),
                     "A batch of intervals as one; the batch is the leading dimension")
-        .def_static("generate_random", &Interval::generate_random, py::arg("n"), py::arg("rng"))
-        .def_property_readonly("inf", [](const Interval &I) { return bounds(I.inf()); })
-        .def_property_readonly("sup", [](const Interval &I) { return bounds(I.sup()); })
-        .def_property_readonly("rad", [](const Interval &I) { return bounds(I.rad()); })
+        .def_static("generate_random", &Interval::generate_random, py::arg("n"), py::arg("rng"),
+                "A random box of n dimensions")
+        .def_property_readonly("inf", [](const Interval &I) { return bounds(I.inf()); },
+                "The lower bounds (..., n)")
+        .def_property_readonly("sup", [](const Interval &I) { return bounds(I.sup()); },
+                "The upper bounds (..., n)")
+        .def_property_readonly("rad", [](const Interval &I) { return bounds(I.rad()); },
+                "The radii (sup - inf) / 2, (..., n)")
         .def(
             "linear_map",
             [](const Interval &I, const py::object &M) {
                 return I.linear_map(tensor_of(M, "the matrix"));
             },
             py::arg("M"), "M I enclosed by its interval hull")
-        .def("plus", &Interval::plus, py::arg("I2"))
+        .def("plus", &Interval::plus, py::arg("I2"), "The sum with an interval, as a box")
         .def_static("unbounded", &Interval::unbounded, py::arg("n"),
                     "The box (-Inf, Inf)^n (CORA: interval.Inf)")
         .def("abs", &Interval::abs, "The image under the elementwise absolute value")
@@ -1376,17 +1382,20 @@ using Indices = std::vector<std::vector<int64_t>>;
 
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
-        .def(py::init([](const py::object &c, const py::object &G) {
+        .def(py::init([](const Array &c, const Array &G) {
                  return Zonotope(vector_of(c, "the center"), tensor_of(G, "the generators"));
              }),
              py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
         .def_static("stack", &Zonotope::stack, py::arg("zonotopes"),
                     "A batch of zonotopes as one; fewer generators are padded with zeros")
         .def_static("generate_random", &Zonotope::generate_random, py::arg("n"), py::arg("m"),
-                    py::arg("rng"))
-        .def_property_readonly("center", [](const Zonotope &Z) { return vector(Z.center()); })
+                    py::arg("rng"),
+                "A random zonotope of n dimensions and m generators")
+        .def_property_readonly("center", [](const Zonotope &Z) { return vector(Z.center()); },
+                "The center c (..., n)")
         .def_property_readonly("generators",
-                               [](const Zonotope &Z) { return matrix(Z.generators()); })
+                               [](const Zonotope &Z) { return matrix(Z.generators()); },
+                "The generator matrix G (..., n, m)")
         .def(
             "rand_point",
             [](const Zonotope &Z, int64_t N, cora::Rng &rng, const std::string &type) {
@@ -1402,9 +1411,12 @@ void bind_zonotope(py::module_ &m) {
             },
             py::arg("M"), "M Z for a matrix (..., k, n), or an interval matrix")
         .def("plus", py::overload_cast<const Zonotope &>(&Zonotope::plus, py::const_),
-             py::arg("Z2"))
-        .def("plus", py::overload_cast<const Interval &>(&Zonotope::plus, py::const_), py::arg("I"))
-        .def("linear_combination", &Zonotope::linear_combination, py::arg("Z2"))
+             py::arg("Z2"),
+                "The Minkowski sum with a zonotope or a box")
+        .def("plus", py::overload_cast<const Interval &>(&Zonotope::plus, py::const_), py::arg("I"),
+                "The Minkowski sum with a zonotope or a box")
+        .def("linear_combination", &Zonotope::linear_combination, py::arg("Z2"),
+                "The zonotope of the convex combinations of this one and Z2")
         .def("reduce", &Zonotope::reduce, py::arg("order"),
              "At most order * n generators; the smallest are enclosed by a box (Girard)")
         .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
@@ -2141,9 +2153,9 @@ void bind_problems(py::module_ &m) {
         .def_readonly("time_point", &ReachSet::time_point, "time_point[k] at k*time_step");
 
     py::class_<ReachProblem>(m, "ReachProblem", "What reach and verify are asked (CORA's params).")
-        .def_readonly("initial_set", &ReachProblem::initial_set)
-        .def_readonly("input_set", &ReachProblem::input_set)
-        .def_readonly("t_final", &ReachProblem::t_final);
+        .def_readonly("initial_set", &ReachProblem::initial_set, "The initial set X0")
+        .def_readonly("input_set", &ReachProblem::input_set, "The input set U, or None")
+        .def_readonly("t_final", &ReachProblem::t_final, "The final time");
 
     py::class_<Falsification>(m, "Falsification", "A trajectory that violates a specification.")
         .def_property_readonly(
@@ -2151,7 +2163,8 @@ void bind_problems(py::module_ &m) {
         .def_readonly("time", &Falsification::time, "the time it is violated");
 
     py::class_<VerifyResult>(m, "VerifyResult", "The outcome of verify.")
-        .def_readonly("verified", &VerifyResult::verified)
+        .def_readonly("verified", &VerifyResult::verified,
+                "True if the specification holds on the whole horizon")
         .def_readonly("computation_time", &VerifyResult::computation_time, "seconds spent")
         .def_readonly("iterations", &VerifyResult::iterations, "passes of the adaptive loop")
         .def_readonly("time_step", &VerifyResult::time_step, "step size of the last pass")
@@ -2161,7 +2174,7 @@ void bind_problems(py::module_ &m) {
 
 void bind_linear_sys(py::module_ &m) {
     py::class_<LinearSys>(m, "LinearSys", "The linear system x' = A x + B u, y = C x.")
-        .def(py::init([](const py::object &A, const py::object &B, const py::object &C,
+        .def(py::init([](const Array &A, const py::object &B, const py::object &C,
                          bool custom_backward) {
                  // custom_backward: hand-written backward pass of the matrix exponential (torch)
                  const auto t = [&](const py::object &o, const char *what) {
@@ -2180,16 +2193,21 @@ void bind_linear_sys(py::module_ &m) {
              py::arg("custom_backward") = false,
              "x' = A x (+ B u), y = C x: A (..., n, n), B (n, m), C (p, n); without C the output "
              "is x")
-        .def_property_readonly("A", [](const LinearSys &sys) { return matrix(sys.A()); })
+        .def_property_readonly("A", [](const LinearSys &sys) { return matrix(sys.A()); },
+                "The system matrix A (..., n, n)")
         .def_property_readonly("B",
-                               [](const LinearSys &sys) -> py::object {
-                                   return sys.B() ? matrix(*sys.B()) : py::none();
-                               })
+                               [](const LinearSys &sys) -> std::optional<Array> {
+                                   if (!sys.B()) return std::nullopt;
+                                   return matrix(*sys.B());
+                               },
+                "The input matrix B (n, m), or None")
         .def_property_readonly("C",
-                               [](const LinearSys &sys) -> py::object {
-                                   return sys.C() ? matrix(*sys.C()) : py::none();
-                               })
-        .def_property_readonly("dim", &LinearSys::dim)
+                               [](const LinearSys &sys) -> std::optional<Array> {
+                                   if (!sys.C()) return std::nullopt;
+                                   return matrix(*sys.C());
+                               },
+                "The output matrix C (p, n), or None (then the output is x)")
+        .def_property_readonly("dim", &LinearSys::dim, "The number of states n")
         .def(
             "reach",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
@@ -2278,9 +2296,12 @@ void bind_nonlinear_sys(py::module_ &m) {
              "The value at the point x (a list of numbers)");
     py::implicitly_convertible<double, Expr>();
     py::implicitly_convertible<int, Expr>();
-    m.def("sin", [](const Expr &a) { return sin(a); }, py::arg("e"));
-    m.def("cos", [](const Expr &a) { return cos(a); }, py::arg("e"));
-    m.def("exp", [](const Expr &a) { return exp(a); }, py::arg("e"));
+    m.def("sin", [](const Expr &a) { return sin(a); }, py::arg("e"),
+          "The sine of a symbolic expression");
+    m.def("cos", [](const Expr &a) { return cos(a); }, py::arg("e"),
+          "The cosine of a symbolic expression");
+    m.def("exp", [](const Expr &a) { return exp(a); }, py::arg("e"),
+          "The exponential of a symbolic expression");
 
     py::class_<NonlinearSys>(m, "NonlinearSys", "The nonlinear system x' = f(x).")
         .def(py::init([](const py::function &f, int64_t dim) {
@@ -2289,7 +2310,7 @@ void bind_nonlinear_sys(py::module_ &m) {
                      [&f](const std::vector<Expr> &x) { return f(x).cast<std::vector<Expr>>(); }, dim);
              }),
              py::arg("f"), py::arg("dim"), "f(x) returns the dim components of the right-hand side")
-        .def_property_readonly("dim", &NonlinearSys::dim)
+        .def_property_readonly("dim", &NonlinearSys::dim, "The number of states n")
         .def(
             "reach",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
@@ -2340,8 +2361,8 @@ void bind_neural_network(py::module_ &m) {
                  return NeuralNetwork(out);
              }),
              py::arg("layers"), "the layers as (W (out, in), b (out,)) pairs, first to last")
-        .def_property_readonly("input_dim", &NeuralNetwork::input_dim)
-        .def_property_readonly("output_dim", &NeuralNetwork::output_dim)
+        .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
+        .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
         .def(
             "evaluate",
             [](const NeuralNetwork &nn, const py::object &x) -> py::object {
@@ -2490,16 +2511,20 @@ std::vector<Tensor> trajectories(const py::object &o) {
 void bind_plot(py::module_ &m) {
     py::class_<Figure>(m, "Figure", "The layers that plot puts into one axes, with every choice made.")
         .def(py::init<>())
-        .def_readwrite("title", &Figure::title)
-        .def_readwrite("xlabel", &Figure::xlabel)
-        .def_readwrite("ylabel", &Figure::ylabel)
-        .def_readwrite("zlabel", &Figure::zlabel)
-        .def_readwrite("equal_axes", &Figure::equal_axes)
-        .def_readwrite("azimuth", &Figure::azimuth)
-        .def_readwrite("elevation", &Figure::elevation)
-        .def_readwrite("xlim", &Figure::xlim)
-        .def_readwrite("ylim", &Figure::ylim)
-        .def_readwrite("zlim", &Figure::zlim)
+        .def_readwrite("title", &Figure::title, "The title of the axes")
+        .def_readwrite("xlabel", &Figure::xlabel, "The label of the x axis")
+        .def_readwrite("ylabel", &Figure::ylabel, "The label of the y axis")
+        .def_readwrite("zlabel", &Figure::zlabel, "The label of the z axis")
+        .def_readwrite("equal_axes", &Figure::equal_axes,
+                "Whether one unit is as long on every axis")
+        .def_readwrite("azimuth", &Figure::azimuth, "The azimuth of a 3-D view in degrees")
+        .def_readwrite("elevation", &Figure::elevation, "The elevation of a 3-D view in degrees")
+        .def_readwrite("xlim", &Figure::xlim,
+                "The limits of the x axis, or None to fit the layers")
+        .def_readwrite("ylim", &Figure::ylim,
+                "The limits of the y axis, or None to fit the layers")
+        .def_readwrite("zlim", &Figure::zlim,
+                "The limits of the z axis, or None to fit the layers")
         .def_readonly("dimension", &Figure::dimension, "2, or 3 once a surface is drawn")
         .def(
             "plot",
@@ -2511,12 +2536,12 @@ void bind_plot(py::module_ &m) {
             "plot",
             [](Figure &fig, const ReachSet &R, const std::vector<int64_t> &dims,
                const py::kwargs &kwargs) { plot(fig, R, dims, options_of(kwargs)); },
-            py::arg("obj"), py::arg("dims"))
+            py::arg("obj"), py::arg("dims"), "Draws the reachable sets, projected onto dims")
         .def(
             "plot",
             [](Figure &fig, const Specification &spec, const std::vector<int64_t> &dims,
                const py::kwargs &kwargs) { plot(fig, spec, dims, options_of(kwargs)); },
-            py::arg("obj"), py::arg("dims"))
+            py::arg("obj"), py::arg("dims"), "Draws the halfspaces of a specification onto dims")
         .def(
             "plot",
             [](Figure &fig, const py::object &data, const std::vector<int64_t> &dims,
@@ -2603,12 +2628,14 @@ void bind_plot(py::module_ &m) {
 
     py::class_<FigureGrid>(m, "FigureGrid", "Figures in rows and columns: SVG cells or a groupplot.")
         .def(py::init<int, int>(), py::arg("rows"), py::arg("cols"))
-        .def_readwrite("share_x", &FigureGrid::share_x)
-        .def_readwrite("share_y", &FigureGrid::share_y)
-        .def_readwrite("width", &FigureGrid::width)
-        .def_readwrite("height", &FigureGrid::height)
-        .def_property_readonly("rows", &FigureGrid::rows)
-        .def_property_readonly("cols", &FigureGrid::cols)
+        .def_readwrite("share_x", &FigureGrid::share_x,
+                "Whether the cells of a column share their x axis")
+        .def_readwrite("share_y", &FigureGrid::share_y,
+                "Whether the cells of a row share their y axis")
+        .def_readwrite("width", &FigureGrid::width, "The width of the grid in pixels")
+        .def_readwrite("height", &FigureGrid::height, "The height of the grid in pixels")
+        .def_property_readonly("rows", &FigureGrid::rows, "The number of rows")
+        .def_property_readonly("cols", &FigureGrid::cols, "The number of columns")
         .def(
             "at",
             [](FigureGrid &g, int row, int col) -> Figure & { return g.at(row, col); },
@@ -2656,7 +2683,7 @@ void bind_specification(py::module_ &m) {
             [](const py::object &a, double b) {
                 return Specification::safe_set(vector_of(a, "the normal"), b);
             },
-            py::arg("a"), py::arg("b"))
+            py::arg("a"), py::arg("b"), "A safe set: the halfspace a.x <= b")
         .def_static(
             "unsafe_set",
             [](const py::object &a, const py::object &b) {
@@ -2677,7 +2704,8 @@ void bind_specification(py::module_ &m) {
                                [](const Specification &spec) {
                                    return spec.type() == SpecType::safe_set ? "safe_set"
                                                                             : "unsafe_set";
-                               })
+                               },
+                "'safe_set' or 'unsafe_set'")
         .def_property_readonly("halfspaces",
                                [](const Specification &spec) {
                                    // The halfspaces as host numpy arrays, whatever the backend.
@@ -2688,7 +2716,8 @@ void bind_specification(py::module_ &m) {
                                            py::array_t<double>(a.size(), a.data()), h.b));
                                    }
                                    return out;
-                               })
+                               },
+                "The halfspaces as (a, b) with a.x <= b")
         .def(
             "holds", [](const Specification &spec, const ContSet &S) { return spec.holds(S); },
             py::arg("S"), "One flag per batch element of the set")
@@ -2746,16 +2775,18 @@ void bind_lean(py::module_ &top) {
             },
             py::arg("dtype"), py::arg("mode") = "nearest",
             "(value, error): the rounded values and an interval enclosing x - value")
-        .def_property_readonly("dtype", &LT::dtype);
+        .def_property_readonly("dtype", &LT::dtype, "The dtype of the values");
     py::implicitly_convertible<py::array, LT>();
     py::implicitly_convertible<py::list, LT>();
 
     py::class_<lean::Certified>(m, "Certified", "An answer of the oracle, a proof if `proved`")
-        .def_readonly("value", &lean::Certified::value)
-        .def_readonly("proved", &lean::Certified::proved);
+        .def_readonly("value", &lean::Certified::value,
+                "The answer, as CORA's operation would give it")
+        .def_readonly("proved", &lean::Certified::proved,
+                "True if the oracle proved the value; else it found no proof");
     py::class_<lean::Vertices>(m, "Vertices", "The vertices V (columns) and an error box E")
-        .def_readonly("V", &lean::Vertices::V)
-        .def_readonly("E", &lean::Vertices::E);
+        .def_readonly("V", &lean::Vertices::V, "The vertices as columns")
+        .def_readonly("E", &lean::Vertices::E, "The box that encloses the error of the vertices");
 
     py::class_<LI>(m, "Interval", "A box of lean values and the oracle's operations on it")
         .def(py::init<LT, LT>(), "inf"_a, "sup"_a)
@@ -2765,7 +2796,8 @@ void bind_lean(py::module_ &top) {
             [](const py::object &inf, const py::object &sup) {
                 return LI::from(host_tensor(inf, true), host_tensor(sup, true));
             },
-            "inf"_a, "sup"_a)
+            "inf"_a, "sup"_a,
+                "CORALean's interval.from_arrays, run by the oracle")
         .def(
             "gather",
             [](const LI &I) {
@@ -2773,96 +2805,127 @@ void bind_lean(py::module_ &top) {
                 return Interval(inf, sup);
             },
             "A cora.Interval; an error if a bound is not a double")
-        .def_property_readonly("inf", &LI::inf)
-        .def_property_readonly("sup", &LI::sup)
-        .def_static("empty", &LI::empty, "n"_a)
-        .def_static("origin", &LI::origin, "n"_a)
-        .def_static("unbounded", &LI::unbounded, "n"_a)
-        .def_static("enclose_points", &LI::enclose_points, "points"_a)
-        .def_static("interval_matrix", &LI::interval_matrix, "c"_a, "r"_a)
-        .def("abs", &LI::abs)
-        .def("uminus", &LI::uminus)
-        .def("uplus", &LI::uplus)
-        .def("sign", &LI::sign)
-        .def("round", &LI::round)
-        .def("sqrt", &LI::sqrt, "p"_a = 20)
-        .def("exp", &LI::exp, "p"_a = 20)
-        .def("sin", &LI::sin, "p"_a = 20)
-        .def("cos", &LI::cos, "p"_a = 20)
-        .def("tan", &LI::tan, "p"_a = 20)
-        .def("sinh", &LI::sinh, "p"_a = 20)
-        .def("cosh", &LI::cosh, "p"_a = 20)
-        .def("tanh", &LI::tanh, "p"_a = 20)
-        .def("log", &LI::log, "p"_a = 20, "k"_a = 20)
-        .def("asin", &LI::asin, "p"_a = 20, "k"_a = 20)
-        .def("acos", &LI::acos, "p"_a = 20, "k"_a = 20)
-        .def("atan", &LI::atan, "p"_a = 20, "k"_a = 20)
-        .def("asinh", &LI::asinh, "p"_a = 20, "k"_a = 20)
-        .def("acosh", &LI::acosh, "p"_a = 20, "k"_a = 20)
-        .def("atanh", &LI::atanh, "p"_a = 20, "k"_a = 20)
-        .def("atan2", &LI::atan2, "I2"_a, "p"_a = 20, "k"_a = 20)
-        .def("enlarge", &LI::enlarge, "factor"_a)
-        .def("power", &LI::power, "exponent"_a)
-        .def("rdivide", &LI::rdivide, "I2"_a)
-        .def("mrdivide", &LI::mrdivide, "d"_a)
-        .def("plus", &LI::plus, "I2"_a)
-        .def("minus", &LI::minus, "I2"_a)
-        .def("times", &LI::times, "I2"_a)
-        .def("unite", &LI::unite, "I2"_a)
-        .def("convex_hull", &LI::convex_hull, "I2"_a)
-        .def("mink_diff", &LI::mink_diff, "I2"_a)
-        .def("min", &LI::min, "I2"_a)
-        .def("max", &LI::max, "I2"_a)
-        .def("intersect", &LI::intersect, "I2"_a)
-        .def("enclose", &LI::enclose, "I2"_a)
-        .def("cart_prod", &LI::cart_prod, "I2"_a)
-        .def("linear_map", py::overload_cast<const LT &>(&LI::linear_map, py::const_), "M"_a)
-        .def("linear_map", py::overload_cast<const LI &>(&LI::linear_map, py::const_), "M"_a)
-        .def("quad_map", &LI::quad_map, "Q"_a)
-        .def("le", &LI::le, "I2"_a, "tol"_a = 0.0)
-        .def("lt", &LI::lt, "I2"_a, "tol"_a = 0.0)
-        .def("isequal", &LI::isequal, "I2"_a, "tol"_a = 0.0)
-        .def("is_full_dim", &LI::is_full_dim, "tol"_a = 0.0)
-        .def("is_bounded", &LI::is_bounded, "tol"_a = 0.0)
-        .def("representsa", &LI::representsa, "type"_a, "tol"_a = 0.0)
+        .def_property_readonly("inf", &LI::inf, "The lower bounds, exact lean values")
+        .def_property_readonly("sup", &LI::sup, "The upper bounds, exact lean values")
+        .def_static("empty", &LI::empty, "n"_a, "CORALean's interval.empty, run by the oracle")
+        .def_static("origin", &LI::origin, "n"_a, "CORALean's interval.origin, run by the oracle")
+        .def_static("unbounded", &LI::unbounded, "n"_a,
+                "CORALean's interval.unbounded, run by the oracle")
+        .def_static("enclose_points", &LI::enclose_points, "points"_a,
+                "CORALean's interval.enclose_points, run by the oracle")
+        .def_static("interval_matrix", &LI::interval_matrix, "c"_a, "r"_a,
+                "CORALean's interval.interval_matrix, run by the oracle")
+        .def("abs", &LI::abs, "CORALean's interval.abs, run by the oracle")
+        .def("uminus", &LI::uminus, "CORALean's interval.uminus, run by the oracle")
+        .def("uplus", &LI::uplus, "CORALean's interval.uplus, run by the oracle")
+        .def("sign", &LI::sign, "CORALean's interval.sign, run by the oracle")
+        .def("round", &LI::round, "CORALean's interval.round, run by the oracle")
+        .def("sqrt", &LI::sqrt, "p"_a = 20, "CORALean's interval.sqrt, run by the oracle")
+        .def("exp", &LI::exp, "p"_a = 20, "CORALean's interval.exp, run by the oracle")
+        .def("sin", &LI::sin, "p"_a = 20, "CORALean's interval.sin, run by the oracle")
+        .def("cos", &LI::cos, "p"_a = 20, "CORALean's interval.cos, run by the oracle")
+        .def("tan", &LI::tan, "p"_a = 20, "CORALean's interval.tan, run by the oracle")
+        .def("sinh", &LI::sinh, "p"_a = 20, "CORALean's interval.sinh, run by the oracle")
+        .def("cosh", &LI::cosh, "p"_a = 20, "CORALean's interval.cosh, run by the oracle")
+        .def("tanh", &LI::tanh, "p"_a = 20, "CORALean's interval.tanh, run by the oracle")
+        .def("log", &LI::log, "p"_a = 20, "k"_a = 20, "CORALean's interval.log, run by the oracle")
+        .def("asin", &LI::asin, "p"_a = 20, "k"_a = 20,
+                "CORALean's interval.asin, run by the oracle")
+        .def("acos", &LI::acos, "p"_a = 20, "k"_a = 20,
+                "CORALean's interval.acos, run by the oracle")
+        .def("atan", &LI::atan, "p"_a = 20, "k"_a = 20,
+                "CORALean's interval.atan, run by the oracle")
+        .def("asinh", &LI::asinh, "p"_a = 20, "k"_a = 20,
+                "CORALean's interval.asinh, run by the oracle")
+        .def("acosh", &LI::acosh, "p"_a = 20, "k"_a = 20,
+                "CORALean's interval.acosh, run by the oracle")
+        .def("atanh", &LI::atanh, "p"_a = 20, "k"_a = 20,
+                "CORALean's interval.atanh, run by the oracle")
+        .def("atan2", &LI::atan2, "I2"_a, "p"_a = 20, "k"_a = 20,
+                "CORALean's interval.atan2, run by the oracle")
+        .def("enlarge", &LI::enlarge, "factor"_a, "CORALean's interval.enlarge, run by the oracle")
+        .def("power", &LI::power, "exponent"_a, "CORALean's interval.power, run by the oracle")
+        .def("rdivide", &LI::rdivide, "I2"_a, "CORALean's interval.rdivide, run by the oracle")
+        .def("mrdivide", &LI::mrdivide, "d"_a, "CORALean's interval.mrdivide, run by the oracle")
+        .def("plus", &LI::plus, "I2"_a, "CORALean's interval.plus, run by the oracle")
+        .def("minus", &LI::minus, "I2"_a, "CORALean's interval.minus, run by the oracle")
+        .def("times", &LI::times, "I2"_a, "CORALean's interval.times, run by the oracle")
+        .def("unite", &LI::unite, "I2"_a, "CORALean's interval.unite, run by the oracle")
+        .def("convex_hull", &LI::convex_hull, "I2"_a,
+                "CORALean's interval.convex_hull, run by the oracle")
+        .def("mink_diff", &LI::mink_diff, "I2"_a,
+                "CORALean's interval.mink_diff, run by the oracle")
+        .def("min", &LI::min, "I2"_a, "CORALean's interval.min, run by the oracle")
+        .def("max", &LI::max, "I2"_a, "CORALean's interval.max, run by the oracle")
+        .def("intersect", &LI::intersect, "I2"_a,
+                "CORALean's interval.intersect, run by the oracle")
+        .def("enclose", &LI::enclose, "I2"_a, "CORALean's interval.enclose, run by the oracle")
+        .def("cart_prod", &LI::cart_prod, "I2"_a,
+                "CORALean's interval.cart_prod, run by the oracle")
+        .def("linear_map", py::overload_cast<const LT &>(&LI::linear_map, py::const_), "M"_a,
+                "CORALean's interval.linear_map, run by the oracle")
+        .def("linear_map", py::overload_cast<const LI &>(&LI::linear_map, py::const_), "M"_a,
+                "CORALean's interval.linear_map, run by the oracle")
+        .def("quad_map", &LI::quad_map, "Q"_a, "CORALean's interval.quad_map, run by the oracle")
+        .def("le", &LI::le, "I2"_a, "tol"_a = 0.0, "CORALean's interval.le, run by the oracle")
+        .def("lt", &LI::lt, "I2"_a, "tol"_a = 0.0, "CORALean's interval.lt, run by the oracle")
+        .def("isequal", &LI::isequal, "I2"_a, "tol"_a = 0.0,
+                "CORALean's interval.isequal, run by the oracle")
+        .def("is_full_dim", &LI::is_full_dim, "tol"_a = 0.0,
+                "CORALean's interval.is_full_dim, run by the oracle")
+        .def("is_bounded", &LI::is_bounded, "tol"_a = 0.0,
+                "CORALean's interval.is_bounded, run by the oracle")
+        .def("representsa", &LI::representsa, "type"_a, "tol"_a = 0.0,
+                "CORALean's interval.representsa, run by the oracle")
         .def("contains", py::overload_cast<const LI &, double>(&LI::contains, py::const_), "I2"_a,
-             "tol"_a = 0.0)
+             "tol"_a = 0.0,
+                "CORALean's interval.contains, run by the oracle")
         .def("contains", py::overload_cast<const LZ &, double>(&LI::contains, py::const_), "Z"_a,
-             "tol"_a = 0.0)
+             "tol"_a = 0.0,
+                "CORALean's interval.contains, run by the oracle")
         .def("is_intersecting", py::overload_cast<const LI &, double>(&LI::is_intersecting, py::const_),
-             "I2"_a, "tol"_a = 0.0)
+             "I2"_a, "tol"_a = 0.0,
+                "CORALean's interval.is_intersecting, run by the oracle")
         .def("is_intersecting", py::overload_cast<const LZ &, double>(&LI::is_intersecting, py::const_),
-             "Z"_a, "tol"_a = 0.0)
-        .def("center", &LI::center)
-        .def("rad", &LI::rad)
-        .def("infimum", &LI::infimum)
-        .def("supremum", &LI::supremum)
-        .def("radius", &LI::radius, "type"_a = 2, "mode"_a = "ub")
-        .def("norm", &LI::norm, "type"_a = 2, "mode"_a = "ub")
-        .def("volume", &LI::volume)
-        .def("support_function", &LI::support_function, "dir"_a, "type"_a = "upper")
-        .def("project", &LI::project, "dims"_a)
-        .def("lift", &LI::lift, "N"_a, "dims"_a)
-        .def("project_high_dim", &LI::project_high_dim, "N"_a, "dims"_a)
-        .def("split", &LI::split, "dim"_a)
-        .def("partition", &LI::partition, "splits"_a, "ind"_a)
-        .def("dirac", &LI::dirac, "n"_a)
-        .def("boundary_point", &LI::boundary_point, "dir"_a, "start"_a)
-        .def("transpose", &LI::transpose)
-        .def("ctranspose", &LI::ctranspose)
-        .def("prod", &LI::prod)
-        .def("diag", &LI::diag)
-        .def("kron", &LI::kron, "I2"_a)
-        .def("horzcat", &LI::horzcat, "I2"_a)
-        .def("vertcat", &LI::vertcat, "I2"_a)
-        .def("sum", &LI::sum, "dim"_a)
-        .def("cat", &LI::cat, "I2"_a, "dim"_a)
-        .def("mpower", &LI::mpower, "exponent"_a)
-        .def("tril", &LI::tril, "K"_a = 0)
-        .def("triu", &LI::triu, "K"_a = 0)
-        .def("reduce", &LI::reduce, "order"_a, "method"_a = "girard")
-        .def("zonotope", &LI::zonotope)
-        .def("vertices", &LI::vertices);
+             "Z"_a, "tol"_a = 0.0,
+                "CORALean's interval.is_intersecting, run by the oracle")
+        .def("center", &LI::center, "CORALean's interval.center, run by the oracle")
+        .def("rad", &LI::rad, "CORALean's interval.rad, run by the oracle")
+        .def("infimum", &LI::infimum, "CORALean's interval.infimum, run by the oracle")
+        .def("supremum", &LI::supremum, "CORALean's interval.supremum, run by the oracle")
+        .def("radius", &LI::radius, "type"_a = 2, "mode"_a = "ub",
+                "CORALean's interval.radius, run by the oracle")
+        .def("norm", &LI::norm, "type"_a = 2, "mode"_a = "ub",
+                "CORALean's interval.norm, run by the oracle")
+        .def("volume", &LI::volume, "CORALean's interval.volume, run by the oracle")
+        .def("support_function", &LI::support_function, "dir"_a, "type"_a = "upper",
+                "CORALean's interval.support_function, run by the oracle")
+        .def("project", &LI::project, "dims"_a, "CORALean's interval.project, run by the oracle")
+        .def("lift", &LI::lift, "N"_a, "dims"_a, "CORALean's interval.lift, run by the oracle")
+        .def("project_high_dim", &LI::project_high_dim, "N"_a, "dims"_a,
+                "CORALean's interval.project_high_dim, run by the oracle")
+        .def("split", &LI::split, "dim"_a, "CORALean's interval.split, run by the oracle")
+        .def("partition", &LI::partition, "splits"_a, "ind"_a,
+                "CORALean's interval.partition, run by the oracle")
+        .def("dirac", &LI::dirac, "n"_a, "CORALean's interval.dirac, run by the oracle")
+        .def("boundary_point", &LI::boundary_point, "dir"_a, "start"_a,
+                "CORALean's interval.boundary_point, run by the oracle")
+        .def("transpose", &LI::transpose, "CORALean's interval.transpose, run by the oracle")
+        .def("ctranspose", &LI::ctranspose, "CORALean's interval.ctranspose, run by the oracle")
+        .def("prod", &LI::prod, "CORALean's interval.prod, run by the oracle")
+        .def("diag", &LI::diag, "CORALean's interval.diag, run by the oracle")
+        .def("kron", &LI::kron, "I2"_a, "CORALean's interval.kron, run by the oracle")
+        .def("horzcat", &LI::horzcat, "I2"_a, "CORALean's interval.horzcat, run by the oracle")
+        .def("vertcat", &LI::vertcat, "I2"_a, "CORALean's interval.vertcat, run by the oracle")
+        .def("sum", &LI::sum, "dim"_a, "CORALean's interval.sum, run by the oracle")
+        .def("cat", &LI::cat, "I2"_a, "dim"_a, "CORALean's interval.cat, run by the oracle")
+        .def("mpower", &LI::mpower, "exponent"_a, "CORALean's interval.mpower, run by the oracle")
+        .def("tril", &LI::tril, "K"_a = 0, "CORALean's interval.tril, run by the oracle")
+        .def("triu", &LI::triu, "K"_a = 0, "CORALean's interval.triu, run by the oracle")
+        .def("reduce", &LI::reduce, "order"_a, "method"_a = "girard",
+                "CORALean's interval.reduce, run by the oracle")
+        .def("zonotope", &LI::zonotope, "CORALean's interval.zonotope, run by the oracle")
+        .def("vertices", &LI::vertices, "CORALean's interval.vertices, run by the oracle");
 
     using LM = lean::IntervalMatrix;
     py::class_<lean::MatrixVertices>(m, "MatrixVertices", "The vertex matrices V and an error box E")
@@ -2892,17 +2955,25 @@ void bind_lean(py::module_ &top) {
     using LE = lean::EmptySet;
     py::class_<LE>(m, "EmptySet", "The empty set of n dimensions and the oracle's operations on it")
         .def(py::init<int64_t>(), "n"_a)
-        .def_property_readonly("dim", &LE::dim)
-        .def_static("empty", &LE::empty, "n"_a)
-        .def("intersect", &LE::intersect, "S"_a)
-        .def("plus", &LE::plus, "S"_a)
-        .def("convex_hull", py::overload_cast<const LI &>(&LE::convex_hull, py::const_), "I"_a)
-        .def("convex_hull", py::overload_cast<const LZ &>(&LE::convex_hull, py::const_), "Z"_a)
-        .def("contains", &LE::contains, "S"_a, "tol"_a = 0.0)
-        .def("is_intersecting", &LE::is_intersecting, "S"_a, "tol"_a = 0.0)
-        .def("isequal", &LE::isequal, "S"_a, "tol"_a = 0.0)
-        .def("is_bounded", &LE::is_bounded, "tol"_a = 0.0)
-        .def("is_full_dim", &LE::is_full_dim, "tol"_a = 0.0)
+        .def_property_readonly("dim", &LE::dim, "The number of dimensions n")
+        .def_static("empty", &LE::empty, "n"_a, "CORALean's emptyset.empty, run by the oracle")
+        .def("intersect", &LE::intersect, "S"_a,
+                "CORALean's emptyset.intersect, run by the oracle")
+        .def("plus", &LE::plus, "S"_a, "CORALean's emptyset.plus, run by the oracle")
+        .def("convex_hull", py::overload_cast<const LI &>(&LE::convex_hull, py::const_), "I"_a,
+                "CORALean's emptyset.convex_hull, run by the oracle")
+        .def("convex_hull", py::overload_cast<const LZ &>(&LE::convex_hull, py::const_), "Z"_a,
+                "CORALean's emptyset.convex_hull, run by the oracle")
+        .def("contains", &LE::contains, "S"_a, "tol"_a = 0.0,
+                "CORALean's emptyset.contains, run by the oracle")
+        .def("is_intersecting", &LE::is_intersecting, "S"_a, "tol"_a = 0.0,
+                "CORALean's emptyset.is_intersecting, run by the oracle")
+        .def("isequal", &LE::isequal, "S"_a, "tol"_a = 0.0,
+                "CORALean's emptyset.isequal, run by the oracle")
+        .def("is_bounded", &LE::is_bounded, "tol"_a = 0.0,
+                "CORALean's emptyset.is_bounded, run by the oracle")
+        .def("is_full_dim", &LE::is_full_dim, "tol"_a = 0.0,
+                "CORALean's emptyset.is_full_dim, run by the oracle")
         .def("center", &LE::center, "The center: None, the set has no point")
         .def("interval", &LE::interval)
         .def("vertices", &LE::vertices)
@@ -2914,64 +2985,97 @@ void bind_lean(py::module_ &top) {
         .def("complement", &LE::complement);
 
     py::class_<LZ>(m, "Zonotope", "A nominal zonotope plus an error box, and the oracle's operations")
-        .def(py::init([](const py::object &c, const py::object &G) {
+        .def(py::init([](const Array &c, const Array &G) {
                  return LZ(host_tensor(c, true), host_tensor(G, true));
              }),
              "center"_a, "generators"_a, "An exact zonotope in the current dtype")
         .def(py::init<const Zonotope &>(), "Z"_a, "The exact zonotope of a cora.Zonotope")
         .def("nominal", &LZ::nominal, "c and G with an empty error box")
         .def("error", &LZ::error, "The error box")
-        .def_property_readonly("center", &LZ::center)
-        .def_property_readonly("generators", &LZ::generators)
+        .def_property_readonly("center", &LZ::center, "The nominal center, exact lean values")
+        .def_property_readonly("generators", &LZ::generators,
+                "The nominal generators, exact lean values")
         .def("enclosure", &LZ::enclosure, "nominal and error as one zonotope")
-        .def("round_to", &LZ::round_to, "dtype"_a, "mode"_a = "nearest")
-        .def("linear_map", py::overload_cast<const LT &>(&LZ::linear_map, py::const_), "M"_a)
-        .def("linear_map", py::overload_cast<const LI &>(&LZ::linear_map, py::const_), "M"_a)
-        .def("plus", py::overload_cast<const LZ &>(&LZ::plus, py::const_), "Z2"_a)
-        .def("plus", py::overload_cast<const LI &>(&LZ::plus, py::const_), "I"_a)
-        .def("linear_combination", &LZ::linear_combination, "Z2"_a)
-        .def("exact_plus", &LZ::exact_plus, "Z2"_a, "k"_a)
-        .def("reduce", &LZ::reduce, "order"_a, "method"_a = "girard")
-        .def("abs", &LZ::abs)
-        .def("intersect", &LZ::intersect, "Z2"_a)
-        .def("convex_hull", &LZ::convex_hull, "Z2"_a)
-        .def("enclose", &LZ::enclose, "Z2"_a)
-        .def("cart_prod", &LZ::cart_prod, "Z2"_a)
-        .def("compact", &LZ::compact, "method"_a = "zeros", "tol"_a = 0.0)
-        .def("intersect_strip", &LZ::intersect_strip, "C"_a, "phi"_a, "y"_a, "Lambda"_a)
-        .def("quad_map", &LZ::quad_map, "Q"_a)
-        .def("cub_map", &LZ::cub_map, "T"_a)
-        .def_static("enclose_many", &LZ::enclose_many, "Zs"_a, "direction"_a, "p"_a = 20)
+        .def("round_to", &LZ::round_to, "dtype"_a, "mode"_a = "nearest",
+                "CORALean's zonotope.round_to, run by the oracle")
+        .def("linear_map", py::overload_cast<const LT &>(&LZ::linear_map, py::const_), "M"_a,
+                "CORALean's zonotope.linear_map, run by the oracle")
+        .def("linear_map", py::overload_cast<const LI &>(&LZ::linear_map, py::const_), "M"_a,
+                "CORALean's zonotope.linear_map, run by the oracle")
+        .def("plus", py::overload_cast<const LZ &>(&LZ::plus, py::const_), "Z2"_a,
+                "CORALean's zonotope.plus, run by the oracle")
+        .def("plus", py::overload_cast<const LI &>(&LZ::plus, py::const_), "I"_a,
+                "CORALean's zonotope.plus, run by the oracle")
+        .def("linear_combination", &LZ::linear_combination, "Z2"_a,
+                "CORALean's zonotope.linear_combination, run by the oracle")
+        .def("exact_plus", &LZ::exact_plus, "Z2"_a, "k"_a,
+                "CORALean's zonotope.exact_plus, run by the oracle")
+        .def("reduce", &LZ::reduce, "order"_a, "method"_a = "girard",
+                "CORALean's zonotope.reduce, run by the oracle")
+        .def("abs", &LZ::abs, "CORALean's zonotope.abs, run by the oracle")
+        .def("intersect", &LZ::intersect, "Z2"_a,
+                "CORALean's zonotope.intersect, run by the oracle")
+        .def("convex_hull", &LZ::convex_hull, "Z2"_a,
+                "CORALean's zonotope.convex_hull, run by the oracle")
+        .def("enclose", &LZ::enclose, "Z2"_a, "CORALean's zonotope.enclose, run by the oracle")
+        .def("cart_prod", &LZ::cart_prod, "Z2"_a,
+                "CORALean's zonotope.cart_prod, run by the oracle")
+        .def("compact", &LZ::compact, "method"_a = "zeros", "tol"_a = 0.0,
+                "CORALean's zonotope.compact, run by the oracle")
+        .def("intersect_strip", &LZ::intersect_strip, "C"_a, "phi"_a, "y"_a, "Lambda"_a,
+                "CORALean's zonotope.intersect_strip, run by the oracle")
+        .def("quad_map", &LZ::quad_map, "Q"_a, "CORALean's zonotope.quad_map, run by the oracle")
+        .def("cub_map", &LZ::cub_map, "T"_a, "CORALean's zonotope.cub_map, run by the oracle")
+        .def_static("enclose_many", &LZ::enclose_many, "Zs"_a, "direction"_a, "p"_a = 20,
+                "CORALean's zonotope.enclose_many, run by the oracle")
         .def_static("enclose_points", &LZ::enclose_points, "points"_a, "U"_a,
-                    "method"_a = "stursberg")
-        .def_static("filter_out", &LZ::filter_out, "Zs"_a)
-        .def_static("origin", &LZ::origin, "n"_a)
-        .def("project", &LZ::project, "dims"_a)
-        .def("lift", &LZ::lift, "N"_a, "dims"_a)
-        .def("project_high_dim", &LZ::project_high_dim, "N"_a, "dims"_a)
-        .def("rotate", &LZ::rotate, "p"_a, "i"_a, "j"_a, "angle"_a)
-        .def("split", &LZ::split, "gen"_a)
-        .def("split_first_gen", &LZ::split_first_gen)
-        .def("split_longest_gen", &LZ::split_longest_gen)
-        .def("constr_sat", &LZ::constr_sat, "C"_a, "d"_a)
-        .def("is_bounded", &LZ::is_bounded, "tol"_a = 0.0)
-        .def("is_full_dim", &LZ::is_full_dim, "tol"_a = 0.0)
-        .def("isequal", &LZ::isequal, "Z2"_a, "tol"_a = 0.0)
-        .def("representsa", &LZ::representsa, "type"_a, "tol"_a = 0.0)
-        .def("contains", &LZ::contains, "Z2"_a, "tol"_a = 0.0)
-        .def("is_intersecting", &LZ::is_intersecting, "Z2"_a, "tol"_a = 0.0)
-        .def("norm", &LZ::norm, "type"_a = 2, "mode"_a = "ub")
-        .def("support_function", &LZ::support_function, "dir"_a, "type"_a = "upper")
-        .def("radius", &LZ::radius, "k"_a = 20)
-        .def("minnorm", &LZ::minnorm, "p"_a = 20)
-        .def("generator_length", &LZ::generator_length, "k"_a = 20)
+                    "method"_a = "stursberg",
+                "CORALean's zonotope.enclose_points, run by the oracle")
+        .def_static("filter_out", &LZ::filter_out, "Zs"_a,
+                "CORALean's zonotope.filter_out, run by the oracle")
+        .def_static("origin", &LZ::origin, "n"_a, "CORALean's zonotope.origin, run by the oracle")
+        .def("project", &LZ::project, "dims"_a, "CORALean's zonotope.project, run by the oracle")
+        .def("lift", &LZ::lift, "N"_a, "dims"_a, "CORALean's zonotope.lift, run by the oracle")
+        .def("project_high_dim", &LZ::project_high_dim, "N"_a, "dims"_a,
+                "CORALean's zonotope.project_high_dim, run by the oracle")
+        .def("rotate", &LZ::rotate, "p"_a, "i"_a, "j"_a, "angle"_a,
+                "CORALean's zonotope.rotate, run by the oracle")
+        .def("split", &LZ::split, "gen"_a, "CORALean's zonotope.split, run by the oracle")
+        .def("split_first_gen", &LZ::split_first_gen,
+                "CORALean's zonotope.split_first_gen, run by the oracle")
+        .def("split_longest_gen", &LZ::split_longest_gen,
+                "CORALean's zonotope.split_longest_gen, run by the oracle")
+        .def("constr_sat", &LZ::constr_sat, "C"_a, "d"_a,
+                "CORALean's zonotope.constr_sat, run by the oracle")
+        .def("is_bounded", &LZ::is_bounded, "tol"_a = 0.0,
+                "CORALean's zonotope.is_bounded, run by the oracle")
+        .def("is_full_dim", &LZ::is_full_dim, "tol"_a = 0.0,
+                "CORALean's zonotope.is_full_dim, run by the oracle")
+        .def("isequal", &LZ::isequal, "Z2"_a, "tol"_a = 0.0,
+                "CORALean's zonotope.isequal, run by the oracle")
+        .def("representsa", &LZ::representsa, "type"_a, "tol"_a = 0.0,
+                "CORALean's zonotope.representsa, run by the oracle")
+        .def("contains", &LZ::contains, "Z2"_a, "tol"_a = 0.0,
+                "CORALean's zonotope.contains, run by the oracle")
+        .def("is_intersecting", &LZ::is_intersecting, "Z2"_a, "tol"_a = 0.0,
+                "CORALean's zonotope.is_intersecting, run by the oracle")
+        .def("norm", &LZ::norm, "type"_a = 2, "mode"_a = "ub",
+                "CORALean's zonotope.norm, run by the oracle")
+        .def("support_function", &LZ::support_function, "dir"_a, "type"_a = "upper",
+                "CORALean's zonotope.support_function, run by the oracle")
+        .def("radius", &LZ::radius, "k"_a = 20, "CORALean's zonotope.radius, run by the oracle")
+        .def("minnorm", &LZ::minnorm, "p"_a = 20, "CORALean's zonotope.minnorm, run by the oracle")
+        .def("generator_length", &LZ::generator_length, "k"_a = 20,
+                "CORALean's zonotope.generator_length, run by the oracle")
         .def("dominant_directions",
-             py::overload_cast<>(&LZ::dominant_directions, py::const_))
+             py::overload_cast<>(&LZ::dominant_directions, py::const_),
+                "CORALean's zonotope.dominant_directions, run by the oracle")
         .def("dominant_directions",
              py::overload_cast<int, int>(&LZ::dominant_directions, py::const_),
-             "filter_length1"_a, "filter_length2"_a)
-        .def("vertices", &LZ::vertices)
-        .def("interval", &LZ::interval)
+             "filter_length1"_a, "filter_length2"_a,
+                "CORALean's zonotope.dominant_directions, run by the oracle")
+        .def("vertices", &LZ::vertices, "CORALean's zonotope.vertices, run by the oracle")
+        .def("interval", &LZ::interval, "CORALean's zonotope.interval, run by the oracle")
         .def(
             "gather", [](const LZ &Z) { return Z.gather(); },
             "(cora.Zonotope, cora.Interval): the nominal part and the error, exactly");
@@ -2979,13 +3083,16 @@ void bind_lean(py::module_ &top) {
     py::class_<lean::Fullspace>(m, "Fullspace", "The whole space R^n and the oracle's operations")
         .def(py::init<int64_t>(), "n"_a)
         .def(py::init<const cora::Fullspace &>(), "F"_a, "The whole space of a cora.Fullspace")
-        .def_property_readonly("dim", &lean::Fullspace::dim)
-        .def_static("inf", &lean::Fullspace::inf, "n"_a)
-        .def("box", &lean::Fullspace::box)
-        .def("interval", &lean::Fullspace::interval)
+        .def_property_readonly("dim", &lean::Fullspace::dim, "The number of dimensions n")
+        .def_static("inf", &lean::Fullspace::inf, "n"_a,
+                "CORALean's fullspace.inf, run by the oracle")
+        .def("box", &lean::Fullspace::box, "CORALean's fullspace.box, run by the oracle")
+        .def("interval", &lean::Fullspace::interval,
+                "CORALean's fullspace.interval, run by the oracle")
         .def("intersect",
              py::overload_cast<const lean::Fullspace &>(&lean::Fullspace::intersect, py::const_),
-             "F2"_a)
+             "F2"_a,
+                "CORALean's fullspace.intersect, run by the oracle")
         .def("intersect", py::overload_cast<const LI &>(&lean::Fullspace::intersect, py::const_),
              "I"_a)
         .def("plus", &lean::Fullspace::plus, "F2"_a)
@@ -3005,11 +3112,13 @@ void bind_lean(py::module_ &top) {
         .def("complement", &lean::Fullspace::complement);
 
     py::class_<lean::ReachSet>(m, "ReachSet", "The reachable sets: lists of lean zonotopes")
-        .def_readonly("time_interval", &lean::ReachSet::time_interval)
-        .def_readonly("time_point", &lean::ReachSet::time_point);
+        .def_readonly("time_interval", &lean::ReachSet::time_interval,
+                "The zonotopes that enclose the reachable set of each time interval")
+        .def_readonly("time_point", &lean::ReachSet::time_point,
+                "The zonotopes that enclose the reachable set at each time point");
 
     py::class_<lean::LinearSys>(m, "LinearSys", "The linear system x' = A x, reached by CORALean")
-        .def(py::init([](const py::object &A) { return lean::LinearSys(host_tensor(A, true)); }),
+        .def(py::init([](const Array &A) { return lean::LinearSys(host_tensor(A, true)); }),
              py::arg("A"))
         .def(
             "reach",

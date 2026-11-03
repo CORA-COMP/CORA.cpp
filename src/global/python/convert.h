@@ -43,6 +43,27 @@ namespace py = pybind11;
 
 // Arrays ------------------------------------------------------------------------------------------
 
+/// A numpy array or torch tensor in a signature: the stubs (scripts/stubs.py) show it as `Array`.
+class Array : public py::object {
+public:
+    PYBIND11_OBJECT_CVT(Array, py::object, any_object, share_object)
+    Array() = default;
+    static bool any_object(PyObject *) { return true; }
+    static PyObject *share_object(PyObject *o) { return py::handle(o).inc_ref().ptr(); }
+};
+
+} // namespace cora::python
+
+/// The name pybind11 prints for an Array in a signature.
+namespace pybind11::detail {
+template <>
+struct handle_type_name<cora::python::Array> {
+    static constexpr auto name = const_name("Array");
+};
+} // namespace pybind11::detail
+
+namespace cora::python {
+
 /// Whether the GIL can still be taken: not once the interpreter is finalized (at process exit,
 /// when static objects holding Python objects are destroyed).
 inline bool python_alive() { return Py_IsInitialized() != 0; }
@@ -108,7 +129,7 @@ inline Tensor column(const torch::Tensor &v) { return from_torch(v.unsqueeze(-1)
 #endif
 
 /// A column (..., n, 1) as a Python vector (..., n), in the array type of its backend.
-inline py::object vector(const Tensor &t) {
+inline Array vector(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1));
 #endif
@@ -118,7 +139,7 @@ inline py::object vector(const Tensor &t) {
 }
 
 /// A matrix (or a batch) in the array type of its backend.
-inline py::object matrix(const Tensor &t) {
+inline Array matrix(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH
     if (is_torch(t)) return py::cast(to_torch(t));
 #endif
@@ -128,7 +149,7 @@ inline py::object matrix(const Tensor &t) {
 }
 
 /// The bounds of an interval: a column bound is a vector (..., n), a matrix bound stays.
-inline py::object bounds(const Tensor &t) { return t.shape().back() == 1 ? vector(t) : matrix(t); }
+inline Array bounds(const Tensor &t) { return t.shape().back() == 1 ? vector(t) : matrix(t); }
 
 /// A (..., 1, 1) result as a scalar per batch element: a torch tensor (...), a float for one
 /// matrix, else an array (...).

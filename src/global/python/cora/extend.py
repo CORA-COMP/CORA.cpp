@@ -15,13 +15,18 @@ block (sys.correction_matrix_state, sys.expm_remainder, Zonotope.linear_map, ...
 The keywords that are not fields of the problem go to the function as its options.
 """
 
+from typing import Any, Callable, TypeVar
+
+Function = TypeVar("Function", bound=Callable[..., Any])
+
 # {(system class name, operation, algorithm name): function(system, problem, **options)}
 ALGORITHMS = {}
 
 
-def register_algorithm(system, name, operation="reach"):
+def register_algorithm(system: type, name: str,
+                       operation: str = "reach") -> Callable[[Function], Function]:
     """A decorator: registers the function as the algorithm `name` of system.operation."""
-    def register(function):
+    def register(function: Function) -> Function:
         ALGORITHMS[(system.__name__, operation, name)] = function
         return function
     return register
