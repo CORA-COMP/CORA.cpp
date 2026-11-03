@@ -8,9 +8,8 @@
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 # The system of the MATLAB call linearSys(A, B, [], C), reach with params.U, step 0.2, order 6.
 A = np.array([[-0.3, 1, 0], [-1, -0.2, 0.4], [0, -0.5, -0.1]])
@@ -157,16 +156,16 @@ class ReachWithInputs(unittest.TestCase):
         self.assertEqual(x.shape, (6, 3, 6))
 
     def test_errors(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(cora.errors.CORAError):
             cora.LinearSys(A).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6,
                                     input_set=U)            # U needs B
-        with self.assertRaises(Exception):
+        with self.assertRaises(cora.errors.CORAError):
             cora.LinearSys(A, B).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6,
                                        input_set=X0)        # U of the wrong dimension
         with self.assertRaises(ValueError):
             cora.LinearSys(A, B).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg="unknown",
                                        input_set=U)
-        with self.assertRaises(Exception):
+        with self.assertRaises(cora.errors.CORAError):
             cora.LinearSys(A).simulate(np.zeros((3, 2)), time_step=0.1, t_final=0.5, input=np.zeros((2, 2)))
 
 

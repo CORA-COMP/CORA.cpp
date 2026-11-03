@@ -4,9 +4,8 @@
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 def box(l1, l2, u1, u2):

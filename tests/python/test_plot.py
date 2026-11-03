@@ -4,11 +4,10 @@ import unittest
 import matplotlib
 
 matplotlib.use("Agg")
+import cora
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import PathPatch
-
-import cora
 
 
 def face(patch):

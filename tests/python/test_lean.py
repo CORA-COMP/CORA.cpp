@@ -3,9 +3,8 @@
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 import oracle_testing
 
 
@@ -18,7 +17,7 @@ class Crossing(unittest.TestCase):
         np.testing.assert_array_equal(cora.lean.Tensor.from_array(x).gather(), x)
 
     def test_nan_does_not_enter(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(cora.errors.CORAError):
             cora.lean.Tensor.from_array(np.array([[np.nan]]))
 
     def test_an_unknown_dtype_is_an_error(self):
@@ -55,7 +54,7 @@ class Oracle(unittest.TestCase):
         X0 = cora.Zonotope(cora.Tensor(c), cora.Tensor(G))
         ref = cora.LinearSys(cora.Tensor(A)).reach(X0, time_step=0.125, t_final=1.0, taylor_terms=8)
         self.assertEqual(len(R.time_point), 9)
-        for k, (lean_set, z) in enumerate(zip(R.time_point, ref.time_point)):
+        for k, (lean_set, z) in enumerate(zip(R.time_point, ref.time_point, strict=True)):
             oracle_testing.check_enclosed(f"time point {k}", z.interval(), lean_set.interval())
 
 

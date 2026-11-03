@@ -156,7 +156,8 @@ def functions(code_lines):
             while j < len(code_lines) and "{" not in code_lines[j] and not code_lines[j].rstrip().endswith(";"):
                 j += 1
             if j < len(code_lines) and "{" in code_lines[j]:
-                if code_lines[j].rstrip().endswith("}") and j == i and code_lines[j].count("{") == code_lines[j].count("}"):
+                one_line = code_lines[j].count("{") == code_lines[j].count("}")
+                if code_lines[j].rstrip().endswith("}") and j == i and one_line:
                     found.append((m.group(1), i, j))
                     i = j + 1
                     continue
@@ -242,7 +243,8 @@ def check_markers(path, lines, issues, needs_main=True, library=True):
         elif line.rstrip() == "} // namespace" and in_anon:
             in_anon = False
             anon_lines.append(i)
-        elif in_anon and library and line and not line.startswith((" ", "//", "}", "using", "struct", "class", "enum", "#")):
+        elif in_anon and library and line and not line.startswith(
+                (" ", "//", "}", "using", "struct", "class", "enum", "#")):
             m = re.match(r"^(?:[\w:<>,*&]+\s+)+[*&]?(\w+)\(", line)
             if not m or not line.rstrip().endswith(("{", ";", ",", "(")):
                 continue
@@ -299,7 +301,8 @@ def check_naming(path, code_lines, issues):
         # a camelCase name that the code defines or calls itself (not a member of another library)
         for m in re.finditer(r"(?<![\w.>~])(?:([A-Za-z_]\w*)::)?([a-z][a-z0-9]*[A-Z]\w*)\b", code):
             scope, name = m.group(1), m.group(2)
-            if name in FOREIGN_NAMES or re.match(r"^k[A-Z]", name) or (scope and scope[0].islower() and scope not in ("cora", "detail")):
+            foreign_scope = scope and scope[0].islower() and scope not in ("cora", "detail")
+            if name in FOREIGN_NAMES or re.match(r"^k[A-Z]", name) or foreign_scope:
                 continue
             if m.start() > 0 and code[m.start() - 1] == ":":  # a::b::name, the scope is a library
                 continue

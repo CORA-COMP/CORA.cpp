@@ -15,9 +15,8 @@ import itertools
 import unittest
 import warnings
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 def zonotope(c, G):

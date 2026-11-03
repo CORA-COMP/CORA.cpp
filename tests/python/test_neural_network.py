@@ -7,9 +7,10 @@ import unittest
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
-    raise unittest.SkipTest("needs torch")
+    raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
@@ -18,7 +19,7 @@ torch.manual_seed(0)
 
 def layers(sizes):
     return [(torch.randn(o, i, dtype=torch.float64), 0.5 * torch.randn(o, dtype=torch.float64))
-            for i, o in zip(sizes[:-1], sizes[1:])]
+            for i, o in zip(sizes[:-1], sizes[1:], strict=True)]
 
 
 def torch_forward(parameters, x):
@@ -65,7 +66,7 @@ class Evaluate(unittest.TestCase):
         Y = cora.NeuralNetwork(parameters).evaluate(cora.Zonotope(c, 0.1 * torch.eye(2, dtype=torch.float64)))
         box = Y.interval()
         (box.sup - box.inf).sum().backward()
-        for W, b in parameters:
+        for W, _b in parameters:
             self.assertTrue(torch.isfinite(W.grad).all() and W.grad.abs().sum() > 0)
         self.assertTrue(torch.isfinite(c.grad).all())
 

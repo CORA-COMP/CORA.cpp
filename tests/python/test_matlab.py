@@ -5,8 +5,8 @@ Outputs:  pass or fail
 See also: test_numpy
 """
 import unittest
-import numpy as np
 
+import numpy as np
 from cora import matlab
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #

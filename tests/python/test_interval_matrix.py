@@ -65,9 +65,8 @@ squares, the powers and the matrix exponential."""
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 # [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]
 EXAMPLE = cora.IntervalMatrix(cora.Interval.matrix(np.array([[1.0, -1.0], [0.0, 2.0]]),

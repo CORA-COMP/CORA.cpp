@@ -11,9 +11,8 @@
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 INF = float("inf")
 

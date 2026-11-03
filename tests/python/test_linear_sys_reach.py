@@ -6,12 +6,14 @@ or numpy, with gradients and the options checked."""
 import unittest
 
 import numpy as np
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
-    raise unittest.SkipTest("needs torch")
+    raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
@@ -42,7 +44,7 @@ class ReachSet(unittest.TestCase):
             n = cora.LinearSys(A.numpy()).reach(cora.Zonotope(c.numpy(), G.numpy()), time_step=0.1,
                                                 t_final=1.0, alg=lin_alg)
             self.assertIsInstance(n.time_interval[0].generators, np.ndarray)
-            for zt, zn in zip(t.time_interval + t.time_point, n.time_interval + n.time_point):
+            for zt, zn in zip(t.time_interval + t.time_point, n.time_interval + n.time_point, strict=True):
                 np.testing.assert_allclose(zt.center.numpy(), zn.center, atol=1e-10)
                 np.testing.assert_allclose(zt.generators.numpy(), zn.generators, atol=1e-10)
 
@@ -55,7 +57,8 @@ class ReachSet(unittest.TestCase):
             both = sys.reach(cora.Zonotope(c, G), time_step=0.1, t_final=1.0, alg=lin_alg)
             for b in range(5):
                 one = sys.reach(cora.Zonotope(c[b], G[b]), time_step=0.1, t_final=1.0, alg=lin_alg)
-                for zb, z1 in zip(both.time_interval + both.time_point, one.time_interval + one.time_point):
+                for zb, z1 in zip(both.time_interval + both.time_point, one.time_interval + one.time_point,
+                                  strict=True):
                     torch.testing.assert_close(zb.center[b], z1.center)
                     torch.testing.assert_close(zb.generators[b], z1.generators)
 
@@ -76,7 +79,7 @@ class ReachSet(unittest.TestCase):
         Z = cora.Zonotope(c, G)
         s = cora.LinearSys(A).reach(Z, time_step=0.1, t_final=1.0, alg="standard")
         w = cora.LinearSys(A).reach(Z, time_step=0.1, t_final=1.0, alg="wrapping_free")
-        for a, b in zip(s.time_point, w.time_point):
+        for a, b in zip(s.time_point, w.time_point, strict=True):
             torch.testing.assert_close(a.generators, b.generators, atol=1e-9, rtol=1e-9)
 
     def test_the_first_enclosure_matches_matlab_cora(self):
@@ -111,7 +114,7 @@ class Gradients(unittest.TestCase):
             for custom in (False, True):
                 A, c, G = (t.requires_grad_() for t in system(n=2, m=2))
 
-                def f(A, c, G):
+                def f(A, c, G, custom=custom, lin_alg=lin_alg):
                     sys = cora.LinearSys(A, custom_backward=custom)
                     R = sys.reach(cora.Zonotope(c, G), time_step=0.2, t_final=0.6, taylor_terms=6,
                                   alg=lin_alg)
@@ -127,7 +130,7 @@ class Gradients(unittest.TestCase):
                                                                 t_final=1.0)
             sum(Z.generators.abs().sum() for Z in R.time_interval).backward()
             grads.append([A.grad, c.grad, G.grad])
-        for a, b in zip(*grads):
+        for a, b in zip(*grads, strict=True):
             torch.testing.assert_close(a, b, atol=1e-9, rtol=1e-9)
 
 

@@ -29,9 +29,8 @@ quad_map of Interval, in Python, on numpy and Eigen alone."""
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 def zonotope(c, G):

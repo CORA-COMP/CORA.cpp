@@ -31,9 +31,8 @@ import itertools
 import unittest
 import warnings
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 def zonotope(c, G):
@@ -193,7 +192,9 @@ class Equality(unittest.TestCase):
 
 class Intersecting(unittest.TestCase):
     def test_by_hand(self):
-        square = lambda x: zonotope([x, 0], [[1, 0], [0, 1]])
+        def square(x):
+            return zonotope([x, 0], [[1, 0], [0, 1]])
+
         Z = square(0)
         self.assertTrue(Z.is_intersecting(square(1.5)))
         self.assertTrue(Z.is_intersecting(square(2)))
@@ -347,7 +348,9 @@ class Enclosing(unittest.TestCase):
 
 class MinkDiff(unittest.TestCase):
     def test_two_dimensions(self):
-        square = lambda r, c=(0.0, 0.0): zonotope(c, r * np.eye(2))
+        def square(r, c=(0.0, 0.0)):
+            return zonotope(c, r * np.eye(2))
+
         D = square(2, (1, 1)).mink_diff(square(1, (0, 0.5)))
         np.testing.assert_allclose(D.center, [1, 0.5])
         np.testing.assert_allclose(D.generators, np.eye(2))

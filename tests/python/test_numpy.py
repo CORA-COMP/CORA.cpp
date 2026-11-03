@@ -1,9 +1,8 @@
 """test_numpy - the Python package on numpy and Eigen alone; every test runs without torch."""
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 class NumpyOnly(unittest.TestCase):

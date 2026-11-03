@@ -41,10 +41,9 @@ from ._cora import (ConZonotope, ContSet, EmptySet, Expr, ExpmMixedResult, ExpmR
                     tensor_ops, tolerance, unite, use_cora_colors)
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
-from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
 from .figure import Figure, subplots, to_tikz
-from .tensor import default_tol
 from .plot import plot, plot_over_time, plot_rand_point
+from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
 
 # An example prints its CORA START block here and its CORA END block on exit.
 banner.install(current_backend)

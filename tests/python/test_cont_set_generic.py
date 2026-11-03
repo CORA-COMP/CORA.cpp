@@ -40,9 +40,8 @@ generate_random, lift, norm, enclose and the unchecked and_, contains_ and isInt
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 def box(lo, hi):
@@ -286,7 +285,7 @@ class Generic(unittest.TestCase):
             with self.assertRaises(cora.errors.Noops):
                 call()
         with self.assertRaises(cora.errors.Noops):
-            C == self.I
+            _ = C == self.I
         with cora.checks(False):
             self.assertTrue(self.I.is_full_dim(tol=-1.0))
 

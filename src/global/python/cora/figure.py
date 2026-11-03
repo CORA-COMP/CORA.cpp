@@ -13,7 +13,6 @@ core from those, in the same way for every language. Titles, axis labels and lim
 matplotlib are taken over when the text is written. `cora.to_tikz(path)` does the same for the
 current matplotlib figure, however its axes were made.
 """
-from ._cora import Figure as _CoreFigure
 from ._cora import FigureGrid as _CoreGrid
 from .plot import core_figure
 

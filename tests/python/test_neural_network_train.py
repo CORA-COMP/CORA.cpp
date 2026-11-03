@@ -5,9 +5,10 @@ try:
     import torch
     from torch import nn
 except ImportError:  # numpy-only build: test_numpy.py covers it
-    raise unittest.SkipTest("needs torch")
+    raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
@@ -49,7 +50,7 @@ class SetBasedTraining(unittest.TestCase):
         loss.backward()
         optimizer.step()
         self.assertTrue(torch.isfinite(loss))
-        for old, p in zip(before, m.parameters()):
+        for old, p in zip(before, m.parameters(), strict=True):
             self.assertTrue(torch.isfinite(p.grad).all())
             self.assertFalse(torch.equal(old, p.detach()))
 

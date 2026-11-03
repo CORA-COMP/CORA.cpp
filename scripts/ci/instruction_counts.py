@@ -82,7 +82,8 @@ def main():
     parser.add_argument("--base", required=True, help="the micro program built against the base commit")
     parser.add_argument("--head", required=True, help="the micro program built against the head commit")
     parser.add_argument("--threshold", type=float, default=3.0, help="percent of growth that fails")
-    parser.add_argument("--accept-from", help="base commit: growth named by `Accept-instructions:` in base..HEAD passes")
+    parser.add_argument("--accept-from",
+                        help="base commit: growth named by `Accept-instructions:` in base..HEAD passes")
     args = parser.parse_args()
     names, known = names_of(args.head), set(names_of(args.base))
     # a benchmark the base does not have yet is listed as new, not compared
