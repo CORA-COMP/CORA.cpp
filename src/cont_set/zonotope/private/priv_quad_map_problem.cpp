@@ -27,3 +27,5 @@ std::string priv_quad_map_problem(const std::vector<Tensor> &Q, int64_t n) {
 }
 
 } // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
