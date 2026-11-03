@@ -606,6 +606,20 @@ void bind_fullspace(py::module_ &m) {
             py::arg("M"), "The image under a matrix, an enclosure when M lacks full row rank");
 }
 
+/// The intervals of a list whose items are intervals or points (arrays, as point intervals).
+std::vector<Interval> intervals_of(const py::list &items) {
+    std::vector<Interval> Is;
+    for (const py::handle &item : items) {
+        if (py::isinstance<Interval>(item)) {
+            Is.push_back(py::cast<Interval>(item));
+        } else {
+            const Tensor p = vector_of(item, "the number");
+            Is.emplace_back(p, p);
+        }
+    }
+    return Is;
+}
+
 void bind_interval(py::module_ &m) {
     py::class_<Interval, ContSet>(m, "Interval",
                                   "A box, or a matrix of intervals: inf <= x <= sup.")
@@ -678,20 +692,11 @@ void bind_interval(py::module_ &m) {
             py::arg("points"), "The smallest box around the points, the columns of (n, N)")
         .def_static("empty", &Interval::empty, py::arg("n"), "The empty interval of n dimensions")
         .def_static(
-            "horzcat",
-            [](const py::list &items) {
-                std::vector<Interval> Is;
-                for (const py::handle &item : items) {
-                    if (py::isinstance<Interval>(item)) {
-                        Is.push_back(py::cast<Interval>(item));
-                    } else {
-                        const Tensor p = vector_of(item, "the number");
-                        Is.emplace_back(p, p);
-                    }
-                }
-                return Interval::horzcat(Is);
-            },
+            "horzcat", [](const py::list &items) { return Interval::horzcat(intervals_of(items)); },
             py::arg("items"), "Intervals (or points, as arrays) joined side by side")
+        .def_static(
+            "vertcat", [](const py::list &items) { return Interval::vertcat(intervals_of(items)); },
+            py::arg("items"), "Intervals (or points, as arrays) stacked")
         .def(
             "enlarge",
             [](const Interval &I, const py::object &factor) {
@@ -700,6 +705,34 @@ void bind_interval(py::module_ &m) {
             },
             py::arg("factor"), "The box scaled about its center by a number or per dimension")
         .def("ctranspose", &Interval::ctranspose, "The transpose of an interval matrix")
+        .def("transpose", &Interval::transpose, "The transpose of an interval matrix")
+        .def_property_readonly("T", &Interval::transpose)
+        .def(
+            "supremum", [](const Interval &I) { return bounds(I.supremum()); }, "The upper bound")
+        .def(
+            "split",
+            [](const Interval &I, int64_t n) { return I.split(n); }, py::arg("n"),
+            "The two halves of the box cut at the center of coordinate n (0-based)")
+        .def("sum", &Interval::sum, py::arg("dim") = py::none(),
+             "The sum of the entries along dim (1: down the rows, 2: along the columns)")
+        .def("tril", &Interval::tril, py::arg("K") = 0,
+             "The lower triangular part from the K-th diagonal on")
+        .def("triu", &Interval::triu, py::arg("K") = 0,
+             "The upper triangular part from the K-th diagonal on")
+        .def(
+            "volume", [](const Interval &I) { return scalar(I.volume()); },
+            "The product of the widths of the box")
+        .def("zonotope", &Interval::zonotope, "The zonotope with the center and the radius as generators")
+        .def("sqrt", &Interval::sqrt, "The image under the square root")
+        .def("tan", &Interval::tan, "The image under the tangent (the line where a pole may lie inside)")
+        .def("tanh", &Interval::tanh, "The image under the hyperbolic tangent")
+        .def(
+            "times",
+            [](const Interval &I, const py::object &other) {
+                if (py::isinstance<Interval>(other)) return I.times(py::cast<Interval>(other));
+                return I.times(operand(I, other, "the factor"));
+            },
+            py::arg("other"), "The entrywise product with a box or with numbers (CORA's .*)")
         .def("diag", &Interval::diag, py::arg("k") = 0,
              "A vector as a diagonal matrix, a matrix as its k-th diagonal")
         .def("dirac", &Interval::dirac, py::arg("n") = 0,
@@ -1319,6 +1352,7 @@ void bind_operators(py::module_ &m) {
         return not_implemented();
     });
     method(I, "__neg__", [](const Interval &A) { return -A; });
+    method(I, "__pos__", [](const Interval &A) { return +A; });
     const auto interval_map = [](const Interval &A, const py::object &o) -> py::object {
         if (is_number(o)) return py::cast(A * py::cast<double>(o));
         if (py::isinstance<Zonotope>(o)) return py::cast(A * py::cast<Zonotope>(o));

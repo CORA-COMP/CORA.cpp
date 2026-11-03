@@ -1,5 +1,5 @@
-// test_lean_interval_functions - exp, log, cos, cosh, acos, asin, atan, acosh, asinh, atanh and atan2
-// against the CORALean oracle, as agreement within a bound
+// test_lean_interval_functions - exp, log, cos, cosh, acos, asin, atan, acosh, asinh, atanh, atan2,
+// sqrt, tan and tanh against the CORALean oracle, as agreement within a bound
 //
 // The oracle's floats are a tuned sound enclosure (bisection with k steps, series with p terms),
 // not libm, so no bit-exact test exists. CORA.cpp's bounds (libm, as CORA) lie in the enclosure
@@ -11,7 +11,11 @@
 // kLooseAgree, relative, at p = 20 (measured: 3e-5 for exp, 1e-5 for log on [1, 40]; the oracle is
 // looser than libm); the oracle's
 // cos is the midpoint form where the box reaches an extremum, far wider than the range (0.63
-// against 0.70 in a bound), so for cos only the enclosure is checked.
+// against 0.70 in a bound), so for cos only the enclosure is checked. sqrt and tan are taken on
+// boxes where the oracle's principal branch and CORA's tests agree (inf >= 0, and inside
+// (-1.4, 1.4)): their bounds differ from the oracle's at nearest by kSqrtAgree and kTanAgree,
+// relative (measured: 2e-16 for sqrt, 2e-14 for tan at p = 20); tanh by at most kLooseAgree
+// (measured 3e-7: the oracle's series is looser than libm).
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -26,7 +30,7 @@ using namespace cora;
 
 namespace {
 
-constexpr double kAgree = 1e-6, kLooseAgree = 1e-3;
+constexpr double kAgree = 1e-6, kLooseAgree = 1e-3, kSqrtAgree = 1e-15, kTanAgree = 1e-13;
 constexpr int kTerms = 20, kSteps = 24, kFewSteps = 6;
 
 /// A box of n dimensions with bounds drawn from [low, high].
@@ -114,5 +118,14 @@ int main() {
     aux_function(
         "atan2", kAgree, 0.5, 4, [](const Interval &I) { return I.atan2(I.plus(I)); },
         [](const lean::Interval &I) { return I.atan2(I.plus(I), kTerms, kSteps); });
+    aux_function(
+        "sqrt", kSqrtAgree, 0, 40, [](const Interval &I) { return I.sqrt(); },
+        [](const lean::Interval &I) { return I.sqrt(kTerms); });
+    aux_function(
+        "tan", kTanAgree, -1.4, 1.4, [](const Interval &I) { return I.tan(); },
+        [](const lean::Interval &I) { return I.tan(kTerms); });
+    aux_function(
+        "tanh", kLooseAgree, -3, 3, [](const Interval &I) { return I.tanh(); },
+        [](const lean::Interval &I) { return I.tanh(kTerms); });
     return test::finish("lean interval functions");
 }
