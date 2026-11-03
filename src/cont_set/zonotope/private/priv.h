@@ -9,6 +9,9 @@
 
 #include "cora/cont_set/zonotope/zonotope.h"
 
+#include <optional>
+#include <utility>
+
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
@@ -16,6 +19,9 @@ namespace cora {
 /// The zonotope of a box, as CORA's zonotope(interval): its center, and an axis generator of its
 /// radius for every dimension whose radius is not zero (in some member of a batch).
 Zonotope priv_zonotope_of_interval(const Interval &I);
+
+/// Why an input is refused, if it is: the identifier and the text, for CORA_CHECK in the entry.
+using Refusal = std::optional<std::pair<Error::Id, std::string>>;
 
 /// The given columns of G (..., n, m), in that order; none is allowed.
 Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns);
@@ -49,6 +55,10 @@ bool priv_containment_vertex_enumeration(const HostZonotope &inner, const HostZo
 /// The scaling of the sufficient test of Sadraddini and Tedrake (CDC 2019, Thm. 3): `inner` lies
 /// in the scaling of `outer` about its center if that is at most 1; by a linear program.
 double priv_containment_sadraddini_tedrake(const HostZonotope &inner, const HostZonotope &outer);
+
+/// The unit normals of the facets of a full-dimensional zonotope as rows (k, n), in CORA's order
+/// (the first half of polytope(Z).A); a single zonotope without zero generators.
+Tensor priv_zonotope_facet_normals(const Zonotope &Z);
 
 /// within_tol(x, b, tol) for every entry of x and a finite number b: 1 where it holds, else 0.
 Tensor priv_within_tol(const Tensor &x, double b, double tol);

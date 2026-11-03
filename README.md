@@ -96,15 +96,15 @@ How much of CORA this has, and how much of it is checked against CORALean, per C
 <!-- coverage:begin -->
 | Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
 |---|---|---|---|---|---|---|---|---|
-| [contSet](coverage/contSet/) | 908 | 795 | 19 | 12 | 17 | 51 | 14 | 23 |
+| [contSet](coverage/contSet/) | 908 | 780 | 21 | 12 | 22 | 59 | 14 | 28 |
 | [contDynamics](coverage/contDynamics/) | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
 | [hybridDynamics](coverage/hybridDynamics/) | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [nn](coverage/nn/) | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | [specification](coverage/specification/) | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
 | [others](coverage/others/) | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 1696 | 1563 | 25 | 26 | 17 | 51 | 14 | 34 |
+| **all** | 1696 | 1548 | 27 | 26 | 22 | 59 | 14 | 39 |
 
-7% of the 1682 CORA methods in scope have a source, 6% are tested in C++ and Python, 3% are checked against CORALean; oracle debt 34.
+8% of the 1682 CORA methods in scope have a source, 6% are tested in C++ and Python, 4% are checked against CORALean; oracle debt 39.
 <!-- coverage:end -->
 
 ## Connection to CORALean

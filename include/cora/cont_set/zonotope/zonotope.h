@@ -9,8 +9,10 @@
 //             generate_random, stack, project, vertices, reduce, display, abs, box, center,
 //             compact, cart_prod, enclose, convex_hull, intersect, constraints_satisfied,
 //             cubic_map, hausdorff_distance_to_box, dominant_directions, contains,
-//             boundary_point (one file each, as in CORA's @zonotope); the constructor checks its
-//             input (zonotope.cpp)
+//             boundary_point, exact_plus, generator_length, is_bounded, is_full_dim, isequal,
+//             is_intersecting, lift, norm, minnorm, intersect_strip, enclose_points,
+//             enclose_many, mink_diff (one file each, as in CORA's @zonotope); the constructor
+//             checks its input (zonotope.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@zonotope/zonotope.m
@@ -25,6 +27,9 @@
 
 #include <limits>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -159,6 +164,86 @@ class Zonotope : public ContSet {
     /// direction dir leaves the zonotope, a column (n, 1). Not a batch.
     Tensor boundary_point(const Tensor &dir) const;
     Tensor boundary_point(const Tensor &dir, const Tensor &start) const;
+
+    // Measures, predicates and further constructions ---------------------------------------------
+
+    /// The Minkowski sum in which the first min(m, m2, k) generators are added pairwise (the
+    /// sums of points with the same coefficients on them), a subset of the plus; k defaults to all.
+    Zonotope exact_plus(const Zonotope &Z2, std::optional<int64_t> k = std::nullopt) const;
+
+    /// The Euclidean length of every generator, a row (..., 1, m).
+    Tensor generator_length() const;
+
+    /// Always true: a zonotope is bounded.
+    bool is_bounded() const;
+
+    /// Whether the generators span the space (their rank is n; singular values up to tol count as
+    /// zero), and with the second form also a basis (n, r) of their span (the identity if full).
+    /// Not a batch.
+    bool is_full_dim(double tol = 1e-6) const;
+    std::pair<bool, Tensor> is_full_dim_subspace(double tol = 1e-6) const;
+
+    /// Whether the zonotope equals a zonotope, a box or a point (n, 1): the centers agree (as
+    /// within_tol) and so do the generators after compact "all", up to order and sign. Not a batch.
+    bool isequal(const Zonotope &S, double tol = std::numeric_limits<double>::epsilon()) const;
+    bool isequal(const Interval &I, double tol = std::numeric_limits<double>::epsilon()) const;
+    bool isequal(const Tensor &p, double tol = std::numeric_limits<double>::epsilon()) const;
+
+    /// Whether the zonotope and a zonotope, a box or points (n, N) (all of them) intersect, with S
+    /// enlarged by tol (CORA's 1e-8). type "exact" decides by a linear program, "approx" tests the
+    /// boxes around the sets. Not a batch.
+    bool is_intersecting(const Zonotope &S, const std::string &type = "exact",
+                         double tol = 1e-8) const;
+    bool is_intersecting(const Interval &I, const std::string &type = "exact",
+                         double tol = 1e-8) const;
+    bool is_intersecting(const Tensor &p, const std::string &type = "exact",
+                         double tol = 1e-8) const;
+
+    /// The zonotope in N dimensions whose state dims[i] is state i (a permutation: new dimensions
+    /// would be unbounded). CORA's lift_ projects onto dims, the inverse permutation.
+    Zonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// An upper bound (..., 1, 1) of the norm (type 1, 2 or infinity) of the points: mode "ub"
+    /// (default) is the norm of the box around the set; "exact" and "ub_convex" are not supported.
+    Tensor norm(double type = 2, const std::string &mode = "ub") const;
+
+    /// The distance from the center to the boundary (1, 1) (the largest ball about the center in
+    /// the set; 0 if the set is flat) and the nearest point of the boundary (n, 1). Not a batch.
+    std::pair<Tensor, Tensor> minnorm() const;
+
+    /// The matrices E, F, A, C of an observer, for the gain "wang-FRad" of intersect_strip.
+    struct StripObserver {
+        Tensor E, F, A, C;
+    };
+
+    /// A zonotope that encloses the intersection with the strips |C x - y| <= phi (C (k, n), phi
+    /// and y (k, 1)): center c + L (y - C c), generators [(I - L C) G, L diag(phi)] for a gain L
+    /// (n, k) that is given, chosen by the method "normGen" (default), "alamo-FRad" or "bravo" (one
+    /// strip), or built from an observer ("wang-FRad"). "svd", "radius" and "alamo-volume" are not
+    /// supported.
+    Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
+                             const std::string &method = "normGen") const;
+    Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
+                             const Tensor &lambda) const;
+    Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
+                             const StripObserver &aux) const;
+
+    /// A zonotope that contains the points (n, N): method "maiga" (default) or "stursberg"; with a
+    /// frame U (n, n) (orthogonal) the box around the points in that frame.
+    static Zonotope enclose_points(const Tensor &points, const std::string &method = "maiga");
+    static Zonotope enclose_points(const Tensor &points, const Tensor &U);
+
+    /// A box in the frame whose first axis is the direction (n, 1), as a zonotope, around the
+    /// zonotopes (each reduced to order 1), and the inverse of the frame. Not a batch.
+    static std::pair<Zonotope, Tensor> enclose_many(const std::vector<Zonotope> &Zs,
+                                                    const Tensor &direction);
+
+    /// The Minkowski difference with a zonotope, a box or a point, by scaling the generators:
+    /// method "approx" (default), "inner", "exact" (two dimensions, or aligned generators),
+    /// "outer", "outer:coarse"; an empty result is an error (no empty set yet). Not a batch.
+    Zonotope mink_diff(const Zonotope &subtrahend, const std::string &method = "approx") const;
+    Zonotope mink_diff(const Interval &subtrahend, const std::string &method = "approx") const;
+    Zonotope mink_diff(const Tensor &p, const std::string &method = "approx") const;
 
   protected:
     int64_t dim_impl() const override { return c_.shape()[c_.shape().size() - 2]; }

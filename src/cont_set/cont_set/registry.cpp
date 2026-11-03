@@ -110,6 +110,15 @@ constexpr Table aux_build() {
         t, [](const Zonotope &Z1, const Zonotope &Z2) { return Z1.cart_prod(Z2); });
     aux_add_set<BinaryOp::cart_prod, Zonotope, Interval>(
         t, [](const Zonotope &Z, const Interval &I) { return Z.cart_prod(I); });
+    // intersection tests of a zonotope with a set of its own or the next class
+    aux_add_predicate<BinaryOp::is_intersecting, Zonotope, Zonotope>(
+        t, [](const Zonotope &Z1, const Zonotope &Z2, double tol) {
+            return Z1.is_intersecting(Z2, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, Zonotope, Interval>(
+        t, [](const Zonotope &Z, const Interval &I, double tol) {
+            return Z.is_intersecting(I, "exact", tol);
+        });
     return t;
 }
 

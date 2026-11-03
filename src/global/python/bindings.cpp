@@ -751,7 +751,119 @@ void bind_zonotope(py::module_ &m) {
                                     : Z.boundary_point(vector_of(dir, "dir")));
             },
             py::arg("dir"), py::arg("start") = py::none(),
-            "Where the ray from start (default: the center) in direction dir leaves the zonotope");
+            "Where the ray from start (default: the center) in direction dir leaves the zonotope")
+        .def(
+            "exact_plus",
+            [](const Zonotope &Z, const Zonotope &Z2, const std::optional<int64_t> &k) {
+                return Z.exact_plus(Z2, k);
+            },
+            py::arg("Z2"), py::arg("k") = py::none(),
+            "The sum with the first min(m, m2, k) generators added pairwise (a subset of the plus)")
+        .def(
+            "generator_length",
+            [](const Zonotope &Z) { return matrix(Z.generator_length().squeeze(-2)); },
+            "The Euclidean length of every generator, (..., m)")
+        .def("is_bounded", &Zonotope::is_bounded, "Always true")
+        .def("is_full_dim", &Zonotope::is_full_dim, py::arg("tol") = 1e-6,
+             "Whether the generators span the space (singular values up to tol count as zero)")
+        .def(
+            "is_full_dim_subspace",
+            [](const Zonotope &Z, double tol) {
+                const auto [res, subspace] = Z.is_full_dim_subspace(tol);
+                return py::make_tuple(res, matrix(subspace));
+            },
+            py::arg("tol") = 1e-6, "(res, subspace): is_full_dim and a basis (n, r) of the span")
+        .def(
+            "isequal",
+            [](const Zonotope &Z, const py::object &S, double tol) {
+                if (py::isinstance<Zonotope>(S)) return Z.isequal(py::cast<Zonotope>(S), tol);
+                if (py::isinstance<Interval>(S)) return Z.isequal(py::cast<Interval>(S), tol);
+                return Z.isequal(tensor_of(S, "the point"), tol);
+            },
+            py::arg("S"), py::arg("tol") = std::numeric_limits<double>::epsilon(),
+            "Whether S (a zonotope, a box or a point) is the same set, up to tol")
+        .def(
+            "is_intersecting",
+            [](const Zonotope &Z, const py::object &S, const std::string &type, double tol) {
+                if (py::isinstance<Zonotope>(S))
+                    return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
+                if (py::isinstance<Interval>(S))
+                    return Z.is_intersecting(py::cast<Interval>(S), type, tol);
+                return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
+            },
+            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = 1e-8,
+            "Whether Z and a zonotope, a box or points intersect; 'exact' (default) or 'approx'")
+        .def("lift", &Zonotope::lift, py::arg("N"), py::arg("dims"),
+             "In N dimensions, with state i at position dims[i] (a permutation)")
+        .def(
+            "norm",
+            [](const Zonotope &Z, double type, const std::string &mode) {
+                return scalar(Z.norm(type, mode));
+            },
+            py::arg("type") = 2.0, py::arg("mode") = "ub",
+            "An upper bound of the 1-, 2- or inf-norm of the points (mode 'ub')")
+        .def(
+            "minnorm",
+            [](const Zonotope &Z) {
+                const auto [value, x] = Z.minnorm();
+                return py::make_tuple(scalar(value), vector(x));
+            },
+            "(val, x): the distance from the center to the boundary and the nearest boundary point")
+        .def(
+            "intersect_strip",
+            [](const Zonotope &Z, const py::object &C, const py::object &phi, const py::object &y,
+               const py::object &method) {
+                const Tensor Ct = tensor_of(C, "C"), pt = vector_of(phi, "phi"),
+                             yt = vector_of(y, "y");
+                if (py::isinstance<py::str>(method))
+                    return Z.intersect_strip(Ct, pt, yt, py::cast<std::string>(method));
+                if (py::isinstance<py::dict>(method)) {
+                    const py::dict d = py::cast<py::dict>(method);
+                    const auto field = [&](const char *key) {
+                        if (!d.contains(key))
+                            CORA_FAIL(Error::wrong_field_value,
+                                      std::string("intersect_strip: the observer needs the key '") +
+                                          key + "'");
+                        return tensor_of(d[key], key);
+                    };
+                    return Z.intersect_strip(Ct, pt, yt,
+                                             {field("E"), field("F"), field("A"), field("C")});
+                }
+                return Z.intersect_strip(Ct, pt, yt, tensor_of(method, "the gain"));
+            },
+            py::arg("C"), py::arg("phi"), py::arg("y"), py::arg("method") = "normGen",
+            "Encloses the intersection with |C x - y| <= phi; method: a name, a gain (n, k) or "
+            "a dict with the observer matrices E, F, A, C ('wang-FRad')")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points, const py::object &method) {
+                if (py::isinstance<py::str>(method))
+                    return Zonotope::enclose_points(tensor_of(points, "the points"),
+                                                    py::cast<std::string>(method));
+                return Zonotope::enclose_points(tensor_of(points, "the points"),
+                                                tensor_of(method, "the frame U"));
+            },
+            py::arg("points"), py::arg("method") = "maiga",
+            "A zonotope containing the points (n, N): 'maiga', 'stursberg', or the frame U (n, n)")
+        .def_static(
+            "enclose_many",
+            [](const std::vector<Zonotope> &Zs, const py::object &direction) {
+                const auto [Z, inverse] = Zonotope::enclose_many(Zs, vector_of(direction, "direction"));
+                return py::make_tuple(Z, matrix(inverse));
+            },
+            py::arg("zonotopes"), py::arg("direction"),
+            "(Z, rot_inv): a box oriented along the direction around the zonotopes, and the "
+            "inverse of its frame")
+        .def(
+            "mink_diff",
+            [](const Zonotope &Z, const py::object &S, const std::string &method) {
+                if (py::isinstance<Zonotope>(S)) return Z.mink_diff(py::cast<Zonotope>(S), method);
+                if (py::isinstance<Interval>(S)) return Z.mink_diff(py::cast<Interval>(S), method);
+                return Z.mink_diff(vector_of(S, "the point"), method);
+            },
+            py::arg("S"), py::arg("method") = "approx",
+            "The Minkowski difference with a zonotope, a box or a point; methods: approx, inner, "
+            "exact, outer, outer:coarse");
 }
 
 /// The operators with numbers and arrays, as CORA writes them: s * S, M * S and M @ S (the linear
