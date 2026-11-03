@@ -34,6 +34,14 @@ def check_set(mine, theirs):
         oracle.check(mine.interval(), theirs.enclosure().interval())
 
 
+def check_hull(mine, theirs):
+    """The box of CORA.cpp's cubic map against the oracle's, to a relative 1e-10: CORA lists
+    N(N+1)(N+2)/6 generators, CORALean N^3, and they sum in another order."""
+    theirs_box, box = theirs.interval(), mine.interval()
+    np.testing.assert_allclose(box.inf, theirs_box.inf.gather(), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(box.sup, theirs_box.sup.gather(), rtol=1e-10, atol=1e-10)
+
+
 def check_same_generators(mine, theirs):
     """CORA lists (G+G2)/2, (c-c2)/2, (G-G2)/2, CORALean's linComb (G+G2)/2, (G-G2)/2, (c-c2)/2: the
     same center and generators in another order."""
@@ -108,6 +116,14 @@ class Oracle(unittest.TestCase):
                     theirs = cora.lean.Zonotope(Z).contains(cora.lean.Zonotope(S))
                     oracle.check(Z.contains(S, "approx:st"), theirs)
         oracle.run("zonotope.contains", body)
+
+    def test_cubic_map(self):
+        def body(rnd):
+            for n, m in [(2, 2), (3, 3), (3, 6)]:
+                Z = rnd.zonotope(n, m)
+                T = [[rnd.matrix(n, n) for _ in range(n)] for _ in range(2)]
+                check_hull(Z.cubic_map(T), cora.lean.Zonotope(Z).cub_map(T))
+        oracle.run("zonotope.cubMap", body)
 
     def test_dominant_directions(self):
         def body(rnd):

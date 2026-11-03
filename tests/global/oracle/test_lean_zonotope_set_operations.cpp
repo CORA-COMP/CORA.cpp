@@ -16,6 +16,7 @@
 #include "oracle_testing.h"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace cora;
 namespace oracle = test::oracle;
@@ -54,6 +55,22 @@ void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &their
     test::check(aux_sorted_columns(mine.generators().data(), n, m) ==
                     aux_sorted_columns(other.generators().data(), n, m),
                 oracle::op_name() + ": the same generators, in another order");
+}
+
+/// The interval hull of CORA.cpp's cubic map against the oracle's: CORA lists N(N+1)(N+2)/6
+/// generators and sums them in its own order, CORALean N^3 with the closed form of the sums, so
+/// the bits differ but the box they span agrees to a relative 1e-10 (a few hundred ulp of the sums
+/// of cubes).
+void aux_check_hull(const Zonotope &mine, const lean::Zonotope &theirs) {
+    const Interval box = mine.interval();
+    const auto [inf, sup] = theirs.interval().gather();
+    const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
+                              d = sup.data();
+    bool ok = a.size() == b.size();
+    for (std::size_t i = 0; ok && i < a.size(); ++i)
+        ok = std::abs(a[i] - b[i]) <= 1e-10 * (1 + std::abs(b[i])) &&
+             std::abs(c[i] - d[i]) <= 1e-10 * (1 + std::abs(d[i]));
+    test::check(ok, oracle::op_name() + ": the box of the oracle's cubic map");
 }
 
 } // namespace
@@ -122,6 +139,19 @@ int main() {
             const Zonotope outer(Z.center(), Z.generators() * 1.5);
             oracle::check(Z.contains(inner, "approx:st"), lean::Zonotope(Z).contains(lean::Zonotope(inner)));
             oracle::check(Z.contains(outer, "approx:st"), lean::Zonotope(Z).contains(lean::Zonotope(outer)));
+        }
+    });
+    oracle::run("zonotope.cubMap", [&](oracle::Random &rnd) {
+        for (const auto [n, m] : {std::pair{2, 2}, {3, 3}, {3, 6}}) {
+            const Zonotope Z = rnd.zonotope(n, m);
+            std::vector<std::vector<Tensor>> T(2);
+            std::vector<std::vector<lean::Tensor>> theirs_T(2);
+            for (std::size_t i = 0; i < 2; ++i)
+                for (int k = 0; k < n; ++k) {
+                    T[i].push_back(rnd.matrix(n, n));
+                    theirs_T[i].push_back(T[i].back());
+                }
+            aux_check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
         }
     });
     oracle::run("zonotope.dominantDirections", [&](oracle::Random &rnd) {

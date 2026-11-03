@@ -55,6 +55,72 @@ def support(Z, rng, count=40):
     return d, np.array([Z.support_function(x) for x in d])
 
 
+def within_tol(a, b, tol):
+    """CORA's withinTol for finite numbers."""
+    difference = np.abs(a - b)
+    return (difference <= tol) | (difference <= tol * np.minimum(np.abs(a), abs(b)))
+
+
+def matlab_delete_aligned(G, tol):
+    """CORA's compact_(Z, 'all', tol), line by line (aux_deleteAligned)."""
+    G = G[:, np.any(G, axis=0)]
+    G = G[:, np.linalg.norm(G, axis=0) > tol]
+    if G.shape[0] == 1:
+        return np.abs(G).sum(axis=1, keepdims=True)
+    length = np.linalg.norm(G, axis=0)
+    order = np.argsort(length, kind="stable")
+    unit, G = (G / length)[:, order], G[:, order].copy()
+    keep = np.ones(G.shape[1], dtype=bool)
+    for i in range(G.shape[1]):
+        if keep[i]:
+            dots = unit[:, i] @ unit
+            parallel, anti = within_tol(dots, 1, tol), within_tol(dots, -1, tol)
+            if parallel.sum() > 1 or anti.any():
+                G[:, i] = G[:, parallel].sum(axis=1) - G[:, anti].sum(axis=1)
+                parallel[i] = False
+                keep = keep & ~parallel & ~anti
+    return G[:, keep]
+
+
+def matlab_cub_map(Zs, T, ind):
+    """CORA's cubMap for one zonotope (aux_cubMapSingle), or for three (aux_cubMapMixed), with
+    MATLAB's loops: the center and generators of the result as one matrix."""
+    fulls = [np.hstack([Z.center.reshape(-1, 1), Z.generators]) for Z in Zs]
+    rows = []
+    for i in range(len(T)):
+        if len(Zs) == 3:
+            F1, F2, F3 = fulls
+            Nq = F1.shape[1] * F2.shape[1]
+            row = np.zeros(Nq * F3.shape[1])
+            for k in ind[i]:
+                vec = (F1.T @ T[i][k] @ F2).reshape(-1, order="F")
+                for j in range(F3.shape[1]):
+                    row[j * Nq:(j + 1) * Nq] += vec * F3[k, j]
+            rows.append(row)
+            continue
+        F = fulls[0]
+        N = F.shape[1]
+        L = [np.zeros((N, N)) for _ in range(N)]
+        for k in ind[i]:
+            Q = F.T @ T[i][k] @ F
+            lower = np.tril(Q, -1)
+            Q = Q - lower + lower.T
+            for j in range(N):
+                L[j] = L[j] + Q * F[k, j]
+        for k in range(1, N):
+            for j in range(k):
+                for h in range(j, N):
+                    if h <= k:
+                        L[j][h, k] += L[k][j, h]
+                    else:
+                        L[j][k, h] += L[k][j, h]
+        L[0][0, 0] += 0.5 * np.diag(L[0])[1:].sum()
+        for k in range(1, N):
+            L[0][k, k] *= 0.5
+        rows.append(np.concatenate([L[k][j, j:] for k in range(N) for j in range(k, N)]))
+    return np.array(rows)
+
+
 class Entrywise(unittest.TestCase):
     def test_abs_and_box_and_center(self):
         Z = zonotope([1, -2], [[1, -3, 0.5], [-2, 0.5, 0]])
@@ -102,6 +168,14 @@ class Compact(unittest.TestCase):
             d, values = support(R, rng)
             np.testing.assert_allclose([C.support_function(x) for x in d], values, rtol=1e-9)
 
+    def test_all_agrees_with_the_matlab_loop(self):
+        rng = np.random.default_rng(4)
+        for n in (1, 2, 3):
+            g = rng.uniform(-1, 1, (n, 4))
+            G = np.hstack([g, -2 * g[:, :1], 3 * g[:, 1:2], 0 * g[:, :1], rng.uniform(-1, 1, (n, 2))])
+            mine = zonotope(np.zeros(n), G).compact("all", 1e-10).generators
+            np.testing.assert_allclose(mine, matlab_delete_aligned(G, 1e-10), atol=1e-12)
+
     def test_errors(self):
         Z = zonotope([0, 0], [[1, 0], [0, 0]])
         with self.assertRaises(ValueError):
@@ -136,7 +210,7 @@ class Combining(unittest.TestCase):
         np.testing.assert_array_equal(E.generators, [[1, -1, 0, 0], [0, 0, 0, 1]])
         rng = np.random.default_rng(4)
         A, B = random_zonotope(rng, 3, 5), random_zonotope(rng, 3, 3)
-        box = cora.Interval.generate_random(3, cora.Rng(4))
+        box = cora.Interval(np.array([-1.0, 0.0, 0.5]), np.array([2.0, 1.0, 3.0]))
         d = rng.standard_normal((40, 3))
         for hull, other in ((A.convex_hull(B), B), (A.convex_hull(box), box)):
             bound = np.maximum([A.support_function(x) for x in d], [other.support_function(x) for x in d])
@@ -213,13 +287,31 @@ class CubicMap(unittest.TestCase):
         Z = random_zonotope(rng, n, 4)
         T = [[rng.standard_normal((n, n)) for _ in range(n)] for _ in range(2)]
         R = Z.cubic_map(T)
-        self.assertEqual(R.generators.shape, (2, 19))
+        # m = 4: the 20 cubic, 10 quadratic and 4 linear terms of CORA's cubMap
+        self.assertEqual(R.generators.shape, (2, 34))
         T0 = [[T[i][0], 0 * T[i][1], T[i][2]] for i in range(2)]
         np.testing.assert_allclose(Z.cubic_map(T, [[0, 2], [0, 2]]).generators, Z.cubic_map(T0).generators)
         for x in Z.rand_point(60, cora.Rng(4)).T:
             z = np.array([sum(x[k] * (x @ T[i][k] @ x) for k in range(n)) for i in range(2)])
             for d in rng.standard_normal((5, 2)):
                 self.assertLessEqual(d @ z, R.support_function(d) + 1e-9)
+
+    def test_agrees_with_the_matlab_loops(self):
+        rng = np.random.default_rng(4)
+        n, m = 3, 3
+        Z, Z2, Z3 = (random_zonotope(rng, n, m + k) for k in range(3))
+        T = [[rng.standard_normal((n, n)) for _ in range(n)] for _ in range(2)]
+        ind = [[0, 1, 2], [2, 0]]
+        for use_ind in (None, ind):
+            chosen = use_ind or [[0, 1, 2]] * 2
+            single = matlab_cub_map([Z], T, chosen)
+            R = Z.cubic_map(T, use_ind)
+            np.testing.assert_allclose(R.center, single[:, 0], rtol=1e-12, atol=1e-12)
+            np.testing.assert_allclose(R.generators, single[:, 1:], rtol=1e-12, atol=1e-12)
+            mixed = matlab_cub_map([Z, Z2, Z3], T, chosen)
+            M = Z.cubic_map(Z2, Z3, T, use_ind)
+            np.testing.assert_allclose(M.center, mixed[:, 0], rtol=1e-12, atol=1e-12)
+            np.testing.assert_allclose(M.generators, mixed[:, 1:], rtol=1e-12, atol=1e-12)
 
     def test_errors(self):
         Z = zonotope([1, 0], [[0.5], [0.2]])
