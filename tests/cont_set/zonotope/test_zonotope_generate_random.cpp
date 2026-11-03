@@ -6,6 +6,7 @@
 #include "cora/global/rng.h"
 #include "testing.h"
 
+#include <algorithm>
 #include <cmath>
 
 using namespace cora;
@@ -32,6 +33,28 @@ void generate_random_follows_cora(const std::string &b) {
           b + ": successive sets differ");
 }
 
+/// The options: the center given (it sets the dimension), the number of generators, the distribution.
+void generate_random_options(const std::string &b) {
+    cora::Rng rng(9);
+    const Tensor center = test::column({1.0, -2.0, 3.0});
+    const Zonotope Z = Zonotope::generate_random(rng, std::nullopt, center);
+    check(close(Z.center(), {1.0, -2.0, 3.0}, 1e-12), b + ": the given center");
+    check(Z.generators().shape() == std::vector<int64_t>({3, 6}), b + ": 2 n generators by default");
+    double longest = 0.0;
+    for (const char *distribution : {"exp", "gamma"}) {
+        const Zonotope W = Zonotope::generate_random(rng, 2, std::nullopt, 400, distribution);
+        const std::vector<double> G = W.generators().data();
+        for (int j = 0; j < 400; ++j)
+            longest = std::max(longest, std::hypot(G[j], G[400 + j]));
+    }
+    check(longest > 1.0, b + ": exponential and gamma lengths exceed the uniform bound");
+    check(test::raises([&] { Zonotope::generate_random(rng, 2, center); }, Error::wrong_value),
+          b + ": the center does not match the dimension");
+    check(test::raises([&] { Zonotope::generate_random(rng, 2, std::nullopt, 1, "normal"); },
+                       Error::wrong_value),
+          b + ": an unknown distribution");
+}
+
 /// A dimension below one is refused; with the checks off the draw is the same.
 void checks_and_their_switch() {
     cora::Rng rng(4), again(4);
@@ -46,7 +69,10 @@ void checks_and_their_switch() {
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { generate_random_follows_cora(b); });
+    test::for_each_backend([](const std::string &b) {
+        generate_random_follows_cora(b);
+        generate_random_options(b);
+    });
     checks_and_their_switch();
     return test::finish("zonotope generate_random");
 }

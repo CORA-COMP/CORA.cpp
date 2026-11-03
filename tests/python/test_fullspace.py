@@ -253,6 +253,12 @@ class ContSetInterface(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             cora.Fullspace.generate_random(rng, dimension=-1)
 
+    def test_is_full_dim_takes_a_tolerance(self):
+        S = cora.Fullspace(2)
+        self.assertEqual(S.is_full_dim(1e-3), S.is_full_dim())
+        with self.assertRaises(cora.errors.WrongValue):
+            S.is_full_dim(tol=-1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

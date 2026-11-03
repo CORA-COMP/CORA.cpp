@@ -35,7 +35,8 @@ from ._cora import (ConZonotope, ContSet, EmptySet, Expr, ExpmMixedResult, ExpmR
                     ReachSet, Rng, Specification, VerifyResult, Zonotope, backend, binary_pairs,
                     cart_prod, checks, checks_enabled, contains, convex_hull, cora_color,
                     current_backend, current_tolerance, generate_random, has_torch, intersect,
-                    is_intersecting, isequal, lean, num_threads, plus, register_binary, set_checks_enabled,
+                    is_intersecting, isequal, lean, num_threads, plus, register_binary,
+                    set_checks_enabled,
                     set_default_backend, set_default_tolerance, set_num_threads, strict_gradients,
                     tensor_ops, tolerance, unite, use_cora_colors)
 from .errors import CORAError, CORAWarning

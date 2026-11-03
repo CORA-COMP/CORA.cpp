@@ -178,6 +178,12 @@ class EmptySet(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             cora.EmptySet.generate_random(rng, dimension=-1)
 
+    def test_is_full_dim_takes_a_tolerance(self):
+        S = cora.EmptySet(2)
+        self.assertEqual(S.is_full_dim(1e-3), S.is_full_dim())
+        with self.assertRaises(cora.errors.WrongValue):
+            S.is_full_dim(tol=-1.0)
+
     def test_pairs_with_the_whole_space(self):
         F = cora.Fullspace(2)
         self.assertIsInstance(self.E + F, cora.EmptySet)

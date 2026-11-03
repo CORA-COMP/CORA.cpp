@@ -33,7 +33,8 @@ void rank_known(const std::string &b) {
 void rank_of_products(const std::string &b) {
     cora::Rng rng(41);
     for (const auto [n, m, r] : {std::tuple{4, 6, 2}, {5, 5, 5}, {3, 7, 1}, {6, 3, 3}}) {
-        const Zonotope A = Zonotope::generate_random(rng, n, std::nullopt, r), B = Zonotope::generate_random(rng, r, std::nullopt, m);
+        const Zonotope A = Zonotope::generate_random(rng, n, std::nullopt, r),
+                       B = Zonotope::generate_random(rng, r, std::nullopt, m);
         const Zonotope Z(A.center(), A.generators().matmul(B.generators()));
         check(Z.rank() == r, b + ": rank " + std::to_string(r));
         check(Z.rank() <= std::min(n, m), b + ": at most min(n, m)");

@@ -31,7 +31,8 @@ void enclose_known_zonotopes(const std::string &b) {
 /// Stated property: the result contains both zonotopes, also for a batch.
 void enclose_contains_both(const std::string &b) {
     cora::Rng rng(18);
-    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5), Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 3);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5),
+                   Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 3);
     for (const Zonotope &E : {Z.enclose(Z2), Z2.enclose(Z)}) {
         check(E.generators().shape().back() == 2 * 3 + 1 + 2, b + ": 2m + 1 + extras generators");
         for (int k = 0; k < 40; ++k) {

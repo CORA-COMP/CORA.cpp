@@ -27,7 +27,8 @@ void enclose_by_class(const std::string &b) {
           b + ": the hull of two boxes");
 
     cora::Rng rng(5);
-    const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 4), Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 2);
+    const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 4),
+                   Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 2);
     const Set E = static_cast<const ContSet &>(Z1).enclose(Z2);
     check(E.is<Zonotope>() && E.as<Zonotope>().isequal(Z1.enclose(Z2)), b + ": a zonotope");
     for (int k = 0; k < 20; ++k) {

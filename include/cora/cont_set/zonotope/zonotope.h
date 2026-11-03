@@ -99,9 +99,9 @@ class Zonotope : public ContSet {
     /// dimension with the radius of that dimension.
     Zonotope box() const;
 
-    /// Without the generators of norm <= tol (method "zeros", the default); "all" also merges the generators
-    /// that are parallel up to tol, "aligned" leaves the set as it is (as CORA). A batch drops
-    /// what every member drops; "all" is not for a batch.
+    /// Without the generators of norm <= tol (method "zeros", the default); "all" also merges the
+    /// generators that are parallel up to tol, "aligned" leaves the set as it is (as CORA). A batch
+    /// drops what every member drops; "all" is not for a batch.
     /// tol default: the repository tolerance (docs/architecture.md).
     Zonotope compact(const std::optional<std::string> &method = std::nullopt,
                      Tol tol = std::nullopt) const;

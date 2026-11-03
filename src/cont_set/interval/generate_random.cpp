@@ -64,7 +64,8 @@ CORA_FROM_NUMBERS Interval Interval::generate_random(Rng &rng, std::optional<int
                           "dimension " + std::to_string(n);
                });
     // the radius, symmetric to keep the center
-    const Tensor radius = (r * 0.5).multiply(Tensor::from_data(aux_uniform(rng, n, 0.0, 1.0), {n, 1}));
+    const Tensor u = Tensor::from_data(aux_uniform(rng, n, 0.0, 1.0), {n, 1});
+    const Tensor radius = (r * 0.5).multiply(u);
     return {c - radius, c + radius};
 }
 

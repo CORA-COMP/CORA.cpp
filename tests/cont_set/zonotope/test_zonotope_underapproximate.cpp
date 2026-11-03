@@ -54,7 +54,8 @@ void the_vertices_are_in_the_zonotope(const std::string &b) {
 /// A batch is the result of each member.
 void a_batch(const std::string &b) {
     cora::Rng rng(52);
-    const Zonotope A = Zonotope::generate_random(rng, 2, std::nullopt, 3), B = Zonotope::generate_random(rng, 2, std::nullopt, 3);
+    const Zonotope A = Zonotope::generate_random(rng, 2, std::nullopt, 3),
+                   B = Zonotope::generate_random(rng, 2, std::nullopt, 3);
     const Tensor S({{1.0, 0.5}, {0.0, 1.0}});
     const Tensor V = Zonotope::stack({A, B}).underapproximate(S);
     check(V.shape() == Shape{2, 2, 4}, b + ": batch shape");

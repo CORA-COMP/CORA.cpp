@@ -16,11 +16,23 @@ spec = importlib.util.spec_from_file_location("stubs", os.path.join(ROOT, "scrip
 stubs = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(stubs)
 
-try:
-    import mypy  # noqa: F401
-    HAS_MYPY = True
-except ImportError:
-    HAS_MYPY = False
+
+def mypy(folder, *files):
+    """The errors of `mypy --strict` on the files and the stubs of the package. A missing mypy fails
+    in CI, which installs it (scripts/requirements-python.txt), and skips elsewhere."""
+    try:
+        import mypy  # noqa: F401
+    except ImportError:
+        if os.environ.get("CI"):
+            raise AssertionError("mypy is not installed: the CI python job must install it")
+        raise unittest.SkipTest("mypy is not installed (pip install mypy)")
+    env = dict(os.environ, MYPYPATH=os.path.dirname(PACKAGE))
+    result = subprocess.run(
+        [sys.executable, "-m", "mypy", "--strict", "--allow-untyped-calls", "--follow-imports=silent",
+         "--ignore-missing-imports", "--cache-dir", os.path.join(folder, "cache"), *files]
+        + [os.path.join(PACKAGE, "_cora", name) for name in ("__init__.pyi", "lean.pyi")],
+        capture_output=True, text=True, env=env)
+    return [line for line in result.stdout.splitlines() if ": error:" in line]
 
 # one file that must fail the check with exactly these messages: the stubs say what a call takes
 WRONG = """import cora
@@ -76,23 +88,23 @@ class Stubs(unittest.TestCase):
                 with open(os.path.join(PACKAGE, path), encoding="utf-8") as f:
                     ast.parse(f.read(), path)
 
-    @unittest.skipUnless(HAS_MYPY, "mypy is not installed (pip install mypy)")
     def test_mypy_accepts_the_example_and_refuses_wrong_calls(self):
         example = os.path.join(ROOT, "examples", "python", "example_linear_reach_09_prototype.py")
         with tempfile.TemporaryDirectory() as folder:
             wrong = os.path.join(folder, "wrong_calls.py")
             with open(wrong, "w", encoding="utf-8") as f:
                 f.write(WRONG)
-            env = dict(os.environ, MYPYPATH=os.path.dirname(PACKAGE))
-            result = subprocess.run(
-                [sys.executable, "-m", "mypy", "--strict", "--allow-untyped-calls", "--follow-imports=silent",
-                 "--ignore-missing-imports", "--cache-dir", os.path.join(folder, "cache"), example, wrong]
-                + [os.path.join(PACKAGE, "_cora", name) for name in ("__init__.pyi", "lean.pyi")],
-                capture_output=True, text=True, env=env)
-        errors = [line for line in result.stdout.splitlines() if ": error:" in line]
-        self.assertEqual([line.split(":")[0] for line in errors], [wrong] * 3, result.stdout)
+            errors = mypy(folder, example, wrong)
+        self.assertEqual([line.split(":")[0] for line in errors], [wrong] * 3, "\n".join(errors))
         for code in ("arg-type", "attr-defined", "assignment"):
-            self.assertEqual(sum(f"[{code}]" in line for line in errors), 1, result.stdout)
+            self.assertEqual(sum(f"[{code}]" in line for line in errors), 1, "\n".join(errors))
+
+    def test_every_set_class_accepts_what_contset_accepts(self):
+        # A method of a ContSet subclass takes every argument of ContSet's (mypy's override check),
+        # so code written against ContSet works on each class.
+        with tempfile.TemporaryDirectory() as folder:
+            errors = mypy(folder)
+        self.assertEqual(errors, [], "\n".join(errors))
 
 
 if __name__ == "__main__":

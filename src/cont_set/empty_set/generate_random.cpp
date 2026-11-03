@@ -24,7 +24,8 @@ namespace cora {
 EmptySet EmptySet::generate_random(Rng &rng, std::optional<int64_t> dimension) {
     detail::Entry entry;
     CORA_CHECK(!dimension || *dimension >= 0, Error::wrong_value, [&] {
-        return "generate_random: the dimension must be nonnegative, got " + std::to_string(*dimension);
+        return "generate_random: the dimension must be nonnegative, got " +
+               std::to_string(*dimension);
     });
     return EmptySet(dimension ? *dimension : priv_random_dimension(rng));
 }

@@ -74,7 +74,10 @@ CORA_FROM_NUMBERS Zonotope Zonotope::generate_random(Rng &rng, std::optional<int
                           "'gamma', got '" + distribution + "'";
                });
     // the dimension: given, else that of the center, else random
-    const int64_t n = dimension ? *dimension : center ? center->size(-2) : priv_random_dimension(rng);
+    int64_t n = 0;
+    if (dimension) n = *dimension;
+    else if (center) n = center->size(-2);
+    else n = priv_random_dimension(rng);
     const Shape vector{n, 1};
     CORA_CHECK(!center || center->shape() == vector,
                Error::wrong_value, [&] {

@@ -5,7 +5,7 @@
 // Inputs:   rng - random numbers (seedable);  dimension - default uniform in 1..10;
 //           admissible - CORA names of the classes to draw from ("interval", "zonotope"); one is
 //           drawn uniformly
-// Outputs:  S - Interval::generate_random(rng, dimension) or Zonotope::generate_random(rng, dimension)
+// Outputs:  S - Interval::generate_random(rng, dimension) or the Zonotope one
 // See also: Interval::generate_random, Zonotope::generate_random
 //
 // CORA: contSet/@contSet/generateRandom.m
@@ -47,7 +47,8 @@ CORA_FROM_NUMBERS Set ContSet::generate_random(Rng &rng, std::optional<int64_t> 
         return std::string("generate_random: name at least one admissible class");
     });
     CORA_CHECK(!dimension || *dimension >= 1, Error::wrong_value, [&] {
-        return "generate_random: the dimension must be at least 1, got " + std::to_string(*dimension);
+        return "generate_random: the dimension must be at least 1, got " +
+               std::to_string(*dimension);
     });
     for (const std::string &name : admissible)
         CORA_CHECK(name == "interval" || name == "zonotope", Error::not_supported, [&] {

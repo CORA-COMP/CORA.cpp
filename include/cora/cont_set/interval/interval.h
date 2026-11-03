@@ -49,9 +49,9 @@ class Interval : public ContSet {
     Interval(Tensor inf, Tensor sup);
 
     /// A random box, as CORA's generateRandom: dimension (default that of center or max_radius,
-    /// else random in 1..10), center (default U[-2, 2] per entry), max_radius (radii >= 0: a vector,
-    /// or a 1 x 1 tensor for all; default U[0, 10] per entry); the radius is max_radius/2*u,
-    /// u ~ U[0, 1].
+    /// else random in 1..10), center (default U[-2, 2] per entry), max_radius (radii >= 0: a
+    /// vector, or a 1 x 1 tensor for all; default U[0, 10] per entry); the radius is
+    /// max_radius/2*u, u ~ U[0, 1].
     static Interval generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
                                     const std::optional<Tensor> &center = std::nullopt,
                                     const std::optional<Tensor> &max_radius = std::nullopt);

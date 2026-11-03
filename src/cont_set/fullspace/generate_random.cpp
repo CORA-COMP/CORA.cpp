@@ -24,7 +24,8 @@ namespace cora {
 Fullspace Fullspace::generate_random(Rng &rng, std::optional<int64_t> dimension) {
     detail::Entry entry;
     CORA_CHECK(!dimension || *dimension >= 0, Error::wrong_value, [&] {
-        return "generate_random: the dimension must be nonnegative, got " + std::to_string(*dimension);
+        return "generate_random: the dimension must be nonnegative, got " +
+               std::to_string(*dimension);
     });
     return Fullspace(dimension ? *dimension : priv_random_dimension(rng));
 }
