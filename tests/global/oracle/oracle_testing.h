@@ -20,8 +20,10 @@
 
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
+#include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/zonotope.h"
+#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "testing.h"
 
 #include <cstdlib>
@@ -85,6 +87,15 @@ class Random {
         std::vector<double> r(n);
         for (double &x : r) x = uniform(0, 1);
         const cora::Tensor rad = cora::Tensor::from_data(r, {n, 1});
+        return {c - rad, c + rad};
+    }
+
+    /// An interval matrix of rows x cols: a center and a radius in [0, 1] per entry.
+    cora::Interval box_matrix(int64_t rows, int64_t cols) {
+        const cora::Tensor c = matrix(rows, cols);
+        std::vector<double> r(rows * cols);
+        for (double &x : r) x = uniform(0, 1);
+        const cora::Tensor rad = cora::Tensor::from_data(r, {rows, cols});
         return {c - rad, c + rad};
     }
 
@@ -154,6 +165,11 @@ inline bool same_bits(const std::string &what, const cora::Fullspace &a, const l
         std::cerr << "  " << what << ": R^" << a.dim() << " in CORA.cpp, R^" << b.dim()
                   << " in the oracle\n";
     return a.dim() == b.dim();
+}
+
+/// An interval matrix against the oracle's interval matrix: its bounds.
+inline bool same_bits(const std::string &what, const cora::IntervalMatrix &a, const lean::Interval &b) {
+    return same_bits(what, a.interval(), b);
 }
 
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).
@@ -234,6 +250,15 @@ inline bool enclosed(const std::string &what, const cora::Interval &a, const lea
 /// The whole space has no enclosure but itself.
 inline bool enclosed(const std::string &what, const cora::Fullspace &a, const lean::Fullspace &b) {
     return same_bits(what, a, b);
+}
+
+/// An interval matrix inside the oracle's, and a matrix of numbers between its bounds.
+inline bool enclosed(const std::string &what, const cora::IntervalMatrix &a, const lean::Interval &b) {
+    return enclosed(what, a.interval(), b);
+}
+
+inline bool enclosed(const std::string &what, const cora::Tensor &a, const lean::Interval &b) {
+    return enclosed(what, cora::Interval(a, a), b);
 }
 
 /// Inside nominal + error box: the oracle proves the containment, or else (when it cannot) the

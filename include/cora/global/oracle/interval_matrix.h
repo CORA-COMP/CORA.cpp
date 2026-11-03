@@ -1,0 +1,62 @@
+// interval_matrix - lean::IntervalMatrix, an interval matrix of exact values, and its oracle ops
+//
+// Syntax:     lean::IntervalMatrix A(lean::Interval(inf, sup));   A.exact_square();
+// Values:     the bounds are exact; an operation returns what the oracle proves to enclose the real
+//             result (outward rounded); a number or a matrix is a point of the dtype
+// Operations: one method per `intervalMatrix.*` op of the oracle, named as CORA.cpp names CORA's
+//             (mtimes is matmul, mpower is matrix_power, infNorm is infinity_norm)
+// Options:    CORA's option names; `tol` is a plain number; `steps` tunes the square root of the
+//             Frobenius norm (CORA has no such argument)
+// See also:   lean/interval.h, lean/request.h
+
+#pragma once
+
+#include "cora/global/oracle/interval.h"
+
+#include <utility>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora::lean {
+
+class IntervalMatrix {
+  public:
+    explicit IntervalMatrix(Interval bounds) : bounds_(std::move(bounds)) {}
+
+    const Interval &interval() const noexcept { return bounds_; }
+
+    // Matrices of the set ----------------------------------------------------------------------
+
+    /// The entrywise largest absolute value, the lower bound matrix.
+    Tensor abs() const;
+    Tensor infimum() const;
+
+    /// The center, bracketed: an interval matrix of the lower and the upper end.
+    Interval center() const;
+
+    /// Whether M is in the set, as the oracle decides: true is certain.
+    bool contains(const Tensor &M, double tol = 0) const;
+
+    // Squares, powers and products -------------------------------------------------------------
+
+    /// The exact square, the pair of r^2 [A]^2 and I + [A] r + [A]^2 r^2 / 2 (the dependent terms).
+    Interval exact_square() const;
+    std::pair<Interval, Interval> dependent_terms(double r) const;
+
+    /// The power with k factors, and the product with another interval matrix.
+    Interval matrix_power(int64_t exponent) const;
+    Interval matmul(const Interval &B) const;
+
+    // Norms --------------------------------------------------------------------------------------
+
+    /// An upper bound of the infinity norm, and of the norm of type 1, "inf" or "fro".
+    double infinity_norm() const;
+    double norm(const std::string &type, int64_t steps = 20) const;
+
+  private:
+    Interval bounds_;
+};
+
+} // namespace cora::lean
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
