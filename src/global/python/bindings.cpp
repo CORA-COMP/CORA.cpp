@@ -33,6 +33,7 @@
 #include "cora/global/rng.h"
 #include "cora/global/threads.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
+#include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
 
@@ -1042,6 +1043,149 @@ void bind_interval_matrix(py::module_ &m) {
             return "IntervalMatrix(" + A.interval().display() + ")";
         });
     m.attr("IntervalMatrix").attr("__array_ufunc__") = py::none(); // numpy defers to the operators
+}
+
+/// The product of a matrix zonotope with what Python offers on the right: another one, a zonotope,
+/// a number or a matrix; NotImplemented for anything else.
+py::object mat_zonotope_product(const MatZonotope &A, const py::object &o) {
+    if (py::isinstance<MatZonotope>(o)) return py::cast(A.matmul(py::cast<MatZonotope>(o)));
+    if (py::isinstance<Zonotope>(o)) return py::cast(A.matmul(py::cast<Zonotope>(o)));
+    if (is_number(o)) return py::cast(A.matmul(py::cast<double>(o)));
+    if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.matmul(*M));
+    return not_implemented();
+}
+
+void bind_mat_zonotope(py::module_ &m) {
+    py::class_<MatZonotope::ExpmMixedResult>(m, "MatZonotopeExpmMixedResult",
+                                             "The result of MatZonotope.expm_mixed")
+        .def_readonly("enclosure", &MatZonotope::ExpmMixedResult::enclosure,
+                      "The terms to the intermediate order, a MatZonotope")
+        .def_readonly("enclosure_rest", &MatZonotope::ExpmMixedResult::enclosure_rest,
+                      "The rest of the series, an IntervalMatrix")
+        .def_readonly("powers", &MatZonotope::ExpmMixedResult::powers, "The powers of orders 1 to intermediate_order")
+        .def_readonly("powers2", &MatZonotope::ExpmMixedResult::powers2, "The powers of the second part")
+        .def_readonly("remainder", &MatZonotope::ExpmMixedResult::remainder, "The remainder box");
+    py::class_<MatZonotope::ExpmOneParamResult>(m, "MatZonotopeExpmOneParamResult",
+                                                "The result of MatZonotope.expm_one_param")
+        .def_readonly("enclosure", &MatZonotope::ExpmOneParamResult::enclosure,
+                      "The matrix zonotope of the Taylor terms")
+        .def_readonly("remainder", &MatZonotope::ExpmOneParamResult::remainder, "The remainder box, to be added")
+        .def_readonly("powers", &MatZonotope::ExpmOneParamResult::powers,
+                      "The powers of r M, powers[k] of order k + 1")
+        .def_readonly("constant_input", &MatZonotope::ExpmOneParamResult::constant_input,
+                      "With an input, the zonotope of its terms, else None");
+    py::class_<MatZonotope>(m, "MatZonotope",
+                            "A matrix zonotope {C + sum b_i G_i | |b|_inf <= 1}: a set of matrices")
+        .def(py::init([](const py::object &center, const py::object &generators) {
+                 if (center.is_none()) return MatZonotope();
+                 if (generators.is_none()) return MatZonotope(tensor_of(center, "center"));
+                 return MatZonotope(tensor_of(center, "center"), tensor_of(generators, "generators"));
+             }),
+             py::arg("center") = py::none(), py::arg("generators") = py::none(),
+             "The center C (rows, cols) and the generators G (h, rows, cols); C alone has no "
+             "generators, nothing is the empty 0 x 0 set")
+        .def_property_readonly("center", [](const MatZonotope &A) { return matrix(A.center()); },
+                               "The center matrix")
+        .def_property_readonly("generators", [](const MatZonotope &A) { return matrix(A.generators()); },
+                               "The generators (h, rows, cols), one matrix each")
+        .def_property_readonly("rows", &MatZonotope::rows)
+        .def_property_readonly("cols", &MatZonotope::cols)
+        .def_property_readonly("num_generators", &MatZonotope::num_generators)
+        .def("zonotope", &MatZonotope::zonotope,
+             "The zonotope of the stacked matrices (column by column)")
+        .def("interval_matrix", &MatZonotope::interval_matrix, "The box around the set, C +- sum |G_i|")
+        .def(
+            "contains",
+            [](const MatZonotope &A, const py::object &M, const std::string &type, Tol tol) {
+                return A.contains(tensor_of(M, "the matrix"), type, tol);
+            },
+            py::arg("M"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            "Whether the matrix M (rows, cols), or the matrices M (p, rows, cols), are in the set")
+        .def("representsa", &MatZonotope::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the set is also a set of the CORA type, e.g. 'point' or 'origin'")
+        .def("transpose", &MatZonotope::transpose, "The transposed matrices")
+        .def(
+            "powers",
+            [](const MatZonotope &A, int64_t max_order, std::optional<int64_t> initial_order,
+               const std::optional<MatZonotope> &initial_power) {
+                if (initial_order || initial_power) {
+                    if (!initial_order || !initial_power)
+                        CORA_FAIL(Error::wrong_value,
+                                  "powers: give initial_order and initial_power together");
+                    return A.powers(max_order, *initial_order, *initial_power);
+                }
+                return A.powers(max_order);
+            },
+            py::arg("max_order"), py::arg("initial_order") = py::none(),
+            py::arg("initial_power") = py::none(),
+            "The powers of orders initial_order (default 1) to max_order, each the previous times A")
+        .def(
+            "norm",
+            [](const MatZonotope &A, const py::object &type) { return scalar(A.norm(norm_of(type))); },
+            py::arg("type") = 2,
+            "An upper bound of the norm of every matrix: 1, inf or 'fro' of the box (2 is refused)")
+        .def("dependent_terms", &MatZonotope::dependent_terms, py::arg("r"),
+             "(r^2 A^2, I + A r + A^2 r^2 / 2) as matrix zonotopes")
+        .def("expm", &MatZonotope::expm, py::arg("max_order") = 10,
+             "The enclosure of exp(M) over the set (expm_independent)")
+        .def("expm_independent", &MatZonotope::expm_independent, py::arg("max_order"),
+             "The enclosure of exp(M) with every power evaluated independently")
+        .def("expm_mixed", &MatZonotope::expm_mixed, py::arg("r"), py::arg("intermediate_order"),
+             py::arg("max_order"), "The series in two parts, up to and beyond intermediate_order")
+        .def(
+            "expm_one_param",
+            [](const MatZonotope &A, double r, int64_t max_order, const py::object &u_trans) {
+                if (u_trans.is_none()) return A.expm_one_param(r, max_order);
+                if (py::isinstance<Zonotope>(u_trans))
+                    return A.expm_one_param(r, max_order, py::cast<Zonotope>(u_trans));
+                const Tensor u = tensor_of(u_trans, "u_trans"); // a column is the zonotope (u, 0)
+                return A.expm_one_param(r, max_order, Zonotope(u, u.zeros_like()));
+            },
+            py::arg("r"), py::arg("max_order"), py::arg("u_trans") = py::none(),
+            "The Taylor series of exp(M r) for the matrices C + b G of a set with one generator, "
+            "with the terms of an input u_trans (a zonotope with one generator or a vector)")
+        .def("__matmul__", &mat_zonotope_product, py::is_operator())
+        .def("__mul__", &mat_zonotope_product, py::is_operator())
+        .def(
+            "__rmatmul__",
+            [](const MatZonotope &A, const py::object &o) -> py::object {
+                if (const std::optional<Tensor> M = as_tensor(o))
+                    return py::cast(MatZonotope::matmul(*M, A));
+                return not_implemented();
+            },
+            py::is_operator())
+        .def(
+            "__rmul__",
+            [](const MatZonotope &A, const py::object &o) -> py::object {
+                if (is_number(o)) return py::cast(A.matmul(py::cast<double>(o)));
+                if (const std::optional<Tensor> M = as_tensor(o))
+                    return py::cast(MatZonotope::matmul(*M, A));
+                return not_implemented();
+            },
+            py::is_operator())
+        .def(
+            "__pow__", [](const MatZonotope &A, int64_t k) { return A.matrix_power(k); },
+            py::is_operator())
+        .def(
+            "__add__",
+            [](const MatZonotope &A, const py::object &o) -> py::object {
+                if (py::isinstance<MatZonotope>(o)) return py::cast(A.plus(py::cast<MatZonotope>(o)));
+                if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.plus(*M));
+                return not_implemented();
+            },
+            py::is_operator())
+        .def(
+            "__radd__",
+            [](const MatZonotope &A, const py::object &o) -> py::object {
+                if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.plus(*M));
+                return not_implemented();
+            },
+            py::is_operator())
+        .def("__repr__", [](const MatZonotope &A) {
+            return "MatZonotope(" + std::to_string(A.rows()) + " x " + std::to_string(A.cols()) +
+                   ", " + std::to_string(A.num_generators()) + " generators)";
+        });
+    m.attr("MatZonotope").attr("__array_ufunc__") = py::none(); // numpy defers to the operators
 }
 
 /// The set without points: what Python adds to the inherited ContSet methods.
@@ -2612,6 +2756,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_fullspace(m);
     bind_zonotope(m);
     bind_interval_matrix(m);
+    bind_mat_zonotope(m);
     bind_operators(m);
     bind_problems(m);
     bind_linear_sys(m);
