@@ -3,6 +3,7 @@
 // CORA: contSet/@interval/isFullDim.m
 
 #include "cora/cont_set/interval/interval.h"
+#include "cora/global/tensor/tolerance.h"
 #include "testing.h"
 
 using namespace cora;
@@ -15,6 +16,8 @@ void is_full_dim_looks_for_flat_coordinates(const std::string &b) {
     check(Interval(column({0.0, 1.0}), column({1.0, 3.0})).is_full_dim(), b + ": a box");
     check(!Interval(column({0.0, 1.0}), column({1.0, 1.0})).is_full_dim(),
           b + ": a zero-width coordinate");
+    // CORA's withinTol default, 1e-8, by the scope
+    const ToleranceScope cora_default(1e-8);
     check(!Interval(column({0.0, 1.0}), column({1.0, 1.0 + 1e-9})).is_full_dim(),
           b + ": a width within 1e-8 counts as zero, as CORA's withinTol");
     check(Interval(column({0.0, 1.0}), column({1.0, 1.0 + 1e-6})).is_full_dim(),

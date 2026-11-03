@@ -25,8 +25,8 @@ void is_intersecting_compares_the_bounds(const std::string &b) {
     check(!apart.is_intersecting(I), b + ": symmetric");
     check(I.is_intersecting(apart, 0.6) && !I.is_intersecting(apart, 0.2),
           b + ": tol bridges a gap");
-    check(I.is_intersecting(Interval(column({2.0 + 1e-9, 0.0}), column({3.0, 1.0}))),
-          b + ": the default tol 1e-8");
+    check(I.is_intersecting(Interval(column({2.0 + 1e-9, 0.0}), column({3.0, 1.0})), 1e-8),
+          b + ": a gap of 1e-9 within tol 1e-8 (CORA's default)");
     check(!I.is_intersecting(Interval(column({2.0 + 1e-9, 0.0}), column({3.0, 1.0})), 0.0),
           b + ": tol 0 is strict");
     check(!I.is_intersecting(Interval::empty(2)) && !Interval::empty(2).is_intersecting(I),
