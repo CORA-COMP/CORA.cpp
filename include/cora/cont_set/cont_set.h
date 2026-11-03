@@ -12,13 +12,18 @@
 // Operations: support_function, interval, rand_point, project, vertices, vertices_3d, display,
 //             center, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
 //             minkowski_difference, decompose, project_high_dim, project_on_hyperplane,
-//             uminus, uplus, times, compact, generate_random (one file each in
+//             uminus, uplus, times, compact, generate_random, lift, norm, enclose (one file each in
 //             src/cont_set/cont_set/, the checks; the classes implement the _impl forms, and a
 //             class that does not gets CORA's noops)
 // See also:   cont_set/set.h, cont_set/registry.h, cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@contSet/contSet.m
 // CORA: contSet/@contSet/dim.m
+// CORA: contSet/@contSet/lift.m
+// CORA: contSet/@contSet/lift_.m
+// CORA: contSet/@contSet/norm.m
+// CORA: contSet/@contSet/norm_.m
+// CORA: contSet/@contSet/enclose.m
 
 #pragma once
 
@@ -187,6 +192,20 @@ class ContSet {
     /// any length and an offset d (..., 1, 1): (I - c c') S + d c with c normalized.
     Set project_on_hyperplane(const Tensor &c, const Tensor &d) const;
 
+    /// The set in N >= n dimensions with its coordinate j at position proj[j] (0-based, default
+    /// 0..n-1): CORA's lift. A class defines what the other coordinates are: unbounded for a
+    /// box, absent for a zonotope, which therefore needs N = n and a permutation.
+    Set lift(int64_t N, const std::optional<std::vector<int64_t>> &proj = std::nullopt) const;
+
+    /// An upper bound (..., 1, 1) of the norm of the points (CORA's norm): type one, two, inf or
+    /// fro; mode "ub" (default), "exact" or "ub_convex", of which a class offers what its norm_
+    /// has. The empty set has norm -Inf.
+    Tensor norm(Tensor::Norm type = Tensor::Norm::two, const std::string &mode = "ub") const;
+
+    /// A set that encloses this one and S2 (CORA's enclose): the class of this set, which takes
+    /// the operand it can (a box and a box, a zonotope and a zonotope); Error::noops otherwise.
+    Set enclose(const ContSet &S2) const;
+
     /// A random set of one of the admissible classes (CORA names: "interval", "zonotope"), of
     /// dimension n (default: uniform in 1..10), drawn with rng.
     static Set generate_random(Rng &rng, std::optional<int64_t> n = std::nullopt,
@@ -239,6 +258,12 @@ class ContSet {
                                           const std::optional<std::string> &type) const;
     /// CORA's projectHighDim_: I(:, proj) * S, which a class with a cheaper one overrides.
     virtual Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const;
+    /// CORA's lift_ (proj has one valid position per coordinate); noops for a class without it.
+    virtual Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const;
+    /// CORA's norm_ (type and mode are valid); noops for a class without it.
+    virtual Tensor norm_impl(Tensor::Norm type, const std::string &mode) const;
+    /// CORA's enclose of two sets; noops for a class that cannot take the class of S2.
+    virtual Set enclose_impl(const ContSet &S2) const;
 
   private:
     ClassId id_;
@@ -252,8 +277,10 @@ namespace detail {
 using Refusal = std::optional<std::pair<Error::Id, std::string>>;
 
 /// The refusal of project_high_dim(N, proj) for a set of dimension n; the entries of every set
-/// class that has the operation raise it with CORA_CHECK.
-Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj);
+/// class that has the operation raise it with CORA_CHECK. `operation` names it in the message
+/// (lift has the same checks).
+Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj,
+                                 const char *operation = "project_high_dim");
 
 } // namespace detail
 

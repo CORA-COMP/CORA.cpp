@@ -78,6 +78,9 @@ changed, and the reasons are listed below.
 | `isequal(S1, S2, tol)`, `eq`, `ne` | `isequal(S1, S2, tol)`, `eq`, `ne`, `S1 == S2` | `cora.isequal`, `cora.eq`, `cora.ne`, `S1 == S2` |
 | `decompose(S, blocks)` | `S.decompose(blocks)` (0-based, inclusive) | `S.decompose(blocks)` |
 | `projectHighDim(S, N, proj)` | `S.project_high_dim(N, proj)` | `S.project_high_dim(N, proj)` |
+| `lift(S, N, proj)` | `S.lift(N, proj)` | `S.lift(N, proj)` |
+| `norm(S, type, mode)` | `S.norm(type, mode)` | `S.norm(type, mode)` |
+| `enclose(S1, S2)`, `enclose(Z, M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` |
 | `projectOnHyperplane(S, hyp)` | `S.project_on_hyperplane(c, d)` (the constraint) | `S.project_on_hyperplane(c, d)` |
 | `contSet.generateRandom(...)` | `ContSet::generate_random(rng, n, admissible)` | `cora.ContSet.generate_random(rng, n, admissible)` |
 | `and_`, `contains_`, `isIntersecting_` | `detail::intersect_impl`, `contains_impl`, `is_intersecting_impl` | - |

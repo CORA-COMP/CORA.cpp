@@ -122,6 +122,8 @@ class EmptySet : public detail::DimensionSet {
     Set linear_map_impl(const Tensor &M) const override;
     Set translate_impl(const Tensor &v) const override;
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
+    Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
 
 };
 

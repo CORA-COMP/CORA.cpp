@@ -7,6 +7,7 @@
 //
 // CORA: contSet/@interval/enclose.m
 
+#include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
 
@@ -24,6 +25,11 @@ Interval Interval::enclose(const Interval &I2) const {
                std::to_string(I2.dim());
     });
     return convex_hull(I2);
+}
+
+Set Interval::enclose_impl(const ContSet &S2) const {
+    if (S2.class_id() != ClassId::interval) priv_noops("enclose", *this, &S2);
+    return enclose(static_cast<const Interval &>(S2));
 }
 
 } // namespace cora

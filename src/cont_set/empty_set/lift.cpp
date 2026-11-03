@@ -24,6 +24,10 @@ EmptySet EmptySet::lift(int64_t N, const std::vector<int64_t> &dims) const {
     return EmptySet(N);
 }
 
+Set EmptySet::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {
+    return lift(N, proj);
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

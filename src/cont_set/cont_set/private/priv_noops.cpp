@@ -11,8 +11,9 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-void priv_noops(const char *operation, const ContSet &S) {
-    CORA_FAIL(Error::noops, std::string(operation) + " is not implemented for " + S.class_name());
+void priv_noops(const char *operation, const ContSet &S, const ContSet *other) {
+    CORA_FAIL(Error::noops, std::string(operation) + " is not implemented for " + S.class_name() +
+                                (other ? " and " + other->class_name() : std::string()));
 }
 
 } // namespace cora
