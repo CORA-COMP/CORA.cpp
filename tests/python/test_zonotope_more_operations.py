@@ -90,8 +90,8 @@ class Measures(unittest.TestCase):
         flat = zonotope([0, 0], [[1, 2], [1, 2]])
         self.assertFalse(flat.is_full_dim())
         thin = zonotope([0, 0], [[1, 0], [0, 1e-7]])
-        self.assertFalse(thin.is_full_dim())
-        self.assertTrue(thin.is_full_dim(tol=1e-8))
+        self.assertFalse(thin.is_full_dim(tol=1e-6))  # CORA's tolerance
+        self.assertTrue(thin.is_full_dim(tol=1e-8) and thin.is_full_dim())
         res, basis = flat.is_full_dim_subspace()
         self.assertFalse(res)
         np.testing.assert_allclose(np.abs(basis), np.sqrt(0.5) * np.ones((2, 1)))
