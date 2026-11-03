@@ -44,7 +44,7 @@ class Figure {
         double face_alpha = 1; // the opacity of the fill; the outline is opaque
         double line_width = 1, radius = 2, sign = 1, b = 0;
         Point a = {0, 0};
-        std::string label;
+        std::string label = "";
         int zorder = 3;
     };
 

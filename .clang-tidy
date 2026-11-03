@@ -7,6 +7,8 @@
 #   bugprone-unchecked-optional-access           optional members are set by construction or by CORA_CHECK, which it cannot see
 #   bugprone-exception-escape                    main of an example lets an error terminate the program
 #   performance-inefficient-string-concatenation  a message is built once, a + b + c reads better than append
+#   readability-redundant-string-init, readability-redundant-member-init
+#                                                an explicit "" keeps an aggregate fully initialised (-Wmissing-field-initializers)
 #   performance-no-automatic-move                Tensor and Zonotope are handles of shared data: a const local copies cheaply
 #   performance-enum-size                        the enums are part of the bound API; their width saves nothing
 #   readability-simplify-boolean-expr            !(a <= b) is not a > b for NaN, which the code relies on
@@ -32,6 +34,8 @@ Checks: >
   modernize-use-default-member-init,
   modernize-use-equals-default,
   readability-redundant-*,
+  -readability-redundant-string-init,
+  -readability-redundant-member-init,
   readability-container-size-empty,
   readability-else-after-return,
   readability-misleading-indentation,
