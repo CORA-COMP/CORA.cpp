@@ -37,5 +37,5 @@ if [ ! -f "$WORK/base-source/scripts/cmake/install.cmake" ]; then
 fi
 build "$WORK/base-source" base
 build "$ROOT" head
-python3 "$ROOT/scripts/ci/instruction_counts.py" --threshold "$THRESHOLD" \
-    --base "$WORK/base-micro/micro" --head "$WORK/head-micro/micro"
+(cd "$ROOT" && python3 "$ROOT/scripts/ci/instruction_counts.py" --threshold "$THRESHOLD" \
+    --base "$WORK/base-micro/micro" --head "$WORK/head-micro/micro" --accept-from "$BASE")

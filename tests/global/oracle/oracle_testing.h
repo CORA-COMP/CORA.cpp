@@ -184,6 +184,11 @@ inline bool same_bits(const std::string &what, const std::vector<int64_t> &a,
     return a == b;
 }
 
+/// A point result against a point interval of the oracle: both of its bounds.
+inline bool same_bits(const std::string &what, const cora::Tensor &a, const lean::Interval &b) {
+    return same_bits(what + ".inf", a, b.inf()) & same_bits(what + ".sup", a, b.sup());
+}
+
 /// A 1 x 1 tensor (CORA.cpp's scalar results) against the oracle's number.
 inline bool same_bits(const std::string &what, const cora::Tensor &a, double b) {
     return same_bits(what, a.data()[0], b);

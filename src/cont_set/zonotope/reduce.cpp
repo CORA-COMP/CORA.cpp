@@ -2,7 +2,8 @@
 //
 // The generators that cost the most to box stay, by Girard's metric ||g||_1 - ||g||_inf (zero on an
 // axis-aligned one); the others are replaced by the box that encloses them. The result contains the
-// zonotope and has at most order * n generators (n the dimension).
+// zonotope and has at most order * n generators (n the dimension). A batch reduces member by
+// member.
 //
 // Syntax:   Zred = Z.reduce(order);
 // Inputs:   order - the largest number of generators per dimension, at least 1
@@ -16,9 +17,6 @@
 #include "cora/global/error.h"
 #include "global/format.h"
 
-#include <algorithm>
-#include <numeric>
-
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
@@ -31,28 +29,15 @@ Zonotope Zonotope::reduce(int order) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "reduce: the zonotope order must be at least 1, got " + std::to_string(order);
     });
-    const std::vector<int64_t> shape = G_.shape();
-    CORA_CHECK(shape.size() == 2, Error::not_supported, [&] {
-        return "reduce: takes a single zonotope, not a batch of the shape " + shape_text(shape) +
-               "; reduce the members one by one";
-    });
-    const int64_t n = shape[0], m = shape[1];
+    const int64_t n = dim(), m = G_.shape().back();
     if (m <= order * n) return *this;
 
-    // Which generators stay is decided on the metric; the sets are then built from tensors.
-    const Tensor abs_t = G_.abs().transpose();
-    const std::vector<double> metric = (abs_t.sum_last() - abs_t.max_last()).data();
-    std::vector<int64_t> by_metric(m);
-    std::iota(by_metric.begin(), by_metric.end(), 0);
-    std::stable_sort(by_metric.begin(), by_metric.end(),
-                     [&](int64_t a, int64_t b) { return metric[a] > metric[b]; });
-
-    // The kept generators come first, then one box generator per dimension.
+    // The kept generators come first, by Girard's score (the choice carries no gradient), then
+    // one box generator per dimension for the rest; per member of a batch.
     const int64_t keep = order * n - n;
-    const std::vector<int64_t> kept(by_metric.begin(), by_metric.begin() + keep);
-    const std::vector<int64_t> rest(by_metric.begin() + keep, by_metric.end());
-    const Tensor box = G_.select_cols(rest).abs().sum_last().diag();
-    return {c_, keep == 0 ? box : Tensor::cat_last({G_.select_cols(kept), box})};
+    const auto [kept, rest] = G_.detach().girard_split(keep);
+    const Tensor box = G_.take_along_axis(rest, -1).abs_sum().diag();
+    return {c_, keep == 0 ? box : Tensor::concat({G_.take_along_axis(kept, -1), box}, -1)};
 }
 
 } // namespace cora

@@ -30,7 +30,7 @@ constexpr int kMaxEta = 75;                     // terms before a Taylor sum cou
 /// Whether a <= b holds for every entry.
 bool aux_all_le(const Tensor &a, const Tensor &b) {
     double m = -std::numeric_limits<double>::infinity();
-    for (double v : (a - b).max_last().data()) m = std::max(m, v);
+    for (double v : (a - b).max(-1, true).data()) m = std::max(m, v);
     return m <= 0;
 }
 
@@ -76,14 +76,14 @@ Tensor TaylorLinSys::Apower(int i) {
 Tensor TaylorLinSys::Apos(int i) {
     Apower(i);
     if (static_cast<int>(Apos_.size()) < i) Apos_.resize(i);
-    if (!Apos_[i - 1].defined()) Apos_[i - 1] = Apower_[i - 1].pos();
+    if (!Apos_[i - 1].defined()) Apos_[i - 1] = Apower_[i - 1].maximum(0.0);
     return Apos_[i - 1];
 }
 
 Tensor TaylorLinSys::Aneg(int i) {
     Apower(i);
     if (static_cast<int>(Aneg_.size()) < i) Aneg_.resize(i);
-    if (!Aneg_[i - 1].defined()) Aneg_[i - 1] = Apower_[i - 1].neg();
+    if (!Aneg_[i - 1].defined()) Aneg_[i - 1] = Apower_[i - 1].minimum(0.0);
     return Aneg_[i - 1];
 }
 

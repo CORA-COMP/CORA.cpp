@@ -10,7 +10,8 @@
     cora.plot(R)                           # or R.plot(); cora.subplots(2, 2).to_tikz(...)
 
 Sets are immutable values with properties (Z.center, Z.generators, Z.dim) and operators (+, @, *,
-&, |, in, -). Settings are scoped: `with cora.backend("torch"):`, `with cora.checks(False):`.
+&, |, in, -). Settings are scoped: `with cora.backend("torch"):`, `with cora.checks(False):`,
+`with cora.strict_gradients():`. cora.tensor_ops() lists the Tensor operations with their tags.
 Errors are cora.errors classes (cora.errors.DimensionMismatch, ...), warnings cora.CORAWarning.
 A Python subclass of cora.ContSet, a pair registered with cora.register_binary and an algorithm
 registered with cora.register_algorithm work like the built-in ones.
@@ -28,8 +29,8 @@ from ._cora import (ContSet, Expr, Falsification, Interval, LinearSys, NeuralNet
                     ReachProblem, ReachSet, Rng, Specification, VerifyResult, Zonotope, backend,
                     binary_pairs, cart_prod, checks, checks_enabled, contains, convex_hull,
                     cora_color, current_backend, has_torch, intersect, is_intersecting, lean, plus,
-                    register_binary, set_checks_enabled, set_default_backend, unite,
-                    use_cora_colors)
+                    register_binary, set_checks_enabled, set_default_backend, strict_gradients,
+                    tensor_ops, unite, use_cora_colors)
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
 from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
@@ -46,6 +47,7 @@ __all__ = [
     "checks_enabled", "contains", "convex_hull", "cora_color", "current_backend", "errors",
     "has_torch", "intersect", "is_intersecting", "lean", "plot", "plot_over_time",
     "plot_rand_point", "plus", "register_algorithm", "register_binary", "set_checks_enabled",
-    "set_default_backend", "subplots", "to_tikz", "unite", "use_cora_colors", "Tensor", "cos",
+    "set_default_backend", "strict_gradients", "subplots", "tensor_ops", "to_tikz", "unite",
+    "use_cora_colors", "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]

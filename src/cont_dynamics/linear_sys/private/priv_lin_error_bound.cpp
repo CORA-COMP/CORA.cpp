@@ -94,7 +94,7 @@ void aux_solve2x2(double a, double b, double c, double d, double r1, double r2, 
 /// The 2-norm of the column sums |V| of a matrix (n, m): MATLAB's vecnorm(sum(abs(V), 2)).
 double aux_row_sum_norm(const Tensor &V) {
     double s = 0;
-    for (double v : V.abs().sum_last().data()) s += v * v;
+    for (double v : V.abs().sum(-1, true).data()) s += v * v;
     return std::sqrt(s);
 }
 
@@ -235,9 +235,7 @@ bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
 
 void LinErrorBound::compute_error_bound_reduction(const Tensor &A, const Tensor &GU) {
     // No input generators: nothing to reduce.
-    bool any = false;
-    for (double v : GU.data()) any = any || v != 0;
-    if (!any) {
+    if (GU.abs().sum().item() == 0) {
         bound_red_max = 0;
         return;
     }

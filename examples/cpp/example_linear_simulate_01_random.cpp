@@ -52,7 +52,7 @@ int main() {
     bool inside = true;
     for (std::size_t j = 0; j < traj_extreme.size(); ++j) {
         const std::size_t step = std::min(j / 2, R.time_interval.size() - 1); // two points per step
-        const std::vector<double> along = d.transpose().matmul(traj_extreme[j]).data();
+        const std::vector<double> along = d.matrix_transpose().matmul(traj_extreme[j]).data();
         inside &= *std::max_element(along.begin(), along.end()) <=
                   R.time_interval[step].support_function(d).data()[0] + 1e-9;
     }

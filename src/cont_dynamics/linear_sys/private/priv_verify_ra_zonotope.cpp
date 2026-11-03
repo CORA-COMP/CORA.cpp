@@ -702,7 +702,7 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
     // Adaptive loop ------------------------------------------------------------------------------
     // The maximum allowed error: a first estimate from simulations, refined by the distances.
     // The simulations use no input: CORA centers U before and drops its center from them.
-    const Tensor no_input = Tensor::like(A, std::vector<double>(n, 0.0), {n, 1});
+    const Tensor no_input = A.zeros_like({n, 1});
     double emax = aux_init_error(A, sys.C(), no_input, R0, safe_sets, unsafe_sets, t_final);
     TaylorLinSys taylor(A);
     AdaptiveSaveData savedata;

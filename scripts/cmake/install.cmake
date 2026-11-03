@@ -8,7 +8,7 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/cora" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-        FILES_MATCHING PATTERN "*.h")
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.def")
 install(FILES "${CMAKE_BINARY_DIR}/include/cora/config.h" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/cora")
 install(TARGETS cora cora_flags EXPORT CORATargets
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"

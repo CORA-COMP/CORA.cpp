@@ -21,7 +21,7 @@ namespace cora {
 CanonicalInput priv_canonical_input(const LinearSys &sys, const Zonotope &U) {
     const Tensor &A = sys.A();
     const int64_t n = A.shape()[0];
-    CanonicalInput in{Tensor::like(A, std::vector<double>(n, 0.0), {n, 1}),
+    CanonicalInput in{A.zeros_like({n, 1}),
                       Tensor::like(A, {}, {n, 0}), n, sys.C() ? sys.C()->shape()[0] : n};
     if (!sys.B()) return in;
     const Tensor &B = *sys.B();
@@ -29,11 +29,7 @@ CanonicalInput priv_canonical_input(const LinearSys &sys, const Zonotope &U) {
     if (U.generators().shape()[1] == 0) return in;
     const Tensor GU = B.matmul(U.generators());
     // zero generators add no uncertainty; dropping them keeps the path without an input set
-    for (const double v : GU.data())
-        if (v != 0) {
-            in.GU = GU;
-            break;
-        }
+    if (GU.abs().sum().item() != 0) in.GU = GU;
     return in;
 }
 

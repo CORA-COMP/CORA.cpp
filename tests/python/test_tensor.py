@@ -9,6 +9,8 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch")
 
 import cora
+if not cora.has_torch:  # torch is installed, but this build has no torch backend
+    raise unittest.SkipTest("needs a build with torch")
 
 
 class Constructors(unittest.TestCase):

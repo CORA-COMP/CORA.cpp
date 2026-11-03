@@ -1,4 +1,4 @@
-// lean - the lean backend of Tensor: double matrices whose operations round and order as CORALean's
+// lean - the lean backend of Tensor: float64 tensors whose operations round and order as CORALean's
 //
 // Syntax:   BackendScope scope("lean");   Tensor t({{1, 2}, {3, 4}});   bool b = is_lean(t);
 // See also: tensor.h, eigen.h, lean/oracle.h

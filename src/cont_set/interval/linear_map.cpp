@@ -2,7 +2,8 @@
 //
 // Syntax:   Ires = I.linear_map(M);
 // Inputs:   M - matrix (..., n, n)
-// Outputs:  Ires - the interval hull of M * I: center M*c, radius |M|*r
+// Outputs:  Ires - the interval hull of M * I: each bound sums the smaller (larger) of
+//           m_ik inf_k and m_ik sup_k, as CORA
 // See also: Zonotope::linear_map
 //
 // CORA: contSet/@interval/mtimes.m
@@ -23,9 +24,8 @@ Interval Interval::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(dim()) +
                " columns (the dimension of I), got the shape " + shape_text(M.shape());
     });
-    const Tensor c = M.matmul(center());
-    const Tensor r = M.abs().matmul(rad());
-    return {c - r, c + r};
+    auto [lo, hi] = Tensor::matmul_interval(M, inf_, sup_);
+    return {std::move(lo), std::move(hi)};
 }
 
 } // namespace cora

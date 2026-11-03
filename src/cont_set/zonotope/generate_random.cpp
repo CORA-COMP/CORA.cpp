@@ -40,7 +40,7 @@ std::vector<double> aux_generators(int64_t n, int64_t m, Rng &rng) {
 
 // ===========================================  MAIN  =========================================== //
 
-Zonotope Zonotope::generate_random(int64_t n, int64_t m, Rng &rng) {
+CORA_FROM_NUMBERS Zonotope Zonotope::generate_random(int64_t n, int64_t m, Rng &rng) {
     detail::Entry entry;
     CORA_CHECK(n >= 1 && m >= 0, Error::wrong_value, [&] {
         return "generate_random: needs a dimension n >= 1 and m >= 0 generators, got n = " +

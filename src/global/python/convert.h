@@ -1,8 +1,9 @@
 // convert - what crosses between Python and C++: arrays, sets, option structs, errors
 //
 // Arrays: a torch tensor runs on the libtorch backend (when the package is built against torch,
-// CORACPP_PYTHON_TORCH), a numpy array on Eigen; a vector is 1-D in Python, a column (..., n, 1)
-// in C++. Sets: any cora set, a Python subclass of ContSet included, becomes a cora::Set and comes
+// CORACPP_PYTHON_TORCH), a numpy array on Eigen over the array's own memory, and results come
+// back as numpy arrays over the tensor's memory: no copy either way. A vector is 1-D in Python, a
+// column (..., n, 1) in C++. Sets: any cora set, a Python subclass of ContSet included, becomes a cora::Set and comes
 // back as the object of its class. Option structs: a problem and an algorithm are filled from
 // keyword arguments through their field lists; a keyword that fits none is refused with the
 // closest name. Only conversion lives here, no computation.
@@ -17,13 +18,12 @@
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "cora/global/backend/eigen.h"
+#include "cora/global/backend/host.h"
 #include "cora/global/backend/lean.h"
 #include "cora/global/options.h"
 
 #include <algorithm>
 #include <optional>
-#include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <variant>
@@ -40,48 +40,86 @@ namespace py = pybind11;
 
 // Arrays ------------------------------------------------------------------------------------------
 
-/// A numpy matrix as a tensor: on Eigen, except under `with cora.backend("lean")`, where it is a
-/// lean tensor so that CORA.cpp rounds and orders its operations as the CORALean oracle does.
-inline Tensor host_tensor(const Eigen::MatrixXd &m) {
-    if (backend().name() != "lean") return from_eigen(m);
-    std::vector<double> row_major;
-    for (Eigen::Index i = 0; i < m.rows(); ++i)
-        for (Eigen::Index j = 0; j < m.cols(); ++j) row_major.push_back(m(i, j));
-    return Tensor::from_data(row_major, {m.rows(), m.cols()});
+/// Whether the GIL can still be taken: not once the interpreter is finalized (at process exit,
+/// when static objects holding Python objects are destroyed).
+inline bool python_alive() { return Py_IsInitialized() != 0; }
+
+/// What keeps a Python object alive while a tensor borrows its memory; released under the GIL.
+inline std::shared_ptr<const void> keep_alive(const py::handle &o) {
+    PyObject *p = o.ptr();
+    Py_INCREF(p);
+    return std::shared_ptr<const void>(p, [](const void *q) {
+        if (!python_alive()) return; // the interpreter is gone: leak, as Python does at exit
+        py::gil_scoped_acquire gil;
+        Py_DECREF(static_cast<PyObject *>(const_cast<void *>(q)));
+    });
 }
 
-/// A lean tensor (a unbatched matrix) as an Eigen matrix.
-inline Eigen::MatrixXd host_matrix(const Tensor &t) {
-    const std::vector<int64_t> shape = t.shape();
-    const std::vector<double> data = t.data();
-    return Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
-        data.data(), shape[0], shape[1]);
+/// A numpy array (or a list) as a host tensor over the array's memory, without a copy: on eigen,
+/// or on lean under `with cora.backend("lean")` (so that CORA.cpp rounds as the CORALean oracle).
+/// A copy is made only for an array that is not C-contiguous or not float64/float32 (lean:
+/// float64). `column` makes a 1-D array a column (n, 1).
+inline Tensor host_tensor(const py::handle &o, bool column) {
+    const uint8_t id = backend().name() == "lean" ? backend_id::lean : backend_id::eigen;
+    py::array a = py::array::ensure(o);
+    if (!a) CORA_FAIL(Error::wrong_value, "cora: expected a numpy array");
+    const bool f32 = a.dtype().is(py::dtype::of<float>()) && id == backend_id::eigen;
+    const bool usable = f32 || a.dtype().is(py::dtype::of<double>());
+    if (!usable || !(a.flags() & py::array::c_style))
+        a = py::array_t<double, py::array::c_style | py::array::forcecast>::ensure(o);
+    Shape shape(std::vector<int64_t>(a.shape(), a.shape() + a.ndim()));
+    if (column && a.ndim() == 1) shape.push_back(1);
+    return host_borrow(a.data(), f32 ? DType::float32 : DType::float64, shape, keep_alive(a), id);
+}
+
+/// A host tensor as a numpy array of `shape` over the tensor's memory, without a copy: a capsule
+/// keeps the tensor alive. Read-only unless the array is the memory's only holder.
+inline py::array host_array(const Tensor &t, const Shape &shape) {
+    const HostView v = host_view(t);
+    const bool f32 = v.dtype == DType::float32;
+    const ssize_t item = f32 ? sizeof(float) : sizeof(double);
+    std::vector<ssize_t> dims(shape.begin(), shape.end()), strides(dims.size());
+    ssize_t step = item;
+    for (std::size_t d = dims.size(); d-- > 0;) {
+        strides[d] = step;
+        step *= dims[d];
+    }
+    py::capsule base(new Tensor::Ptr(t.ptr()),
+                     [](void *p) { delete static_cast<Tensor::Ptr *>(p); });
+    py::array out(f32 ? py::dtype::of<float>() : py::dtype::of<double>(), dims, strides, v.data,
+                  base);
+    if (!v.unique) out.attr("setflags")(py::arg("write") = false);
+    return out;
+}
+
+/// The shape of a column (..., n, 1) as a vector (..., n).
+inline Shape vector_shape(const Tensor &t) {
+    Shape s;
+    for (int64_t d = 0; d + 1 < t.ndim(); ++d) s.push_back(t.shape()[d]);
+    return s;
 }
 
 /// A Python vector (..., n) as a column (..., n, 1).
 #ifdef CORACPP_PYTHON_TORCH
 inline Tensor column(const torch::Tensor &v) { return from_torch(v.unsqueeze(-1)); }
 #endif
-inline Tensor column(const Eigen::VectorXd &v) { return host_tensor(v); }
 
 /// A column (..., n, 1) as a Python vector (..., n), in the array type of its backend.
 inline py::object vector(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1));
 #endif
-    if (is_eigen(t)) return py::cast(Eigen::VectorXd(to_eigen(t).col(0)));
-    if (is_lean(t)) return py::cast(Eigen::VectorXd(host_matrix(t).col(0)));
+    if (is_host(t)) return host_array(t, vector_shape(t));
     CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take; "
                                     "use the eigen, torch or lean backend");
 }
 
-/// A matrix in the array type of its backend.
+/// A matrix (or a batch) in the array type of its backend.
 inline py::object matrix(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH
     if (is_torch(t)) return py::cast(to_torch(t));
 #endif
-    if (is_eigen(t)) return py::cast(to_eigen(t));
-    if (is_lean(t)) return py::cast(host_matrix(t));
+    if (is_host(t)) return host_array(t, t.shape());
     CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take; "
                                     "use the eigen, torch or lean backend");
 }
@@ -89,14 +127,14 @@ inline py::object matrix(const Tensor &t) {
 /// The bounds of an interval: a column bound is a vector (..., n), a matrix bound stays.
 inline py::object bounds(const Tensor &t) { return t.shape().back() == 1 ? vector(t) : matrix(t); }
 
-/// A (..., 1, 1) result as a scalar per batch element: a torch tensor (...) or a float.
+/// A (..., 1, 1) result as a scalar per batch element: a torch tensor (...), a float for one
+/// matrix, else an array (...).
 inline py::object scalar(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1).squeeze(-1));
 #endif
-    if (is_eigen(t)) return py::cast(to_eigen(t)(0, 0));
-    if (is_lean(t)) return py::cast(t.data()[0]);
-    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take");
+    if (t.numel() == 1) return py::cast(t.item());
+    return host_array(t, vector_shape(t.squeeze(-1)));
 }
 
 /// A torch tensor or numpy array (or a list of numbers) as a Tensor on its backend, 1-D as a
@@ -112,9 +150,8 @@ inline std::optional<Tensor> as_tensor(const py::handle &o) {
     if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) ||
         py::isinstance<py::tuple>(o)) {
         const py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
-        if (!a) return std::nullopt;
-        if (a.ndim() == 1) return column(py::cast<Eigen::VectorXd>(a));
-        if (a.ndim() == 2) return host_tensor(py::cast<Eigen::MatrixXd>(a));
+        if (!a || a.ndim() == 0) return std::nullopt;
+        return host_tensor(o, true);
     }
     return std::nullopt;
 }
@@ -126,25 +163,21 @@ inline Tensor tensor_of(const py::handle &o, const char *what) {
               std::string("cora: ") + what + " must be a numpy array or a torch tensor");
 }
 
-/// A vector (..., n) from Python as a column (..., n, 1): a torch tensor of any batch, or a 1-D
-/// numpy array or list.
+/// A vector (..., n) from Python as a column (..., n, 1): a torch tensor of any batch, or a
+/// numpy array or list (1-D, or a batch (..., n)), or a number.
 inline Tensor vector_of(const py::handle &o, const char *what) {
 #ifdef CORACPP_PYTHON_TORCH
     py::detail::make_caster<torch::Tensor> torch_caster;
     if (torch_caster.load(o, /*convert=*/false)) return column(py::cast<torch::Tensor>(o));
 #endif
     if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) || py::isinstance<py::tuple>(o)) {
-        const py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
-        if (a && a.ndim() == 1) return column(py::cast<Eigen::VectorXd>(a));
-        if (a && a.ndim() == 0) return column(Eigen::VectorXd::Constant(1, py::cast<double>(o)));
+        py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
+        if (a && a.ndim() >= 1) return host_tensor(o, false).expand_dims(-1);
+        if (a && a.ndim() == 0) return host_tensor(a.reshape({1}), true);
     }
     CORA_FAIL(Error::wrong_value, std::string("cora: ") + what +
-                                      " must be a vector: a torch tensor (..., n) or a 1-D numpy array");
+                                      " must be a vector: a torch tensor (..., n) or a numpy array");
 }
-
-/// Whether the GIL can still be taken: not once the interpreter is finalized (at process exit,
-/// when static objects holding Python objects are destroyed).
-inline bool python_alive() { return Py_IsInitialized() != 0; }
 
 // Sets --------------------------------------------------------------------------------------------
 

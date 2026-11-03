@@ -21,23 +21,14 @@
 
 namespace cora {
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-/// The reduction to zonotope_order; a batch keeps all generators, reduction takes a single set.
-Zonotope aux_reduce(const Zonotope &Z, int zonotope_order) {
-    return Z.generators().shape().size() == 2 ? Z.reduce(zonotope_order) : Z;
-}
-
-} // namespace
-
 
 // ===========================================  MAIN  =========================================== //
 
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
                              int steps) {
     ReachSet R;
+    R.time_interval.reserve(steps);
+    R.time_point.reserve(steps + 1);
     // The identity map broadcasts X0 to a batch of systems, so every step has the batch shape.
     Zonotope X = X0.linear_map(e_adt.eye_like());
 
@@ -56,6 +47,8 @@ ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Inte
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
                              const InputSolution &in, int steps, int zonotope_order) {
     ReachSet R;
+    R.time_interval.reserve(steps);
+    R.time_point.reserve(steps + 1);
     const Zonotope X =
         X0.linear_map(e_adt.eye_like()); // the identity map broadcasts a batch of sets
     if (steps < 1) return {{}, {X}};
@@ -69,10 +62,10 @@ ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Inte
     R.time_point.push_back(Htp.plus(PU));
 
     for (int k = 1; k < steps; ++k) {
-        Htp = aux_reduce(Htp.linear_map(e_adt) + in.Pu, zonotope_order);
-        Hti = aux_reduce(Hti.linear_map(e_adt) + in.Pu, zonotope_order);
+        Htp = (Htp.linear_map(e_adt) + in.Pu).reduce(zonotope_order);
+        Hti = (Hti.linear_map(e_adt) + in.Pu).reduce(zonotope_order);
         PUnext = PUnext.linear_map(e_adt);
-        PU = aux_reduce(PU.plus(PUnext), zonotope_order);
+        PU = PU.plus(PUnext).reduce(zonotope_order);
         R.time_interval.push_back(Hti.plus(PU).plus(in.Cinput));
         R.time_point.push_back(Htp.plus(PU));
     }

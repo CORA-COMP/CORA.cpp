@@ -17,7 +17,7 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Tensor Interval::support_function_impl(const Tensor &d) const {
-    return d.transpose().matmul(center()) + d.abs().transpose().matmul(rad());
+    return d.matrix_transpose().matmul(center()) + d.abs().matrix_transpose().matmul(rad());
 }
 
 } // namespace cora

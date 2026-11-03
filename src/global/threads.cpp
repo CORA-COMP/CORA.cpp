@@ -94,7 +94,7 @@ EigenThreads::~EigenThreads() { Eigen::setNbThreads(previous_); }
 
 // The whole pool once the work clears the bar, else one thread: never a team in between.
 int threads_for(long long iterations, long long work) {
-    if (iterations <= 1) return 1;
+    if (iterations <= 1 || work < kMinWorkPerThread) return 1; // no pool needed, none configured
     return work >= kMinWorkPerThread * max_threads() ? max_threads() : 1;
 }
 

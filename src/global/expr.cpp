@@ -46,12 +46,11 @@ using M = ExprMaker;
 
 const double kPi = 3.14159265358979323846;
 
-/// A tensor of the shape and backend of `like` filled with `value`; without `like`, a 1x1 one.
-Tensor aux_constant(const Tensor &like, double value) {
+/// A tensor of the shape and backend of `like` filled with `value`; without `like` (a constant
+/// with no state to follow), a 1x1 one on the current backend.
+CORA_FROM_NUMBERS Tensor aux_constant(const Tensor &like, double value) {
     if (!like.defined()) return Tensor::from_data({value}, {1, 1});
-    int64_t count = 1;
-    for (const int64_t d : like.shape()) count *= d;
-    return Tensor::like(like, std::vector<double>(count, value), like.shape());
+    return like.full_like(like.shape(), value);
 }
 
 /// The mask of `like`'s shape with 1 where the flag is set: a decision made on the host values,
@@ -62,12 +61,12 @@ Tensor aux_mask(const Tensor &like, const std::vector<double> &flags) {
 
 /// a^n for a tensor and an integer n, by repeated squaring.
 Tensor aux_power(const Tensor &a, int n) {
-    if (n < 0) return aux_constant(a, 1.0).div(aux_power(a, -n));
+    if (n < 0) return aux_constant(a, 1.0).divide(aux_power(a, -n));
     if (n == 0) return aux_constant(a, 1.0);
     Tensor result, base = a;
     for (int k = n; k > 0; k >>= 1) {
-        if (k & 1) result = result.defined() ? result.mul(base) : base;
-        if (k > 1) base = base.mul(base);
+        if (k & 1) result = result.defined() ? result.multiply(base) : base;
+        if (k > 1) base = base.multiply(base);
     }
     return result;
 }
@@ -95,8 +94,8 @@ Range aux_trig(const Range &a, bool cosine) {
         keep_bottom[i] = 1 - bottom[i];
     }
     const Tensor va = cosine ? a.lo.cos() : a.lo.sin(), vb = cosine ? a.hi.cos() : a.hi.sin();
-    return {Tensor::minimum(va, vb).mul(aux_mask(a.lo, keep_bottom)) - aux_mask(a.lo, bottom),
-            Tensor::maximum(va, vb).mul(aux_mask(a.lo, keep_top)) + aux_mask(a.lo, top)};
+    return {va.minimum(vb).multiply(aux_mask(a.lo, keep_bottom)) - aux_mask(a.lo, bottom),
+            va.maximum(vb).multiply(aux_mask(a.lo, keep_top)) + aux_mask(a.lo, top)};
 }
 
 Range aux_div(const Range &a, const Range &b) {
@@ -108,7 +107,7 @@ Range aux_div(const Range &a, const Range &b) {
                       "cora: an expression divides by a range that contains 0; "
                       "the box is too large for this dynamics");
     const Tensor one = aux_constant(b.lo, 1.0);
-    return a * Range(one.div(b.hi), one.div(b.lo));
+    return a * Range(one.divide(b.hi), one.divide(b.lo));
 }
 
 Range aux_pow(const Range &a, int n) {
@@ -120,7 +119,7 @@ Range aux_pow(const Range &a, int n) {
     const std::vector<double> lo = a.lo.data(), hi = a.hi.data();
     std::vector<double> keep(lo.size());
     for (std::size_t i = 0; i < lo.size(); ++i) keep[i] = !(lo[i] <= 0 && hi[i] >= 0);
-    return {Tensor::minimum(p, q).mul(aux_mask(a.lo, keep)), Tensor::maximum(p, q)};
+    return {p.minimum(q).multiply(aux_mask(a.lo, keep)), p.maximum(q)};
 }
 
 // Evaluation --------------------------------------------------------------------------------------
@@ -130,8 +129,8 @@ Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
     switch (n.op) {
     case Op::add: return a + b;
     case Op::sub: return a - b;
-    case Op::mul: return a.mul(b);
-    case Op::div: return a.div(b);
+    case Op::mul: return a.multiply(b);
+    case Op::div: return a.divide(b);
     case Op::neg: return a * -1.0;
     case Op::pow: return aux_power(a, n.index);
     case Op::sin: return a.sin();
@@ -212,9 +211,10 @@ Range operator+(const Range &a, const Range &b) { return {a.lo + b.lo, a.hi + b.
 Range operator-(const Range &a, const Range &b) { return {a.lo - b.hi, a.hi - b.lo}; }
 
 Range operator*(const Range &a, const Range &b) {
-    const Tensor p[4] = {a.lo.mul(b.lo), a.lo.mul(b.hi), a.hi.mul(b.lo), a.hi.mul(b.hi)};
-    return {Tensor::minimum(Tensor::minimum(p[0], p[1]), Tensor::minimum(p[2], p[3])),
-            Tensor::maximum(Tensor::maximum(p[0], p[1]), Tensor::maximum(p[2], p[3]))};
+    const Tensor p[4] = {a.lo.multiply(b.lo), a.lo.multiply(b.hi), a.hi.multiply(b.lo),
+                         a.hi.multiply(b.hi)};
+    return {p[0].minimum(p[1]).minimum(p[2].minimum(p[3])),
+            p[0].maximum(p[1]).maximum(p[2].maximum(p[3]))};
 }
 
 Range operator*(const Range &a, double s) {
@@ -222,11 +222,11 @@ Range operator*(const Range &a, double s) {
 }
 
 Range square(const Range &a) {
-    const Tensor p = a.lo.mul(a.lo), q = a.hi.mul(a.hi);
+    const Tensor p = a.lo.multiply(a.lo), q = a.hi.multiply(a.hi);
     // The smallest square is 0 where the range contains 0, else the smaller end: with
     // dist = max(lo, 0) + max(-hi, 0) the distance of 0 from the range.
-    const Tensor dist = a.lo.pos() + (a.hi * -1.0).pos();
-    return {dist.mul(dist), Tensor::maximum(p, q)};
+    const Tensor dist = a.lo.maximum(0.0) + (a.hi * -1.0).maximum(0.0);
+    return {dist.multiply(dist), p.maximum(q)};
 }
 
 // Building ------------------------------------------------------------------------------------
@@ -316,7 +316,7 @@ Tensor Expr::eval_tensor(const std::vector<Tensor> &x) const {
     return Evaluator<Tensor>{x, like}(*this);
 }
 
-double Expr::eval(const std::vector<double> &x) const {
+CORA_FROM_NUMBERS double Expr::eval(const std::vector<double> &x) const {
     std::vector<Tensor> tensors;
     for (const double v : x) tensors.push_back(Tensor::from_data({v}, {1, 1}));
     return eval_tensor(tensors).data()[0];

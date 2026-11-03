@@ -131,7 +131,7 @@ std::string Tensor::encode(double x) {
 
 double Tensor::decode(const std::string &text) { return aux_decode(text); }
 
-cora::Tensor Tensor::gather() const {
+CORA_FROM_NUMBERS cora::Tensor Tensor::gather() const {
     std::vector<double> values;
     for (const std::string &s : data_) values.push_back(aux_decode(s));
     return cora::Tensor::from_data(values, {rows_, cols_});
