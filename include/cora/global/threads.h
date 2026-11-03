@@ -7,20 +7,38 @@
 // the pool once, and threads_for skips a region whose work cannot pay for one.
 //
 // Syntax:   configure_threads();   int nt = threads_for(iterations, work);
-//           EigenThreads narrow(work);
+//           EigenThreads narrow(work);   set_num_threads(4);
 // See also: threads.cpp
 
 #pragma once
+
+#include <string>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
 
-/// Sets OpenMP and Eigen to the machine's physical cores. An explicit OMP_NUM_THREADS is left
-/// alone. Idempotent; called at startup.
+/// The CPUs a cgroup quota grants, rounded up, from the contents of the cgroup v2 file `cpu.max`
+/// ("<quota> <period>" or "max <period>") or of the v1 files `cpu.cfs_quota_us` and
+/// `cpu.cfs_period_us`; 0 when there is no quota or it cannot be read. Pass empty strings for the
+/// version not in use.
+int quota_cpus(const std::string &cpu_max, const std::string &cfs_quota,
+               const std::string &cfs_period);
+
+/// The threads CORA may use here: the least of the cgroup CPU quota, the CPU affinity mask and
+/// the physical cores.
+int available_threads();
+
+/// Sets the width of every pool (OpenMP, Eigen, and libtorch's intra- and inter-op pools when
+/// built with it) once, to the first of: `set_num_threads`, CORACPP_NUM_THREADS, OMP_NUM_THREADS,
+/// `available_threads()`. Idempotent; called on first use.
 void configure_threads();
 
-/// The threads the pool was set to.
+/// Sets the width of every pool to `n`; `n < 1` goes back to the default above. (libtorch's
+/// inter-op pool can be sized only once, so later calls leave it.)
+void set_num_threads(int n);
+
+/// The threads the pools were set to.
 int max_threads();
 
 /// How many threads a loop of `iterations` should use when its whole body costs about

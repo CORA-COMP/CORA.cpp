@@ -29,6 +29,7 @@
 #include "cora/global/oracle/request.h"
 #include "cora/global/plot/plot.h"
 #include "cora/global/rng.h"
+#include "cora/global/threads.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
 
@@ -111,6 +112,11 @@ void bind_settings(py::module_ &m) {
             return default_tol(dtype == "float32" ? DType::float32 : DType::float64);
         },
         py::arg("dtype"), "The tolerance of a dtype ('float64' or 'float32') without any override");
+    m.def("set_num_threads", &set_num_threads, py::arg("n"),
+          "The width of every thread pool (OpenMP, Eigen, torch); n < 1: the default (the least of "
+          "the CPU quota, the affinity mask and the physical cores; CORACPP_NUM_THREADS and "
+          "OMP_NUM_THREADS override it)");
+    m.def("num_threads", &max_threads, "The width of the thread pools");
     m.def(
         "backend",
         [](const std::string &spec) {
@@ -1904,6 +1910,7 @@ PYBIND11_MODULE(_cora, m) {
 
     bind_errors(m);
     bind_settings(m);
+    configure_threads(); // the pools, before torch or numpy start any work
     bind_cont_set(m);
     bind_interval(m);
     bind_zonotope(m);

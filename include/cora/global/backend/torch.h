@@ -21,6 +21,10 @@ namespace cora {
 std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device,
                                                      bool custom_backward);
 
+/// Sets libtorch's intra-op pool to `n` threads, and its inter-op pool too the first time
+/// (libtorch allows that once, before any parallel work).
+void torch_set_threads(int n);
+
 /// The device named "cpu", "gpu" (CUDA), "cuda" or "cuda:<index>"; anything else is an error.
 torch::Device torch_device(const std::string &name);
 
