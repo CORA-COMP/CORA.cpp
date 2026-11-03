@@ -54,6 +54,11 @@ Set Fullspace::linear_map(const Interval &) const {
                             "is not implemented (CORA: CORA:noops)");
 }
 
+Set Fullspace::linear_map_impl(const Tensor &M) const { return linear_map(M); }
+
+/// A translation leaves the whole space as it is.
+Set Fullspace::translate_impl(const Tensor &) const { return *this; }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

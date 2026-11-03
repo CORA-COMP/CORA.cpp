@@ -6,6 +6,7 @@
 // See also: registry, plus
 //
 // CORA: contSet/@contSet/cartProd.m
+// CORA: contSet/@contSet/cartProd_.m
 
 #include "cora/cont_set/registry.h"
 

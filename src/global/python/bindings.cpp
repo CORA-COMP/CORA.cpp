@@ -436,6 +436,23 @@ void bind_cont_set(py::module_ &m) {
             },
             py::arg("p"), "The set shifted by -p")
         .def(
+            "times",
+            [](const ContSet &S, const py::object &factor) {
+                if (is_number(factor)) return object_of(S.times(py::cast<double>(factor)));
+                return object_of(S.times(vector_of(factor, "the factor")));
+            },
+            py::arg("factor"), "The set scaled by a number or per dimension, diag(factor) S")
+        .def(
+            "compact",
+            [](const ContSet &S, const std::optional<std::string> &method, Tol tol) {
+                return object_of(S.compact(method, tol));
+            },
+            py::arg("method") = py::none(), py::arg("tol") = py::none(),
+            "The set without redundancy; a variant of the class (a zonotope: 'zeros', 'all', "
+            "'aligned'); tol=None: the repository tolerance")
+        .def("__neg__", [](const ContSet &S) { return object_of(S.uminus()); }, "-S")
+        .def("__pos__", [](const ContSet &S) { return object_of(S.uplus()); }, "S itself")
+        .def(
             "minkowski_difference",
             [](const ContSet &S, const py::object &S2, const std::optional<std::string> &type) {
                 return object_of(S.minkowski_difference(set_of(S2), type));

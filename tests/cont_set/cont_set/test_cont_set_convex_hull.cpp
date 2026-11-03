@@ -2,6 +2,7 @@
 // noops
 //
 // CORA: contSet/@contSet/convHull.m
+// CORA: contSet/@contSet/convHull_.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

@@ -2,6 +2,7 @@
 // entry raises noops
 //
 // CORA: contSet/@contSet/cartProd.m
+// CORA: contSet/@contSet/cartProd_.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"

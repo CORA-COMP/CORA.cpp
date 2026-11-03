@@ -119,6 +119,9 @@ class EmptySet : public detail::DimensionSet {
     std::vector<Polygon> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
+    Set linear_map_impl(const Tensor &M) const override;
+    Set translate_impl(const Tensor &v) const override;
+    Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
 
 };
 

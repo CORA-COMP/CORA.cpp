@@ -40,6 +40,8 @@ Interval Interval::times(const Tensor &factor) const {
     return {lo, hi};
 }
 
+Set Interval::times_impl(const Tensor &factor) const { return times(factor); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

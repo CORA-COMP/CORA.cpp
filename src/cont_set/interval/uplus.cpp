@@ -21,6 +21,8 @@ Interval Interval::uplus() const {
     return *this;
 }
 
+Set Interval::uplus_impl() const { return uplus(); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

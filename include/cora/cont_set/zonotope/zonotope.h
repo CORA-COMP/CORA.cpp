@@ -398,6 +398,8 @@ class Zonotope : public ContSet {
 
     // The generic operations of ContSet, which a zonotope answers by its own (defined beside them).
     Set translate_impl(const Tensor &v) const override;
+    Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
+    std::optional<std::vector<std::string>> compact_methods_impl() const override;
     Set minkowski_difference_impl(const ContSet &S2,
                                   const std::optional<std::string> &type) const override;
     bool is_bounded_impl() const override;
