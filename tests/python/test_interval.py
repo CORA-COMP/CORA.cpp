@@ -14,6 +14,21 @@
 # CORA: contSet/@interval/cat.m
 # CORA: contSet/@interval/center.m
 # CORA: contSet/@interval/contains_.m
+# CORA: contSet/@interval/convHull_.m
+# CORA: contSet/@interval/cos.m
+# CORA: contSet/@interval/cosh.m
+# CORA: contSet/@interval/ctranspose.m
+# CORA: contSet/@interval/diag.m
+# CORA: contSet/@interval/dirac.m
+# CORA: contSet/@interval/empty.m
+# CORA: contSet/@interval/enclose.m
+# CORA: contSet/@interval/enclosePoints.m
+# CORA: contSet/@interval/enlarge.m
+# CORA: contSet/@interval/exp.m
+# CORA: contSet/@interval/horzcat.m
+# CORA: contSet/@interval/infimum.m
+# CORA: contSet/@interval/intervalMatrix.m
+# CORA: contSet/@interval/isBounded.m
 # CORA: contSet/@interval/generateRandom.m
 # CORA: contSet/@interval/interval.m
 # CORA: contSet/@interval/mtimes.m
@@ -176,6 +191,81 @@ class IntervalMethods(unittest.TestCase):
         self.assertGreaterEqual(float(cut.sup[0]), 3.141592653589793)
         self.assertLessEqual(float(cut.inf[0]), -3.141592653589793)
 
+    def test_exp_cos_cosh(self):
+        torch.testing.assert_close(box([-1.0], [2.0]).exp().sup, torch.exp(torch.tensor([2.0], **F64)))
+        torch.testing.assert_close(box([-1.0], [2.0]).exp().inf, torch.exp(torch.tensor([-1.0], **F64)))
+        C = box([3.0, 0.0, -10.0], [4.0, 1.0, 20.0]).cos()  # [3, 4] holds pi
+        torch.testing.assert_close(C.inf, torch.tensor([-1.0, np.cos(1.0), -1.0], **F64))
+        torch.testing.assert_close(C.sup, torch.tensor([np.cos(4.0), 1.0, 1.0], **F64))
+        H = box([-2.0, 1.0, -1.0], [-1.0, 2.0, 3.0]).cosh()  # left of 0, right of 0, around 0
+        torch.testing.assert_close(H.inf, torch.tensor([np.cosh(1.0), np.cosh(1.0), 1.0], **F64))
+        torch.testing.assert_close(H.sup, torch.tensor([np.cosh(2.0), np.cosh(2.0), np.cosh(3.0)], **F64))
+
+    def test_convex_hull_and_enclose(self):
+        I, J = box([-1.0, 0.0], [1.0, 2.0]), box([0.0, 3.0], [4.0, 5.0])
+        self.assertEqual(I.convex_hull(J).inf.tolist(), [-1.0, 0.0])
+        self.assertEqual(I.enclose(J).sup.tolist(), [4.0, 5.0])
+        self.assertEqual(cora.convex_hull(I, J).sup.tolist(), [4.0, 5.0])
+        self.assertEqual(I.convex_hull(cora.Interval.empty(2)).sup.tolist(), [1.0, 2.0])
+        for f in (I.convex_hull, I.enclose):
+            with self.assertRaises(cora.errors.DimensionMismatch):
+                f(box([0.0], [1.0]))
+
+    def test_enclose_points(self):
+        P = torch.tensor([[1.0, -2.0, 3.0], [0.0, 5.0, -1.0]], **F64)
+        I = cora.Interval.enclose_points(P)
+        self.assertEqual(I.inf.tolist(), [-2.0, -1.0])
+        self.assertEqual(I.sup.tolist(), [3.0, 5.0])
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.Interval.enclose_points(torch.zeros(2, 0, **F64))
+
+    def test_empty_and_is_bounded(self):
+        E = cora.Interval.empty(3)
+        self.assertEqual(tuple(E.inf.shape), (3, 0))
+        self.assertTrue(E.is_bounded())
+        self.assertTrue(box([0.0], [1.0]).is_bounded())
+        self.assertFalse(cora.Interval.unbounded(2).is_bounded())
+        self.assertFalse(box([0.0], [float("inf")]).is_bounded())
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.Interval.empty(-1)
+
+    def test_enlarge(self):
+        I = box([0.0, 1.0], [2.0, 5.0])
+        self.assertEqual(I.enlarge(2.0).inf.tolist(), [-1.0, -1.0])
+        self.assertEqual(I.enlarge(torch.tensor([0.5, 0.0], **F64)).sup.tolist(), [1.5, 3.0])
+        self.assertEqual(cora.Interval.unbounded(1).enlarge(2.0).sup.tolist(), [float("inf")])
+        with self.assertRaises(cora.errors.WrongValue):
+            I.enlarge(-1.0)
+        with self.assertRaises(cora.errors.NotSupported):
+            cora.Interval.unbounded(1).enlarge(0.5)
+
+    def test_matrix_methods(self):
+        a, b = box([1.0, 2.0], [3.0, 4.0]), box([5.0, 6.0], [7.0, 8.0])
+        M = cora.Interval.horzcat([a, b])
+        self.assertEqual(tuple(M.inf.shape), (2, 2))
+        self.assertEqual(M.inf.tolist(), [[1.0, 5.0], [2.0, 6.0]])
+        self.assertEqual(M.ctranspose().sup.tolist(), [[3.0, 4.0], [7.0, 8.0]])
+        self.assertEqual(cora.Interval.horzcat([a, torch.tensor([9.0, 9.5], **F64)]).inf.tolist(),
+                         [[1.0, 9.0], [2.0, 9.5]])
+        self.assertEqual(a.diag().inf.tolist(), [[1.0, 0.0], [0.0, 2.0]])
+        self.assertEqual(a.diag(1).sup.tolist(), [[0.0, 3.0, 0.0], [0.0, 0.0, 4.0], [0.0, 0.0, 0.0]])
+        self.assertEqual(M.diag().inf.tolist(), [1.0, 6.0])
+        self.assertEqual(M.infimum().tolist(), [[1.0, 5.0], [2.0, 6.0]])
+        self.assertEqual(M.interval_matrix().sup.tolist(), M.sup.tolist())
+        with self.assertRaises(cora.errors.NotSupported):
+            M.diag(2)
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            cora.Interval.horzcat([a, box([0.0], [1.0])])
+
+    def test_dirac(self):
+        inf = float("inf")
+        I = box([-3.0, -1.0, 0.0, -2.0], [-1.0, 1.0, 3.0, 0.0])
+        self.assertEqual(I.dirac().sup.tolist(), [0.0, inf, inf, inf])
+        self.assertEqual(I.dirac(1).inf.tolist(), [0.0, -inf, -inf, 0.0])
+        self.assertEqual(I.dirac(2).inf.tolist(), [0.0, -inf, -inf, -inf])
+        with self.assertRaises(cora.errors.WrongValue):
+            I.dirac(-1)
+
     def test_batches(self):
         I = cora.Interval(torch.tensor([[-1.0, 0.5], [0.0, 2.0]], **F64),
                           torch.tensor([[1.0, 1.0], [3.0, 4.0]], **F64))
@@ -200,13 +290,18 @@ class IntervalGradients(unittest.TestCase):
 
     def test_gradients(self):
         lo, hi = [0.1, -0.6, 0.3], [0.7, 0.4, 0.9]
-        for name in ("acos", "asin", "atan", "asinh", "atanh", "abs"):
+        for name in ("acos", "asin", "atan", "asinh", "atanh", "abs", "exp", "cos", "cosh"):
             with self.subTest(name):
                 self.check(lambda I, name=name: getattr(I, name)(), lo, hi)
         self.check(lambda I: I.acosh(), [1.2, 2.0], [3.0, 5.0])
         self.check(lambda I: I.atan2(I.abs() + torch.ones(3, **F64)), lo, hi)
         self.check(lambda I: I.intersect(I + torch.tensor([0.1, 0.1, 0.1], **F64)), lo, hi)
         self.check(lambda I: I.cart_prod(I), lo, hi)
+        self.check(lambda I: I.convex_hull(I + torch.full((3,), 0.05, **F64)), lo, hi)
+        self.check(lambda I: I.enlarge(1.5), lo, hi)
+        self.check(lambda I: I.interval_matrix(), lo, hi)
+        self.check(lambda I: cora.Interval.horzcat([I, I]).ctranspose(), lo, hi)
+        self.check(lambda I: I.diag(), lo, hi)
         self.check(lambda I: cora.Interval.cat(1, [I, I]), lo, hi)
         self.check(lambda I: cora.Interval(I.center, I.center + 1.0), lo, hi)
         # off the kink where two faces are reached at once

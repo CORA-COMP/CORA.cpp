@@ -75,6 +75,10 @@ changed, and the reasons are listed below.
 | `interval.generateRandom` | `Interval::generate_random(n, rng)` | `cora.Interval.generate_random` |
 | `interval.Inf(n)` | `Interval::unbounded(n)` | `cora.Interval.unbounded(n)` |
 | `cat(dim, I1, I2)` | `Interval::cat(dim, {I1, I2})` | `cora.Interval.cat(dim, [I1, I2])` |
+| `horzcat(I1, I2)` | `Interval::horzcat({I1, I2})` | `cora.Interval.horzcat([I1, I2])` |
+| `interval.empty(n)` | `Interval::empty(n)` | `cora.Interval.empty(n)` |
+| `interval.enclosePoints(P)` | `Interval::enclose_points(P)` | `cora.Interval.enclose_points(P)` |
+| `intervalMatrix(I)` | `I.interval_matrix()` | `I.interval_matrix()` |
 | `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |
 | `nonlinearSys(f)` | `NonlinearSys(f, n)` | `cora.NonlinearSys(f, n)` |
