@@ -1,4 +1,5 @@
-// test_interval_matrix_plus - IntervalMatrix plus: the sum with an interval matrix, a matrix, a number
+// test_interval_matrix_plus - IntervalMatrix plus: the sum with an interval matrix, a matrix, a
+// number
 //
 // CORA: matrixSet/@intervalMatrix/plus.m
 // PROPERTY: matrixSet/@intervalMatrix/plus.m

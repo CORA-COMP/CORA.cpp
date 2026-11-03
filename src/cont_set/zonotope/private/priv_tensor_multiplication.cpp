@@ -66,16 +66,16 @@ Refusal priv_tensor_multiplication_refusal(const Zonotope &Z, const Tensor &M,
                              std::string("every row of perm must have 3 entries, one per factor")};
         for (const int64_t j : triple)
             if (j < 0 || j >= m)
-                return std::pair{Error::wrong_value,
-                                 "perm has the generator " + std::to_string(j) + ", outside [0, " +
-                                     std::to_string(m) + ")"};
+                return std::pair{Error::wrong_value, "perm has the generator " + std::to_string(j) +
+                                                         ", outside [0, " + std::to_string(m) +
+                                                         ")"};
     }
     // every triple adds to a column of H
     for (const int64_t j : list.map)
         if (j < 0 || j >= columns)
-            return std::pair{Error::wrong_value,
-                             "map has the column " + std::to_string(j) + ", outside [0, " +
-                                 std::to_string(columns) + ")"};
+            return std::pair{Error::wrong_value, "map has the column " + std::to_string(j) +
+                                                     ", outside [0, " + std::to_string(columns) +
+                                                     ")"};
     // CORA leaves H undefined for another center and fails
     if (Z.center().detach().abs().max().item() != 0)
         return std::pair{Error::wrong_value,

@@ -36,7 +36,8 @@ Shape broadcast_shapes(const Shape &a, const Shape &b);
 
 // Tensor ------------------------------------------------------------------------------------------
 
-template <class T> struct HostTensor : Tensor::Impl {
+template <class T>
+struct HostTensor : Tensor::Impl {
     using Ptr = Tensor::Ptr;
     static constexpr int64_t kInline = 8; ///< up to this many entries live in the object
 
@@ -120,18 +121,19 @@ template <class T> struct HostTensor : Tensor::Impl {
 
 /// The kernels of the eigen backend (eigen.cpp), for HostTensor of that backend.
 namespace eigen {
-template <class T> Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b);
-template <class T> Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims);
-template <class T> Tensor::Ptr expm(const HostTensor<T> &a);
 template <class T>
-std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_linear_map(const HostTensor<T> &M,
-                                                        const HostTensor<T> &c,
-                                                        const HostTensor<T> &G);
+Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b);
 template <class T>
-std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_interval_map(const HostTensor<T> &inf,
-                                                          const HostTensor<T> &sup,
-                                                          const HostTensor<T> &c,
-                                                          const HostTensor<T> &G);
+Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims);
+template <class T>
+Tensor::Ptr expm(const HostTensor<T> &a);
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr>
+zonotope_linear_map(const HostTensor<T> &M, const HostTensor<T> &c, const HostTensor<T> &G);
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr>
+zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const HostTensor<T> &c,
+                      const HostTensor<T> &G);
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
@@ -142,7 +144,8 @@ std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
                                                     const HostTensor<T> &M, bool point_left);
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t keep);
-template <class T> Tensor::Ptr abs_sum(const HostTensor<T> &a);
+template <class T>
+Tensor::Ptr abs_sum(const HostTensor<T> &a);
 } // namespace eigen
 
 // Batches -----------------------------------------------------------------------------------------
@@ -166,7 +169,8 @@ struct BatchPairs {
 BatchPairs batch_pairs(const Shape &a, const Shape &b, const char *op);
 
 /// f(i) for i in [0, count), in threads when `work` (all of it, in scalar operations) pays.
-template <class F> void parallel_for(int64_t count, long long work, F f) {
+template <class F>
+void parallel_for(int64_t count, long long work, F f) {
     const int threads = threads_for(count, work);
     if (threads <= 1) {
         for (int64_t i = 0; i < count; ++i) f(i);

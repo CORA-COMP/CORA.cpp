@@ -134,7 +134,7 @@ Tensor aux_series_remainder(const Tensor &norm_a, double dt, int taylor_terms) {
         CORA_FAIL(Error::special_error,
                   "cora: the time step is too large for the Taylor series of the "
                   "linearized system; use a smaller step or more taylor_terms");
-    Tensor term = r.full_like(r.shape(), dt);               // dt * r^(q+1) / (q+2)!
+    Tensor term = r.full_like(r.shape(), dt); // dt * r^(q+1) / (q+2)!
     for (int i = 1; i <= q + 1; ++i) term = term.multiply(r) * (1.0 / (i + 1));
     return term.divide(1.0 - r * (1.0 / (q + 3))) * (1.0 / (q + 2));
 }

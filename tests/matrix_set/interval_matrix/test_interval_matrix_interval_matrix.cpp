@@ -11,7 +11,8 @@ using test::close;
 
 namespace {
 
-/// Center and delta give [C - |D|, C + |D|]; a center alone is a point; bounds are kept as they are.
+/// Center and delta give [C - |D|, C + |D|]; a center alone is a point; bounds are kept as they
+/// are.
 void the_three_constructors(const std::string &b) {
     const Tensor C = test::matrix({1, -2, 0, 3}, 2, 2), D = test::matrix({0.5, -1, 0, 2}, 2, 2);
     const IntervalMatrix A(C, D);
@@ -30,19 +31,22 @@ void rebuilt_from_center_and_radius(const std::string &b) {
     Rng rng(5);
     const IntervalMatrix A = test::random_matrix(rng, 3, 1.0);
     const IntervalMatrix B(A.center(), A.interval().rad());
-    check(close(B.infimum(), A.infimum(), 1e-12) && close(B.interval().sup(), A.interval().sup(), 1e-12),
+    check(close(B.infimum(), A.infimum(), 1e-12) &&
+              close(B.interval().sup(), A.interval().sup(), 1e-12),
           b + ": the center and the radius rebuild the set");
     check(B.contains(A.center(), "exact", 0.0), b + ": it contains its center");
 }
 
-/// A center and a delta of different shapes are refused; with the checks off a valid one is the same.
+/// A center and a delta of different shapes are refused; with the checks off a valid one is the
+/// same.
 void checks_and_their_switch() {
     const Tensor C = test::matrix({1, 2, 3, 4}, 2, 2), D = test::matrix({1, 2, 3}, 1, 3);
     check(test::raises([&] { IntervalMatrix(C, D); }, Error::wrong_input_in_constructor),
           "IntervalMatrix: a delta of another shape");
     const Tensor on = IntervalMatrix(C, C).infimum();
     ChecksScope off(false);
-    check(close(IntervalMatrix(C, C).infimum(), on, 0), "IntervalMatrix: the same with the checks off");
+    check(close(IntervalMatrix(C, C).infimum(), on, 0),
+          "IntervalMatrix: the same with the checks off");
 }
 
 } // namespace

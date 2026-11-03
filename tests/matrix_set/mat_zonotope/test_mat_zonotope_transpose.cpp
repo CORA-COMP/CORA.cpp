@@ -17,7 +17,8 @@ void transpose_of_the_example(const std::string &b) {
     check(close(T.center(), {1, 3, 2, 4}), b + ": the center");
     check(close(T.generators(), {1, 0, 0, 1, 0, 1, 1, 0}), b + ": the generators (both symmetric)");
     const MatZonotope W = test::set_of({1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6}, 2, 3).transpose();
-    check(W.rows() == 3 && W.cols() == 2 && close(W.center(), {1, 4, 2, 5, 3, 6}), b + ": a 2 x 3 set");
+    check(W.rows() == 3 && W.cols() == 2 && close(W.center(), {1, 4, 2, 5, 3, 6}),
+          b + ": a 2 x 3 set");
 }
 
 /// The transpose of a member is a member of the transpose (exactly), and transposing twice is the
@@ -26,8 +27,9 @@ void members_transpose(const std::string &b) {
     Rng rng(13);
     const MatZonotope A = test::random_set(rng, 3, 3, 0.5);
     const std::vector<double> coeff = test::coefficients(rng, 3);
-    check(close(test::member(A.transpose(), coeff), test::member(A, coeff).matrix_transpose(), 1e-14),
-          b + ": the transpose of a member");
+    check(
+        close(test::member(A.transpose(), coeff), test::member(A, coeff).matrix_transpose(), 1e-14),
+        b + ": the transpose of a member");
     check(test::same_set(A.transpose().transpose(), A, 0), b + ": twice is the identity");
     check(test::same_set(test::batch_member(test::batch_of(A, A).transpose(), 0), A.transpose(), 0),
           b + ": a batch");

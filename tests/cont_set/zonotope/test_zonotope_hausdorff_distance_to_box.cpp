@@ -23,12 +23,15 @@ void each_method_on_one_generator(const std::string &b) {
     check(close(Z.hausdorff_distance_to_box("wgreedy").item(), 2.0, 1e-14), b + ": wgreedy");
     check(close(Z.hausdorff_distance_to_box("wopt").item(), std::sqrt(2.0), 1e-14), b + ": wopt");
     check(close(Z.hausdorff_distance_to_box("exact").item(), std::sqrt(2.0), 1e-4), b + ": exact");
-    check(close(Z.hausdorff_distance_to_box().item(), Z.hausdorff_distance_to_box("exact").item(), 0),
-          b + ": the default of a plane is exact");
+    check(
+        close(Z.hausdorff_distance_to_box().item(), Z.hausdorff_distance_to_box("exact").item(), 0),
+        b + ": the default of a plane is exact");
     const Zonotope Z4(column({0.0, 0.0, 0.0, 0.0}), Tensor({{1.0}, {1.0}, {1.0}, {1.0}}));
-    check(close(Z4.hausdorff_distance_to_box().item(), 2.0, 1e-14), b + ": the default above 3-D is naive");
+    check(close(Z4.hausdorff_distance_to_box().item(), 2.0, 1e-14),
+          b + ": the default above 3-D is naive");
     const Zonotope Z1(column({0.0}), Tensor({{1.0, -2.0}}));
-    check(close(Z1.hausdorff_distance_to_box("exact").item(), 0.0, 0), b + ": a box in one dimension");
+    check(close(Z1.hausdorff_distance_to_box("exact").item(), 0.0, 0),
+          b + ": a box in one dimension");
 }
 
 /// A batch gives one number per member.
@@ -53,12 +56,15 @@ void bounded_by_the_generator_lengths(const std::string &b) {
             for (int i = 0; i < n; ++i) len += G[i * 5 + j] * G[i * 5 + j];
             sum += std::sqrt(len);
         }
-        check(Z.hausdorff_distance_to_box("exact").item() <= sum + 1e-9, b + ": exact <= sum of lengths");
-        check(Z.hausdorff_distance_to_box("naive").item() <= sum + 1e-9, b + ": naive <= sum of lengths");
+        check(Z.hausdorff_distance_to_box("exact").item() <= sum + 1e-9,
+              b + ": exact <= sum of lengths");
+        check(Z.hausdorff_distance_to_box("naive").item() <= sum + 1e-9,
+              b + ": naive <= sum of lengths");
         check(Z.hausdorff_distance_to_box("exact").item() >= 0, b + ": nonnegative");
     }
     const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
-    check(close(box.hausdorff_distance_to_box("exact").item(), 0.0, 1e-12), b + ": a box has distance 0");
+    check(close(box.hausdorff_distance_to_box("exact").item(), 0.0, 1e-12),
+          b + ": a box has distance 0");
 }
 
 /// Unknown methods and "ell" are refused; with the checks off the result is the same.
@@ -70,7 +76,8 @@ void checks_and_their_switch() {
           "hausdorff_distance_to_box: ell");
     const double on = Z.hausdorff_distance_to_box("wopt").item();
     ChecksScope off(false);
-    check(Z.hausdorff_distance_to_box("wopt").item() == on, "hausdorff_distance_to_box: checks off");
+    check(Z.hausdorff_distance_to_box("wopt").item() == on,
+          "hausdorff_distance_to_box: checks off");
 }
 
 } // namespace

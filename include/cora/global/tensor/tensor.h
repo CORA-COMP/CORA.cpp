@@ -167,13 +167,48 @@ class Tensor {
   public:
     /// The elementwise operations of two operands.
     enum class Binary : uint8_t {
-        add, subtract, multiply, divide, pow, maximum, minimum, remainder, atan2,
-        equal, not_equal, less, less_equal, greater, greater_equal
+        add,
+        subtract,
+        multiply,
+        divide,
+        pow,
+        maximum,
+        minimum,
+        remainder,
+        atan2,
+        equal,
+        not_equal,
+        less,
+        less_equal,
+        greater,
+        greater_equal
     };
     /// The elementwise functions.
     enum class Unary : uint8_t {
-        negative, abs, sign, floor, ceil, round, sqrt, exp, log, sin, cos, tan, asin, acos, atan,
-        sinh, cosh, tanh, asinh, acosh, atanh, isnan, isinf, isfinite
+        negative,
+        abs,
+        sign,
+        floor,
+        ceil,
+        round,
+        sqrt,
+        exp,
+        log,
+        sin,
+        cos,
+        tan,
+        asin,
+        acos,
+        atan,
+        sinh,
+        cosh,
+        tanh,
+        asinh,
+        acosh,
+        atanh,
+        isnan,
+        isinf,
+        isfinite
     };
     /// The reductions along an axis.
     enum class Reduce : uint8_t { sum, prod, max, min, argmax, argmin };

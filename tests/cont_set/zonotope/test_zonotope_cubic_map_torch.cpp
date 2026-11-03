@@ -18,11 +18,10 @@ void cubic_map_gradient() {
             for (int64_t k = 0; k < 2; ++k) out[i].push_back(from_torch(to_torch(t)[i][k]));
         return out;
     };
-    test::gradcheck("cubic_map",
-                    [&](const Inputs &x) {
-                        return test::parts(Zonotope(x[0], x[1]).cubic_map(grid(x[2])));
-                    },
-                    {Z[0], Z[1], T});
+    test::gradcheck(
+        "cubic_map",
+        [&](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).cubic_map(grid(x[2]))); },
+        {Z[0], Z[1], T});
     test::gradcheck("cubic_map (mixed)",
                     [&](const Inputs &x) {
                         const Zonotope Z2(x[0] * 0.5, x[1] * 0.7);

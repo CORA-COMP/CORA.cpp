@@ -16,8 +16,10 @@ int main() {
             const IntervalMatrix A(rnd.box_matrix(n, n)), X(rnd.box_matrix(n, n));
             const lean::IntervalMatrix L{lean::Interval(A.interval())};
             for (const int k : {0, 1, 2, 4}) {
-                test::oracle::check(A.powers(k + 1).back(), L.powers(lean::Interval(A.interval()), k));
-                test::oracle::check(A.powers(k + 3, 3, X).back(), L.powers(lean::Interval(X.interval()), k));
+                test::oracle::check(A.powers(k + 1).back(),
+                                    L.powers(lean::Interval(A.interval()), k));
+                test::oracle::check(A.powers(k + 3, 3, X).back(),
+                                    L.powers(lean::Interval(X.interval()), k));
             }
         }
     });

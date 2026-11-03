@@ -20,7 +20,7 @@ namespace {
 /// CORA's unit test: eight generators in two dimensions reduced to order 1.
 Zonotope example() {
     return {column({1.0, 0.0}), Tensor({{1.0, 3.0, -2.0, 3.0, -1.0, 0.0, 2.0, 3.0},
-                                       {2.0, -1.0, 1.0, 0.0, 3.0, -2.0, 1.0, 2.0}})};
+                                        {2.0, -1.0, 1.0, 0.0, 3.0, -2.0, 1.0, 2.0}})};
 }
 
 /// kochdumper by hand: the longest generator (3, 2) stays, the others (signed by their first
@@ -43,8 +43,9 @@ void raghuraman_by_hand(const std::string &b) {
           b + ": generators (2, 4) and (5, 0)");
     // a small generator orthogonal to the big one: CORA divides 0/0 and gets NaN, this drops it
     const Zonotope Z(column({0.0, 0.0}), Tensor({{3.0, 0.0}, {0.0, 1.0}}));
-    check(close(Z.reduce_under_approx("raghuraman", 0.5).generators(), std::vector<double>{3, 0}, 0),
-          b + ": an orthogonal small generator is dropped");
+    check(
+        close(Z.reduce_under_approx("raghuraman", 0.5).generators(), std::vector<double>{3, 0}, 0),
+        b + ": an orthogonal small generator is dropped");
 }
 
 /// Few enough generators: the zonotope without its zero generators.
@@ -80,7 +81,8 @@ void checks_and_their_switch() {
                              "cluster", "linProg", "wetzlinger"})
         check(test::raises([&] { Z.reduce_under_approx(name, 1); }, Error::not_supported),
               std::string("reduce_under_approx: ") + name);
-    check(test::raises([&] { Z.reduce_under_approx("boxNLP", 1); }, Error::wrong_value), "an unknown method");
+    check(test::raises([&] { Z.reduce_under_approx("boxNLP", 1); }, Error::wrong_value),
+          "an unknown method");
     check(test::raises([&] { Z.reduce_under_approx("yang", 0); }, Error::wrong_value), "order 0");
     check(test::raises([&] { Z.reduce_under_approx("yang", -1); }, Error::wrong_value), "order -1");
     check(test::raises([&] { Z.reduce_under_approx("kochdumper", 0.4); }, Error::wrong_value),

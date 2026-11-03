@@ -24,14 +24,16 @@ void times_scales(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({0.5, 0.0, 0.2, 0.5}, {2, 2}));
     const Interval I(column({-1.0, 0.0}), column({2.0, 3.0}));
     const Tensor f = column({2.0, -1.0});
-    const Set A = static_cast<const ContSet &>(Z).times(f), B = static_cast<const ContSet &>(I).times(f);
+    const Set A = static_cast<const ContSet &>(Z).times(f),
+              B = static_cast<const ContSet &>(I).times(f);
     check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center(), {2.0, -2.0}) &&
               test::close(A.as<Zonotope>().generators(), {1.0, 0.0, -0.2, -0.5}),
           b + ": a zonotope by a column");
     check(B.is<Interval>() && test::close(B.as<Interval>().inf(), {-2.0, -3.0}) &&
               test::close(B.as<Interval>().sup(), {4.0, 0.0}),
           b + ": a box by a column");
-    const Set C = static_cast<const ContSet &>(Z).times(3.0), D = static_cast<const ContSet &>(I).times(-2.0);
+    const Set C = static_cast<const ContSet &>(Z).times(3.0),
+              D = static_cast<const ContSet &>(I).times(-2.0);
     check(test::close(C.as<Zonotope>().center(), {3.0, 6.0}) &&
               test::close(C.as<Zonotope>().generators(), {1.5, 0.0, 0.6, 1.5}),
           b + ": a zonotope by a number");
@@ -39,9 +41,10 @@ void times_scales(const std::string &b) {
               test::close(D.as<Interval>().sup(), {2.0, 0.0}),
           b + ": a box by a number");
     // a 1 x 1 tensor is a number as well
-    check(test::close(test::support(static_cast<const ContSet &>(Z).times(column({3.0})), {1.0, 0.0}),
-                      test::support(C, {1.0, 0.0})),
-          b + ": a 1 x 1 factor");
+    check(
+        test::close(test::support(static_cast<const ContSet &>(Z).times(column({3.0})), {1.0, 0.0}),
+                    test::support(C, {1.0, 0.0})),
+        b + ": a 1 x 1 factor");
     // the support function: h_{diag(f) S}(d) = h_S(f .* d)
     check(test::close(test::support(A, {1.0, 1.0}), test::support(Z, {2.0, -1.0})),
           b + ": the support of the product");

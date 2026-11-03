@@ -13,7 +13,8 @@ namespace {
 
 /// The widths of [0, 1], [0, 2], [0, 3], [0, 4] multiply to 24; a width 0 gives 0.
 void volume_of_boxes(const std::string &b) {
-    const IntervalMatrix box(Interval(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
+    const IntervalMatrix box(
+        Interval(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
     check(close(box.volume(), std::vector<double>{24}), b + ": 1 * 2 * 3 * 4");
     check(close(test::example().volume(), std::vector<double>{0}), b + ": a degenerate entry");
     check(close(IntervalMatrix(test::matrix({1, 2}, 1, 2)).volume(), std::vector<double>{0}),
@@ -29,8 +30,10 @@ void volume_scales_and_batches(const std::string &b) {
     const Tensor C = A.center();
     const IntervalMatrix half(C, A.rad() * 0.5);
     check(close(half.volume() * 512.0, A.volume(), 1e-9), b + ": 2^9 for halved widths");
-    const IntervalMatrix box(Interval(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
-    const Tensor v = IntervalMatrix(Interval::stack({box.interval(), test::example().interval()})).volume();
+    const IntervalMatrix box(
+        Interval(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
+    const Tensor v =
+        IntervalMatrix(Interval::stack({box.interval(), test::example().interval()})).volume();
     check(close(v.reshape({2}), std::vector<double>{24, 0}), b + ": batch");
 }
 

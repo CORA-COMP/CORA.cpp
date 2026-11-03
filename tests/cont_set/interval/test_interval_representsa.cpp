@@ -60,16 +60,18 @@ void sets_that_every_box_is(const std::string &b) {
     for (const char *type : {"interval", "zonotope", "conZonotope", "polytope", "polyZonotope",
                              "zonoBundle", "conPolyZono", "levelSet", "parallelotope", "convexSet"})
         check(I.representsa(type), b + ": " + type);
-    check(!I.representsa("probZonotope") && !I.representsa("emptySet"), b + ": probZonotope, emptySet");
-    check(box({-kInf, -kInf}, {kInf, kInf}).representsa("fullspace") && !I.representsa("fullspace") &&
+    check(!I.representsa("probZonotope") && !I.representsa("emptySet"),
+          b + ": probZonotope, emptySet");
+    check(box({-kInf, -kInf}, {kInf, kInf}).representsa("fullspace") &&
+              !I.representsa("fullspace") &&
               !box({0, -kInf}, {kInf, kInf}).representsa("fullspace"),
           b + ": fullspace");
 }
 
 void the_empty_interval(const std::string &b) {
     const Interval E = Interval::empty(2);
-    for (const char *type : {"emptySet", "interval", "polytope", "hyperplane", "capsule", "zonotope",
-                             "conZonotope", "halfspace", "probZonotope"})
+    for (const char *type : {"emptySet", "interval", "polytope", "hyperplane", "capsule",
+                             "zonotope", "conZonotope", "halfspace", "probZonotope"})
         check(E.representsa(type), b + ": the empty interval is " + type);
     for (const char *type : {"origin", "point", "parallelotope", "fullspace"})
         check(!E.representsa(type), b + ": the empty interval is not " + type);
@@ -79,8 +81,10 @@ void the_empty_interval(const std::string &b) {
 /// checks off the result is the same.
 void checks_and_their_switch() {
     const Interval I = box({0, 0}, {1, 2});
-    const Interval M(Tensor::from_data({0, 0, 0, 0}, {2, 2}), Tensor::from_data({1, 1, 1, 1}, {2, 2}));
-    check(test::raises([&] { I.representsa("circle"); }, Error::wrong_value), "representsa: a type");
+    const Interval M(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
+                     Tensor::from_data({1, 1, 1, 1}, {2, 2}));
+    check(test::raises([&] { I.representsa("circle"); }, Error::wrong_value),
+          "representsa: a type");
     check(test::raises([&] { I.representsa("polygon"); }, Error::not_supported),
           "representsa: polygon");
     check(test::raises([&] { M.representsa("point"); }, Error::not_supported),

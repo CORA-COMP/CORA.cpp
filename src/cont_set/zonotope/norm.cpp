@@ -32,8 +32,10 @@ Tensor Zonotope::norm(double type, const std::string &mode) const {
     CORA_CHECK(mode == "exact" || mode == "ub" || mode == "ub_convex", Error::wrong_value, [&] {
         return "norm: the mode must be 'exact', 'ub' or 'ub_convex', got '" + mode + "'";
     });
-    return norm_impl(type == 1 ? Tensor::Norm::one : type == 2 ? Tensor::Norm::two
-                                                               : Tensor::Norm::inf, mode);
+    return norm_impl(type == 1   ? Tensor::Norm::one
+                     : type == 2 ? Tensor::Norm::two
+                                 : Tensor::Norm::inf,
+                     mode);
 }
 
 Tensor Zonotope::norm_impl(Tensor::Norm type, const std::string &mode) const {

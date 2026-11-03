@@ -67,15 +67,15 @@ class Expr {
     /// variable, all of one shape); it is exact for a variable that occurs once.
     Range enclose(const std::vector<Range> &x) const;
 
-    struct Node;  // the tree behind an expression
+    struct Node; // the tree behind an expression
 
   private:
-    Expr() = default;  // an empty operand of a node
+    Expr() = default; // an empty operand of a node
     explicit Expr(std::shared_ptr<const Node> node) : node_(std::move(node)) {}
 
     std::shared_ptr<const Node> node_;
 
-    friend struct ExprMaker;  // builds the nodes (expr.cpp)
+    friend struct ExprMaker; // builds the nodes (expr.cpp)
 };
 
 Expr operator+(const Expr &a, const Expr &b);

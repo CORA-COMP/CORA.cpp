@@ -29,11 +29,11 @@ namespace cora {
 
 /// The model parameters in canonical form.
 struct AdaptiveParams {
-    Zonotope R0;                ///< initial set
-    Tensor GU;                  ///< generators of the input set U (n, mU), centered; mU may be 0
-    Tensor u_trans;             ///< constant input offset (n, 1)
-    std::optional<Tensor> C;    ///< output matrix (p, n); empty: y = x
-    double t_final;             ///< time horizon (from time 0)
+    Zonotope R0;             ///< initial set
+    Tensor GU;               ///< generators of the input set U (n, mU), centered; mU may be 0
+    Tensor u_trans;          ///< constant input offset (n, 1)
+    std::optional<Tensor> C; ///< output matrix (p, n); empty: y = x
+    double t_final;          ///< time horizon (from time 0)
 };
 
 /// What a run leaves for the next one: the step sizes used and what was computed for them.

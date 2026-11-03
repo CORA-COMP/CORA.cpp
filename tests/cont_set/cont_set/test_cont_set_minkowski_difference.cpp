@@ -26,7 +26,8 @@ void the_difference_of_any_pair(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const Zonotope Q(column({0.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
     const Interval box(column({-0.5, -0.25}), column({0.5, 0.25}));
-    for (const ContSet *T : {static_cast<const ContSet *>(&Q), static_cast<const ContSet *>(&box)}) {
+    for (const ContSet *T :
+         {static_cast<const ContSet *>(&Q), static_cast<const ContSet *>(&box)}) {
         const Set D = static_cast<const ContSet &>(Z).minkowski_difference(*T, "inner");
         check(D.is<Zonotope>(), b + ": a zonotope minus a zonotope or a box");
         for (const std::vector<double> &d : {std::vector<double>{1, 0}, {0, 1}, {1, 1}, {1, -1}})
@@ -44,9 +45,11 @@ void errors_and_their_switch() {
     check(test::raises([&] { static_cast<const ContSet &>(I).minkowski_difference(I3); },
                        Error::dimension_mismatch),
           "dimensions 2 and 1");
-    check(test::raises([&] { static_cast<const ContSet &>(Z).minkowski_difference(test::UnregisteredSet()); },
-                       Error::noops),
-          "a zonotope minus a custom set");
+    check(
+        test::raises(
+            [&] { static_cast<const ContSet &>(Z).minkowski_difference(test::UnregisteredSet()); },
+            Error::noops),
+        "a zonotope minus a custom set");
     check(test::raises([] { test::UnregisteredSet().minkowski_difference(Interval::origin(2)); },
                        Error::noops),
           "a custom minuend");

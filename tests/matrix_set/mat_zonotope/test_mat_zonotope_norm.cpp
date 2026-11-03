@@ -13,14 +13,15 @@ using test::close;
 
 namespace {
 
-/// |center| + rad of the example is [[2, 3], [4, 5]]: column sums 6 and 8, row sums 5 and 9, and the
-/// square root of 4 + 9 + 16 + 25.
+/// |center| + rad of the example is [[2, 3], [4, 5]]: column sums 6 and 8, row sums 5 and 9, and
+/// the square root of 4 + 9 + 16 + 25.
 void norms_of_the_example(const std::string &b) {
     const MatZonotope A = test::example();
     check(close(A.norm(Tensor::Norm::one).item(), 8.0), b + ": the 1-norm");
     check(close(A.norm(Tensor::Norm::inf).item(), 9.0), b + ": the Inf-norm");
     check(close(A.norm(Tensor::Norm::fro).item(), std::sqrt(54.0)), b + ": the Frobenius norm");
-    check(close(A.norm(Tensor::Norm::fro).item(), A.interval_matrix().norm(Tensor::Norm::fro).item(), 0),
+    check(close(A.norm(Tensor::Norm::fro).item(),
+                A.interval_matrix().norm(Tensor::Norm::fro).item(), 0),
           b + ": the norm of the box around the set");
 }
 
@@ -32,12 +33,13 @@ void norm_bounds_the_members(const std::string &b) {
         const double bound = A.norm(type).item();
         bool below = true;
         for (int trial = 0; trial < 40; ++trial)
-            below = below &&
-                    test::member(A, test::coefficients(rng, 3)).matrix_norm(type).item() <= bound + 1e-12;
+            below = below && test::member(A, test::coefficients(rng, 3)).matrix_norm(type).item() <=
+                                 bound + 1e-12;
         check(below, b + ": the members' norms are below the norm");
     }
     const MatZonotope batch = test::batch_of(A, A);
-    check(close(batch.norm(Tensor::Norm::fro).slice(0, 1, 2).reshape({1, 1}), A.norm(Tensor::Norm::fro)),
+    check(close(batch.norm(Tensor::Norm::fro).slice(0, 1, 2).reshape({1, 1}),
+                A.norm(Tensor::Norm::fro)),
           b + ": a batch");
 }
 

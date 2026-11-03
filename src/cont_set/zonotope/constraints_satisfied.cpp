@@ -27,7 +27,8 @@ bool Zonotope::constraints_satisfied(const Tensor &C, const Tensor &d) const {
     });
     CORA_CHECK(is_column(d, C.shape()[C.ndim() - 2]), Error::dimension_mismatch, [&] {
         return "constraints_satisfied: d must be a column with one entry per row of C, got the "
-               "shape " + shape_text(d.shape());
+               "shape " +
+               shape_text(d.shape());
     });
     const Tensor below = linear_map(C).interval().sup().detach().less(d.detach());
     return below.min().item() != 0;

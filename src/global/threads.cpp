@@ -12,14 +12,14 @@
 #include <Eigen/Core>
 
 #include <algorithm>
-#include <cmath>
 #include <atomic>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <set>
-#include <string>
 #include <sstream>
+#include <string>
 #include <thread>
 
 #ifdef __linux__

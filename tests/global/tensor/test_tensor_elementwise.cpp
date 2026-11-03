@@ -37,8 +37,8 @@ void static_functions_take_numbers_and_tensors(const std::string &b) {
     check(Tensor::sin(0.2) == std::sin(0.2) && Tensor::sqrt(4.0) == 2.0, b + ": of a number");
     const double phi = 0.2;
     const Tensor A({{Tensor::cos(phi), Tensor::sin(phi)}, {-Tensor::sin(phi), Tensor::cos(phi)}});
-    check(test::close(A, std::vector<double>{std::cos(phi), std::sin(phi), -std::sin(phi),
-                                             std::cos(phi)}),
+    check(test::close(
+              A, std::vector<double>{std::cos(phi), std::sin(phi), -std::sin(phi), std::cos(phi)}),
           b + ": a rotation matrix");
     const Tensor t = Tensor::from_data({0.5, 2.0}, {1, 2});
     check(test::close(Tensor::exp(t), t.exp()) && test::close(Tensor::log(t), t.log()),
@@ -55,7 +55,8 @@ void products_and_quotients_are_elementwise(const std::string &b) {
     check(test::close(a.multiply(col), std::vector<double>{10.0, 20.0, 300.0, 400.0}) &&
               test::close(col.multiply(a), std::vector<double>{10.0, 20.0, 300.0, 400.0}),
           b + ": a column meets every column");
-    check(test::close(a.divide(col), std::vector<double>{0.1, 0.2, 0.03, 0.04}), b + ": div by a column");
+    check(test::close(a.divide(col), std::vector<double>{0.1, 0.2, 0.03, 0.04}),
+          b + ": div by a column");
 }
 
 void maximum_and_minimum_pick_elements(const std::string &b) {

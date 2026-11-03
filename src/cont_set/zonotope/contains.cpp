@@ -16,10 +16,10 @@
 // CORA: contSet/@zonotope/contains_.m
 // CORA: contSet/@zonotope/private/priv_zonotopeContainment_pointContainment.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
-#include "cont_set/zonotope/private/priv.h"
 
 #include <optional>
 #include <utility>
@@ -94,15 +94,15 @@ bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::stri
     if (method == "exact" || method == "exact:venum")
         return priv_containment_vertex_enumeration(priv_host_zonotope(inner),
                                                    priv_host_zonotope(outer), tol);
-    const double scaling = priv_containment_sadraddini_tedrake(priv_host_zonotope(inner),
-                                                               priv_host_zonotope(outer));
+    const double scaling =
+        priv_containment_sadraddini_tedrake(priv_host_zonotope(inner), priv_host_zonotope(outer));
     return scaling <= 1 + tol;
 }
 
 /// Why the call is refused, if it is: a batch, a method not known for the operand (points or a
 /// set) or not supported.
 std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const std::string &method,
-                                                              bool points) {
+                                                             bool points) {
     using Refusal = std::pair<Error::Id, std::string>;
     if (batch)
         return Refusal{Error::not_supported, "a linear program per set: it supports a single "

@@ -12,8 +12,8 @@
 //
 // CORA: matrixSet/@intervalMatrix/mtimes.m
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "cont_set/interval/private/priv_matmul.h"
+#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //

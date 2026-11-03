@@ -56,7 +56,8 @@ void checks_and_their_switch() {
               Error::dimension_mismatch),
           "tensor_multiplication_zono: a generator's shape");
     check(test::raises([&] { Z.tensor_multiplication_zono(M, {M}, {list.perm, list.comb, {}}); },
-                       Error::wrong_value), "tensor_multiplication_zono: map shorter than perm");
+                       Error::wrong_value),
+          "tensor_multiplication_zono: map shorter than perm");
     const Tensor on = Z.tensor_multiplication_zono(M, {M}, list).generators();
     ChecksScope off(false);
     check(close(Z.tensor_multiplication_zono(M, {M}, list).generators(), on, 0),

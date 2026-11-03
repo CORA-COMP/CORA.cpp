@@ -38,9 +38,9 @@ void checks_and_their_switch() {
           "contains: a set of 3 dimensions");
     check(test::raises([&] { E.contains(EmptySet(2), -1.0); }, Error::wrong_value),
           "contains: tol = -1");
-    check(test::raises([&] { E.contains(test::column({0.0, 0.0, 0.0})); },
-                       Error::dimension_mismatch),
-          "contains: a point of 3 dimensions");
+    check(
+        test::raises([&] { E.contains(test::column({0.0, 0.0, 0.0})); }, Error::dimension_mismatch),
+        "contains: a point of 3 dimensions");
     ChecksScope off(false);
     check(E.contains(EmptySet(2)), "contains: the same with the checks off");
 }

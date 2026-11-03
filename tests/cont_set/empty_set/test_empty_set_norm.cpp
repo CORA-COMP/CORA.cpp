@@ -18,8 +18,8 @@ void the_norm_is_minus_infinity(const std::string &b) {
     const std::vector<double> minus_inf{-std::numeric_limits<double>::infinity()};
     const EmptySet E(2);
     const ContSet &S = E;
-    for (const Tensor::Norm type : {Tensor::Norm::one, Tensor::Norm::two, Tensor::Norm::inf,
-                                    Tensor::Norm::fro})
+    for (const Tensor::Norm type :
+         {Tensor::Norm::one, Tensor::Norm::two, Tensor::Norm::inf, Tensor::Norm::fro})
         check(S.norm(type).data() == minus_inf && S.norm(type, "exact").shape() == Shape({1, 1}),
               b + ": the empty set");
     check(static_cast<const ContSet &>(Interval::empty(2)).norm().data() == minus_inf,

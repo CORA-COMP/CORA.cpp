@@ -40,7 +40,8 @@ void checks_and_their_switch() {
           "support_function: a direction of the wrong dimension");
     const double on = test::support(Z, {1, 0});
     ChecksScope off(false);
-    check(test::close(test::support(Z, {1, 0}), on, 0), "support_function: the same with the checks off");
+    check(test::close(test::support(Z, {1, 0}), on, 0),
+          "support_function: the same with the checks off");
 }
 
 } // namespace

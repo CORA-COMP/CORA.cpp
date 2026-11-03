@@ -24,8 +24,8 @@ namespace {
 /// Makes lean tensors: float64 on the CPU only.
 struct LeanBackend : Tensor::Backend {
     std::string name() const override { return "lean"; }
-    Tensor::Ptr make(const std::vector<double> &data, const Shape &shape,
-                     const std::string &device, DType dtype) const override {
+    Tensor::Ptr make(const std::vector<double> &data, const Shape &shape, const std::string &device,
+                     DType dtype) const override {
         if (!device.empty() && device != "cpu")
             CORA_FAIL(Error::wrong_value, "CoraTensor: the lean backend runs on the CPU only");
         if (dtype != DType::float64)

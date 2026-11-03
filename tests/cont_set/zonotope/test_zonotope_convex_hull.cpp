@@ -30,29 +30,36 @@ void convex_hull_with_each_kind_of_set(const std::string &b) {
           b + ": a point has no generators: the hull has m + 1 generators");
     for (int k = 0; k < 40; ++k) {
         const std::vector<double> d = test::random_direction(rng, n);
-        check(test::support(with_box, d) >= std::max(test::support(Z, d), test::support(I, d)) - 1e-9,
+        check(test::support(with_box, d) >=
+                  std::max(test::support(Z, d), test::support(I, d)) - 1e-9,
               b + ": box");
         check(test::support(with_point, d) >=
-                  std::max(test::support(Z, d), d[0] * p.data()[0] + d[1] * p.data()[1] +
-                                                    d[2] * p.data()[2]) - 1e-9,
+                  std::max(test::support(Z, d),
+                           d[0] * p.data()[0] + d[1] * p.data()[1] + d[2] * p.data()[2]) -
+                      1e-9,
               b + ": point");
     }
     const Set via_sets = convex_hull(Z, Z2);
-    check(via_sets.is<Zonotope>() && via_sets.as<Zonotope>().dim() == n, b + ": through the registry");
+    check(via_sets.is<Zonotope>() && via_sets.as<Zonotope>().dim() == n,
+          b + ": through the registry");
     check(convex_hull(Z, I).is<Zonotope>(), b + ": a box through the registry");
 }
 
 /// Operands of another dimension, and a point that is not a column, are refused.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
-    check(test::raises([&] { Z.convex_hull(Z1); }, Error::dimension_mismatch), "convex_hull: dim 1");
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {0.0}})),
+        Z1(column({0.0}), Tensor({{1.0}}));
+    check(test::raises([&] { Z.convex_hull(Z1); }, Error::dimension_mismatch),
+          "convex_hull: dim 1");
     check(test::raises([&] { Z.convex_hull(Interval(column({0.0}), column({1.0}))); },
-                       Error::dimension_mismatch), "convex_hull: a box of dimension 1");
+                       Error::dimension_mismatch),
+          "convex_hull: a box of dimension 1");
     check(test::raises([&] { Z.convex_hull(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "convex_hull: a point of dimension 3");
     const Tensor on = Z.convex_hull(Z).generators();
     ChecksScope off(false);
-    check(test::close(Z.convex_hull(Z).generators(), on, 0), "convex_hull: same with the checks off");
+    check(test::close(Z.convex_hull(Z).generators(), on, 0),
+          "convex_hull: same with the checks off");
 }
 
 } // namespace

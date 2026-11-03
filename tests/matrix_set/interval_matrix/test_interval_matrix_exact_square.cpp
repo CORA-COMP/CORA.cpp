@@ -11,8 +11,8 @@ using test::close;
 
 namespace {
 
-/// By hand: (1,1) is [1, 4] + [-1, 1] [0, 3] = [-2, 7], (1,2) is [-1, 1] ([1, 2] + [2, 2]) = [-4, 4],
-/// (2,1) is [0, 3] [3, 4] = [0, 12] and (2,2) is 4 + [-3, 3] = [1, 7].
+/// By hand: (1,1) is [1, 4] + [-1, 1] [0, 3] = [-2, 7], (1,2) is [-1, 1] ([1, 2] + [2, 2]) = [-4,
+/// 4], (2,1) is [0, 3] [3, 4] = [0, 12] and (2,2) is 4 + [-3, 3] = [1, 7].
 void square_of_the_example(const std::string &b) {
     const Interval S = test::example().exact_square().interval();
     check(close(S.inf(), std::vector<double>{-2, -4, 0, 1}), b + ": lower bounds");
@@ -22,10 +22,12 @@ void square_of_the_example(const std::string &b) {
     check(close(P.inf(), std::vector<double>{7, 10, 15, 22}) && close(P.sup(), P.inf()),
           b + ": a point matrix is its square");
     // a diagonal entry that straddles 0 squares to [0, ...], one that touches 0 does as well
-    const IntervalMatrix D(Interval(test::matrix({-2, 0}, 2, 1).diag(),
-                                    test::matrix({1, 3}, 2, 1).diag()));
-    check(close(D.exact_square().interval().inf(), std::vector<double>{0, 0, 0, 0}), b + ": 0 inside");
-    check(close(D.exact_square().interval().sup(), std::vector<double>{4, 0, 0, 9}), b + ": its end");
+    const IntervalMatrix D(
+        Interval(test::matrix({-2, 0}, 2, 1).diag(), test::matrix({1, 3}, 2, 1).diag()));
+    check(close(D.exact_square().interval().inf(), std::vector<double>{0, 0, 0, 0}),
+          b + ": 0 inside");
+    check(close(D.exact_square().interval().sup(), std::vector<double>{4, 0, 0, 9}),
+          b + ": its end");
 }
 
 /// The squares of members of random sets are in the result.

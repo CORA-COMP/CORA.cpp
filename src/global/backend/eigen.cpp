@@ -24,10 +24,14 @@ namespace cora {
 
 namespace {
 
-template <class T> using RowMat = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-template <class T> using MapC = Eigen::Map<const RowMat<T>>;
-template <class T> using Map = Eigen::Map<RowMat<T>>;
-template <class T> using H = host::HostTensor<T>;
+template <class T>
+using RowMat = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+template <class T>
+using MapC = Eigen::Map<const RowMat<T>>;
+template <class T>
+using Map = Eigen::Map<RowMat<T>>;
+template <class T>
+using H = host::HostTensor<T>;
 
 /// The rows and columns of the matrices of a shape.
 int64_t aux_rows(const Shape &s) { return s[s.size() - 2]; }
@@ -47,7 +51,8 @@ constexpr long long kSerialWork = 100000;
 
 /// C = A B of one pair, (n, k) times (k, m). A small product is a plain loop over the rows of B
 /// weighted by a row of A: no setup cost.
-template <class T> void aux_product(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t m) {
+template <class T>
+void aux_product(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t m) {
     if (n * k * m > kSmallProduct) {
         Map<T>(C, n, m).noalias() = MapC<T>(A, n, k) * MapC<T>(B, k, m);
         return;
@@ -87,14 +92,15 @@ void aux_products(const T *a, const Shape &sa, const T *b, const Shape &sb, T *o
 host::BatchPairs aux_pairs(const Shape &a, const Shape &b, const char *op) {
     host::BatchPairs bp = host::batch_pairs(a, b, op);
     if (aux_rows(b) != a.back())
-        CORA_FAIL(Error::dimension_mismatch, std::string("CoraTensor::") + op +
-                                                 ": the inner sizes of the product differ");
+        CORA_FAIL(Error::dimension_mismatch,
+                  std::string("CoraTensor::") + op + ": the inner sizes of the product differ");
     return bp;
 }
 
 /// Memory of this thread for the temporaries of a kernel, reused from call to call so that a
 /// kernel allocates its results only.
-template <class T> T *aux_scratch(int64_t count) {
+template <class T>
+T *aux_scratch(int64_t count) {
     thread_local std::vector<T> buffer;
     if (static_cast<int64_t>(buffer.size()) < count) buffer.resize(count);
     return buffer.data();
@@ -103,8 +109,8 @@ template <class T> T *aux_scratch(int64_t count) {
 /// Makes Eigen tensors from host numbers, on the CPU only.
 struct EigenBackend : Tensor::Backend {
     std::string name() const override { return "eigen"; }
-    Tensor::Ptr make(const std::vector<double> &data, const Shape &shape,
-                     const std::string &device, DType dtype) const override {
+    Tensor::Ptr make(const std::vector<double> &data, const Shape &shape, const std::string &device,
+                     DType dtype) const override {
         if (!device.empty() && device != "cpu")
             CORA_FAIL(Error::wrong_value, "CoraTensor: the eigen backend runs on the CPU only");
         if (dtype == DType::float32) {
@@ -127,7 +133,8 @@ struct EigenBackend : Tensor::Backend {
 
 namespace host::eigen {
 
-template <class T> Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b) {
+template <class T>
+Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b) {
     // two small matrices, the common case: no batch to pair, no threads to ask for
     if (a.shape.size() == 2 && b.shape.size() == 2 && a.shape[1] == b.shape[0] &&
         a.shape[0] * a.shape[1] * b.shape[1] < kSerialWork) {
@@ -142,19 +149,25 @@ template <class T> Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T
 }
 
 // All rows of all matrices at once: one Eigen row sum.
-template <class T> Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims) {
+template <class T>
+Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims) {
     const int64_t len = a.shape.back();
     Shape out = a.shape;
-    if (keepdims) out.back() = 1;
-    else out = Shape(std::vector<int64_t>(a.shape.begin(), a.shape.end() - 1));
+    if (keepdims)
+        out.back() = 1;
+    else
+        out = Shape(std::vector<int64_t>(a.shape.begin(), a.shape.end() - 1));
     auto r = a.fresh(out);
     const int64_t rows = out.numel(); // an empty axis has no entries, so count the outputs
-    if (len == 0) std::fill(r->p, r->p + rows, T(0));
-    else Map<T>(r->p, rows, 1) = MapC<T>(a.p, rows, len).rowwise().sum();
+    if (len == 0)
+        std::fill(r->p, r->p + rows, T(0));
+    else
+        Map<T>(r->p, rows, 1) = MapC<T>(a.p, rows, len).rowwise().sum();
     return r;
 }
 
-template <class T> Tensor::Ptr expm(const HostTensor<T> &a) {
+template <class T>
+Tensor::Ptr expm(const HostTensor<T> &a) {
     const int64_t n = a.shape.back(), count = a.shape.numel() / std::max<int64_t>(n * n, 1);
     auto r = a.fresh(a.shape);
     // in column-major storage, where Eigen's Pade solve is quicker than on row-major matrices
@@ -169,9 +182,8 @@ template <class T> Tensor::Ptr expm(const HostTensor<T> &a) {
 
 // M c and M G, two products of one call.
 template <class T>
-std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_linear_map(const HostTensor<T> &M,
-                                                        const HostTensor<T> &c,
-                                                        const HostTensor<T> &G) {
+std::pair<Tensor::Ptr, Tensor::Ptr>
+zonotope_linear_map(const HostTensor<T> &M, const HostTensor<T> &c, const HostTensor<T> &G) {
     return {matmul(M, c), matmul(M, G)};
 }
 
@@ -213,10 +225,9 @@ std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
 // T = (inf + sup) / 2 and S = (sup - inf) / 2 in scratch memory, then T c, T G and the box of
 // S times the row sums of |[c G]|, written straight into the results.
 template <class T>
-std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_interval_map(const HostTensor<T> &inf,
-                                                          const HostTensor<T> &sup,
-                                                          const HostTensor<T> &c,
-                                                          const HostTensor<T> &G) {
+std::pair<Tensor::Ptr, Tensor::Ptr>
+zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const HostTensor<T> &c,
+                      const HostTensor<T> &G) {
     const BatchPairs bp = aux_pairs(inf.shape, G.shape, "zonotope_interval_map");
     const int64_t n = aux_rows(inf.shape), k = inf.shape.back(), m = G.shape.back();
     const int64_t count = bp.batch.numel();
@@ -241,7 +252,7 @@ std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_interval_map(const HostTensor<T> &i
         Map<T>(box, n, 1).noalias() = MapC<T>(s, n, k) * MapC<T>(reach, k, 1);
         Map<T>(Tc->p + z * n, n, 1).noalias() = MapC<T>(t, n, k) * cz;
         Eigen::Map<RowMat<T>, 0, Eigen::OuterStride<>> out(TG->p + z * n * (m + n), n, m + n,
-                                                          Eigen::OuterStride<>(m + n));
+                                                           Eigen::OuterStride<>(m + n));
         out.leftCols(m).noalias() = MapC<T>(t, n, k) * Gz;
         out.rightCols(n).setZero();
         for (int64_t i = 0; i < n; ++i) out(i, m + i) = box[i];
@@ -294,14 +305,17 @@ std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t
 }
 
 // All rows of all matrices at once: one Eigen row sum of |a|.
-template <class T> Tensor::Ptr abs_sum(const HostTensor<T> &a) {
+template <class T>
+Tensor::Ptr abs_sum(const HostTensor<T> &a) {
     const int64_t len = a.shape.back();
     Shape out = a.shape;
     out.back() = 1;
     auto r = a.fresh(out);
     const int64_t rows = out.numel(); // an empty axis has no entries, so count the outputs
-    if (len == 0) std::fill(r->p, r->p + rows, T(0));
-    else Map<T>(r->p, rows, 1) = MapC<T>(a.p, rows, len).cwiseAbs().rowwise().sum();
+    if (len == 0)
+        std::fill(r->p, r->p + rows, T(0));
+    else
+        Map<T>(r->p, rows, 1) = MapC<T>(a.p, rows, len).cwiseAbs().rowwise().sum();
     return r;
 }
 

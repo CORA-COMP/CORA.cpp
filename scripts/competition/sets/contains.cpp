@@ -6,9 +6,9 @@
 //
 // Each set of a batch is handled on its own, so the batch is one parallel loop.
 
+#include "cora/global/threads.h"
 #include "lp.h"
 #include "sets.h"
-#include "cora/global/threads.h"
 
 #include <Eigen/QR>
 
@@ -65,8 +65,7 @@ std::vector<std::vector<Index>> combinations(Index m, Index k) {
 void settle_by_lp(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::MatrixXd &r,
                   const std::vector<char> &open, double tol, std::uint8_t *out) {
     for (Index k = 0; k < r.cols(); ++k)
-        if (open[static_cast<std::size_t>(k)])
-            out[k] = contains_lp(g, r.col(k), tol) ? 1 : 0;
+        if (open[static_cast<std::size_t>(k)]) out[k] = contains_lp(g, r.col(k), tol) ? 1 : 0;
 }
 
 /// A full-dimensional zonotope is the intersection of the slabs
@@ -121,9 +120,9 @@ void by_facets(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::MatrixXd
     }
 
     Eigen::MatrixXd h(static_cast<Index>(keep.size()), n);
-    for (std::size_t i = 0; i < keep.size(); ++i) h.row(static_cast<Index>(i)) = normals.row(keep[i]);
-    const Eigen::VectorXd reach =
-        (h * g).cwiseAbs().rowwise().sum() * (1.0 + kFacetTol);
+    for (std::size_t i = 0; i < keep.size(); ++i)
+        h.row(static_cast<Index>(i)) = normals.row(keep[i]);
+    const Eigen::VectorXd reach = (h * g).cwiseAbs().rowwise().sum() * (1.0 + kFacetTol);
     const Eigen::MatrixXd projected = (h * r).cwiseAbs(); // (F, points)
     for (Index k = 0; k < points; ++k)
         out[k] = (projected.col(k).array() <= reach.array()).all() ? 1 : 0;
@@ -167,8 +166,8 @@ void by_projection(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::Matr
             const Eigen::RowVectorXd reach = x.cwiseAbs().colwise().maxCoeff();
             y.noalias() = q.transpose() * (x - a);
             spread.noalias() = q * y;
-            const Eigen::RowVectorXd gap = (y.array() * w.array()).colwise().sum()
-                                           - spread.cwiseAbs().colwise().sum().array();
+            const Eigen::RowVectorXd gap =
+                (y.array() * w.array()).colwise().sum() - spread.cwiseAbs().colwise().sum().array();
             const Eigen::RowVectorXd slack = y.cwiseAbs().colwise().sum();
             bool done = true;
             for (Index k = 0; k < points; ++k) {
@@ -205,18 +204,16 @@ Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index poin
     // and no full-row-rank QR, so the LP is the only exact answer left.
     const bool flat = m < n;
     const bool facets = !flat && binomial(m, n - 1) <= kMaxFacetNormals;
-    const auto subsets = facets && n > 1 ? combinations(m, n - 1)
-                                         : std::vector<std::vector<Index>>();
+    const auto subsets =
+        facets && n > 1 ? combinations(m, n - 1) : std::vector<std::vector<Index>>();
 
     const int nt = threads_for(batch, batch * points * n * m);
 #pragma omp parallel for schedule(dynamic) num_threads(nt) if (nt > 1)
     for (Index b = 0; b < batch; ++b) {
-        const Eigen::MatrixXd r =
-            p.middleCols(b * points, points).colwise() - s.c.col(b);
+        const Eigen::MatrixXd r = p.middleCols(b * points, points).colwise() - s.c.col(b);
         std::uint8_t *answers = out.data() + b * points;
         if (flat) {
-            settle_by_lp(s.block(b), r,
-                         std::vector<char>(static_cast<std::size_t>(points), 1),
+            settle_by_lp(s.block(b), r, std::vector<char>(static_cast<std::size_t>(points), 1),
                          1000.0 * std::numeric_limits<double>::epsilon(), answers);
         } else if (facets) {
             by_facets(s.block(b), r, subsets, answers);

@@ -1,7 +1,9 @@
 // mat_zonotope_testing - what the tests of the matrix zonotope operations share
 //
-// Syntax:   const MatZonotope A = test::example();   MatZonotope B = test::random_set(rng, 3, 2, 0.2);
-//           const Tensor M = test::member(A, b);   std::vector<double> b = test::coefficients(rng, h);
+// Syntax:   const MatZonotope A = test::example();   MatZonotope B = test::random_set(rng, 3, 2,
+// 0.2);
+//           const Tensor M = test::member(A, b);   std::vector<double> b = test::coefficients(rng,
+//           h);
 // Provides: a hand-computed 2 x 2 example with two generators, the lean backend next to the others,
 //           a random square set, the matrix C + sum b_i G_i for given coefficients, a batch of two
 //           sets and one set of a batch
@@ -49,12 +51,13 @@ inline cora::Tensor member(const cora::MatZonotope &A, const std::vector<double>
 /// The set of C and the generators G (h, rows, cols) given as numbers.
 inline cora::MatZonotope set_of(const std::vector<double> &C, const std::vector<double> &G,
                                 int64_t rows, int64_t cols) {
-    return cora::MatZonotope(matrix(C, rows, cols),
-                             cora::Tensor::from_data(G, {int64_t(G.size()) / (rows * cols), rows, cols}));
+    return cora::MatZonotope(
+        matrix(C, rows, cols),
+        cora::Tensor::from_data(G, {int64_t(G.size()) / (rows * cols), rows, cols}));
 }
 
-/// exp(M) by the Taylor series to 40 terms, exact to rounding for the small matrices of the tests (the
-/// lean backend has no expm).
+/// exp(M) by the Taylor series to 40 terms, exact to rounding for the small matrices of the tests
+/// (the lean backend has no expm).
 inline cora::Tensor exponential(const cora::Tensor &M) {
     cora::Tensor sum = M.eye_like(M.size(-1)) + M.zeros_like(), term = sum;
     for (int k = 1; k <= 40; ++k) {

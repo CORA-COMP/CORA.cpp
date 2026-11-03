@@ -11,7 +11,8 @@ using test::close;
 
 namespace {
 
-/// The exponential of every member is inside enclosure, for each form of the call; the zero matrix gives I.
+/// The exponential of every member is inside enclosure, for each form of the call; the zero matrix
+/// gives I.
 void expm_encloses_the_exponentials(const std::string &b) {
     Rng rng(17);
     const IntervalMatrix A = test::random_matrix(rng, 3, 0.3);
@@ -46,7 +47,8 @@ void expm_lists_its_powers(const std::string &b) {
     const IntervalMatrix A = test::random_matrix(rng, 2, 0.3);
     const ExpmResult R = A.expm(6);
     check(R.first_order == 2 && R.powers.size() == 5, b + ": the powers of order 2 to 6");
-    check(close(R.powers[1].center(), A.matrix_power(3).center(), 0.2), b + ": the power of order 3");
+    check(close(R.powers[1].center(), A.matrix_power(3).center(), 0.2),
+          b + ": the power of order 3");
     check(close(R.remainder.interval().sup(), A.exponential_remainder(6).interval().sup(), 1e-14),
           b + ": the remainder of the order");
     const ExpmResult tighter = A.expm(12);
@@ -61,7 +63,8 @@ void expm_lists_its_powers(const std::string &b) {
 /// A matrix that is not square, a zero step and a negative order are refused; checks off: the same.
 void checks_and_their_switch() {
     const IntervalMatrix wide(test::matrix({1, 2, 3}, 1, 3)), A = test::example();
-    check(test::raises([&] { wide.expm(4); }, Error::dimension_mismatch), "expm: a non-square matrix");
+    check(test::raises([&] { wide.expm(4); }, Error::dimension_mismatch),
+          "expm: a non-square matrix");
     check(test::raises([&] { A.expm(0.0, 4); }, Error::wrong_value), "expm: the step 0");
     check(test::raises([&] { A.expm(-1); }, Error::wrong_value), "expm: a negative order");
     check(test::raises([&] { A.expm(1.0, 4, 2, wide); }, Error::dimension_mismatch),

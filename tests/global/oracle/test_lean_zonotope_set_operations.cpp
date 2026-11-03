@@ -43,8 +43,8 @@ void aux_check_set(const A &mine, const B &theirs) {
     oracle::check(mine.interval(), theirs.enclosure().interval());
 }
 
-/// enclose and convex_hull: CORA lists the generators (G+G2)/2, (c-c2)/2, (G-G2)/2, CORALean's linComb
-/// (G+G2)/2, (G-G2)/2, (c-c2)/2: the same center and the same generators, in another order.
+/// enclose and convex_hull: CORA lists the generators (G+G2)/2, (c-c2)/2, (G-G2)/2, CORALean's
+/// linComb (G+G2)/2, (G-G2)/2, (c-c2)/2: the same center and the same generators, in another order.
 void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &theirs) {
     if (oracle::mode() != oracle::Mode::exact) return aux_check_set(mine, theirs);
     const Zonotope other = theirs.gather().first;
@@ -102,8 +102,8 @@ int main() {
             const Tensor G = Z.generators();
             // a generator of zeros in the middle and at the end
             const Tensor zero = G.slice(-1, 0, 1).zeros_like();
-            const Zonotope Zz(Z.center(), Tensor::concat({G.slice(-1, 0, 2), zero,
-                                                           G.slice(-1, 2, m), zero}, -1));
+            const Zonotope Zz(
+                Z.center(), Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1));
             aux_check_set(Zz.compact("zeros", 0.0), lean::Zonotope(Zz).compact("zeros", 0.0));
         }
     });
@@ -137,8 +137,10 @@ int main() {
             // half of Z about its center is in Z, one and a half times is not
             const Zonotope inner(Z.center(), Z.generators() * 0.5);
             const Zonotope outer(Z.center(), Z.generators() * 1.5);
-            oracle::check(Z.contains(inner, "approx:st"), lean::Zonotope(Z).contains(lean::Zonotope(inner)));
-            oracle::check(Z.contains(outer, "approx:st"), lean::Zonotope(Z).contains(lean::Zonotope(outer)));
+            oracle::check(Z.contains(inner, "approx:st"),
+                          lean::Zonotope(Z).contains(lean::Zonotope(inner)));
+            oracle::check(Z.contains(outer, "approx:st"),
+                          lean::Zonotope(Z).contains(lean::Zonotope(outer)));
         }
     });
     oracle::run("zonotope.cubMap", [&](oracle::Random &rnd) {

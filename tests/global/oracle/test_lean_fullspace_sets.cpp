@@ -1,4 +1,5 @@
-// test_lean_fullspace_sets - the set operations and constructors of Fullspace against the CORALean oracle
+// test_lean_fullspace_sets - the set operations and constructors of Fullspace against the CORALean
+// oracle
 //
 // ORACLE: contSet/@fullspace/Inf.m
 // ORACLE: contSet/@fullspace/fullspace.m
@@ -26,10 +27,12 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("fullspace.Inf", [](test::oracle::Random &) {
-        for (const int n : {0, 1, 5}) test::oracle::check(Fullspace::inf(n), lean::Fullspace::inf(n));
+        for (const int n : {0, 1, 5})
+            test::oracle::check(Fullspace::inf(n), lean::Fullspace::inf(n));
     });
     test::oracle::run("fullspace.box", [](test::oracle::Random &) {
-        for (const int n : {1, 5}) test::oracle::check(Fullspace(n).box(), lean::Fullspace(n).box());
+        for (const int n : {1, 5})
+            test::oracle::check(Fullspace(n).box(), lean::Fullspace(n).box());
     });
     test::oracle::run("fullspace.interval", [](test::oracle::Random &) {
         for (const int n : {1, 2, 5})

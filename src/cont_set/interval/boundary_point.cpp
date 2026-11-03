@@ -58,8 +58,7 @@ Tensor Interval::boundary_point(const Tensor &dir, const std::optional<Tensor> &
                std::to_string(dim()) + " of the interval, got the shape " +
                shape_text(start.shape());
     });
-    CORA_CHECK(dir.abs().max(-2, true).min().item() > machine_eps(dir.dtype()),
-               Error::wrong_value,
+    CORA_CHECK(dir.abs().max(-2, true).min().item() > machine_eps(dir.dtype()), Error::wrong_value,
                [] { return std::string("boundary_point: dir must be a nonzero vector"); });
     if (is_empty()) return dir.zeros_like({dim(), 0});
     CORA_CHECK(contains(start), Error::wrong_value, [] {

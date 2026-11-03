@@ -29,12 +29,16 @@ using Binary = Tensor::Binary;
 using Unary = Tensor::Unary;
 using Reduce = Tensor::Reduce;
 
-template <class T> using RowMat = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-template <class T> using MapC = Eigen::Map<const RowMat<T>>;
-template <class T> using Map = Eigen::Map<RowMat<T>>;
+template <class T>
+using RowMat = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+template <class T>
+using MapC = Eigen::Map<const RowMat<T>>;
+template <class T>
+using Map = Eigen::Map<RowMat<T>>;
 
 /// The dtype of the entry type.
-template <class T> constexpr DType aux_dtype() {
+template <class T>
+constexpr DType aux_dtype() {
     return std::is_same_v<T, double> ? DType::float64 : DType::float32;
 }
 
@@ -47,76 +51,123 @@ std::string aux_text(const Shape &s) {
 // Elementwise -------------------------------------------------------------------------------------
 
 /// The larger of a and b, NaN if either is: torch.maximum.
-template <class T> T aux_max(T a, T b) {
+template <class T>
+T aux_max(T a, T b) {
     if (std::isnan(a)) return a;
     return a > b ? a : b;
 }
-template <class T> T aux_min(T a, T b) {
+template <class T>
+T aux_min(T a, T b) {
     if (std::isnan(a)) return a;
     return a < b ? a : b;
 }
 
 /// fmod(a, b) moved to the sign of b, as torch.remainder and MATLAB's mod.
-template <class T> T aux_remainder(T a, T b) {
+template <class T>
+T aux_remainder(T a, T b) {
     T r = std::fmod(a, b);
     if (r != 0 && ((r < 0) != (b < 0))) r += b;
     return r;
 }
 
 /// Calls g(f) with the scalar function f of `op`: the one switch over the binary operations.
-template <class T, class G> auto aux_with_binary(Binary op, G &&g) {
+template <class T, class G>
+auto aux_with_binary(Binary op, G &&g) {
     switch (op) {
-    case Binary::add: return g([](T a, T b) { return a + b; });
-    case Binary::subtract: return g([](T a, T b) { return a - b; });
-    case Binary::multiply: return g([](T a, T b) { return a * b; });
-    case Binary::divide: return g([](T a, T b) { return a / b; });
-    case Binary::pow: return g([](T a, T b) { return std::pow(a, b); });
-    case Binary::maximum: return g([](T a, T b) { return aux_max(a, b); });
-    case Binary::minimum: return g([](T a, T b) { return aux_min(a, b); });
-    case Binary::remainder: return g([](T a, T b) { return aux_remainder(a, b); });
-    case Binary::atan2: return g([](T a, T b) { return std::atan2(a, b); });
-    case Binary::equal: return g([](T a, T b) { return T(a == b); });
-    case Binary::not_equal: return g([](T a, T b) { return T(a != b); });
-    case Binary::less: return g([](T a, T b) { return T(a < b); });
-    case Binary::less_equal: return g([](T a, T b) { return T(a <= b); });
-    case Binary::greater: return g([](T a, T b) { return T(a > b); });
-    case Binary::greater_equal: return g([](T a, T b) { return T(a >= b); });
+    case Binary::add:
+        return g([](T a, T b) { return a + b; });
+    case Binary::subtract:
+        return g([](T a, T b) { return a - b; });
+    case Binary::multiply:
+        return g([](T a, T b) { return a * b; });
+    case Binary::divide:
+        return g([](T a, T b) { return a / b; });
+    case Binary::pow:
+        return g([](T a, T b) { return std::pow(a, b); });
+    case Binary::maximum:
+        return g([](T a, T b) { return aux_max(a, b); });
+    case Binary::minimum:
+        return g([](T a, T b) { return aux_min(a, b); });
+    case Binary::remainder:
+        return g([](T a, T b) { return aux_remainder(a, b); });
+    case Binary::atan2:
+        return g([](T a, T b) { return std::atan2(a, b); });
+    case Binary::equal:
+        return g([](T a, T b) { return T(a == b); });
+    case Binary::not_equal:
+        return g([](T a, T b) { return T(a != b); });
+    case Binary::less:
+        return g([](T a, T b) { return T(a < b); });
+    case Binary::less_equal:
+        return g([](T a, T b) { return T(a <= b); });
+    case Binary::greater:
+        return g([](T a, T b) { return T(a > b); });
+    case Binary::greater_equal:
+        return g([](T a, T b) { return T(a >= b); });
     }
     CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise operation");
 }
 
 /// -1, 0 or 1; NaN stays.
-template <class T> T aux_sign(T x) { return std::isnan(x) ? x : T((x > 0) - (x < 0)); }
+template <class T>
+T aux_sign(T x) {
+    return std::isnan(x) ? x : T((x > 0) - (x < 0));
+}
 
 /// Calls g(f) with the scalar function f of `op`.
-template <class T, class G> auto aux_with_unary(Unary op, G &&g) {
+template <class T, class G>
+auto aux_with_unary(Unary op, G &&g) {
     switch (op) {
-    case Unary::negative: return g([](T x) { return -x; });
-    case Unary::abs: return g([](T x) { return std::fabs(x); });
-    case Unary::sign: return g([](T x) { return aux_sign(x); });
-    case Unary::floor: return g([](T x) { return std::floor(x); });
-    case Unary::ceil: return g([](T x) { return std::ceil(x); });
-    case Unary::round: return g([](T x) { return std::round(x) + T(0); }); // -0 becomes 0
-    case Unary::sqrt: return g([](T x) { return std::sqrt(x); });
-    case Unary::exp: return g([](T x) { return std::exp(x); });
-    case Unary::log: return g([](T x) { return std::log(x); });
+    case Unary::negative:
+        return g([](T x) { return -x; });
+    case Unary::abs:
+        return g([](T x) { return std::fabs(x); });
+    case Unary::sign:
+        return g([](T x) { return aux_sign(x); });
+    case Unary::floor:
+        return g([](T x) { return std::floor(x); });
+    case Unary::ceil:
+        return g([](T x) { return std::ceil(x); });
+    case Unary::round:
+        return g([](T x) { return std::round(x) + T(0); }); // -0 becomes 0
+    case Unary::sqrt:
+        return g([](T x) { return std::sqrt(x); });
+    case Unary::exp:
+        return g([](T x) { return std::exp(x); });
+    case Unary::log:
+        return g([](T x) { return std::log(x); });
     // the C library: CORALean has no counterpart of these
-    case Unary::sin: return g([](T x) { return std::sin(x); });
-    case Unary::cos: return g([](T x) { return std::cos(x); });
-    case Unary::tan: return g([](T x) { return std::tan(x); });
-    case Unary::asin: return g([](T x) { return std::asin(x); });
-    case Unary::acos: return g([](T x) { return std::acos(x); });
-    case Unary::atan: return g([](T x) { return std::atan(x); });
-    case Unary::sinh: return g([](T x) { return std::sinh(x); });
-    case Unary::cosh: return g([](T x) { return std::cosh(x); });
-    case Unary::tanh: return g([](T x) { return std::tanh(x); });
-    case Unary::asinh: return g([](T x) { return std::asinh(x); });
-    case Unary::acosh: return g([](T x) { return std::acosh(x); });
-    case Unary::atanh: return g([](T x) { return std::atanh(x); });
+    case Unary::sin:
+        return g([](T x) { return std::sin(x); });
+    case Unary::cos:
+        return g([](T x) { return std::cos(x); });
+    case Unary::tan:
+        return g([](T x) { return std::tan(x); });
+    case Unary::asin:
+        return g([](T x) { return std::asin(x); });
+    case Unary::acos:
+        return g([](T x) { return std::acos(x); });
+    case Unary::atan:
+        return g([](T x) { return std::atan(x); });
+    case Unary::sinh:
+        return g([](T x) { return std::sinh(x); });
+    case Unary::cosh:
+        return g([](T x) { return std::cosh(x); });
+    case Unary::tanh:
+        return g([](T x) { return std::tanh(x); });
+    case Unary::asinh:
+        return g([](T x) { return std::asinh(x); });
+    case Unary::acosh:
+        return g([](T x) { return std::acosh(x); });
+    case Unary::atanh:
+        return g([](T x) { return std::atanh(x); });
     // masks: 1 or 0
-    case Unary::isnan: return g([](T x) { return T(std::isnan(x)); });
-    case Unary::isinf: return g([](T x) { return T(std::isinf(x)); });
-    case Unary::isfinite: return g([](T x) { return T(std::isfinite(x)); });
+    case Unary::isnan:
+        return g([](T x) { return T(std::isnan(x)); });
+    case Unary::isinf:
+        return g([](T x) { return T(std::isinf(x)); });
+    case Unary::isfinite:
+        return g([](T x) { return T(std::isfinite(x)); });
     }
     CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise function");
 }
@@ -180,9 +231,8 @@ void aux_binary_into(const HostTensor<T> &a, const HostTensor<T> &b, T *out, con
     } else {
         const std::array<Shape, 3> st = {aux_broadcast_strides(a.shape, shape),
                                          aux_broadcast_strides(b.shape, shape), strides_of(shape)};
-        aux_walk<3>(shape, st, [&](int64_t ia, int64_t ib, int64_t io) {
-            out[io] = f(a.p[ia], b.p[ib]);
-        });
+        aux_walk<3>(shape, st,
+                    [&](int64_t ia, int64_t ib, int64_t io) { out[io] = f(a.p[ia], b.p[ib]); });
     }
 }
 
@@ -210,8 +260,10 @@ Extents aux_extents(const Shape &s, int axis) {
 Shape aux_reduced(const Shape &s, int axis, bool keepdims) {
     Shape r;
     for (int64_t d = 0; d < s.size(); ++d)
-        if (d != axis) r.push_back(s[d]);
-        else if (keepdims) r.push_back(1);
+        if (d != axis)
+            r.push_back(s[d]);
+        else if (keepdims)
+            r.push_back(1);
     return r;
 }
 
@@ -248,7 +300,8 @@ void aux_select(const T *x, const Extents &e, T *value, T *index, B better) {
 // Linear Algebra ----------------------------------------------------------------------------------
 
 /// The matrix `k` of a batch of (rows, cols) matrices.
-template <class T> MapC<T> aux_matrix(const T *p, int64_t k, int64_t rows, int64_t cols) {
+template <class T>
+MapC<T> aux_matrix(const T *p, int64_t k, int64_t rows, int64_t cols) {
     return MapC<T>(p + k * rows * cols, rows, cols);
 }
 
@@ -272,12 +325,12 @@ int64_t aux_matrices(const Shape &s) { return aux_batch(s).numel(); }
 
 void aux_require_matrix(const Shape &s, const char *op, bool square) {
     if (s.size() < 2)
-        CORA_FAIL(Error::dimension_mismatch,
-                  std::string("CoraTensor::") + op + ": needs a matrix (..., n, m), got " +
-                      aux_text(s));
-    if (square && s[s.size() - 1] != s[s.size() - 2])
         CORA_FAIL(Error::dimension_mismatch, std::string("CoraTensor::") + op +
-                                                 ": needs square matrices, got " + aux_text(s));
+                                                 ": needs a matrix (..., n, m), got " +
+                                                 aux_text(s));
+    if (square && s[s.size() - 1] != s[s.size() - 2])
+        CORA_FAIL(Error::dimension_mismatch,
+                  std::string("CoraTensor::") + op + ": needs square matrices, got " + aux_text(s));
 }
 
 } // namespace
@@ -315,8 +368,8 @@ Shape broadcast_shapes(const Shape &a, const Shape &b) {
         const int64_t da = d - (rank - a.size()), db = d - (rank - b.size());
         const int64_t x = da >= 0 ? a[da] : 1, y = db >= 0 ? b[db] : 1;
         if (x != y && x != 1 && y != 1)
-            CORA_FAIL(Error::dimension_mismatch, "CoraTensor: the shapes " + aux_text(a) +
-                                                     " and " + aux_text(b) + " do not broadcast");
+            CORA_FAIL(Error::dimension_mismatch, "CoraTensor: the shapes " + aux_text(a) + " and " +
+                                                     aux_text(b) + " do not broadcast");
         r.push_back(x == 1 ? y : x);
     }
     return r;
@@ -362,18 +415,21 @@ std::shared_ptr<HostTensor<T>> HostTensor<T>::borrow(const T *data, const Shape 
 }
 
 // The values as doubles, which every float32 and float64 is exactly.
-template <class T> std::vector<double> HostTensor<T>::data() const {
+template <class T>
+std::vector<double> HostTensor<T>::data() const {
     return std::vector<double>(p, p + shape.numel());
 }
 
-template <class T> Tensor::Ptr HostTensor<T>::to(Device device) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::to(Device device) const {
     if (device.type != Device::Type::cpu)
         CORA_FAIL(Error::wrong_value, "CoraTensor: the host backends run on the CPU only");
     return self();
 }
 
 // A copy in the other dtype; lean has float64 only.
-template <class T> Tensor::Ptr HostTensor<T>::to(DType dtype) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::to(DType dtype) const {
     if (dtype == this->dtype) return self();
     if (backend == backend_id::lean)
         CORA_FAIL(Error::not_supported, "CoraTensor: the lean backend computes in float64 only");
@@ -389,20 +445,23 @@ template <class T> Tensor::Ptr HostTensor<T>::to(DType dtype) const {
 }
 
 // New tensors of this backend and dtype.
-template <class T> Tensor::Ptr HostTensor<T>::like(const double *values, const Shape &s) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::like(const double *values, const Shape &s) const {
     auto r = fresh(s);
     const int64_t n = s.numel();
     for (int64_t i = 0; i < n; ++i) r->p[i] = static_cast<T>(values[i]);
     return r;
 }
 
-template <class T> Tensor::Ptr HostTensor<T>::full(const Shape &s, double value) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::full(const Shape &s, double value) const {
     auto r = fresh(s);
     std::fill(r->p, r->p + s.numel(), static_cast<T>(value));
     return r;
 }
 
-template <class T> Tensor::Ptr HostTensor<T>::arange(int64_t n) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::arange(int64_t n) const {
     auto r = fresh(Shape{n});
     for (int64_t i = 0; i < n; ++i) r->p[i] = T(i);
     return r;
@@ -411,7 +470,8 @@ template <class T> Tensor::Ptr HostTensor<T>::arange(int64_t n) const {
 // Elementwise -------------------------------------------------------------------------------------
 
 // Into new memory of the broadcast shape.
-template <class T> Tensor::Ptr HostTensor<T>::binary(Binary op, const Tensor::Impl &o) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::binary(Binary op, const Tensor::Impl &o) const {
     const Shape out = shape == o.shape ? shape : broadcast_shapes(shape, o.shape);
     auto r = fresh(out);
     aux_with_binary<T>(op, [&](auto f) { aux_binary_into(*this, of(o), r->p, out, f); });
@@ -433,7 +493,8 @@ Tensor::Ptr HostTensor<T>::scalar(Binary op, double s, bool scalar_first) const 
 }
 
 // The C library's function of every entry.
-template <class T> Tensor::Ptr HostTensor<T>::unary(Unary op) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::unary(Unary op) const {
     auto r = fresh(shape);
     const int64_t n = shape.numel();
     aux_with_unary<T>(op, [&](auto f) {
@@ -458,13 +519,15 @@ Tensor::Ptr HostTensor<T>::where(const Tensor::Impl &a, const Tensor::Impl &b) c
 }
 
 // In place: only on memory of its own, and only when the result keeps this shape.
-template <class T> bool HostTensor<T>::binary_inplace(Binary op, const Tensor::Impl &o) {
+template <class T>
+bool HostTensor<T>::binary_inplace(Binary op, const Tensor::Impl &o) {
     if (!owns() || broadcast_shapes(shape, o.shape) != shape) return false;
     aux_with_binary<T>(op, [&](auto f) { aux_binary_into(*this, of(o), p, shape, f); });
     return true;
 }
 
-template <class T> bool HostTensor<T>::scalar_inplace(Binary op, double s, bool scalar_first) {
+template <class T>
+bool HostTensor<T>::scalar_inplace(Binary op, double s, bool scalar_first) {
     if (!owns()) return false;
     const T v = static_cast<T>(s);
     const int64_t n = shape.numel();
@@ -478,7 +541,8 @@ template <class T> bool HostTensor<T>::scalar_inplace(Binary op, double s, bool 
 }
 
 // Every entry replaced by its value.
-template <class T> bool HostTensor<T>::unary_inplace(Unary op) {
+template <class T>
+bool HostTensor<T>::unary_inplace(Unary op) {
     if (!owns()) return false;
     const int64_t n = shape.numel();
     aux_with_unary<T>(op, [&](auto f) {
@@ -490,7 +554,8 @@ template <class T> bool HostTensor<T>::unary_inplace(Unary op) {
 // Reductions --------------------------------------------------------------------------------------
 
 // Sums and products nest to the right from 0 and 1; max, min and their indices take the first.
-template <class T> Tensor::Ptr HostTensor<T>::reduce(Reduce op, int axis, bool keepdims) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::reduce(Reduce op, int axis, bool keepdims) const {
     axis = axis_of(axis, shape.size(), "reduce");
     if (backend == backend_id::eigen && op == Reduce::sum && axis + 1 == shape.size())
         return eigen::sum_last(*this, keepdims);
@@ -502,18 +567,31 @@ template <class T> Tensor::Ptr HostTensor<T>::reduce(Reduce op, int axis, bool k
     const auto above = [](T a, T b) { return a > b; };
     const auto below = [](T a, T b) { return a < b; };
     switch (op) {
-    case Reduce::sum: aux_fold_right(p, e, T(0), r->p, [](T x, T acc) { return x + acc; }); break;
-    case Reduce::prod: aux_fold_right(p, e, T(1), r->p, [](T x, T acc) { return x * acc; }); break;
-    case Reduce::max: aux_select(p, e, r->p, none, above); break;
-    case Reduce::min: aux_select(p, e, r->p, none, below); break;
-    case Reduce::argmax: aux_select(p, e, none, r->p, above); break;
-    case Reduce::argmin: aux_select(p, e, none, r->p, below); break;
+    case Reduce::sum:
+        aux_fold_right(p, e, T(0), r->p, [](T x, T acc) { return x + acc; });
+        break;
+    case Reduce::prod:
+        aux_fold_right(p, e, T(1), r->p, [](T x, T acc) { return x * acc; });
+        break;
+    case Reduce::max:
+        aux_select(p, e, r->p, none, above);
+        break;
+    case Reduce::min:
+        aux_select(p, e, r->p, none, below);
+        break;
+    case Reduce::argmax:
+        aux_select(p, e, none, r->p, above);
+        break;
+    case Reduce::argmin:
+        aux_select(p, e, none, r->p, below);
+        break;
     }
     return r;
 }
 
 // The running sum from the first entry: c_0 = x_0, c_l = c_{l-1} + x_l.
-template <class T> Tensor::Ptr HostTensor<T>::cumsum(int axis) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::cumsum(int axis) const {
     axis = axis_of(axis, shape.size(), "cumsum");
     const Extents e = aux_extents(shape, axis);
     auto r = fresh(shape);
@@ -529,7 +607,8 @@ template <class T> Tensor::Ptr HostTensor<T>::cumsum(int axis) const {
 // Shape and Selection -----------------------------------------------------------------------------
 
 // A view of the same memory: the new tensor keeps this one alive.
-template <class T> Tensor::Ptr HostTensor<T>::reshape(const Shape &s) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::reshape(const Shape &s) const {
     if (s.numel() != shape.numel())
         CORA_FAIL(Error::dimension_mismatch, "CoraTensor::reshape: " + aux_text(shape) +
                                                  " has another number of entries than " +
@@ -538,7 +617,8 @@ template <class T> Tensor::Ptr HostTensor<T>::reshape(const Shape &s) const {
 }
 
 // A copy that walks the source by permuted strides.
-template <class T> Tensor::Ptr HostTensor<T>::permute_dims(const std::vector<int> &axes) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::permute_dims(const std::vector<int> &axes) const {
     const Shape st = strides_of(shape);
     Shape out, strides;
     for (const int a : axes) {
@@ -551,7 +631,8 @@ template <class T> Tensor::Ptr HostTensor<T>::permute_dims(const std::vector<int
 }
 
 // A copy that walks the source with stride zero along the broadcast axes.
-template <class T> Tensor::Ptr HostTensor<T>::broadcast_to(const Shape &s) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::broadcast_to(const Shape &s) const {
     if (broadcast_shapes(shape, s) != s)
         CORA_FAIL(Error::dimension_mismatch, "CoraTensor::broadcast_to: " + aux_text(shape) +
                                                  " does not broadcast to " + aux_text(s));
@@ -574,7 +655,8 @@ Tensor::Ptr HostTensor<T>::slice(int axis, int64_t start, int64_t stop, int64_t 
 }
 
 // Whole blocks of the axes after `axis` are copied per index.
-template <class T> Tensor::Ptr HostTensor<T>::take(const Tensor::Impl &idx, int axis) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::take(const Tensor::Impl &idx, int axis) const {
     const Extents e = aux_extents(shape, axis);
     const int64_t k = idx.shape.numel();
     const T *ix = of(idx).p;
@@ -625,10 +707,9 @@ Tensor::Ptr HostTensor<T>::concat(std::span<const Tensor::Impl *const> parts, in
         Shape probe = q->shape;
         probe[axis] = shape[axis];
         if (probe != shape)
-            CORA_FAIL(Error::dimension_mismatch, "CoraTensor::concat: " + aux_text(shape) +
-                                                     " and " + aux_text(q->shape) +
-                                                     " differ outside the axis " +
-                                                     std::to_string(axis));
+            CORA_FAIL(Error::dimension_mismatch,
+                      "CoraTensor::concat: " + aux_text(shape) + " and " + aux_text(q->shape) +
+                          " differ outside the axis " + std::to_string(axis));
         out[axis] += q->shape[axis];
     }
     const Extents e = aux_extents(out, axis);
@@ -645,7 +726,8 @@ Tensor::Ptr HostTensor<T>::concat(std::span<const Tensor::Impl *const> parts, in
 }
 
 // A stable sort of each line's indices; descending keeps equal entries in index order too.
-template <class T> Tensor::Ptr HostTensor<T>::argsort(int axis, bool descending) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::argsort(int axis, bool descending) const {
     const Extents e = aux_extents(shape, axis);
     auto r = fresh(shape);
     std::vector<int64_t> order(e.len);
@@ -668,7 +750,8 @@ template <class T> Tensor::Ptr HostTensor<T>::argsort(int axis, bool descending)
 // Linear Algebra ----------------------------------------------------------------------------------
 
 // Each entry nests its sum to the right from zero; the loop over j keeps that order per entry.
-template <class T> Tensor::Ptr HostTensor<T>::matmul(const Tensor::Impl &o) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::matmul(const Tensor::Impl &o) const {
     if (backend == backend_id::eigen) return eigen::matmul(*this, of(o));
     const BatchPairs bp = batch_pairs(shape, o.shape, "matmul");
     const int64_t n = shape[shape.size() - 2], k = shape.back(), m = o.shape.back();
@@ -696,7 +779,8 @@ template <class T> Tensor::Ptr HostTensor<T>::matmul(const Tensor::Impl &o) cons
 }
 
 // LU with partial pivoting per matrix, as LAPACK's gesv and torch.
-template <class T> Tensor::Ptr HostTensor<T>::solve(const Tensor::Impl &rhs) const {
+template <class T>
+Tensor::Ptr HostTensor<T>::solve(const Tensor::Impl &rhs) const {
     aux_require_matrix(shape, "solve", true);
     const BatchPairs bp = batch_pairs(shape, rhs.shape, "solve");
     const int64_t n = shape.back(), m = rhs.shape.back();
@@ -714,7 +798,8 @@ template <class T> Tensor::Ptr HostTensor<T>::solve(const Tensor::Impl &rhs) con
 }
 
 // The lower factor; a matrix that is not positive definite is an error.
-template <class T> Tensor::Ptr HostTensor<T>::cholesky() const {
+template <class T>
+Tensor::Ptr HostTensor<T>::cholesky() const {
     aux_require_matrix(shape, "cholesky", true);
     const int64_t n = shape.back(), count = aux_matrices(shape);
     auto r = fresh(shape);
@@ -729,7 +814,8 @@ template <class T> Tensor::Ptr HostTensor<T>::cholesky() const {
 }
 
 // Householder QR, reduced: Q (n, k), R (k, m).
-template <class T> std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::qr() const {
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::qr() const {
     aux_require_matrix(shape, "qr", false);
     const int64_t n = shape[shape.size() - 2], m = shape.back(), k = std::min(n, m);
     const int64_t count = aux_matrices(shape);
@@ -745,7 +831,8 @@ template <class T> std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::qr() const
 }
 
 // One-sided Jacobi, the most accurate of Eigen's; thin U and V.
-template <class T> std::array<Tensor::Ptr, 3> HostTensor<T>::svd() const {
+template <class T>
+std::array<Tensor::Ptr, 3> HostTensor<T>::svd() const {
     aux_require_matrix(shape, "svd", false);
     const int64_t n = shape[shape.size() - 2], m = shape.back(), k = std::min(n, m);
     const int64_t count = aux_matrices(shape);
@@ -768,7 +855,8 @@ template <class T> std::array<Tensor::Ptr, 3> HostTensor<T>::svd() const {
 }
 
 // The symmetric eigensolver: ascending eigenvalues.
-template <class T> std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::eigh() const {
+template <class T>
+std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::eigh() const {
     aux_require_matrix(shape, "eigh", true);
     const int64_t n = shape.back(), count = aux_matrices(shape);
     auto W = fresh(aux_with_matrix(aux_batch(shape), n, 1)), V = fresh(shape);
@@ -781,7 +869,8 @@ template <class T> std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::eigh() con
 }
 
 // The column's entries on the diagonal, zeros elsewhere.
-template <class T> Tensor::Ptr HostTensor<T>::diag() const {
+template <class T>
+Tensor::Ptr HostTensor<T>::diag() const {
     const int64_t n = shape[shape.size() - 2], count = aux_matrices(shape);
     auto r = fresh(aux_with_matrix(aux_batch(shape), n, n));
     std::fill(r->p, r->p + count * n * n, T(0));
@@ -793,7 +882,8 @@ template <class T> Tensor::Ptr HostTensor<T>::diag() const {
 // Derived and Fused ------------------------------------------------------------------------------
 
 // CORALean's exponential is an interval Taylor series, which no point function reproduces.
-template <class T> Tensor::Ptr HostTensor<T>::expm() const {
+template <class T>
+Tensor::Ptr HostTensor<T>::expm() const {
     if (backend == backend_id::eigen) return eigen::expm(*this);
     CORA_FAIL(Error::special_error,
               "CoraTensor: the lean backend has no expm; CORALean's exponential is an interval "
@@ -849,7 +939,8 @@ std::pair<Tensor::Ptr, Tensor::Ptr> HostTensor<T>::girard_split(int64_t keep) co
     return Impl::girard_split(keep);
 }
 
-template <class T> Tensor::Ptr HostTensor<T>::abs_sum() const {
+template <class T>
+Tensor::Ptr HostTensor<T>::abs_sum() const {
     if (backend == backend_id::eigen) return eigen::abs_sum(*this);
     return Impl::abs_sum();
 }

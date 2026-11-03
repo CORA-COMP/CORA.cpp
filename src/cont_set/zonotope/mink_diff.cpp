@@ -261,8 +261,8 @@ Set Zonotope::minkowski_difference_impl(const ContSet &S2,
         return mink_diff(static_cast<const Zonotope &>(S2), method);
     if (S2.class_id() == ClassId::interval)
         return mink_diff(static_cast<const Interval &>(S2), method);
-    CORA_FAIL(Error::noops, "minkowski_difference is not implemented for Zonotope and " +
-                                S2.class_name());
+    CORA_FAIL(Error::noops,
+              "minkowski_difference is not implemented for Zonotope and " + S2.class_name());
 }
 
 } // namespace cora

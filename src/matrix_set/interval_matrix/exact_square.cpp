@@ -10,8 +10,8 @@
 //
 // CORA: matrixSet/@intervalMatrix/exactSquare.m
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "cont_set/interval/private/priv_times.h"
+#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"
 #include "matrix_set/interval_matrix/private/priv_square_terms.h"
 

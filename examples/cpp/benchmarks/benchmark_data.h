@@ -201,12 +201,13 @@ inline Specification read_spec(const Json &spec) {
     }
     if (spec["type"].string == "safeSet") return Specification::safe_set(halfspaces);
     if (spec["type"].string != "unsafeSet")
-        throw std::runtime_error("benchmark data: unknown specification type "
-                                 + spec["type"].string);
+        throw std::runtime_error("benchmark data: unknown specification type " +
+                                 spec["type"].string);
     return Specification::unsafe_set(halfspaces);
 }
 
-/// Reads <name>.json and its binary file from examples/benchmarks/data (or $CORACPP_BENCHMARK_DATA).
+/// Reads <name>.json and its binary file from examples/benchmarks/data (or
+/// $CORACPP_BENCHMARK_DATA).
 inline Instance load_instance(const std::string &name) {
     const std::string folder = std::getenv("CORACPP_BENCHMARK_DATA")
                                    ? std::getenv("CORACPP_BENCHMARK_DATA")

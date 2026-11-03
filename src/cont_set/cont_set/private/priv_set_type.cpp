@@ -19,11 +19,12 @@ bool priv_type_in(const std::string &type, std::initializer_list<const char *> t
 }
 
 bool priv_is_set_type(const std::string &type) {
-    return priv_type_in(type, {"capsule", "conPolyZono", "conHyperplane", "conZonotope",
-                               "ellipsoid", "halfspace", "interval", "levelSet", "polygon",
-                               "polytope", "polyZonotope", "probZonotope", "zonoBundle",
-                               "zonotope", "origin", "point", "hyperplane", "parallelotope",
-                               "convexSet", "emptySet", "fullspace"});
+    return priv_type_in(type, {"capsule",    "conPolyZono",   "conHyperplane", "conZonotope",
+                               "ellipsoid",  "halfspace",     "interval",      "levelSet",
+                               "polygon",    "polytope",      "polyZonotope",  "probZonotope",
+                               "zonoBundle", "zonotope",      "origin",        "point",
+                               "hyperplane", "parallelotope", "convexSet",     "emptySet",
+                               "fullspace"});
 }
 
 } // namespace cora

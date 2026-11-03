@@ -1,9 +1,9 @@
 // test_lean_interval_norm - Interval::norm against the CORALean oracle (its `norm`)
 //
-// The oracle answers the squared length rounded up (its `normSq`, the float definition has no square
-// root). On the lean backend CORA.cpp's norm is the correctly rounded root of the same sum of
-// squares, so it equals the root of the oracle's number bit for bit; in the sound mode it may exceed
-// the root of the upper bound by the rounding of the root and the sum, kRelative (4 eps).
+// The oracle answers the squared length rounded up (its `normSq`, the float definition has no
+// square root). On the lean backend CORA.cpp's norm is the correctly rounded root of the same sum
+// of squares, so it equals the root of the oracle's number bit for bit; in the sound mode it may
+// exceed the root of the upper bound by the rounding of the root and the sum, kRelative (4 eps).
 //
 // ORACLE: contSet/@interval/norm_.m
 

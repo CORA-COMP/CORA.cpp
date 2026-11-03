@@ -205,7 +205,8 @@ void trajectories_and_points(const std::string &b) {
          {0, 1}, {.label = "simulations"});
     plot(initial_set().rand_point(5, rng), {0, 1});
     const std::string svg = figure().svg();
-    check(count(svg, "<circle") == 5, b + ": only the points are dots, trajectories have no markers");
+    check(count(svg, "<circle") == 5,
+          b + ": only the points are dots, trajectories have no markers");
     check(has(svg, "simulations"), b + ": legend entry");
 }
 

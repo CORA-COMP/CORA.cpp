@@ -52,9 +52,8 @@ ExpmResult IntervalMatrix::expm(double r, int64_t max_order) const {
         return "expm: the matrix must be square, got the shape " + shape_text(int_.inf().shape());
     });
     // r divides the matrix
-    CORA_CHECK(r != 0, Error::wrong_value, [] {
-        return std::string("expm: the step must be nonzero, it divides the matrix");
-    });
+    CORA_CHECK(r != 0, Error::wrong_value,
+               [] { return std::string("expm: the step must be nonzero, it divides the matrix"); });
     CORA_CHECK(max_order >= 0, Error::wrong_value, [&] {
         return "expm: the order must be nonnegative, got " + std::to_string(max_order);
     });
@@ -66,16 +65,15 @@ ExpmResult IntervalMatrix::expm(double, int64_t max_order, int64_t initial_order
                                 const IntervalMatrix &initial_power) const {
     detail::Entry entry;
     // the matrix and the power it continues from are square and of one size
-    CORA_CHECK(rows() == cols() && initial_power.rows() == rows() &&
-                   initial_power.cols() == cols(),
+    CORA_CHECK(rows() == cols() && initial_power.rows() == rows() && initial_power.cols() == cols(),
                Error::dimension_mismatch, [&] {
                    return "expm: the matrix and the initial power must be square of one size, "
-                          "got " + shape_text(int_.inf().shape()) + " and " +
+                          "got " +
+                          shape_text(int_.inf().shape()) + " and " +
                           shape_text(initial_power.interval().inf().shape());
                });
-    CORA_CHECK(initial_order >= 0 && max_order >= 0, Error::wrong_value, [] {
-        return std::string("expm: the orders must be nonnegative");
-    });
+    CORA_CHECK(initial_order >= 0 && max_order >= 0, Error::wrong_value,
+               [] { return std::string("expm: the orders must be nonnegative"); });
     return priv_expm_continued(*this, max_order, initial_order, initial_power);
 }
 

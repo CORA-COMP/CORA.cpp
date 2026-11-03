@@ -16,9 +16,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Set plus(const ContSet &S1, const ContSet &S2) {
-    return detail::dispatch(BinaryOp::plus, S1, S2);
-}
+Set plus(const ContSet &S1, const ContSet &S2) { return detail::dispatch(BinaryOp::plus, S1, S2); }
 
 } // namespace cora
 

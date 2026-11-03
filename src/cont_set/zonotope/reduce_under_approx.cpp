@@ -132,12 +132,10 @@ Zonotope Zonotope::reduce_under_approx(const std::string &method, double order) 
     // a method of CORA, then one this port has; an order; a single zonotope
     CORA_CHECK(method == "yang" || method == "raghuraman" || method == "kochdumper" ||
                    method == "sum" || aux_unsupported(method),
-               Error::wrong_value, [&] {
-                   return "reduce_under_approx: '" + method + "' is not a method of CORA";
-               });
-    CORA_CHECK(!aux_unsupported(method), Error::not_supported, [&] {
-        return "reduce_under_approx: the method '" + method + "' is not supported";
-    });
+               Error::wrong_value,
+               [&] { return "reduce_under_approx: '" + method + "' is not a method of CORA"; });
+    CORA_CHECK(!aux_unsupported(method), Error::not_supported,
+               [&] { return "reduce_under_approx: the method '" + method + "' is not supported"; });
     CORA_CHECK(!std::isnan(order) && order > 0, Error::wrong_value, [&] {
         return "reduce_under_approx: the order must be positive, got " + format_number(order);
     });

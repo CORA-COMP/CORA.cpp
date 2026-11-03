@@ -18,7 +18,8 @@ using test::oracle::check_exact;
 namespace {
 
 /// Runs one comparison; an error of the oracle fails it with the message.
-template <class F> void aux_case(const std::string &name, F f) {
+template <class F>
+void aux_case(const std::string &name, F f) {
     try {
         f();
     } catch (const std::exception &e) {
@@ -34,30 +35,14 @@ lean::Interval aux_point(const Tensor &x) { return lean::Interval::from(x, x); }
 void aux_elementwise(test::oracle::Random &rnd) {
     const Tensor a = rnd.vector(6), b = rnd.vector(6);
     const lean::Interval A = aux_point(a), B = aux_point(b);
-    aux_case("add", [&] {
-        check_exact("add", a + b, A.plus(B));
-    });
-    aux_case("subtract", [&] {
-        check_exact("subtract", a - b, A.minus(B));
-    });
-    aux_case("multiply", [&] {
-        check_exact("multiply", a.multiply(b), A.times(B));
-    });
-    aux_case("maximum", [&] {
-        check_exact("maximum", a.maximum(b), A.max(B));
-    });
-    aux_case("minimum", [&] {
-        check_exact("minimum", a.minimum(b), A.min(B));
-    });
-    aux_case("abs", [&] {
-        check_exact("abs", a.abs(), A.abs());
-    });
-    aux_case("negative", [&] {
-        check_exact("negative", a.negative(), A.uminus());
-    });
-    aux_case("round", [&] {
-        check_exact("round", (a * 3.0).round(), aux_point(a * 3.0).round());
-    });
+    aux_case("add", [&] { check_exact("add", a + b, A.plus(B)); });
+    aux_case("subtract", [&] { check_exact("subtract", a - b, A.minus(B)); });
+    aux_case("multiply", [&] { check_exact("multiply", a.multiply(b), A.times(B)); });
+    aux_case("maximum", [&] { check_exact("maximum", a.maximum(b), A.max(B)); });
+    aux_case("minimum", [&] { check_exact("minimum", a.minimum(b), A.min(B)); });
+    aux_case("abs", [&] { check_exact("abs", a.abs(), A.abs()); });
+    aux_case("negative", [&] { check_exact("negative", a.negative(), A.uminus()); });
+    aux_case("round", [&] { check_exact("round", (a * 3.0).round(), aux_point(a * 3.0).round()); });
 }
 
 /// Sums and products along both axes (the oracle answers columns), and the matrix product.
@@ -65,18 +50,12 @@ void aux_sums(test::oracle::Random &rnd) {
     for (const auto [n, m] : {std::pair<int64_t, int64_t>{2, 3}, {7, 30}}) {
         const Tensor x = rnd.matrix(n, m), y = rnd.matrix(m, n), v = rnd.vector(n);
         const lean::Interval X = aux_point(x);
-        aux_case("sum(-2)", [&] {
-            check_exact("sum(-2)", x.sum(-2, true).reshape({m, 1}), X.sum(1));
-        });
-        aux_case("sum(-1)", [&] {
-            check_exact("sum(-1)", x.sum(-1, true), X.sum(2));
-        });
-        aux_case("prod(-2)", [&] {
-            check_exact("prod(-2)", x.prod(-2, true).reshape({m, 1}), X.prod());
-        });
-        aux_case("matmul", [&] {
-            check_exact("matmul", y.matmul(v), aux_point(v).linear_map(y));
-        });
+        aux_case("sum(-2)",
+                 [&] { check_exact("sum(-2)", x.sum(-2, true).reshape({m, 1}), X.sum(1)); });
+        aux_case("sum(-1)", [&] { check_exact("sum(-1)", x.sum(-1, true), X.sum(2)); });
+        aux_case("prod(-2)",
+                 [&] { check_exact("prod(-2)", x.prod(-2, true).reshape({m, 1}), X.prod()); });
+        aux_case("matmul", [&] { check_exact("matmul", y.matmul(v), aux_point(v).linear_map(y)); });
     }
 }
 
@@ -84,21 +63,12 @@ void aux_sums(test::oracle::Random &rnd) {
 void aux_rearrangements(test::oracle::Random &rnd) {
     const Tensor a = rnd.matrix(3, 4), b = rnd.matrix(2, 3), v = rnd.vector(4);
     const lean::Interval A = aux_point(a), B = aux_point(b);
-    aux_case("matrix_transpose", [&] {
-        check_exact("matrix_transpose", a.matrix_transpose(), A.transpose());
-    });
-    aux_case("kron", [&] {
-        check_exact("kron", a.kron(b), A.kron(B));
-    });
-    aux_case("diag", [&] {
-        check_exact("diag", v.diag(), aux_point(v).diag());
-    });
-    aux_case("tril", [&] {
-        check_exact("tril", a.tril(1), A.tril(1));
-    });
-    aux_case("triu", [&] {
-        check_exact("triu", a.triu(2), A.triu(2));
-    });
+    aux_case("matrix_transpose",
+             [&] { check_exact("matrix_transpose", a.matrix_transpose(), A.transpose()); });
+    aux_case("kron", [&] { check_exact("kron", a.kron(b), A.kron(B)); });
+    aux_case("diag", [&] { check_exact("diag", v.diag(), aux_point(v).diag()); });
+    aux_case("tril", [&] { check_exact("tril", a.tril(1), A.tril(1)); });
+    aux_case("triu", [&] { check_exact("triu", a.triu(2), A.triu(2)); });
     const Tensor c = rnd.matrix(3, 2);
     aux_case("concat(-1)", [&] {
         check_exact("concat(-1)", Tensor::concat({a, c}, -1), A.horzcat(aux_point(c)));
@@ -127,7 +97,8 @@ void aux_interval_products(test::oracle::Random &rnd) {
             check_exact("matmul_interval", Interval(lo2, hi2), lean::Interval(box).linear_map(M));
         });
         aux_case("Interval::linear_map", [&] {
-            check_exact("Interval::linear_map", box.linear_map(M), lean::Interval(box).linear_map(M));
+            check_exact("Interval::linear_map", box.linear_map(M),
+                        lean::Interval(box).linear_map(M));
         });
     }
 }

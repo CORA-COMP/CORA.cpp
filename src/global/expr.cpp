@@ -21,9 +21,9 @@ enum class Op { constant, var, add, sub, mul, div, neg, pow, sin, cos, exp };
 
 struct Expr::Node {
     Op op;
-    double value = 0;  // Const
-    int index = 0;     // Var: the variable; Pow: the exponent
-    Expr a, b;         // the operands
+    double value = 0; // Const
+    int index = 0;    // Var: the variable; Pow: the exponent
+    Expr a, b;        // the operands
 };
 
 /// Builds the nodes, and folds constants so that derivatives stay small.
@@ -114,7 +114,7 @@ Range aux_pow(const Range &a, int n) {
     if (n < 0) return aux_div(Range(aux_constant(a.lo, 1.0)), aux_pow(a, -n));
     if (n == 0) return Range(aux_constant(a.lo, 1.0));
     const Tensor p = aux_power(a.lo, n), q = aux_power(a.hi, n);
-    if (n % 2 == 1) return {p, q};  // odd powers grow
+    if (n % 2 == 1) return {p, q}; // odd powers grow
     // An even power dips to 0 where the range contains 0.
     const std::vector<double> lo = a.lo.data(), hi = a.hi.data();
     std::vector<double> keep(lo.size());
@@ -127,16 +127,26 @@ Range aux_pow(const Range &a, int n) {
 /// The value of a node from the values of its operands.
 Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
     switch (n.op) {
-    case Op::add: return a + b;
-    case Op::sub: return a - b;
-    case Op::mul: return a.multiply(b);
-    case Op::div: return a.divide(b);
-    case Op::neg: return a * -1.0;
-    case Op::pow: return aux_power(a, n.index);
-    case Op::sin: return a.sin();
-    case Op::cos: return a.cos();
-    case Op::exp: return a.exp();
-    default: break;
+    case Op::add:
+        return a + b;
+    case Op::sub:
+        return a - b;
+    case Op::mul:
+        return a.multiply(b);
+    case Op::div:
+        return a.divide(b);
+    case Op::neg:
+        return a * -1.0;
+    case Op::pow:
+        return aux_power(a, n.index);
+    case Op::sin:
+        return a.sin();
+    case Op::cos:
+        return a.cos();
+    case Op::exp:
+        return a.exp();
+    default:
+        break;
     }
     CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
 }
@@ -144,31 +154,44 @@ Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
 /// The same over boxes.
 Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
     switch (n.op) {
-    case Op::add: return a + b;
-    case Op::sub: return a - b;
-    case Op::mul: return a * b;
-    case Op::div: return aux_div(a, b);
-    case Op::neg: return {a.hi * -1.0, a.lo * -1.0};
-    case Op::pow: return aux_pow(a, n.index);
-    case Op::sin: return aux_trig(a, false);
-    case Op::cos: return aux_trig(a, true);
-    case Op::exp: return {a.lo.exp(), a.hi.exp()};
-    default: break;
+    case Op::add:
+        return a + b;
+    case Op::sub:
+        return a - b;
+    case Op::mul:
+        return a * b;
+    case Op::div:
+        return aux_div(a, b);
+    case Op::neg:
+        return {a.hi * -1.0, a.lo * -1.0};
+    case Op::pow:
+        return aux_pow(a, n.index);
+    case Op::sin:
+        return aux_trig(a, false);
+    case Op::cos:
+        return aux_trig(a, true);
+    case Op::exp:
+        return {a.lo.exp(), a.hi.exp()};
+    default:
+        break;
     }
     CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
 }
 
 /// The value of an expression at the tensors or over the ranges x; `like` gives the constants
 /// their shape. A product or quotient with a constant is a scaling, which saves the constant.
-template <class T> struct Evaluator {
+template <class T>
+struct Evaluator {
     const std::vector<T> &x;
     const Tensor &like;
 
     static T scaled(const T &a, double s) { return a * s; }
 
     T constant(double v) const {
-        if constexpr (std::is_same_v<T, Tensor>) return aux_constant(like, v);
-        else return Range(aux_constant(like, v));
+        if constexpr (std::is_same_v<T, Tensor>)
+            return aux_constant(like, v);
+        else
+            return Range(aux_constant(like, v));
     }
 
     T operator()(const Expr &e) const {
@@ -193,10 +216,13 @@ template <class T> struct Evaluator {
 };
 
 /// The prototype of the constants: the first variable, or none.
-template <class T> Tensor aux_prototype(const std::vector<T> &x) {
+template <class T>
+Tensor aux_prototype(const std::vector<T> &x) {
     if (x.empty()) return Tensor();
-    if constexpr (std::is_same_v<T, Tensor>) return x[0];
-    else return x[0].lo;
+    if constexpr (std::is_same_v<T, Tensor>)
+        return x[0];
+    else
+        return x[0].lo;
 }
 
 } // namespace
@@ -292,18 +318,28 @@ Expr Expr::diff(int i) const {
     const Node &n = *node_;
     if (n.op == Op::constant) return Expr(0.0);
     if (n.op == Op::var) return Expr(n.index == i ? 1.0 : 0.0);
-    const Expr da = n.a.diff(i);  // the chain rule needs the inner derivative for every operation
+    const Expr da = n.a.diff(i); // the chain rule needs the inner derivative for every operation
     switch (n.op) {
-    case Op::add: return da + n.b.diff(i);
-    case Op::sub: return da - n.b.diff(i);
-    case Op::mul: return da * n.b + n.a * n.b.diff(i);
-    case Op::div: return (da * n.b - n.a * n.b.diff(i)) / (n.b * n.b);
-    case Op::neg: return -da;
-    case Op::pow: return Expr(double(n.index)) * pow(n.a, n.index - 1) * da;
-    case Op::sin: return cos(n.a) * da;
-    case Op::cos: return -(sin(n.a) * da);
-    case Op::exp: return exp(n.a) * da;
-    default: break;
+    case Op::add:
+        return da + n.b.diff(i);
+    case Op::sub:
+        return da - n.b.diff(i);
+    case Op::mul:
+        return da * n.b + n.a * n.b.diff(i);
+    case Op::div:
+        return (da * n.b - n.a * n.b.diff(i)) / (n.b * n.b);
+    case Op::neg:
+        return -da;
+    case Op::pow:
+        return Expr(double(n.index)) * pow(n.a, n.index - 1) * da;
+    case Op::sin:
+        return cos(n.a) * da;
+    case Op::cos:
+        return -(sin(n.a) * da);
+    case Op::exp:
+        return exp(n.a) * da;
+    default:
+        break;
     }
     CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
 }

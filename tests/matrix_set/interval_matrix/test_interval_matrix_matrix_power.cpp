@@ -13,15 +13,18 @@ namespace {
 
 /// A = [[[1, 2], [0, 1]], [0, 1]]: the powers by the hull of the corner products.
 void powers_of_a_triangular_matrix(const std::string &b) {
-    const IntervalMatrix A(Interval(test::matrix({1, 0, 0, 1}, 2, 2), test::matrix({2, 1, 0, 1}, 2, 2)));
+    const IntervalMatrix A(
+        Interval(test::matrix({1, 0, 0, 1}, 2, 2), test::matrix({2, 1, 0, 1}, 2, 2)));
     const Interval P0 = A.matrix_power(0).interval();
-    check(close(P0.inf(), std::vector<double>{1, 0, 0, 1}) && close(P0.sup(), P0.inf()), b + ": A^0 = I");
+    check(close(P0.inf(), std::vector<double>{1, 0, 0, 1}) && close(P0.sup(), P0.inf()),
+          b + ": A^0 = I");
     check(close(A.matrix_power(1).interval().sup(), A.interval().sup()), b + ": A^1 = A");
     check(close(A.matrix_power(2).interval().sup(), std::vector<double>{4, 3, 0, 1}), b + ": A^2");
     check(close(A.matrix_power(3).interval().sup(), std::vector<double>{8, 7, 0, 1}), b + ": A^3");
     // the product of intervals, not the power of an interval: [-1, 1]^2 is [-1, 1] here
     const IntervalMatrix S(Interval(test::matrix({-1}, 1, 1), test::matrix({1}, 1, 1)));
-    check(close(S.matrix_power(2).interval().inf(), std::vector<double>{-1}), b + ": a 1 x 1 matrix");
+    check(close(S.matrix_power(2).interval().inf(), std::vector<double>{-1}),
+          b + ": a 1 x 1 matrix");
 }
 
 /// The powers of members are in the powers of the set, and a point matrix is its power.

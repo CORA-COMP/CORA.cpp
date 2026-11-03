@@ -91,7 +91,8 @@ int main() {
         for (const auto [n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const auto mine = Z.split_longest_gen();
-            aux_check_halves(std::pair{mine.second, mine.first}, lean::Zonotope(Z).split_longest_gen());
+            aux_check_halves(std::pair{mine.second, mine.first},
+                             lean::Zonotope(Z).split_longest_gen());
         }
     });
     return test::finish("lean zonotope maps");

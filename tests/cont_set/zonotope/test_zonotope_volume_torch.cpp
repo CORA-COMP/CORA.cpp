@@ -10,10 +10,11 @@ namespace {
 /// The exact sum of |det| and the Alamo bound are differentiable in the generators.
 void volume_gradient() {
     const std::vector<torch::Tensor> Z = test::random_zonotope(2, 4);
-    test::gradcheck("volume (exact)",
-                    [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).volume()}; }, Z);
-    test::gradcheck("volume (alamo)",
-                    [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).volume("alamo")}; }, Z);
+    test::gradcheck(
+        "volume (exact)", [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).volume()}; }, Z);
+    test::gradcheck(
+        "volume (alamo)",
+        [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).volume("alamo")}; }, Z);
 }
 
 } // namespace

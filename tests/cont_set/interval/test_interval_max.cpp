@@ -14,7 +14,8 @@ using test::column;
 namespace {
 
 void max_takes_the_larger_bounds(const std::string &b) {
-    const Interval I(column({0.0, -1.0}), column({2.0, 1.0})), J(column({1.0, -2.0}), column({3.0, 0.0}));
+    const Interval I(column({0.0, -1.0}), column({2.0, 1.0})),
+        J(column({1.0, -2.0}), column({3.0, 0.0}));
     const Interval R = I.max(J);
     check(close(R.inf(), std::vector<double>{1, -1}) && close(R.sup(), std::vector<double>{3, 1}),
           b + ": [max(inf, inf2), max(sup, sup2)]");

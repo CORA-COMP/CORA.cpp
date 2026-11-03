@@ -42,9 +42,7 @@ Zonotope Zonotope::lift(int64_t N, const std::vector<int64_t> &dims) const {
     return {c_.take(source, -2), G_.take(source, -2)};
 }
 
-Set Zonotope::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {
-    return lift(N, proj);
-}
+Set Zonotope::lift_impl(int64_t N, const std::vector<int64_t> &proj) const { return lift(N, proj); }
 
 } // namespace cora
 

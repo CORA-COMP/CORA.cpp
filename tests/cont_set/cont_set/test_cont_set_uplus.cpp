@@ -23,7 +23,8 @@ namespace {
 void uplus_is_the_identity(const std::string &b) {
     const Zonotope Z(column({-0.0, 1.0}), Tensor::from_data({0.5, 0.0, -0.0, 0.5}, {2, 2}));
     const Interval I(column({-0.0, 0.0}), column({2.0, 3.0}));
-    const Set A = static_cast<const ContSet &>(Z).uplus(), B = static_cast<const ContSet &>(I).uplus();
+    const Set A = static_cast<const ContSet &>(Z).uplus(),
+              B = static_cast<const ContSet &>(I).uplus();
     check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center(), Z.center(), 0) &&
               test::close(A.as<Zonotope>().generators(), Z.generators(), 0),
           b + ": a zonotope");

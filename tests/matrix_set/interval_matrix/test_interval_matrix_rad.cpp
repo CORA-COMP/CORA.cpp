@@ -12,7 +12,8 @@ using test::close;
 namespace {
 
 void rad_of_the_example(const std::string &b) {
-    check(close(test::example().rad(), std::vector<double>{0.5, 1, 1.5, 0}), b + ": (sup - inf) / 2");
+    check(close(test::example().rad(), std::vector<double>{0.5, 1, 1.5, 0}),
+          b + ": (sup - inf) / 2");
     const IntervalMatrix P(test::matrix({3, -1}, 1, 2));
     check(close(P.rad(), std::vector<double>{0, 0}), b + ": a point matrix has radius 0");
 }
@@ -25,8 +26,9 @@ void rad_bounds_the_distance_to_the_center(const std::string &b) {
     const IntervalMatrix A = test::random_matrix(rng, 3, 1.0);
     bool within = true;
     for (int trial = 0; trial < 20; ++trial)
-        within = within &&
-                 (test::member(A, rng) - A.center()).abs().less_equal(A.rad() + 1e-15).min().item() != 0;
+        within =
+            within &&
+            (test::member(A, rng) - A.center()).abs().less_equal(A.rad() + 1e-15).min().item() != 0;
     check(within, b + ": members are within rad of the center");
     const IntervalMatrix T = test::random_matrix(rng, 2, 1.0);
     const IntervalMatrix batch(Interval::stack({T.interval(), test::example().interval()}));

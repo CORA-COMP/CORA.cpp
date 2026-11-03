@@ -59,7 +59,8 @@ void enclosures_contain_the_values() {
         for (int i = 0; i <= 20; ++i)
             for (int j = 0; j <= 20; ++j) {
                 const double v = f.eval({-1.2 + 3.2 * i / 20, -3.0 + 4.5 * j / 20});
-                check(v >= lower(r) - 1e-12 && v <= upper(r) + 1e-12, "a sampled value is enclosed");
+                check(v >= lower(r) - 1e-12 && v <= upper(r) + 1e-12,
+                      "a sampled value is enclosed");
             }
     }
 }
@@ -82,7 +83,8 @@ void tensors_evaluate_elementwise() {
         f.eval_tensor({Tensor::from_data(xs, {3, 1}), Tensor::from_data(ys, {3, 1})});
     check(all.shape() == std::vector<int64_t>({3, 1}), "the result has the shape of the points");
     const std::vector<double> values = all.data();
-    for (int i = 0; i < 3; ++i) check(close(values[i], f.eval({xs[i], ys[i]})), "point " + std::to_string(i));
+    for (int i = 0; i < 3; ++i)
+        check(close(values[i], f.eval({xs[i], ys[i]})), "point " + std::to_string(i));
 }
 
 /// Products and squares of ranges take the extremes of the ends.
@@ -99,7 +101,8 @@ void range_arithmetic_takes_the_extremes() {
 
 void errors_are_described() {
     const Expr x = Expr::var(0);
-    check(test::throws([&] { (1 / x).enclose({span(-1.0, 1.0)}); }), "dividing by a range around 0");
+    check(test::throws([&] { (1 / x).enclose({span(-1.0, 1.0)}); }),
+          "dividing by a range around 0");
     check(test::throws([&] { x.eval(std::vector<double>{}); }), "a missing variable");
     check(test::throws([&] { Expr::var(-1); }), "a negative variable index");
     check(test::throws([&] { x / Expr(0.0); }), "dividing by the constant 0");

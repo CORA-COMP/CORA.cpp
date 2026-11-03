@@ -1,21 +1,21 @@
 #include "instance.h"
 
 #include "backend.h"
+#include "cora/global/threads.h"
 #include "json.h"
 #include "sets/lp.h"
 #include "sets/sets.h"
-#include "cora/global/threads.h"
 
 #include <algorithm>
 #include <chrono>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <thread>
 #include <string>
+#include <thread>
 #include <vector>
 
 #ifdef _OPENMP
@@ -132,8 +132,7 @@ struct Prepared : Runner {
         } else if (op == "randPoint") {
             sink(s.rand_point(in.points, rng)(0, 0));
         } else if (op == "supportFunc") {
-            sink(s.is_box ? support_func(s.box, direction)(0)
-                          : support_func(s.zono, direction)(0));
+            sink(s.is_box ? support_func(s.box, direction)(0) : support_func(s.zono, direction)(0));
         } else if (op == "matMul") {
             sink(s.is_box ? mat_mul(s.box, matrix).lo(0, 0) : mat_mul(s.zono, matrix).c(0, 0));
         } else if (op == "minkSum") {
@@ -214,12 +213,12 @@ void warm_up() {
             for (int batch : {1, 2}) {
                 for (int n : {1, 3, 10}) {
                     const std::string params =
-                        std::string("{\"set\": \"") + set + "\", \"operation\": \"" + op
-                        + "\", \"dim\": " + std::to_string(n)
-                        + ", \"generators\": " + std::to_string(2 * n)
-                        + ", \"device\": \"cpu\", \"repetition\": 1, \"points\": 2"
-                        + ", \"batch_size\": " + std::to_string(batch) + ", \"type\": \""
-                        + (std::string(op) == "supportFunc" ? "upper" : "standard") + "\"}";
+                        std::string("{\"set\": \"") + set + "\", \"operation\": \"" + op +
+                        "\", \"dim\": " + std::to_string(n) +
+                        ", \"generators\": " + std::to_string(2 * n) +
+                        ", \"device\": \"cpu\", \"repetition\": 1, \"points\": 2" +
+                        ", \"batch_size\": " + std::to_string(batch) + ", \"type\": \"" +
+                        (std::string(op) == "supportFunc" ? "upper" : "standard") + "\"}";
                     const Params in(params);
                     Rng rng(kSeed);
                     Prepared(in, rng).run();

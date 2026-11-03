@@ -49,8 +49,7 @@ inline Mat<double> just_outside(const Zonotope<double> &z, Eigen::Index points, 
 /// `points` points per set scattered across the boundary, so roughly half land inside:
 /// a corner of the generator box, jittered. Two implementations that disagree at all
 /// disagree here.
-inline Mat<double> across_the_boundary(const Zonotope<double> &z, Eigen::Index points,
-                                       Rng &rng) {
+inline Mat<double> across_the_boundary(const Zonotope<double> &z, Eigen::Index points, Rng &rng) {
     const Eigen::Index n = z.dim(), batch = z.batch();
     Mat<double> jitter(n, points * batch), offset(n, batch), out(n, points * batch);
     rng.normal(jitter.data(), static_cast<std::size_t>(jitter.size()), 0.3);

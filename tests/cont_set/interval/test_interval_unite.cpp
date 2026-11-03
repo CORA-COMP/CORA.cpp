@@ -14,7 +14,8 @@ using test::column;
 namespace {
 
 void unite_is_the_hull(const std::string &b) {
-    const Interval I(column({0.0, 0.0}), column({1.0, 1.0})), J(column({2.0, -1.0}), column({3.0, 0.5}));
+    const Interval I(column({0.0, 0.0}), column({1.0, 1.0})),
+        J(column({2.0, -1.0}), column({3.0, 0.5}));
     const Interval R = I.unite(J);
     check(close(R.inf(), std::vector<double>{0, -1}) && close(R.sup(), std::vector<double>{3, 1}),
           b + ": [min(inf, inf2), max(sup, sup2)]");
@@ -34,7 +35,8 @@ void unite_is_the_hull(const std::string &b) {
           b + ": a batch");
 }
 
-/// A box of another dimension and a point of another shape are refused; the checks off give the same.
+/// A box of another dimension and a point of another shape are refused; the checks off give the
+/// same.
 void checks_and_their_switch() {
     const Interval I(column({0.0, 0.0}), column({1.0, 1.0}));
     check(test::raises([&] { I.unite(Interval(column({0.0}), column({1.0}))); },

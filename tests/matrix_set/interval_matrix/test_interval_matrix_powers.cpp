@@ -1,4 +1,5 @@
-// test_interval_matrix_powers - IntervalMatrix powers: the powers from a given order, from the right
+// test_interval_matrix_powers - IntervalMatrix powers: the powers from a given order, from the
+// right
 //
 // CORA: matrixSet/@intervalMatrix/powers.m
 // PROPERTY: matrixSet/@intervalMatrix/powers.m

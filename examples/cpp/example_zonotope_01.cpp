@@ -22,7 +22,7 @@ int main() {
     Zonotope Z(Tensor({-1, 0}), Tensor({{1, 0}, {0, 1}}) * 0.1);
 
     // init rotation matrix
-    const double phi = 0.2;  // radians
+    const double phi = 0.2; // radians
     Tensor A({{Tensor::cos(phi), Tensor::sin(phi)}, {-Tensor::sin(phi), Tensor::cos(phi)}});
     A = A * 0.975;
 

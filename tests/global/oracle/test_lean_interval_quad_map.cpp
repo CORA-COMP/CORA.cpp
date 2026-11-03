@@ -20,7 +20,8 @@ int main() {
             const std::vector<Tensor> Q{rnd.matrix(n, n), rnd.matrix(n, n)};
             std::vector<lean::Tensor> LQ;
             for (const Tensor &M : Q) LQ.push_back(lean::Tensor::from(M));
-            test::oracle::check_enclosed("interval.quadMap", I.quad_map(Q), lean::Interval(I).quad_map(LQ));
+            test::oracle::check_enclosed("interval.quadMap", I.quad_map(Q),
+                                         lean::Interval(I).quad_map(LQ));
         }
     });
     return test::finish("lean interval quad_map");

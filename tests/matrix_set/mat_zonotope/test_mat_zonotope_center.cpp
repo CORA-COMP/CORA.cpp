@@ -18,7 +18,8 @@ void center_is_the_member_at_zero(const std::string &b) {
     check(close(A.center(), {1, 2, 3, 4}), b + ": the center of the example");
     Rng rng(1);
     const MatZonotope R = test::random_set(rng, 3, 2, 0.4);
-    check(close(test::member(R, {0.0, 0.0}), R.center()), b + ": the member at b = 0 is the center");
+    check(close(test::member(R, {0.0, 0.0}), R.center()),
+          b + ": the member at b = 0 is the center");
     const MatZonotope batch = test::batch_of(A, A.plus(test::matrix({1, 1, 1, 1}, 2, 2)));
     check(close(batch.center().slice(0, 1, 2).squeeze(0), {2, 3, 4, 5}), b + ": a batch");
 }

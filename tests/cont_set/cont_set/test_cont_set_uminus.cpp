@@ -23,7 +23,8 @@ namespace {
 void uminus_negates(const std::string &b) {
     const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.2, 0.5}, {2, 2}));
     const Interval I(column({-1.0, 0.0}), column({2.0, 3.0}));
-    const Set A = static_cast<const ContSet &>(Z).uminus(), B = static_cast<const ContSet &>(I).uminus();
+    const Set A = static_cast<const ContSet &>(Z).uminus(),
+              B = static_cast<const ContSet &>(I).uminus();
     check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center(), {-1.0, 0.0}) &&
               test::close(A.as<Zonotope>().generators(), {-0.5, -0.0, -0.2, -0.5}),
           b + ": a zonotope");
@@ -32,7 +33,8 @@ void uminus_negates(const std::string &b) {
           b + ": a box");
     for (const std::vector<double> &d : {std::vector<double>{1.0, 2.0}, {-1.0, 0.5}}) {
         const std::vector<double> minus_d{-d[0], -d[1]};
-        check(test::close(test::support(A, d), test::support(Z, minus_d)), b + ": the support of -Z");
+        check(test::close(test::support(A, d), test::support(Z, minus_d)),
+              b + ": the support of -Z");
     }
     // the unbounded box has no NaN from a zero entry of the map
     const double inf = std::numeric_limits<double>::infinity();

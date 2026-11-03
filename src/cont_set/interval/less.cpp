@@ -24,8 +24,7 @@ bool Interval::less(const Interval &I2) const {
         return "less: the intervals differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(I2.dim());
     });
-    return inf_.numel() == 0 ||
-           I2.inf().less(inf_).minimum(sup_.less(I2.sup())).min().item() != 0;
+    return inf_.numel() == 0 || I2.inf().less(inf_).minimum(sup_.less(I2.sup())).min().item() != 0;
 }
 
 } // namespace cora

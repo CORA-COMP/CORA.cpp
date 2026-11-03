@@ -25,10 +25,12 @@ void abs_bounds_the_members(const std::string &b) {
     for (int trial = 0; trial < 30; ++trial)
         below = below && test::member(A, rng).abs().less_equal(A.abs() + 1e-15).min().item() != 0;
     check(below, b + ": |M| <= abs(A) for members");
-    check(close(A.abs(), A.infimum().abs().maximum(A.interval().sup().abs())), b + ": reached at an end");
+    check(close(A.abs(), A.infimum().abs().maximum(A.interval().sup().abs())),
+          b + ": reached at an end");
     const IntervalMatrix T = test::random_matrix(rng, 2, 1.0);
     const IntervalMatrix batch(Interval::stack({T.interval(), test::example().interval()}));
-    check(close(batch.abs().slice(0, 1, 2).reshape({2, 2}), test::example().abs()), b + ": a batch");
+    check(close(batch.abs().slice(0, 1, 2).reshape({2, 2}), test::example().abs()),
+          b + ": a batch");
 }
 
 /// abs has no input to refuse; with the checks off the result is the same.

@@ -35,7 +35,8 @@ void linear_map_cases_of_cora(const std::string &b) {
           b + ": a zero row stays at 0, the other is unbounded");
     check((matrix({2, 0, 0, 3}, 2, 2) * F).is<Fullspace>(), b + ": the operator M * F");
     // a scalar, as a 1 x 1 matrix: 0 gives the origin, any other number the space
-    check(F.linear_map(matrix({0.0}, 1, 1)).as<Interval>().sup().data() == std::vector<double>(2, 0.0),
+    check(F.linear_map(matrix({0.0}, 1, 1)).as<Interval>().sup().data() ==
+              std::vector<double>(2, 0.0),
           b + ": the scalar 0 is the origin");
     check(F.linear_map(matrix({-2.0}, 1, 1)).is<Fullspace>(), b + ": a nonzero scalar");
     check(F.linear_map(matrix({1e-17}, 1, 1)).is<Interval>(), b + ": a scalar within eps of 0");

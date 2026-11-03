@@ -34,8 +34,10 @@ Tensor aux_embed(const Tensor &rows, int64_t N, const std::vector<int64_t> &dims
 /// What is wrong with N and the positions dims for a zonotope of dimension n, or "" if nothing.
 std::string aux_problem(int64_t N, const std::vector<int64_t> &dims, int64_t n) {
     if (N < n)
-        return "the space of " + std::to_string(N) + " dimensions must not be smaller than the "
-               "zonotope of " + std::to_string(n);
+        return "the space of " + std::to_string(N) +
+               " dimensions must not be smaller than the "
+               "zonotope of " +
+               std::to_string(n);
     if (int64_t(dims.size()) != n)
         return "one position per state is needed, got " + std::to_string(dims.size()) + " for " +
                std::to_string(n);
@@ -54,8 +56,7 @@ std::string aux_problem(int64_t N, const std::vector<int64_t> &dims, int64_t n) 
 Zonotope Zonotope::project_high_dim(int64_t N, const std::vector<int64_t> &dims) const {
     detail::Entry entry;
     const std::string problem = aux_problem(N, dims, dim());
-    CORA_CHECK(problem.empty(), Error::wrong_value,
-               [&] { return "project_high_dim: " + problem; });
+    CORA_CHECK(problem.empty(), Error::wrong_value, [&] { return "project_high_dim: " + problem; });
     return {aux_embed(c_, N, dims), aux_embed(G_, N, dims)};
 }
 

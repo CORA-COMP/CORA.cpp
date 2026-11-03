@@ -1,4 +1,5 @@
-// test_interval_matrix_expm_absolute_bound - IntervalMatrix expm_absolute_bound: CORA's matrix bound
+// test_interval_matrix_expm_absolute_bound - IntervalMatrix expm_absolute_bound: CORA's matrix
+// bound
 //
 // CORA: matrixSet/@intervalMatrix/expmAbsoluteBound.m
 // PROPERTY: matrixSet/@intervalMatrix/expmAbsoluteBound.m
@@ -30,10 +31,12 @@ Tensor limit_by_powers(const IntervalMatrix &A, double t) {
 /// (0.25 * (0.5 / 0.75) + 0.5) / 0.5 = 4/3; and it is the limit of the powers of G.
 void bound_of_small_sets(const std::string &b) {
     const IntervalMatrix A(test::matrix({0.5}, 1, 1), test::matrix({0.5}, 1, 1));
-    check(close(A.expm_absolute_bound(1.0), std::vector<double>{4.0 / 3.0}, 1e-12), b + ": 1 x 1 by hand");
+    check(close(A.expm_absolute_bound(1.0), std::vector<double>{4.0 / 3.0}, 1e-12),
+          b + ": 1 x 1 by hand");
     const IntervalMatrix B(test::matrix({0.3, -0.2, 0.1, 0.4}, 2, 2),
                            test::matrix({0.1, 0.05, 0.02, 0.1}, 2, 2));
-    check(close(B.expm_absolute_bound(1.0), limit_by_powers(B, 1.0), 1e-9), b + ": the limit of G^k, 2 x 2");
+    check(close(B.expm_absolute_bound(1.0), limit_by_powers(B, 1.0), 1e-9),
+          b + ": the limit of G^k, 2 x 2");
     check(close(B.expm_absolute_bound(0.5), limit_by_powers(B, 0.5), 1e-9), b + ": ... at t = 0.5");
     check(close(IntervalMatrix(test::matrix({0.3, 0.1, 0.2, 0.4}, 2, 2)).expm_absolute_bound(1.0),
                 std::vector<double>(4, 0.0), 1e-12),
@@ -52,15 +55,17 @@ void bound_of_random_sets(const std::string &b) {
 
 /// A matrix that is not square is refused; with the checks off a valid call gives the same.
 void checks_and_their_switch() {
-    check(test::raises([&] { IntervalMatrix(test::matrix({1, 2, 3}, 1, 3)).expm_absolute_bound(1.0); },
-                       Error::dimension_mismatch),
+    check(test::raises(
+              [&] { IntervalMatrix(test::matrix({1, 2, 3}, 1, 3)).expm_absolute_bound(1.0); },
+              Error::dimension_mismatch),
           "expm_absolute_bound: not square");
     check(test::raises([&] { test::example().expm_absolute_bound(-1.0); }, Error::wrong_value),
           "expm_absolute_bound: a negative time");
     const IntervalMatrix A(test::matrix({0.5}, 1, 1), test::matrix({0.5}, 1, 1));
     const Tensor on = A.expm_absolute_bound(1.0);
     ChecksScope off(false);
-    check(close(A.expm_absolute_bound(1.0), on, 0), "expm_absolute_bound: the same with the checks off");
+    check(close(A.expm_absolute_bound(1.0), on, 0),
+          "expm_absolute_bound: the same with the checks off");
 }
 
 } // namespace

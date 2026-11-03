@@ -7,15 +7,17 @@ using test::Inputs;
 
 namespace {
 
-/// Every method is piecewise (abs, max, argmax): the gradient of the branch taken, away from the kinks.
+/// Every method is piecewise (abs, max, argmax): the gradient of the branch taken, away from the
+/// kinks.
 void hausdorff_distance_gradient() {
     const std::vector<torch::Tensor> Z = test::random_zonotope(2, 4);
     for (const std::string method : {"exact", "naive", "wgreedy", "wopt"})
-        test::gradcheck("hausdorff_distance_to_box " + method,
-                        [&](const Inputs &x) {
-                            return Inputs{Zonotope(x[0], x[1]).hausdorff_distance_to_box(method)};
-                        },
-                        Z);
+        test::gradcheck(
+            "hausdorff_distance_to_box " + method,
+            [&](const Inputs &x) {
+                return Inputs{Zonotope(x[0], x[1]).hausdorff_distance_to_box(method)};
+            },
+            Z);
 }
 
 } // namespace

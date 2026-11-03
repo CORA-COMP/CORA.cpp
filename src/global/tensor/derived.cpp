@@ -54,11 +54,20 @@ void aux_require_matrix(const Tensor &t, const char *op) {
 }
 
 /// The Pade 13 coefficients of Higham's scaling and squaring (SIAM J. Matrix Anal. Appl. 2005).
-constexpr double kPade[14] = {64764752532480000.0, 32382376266240000.0, 7771770303897600.0,
-                              1187353796428800.0,  129060195264000.0,   10559470521600.0,
-                              670442572800.0,      33522128640.0,       1323241920.0,
-                              40840800.0,          960960.0,            16380.0,
-                              182.0,               1.0};
+constexpr double kPade[14] = {64764752532480000.0,
+                              32382376266240000.0,
+                              7771770303897600.0,
+                              1187353796428800.0,
+                              129060195264000.0,
+                              10559470521600.0,
+                              670442572800.0,
+                              33522128640.0,
+                              1323241920.0,
+                              40840800.0,
+                              960960.0,
+                              16380.0,
+                              182.0,
+                              1.0};
 constexpr double kTheta13 = 5.371920351148152;
 
 } // namespace
@@ -98,11 +107,11 @@ Tensor derived::expm(const Tensor &A) {
     const Tensor X = A * std::ldexp(1.0, -s), I = A.eye_like();
     const Tensor X2 = X.matmul(X), X4 = X2.matmul(X2), X6 = X4.matmul(X2);
     const Tensor u_high = X6 * kPade[13] + X4 * kPade[11] + X2 * kPade[9];
-    const Tensor U = X.matmul(X6.matmul(u_high) + X6 * kPade[7] + X4 * kPade[5] + X2 * kPade[3] +
-                              I * kPade[1]);
+    const Tensor U =
+        X.matmul(X6.matmul(u_high) + X6 * kPade[7] + X4 * kPade[5] + X2 * kPade[3] + I * kPade[1]);
     const Tensor v_high = X6 * kPade[12] + X4 * kPade[10] + X2 * kPade[8];
-    const Tensor V = X6.matmul(v_high) + X6 * kPade[6] + X4 * kPade[4] + X2 * kPade[2] +
-                     I * kPade[0];
+    const Tensor V =
+        X6.matmul(v_high) + X6 * kPade[6] + X4 * kPade[4] + X2 * kPade[2] + I * kPade[0];
     Tensor R = (V - U).solve(V + U);
     for (int k = 0; k < s; ++k) R = R.matmul(R); // undo the scaling by squaring
     return R;
@@ -133,20 +142,27 @@ Tensor derived::kron(const Tensor &A, const Tensor &B) {
 Tensor derived::matrix_norm(const Tensor &A, Norm ord) {
     aux_require_matrix(A, "matrix_norm");
     switch (ord) {
-    case Norm::one: return A.abs().sum(-2, true).max(-1, true);
-    case Norm::inf: return A.abs().sum(-1, true).max(-2, true);
-    case Norm::fro: return A.square().sum(-1, true).sum(-2, true).sqrt();
-    case Norm::two: return A.svd()[1].max(-2, true);
+    case Norm::one:
+        return A.abs().sum(-2, true).max(-1, true);
+    case Norm::inf:
+        return A.abs().sum(-1, true).max(-2, true);
+    case Norm::fro:
+        return A.square().sum(-1, true).sum(-2, true).sqrt();
+    case Norm::two:
+        return A.svd()[1].max(-2, true);
     }
     CORA_FAIL(Error::wrong_value, "CoraTensor::matrix_norm: unknown norm");
 }
 
 Tensor derived::vector_norm(const Tensor &x, Norm ord, int axis, bool keepdims) {
     switch (ord) {
-    case Norm::one: return x.abs().sum(axis, keepdims);
-    case Norm::inf: return x.abs().max(axis, keepdims);
+    case Norm::one:
+        return x.abs().sum(axis, keepdims);
+    case Norm::inf:
+        return x.abs().max(axis, keepdims);
     case Norm::two:
-    case Norm::fro: return x.square().sum(axis, keepdims).sqrt();
+    case Norm::fro:
+        return x.square().sum(axis, keepdims).sqrt();
     }
     CORA_FAIL(Error::wrong_value, "CoraTensor::vector_norm: unknown norm");
 }

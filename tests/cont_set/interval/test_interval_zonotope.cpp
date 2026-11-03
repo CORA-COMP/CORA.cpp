@@ -29,7 +29,8 @@ void zonotope_has_the_radius_as_generators(const std::string &b) {
     check(S.generators().shape() == std::vector<int64_t>({2, 3, 2}),
           b + ": a batch drops the columns of zero radius in every member");
     const Interval J(column({0.0, 1.0, -1.0}), column({2.0, 1.0, -1.0}));
-    check(Interval::stack({I, J}).zonotope().generators().shape() == std::vector<int64_t>({2, 3, 2}),
+    check(Interval::stack({I, J}).zonotope().generators().shape() ==
+              std::vector<int64_t>({2, 3, 2}),
           b + ": a batch keeps a column that has a radius in some member");
 }
 

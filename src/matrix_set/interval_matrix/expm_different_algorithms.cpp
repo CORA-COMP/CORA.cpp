@@ -20,8 +20,9 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::optional<IntervalMatrix> IntervalMatrix::expm_different_algorithms(
-    int64_t max_order, int64_t style, int64_t scaling_exponent) const {
+std::optional<IntervalMatrix>
+IntervalMatrix::expm_different_algorithms(int64_t max_order, int64_t style,
+                                          int64_t scaling_exponent) const {
     detail::Entry entry;
     if (entry.check()) check_series_input(max_order, style, scaling_exponent, true);
     if (style == 4) return expm(1.0, max_order).enclosure;

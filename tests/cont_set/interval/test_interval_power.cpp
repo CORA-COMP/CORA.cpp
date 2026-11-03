@@ -104,7 +104,8 @@ void power_with_box_exponents(const std::string &b) {
     const Interval R = Interval::power(column({2.0}), E);
     check(close(R.inf(), std::vector<double>{2}) && close(R.sup(), std::vector<double>{8}),
           b + ": a number to a box");
-    const Interval T = Interval(column({2.0}), column({3.0})).power(Interval(column({1.0}), column({2.0})));
+    const Interval T =
+        Interval(column({2.0}), column({3.0})).power(Interval(column({1.0}), column({2.0})));
     check(close(T.inf(), std::vector<double>{2}) && close(T.sup(), std::vector<double>{9}),
           b + ": a box to a box");
 }
@@ -141,8 +142,9 @@ void checks_and_their_switch() {
     check(test::raises([&] { Interval(column({0.0}), column({0.0})).power(-1); },
                        Error::out_of_domain),
           "power: the reciprocal of [0, 0]");
-    check(test::raises([&] { Interval::power(column({-2.0}), Interval(column({1.0}), column({2.0}))); },
-                       Error::out_of_domain),
+    check(test::raises(
+              [&] { Interval::power(column({-2.0}), Interval(column({1.0}), column({2.0}))); },
+              Error::out_of_domain),
           "power: a negative number to a box");
     check(test::raises([&] { I.power(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "power: three exponents for two coordinates");

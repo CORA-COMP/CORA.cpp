@@ -40,8 +40,8 @@ MatZonotope::MatZonotope(Tensor center, Tensor generators)
     CORA_CHECK(C_.ndim() >= 2 && G_.ndim() == C_.ndim() + 1, Error::wrong_input_in_constructor,
                [&] {
                    return "MatZonotope: the center must be (..., rows, cols) and the generators "
-                          "(..., h, rows, cols), got the shapes " + shape_text(C_.shape()) +
-                          " and " + shape_text(G_.shape());
+                          "(..., h, rows, cols), got the shapes " +
+                          shape_text(C_.shape()) + " and " + shape_text(G_.shape());
                });
     // the generators share the batch, the rows and the columns of the center
     CORA_CHECK(G_.size(-2) == rows() && G_.size(-1) == cols() &&

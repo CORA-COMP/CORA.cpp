@@ -2,7 +2,8 @@
 //
 // For each operation tagged differentiable or piecewise in ops.def, the gradient that autograd
 // gives through the torch backend equals central differences, in float64, at points away from the
-// kinks of the piecewise ones. The conventions test requires a gradcheck("<op>", ...) here for each.
+// kinks of the piecewise ones. The conventions test requires a gradcheck("<op>", ...) here for
+// each.
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -38,7 +39,8 @@ void gradcheck(const std::string &op, const Fn &f, const std::vector<torch::Tens
     std::vector<torch::Tensor> x, weights;
     for (const torch::Tensor &t : inputs) x.push_back(t.detach().clone().requires_grad_(true));
     const torch::Tensor loss = aux_loss(f, x, weights);
-    const std::vector<torch::Tensor> grads = torch::autograd::grad({loss}, x, {}, false, false, true);
+    const std::vector<torch::Tensor> grads =
+        torch::autograd::grad({loss}, x, {}, false, false, true);
     const double h = 1e-6;
     bool ok = true;
     for (std::size_t k = 0; k < x.size() && ok; ++k) {
@@ -52,9 +54,9 @@ void gradcheck(const std::string &op, const Fn &f, const std::vector<torch::Tens
             plus[k].view(-1)[j] += h;
             minus[k].view(-1)[j] -= h;
             const double numeric = (aux_loss(f, plus, weights).item<double>() -
-                                    aux_loss(f, minus, weights).item<double>()) / (2 * h);
-            const double analytic =
-                grads[k].defined() ? grads[k].flatten()[j].item<double>() : 0.0;
+                                    aux_loss(f, minus, weights).item<double>()) /
+                                   (2 * h);
+            const double analytic = grads[k].defined() ? grads[k].flatten()[j].item<double>() : 0.0;
             if (std::abs(numeric - analytic) > 1e-5 + 1e-4 * std::abs(numeric)) {
                 std::cerr << "  " << op << ": input " << k << " entry " << j << ": autograd "
                           << analytic << ", differences " << numeric << "\n";
@@ -104,7 +106,8 @@ void elementwise() {
               {aux_randn({3, 4}), aux_randn({3, 4}) + 5});
     gradcheck("remainder", [](const V &v) { return V{v[0].remainder(v[1])}; },
               {aux_within({3, 4}, 0.1, 0.4), aux_within({3, 4}, 0.6, 1)});
-    gradcheck("atan2", [](const V &v) { return V{v[0].atan2(v[1])}; }, {aux_randn({3, 4}), aux_away({3, 4})});
+    gradcheck("atan2", [](const V &v) { return V{v[0].atan2(v[1])}; },
+              {aux_randn({3, 4}), aux_away({3, 4})});
     const auto one = [](Tensor (Tensor::*op)() const) {
         return [op](const V &v) { return V{(v[0].*op)()}; };
     };
@@ -132,9 +135,11 @@ void elementwise() {
     gradcheck("square", one(&Tensor::square), {aux_randn({3, 4})});
     gradcheck("sigmoid", one(&Tensor::sigmoid), {aux_randn({3, 4})});
     gradcheck("clip", [](const V &v) { return V{v[0].clip(-1, 1)}; }, {aux_away({3, 4}) * 0.5});
-    gradcheck("where", [](const V &v) {
-        return V{Tensor::where(v[0].detach().greater(v[1].detach()), v[0], v[1])};
-    }, {aux_randn({3, 4}), aux_randn({3, 4}) + 3});
+    gradcheck("where",
+              [](const V &v) {
+                  return V{Tensor::where(v[0].detach().greater(v[1].detach()), v[0], v[1])};
+              },
+              {aux_randn({3, 4}), aux_randn({3, 4}) + 3});
     gradcheck("to", [](const V &v) { return V{v[0].to("cpu") * 2.0, v[0].to(DType::float64)}; },
               {aux_randn({3, 2})});
 }
@@ -142,7 +147,8 @@ void elementwise() {
 void reductions() {
     using V = std::vector<Tensor>;
     const torch::Tensor x = aux_randn({2, 3, 4});
-    gradcheck("sum", [](const V &v) { return V{v[0].sum(1), v[0].sum(-1, true), v[0].sum()}; }, {x});
+    gradcheck("sum", [](const V &v) { return V{v[0].sum(1), v[0].sum(-1, true), v[0].sum()}; },
+              {x});
     gradcheck("prod", [](const V &v) { return V{v[0].prod(-1)}; }, {aux_away({2, 3, 4})});
     gradcheck("max", [](const V &v) { return V{v[0].max(1), v[0].max()}; }, {x});
     gradcheck("min", [](const V &v) { return V{v[0].min(-1, true)}; }, {x});
@@ -160,9 +166,11 @@ void shapes() {
               {aux_randn({3, 1})});
     gradcheck("slice", [](const V &v) { return V{v[0].slice(-1, 1, 4, 2)}; }, {x});
     gradcheck("take", [](const V &v) { return V{v[0].take({3, 0, 3}, -1)}; }, {x});
-    gradcheck("take_along_axis", [](const V &v) {
-        return V{v[0].take_along_axis(Tensor::like(v[0], {2, 0}, {1, 1, 2}), -1)};
-    }, {x});
+    gradcheck("take_along_axis",
+              [](const V &v) {
+                  return V{v[0].take_along_axis(Tensor::like(v[0], {2, 0}, {1, 1, 2}), -1)};
+              },
+              {x});
     gradcheck("concat", [](const V &v) { return V{Tensor::concat({v[0], v[1]}, -1)}; },
               {aux_randn({3, 2}), aux_randn({3, 4})});
     gradcheck("matrix_transpose", [](const V &v) { return V{v[0].matrix_transpose()}; }, {x});
@@ -194,54 +202,75 @@ void linear_algebra() {
     gradcheck("pinv", [](const V &v) { return V{v[0].pinv()}; }, {aux_randn({4, 3})});
     gradcheck("cholesky", [](const V &v) { return V{aux_spd(v[0]).cholesky()}; },
               {aux_randn({3, 3})});
-    gradcheck("qr", [](const V &v) {
-        const auto [Q, R] = v[0].qr();
-        return V{Q, R};
-    }, {aux_randn({5, 3})});
-    gradcheck("svd", [](const V &v) {
-        const auto [U, S, W] = v[0].svd();
-        return V{U, S, W};
-    }, {aux_randn({4, 3})});
-    gradcheck("eigh", [](const V &v) {
-        const auto [w, Q] = (v[0] + v[0].matrix_transpose()).eigh();
-        return V{w, Q};
-    }, {aux_randn({4, 4})});
+    gradcheck("qr",
+              [](const V &v) {
+                  const auto [Q, R] = v[0].qr();
+                  return V{Q, R};
+              },
+              {aux_randn({5, 3})});
+    gradcheck("svd",
+              [](const V &v) {
+                  const auto [U, S, W] = v[0].svd();
+                  return V{U, S, W};
+              },
+              {aux_randn({4, 3})});
+    gradcheck("eigh",
+              [](const V &v) {
+                  const auto [w, Q] = (v[0] + v[0].matrix_transpose()).eigh();
+                  return V{w, Q};
+              },
+              {aux_randn({4, 4})});
     gradcheck("trace", [](const V &v) { return V{v[0].trace()}; }, {aux_randn({2, 3, 3})});
     gradcheck("kron", [](const V &v) { return V{v[0].kron(v[1])}; },
               {aux_randn({2, 3}), aux_randn({2, 2})});
     gradcheck("expm", [](const V &v) { return V{v[0].expm()}; }, {aux_randn({2, 3, 3})});
-    gradcheck("matrix_norm", [](const V &v) {
-        return V{v[0].matrix_norm(Norm::one), v[0].matrix_norm(Norm::inf),
-                 v[0].matrix_norm(Norm::fro), v[0].matrix_norm(Norm::two)};
-    }, {aux_randn({4, 3})});
-    gradcheck("vector_norm", [](const V &v) {
-        return V{v[0].vector_norm(Norm::one, -1), v[0].vector_norm(Norm::inf, -1),
-                 v[0].vector_norm(Norm::two, 0)};
-    }, {aux_away({4, 3})});
+    gradcheck("matrix_norm",
+              [](const V &v) {
+                  return V{v[0].matrix_norm(Norm::one), v[0].matrix_norm(Norm::inf),
+                           v[0].matrix_norm(Norm::fro), v[0].matrix_norm(Norm::two)};
+              },
+              {aux_randn({4, 3})});
+    gradcheck("vector_norm",
+              [](const V &v) {
+                  return V{v[0].vector_norm(Norm::one, -1), v[0].vector_norm(Norm::inf, -1),
+                           v[0].vector_norm(Norm::two, 0)};
+              },
+              {aux_away({4, 3})});
 }
 
 void fused() {
     using V = std::vector<Tensor>;
-    gradcheck("zonotope_linear_map", [](const V &v) {
-        const auto [Mc, MG] = Tensor::zonotope_linear_map(v[0], v[1], v[2]);
-        return V{Mc, MG};
-    }, {aux_randn({3, 4}), aux_randn({4, 1}), aux_randn({2, 4, 5})});
-    gradcheck("zonotope_interval_map", [](const V &v) {
-        const auto [Tc, TG] = Tensor::zonotope_interval_map(v[0], v[0] + v[1].abs(), v[2], v[3]);
-        return V{Tc, TG};
-    }, {aux_randn({3, 3}), aux_away({3, 3}), aux_away({3, 1}), aux_away({3, 4})});
-    gradcheck("zonotope_linear_combination", [](const V &v) {
-        const auto [c, G] = Tensor::zonotope_linear_combination(v[0], v[1], v[2], v[3]);
-        return V{c, G};
-    }, {aux_randn({3, 1}), aux_randn({3, 4}), aux_randn({3, 1}), aux_randn({3, 4})});
-    gradcheck("interval_matmul", [](const V &v) {
-        const auto [lo, hi] = Tensor::interval_matmul(v[0], v[0] + v[1].abs(), v[2]);
-        return V{lo, hi};
-    }, {aux_randn({3, 4}), aux_away({3, 4}), aux_away({4, 2})});
-    gradcheck("matmul_interval", [](const V &v) {
-        const auto [lo, hi] = Tensor::matmul_interval(v[2], v[0], v[0] + v[1].abs());
-        return V{lo, hi};
-    }, {aux_randn({4, 2}), aux_away({4, 2}), aux_away({3, 4})});
+    gradcheck("zonotope_linear_map",
+              [](const V &v) {
+                  const auto [Mc, MG] = Tensor::zonotope_linear_map(v[0], v[1], v[2]);
+                  return V{Mc, MG};
+              },
+              {aux_randn({3, 4}), aux_randn({4, 1}), aux_randn({2, 4, 5})});
+    gradcheck("zonotope_interval_map",
+              [](const V &v) {
+                  const auto [Tc, TG] =
+                      Tensor::zonotope_interval_map(v[0], v[0] + v[1].abs(), v[2], v[3]);
+                  return V{Tc, TG};
+              },
+              {aux_randn({3, 3}), aux_away({3, 3}), aux_away({3, 1}), aux_away({3, 4})});
+    gradcheck("zonotope_linear_combination",
+              [](const V &v) {
+                  const auto [c, G] = Tensor::zonotope_linear_combination(v[0], v[1], v[2], v[3]);
+                  return V{c, G};
+              },
+              {aux_randn({3, 1}), aux_randn({3, 4}), aux_randn({3, 1}), aux_randn({3, 4})});
+    gradcheck("interval_matmul",
+              [](const V &v) {
+                  const auto [lo, hi] = Tensor::interval_matmul(v[0], v[0] + v[1].abs(), v[2]);
+                  return V{lo, hi};
+              },
+              {aux_randn({3, 4}), aux_away({3, 4}), aux_away({4, 2})});
+    gradcheck("matmul_interval",
+              [](const V &v) {
+                  const auto [lo, hi] = Tensor::matmul_interval(v[2], v[0], v[0] + v[1].abs());
+                  return V{lo, hi};
+              },
+              {aux_randn({4, 2}), aux_away({4, 2}), aux_away({3, 4})});
     gradcheck("abs_sum", [](const V &v) { return V{v[0].abs_sum()}; }, {aux_away({2, 3, 5})});
 }
 

@@ -44,8 +44,10 @@ torch::Tensor simulate_loss(const torch::Tensor &x0) {
         .sum();
 }
 
-/// The largest relative difference between the autograd gradient of f in x0 and central differences.
-template <class F> double gradient_error(F f, const torch::Tensor &x0) {
+/// The largest relative difference between the autograd gradient of f in x0 and central
+/// differences.
+template <class F>
+double gradient_error(F f, const torch::Tensor &x0) {
     torch::Tensor x = x0.clone().requires_grad_(true);
     const torch::Tensor grad = torch::autograd::grad({f(x)}, {x})[0].detach();
     const double h = 1e-6;

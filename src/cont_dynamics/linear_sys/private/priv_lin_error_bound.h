@@ -28,7 +28,7 @@ namespace cora {
 
 class LinErrorBound {
   public:
-    using PerStep = std::vector<std::vector<double>>;  ///< [k][kIter]
+    using PerStep = std::vector<std::vector<double>>; ///< [k][kIter]
 
     LinErrorBound(double emax, double t_final);
 

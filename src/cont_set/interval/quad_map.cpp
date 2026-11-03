@@ -31,9 +31,8 @@ bool aux_has_zonotope(const Interval &I) { return I.is_bounded() && I.inf().shap
 
 Interval Interval::quad_map(const std::vector<Tensor> &Q) const {
     detail::Entry entry;
-    CORA_CHECK(aux_has_zonotope(*this), Error::wrong_value, [] {
-        return std::string("quad_map: the box must be a bounded vector");
-    });
+    CORA_CHECK(aux_has_zonotope(*this), Error::wrong_value,
+               [] { return std::string("quad_map: the box must be a bounded vector"); });
     const std::string problem = priv_quad_map_problem(Q, dim());
     CORA_CHECK(problem.empty(), Error::dimension_mismatch, [&] { return "quad_map: " + problem; });
     return zonotope().quad_map(Q).interval();
@@ -41,9 +40,8 @@ Interval Interval::quad_map(const std::vector<Tensor> &Q) const {
 
 Interval Interval::quad_map(const Interval &I2, const std::vector<Tensor> &Q) const {
     detail::Entry entry;
-    CORA_CHECK(aux_has_zonotope(*this) && aux_has_zonotope(I2), Error::wrong_value, [] {
-        return std::string("quad_map: the boxes must be bounded vectors");
-    });
+    CORA_CHECK(aux_has_zonotope(*this) && aux_has_zonotope(I2), Error::wrong_value,
+               [] { return std::string("quad_map: the boxes must be bounded vectors"); });
     const std::string problem = priv_quad_map_problem(Q, dim());
     CORA_CHECK(problem.empty(), Error::dimension_mismatch, [&] { return "quad_map: " + problem; });
     CORA_CHECK(I2.dim() == dim(), Error::dimension_mismatch, [&] {

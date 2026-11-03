@@ -72,12 +72,16 @@ void checks_and_their_switch() {
     check(test::raises([&] { I.partition(0); }, Error::wrong_value), "partition: 0 splits");
     check(test::raises([&] { Interval::empty(2).partition(2); }, Error::not_supported),
           "partition: an empty box");
-    check(test::raises([&] {
-              Interval(Tensor::from_data({0, 0, 0, 0}, {2, 2}), Tensor::from_data({1, 1, 1, 1}, {2, 2}))
-                  .partition(2);
-          }, Error::not_supported),
+    check(test::raises(
+              [&] {
+                  Interval(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
+                           Tensor::from_data({1, 1, 1, 1}, {2, 2}))
+                      .partition(2);
+              },
+              Error::not_supported),
           "partition: an interval matrix");
-    check(test::raises([&] { I.partition(100000); }, Error::out_of_memory), "partition: 10^10 pieces");
+    check(test::raises([&] { I.partition(100000); }, Error::out_of_memory),
+          "partition: 10^10 pieces");
     const std::vector<double> on = I.partition(2)[3].sup().data();
     ChecksScope off(false);
     check(I.partition(2)[3].sup().data() == on, "partition: the same with the checks off");

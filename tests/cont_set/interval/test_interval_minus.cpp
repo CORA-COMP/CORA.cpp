@@ -13,7 +13,8 @@ using test::column;
 namespace {
 
 void minus_subtracts_the_opposite_bounds(const std::string &b) {
-    const Interval I(column({0.0, 1.0}), column({2.0, 4.0})), J(column({-1.0, 0.0}), column({1.0, 3.0}));
+    const Interval I(column({0.0, 1.0}), column({2.0, 4.0})),
+        J(column({-1.0, 0.0}), column({1.0, 3.0}));
     const Interval R = I.minus(J);
     check(close(R.inf(), std::vector<double>{-1, -2}) && close(R.sup(), std::vector<double>{3, 4}),
           b + ": [inf - sup2, sup - inf2]");
@@ -42,7 +43,8 @@ void checks_and_their_switch() {
           "minus: a box of dimension 1");
     check(test::raises([&] { I.minus(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "minus: three numbers for two coordinates");
-    check(test::raises([&] { Interval::minus(column({1.0, 2.0, 3.0}), I); }, Error::dimension_mismatch),
+    check(test::raises([&] { Interval::minus(column({1.0, 2.0, 3.0}), I); },
+                       Error::dimension_mismatch),
           "minus: a point of three coordinates minus a box");
     const Tensor on = I.minus(I).sup();
     ChecksScope off(false);

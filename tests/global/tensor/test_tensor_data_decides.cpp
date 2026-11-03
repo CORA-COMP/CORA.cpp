@@ -14,7 +14,8 @@ using test::check;
 namespace {
 
 /// The message of the error that f raises, empty if none.
-template <class F> std::string aux_message(F f) {
+template <class F>
+std::string aux_message(F f) {
     try {
         f();
     } catch (const std::exception &e) {
@@ -31,7 +32,8 @@ void stays_where_it_lives() {
     }
     const BackendScope eigen("eigen");
     check(std::string(a.backend_name()) == "lean", "made on lean, it stays lean");
-    check(std::string((a + a).backend_name()) == "lean", "an operation runs on its operands' backend");
+    check(std::string((a + a).backend_name()) == "lean",
+          "an operation runs on its operands' backend");
     check(std::string(a.zeros_like({3, 1}).backend_name()) == "lean", "zeros like it are lean");
     check(std::string(a.eye_like().backend_name()) == "lean", "the identity like it is lean");
     check(std::string(Tensor::like(a, {1, 2}, {2, 1}).backend_name()) == "lean",
@@ -52,10 +54,12 @@ void mixing_is_an_error() {
     check(message.find("lean") != std::string::npos && message.find("eigen") != std::string::npos,
           "the error names both backends: " + message);
     check(!aux_message([&] { (void)a.matmul(b); }).empty(), "matmul of two backends");
-    check(!aux_message([&] { (void)Tensor::concat({a, b}, -1); }).empty(), "concat of two backends");
+    check(!aux_message([&] { (void)Tensor::concat({a, b}, -1); }).empty(),
+          "concat of two backends");
     const Tensor f = b.to(DType::float32);
     const std::string dtypes = aux_message([&] { (void)(f + b); });
-    check(dtypes.find("float32") != std::string::npos && dtypes.find("float64") != std::string::npos,
+    check(dtypes.find("float32") != std::string::npos &&
+              dtypes.find("float64") != std::string::npos,
           "the error names both dtypes: " + dtypes);
     {
         const ChecksScope off(false);

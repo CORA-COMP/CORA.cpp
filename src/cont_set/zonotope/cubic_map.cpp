@@ -11,8 +11,8 @@
 //
 // CORA: contSet/@zonotope/cubMap.m
 
-#include "cora/cont_set/zonotope/zonotope.h"
 #include "cont_set/zonotope/private/priv.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
 
 #include <algorithm>
@@ -94,12 +94,10 @@ Tensor aux_single_row(const Tensor &Zfull, const std::vector<Tensor> &Ti,
 
     // identical factors of different orders add: W[j,a,b] += W[a,j,b] (j<a<b) and += W[b,j,a]
     // (j<=a<=b, b>j), as CORA's loops over k, j, h do
-    const Tensor first = aux_mask(Zfull, N, [](int64_t j, int64_t a, int64_t b) {
-        return j < a && a < b;
-    });
-    const Tensor second = aux_mask(Zfull, N, [](int64_t j, int64_t a, int64_t b) {
-        return j <= a && a <= b && b > j;
-    });
+    const Tensor first =
+        aux_mask(Zfull, N, [](int64_t j, int64_t a, int64_t b) { return j < a && a < b; });
+    const Tensor second = aux_mask(
+        Zfull, N, [](int64_t j, int64_t a, int64_t b) { return j <= a && a <= b && b > j; });
     W = Tensor::where(first, W + W.permute_dims(aux_axes(batch, {1, 0, 2})), W);
     W = Tensor::where(second, W + W.permute_dims(aux_axes(batch, {1, 2, 0})), W);
 

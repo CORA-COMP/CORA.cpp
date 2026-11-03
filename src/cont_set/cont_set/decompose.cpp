@@ -24,8 +24,8 @@ std::vector<Set> ContSet::decompose(const std::vector<std::array<int64_t, 2>> &b
     CORA_CHECK(!blocks.empty(), Error::wrong_value,
                [] { return std::string("decompose: name at least one block, e.g. {{0, 1}}"); });
     for (const std::array<int64_t, 2> &block : blocks)
-        CORA_CHECK(0 <= block[0] && block[0] <= block[1] && block[1] < dim(),
-                   Error::wrong_value, [&] {
+        CORA_CHECK(0 <= block[0] && block[0] <= block[1] && block[1] < dim(), Error::wrong_value,
+                   [&] {
                        return "decompose: the block {" + std::to_string(block[0]) + ", " +
                               std::to_string(block[1]) + "} must satisfy 0 <= first <= last < " +
                               std::to_string(dim());

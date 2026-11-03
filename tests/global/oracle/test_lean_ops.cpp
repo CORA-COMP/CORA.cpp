@@ -35,25 +35,25 @@ int main() {
     const lean::DTypeScope binary64("binary64");
     const lean::Interval I(aux_matrix(2, 1, {1, -2}), aux_matrix(2, 1, {3, 4}));
     const lean::Interval J(aux_matrix(2, 1, {0.5, -1}), aux_matrix(2, 1, {2, 3}));
-    const lean::Interval P(aux_matrix(2, 1, {0.5, 1}), aux_matrix(2, 1, {2, 3}));  // positive
+    const lean::Interval P(aux_matrix(2, 1, {0.5, 1}), aux_matrix(2, 1, {2, 3})); // positive
     const lean::Interval A(aux_matrix(2, 2, {1, 2, 3, 4}), aux_matrix(2, 2, {2, 3, 4, 5}));
     const Tensor M = aux_matrix(2, 2, {1, 2, 0, 1}), d = aux_matrix(2, 1, {1, 1});
     const lean::Zonotope Z(aux_matrix(2, 1, {1, 2}), aux_matrix(2, 3, {1, 0.5, 0, 0, 1, 2}));
     const lean::Zonotope Z2(aux_matrix(2, 1, {0, 1}), aux_matrix(2, 2, {2, 0, 0, 1}));
     const lean::Interval U(aux_matrix(2, 1, {-0.5, -0.5}), aux_matrix(2, 1, {0.5, 0.5}));
-    const lean::Interval K(aux_matrix(2, 1, {1.5, 0}), aux_matrix(2, 1, {2.5, 1}));  // inside I
-    const lean::Interval G(aux_matrix(2, 1, {1.5, 2}), aux_matrix(2, 1, {3, 4}));    // above 1
+    const lean::Interval K(aux_matrix(2, 1, {1.5, 0}), aux_matrix(2, 1, {2.5, 1})); // inside I
+    const lean::Interval G(aux_matrix(2, 1, {1.5, 2}), aux_matrix(2, 1, {3, 4}));   // above 1
 
     const lean::Zonotope Zin(aux_matrix(2, 1, {1, 2}), aux_matrix(2, 2, {1, 0, 0, 1}));
 
     // Interval: the same box out for the elementwise operations -------------------------------
-    for (const lean::Interval &R : {I.abs(), I.uminus(), I.uplus(), I.sign(), I.round(), P.sqrt(),
-                                    I.exp(), I.sin(), I.cos(), U.tan(), I.sinh(), I.cosh(),
-                                    I.tanh(), P.log(), U.asin(), U.acos(), I.atan(), I.asinh(),
-                                    G.acosh(), U.atanh(), I.atan2(P), I.enlarge(2), I.power(3),
-                                    I.rdivide(P), I.mrdivide(4), I.plus(J), I.minus(J), I.times(J),
-                                    I.unite(J), I.convex_hull(J), I.mink_diff(J), I.min(J),
-                                    I.max(J), I.intersect(J), I.enclose(J), I.reduce(1)})
+    for (const lean::Interval &R :
+         {I.abs(),        I.uminus(), I.uplus(),  I.sign(),       I.round(),    P.sqrt(),
+          I.exp(),        I.sin(),    I.cos(),    U.tan(),        I.sinh(),     I.cosh(),
+          I.tanh(),       P.log(),    U.asin(),   U.acos(),       I.atan(),     I.asinh(),
+          G.acosh(),      U.atanh(),  I.atan2(P), I.enlarge(2),   I.power(3),   I.rdivide(P),
+          I.mrdivide(4),  I.plus(J),  I.minus(J), I.times(J),     I.unite(J),   I.convex_hull(J),
+          I.mink_diff(J), I.min(J),   I.max(J),   I.intersect(J), I.enclose(J), I.reduce(1)})
         test::check(aux_shape(R, 2, 1), "an elementwise operation keeps the shape");
     test::check(I.plus(J).inf().gather().data()[0] == 1.5, "plus adds the infima");
     test::check(I.cart_prod(J).inf().rows() == 4, "cart_prod stacks");
@@ -67,7 +67,8 @@ int main() {
     test::check(I.contains(K).proved && !K.contains(I).proved, "contains is a proof");
     test::check(I.contains(Z).value == I.contains(Z).proved, "contains a zonotope");
     test::check(!I.is_intersecting(J).value == I.is_intersecting(J).proved &&
-                    !I.is_intersecting(J).proved, "is_intersecting");
+                    !I.is_intersecting(J).proved,
+                "is_intersecting");
     test::check(I.center().rows() == 2 && I.rad().rows() == 2 && I.infimum().rows() == 2 &&
                     I.supremum().rows() == 2,
                 "center, rad, infimum, supremum");
@@ -89,7 +90,8 @@ int main() {
                     aux_shape(A.cat(A, 1), 4, 2) && aux_shape(A.mpower(3), 2, 2) &&
                     aux_shape(A.tril(), 2, 2) && aux_shape(A.triu(1), 2, 2),
                 "the matrix operations");
-    test::check(aux_shape(lean::Interval::empty(2), 2, 1) && aux_shape(lean::Interval::origin(3), 3, 1) &&
+    test::check(aux_shape(lean::Interval::empty(2), 2, 1) &&
+                    aux_shape(lean::Interval::origin(3), 3, 1) &&
                     aux_shape(lean::Interval::unbounded(2), 2, 1) &&
                     aux_shape(lean::Interval::enclose_points(aux_matrix(2, 3, {1, 2, 3, 0, -1, 4})),
                               2, 1) &&
@@ -100,8 +102,9 @@ int main() {
     // Zonotope: sets ----------------------------------------------------------------------------
     test::check(aux_shape(Z.linear_map(M), 2, 3) && aux_shape(Z.linear_map(A), 2, 5) &&
                     aux_shape(Z.plus(Z2), 2, 5) && aux_shape(Z.plus(I), 2, 3) &&
-                    aux_shape(Z.linear_combination(Z2), 2, 6) && aux_shape(Z.exact_plus(Z2, 1), 2, 4) &&
-                    aux_shape(Z.reduce(1), 2, 2) && aux_shape(Z.abs(), 2, 3),
+                    aux_shape(Z.linear_combination(Z2), 2, 6) &&
+                    aux_shape(Z.exact_plus(Z2, 1), 2, 4) && aux_shape(Z.reduce(1), 2, 2) &&
+                    aux_shape(Z.abs(), 2, 3),
                 "linear_map, plus, linear_combination, exact_plus, reduce, abs");
     test::check(aux_shape(Z.intersect(Z2), 2, 5) && aux_shape(Z.convex_hull(Z2), 2, 6) &&
                     aux_shape(Z.enclose(Z2), 2, 6) && aux_shape(Z.cart_prod(Z2), 4, 5) &&
@@ -111,7 +114,7 @@ int main() {
                                             aux_matrix(1, 1, {1}), aux_matrix(2, 1, {1, 0})),
                           2, 6),
                 "intersect_strip");
-        test::check(aux_shape(Z.quad_map({M}), 1, 36) && aux_shape(Zin.cub_map({{M, M}}), 1, 125),
+    test::check(aux_shape(Z.quad_map({M}), 1, 36) && aux_shape(Zin.cub_map({{M, M}}), 1, 125),
                 "quad_map, cub_map");
     test::check(lean::Zonotope::enclose_many({Z, Z2}, d).has_value() &&
                     aux_shape(lean::Zonotope::enclose_points(aux_matrix(2, 3, {1, 2, 3, 0, -1, 4}),

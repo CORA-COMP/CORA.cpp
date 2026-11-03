@@ -43,14 +43,17 @@ void averaging_weights(const std::string &b) {
     cora::Rng rng(20);
     for (int k = 0; k < 20; ++k) {
         const std::vector<double> d = test::random_direction(rng, 2);
-        check(close(test::support(same, d), test::support(Z, d), 1e-12), b + ": Z and Z average to Z");
+        check(close(test::support(same, d), test::support(Z, d), 1e-12),
+              b + ": Z and Z average to Z");
     }
     const Zonotope Z2(column({0.0, 1.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}}));
     const Zonotope R = Z.intersect(Z2, "averaging");
     // traces 4 and 8: weights 2/3 and 1/3
-    check(close(R.center(), std::vector<double>{2.0 / 3.0, 1.0 / 3.0}, 1e-12), b + ": weighted center");
+    check(close(R.center(), std::vector<double>{2.0 / 3.0, 1.0 / 3.0}, 1e-12),
+          b + ": weighted center");
     check(close(R.generators(),
-                std::vector<double>{2.0 / 3, 2.0 / 3, 2.0 / 3, 0, 2.0 / 3, -2.0 / 3, 0, 2.0 / 3}, 1e-12),
+                std::vector<double>{2.0 / 3, 2.0 / 3, 2.0 / 3, 0, 2.0 / 3, -2.0 / 3, 0, 2.0 / 3},
+                1e-12),
           b + ": weighted generators");
 }
 
@@ -75,16 +78,22 @@ void averaging_contains_the_intersection(const std::string &b) {
     check(shared > 5, b + ": the property was exercised");
 }
 
-/// Refusals: a pair of zonotopes that are not boxes needs ConZonotope, disjoint boxes the empty set.
+/// Refusals: a pair of zonotopes that are not boxes needs ConZonotope, disjoint boxes the empty
+/// set.
 void refusals_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}}));
     const Zonotope box(column({5.0, 5.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Z.intersect(Z); }, Error::not_supported), "intersect: conZonotope");
-    check(test::raises([&] { Z.intersect(Z, "exact"); }, Error::wrong_value), "intersect: unknown method");
-    check(test::raises([&] { box.intersect(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))); },
-                       Error::empty_set), "intersect: disjoint boxes");
+    check(test::raises([&] { Z.intersect(Z, "exact"); }, Error::wrong_value),
+          "intersect: unknown method");
+    check(
+        test::raises(
+            [&] { box.intersect(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))); },
+            Error::empty_set),
+        "intersect: disjoint boxes");
     check(test::raises([&] { Z.intersect(Zonotope(column({0.0}), Tensor({{1.0}}))); },
-                       Error::dimension_mismatch), "intersect: dimensions 2 and 1");
+                       Error::dimension_mismatch),
+          "intersect: dimensions 2 and 1");
     const Tensor on = Z.intersect(Z, "averaging").generators();
     ChecksScope off(false);
     check(test::close(Z.intersect(Z, "averaging").generators(), on, 0),

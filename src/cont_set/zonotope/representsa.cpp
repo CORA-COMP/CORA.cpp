@@ -29,11 +29,11 @@ namespace cora {
 namespace {
 
 /// The types of CORA's representsa.
-const char *const kTypes[] = {"capsule", "conPolyZono", "conHyperplane", "conZonotope",
-                              "ellipsoid", "halfspace", "interval", "levelSet", "polygon",
-                              "polytope", "polyZonotope", "probZonotope", "zonoBundle",
-                              "zonotope", "origin", "point", "hyperplane", "parallelotope",
-                              "convexSet", "emptySet", "fullspace"};
+const char *const kTypes[] = {
+    "capsule",    "conPolyZono", "conHyperplane", "conZonotope", "ellipsoid",    "halfspace",
+    "interval",   "levelSet",    "polygon",       "polytope",    "polyZonotope", "probZonotope",
+    "zonoBundle", "zonotope",    "origin",        "point",       "hyperplane",   "parallelotope",
+    "convexSet",  "emptySet",    "fullspace"};
 
 /// Whether the 0/1 mask holds everywhere.
 bool aux_all(const Tensor &mask) { return mask.numel() == 0 || mask.min().item() != 0; }

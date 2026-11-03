@@ -52,9 +52,11 @@ void numbers_over_a_box(const std::string &b) {
 
 /// A box over a box is I .* (1 ./ D).
 void box_over_box(const std::string &b) {
-    const Interval I(column({1.0, -2.0}), column({2.0, 3.0})), D(column({2.0, -4.0}), column({4.0, -2.0}));
+    const Interval I(column({1.0, -2.0}), column({2.0, 3.0})),
+        D(column({2.0, -4.0}), column({4.0, -2.0}));
     const Interval R = I.rdivide(D);
-    check(close(R.inf(), std::vector<double>{0.25, -1.5}) && close(R.sup(), std::vector<double>{1, 1}),
+    check(close(R.inf(), std::vector<double>{0.25, -1.5}) &&
+              close(R.sup(), std::vector<double>{1, 1}),
           b + ": I ./ D");
     const Interval W = I.rdivide(Interval(column({-1.0, 1.0}), column({1.0, 2.0})));
     check(W.inf().data()[0] == -kInf && W.sup().data()[0] == kInf, b + ": D around 0");
@@ -81,20 +83,24 @@ void checks_and_their_switch() {
     const Interval I(column({1.0, 2.0}), column({2.0, 3.0}));
     check(test::raises([&] { I.rdivide(column({1.0, 2.0, 3.0})); }, Error::special_error),
           "rdivide: three numbers for two coordinates");
-    check(test::raises([&] { Interval::rdivide(column({1.0, 2.0, 3.0}), I); }, Error::special_error),
-          "rdivide: three numerators for two coordinates");
-    check(test::raises([&] { I.rdivide(Interval(column({1.0, 2.0, 3.0}), column({1.0, 2.0, 3.0}))); },
-                       Error::special_error),
-          "rdivide: three denominators for two coordinates");
-    check(test::raises([&] { Interval::rdivide(column({1.0}), Interval(column({0.0}), column({0.0}))); },
-                       Error::out_of_domain),
+    check(
+        test::raises([&] { Interval::rdivide(column({1.0, 2.0, 3.0}), I); }, Error::special_error),
+        "rdivide: three numerators for two coordinates");
+    check(
+        test::raises([&] { I.rdivide(Interval(column({1.0, 2.0, 3.0}), column({1.0, 2.0, 3.0}))); },
+                     Error::special_error),
+        "rdivide: three denominators for two coordinates");
+    check(test::raises(
+              [&] { Interval::rdivide(column({1.0}), Interval(column({0.0}), column({0.0}))); },
+              Error::out_of_domain),
           "rdivide: the denominator [0, 0]");
     const Interval U(column({1.0}), column({kInf}));
     check(test::raises([&] { U.rdivide(column({kInf})); }, Error::out_of_domain),
           "rdivide: Inf / Inf");
     const Tensor on = I.rdivide(column({2.0, 4.0})).sup();
     ChecksScope off(false);
-    check(close(I.rdivide(column({2.0, 4.0})).sup(), on, 0), "rdivide: the same with the checks off");
+    check(close(I.rdivide(column({2.0, 4.0})).sup(), on, 0),
+          "rdivide: the same with the checks off");
 }
 
 } // namespace

@@ -134,7 +134,6 @@ class Fullspace : public detail::DimensionSet {
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     bool is_full_dim_impl(Tol tol) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-
 };
 
 /// The image of the whole space under a matrix, as CORA writes M * F.

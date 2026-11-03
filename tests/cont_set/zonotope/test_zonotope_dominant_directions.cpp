@@ -44,7 +44,8 @@ void the_parallelotope_encloses_the_zonotope(const std::string &b) {
         const Tensor dt = column(d), Pd = P.matrix_transpose().matmul(dt).abs();
         const double box = Pd.matrix_transpose().matmul(R).item() +
                            dt.matrix_transpose().matmul(Z.center()).item();
-        check(box >= test::support(Z, d) - 1e-9, b + ": P box(P^-1 Z) contains Z along a direction");
+        check(box >= test::support(Z, d) - 1e-9,
+              b + ": P box(P^-1 Z) contains Z along a direction");
     }
 }
 
@@ -52,8 +53,9 @@ void the_parallelotope_encloses_the_zonotope(const std::string &b) {
 /// result is the same.
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0, 0.1}, {0.0, 2.0, 0.1}}));
-    check(test::raises([&] { Zonotope::stack({Z, Z}).dominant_directions(); }, Error::not_supported),
-          "dominant_directions: a batch");
+    check(
+        test::raises([&] { Zonotope::stack({Z, Z}).dominant_directions(); }, Error::not_supported),
+        "dominant_directions: a batch");
     check(test::raises([&] { Z.dominant_directions(0, 1); }, Error::wrong_value),
           "dominant_directions: filter length 0");
     const Zonotope thin(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 0.0}}));

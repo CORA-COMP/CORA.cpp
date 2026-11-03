@@ -40,7 +40,8 @@ void divide_scales_and_a_negative_number_swaps(const std::string &b) {
 /// An infinite bound divided by an infinity is NaN and refused; the checks off give the same.
 void checks_and_their_switch() {
     const Interval I(column({2.0, -4.0}), column({4.0, 6.0}));
-    check(test::raises([] { Interval(column({1.0}), column({kInf})).divide(kInf); }, Error::out_of_domain),
+    check(test::raises([] { Interval(column({1.0}), column({kInf})).divide(kInf); },
+                       Error::out_of_domain),
           "divide: Inf / Inf");
     const Tensor on = I.divide(2.0).sup();
     ChecksScope off(false);

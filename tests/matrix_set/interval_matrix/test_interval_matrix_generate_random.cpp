@@ -24,7 +24,8 @@ void random_sets_have_the_stated_ranges(const std::string &b) {
     check(sizes, b + ": sizes in 1..10");
     check(radii, b + ": radii in [0, 10]");
     Rng a(5), c(5);
-    const IntervalMatrix X = IntervalMatrix::generate_random(a), Y = IntervalMatrix::generate_random(c);
+    const IntervalMatrix X = IntervalMatrix::generate_random(a),
+                         Y = IntervalMatrix::generate_random(c);
     check(close(X.interval().inf(), Y.interval().inf(), 0) &&
               close(X.interval().sup(), Y.interval().sup(), 0),
           b + ": the same seed");
@@ -43,7 +44,8 @@ void options_are_used(const std::string &b) {
               close(C.rad(), std::vector<double>(6, 0.5), 1e-12),
           b + ": a center and one radius");
     const Tensor radius = test::matrix({0, 1, 2, 3}, 2, 2);
-    const IntervalMatrix R = IntervalMatrix::generate_random(rng, std::nullopt, std::nullopt, radius);
+    const IntervalMatrix R =
+        IntervalMatrix::generate_random(rng, std::nullopt, std::nullopt, radius);
     check(R.dim() == std::array<int64_t, 2>{2, 2} && close(R.rad(), radius, 1e-12),
           b + ": radii give the shape");
 }
@@ -53,16 +55,19 @@ void options_are_used(const std::string &b) {
 void checks_and_their_switch() {
     Rng rng(30);
     const Tensor negative = test::matrix({-1}, 1, 1);
-    check(test::raises([&] { IntervalMatrix::generate_random(rng, std::nullopt, std::nullopt, negative); },
-                       Error::wrong_value),
+    check(test::raises(
+              [&] { IntervalMatrix::generate_random(rng, std::nullopt, std::nullopt, negative); },
+              Error::wrong_value),
           "generate_random: a negative radius");
     check(test::raises([&] { IntervalMatrix::generate_random(rng, std::array<int64_t, 2>{0, 2}); },
                        Error::wrong_value),
           "generate_random: dimension 0");
-    check(test::raises([&] {
-              IntervalMatrix::generate_random(rng, std::nullopt, test::matrix({1, 2}, 1, 2),
-                                              test::matrix({1, 2, 3, 4}, 2, 2));
-          }, Error::wrong_input_in_constructor),
+    check(test::raises(
+              [&] {
+                  IntervalMatrix::generate_random(rng, std::nullopt, test::matrix({1, 2}, 1, 2),
+                                                  test::matrix({1, 2, 3, 4}, 2, 2));
+              },
+              Error::wrong_input_in_constructor),
           "generate_random: a center and a radius of two shapes");
     Rng a(3), c(3);
     const IntervalMatrix on = IntervalMatrix::generate_random(a);

@@ -13,9 +13,9 @@ int main() {
     torch::manual_seed(54);
     const std::vector<Tensor> Q{cora::from_torch(torch::randn({3, 3}, torch::kDouble)),
                                 cora::from_torch(torch::randn({3, 3}, torch::kDouble))};
-    test::gradcheck("quad_map",
-                    [&](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).quad_map(Q)); },
-                    test::random_zonotope(3, 3));
+    test::gradcheck(
+        "quad_map", [&](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).quad_map(Q)); },
+        test::random_zonotope(3, 3));
     test::gradcheck("quad_map (two zonotopes)",
                     [&](const Inputs &x) {
                         return test::parts(Zonotope(x[0], x[1]).quad_map(Zonotope(x[2], x[3]), Q));

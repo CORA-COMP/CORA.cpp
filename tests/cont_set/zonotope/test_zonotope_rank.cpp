@@ -45,7 +45,8 @@ void rank_of_products(const std::string &b) {
 /// A batch and a negative tolerance are refused; with the checks off the rank is the same.
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    check(test::raises([&] { Zonotope::stack({Z, Z}).rank(); }, Error::not_supported), "rank: a batch");
+    check(test::raises([&] { Zonotope::stack({Z, Z}).rank(); }, Error::not_supported),
+          "rank: a batch");
     check(test::raises([&] { Z.rank(-1.0); }, Error::wrong_value), "rank: a negative tol");
     ChecksScope off(false);
     check(Z.rank() == 2, "rank: the same with the checks off");

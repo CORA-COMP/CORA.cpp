@@ -35,8 +35,8 @@ void the_corners_are_those_of_the_box(const std::string &b) {
         const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
         for (const Polygon &polygon : Z.vertices())
             for (const Point &p : polygon)
-                check(Fullspace(2).contains(Interval(test::column({p[0], p[1]}),
-                                                     test::column({p[0], p[1]}))),
+                check(Fullspace(2).contains(
+                          Interval(test::column({p[0], p[1]}), test::column({p[0], p[1]}))),
                       b + ": a vertex of a zonotope is in the whole space");
     }
 }

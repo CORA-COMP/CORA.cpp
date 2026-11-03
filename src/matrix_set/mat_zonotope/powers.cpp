@@ -37,8 +37,8 @@ std::vector<MatZonotope> MatZonotope::powers(int64_t max_order, int64_t initial_
     CORA_CHECK(rows() == cols() && initial_power.rows() == rows() && initial_power.cols() == cols(),
                Error::dimension_mismatch, [&] {
                    return "powers: the matrix zonotope and the initial power must be square of one "
-                          "size, got " + shape_text(C_.shape()) + " and " +
-                          shape_text(initial_power.C_.shape());
+                          "size, got " +
+                          shape_text(C_.shape()) + " and " + shape_text(initial_power.C_.shape());
                });
     CORA_CHECK(initial_order >= 1, Error::wrong_value, [&] {
         return "powers: the initial order must be at least 1, got " + std::to_string(initial_order);

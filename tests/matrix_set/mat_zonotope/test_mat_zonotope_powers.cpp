@@ -49,10 +49,12 @@ void powers_from_an_initial_power(const std::string &b) {
 void checks_and_their_switch() {
     const MatZonotope A = test::example();
     const MatZonotope wide(test::matrix({1, 2, 3}, 1, 3));
-    check(test::raises([&] { wide.powers(2); }, Error::dimension_mismatch), "powers: a non-square set");
+    check(test::raises([&] { wide.powers(2); }, Error::dimension_mismatch),
+          "powers: a non-square set");
     check(test::raises([&] { A.powers(2, 1, wide); }, Error::dimension_mismatch),
           "powers: an initial power of another size");
-    check(test::raises([&] { A.powers(2, 0, A); }, Error::wrong_value), "powers: the initial order 0");
+    check(test::raises([&] { A.powers(2, 0, A); }, Error::wrong_value),
+          "powers: the initial order 0");
     const std::size_t on = A.powers(3).size();
     ChecksScope off(false);
     check(A.powers(3).size() == on, "powers: the same with the checks off");

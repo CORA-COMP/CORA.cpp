@@ -13,8 +13,8 @@
 // CORA: contSet/@zonotope/compact_.m
 // CORA: contSet/@contSet/compact.m
 
-#include "cora/cont_set/zonotope/zonotope.h"
 #include "cont_set/zonotope/private/priv.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/within_tol.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -83,9 +83,10 @@ Zonotope Zonotope::compact(const std::optional<std::string> &method_arg, Tol tol
     detail::Entry entry;
     const std::string method = method_arg.value_or("zeros");
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "compact");
-    CORA_CHECK(method == "zeros" || method == "all" || method == "aligned", Error::wrong_value,
-               [&] { return "compact: the method must be 'zeros', 'all' or 'aligned', got '" +
-                            method + "'"; });
+    CORA_CHECK(
+        method == "zeros" || method == "all" || method == "aligned", Error::wrong_value, [&] {
+            return "compact: the method must be 'zeros', 'all' or 'aligned', got '" + method + "'";
+        });
     if (method == "aligned") return *this;
     if (method == "zeros") return {c_, aux_nonzero_filter(G_, tol)};
     if (G_.ndim() != 2)

@@ -32,17 +32,19 @@ void minkowski_difference_can_be_empty(const std::string &b) {
     const Interval E = I.minkowski_difference(Interval(column({-1.0, 0.0}), column({1.0, 1.0})));
     check(E.is_empty() && E.dim() == 2, b + ": a bound would cross: the empty interval");
     const Interval B = Interval::stack({I, I});
-    check(B.minkowski_difference(Interval::stack({Interval(column({-1.0, 0.0}), column({1.0, 1.0})),
-                                                  Interval(column({-1.0, 0.0}), column({1.0, 1.0}))}))
-              .is_empty(),
-          b + ": a batch of empty differences");
+    check(
+        B.minkowski_difference(Interval::stack({Interval(column({-1.0, 0.0}), column({1.0, 1.0})),
+                                                Interval(column({-1.0, 0.0}), column({1.0, 1.0}))}))
+            .is_empty(),
+        b + ": a batch of empty differences");
 }
 
 void minkowski_difference_of_another_set(const std::string &b) {
     const Interval I(column({0.0, 0.0}), column({4.0, 4.0}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
     const Interval R = I.minkowski_difference(Z);
-    check(close(R.inf(), std::vector<double>{0.5, 0.5}) && close(R.sup(), std::vector<double>{3.5, 3.5}),
+    check(close(R.inf(), std::vector<double>{0.5, 0.5}) &&
+              close(R.sup(), std::vector<double>{3.5, 3.5}),
           b + ": the support function bounds each coordinate");
     const Interval Q = I.minkowski_difference(Z, std::string("inner"));
     check(close(Q.inf(), R.inf()) && close(Q.sup(), R.sup()), b + ": type inner is the default");
@@ -60,10 +62,12 @@ void checks_and_their_switch() {
           "minkowski_difference: a box of dimension 1");
     check(test::raises([&] { I.minkowski_difference(column({1.0})); }, Error::dimension_mismatch),
           "minkowski_difference: a point of dimension 1");
-    check(test::raises([&] { I.minkowski_difference(Z, std::string("exact")); }, Error::no_exact_alg),
-          "minkowski_difference: no exact algorithm for a zonotope");
-    check(test::raises([&] { I.minkowski_difference(Z, std::string("outer")); }, Error::wrong_value),
-          "minkowski_difference: an unknown type");
+    check(
+        test::raises([&] { I.minkowski_difference(Z, std::string("exact")); }, Error::no_exact_alg),
+        "minkowski_difference: no exact algorithm for a zonotope");
+    check(
+        test::raises([&] { I.minkowski_difference(Z, std::string("outer")); }, Error::wrong_value),
+        "minkowski_difference: an unknown type");
     const Tensor on = I.minkowski_difference(Z).sup();
     ChecksScope off(false);
     check(close(I.minkowski_difference(Z).sup(), on, 0),

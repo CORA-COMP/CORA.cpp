@@ -8,8 +8,8 @@
 // Outputs:  Ainv - the inverse, or empty if A is (numerically) singular
 // See also: priv_verify_ra_support_function, priv_reach_adaptive
 
-#include "cora/global/tensor/tolerance.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <cmath>

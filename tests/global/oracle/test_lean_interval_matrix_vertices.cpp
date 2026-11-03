@@ -17,7 +17,8 @@ using namespace cora;
 namespace {
 
 /// The matrices of the oracle (row-major values), sorted by the entries stacked column by column.
-std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64_t rows, int64_t cols) {
+std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64_t rows,
+                                            int64_t cols) {
     std::vector<std::vector<double>> matrices;
     for (const lean::Tensor &V : L.V) matrices.push_back(V.gather().data());
     const auto stacked = [&](const std::vector<double> &M) {
@@ -43,7 +44,8 @@ int main() {
             const std::vector<double> mine = A.vertices()[0].data();
             bool same = mine.size() == theirs.size() * m * n;
             for (std::size_t k = 0; same && k < theirs.size(); ++k)
-                same = std::memcmp(mine.data() + k * m * n, theirs[k].data(), m * n * sizeof(double)) == 0;
+                same = std::memcmp(mine.data() + k * m * n, theirs[k].data(),
+                                   m * n * sizeof(double)) == 0;
             test::check(same, "intervalMatrix.vertices: the same matrices as the oracle's");
         }
     });

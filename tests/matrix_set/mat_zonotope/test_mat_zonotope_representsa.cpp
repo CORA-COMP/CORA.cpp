@@ -10,10 +10,11 @@ using test::check;
 
 namespace {
 
-/// A point matrix is a point and, for the zero matrix, the origin; a set with a generator is neither;
-/// a zero generator does not count.
+/// A point matrix is a point and, for the zero matrix, the origin; a set with a generator is
+/// neither; a zero generator does not count.
 void point_and_origin(const std::string &b) {
-    const MatZonotope point(test::matrix({1, 2, 3, 4}, 2, 2)), zero(test::matrix({0, 0, 0, 0}, 2, 2));
+    const MatZonotope point(test::matrix({1, 2, 3, 4}, 2, 2)),
+        zero(test::matrix({0, 0, 0, 0}, 2, 2));
     check(point.representsa("point"), b + ": a point matrix is a point");
     check(!point.representsa("origin"), b + ": a nonzero point is not the origin");
     check(zero.representsa("origin") && zero.representsa("point"), b + ": the zero matrix");
@@ -44,7 +45,8 @@ void tolerance(const std::string &b) {
 /// A batch of sets and a type CORA does not know are refused; checks off: the same.
 void checks_and_their_switch() {
     const MatZonotope A = test::example();
-    check(test::raises([&] { A.representsa("point", -1.0); }, Error::wrong_value), "representsa: tol");
+    check(test::raises([&] { A.representsa("point", -1.0); }, Error::wrong_value),
+          "representsa: tol");
     check(test::raises([&] { test::batch_of(A, A).representsa("point"); }, Error::not_supported),
           "representsa: a batch of sets");
     const bool on = A.representsa("point");

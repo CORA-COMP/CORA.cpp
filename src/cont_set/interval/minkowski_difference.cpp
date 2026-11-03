@@ -43,8 +43,8 @@ Interval aux_box_or_empty(const Tensor &lower, const Tensor &upper) {
 Interval Interval::minkowski_difference(const Interval &S) const {
     detail::Entry entry;
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
-        return "minkowski_difference: the intervals differ in dimension, " +
-               std::to_string(dim()) + " and " + std::to_string(S.dim());
+        return "minkowski_difference: the intervals differ in dimension, " + std::to_string(dim()) +
+               " and " + std::to_string(S.dim());
     });
     return aux_box_or_empty(inf_ - S.inf(), sup_ - S.sup());
 }

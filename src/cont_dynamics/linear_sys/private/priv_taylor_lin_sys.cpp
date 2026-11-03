@@ -9,10 +9,10 @@
 // Outputs:  the cached quantities of priv_taylorLinSys.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
 
-#include "cora/global/tensor/tolerance.h"
-#include "cora/global/within_tol.h"
 #include "cont_dynamics/linear_sys/private/priv_taylor_lin_sys.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cora/global/tensor/tolerance.h"
+#include "cora/global/within_tol.h"
 
 #include <algorithm>
 #include <cmath>
@@ -26,7 +26,7 @@ namespace cora {
 
 namespace {
 
-constexpr int kMaxEta = 75;                     // terms before a Taylor sum counts as diverging
+constexpr int kMaxEta = 75; // terms before a Taylor sum counts as diverging
 
 /// Whether a <= b holds for every entry.
 bool aux_all_le(const Tensor &a, const Tensor &b) {
@@ -36,9 +36,7 @@ bool aux_all_le(const Tensor &a, const Tensor &b) {
 }
 
 /// The weight of the i-th Taylor term in the correction matrices: i^(-i/(i-1)) - i^(-1/(i-1)).
-double aux_weight(int i) {
-    return std::pow(i, -double(i) / (i - 1)) - std::pow(i, -1.0 / (i - 1));
-}
+double aux_weight(int i) { return std::pow(i, -double(i) / (i - 1)) - std::pow(i, -1.0 / (i - 1)); }
 
 } // namespace
 

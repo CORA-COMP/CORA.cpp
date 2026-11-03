@@ -250,8 +250,8 @@ std::optional<Tensor> Zonotope::dominant_directions() const {
     return dominant_directions(n + 5, n + 3);
 }
 std::optional<Tensor> Zonotope::dominant_directions(int filter_length1, int filter_length2) const {
-    return ask("zonotope.dominantDirections", {{"Z", *this}, {"filterLength1", filter_length1},
-                                               {"filterLength2", filter_length2}})
+    return ask("zonotope.dominantDirections",
+               {{"Z", *this}, {"filterLength1", filter_length1}, {"filterLength2", filter_length2}})
         .get<std::optional<Tensor>>("value");
 }
 

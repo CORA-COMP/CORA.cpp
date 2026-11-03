@@ -1,4 +1,5 @@
-// example_linear_conformal_01_pendulum - a linear model of a nonlinear system with a conformal guarantee
+// example_linear_conformal_01_pendulum - a linear model of a nonlinear system with a conformal
+// guarantee
 //
 // Noisy trajectories of a damped pendulum start in a known set. The linearization at the origin is
 // the model, and its reachable set misses trajectories where the pendulum is nonlinear. Split
@@ -29,14 +30,15 @@ int main() {
 
     const double time_step = 0.1, t_final = 3.0;
     const Zonotope X0(Tensor({1.2, 0.0}), Tensor({{0.2, 0.0}, {0.0, 0.2}}));
-    const double alpha = 0.1;   // the miss rate: coverage of at least 1 - alpha is guaranteed
-    const double noise = 0.01;  // standard deviation of the measurement noise
+    const double alpha = 0.1;  // the miss rate: coverage of at least 1 - alpha is guaranteed
+    const double noise = 0.01; // standard deviation of the measurement noise
 
     // Ground Truth and Model ------------------------------------------------------------------
 
     // the damped pendulum: the angle and the angular velocity
     const NonlinearSys pendulum(
-        [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -sin(x[0]) - 0.2 * x[1]}; }, 2);
+        [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -sin(x[0]) - 0.2 * x[1]}; },
+        2);
 
     // the model: the pendulum linearized at the origin
     const LinearSys model(Tensor({{0.0, 1.0}, {-1.0, -0.2}}));
@@ -69,7 +71,8 @@ int main() {
                                       x = trajectories[k].data();
             for (int64_t i = 0; i < 2; ++i)
                 for (int64_t j = 0; j < count; ++j)
-                    worst[j] = std::max({worst[j], lo[i] - x[i * count + j], x[i * count + j] - hi[i]});
+                    worst[j] =
+                        std::max({worst[j], lo[i] - x[i * count + j], x[i * count + j] - hi[i]});
         }
         return worst;
     };
@@ -78,14 +81,16 @@ int main() {
     std::vector<double> calibration = scores(measure(200, 2));
     std::sort(calibration.begin(), calibration.end());
     const std::size_t rank = std::min<std::size_t>(
-        calibration.size(), static_cast<std::size_t>(std::ceil((calibration.size() + 1) * (1 - alpha))));
+        calibration.size(),
+        static_cast<std::size_t>(std::ceil((calibration.size() + 1) * (1 - alpha))));
     const double radius = calibration[rank - 1];
 
     // Evaluation ------------------------------------------------------------------------------
 
     const std::vector<double> test = scores(measure(1000, 3));
     const auto coverage = [&](double r) {
-        return double(std::count_if(test.begin(), test.end(), [r](double s) { return s <= r; })) / test.size();
+        return double(std::count_if(test.begin(), test.end(), [r](double s) { return s <= r; })) /
+               test.size();
     };
     std::cout << "conformal radius: " << radius << "\n";
     std::cout << "coverage of the reachable set alone: " << coverage(0.0) << "\n";

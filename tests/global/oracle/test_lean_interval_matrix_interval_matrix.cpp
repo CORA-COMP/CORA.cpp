@@ -1,4 +1,5 @@
-// test_lean_interval_matrix_interval_matrix - the constructor IntervalMatrix(C, D) against the oracle
+// test_lean_interval_matrix_interval_matrix - the constructor IntervalMatrix(C, D) against the
+// oracle
 //
 // ORACLE: matrixSet/@intervalMatrix/intervalMatrix.m
 
@@ -15,7 +16,7 @@ int main() {
             const Interval box = rnd.box_matrix(m, n);
             const IntervalMatrix A(box.center(), box.rad());
             test::oracle::check(A, lean::Interval::interval_matrix(lean::Tensor::from(box.center()),
-                                                                    lean::Tensor::from(box.rad())));
+                                                                   lean::Tensor::from(box.rad())));
         }
     });
     return test::finish("lean interval_matrix constructor");

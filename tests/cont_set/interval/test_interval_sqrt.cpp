@@ -43,13 +43,16 @@ void sqrt_encloses_the_image(const std::string &b) {
     }
 }
 
-/// A negative lower bound is out of the domain; with the checks off the result is the same inside it.
+/// A negative lower bound is out of the domain; with the checks off the result is the same inside
+/// it.
 void checks_and_their_switch() {
     const Interval I(column({0.5, 1.0}), column({1.0, 2.0}));
-    check(test::raises([] { Interval(column({-1.0}), column({1.0})).sqrt(); }, Error::out_of_domain),
-          "sqrt: a negative lower bound");
-    check(test::raises([] { Interval(column({-2.0}), column({-1.0})).sqrt(); }, Error::out_of_domain),
-          "sqrt: a negative box");
+    check(
+        test::raises([] { Interval(column({-1.0}), column({1.0})).sqrt(); }, Error::out_of_domain),
+        "sqrt: a negative lower bound");
+    check(
+        test::raises([] { Interval(column({-2.0}), column({-1.0})).sqrt(); }, Error::out_of_domain),
+        "sqrt: a negative box");
     const Tensor on = I.sqrt().sup();
     ChecksScope off(false);
     check(close(I.sqrt().sup(), on, 0), "sqrt: the same with the checks off");

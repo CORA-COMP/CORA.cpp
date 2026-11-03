@@ -36,7 +36,8 @@ void aux_agree(const std::string &what, const Tensor &a, const Tensor &b, double
         largest = std::max(largest, std::fabs(x[i]));
         diff = std::max(diff, std::fabs(x[i] - y[i]));
     }
-    check(diff <= rel * largest, what + ": within " + std::to_string(rel) + " of the largest entry");
+    check(diff <= rel * largest,
+          what + ": within " + std::to_string(rel) + " of the largest entry");
 }
 
 /// The tolerance of a sum or product of n terms: n u, with room for the order.
@@ -59,8 +60,8 @@ void aux_overrides(const std::string &b) {
         aux_agree(b + " matrix_norm", G.matrix_norm(ord), derived::matrix_norm(G, ord),
                   aux_sum_bound(11));
     for (const Norm ord : {Norm::one, Norm::inf, Norm::two})
-        aux_agree(b + " vector_norm", G.vector_norm(ord, -2), derived::vector_norm(G, ord, -2, false),
-                  aux_sum_bound(6));
+        aux_agree(b + " vector_norm", G.vector_norm(ord, -2),
+                  derived::vector_norm(G, ord, -2, false), aux_sum_bound(6));
     const Tensor c = rnd.vector(6);
     aux_agree(b + " diag", c.diag(), derived::diag(c), 0);
 

@@ -25,7 +25,8 @@ void is_full_dim_looks_for_flat_coordinates(const std::string &b) {
     check(Interval::unbounded(2).is_full_dim(), b + ": the whole space");
     check(!Interval::empty(2).is_full_dim(), b + ": the empty interval");
     const Interval full(column({0.0}), column({1.0})), flat(column({1.0}), column({1.0}));
-    check(Interval::stack({full, full}).is_full_dim() && !Interval::stack({full, flat}).is_full_dim(),
+    check(Interval::stack({full, full}).is_full_dim() &&
+              !Interval::stack({full, flat}).is_full_dim(),
           b + ": a batch is full-dimensional only if every member is");
 }
 

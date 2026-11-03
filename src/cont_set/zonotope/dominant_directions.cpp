@@ -15,10 +15,10 @@
 // CORA: contSet/@zonotope/private/priv_generatorVolumeFilter.m
 // CORA: contSet/@zonotope/private/priv_volumeFilter.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
-#include "cont_set/zonotope/private/priv.h"
 
 #include <algorithm>
 #include <limits>
@@ -46,13 +46,12 @@ Tensor aux_nonzero_generators(const Tensor &G) {
 Tensor aux_volumes(const Tensor &P, const Tensor &G) {
     const int64_t n = P.shape().back();
     const Tensor singular_values = P.svd()[1]; // (B, n, 1), descending
-    const Tensor tolerance = singular_values.slice(-2, 0, 1) *
-                             (double(n) * machine_eps(P.dtype()));
+    const Tensor tolerance = singular_values.slice(-2, 0, 1) * (double(n) * machine_eps(P.dtype()));
     const Tensor singular = singular_values.slice(-2, n - 1, n).less_equal(tolerance);
-    const Tensor radius = P.inv().matmul(G).abs_sum();      // the box of P^-1 Z, (B, n, 1)
+    const Tensor radius = P.inv().matmul(G).abs_sum(); // the box of P^-1 Z, (B, n, 1)
     const Tensor volume = priv_abs_det(P).multiply(radius.prod(-2, true));
-    return Tensor::where(singular, volume.full_like(volume.shape(),
-                                                    std::numeric_limits<double>::infinity()),
+    return Tensor::where(singular,
+                         volume.full_like(volume.shape(), std::numeric_limits<double>::infinity()),
                          volume);
 }
 
@@ -61,8 +60,7 @@ Tensor aux_volumes(const Tensor &P, const Tensor &G) {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor Zonotope::dominant_directions(std::optional<int> length1,
-                                     std::optional<int> length2) const {
+Tensor Zonotope::dominant_directions(std::optional<int> length1, std::optional<int> length2) const {
     detail::Entry entry;
     const int64_t n = dim();
     const int filter_length1 = length1.value_or(int(n) + 5);
@@ -80,8 +78,10 @@ Tensor Zonotope::dominant_directions(std::optional<int> length1,
     const Tensor Gd = G.detach();
     const int64_t count = G.shape().back();
     CORA_CHECK(count >= n, Error::degenerate_set, [&] {
-        return "dominant_directions: " + std::to_string(count) + " nonzero generators span "
-               "fewer than the " + std::to_string(n) + " dimensions of the zonotope";
+        return "dominant_directions: " + std::to_string(count) +
+               " nonzero generators span "
+               "fewer than the " +
+               std::to_string(n) + " dimensions of the zonotope";
     });
 
     // the longest generators, longest first (priv_lengthFilter)

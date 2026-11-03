@@ -14,7 +14,8 @@ namespace {
 /// The bounds of the example, and C +- |D| for the constructor of a center and a delta.
 void bounds_of_the_set(const std::string &b) {
     const Interval I = test::example().interval();
-    check(close(I.inf(), std::vector<double>{1, -1, 0, 2}) && close(I.sup(), std::vector<double>{2, 1, 3, 2}),
+    check(close(I.inf(), std::vector<double>{1, -1, 0, 2}) &&
+              close(I.sup(), std::vector<double>{2, 1, 3, 2}),
           b + ": the example");
     const IntervalMatrix A(test::matrix({1, -2}, 1, 2), test::matrix({0.5, -1}, 1, 2));
     check(close(A.interval().inf(), std::vector<double>{0.5, -3}) &&

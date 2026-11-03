@@ -56,23 +56,22 @@ void the_operations_match_their_definitions() {
         std::vector<Eigen::Vector3d> vertices;
         for (int mask = 0; mask < 8; ++mask) {
             Eigen::Vector3d v;
-            for (Index i = 0; i < n; ++i)
-                v(i) = (mask >> i & 1) ? box.hi(i, b) : box.lo(i, b);
+            for (Index i = 0; i < n; ++i) v(i) = (mask >> i & 1) ? box.hi(i, b) : box.lo(i, b);
             vertices.push_back(v);
             best = std::max(best, d.col(b).dot(v));
         }
         check(close(box_support(b), best), "interval support at a vertex");
 
         // A zonotope's is c'd + ||G'd||_1.
-        const double want = zono.c.col(b).dot(d.col(b))
-                            + (zono.block(b).transpose() * d.col(b)).array().abs().sum();
+        const double want = zono.c.col(b).dot(d.col(b)) +
+                            (zono.block(b).transpose() * d.col(b)).array().abs().sum();
         check(close(zono_support(b), want), "zonotope support");
 
         // The image of every vertex lies in the interval hull.
         for (const auto &v : vertices) {
             const Eigen::Vector3d image_point = matrix * v;
-            check((image_point.array() >= image.lo.col(b).array() - 1e-12).all()
-                      && (image_point.array() <= image.hi.col(b).array() + 1e-12).all(),
+            check((image_point.array() >= image.lo.col(b).array() - 1e-12).all() &&
+                      (image_point.array() <= image.hi.col(b).array() + 1e-12).all(),
                   "a vertex left the interval hull");
         }
 
@@ -115,8 +114,8 @@ void zonotope_containment_is_exact() {
                 const Eigen::VectorXd r = mixed.col(col) - zono.c.col(b);
                 const bool want = contains_lp(zono.block(b), r, 1e-9);
                 check(static_cast<bool>(answers[static_cast<std::size_t>(col)]) == want,
-                      "n=" + std::to_string(n) + ", point " + std::to_string(col)
-                          + ": disagreed with the LP");
+                      "n=" + std::to_string(n) + ", point " + std::to_string(col) +
+                          ": disagreed with the LP");
             }
         }
     }

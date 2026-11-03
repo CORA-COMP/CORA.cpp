@@ -13,10 +13,11 @@ int main() {
     torch::manual_seed(56);
     const auto input = test::random_zonotope(2, 6);
     for (const char *method : {"kochdumper", "raghuraman", "yang"})
-        test::gradcheck(std::string("reduce_under_approx ") + method,
-                        [method](const Inputs &x) {
-                            return test::parts(Zonotope(x[0], x[1]).reduce_under_approx(method, 1.5));
-                        },
-                        input);
+        test::gradcheck(
+            std::string("reduce_under_approx ") + method,
+            [method](const Inputs &x) {
+                return test::parts(Zonotope(x[0], x[1]).reduce_under_approx(method, 1.5));
+            },
+            input);
     return test::finish("zonotope reduce_under_approx (torch)");
 }

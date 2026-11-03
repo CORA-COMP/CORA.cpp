@@ -20,19 +20,21 @@ namespace {
 void prod_of_rows_and_columns(const std::string &b) {
     const Interval v(column({-3.0, 1.0, 0.5}), column({2.0, 3.0, 5.0}));
     const Interval P = v.prod();
-    check(P.inf().shape() == std::vector<int64_t>({1, 1}) && close(P.inf(), std::vector<double>{-45}) &&
-              close(P.sup(), std::vector<double>{30}),
+    check(P.inf().shape() == std::vector<int64_t>({1, 1}) &&
+              close(P.inf(), std::vector<double>{-45}) && close(P.sup(), std::vector<double>{30}),
           b + ": the product of a vector");
     // columns (1, 2, 3) and (-1, 4, 1) to (2, 3, 5), (1, 2, 2)
     const Interval M(Tensor::from_data({1, -1, 2, 4, 3, 1}, {3, 2}),
                      Tensor::from_data({2, 1, 3, 4, 5, 2}, {3, 2}));
     const Interval C = M.prod(1);
     check(C.inf().shape() == std::vector<int64_t>({1, 2}) &&
-              close(C.inf(), std::vector<double>{6, -8}) && close(C.sup(), std::vector<double>{30, 8}),
+              close(C.inf(), std::vector<double>{6, -8}) &&
+              close(C.sup(), std::vector<double>{30, 8}),
           b + ": dim 1, a row of column products");
     const Interval R = M.prod(2);
     check(R.inf().shape() == std::vector<int64_t>({3, 1}) &&
-              close(R.inf(), std::vector<double>{-2, 8, 3}) && close(R.sup(), std::vector<double>{2, 12, 10}),
+              close(R.inf(), std::vector<double>{-2, 8, 3}) &&
+              close(R.sup(), std::vector<double>{2, 12, 10}),
           b + ": dim 2, a column of row products");
     const Interval row(Tensor::from_data({1, 2, 3}, {1, 3}), Tensor::from_data({1, 2, 4}, {1, 3}));
     check(close(row.prod().sup(), std::vector<double>{8}), b + ": a single row defaults to dim 2");

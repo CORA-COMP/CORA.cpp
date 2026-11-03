@@ -112,22 +112,20 @@ Zonotope aux_unite(const Zonotope &Z, std::vector<Zonotope> Zs, const Interval *
                    method == "althoff" || method == "parallelotope",
                Error::wrong_value, [&] {
                    return "unite: the method must be linprog, tedrake, iterative, althoff or "
-                          "parallelotope, got '" + method + "'";
+                          "parallelotope, got '" +
+                          method + "'";
                });
-    CORA_CHECK(method != "tedrake" && method != "althoff", Error::not_supported, [&] {
-        return "unite: the method '" + method + "' is not supported";
-    });
+    CORA_CHECK(method != "tedrake" && method != "althoff", Error::not_supported,
+               [&] { return "unite: the method '" + method + "' is not supported"; });
     CORA_CHECK(!order, Error::not_supported, [] {
         return std::string("unite: reducing the order needs the reduction methods 'methC' and "
                            "'pca', which are not supported");
     });
-    CORA_CHECK(Z.center().ndim() == 2, Error::not_supported, [] {
-        return std::string("unite: it supports a single zonotope, not a batch");
-    });
+    CORA_CHECK(Z.center().ndim() == 2, Error::not_supported,
+               [] { return std::string("unite: it supports a single zonotope, not a batch"); });
     if (box) {
-        CORA_CHECK(box->is_bounded() && box->inf().shape().back() == 1, Error::wrong_value, [] {
-            return std::string("unite: the box must be bounded and a vector");
-        });
+        CORA_CHECK(box->is_bounded() && box->inf().shape().back() == 1, Error::wrong_value,
+                   [] { return std::string("unite: the box must be bounded and a vector"); });
         Zs.push_back(box->zonotope());
     }
     // this set first, as CORA's cell array
@@ -170,18 +168,26 @@ Zonotope aux_point(const Zonotope &Z, const Tensor &p, const std::string &method
 // The union with sets -----------------------------------------------------------------------------
 
 Zonotope Zonotope::unite(const std::vector<Zonotope> &Zs, const std::string &method,
-    std::optional<int> order) const { return aux_sets(*this, Zs, method, order); }
+                         std::optional<int> order) const {
+    return aux_sets(*this, Zs, method, order);
+}
 
 // The union with one set --------------------------------------------------------------------------
 
 Zonotope Zonotope::unite(const Zonotope &Z2, const std::string &method,
-    std::optional<int> order) const { return aux_sets(*this, {Z2}, method, order); }
+                         std::optional<int> order) const {
+    return aux_sets(*this, {Z2}, method, order);
+}
 
 Zonotope Zonotope::unite(const Interval &I, const std::string &method,
-    std::optional<int> order) const { return aux_box(*this, I, method, order); }
+                         std::optional<int> order) const {
+    return aux_box(*this, I, method, order);
+}
 
 Zonotope Zonotope::unite(const Tensor &p, const std::string &method,
-    std::optional<int> order) const { return aux_point(*this, p, method, order); }
+                         std::optional<int> order) const {
+    return aux_point(*this, p, method, order);
+}
 
 } // namespace cora
 

@@ -35,8 +35,7 @@ namespace cora::comp::tb {
 ///
 /// A device draw is already parallel and goes to torch untouched, as does anything small
 /// enough that setting up to split it would cost more than drawing it.
-inline torch::Tensor draw(torch::IntArrayRef shape, const torch::TensorOptions &opts,
-                          bool normal) {
+inline torch::Tensor draw(torch::IntArrayRef shape, const torch::TensorOptions &opts, bool normal) {
     constexpr int64_t kGrain = 1 << 16;
 
     int64_t n = 1;

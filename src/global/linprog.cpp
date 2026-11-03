@@ -26,8 +26,7 @@ namespace cora {
 
 namespace {
 
-constexpr double kInf =
-    std::numeric_limits<double>::infinity();
+constexpr double kInf = std::numeric_limits<double>::infinity();
 constexpr int kMaxPivots = 200000;
 
 /// How one original variable is written with nonnegative ones: x = offset + s1 y[c1] + s2 y[c2].
@@ -40,9 +39,9 @@ struct VarMap {
 /// The standard form rows M y = r with the basis column of each row.
 struct Standard {
     int m = 0, N = 0;
-    std::vector<double> M;  // (m, N) row-major
+    std::vector<double> M; // (m, N) row-major
     std::vector<double> r, c;
-    std::vector<int> basis;  // slack column with +1 of the row, or -1
+    std::vector<int> basis; // slack column with +1 of the row, or -1
 };
 
 // Simplex -----------------------------------------------------------------------------------------
@@ -62,9 +61,8 @@ void aux_pivot(std::vector<double> &T, int m, int W, int row, int col) {
 
 /// Simplex pivots on the tableau for the cost `cost` over the columns allowed to enter; the
 /// return value is 0 (optimal), 1 (unbounded) or 2 (pivot limit).
-int aux_simplex(
-    std::vector<double> &T, std::vector<int> &basis, int m, int W, const std::vector<double> &cost,
-    const std::vector<char> &allowed) {
+int aux_simplex(std::vector<double> &T, std::vector<int> &basis, int m, int W,
+                const std::vector<double> &cost, const std::vector<char> &allowed) {
     const int N = W - 1;
     int stall = 0;
     for (int iter = 0; iter < kMaxPivots; ++iter) {

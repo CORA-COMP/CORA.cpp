@@ -35,7 +35,8 @@ void unions_by_hand(const std::string &b) {
         check(U.contains(A, "exact", 1e-9) && U.contains(B, "exact", 1e-9),
               std::string(b) + ": " + method + ": it contains both");
     }
-    const Zonotope p(column({0.0, 0.0}), Tensor::zeros({2, 0})), q(column({2.0, 0.0}), Tensor::zeros({2, 0}));
+    const Zonotope p(column({0.0, 0.0}), Tensor::zeros({2, 0})),
+        q(column({2.0, 0.0}), Tensor::zeros({2, 0}));
     const Zonotope S = p.unite(q);
     check(close(S.center(), std::vector<double>{1, 0}, 1e-9) &&
               S.generators().shape() == std::vector<int64_t>({2, 1}) &&
@@ -75,7 +76,8 @@ void union_contains_the_sets(const std::string &b) {
         for (const char *method : {"linprog", "iterative", "parallelotope"}) {
             const Zonotope U = Zs[0].unite(std::vector<Zonotope>{Zs[1], Zs[2]}, method);
             for (const Zonotope &Z : Zs)
-                check(U.contains(Z, "exact", 1e-8), std::string(b) + ": " + method + ": it contains a set");
+                check(U.contains(Z, "exact", 1e-8),
+                      std::string(b) + ": " + method + ": it contains a set");
         }
     }
     // flat sets: a segment and a point in the plane
@@ -94,14 +96,17 @@ void checks_and_their_switch() {
               std::string("unite: ") + method);
     check(test::raises([&] { A.unite(B, "convex"); }, Error::wrong_value), "unite: unknown method");
     check(test::raises([&] { A.unite(B, "linprog", 2); }, Error::not_supported), "unite: an order");
-    check(test::raises([&] { A.unite(Zonotope::origin(3)); }, Error::dimension_mismatch), "unite: dimension");
+    check(test::raises([&] { A.unite(Zonotope::origin(3)); }, Error::dimension_mismatch),
+          "unite: dimension");
     const double inf = std::numeric_limits<double>::infinity();
     const Interval unbounded(column({0.0, 0.0}), column({inf, 1.0}));
     check(test::raises([&] { A.unite(unbounded); }, Error::wrong_value), "unite: an unbounded box");
-    check(test::raises([&] { Zonotope::stack({A, B}).unite(A); }, Error::not_supported), "unite: a batch");
+    check(test::raises([&] { Zonotope::stack({A, B}).unite(A); }, Error::not_supported),
+          "unite: a batch");
     const Tensor on = A.unite(B, "iterative").generators();
     ChecksScope off(false);
-    check(close(A.unite(B, "iterative").generators(), on, 0), "unite: the same with the checks off");
+    check(close(A.unite(B, "iterative").generators(), on, 0),
+          "unite: the same with the checks off");
 }
 
 } // namespace

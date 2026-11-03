@@ -25,12 +25,14 @@ void norm_bounds_the_members(const std::string &b) {
     const double bound = A.infinity_norm().item();
     bool below = true;
     for (int trial = 0; trial < 40; ++trial)
-        below = below && test::member(A, rng).matrix_norm(Tensor::Norm::inf).item() <= bound + 1e-12;
+        below =
+            below && test::member(A, rng).matrix_norm(Tensor::Norm::inf).item() <= bound + 1e-12;
     check(below, b + ": the members' Inf-norms are below it");
     check(close(bound, A.abs().matrix_norm(Tensor::Norm::inf).item()), b + ": the Inf-norm of abs");
     const IntervalMatrix T = test::random_matrix(rng, 2, 1.0);
     const IntervalMatrix batch(Interval::stack({T.interval(), test::example().interval()}));
-    check(close(batch.infinity_norm().slice(0, 1, 2).reshape({1, 1}), test::example().infinity_norm()),
+    check(close(batch.infinity_norm().slice(0, 1, 2).reshape({1, 1}),
+                test::example().infinity_norm()),
           b + ": a batch");
 }
 

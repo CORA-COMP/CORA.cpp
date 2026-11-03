@@ -35,12 +35,14 @@ ReachSet LinearSys::reach(const Zonotope &X0, double t_final, const alg::Standar
     const double steps = t_final / time_step;
     CORA_CHECK(
         t_final > 0 && std::abs(steps - std::round(steps)) <= numerics::kStepCount * steps,
-        Error::wrong_value, [] {
-            return std::string("lean reach: t_final must be a positive multiple of time_step");
-        });
+        Error::wrong_value,
+        [] { return std::string("lean reach: t_final must be a positive multiple of time_step"); });
     // the times are exact doubles, not values of the dtype
-    const Reply r = ask("linearSysReach", {{"A", A_}, {"X0", X0}, {"timeStep", time_step},
-                                           {"tFinal", t_final}, {"taylorTerms", taylor_terms},
+    const Reply r = ask("linearSysReach", {{"A", A_},
+                                           {"X0", X0},
+                                           {"timeStep", time_step},
+                                           {"tFinal", t_final},
+                                           {"taylorTerms", taylor_terms},
                                            {"zonotopeOrder", zonotope_order}});
     return {r.get<std::vector<Zonotope>>("timePoint"),
             r.get<std::vector<Zonotope>>("timeInterval")};

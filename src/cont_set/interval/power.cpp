@@ -50,14 +50,14 @@ bool aux_fits(const Tensor &x, const Tensor &bounds) {
 Tensor aux_integer_power(const Tensor &x, const Tensor &k) {
     Tensor product = x.add(k).ones_like();
     const double most = k.max().item();
-    const int64_t steps = most > numerics::kPowerProduct ? numerics::kPowerProduct
-                                                         : static_cast<int64_t>(most);
+    const int64_t steps =
+        most > numerics::kPowerProduct ? numerics::kPowerProduct : static_cast<int64_t>(most);
     for (int64_t j = 1; j <= steps; ++j)
         product = Tensor::where(aux_compare(k, Tensor::Binary::greater_equal, double(j)),
                                 product.multiply(x), product);
     if (most <= numerics::kPowerProduct) return product;
-    return Tensor::where(aux_compare(k, Tensor::Binary::greater, numerics::kPowerProduct),
-                         x.pow(k), product);
+    return Tensor::where(aux_compare(k, Tensor::Binary::greater, numerics::kPowerProduct), x.pow(k),
+                         product);
 }
 
 /// The bounds of [a, b]^e for numbers e: CORA's branches by the sign and the integrality of e.
@@ -79,8 +79,8 @@ Bounds aux_numeric_power(const Tensor &a, const Tensor &b, const Tensor &e) {
     const Tensor even = ((k / 2.0).floor() * 2.0).equal(k);
     const Tensor changes_sign = aux_compare(lo, Tensor::Binary::less, 0)
                                     .multiply(aux_compare(hi, Tensor::Binary::greater, 0));
-    const Tensor flat = even.multiply(aux_compare(k, Tensor::Binary::not_equal, 0))
-                            .multiply(changes_sign);
+    const Tensor flat =
+        even.multiply(aux_compare(k, Tensor::Binary::not_equal, 0)).multiply(changes_sign);
     const Tensor int_lo = Tensor::where(flat, aux_fill(p1, 0), p1.minimum(p2));
     return {Tensor::where(integral, int_lo, lo.pow(exponent)),
             Tensor::where(integral, p1.maximum(p2), hi.pow(exponent))};
@@ -132,8 +132,8 @@ Interval Interval::power(const Tensor &exponent) const {
 Interval Interval::power(const Tensor &base, const Interval &exponent) {
     detail::Entry entry;
     // the base is one number or has the shape of the exponents
-    CORA_CHECK(aux_fits(base, exponent.inf()) || (exponent.inf().size(-1) == 1 &&
-                                                  exponent.inf().size(-2) == 1),
+    CORA_CHECK(aux_fits(base, exponent.inf()) ||
+                   (exponent.inf().size(-1) == 1 && exponent.inf().size(-2) == 1),
                Error::dimension_mismatch, [&] {
                    return "power: the base " + shape_text(base.shape()) +
                           " must be one number or match the exponents " +
@@ -149,9 +149,8 @@ Interval Interval::power(const Interval &exponent) const {
     detail::Entry entry;
     CORA_CHECK(priv_broadcastable(inf_.shape(), exponent.inf().shape()), Error::dimension_mismatch,
                [&] {
-                   return "power: the bounds " + shape_text(inf_.shape()) +
-                          " and the exponents " + shape_text(exponent.inf().shape()) +
-                          " must have one shape";
+                   return "power: the bounds " + shape_text(inf_.shape()) + " and the exponents " +
+                          shape_text(exponent.inf().shape()) + " must have one shape";
                });
     const auto [lo, hi] = aux_hull_power({inf_, sup_}, {exponent.inf(), exponent.sup()});
     priv_check_nan("power", lo, hi, "base >= 0");

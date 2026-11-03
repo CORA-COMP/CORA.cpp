@@ -34,7 +34,8 @@ void norm_bounds_the_members(const std::string &b) {
         check(below, b + ": the members' norms are below the norm");
     }
     const IntervalMatrix batch(Interval::stack({A.interval(), A.interval()}));
-    check(close(batch.norm(Tensor::Norm::fro).slice(0, 1, 2).reshape({1, 1}), A.norm(Tensor::Norm::fro)),
+    check(close(batch.norm(Tensor::Norm::fro).slice(0, 1, 2).reshape({1, 1}),
+                A.norm(Tensor::Norm::fro)),
           b + ": a batch");
 }
 

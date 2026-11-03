@@ -31,8 +31,7 @@ void lift_by_class(const std::string &b) {
               A.as<Interval>().sup().data() == std::vector<double>{kInf, 3.0, kInf, 1.0},
           b + ": a box at positions 3 and 1");
     const Set D = static_cast<const ContSet &>(I).lift(3);
-    check(D.is<Interval>() &&
-              D.as<Interval>().inf().data() == std::vector<double>{0.0, 2.0, -kInf},
+    check(D.is<Interval>() && D.as<Interval>().inf().data() == std::vector<double>{0.0, 2.0, -kInf},
           b + ": the default positions 0..n-1");
 
     const Zonotope Z(column({1.0, 2.0, 3.0}),
@@ -43,8 +42,11 @@ void lift_by_class(const std::string &b) {
     check(static_cast<const ContSet &>(Z).lift(3).as<Zonotope>().isequal(Z),
           b + ": the default positions of a zonotope");
     const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0, 1.0})});
-    check(static_cast<const ContSet &>(batch).lift(3, std::vector<int64_t>{1, 2, 0})
-                  .as<Zonotope>().center().shape() == Shape({2, 3, 1}),
+    check(static_cast<const ContSet &>(batch)
+                  .lift(3, std::vector<int64_t>{1, 2, 0})
+                  .as<Zonotope>()
+                  .center()
+                  .shape() == Shape({2, 3, 1}),
           b + ": a batch of zonotopes");
 }
 

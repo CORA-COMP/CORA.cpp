@@ -53,7 +53,8 @@ void the_volume_is_the_area(const std::string &b) {
             const Point &u = p[i], &v = p[(i + 1) % p.size()];
             area += u[0] * v[1] - v[0] * u[1];
         }
-        check(close(Z.volume().item(), std::abs(area) / 2, 1e-9), b + ": the area, m = " + std::to_string(m));
+        check(close(Z.volume().item(), std::abs(area) / 2, 1e-9),
+              b + ": the area, m = " + std::to_string(m));
         check(Z.volume("alamo").item() <= Z.volume().item() + 1e-9, b + ": alamo is a lower bound");
     }
     const Zonotope P = Zonotope::generate_random(rng, 3, std::nullopt, 3);

@@ -14,10 +14,10 @@ using test::check;
 namespace {
 
 const char *const kTrue[] = {"interval", "convexSet", "fullspace"};
-const char *const kFalse[] = {"origin",     "point",       "capsule",       "conHyperplane",
-                              "conPolyZono", "conZonotope", "ellipsoid",     "halfspace",
-                              "polytope",   "polyZonotope", "probZonotope", "zonoBundle",
-                              "zonotope",   "hyperplane",  "parallelotope", "emptySet"};
+const char *const kFalse[] = {"origin",      "point",        "capsule",       "conHyperplane",
+                              "conPolyZono", "conZonotope",  "ellipsoid",     "halfspace",
+                              "polytope",    "polyZonotope", "probZonotope",  "zonoBundle",
+                              "zonotope",    "hyperplane",   "parallelotope", "emptySet"};
 
 void the_table_of_cora(const std::string &b) {
     const Fullspace F(3);
@@ -42,7 +42,8 @@ void the_answer_depends_on_the_type_alone() {
     for (int trial = 0; trial < 20; ++trial) {
         Fullspace F = Fullspace::generate_random(rng);
         const double tol = 1e-3 * trial;
-        for (const char *type : kTrue) check(F.representsa(type, tol), std::string("true: ") + type);
+        for (const char *type : kTrue)
+            check(F.representsa(type, tol), std::string("true: ") + type);
         for (const char *type : kFalse)
             check(!F.representsa(type, tol), std::string("false: ") + type);
         const EmptySet E = F.complement();
@@ -53,7 +54,8 @@ void the_answer_depends_on_the_type_alone() {
     }
 }
 
-/// An unknown type, a level set and a polygon are refused; with the checks off the answer is the same.
+/// An unknown type, a level set and a polygon are refused; with the checks off the answer is the
+/// same.
 void checks_and_their_switch() {
     const Fullspace F(2);
     check(test::raises([&] { F.representsa("circle"); }, Error::wrong_value), "an unknown type");

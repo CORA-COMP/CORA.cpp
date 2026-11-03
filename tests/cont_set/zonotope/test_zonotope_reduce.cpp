@@ -30,7 +30,8 @@ void reduce_encloses_the_zonotope(const std::string &b) {
     const Zonotope R = Z.reduce(3);
     for (int k = 0; k < 40; ++k) {
         const std::vector<double> d = random_direction(rng, n);
-        check(support(R, d) >= support(Z, d) - 1e-9, b + ": the support along a direction only grows");
+        check(support(R, d) >= support(Z, d) - 1e-9,
+              b + ": the support along a direction only grows");
     }
 }
 

@@ -28,7 +28,8 @@ void box_encloses_and_is_tight(const std::string &b) {
     const IntervalMatrix box = A.interval_matrix();
     bool inside = true;
     for (int trial = 0; trial < 30; ++trial)
-        inside = inside && box.contains(test::member(A, test::coefficients(rng, 4)), "exact", 1e-12);
+        inside =
+            inside && box.contains(test::member(A, test::coefficients(rng, 4)), "exact", 1e-12);
     check(inside, b + ": every member is in the box");
     // the corner b_i = sign(G_i[0, 0]) maximizes the entry (0, 0)
     std::vector<double> corner;
@@ -38,7 +39,8 @@ void box_encloses_and_is_tight(const std::string &b) {
     check(close(reached.slice(0, 0, 1).slice(1, 0, 1), bound.slice(0, 0, 1).slice(1, 0, 1), 1e-12),
           b + ": the upper bound is attained");
     const MatZonotope batch = test::batch_of(A, A.transpose());
-    check(close(batch.interval_matrix().center().slice(0, 1, 2).squeeze(0), A.transpose().center(), 1e-12),
+    check(close(batch.interval_matrix().center().slice(0, 1, 2).squeeze(0), A.transpose().center(),
+                1e-12),
           b + ": a batch");
 }
 
@@ -47,7 +49,8 @@ void checks_and_their_switch() {
     const MatZonotope A = test::example();
     const Tensor on = A.interval_matrix().infimum();
     ChecksScope off(false);
-    check(close(A.interval_matrix().infimum(), on, 0), "interval_matrix: the same with the checks off");
+    check(close(A.interval_matrix().infimum(), on, 0),
+          "interval_matrix: the same with the checks off");
 }
 
 } // namespace

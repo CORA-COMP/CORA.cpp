@@ -38,17 +38,15 @@ Tensor aux_rotate_rows(const Tensor &M, const Tensor &R, const std::vector<int64
 
 Zonotope Zonotope::rotate(const std::vector<int64_t> &dims, double angle) const {
     detail::Entry entry;
-    CORA_CHECK(dims.size() == 2 && dims[0] != dims[1], Error::wrong_value, [] {
-        return std::string("rotate: dims must be two different states");
-    });
+    CORA_CHECK(dims.size() == 2 && dims[0] != dims[1], Error::wrong_value,
+               [] { return std::string("rotate: dims must be two different states"); });
     for (const int64_t d : dims)
         CORA_CHECK(d >= 0 && d < dim(), Error::wrong_value, [&] {
             return "rotate: the state " + std::to_string(d) + " is not in [0, " +
                    std::to_string(dim()) + ")";
         });
-    CORA_CHECK(!std::isnan(angle), Error::wrong_value, [] {
-        return std::string("rotate: the angle must not be NaN");
-    });
+    CORA_CHECK(!std::isnan(angle), Error::wrong_value,
+               [] { return std::string("rotate: the angle must not be NaN"); });
     const double cosine = std::cos(angle), sine = std::sin(angle);
     const Tensor R = Tensor::like(c_, {cosine, -sine, sine, cosine}, {2, 2});
     return {aux_rotate_rows(c_, R, dims), aux_rotate_rows(G_, R, dims)};

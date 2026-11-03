@@ -20,9 +20,9 @@
 #include <cstdint>
 #include <vector>
 
-#include "mask.h"
 #include "cora/global/rng.h"
 #include "cora/global/threads.h"
+#include "mask.h"
 
 namespace cora::comp {
 
@@ -68,8 +68,7 @@ Interval<double> random_interval(Rng &rng, Eigen::Index n, Eigen::Index batch);
 
 /// CORA's `zonotope.generate_random`: centre `10 · randn`, `m` generators, each a
 /// uniformly random unit direction with a length `~ U[0, 1]`.
-Zonotope<double> random_zonotope(Rng &rng, Eigen::Index n, Eigen::Index m,
-                                 Eigen::Index batch);
+Zonotope<double> random_zonotope(Rng &rng, Eigen::Index n, Eigen::Index m, Eigen::Index batch);
 
 /// The unit zonotope at the origin: the `startup` instance.
 template <typename T>
@@ -100,8 +99,7 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> support_func(const Zonotope<T> &s, const Mat
     const int nt = threads_for(s.batch(), s.batch() * s.dim() * s.m);
 #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index b = 0; b < s.batch(); ++b) {
-        out(b) = s.c.col(b).dot(d.col(b))
-                 + (d.col(b).transpose() * s.block(b)).array().abs().sum();
+        out(b) = s.c.col(b).dot(d.col(b)) + (d.col(b).transpose() * s.block(b)).array().abs().sum();
     }
     return out;
 }

@@ -12,7 +12,8 @@ using test::close;
 namespace {
 
 void center_of_the_example(const std::string &b) {
-    check(close(test::example().center(), std::vector<double>{1.5, 0, 1.5, 2}), b + ": (inf + sup) / 2");
+    check(close(test::example().center(), std::vector<double>{1.5, 0, 1.5, 2}),
+          b + ": (inf + sup) / 2");
 }
 
 /// The center is in the set, and centers a set built around it; a batch is per member.
@@ -25,7 +26,8 @@ void center_is_a_member(const std::string &b) {
     check(close(B.center(), C, 1e-12), b + ": the center of C +- D is C");
     const IntervalMatrix T = test::random_matrix(rng, 2, 1.0);
     const IntervalMatrix batch(Interval::stack({T.interval(), test::example().interval()}));
-    check(close(batch.center().slice(0, 1, 2).reshape({2, 2}), test::example().center()), b + ": batch");
+    check(close(batch.center().slice(0, 1, 2).reshape({2, 2}), test::example().center()),
+          b + ": batch");
 }
 
 /// center has no input to refuse; with the checks off the result is the same.

@@ -32,9 +32,7 @@ Interval Interval::lift(int64_t N, const std::vector<int64_t> &dims) const {
     return priv_embed(*this, N, dims, -kInf, kInf);
 }
 
-Set Interval::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {
-    return lift(N, proj);
-}
+Set Interval::lift_impl(int64_t N, const std::vector<int64_t> &proj) const { return lift(N, proj); }
 
 } // namespace cora
 

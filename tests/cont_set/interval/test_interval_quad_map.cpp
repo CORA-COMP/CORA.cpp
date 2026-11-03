@@ -22,11 +22,13 @@ namespace {
 void quad_map_by_hand(const std::string &b) {
     const Interval I(column({-1.0}), column({1.0}));
     const Interval R = I.quad_map({Tensor({{2.0}})});
-    check(close(R.inf(), std::vector<double>{0}, 1e-14) && close(R.sup(), std::vector<double>{2}, 1e-14),
+    check(close(R.inf(), std::vector<double>{0}, 1e-14) &&
+              close(R.sup(), std::vector<double>{2}, 1e-14),
           b + ": 2 x^2 on [-1, 1]");
     const Interval X(column({1.0}), column({2.0})), Y(column({-1.0}), column({3.0}));
     const Interval M = X.quad_map(Y, {Tensor({{1.0}})});
-    check(close(M.inf(), std::vector<double>{-3}, 1e-14) && close(M.sup(), std::vector<double>{6}, 1e-14),
+    check(close(M.inf(), std::vector<double>{-3}, 1e-14) &&
+              close(M.sup(), std::vector<double>{6}, 1e-14),
           b + ": x1 x2 on [1, 2] x [-1, 3]");
 }
 
@@ -51,7 +53,8 @@ void quad_map_is_the_hull_of_the_zonotope_map(const std::string &b) {
     for (int k = 0; k < 50; ++k) {
         const Tensor p = x.slice(-1, k, k + 1), q = y.slice(-1, k, k + 1);
         const Tensor image = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(q),
-                                             p.matrix_transpose().matmul(Q[1]).matmul(q)}, 0);
+                                             p.matrix_transpose().matmul(Q[1]).matmul(q)},
+                                            0);
         check(M.contains(image, 1e-9), b + ": the image of points of both boxes");
     }
 }
@@ -63,13 +66,16 @@ void checks_and_their_switch() {
     check(test::raises([&] { Interval(column({0.0}), column({inf})).quad_map({Tensor({{1.0}})}); },
                        Error::wrong_value),
           "quad_map: an unbounded box");
-    check(test::raises([&] { I.quad_map(Interval(column({0.0}), column({inf})), {Tensor({{1.0}})}); },
-                       Error::wrong_value),
-          "quad_map: an unbounded second box");
-    check(test::raises([&] { I.quad_map({Tensor({{1.0, 0.0}, {0.0, 1.0}})}); }, Error::dimension_mismatch),
+    check(
+        test::raises([&] { I.quad_map(Interval(column({0.0}), column({inf})), {Tensor({{1.0}})}); },
+                     Error::wrong_value),
+        "quad_map: an unbounded second box");
+    check(test::raises([&] { I.quad_map({Tensor({{1.0, 0.0}, {0.0, 1.0}})}); },
+                       Error::dimension_mismatch),
           "quad_map: a matrix of the wrong size");
     ChecksScope off(false);
-    check(close(I.quad_map({Tensor({{1.0}})}).sup(), std::vector<double>{1}, 1e-14), "quad_map: checks off");
+    check(close(I.quad_map({Tensor({{1.0}})}).sup(), std::vector<double>{1}, 1e-14),
+          "quad_map: checks off");
 }
 
 } // namespace

@@ -19,8 +19,7 @@ Interval<double> random_interval(Rng &rng, Eigen::Index n, Eigen::Index batch) {
     return s;
 }
 
-Zonotope<double> random_zonotope(Rng &rng, Eigen::Index n, Eigen::Index m,
-                                 Eigen::Index batch) {
+Zonotope<double> random_zonotope(Rng &rng, Eigen::Index n, Eigen::Index m, Eigen::Index batch) {
     Zonotope<double> s{Mat<double>(n, batch), Mat<double>(n, m * batch), m};
     rng.normal(s.c.data(), static_cast<std::size_t>(n) * batch, 10.0);
     rng.normal(s.g.data(), static_cast<std::size_t>(n) * m * batch, 1.0);
@@ -70,11 +69,10 @@ Mask contains(const Interval<double> &s, const Mat<double> &p, Eigen::Index poin
 #pragma omp parallel for schedule(static) if (p.size() >= (1 << 14))
     for (Eigen::Index k = 0; k < cols; ++k) {
         const Eigen::Index b = k / points;
-        out[static_cast<std::size_t>(k)] =
-            (p.col(k).array() >= s.lo.col(b).array()).all()
-                    && (p.col(k).array() <= s.hi.col(b).array()).all()
-                ? 1
-                : 0;
+        out[static_cast<std::size_t>(k)] = (p.col(k).array() >= s.lo.col(b).array()).all() &&
+                                                   (p.col(k).array() <= s.hi.col(b).array()).all()
+                                               ? 1
+                                               : 0;
     }
     return out;
 }

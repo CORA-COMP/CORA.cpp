@@ -79,7 +79,7 @@ HostZonotope priv_host_zonotope(const Zonotope &Z);
 
 /// The norm of a point w.r.t. the generators of a zonotope and the coefficients that reach it.
 struct ZonotopeNorm {
-    double value;                 ///< s, or infinity if there is no beta
+    double value;                  ///< s, or infinity if there is no beta
     std::vector<double> minimizer; ///< beta (m values); empty if the value is infinite
 };
 

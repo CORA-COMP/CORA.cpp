@@ -12,7 +12,8 @@ using test::close;
 namespace {
 
 void infimum_of_the_example(const std::string &b) {
-    check(close(test::example().infimum(), std::vector<double>{1, -1, 0, 2}), b + ": the lower bound");
+    check(close(test::example().infimum(), std::vector<double>{1, -1, 0, 2}),
+          b + ": the lower bound");
 }
 
 /// The infimum is a member below every other one; a batch is per member.
@@ -26,7 +27,8 @@ void infimum_is_the_smallest_member(const std::string &b) {
     check(below, b + ": below every member");
     const IntervalMatrix T = test::random_matrix(rng, 2, 1.0);
     const IntervalMatrix batch(Interval::stack({T.interval(), test::example().interval()}));
-    check(close(batch.infimum().slice(0, 1, 2).reshape({2, 2}), test::example().infimum()), b + ": batch");
+    check(close(batch.infimum().slice(0, 1, 2).reshape({2, 2}), test::example().infimum()),
+          b + ": batch");
 }
 
 /// infimum has no input to refuse; with the checks off the result is the same.

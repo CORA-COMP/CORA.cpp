@@ -22,7 +22,8 @@ void constructor_forms(const std::string &b) {
     const MatZonotope point(test::matrix({1, 2, 3, 4, 5, 6}, 2, 3));
     check(point.rows() == 2 && point.cols() == 3 && point.num_generators() == 0,
           b + ": a point matrix has no generators");
-    check(point.generators().shape() == std::vector<int64_t>({0, 2, 3}), b + ": its empty generators");
+    check(point.generators().shape() == std::vector<int64_t>({0, 2, 3}),
+          b + ": its empty generators");
     const MatZonotope empty;
     check(empty.rows() == 0 && empty.cols() == 0 && empty.num_generators() == 0,
           b + ": the empty set is 0 x 0");
@@ -45,13 +46,15 @@ void batches(const std::string &b) {
     const MatZonotope A = test::example();
     const MatZonotope batch = test::batch_of(A, A.transpose());
     check(batch.rows() == 2 && batch.num_generators() == 2, b + ": the sizes of a batch");
-    check(test::same_set(test::batch_member(batch, 1), A.transpose()), b + ": a member of the batch");
+    check(test::same_set(test::batch_member(batch, 1), A.transpose()),
+          b + ": a member of the batch");
 }
 
 /// Centers and generators of another shape, a missing tensor, and NaN are refused; with the checks
 /// off the same valid construction.
 void checks_and_their_switch() {
-    const Tensor C = test::matrix({1, 2, 3, 4}, 2, 2), G = Tensor::from_data({1, 0, 0, 1}, {1, 2, 2});
+    const Tensor C = test::matrix({1, 2, 3, 4}, 2, 2),
+                 G = Tensor::from_data({1, 0, 0, 1}, {1, 2, 2});
     check(test::raises([&] { MatZonotope(Tensor(), G); }, Error::wrong_input_in_constructor),
           "MatZonotope: an undefined center");
     check(test::raises([&] { MatZonotope(C, test::matrix({1, 0, 0, 1}, 2, 2)); },
@@ -64,8 +67,9 @@ void checks_and_their_switch() {
                        Error::wrong_input_in_constructor),
           "MatZonotope: a center that is not a matrix");
     const double nan = std::numeric_limits<double>::quiet_NaN();
-    check(test::raises([&] { MatZonotope(test::matrix({1, nan, 3, 4}, 2, 2)); }, Error::wrong_value),
-          "MatZonotope: a NaN center");
+    check(
+        test::raises([&] { MatZonotope(test::matrix({1, nan, 3, 4}, 2, 2)); }, Error::wrong_value),
+        "MatZonotope: a NaN center");
     check(test::raises([&] { MatZonotope(C, Tensor::from_data({1, nan, 0, 1}, {1, 2, 2})); },
                        Error::wrong_value),
           "MatZonotope: a NaN generator");

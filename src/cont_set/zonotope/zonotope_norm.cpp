@@ -30,9 +30,11 @@ Refusal aux_refusal(const Zonotope &Z, const Tensor &p) {
                          std::string("a linear program per zonotope: it supports a single "
                                      "zonotope, not a batch")};
     if (p.shape() != Shape{Z.dim(), 1})
-        return std::pair{Error::dimension_mismatch,
-                         "the point must be a column (" + std::to_string(Z.dim()) + ", 1), got "
-                             "the shape " + shape_text(p.shape())};
+        return std::pair{Error::dimension_mismatch, "the point must be a column (" +
+                                                        std::to_string(Z.dim()) +
+                                                        ", 1), got "
+                                                        "the shape " +
+                                                        shape_text(p.shape())};
     return std::nullopt;
 }
 

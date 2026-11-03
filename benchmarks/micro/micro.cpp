@@ -1,4 +1,5 @@
-// micro - micro-benchmarks of the public API, run one at a time so a profiler counts its instructions
+// micro - micro-benchmarks of the public API, run one at a time so a profiler counts its
+// instructions
 //
 // Syntax:   micro            list the benchmarks
 //           micro <name>     run one: the setup, then the measured region (micro_measured_region)
@@ -34,7 +35,8 @@ double sum_of(const Tensor &t) {
 
 #if __has_include("cora/global/tensor/ops.def")
 /// `calls` calls of f, summed.
-template <class F> Work aux_repeat(int calls, F f) {
+template <class F>
+Work aux_repeat(int calls, F f) {
     return Work([=] {
         double s = 0;
         for (int k = 0; k < calls; ++k) s += f();
@@ -63,9 +65,8 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
     table["tensor_take_concat"] = [=] {
         const Tensor A = matrix(20, 200, 11);
         const Tensor i = A.sum(-2, true).argsort(-1);
-        return aux_repeat(2000, [=] {
-            return sum_of(Tensor::concat({A.take_along_axis(i, -1), A}, -1));
-        });
+        return aux_repeat(
+            2000, [=] { return sum_of(Tensor::concat({A.take_along_axis(i, -1), A}, -1)); });
     };
     table["tensor_expm_10"] = [=] {
         const Tensor A = 0.1 * matrix(10, 10, 12);
@@ -73,22 +74,19 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
     };
     table["fused_zonotope_linear_map"] = [=] {
         const Tensor M = matrix(10, 10, 13), c = matrix(10, 1, 14), G = matrix(10, 40, 15);
-        return aux_repeat(5000, [=] {
-            return sum_of(Tensor::zonotope_linear_map(M, c, G).second);
-        });
+        return aux_repeat(5000,
+                          [=] { return sum_of(Tensor::zonotope_linear_map(M, c, G).second); });
     };
     table["fused_zonotope_interval_map"] = [=] {
         const Tensor lo = matrix(10, 10, 16), hi = lo + matrix(10, 10, 17).abs();
         const Tensor c = matrix(10, 1, 18), G = matrix(10, 40, 19);
-        return aux_repeat(5000, [=] {
-            return sum_of(Tensor::zonotope_interval_map(lo, hi, c, G).second);
-        });
+        return aux_repeat(
+            5000, [=] { return sum_of(Tensor::zonotope_interval_map(lo, hi, c, G).second); });
     };
     table["fused_zonotope_linear_combination"] = [=] {
         const Tensor c = matrix(10, 1, 20), G = matrix(10, 40, 21), H = matrix(10, 40, 22);
-        return aux_repeat(5000, [=] {
-            return sum_of(Tensor::zonotope_linear_combination(c, G, c, H).second);
-        });
+        return aux_repeat(
+            5000, [=] { return sum_of(Tensor::zonotope_linear_combination(c, G, c, H).second); });
     };
     table["fused_interval_matmul"] = [=] {
         const Tensor lo = matrix(20, 20, 23), hi = lo + matrix(20, 20, 24).abs();
@@ -171,9 +169,9 @@ const std::map<std::string, Benchmark> &benchmarks() {
          }},
     };
 #if __has_include("cora/global/tensor/ops.def")
-    aux_tensor_benchmarks(sets);
+        aux_tensor_benchmarks(sets);
 #endif
-    return sets;
+        return sets;
     }();
     return table;
 }

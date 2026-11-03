@@ -54,7 +54,8 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             const double mine = Z.radius().item(), bound = lean::Zonotope(Z).radius();
             test::check(mine <= bound * (1 + kSlack), "radius: " + std::to_string(mine) +
-                                                          " exceeds the bound " + std::to_string(bound));
+                                                          " exceeds the bound " +
+                                                          std::to_string(bound));
             test::check(mine >= bound * (1 - 1e-6), "radius: the bound " + std::to_string(bound) +
                                                         " is far above " + std::to_string(mine));
         }
@@ -66,7 +67,8 @@ int main() {
             const std::vector<Tensor> Q{rnd.matrix(n, n), rnd.matrix(n, n)};
             std::vector<lean::Tensor> LQ;
             for (const Tensor &M : Q) LQ.push_back(lean::Tensor::from(M));
-            oracle::check_enclosed("zonotope.quadMap", Z.quad_map(Q), lean::Zonotope(Z).quad_map(LQ));
+            oracle::check_enclosed("zonotope.quadMap", Z.quad_map(Q),
+                                   lean::Zonotope(Z).quad_map(LQ));
         }
     });
 

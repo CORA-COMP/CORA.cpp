@@ -33,13 +33,17 @@ void points_in_a_diamond(const std::string &b) {
 /// The special cases of CORA's contains_: a point, a box, and a flat zonotope.
 void special_zonotopes(const std::string &b) {
     const Zonotope point(column({1.0, 2.0}), Tensor({{0.0}, {0.0}}));
-    check(point.contains(column({1.0, 2.0})) && !point.contains(column({1.0, 2.5})), b + ": a point");
-    check(point.contains(Zonotope(column({1.0, 2.0}), Tensor({{0.0}, {0.0}}))), b + ": a point holds itself");
+    check(point.contains(column({1.0, 2.0})) && !point.contains(column({1.0, 2.5})),
+          b + ": a point");
+    check(point.contains(Zonotope(column({1.0, 2.0}), Tensor({{0.0}, {0.0}}))),
+          b + ": a point holds itself");
     check(!point.contains(diamond()), b + ": a point holds no set");
     const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(box.contains(column({1.0, -1.0})) && !box.contains(column({1.1, 0.0})), b + ": a box");
-    check(box.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.0}))), b + ": a box holds a box");
-    check(!box.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.5}))), b + ": a box, not a larger one");
+    check(box.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.0}))),
+          b + ": a box holds a box");
+    check(!box.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.5}))),
+          b + ": a box, not a larger one");
     const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
     check(segment.contains(column({0.5, 0.5})), b + ": a segment holds its points");
     check(!segment.contains(column({0.5, 0.6})), b + ": and no other");
@@ -86,14 +90,16 @@ void checks_and_their_switch() {
     check(test::raises([&] { Z.contains(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "contains: a point of dimension 3");
     check(test::raises([&] { Z.contains(Zonotope(column({0.0}), Tensor({{1.0}}))); },
-                       Error::dimension_mismatch), "contains: a zonotope of dimension 1");
+                       Error::dimension_mismatch),
+          "contains: a zonotope of dimension 1");
     check(test::raises([&] { Z.contains(column({0.0, 0.0}), "exact", -1.0); }, Error::wrong_value),
           "contains: tol < 0");
     check(test::raises([&] { Z.contains(column({0.0, 0.0}), "simplex"); }, Error::no_specific_alg),
           "contains: unknown method");
     check(test::raises([&] { Z.contains(Z, "exact:polymax"); }, Error::not_supported),
           "contains: polymax needs Polytope");
-    check(test::raises([&] { Z.contains(Z, "sampling"); }, Error::not_supported), "contains: sampling");
+    check(test::raises([&] { Z.contains(Z, "sampling"); }, Error::not_supported),
+          "contains: sampling");
     check(test::raises([&] { Zonotope::stack({Z, Z}).contains(Z); }, Error::not_supported),
           "contains: a batch");
     const bool on = Z.contains(0.5 * Z);

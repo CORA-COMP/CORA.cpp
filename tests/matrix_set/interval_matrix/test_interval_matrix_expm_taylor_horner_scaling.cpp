@@ -28,7 +28,8 @@ void the_point_matrix_minus_one(const std::string &b) {
     }
     // scaling by 2: Horner of -1/2 is [0.601190, 0.648810] (by hand), squared as intervals
     const IntervalMatrix S = *A.expm_taylor_horner_scaling(2, 2);
-    check(close(S.interval().inf(), std::vector<double>{std::pow(0.625 - 0.5 * 0.25 / 6 / 0.875, 2)}, 1e-12),
+    check(close(S.interval().inf(),
+                std::vector<double>{std::pow(0.625 - 0.5 * 0.25 / 6 / 0.875, 2)}, 1e-12),
           b + ": scaled, lower bound");
     check(S.contains(test::matrix({std::exp(-1.0)}, 1, 1)), b + ": scaled, exp(-1) is inside");
 }
@@ -70,14 +71,17 @@ void checks_and_their_switch() {
     const IntervalMatrix A(test::matrix({0.5}, 1, 1));
     check(test::raises([&] { A.expm_taylor_horner_scaling(3, 3); }, Error::wrong_value), "style 3");
     check(test::raises([&] { A.expm_taylor_horner_scaling(3, 4); }, Error::wrong_value), "style 4");
-    check(test::raises([&] { A.expm_taylor_horner_scaling(0, 1); }, Error::wrong_value), "order 0, Horner");
-    check(test::raises([&] { A.expm_taylor_horner_scaling(3, 2, -1); }, Error::wrong_value), "exponent -1");
+    check(test::raises([&] { A.expm_taylor_horner_scaling(0, 1); }, Error::wrong_value),
+          "order 0, Horner");
+    check(test::raises([&] { A.expm_taylor_horner_scaling(3, 2, -1); }, Error::wrong_value),
+          "exponent -1");
     const IntervalMatrix wide(test::matrix({1, 2, 3}, 1, 3));
     check(test::raises([&] { wide.expm_taylor_horner_scaling(3, 0); }, Error::dimension_mismatch),
           "not square");
     const Tensor on = A.expm_taylor_horner_scaling(3, 0)->interval().sup();
     ChecksScope off(false);
-    check(close(A.expm_taylor_horner_scaling(3, 0)->interval().sup(), on, 0), "the same with the checks off");
+    check(close(A.expm_taylor_horner_scaling(3, 0)->interval().sup(), on, 0),
+          "the same with the checks off");
 }
 
 } // namespace

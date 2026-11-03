@@ -1,4 +1,5 @@
-// test_interval_matrix_expm_different_algorithms - IntervalMatrix expm_different_algorithms: by style
+// test_interval_matrix_expm_different_algorithms - IntervalMatrix expm_different_algorithms: by
+// style
 //
 // CORA: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
 // PROPERTY: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
@@ -40,21 +41,25 @@ void results_enclose(const std::string &b) {
             inside = inside && E && E->contains(test::member(A, rng).expm(), "exact", 1e-12);
     }
     check(inside, b + ": exp of members");
-    const IntervalMatrix E = *IntervalMatrix(test::matrix({-1}, 1, 1)).expm_different_algorithms(2, 0);
+    const IntervalMatrix E =
+        *IntervalMatrix(test::matrix({-1}, 1, 1)).expm_different_algorithms(2, 0);
     check(close(E.interval().inf(), std::vector<double>{5.0 / 18}, 1e-12), b + ": the point -1");
 }
 
-/// A style that CORA has no case for is refused, as are a matrix that is not square; with the checks
-/// off a valid call gives the same.
+/// A style that CORA has no case for is refused, as are a matrix that is not square; with the
+/// checks off a valid call gives the same.
 void checks_and_their_switch() {
     const IntervalMatrix A(test::matrix({0.5}, 1, 1));
     check(test::raises([&] { A.expm_different_algorithms(3, 3); }, Error::wrong_value), "style 3");
-    check(test::raises([&] { IntervalMatrix(test::matrix({1, 2, 3}, 1, 3)).expm_different_algorithms(3, 4); },
-                       Error::dimension_mismatch),
-          "not square, style 4");
+    check(
+        test::raises(
+            [&] { IntervalMatrix(test::matrix({1, 2, 3}, 1, 3)).expm_different_algorithms(3, 4); },
+            Error::dimension_mismatch),
+        "not square, style 4");
     const Tensor on = A.expm_different_algorithms(3, 4)->interval().sup();
     ChecksScope off(false);
-    check(close(A.expm_different_algorithms(3, 4)->interval().sup(), on, 0), "the same with the checks off");
+    check(close(A.expm_different_algorithms(3, 4)->interval().sup(), on, 0),
+          "the same with the checks off");
 }
 
 } // namespace

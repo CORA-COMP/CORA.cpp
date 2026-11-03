@@ -38,14 +38,13 @@ ExpmResult IntervalMatrix::expm_independent(int64_t max_order) const {
 ExpmResult IntervalMatrix::expm_independent(int64_t max_order, int64_t initial_order,
                                             const IntervalMatrix &initial_power) const {
     detail::Entry entry;
-    CORA_CHECK(max_order >= 0 && initial_order >= 0, Error::wrong_value, [] {
-        return std::string("expm_independent: the orders must be nonnegative");
-    });
-    CORA_CHECK(rows() == cols() && initial_power.rows() == rows() &&
-                   initial_power.cols() == cols(),
+    CORA_CHECK(max_order >= 0 && initial_order >= 0, Error::wrong_value,
+               [] { return std::string("expm_independent: the orders must be nonnegative"); });
+    CORA_CHECK(rows() == cols() && initial_power.rows() == rows() && initial_power.cols() == cols(),
                Error::dimension_mismatch, [&] {
                    return "expm_independent: the matrix and the initial power must be square of "
-                          "one size, got " + shape_text(int_.inf().shape()) + " and " +
+                          "one size, got " +
+                          shape_text(int_.inf().shape()) + " and " +
                           shape_text(initial_power.interval().inf().shape());
                });
     return priv_expm_continued(*this, max_order, initial_order, initial_power);

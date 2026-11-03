@@ -12,7 +12,9 @@ int main() {
     torch::manual_seed(52);
     test::gradcheck(
         "project_high_dim",
-        [](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).project_high_dim(5, {3, 0, 4})); },
+        [](const Inputs &x) {
+            return test::parts(Zonotope(x[0], x[1]).project_high_dim(5, {3, 0, 4}));
+        },
         test::random_zonotope(3, 4));
     return test::finish("zonotope project_high_dim (torch)");
 }

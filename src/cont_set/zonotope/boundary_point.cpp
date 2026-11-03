@@ -9,11 +9,11 @@
 //
 // CORA: contSet/@zonotope/boundaryPoint.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/linprog.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
-#include "cont_set/zonotope/private/priv.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -72,9 +72,8 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
     const std::vector<double> d = dir.data(), s = start.data();
     bool zero = true;
     for (const double x : d) zero = zero && within_tol(x, 0.0);
-    CORA_CHECK(!zero, Error::wrong_value, [] {
-        return std::string("boundary_point: dir has to be a nonzero vector");
-    });
+    CORA_CHECK(!zero, Error::wrong_value,
+               [] { return std::string("boundary_point: dir has to be a nonzero vector"); });
     CORA_CHECK(contains(start, "exact"), Error::wrong_value, [] {
         return std::string("boundary_point: start has to be a point of the zonotope");
     });

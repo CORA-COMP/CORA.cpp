@@ -22,20 +22,25 @@ int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(55);
     const auto input = test::random_zonotope(3, 4);
-    test::gradcheck("split by a coordinate",
-                    [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split(1)); }, input);
-    test::gradcheck("split along a generator",
-                    [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split(2, 4)); }, input);
-    test::gradcheck("split by a direction",
-                    [](const Inputs &x) {
-                        return pieces(Zonotope(x[0], x[1]).split(
-                            cora::from_torch(torch::tensor({{1.0}, {2.0}, {-1.0}}, torch::kDouble))));
-                    },
-                    input);
-    test::gradcheck("split_first_gen",
-                    [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split_first_gen()); }, input);
-    test::gradcheck("split_longest_gen",
-                    [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split_longest_gen()); },
-                    input);
+    test::gradcheck(
+        "split by a coordinate",
+        [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split(1)); }, input);
+    test::gradcheck(
+        "split along a generator",
+        [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split(2, 4)); }, input);
+    test::gradcheck(
+        "split by a direction",
+        [](const Inputs &x) {
+            return pieces(Zonotope(x[0], x[1])
+                              .split(cora::from_torch(
+                                  torch::tensor({{1.0}, {2.0}, {-1.0}}, torch::kDouble))));
+        },
+        input);
+    test::gradcheck(
+        "split_first_gen",
+        [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split_first_gen()); }, input);
+    test::gradcheck(
+        "split_longest_gen",
+        [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split_longest_gen()); }, input);
     return test::finish("zonotope split (torch)");
 }
