@@ -687,6 +687,17 @@ def check_build_jobs(issues_by_file):
                     f"line {i + 1}: a build without a number of jobs; pass --parallel <n>")
 
 
+def check_portable_types(issues_by_file):
+    """C++ that builds with MSVC: `ssize_t` is POSIX (MSVC has none); use py::ssize_t in the
+    bindings and std::ptrdiff_t elsewhere."""
+    bare = re.compile(r"(?<![:\w])ssize_t\b")
+    for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h") + files("tests/**/*.cpp"):
+        for i, line in enumerate(code_only("\n".join(read_lines(path))).split("\n")):
+            if bare.search(line):
+                issues_by_file.setdefault(rel(path), []).append(
+                    f"line {i + 1}: ssize_t is POSIX; use py::ssize_t or std::ptrdiff_t")
+
+
 def main():
     issues_by_file = {}
     for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h"):
@@ -708,6 +719,7 @@ def main():
     check_python_tests_cover_the_api(issues_by_file)
     check_clones(issues_by_file)
     check_build_jobs(issues_by_file)
+    check_portable_types(issues_by_file)
     check_tensor_ops(issues_by_file)
     for path in files("examples/cpp/**/*.cpp") + files("examples/python/example_*.py"):
         if "/benchmarks/" in rel(path):

@@ -1,7 +1,8 @@
 # install_test - installs the build into BUILD/install-test and builds and runs a tiny consumer
-# against it (tests/install/consumer); the ctest install/consumer.
+# against it (tests/install/consumer), with the flags of the build (a sanitized static library
+# needs its runtime at the link); the ctest install/consumer.
 #
-#   cmake -DBUILD=build -DSOURCE=. -DGENERATOR=Ninja -DCXX=g++ -DCONFIG=Release -P install_test.cmake
+#   cmake -DBUILD=build -DSOURCE=. -DGENERATOR=Ninja -DCXX=g++ -DCXX_FLAGS= -DCONFIG=Release -P install_test.cmake
 
 set(prefix "${BUILD}/install-test/prefix")
 set(consumer "${BUILD}/install-test/consumer")
@@ -12,7 +13,7 @@ endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" --install "${BUILD}" --prefix "${prefix}" --config "${CONFIG}"
                 OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
 execute_process(COMMAND "${CMAKE_COMMAND}" -S "${SOURCE}/tests/install/consumer" -B "${consumer}"
-                        -G "${GENERATOR}" "-DCMAKE_CXX_COMPILER=${CXX}" "-DCMAKE_BUILD_TYPE=${CONFIG}"
+                        -G "${GENERATOR}" "-DCMAKE_CXX_COMPILER=${CXX}" "-DCMAKE_CXX_FLAGS=${CXX_FLAGS}" "-DCMAKE_BUILD_TYPE=${CONFIG}"
                         "-DCMAKE_PREFIX_PATH=${prefix}"
                 RESULT_VARIABLE configured)
 if(NOT configured EQUAL 0)
