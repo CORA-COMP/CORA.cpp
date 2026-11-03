@@ -12,6 +12,8 @@
 // ORACLE: contSet/@conZonotope/compact_.m
 // ORACLE: contSet/@conZonotope/conIntersect.m
 // ORACLE: contSet/@conZonotope/isBounded.m
+// ORACLE: contSet/@zonotope/conZonotope.m
+// ORACLE: contSet/@interval/conZonotope.m
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/global/oracle/con_zonotope.h"
@@ -130,6 +132,14 @@ int main() {
     oracle::run("conZonotope.isBounded", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
         oracle::check(a.is_bounded(), lean::ConZonotope(a).is_bounded());
+    });
+    oracle::run("zonotope.conZonotope", [](oracle::Random &rnd) {
+        const Zonotope Z = rnd.zonotope(3, 4);
+        oracle::check(ConZonotope(Z), lean::ConZonotope::from_zonotope(lean::Zonotope(Z)));
+    });
+    oracle::run("interval.conZonotope", [](oracle::Random &rnd) {
+        const Interval I = rnd.box(3);
+        oracle::check(ConZonotope(I), lean::ConZonotope::from_interval(lean::Interval(I)));
     });
     return test::finish("lean con zonotope");
 }

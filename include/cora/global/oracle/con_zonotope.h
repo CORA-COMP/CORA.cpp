@@ -15,6 +15,7 @@
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/tensor.h"
+#include "cora/global/oracle/zonotope.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -63,6 +64,10 @@ class ConZonotope {
     ConZonotope compact(const std::string &method = "zeros", double tol = 0) const;
 
     static ConZonotope empty(int64_t n);
+
+    /// A zonotope or a box as a constrained zonotope without constraints.
+    static ConZonotope from_zonotope(const Zonotope &Z);
+    static ConZonotope from_interval(const Interval &I);
 
     bool is_bounded() const;
 

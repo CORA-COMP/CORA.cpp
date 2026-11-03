@@ -31,6 +31,8 @@ Wire aux_list(const std::vector<T> &items) {
     return Wire(std::move(list), dtype);
 }
 
+// Decoding ----------------------------------------------------------------------------------------
+
 // Decoding by type: the dtype names what the response's values are in.
 template <class T>
 struct Decode;

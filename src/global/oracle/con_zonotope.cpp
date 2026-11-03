@@ -70,7 +70,8 @@ cora::ConZonotope ConZonotope::nominal() const {
             Tensor::from_json(dtype_, P->at("be")).gather()};
 }
 
-std::pair<cora::Tensor, cora::Tensor> ConZonotope::inequalities() const {
+CORA_FROM_NUMBERS std::pair<cora::Tensor, cora::Tensor> ConZonotope::inequalities() const {
+    // an input has no inequality rows
     const Json *P = json_.find("P");
     const int64_t m = Tensor::from_json(dtype_, json_.at("G")).cols();
     if (!P) return {cora::Tensor::zeros({0, m}), cora::Tensor::zeros({0, 1})};
@@ -84,6 +85,8 @@ cora::ConZonotope ConZonotope::gather() const {
                   "lean: the oracle's set has an inequality row or a nonempty error box");
     return nominal();
 }
+
+// the wire form of a result is the oracle's own object
 
 Json ConZonotope::to_json() const { return json_; }
 
@@ -103,6 +106,8 @@ ConZonotope ConZonotope::intersect(const ConZonotope &cz2) const {
     return aux_set(ask("conZonotope.and", {{"cZ", *this}, {"cZ2", cz2}}));
 }
 
+// each of these sends the operands as {cZ, cZ2, ...} and reads the set `cZ` back
+
 ConZonotope ConZonotope::convex_hull(const ConZonotope &cz2) const {
     return aux_set(ask("conZonotope.convHull", {{"cZ", *this}, {"cZ2", cz2}}));
 }
@@ -118,6 +123,8 @@ ConZonotope ConZonotope::con_intersect(const ConZonotope &cz2, const Tensor &R) 
 ConZonotope ConZonotope::enclose(const Tensor &M, const ConZonotope &cz2) const {
     return aux_set(ask("conZonotope.enclose", {{"cZ", *this}, {"M", M}, {"cZ2", cz2}}));
 }
+
+// the strips and the maps carry their own operands
 
 ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
                                          const Tensor &Lambda) const {
@@ -135,6 +142,16 @@ ConZonotope ConZonotope::compact(const std::string &method, double tol) const {
 }
 
 ConZonotope ConZonotope::empty(int64_t n) { return aux_set(ask("conZonotope.empty", {{"n", n}})); }
+
+// the conversions of a zonotope and of a box
+
+ConZonotope ConZonotope::from_zonotope(const Zonotope &Z) {
+    return aux_set(ask("zonotope.conZonotope", {{"Z", Z}}));
+}
+
+ConZonotope ConZonotope::from_interval(const Interval &I) {
+    return aux_set(ask("interval.conZonotope", {{"I", I}}));
+}
 
 } // namespace cora::lean
 
