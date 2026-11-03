@@ -1,5 +1,6 @@
 // test_empty_set_empty_set - the EmptySet constructor: the dimension, and what it refuses
 //
+// CORA: contSet/@emptySet/dim.m
 // CORA: contSet/@emptySet/emptySet.m
 
 #include "cora/cont_set/empty_set/empty_set.h"

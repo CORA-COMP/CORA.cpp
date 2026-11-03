@@ -36,6 +36,8 @@ Zonotope Zonotope::plus(const Interval &I) const {
     return {c_ + I.center(), Tensor::concat({G_, I.rad().diag()}, -1)};
 }
 
+Set Zonotope::translate_impl(const Tensor &v) const { return Zonotope(c_ + v, G_); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -57,7 +57,7 @@ std::pair<Zonotope, Tensor> Zonotope::enclose_many(const std::vector<Zonotope> &
         hull =
             hull ? Interval(hull->inf().minimum(box.inf()), hull->sup().maximum(box.sup())) : box;
     }
-    return {priv_zonotope_of_interval(*hull).linear_map(rotation), rotation_inverse};
+    return {hull->zonotope().linear_map(rotation), rotation_inverse};
 }
 
 } // namespace cora

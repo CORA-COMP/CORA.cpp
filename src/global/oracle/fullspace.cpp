@@ -5,6 +5,7 @@
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/error.h"
 
+#include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/request.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -85,6 +86,24 @@ Fullspace Fullspace::enclose_points(const Tensor &points) {
 }
 Fullspace Fullspace::lift(int64_t N, const std::vector<int64_t> &dims) const {
     return aux_space("fullspace.lift", {{"n", n_}, {"N", N}, {"dims", dims}});
+}
+
+Fullspace Fullspace::project(const std::vector<int64_t> &dims) const {
+    return aux_space("fullspace.project", {{"n", n_}, {"dims", dims}});
+}
+Fullspace Fullspace::project_high_dim(int64_t N, const std::vector<int64_t> &proj) const {
+    return aux_space("fullspace.projectHighDim", {{"n", n_}, {"N", N}, {"dims", proj}});
+}
+
+// The radius and the volume are numbers, the complement a set of the other class.
+double Fullspace::radius() const {
+    return ask("fullspace.radius", {{"n", n_}}).get<double>("value");
+}
+double Fullspace::volume() const {
+    return ask("fullspace.volume", {{"n", n_}}).get<double>("value");
+}
+EmptySet Fullspace::complement() const {
+    return ask("fullspace.not", {{"n", n_}}).get<EmptySet>("E");
 }
 
 } // namespace cora::lean

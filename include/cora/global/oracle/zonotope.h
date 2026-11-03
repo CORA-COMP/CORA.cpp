@@ -135,6 +135,9 @@ class Zonotope {
     std::optional<double> minnorm(int p = 20) const;
     Tensor generator_length(int k = 20) const;
 
+    /// The center as the oracle returns it (`zonotope.center`); center() is the stored one.
+    Tensor center_value() const;
+
     /// The principal directions (n x n), nothing if there are none; the filter lengths default to
     /// CORA's n + 5 and n + 3.
     std::optional<Tensor> dominant_directions() const;

@@ -28,6 +28,8 @@ Interval Interval::linear_map(const Tensor &M) const {
     return {std::move(lo), std::move(hi)};
 }
 
+Set Interval::linear_map_impl(const Tensor &M) const { return linear_map(M); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

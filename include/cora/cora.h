@@ -23,6 +23,8 @@
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+// matrix sets
+#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 // tensors, backends, errors, settings, plotting and the CORALean oracle
 #include "cora/global/backend/eigen.h"
 #include "cora/global/backend/lean.h"
@@ -31,6 +33,7 @@
 #include "cora/global/linprog.h"
 #include "cora/global/options.h"
 #include "cora/global/oracle/empty_set.h"
+#include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"

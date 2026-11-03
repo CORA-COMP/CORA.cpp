@@ -26,15 +26,15 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 
 | Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
 |---|---|---|---|---|---|---|---|---|
-| contSet | 908 | 729 | 21 | 18 | 27 | 99 | 14 | 34 |
+| contSet | 908 | 660 | 19 | 26 | 48 | 141 | 14 | 54 |
 | contDynamics | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
 | hybridDynamics | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | nn | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | specification | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
-| others | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 1696 | 1497 | 27 | 32 | 27 | 99 | 14 | 45 |
+| others | 212 | 197 | 0 | 0 | 5 | 10 | 0 | 5 |
+| **all** | 1696 | 1413 | 25 | 40 | 53 | 151 | 14 | 70 |
 
-11% of the 1682 CORA methods in scope have a source, 9% are tested in C++ and Python, 6% are checked against CORALean; oracle debt 45.
+16% of the 1682 CORA methods in scope have a source, 15% are tested in C++ and Python, 9% are checked against CORALean; oracle debt 70.
 
 ## Classes
 
@@ -44,11 +44,11 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [contSet/capsule](contSet/capsule.md) | 39 | 39 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/conPolyZono](contSet/conPolyZono.md) | 47 | 47 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/conZonotope](contSet/conZonotope.md) | 50 | 49 | 0 | 0 | 0 | 0 | 1 | 0 |
-| [contSet/contSet](contSet/contSet.md) | 101 | 72 | 12 | 7 | 0 | 1 | 9 | 2 |
+| [contSet/contSet](contSet/contSet.md) | 101 | 53 | 12 | 10 | 1 | 16 | 9 | 3 |
 | [contSet/ellipsoid](contSet/ellipsoid.md) | 50 | 50 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [contSet/emptySet](contSet/emptySet.md) | 30 | 11 | 0 | 3 | 1 | 15 | 0 | 2 |
-| [contSet/fullspace](contSet/fullspace.md) | 33 | 17 | 0 | 0 | 1 | 15 | 0 | 1 |
-| [contSet/interval](contSet/interval.md) | 110 | 41 | 3 | 5 | 15 | 46 | 0 | 18 |
+| [contSet/emptySet](contSet/emptySet.md) | 30 | 4 | 0 | 4 | 3 | 19 | 0 | 3 |
+| [contSet/fullspace](contSet/fullspace.md) | 33 | 5 | 0 | 4 | 4 | 20 | 0 | 4 |
+| [contSet/interval](contSet/interval.md) | 110 | 25 | 3 | 5 | 19 | 58 | 0 | 22 |
 | [contSet/levelSet](contSet/levelSet.md) | 22 | 22 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/polyZonotope](contSet/polyZonotope.md) | 73 | 72 | 0 | 0 | 0 | 0 | 1 | 0 |
 | [contSet/polygon](contSet/polygon.md) | 46 | 45 | 0 | 0 | 0 | 0 | 1 | 0 |
@@ -57,7 +57,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [contSet/spectraShadow](contSet/spectraShadow.md) | 33 | 33 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/taylm](contSet/taylm.md) | 51 | 51 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/zonoBundle](contSet/zonoBundle.md) | 44 | 44 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [contSet/zonotope](contSet/zonotope.md) | 80 | 37 | 6 | 3 | 10 | 22 | 2 | 11 |
+| [contSet/zonotope](contSet/zonotope.md) | 80 | 22 | 4 | 3 | 21 | 28 | 2 | 22 |
 | [contSet/zoo](contSet/zoo.md) | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contDynamics/contDynamics](contDynamics/contDynamics.md) | 19 | 15 | 2 | 2 | 0 | 0 | 0 | 1 |
 | [contDynamics/linParamSys](contDynamics/linParamSys.md) | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -104,7 +104,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [others/commonocean2cora](others/commonocean2cora.md) | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/commonroad2cora](others/commonroad2cora.md) | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/cora2spaceex](others/cora2spaceex.md) | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [others/intervalMatrix](others/intervalMatrix.md) | 39 | 39 | 0 | 0 | 0 | 0 | 0 | 0 |
+| [others/intervalMatrix](others/intervalMatrix.md) | 39 | 24 | 0 | 0 | 5 | 10 | 0 | 5 |
 | [others/markovchain](others/markovchain.md) | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/matPolytope](others/matPolytope.md) | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/matZonotope](others/matZonotope.md) | 33 | 33 | 0 | 0 | 0 | 0 | 0 | 0 |

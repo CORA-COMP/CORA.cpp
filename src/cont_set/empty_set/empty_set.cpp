@@ -2,9 +2,10 @@
 //
 // Syntax:   EmptySet E(n);
 // Inputs:   n - the dimension, an integer >= 0
-// Outputs:  E - the empty set of n dimensions
+// Outputs:  E - the empty set of n dimensions, whose dim() is n (CORA's dim)
 // See also: empty, Interval::Interval
 //
+// CORA: contSet/@emptySet/dim.m
 // CORA: contSet/@emptySet/emptySet.m
 
 #include "cora/cont_set/empty_set/empty_set.h"

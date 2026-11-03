@@ -5,7 +5,7 @@
 // operation returns a new interval.
 //
 // Syntax:     Interval I(inf, sup);   Interval I = Interval::generate_random(n, rng);
-// Operators:  I + I2, I + v, I - I2, I - v, v - I, -I, s * I, M * I, I / s, I <= I2, I < I2, as
+// Operators:  I + I2, I + v, I - I2, I - v, v - I, -I, +I, s * I, M * I, I / s, I <= I2, I < I2, as
 //             in CORA
 // Operations: support_function, linear_map, plus, rand_point, contains, stack, project, vertices,
 //             generate_random, display, center, abs, intersect, cart_prod, cat, unbounded,
@@ -14,8 +14,10 @@
 //             dirac, infimum, interval_matrix, is_bounded, is_full_dim, is_intersecting, isequal,
 //             kron, less_equal, less, lift, log, max, min, minkowski_difference, minus,
 //             matrix_power, divide, norm, unite, origin, rad, radius, sign, round, sin, sinh,
-//             power, rdivide, prod, partition, project_high_dim, reduce, representsa (one file
-//             each); the constructor checks its input (interval.cpp)
+//             power, rdivide, prod, partition, project_high_dim, quad_map, reduce, representsa,
+//             split, sqrt, sum, supremum, tan, tanh, times, transpose, tril, triu, uminus, uplus,
+//             vertcat, volume, zonotope (one file each); the constructor checks its input
+//             (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@interval/interval.m
@@ -29,11 +31,14 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+class Zonotope;
 
 class Interval : public ContSet {
   public:
@@ -95,6 +100,10 @@ class Interval : public ContSet {
     /// The intervals joined side by side (CORA's horzcat; a number is a point interval).
     static Interval horzcat(const std::vector<Interval> &Is);
 
+    /// The intervals stacked (CORA's vertcat; a number is a point interval); they agree in the
+    /// columns.
+    static Interval vertcat(const std::vector<Interval> &Is);
+
     /// The empty interval of n dimensions: bounds (n, 0).
     static Interval empty(int64_t n);
 
@@ -117,6 +126,9 @@ class Interval : public ContSet {
     /// The matrix of bounds transposed (CORA's ctranspose, real).
     Interval ctranspose() const;
 
+    /// The matrix of bounds transposed (CORA's transpose; the same as ctranspose for real bounds).
+    Interval transpose() const;
+
     /// A column (or row) as the diagonal matrix with it on the k-th diagonal, a matrix as the
     /// column of its k-th diagonal (CORA's diag(I, k)); off the diagonal the matrix is [0, 0].
     Interval diag(int64_t k = 0) const;
@@ -128,6 +140,9 @@ class Interval : public ContSet {
     /// The lower bound (CORA's infimum).
     Tensor infimum() const;
 
+    /// The upper bound (CORA's supremum).
+    Tensor supremum() const;
+
     /// The interval matrix [c - r, c + r] of the center c and the radius r (CORA's
     /// intervalMatrix(center(I), rad(I))); an Interval of matrix bounds is CORA's intervalMatrix.
     Interval interval_matrix() const;
@@ -137,9 +152,9 @@ class Interval : public ContSet {
 
     // Comparison and predicates -------------------------------------------------------------------
 
-    /// Whether no coordinate has a width within the repository tolerance of zero (as within_tol);
-    /// false for an empty interval; for a batch, whether all members are.
-    bool is_full_dim() const;
+    /// Whether no coordinate has a width within tol of zero (as within_tol); false for an empty
+    /// interval; for a batch, whether all members are. tol default: the repository tolerance.
+    bool is_full_dim(Tol tol = std::nullopt) const;
 
     /// Whether the boxes meet (CORA's isIntersecting_): per coordinate the bounds overlap, up to
     /// tol as within_tol; false if one is empty. With a point p, whether p is in the box. For a
@@ -160,6 +175,24 @@ class Interval : public ContSet {
     bool less(const Interval &I2) const;
 
     // Arithmetic ----------------------------------------------------------------------------------
+
+    /// The negated box [-sup, -inf] (CORA's uminus) and the box itself (CORA's uplus).
+    Interval uminus() const;
+    Interval uplus() const;
+
+    /// The entrywise product with a box or with numbers (CORA's times, I .* F): the hull of the
+    /// corner products, a corner 0 * Inf taken as 0; the operands broadcast (a 1 x 1 factor is a
+    /// scalar).
+    Interval times(const Interval &I2) const;
+    Interval times(const Tensor &factor) const;
+
+    /// The sum of the entries along dim (1: down the rows, a row result; 2: along the columns, a
+    /// column result); default: 1, or 2 for a single row (CORA's sum). The bounds add.
+    Interval sum(std::optional<int> dim = std::nullopt) const;
+
+    /// The volume of the box, (..., 1, 1): the product of the widths, 0 for an empty or a
+    /// degenerate box (CORA's volume_).
+    Tensor volume() const;
 
     /// The difference of two boxes, [inf - sup2, sup - inf2]; with a column v, the box shifted by
     /// -v, and v - I the box [v - sup, v - inf] (CORA's minus).
@@ -265,6 +298,20 @@ class Interval : public ContSet {
     /// The box itself (CORA's reduce of an interval); order must be at least 1.
     Interval reduce(int order = 1) const;
 
+    /// The two halves of the box cut at the center of coordinate n (0-based): the lower half has
+    /// the center as upper bound there, the upper half as lower bound (CORA's split).
+    std::pair<Interval, Interval> split(int64_t n) const;
+
+    /// The lower (upper) triangular part of an interval matrix from the k-th diagonal on, k >= 0;
+    /// the other entries are [0, 0] (CORA's tril and triu).
+    Interval tril(int64_t K = 0) const;
+    Interval triu(int64_t K = 0) const;
+
+    /// The zonotope with the center c and the generators diag(r), r the radius reaching both ends
+    /// from c (CORA's zonotope); the columns of zero radius are dropped (those of zero radius in
+    /// every member of a batch).
+    Zonotope zonotope() const;
+
     // Rounding and signs --------------------------------------------------------------------------
 
     /// The bounds rounded to digits decimals, halves away from zero (CORA's round); type
@@ -307,6 +354,22 @@ class Interval : public ContSet {
     Interval sin() const;
     Interval sinh() const;
 
+    /// The box around the image of the quadratic map x -> (x' Q_i x)_i over this box (CORA's
+    /// quadMap): the box of Zonotope::quad_map of its zonotope. With I2, x1' Q_i x2 for x1 in
+    /// this box and x2 in I2. Q[i] are the (n, n) matrices of the outputs; the boxes must be
+    /// bounded.
+    Interval quad_map(const std::vector<Tensor> &Q) const;
+    Interval quad_map(const Interval &I2, const std::vector<Tensor> &Q) const;
+
+    /// The image under sqrt and tanh: [f(inf), f(sup)] (both increase); sqrt needs inf >= 0, else
+    /// Error::out_of_domain.
+    Interval sqrt() const;
+    Interval tanh() const;
+
+    /// The image under tan: [tan(inf), tan(sup)] where the box is narrower than pi and does not
+    /// reach past a pole, else (-Inf, Inf), as CORA.
+    Interval tan() const;
+
     /// The hull of atan2(y, x) at the four corners, y from this interval and x from I2, as CORA
     /// (not an enclosure where the box meets the branch cut of atan2).
     Interval atan2(const Interval &I2) const;
@@ -321,6 +384,17 @@ class Interval : public ContSet {
     std::vector<Polygon> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
+
+    // The generic operations of ContSet, which a box answers by its own (defined beside them).
+    bool is_bounded_impl() const override;
+    bool is_full_dim_impl(Tol tol) const override;
+    Set reduce_impl(int order) const override;
+    Set linear_map_impl(const Tensor &M) const override;
+    Set translate_impl(const Tensor &v) const override;
+    Set enlarge_impl(const Tensor &factor) const override;
+    Set minkowski_difference_impl(const ContSet &S2,
+                                  const std::optional<std::string> &type) const override;
+    Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
 
   private:
     Tensor inf_, sup_;
@@ -341,7 +415,8 @@ inline Interval operator*(double s, const Interval &I) {
     return s >= 0 ? Interval(I.inf() * s, I.sup() * s) : Interval(I.sup() * s, I.inf() * s);
 }
 inline Interval operator*(const Interval &I, double s) { return s * I; }
-inline Interval operator-(const Interval &I) { return -1.0 * I; }
+inline Interval operator-(const Interval &I) { return I.uminus(); }
+inline Interval operator+(const Interval &I) { return I.uplus(); }
 inline Interval operator*(const Tensor &M, const Interval &I) { return I.linear_map(M); }
 
 } // namespace cora

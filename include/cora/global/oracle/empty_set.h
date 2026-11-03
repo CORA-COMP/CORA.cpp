@@ -19,6 +19,8 @@
 
 namespace cora::lean {
 
+class Fullspace;
+
 class EmptySet {
   public:
     explicit EmptySet(int64_t n) : n_(n) {}
@@ -55,6 +57,12 @@ class EmptySet {
     /// The set in N dimensions at the coordinates dims (0-based), and the projection onto dims.
     EmptySet lift(int64_t N, const std::vector<int64_t> &dims) const;
     EmptySet project(const std::vector<int64_t> &dims) const;
+    EmptySet project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
+
+    /// The radius and the volume (0, 0), and the complement (the whole space of the dimension).
+    double radius() const;
+    double volume() const;
+    Fullspace complement() const;
 
   private:
     int64_t n_;

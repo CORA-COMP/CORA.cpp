@@ -29,11 +29,13 @@ void is_full_dim_looks_for_flat_coordinates(const std::string &b) {
           b + ": a batch is full-dimensional only if every member is");
 }
 
-/// is_full_dim has no input to refuse; with the checks off the answer is the same.
+/// tol relaxes the width test and must not be negative; with the checks off it is not looked at.
 void checks_and_their_switch() {
-    const Interval I(column({0.0, 1.0}), column({1.0, 3.0}));
+    const Interval I(column({0.0, 1.0}), column({1.0, 3.0})), thin(column({0.0}), column({1e-4}));
+    check(thin.is_full_dim() && !thin.is_full_dim(1e-3), "is_full_dim: tol widens the zero");
+    check(test::raises([&] { I.is_full_dim(-1.0); }, Error::wrong_value), "is_full_dim: tol -1");
     ChecksScope off(false);
-    check(I.is_full_dim(), "is_full_dim: the same with the checks off");
+    check(I.is_full_dim(-1.0), "is_full_dim: the same with the checks off");
 }
 
 } // namespace

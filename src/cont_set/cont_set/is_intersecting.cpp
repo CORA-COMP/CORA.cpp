@@ -19,7 +19,10 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 bool is_intersecting(const ContSet &S1, const ContSet &S2, Tol tol) {
-    return detail::dispatch(BinaryOp::is_intersecting, S1, S2, tol);
+    detail::Entry entry;
+    const detail::Refusal r = detail::refusal(BinaryOp::is_intersecting, S1, S2, tol);
+    CORA_CHECK(!r, r->first, [&] { return r->second; });
+    return detail::is_intersecting_impl(S1, S2, tol);
 }
 
 } // namespace cora

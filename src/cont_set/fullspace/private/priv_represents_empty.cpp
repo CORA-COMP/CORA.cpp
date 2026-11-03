@@ -13,7 +13,8 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 bool priv_represents_empty(const ContSet &S) {
-    return S.class_id() == ClassId::interval && static_cast<const Interval &>(S).is_empty();
+    return S.class_id() == ClassId::empty_set ||
+           (S.class_id() == ClassId::interval && static_cast<const Interval &>(S).is_empty());
 }
 
 } // namespace cora

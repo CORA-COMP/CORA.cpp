@@ -72,6 +72,8 @@ Interval Interval::enlarge(double factor) const {
     return aux_enlarge(*this, inf_.full_like({1, 1}, factor));
 }
 
+Set Interval::enlarge_impl(const Tensor &factor) const { return enlarge(factor); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

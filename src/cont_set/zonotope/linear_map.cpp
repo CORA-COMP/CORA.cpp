@@ -41,6 +41,8 @@ Zonotope Zonotope::linear_map(const Interval &I) const {
     return {std::move(c), std::move(G)};
 }
 
+Set Zonotope::linear_map_impl(const Tensor &M) const { return linear_map(M); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

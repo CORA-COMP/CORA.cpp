@@ -18,9 +18,10 @@
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"
+
+#include "cont_set/cont_set/private/priv_set_type.h"
 #include "global/format.h"
 
-#include <algorithm>
 #include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -30,13 +31,6 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-/// The types of CORA's representsa.
-const char *const kTypes[] = {"capsule", "conPolyZono", "conHyperplane", "conZonotope",
-                              "ellipsoid", "halfspace", "interval", "levelSet", "polygon",
-                              "polytope", "polyZonotope", "probZonotope", "zonoBundle",
-                              "zonotope", "origin", "point", "hyperplane", "parallelotope",
-                              "convexSet", "emptySet", "fullspace"};
 
 /// The types that an empty interval does not represent (CORA's representsa_emptyObject).
 bool aux_empty_is_not(const std::string &type) {
@@ -61,8 +55,7 @@ bool aux_count_is(const Tensor &mask, Tensor::Binary op, double s) {
 
 bool Interval::representsa(const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
-    CORA_CHECK(std::find(std::begin(kTypes), std::end(kTypes), type) != std::end(kTypes),
-               Error::wrong_value,
+    CORA_CHECK(priv_is_set_type(type), Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
     CORA_CHECK(type != "polygon", Error::not_supported,
                [] { return std::string("representsa: the type 'polygon' is not supported"); });

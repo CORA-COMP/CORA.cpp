@@ -4,11 +4,14 @@
 // at the origin must be scaled to reach p. A linear program in (s, beta).
 //
 // Syntax:   double s = priv_zonotope_norm(Z, p);
+//           ZonotopeNorm r = priv_zonotope_norm_minimizer(Z, p);
 // Inputs:   Z - zonotope (its center is ignored);  p - a point (n values)
-// Outputs:  s - the norm; infinity if p is not in the span of the generators
-// See also: priv_containment_vertex_enumeration
+// Outputs:  s - the norm; infinity if p is not in the span of the generators;  r - s and the
+//           coefficients beta (none if s is infinite)
+// See also: priv_containment_vertex_enumeration, zonotope_norm
 //
-// CORA: contSet/@zonotope/zonotopeNorm.m
+// CORA.cpp only: the linear program of zonotopeNorm, on the host and unchecked, for contains and
+//                the other callers
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/linprog.h"
@@ -22,12 +25,12 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-double priv_zonotope_norm(const HostZonotope &Z, const std::vector<double> &p) {
+ZonotopeNorm priv_zonotope_norm_minimizer(const HostZonotope &Z, const std::vector<double> &p) {
     constexpr double kInf = std::numeric_limits<double>::infinity();
     if (Z.m == 0) {
         for (const double x : p)
-            if (x != 0) return kInf;
-        return 0.0;
+            if (x != 0) return {kInf, {}};
+        return {0.0, {}};
     }
     // variables (s, beta): min s, G beta = p, -s <= beta_i <= s
     LinProg lp;
@@ -46,7 +49,12 @@ double priv_zonotope_norm(const HostZonotope &Z, const std::vector<double> &p) {
         lp.Aineq[(2 * j + 1) * lp.n + 1 + j] = -1.0;
     }
     const LinProgResult r = linprog(lp);
-    return r.status == LinProgResult::Status::optimal ? r.fval : kInf;
+    if (r.status != LinProgResult::Status::optimal) return {kInf, {}};
+    return {r.fval, std::vector<double>(r.x.begin() + 1, r.x.end())};
+}
+
+double priv_zonotope_norm(const HostZonotope &Z, const std::vector<double> &p) {
+    return priv_zonotope_norm_minimizer(Z, p).value;
 }
 
 } // namespace cora

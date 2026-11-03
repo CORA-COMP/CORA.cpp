@@ -40,6 +40,14 @@ changed, and the reasons are listed below.
 | `interval(inf, sup)` | `Interval(inf, sup)` | `cora.Interval(inf, sup)` |
 | `fullspace(n)`, `fullspace.Inf(n)` | `Fullspace(n)`, `Fullspace::inf(n)` | `cora.Fullspace(n)`, `cora.Fullspace.inf(n)` |
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
+| `interval(inf, sup)` of matrix bounds | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
+| `intervalMatrix(C, D)`, `intervalMatrix(C)` | `IntervalMatrix(C, D)`, `IntervalMatrix(C)`, `IntervalMatrix(I)` | `cora.IntervalMatrix(C, D)` |
+| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs()`, `A.center`, `A.infimum`, `A.contains(M, type, tol)` |
+| `mtimes(A, B)`, `A * B` | `A.matmul(B)`, `A * B`, `M * A`, `A * M`, `s * A`, `A * Z` | `A @ B`, `M @ A`, `A @ M`, `s * A`, `A @ Z` |
+| `mpower(A, k)` | `A.matrix_power(k)` | `A.matrix_power(k)`, `A ** k` |
+| `expm`, `expmInd`, `expmMixed` | `A.expm(...)`, `A.expm_independent(...)`, `A.expm_mixed(r, k, N)` | the same |
+| `infNorm(A)`, `norm(A, type)` | `A.infinity_norm()`, `A.norm(type)` | the same |
+| `dependentTerms(A, r)`, `exactSquare(A)`, `exponentialRemainder(A, N)` | `A.dependent_terms(r)`, `A.exact_square()`, `A.exponential_remainder(N)` | the same |
 | `Z.c`, `center(Z)` | `Z.center()` | `Z.center` |
 | `Z.G`, `generators(Z)` | `Z.generators()` | `Z.generators` |
 | `dim(S)` | `S.dim()` | `S.dim` |
@@ -59,6 +67,16 @@ changed, and the reasons are listed below.
 | `contains(S1, S2, type, tol)` | `contains(S1, S2, tol)`, `I.contains(p, tol)` | `cora.contains`, `p in I` |
 | `isIntersecting(S1, S2, type, tol)` | `is_intersecting(S1, S2, tol)` | `cora.is_intersecting` |
 | `reduce(Z, 'girard', order)` | `Z.reduce(order)` | `Z.reduce(order)` |
+| `isBounded(S)`, `isFullDim(S, tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` |
+| `enlarge(S, factor)` | `S.enlarge(factor)` | `S.enlarge(factor)` |
+| `minus(S, p)`, `minus(p, S)` | `S.minus(p)`, `ContSet::minus(p, S)` | `S.minus(p)` |
+| `minkDiff(S, S2, type)` | `S.minkowski_difference(S2, type)` | `S.minkowski_difference(S2, type)` |
+| `isequal(S1, S2, tol)`, `eq`, `ne` | `isequal(S1, S2, tol)`, `eq`, `ne`, `S1 == S2` | `cora.isequal`, `cora.eq`, `cora.ne`, `S1 == S2` |
+| `decompose(S, blocks)` | `S.decompose(blocks)` (0-based, inclusive) | `S.decompose(blocks)` |
+| `projectHighDim(S, N, proj)` | `S.project_high_dim(N, proj)` | `S.project_high_dim(N, proj)` |
+| `projectOnHyperplane(S, hyp)` | `S.project_on_hyperplane(c, d)` (the constraint) | `S.project_on_hyperplane(c, d)` |
+| `contSet.generateRandom(...)` | `ContSet::generate_random(rng, n, admissible)` | `cora.ContSet.generate_random(rng, n, admissible)` |
+| `and_`, `contains_`, `isIntersecting_` | `detail::intersect_impl`, `contains_impl`, `is_intersecting_impl` | - |
 | `abs(Z)`, `box(Z)` | `Z.abs()`, `Z.box()` | `Z.abs()`, `Z.box()` |
 | `compact(Z, method, tol)` | `Z.compact(method, tol)` | `Z.compact(method, tol)` |
 | `cartProd(Z, S)` | `Z.cart_prod(S)`, `Zonotope::cart_prod(p, Z)` | `Z.cart_prod(S)` |
@@ -100,6 +118,21 @@ changed, and the reasons are listed below.
 | `and(E, S)`, `plus(E, S)`, `convHull(E, S)` | `E.intersect(S)`, `E.plus(S)`, `E.convex_hull(S)` | the same |
 | `contains(E, S, type, tol)`, `isIntersecting(E, S, type, tol)`, `isequal(E, S, tol)` | `E.contains(S, tol)`, `E.is_intersecting(S, tol)`, `E.isequal(S, tol)` | the same |
 | `mtimes(M, E)`, `lift(E, N, dims)` | `E.linear_map(M)`, `M * E`, `E.lift(N, dims)` | `E.linear_map(M)`, `M @ E`, `E.lift(N, dims)` |
+| `zonotope.origin(n)` | `Zonotope::origin(n)` | `cora.Zonotope.origin(n)` |
+| `radius(Z)`, `rank(Z, tol)` | `Z.radius()`, `Z.rank(tol)` | `Z.radius()`, `Z.rank(tol)` |
+| `representsa(Z, type, tol)` | `Z.representsa(type, tol)` | `Z.representsa(type, tol)` |
+| `projectHighDim(Z, N, proj)` | `Z.project_high_dim(N, dims)` | `Z.project_high_dim(N, dims)` |
+| `rotate(Z, dims, angle)` | `Z.rotate(dims, angle)` | `Z.rotate(dims, angle)` |
+| `quadMap(Z, Q)`, `quadMap(Z, Z2, Q)` | `Z.quad_map(Q)`, `Z.quad_map(Z2, Q)` | `Z.quad_map(Q)`, `Z.quad_map(Z2, Q)` |
+| `quadMap(I, Q)` | `I.quad_map(Q)`, `I.quad_map(I2, Q)` | `I.quad_map(Q)`, `I.quad_map(I2, Q)` |
+| `split(Z)`, `split(Z, N)`, `split(Z, N, maxOrder)`, `split(Z, dir)`, `split(Z, hs)` | `Z.split()`, `Z.split(N)`, `Z.split(N, max_order)`, `Z.split(dir)`, `Z.split(a, d)` | the same |
+| `splitFirstGen(Z)`, `splitLongestGen(Z)` | `Z.split_first_gen()`, `Z.split_longest_gen()` | the same |
+| `reduceUnderApprox(Z, method, order)` | `Z.reduce_under_approx(method, order)` | `Z.reduce_under_approx(method, order)` |
+| `or(Z, S, alg, order)` | `Z.unite(S, method, order)` | `Z.unite(S, method, order)`, `Z \| S` |
+| `not(E)`, `not(fs)` | `E.complement()`, `F.complement()` | `E.complement()`, `F.complement()` |
+| `radius(E)`, `volume_(E)`, and the same of `fullspace` | `E.radius()`, `E.volume()` (a double) | `E.radius()`, `E.volume()` |
+| `representsa_(E, type, tol)` | `E.representsa(type, tol)` (`Fullspace` the same) | `E.representsa(type, tol)` |
+| `projectHighDim_(E, N, proj)`, `generateRandom('Dimension', n)` | `E.project_high_dim(N, proj)`, `EmptySet::generate_random(rng, n)` | `E.project_high_dim(N, proj)`, `cora.EmptySet.generate_random(rng, n=None)` |
 | `intervalMatrix(I)` | `I.interval_matrix()` | `I.interval_matrix()` |
 | `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |
@@ -156,11 +189,17 @@ changed, and the reasons are listed below.
 - **Changed beyond snake_case:**
   - `and` and `or` are keywords of C++ (alternative tokens), so they are `intersect` and
     `unite`. The operators `&` and `|` stay.
-  - `mtimes` is MATLAB's name of an operator, so it is `linear_map`.
+  - `mtimes` is MATLAB's name of an operator, so it is `linear_map` for a set under a matrix and
+    `matmul` for the product of matrices (`IntervalMatrix`); `projectOnHyperplane` takes the
+    constraint of the hyperplane (a normal and an offset), as CORA.cpp has no hyperplane class.
+  - `not` is a keyword of C++ (an alternative token), so the complement of `emptySet` and
+    `fullspace` is `complement`.
   - `interval.Inf` is `unbounded`, because `inf` is the lower bound.
   - `linComb` is `linear_combination` and `convHull` is `convex_hull`: words, not
     abbreviations. So are `constrSat` (`constraints_satisfied`), `cubMap` (`cubic_map`) and `dH2box`
     (`hausdorff_distance_to_box`).
+  - `infNorm` is `infinity_norm` and `expmInd` is `expm_independent` (`Ind` is *independent*; `Inf` is
+    also the unbounded box), as words, not abbreviations. `expm` is a term of art.
   - `le` and `lt` (operators of MATLAB) are `less_equal` and `less`, as Tensor names them;
     `mrdivide` (the division by a number) is `divide`, `mpower` is `matrix_power`, and `minkDiff`
     is `minkowski_difference`: words, not abbreviations.

@@ -40,10 +40,12 @@ AUX_MARKER = "// ----------------------------------------  AUXILIARY  ----------
 MAIN_MARKER = "// ===========================================  MAIN  =========================================== //"
 SECTION = re.compile(r"^\s*(//|#) [A-Z][A-Za-z ]+ -{10,}$")
 # Directories whose .cpp files are operations, each in a folder named after its class.
-OPERATION_ROOTS = ("src/cont_set/", "src/cont_dynamics/", "src/specification/", "src/nn/")
+OPERATION_ROOTS = ("src/cont_set/", "src/matrix_set/", "src/cont_dynamics/", "src/specification/",
+                   "src/nn/")
 # Folders of the public headers of the set classes, systems and specifications (CORA tag).
-CLASS_HEADER_ROOTS = ("include/cora/cont_set/", "include/cora/cont_dynamics/",
-                      "include/cora/specification/", "include/cora/nn/")
+CLASS_HEADER_ROOTS = ("include/cora/cont_set/", "include/cora/matrix_set/",
+                      "include/cora/cont_dynamics/", "include/cora/specification/",
+                      "include/cora/nn/")
 # Operations that take no input, so no test can give them an invalid one.
 NO_INPUT_OPERATIONS = {"display", "interval", "abs", "asinh", "atan", "center"}
 # Not an operation of a class: the table of the binary operations.

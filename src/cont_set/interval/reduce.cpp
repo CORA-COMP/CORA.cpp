@@ -25,6 +25,8 @@ Interval Interval::reduce(int order) const {
     return *this;
 }
 
+Set Interval::reduce_impl(int order) const { return reduce(order); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

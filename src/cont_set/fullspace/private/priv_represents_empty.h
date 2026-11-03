@@ -2,8 +2,8 @@
 //
 // Syntax:   bool e = priv_represents_empty(S);
 // Inputs:   S - a set of any class
-// Outputs:  e - true for an empty interval (bounds without columns), false for every other class
-//           (a Fullspace and a Zonotope are never empty here)
+// Outputs:  e - true for an EmptySet and an empty interval (bounds without columns), false for
+//           every other class (a Fullspace and a Zonotope are never empty here)
 // See also: plus, is_intersecting
 
 #pragma once

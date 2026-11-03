@@ -33,8 +33,10 @@ class DimensionSet : public ContSet {
     }
 
     /// Why lift(N, dims) is refused ("" if it is not): it needs N >= n and one position per
-    /// dimension, each in [0, N). The derived lift checks it (Error::wrong_value).
-    std::string lift_refusal(int64_t N, const std::vector<int64_t> &dims) const;
+    /// dimension, each in [0, N). The derived lift checks it (Error::wrong_value); `operation`
+    /// names it in the message (projectHighDim_ has the same checks).
+    std::string lift_refusal(int64_t N, const std::vector<int64_t> &dims,
+                             const char *operation = "lift") const;
 
     int64_t dim_impl() const override { return n_; }
 

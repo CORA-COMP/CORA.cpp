@@ -238,6 +238,9 @@ double Zonotope::radius(int k) const {
 std::optional<double> Zonotope::minnorm(int p) const {
     return ask("zonotope.minnorm", {{"Z", *this}, {"p", p}}).get<std::optional<double>>("value");
 }
+Tensor Zonotope::center_value() const {
+    return ask("zonotope.center", {{"Z", *this}}).get<Tensor>("value");
+}
 Tensor Zonotope::generator_length(int k) const {
     return ask("zonotope.generatorLength", {{"Z", *this}, {"k", k}}).get<Tensor>("value");
 }

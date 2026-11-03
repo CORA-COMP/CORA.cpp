@@ -2,6 +2,7 @@
 //
 // CORA: contSet/@fullspace/isIntersecting_.m
 
+#include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -19,6 +20,7 @@ void is_intersecting_unless_empty(const std::string &b) {
     check(F.is_intersecting(Z) && F.is_intersecting(Fullspace(2)), b + ": a zonotope, the space");
     check(F.is_intersecting(Interval(column({3.0, 3.0}), column({3.0, 3.0}))), b + ": a point");
     check(!F.is_intersecting(Interval::empty(2)), b + ": the empty interval");
+    check(!F.is_intersecting(EmptySet(2)), b + ": the empty set");
     check(is_intersecting(F, Z) && is_intersecting(Z, F), b + ": through the registry");
 }
 

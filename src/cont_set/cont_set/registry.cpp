@@ -5,9 +5,9 @@
 // lookup is two array indexes. A commutative entry is registered once, the class of lower CORA
 // precedence on the left (checked at compile time), and found for either order of operands.
 //
-// Syntax:   Set S = detail::dispatch(BinaryOp::plus, S1, S2);   binary_pairs();
+// Syntax:   Set S = detail::lookup(BinaryOp::plus, S1, S2);   binary_pairs();
 //           register_binary(BinaryOp::plus, "Ball", "Zonotope", f);
-// Inputs:   op - the operation;  S1, S2 - the operands (already checked by the entry point)
+// Inputs:   op - the operation;  S1, S2 - the operands (checked by check_operands in the entry)
 // Outputs:  S - the result of the entry for (class of S1, class of S2)
 // See also: cora/cont_set/registry.h, plus, contains
 //
@@ -89,7 +89,7 @@ constexpr Table aux_build() {
         t, [](const Interval &I1, const Interval &I2, Tol tol) {
             return I1.is_intersecting(I2, tol);
         });
-    // the zonotope pairs: intersection, convex hull, containment and Cartesian product
+    // the zonotope pairs: intersection, convex hull, union, containment and Cartesian product
     aux_add_set<BinaryOp::intersect, Zonotope, Zonotope>(
         t, [](const Zonotope &Z1, const Zonotope &Z2) { return Z1.intersect(Z2); });
     aux_add_set<BinaryOp::intersect, Zonotope, Interval>(
@@ -98,6 +98,10 @@ constexpr Table aux_build() {
         t, [](const Zonotope &Z1, const Zonotope &Z2) { return Z1.convex_hull(Z2); });
     aux_add_set<BinaryOp::convex_hull, Zonotope, Interval>(
         t, [](const Zonotope &Z, const Interval &I) { return Z.convex_hull(I); });
+    aux_add_set<BinaryOp::unite, Zonotope, Zonotope>(
+        t, [](const Zonotope &Z1, const Zonotope &Z2) { return Z1.unite(Z2); });
+    aux_add_set<BinaryOp::unite, Zonotope, Interval>(
+        t, [](const Zonotope &Z, const Interval &I) { return Z.unite(I); });
     // a zonotope contains sets of its own and of the next class
     aux_add_predicate<BinaryOp::contains, Zonotope, Zonotope>(
         t, [](const Zonotope &Z1, const Zonotope &Z2, Tol tol) {
@@ -160,6 +164,21 @@ constexpr Table aux_build() {
         t, [](const EmptySet &E, const Zonotope &Z, Tol tol) {
             return E.is_intersecting(Z, tol);
         });
+    // the pairs of the empty set with the whole space, the empty set first
+    aux_add_set<BinaryOp::plus, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F) { return E.plus(F); });
+    aux_add_set<BinaryOp::intersect, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F) { return E.intersect(F); });
+    aux_add_set<BinaryOp::convex_hull, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F) { return E.convex_hull(Set(F)); });
+    aux_add_predicate<BinaryOp::contains, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F, Tol tol) { return E.contains(F, tol); });
+    aux_add_predicate<BinaryOp::contains, Fullspace, EmptySet>(
+        t, [](const Fullspace &F, const EmptySet &E, Tol tol) { return F.contains(E, tol); });
+    aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Fullspace>(
+        t, [](const EmptySet &E, const Fullspace &F, Tol tol) {
+            return E.is_intersecting(F, tol);
+        });
     // the whole space is of the lowest precedence of these classes: it comes first
     aux_add_set<BinaryOp::plus, Fullspace, Fullspace>(
         t, [](const Fullspace &F1, const Fullspace &F2) { return F1.plus(F2); });
@@ -199,6 +218,13 @@ constexpr Table aux_build() {
         t, [](const Fullspace &F, const Interval &I, Tol tol) {
             return F.is_intersecting(I, tol);
         });
+    // equality: the pair of the class of lower precedence, which the other converts to
+    aux_add_predicate<BinaryOp::isequal, Interval, Interval>(
+        t, [](const Interval &I1, const Interval &I2, Tol tol) { return I1.isequal(I2, tol); });
+    aux_add_predicate<BinaryOp::isequal, Zonotope, Zonotope>(
+        t, [](const Zonotope &Z1, const Zonotope &Z2, Tol tol) { return Z1.isequal(Z2, tol); });
+    aux_add_predicate<BinaryOp::isequal, Zonotope, Interval>(
+        t, [](const Zonotope &Z, const Interval &I, Tol tol) { return Z.isequal(I, tol); });
     return t;
 }
 
@@ -254,7 +280,7 @@ std::string aux_noops(BinaryOp op, const ContSet &S1, const ContSet &S2) {
 /// The name of an operation, as in Python and in the messages.
 const char *binary_op_name(BinaryOp op) noexcept {
     constexpr const char *names[] = {"plus",      "intersect", "unite",          "convex_hull",
-                                     "cart_prod", "contains",  "is_intersecting"};
+                                     "cart_prod", "contains",  "is_intersecting", "isequal"};
     return names[static_cast<int>(op)];
 }
 
@@ -262,9 +288,10 @@ const char *binary_op_name(BinaryOp op) noexcept {
 BinaryOp binary_op(const std::string &name) {
     for (int op = 0; op < kOps; ++op)
         if (name == binary_op_name(static_cast<BinaryOp>(op))) return static_cast<BinaryOp>(op);
-    CORA_FAIL(Error::wrong_value, "unknown binary operation '" + name +
-                                      "'; use plus, intersect, "
-                                      "unite, convex_hull, cart_prod, contains or is_intersecting");
+    CORA_FAIL(Error::wrong_value,
+              "unknown binary operation '" + name +
+                  "'; use plus, intersect, unite, convex_hull, cart_prod, contains, "
+                  "is_intersecting or isequal");
 }
 
 /// Every implemented pair: the built-in table, then the registered ones.
@@ -309,13 +336,7 @@ void register_binary(BinaryOp op, const std::string &left, const std::string &ri
 
 namespace detail {
 
-Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2) {
-    detail::Entry entry;
-    CORA_CHECK(op == BinaryOp::cart_prod || S1.dim() == S2.dim(), Error::dimension_mismatch, [&] {
-        return std::string(binary_op_name(op)) + ": the sets differ in dimension, " +
-               S1.class_name() + " of " + std::to_string(S1.dim()) + " and " + S2.class_name() +
-               " of " + std::to_string(S2.dim());
-    });
+Set lookup(BinaryOp op, const ContSet &S1, const ContSet &S2) {
     const int o = static_cast<int>(op), a = static_cast<int>(S1.class_id()),
               b = static_cast<int>(S2.class_id());
     // the table, by class ids: O(1), the lower precedence first
@@ -334,17 +355,7 @@ Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2) {
     CORA_FAIL(Error::noops, aux_noops(op, S1, S2));
 }
 
-bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol) {
-    detail::Entry entry;
-    CORA_CHECK(op == BinaryOp::cart_prod || S1.dim() == S2.dim(), Error::dimension_mismatch, [&] {
-        return std::string(binary_op_name(op)) + ": the sets differ in dimension, " +
-               S1.class_name() + " of " + std::to_string(S1.dim()) + " and " + S2.class_name() +
-               " of " + std::to_string(S2.dim());
-    });
-    CORA_CHECK(!tol || *tol >= 0, Error::wrong_value, [&] {
-        return std::string(binary_op_name(op)) + ": tol must be nonnegative, got " +
-               std::to_string(*tol);
-    });
+bool lookup(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol) {
     const int o = static_cast<int>(op), a = static_cast<int>(S1.class_id()),
               b = static_cast<int>(S2.class_id());
     // the table, by class ids: O(1), the lower precedence first
@@ -361,6 +372,40 @@ bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol) {
     }
     if (g) return swapped ? g(S2, S1, tol) : g(S1, S2, tol);
     CORA_FAIL(Error::noops, aux_noops(op, S1, S2));
+}
+
+Refusal refusal(BinaryOp op, const ContSet &S1, const ContSet &S2) {
+    // the product is the one operation of sets of different dimensions
+    if (op == BinaryOp::cart_prod || S1.dim() == S2.dim()) return std::nullopt;
+    return std::pair{Error::dimension_mismatch,
+                     std::string(binary_op_name(op)) + ": the sets differ in dimension, " +
+                         S1.class_name() + " of " + std::to_string(S1.dim()) + " and " +
+                         S2.class_name() + " of " + std::to_string(S2.dim())};
+}
+
+Refusal refusal(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol) {
+    if (const Refusal r = refusal(op, S1, S2)) return r;
+    // an unset tol is resolved by the class
+    if (!tol || *tol >= 0) return std::nullopt;
+    return std::pair{Error::wrong_value, std::string(binary_op_name(op)) +
+                                             ": tol must be nonnegative, got " +
+                                             std::to_string(*tol)};
+}
+
+Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2) {
+    // the checked entry of an operation without an unchecked form of its own
+    detail::Entry entry;
+    const Refusal r = refusal(op, S1, S2);
+    CORA_CHECK(!r, r->first, [&] { return r->second; });
+    return lookup(op, S1, S2);
+}
+
+bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol) {
+    // the same for a predicate
+    detail::Entry entry;
+    const Refusal r = refusal(op, S1, S2, tol);
+    CORA_CHECK(!r, r->first, [&] { return r->second; });
+    return lookup(op, S1, S2, tol);
 }
 
 } // namespace detail

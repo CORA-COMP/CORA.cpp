@@ -102,6 +102,7 @@ inline constexpr double kOdeAbsTol = 1e-6; ///< absolute tolerance of the step c
 
 inline constexpr int64_t kPowerProduct = 64; ///< integer powers up to this many factors: products
 inline constexpr int64_t kMaxPieces = int64_t{1} << 24; ///< most boxes that partition returns
+inline constexpr int64_t kSubsetBlock = int64_t{1} << 22; ///< entries per block of volume
 
 // Linear programs ---------------------------------------------------------------------------------
 
@@ -120,6 +121,7 @@ inline constexpr double kPolytopeContains = 1e-12; ///< a point beyond a facet b
 // Geometry of zonotopes and pictures --------------------------------------------------------------
 
 inline constexpr double kGeneratorZero = 1e-14; ///< a generator shorter than this is dropped
+inline constexpr double kDegenerateZonotope = 1e-12; ///< polytope(Z): twice this and below is flat
 inline constexpr double kParallel2d = 1e-12; ///< sine below which 2d generators are parallel
 inline constexpr double kParallel3d = 1e-10; ///< the same in 3d, and the face plane distance
 inline constexpr double kAngleMerge = 1e-9; ///< angles this close are one

@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <initializer_list>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -54,6 +55,10 @@ inline bool close(const cora::Tensor &a, const std::vector<double> &values, doub
     for (std::size_t i = 0; i < x.size(); ++i)
         if (!close(x[i], values[i], tol)) return false;
     return true;
+}
+
+inline bool close(const cora::Tensor &a, std::initializer_list<double> values, double tol = 1e-9) {
+    return close(a, std::vector<double>(values), tol);
 }
 
 /// Every backend this build and this machine offer, as `BackendScope` names them.

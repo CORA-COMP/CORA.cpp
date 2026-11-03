@@ -130,6 +130,19 @@ struct, as CORA separates `params` from `options`.
   matrix.
 - Files: `include/cora/cont_set/`, `src/global/python/bindings.cpp`.
 
+**Interval matrices are a class of their own that holds an `Interval`.** CORA's `intervalMatrix` is a
+`matrixSet`, not a `contSet`, and several methods mean something else than the interval's of the same
+name: `abs` is the matrix of the largest absolute values, `contains` takes a matrix, `mtimes` is the
+product of matrices, `norm` is the norm of the matrix of largest entries.
+- `IntervalMatrix` (`include/cora/matrix_set/interval_matrix/`) holds one `Interval` of matrix bounds,
+  CORA's `int` field, and no second representation. The methods that CORA forwards to the interval
+  (`center`, `infimum`, `norm`) call the `Interval`'s, and the products reuse its private
+  `priv_matmul` and `priv_times`.
+- A C++ method cannot mean two things on one class, and a matrix set must not be taken for a set of
+  points (no `ClassId`, no registry pair). An `Interval` with matrix bounds stays what it was
+  (`Interval::matrix_power`, `Interval::linear_map`), so existing code keeps working.
+- Files: `include/cora/matrix_set/interval_matrix/interval_matrix.h`, `src/matrix_set/interval_matrix/`.
+
 **One plot core, thin front ends.** `plot` decides everything about a picture once (projection,
 vertices, CORA's colors, the union of overlapping sets, z-order) and puts it into the layers of a
 `Figure`; a `FigureGrid` is several figures.

@@ -18,11 +18,16 @@
 // ORACLE: contSet/@emptySet/isIntersecting_.m
 // ORACLE: contSet/@emptySet/isequal.m
 // ORACLE: contSet/@emptySet/lift_.m
+// ORACLE: contSet/@emptySet/not.m
 // ORACLE: contSet/@emptySet/plus.m
 // ORACLE: contSet/@emptySet/project.m
+// ORACLE: contSet/@emptySet/projectHighDim_.m
+// ORACLE: contSet/@emptySet/radius.m
 // ORACLE: contSet/@emptySet/vertices_.m
+// ORACLE: contSet/@emptySet/volume_.m
 
 #include "cora/cont_set/empty_set/empty_set.h"
+#include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/global/oracle/empty_set.h"
 #include "oracle_testing.h"
 
@@ -115,6 +120,21 @@ int main() {
         for (int64_t i = 0; i < n; i += 2) dims.push_back(i);
         const Set P = EmptySet(n).project(dims);
         check(P.as<EmptySet>().dim(), lean::EmptySet(n).project(dims).dim());
+    }));
+    test::oracle::run("emptySet.projectHighDim", each_dimension([](Random &, int64_t n) {
+        std::vector<int64_t> dims;
+        for (int64_t i = 0; i < n; ++i) dims.push_back(n + 2 - 1 - i);
+        check(EmptySet(n).project_high_dim(n + 2, dims).dim(),
+              lean::EmptySet(n).project_high_dim(n + 2, dims).dim());
+    }));
+    test::oracle::run("emptySet.radius", each_dimension([](Random &, int64_t n) {
+        check(EmptySet(n).radius(), lean::EmptySet(n).radius());
+    }));
+    test::oracle::run("emptySet.volume", each_dimension([](Random &, int64_t n) {
+        check(EmptySet(n).volume(), lean::EmptySet(n).volume());
+    }));
+    test::oracle::run("emptySet.not", each_dimension([](Random &, int64_t n) {
+        check(EmptySet(n).complement(), lean::EmptySet(n).complement());
     }));
     return test::finish("lean empty_set");
 }

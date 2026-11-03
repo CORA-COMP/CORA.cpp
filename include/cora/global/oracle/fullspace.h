@@ -16,6 +16,8 @@
 
 namespace cora::lean {
 
+class EmptySet;
+
 class Fullspace {
   public:
     explicit Fullspace(int64_t n) : n_(n) {}
@@ -53,6 +55,15 @@ class Fullspace {
     /// R^n of the dimension of the points (n, N), and R^N.
     static Fullspace enclose_points(const Tensor &points);
     Fullspace lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// The projection onto dims, and the embedding into N dimensions (proj as dims of lift).
+    Fullspace project(const std::vector<int64_t> &dims) const;
+    Fullspace project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
+
+    /// The radius and the volume (Inf, Inf for 0 < n), and the complement (the empty set).
+    double radius() const;
+    double volume() const;
+    EmptySet complement() const;
 
   private:
     int64_t n_;

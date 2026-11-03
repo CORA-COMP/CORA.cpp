@@ -84,6 +84,14 @@ Interval Interval::minkowski_difference(const ContSet &S,
     return aux_box_or_empty(inf_ + Tensor::concat(down, -2), sup_ - Tensor::concat(up, -2));
 }
 
+Set Interval::minkowski_difference_impl(const ContSet &S2,
+                                        const std::optional<std::string> &type) const {
+    // a box takes the exact rule of boxes, whatever the type; any other set the support function
+    if (S2.class_id() == ClassId::interval)
+        return minkowski_difference(static_cast<const Interval &>(S2));
+    return minkowski_difference(S2, type);
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

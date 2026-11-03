@@ -11,8 +11,11 @@
 //             cubic_map, hausdorff_distance_to_box, dominant_directions, contains,
 //             boundary_point, exact_plus, generator_length, is_bounded, is_full_dim, isequal,
 //             is_intersecting, lift, norm, minnorm, intersect_strip, enclose_points,
-//             enclose_many, mink_diff (one file each, as in CORA's @zonotope); the constructor
-//             checks its input (zonotope.cpp)
+//             enclose_many, mink_diff, origin, radius, rank, representsa, project_high_dim,
+//             rotate, quad_map, split, split_first_gen, split_longest_gen, reduce_under_approx,
+//             unite, tensor_multiplication, tensor_multiplication_zono, underapproximate, volume,
+//             zonotope_norm (one file each, as in CORA's @zonotope); the constructor checks its
+//             input (zonotope.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@zonotope/zonotope.m
@@ -247,6 +250,140 @@ class Zonotope : public ContSet {
     Zonotope mink_diff(const Interval &subtrahend, const std::string &method = "approx") const;
     Zonotope mink_diff(const Tensor &p, const std::string &method = "approx") const;
 
+    // Embedding maps and cutting ------------------------------------------------------------------
+
+    /// The origin {0} in n dimensions (no generators), n >= 1.
+    static Zonotope origin(int64_t n);
+
+    /// The zonotope in N dimensions whose state dims[i] is state i of this one and zero elsewhere
+    /// (CORA's projectHighDim_); dims lists positions 0..N-1, a repeated one keeps the last.
+    Zonotope project_high_dim(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// The rotation by angle (radians) in the plane of the two states dims (0-based, different):
+    /// the center and every generator turn by [cos -sin; sin cos] there. Exact in real numbers.
+    Zonotope rotate(const std::vector<int64_t> &dims, double angle) const;
+
+    /// An upper bound (..., 1, 1) of the distance from the center: the smaller of the sum of the
+    /// generator lengths and the 2-norm of the radius of the box around the zonotope.
+    Tensor radius() const;
+
+    /// The rank of the generators (singular values up to tol count as zero). Not a batch. tol
+    /// default: the repository tolerance (docs/architecture.md; CORA's own default is 0).
+    int64_t rank(Tol tol = std::nullopt) const;
+
+    /// Whether the zonotope is also a set of the CORA type ("origin", "point", "interval",
+    /// "parallelotope", "capsule", "zonotope", ...), judged after dropping the zero generators;
+    /// the converted set (CORA's second output) is not returned. "conHyperplane" and "ellipsoid"
+    /// are Error::not_supported, as in CORA; "polygon" has no case in CORA and is refused too.
+    /// Not a batch. tol default: the repository tolerance.
+    bool representsa(const std::string &type, Tol tol = std::nullopt) const;
+
+    /// An enclosure of {(x' Q_i x)_i | x in Z}: Q[i] are the (n, n) matrices of the outputs. Its
+    /// center and generators are those of CORA's quadMap (squares, then the mixed terms); with at
+    /// most one nonzero Q a single box generator. (matZonotope entries of Q are not supported.)
+    Zonotope quad_map(const std::vector<Tensor> &Q) const;
+
+    /// An enclosure of {(x1' Q_i x2)_i | x1 in Z, x2 in Z2}.
+    Zonotope quad_map(const Zonotope &Z2, const std::vector<Tensor> &Q) const;
+
+    /// The two halves of the box around the zonotope cut at the center of coordinate N (0-based)
+    /// (CORA's split(Z, N)), and the list for every coordinate (split(Z)). The pieces enclose Z.
+    /// CORA indexes the nonzero generators of the box, so a flat coordinate shifts or breaks it.
+    std::pair<Zonotope, Zonotope> split(int64_t N) const;
+    std::vector<std::pair<Zonotope, Zonotope>> split() const;
+
+    /// The two halves along generator N (0-based) of the zonotope reduced to at most max_order
+    /// (CORA's split(Z, N, maxOrder)): centers c -+ g_N/2, that generator halved. They cover Z.
+    std::pair<Zonotope, Zonotope> split(int64_t N, int max_order) const;
+
+    /// The pieces cut off by a plane through the zonotope normal to dir (CORA's split(Z, dir)):
+    /// the generators lose their share along dir, which becomes the one generator of the halves.
+    /// Not a batch.
+    std::pair<Zonotope, Zonotope> split(const Tensor &dir) const;
+
+    /// As above for the direction aux_dir with the part along orig_dir removed (CORA's
+    /// split(Z, origDir, auxDir)).
+    std::pair<Zonotope, Zonotope> split(const Tensor &orig_dir, const Tensor &aux_dir) const;
+
+    /// The pieces on the two sides of the plane a'x = d (CORA's split(Z, halfspace)): both halves
+    /// of the direction split at that plane, or the zonotope alone if the plane misses it. Not a
+    /// batch.
+    std::vector<Zonotope> split(const Tensor &a, double d) const;
+
+    /// The two halves along the generator g_j of largest sum_k |g_j' g_k| (CORA's splitFirstGen,
+    /// which passes the index to a split by coordinate; CORA.cpp splits that generator). No
+    /// generator: the zonotope twice. Not a batch.
+    std::pair<Zonotope, Zonotope> split_first_gen() const;
+
+    /// The two halves along the longest generator, centers c + g/2 first (CORA's splitLongestGen);
+    /// no generator: the zonotope twice. Not a batch.
+    std::pair<Zonotope, Zonotope> split_longest_gen() const;
+
+    /// A zonotope inside this one with at most order * n generators (CORA's reduceUnderApprox),
+    /// method "yang" (merge the closest pair by sum or difference), "raghuraman" or "kochdumper"
+    /// (also "sum"). A zonotope with few enough generators is returned without its zero
+    /// generators. "sadraddini", "scale", "boxLP", "boxCone", "boxNLP", "boxWetzlinger", "nlp",
+    /// "cluster" (and the old names) are Error::not_supported. Not a batch.
+    Zonotope reduce_under_approx(const std::string &method, double order) const;
+
+    /// A zonotope that contains the union with the sets Zs (CORA's or): method "linprog" (default;
+    /// the smallest generator scaling and center that cover the iterative enclosure's facets),
+    /// "iterative" (pairwise enclose) or "parallelotope" (a box in the principal axes of the
+    /// generators). "tedrake" and "althoff", and an order reduction, are Error::not_supported.
+    /// Not a batch.
+    Zonotope unite(const std::vector<Zonotope> &Zs, const std::string &method = "linprog",
+                   std::optional<int> order = std::nullopt) const;
+    Zonotope unite(const Zonotope &Z2, const std::string &method = "linprog",
+                   std::optional<int> order = std::nullopt) const;
+    Zonotope unite(const Interval &I, const std::string &method = "linprog",
+                   std::optional<int> order = std::nullopt) const;
+    Zonotope unite(const Tensor &p, const std::string &method = "linprog",
+                   std::optional<int> order = std::nullopt) const;
+
+    // Tensor images and measures -----------------------------------------------------------------
+
+    /// The lists of tensor_multiplication, as CORA's options.list: perm (P, 3) the ordered triples
+    /// of generators, comb (C, 3) the unordered ones (only its row count C is read: the number of
+    /// generators of the result), map (P) the column in [0, C) that triple p adds to.
+    struct TensorLists {
+        std::vector<std::vector<int64_t>> perm, comb;
+        std::vector<int64_t> map;
+    };
+
+    /// A zonotope (0, H) that encloses {sum_jkl M[i, j, k, l] x_j x_k x_l | x in Z} for a zonotope
+    /// centered at the origin and a third-order tensor M (n, n, n, n); column map[p] of H sums the
+    /// products of the generators perm[p]. The second-order form fails in CORA for every input and
+    /// is not supported (docs/cora-differences.md).
+    Zonotope tensor_multiplication(const Tensor &M, const TensorLists &list) const;
+
+    /// The same for a tensor in a zonotope {M_c + sum_i b_i M_i | |b|_inf <= 1} (M_c and the M_i
+    /// third-order tensors): the Minkowski sum of the results for M_c and for every M_i.
+    Zonotope tensor_multiplication_zono(const Tensor &M_center,
+                                        const std::vector<Tensor> &M_generators,
+                                        const TensorLists &list) const;
+
+    /// The vertices c +- sum_j sign(s_i' g_j) g_j of the zonotope for the directions s_i, the
+    /// columns of S (n, k), as the columns (..., n, 2k) in the order +, - per direction; a subset
+    /// of the zonotope. Without S: the generators if there are at least as many as dimensions,
+    /// else dominant_directions (not a batch).
+    Tensor underapproximate() const;
+    Tensor underapproximate(const Tensor &S) const;
+
+    /// The volume (..., 1, 1): method "exact" (default) is 2^n times the sum of |det| over the
+    /// n-subsets of generators; "alamo" is 2^n sqrt(det(G G')), a lower bound; both are 0 if the
+    /// generators do not span the space. "reduce" (order reduction by 'pca') is not supported.
+    /// order is the one of "reduce".
+    Tensor volume(const std::string &method = "exact", int order = 5) const;
+
+    /// The norm (1, 1) of the point p (n, 1) w.r.t. the zonotope centered at the origin (its
+    /// center is ignored): min s with G beta = p, |beta|_inf <= s, by a linear program; infinity if
+    /// p is not in the span of the generators. Not a batch.
+    Tensor zonotope_norm(const Tensor &p) const;
+
+    /// The norm and the minimizer beta (m, 1) (an empty (0, 1) if the norm is infinite); a
+    /// warning if the center is not the origin, as the minimizer is then not valid.
+    std::pair<Tensor, Tensor> zonotope_norm_minimizer(const Tensor &p) const;
+
   protected:
     int64_t dim_impl() const override { return c_.shape()[c_.shape().size() - 2]; }
     Tensor center_impl() const override;
@@ -258,6 +395,15 @@ class Zonotope : public ContSet {
     std::vector<Polygon> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
+
+    // The generic operations of ContSet, which a zonotope answers by its own (defined beside them).
+    Set translate_impl(const Tensor &v) const override;
+    Set minkowski_difference_impl(const ContSet &S2,
+                                  const std::optional<std::string> &type) const override;
+    bool is_bounded_impl() const override;
+    bool is_full_dim_impl(Tol tol) const override;
+    Set reduce_impl(int order) const override;
+    Set linear_map_impl(const Tensor &M) const override;
 
   private:
     Tensor c_, G_;

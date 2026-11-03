@@ -66,7 +66,7 @@ Zonotope Zonotope::cart_prod(const Interval &I) const {
         return "cart_prod: the interval must be a box with column bounds and the batch shape of "
                "the zonotope, got the shape " + shape_text(I.inf().shape());
     });
-    return aux_blocks(*this, priv_zonotope_of_interval(I));
+    return aux_blocks(*this, I.zonotope());
 }
 
 Zonotope Zonotope::cart_prod(const Tensor &p) const {
