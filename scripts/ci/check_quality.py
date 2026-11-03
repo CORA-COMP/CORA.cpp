@@ -2,7 +2,7 @@
 
 Syntax:   python scripts/ci/check_quality.py format|tidy|lint [--base REV | --all] [--fix] [-j N]
 Checks:   format  clang-format (.clang-format) on the C++ files: the file is what clang-format prints.
-          tidy    clang-tidy (.clang-tidy) on the translation units of build/core/compile_commands.json
+          tidy    clang-tidy (.clang-tidy) on the translation units of build/python/compile_commands.json
                   (--build-dir); a changed header is analysed through the one source that includes it.
           lint    ruff (ruff.toml) on scripts/, tests/ and src/global/python/cora/.
 Scope:    --base REV: the files changed since the merge base with REV and in the working tree
@@ -127,7 +127,7 @@ def closure(graph, root):
 def check_tidy(files, everything, fix, build_dir, jobs):
     database = os.path.join(build_dir, "compile_commands.json")
     if not os.path.exists(database):
-        print(f"check_quality: {database} is missing; configure first: cmake --preset core", file=sys.stderr)
+        print(f"check_quality: {database} is missing; configure first: cmake --preset python", file=sys.stderr)
         return 2
     exe = tool("clang-tidy")
     units = tidy_units([f for f in files if f.endswith(CPP)], everything, translation_units(database))
@@ -160,7 +160,7 @@ def main():
     parser.add_argument("--base", default="origin/main", help="the revision the change is measured from")
     parser.add_argument("--all", action="store_true", help="every tracked file, not only the changed ones")
     parser.add_argument("--fix", action="store_true")
-    parser.add_argument("--build-dir", default=os.path.join(ROOT, "build", "core"))
+    parser.add_argument("--build-dir", default=os.path.join(ROOT, "build", "python"))
     parser.add_argument("-j", "--jobs", type=int, help="parallel clang-tidy runs (default: all CPUs)",
                         default=int(os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", os.cpu_count() or 1)))
     args = parser.parse_args()

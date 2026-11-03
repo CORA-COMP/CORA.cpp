@@ -20,6 +20,7 @@ namespace {
 std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64_t rows,
                                             int64_t cols) {
     std::vector<std::vector<double>> matrices;
+    matrices.reserve(L.V.size());
     for (const lean::Tensor &V : L.V) matrices.push_back(V.gather().data());
     const auto stacked = [&](const std::vector<double> &M) {
         std::vector<double> v;

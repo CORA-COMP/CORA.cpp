@@ -42,8 +42,8 @@ void powers_from_an_initial_power(const std::string &b) {
     for (int trial = 0; trial < 20; ++trial) {
         const Tensor M = test::member(A, rng);
         Tensor power = M;
-        for (std::size_t k = 0; k < Q.size(); ++k) {
-            inside = inside && Q[k].contains(power, "exact", 1e-12);
+        for (const IntervalMatrix &q : Q) {
+            inside = inside && q.contains(power, "exact", 1e-12);
             power = power.matmul(M);
         }
     }

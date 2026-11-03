@@ -85,7 +85,7 @@ jobs:
       - run: python3 -m pip install --quiet -r scripts/requirements-quality.txt
       - run: python3 scripts/ci/check_quality.py format --all
       - run: python3 scripts/ci/check_quality.py lint --all
-      - run: cmake --preset core -DCORACPP_NATIVE=OFF
+      - run: cmake --preset python -DCORACPP_NATIVE=OFF
       - run: python3 scripts/ci/check_quality.py tidy --all -j "$(nproc)"
 
   # The CORA-COMP binary and its tests.

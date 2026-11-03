@@ -23,6 +23,7 @@ Newton steps, so CORA.cpp's correctly rounded root is inside the bound but not i
 import unittest
 
 import cora
+import numpy as np
 import oracle_testing as oracle
 
 SHAPES = ((2, 2), (3, 4), (5, 1), (4, 4))

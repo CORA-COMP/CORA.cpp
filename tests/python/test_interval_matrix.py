@@ -456,7 +456,7 @@ class Gradients(unittest.TestCase):
         self.check(lambda A: A.expm_norm_infinity(0.5), center, delta)
         self.check(lambda A: A.expm_absolute_bound(0.5), center, delta)
         for style in (0, 1, 2):
-            self.check(lambda A: A.expm_taylor_horner_scaling(6, style), center, delta)
+            self.check(lambda A, style=style: A.expm_taylor_horner_scaling(6, style), center, delta)
         self.check(lambda A: A.expm_independent_mixed(2, 6).enclosure, center, delta)
 
 

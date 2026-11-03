@@ -178,7 +178,7 @@ pull request, everything every night):
 ```bash
 scripts/with_env.sh python scripts/ci/check_quality.py format        # clang-format (.clang-format)
 scripts/with_env.sh python scripts/ci/check_quality.py lint          # ruff (ruff.toml) on scripts/, tests/ and cora/
-scripts/with_env.sh python scripts/ci/check_quality.py tidy          # clang-tidy (.clang-tidy); needs cmake --preset core
+scripts/with_env.sh python scripts/ci/check_quality.py tidy          # clang-tidy (.clang-tidy); needs cmake --preset python
 ```
 
 - **Warnings are errors.** The presets set `CORACPP_WERROR=ON` (`-Werror`, MSVC `/W4 /WX`); fix the warning, or opt out

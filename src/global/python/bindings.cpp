@@ -51,6 +51,7 @@ namespace {
 
 /// cora::Error becomes the class of its identifier in cora.errors (a ValueError, ...).
 void bind_errors(py::module_ &) {
+    // NOLINTNEXTLINE(performance-unnecessary-value-param): pybind11 takes a function pointer
     py::register_exception_translator([](std::exception_ptr p) {
         try {
             if (p) std::rethrow_exception(p);
@@ -215,6 +216,7 @@ class PyContSet : public ContSet {
             const auto a = py::array_t < double,
                        py::array::c_style | py::array::forcecast > ::ensure(p);
             std::vector<Point3> corners;
+            corners.reserve(static_cast<std::size_t>(a.shape(0)));
             for (py::ssize_t i = 0; i < a.shape(0); ++i)
                 corners.push_back({a.at(i, 0), a.at(i, 1), a.at(i, 2)});
             out.push_back(corners);
@@ -2187,7 +2189,7 @@ py::object run_with_kwargs(const py::object &self, const char *operation, const 
             },
             *alg);
         for (const std::string &k : extra) known.push_back(k);
-        known.push_back("alg");
+        known.emplace_back("alg");
         const std::vector<std::string> others =
             algorithm_fields<V>(std::make_index_sequence<std::variant_size_v<V>>());
         refuse_leftovers(rest, known, where, others, name);
@@ -2425,6 +2427,7 @@ void bind_neural_network(py::module_ &m) {
                               "Affine layers with a ReLU after each but the last.")
         .def(py::init([](const std::vector<std::pair<py::object, py::object>> &layers) {
                  std::vector<NeuralNetwork::Layer> out;
+                 out.reserve(layers.size());
                  for (const auto &[W, b] : layers)
                      out.push_back({tensor_of(W, "the weights"), tensor_of(b, "the bias")});
                  return NeuralNetwork(out);
@@ -2776,6 +2779,7 @@ void bind_specification(py::module_ &m) {
                 const Tensor A = host_tensor(a, false);
                 const std::vector<double> bs = py::cast<std::vector<double>>(b);
                 std::vector<Halfspace> halfspaces;
+                halfspaces.reserve(static_cast<std::size_t>(A.size(-2)));
                 for (int64_t i = 0; i < A.size(-2); ++i)
                     halfspaces.push_back({A.slice(-2, i, i + 1).matrix_transpose(), bs[i]});
                 return Specification::unsafe_set(std::move(halfspaces));

@@ -178,7 +178,8 @@ inline bool same_bits(const std::string &what, double a, double b) {
 }
 
 inline bool same_bits(const std::string &what, const cora::Interval &a, const lean::Interval &b) {
-    return same_bits(what + ".inf", a.inf(), b.inf()) & same_bits(what + ".sup", a.sup(), b.sup());
+    const bool inf = same_bits(what + ".inf", a.inf(), b.inf()); // both are reported
+    return same_bits(what + ".sup", a.sup(), b.sup()) && inf;
 }
 
 /// A whole space is its dimension: the same one.
@@ -197,8 +198,8 @@ inline bool same_bits(const std::string &what, const cora::IntervalMatrix &a,
 
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).
 inline bool same_bits(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
-    return same_bits(what + ".c", a.center(), b.center()) &
-           same_bits(what + ".G", a.generators(), b.generators());
+    const bool center = same_bits(what + ".c", a.center(), b.center()); // both are reported
+    return same_bits(what + ".G", a.generators(), b.generators()) && center;
 }
 
 /// The nominal part of the oracle's set (c, G and the equalities); its error boxes are not
@@ -252,7 +253,8 @@ inline bool same_bits(const std::string &what, const std::vector<int64_t> &a,
 
 /// A point result against a point interval of the oracle: both of its bounds.
 inline bool same_bits(const std::string &what, const cora::Tensor &a, const lean::Interval &b) {
-    return same_bits(what + ".inf", a, b.inf()) & same_bits(what + ".sup", a, b.sup());
+    const bool inf = same_bits(what + ".inf", a, b.inf()); // both are reported
+    return same_bits(what + ".sup", a, b.sup()) && inf;
 }
 
 /// A 1 x 1 tensor (CORA.cpp's scalar results) against the oracle's number.
