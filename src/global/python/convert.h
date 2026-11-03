@@ -77,9 +77,9 @@ inline Tensor host_tensor(const py::handle &o, bool column) {
 inline py::array host_array(const Tensor &t, const Shape &shape) {
     const HostView v = host_view(t);
     const bool f32 = v.dtype == DType::float32;
-    const ssize_t item = f32 ? sizeof(float) : sizeof(double);
-    std::vector<ssize_t> dims(shape.begin(), shape.end()), strides(dims.size());
-    ssize_t step = item;
+    const py::ssize_t item = f32 ? sizeof(float) : sizeof(double);
+    std::vector<py::ssize_t> dims(shape.begin(), shape.end()), strides(dims.size());
+    py::ssize_t step = item;
     for (std::size_t d = dims.size(); d-- > 0;) {
         strides[d] = step;
         step *= dims[d];
