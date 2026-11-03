@@ -15,6 +15,7 @@
 
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/empty_set/empty_set.h"
+#include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 
@@ -158,6 +159,45 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Zonotope>(
         t, [](const EmptySet &E, const Zonotope &Z, Tol tol) {
             return E.is_intersecting(Z, tol);
+        });
+    // the whole space is of the lowest precedence of these classes: it comes first
+    aux_add_set<BinaryOp::plus, Fullspace, Fullspace>(
+        t, [](const Fullspace &F1, const Fullspace &F2) { return F1.plus(F2); });
+    aux_add_set<BinaryOp::plus, Fullspace, Zonotope>(
+        t, [](const Fullspace &F, const Zonotope &Z) { return F.plus(Z); });
+    aux_add_set<BinaryOp::plus, Fullspace, Interval>(
+        t, [](const Fullspace &F, const Interval &I) { return F.plus(I); });
+    // the intersection is the other operand; the hull and the sum are the whole space
+    aux_add_set<BinaryOp::intersect, Fullspace, Fullspace>(
+        t, [](const Fullspace &F1, const Fullspace &F2) { return F1.intersect(F2); });
+    aux_add_set<BinaryOp::intersect, Fullspace, Zonotope>(
+        t, [](const Fullspace &F, const Zonotope &Z) { return F.intersect(Z); });
+    aux_add_set<BinaryOp::intersect, Fullspace, Interval>(
+        t, [](const Fullspace &F, const Interval &I) { return F.intersect(I); });
+    aux_add_set<BinaryOp::convex_hull, Fullspace, Fullspace>(
+        t, [](const Fullspace &F1, const Fullspace &F2) { return F1.convex_hull(F2); });
+    aux_add_set<BinaryOp::convex_hull, Fullspace, Zonotope>(
+        t, [](const Fullspace &F, const Zonotope &Z) { return F.convex_hull(Z); });
+    aux_add_set<BinaryOp::convex_hull, Fullspace, Interval>(
+        t, [](const Fullspace &F, const Interval &I) { return F.convex_hull(I); });
+    // the whole space contains every set; it meets every set that is not empty
+    aux_add_predicate<BinaryOp::contains, Fullspace, Fullspace>(
+        t, [](const Fullspace &F1, const Fullspace &F2, Tol tol) { return F1.contains(F2, tol); });
+    aux_add_predicate<BinaryOp::contains, Fullspace, Zonotope>(
+        t, [](const Fullspace &F, const Zonotope &Z, Tol tol) { return F.contains(Z, tol); });
+    aux_add_predicate<BinaryOp::contains, Fullspace, Interval>(
+        t, [](const Fullspace &F, const Interval &I, Tol tol) { return F.contains(I, tol); });
+    aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Fullspace>(
+        t, [](const Fullspace &F1, const Fullspace &F2, Tol tol) {
+            return F1.is_intersecting(F2, tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Zonotope>(
+        t, [](const Fullspace &F, const Zonotope &Z, Tol tol) {
+            return F.is_intersecting(Z, tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Interval>(
+        t, [](const Fullspace &F, const Interval &I, Tol tol) {
+            return F.is_intersecting(I, tol);
         });
     return t;
 }

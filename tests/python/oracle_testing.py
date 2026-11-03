@@ -89,6 +89,8 @@ def _parts(x):
         x = x.gather()[0]
     if isinstance(x, cora.lean.Interval):
         x = x.gather()
+    if isinstance(x, (cora.Fullspace, cora.lean.Fullspace)):
+        return {"dim": np.array([float(x.dim)])}
     if isinstance(x, cora.Zonotope):
         return {"c": x.center, "G": x.generators}
     if isinstance(x, cora.Interval):
@@ -133,6 +135,8 @@ def enclosed(what, a, b):
     elif isinstance(b, tuple):
         for i, (x, y) in enumerate(zip(a, b)):
             enclosed(f"{what}.{i + 1}", x, y)
+    elif isinstance(b, cora.lean.Fullspace):
+        same_bits(what, a, b)  # the whole space has no enclosure but itself
     elif isinstance(b, cora.lean.Interval):
         lo, hi = _array(b.inf), _array(b.sup)
         inf, sup = _array(a.inf), _array(a.sup)

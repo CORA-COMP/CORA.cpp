@@ -55,6 +55,9 @@ double resolve_tol(Tol tol, DType dtype) noexcept;
 /// Error::wrong_value, "<operation>: tol must be nonnegative, got <tol>".
 double resolve_tol(const detail::Entry &entry, Tol tol, DType dtype, const char *operation);
 
+/// resolve_tol at the entry point of an operation on numbers only (a set that holds no tensor).
+double resolve_tol(const detail::Entry &entry, Tol tol, const char *operation);
+
 /// resolve_tol for numbers, which are doubles.
 inline double resolve_tol(Tol tol) noexcept { return resolve_tol(tol, DType::float64); }
 

@@ -632,14 +632,16 @@ TOKEN = re.compile(r"[A-Za-z_]\w*|\d[\w.]*|::|->|[^\s\w]")
 
 def tokens(path):
     """The tokens of the code between BEGIN CODE and END OF CODE, literals abstracted, with the
-    line of each."""
+    line of each. Preprocessor lines and declarations of overrides (`... override;`, no body)
+    are left out: every class of an interface repeats the same declarations."""
     lines = read_lines(path)
     begin = lines.index(BEGIN_MARKER) if BEGIN_MARKER in lines else 0
     end = lines.index(END_MARKER) if END_MARKER in lines else len(lines)
     code = code_only("\n".join(lines)).split("\n")
     out = []
     for i in range(begin + 1, end):
-        if code[i].lstrip().startswith("#"):
+        if code[i].lstrip().startswith("#") or code[i].rstrip().endswith(") const override;") \
+                or code[i].rstrip().endswith(") override;"):
             continue
         for t in TOKEN.findall(code[i]):
             out.append(("0" if t[0].isdigit() else t, i + 1))

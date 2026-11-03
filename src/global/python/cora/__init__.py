@@ -28,14 +28,14 @@ except ImportError:  # numpy and Eigen only
     pass
 
 from . import banner, errors
-from ._cora import (ContSet, EmptySet, Expr, Falsification, Interval, LinearSys, NeuralNetwork,
-                    NonlinearSys, ReachProblem, ReachSet, Rng, Specification, VerifyResult,
-                    Zonotope, backend, binary_pairs, cart_prod, checks, checks_enabled, contains,
-                    convex_hull, cora_color, current_backend, current_tolerance, has_torch,
-                    intersect, is_intersecting, lean, num_threads, plus, register_binary,
-                    set_checks_enabled, set_default_backend, set_default_tolerance,
-                    set_num_threads, strict_gradients, tensor_ops, tolerance, unite,
-                    use_cora_colors)
+from ._cora import (ContSet, EmptySet, Expr, Falsification, Fullspace, Interval, LinearSys,
+                    NeuralNetwork, NonlinearSys, ReachProblem, ReachSet, Rng, Specification,
+                    VerifyResult, Zonotope, backend, binary_pairs, cart_prod, checks,
+                    checks_enabled, contains, convex_hull, cora_color, current_backend,
+                    current_tolerance, has_torch, intersect, is_intersecting, lean, num_threads,
+                    plus, register_binary, set_checks_enabled, set_default_backend,
+                    set_default_tolerance, set_num_threads, strict_gradients, tensor_ops,
+                    tolerance, unite, use_cora_colors)
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
 from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
@@ -48,6 +48,7 @@ banner.install(current_backend)
 
 __all__ = [
     "CORAError", "CORAWarning", "ContSet", "EmptySet", "Expr", "Falsification", "Figure",
+    "Fullspace",
     "Interval", "LinearSys", "NeuralNetwork", "NonlinearSys", "ReachProblem", "ReachSet", "Rng",
     "Specification", "VerifyResult", "Zonotope", "backend", "binary_pairs", "cart_prod", "checks",
     "checks_enabled", "contains", "convex_hull", "cora_color", "current_backend",

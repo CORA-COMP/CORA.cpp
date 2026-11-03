@@ -38,6 +38,7 @@ changed, and the reasons are listed below.
 | `contSet` | `ContSet`, type-erased `Set` | `cora.ContSet` (subclass it) |
 | `zonotope(c, G)` | `Zonotope(c, G)` | `cora.Zonotope(c, G)` |
 | `interval(inf, sup)` | `Interval(inf, sup)` | `cora.Interval(inf, sup)` |
+| `fullspace(n)`, `fullspace.Inf(n)` | `Fullspace(n)`, `Fullspace::inf(n)` | `cora.Fullspace(n)`, `cora.Fullspace.inf(n)` |
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
 | `Z.c`, `center(Z)` | `Z.center()` | `Z.center` |
 | `Z.G`, `generators(Z)` | `Z.generators()` | `Z.generators` |
@@ -91,6 +92,7 @@ changed, and the reasons are listed below.
 | `or(I, S)` | `I.unite(S)` | `I.unite(S)` |
 | `norm_(I, type)` | `I.norm(type)` | `I.norm(type)` |
 | `lift_(I, N, proj)` | `I.lift(N, dims)` | `I.lift(N, dims)` |
+| `enclosePoints(P)`, `lift_(fs, N, dims)`, `mtimes(M, fs)` | `Fullspace::enclose_points(P)`, `F.lift(N, dims)`, `F.linear_map(M)`, `M * F` | `cora.Fullspace.enclose_points(P)`, `F.lift(N, dims)`, `F.linear_map(M)`, `M @ F` |
 | `interval.origin(n)` | `Interval::origin(n)` | `cora.Interval.origin(n)` |
 | `log(I)` | `I.log()` | `I.log()` |
 | `emptySet(n)`, `emptySet.empty(n)` | `EmptySet(n)`, `EmptySet::empty(n)` | `cora.EmptySet(n)`, `cora.EmptySet.empty(n)` |

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "cora/cont_set/cont_set.h"
+#include "cora/cont_set/dimension_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
 #include "cora/global/tensor/tolerance.h"
@@ -27,7 +28,7 @@
 
 namespace cora {
 
-class EmptySet : public ContSet {
+class EmptySet : public detail::DimensionSet {
   public:
     static constexpr ClassId kClassId = ClassId::empty_set;
 
@@ -80,7 +81,6 @@ class EmptySet : public ContSet {
     EmptySet lift(int64_t N, const std::vector<int64_t> &dims) const;
 
   protected:
-    int64_t dim_impl() const override { return n_; }
     Tensor center_impl() const override;
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override;
@@ -90,8 +90,6 @@ class EmptySet : public ContSet {
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
 
-  private:
-    int64_t n_;
 };
 
 // Operators, as CORA writes them: a matrix or a number times the empty set.
