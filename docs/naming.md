@@ -45,6 +45,10 @@ changed, and the reasons are listed below.
 | `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs()`, `A.center`, `A.infimum`, `A.contains(M, type, tol)` |
 | `mtimes(A, B)`, `A * B` | `A.matmul(B)`, `A * B`, `M * A`, `A * M`, `s * A`, `A * Z` | `A @ B`, `M @ A`, `A @ M`, `s * A`, `A @ Z` |
 | `mpower(A, k)` | `A.matrix_power(k)` | `A.matrix_power(k)`, `A ** k` |
+| `plus(A, B)`, `A + B` | `A.plus(B)`, `A + B`, `A + M`, `M + A`, `A + s`, `s + A` | `A + B`, `A + M`, `s + A`, `A.plus(B)` |
+| `powers(A, N, k, P)` | `A.powers(N)`, `A.powers(N, k, P)` | `A.powers(N, k, P)` (a list, `[i]` of order `k + i`) |
+| `rad(A)`, `supremum(A)` | `A.rad()`, `A.supremum()` | `A.rad`, `A.supremum` |
+| `representsa(A, type, tol)`, `volume(A)`, `vertices(A)` | `A.representsa(type, tol)`, `A.volume()`, `A.vertices()` | the same |
 | `expm`, `expmInd`, `expmMixed` | `A.expm(...)`, `A.expm_independent(...)`, `A.expm_mixed(r, k, N)` | the same |
 | `infNorm(A)`, `norm(A, type)` | `A.infinity_norm()`, `A.norm(type)` | the same |
 | `dependentTerms(A, r)`, `exactSquare(A)`, `exponentialRemainder(A, N)` | `A.dependent_terms(r)`, `A.exact_square()`, `A.exponential_remainder(N)` | the same |

@@ -34,12 +34,33 @@ Tensor IntervalMatrix::abs() const { return aux_value("intervalMatrix.abs", {{"I
 Tensor IntervalMatrix::infimum() const {
     return aux_value("intervalMatrix.infimum", {{"IM", bounds_}});
 }
+Tensor IntervalMatrix::supremum() const {
+    return aux_value("intervalMatrix.supremum", {{"IM", bounds_}});
+}
+Tensor IntervalMatrix::rad() const { return aux_value("intervalMatrix.rad", {{"IM", bounds_}}); }
 Interval IntervalMatrix::center() const {
     return aux_matrix("intervalMatrix.center", {{"IM", bounds_}});
 }
 bool IntervalMatrix::contains(const Tensor &M, double tol) const {
     return ask("intervalMatrix.contains", {{"IM", bounds_}, {"M", M}, {"tol", tol}})
         .get<bool>("contains");
+}
+
+// Sums and the set's own queries.
+Interval IntervalMatrix::plus(const Interval &B) const {
+    return aux_matrix("intervalMatrix.plus", {{"IM", bounds_}, {"IM2", B}});
+}
+bool IntervalMatrix::representsa(const std::string &type, double tol) const {
+    return ask("intervalMatrix.representsa",
+               {{"IM", bounds_}, {"type", type}, {"tol", number(tol)}})
+        .get<bool>("value");
+}
+MatrixVertices IntervalMatrix::vertices() const {
+    const Reply reply = ask("intervalMatrix.vertices", {{"IM", bounds_}});
+    return {reply.get<std::vector<Tensor>>("V"), reply.get<Interval>("E")};
+}
+double IntervalMatrix::volume() const {
+    return ask("intervalMatrix.volume", {{"IM", bounds_}}).get<double>("value");
 }
 
 // Squares, powers and products.
@@ -52,6 +73,9 @@ std::pair<Interval, Interval> IntervalMatrix::dependent_terms(double r) const {
 }
 Interval IntervalMatrix::matrix_power(int64_t exponent) const {
     return aux_matrix("intervalMatrix.mpower", {{"IM", bounds_}, {"exponent", exponent}});
+}
+Interval IntervalMatrix::powers(const Interval &P, int64_t k) const {
+    return aux_matrix("intervalMatrix.powers", {{"IM", bounds_}, {"IM2", P}, {"k", k}});
 }
 Interval IntervalMatrix::matmul(const Interval &B) const {
     return aux_matrix("intervalMatrix.mtimes", {{"IM", bounds_}, {"IM2", B}});

@@ -1,35 +1,67 @@
-"""test_interval_matrix - cora.IntervalMatrix: the constructors, the bounds, the norms, the
-squares and the matrix exponential."""
+"""test_interval_matrix - cora.IntervalMatrix: the constructors, the bounds, the sums, the norms, the
+squares, the powers and the matrix exponential."""
 # CORA: matrixSet/@intervalMatrix/abs.m
 # CORA: matrixSet/@intervalMatrix/center.m
 # CORA: matrixSet/@intervalMatrix/contains.m
 # CORA: matrixSet/@intervalMatrix/dependentTerms.m
+# CORA: matrixSet/@intervalMatrix/dim.m
+# CORA: matrixSet/@intervalMatrix/display.m
 # CORA: matrixSet/@intervalMatrix/exactSquare.m
 # CORA: matrixSet/@intervalMatrix/expm.m
+# CORA: matrixSet/@intervalMatrix/expmAbsoluteBound.m
+# CORA: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
 # CORA: matrixSet/@intervalMatrix/expmInd.m
+# CORA: matrixSet/@intervalMatrix/expmIndMixed.m
 # CORA: matrixSet/@intervalMatrix/expmMixed.m
+# CORA: matrixSet/@intervalMatrix/expmNormInf.m
+# CORA: matrixSet/@intervalMatrix/expmTaylorHornerScaling.m
 # CORA: matrixSet/@intervalMatrix/exponentialRemainder.m
+# CORA: matrixSet/@intervalMatrix/generateRandom.m
 # CORA: matrixSet/@intervalMatrix/infNorm.m
 # CORA: matrixSet/@intervalMatrix/infimum.m
+# CORA: matrixSet/@intervalMatrix/interval.m
 # CORA: matrixSet/@intervalMatrix/intervalMatrix.m
 # CORA: matrixSet/@intervalMatrix/mpower.m
 # CORA: matrixSet/@intervalMatrix/mtimes.m
 # CORA: matrixSet/@intervalMatrix/norm.m
+# CORA: matrixSet/@intervalMatrix/plus.m
+# CORA: matrixSet/@intervalMatrix/powers.m
+# CORA: matrixSet/@intervalMatrix/rad.m
+# CORA: matrixSet/@intervalMatrix/representsa.m
+# CORA: matrixSet/@intervalMatrix/supremum.m
+# CORA: matrixSet/@intervalMatrix/vertices.m
+# CORA: matrixSet/@intervalMatrix/volume.m
 # PROPERTY: matrixSet/@intervalMatrix/abs.m
 # PROPERTY: matrixSet/@intervalMatrix/center.m
 # PROPERTY: matrixSet/@intervalMatrix/contains.m
 # PROPERTY: matrixSet/@intervalMatrix/dependentTerms.m
+# PROPERTY: matrixSet/@intervalMatrix/dim.m
+# PROPERTY: matrixSet/@intervalMatrix/display.m
 # PROPERTY: matrixSet/@intervalMatrix/exactSquare.m
 # PROPERTY: matrixSet/@intervalMatrix/expm.m
+# PROPERTY: matrixSet/@intervalMatrix/expmAbsoluteBound.m
+# PROPERTY: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
 # PROPERTY: matrixSet/@intervalMatrix/expmInd.m
+# PROPERTY: matrixSet/@intervalMatrix/expmIndMixed.m
 # PROPERTY: matrixSet/@intervalMatrix/expmMixed.m
+# PROPERTY: matrixSet/@intervalMatrix/expmNormInf.m
+# PROPERTY: matrixSet/@intervalMatrix/expmTaylorHornerScaling.m
 # PROPERTY: matrixSet/@intervalMatrix/exponentialRemainder.m
+# PROPERTY: matrixSet/@intervalMatrix/generateRandom.m
 # PROPERTY: matrixSet/@intervalMatrix/infNorm.m
 # PROPERTY: matrixSet/@intervalMatrix/infimum.m
+# PROPERTY: matrixSet/@intervalMatrix/interval.m
 # PROPERTY: matrixSet/@intervalMatrix/intervalMatrix.m
 # PROPERTY: matrixSet/@intervalMatrix/mpower.m
 # PROPERTY: matrixSet/@intervalMatrix/mtimes.m
 # PROPERTY: matrixSet/@intervalMatrix/norm.m
+# PROPERTY: matrixSet/@intervalMatrix/plus.m
+# PROPERTY: matrixSet/@intervalMatrix/powers.m
+# PROPERTY: matrixSet/@intervalMatrix/rad.m
+# PROPERTY: matrixSet/@intervalMatrix/representsa.m
+# PROPERTY: matrixSet/@intervalMatrix/supremum.m
+# PROPERTY: matrixSet/@intervalMatrix/vertices.m
+# PROPERTY: matrixSet/@intervalMatrix/volume.m
 
 import unittest
 
@@ -212,6 +244,175 @@ class Exponential(unittest.TestCase):
             A.expm_mixed(1.0, 1, 9)
 
 
+class SumsAndQueries(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("eigen"))
+
+    def test_plus(self):
+        M = np.array([[1.0, 2.0], [3.0, 4.0]])
+        S = EXAMPLE + EXAMPLE
+        np.testing.assert_allclose(S.interval.inf, [[2, -2], [0, 4]])
+        np.testing.assert_allclose(S.interval.sup, [[4, 2], [6, 4]])
+        for T in (EXAMPLE + M, M + EXAMPLE, EXAMPLE.plus(M)):
+            np.testing.assert_allclose(T.interval.inf, [[2, 1], [3, 6]])
+            np.testing.assert_allclose(T.interval.sup, [[3, 3], [6, 6]])
+        np.testing.assert_allclose((1.0 + EXAMPLE).interval.inf, [[2, 0], [1, 3]])
+        np.testing.assert_allclose((EXAMPLE + 1.0).interval.sup, [[3, 2], [4, 3]])
+        rng = np.random.default_rng(12)
+        A, B = random_matrix(rng, 3, 1.0), random_matrix(rng, 3, 0.5)
+        self.assertTrue(all((A + B).contains(member(A, rng) + member(B, rng), tol=1e-12) for _ in range(20)))
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            EXAMPLE + np.ones((1, 3))
+        with self.assertRaises(TypeError):
+            EXAMPLE + "x"
+
+    def test_powers(self):
+        P = EXAMPLE.powers(3)
+        self.assertEqual(len(P), 3)
+        np.testing.assert_allclose(P[0].interval.inf, EXAMPLE.interval.inf)
+        np.testing.assert_allclose(P[1].interval.inf, [[-2, -4], [0, 1]])
+        np.testing.assert_allclose(P[1].interval.sup, [[7, 4], [12, 7]])
+        np.testing.assert_allclose(P[2].interval.sup, (P[1] @ EXAMPLE).interval.sup)
+        Q = EXAMPLE.powers(5, initial_order=3, initial_power=P[1])
+        self.assertEqual(len(Q), 3)
+        np.testing.assert_allclose(Q[1].interval.inf, (P[1] @ EXAMPLE).interval.inf)
+        with self.assertRaises(cora.errors.WrongValue):
+            EXAMPLE.powers(3, initial_order=0, initial_power=EXAMPLE)
+        with self.assertRaises(cora.errors.WrongValue):
+            EXAMPLE.powers(3, initial_order=2)
+
+    def test_rad_and_supremum(self):
+        np.testing.assert_allclose(EXAMPLE.rad, [[0.5, 1], [1.5, 0]])
+        np.testing.assert_allclose(EXAMPLE.supremum, [[2, 1], [3, 2]])
+        A = cora.IntervalMatrix(np.array([[1.0, -2.0]]), np.array([[0.5, -1.0]]))
+        np.testing.assert_allclose(A.rad, [[0.5, 1.0]])
+
+    def test_representsa(self):
+        point = cora.IntervalMatrix(np.array([[1.0, 2.0], [3.0, 4.0]]))
+        zero = cora.IntervalMatrix(np.zeros((2, 2)))
+        self.assertTrue(point.representsa("point") and zero.representsa("origin"))
+        self.assertFalse(EXAMPLE.representsa("point") or point.representsa("origin"))
+        self.assertTrue(EXAMPLE.representsa("interval"))
+        thin = cora.IntervalMatrix(point.center, np.full((2, 2), 1e-6))
+        self.assertFalse(thin.representsa("point", tol=1e-9))
+        self.assertTrue(thin.representsa("point", tol=1e-5))
+        with self.assertRaises(cora.errors.WrongValue):
+            EXAMPLE.representsa("nothing")
+        with self.assertRaises(cora.errors.NotSupported):
+            EXAMPLE.representsa("polygon")
+
+    def test_volume(self):
+        box = cora.IntervalMatrix(cora.Interval.matrix(np.zeros((2, 2)), np.array([[1.0, 2.0], [3.0, 4.0]])))
+        self.assertEqual(box.volume(), 24.0)
+        self.assertEqual(EXAMPLE.volume(), 0.0)
+
+    def test_vertices(self):
+        V = EXAMPLE.vertices()
+        self.assertEqual(len(V), 1)
+        self.assertEqual(V[0].shape, (8, 2, 2))
+        np.testing.assert_allclose(V[0][0], [[1, -1], [0, 2]])
+        np.testing.assert_allclose(V[0][1], [[1, 1], [0, 2]])
+        np.testing.assert_allclose(V[0][7], [[2, 1], [3, 2]])
+        self.assertTrue(all(EXAMPLE.contains(v, tol=0.0) for v in V[0]))
+        with self.assertRaises(cora.errors.NotSupported):
+            cora.IntervalMatrix(np.zeros((5, 5)), np.ones((5, 5))).vertices()
+
+
+class MoreOperations(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("eigen"))
+
+    def test_dim_and_interval(self):
+        wide = cora.IntervalMatrix(np.array([[1.0, 2.0, 3.0]]))
+        self.assertEqual(EXAMPLE.dim(), (2, 2))
+        self.assertEqual((wide.dim(), wide.dim(1), wide.dim(2)), ((1, 3), 1, 3))
+        with self.assertRaises(cora.errors.WrongValue):
+            wide.dim(3)
+        np.testing.assert_allclose(EXAMPLE.interval.inf, [[1, -1], [0, 2]])
+        np.testing.assert_allclose(EXAMPLE.interval.sup, [[2, 1], [3, 2]])
+
+    def test_display(self):
+        text = repr(EXAMPLE)
+        self.assertTrue(text.startswith("intervalMatrix\n- dimension: 2  2\n- infimum:\n"))
+        self.assertIn("- supremum:", text)
+
+    def test_generate_random(self):
+        rng = cora.Rng(28)
+        for _ in range(20):
+            A = cora.IntervalMatrix.generate_random(rng)
+            self.assertTrue(1 <= A.rows <= 10 and 1 <= A.cols <= 10)
+            self.assertTrue(np.all(A.rad >= 0) and np.all(A.rad <= 10 + 1e-9))
+        self.assertEqual(cora.IntervalMatrix.generate_random(rng, dimension=(3, 4)).dim(), (3, 4))
+        center = np.arange(6.0).reshape(2, 3)
+        A = cora.IntervalMatrix.generate_random(rng, center=center, max_radius=0.5)
+        np.testing.assert_allclose(A.center, center, atol=1e-12)
+        np.testing.assert_allclose(A.rad, 0.5, atol=1e-12)
+        a, b = cora.Rng(5), cora.Rng(5)
+        np.testing.assert_array_equal(cora.IntervalMatrix.generate_random(a).interval.inf,
+                                      cora.IntervalMatrix.generate_random(b).interval.inf)
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.IntervalMatrix.generate_random(rng, max_radius=-1.0)
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.IntervalMatrix.generate_random(rng, dimension=(0, 2))
+        with self.assertRaises(cora.errors.WrongInputInConstructor):
+            cora.IntervalMatrix.generate_random(rng, center=np.ones((1, 2)), max_radius=np.ones((2, 2)))
+
+    def test_closed_form_bounds(self):
+        A = cora.IntervalMatrix(np.array([[0.2]]), np.array([[0.1]]))
+        self.assertAlmostEqual(float(A.expm_norm_infinity(1.0)), 0.01 / 0.765 + 0.1 / 0.85, places=12)
+        with self.assertRaises(cora.errors.WrongValue):
+            A.expm_norm_infinity(-1.0)
+        B = cora.IntervalMatrix(np.array([[0.5]]), np.array([[0.5]]))
+        np.testing.assert_allclose(B.expm_absolute_bound(1.0), [[4.0 / 3.0]], rtol=1e-12)
+        C = cora.IntervalMatrix(np.array([[0.3, -0.2], [0.1, 0.4]]), np.array([[0.1, 0.05], [0.02, 0.1]]))
+        absC, S, n = np.abs(C.center), C.rad, 2
+        O = np.zeros((n, n))
+        G = np.block([[absC / 2, O, O], [S / 2, (absC + S) / 2, O], [O, np.eye(n), np.eye(n)]])
+        limit = np.linalg.matrix_power(G, 300) @ np.vstack([absC, S, O])
+        np.testing.assert_allclose(C.expm_absolute_bound(1.0), limit[2 * n:], atol=1e-9)
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            cora.IntervalMatrix(np.ones((1, 3))).expm_absolute_bound(1.0)
+
+    def test_taylor_horner_scaling(self):
+        A = cora.IntervalMatrix(np.array([[-1.0]]))
+        for style in (0, 1):
+            E = A.expm_taylor_horner_scaling(2, style)
+            np.testing.assert_allclose([E.interval.inf[0], E.interval.sup[0]], [5 / 18, 13 / 18], rtol=1e-12)
+        self.assertTrue(A.expm_taylor_horner_scaling(2, 2).contains(np.array([[np.exp(-1.0)]])))
+        self.assertIsNone(cora.IntervalMatrix(np.array([[5.0]])).expm_taylor_horner_scaling(2, 0))
+        rng = np.random.default_rng(38)
+        S = random_matrix(rng, 3, 0.3)
+        for style in (0, 1, 2):
+            E = S.expm_taylor_horner_scaling(8, style, 2)
+            self.assertTrue(all(E.contains(exponential(member(S, rng)), tol=1e-12) for _ in range(20)))
+        for style in (0, 1, 2, 4):
+            E = S.expm_different_algorithms(8, style)
+            self.assertTrue(all(E.contains(exponential(member(S, rng)), tol=1e-12) for _ in range(20)))
+        np.testing.assert_array_equal(S.expm_different_algorithms(6, 4).interval.inf,
+                                      S.expm(6).enclosure.interval.inf)
+        np.testing.assert_array_equal(S.expm_different_algorithms(6, 1).interval.inf,
+                                      S.expm_taylor_horner_scaling(6, 1).interval.inf)
+        for call in (lambda: A.expm_taylor_horner_scaling(3, 3), lambda: A.expm_taylor_horner_scaling(3, 4),
+                     lambda: A.expm_taylor_horner_scaling(0, 1), lambda: A.expm_different_algorithms(3, 3)):
+            with self.assertRaises(cora.errors.WrongValue):
+                call()
+
+    def test_independent_mixed(self):
+        N = cora.IntervalMatrix(np.array([[0.0, 1.0], [0.0, 0.0]]))
+        R = N.expm_independent_mixed(2, 5)
+        np.testing.assert_allclose(R.enclosure.interval.inf, [[1, 1], [0, 1]])
+        self.assertEqual((len(R.powers), len(R.powers2)), (2, 3))
+        rng = np.random.default_rng(36)
+        A = random_matrix(rng, 3, 0.2)
+        R = A.expm_independent_mixed(3, 9)
+        total = cora.IntervalMatrix(R.enclosure.interval + R.enclosure_rest.interval)
+        self.assertTrue(all(total.contains(exponential(member(A, rng)), tol=1e-12) for _ in range(20)))
+        with self.assertRaises(cora.errors.WrongValue):
+            A.expm_independent_mixed(0, 3)
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            cora.IntervalMatrix(np.ones((1, 3))).expm_independent_mixed(1, 3)
+
+
 class Gradients(unittest.TestCase):
     """Autograd through the operations equals central differences (piecewise ones off their kinks)."""
 
@@ -246,6 +447,18 @@ class Gradients(unittest.TestCase):
         self.check(lambda A: A @ A, center, delta)
         self.check(lambda A: A.dependent_terms(0.5)[1], center, delta)
         self.check(lambda A: A.expm(6).enclosure, center, delta)
+        self.check(lambda A: A + A, center, delta)
+        self.check(lambda A: A + 1.5, center, delta)
+        self.check(lambda A: A.powers(4)[3], center, delta)
+        self.check(lambda A: A.rad, center, delta)
+        self.check(lambda A: A.supremum, center, delta)
+        self.check(lambda A: A.volume(), center, delta)
+        self.check(lambda A: A.vertices()[0], center, delta)
+        self.check(lambda A: A.expm_norm_infinity(0.5), center, delta)
+        self.check(lambda A: A.expm_absolute_bound(0.5), center, delta)
+        for style in (0, 1, 2):
+            self.check(lambda A: A.expm_taylor_horner_scaling(6, style), center, delta)
+        self.check(lambda A: A.expm_independent_mixed(2, 6).enclosure, center, delta)
 
 
 if __name__ == "__main__":

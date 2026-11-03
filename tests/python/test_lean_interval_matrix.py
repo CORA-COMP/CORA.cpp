@@ -12,6 +12,13 @@ Newton steps, so CORA.cpp's correctly rounded root is inside the bound but not i
 # ORACLE: matrixSet/@intervalMatrix/intervalMatrix.m
 # ORACLE: matrixSet/@intervalMatrix/mpower.m
 # ORACLE: matrixSet/@intervalMatrix/mtimes.m
+# ORACLE: matrixSet/@intervalMatrix/plus.m
+# ORACLE: matrixSet/@intervalMatrix/powers.m
+# ORACLE: matrixSet/@intervalMatrix/rad.m
+# ORACLE: matrixSet/@intervalMatrix/representsa.m
+# ORACLE: matrixSet/@intervalMatrix/supremum.m
+# ORACLE: matrixSet/@intervalMatrix/vertices.m
+# ORACLE: matrixSet/@intervalMatrix/volume.m
 
 import unittest
 
@@ -82,6 +89,43 @@ class Oracle(unittest.TestCase):
                 M = rnd.matrix(n, p)
                 oracle.check((A @ M).interval, lean_of(A).matmul(cora.lean.Interval(point(M))))
         oracle.run("intervalMatrix.mtimes", run)
+
+    def test_sums_and_queries(self):
+        self.each("intervalMatrix.rad", lambda rnd, A, L: oracle.check(A.rad, L.rad()))
+        self.each("intervalMatrix.supremum", lambda rnd, A, L: oracle.check(A.supremum, L.supremum()))
+        self.each("intervalMatrix.volume", lambda rnd, A, L: oracle.check(A.volume(), L.volume()))
+
+        def plus(rnd, A, L):
+            B = box_matrix(rnd, A.rows, A.cols)
+            M = rnd.matrix(A.rows, A.cols)
+            oracle.check((A + B).interval, L.plus(cora.lean.Interval(B.interval)))
+            oracle.check((A + M).interval, L.plus(cora.lean.Interval(point(M))))
+        self.each("intervalMatrix.plus", plus)
+
+        def represents(rnd, A, L):
+            M = rnd.matrix(A.rows, A.cols)
+            # at dtype nearest the oracle's emptySet is true for inf = sup: only boxes of positive radius
+            for S in (A, cora.IntervalMatrix(M), cora.IntervalMatrix(0.0 * M)):
+                for kind in ("emptySet", "point", "origin"):
+                    if kind != "emptySet" or S is A:
+                        oracle.check(S.representsa(kind, tol=0.0), lean_of(S).representsa(kind, 0.0))
+        self.each("intervalMatrix.representsa", represents)
+
+    def test_powers(self):
+        def powers(rnd, A, L):
+            X = box_matrix(rnd, A.rows, A.cols)
+            for k in (0, 1, 2, 4):
+                oracle.check(A.powers(k + 1)[-1].interval, L.powers(cora.lean.Interval(A.interval), k))
+                oracle.check(A.powers(k + 3, 3, X)[-1].interval, L.powers(cora.lean.Interval(X.interval), k))
+        self.each("intervalMatrix.powers", powers, ((2, 2), (3, 3), (4, 4)))
+
+    def test_vertices(self):
+        def vertices(rnd, A, L):
+            theirs = [np.asarray(V.gather()) for V in L.vertices().V]
+            theirs.sort(key=lambda M: tuple(M.T.reshape(-1)))
+            mine = A.vertices()[0]
+            np.testing.assert_array_equal(mine, np.stack(theirs))
+        self.each("intervalMatrix.vertices", vertices, ((2, 2), (1, 3), (3, 2)))
 
     def test_the_infinity_norm(self):
         self.each("intervalMatrix.infNorm",

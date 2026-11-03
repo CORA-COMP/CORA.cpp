@@ -69,13 +69,21 @@ struct Decode<EmptySet> {
         return EmptySet(std::stoll(j.at("n").text));
     }
 };
-// Indices and lists of zonotopes are JSON arrays.
+// Indices and lists of matrices or zonotopes are JSON arrays.
 template <>
 struct Decode<std::vector<int64_t>> {
     static std::vector<int64_t> of(const std::string &, const Json &j) {
         std::vector<int64_t> indices;
         for (const Json &i : j.items) indices.push_back(std::stoll(i.text));
         return indices;
+    }
+};
+template <>
+struct Decode<std::vector<Tensor>> {
+    static std::vector<Tensor> of(const std::string &dt, const Json &j) {
+        std::vector<Tensor> matrices;
+        for (const Json &m : j.items) matrices.push_back(Tensor::from_json(dt, m));
+        return matrices;
     }
 };
 template <>
@@ -112,6 +120,8 @@ Wire::Wire(const Fullspace &F) : json(F.to_json()) {}
 Wire::Wire(const Zonotope &Z) : json(Z.to_json()), dtype(Z.center().dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
+
+// Lists ---------------------------------------------------------------------------------------
 
 Wire::Wire(const std::vector<std::vector<Tensor>> &Tss) {
     json = Json::array();
@@ -152,6 +162,7 @@ template Fullspace Reply::get<Fullspace>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
+template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
 template std::vector<Zonotope> Reply::get<std::vector<Zonotope>>(const char *) const;
 template std::optional<double> Reply::get<std::optional<double>>(const char *) const;
 template std::optional<Tensor> Reply::get<std::optional<Tensor>>(const char *) const;
