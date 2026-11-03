@@ -6,6 +6,7 @@
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/error.h"
+#include "cora/global/threads.h"
 
 #include <limits>
 
@@ -297,6 +298,7 @@ struct TorchBackend : Tensor::Backend {
 
 std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device,
                                                      bool custom_backward) {
+    configure_threads(); // libtorch's pools, before any work
     return std::make_shared<TorchBackend>(device, custom_backward);
 }
 
@@ -307,6 +309,18 @@ Tensor from_torch(const torch::Tensor &t, bool custom_backward) {
 torch::Tensor to_torch(const Tensor &t) {
     if (!is_torch(t)) CORA_FAIL(Error::wrong_value, "to_torch: not a tensor of the torch backend");
     return static_cast<const TorchTensor &>(t.impl()).t;
+}
+
+void torch_set_threads(int n) {
+    at::set_num_threads(n);
+    static const bool inter_op = [n] {
+        try {
+            at::set_num_interop_threads(n);
+        } catch (const c10::Error &) { // the host program has used the pool already
+        }
+        return true;
+    }();
+    (void)inter_op;
 }
 
 torch::Device torch_device(const std::string &name) {

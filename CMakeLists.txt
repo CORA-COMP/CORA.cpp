@@ -98,7 +98,9 @@ function(cora_executable name source folder)
 endfunction()
 
 # Windows finds libtorch's DLLs through PATH: the tests that run a program get it in front.
+# ctest runs the tests side by side, so each gets one thread (a test about threads sets its own).
 function(cora_run_environment test)
+  set_property(TEST ${test} APPEND PROPERTY ENVIRONMENT "CORACPP_NUM_THREADS=1")
   if(WIN32 AND CORACPP_HAS_TORCH)
     set_property(TEST ${test} APPEND PROPERTY ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${CORACPP_TORCH_LIB}")
   endif()

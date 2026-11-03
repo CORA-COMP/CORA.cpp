@@ -77,6 +77,11 @@ other's. Reading a setting is one thread-local load plus, without a scope, an at
 lock is taken. Files: `include/cora/global/tensor/tensor.h` (backend),
 `include/cora/global/settings.h`, `include/cora/global/oracle/oracle.h`.
 
+**Threads.** `max_threads()` is the width of every pool (OpenMP, Eigen, libtorch): the first of
+`set_num_threads(n)` (Python `cora.set_num_threads`), `CORACPP_NUM_THREADS`, `OMP_NUM_THREADS`, and
+the least of the cgroup CPU quota, the affinity mask and the physical cores. ctest gives every test
+one thread. Files: `include/cora/global/threads.h`, `src/global/threads.cpp`.
+
 **The data decides the backend.** The scoped or default backend applies only where a tensor is
 made from raw numbers: `Tensor({{1, 2}})`, `Tensor::from_data`, `generate_random`, and the gather
 of an oracle result.

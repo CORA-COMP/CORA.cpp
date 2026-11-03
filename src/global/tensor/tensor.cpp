@@ -202,6 +202,14 @@ const Tensor::Backend &backend(const std::string &spec) {
     return *it->second;
 }
 
+namespace detail {
+void set_backend_threads([[maybe_unused]] int n) {
+#ifdef CORACPP_TORCH
+    torch_set_threads(n);
+#endif
+}
+} // namespace detail
+
 // This thread's backend: a scope's, else the process default ($CORACPP_BACKEND or the best built
 // in).
 const Tensor::Backend &backend() {

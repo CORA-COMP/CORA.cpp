@@ -13,7 +13,8 @@ Sets are immutable values with properties (Z.center, Z.generators, Z.dim) and op
 &, |, in, -). Settings are scoped: `with cora.backend("torch"):`, `with cora.checks(False):`,
 `with cora.strict_gradients():`, `with cora.tolerance(1e-10):` (the `tol` of every call that
 is given none; default: `cora.default_tol(dtype)`). cora.tensor_ops() lists the Tensor operations
-with their tags.
+with their tags. cora.set_num_threads(n) sets the width of the thread pools (default: the CPU
+quota, the affinity mask and the physical cores; env CORACPP_NUM_THREADS or OMP_NUM_THREADS).
 Errors are cora.errors classes (cora.errors.DimensionMismatch, ...), warnings cora.CORAWarning.
 A Python subclass of cora.ContSet, a pair registered with cora.register_binary and an algorithm
 registered with cora.register_algorithm work like the built-in ones.
@@ -31,9 +32,9 @@ from ._cora import (ContSet, Expr, Falsification, Interval, LinearSys, NeuralNet
                     ReachProblem, ReachSet, Rng, Specification, VerifyResult, Zonotope, backend,
                     binary_pairs, cart_prod, checks, checks_enabled, contains, convex_hull,
                     cora_color, current_backend, current_tolerance, has_torch, intersect,
-                    is_intersecting, lean, plus, register_binary, set_checks_enabled,
-                    set_default_backend, set_default_tolerance, strict_gradients, tensor_ops,
-                    tolerance, unite, use_cora_colors)
+                    is_intersecting, lean, num_threads, plus, register_binary, set_checks_enabled,
+                    set_default_backend, set_default_tolerance, set_num_threads,
+                    strict_gradients, tensor_ops, tolerance, unite, use_cora_colors)
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
 from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
@@ -50,9 +51,10 @@ __all__ = [
     "Specification", "VerifyResult", "Zonotope", "backend", "binary_pairs", "cart_prod", "checks",
     "checks_enabled", "contains", "convex_hull", "cora_color", "current_backend",
     "current_tolerance", "default_tol", "errors",
-    "has_torch", "intersect", "is_intersecting", "lean", "plot", "plot_over_time",
+    "has_torch", "intersect", "is_intersecting", "lean", "num_threads", "plot", "plot_over_time",
     "plot_rand_point", "plus", "register_algorithm", "register_binary", "set_checks_enabled",
-    "set_default_backend", "set_default_tolerance", "strict_gradients", "subplots", "tensor_ops",
+    "set_default_backend", "set_default_tolerance", "set_num_threads", "strict_gradients",
+    "subplots", "tensor_ops",
     "to_tikz", "tolerance", "unite",
     "use_cora_colors", "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",

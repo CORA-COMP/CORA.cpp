@@ -29,6 +29,9 @@ int axis_of(int axis, int64_t rank, const char *op);
 /// under GradientsScope), when it needs gradients; else t itself.
 Tensor without_gradient(TensorOp op, const Tensor &t);
 
+/// Sets the thread pools of the compiled-in backends (libtorch) to `n`.
+void set_backend_threads(int n);
+
 } // namespace detail
 
 namespace derived {
