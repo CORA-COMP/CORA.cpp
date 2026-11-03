@@ -91,21 +91,10 @@ Use it from another CMake project after `cmake --install build --prefix <dir>`:
 ## Coverage
 
 How much of CORA this has, and how much of it is checked against CORALean, per CORA method
-([the tables](coverage/README.md), generated from the tree and enforced by `ctest`):
+([the tables](coverage/README.md), generated from the tree and enforced by `ctest`).
 
-<!-- coverage:begin -->
-| Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
-|---|---|---|---|---|---|---|---|---|
-| [contSet](coverage/contSet/) | 908 | 660 | 19 | 26 | 48 | 141 | 14 | 54 |
-| [contDynamics](coverage/contDynamics/) | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
-| [hybridDynamics](coverage/hybridDynamics/) | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [nn](coverage/nn/) | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
-| [specification](coverage/specification/) | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
-| [others](coverage/others/) | 212 | 180 | 0 | 0 | 22 | 10 | 0 | 22 |
-| **all** | 1696 | 1396 | 25 | 40 | 70 | 151 | 14 | 87 |
-
-17% of the 1682 CORA methods in scope have a source, 16% are tested in C++ and Python, 9% are checked against CORALean; oracle debt 87.
-<!-- coverage:end -->
+`python scripts/coverage/coverage.py --summary` prints the totals per group and class; every CI run shows
+them in its job summary.
 
 ## Connection to CORALean
 

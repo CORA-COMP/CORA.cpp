@@ -1,6 +1,6 @@
 """coverage - how much of CORA CORA.cpp has, and how much of it is checked: computed from the tree
 
-Syntax:   python scripts/coverage/coverage.py [--check] [--accept-drop <row>]... [--accept-debt]
+Syntax:   python scripts/coverage/coverage.py [--check] [--accept-drop <row>]... [--accept-debt] [--summary]
 Reads:    coverage/cora-inventory.json (the rows), coverage/coralean-status.json (what CORALean has),
           coverage/out-of-scope.md (the ledger), and the tags of the sources and the tests:
             `// CORA: <path>.m[:method]`       in a source (src/, include/) or a C++ test (`# CORA:` in Python)
@@ -8,11 +8,12 @@ Reads:    coverage/cora-inventory.json (the rows), coverage/coralean-status.json
             `// PROPERTY: <path>.m[:method]`   a test of a stated property on randomized inputs, fixed seeds
             `// ORACLE: <path>.m[:method]`     a test against CORALean (bit-exact at nearest, inside the enclosure)
           `<path>` is the CORA file relative to the CORA root; `:method` names a method of a single-file class.
-Writes:   coverage/status.json (each row's status, the ceiling of the oracle debt), coverage/README.md,
-          coverage/<group>/<class>.md and the numbers block of README.md. Never by hand.
+Writes:   coverage/status.json (each row's status), coverage/README.md and coverage/<group>/<class>.md.
+          Never by hand. No committed file holds totals, so PRs on different classes never conflict;
+          --summary prints the totals per group and class (CI shows them in the job summary).
 Checks:   --check: the files above are current; every tag names an inventory row; every public operation
           has a tag or a `CORA.cpp only:` reason; no row falls below its committed status (`--accept-drop
-          <row>` records a drop); the oracle debt does not exceed its committed ceiling (`--accept-debt`).
+          <row>` records a drop); no row becomes oracle debt (`--accept-debt` accepts it).
 Exit code: 0 if all holds (or the files are written), else 1 with what is wrong.
 """
 import argparse
@@ -39,7 +40,6 @@ TAG = re.compile(r"^(?://|#) (CORA|PROPERTY|ORACLE): (\S+)\s*$")
 ONLY = re.compile(r"^// CORA\.cpp only: \S")
 SEED = re.compile(r"Rng\s+\w+\(\s*\d+\s*\)|Rng\(\s*\d+\s*\)|manual_seed\(|default_rng\(\s*\d+|"
                   r"RandomState\(\s*\d+|random\.seed\(|Random\(\s*\d+")
-BEGIN, END = "<!-- coverage:begin -->", "<!-- coverage:end -->"
 LEAN_NOT_ORACLE = "CORALean has it (proved, float or bound) and CORA.cpp does not yet check against it"
 
 HEADER = """# CORA coverage
@@ -63,8 +63,8 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 (`:method` is not needed for the file's own name).
 
 `ctest` runs `coverage.py --check` first: a row may not fall below the status in `status.json`
-(`--accept-drop <row>` records a drop), and the **oracle debt**, the rows that are `ported` or
-`property` while CORALean has them, may not exceed the committed count (`--accept-debt`).
+(`--accept-drop <row>` records a drop), and no row may become **oracle debt**, `ported` or
+`property` while CORALean has it (`--accept-debt`). `coverage.py --summary` prints the totals.
 """
 
 
@@ -368,33 +368,23 @@ def generate(root, inventory, lean, evidence, ledger, names):
     status = statuses(groups, evidence, ledger)
     files = {}
     commit = inventory.get("cora_commit", "unknown")[:7]
-    files["coverage/README.md"] = (HEADER.replace("{commit}", f"CORA commit {commit}") + "\n## Totals\n\n"
-                                   + group_table(groups, status, lean) + "\n## Classes\n\n"
-                                   + class_tables(groups, status, lean))
+    files["coverage/README.md"] = HEADER.replace("{commit}", f"CORA commit {commit}")
     for g in GROUP_ORDER:
         for c in groups.get(g, {}):
             files[f"coverage/{g}/{c}.md"] = class_page(g, c, groups, status, evidence, lean, names)
-    debt = oracle_debt(status, lean)
-    files["coverage/status.json"] = status_text(inventory, status, len(debt))
-    return files, status, debt
+    files["coverage/status.json"] = status_text(inventory, status)
+    return files, status
 
 
-def status_text(inventory, status, debt):
+def status_text(inventory, status):
     rows = ",\n".join(f"  {json.dumps(k)}: {json.dumps(v)}" for k, v in status.items())
     return (f'{{\n "cora_commit": {json.dumps(inventory.get("cora_commit", "unknown"))},\n'
-            f' "oracle_debt": {debt},\n "rows": {{\n{rows}\n }}\n}}\n')
+            f' "rows": {{\n{rows}\n }}\n}}\n')
 
 
-def numbers_block(groups, status, lean):
-    return f"{BEGIN}\n{group_table(groups, status, lean, lambda g: f'[{g}](coverage/{g}/)')}{END}"
-
-
-def with_numbers(readme, block):
-    """README.md with its numbers block replaced, None if it has no markers."""
-    start, end = readme.find(BEGIN), readme.find(END)
-    if start < 0 or end < start:
-        return None
-    return readme[:start] + block + readme[end + len(END):]
+def summary(groups, status, lean):
+    """The totals per group and per class, as markdown."""
+    return ("## Coverage\n\n" + group_table(groups, status, lean) + "\n" + class_tables(groups, status, lean))
 
 
 # ------------------------------------------------------------------------------- the checks
@@ -412,8 +402,8 @@ def compare(root, expected, problems):
                         f"{shown}); rerun `python scripts/coverage/coverage.py`")
 
 
-def ratchet(status, committed, debt, accept_drop, accept_debt):
-    """`(problems, warnings)` of the status against the committed one and of the debt against its ceiling."""
+def ratchet(status, committed, lean, accept_drop, accept_debt):
+    """`(problems, warnings)` of the status against the committed one: no drop, no new oracle debt."""
     problems, warnings = [], []
     rows = committed.get("rows", {})
     for key, old in rows.items():
@@ -426,11 +416,13 @@ def ratchet(status, committed, debt, accept_drop, accept_debt):
         else:
             problems.append(f"{message}: coverage may only go up; if the drop is intended, run "
                             f"`python scripts/coverage/coverage.py --accept-drop {key}`")
-    ceiling = committed.get("oracle_debt")
-    if ceiling is not None and debt > ceiling:
-        message = f"oracle debt {debt} exceeds the committed {ceiling}: {LEAN_NOT_ORACLE}"
+    was = set(oracle_debt({k: v for k, v in rows.items() if k in status}, lean))
+    new = [k for k in oracle_debt(status, lean) if k not in was]
+    if new:
+        shown = ", ".join(new[:4]) + (" ..." if len(new) > 4 else "")
+        message = f"{len(new)} new rows of oracle debt ({shown}): {LEAN_NOT_ORACLE}"
         if accept_debt:
-            warnings.append(f"{message}: growth accepted")
+            warnings.append(f"{message}: accepted")
         else:
             problems.append(f"{message}; add the ORACLE test, or run "
                             "`python scripts/coverage/coverage.py --accept-debt`")
@@ -449,19 +441,14 @@ def run(root, check=True, accept_drop=(), accept_debt=False, cora=None):
     ledger, more = ledger_of(root, groups)
     problems += more + tagged_but_out_of_scope(evidence, ledger) + tests_without_source(evidence, groups)
     problems += existence_problems(root, cora, inventory)
-    expected, status, debt = generate(root, inventory, lean, evidence, ledger, python_names(root))
+    expected, status = generate(root, inventory, lean, evidence, ledger, python_names(root))
     committed = load_json(root / "coverage" / "status.json")
-    more, warnings = ratchet(status, committed, len(debt), set(accept_drop), accept_debt)
+    more, warnings = ratchet(status, committed, lean, set(accept_drop), accept_debt)
     problems += more
-    block = numbers_block(groups, status, lean)
-    readme = (root / "README.md").read_text(encoding="utf-8") if (root / "README.md").is_file() else ""
-    if with_numbers(readme, block) is None:
-        problems.append(f"README.md: has no `{BEGIN}` ... `{END}` block for the numbers")
-    elif check:
-        expected["README.md"] = with_numbers(readme, block)
+    if check:
         compare(root, expected, problems)
     if not check and not problems:
-        write(root, expected, readme, block)
+        write(root, expected)
     return problems, warnings
 
 
@@ -490,7 +477,7 @@ def existence_problems(root, cora, inventory):
     return out
 
 
-def write(root, expected, readme, block):
+def write(root, expected):
     """Writes the generated files, and removes the tables of classes that are gone."""
     for path in sorted((root / "coverage").glob("*/*.md")):
         path.unlink()
@@ -498,7 +485,6 @@ def write(root, expected, readme, block):
         target = root / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding="utf-8")
-    (root / "README.md").write_text(with_numbers(readme, block), encoding="utf-8")
 
 
 def main():
@@ -506,8 +492,15 @@ def main():
     parser.add_argument("--check", action="store_true", help="verify, write nothing")
     parser.add_argument("--accept-drop", action="append", default=[], metavar="ROW",
                         help="accept that ROW (group/class/method) fell below its committed status")
-    parser.add_argument("--accept-debt", action="store_true", help="accept growth of the oracle debt")
+    parser.add_argument("--accept-debt", action="store_true", help="accept rows that become oracle debt")
+    parser.add_argument("--summary", action="store_true", help="print the totals as markdown, check nothing")
     args = parser.parse_args()
+    if args.summary:
+        inventory = load_json(REPO / "coverage" / "cora-inventory.json")
+        lean = load_json(REPO / "coverage" / "coralean-status.json").get("rows", {})
+        status = load_json(REPO / "coverage" / "status.json").get("rows", {})
+        print(summary(inventory["groups"], status, lean), end="")
+        return 0
     cora = inventory_file.cora_checkout()
     problems, warnings = run(REPO, args.check, args.accept_drop, args.accept_debt, cora)
     for warning in warnings:
@@ -517,7 +510,7 @@ def main():
     if problems:
         print(f"coverage: {len(problems)} problems")
         return 1
-    print("coverage: all constraints hold" if args.check else "coverage: wrote coverage/ and README.md")
+    print("coverage: all constraints hold" if args.check else "coverage: wrote coverage/")
     return 0
 
 

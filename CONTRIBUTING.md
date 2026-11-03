@@ -67,8 +67,10 @@ it, and `ctest` (`coverage`, the first test) fails when it is stale.
   `oracle` (`// ORACLE:` a test against CORALean, in `tests/**/oracle/` or `test_lean*`), `out-of-scope`
   (a row with its reason in `coverage/out-of-scope.md`).
 - Coverage only goes up: a row below its status in `coverage/status.json` fails the check
-  (`--accept-drop <row>` records a drop). The oracle debt, the rows that are `ported` or `property`
-  while CORALean has them (`coverage/coralean-status.json`), may not grow (`--accept-debt`).
+  (`--accept-drop <row>` records a drop). No row may become oracle debt, `ported` or `property`
+  while CORALean has it (`coverage/coralean-status.json`), unless `--accept-debt`.
+- No committed file holds totals, so PRs on different classes do not conflict; `coverage.py
+  --summary` prints them, and CI shows them in the job summary.
 - `scripts/coverage/inventory.py` regenerates the rows from a CORA checkout (`~/CORA` or `CORA_DIR`);
   `scripts/coverage/import_coralean.py <CORALean>` refreshes what CORALean has. Both run on demand.
 - `tests/global/test_coverage.py` tests the checker.
