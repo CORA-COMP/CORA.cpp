@@ -3,7 +3,7 @@
 Syntax:   python tests/global/test_coverage.py
 Checks:   on a small fake tree (two CORA methods, a source, a C++ and a Python test): the clean tree
           passes; a tag to a nonexistent row, a stale table, an operation without a tag, a status
-          drop, a growing oracle debt, a test of an unimplemented row, a property test without a
+          drop, a row becoming oracle debt, a test of an unimplemented row, a property test without a
           seed, an oracle test without the helper and an out-of-scope row that is implemented each
           fail with a clear message.
 Exit code: 0 if all pass.
@@ -43,7 +43,6 @@ def make_tree(root, lean=True):
     write(root, "coverage/cora-inventory.json", json.dumps(INVENTORY))
     if lean:
         write(root, "coverage/coralean-status.json", json.dumps(LEAN))
-    write(root, "README.md", f"# fake\n\n{cov.BEGIN}\n{cov.END}\n")
     write(root, "src/cont_set/zonotope/plus.cpp", SOURCE)
     write(root, "tests/cont_set/zonotope/test_zonotope_plus.cpp", CPP_TEST)
     write(root, "tests/python/test_zonotope.py", PY_TEST)
@@ -87,10 +86,11 @@ class Checker(unittest.TestCase):
         table.write_text(table.read_text() + "\nedited by hand\n")
         self.assert_fails("generated files out of date")
 
-    def test_a_stale_readme_number_fails(self):
-        readme = self.root / "README.md"
-        readme.write_text(readme.read_text().replace(cov.BEGIN, cov.BEGIN + "\n| 1 | 2 |"))
-        self.assert_fails("generated files out of date")
+    def test_no_generated_file_holds_totals(self):
+        for path in (self.root / "coverage").rglob("*"):
+            if path.is_file() and path.name != "cora-inventory.json":
+                self.assertNotIn("**all**", path.read_text(), path)
+        self.assertNotIn("oracle_debt", (self.root / "coverage/status.json").read_text())
 
     def test_an_operation_without_a_tag_fails(self):
         write(self.root, "src/cont_set/zonotope/center.cpp", "// center - the center\n\nint y;\n")
@@ -113,7 +113,7 @@ class Checker(unittest.TestCase):
         (self.root / "tests/global/oracle/test_lean_plus.cpp").unlink()
         problems, _ = cov.run(self.root, check=False)
         self.assertTrue(any("may only go up" in p for p in problems))
-        self.assertTrue(any("oracle debt 1" in p for p in problems))  # the drop makes debt
+        self.assertTrue(any("1 new rows of oracle debt" in p for p in problems))  # the drop makes debt
         problems, _ = cov.run(self.root, check=False, accept_drop=["contSet/zonotope/plus"],
                               accept_debt=True)
         self.assertEqual(problems, [])
@@ -121,16 +121,22 @@ class Checker(unittest.TestCase):
         rows = json.loads((self.root / "coverage/status.json").read_text())["rows"]
         self.assertEqual(rows["contSet/zonotope/plus"], "ported")
 
-    def test_growing_oracle_debt_fails_unless_accepted(self):
+    def test_a_row_becoming_oracle_debt_fails_unless_accepted(self):
         write(self.root, "src/cont_set/zonotope/center.cpp", CENTER)
         write(self.root, "tests/cont_set/zonotope/test_zonotope_center.cpp",
               CPP_TEST.replace("plus", "center"))
         write(self.root, "tests/python/test_center.py",
               PY_TEST.replace("plus", "center").replace("test_zonotope", "test_center"))
-        self.assert_fails("oracle debt 1 exceeds the committed 0")
+        self.assert_fails("1 new rows of oracle debt (contSet/zonotope/center)")
         problems, warnings = self.check(accept_debt=True)
         self.assertFalse([p for p in problems if "oracle debt" in p])
-        self.assertTrue(any("growth accepted" in w for w in warnings))
+        self.assertTrue(any("oracle debt" in w and "accepted" in w for w in warnings))
+
+    def test_the_summary_has_the_totals(self):
+        status = json.loads((self.root / "coverage/status.json").read_text())["rows"]
+        text = cov.summary(INVENTORY["groups"], status, LEAN["rows"])
+        self.assertIn("| **all** | 2 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |", text)
+        self.assertIn("contSet/zonotope", text)
 
     def test_a_test_of_a_row_no_source_implements_fails(self):
         write(self.root, "tests/python/test_center.py",

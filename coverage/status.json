@@ -1,6 +1,5 @@
 {
  "cora_commit": "904a4442e68b1dc149a34e917dd63a7d3fb49a3a",
- "oracle_debt": 87,
  "rows": {
   "contSet/affine/affine": "todo",
   "contSet/capsule/and_": "todo",
