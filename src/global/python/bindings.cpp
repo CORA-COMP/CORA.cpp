@@ -766,7 +766,7 @@ void bind_interval(py::module_ &m) {
             py::arg("factor"), "The box scaled about its center by a number or per dimension")
         .def("ctranspose", &Interval::ctranspose, "The transpose of an interval matrix")
         .def("transpose", &Interval::transpose, "The transpose of an interval matrix")
-        .def_property_readonly("T", &Interval::transpose)
+        .def_property_readonly("T", &Interval::transpose, "The transposed box")
         .def(
             "supremum", [](const Interval &I) { return bounds(I.supremum()); }, "The upper bound")
         .def(
@@ -999,8 +999,8 @@ void bind_interval_matrix(py::module_ &m) {
              py::arg("center"), py::arg("delta") = py::none(),
              "The matrices C +- |D|; C alone is a point matrix; an Interval of matrix bounds is kept")
         .def_property_readonly("interval", &IntervalMatrix::interval, "The bounds, an Interval")
-        .def_property_readonly("rows", &IntervalMatrix::rows)
-        .def_property_readonly("cols", &IntervalMatrix::cols)
+        .def_property_readonly("rows", &IntervalMatrix::rows, "The number of rows")
+        .def_property_readonly("cols", &IntervalMatrix::cols, "The number of columns")
         .def_property_readonly("center", [](const IntervalMatrix &A) { return matrix(A.center()); },
                                "The center matrix (inf + sup) / 2")
         .def_property_readonly("infimum", [](const IntervalMatrix &A) { return matrix(A.infimum()); },
@@ -1208,9 +1208,10 @@ void bind_mat_zonotope(py::module_ &m) {
                                "The center matrix")
         .def_property_readonly("generators", [](const MatZonotope &A) { return matrix(A.generators()); },
                                "The generators (h, rows, cols), one matrix each")
-        .def_property_readonly("rows", &MatZonotope::rows)
-        .def_property_readonly("cols", &MatZonotope::cols)
-        .def_property_readonly("num_generators", &MatZonotope::num_generators)
+        .def_property_readonly("rows", &MatZonotope::rows, "The number of rows")
+        .def_property_readonly("cols", &MatZonotope::cols, "The number of columns")
+        .def_property_readonly("num_generators", &MatZonotope::num_generators,
+                               "The number of generator matrices h")
         .def("zonotope", &MatZonotope::zonotope,
              "The zonotope of the stacked matrices (column by column)")
         .def("interval_matrix", &MatZonotope::interval_matrix, "The box around the set, C +- sum |G_i|")
@@ -2929,28 +2930,28 @@ void bind_lean(py::module_ &top) {
 
     using LM = lean::IntervalMatrix;
     py::class_<lean::MatrixVertices>(m, "MatrixVertices", "The vertex matrices V and an error box E")
-        .def_readonly("V", &lean::MatrixVertices::V)
-        .def_readonly("E", &lean::MatrixVertices::E);
+        .def_readonly("V", &lean::MatrixVertices::V, "The vertex matrices, one (rows, cols) array each")
+        .def_readonly("E", &lean::MatrixVertices::E, "The error box around the vertices");
     py::class_<LM>(m, "IntervalMatrix", "An interval matrix of lean values and the oracle's operations")
         .def(py::init<LI>(), "bounds"_a)
-        .def_property_readonly("interval", &LM::interval)
-        .def("abs", &LM::abs)
-        .def("infimum", &LM::infimum)
-        .def("supremum", &LM::supremum)
-        .def("rad", &LM::rad)
-        .def("plus", &LM::plus, "B"_a)
-        .def("representsa", &LM::representsa, "type"_a, "tol"_a = 0.0)
-        .def("vertices", &LM::vertices)
-        .def("volume", &LM::volume)
-        .def("powers", &LM::powers, "P"_a, "k"_a)
-        .def("center", &LM::center)
-        .def("contains", &LM::contains, "M"_a, "tol"_a = 0.0)
-        .def("exact_square", &LM::exact_square)
-        .def("dependent_terms", &LM::dependent_terms, "r"_a)
-        .def("matrix_power", &LM::matrix_power, "exponent"_a)
-        .def("matmul", &LM::matmul, "B"_a)
-        .def("infinity_norm", &LM::infinity_norm)
-        .def("norm", &LM::norm, "type"_a, "steps"_a = 20);
+        .def_property_readonly("interval", &LM::interval, "CORALean's intervalMatrix.interval, run by the oracle")
+        .def("abs", &LM::abs, "CORALean's intervalMatrix.abs, run by the oracle")
+        .def("infimum", &LM::infimum, "CORALean's intervalMatrix.infimum, run by the oracle")
+        .def("supremum", &LM::supremum, "CORALean's intervalMatrix.supremum, run by the oracle")
+        .def("rad", &LM::rad, "CORALean's intervalMatrix.rad, run by the oracle")
+        .def("plus", &LM::plus, "B"_a, "CORALean's intervalMatrix.plus, run by the oracle")
+        .def("representsa", &LM::representsa, "type"_a, "tol"_a = 0.0, "CORALean's intervalMatrix.representsa, run by the oracle")
+        .def("vertices", &LM::vertices, "CORALean's intervalMatrix.vertices, run by the oracle")
+        .def("volume", &LM::volume, "CORALean's intervalMatrix.volume, run by the oracle")
+        .def("powers", &LM::powers, "P"_a, "k"_a, "CORALean's intervalMatrix.powers, run by the oracle")
+        .def("center", &LM::center, "CORALean's intervalMatrix.center, run by the oracle")
+        .def("contains", &LM::contains, "M"_a, "tol"_a = 0.0, "CORALean's intervalMatrix.contains, run by the oracle")
+        .def("exact_square", &LM::exact_square, "CORALean's intervalMatrix.exact_square, run by the oracle")
+        .def("dependent_terms", &LM::dependent_terms, "r"_a, "CORALean's intervalMatrix.dependent_terms, run by the oracle")
+        .def("matrix_power", &LM::matrix_power, "exponent"_a, "CORALean's intervalMatrix.matrix_power, run by the oracle")
+        .def("matmul", &LM::matmul, "B"_a, "CORALean's intervalMatrix.matmul, run by the oracle")
+        .def("infinity_norm", &LM::infinity_norm, "CORALean's intervalMatrix.infinity_norm, run by the oracle")
+        .def("norm", &LM::norm, "type"_a, "steps"_a = 20, "CORALean's intervalMatrix.norm, run by the oracle");
 
     using LE = lean::EmptySet;
     py::class_<LE>(m, "EmptySet", "The empty set of n dimensions and the oracle's operations on it")
@@ -2975,14 +2976,14 @@ void bind_lean(py::module_ &top) {
         .def("is_full_dim", &LE::is_full_dim, "tol"_a = 0.0,
                 "CORALean's emptyset.is_full_dim, run by the oracle")
         .def("center", &LE::center, "The center: None, the set has no point")
-        .def("interval", &LE::interval)
-        .def("vertices", &LE::vertices)
-        .def("lift", &LE::lift, "N"_a, "dims"_a)
-        .def("project", &LE::project, "dims"_a)
-        .def("project_high_dim", &LE::project_high_dim, "N"_a, "proj"_a)
-        .def("radius", &LE::radius)
-        .def("volume", &LE::volume)
-        .def("complement", &LE::complement);
+        .def("interval", &LE::interval, "CORALean's emptyset.interval, run by the oracle")
+        .def("vertices", &LE::vertices, "CORALean's emptyset.vertices, run by the oracle")
+        .def("lift", &LE::lift, "N"_a, "dims"_a, "CORALean's emptyset.lift, run by the oracle")
+        .def("project", &LE::project, "dims"_a, "CORALean's emptyset.project, run by the oracle")
+        .def("project_high_dim", &LE::project_high_dim, "N"_a, "proj"_a, "CORALean's emptyset.project_high_dim, run by the oracle")
+        .def("radius", &LE::radius, "CORALean's emptyset.radius, run by the oracle")
+        .def("volume", &LE::volume, "CORALean's emptyset.volume, run by the oracle")
+        .def("complement", &LE::complement, "CORALean's emptyset.complement, run by the oracle");
 
     py::class_<LZ>(m, "Zonotope", "A nominal zonotope plus an error box, and the oracle's operations")
         .def(py::init([](const Array &c, const Array &G) {
@@ -3092,24 +3093,24 @@ void bind_lean(py::module_ &top) {
         .def("intersect",
              py::overload_cast<const lean::Fullspace &>(&lean::Fullspace::intersect, py::const_),
              "F2"_a,
-                "CORALean's fullspace.intersect, run by the oracle")
+                "CORALean's fullspace.intersect, run by the oracle", "CORALean's fullspace.intersect, run by the oracle")
         .def("intersect", py::overload_cast<const LI &>(&lean::Fullspace::intersect, py::const_),
-             "I"_a)
-        .def("plus", &lean::Fullspace::plus, "F2"_a)
-        .def("convex_hull", &lean::Fullspace::convex_hull, "F2"_a)
-        .def("contains", &lean::Fullspace::contains, "I"_a)
-        .def("is_intersecting", &lean::Fullspace::is_intersecting, "I"_a)
-        .def("isequal", &lean::Fullspace::isequal, "F2"_a, "tol"_a = 0.0)
-        .def("is_bounded", &lean::Fullspace::is_bounded)
-        .def("is_full_dim", &lean::Fullspace::is_full_dim)
-        .def("center", &lean::Fullspace::center)
-        .def_static("enclose_points", &lean::Fullspace::enclose_points, "points"_a)
-        .def("lift", &lean::Fullspace::lift, "N"_a, "dims"_a)
-        .def("project", &lean::Fullspace::project, "dims"_a)
-        .def("project_high_dim", &lean::Fullspace::project_high_dim, "N"_a, "proj"_a)
-        .def("radius", &lean::Fullspace::radius)
-        .def("volume", &lean::Fullspace::volume)
-        .def("complement", &lean::Fullspace::complement);
+             "I"_a, "CORALean's fullspace.intersect with a box, run by the oracle")
+        .def("plus", &lean::Fullspace::plus, "F2"_a, "CORALean's fullspace.plus, run by the oracle")
+        .def("convex_hull", &lean::Fullspace::convex_hull, "F2"_a, "CORALean's fullspace.convex_hull, run by the oracle")
+        .def("contains", &lean::Fullspace::contains, "I"_a, "CORALean's fullspace.contains, run by the oracle")
+        .def("is_intersecting", &lean::Fullspace::is_intersecting, "I"_a, "CORALean's fullspace.is_intersecting, run by the oracle")
+        .def("isequal", &lean::Fullspace::isequal, "F2"_a, "tol"_a = 0.0, "CORALean's fullspace.isequal, run by the oracle")
+        .def("is_bounded", &lean::Fullspace::is_bounded, "CORALean's fullspace.is_bounded, run by the oracle")
+        .def("is_full_dim", &lean::Fullspace::is_full_dim, "CORALean's fullspace.is_full_dim, run by the oracle")
+        .def("center", &lean::Fullspace::center, "CORALean's fullspace.center, run by the oracle")
+        .def_static("enclose_points", &lean::Fullspace::enclose_points, "points"_a, "CORALean's fullspace.enclose_points, run by the oracle")
+        .def("lift", &lean::Fullspace::lift, "N"_a, "dims"_a, "CORALean's fullspace.lift, run by the oracle")
+        .def("project", &lean::Fullspace::project, "dims"_a, "CORALean's fullspace.project, run by the oracle")
+        .def("project_high_dim", &lean::Fullspace::project_high_dim, "N"_a, "proj"_a, "CORALean's fullspace.project_high_dim, run by the oracle")
+        .def("radius", &lean::Fullspace::radius, "CORALean's fullspace.radius, run by the oracle")
+        .def("volume", &lean::Fullspace::volume, "CORALean's fullspace.volume, run by the oracle")
+        .def("complement", &lean::Fullspace::complement, "CORALean's fullspace.complement, run by the oracle");
 
     py::class_<lean::ReachSet>(m, "ReachSet", "The reachable sets: lists of lean zonotopes")
         .def_readonly("time_interval", &lean::ReachSet::time_interval,
