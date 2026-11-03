@@ -93,6 +93,11 @@ changed, and the reasons are listed below.
 | `lift_(I, N, proj)` | `I.lift(N, dims)` | `I.lift(N, dims)` |
 | `interval.origin(n)` | `Interval::origin(n)` | `cora.Interval.origin(n)` |
 | `log(I)` | `I.log()` | `I.log()` |
+| `emptySet(n)`, `emptySet.empty(n)` | `EmptySet(n)`, `EmptySet::empty(n)` | `cora.EmptySet(n)`, `cora.EmptySet.empty(n)` |
+| `isBounded(E)`, `isFullDim(E)` | `E.is_bounded()`, `E.is_full_dim()` | `E.is_bounded()`, `E.is_full_dim()` |
+| `and(E, S)`, `plus(E, S)`, `convHull(E, S)` | `E.intersect(S)`, `E.plus(S)`, `E.convex_hull(S)` | the same |
+| `contains(E, S, type, tol)`, `isIntersecting(E, S, type, tol)`, `isequal(E, S, tol)` | `E.contains(S, tol)`, `E.is_intersecting(S, tol)`, `E.isequal(S, tol)` | the same |
+| `mtimes(M, E)`, `lift(E, N, dims)` | `E.linear_map(M)`, `M * E`, `E.lift(N, dims)` | `E.linear_map(M)`, `M @ E`, `E.lift(N, dims)` |
 | `intervalMatrix(I)` | `I.interval_matrix()` | `I.interval_matrix()` |
 | `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |

@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -185,6 +186,7 @@ inline Tensor vector_of(const py::handle &o, const char *what) {
 inline Set set_of(const py::handle &o) {
     if (py::isinstance<Zonotope>(o)) return Set(py::cast<Zonotope>(o));
     if (py::isinstance<Interval>(o)) return Set(py::cast<Interval>(o));
+    if (py::isinstance<EmptySet>(o)) return Set(py::cast<EmptySet>(o));
     if (py::isinstance<ContSet>(o)) {
         // the Python object owns the C++ part; the Set keeps the object alive
         const ContSet *S = py::cast<const ContSet *>(o);
@@ -199,7 +201,7 @@ inline Set set_of(const py::handle &o) {
         };
         return Set(std::shared_ptr<const ContSet>(S, release));
     }
-    CORA_FAIL(Error::wrong_value, "cora: expected a set (Zonotope, Interval, a ContSet), got " +
+    CORA_FAIL(Error::wrong_value, "cora: expected a set (Zonotope, Interval, EmptySet, a ContSet), got " +
                                       std::string(py::str(py::type::of(o).attr("__name__"))));
 }
 
@@ -208,6 +210,7 @@ inline py::object object_of(const Set &S) {
     switch (S.class_id()) {
     case ClassId::zonotope: return py::cast(S.as<Zonotope>());
     case ClassId::interval: return py::cast(S.as<Interval>());
+    case ClassId::empty_set: return py::cast(S.as<EmptySet>());
     default: return py::cast(&S.get(), py::return_value_policy::reference);
     }
 }

@@ -21,7 +21,7 @@ namespace cora {
 
 Set ContSet::project(const std::vector<int64_t> &dims) const {
     detail::Entry entry;
-    CORA_CHECK(center().shape().back() == 1, Error::not_supported, [] {
+    CORA_CHECK(center().shape().back() <= 1, Error::not_supported, [] {
         return std::string("project: needs a set of vectors, not an interval matrix");
     });
     CORA_CHECK(!dims.empty(), Error::wrong_value,

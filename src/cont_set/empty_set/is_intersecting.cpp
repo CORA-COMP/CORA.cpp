@@ -1,0 +1,33 @@
+// is_intersecting - whether a set meets the empty set, as CORA's emptySet.isIntersecting_
+//
+// Syntax:   bool b = E.is_intersecting(S);   bool b = E.is_intersecting(S, tol);
+// Inputs:   S - a set of the dimension of E;  tol - nonnegative, default 1e-8; relaxes nothing
+// Outputs:  b - false: the empty set has no point in common with any set
+// See also: intersect, Interval::is_intersecting
+//
+// CORA: contSet/@emptySet/isIntersecting_.m
+
+#include "cora/cont_set/empty_set/empty_set.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+
+// ===========================================  MAIN  =========================================== //
+
+bool EmptySet::is_intersecting(const ContSet &S, double tol) const {
+    detail::Entry entry;
+    CORA_CHECK(S.dim() == n_, Error::dimension_mismatch, [&] {
+        return "is_intersecting: the sets differ in dimension, " + std::to_string(n_) + " and " +
+               std::to_string(S.dim());
+    });
+    CORA_CHECK(tol >= 0, Error::wrong_value, [&] {
+        return "is_intersecting: tol must be nonnegative, got " + std::to_string(tol);
+    });
+    return false;
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
