@@ -17,6 +17,7 @@
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 // sets, the type-erased Set and the binary registry
 #include "cora/cont_set/cont_set.h"
+#include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/set.h"
@@ -28,6 +29,7 @@
 #include "cora/global/expr.h"
 #include "cora/global/linprog.h"
 #include "cora/global/options.h"
+#include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"

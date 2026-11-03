@@ -174,6 +174,12 @@ inline bool same_bits(const std::string &what, bool a, bool b) {
     return a == b;
 }
 
+/// A dimension or a count, exact.
+inline bool same_bits(const std::string &what, int64_t a, int64_t b) {
+    if (a != b) std::cerr << "  " << what << ": " << a << " in CORA.cpp, " << b << " in the oracle\n";
+    return a == b;
+}
+
 inline bool same_bits(const std::string &what, bool a, const lean::Certified &b) {
     return same_bits(what, a, b.value);
 }
@@ -236,6 +242,9 @@ inline bool enclosed(const std::string &what, bool a, const lean::Certified &b) 
 inline bool enclosed(const std::string &what, bool a, bool b) {
     return enclosed(what, a, lean::Certified{b, b});
 }
+
+/// A dimension or a count is exact.
+inline bool enclosed(const std::string &what, int64_t a, int64_t b) { return same_bits(what, a, b); }
 
 template <class A, class B>
 bool enclosed(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {

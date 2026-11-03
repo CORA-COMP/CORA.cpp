@@ -15,7 +15,7 @@
 // algorithm registered from Python (cora.register_algorithm) gets the problem checks of the
 // built-in ones. Errors arrive as cora.errors classes, warnings through warnings.warn.
 //
-// Syntax:   cora.Zonotope, Interval, ContSet, LinearSys, NonlinearSys, NeuralNetwork, Expr,
+// Syntax:   cora.Zonotope, Interval, EmptySet, ContSet, LinearSys, NonlinearSys, NeuralNetwork, Expr,
 //           ReachSet, Specification, VerifyResult, Rng, backend, checks, plus, register_binary
 // See also: convert.h, the C++ headers, which document every method
 
@@ -24,6 +24,7 @@
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/cont_set/registry.h"
+#include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"
@@ -696,6 +697,57 @@ void bind_interval(py::module_ &m) {
             "Whether p is in the box enlarged by tol per coordinate");
 }
 
+/// The set without points: what Python adds to the inherited ContSet methods.
+void bind_empty_set(py::module_ &m) {
+    py::class_<EmptySet, ContSet>(m, "EmptySet", "The empty set of n dimensions.")
+        .def(py::init([](const std::optional<int64_t> &n) {
+                 if (!n)
+                     CORA_FAIL(Error::no_input_in_set_constructor,
+                               "EmptySet: give the dimension, e.g. EmptySet(2)");
+                 return EmptySet(*n);
+             }),
+             py::arg("n") = py::none(), "The empty set of n >= 0 dimensions")
+        .def_static("empty", &EmptySet::empty, py::arg("n") = 0, "The empty set of n dimensions")
+        .def("is_bounded", &EmptySet::is_bounded, "Whether the set is bounded: always")
+        .def("is_full_dim", &EmptySet::is_full_dim, "Whether the interior is nonempty: never")
+        .def("intersect", &EmptySet::intersect, py::arg("S"), "The intersection with S: empty")
+        .def(
+            "plus",
+            [](const EmptySet &E, const py::object &S) {
+                if (py::isinstance<ContSet>(S)) return E.plus(py::cast<const ContSet &>(S));
+                return E.plus(vector_of(S, "the vector"));
+            },
+            py::arg("S"), "The sum with a set or a vector: empty")
+        .def(
+            "convex_hull",
+            [](const EmptySet &E, const py::object &S) {
+                return object_of(E.convex_hull(set_of(S)));
+            },
+            py::arg("S"), "The convex hull with S: S itself")
+        .def(
+            "contains",
+            [](const EmptySet &E, const py::object &S, Tol tol) {
+                if (py::isinstance<ContSet>(S)) return E.contains(py::cast<const ContSet &>(S), tol);
+                return E.contains(tensor_of(S, "the points"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether S (a set, or points (n, N)) is contained: only if it is empty")
+        .def("is_intersecting", &EmptySet::is_intersecting, py::arg("S"), py::arg("tol") = py::none(),
+             "Whether S meets the set: never")
+        .def("isequal", &EmptySet::isequal, py::arg("S"), py::arg("tol") = py::none(),
+             "Whether S is the empty set of the same dimension")
+        .def(
+            "linear_map",
+            [](const EmptySet &E, const py::object &M) {
+                if (is_number(M)) return E.linear_map(py::cast<double>(M));
+                if (py::isinstance<Interval>(M)) return E.linear_map(py::cast<Interval>(M));
+                return E.linear_map(tensor_of(M, "the matrix"));
+            },
+            py::arg("M"), "The image under a matrix, an interval matrix or a number: empty")
+        .def("lift", &EmptySet::lift, py::arg("N"), py::arg("dims"),
+             "The empty set in N dimensions");
+}
+
 /// The matrices of a cubic map T[i][k] from Python: a list of rows, each a list of arrays.
 std::vector<std::vector<Tensor>> matrices_of(const py::list &T) {
     std::vector<std::vector<Tensor>> out;
@@ -945,9 +997,10 @@ void bind_zonotope(py::module_ &m) {
 /// map), S + v, S - v, -S. What an operator does not understand it hands back to Python
 /// (NotImplemented), which raises the TypeError.
 void bind_operators(py::module_ &m) {
-    const py::object Z = m.attr("Zonotope"), I = m.attr("Interval");
+    const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet");
     Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
+    E.attr("__array_ufunc__") = py::none();
     const auto method = [](const py::object &cls, const char *name, auto f) {
         cls.attr(name) = py::cpp_function(f, py::is_method(cls));
     };
@@ -1037,6 +1090,16 @@ void bind_operators(py::module_ &m) {
     };
     method(I, "__rmul__", interval_product);
     method(I, "__rmatmul__", interval_product);
+
+    // EmptySet
+    const auto empty_set_product = [](const EmptySet &A, const py::object &o) -> py::object {
+        if (is_number(o)) return py::cast(py::cast<double>(o) * A);
+        if (py::isinstance<Interval>(o)) return py::cast(py::cast<Interval>(o) * A);
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
+        return not_implemented();
+    };
+    method(E, "__rmul__", empty_set_product);
+    method(E, "__rmatmul__", empty_set_product);
 }
 
 // Dynamics ---------------------------------------------------------------------------------------
@@ -1873,6 +1936,26 @@ void bind_lean(py::module_ &top) {
         .def("zonotope", &LI::zonotope)
         .def("vertices", &LI::vertices);
 
+    using LE = lean::EmptySet;
+    py::class_<LE>(m, "EmptySet", "The empty set of n dimensions and the oracle's operations on it")
+        .def(py::init<int64_t>(), "n"_a)
+        .def_property_readonly("dim", &LE::dim)
+        .def_static("empty", &LE::empty, "n"_a)
+        .def("intersect", &LE::intersect, "S"_a)
+        .def("plus", &LE::plus, "S"_a)
+        .def("convex_hull", py::overload_cast<const LI &>(&LE::convex_hull, py::const_), "I"_a)
+        .def("convex_hull", py::overload_cast<const LZ &>(&LE::convex_hull, py::const_), "Z"_a)
+        .def("contains", &LE::contains, "S"_a, "tol"_a = 0.0)
+        .def("is_intersecting", &LE::is_intersecting, "S"_a, "tol"_a = 0.0)
+        .def("isequal", &LE::isequal, "S"_a, "tol"_a = 0.0)
+        .def("is_bounded", &LE::is_bounded, "tol"_a = 0.0)
+        .def("is_full_dim", &LE::is_full_dim, "tol"_a = 0.0)
+        .def("center", &LE::center, "The center: None, the set has no point")
+        .def("interval", &LE::interval)
+        .def("vertices", &LE::vertices)
+        .def("lift", &LE::lift, "N"_a, "dims"_a)
+        .def("project", &LE::project, "dims"_a);
+
     py::class_<LZ>(m, "Zonotope", "A nominal zonotope plus an error box, and the oracle's operations")
         .def(py::init([](const py::object &c, const py::object &G) {
                  return LZ(host_tensor(c, true), host_tensor(G, true));
@@ -1981,6 +2064,7 @@ PYBIND11_MODULE(_cora, m) {
     configure_threads(); // the pools, before torch or numpy start any work
     bind_cont_set(m);
     bind_interval(m);
+    bind_empty_set(m);
     bind_zonotope(m);
     bind_operators(m);
     bind_problems(m);

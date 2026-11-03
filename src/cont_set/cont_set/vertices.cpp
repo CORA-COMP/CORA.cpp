@@ -21,7 +21,7 @@ namespace cora {
 
 std::vector<Polygon> ContSet::vertices() const {
     detail::Entry entry;
-    CORA_CHECK(dim() == 2 && center().shape().back() == 1, Error::not_supported, [&] {
+    CORA_CHECK(dim() == 2 && center().shape().back() <= 1, Error::not_supported, [&] {
         return "vertices: needs a two-dimensional set of vectors, this one has " +
                std::to_string(dim()) + " dimensions; project it first, e.g. S.project({0, 1})";
     });

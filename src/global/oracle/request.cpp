@@ -5,6 +5,7 @@
 #include "cora/global/oracle/request.h"
 #include "cora/global/error.h"
 
+#include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/oracle.h"
 
 #include <sstream>
@@ -53,6 +54,13 @@ struct Decode<Interval> {
 template <>
 struct Decode<Zonotope> {
     static Zonotope of(const std::string &dt, const Json &j) { return Zonotope::from_json(dt, j); }
+};
+// The empty set is its dimension, {"n": n}.
+template <>
+struct Decode<EmptySet> {
+    static EmptySet of(const std::string &, const Json &j) {
+        return EmptySet(std::stoll(j.at("n").text));
+    }
 };
 // Indices and lists of zonotopes are JSON arrays.
 template <>
@@ -133,6 +141,7 @@ template bool Reply::get<bool>(const char *) const;
 template Tensor Reply::get<Tensor>(const char *) const;
 template Interval Reply::get<Interval>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
+template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<Zonotope> Reply::get<std::vector<Zonotope>>(const char *) const;
 template std::optional<double> Reply::get<std::optional<double>>(const char *) const;
