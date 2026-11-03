@@ -42,9 +42,12 @@ The library is namespace `cora`; the competition entry keeps its own sets in `co
 - Every option switch handles all options and ends in `CORA_FAIL`; a test covers each option.
 - The tests of an operation call it with an invalid input (`test::raises(f, Error::<id>)`) and
   once with the checks off (`ChecksScope off(false);`).
-- Where CORA's function has a `tol`, ours has it too, as an explicit last argument with CORA's
-  default (contains 100·eps, is_intersecting 1e-8); the docstring says in one line what it
-  relaxes, and the comparison goes through `cora::within_tol(a, b, tol)`.
+- Tolerances: where CORA's function has a `tol`, ours has it too, as the last argument of type
+  `Tol` (Python `tol=None`), unset by default. The entry resolves it with
+  `resolve_tol(entry, tol, dtype, "name")`, the comparison goes through `within_tol(a, b, tol)`,
+  and the docstring says what `tol` relaxes, "default: the repository tolerance
+  (docs/architecture.md)". No literal like `1e-8` or `epsilon()` outside `tolerance.h`: use
+  `default_tol`, `machine_eps` or a `numerics::k...` threshold there.
 - One code path: library code never asks which backend, device or dtype it runs on (only
   `global/backend/` and `global/tensor/` do), makes new tensors `like` an input, and is not
   duplicated (the conventions test fails on a clone of 100 tokens).

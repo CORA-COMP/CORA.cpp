@@ -150,15 +150,24 @@ vertices, CORA's colors, the union of overlapping sets, z-order) and puts it int
   the install tree.
 - Files: `scripts/cmake/install.cmake`, `scripts/cmake/CORAConfig.cmake.in`.
 
-**Tolerances as CORA has them.**
-- Where CORA's function takes a `tol`, CORA.cpp takes it too, as an explicit last argument with
-  CORA's default: `contains` 100·eps, `is_intersecting` and `within_tol` 1e-8. A docstring says
-  in one line what `tol` relaxes.
-- Every comparison with a tolerance goes through `cora::within_tol(a, b, tol)`. Like CORA's
-  `withinTol`, it accepts an absolute or a relative difference, and equal infinities agree.
+**Tolerances.**
+- One policy for the whole repository. A `tol` argument is `std::optional<double>` (Python
+  `tol=None`), unset by default, and no function has a default number of its own. The entry point
+  resolves it: the explicit `tol`, else the innermost `ToleranceScope` (Python `with
+  cora.tolerance(1e-10):`) of the thread, else the process default (`set_default_tolerance`), else
+  `default_tol(dtype)`.
+- `default_tol(dtype)` is 100 machine epsilons of the dtype of the data: CORA's `contains` default,
+  which absorbs the rounding between a set and its scaled copy. float32 gets 100 of its own
+  epsilon, about 1.2e-5.
+- Every comparison with a tolerance goes through `cora::within_tol(a, b, tol)`, for numbers and
+  tensors. Like CORA's `withinTol`, it accepts an absolute or a relative difference, and equal
+  infinities agree, opposite ones do not.
+- Fixed numbers of an algorithm (pivot sizes, rounding slack, picture resolution) are not
+  tolerances of the user: they are `numerics::k...` with a doc line. No other file has a literal
+  like `1e-8` or `epsilon()`; `tests/global/test_coding_conventions.py` checks it.
 - Open point: CORA's `isIntersecting` documents `tol` without saying whether it is absolute or
   relative for every pair. CORA.cpp reads it as absolute until a pair needs otherwise.
-- File: `include/cora/global/within_tol.h`.
+- Files: `include/cora/global/tensor/tolerance.h`, `include/cora/global/within_tol.h`.
 
 **Extension from Python.**
 - A Python subclass of `cora.ContSet` (through a pybind11 trampoline) implements `_dim`,
