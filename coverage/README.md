@@ -31,10 +31,10 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | hybridDynamics | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | nn | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | specification | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
-| others | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 1696 | 1447 | 25 | 35 | 43 | 132 | 14 | 61 |
+| others | 212 | 197 | 0 | 0 | 5 | 10 | 0 | 5 |
+| **all** | 1696 | 1432 | 25 | 35 | 48 | 142 | 14 | 66 |
 
-14% of the 1682 CORA methods in scope have a source, 12% are tested in C++ and Python, 8% are checked against CORALean; oracle debt 61.
+15% of the 1682 CORA methods in scope have a source, 13% are tested in C++ and Python, 8% are checked against CORALean; oracle debt 66.
 
 ## Classes
 
@@ -104,7 +104,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [others/commonocean2cora](others/commonocean2cora.md) | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/commonroad2cora](others/commonroad2cora.md) | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/cora2spaceex](others/cora2spaceex.md) | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [others/intervalMatrix](others/intervalMatrix.md) | 39 | 39 | 0 | 0 | 0 | 0 | 0 | 0 |
+| [others/intervalMatrix](others/intervalMatrix.md) | 39 | 24 | 0 | 0 | 5 | 10 | 0 | 5 |
 | [others/markovchain](others/markovchain.md) | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/matPolytope](others/matPolytope.md) | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [others/matZonotope](others/matZonotope.md) | 33 | 33 | 0 | 0 | 0 | 0 | 0 | 0 |
