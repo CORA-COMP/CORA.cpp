@@ -40,6 +40,14 @@ changed, and the reasons are listed below.
 | `interval(inf, sup)` | `Interval(inf, sup)` | `cora.Interval(inf, sup)` |
 | `fullspace(n)`, `fullspace.Inf(n)` | `Fullspace(n)`, `Fullspace::inf(n)` | `cora.Fullspace(n)`, `cora.Fullspace.inf(n)` |
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
+| `interval(inf, sup)` of matrix bounds | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
+| `intervalMatrix(C, D)`, `intervalMatrix(C)` | `IntervalMatrix(C, D)`, `IntervalMatrix(C)`, `IntervalMatrix(I)` | `cora.IntervalMatrix(C, D)` |
+| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs()`, `A.center`, `A.infimum`, `A.contains(M, type, tol)` |
+| `mtimes(A, B)`, `A * B` | `A.matmul(B)`, `A * B`, `M * A`, `A * M`, `s * A`, `A * Z` | `A @ B`, `M @ A`, `A @ M`, `s * A`, `A @ Z` |
+| `mpower(A, k)` | `A.matrix_power(k)` | `A.matrix_power(k)`, `A ** k` |
+| `expm`, `expmInd`, `expmMixed` | `A.expm(...)`, `A.expm_independent(...)`, `A.expm_mixed(r, k, N)` | the same |
+| `infNorm(A)`, `norm(A, type)` | `A.infinity_norm()`, `A.norm(type)` | the same |
+| `dependentTerms(A, r)`, `exactSquare(A)`, `exponentialRemainder(A, N)` | `A.dependent_terms(r)`, `A.exact_square()`, `A.exponential_remainder(N)` | the same |
 | `Z.c`, `center(Z)` | `Z.center()` | `Z.center` |
 | `Z.G`, `generators(Z)` | `Z.generators()` | `Z.generators` |
 | `dim(S)` | `S.dim()` | `S.dim` |
@@ -179,10 +187,14 @@ changed, and the reasons are listed below.
     `unite`. The operators `&` and `|` stay.
   - `mtimes` is MATLAB's name of an operator, so it is `linear_map`; `projectOnHyperplane` takes
     the constraint of the hyperplane (a normal and an offset), as CORA.cpp has no hyperplane class.
+  - `mtimes` is MATLAB's name of an operator, so it is `linear_map` for a set under a matrix and
+    `matmul` for the product of matrices (`IntervalMatrix`).
   - `interval.Inf` is `unbounded`, because `inf` is the lower bound.
   - `linComb` is `linear_combination` and `convHull` is `convex_hull`: words, not
     abbreviations. So are `constrSat` (`constraints_satisfied`), `cubMap` (`cubic_map`) and `dH2box`
     (`hausdorff_distance_to_box`).
+  - `infNorm` is `infinity_norm` and `expmInd` is `expm_independent` (`Ind` is *independent*; `Inf` is
+    also the unbounded box), as words, not abbreviations. `expm` is a term of art.
   - `le` and `lt` (operators of MATLAB) are `less_equal` and `less`, as Tensor names them;
     `mrdivide` (the division by a number) is `divide`, `mpower` is `matrix_power`, and `minkDiff`
     is `minkowski_difference`: words, not abbreviations.
