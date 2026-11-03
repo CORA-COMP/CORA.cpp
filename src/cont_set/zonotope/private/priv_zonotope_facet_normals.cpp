@@ -70,21 +70,25 @@ std::vector<double> aux_cross(const std::vector<double> &Q, int64_t n) {
 
 Tensor priv_zonotope_facet_normals(const Zonotope &Z) {
     const HostZonotope H = priv_host_zonotope(Z);
-    if (H.n == 1) return Tensor::like(Z.generators(), {1.0}, {1, 1});
+    const Tensor &G = Z.generators();
+    if (H.n == 1) return Tensor::like(G, {1.0}, {1, 1});
     const int64_t k = H.n - 1;
-    std::vector<double> rows;
+    // the subsets of generators whose cross product is not zero, with that product on the host
+    std::vector<int64_t> columns;
+    std::vector<double> cross;
     std::vector<int64_t> subset(k);
     for (int64_t i = 0; i < k; ++i) subset[i] = i;
     while (H.m >= k) {
         std::vector<double> Q(H.n * k);
         for (int64_t r = 0; r < H.n; ++r)
             for (int64_t j = 0; j < k; ++j) Q[r * k + j] = H.G[r * H.m + subset[j]];
-        std::vector<double> v = aux_cross(Q, H.n);
+        const std::vector<double> v = aux_cross(Q, H.n);
         double sum = 0.0;
         for (const double x : v) sum += x * x;
-        const double length = std::sqrt(sum);
-        if (length > 0.0) // a zero normal is NaN in CORA, and CORA drops the row
-            for (const double x : v) rows.push_back(x / length);
+        if (sum > 0.0) { // a zero normal is NaN in CORA, and CORA drops the row
+            columns.insert(columns.end(), subset.begin(), subset.end());
+            cross.insert(cross.end(), v.begin(), v.end());
+        }
         // the next subset in lexicographic order
         int64_t i = k - 1;
         while (i >= 0 && subset[i] == H.m - k + i) --i;
@@ -92,7 +96,16 @@ Tensor priv_zonotope_facet_normals(const Zonotope &Z) {
         ++subset[i];
         for (int64_t j = i + 1; j < k; ++j) subset[j] = subset[j - 1] + 1;
     }
-    return Tensor::like(Z.generators(), rows, {int64_t(rows.size()) / H.n, H.n});
+    const int64_t rows = int64_t(columns.size()) / k;
+    if (rows == 0) return G.zeros_like({0, H.n});
+    // the normal of each subset by tensor operations, so that it carries the gradient: the part
+    // of the host cross product w orthogonal to the subset Q, w - Q (Q'Q)^-1 Q' w, normalized
+    const Tensor Q = G.take(columns, -1).reshape({H.n, rows, k}).permute_dims({1, 0, 2});
+    const Tensor w = Tensor::like(G, cross, {rows, H.n, 1});
+    const Tensor Qt = Q.matrix_transpose();
+    const Tensor orthogonal = w - Q.matmul(Qt.matmul(Q).solve(Qt.matmul(w)));
+    const Tensor unit = orthogonal.divide(orthogonal.vector_norm(Tensor::Norm::two, -2, true));
+    return unit.reshape({rows, H.n});
 }
 
 } // namespace cora

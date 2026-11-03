@@ -123,7 +123,7 @@ class Measures(unittest.TestCase):
     def test_norm_bounds_the_points(self):
         rng = np.random.default_rng(8)
         Z = random_zonotope(rng, 3, 4)
-        points = Z.rand_point(300, rng, "extreme")
+        points = Z.rand_point(300, cora.Rng(8), "extreme")
         for kind, bound in ((1, Z.norm(1)), (2, Z.norm(2)), (np.inf, Z.norm(np.inf))):
             self.assertLessEqual(np.linalg.norm(points, kind, axis=0).max(), bound + 1e-9)
 
@@ -282,7 +282,7 @@ class IntersectStrip(unittest.TestCase):
         Z = random_zonotope(rng, 3, 5)
         C = np.array([[1.0, 0.5, 0.0], [0.0, -1.0, 2.0]])
         phi, y = np.array([0.8, 1.5]), C @ Z.center + np.array([0.3, -0.2])
-        points = Z.rand_point(2000, rng)
+        points = Z.rand_point(2000, cora.Rng(13))
         inside = points[:, np.all(np.abs(C @ points - y[:, None]) <= phi[:, None], axis=0)]
         self.assertGreater(inside.shape[1], 50)
         for method in ("normGen", np.zeros((3, 2))):
