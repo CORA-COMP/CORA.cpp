@@ -1,6 +1,7 @@
 // test_interval_project_high_dim - interval project_high_dim: a box placed into a larger space
 //
 // CORA: contSet/@interval/projectHighDim_.m
+// CORA: contSet/@contSet/projectHighDim.m
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"

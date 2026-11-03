@@ -5,6 +5,9 @@
 # CORA: contSet/@interval/radius.m
 # CORA: contSet/@interval/reduce.m
 # CORA: contSet/@interval/representsa_.m
+# CORA: contSet/@contSet/projectHighDim.m
+# CORA: contSet/@contSet/representsa.m
+# CORA: contSet/@contSet/representsa_emptyObject.m
 
 import unittest
 
