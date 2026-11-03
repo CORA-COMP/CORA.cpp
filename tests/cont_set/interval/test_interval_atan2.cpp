@@ -8,6 +8,7 @@
 #include "testing.h"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace cora;
 using test::check;
@@ -33,14 +34,23 @@ void atan2_is_the_hull_of_the_corners(const std::string &b) {
           b + ": a batch");
 }
 
-/// As in CORA, a box across the branch cut (x < 0, y = 0) gets only the corners' hull: it misses
-/// the points near +-pi, which atan2 reaches at y = 0.
-void atan2_across_the_branch_cut_is_not_an_enclosure(const std::string &b) {
+/// A box across the branch cut (x < 0, y = 0) gets [-pi, pi] (CORALean's guard), not the corners'
+/// hull [-2.678, 2.678] of CORA's atan2.m, which misses +-pi.
+void atan2_across_the_branch_cut_is_an_enclosure(const std::string &b) {
     const Interval Y(column({-1.0}), column({1.0})), X(column({-2.0}), column({-1.0}));
     const Interval R = Y.atan2(X);
-    check(close(R.sup(), std::vector<double>{2.677945044588987}) &&
-              close(R.inf(), std::vector<double>{-2.677945044588987}),
-          b + ": the corner hull, which excludes pi");
+    check(R.sup().data()[0] >= M_PI && R.inf().data()[0] <= -M_PI &&
+              R.sup().data()[0] < M_PI + 1e-14,
+          b + ": +-pi are inside");
+    cora::Rng rng(43);
+    bool inside = true;
+    for (int k = 0; k < 50; ++k) {
+        const Tensor y = Y.rand_point(1, rng), x = X.rand_point(1, rng);
+        inside = inside && R.contains(y.atan2(x));
+    }
+    check(inside, b + ": a sample across the cut is inside");
+    const Interval P(column({0.0}), column({1.0})), Q(column({-3.0}), column({0.0}));
+    check(P.atan2(Q).sup().data()[0] >= M_PI, b + ": y touching 0, x <= 0: the guard fails");
 }
 
 /// Away from the cut (x > 0) the image of every sampled point lies in the result.
@@ -75,7 +85,7 @@ void checks_and_their_switch() {
 int main() {
     test::for_each_backend([](const std::string &b) {
         atan2_is_the_hull_of_the_corners(b);
-        atan2_across_the_branch_cut_is_not_an_enclosure(b);
+        atan2_across_the_branch_cut_is_an_enclosure(b);
         atan2_encloses_the_image_off_the_cut(b);
     });
     checks_and_their_switch();

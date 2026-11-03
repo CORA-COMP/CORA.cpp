@@ -172,8 +172,9 @@ class IntervalMethods(unittest.TestCase):
         R = Y.atan2(X)
         self.assertAlmostEqual(float(R.inf[0]), 0.4636476090008061, places=14)
         self.assertAlmostEqual(float(R.sup[0]), 1.1071487177940904, places=14)
-        cut = box([-1.0], [1.0]).atan2(box([-2.0], [-1.0]))  # misses pi, as CORA does
-        self.assertAlmostEqual(float(cut.sup[0]), 2.677945044588987, places=14)
+        cut = box([-1.0], [1.0]).atan2(box([-2.0], [-1.0]))  # across the branch cut
+        self.assertGreaterEqual(float(cut.sup[0]), 3.141592653589793)
+        self.assertLessEqual(float(cut.inf[0]), -3.141592653589793)
 
     def test_batches(self):
         I = cora.Interval(torch.tensor([[-1.0, 0.5], [0.0, 2.0]], **F64),
