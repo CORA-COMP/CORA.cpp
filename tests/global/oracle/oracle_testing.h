@@ -25,6 +25,7 @@
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/interval_matrix.h"
+#include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
@@ -131,6 +132,13 @@ class Random {
         }
         return {vector(n), matrix(n, m), cora::Tensor::from_data(A, {p, m}),
                 cora::Tensor::from_data(b, {p, 1})};
+    }
+
+    /// A matrix zonotope of rows x cols matrices with h generators.
+    cora::MatZonotope mat_zonotope(int64_t rows, int64_t cols, int64_t h) {
+        std::vector<double> data(h * rows * cols);
+        for (double &x : data) x = scalar();
+        return {matrix(rows, cols), cora::Tensor::from_data(data, {h, rows, cols})};
     }
 
     /// A box of n dimensions: a center and a radius in [0, 1].
@@ -245,6 +253,14 @@ inline bool same_bits(const std::string &what, const cora::ConZonotope &a,
     return same_bits(what + ".b", a.b(), other.b()) && same;
 }
 
+/// The nominal part of the oracle's matrix zonotope: the center and the generators in their order.
+inline bool same_bits(const std::string &what, const cora::MatZonotope &a,
+                      const lean::MatZonotope &b) {
+    const cora::MatZonotope other = b.gather().first;
+    return same_bits(what + ".C", a.center(), other.center()) &
+           same_bits(what + ".G", a.generators(), other.generators());
+}
+
 /// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
@@ -332,6 +348,12 @@ inline bool enclosed(const std::string &what, const cora::IntervalMatrix &a,
 
 inline bool enclosed(const std::string &what, const cora::Tensor &a, const lean::Interval &b) {
     return enclosed(what, cora::Interval(a, a), b);
+}
+
+/// Inside the box of the oracle's matrix zonotope (its error box included).
+inline bool enclosed(const std::string &what, const cora::MatZonotope &a,
+                     const lean::MatZonotope &b) {
+    return enclosed(what + " (box)", a.interval_matrix(), b.interval_matrix());
 }
 
 /// Inside nominal + error box: the oracle proves the containment, or else (when it cannot) the

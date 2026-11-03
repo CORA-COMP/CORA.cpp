@@ -83,8 +83,9 @@ class MatZonotope {
     MatZonotope plus(const MatZonotope &B) const;
     MatZonotope plus(const Tensor &M) const;
 
-    /// The product A B of two matrix zonotopes, an enclosure: the center C_A C_B and every product
-    /// of two of the (h_A + 1)(h_B + 1) - 1 other matrices, those of A varying fastest, as CORA.
+    /// The product A B of two matrix zonotopes, an enclosure: the center C_A C_B and the products
+    /// G_A(i) C_B, C_A G_B(j) and G_A(i) G_B(j) (j varying fastest) of the generators, in the order
+    /// of CORALean; CORA lists the same products with A's index fastest.
     MatZonotope matmul(const MatZonotope &B) const;
 
     /// A M and M A for a matrix of numbers, and s A for a number: exact.
