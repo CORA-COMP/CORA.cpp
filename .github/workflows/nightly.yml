@@ -88,7 +88,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y libglpk-dev
       - run: |
           cmake -S . -B build -DCORACPP_NATIVE=OFF -DCORACPP_TORCH=OFF -DCORACPP_COMPETITION=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel
+          cmake --build build --parallel "$(nproc)"
           ctest --test-dir build -j4 --output-on-failure -L competition
 
   # The lean tests against the CORALean oracle, fetched from the pinned release (scripts/coralean.cmake).

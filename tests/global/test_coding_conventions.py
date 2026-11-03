@@ -676,6 +676,17 @@ def check_clones(issues_by_file):
             i += 1
 
 
+def check_build_jobs(issues_by_file):
+    """A build names its number of jobs: a bare `--parallel` (or `-j`) means unlimited with make,
+    which runs a CI runner out of memory."""
+    bare = re.compile(r"(--parallel|\s-j)(?=\s*(\\|$|&&|\||;|--\s))")
+    for path in files("scripts/**/*.sh") + files(".github/workflows/*.yml") + files("cmake/**/*.cmake"):
+        for i, line in enumerate(read_lines(path)):
+            if not line.lstrip().startswith("#") and "cmake --build" in line and bare.search(line):
+                issues_by_file.setdefault(rel(path), []).append(
+                    f"line {i + 1}: a build without a number of jobs; pass --parallel <n>")
+
+
 def main():
     issues_by_file = {}
     for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h"):
@@ -696,6 +707,7 @@ def main():
     check_python_files(issues_by_file)
     check_python_tests_cover_the_api(issues_by_file)
     check_clones(issues_by_file)
+    check_build_jobs(issues_by_file)
     check_tensor_ops(issues_by_file)
     for path in files("examples/cpp/**/*.cpp") + files("examples/python/example_*.py"):
         if "/benchmarks/" in rel(path):

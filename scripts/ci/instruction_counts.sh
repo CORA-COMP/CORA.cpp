@@ -10,6 +10,8 @@ set -euo pipefail
 
 BASE="${1:?usage: instruction_counts.sh <base commit> [threshold]}"
 THRESHOLD="${2:-3}"
+# a number of jobs: a bare --parallel means unlimited with make, and the runner runs out of memory
+JOBS="${CMAKE_BUILD_PARALLEL_LEVEL:-$(nproc)}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK="$ROOT/build/ic"
 LAUNCHER=()
@@ -20,10 +22,10 @@ build() {
     local source="$1" name="$2"
     cmake -S "$source" -B "$WORK/$name-lib" -DCMAKE_BUILD_TYPE=Release -DCORACPP_NATIVE=OFF \
         -DCORACPP_TORCH=OFF -DCORACPP_PYTHON=OFF "${LAUNCHER[@]}" >/dev/null
-    cmake --build "$WORK/$name-lib" --target cora --parallel
+    cmake --build "$WORK/$name-lib" --target cora --parallel "$JOBS"
     cmake --install "$WORK/$name-lib" --prefix "$WORK/$name-prefix" >/dev/null
     cmake -S "$ROOT/benchmarks/micro" -B "$WORK/$name-micro" -DCMAKE_PREFIX_PATH="$WORK/$name-prefix" >/dev/null
-    cmake --build "$WORK/$name-micro"
+    cmake --build "$WORK/$name-micro" --parallel "$JOBS"
 }
 
 rm -rf "$WORK"
