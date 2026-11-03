@@ -75,6 +75,19 @@ jobs:
       build_type: RelWithDebInfo
       cxx_flags: -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
 
+  # clang-format, ruff and clang-tidy over the whole tree (a pull request checks only what it changes).
+  quality:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m pip install --quiet -r scripts/requirements-quality.txt
+      - run: python3 scripts/ci/check_quality.py format --all
+      - run: python3 scripts/ci/check_quality.py lint --all
+      - run: cmake --preset core -DCORACPP_NATIVE=OFF
+      - run: python3 scripts/ci/check_quality.py tidy --all -j "$(nproc)"
+
   # The CORA-COMP binary and its tests.
   competition:
     needs: changed
@@ -108,7 +121,7 @@ jobs:
   # One issue per failed night: the open `nightly` issue gets a comment instead of a second issue.
   report:
     if: failure() && github.event_name == 'schedule'
-    needs: [changed, install, sanitizers, competition]
+    needs: [changed, install, sanitizers, quality, competition]
     runs-on: ubuntu-24.04
     permissions:
       issues: write
