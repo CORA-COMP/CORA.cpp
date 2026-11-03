@@ -29,6 +29,7 @@
 #include "cora/global/expr.h"
 #include "cora/global/linprog.h"
 #include "cora/global/options.h"
+#include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"

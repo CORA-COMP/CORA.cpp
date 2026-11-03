@@ -24,6 +24,7 @@
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/cont_set/registry.h"
+#include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"
@@ -1935,6 +1936,26 @@ void bind_lean(py::module_ &top) {
         .def("reduce", &LI::reduce, "order"_a, "method"_a = "girard")
         .def("zonotope", &LI::zonotope)
         .def("vertices", &LI::vertices);
+
+    using LE = lean::EmptySet;
+    py::class_<LE>(m, "EmptySet", "The empty set of n dimensions and the oracle's operations on it")
+        .def(py::init<int64_t>(), "n"_a)
+        .def_property_readonly("dim", &LE::dim)
+        .def_static("empty", &LE::empty, "n"_a)
+        .def("intersect", &LE::intersect, "S"_a)
+        .def("plus", &LE::plus, "S"_a)
+        .def("convex_hull", py::overload_cast<const LI &>(&LE::convex_hull, py::const_), "I"_a)
+        .def("convex_hull", py::overload_cast<const LZ &>(&LE::convex_hull, py::const_), "Z"_a)
+        .def("contains", &LE::contains, "S"_a, "tol"_a = 0.0)
+        .def("is_intersecting", &LE::is_intersecting, "S"_a, "tol"_a = 0.0)
+        .def("isequal", &LE::isequal, "S"_a, "tol"_a = 0.0)
+        .def("is_bounded", &LE::is_bounded, "tol"_a = 0.0)
+        .def("is_full_dim", &LE::is_full_dim, "tol"_a = 0.0)
+        .def("center", &LE::center, "The center: None, the set has no point")
+        .def("interval", &LE::interval)
+        .def("vertices", &LE::vertices)
+        .def("lift", &LE::lift, "N"_a, "dims"_a)
+        .def("project", &LE::project, "dims"_a);
 
     py::class_<LZ>(m, "Zonotope", "A nominal zonotope plus an error box, and the oracle's operations")
         .def(py::init([](const py::object &c, const py::object &G) {
