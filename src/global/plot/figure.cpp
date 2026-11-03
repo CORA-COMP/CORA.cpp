@@ -8,6 +8,7 @@
 #include "cora/global/plot/figure.h"
 #include "cora/global/error.h"
 #include "cora/global/plot/geometry.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <cmath>
@@ -23,7 +24,7 @@ namespace {
 
 // The range lo..hi widened by 5% on both sides.
 void aux_pad(double &lo, double &hi) {
-    const double w = hi - lo > 1e-12 ? hi - lo : std::max(1.0, std::abs(lo) * 0.1);
+    const double w = hi - lo > numerics::kAxisRange ? hi - lo : std::max(1.0, std::abs(lo) * 0.1);
     lo -= 0.05 * w;
     hi += 0.05 * w;
 }

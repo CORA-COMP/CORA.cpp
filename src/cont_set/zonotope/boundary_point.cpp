@@ -75,7 +75,7 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
     CORA_CHECK(!zero, Error::wrong_value, [] {
         return std::string("boundary_point: dir has to be a nonzero vector");
     });
-    CORA_CHECK(contains(start, "exact", 1e-8), Error::wrong_value, [] {
+    CORA_CHECK(contains(start, "exact"), Error::wrong_value, [] {
         return std::string("boundary_point: start has to be a point of the zonotope");
     });
 
@@ -83,7 +83,7 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
     if (dim() == 1) return d[0] < 0 ? c_ - G_.abs_sum() : c_ + G_.abs_sum();
     const HostZonotope Z = priv_host_zonotope(*this);
     bool at_center = true;
-    for (int64_t i = 0; i < Z.n; ++i) at_center = at_center && within_tol(Z.c[i], s[i], 1e-12);
+    for (int64_t i = 0; i < Z.n; ++i) at_center = at_center && within_tol(Z.c[i], s[i]);
     if (at_center) { // the zonotope norm of dir is the factor 1 / t
         const HostZonotope centered{Z.n, Z.m, std::vector<double>(Z.n, 0.0), Z.G};
         return c_ + dir / priv_zonotope_norm(centered, d);

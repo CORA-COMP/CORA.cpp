@@ -16,6 +16,7 @@
 // CORA: contSet/@zonotope/private/priv_volumeFilter.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 #include "cont_set/zonotope/private/priv.h"
 
@@ -71,7 +72,7 @@ Tensor aux_volumes(const Tensor &P, const Tensor &G) {
     const int64_t n = P.shape().back();
     const Tensor singular_values = P.svd()[1]; // (B, n, 1), descending
     const Tensor tolerance = singular_values.slice(-2, 0, 1) *
-                             (double(n) * std::numeric_limits<double>::epsilon());
+                             (double(n) * machine_eps(P.dtype()));
     const Tensor singular = singular_values.slice(-2, n - 1, n).less_equal(tolerance);
     const Tensor radius = P.inv().matmul(G).abs_sum();      // the box of P^-1 Z, (B, n, 1)
     const Tensor volume = aux_abs_det(P).multiply(radius.prod(-2, true));

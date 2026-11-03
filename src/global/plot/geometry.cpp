@@ -6,6 +6,7 @@
 // See also: cora/global/plot/geometry.h, cora/global/plot/figure.h
 
 #include "cora/global/plot/geometry.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/vec.h"
 
 #include <algorithm>
@@ -129,12 +130,13 @@ std::vector<Point3> aux_merge(const std::vector<Point3> &p, const std::vector<Tr
 
 // Thinning ----------------------------------------------------------------------------------------
 
-Polygon thin_polygon(const Polygon &polygon, Point tol, bool closed) {
+Polygon thin_polygon(const Polygon &polygon, Point resolution, bool closed) {
     const std::size_t n = polygon.size();
     if (n < (closed ? 4u : 3u)) return polygon;
-    std::vector<Point> pts; // in units of the tolerance, so that the limit is 1
+    std::vector<Point> pts; // in units of the resolution, so that the limit is 1
     for (const Point &p : polygon)
-        pts.push_back({p[0] / std::max(tol[0], 1e-300), p[1] / std::max(tol[1], 1e-300)});
+        pts.push_back({p[0] / std::max(resolution[0], numerics::kTiny),
+                       p[1] / std::max(resolution[1], numerics::kTiny)});
     std::vector<bool> keep(n, false);
     std::vector<std::size_t> idx(n);
     for (std::size_t i = 0; i < n; ++i) idx[i] = i;
@@ -166,7 +168,8 @@ std::vector<std::vector<Point3>> hull_faces(const std::vector<Point3> &p) {
             lo[k] = std::min(lo[k], v[k]);
             hi[k] = std::max(hi[k], v[k]);
         }
-    const double eps = 1e-10 * std::max({hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2], 1e-300});
+    const double eps = numerics::kHullExtent *
+                       std::max({hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2], numerics::kTiny});
     // The first point, the farthest from it, the farthest from their line, the farthest from
     // their plane: a tetrahedron, or the flat case.
     const std::size_t i0 = 0;
@@ -219,7 +222,7 @@ std::vector<std::vector<Point3>> hull_faces(const std::vector<Point3> &p) {
         if (!tris[t].alive || done[t]) continue;
         std::vector<std::size_t> group = {t};
         for (std::size_t s = t + 1; s < tris.size(); ++s)
-            if (tris[s].alive && !done[s] && dot(tris[t].n, tris[s].n) > 1 - 1e-9 &&
+            if (tris[s].alive && !done[s] && dot(tris[t].n, tris[s].n) > 1 - numerics::kCoplanar &&
                 std::abs(tris[t].d - tris[s].d) <= 10 * eps)
                 group.push_back(s);
         for (std::size_t s : group) done[s] = true;

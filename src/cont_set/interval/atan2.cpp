@@ -10,6 +10,7 @@
 // CORA: contSet/@interval/atan2.m
 
 #include "cora/cont_set/interval/interval.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
 #include <limits>
@@ -33,7 +34,7 @@ Interval Interval::atan2(const Interval &I2) const {
     const Tensor zero = inf_.zeros_like();
     const Tensor off_cut = I2.inf().greater(zero).add(inf_.greater(zero)).add(sup_.less(zero));
     // pi rounded up: twice acos(0), widened by a few ulp
-    const double kUp = 2.0 * (1.0 + 4 * std::numeric_limits<double>::epsilon());
+    const double kUp = 2.0 * (1.0 + 4 * machine_eps(inf_.dtype()));
     const Tensor pi = zero.acos() * kUp;
     return {Tensor::where(off_cut, r1.minimum(r2).minimum(r3.minimum(r4)), -pi),
             Tensor::where(off_cut, r1.maximum(r2).maximum(r3.maximum(r4)), pi)};

@@ -9,6 +9,7 @@
 #include "cora/global/error.h"
 #include "cora/global/plot/figure.h"
 #include "cora/global/plot/geometry.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
 #include <algorithm>
@@ -61,7 +62,9 @@ const std::vector<NamedColor> &aux_named_colors() {
 }
 
 bool aux_same_color(const Color &a, const Color &b) {
-    return std::abs(a.r - b.r) < 5e-5 && std::abs(a.g - b.g) < 5e-5 && std::abs(a.b - b.b) < 5e-5;
+    return std::abs(a.r - b.r) < numerics::kColorEqual &&
+           std::abs(a.g - b.g) < numerics::kColorEqual &&
+           std::abs(a.b - b.b) < numerics::kColorEqual;
 }
 
 // Numbers -----------------------------------------------------------------------------------------
@@ -99,10 +102,10 @@ struct Writer {
     }
 };
 
-// The decimals that give 1e-5 of the range of an axis.
+// The decimals that give a hundred-thousandth of the range of an axis.
 int aux_decimals(double lo, double hi) {
-    return std::clamp(static_cast<int>(std::ceil(-std::log10(std::max(hi - lo, 1e-300)))) + 5, 0,
-                      15);
+    const double range = std::max(hi - lo, numerics::kTiny);
+    return std::clamp(static_cast<int>(std::ceil(-std::log10(range))) + 5, 0, 15);
 }
 
 // The limits of the axes and the decimals that its numbers are written with.
@@ -124,7 +127,7 @@ using Path = std::vector<std::array<double, 3>>;
 std::string aux_style(Writer &w, const Figure::Layer &l) {
     std::vector<std::string> o;
     const bool cora_fill = w.options.coramacs && l.filled && aux_same_color(l.edge, l.face) &&
-                           std::abs(l.face_alpha - 0.2) < 1e-9;
+                           std::abs(l.face_alpha - 0.2) < numerics::kPlotEqual;
     if (cora_fill) {
         o.push_back("plot filled=" + w.color(l.face));
     } else {
@@ -135,7 +138,7 @@ std::string aux_style(Writer &w, const Figure::Layer &l) {
             if (!l.label.empty()) o.push_back("area legend");
         }
     }
-    if (std::abs(l.line_width - 1) > 1e-9)
+    if (std::abs(l.line_width - 1) > numerics::kPlotEqual)
         o.push_back("line width=" + aux_fixed(0.4 * l.line_width, 3) + "pt");
     if (l.dashed) o.push_back("dashed");
     std::string text;
@@ -288,7 +291,7 @@ void aux_layers(std::ostringstream &out, Writer &w, const Figure &fig, const Axe
         case Figure::Kind::polyline:
             aux_addplot(out, w,
                         "draw=" + w.color(l.edge) +
-                            (std::abs(l.line_width - 1) > 1e-9
+                            (std::abs(l.line_width - 1) > numerics::kPlotEqual
                                  ? ", line width=" + aux_fixed(0.4 * l.line_width, 3) + "pt"
                                  : ""),
                         {aux_path(l.polygons[0], false, a, w.options)}, false, a, l.label);

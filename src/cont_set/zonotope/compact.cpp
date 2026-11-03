@@ -4,7 +4,8 @@
 // Inputs:   method - "zeros" (default) drops the generators of norm <= tol; "all" also merges
 //                    those that are parallel or antiparallel up to tol; "aligned" leaves Z as it
 //                    is (CORA's compact_ has no branch for it)
-//           tol - CORA's default eps: relaxes "is zero" and "is parallel" (as within_tol)
+//           tol - relaxes "is zero" and "is parallel" (as within_tol); default: the repository
+//                 tolerance (docs/architecture.md)
 // Outputs:  Zres - the zonotope without them; a batch drops what every member drops, and "all"
 //           is not for a batch
 // See also: reduce, box
@@ -13,6 +14,7 @@
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cont_set/zonotope/private/priv.h"
+#include "cora/global/within_tol.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -50,8 +52,8 @@ Tensor aux_delete_aligned(const Tensor &G_in, double tol) {
 
     // which sorted columns are parallel (dot product 1) or antiparallel (-1) to which
     const Tensor dots = unit.matrix_transpose().matmul(unit);
-    const Tensor parallel = priv_within_tol(dots, 1.0, tol);
-    const Tensor anti = priv_within_tol(dots, -1.0, tol);
+    const Tensor parallel = within_tol(dots, dots.ones_like(), tol);
+    const Tensor anti = within_tol(dots, dots.full_like(dots.shape(), -1.0), tol);
 
     Tensor keep = G.ones_like({1, m});
     for (int64_t i = 0; i < m; ++i) {
@@ -76,13 +78,12 @@ Tensor aux_delete_aligned(const Tensor &G_in, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-Zonotope Zonotope::compact(const std::string &method, double tol) const {
+Zonotope Zonotope::compact(const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "compact");
     CORA_CHECK(method == "zeros" || method == "all" || method == "aligned", Error::wrong_value,
                [&] { return "compact: the method must be 'zeros', 'all' or 'aligned', got '" +
                             method + "'"; });
-    CORA_CHECK(tol >= 0, Error::wrong_value,
-               [&] { return "compact: tol must be nonnegative, got " + std::to_string(tol); });
     CORA_CHECK(method != "all" || G_.ndim() == 2, Error::not_supported, [] {
         return std::string("compact: method 'all' merges generators member by member; "
                            "it supports a single zonotope, not a batch");

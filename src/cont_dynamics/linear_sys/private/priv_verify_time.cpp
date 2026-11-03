@@ -8,6 +8,8 @@
 // Outputs:  the queries of priv_verifyTime.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
 
+#include "cora/global/tensor/tolerance.h"
+#include "cora/global/within_tol.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 
 #include <algorithm>
@@ -22,13 +24,6 @@ namespace cora {
 
 namespace {
 
-/// CORA's withinTol: equal up to an absolute or a relative tolerance.
-bool aux_within_tol(double a, double b, double tol = 1e-8) {
-    const double diff = std::abs(a - b);
-    return diff <= tol || diff / std::min(std::abs(a), std::abs(b)) <= tol ||
-           (std::isinf(a) && std::isinf(b) && (a > 0) == (b > 0));
-}
-
 } // namespace
 
 
@@ -36,12 +31,12 @@ bool aux_within_tol(double a, double b, double tol = 1e-8) {
 
 VerifyTime VerifyTime::compact() const {
     if (bounds.size() <= 1) return *this;
-    const double tol = 2.220446049250313e-16 * (final_time() - start_time());
+    const double tol = machine_eps() * (final_time() - start_time());
     VerifyTime out;
     out.bounds.push_back(bounds[0]);
     for (std::size_t i = 1; i < bounds.size(); ++i) {
         // An interval starting where the previous one ends extends it.
-        if (aux_within_tol(out.bounds.back()[1], bounds[i][0], tol))
+        if (within_tol(out.bounds.back()[1], bounds[i][0], tol))
             out.bounds.back()[1] = bounds[i][1];
         else
             out.bounds.push_back(bounds[i]);
@@ -70,7 +65,7 @@ bool VerifyTime::time_until_switch(double t, double &t_switch, bool &inside) con
     // The flattened bounds lower_1, upper_1, lower_2, ...: the first one after t is the switch.
     for (std::size_t i = 0; i < 2 * c.bounds.size(); ++i) {
         const double v = c.bounds[i / 2][i % 2];
-        if (t < v && !aux_within_tol(t, v)) {
+        if (t < v && !within_tol(t, v)) {
             t_switch = v - t;
             inside = (i + 1) % 2 == 0;
             return true;
@@ -89,10 +84,10 @@ void VerifyTime::setdiff(double t0, double t1) {
         if (iv[0] < t0) kept.push_back({iv[0], t0});
         if (t1 < iv[1]) kept.push_back({t1, iv[1]});
     }
-    // Remainders shorter than 1e-14 are rounding errors of the times.
+    // Remainders shorter than kTimeRound are rounding errors of the times.
     kept.erase(std::remove_if(kept.begin(), kept.end(),
                               [](const std::array<double, 2> &iv) {
-                                  return std::abs(iv[1] - iv[0]) < 1e-14;
+                                  return std::abs(iv[1] - iv[0]) < numerics::kTimeRound;
                               }),
                kept.end());
     bounds = std::move(kept);

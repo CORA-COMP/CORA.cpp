@@ -15,6 +15,7 @@
 // CORA: nn/@neuralNetwork/evaluate.m
 // CORA: nn/layers/nonlinear/nnReLULayer.m
 
+#include "cora/global/tensor/tolerance.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"
 
@@ -33,7 +34,7 @@ Zonotope aux_relu(const Zonotope &Z) {
     // max(u, 0) and min(l, 0)
     const Tensor upper = range.sup().maximum(0.0), lower = range.inf().minimum(0.0);
     // upper - lower is 0 only for l = u = 0; the tiny term keeps the slope 0 there, not NaN.
-    const Tensor slope = upper.divide(upper - lower + 1e-300);
+    const Tensor slope = upper.divide(upper - lower + numerics::kTiny);
     const Tensor mu = slope.multiply(lower) * -0.5;
     return {slope.multiply(Z.center()) + mu,
             Tensor::concat({slope.multiply(Z.generators()), mu.diag()}, -1)};

@@ -21,6 +21,7 @@
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cora/global/error.h"
 #include "cora/global/linprog.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <chrono>
@@ -42,7 +43,6 @@ constexpr double kInf =
     std::numeric_limits<double>::infinity();
 constexpr double kNaN =
     std::numeric_limits<double>::quiet_NaN();
-constexpr double kIntersectTol = 1e-9;  // a linear program distance below this counts as 0
 
 // Sets on the host --------------------------------------------------------------------------------
 
@@ -268,7 +268,7 @@ bool aux_intersection_check_fast(const ZHost &Z, const Poly &F) {
     // The LP distance is zero iff they intersect (up to the solver accuracy).
     const InnerSet Z0{Z, 0.0};
     const double d = aux_intersection_check_inner(Z0, F);
-    return d <= kIntersectTol;
+    return d <= numerics::kLpDistanceZero;
 }
 
 // Specifications ----------------------------------------------------------------------------------
@@ -348,10 +348,10 @@ void aux_get_sets_from_spec(const std::vector<Specification> &specs, int64_t p, 
 
 // Distances of points -----------------------------------------------------------------------------
 
-/// Whether the point is in the polytope (up to 1e-12).
+/// Whether the point is in the polytope (up to kPolytopeContains).
 bool aux_contains(const Poly &P, const std::vector<double> &y) {
     for (int i = 0; i < P.rows; ++i)
-        if (aux_row_dot(P, i, y) > P.b[i] + 1e-12) return false;
+        if (aux_row_dot(P, i, y) > P.b[i] + numerics::kPolytopeContains) return false;
     return true;
 }
 
@@ -458,7 +458,8 @@ void aux_ode45(const std::vector<double> &A, int n, const std::vector<double> &b
                                     11.0 / 84}};
     static const double E[7] = {71.0 / 57600, 0, -71.0 / 16695, 71.0 / 1920, -17253.0 / 339200,
                                 22.0 / 525, -1.0 / 40};
-    const double rtol = 1e-3, threshold = 1e-6 / rtol, pow5 = 1.0 / 5;
+    const double rtol = numerics::kOdeRelTol, pow5 = 1.0 / 5;
+    const double threshold = numerics::kOdeAbsTol / rtol;
     auto f = [&](const std::vector<double> &x) {
         std::vector<double> dx(b);
         for (int i = 0; i < n; ++i)
@@ -789,7 +790,7 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
                 d = aux_intersection_check_inner(inner_of(j), P);
                 // The program returns 0 for an intersection up to its accuracy; round-off in
                 // the solver must not decide between "intersecting" and "almost".
-                if (d <= kIntersectTol) d = 0;
+                if (d <= numerics::kLpDistanceZero) d = 0;
                 if (d < 0) return falsified();
                 if (d < d_fi) d_fi = d, ind_fi = static_cast<int>(j);
             }

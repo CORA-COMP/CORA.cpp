@@ -94,8 +94,8 @@ class Zonotope : public ContSet {
     /// Without the generators of norm <= tol (method "zeros"); "all" also merges the generators
     /// that are parallel up to tol, "aligned" leaves the set as it is (as CORA). A batch drops
     /// what every member drops; "all" is not for a batch.
-    Zonotope compact(const std::string &method = "zeros",
-                     double tol = std::numeric_limits<double>::epsilon()) const;
+    /// tol default: the repository tolerance (docs/architecture.md).
+    Zonotope compact(const std::string &method = "zeros", Tol tol = std::nullopt) const;
 
     // Combining with other sets -------------------------------------------------------------------
 
@@ -152,13 +152,14 @@ class Zonotope : public ContSet {
     /// tol (the norm of the zonotope, relaxed as within_tol). method: "exact" and "exact:venum"
     /// (a linear program per point; a search over the vertices for a set); "approx" and
     /// "approx:st" (a sufficient test of Sadraddini and Tedrake for a set); "exact:polymax"
-    /// needs Polytope, "approx:stDual", "sampling" and "opt" are not supported. Not a batch.
+    /// needs Polytope, "approx:stDual", "sampling" and "opt" are not supported. Not a batch. tol
+    /// default: the repository tolerance (docs/architecture.md).
     bool contains(const Tensor &p, const std::string &method = "exact",
-                  double tol = 100 * std::numeric_limits<double>::epsilon()) const;
+                  Tol tol = std::nullopt) const;
     bool contains(const Zonotope &S, const std::string &method = "exact",
-                  double tol = 100 * std::numeric_limits<double>::epsilon()) const;
+                  Tol tol = std::nullopt) const;
     bool contains(const Interval &I, const std::string &method = "exact",
-                  double tol = 100 * std::numeric_limits<double>::epsilon()) const;
+                  Tol tol = std::nullopt) const;
 
     /// The point where the ray from `start` (a point of the zonotope; default: the center) in
     /// direction dir leaves the zonotope, a column (n, 1). Not a batch.

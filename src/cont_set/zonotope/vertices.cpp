@@ -9,6 +9,7 @@
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <cmath>
@@ -27,7 +28,7 @@ Polygon aux_polygon(const double *c, const double *G, int64_t m) {
     std::vector<Point> g; // the generators (G is row-major (2, m))
     for (int64_t j = 0; j < m; ++j) {
         Point p = {G[j], G[m + j]};
-        if (std::hypot(p[0], p[1]) <= 1e-14) continue;
+        if (std::hypot(p[0], p[1]) <= numerics::kGeneratorZero) continue;
         if (p[1] < 0 || (p[1] == 0 && p[0] < 0)) p = {-p[0], -p[1]};
         g.push_back(p);
     }
@@ -40,7 +41,8 @@ Polygon aux_polygon(const double *c, const double *G, int64_t m) {
     for (std::size_t i = 1; i < g.size(); ++i) {
         Point &last = merged.back();
         const double cross = last[0] * g[i][1] - last[1] * g[i][0];
-        if (std::abs(cross) <= 1e-12 * std::hypot(last[0], last[1]) * std::hypot(g[i][0], g[i][1]))
+        const double lengths = std::hypot(last[0], last[1]) * std::hypot(g[i][0], g[i][1]);
+        if (std::abs(cross) <= numerics::kParallel2d * lengths)
             last = {last[0] + g[i][0], last[1] + g[i][1]};
         else
             merged.push_back(g[i]);

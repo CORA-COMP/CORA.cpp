@@ -8,6 +8,7 @@
 // Outputs:  Ainv - the inverse, or empty if A is (numerically) singular
 // See also: priv_verify_ra_support_function, priv_reach_adaptive
 
+#include "cora/global/tensor/tolerance.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 
 #include <algorithm>
@@ -26,7 +27,7 @@ std::optional<Tensor> priv_inverse(const Tensor &A) {
     double max_abs = 0;
     for (double v : M) max_abs = std::max(max_abs, std::abs(v));
     for (int64_t i = 0; i < n; ++i) inv[i * n + i] = 1;
-    const double tol = double(n) * 2.220446049250313e-16 * max_abs;
+    const double tol = double(n) * machine_eps() * max_abs;
     for (int64_t j = 0; j < n; ++j) {
         // The largest entry of the column below the diagonal is the pivot.
         int64_t piv = j;

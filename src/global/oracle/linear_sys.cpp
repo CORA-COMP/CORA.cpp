@@ -6,6 +6,7 @@
 #include "cora/global/error.h"
 
 #include "cora/global/oracle/request.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -33,8 +34,10 @@ ReachSet LinearSys::reach(const Zonotope &X0, double t_final, const alg::Standar
     });
     const double steps = t_final / time_step;
     CORA_CHECK(
-        t_final > 0 && std::abs(steps - std::round(steps)) <= 1e-9 * steps, Error::wrong_value,
-        [] { return std::string("lean reach: t_final must be a positive multiple of time_step"); });
+        t_final > 0 && std::abs(steps - std::round(steps)) <= numerics::kStepCount * steps,
+        Error::wrong_value, [] {
+            return std::string("lean reach: t_final must be a positive multiple of time_step");
+        });
     // the times are exact doubles, not values of the dtype
     const Reply r = ask("linearSysReach", {{"A", A_}, {"X0", X0}, {"timeStep", time_step},
                                            {"tFinal", t_final}, {"taylorTerms", taylor_terms},

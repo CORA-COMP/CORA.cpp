@@ -9,6 +9,7 @@
 // CORA: contSet/@zonotope/representsa_.m
 
 #include "cont_set/zonotope/private/priv.h"
+#include "cora/global/within_tol.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -19,7 +20,8 @@ namespace cora {
 
 bool priv_is_box(const Zonotope &Z, double tol) {
     if (Z.dim() == 1) return true;
-    const Tensor beyond = priv_within_tol(Z.generators().detach(), 0.0, tol).negative() + 1.0;
+    const Tensor G = Z.generators().detach();
+    const Tensor beyond = within_tol(G, G.zeros_like(), tol).negative() + 1.0;
     const Tensor per_generator = beyond.sum(-2);
     return per_generator.numel() == 0 || per_generator.max().item() <= 1;
 }

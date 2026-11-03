@@ -5,6 +5,8 @@
 
 #pragma once
 
+
+#include "cora/global/tensor/tolerance.h"
 #include <string>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,7 +27,7 @@ struct TikzOptions {
     /// Whether to remove vertices that lie within `thin_tolerance` of the line through their
     /// neighbors, as matlab2tikz's cleanfigure does; the tolerance is a fraction of the axis range.
     bool thin = true;
-    double thin_tolerance = 1e-3;
+    double thin_tolerance = numerics::kThinTolerance;
 
     /// Whether the coordinates of every layer go to a table next to the .tikz file,
     /// `<path without extension>_<k>.dat`, which the .tikz file reads (by the path given to

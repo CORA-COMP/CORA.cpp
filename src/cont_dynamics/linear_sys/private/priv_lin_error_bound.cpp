@@ -12,6 +12,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv_lin_error_bound.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <cmath>
@@ -26,7 +27,6 @@ namespace cora {
 
 namespace {
 
-constexpr double kEps = 2.220446049250313e-16; // as MATLAB's eps
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 /// Sets v[k][it], growing the lists as MATLAB does when an element is assigned.
@@ -202,8 +202,9 @@ bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
     for (double v : tp) any_tp = any_tp || v != 0;
     for (std::size_t k = 0; k < K; ++k) {
         if (!full[k]) continue;
-        if (std::abs(total_error[k] - RoutError[k]) > 1e-9) internal_ok = false;
-        if (any_tp && std::abs(total_error_tp[k] - tp[k]) > 1e-9) internal_ok = false;
+        const double agree = numerics::kInternalConsistency;
+        if (std::abs(total_error[k] - RoutError[k]) > agree) internal_ok = false;
+        if (any_tp && std::abs(total_error_tp[k] - tp[k]) > agree) internal_ok = false;
     }
 
     // Non-accumulating errors, accumulating errors and their linearly increasing bound.
@@ -219,7 +220,7 @@ bool LinErrorBound::check_errors(const std::vector<double> &RoutError,
     for (std::size_t k = 0; k < K; ++k) cumsum_t[k] = cum_t += t_vec[k];
     for (std::size_t k = 0; k < K; ++k) {
         const double lin_bound = final_value * cumsum_t[k] / cumsum_t[K - 1];
-        if (cum_acc[k] > lin_bound || lin_bound - acc_total_bound[k] < -10 * kEps)
+        if (cum_acc[k] > lin_bound || lin_bound - acc_total_bound[k] < -10 * machine_eps())
             internal_ok = false;
     }
 
@@ -315,7 +316,7 @@ void LinErrorBound::update_coefficients_approx_fun(int k, int kIter, bool fullco
     // a dt^2 + b dt through the two most recent values.
     const double dt_prev = time_steps[k][kIter - 1];
     const double m11 = dt_prev * dt_prev, m12 = dt_prev, m21 = dt * dt, m22 = dt;
-    if (std::abs(1 / aux_cond2x2(m11, m12, m21, m22)) < kEps)
+    if (std::abs(1 / aux_cond2x2(m11, m12, m21, m22)) < machine_eps())
         CORA_FAIL(Error::special_error,
                   "LinearSys::verify: estimation of the time step size failed");
     aux_solve2x2(m11, m12, m21, m22, idv_pu_tkplus1[k][kIter - 1], idv_pu_tkplus1[k][kIter],

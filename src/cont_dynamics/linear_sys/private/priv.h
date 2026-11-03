@@ -8,6 +8,7 @@
 #pragma once
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <cmath>
 
@@ -15,9 +16,9 @@
 
 namespace cora {
 
-/// The number of steps of size time_step that cover t_final; a tolerance keeps 0.3 / 0.1 at 3.
+/// The number of steps of size time_step that cover t_final; a slack keeps 0.3 / 0.1 at 3.
 inline int priv_num_steps(double t_final, double time_step) {
-    return static_cast<int>(std::ceil(t_final / time_step - 1e-9));
+    return static_cast<int>(std::ceil(t_final / time_step - numerics::kStepCount));
 }
 
 /// The weight (i^(-i/(i-1)) - i^(-1/(i-1))) dt^i / i! of the i-th Taylor term in a correction

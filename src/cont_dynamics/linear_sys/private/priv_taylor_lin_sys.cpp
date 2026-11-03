@@ -9,6 +9,8 @@
 // Outputs:  the cached quantities of priv_taylorLinSys.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
 
+#include "cora/global/tensor/tolerance.h"
+#include "cora/global/within_tol.h"
 #include "cont_dynamics/linear_sys/private/priv_taylor_lin_sys.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 
@@ -24,7 +26,6 @@ namespace cora {
 
 namespace {
 
-constexpr double kEps = 2.220446049250313e-16;  // as MATLAB's eps
 constexpr int kMaxEta = 75;                     // terms before a Taylor sum counts as diverging
 
 /// Whether a <= b holds for every entry.
@@ -32,12 +33,6 @@ bool aux_all_le(const Tensor &a, const Tensor &b) {
     double m = -std::numeric_limits<double>::infinity();
     for (double v : (a - b).max(-1, true).data()) m = std::max(m, v);
     return m <= 0;
-}
-
-/// CORA's withinTol: equal up to an absolute or a relative tolerance.
-bool aux_within_tol(double a, double b, double tol) {
-    const double diff = std::abs(a - b);
-    return diff <= tol || diff / std::min(std::abs(a), std::abs(b)) <= tol;
 }
 
 /// The weight of the i-th Taylor term in the correction matrices: i^(-i/(i-1)) - i^(-1/(i-1)).
@@ -56,13 +51,13 @@ TaylorLinSys::TaylorLinSys(Tensor A) : A_(std::move(A)) { Apower_.push_back(A_);
 
 const TaylorLinSys::PerStep *TaylorLinSys::find(double dt) const {
     for (const PerStep &s : steps_)
-        if (aux_within_tol(s.dt, dt, 1e-10)) return &s;
+        if (within_tol(s.dt, dt, numerics::kTaylorStepMatch)) return &s;
     return nullptr;
 }
 
 TaylorLinSys::PerStep &TaylorLinSys::entry(double dt) {
     for (PerStep &s : steps_)
-        if (aux_within_tol(s.dt, dt, 1e-10)) return s;
+        if (within_tol(s.dt, dt, numerics::kTaylorStepMatch)) return s;
     steps_.push_back({dt, {}, std::nullopt, std::nullopt, std::nullopt});
     return steps_.back();
 }
@@ -130,7 +125,9 @@ std::optional<Interval> TaylorLinSys::F(double dt) {
         // The weight is negative: the negative part of A^eta bounds F from above.
         const double factor = aux_weight(eta) * dtoverfac(dt, eta);
         const Tensor add_pos = Apos(eta) * factor, add_neg = Aneg(eta) * factor;
-        if (aux_all_le(add_neg, sum_pos * kEps) && aux_all_le(sum_neg * kEps, add_pos)) break;
+        if (aux_all_le(add_neg, sum_pos * machine_eps()) &&
+            aux_all_le(sum_neg * machine_eps(), add_pos))
+            break;
         if (eta == kMaxEta) return std::nullopt;
         sum_pos = sum_pos + add_neg;
         sum_neg = sum_neg + add_pos;
@@ -146,7 +143,9 @@ std::optional<Interval> TaylorLinSys::G(double dt) {
         // The terms of G use one power of A less than those of F for the same weight.
         const double factor = aux_weight(eta) * dtoverfac(dt, eta);
         const Tensor add_pos = Apos(eta - 1) * factor, add_neg = Aneg(eta - 1) * factor;
-        if (aux_all_le(add_neg, sum_pos * kEps) && aux_all_le(sum_neg * kEps, add_pos)) break;
+        if (aux_all_le(add_neg, sum_pos * machine_eps()) &&
+            aux_all_le(sum_neg * machine_eps(), add_pos))
+            break;
         if (eta == kMaxEta + 1) return std::nullopt;
         sum_pos = sum_pos + add_neg;
         sum_neg = sum_neg + add_pos;

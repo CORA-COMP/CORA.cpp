@@ -22,6 +22,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <optional>
 
@@ -54,7 +55,7 @@ Box aux_box(const Zonotope &Z) {
 /// The box hull of two boxes, made 10% (and a little) larger.
 Box aux_inflated_hull(const Box &a, const Box &b) {
     const Tensor lo = a.lo.minimum(b.lo), hi = a.hi.maximum(b.hi);
-    const Tensor margin = (hi - lo) * 0.1 + 1e-10;
+    const Tensor margin = (hi - lo) * 0.1 + numerics::kBoxMargin;
     return {lo - margin, hi + margin};
 }
 

@@ -7,6 +7,7 @@
 
 #include "cora/global/error.h"
 #include "cora/global/plot/figure.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
 #include <algorithm>
@@ -27,7 +28,7 @@ namespace {
 // A number with up to four significant digits and no trailing zeros.
 std::string aux_num(double v) {
     char out[32];
-    std::snprintf(out, sizeof out, "%.4g", std::abs(v) < 1e-12 ? 0.0 : v);
+    std::snprintf(out, sizeof out, "%.4g", std::abs(v) < numerics::kPrintZero ? 0.0 : v);
     return out;
 }
 
@@ -55,7 +56,7 @@ std::vector<double> aux_ticks(double lo, double hi) {
                                            : 10) *
                         mag;
     std::vector<double> ticks;
-    for (double t = std::ceil(lo / step) * step; t <= hi + 1e-9 * step; t += step)
+    for (double t = std::ceil(lo / step) * step; t <= hi + numerics::kTickSlack * step; t += step)
         ticks.push_back(t);
     return ticks;
 }

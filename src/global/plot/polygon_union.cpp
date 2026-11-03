@@ -11,6 +11,7 @@
 // uncovered pieces keep their direction and chain into loops.
 
 #include "cora/global/plot/geometry.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/vec.h"
 
 #include <algorithm>
@@ -124,7 +125,7 @@ bool aux_convex_polygons(const std::vector<Polygon> &polygons, double eps,
     for (const Polygon &given : polygons) {
         const Polygon p = aux_ccw(given, eps);
         if (p.size() < 3 || std::abs(area(p)) <= eps * eps) continue;
-        if (aux_is_convex(p, 1e-12)) {
+        if (aux_is_convex(p, numerics::kConvexCorner)) {
             out.emplace_back(p);
             continue;
         }
@@ -298,7 +299,7 @@ bool aux_chain(const std::vector<Piece> &pieces, double eps, std::vector<Polygon
 
 // Union -------------------------------------------------------------------------------------------
 
-std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double tol) {
+std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double resolution) {
     double x0 = 1e300, x1 = -1e300, y0 = 1e300, y1 = -1e300;
     for (const Polygon &p : given)
         for (const Point &v : p) {
@@ -307,11 +308,11 @@ std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double to
             y0 = std::min(y0, v[1]);
             y1 = std::max(y1, v[1]);
         }
-    const double eps = 1e-9 * std::max({x1 - x0, y1 - y0, 1e-300});
+    const double eps = numerics::kUnionExtent * std::max({x1 - x0, y1 - y0, numerics::kTiny});
     // Corners that the picture cannot show are dropped first: fewer edges to test.
     std::vector<Polygon> polygons;
     for (const Polygon &p : given)
-        polygons.push_back(thin_polygon(p, {tol * (x1 - x0), tol * (y1 - y0)}));
+        polygons.push_back(thin_polygon(p, {resolution * (x1 - x0), resolution * (y1 - y0)}));
     // The polygons with an area, convex and counter-clockwise; their neighbors.
     std::vector<Convex> polys;
     const bool simple = aux_convex_polygons(polygons, eps, polys);
