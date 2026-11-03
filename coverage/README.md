@@ -26,15 +26,15 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 
 | Group | CORA methods | todo | untested | ported | property | oracle | out of scope | oracle debt |
 |---|---|---|---|---|---|---|---|---|
-| contSet | 908 | 729 | 21 | 18 | 27 | 99 | 14 | 34 |
+| contSet | 908 | 710 | 21 | 21 | 28 | 114 | 14 | 35 |
 | contDynamics | 159 | 144 | 5 | 10 | 0 | 0 | 0 | 7 |
 | hybridDynamics | 89 | 89 | 0 | 0 | 0 | 0 | 0 | 0 |
 | nn | 104 | 101 | 1 | 2 | 0 | 0 | 0 | 2 |
 | specification | 224 | 222 | 0 | 2 | 0 | 0 | 0 | 2 |
 | others | 212 | 212 | 0 | 0 | 0 | 0 | 0 | 0 |
-| **all** | 1696 | 1497 | 27 | 32 | 27 | 99 | 14 | 45 |
+| **all** | 1696 | 1478 | 27 | 35 | 28 | 114 | 14 | 46 |
 
-11% of the 1682 CORA methods in scope have a source, 9% are tested in C++ and Python, 6% are checked against CORALean; oracle debt 45.
+12% of the 1682 CORA methods in scope have a source, 11% are tested in C++ and Python, 7% are checked against CORALean; oracle debt 46.
 
 ## Classes
 
@@ -44,7 +44,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 | [contSet/capsule](contSet/capsule.md) | 39 | 39 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/conPolyZono](contSet/conPolyZono.md) | 47 | 47 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/conZonotope](contSet/conZonotope.md) | 50 | 49 | 0 | 0 | 0 | 0 | 1 | 0 |
-| [contSet/contSet](contSet/contSet.md) | 101 | 72 | 12 | 7 | 0 | 1 | 9 | 2 |
+| [contSet/contSet](contSet/contSet.md) | 101 | 53 | 12 | 10 | 1 | 16 | 9 | 3 |
 | [contSet/ellipsoid](contSet/ellipsoid.md) | 50 | 50 | 0 | 0 | 0 | 0 | 0 | 0 |
 | [contSet/emptySet](contSet/emptySet.md) | 30 | 11 | 0 | 3 | 1 | 15 | 0 | 2 |
 | [contSet/fullspace](contSet/fullspace.md) | 33 | 17 | 0 | 0 | 1 | 15 | 0 | 1 |
