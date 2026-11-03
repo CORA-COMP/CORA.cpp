@@ -429,7 +429,8 @@ inline Zonotope operator+(const Tensor &v, const Zonotope &Z) { return Z + v; }
 inline Zonotope operator-(const Zonotope &Z, const Tensor &v) {
     return {Z.center() - v, Z.generators()};
 }
-inline Zonotope operator-(const Zonotope &Z) { return {Z.center() * -1.0, Z.generators()}; }
+/// -Z as CORA's uminus: centre and generators negated, like ContSet::uminus.
+inline Zonotope operator-(const Zonotope &Z) { return {Z.center() * -1.0, Z.generators() * -1.0}; }
 
 } // namespace cora
 
