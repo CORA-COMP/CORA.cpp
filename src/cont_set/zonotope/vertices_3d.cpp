@@ -106,7 +106,7 @@ std::vector<std::vector<Point3>> Zonotope::vertices_3d_impl() const {
         std::vector<Point3> g;
         for (int64_t j = 0; j < m; ++j) {
             const Point3 p = {G[j], G[m + j], G[2 * m + j]};
-            if (norm(p) > 1e-14) g.push_back(p);
+            if (cora::norm(p) > 1e-14) g.push_back(p);
         }
         out.push_back(aux_corners({cs[3 * b], cs[3 * b + 1], cs[3 * b + 2]}, g));
     }
