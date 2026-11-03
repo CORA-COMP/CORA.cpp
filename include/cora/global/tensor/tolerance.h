@@ -95,6 +95,11 @@ inline constexpr double kTiny = 1e-300; ///< keeps a denominator or a range off 
 inline constexpr double kOdeRelTol = 1e-3; ///< relative tolerance of the step control (ode45)
 inline constexpr double kOdeAbsTol = 1e-6; ///< absolute tolerance of the step control (ode45)
 
+// Powers and pieces -------------------------------------------------------------------------------
+
+inline constexpr int64_t kPowerProduct = 64; ///< integer powers up to this many factors: products
+inline constexpr int64_t kMaxPieces = int64_t{1} << 24; ///< most boxes that partition returns
+
 // Linear programs ---------------------------------------------------------------------------------
 
 inline constexpr double kSimplexPivot = 1e-9; ///< smallest usable tableau entry in a ratio test
