@@ -31,6 +31,12 @@ class InstructionCountsTest(unittest.TestCase):
         _, grown = ic.compare({"a": 1000, "b": 1000, "c": 1000}, {"a": 1040, "b": 1020, "c": 900}, 3.0)
         self.assertEqual(grown, ["a"])
 
+    def test_a_growth_is_accepted_only_with_a_reason_in_a_commit(self):
+        msgs = ("Tensor: x\n\nAccept-instructions: interval_matrix_product: CORA's endpoint formula\n"
+                "Accept-instructions: zonotope_plus:\n")
+        self.assertEqual(ic.accepted_growth(None, msgs),
+                         {"interval_matrix_product": "CORA's endpoint formula"})
+
     def test_a_benchmark_new_in_the_head_is_listed_not_failed(self):
         lines, grown = ic.compare({}, {"a": 10}, 3.0)
         self.assertEqual(grown, [])

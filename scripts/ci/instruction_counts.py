@@ -7,6 +7,9 @@ Method:   every benchmark runs under `valgrind --tool=callgrind`, counting the i
           (the whole process, noisy).
 Output:   a table of base, head and the change in percent; exit code 1 if one grew by more than the
           threshold (percent, default 3), else 0. A benchmark the base does not have is listed as new.
+Accepting a growth: a commit of the change (git log <base>..HEAD, with --accept-from <base>) names it
+          in a line `Accept-instructions: <benchmark>: <reason>`; the reason is required and printed.
+          The acceptance lives in the history of that one change, never in a list in the tree.
 """
 import argparse
 import re
@@ -79,6 +82,7 @@ def main():
     parser.add_argument("--base", required=True, help="the micro program built against the base commit")
     parser.add_argument("--head", required=True, help="the micro program built against the head commit")
     parser.add_argument("--threshold", type=float, default=3.0, help="percent of growth that fails")
+    parser.add_argument("--accept-from", help="base commit: growth named by `Accept-instructions:` in base..HEAD passes")
     args = parser.parse_args()
     names, known = names_of(args.head), set(names_of(args.base))
     # a benchmark the base does not have yet is listed as new, not compared
@@ -86,10 +90,26 @@ def main():
     head = {name: count(args.head, name) for name in names}
     lines, grown = compare(base, head, args.threshold)
     print("\n".join(lines))
+    accepted = accepted_growth(args.accept_from) if args.accept_from else {}
+    for name in [g for g in grown if g in accepted]:
+        print(f"\naccepted growth of {name}: {accepted[name]}")
+    grown = [g for g in grown if g not in accepted]
     if grown:
         print(f"\nmore than {args.threshold}% more instructions: {', '.join(grown)}")
         return 1
     return 0
+
+
+ACCEPT = re.compile(r"^Accept-instructions:\s*([\w.-]+)\s*:\s*(\S.*)$", re.M)
+
+
+def accepted_growth(base, messages=None):
+    """{benchmark: reason} of the `Accept-instructions: <name>: <reason>` lines in the messages of
+    the commits base..HEAD (or of `messages`, for tests); a line without a reason does not count."""
+    if messages is None:
+        messages = subprocess.run(["git", "log", "--format=%B", f"{base}..HEAD"], capture_output=True,
+                                  text=True, check=True).stdout
+    return {m.group(1): m.group(2).strip() for m in ACCEPT.finditer(messages)}
 
 
 if __name__ == "__main__":
