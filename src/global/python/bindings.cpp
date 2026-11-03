@@ -309,18 +309,6 @@ void bind_registry(py::module_ &m) {
         py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(),
         "Whether two sets are equal, up to tol (None: the repository tolerance)");
     m.def(
-        "eq",
-        [](const py::object &S1, const py::object &S2, Tol tol) {
-            return eq(set_of(S1), set_of(S2), tol);
-        },
-        py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(), "isequal, as CORA's eq");
-    m.def(
-        "ne",
-        [](const py::object &S1, const py::object &S2, Tol tol) {
-            return ne(set_of(S1), set_of(S2), tol);
-        },
-        py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(), "Not isequal, as CORA's ne");
-    m.def(
         "binary_pairs",
         [] {
             py::list out;

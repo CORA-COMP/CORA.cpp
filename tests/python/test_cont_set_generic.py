@@ -116,7 +116,6 @@ class Generic(unittest.TestCase):
     def test_equality(self):
         Zi = zonotope([0.0, 1.0], [[1.0, 0.0], [0.0, 1.0]])
         self.assertTrue(cora.isequal(Zi, self.I) and cora.isequal(self.I, Zi))
-        self.assertTrue(cora.eq(self.I, Zi) and not cora.ne(self.I, Zi))
         self.assertTrue(self.I == Zi and Zi == self.I and self.I != self.Z)
         self.assertNotEqual(self.I, box([-1.0, 0.0], [1.0, 2.001]))
         self.assertTrue(cora.isequal(self.I, box([-1.0, 0.0], [1.0, 2.001]), tol=1e-2))
@@ -124,7 +123,7 @@ class Generic(unittest.TestCase):
         with self.assertRaises(cora.errors.DimensionMismatch):
             cora.isequal(self.I, box([0.0], [1.0]))
         with self.assertRaises(cora.errors.WrongValue):
-            cora.ne(self.I, self.I, tol=-1.0)
+            cora.isequal(self.I, self.I, tol=-1.0)
 
     def test_generate_random(self):
         rng = cora.Rng(3)
