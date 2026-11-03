@@ -34,7 +34,7 @@ Interval Interval::quad_map(const std::vector<Tensor> &Q) const {
     CORA_CHECK(aux_has_zonotope(*this), Error::wrong_value, [] {
         return std::string("quad_map: the box must be a bounded vector");
     });
-    return priv_zonotope_of_interval(*this).quad_map(Q).interval();
+    return zonotope().quad_map(Q).interval();
 }
 
 Interval Interval::quad_map(const Interval &I2, const std::vector<Tensor> &Q) const {
@@ -42,8 +42,8 @@ Interval Interval::quad_map(const Interval &I2, const std::vector<Tensor> &Q) co
     CORA_CHECK(aux_has_zonotope(*this) && aux_has_zonotope(I2), Error::wrong_value, [] {
         return std::string("quad_map: the boxes must be bounded vectors");
     });
-    return priv_zonotope_of_interval(*this)
-        .quad_map(priv_zonotope_of_interval(I2), Q)
+    return zonotope()
+        .quad_map(I2.zonotope(), Q)
         .interval();
 }
 

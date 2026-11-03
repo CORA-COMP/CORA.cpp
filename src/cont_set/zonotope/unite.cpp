@@ -99,7 +99,7 @@ Zonotope aux_parallelotope(const std::vector<Zonotope> &Zs) {
     const Tensor Ut = U.matrix_transpose();
     Interval hull = Zs.front().linear_map(Ut).interval();
     for (std::size_t i = 1; i < Zs.size(); ++i) hull = hull.unite(Zs[i].linear_map(Ut).interval());
-    return priv_zonotope_of_interval(hull).linear_map(U);
+    return hull.zonotope().linear_map(U);
 }
 
 /// The union of Z, the sets Zs and the box (if given) by the method; every overload ends here, so
@@ -128,7 +128,7 @@ Zonotope aux_unite(const Zonotope &Z, std::vector<Zonotope> Zs, const Interval *
         CORA_CHECK(box->is_bounded() && box->inf().shape().back() == 1, Error::wrong_value, [] {
             return std::string("unite: the box must be bounded and a vector");
         });
-        Zs.push_back(priv_zonotope_of_interval(*box));
+        Zs.push_back(box->zonotope());
     }
     // this set first, as CORA's cell array
     std::vector<Zonotope> all{Z};
