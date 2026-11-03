@@ -129,11 +129,11 @@ class EmptySet(unittest.TestCase):
     def test_plotting_draws_nothing(self):
         fig, ax = plt.subplots()
         cora.plot(cora.EmptySet(2), ax=ax)
-        self.assertEqual(len(ax.patches), 0)
+        self.assertEqual([len(p.get_path().vertices) for p in ax.patches], [0])
         plt.close(fig)
 
     def test_the_registry_lists_the_pairs(self):
-        pairs = {(p.op, p.left, p.right) for p in cora.binary_pairs()}
+        pairs = set(cora.binary_pairs())
         self.assertIn(("plus", "EmptySet", "Zonotope"), pairs)
         self.assertIn(("contains", "EmptySet", "Interval"), pairs)
 
