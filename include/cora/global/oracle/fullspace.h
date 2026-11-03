@@ -48,6 +48,11 @@ class Fullspace {
     Certified is_intersecting(const Interval &I) const;
     bool isequal(const Fullspace &F2, double tol = 0) const;
 
+    /// The image under a matrix (m, n): the whole space of m dimensions; the support function:
+    /// Inf, 0 for the zero direction.
+    Fullspace linear_map(const Tensor &M) const;
+    double support_function(const Tensor &dir, const std::string &type = "upper") const;
+
     bool is_bounded() const;
     bool is_full_dim() const;
     Tensor center() const;

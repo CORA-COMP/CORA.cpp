@@ -44,6 +44,11 @@ class EmptySet {
     bool is_intersecting(const cora::ContSet &S, double tol = 0) const;
     bool isequal(const cora::ContSet &S, double tol = 0) const;
 
+    /// The image under a matrix (m, n): the empty set of m dimensions; the support function:
+    /// -Inf.
+    EmptySet linear_map(const Tensor &M) const;
+    double support_function(const Tensor &dir, const std::string &type = "upper") const;
+
     bool is_bounded(double tol = 0) const;
     bool is_full_dim(double tol = 0) const;
 

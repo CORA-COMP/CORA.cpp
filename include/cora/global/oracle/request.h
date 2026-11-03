@@ -7,7 +7,7 @@
 //             sets the request's dtype, all lean operands must agree, none means lean::dtype()
 // Results:    Reply::get<T>(key) decodes double, bool, int64 list, Tensor, Interval, Fullspace,
 //             Zonotope, ConZonotope, Zonotope list, or std::optional of one of them (a JSON null is
-//             nothing)
+//             nothing); list(key) splits an array of objects into replies
 // See also:   lean/oracle.h, lean/interval.h, lean/zonotope.h
 
 #pragma once
@@ -38,6 +38,7 @@ struct Wire {
     template <class I, std::enable_if_t<std::is_integral_v<I> && !std::is_same_v<I, bool>, int> = 0>
     Wire(I n) : json(static_cast<int64_t>(n)) {}
     Wire(const std::vector<int64_t> &indices);
+    Wire(const std::vector<std::vector<int64_t>> &index_lists);
     Wire(const Tensor &T);
     Wire(const Interval &I);
     Wire(const Fullspace &F);
@@ -65,6 +66,9 @@ class Reply {
     /// The member `key` as a T; throws if it is missing or not a T.
     template <class T>
     T get(const char *key) const;
+
+    /// The elements of the array `key`, each a reply on its own: their members are read with get.
+    std::vector<Reply> list(const char *key) const;
 
     /// The answer of a `contains` (a proof when true) or an `isIntersecting` (a proof of
     /// disjointness, so a proof when false) request.

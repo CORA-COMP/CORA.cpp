@@ -149,6 +149,9 @@ Wire::Wire(const std::vector<std::vector<Tensor>> &Tss) {
 Wire::Wire(const std::vector<int64_t> &indices) : json(Json::array()) {
     for (const int64_t i : indices) json.push(Json(i));
 }
+Wire::Wire(const std::vector<std::vector<int64_t>> &index_lists) : json(Json::array()) {
+    for (const std::vector<int64_t> &indices : index_lists) json.push(Wire(indices).json);
+}
 
 Wire number(double x) {
     Json j;
@@ -182,6 +185,15 @@ template std::optional<double> Reply::get<std::optional<double>>(const char *) c
 template std::optional<Tensor> Reply::get<std::optional<Tensor>>(const char *) const;
 template std::optional<Interval> Reply::get<std::optional<Interval>>(const char *) const;
 template std::optional<Zonotope> Reply::get<std::optional<Zonotope>>(const char *) const;
+
+// Replies ----------------------------------------------------------------------------------------
+
+// The elements of an array member, as replies.
+std::vector<Reply> Reply::list(const char *key) const {
+    std::vector<Reply> replies;
+    for (const Json &item : json_.at(key).items) replies.emplace_back(dtype_, item);
+    return replies;
+}
 
 // A contains proves with true, an isIntersecting (disjoint) proves with false.
 Certified Reply::proved_contains() const {

@@ -273,6 +273,10 @@ std::optional<Interval> Interval::boundary_point(const Tensor &dir, const Tensor
         .get<std::optional<Interval>>("I");
 }
 
+Interval Interval::project_on_hyperplane(const Tensor &c, double d) const {
+    return aux_box("interval.projectOnHyperplane", {{"I", *this}, {"c", c}, {"d", d}});
+}
+
 // Matrices -----------------------------------------------------------------------------------
 
 // Matrix operations: transpose, product, diagonal and the block constructions.

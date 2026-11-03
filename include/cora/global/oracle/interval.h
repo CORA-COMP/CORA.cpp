@@ -157,6 +157,9 @@ class Interval {
     /// Where the ray from `start` along `dir` leaves the box, nothing if it stays inside.
     std::optional<Interval> boundary_point(const Tensor &dir, const Tensor &start) const;
 
+    /// The box of the projection onto the hyperplane {x | c'x = d} for a unit normal c.
+    Interval project_on_hyperplane(const Tensor &c, double d) const;
+
     // Matrices ---------------------------------------------------------------------------------
 
     Interval transpose() const;

@@ -108,6 +108,44 @@ class Zonotope {
     std::pair<Zonotope, Zonotope> split_first_gen() const;
     std::pair<Zonotope, Zonotope> split_longest_gen() const;
 
+    /// The zonotope scaled about its center by a number or a column, and shifted by -v.
+    Zonotope enlarge(double factor) const;
+    Zonotope enlarge(const Tensor &factor) const;
+    Zonotope minus(const Tensor &v) const;
+
+    /// The projection onto the hyperplane {x | c'x = d} for a unit normal c.
+    Zonotope project_on_hyperplane(const Tensor &c, double d) const;
+
+    /// The box that holds the point where the ray from `start` (default: the center) along `dir`
+    /// leaves the zonotope; nothing if no facet bounds the ray.
+    std::optional<Interval> boundary_point(const Tensor &dir) const;
+    std::optional<Interval> boundary_point(const Tensor &dir, const Tensor &start) const;
+
+    // Tensor images ------------------------------------------------------------------------------
+
+    /// The lists of CORA's options.list: perm (rows of generator indices), map (the combination
+    /// each row adds to, 0-based) and C, the number of combinations. M is the third-order tensor:
+    /// n blocks, each n matrices (n, n).
+    struct TensorLists {
+        std::vector<std::vector<int64_t>> perm;
+        std::vector<int64_t> map;
+        int64_t C;
+    };
+    using Tensor3 = std::vector<std::vector<Tensor>>;
+    Zonotope tensor_multiplication(const Tensor3 &M, const TensorLists &list) const;
+
+    /// The same for the tensor zonotope {M_c + sum_i b_i M_i}.
+    Zonotope tensor_multiplication_zono(const Tensor3 &M_center,
+                                        const std::vector<Tensor3> &M_generators,
+                                        const TensorLists &list) const;
+
+    /// The vertices c +- sum_j sign(s_i' g_j) g_j per direction s_i: nothing for the one that
+    /// rounds, as the oracle certifies only a vertex it can contain.
+    struct VertexPair {
+        std::optional<Tensor> plus, minus;
+    };
+    std::vector<VertexPair> underapproximate(const std::vector<Tensor> &S) const;
+
     // Predicates (exact answers) ---------------------------------------------------------------
 
     bool constr_sat(const Tensor &C, const Tensor &d) const;
@@ -131,6 +169,11 @@ class Zonotope {
     double norm(int type = 2, const std::string &mode = "ub") const;
     double support_function(const Tensor &dir, const std::string &type = "upper") const;
     double radius(int k = 20) const;
+
+    /// A lower bound on the norm of the point p w.r.t. the zonotope centered at the origin (the
+    /// center is ignored): the norm for n independent generators up to the rounding of quotients;
+    /// infinite only where p is certified outside the span of the generators.
+    double zonotope_norm(const Tensor &p) const;
     std::optional<double> minnorm(int p = 20) const;
     Tensor generator_length(int k = 20) const;
 
