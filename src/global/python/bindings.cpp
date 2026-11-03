@@ -463,6 +463,51 @@ void bind_interval(py::module_ &m) {
         .def("atanh", &Interval::atanh, "The image under the inverse hyperbolic tangent")
         .def("atan2", &Interval::atan2, py::arg("I2"),
              "The hull of atan2(y, x) at the four corners, y from this interval, x from I2")
+        .def("cos", &Interval::cos, "The image under the cosine (CORA's case analysis)")
+        .def("cosh", &Interval::cosh, "The image under the hyperbolic cosine")
+        .def("exp", &Interval::exp, "The image under the exponential")
+        .def("convex_hull", &Interval::convex_hull, py::arg("I2"),
+             "The hull of two boxes; an empty one returns the other")
+        .def("enclose", &Interval::enclose, py::arg("I2"), "A box around two boxes")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points) {
+                return Interval::enclose_points(tensor_of(points, "the points"));
+            },
+            py::arg("points"), "The smallest box around the points, the columns of (n, N)")
+        .def_static("empty", &Interval::empty, py::arg("n"), "The empty interval of n dimensions")
+        .def_static(
+            "horzcat",
+            [](const py::list &items) {
+                std::vector<Interval> Is;
+                for (const py::handle &item : items) {
+                    if (py::isinstance<Interval>(item)) {
+                        Is.push_back(py::cast<Interval>(item));
+                    } else {
+                        const Tensor p = vector_of(item, "the number");
+                        Is.emplace_back(p, p);
+                    }
+                }
+                return Interval::horzcat(Is);
+            },
+            py::arg("items"), "Intervals (or points, as arrays) joined side by side")
+        .def(
+            "enlarge",
+            [](const Interval &I, const py::object &factor) {
+                if (is_number(factor)) return I.enlarge(py::cast<double>(factor));
+                return I.enlarge(vector_of(factor, "the factor"));
+            },
+            py::arg("factor"), "The box scaled about its center by a number or per dimension")
+        .def("ctranspose", &Interval::ctranspose, "The transpose of an interval matrix")
+        .def("diag", &Interval::diag, py::arg("k") = 0,
+             "A vector as a diagonal matrix, a matrix as its k-th diagonal")
+        .def("dirac", &Interval::dirac, py::arg("n") = 0,
+             "The n-th derivative of the Dirac delta on the box")
+        .def(
+            "infimum", [](const Interval &I) { return bounds(I.infimum()); }, "The lower bound")
+        .def("interval_matrix", &Interval::interval_matrix,
+             "The interval matrix [c - r, c + r] of the center and the radius")
+        .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
         .def(
             "contains",
             [](const Interval &I, const py::object &p, double tol) {

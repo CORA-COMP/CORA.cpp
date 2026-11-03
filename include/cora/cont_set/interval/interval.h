@@ -8,8 +8,10 @@
 // Operators:  I + I2, I + v, I - v, -I, s * I, M * I, as in CORA
 // Operations: support_function, linear_map, plus, rand_point, contains, stack, project, vertices,
 //             generate_random, display, center, abs, intersect, cart_prod, cat, unbounded,
-//             boundary_point, acos, asin, atan, atan2, acosh, asinh, atanh (one file each); rad
-//             (below); the constructor checks its input (interval.cpp)
+//             boundary_point, acos, asin, atan, atan2, acosh, asinh, atanh, cos, cosh, exp,
+//             convex_hull, enclose, enclose_points, enlarge, empty, horzcat, ctranspose, diag,
+//             dirac, infimum, interval_matrix, is_bounded (one file each); rad (below); the
+//             constructor checks its input (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@interval/interval.m
@@ -83,6 +85,49 @@ class Interval : public ContSet {
     /// The intervals joined along dim (1: stacked, 2: side by side), as CORA's cat.
     static Interval cat(int dim, const std::vector<Interval> &Is);
 
+    /// The intervals joined side by side (CORA's horzcat; a number is a point interval).
+    static Interval horzcat(const std::vector<Interval> &Is);
+
+    /// The empty interval of n dimensions: bounds (n, 0).
+    static Interval empty(int64_t n);
+
+    /// The smallest box around the points (..., n, N): the minimum and maximum over the columns.
+    static Interval enclose_points(const Tensor &points);
+
+    /// The hull of the two boxes (CORA's convHull_, which ends in or); an empty operand returns
+    /// the other.
+    Interval convex_hull(const Interval &I2) const;
+
+    /// CORA's enclose: the convex hull of the two boxes.
+    Interval enclose(const Interval &I2) const;
+
+    /// The box scaled by factor about its center: [c - r f, c + r f]. factor is a number or a
+    /// column (..., n, 1), nonnegative. An unbounded half-width stays unbounded for factor > 1 and
+    /// is refused (Error::not_supported) for factor < 1.
+    Interval enlarge(const Tensor &factor) const;
+    Interval enlarge(double factor) const;
+
+    /// The matrix of bounds transposed (CORA's ctranspose, real).
+    Interval ctranspose() const;
+
+    /// A column (or row) as the diagonal matrix with it on the k-th diagonal, a matrix as the
+    /// column of its k-th diagonal (CORA's diag(I, k)); off the diagonal the matrix is [0, 0].
+    Interval diag(int64_t k = 0) const;
+
+    /// The derivative of order n of the Dirac delta on the box, elementwise (CORA's dirac(n, I)):
+    /// [0, 0] where 0 is not in the box, else infinite bounds as CORA fixes them.
+    Interval dirac(int64_t n = 0) const;
+
+    /// The lower bound (CORA's infimum).
+    Tensor infimum() const;
+
+    /// The interval matrix [c - r, c + r] of the center c and the radius r (CORA's
+    /// intervalMatrix(center(I), rad(I))); an Interval of matrix bounds is CORA's intervalMatrix.
+    Interval interval_matrix() const;
+
+    /// Whether no bound is infinite (an empty interval is bounded); for a batch, whether all are.
+    bool is_bounded() const;
+
     // Points and functions ------------------------------------------------------------------------
 
     /// The point where the ray start + s dir, s >= 0, leaves the box; start defaults to the
@@ -99,6 +144,12 @@ class Interval : public ContSet {
     Interval acosh() const;
     Interval asinh() const;
     Interval atanh() const;
+
+    /// The image under cos (CORA's case analysis of the multiples of 2 pi, not the interval
+    /// arithmetic of cos at the bounds), cosh (three cases around 0) and exp, elementwise.
+    Interval cos() const;
+    Interval cosh() const;
+    Interval exp() const;
 
     /// The hull of atan2(y, x) at the four corners, y from this interval and x from I2, as CORA
     /// (not an enclosure where the box meets the branch cut of atan2).
