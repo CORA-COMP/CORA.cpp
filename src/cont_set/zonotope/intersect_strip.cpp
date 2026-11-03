@@ -19,6 +19,7 @@
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
 #include <cmath>
@@ -83,7 +84,7 @@ Zonotope aux_bravo(const Zonotope &Z, const Tensor &C, const Tensor &phi, const 
     const int64_t n = Z.dim(), m = G.shape().back();
     const Tensor c1 = C.slice(-2, 0, 1), phi1 = phi.slice(-2, 0, 1), y1 = y.slice(-2, 0, 1);
     const Tensor along = c1.matmul(G); // (1, m): the strip's row against each generator
-    const double limit = 1e10 * std::numeric_limits<double>::epsilon();
+    const double limit = 1e10 * machine_eps(G.dtype());
     const std::vector<double> a = along.data();
     // det(G G') is the product of the squared singular values, and 0 for fewer generators than rows
     const auto volume = [&](const Tensor &Gk) {

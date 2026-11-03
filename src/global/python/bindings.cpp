@@ -781,34 +781,34 @@ void bind_zonotope(py::module_ &m) {
             [](const Zonotope &Z) { return matrix(Z.generator_length().squeeze(-2)); },
             "The Euclidean length of every generator, (..., m)")
         .def("is_bounded", &Zonotope::is_bounded, "Always true")
-        .def("is_full_dim", &Zonotope::is_full_dim, py::arg("tol") = 1e-6,
+        .def("is_full_dim", &Zonotope::is_full_dim, py::arg("tol") = py::none(),
              "Whether the generators span the space (singular values up to tol count as zero)")
         .def(
             "is_full_dim_subspace",
-            [](const Zonotope &Z, double tol) {
+            [](const Zonotope &Z, Tol tol) {
                 const auto [res, subspace] = Z.is_full_dim_subspace(tol);
                 return py::make_tuple(res, matrix(subspace));
             },
-            py::arg("tol") = 1e-6, "(res, subspace): is_full_dim and a basis (n, r) of the span")
+            py::arg("tol") = py::none(), "(res, subspace): is_full_dim and a basis (n, r) of the span")
         .def(
             "isequal",
-            [](const Zonotope &Z, const py::object &S, double tol) {
+            [](const Zonotope &Z, const py::object &S, Tol tol) {
                 if (py::isinstance<Zonotope>(S)) return Z.isequal(py::cast<Zonotope>(S), tol);
                 if (py::isinstance<Interval>(S)) return Z.isequal(py::cast<Interval>(S), tol);
                 return Z.isequal(tensor_of(S, "the point"), tol);
             },
-            py::arg("S"), py::arg("tol") = std::numeric_limits<double>::epsilon(),
+            py::arg("S"), py::arg("tol") = py::none(),
             "Whether S (a zonotope, a box or a point) is the same set, up to tol")
         .def(
             "is_intersecting",
-            [](const Zonotope &Z, const py::object &S, const std::string &type, double tol) {
+            [](const Zonotope &Z, const py::object &S, const std::string &type, Tol tol) {
                 if (py::isinstance<Zonotope>(S))
                     return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
                 if (py::isinstance<Interval>(S))
                     return Z.is_intersecting(py::cast<Interval>(S), type, tol);
                 return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
             },
-            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = 1e-8,
+            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
             "Whether Z and a zonotope, a box or points intersect; 'exact' (default) or 'approx'")
         .def("lift", &Zonotope::lift, py::arg("N"), py::arg("dims"),
              "In N dimensions, with state i at position dims[i] (a permutation)")

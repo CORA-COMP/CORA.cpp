@@ -21,7 +21,8 @@ void full_dim_known(const std::string &b) {
     check(full.is_full_dim(), b + ": the unit square is full-dimensional");
     check(!flat.is_full_dim(), b + ": parallel generators span a line");
     const Zonotope thin(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1e-7}}));
-    check(!thin.is_full_dim(), b + ": a singular value 1e-7 is zero at the default 1e-6");
+    check(!thin.is_full_dim(1e-6), b + ": a singular value 1e-7 is zero at CORA's tol 1e-6");
+    check(thin.is_full_dim(), b + ": and nonzero at the repository tolerance");
     check(thin.is_full_dim(1e-8), b + ": and nonzero at tol 1e-8");
     check(!Zonotope(column({1.0}), Tensor::zeros({1, 0})).is_full_dim(), b + ": a point is not");
 

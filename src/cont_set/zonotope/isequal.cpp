@@ -1,8 +1,9 @@
 // isequal - whether a zonotope equals a zonotope, a box or a point, up to a tolerance
 //
 // Syntax:   res = Z.isequal(S);   res = Z.isequal(S, tol);
-// Inputs:   S - a zonotope, a box or a point (n, 1);  tol - CORA's default eps: the centers agree
-//           as within_tol, and so do the generators after compact "all" (up to order and sign)
+// Inputs:   S - a zonotope, a box or a point (n, 1)
+//           tol - the centers agree as within_tol, and so do the generators after compact "all"
+//                 (up to order and sign); default: the repository tolerance (docs/architecture.md)
 // Outputs:  res - true if the two sets are the same; a different dimension gives false. Not a batch
 // See also: compact, contains
 //
@@ -10,9 +11,9 @@
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/tensor/tolerance.h"
 #include "cora/global/within_tol.h"
 
-#include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -50,14 +51,11 @@ bool aux_isequal(const Zonotope &Z, const Zonotope &S, double tol) {
     return a.m == b.m && aux_same_columns(a.G, b.G, a.n, a.m, tol);
 }
 
-/// Why the call is refused, if it is: a batch (the generators are compared one set at a time), a
-/// negative tol.
-Refusal aux_refusal(const Tensor &c, const Tensor &c2, double tol) {
+/// Why the call is refused, if it is: a batch (the generators are compared one set at a time).
+Refusal aux_refusal(const Tensor &c, const Tensor &c2) {
     if (c.ndim() != 2 || c2.ndim() != 2)
         return std::pair{Error::not_supported, std::string("it supports a single zonotope, not a "
                                                            "batch")};
-    if (!(tol >= 0))
-        return std::pair{Error::wrong_value, "tol must be nonnegative, got " + std::to_string(tol)};
     return std::nullopt;
 }
 
@@ -66,27 +64,30 @@ Refusal aux_refusal(const Tensor &c, const Tensor &c2, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Zonotope::isequal(const Zonotope &S, double tol) const {
+bool Zonotope::isequal(const Zonotope &S, Tol tol_arg) const {
     detail::Entry entry;
-    const Refusal refusal = aux_refusal(c_, S.center(), tol);
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
+    const Refusal refusal = aux_refusal(c_, S.center());
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
     return S.dim() == dim() && aux_isequal(*this, S, tol);
 }
 
-bool Zonotope::isequal(const Interval &I, double tol) const {
+bool Zonotope::isequal(const Interval &I, Tol tol_arg) const {
     detail::Entry entry;
-    const Refusal refusal = aux_refusal(c_, I.inf(), tol);
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
+    const Refusal refusal = aux_refusal(c_, I.inf());
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
     // a box is the zonotope of its axes; the empty box is no zonotope
     return I.dim() == dim() && !I.is_empty() &&
            aux_isequal(*this, priv_zonotope_of_interval(I), tol);
 }
 
-bool Zonotope::isequal(const Tensor &p, double tol) const {
+bool Zonotope::isequal(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
     CORA_CHECK(p.ndim() == 2, Error::dimension_mismatch,
                [] { return std::string("isequal: a point must be a column (n, 1)"); });
-    const Refusal refusal = aux_refusal(c_, p, tol);
+    const Refusal refusal = aux_refusal(c_, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
     return p.shape()[0] == dim() && p.shape().back() == 1 &&
            aux_isequal(*this, priv_zonotope_of_point(p), tol);

@@ -180,25 +180,26 @@ class Zonotope : public ContSet {
 
     /// Whether the generators span the space (their rank is n; singular values up to tol count as
     /// zero), and with the second form also a basis (n, r) of their span (the identity if full).
-    /// Not a batch.
-    bool is_full_dim(double tol = 1e-6) const;
-    std::pair<bool, Tensor> is_full_dim_subspace(double tol = 1e-6) const;
+    /// Not a batch. tol default: the repository tolerance (docs/architecture.md).
+    bool is_full_dim(Tol tol = std::nullopt) const;
+    std::pair<bool, Tensor> is_full_dim_subspace(Tol tol = std::nullopt) const;
 
     /// Whether the zonotope equals a zonotope, a box or a point (n, 1): the centers agree (as
     /// within_tol) and so do the generators after compact "all", up to order and sign. Not a batch.
-    bool isequal(const Zonotope &S, double tol = std::numeric_limits<double>::epsilon()) const;
-    bool isequal(const Interval &I, double tol = std::numeric_limits<double>::epsilon()) const;
-    bool isequal(const Tensor &p, double tol = std::numeric_limits<double>::epsilon()) const;
+    /// tol default: the repository tolerance.
+    bool isequal(const Zonotope &S, Tol tol = std::nullopt) const;
+    bool isequal(const Interval &I, Tol tol = std::nullopt) const;
+    bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether the zonotope and a zonotope, a box or points (n, N) (all of them) intersect, with S
-    /// enlarged by tol (CORA's 1e-8). type "exact" decides by a linear program, "approx" tests the
-    /// boxes around the sets. Not a batch.
+    /// enlarged by tol (default: the repository tolerance). type "exact" decides by a linear
+    /// program, "approx" tests the boxes around the sets. Not a batch.
     bool is_intersecting(const Zonotope &S, const std::string &type = "exact",
-                         double tol = 1e-8) const;
+                         Tol tol = std::nullopt) const;
     bool is_intersecting(const Interval &I, const std::string &type = "exact",
-                         double tol = 1e-8) const;
+                         Tol tol = std::nullopt) const;
     bool is_intersecting(const Tensor &p, const std::string &type = "exact",
-                         double tol = 1e-8) const;
+                         Tol tol = std::nullopt) const;
 
     /// The zonotope in N dimensions whose state dims[i] is state i (a permutation: new dimensions
     /// would be unbounded). CORA's lift_ projects onto dims, the inverse permutation.
