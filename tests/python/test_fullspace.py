@@ -41,7 +41,7 @@ class Construction(unittest.TestCase):
         self.assertEqual(F.box().dim, 3)
         self.assertEqual(cora.Fullspace(0).dim, 0)
         self.assertIn("fullspace", repr(F))
-        with self.assertRaises(cora.errors.WrongValue):
+        with self.assertRaises(cora.errors.WrongInputInConstructor):
             cora.Fullspace(-1)
         with self.assertRaises(cora.errors.WrongValue):
             cora.Fullspace.inf(-1)

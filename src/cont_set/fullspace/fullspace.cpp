@@ -22,12 +22,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Fullspace::Fullspace(int64_t n) : ContSet(kClassId), n_(n) {
-    detail::Entry entry;
-    CORA_CHECK(n >= 0, Error::wrong_value, [&] {
-        return "Fullspace: the dimension must be a nonnegative integer, got " + std::to_string(n);
-    });
-}
+Fullspace::Fullspace(int64_t n) : DimensionSet(kClassId, n) {}
 
 Tensor Fullspace::support_function_impl(const Tensor &d) const {
     // max d'x over R^n is Inf unless d = 0; the largest |d_i| tells which

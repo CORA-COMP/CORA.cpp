@@ -16,12 +16,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-EmptySet::EmptySet(int64_t n) : ContSet(kClassId), n_(n) {
-    detail::Entry entry;
-    CORA_CHECK(n_ >= 0, Error::wrong_input_in_constructor, [&] {
-        return "EmptySet: the dimension must be a nonnegative integer, got " + std::to_string(n_);
-    });
-}
+EmptySet::EmptySet(int64_t n) : DimensionSet(kClassId, n) {}
 
 } // namespace cora
 

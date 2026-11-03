@@ -17,6 +17,7 @@
 #pragma once
 
 #include "cora/cont_set/cont_set.h"
+#include "cora/cont_set/dimension_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
 #include "cora/global/tensor/tolerance.h"
@@ -29,7 +30,7 @@
 
 namespace cora {
 
-class Fullspace : public ContSet {
+class Fullspace : public detail::DimensionSet {
   public:
     static constexpr ClassId kClassId = ClassId::fullspace;
 
@@ -87,7 +88,6 @@ class Fullspace : public ContSet {
     Set linear_map(const Interval &) const;
 
   protected:
-    int64_t dim_impl() const override { return n_; }
     Tensor center_impl() const override;
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override;
@@ -97,8 +97,6 @@ class Fullspace : public ContSet {
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
 
-  private:
-    int64_t n_;
 };
 
 /// The image of the whole space under a matrix, as CORA writes M * F.

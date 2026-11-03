@@ -21,7 +21,8 @@ void inf_and_the_constructor_hold_the_dimension() {
 /// A negative dimension is refused, in both; with the checks off the call goes through.
 void checks_and_their_switch() {
     check(test::raises([] { Fullspace::inf(-1); }, Error::wrong_value), "inf: a negative n");
-    check(test::raises([] { Fullspace(-2); }, Error::wrong_value), "Fullspace: a negative n");
+    check(test::raises([] { Fullspace(-2); }, Error::wrong_input_in_constructor),
+          "Fullspace: a negative n");
     ChecksScope off(false);
     check(Fullspace::inf(4).dim() == 4, "inf: the same with the checks off");
 }

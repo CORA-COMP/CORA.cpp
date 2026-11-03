@@ -19,19 +19,8 @@ namespace cora {
 
 Fullspace Fullspace::lift(int64_t N, const std::vector<int64_t> &dims) const {
     detail::Entry entry;
-    CORA_CHECK(N >= n_, Error::wrong_value, [&] {
-        return "lift: the space of " + std::to_string(N) +
-               " dimensions must not be smaller than the set of " + std::to_string(n_);
-    });
-    CORA_CHECK(static_cast<int64_t>(dims.size()) == n_, Error::wrong_value, [&] {
-        return "lift: one position per dimension is needed, got " + std::to_string(dims.size()) +
-               " for " + std::to_string(n_);
-    });
-    for (const int64_t d : dims)
-        CORA_CHECK(d >= 0 && d < N, Error::wrong_value, [&] {
-            return "lift: the position " + std::to_string(d) + " is not in [0, " +
-                   std::to_string(N) + ")";
-        });
+    CORA_CHECK(lift_refusal(N, dims).empty(), Error::wrong_value,
+               [&] { return lift_refusal(N, dims); });
     return Fullspace(N);
 }
 
