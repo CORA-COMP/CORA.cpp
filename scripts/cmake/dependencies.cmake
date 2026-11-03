@@ -51,11 +51,14 @@ else()
 endif()
 if(MSVC)
   # /utf-8: the sources are UTF-8; /bigobj: Eigen templates; the defines keep <cmath> and <windows.h> tame.
-  target_compile_options(cora_flags INTERFACE /utf-8 /bigobj /EHsc /W3
+  target_compile_options(cora_flags INTERFACE /utf-8 /bigobj /EHsc /W4
                          "$<$<CONFIG:Release>:/O2>")
   # MSVC has no -march=native; AVX2 is what the x64 CPUs of the last decade run.
   if(CORACPP_NATIVE AND CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64|x86_64")
     target_compile_options(cora_flags INTERFACE "$<$<CONFIG:Release>:/arch:AVX2>")
+  endif()
+  if(CORACPP_WERROR)
+    target_compile_options(cora_flags INTERFACE /WX)
   endif()
   target_compile_definitions(cora_flags INTERFACE _USE_MATH_DEFINES NOMINMAX _CRT_SECURE_NO_WARNINGS
                              "$<$<CONFIG:Release>:NDEBUG;EIGEN_NO_DEBUG>")
@@ -63,6 +66,9 @@ else()
   # Eigen's AVX512 triangular-solve kernel makes GCC 16 report uninitialized values and out-of-bounds
   # accesses that are not there; those two are off so that a real warning is visible.
   target_compile_options(cora_flags INTERFACE -Wall -Wextra)
+  if(CORACPP_WERROR)
+    target_compile_options(cora_flags INTERFACE -Werror)
+  endif()
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(cora_flags INTERFACE -Wno-maybe-uninitialized -Wno-array-bounds)
   endif()

@@ -6,7 +6,7 @@
       "name": "base",
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CORACPP_WERROR": "ON" }
     },
     {
       "name": "core",
