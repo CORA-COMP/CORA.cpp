@@ -101,7 +101,7 @@ class Functions(unittest.TestCase):
         M = cora.Interval.matrix(np.array([[1.0, -1.0], [2.0, 4.0], [3.0, 1.0]]),
                                  np.array([[2.0, 1.0], [3.0, 4.0], [5.0, 2.0]]))
         np.testing.assert_allclose(M.prod(1).sup, [[30.0, 8.0]])
-        np.testing.assert_allclose(M.prod(dim=2).sup, [[2.0], [12.0], [10.0]])
+        np.testing.assert_allclose(M.prod(dim=2).sup, [2.0, 12.0, 10.0])
         with self.assertRaises(cora.errors.WrongValue):
             v.prod(3)
 
