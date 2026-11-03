@@ -1,7 +1,7 @@
 """test_cont_set_generic - the operations every set has (ContSet) on a box, a zonotope and a set
 written in Python: center, dim, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
 minkowski_difference, isequal, eq, ne, decompose, project_high_dim, project_on_hyperplane,
-generate_random and the unchecked and_, contains_ and isIntersecting_ forms."""
+generate_random, lift, norm, enclose and the unchecked and_, contains_ and isIntersecting_ forms."""
 # CORA: contSet/@contSet/center.m
 # CORA: contSet/@contSet/dim.m
 # CORA: contSet/@contSet/isBounded.m
@@ -31,6 +31,11 @@ generate_random and the unchecked and_, contains_ and isIntersecting_ forms."""
 # CORA: contSet/@contSet/compact_.m
 # CORA: contSet/@contSet/cartProd_.m
 # CORA: contSet/@contSet/convHull_.m
+# CORA: contSet/@contSet/lift.m
+# CORA: contSet/@contSet/lift_.m
+# CORA: contSet/@contSet/norm.m
+# CORA: contSet/@contSet/norm_.m
+# CORA: contSet/@contSet/enclose.m
 # PROPERTY: contSet/@contSet/projectOnHyperplane.m
 
 import unittest
@@ -200,6 +205,75 @@ class Generic(unittest.TestCase):
             cora.ContSet.compact(Z, "zeros", -1.0)
         with self.assertRaises(cora.errors.Noops):
             Custom().compact()
+
+    def test_lift(self):
+        inf = float("inf")
+        L = self.I.lift(4, [3, 1])
+        self.assertEqual((L.inf.tolist(), L.sup.tolist()),
+                         ([-inf, 0.0, -inf, -1.0], [inf, 2.0, inf, 1.0]))
+        self.assertEqual(self.I.lift(3).inf.tolist(), [-1.0, 0.0, -inf])
+        P = self.Z.lift(2, proj=[1, 0])
+        self.assertEqual(P.center.tolist(), [0.0, 1.0])
+        self.assertEqual(self.Z.lift(2).center.tolist(), self.Z.center.tolist())
+        self.assertEqual(cora.EmptySet(2).lift(4, [1, 3]).dim, 4)
+        self.assertIsInstance(cora.Fullspace(2).lift(4), cora.Fullspace)
+        for call in (lambda: self.I.lift(1), lambda: self.I.lift(3, [0]),
+                     lambda: self.I.lift(3, [0, 3]), lambda: self.I.lift(3, [-1, 0])):
+            with self.assertRaises(cora.errors.WrongValue):
+                call()
+        with self.assertRaises(cora.errors.NotDefined):
+            self.Z.lift(3)
+        with self.assertRaises(cora.errors.Noops):
+            Custom().lift(3)
+        with cora.checks(False):
+            self.assertEqual(self.I.lift(3).dim, 3)
+
+    def test_norm(self):
+        self.assertAlmostEqual(self.I.norm(), 5.0 ** 0.5)
+        self.assertEqual((self.I.norm(1), self.I.norm(float("inf")), self.I.norm("fro", "exact")),
+                         (3.0, 2.0, 5.0 ** 0.5))
+        self.assertAlmostEqual(self.Z.norm(), 2.5 ** 0.5)
+        self.assertEqual((self.Z.norm(1), self.Z.norm(float("inf"))), (2.0, 1.5))
+        self.assertAlmostEqual(self.Z.norm("fro"), 2.5 ** 0.5)
+        self.assertEqual(cora.EmptySet(2).norm(), -float("inf"))
+        for call in (lambda: self.Z.norm(3), lambda: self.Z.norm("l2"),
+                     lambda: self.Z.norm(2, "bogus")):
+            with self.assertRaises(cora.errors.WrongValue):
+                call()
+        for mode in ("exact", "ub_convex"):
+            with self.assertRaises(cora.errors.NotSupported):
+                self.Z.norm(2, mode)
+        with self.assertRaises(cora.errors.Noops):
+            cora.Fullspace(2).norm()
+        with self.assertRaises(cora.errors.Noops):
+            Custom().norm()
+        with cora.checks(False):
+            self.assertEqual(self.Z.norm(1), 2.0)
+
+    def test_enclose(self):
+        J = box([2.0, -1.0], [3.0, 0.0])
+        H = self.I.enclose(J)
+        self.assertEqual((H.inf.tolist(), H.sup.tolist()), ([-1.0, -1.0], [3.0, 2.0]))
+        Z2 = zonotope([0.0, 1.0], [[0.25, 0.0], [0.0, 0.25]])
+        E = self.Z.enclose(Z2)
+        self.assertIsInstance(E, cora.Zonotope)
+        for d in ([1.0, 0.0], [0.0, -1.0], [1.0, 1.0]):
+            d = np.array(d)
+            self.assertGreaterEqual(E.support_function(d), self.Z.support_function(d) - 1e-12)
+            self.assertGreaterEqual(E.support_function(d), Z2.support_function(d) - 1e-12)
+        M = np.array([[1.0, 2.0], [0.0, 1.0]])
+        A = self.Z.enclose(M, Z2)
+        B = self.Z.enclose(self.Z.linear_map(M) + Z2)
+        self.assertEqual(A.center.tolist(), B.center.tolist())
+        self.assertEqual(np.asarray(A.generators).tolist(), np.asarray(B.generators).tolist())
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            self.I.enclose(zonotope([0.0], [[1.0]]))
+        for call in (lambda: self.I.enclose(self.Z), lambda: self.Z.enclose(self.I),
+                     lambda: cora.EmptySet(2).enclose(self.I), lambda: Custom().enclose(self.I)):
+            with self.assertRaises(cora.errors.Noops):
+                call()
+        with cora.checks(False):
+            self.assertIsInstance(self.I.enclose(J), cora.Interval)
 
     def test_a_pair_without_an_entry_is_noops(self):
         for operation in (cora.cart_prod, cora.convex_hull):

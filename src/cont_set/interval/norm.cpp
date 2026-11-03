@@ -30,6 +30,8 @@ Tensor Interval::norm(Tensor::Norm type) const {
     return largest.matrix_norm(Tensor::Norm::two);
 }
 
+Tensor Interval::norm_impl(Tensor::Norm type, const std::string &) const { return norm(type); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

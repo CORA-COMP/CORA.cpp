@@ -24,6 +24,10 @@ Fullspace Fullspace::lift(int64_t N, const std::vector<int64_t> &dims) const {
     return Fullspace(N);
 }
 
+Set Fullspace::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {
+    return lift(N, proj);
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -362,6 +362,8 @@ void bind_registry(py::module_ &m) {
         "built-in pairs)");
 }
 
+Tensor::Norm norm_of(const py::object &type);
+
 /// What every set has; bound on the base class, so any set works wherever a set is expected,
 /// including the operators between sets of any classes (through the registry).
 void bind_cont_set(py::module_ &m) {
@@ -413,6 +415,26 @@ void bind_cont_set(py::module_ &m) {
         .def("is_bounded", &ContSet::is_bounded, "Whether the set is bounded")
         .def("is_full_dim", &ContSet::is_full_dim, py::arg("tol") = py::none(),
              "Whether the set has a nonempty interior; tol=None: the repository tolerance")
+        .def(
+            "lift",
+            [](const ContSet &S, int64_t N, const std::optional<std::vector<int64_t>> &proj) {
+                return object_of(S.lift(N, proj));
+            },
+            py::arg("N"), py::arg("proj") = py::none(),
+            "The set in N dimensions with coordinate j at position proj[j] (0-based; default "
+            "0..dim-1)")
+        .def(
+            "norm",
+            [](const ContSet &S, const py::object &type, const std::string &mode) {
+                return scalar(S.norm(norm_of(type), mode));
+            },
+            py::arg("type") = 2, py::arg("mode") = "ub",
+            "An upper bound of the norm (1, 2, inf or 'fro') of the points; -inf for the empty "
+            "set")
+        .def(
+            "enclose",
+            [](const ContSet &S, const ContSet &S2) { return object_of(S.enclose(S2)); },
+            py::arg("S2"), "A set of the class of S that encloses S and S2")
         .def(
             "reduce", [](const ContSet &S, int order) { return object_of(S.reduce(order)); },
             py::arg("order") = 1, "A set with at most order * dim generators that encloses S")
@@ -617,8 +639,6 @@ void bind_fullspace(py::module_ &m) {
                 return Fullspace::enclose_points(tensor_of(points, "the points"));
             },
             py::arg("points"), "The whole space of the dimension of the points (n, N)")
-        .def("lift", &Fullspace::lift, py::arg("N"), py::arg("dims"),
-             "The whole space of N dimensions; dims (0-based) is checked")
         .def("project_high_dim", &Fullspace::project_high_dim, py::arg("N"), py::arg("proj"),
              "The whole space again, for N = dim; any other N is refused (CORA: not_defined)")
         .def_static("generate_random", &Fullspace::generate_random, py::arg("rng"),
@@ -716,7 +736,6 @@ void bind_interval(py::module_ &m) {
         .def("exp", &Interval::exp, "The image under the exponential")
         .def("convex_hull", &Interval::convex_hull, py::arg("I2"),
              "The hull of two boxes; an empty one returns the other")
-        .def("enclose", &Interval::enclose, py::arg("I2"), "A box around two boxes")
         .def_static(
             "enclose_points",
             [](const py::object &points) {
@@ -851,14 +870,6 @@ void bind_interval(py::module_ &m) {
                 return I.unite(vector_of(other, "the point"));
             },
             py::arg("other"), "The smallest box around the box and a box or a point")
-        .def(
-            "norm",
-            [](const Interval &I, const py::object &type) {
-                return scalar(I.norm(norm_of(type)));
-            },
-            py::arg("type") = 2, "The norm of the largest member: 2 (default), 1, inf or 'fro'")
-        .def("lift", &Interval::lift, py::arg("N"), py::arg("dims"),
-             "The box in N dimensions at the coordinates dims (0-based), unbounded elsewhere")
         .def_static("origin", &Interval::origin, py::arg("n"), "The box {0} of n dimensions")
         .def(
             "quad_map",
@@ -1336,8 +1347,6 @@ void bind_empty_set(py::module_ &m) {
                 return E.linear_map(tensor_of(M, "the matrix"));
             },
             py::arg("M"), "The image under a matrix, an interval matrix or a number: empty")
-        .def("lift", &EmptySet::lift, py::arg("N"), py::arg("dims"),
-             "The empty set in N dimensions")
         .def("project_high_dim", &EmptySet::project_high_dim, py::arg("N"), py::arg("proj"),
              "The empty set in N dimensions, with the checks of lift")
         .def_static("generate_random", &EmptySet::generate_random, py::arg("rng"),
@@ -1409,7 +1418,18 @@ void bind_zonotope(py::module_ &m) {
                 return Z.cart_prod(vector_of(S, "the point"));
             },
             py::arg("S"), "The Cartesian product with a zonotope, a box or a point")
-        .def("enclose", &Zonotope::enclose, py::arg("Z2"), "A zonotope that encloses both")
+        .def(
+            "enclose",
+            [](const Zonotope &Z, const ContSet &S2) {
+                return object_of(static_cast<const ContSet &>(Z).enclose(S2));
+            },
+            py::arg("S2"), "A zonotope that encloses both")
+        .def(
+            "enclose",
+            [](const Zonotope &Z, const py::object &M, const Zonotope &Zplus) {
+                return Z.enclose(tensor_of(M, "the matrix"), Zplus);
+            },
+            py::arg("M"), py::arg("Zplus"), "A zonotope that encloses Z and M Z + Zplus")
         .def(
             "convex_hull",
             [](const Zonotope &Z, const py::object &S) {
@@ -1571,15 +1591,6 @@ void bind_zonotope(py::module_ &m) {
             },
             py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
             "Whether Z and a zonotope, a box or points intersect; 'exact' (default) or 'approx'")
-        .def("lift", &Zonotope::lift, py::arg("N"), py::arg("dims"),
-             "In N dimensions, with state i at position dims[i] (a permutation)")
-        .def(
-            "norm",
-            [](const Zonotope &Z, double type, const std::string &mode) {
-                return scalar(Z.norm(type, mode));
-            },
-            py::arg("type") = 2.0, py::arg("mode") = "ub",
-            "An upper bound of the 1-, 2- or inf-norm of the points (mode 'ub')")
         .def(
             "minnorm",
             [](const Zonotope &Z) {

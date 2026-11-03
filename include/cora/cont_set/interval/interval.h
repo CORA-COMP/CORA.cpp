@@ -399,6 +399,9 @@ class Interval : public ContSet {
     Set minkowski_difference_impl(const ContSet &S2,
                                   const std::optional<std::string> &type) const override;
     Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
+    Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
+    Set enclose_impl(const ContSet &S2) const override;
 
   private:
     Tensor inf_, sup_;

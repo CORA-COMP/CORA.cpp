@@ -115,6 +115,10 @@ class Zonotope : public ContSet {
     /// as in linear_combination, the others of the longer one are kept.
     Zonotope enclose(const Zonotope &Z2) const;
 
+    /// The same with the second zonotope M * Z + Zplus (CORA's enclose(Z, M, Zplus)), for a
+    /// square M (..., n, n): the enclosure of a set and its image under a map and a shift.
+    Zonotope enclose(const Tensor &M, const Zonotope &Zplus) const;
+
     /// A zonotope that encloses the convex hull of the zonotope and a zonotope, a box or a point.
     Zonotope convex_hull(const Zonotope &Z2) const;
     Zonotope convex_hull(const Interval &I) const;
@@ -406,6 +410,9 @@ class Zonotope : public ContSet {
     bool is_full_dim_impl(Tol tol) const override;
     Set reduce_impl(int order) const override;
     Set linear_map_impl(const Tensor &M) const override;
+    Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
+    Set enclose_impl(const ContSet &S2) const override;
 
   private:
     Tensor c_, G_;

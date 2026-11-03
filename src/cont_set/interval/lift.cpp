@@ -24,24 +24,16 @@ namespace cora {
 
 Interval Interval::lift(int64_t N, const std::vector<int64_t> &dims) const {
     detail::Entry entry;
-    CORA_CHECK(N >= dim(), Error::wrong_value, [&] {
-        return "lift: the space of " + std::to_string(N) +
-               " dimensions must not be smaller than the interval of " + std::to_string(dim());
-    });
-    CORA_CHECK(static_cast<int64_t>(dims.size()) == dim(), Error::wrong_value, [&] {
-        return "lift: one coordinate per dimension of the interval is needed, got " +
-               std::to_string(dims.size()) + " for " + std::to_string(dim());
-    });
-    for (const int64_t d : dims)
-        CORA_CHECK(d >= 0 && d < N, Error::wrong_value, [&] {
-            return "lift: the coordinate " + std::to_string(d) + " is not in [0, " +
-                   std::to_string(N) + ")";
-        });
-    CORA_CHECK(!is_empty(), Error::not_supported, [] {
-        return std::string("lift: the operation is not supported for empty intervals");
-    });
+    const detail::Refusal r = detail::project_high_dim_refusal(dim(), N, dims, "lift");
+    CORA_CHECK(!r, r->first, [&] { return r->second; });
+    if (is_empty())
+        CORA_FAIL(Error::not_supported, "lift: the operation is not supported for empty intervals");
     const double kInf = std::numeric_limits<double>::infinity();
     return priv_embed(*this, N, dims, -kInf, kInf);
+}
+
+Set Interval::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {
+    return lift(N, proj);
 }
 
 } // namespace cora

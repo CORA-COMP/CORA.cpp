@@ -20,20 +20,22 @@ namespace cora {
 
 namespace detail {
 
-Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj) {
+Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj,
+                                 const char *operation) {
+    const std::string name = std::string(operation) + ": ";
     // CORA's checks, in its order: the size of the space, the number and the range of coordinates
     if (N < n)
         return std::pair{Error::wrong_value,
-                         "project_high_dim: the space of " + std::to_string(N) +
+                         name + "the space of " + std::to_string(N) +
                              " dimensions must not be smaller than the set of " +
                              std::to_string(n)};
     if (static_cast<int64_t>(proj.size()) != n)
         return std::pair{Error::wrong_value,
-                         "project_high_dim: one coordinate per dimension of the set is needed, "
+                         name + "one coordinate per dimension of the set is needed, "
                          "got " + std::to_string(proj.size()) + " for " + std::to_string(n)};
     for (const int64_t d : proj)
         if (d < 0 || d >= N)
-            return std::pair{Error::wrong_value, "project_high_dim: the coordinate " +
+            return std::pair{Error::wrong_value, name + "the coordinate " +
                                                      std::to_string(d) + " is not in [0, " +
                                                      std::to_string(N) + ")"};
     return std::nullopt;
