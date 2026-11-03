@@ -13,8 +13,9 @@
 //             is_intersecting, lift, norm, minnorm, intersect_strip, enclose_points,
 //             enclose_many, mink_diff, origin, radius, rank, representsa, project_high_dim,
 //             rotate, quad_map, split, split_first_gen, split_longest_gen, reduce_under_approx,
-//             unite (one file each, as in CORA's @zonotope); the constructor checks its input
-//             (zonotope.cpp)
+//             unite, tensor_multiplication, tensor_multiplication_zono, underapproximate, volume,
+//             zonotope_norm (one file each, as in CORA's @zonotope); the constructor checks its
+//             input (zonotope.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@zonotope/zonotope.m
@@ -338,6 +339,50 @@ class Zonotope : public ContSet {
                    std::optional<int> order = std::nullopt) const;
     Zonotope unite(const Tensor &p, const std::string &method = "linprog",
                    std::optional<int> order = std::nullopt) const;
+
+    // Tensor images and measures -----------------------------------------------------------------
+
+    /// The lists of tensor_multiplication, as CORA's options.list: perm (P, 3) the ordered triples
+    /// of generators, comb (C, 3) the unordered ones (only its row count C is read: the number of
+    /// generators of the result), map (P) the column in [0, C) that triple p adds to.
+    struct TensorLists {
+        std::vector<std::vector<int64_t>> perm, comb;
+        std::vector<int64_t> map;
+    };
+
+    /// A zonotope (0, H) that encloses {sum_jkl M[i, j, k, l] x_j x_k x_l | x in Z} for a zonotope
+    /// centered at the origin and a third-order tensor M (n, n, n, n); column map[p] of H sums the
+    /// products of the generators perm[p]. The second-order form fails in CORA for every input and
+    /// is not supported (docs/cora-differences.md).
+    Zonotope tensor_multiplication(const Tensor &M, const TensorLists &list) const;
+
+    /// The same for a tensor in a zonotope {M_c + sum_i b_i M_i | |b|_inf <= 1} (M_c and the M_i
+    /// third-order tensors): the Minkowski sum of the results for M_c and for every M_i.
+    Zonotope tensor_multiplication_zono(const Tensor &M_center,
+                                        const std::vector<Tensor> &M_generators,
+                                        const TensorLists &list) const;
+
+    /// The vertices c +- sum_j sign(s_i' g_j) g_j of the zonotope for the directions s_i, the
+    /// columns of S (n, k), as the columns (..., n, 2k) in the order +, - per direction; a subset
+    /// of the zonotope. Without S: the generators if there are at least as many as dimensions,
+    /// else dominant_directions (not a batch).
+    Tensor underapproximate() const;
+    Tensor underapproximate(const Tensor &S) const;
+
+    /// The volume (..., 1, 1): method "exact" (default) is 2^n times the sum of |det| over the
+    /// n-subsets of generators; "alamo" is 2^n sqrt(det(G G')), a lower bound; both are 0 if the
+    /// generators do not span the space. "reduce" (order reduction by 'pca') is not supported.
+    /// order is the one of "reduce".
+    Tensor volume(const std::string &method = "exact", int order = 5) const;
+
+    /// The norm (1, 1) of the point p (n, 1) w.r.t. the zonotope centered at the origin (its
+    /// center is ignored): min s with G beta = p, |beta|_inf <= s, by a linear program; infinity if
+    /// p is not in the span of the generators. Not a batch.
+    Tensor zonotope_norm(const Tensor &p) const;
+
+    /// The norm and the minimizer beta (m, 1) (an empty (0, 1) if the norm is infinite); a
+    /// warning if the center is not the origin, as the minimizer is then not valid.
+    std::pair<Tensor, Tensor> zonotope_norm_minimizer(const Tensor &p) const;
 
   protected:
     int64_t dim_impl() const override { return c_.shape()[c_.shape().size() - 2]; }

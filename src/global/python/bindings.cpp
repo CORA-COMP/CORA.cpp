@@ -1064,6 +1064,55 @@ void bind_zonotope(py::module_ &m) {
             py::arg("filter_length1") = py::none(), py::arg("filter_length2") = py::none(),
             "n generators (columns) that span a tight parallelotope around the zonotope")
         .def(
+            "tensor_multiplication",
+            [](const Zonotope &Z, const py::object &M, const Indices &perm, const Indices &comb,
+               const std::vector<int64_t> &map) {
+                return Z.tensor_multiplication(tensor_of(M, "M"), {perm, comb, map});
+            },
+            py::arg("M"), py::arg("perm"), py::arg("comb"), py::arg("map"),
+            "(0, H) enclosing {sum_jkl M[i, j, k, l] x_j x_k x_l} for a zonotope centered at 0; "
+            "perm (ordered generator triples), comb (its row count: the generators of H) and map")
+        .def(
+            "tensor_multiplication_zono",
+            [](const Zonotope &Z, const py::object &M_center, const py::list &M_generators,
+               const Indices &perm, const Indices &comb, const std::vector<int64_t> &map) {
+                std::vector<Tensor> generators;
+                for (const py::handle &M : M_generators)
+                    generators.push_back(tensor_of(M, "a generator of M"));
+                return Z.tensor_multiplication_zono(tensor_of(M_center, "M_center"), generators,
+                                                    {perm, comb, map});
+            },
+            py::arg("M_center"), py::arg("M_generators"), py::arg("perm"), py::arg("comb"),
+            py::arg("map"), "tensor_multiplication for a tensor zonotope: the sum over its parts")
+        .def(
+            "underapproximate",
+            [](const Zonotope &Z, const py::object &S) {
+                return matrix(S.is_none() ? Z.underapproximate()
+                                          : Z.underapproximate(tensor_of(S, "S")));
+            },
+            py::arg("S") = py::none(),
+            "Vertices c +- sum_j sign(s_i' g_j) g_j, columns (n, 2k) for the directions S (n, k)")
+        .def(
+            "volume",
+            [](const Zonotope &Z, const std::string &method, int order) {
+                return scalar(Z.volume(method, order));
+            },
+            py::arg("method") = "exact", py::arg("order") = 5,
+            "The volume: 'exact' (sum over the n-subsets of generators) or 'alamo' (a lower bound)")
+        .def(
+            "zonotope_norm",
+            [](const Zonotope &Z, const py::object &p) {
+                return scalar(Z.zonotope_norm(vector_of(p, "p")));
+            },
+            py::arg("p"), "The norm of p with the zonotope centered at 0 as unit ball")
+        .def(
+            "zonotope_norm_minimizer",
+            [](const Zonotope &Z, const py::object &p) {
+                const auto [value, beta] = Z.zonotope_norm_minimizer(vector_of(p, "p"));
+                return py::make_tuple(scalar(value), vector(beta));
+            },
+            py::arg("p"), "(norm, beta): the norm of p and the coefficients that reach it")
+        .def(
             "contains",
             [](const Zonotope &Z, const py::object &S, const std::string &method, Tol tol) {
                 if (py::isinstance<Zonotope>(S)) return Z.contains(py::cast<Zonotope>(S), method, tol);

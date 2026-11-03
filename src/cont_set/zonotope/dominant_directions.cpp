@@ -31,31 +31,6 @@ namespace cora {
 
 namespace {
 
-// Subsets -----------------------------------------------------------------------------------------
-
-/// The n-subsets of {0, ..., total - 1} in lexicographic order, as a flat list (CORA's combinator).
-std::vector<int64_t> aux_combinations(int64_t total, int64_t n) {
-    std::vector<int64_t> flat, current(n);
-    for (int64_t i = 0; i < n; ++i) current[i] = i;
-    while (true) {
-        flat.insert(flat.end(), current.begin(), current.end());
-        int64_t i = n - 1;
-        while (i >= 0 && current[i] == total - n + i) --i;
-        if (i < 0) return flat;
-        ++current[i];
-        for (int64_t j = i + 1; j < n; ++j) current[j] = current[j - 1] + 1;
-    }
-}
-
-/// The n x n matrices (B, n, n) whose columns are G(:, subset) for every row of `members` (B, n).
-Tensor aux_subsets(const Tensor &G, const Tensor &members) {
-    const int64_t B = members.shape()[0], n = members.shape()[1];
-    return G.take(members.reshape({B * n}), -1).reshape({n, B, n}).permute_dims({1, 0, 2});
-}
-
-/// |det| of matrices (B, n, n), by the diagonal of R of a QR factorization: (B, 1, 1).
-Tensor aux_abs_det(const Tensor &P) { return P.qr().second.diagonal().prod(-2, true); }
-
 /// The generators of the zonotope that are not zero (CORA's nonzeroFilter without a tolerance).
 Tensor aux_nonzero_generators(const Tensor &G) {
     const Tensor values = G.detach();
@@ -75,7 +50,7 @@ Tensor aux_volumes(const Tensor &P, const Tensor &G) {
                              (double(n) * machine_eps(P.dtype()));
     const Tensor singular = singular_values.slice(-2, n - 1, n).less_equal(tolerance);
     const Tensor radius = P.inv().matmul(G).abs_sum();      // the box of P^-1 Z, (B, n, 1)
-    const Tensor volume = aux_abs_det(P).multiply(radius.prod(-2, true));
+    const Tensor volume = priv_abs_det(P).multiply(radius.prod(-2, true));
     return Tensor::where(singular, volume.full_like(volume.shape(),
                                                     std::numeric_limits<double>::infinity()),
                          volume);
@@ -115,12 +90,13 @@ Tensor Zonotope::dominant_directions(std::optional<int> length1,
     const Tensor longest = lengths.topk(keep).second;
 
     // the n-subsets of largest |det| (priv_generatorVolumeFilter), as indices into G
-    const std::vector<int64_t> subsets = aux_combinations(keep, n);
+    const std::vector<int64_t> subsets =
+        Combinations(keep, n).next(std::numeric_limits<int64_t>::max());
     const int64_t number = int64_t(subsets.size()) / n;
     const Tensor members = longest.take(subsets, 0).reshape({number, n});
-    const Tensor candidates = aux_subsets(Gd, members);
+    const Tensor candidates = priv_column_subsets(Gd, members);
     const int64_t shortlist = std::min<int64_t>({filter_length2, count, number});
-    const Tensor volume = aux_abs_det(candidates).reshape({number});
+    const Tensor volume = priv_abs_det(candidates).reshape({number});
     const Tensor best = volume.topk(shortlist).second;
 
     // the one of least volume (priv_volumeFilter): a tie goes to the first
