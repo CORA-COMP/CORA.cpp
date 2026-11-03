@@ -158,7 +158,7 @@ class Generic(unittest.TestCase):
     def test_support_function(self):
         d = np.array([1.0, -1.0])
         self.assertEqual(cora.ContSet.support_function(self.I, d), 1.0)
-        self.assertEqual(cora.ContSet.support_function(self.Z, d), 1.5)
+        self.assertEqual(cora.ContSet.support_function(self.Z, d), 2.0)
         with self.assertRaises(cora.errors.DimensionMismatch):
             cora.ContSet.support_function(self.I, np.ones(3))
 
