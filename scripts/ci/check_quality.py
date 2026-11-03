@@ -37,7 +37,8 @@ def candidates(base):
     if base is None:
         return git("ls-files")
     merge_base = git("merge-base", base, "HEAD")[0]
-    return [f for f in git("diff", "--name-only", "--diff-filter=d", merge_base) if os.path.exists(os.path.join(ROOT, f))]
+    changed = git("diff", "--name-only", "--diff-filter=d", merge_base)
+    return [f for f in changed if os.path.exists(os.path.join(ROOT, f))]
 
 
 def tool(name):
@@ -95,13 +96,22 @@ def tidy_units(files, everything, units):
     headers = [f for f in files if f.endswith(".h")]
     if headers:
         known = affected_tests.list_files()
-        graph = affected_tests.includes_of(known, lambda n: open(os.path.join(ROOT, n), encoding="utf-8", errors="replace").read())
+        graph = affected_tests.includes_of(known, read)
         for header in headers:
             users = sorted(u for u in units if u in graph and header in closure(graph, u))
-            own = [u for u in users if os.path.splitext(u)[0].split("/")[-1] == os.path.splitext(header)[0].split("/")[-1]]
+            own = [u for u in users if stem(u) == stem(header)]
             if users and not chosen & set(users):
                 chosen.add((own or users)[0])
     return sorted(chosen)
+
+
+def stem(path):
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+def read(name):
+    with open(os.path.join(ROOT, name), encoding="utf-8", errors="replace") as handle:
+        return handle.read()
 
 
 def closure(graph, root):
@@ -125,8 +135,9 @@ def check_tidy(files, everything, fix, build_dir, jobs):
         return 0
 
     def analyse(unit):
-        result = run([exe, "-p", build_dir, "--quiet", "-extra-arg=-Wno-unknown-warning-option", "-extra-arg=-fno-openmp",
-                      *(["--fix"] if fix else []), unit])
+        # GCC's flags the compile database holds, and OpenMP (clang-tidy has no omp.h), are dropped
+        extra = ["-extra-arg=-Wno-unknown-warning-option", "-extra-arg=-fno-openmp"]
+        result = run([exe, "-p", build_dir, "--quiet", *extra, *(["--fix"] if fix else []), unit])
         return unit, result.returncode, result.stdout
 
     findings = {}  # deduplicated: a header finding repeats in every source that includes it
@@ -149,7 +160,8 @@ def main():
     parser.add_argument("--all", action="store_true", help="every tracked file, not only the changed ones")
     parser.add_argument("--fix", action="store_true")
     parser.add_argument("--build-dir", default=os.path.join(ROOT, "build", "core"))
-    parser.add_argument("-j", "--jobs", type=int, default=int(os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", os.cpu_count() or 1)))
+    parser.add_argument("-j", "--jobs", type=int, help="parallel clang-tidy runs (default: all CPUs)",
+                        default=int(os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", os.cpu_count() or 1)))
     args = parser.parse_args()
     files = candidates(None if args.all else args.base)
     if args.what == "format":

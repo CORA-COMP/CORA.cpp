@@ -1,0 +1,10 @@
+# The Python lint of CI (scripts/ci/check_quality.py lint); `ruff check --fix` repairs what it can.
+# pyflakes (F), pycodestyle errors and warnings (E, W), bugbear (B), isort-style imports (I).
+line-length = 120
+target-version = "py310"
+extend-exclude = ["build", ".venv"]
+
+[lint]
+select = ["F", "E", "W", "B", "I"]
+# E741: l, h and I are the bounds and the identity of the interval and matrix tests, as in the math.
+ignore = ["E741"]
