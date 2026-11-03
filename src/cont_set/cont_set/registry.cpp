@@ -58,7 +58,7 @@ constexpr void aux_add_predicate(Table &table, F) {
     static_assert(!is_commutative(Op) || precedence(A::kClassId) <= precedence(B::kClassId),
                   "a commutative pair is registered with the class of lower precedence first");
     table.predicate[static_cast<int>(Op)][static_cast<int>(A::kClassId)][static_cast<int>(
-        B::kClassId)] = [](const ContSet &S1, const ContSet &S2, double tol) -> bool {
+        B::kClassId)] = [](const ContSet &S1, const ContSet &S2, Tol tol) -> bool {
         return F{}(static_cast<const A &>(S1), static_cast<const B &>(S2), tol);
     };
 }
@@ -84,7 +84,7 @@ constexpr Table aux_build() {
     aux_add_set<BinaryOp::unite, Interval, Interval>(
         t, [](const Interval &I1, const Interval &I2) { return I1.unite(I2); });
     aux_add_predicate<BinaryOp::is_intersecting, Interval, Interval>(
-        t, [](const Interval &I1, const Interval &I2, double tol) {
+        t, [](const Interval &I1, const Interval &I2, Tol tol) {
             return I1.is_intersecting(I2, tol);
         });
     // the zonotope pairs: intersection, convex hull, containment and Cartesian product
@@ -98,11 +98,11 @@ constexpr Table aux_build() {
         t, [](const Zonotope &Z, const Interval &I) { return Z.convex_hull(I); });
     // a zonotope contains sets of its own and of the next class
     aux_add_predicate<BinaryOp::contains, Zonotope, Zonotope>(
-        t, [](const Zonotope &Z1, const Zonotope &Z2, double tol) {
+        t, [](const Zonotope &Z1, const Zonotope &Z2, Tol tol) {
             return Z1.contains(Z2, "exact", tol);
         });
     aux_add_predicate<BinaryOp::contains, Zonotope, Interval>(
-        t, [](const Zonotope &Z, const Interval &I, double tol) {
+        t, [](const Zonotope &Z, const Interval &I, Tol tol) {
             return Z.contains(I, "exact", tol);
         });
     // the product is not commutative: the zonotope comes first
@@ -112,11 +112,11 @@ constexpr Table aux_build() {
         t, [](const Zonotope &Z, const Interval &I) { return Z.cart_prod(I); });
     // intersection tests of a zonotope with a set of its own or the next class
     aux_add_predicate<BinaryOp::is_intersecting, Zonotope, Zonotope>(
-        t, [](const Zonotope &Z1, const Zonotope &Z2, double tol) {
+        t, [](const Zonotope &Z1, const Zonotope &Z2, Tol tol) {
             return Z1.is_intersecting(Z2, "exact", tol);
         });
     aux_add_predicate<BinaryOp::is_intersecting, Zonotope, Interval>(
-        t, [](const Zonotope &Z, const Interval &I, double tol) {
+        t, [](const Zonotope &Z, const Interval &I, Tol tol) {
             return Z.is_intersecting(I, "exact", tol);
         });
     return t;
@@ -254,16 +254,16 @@ Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2) {
     CORA_FAIL(Error::noops, aux_noops(op, S1, S2));
 }
 
-bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, double tol) {
+bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol) {
     detail::Entry entry;
     CORA_CHECK(op == BinaryOp::cart_prod || S1.dim() == S2.dim(), Error::dimension_mismatch, [&] {
         return std::string(binary_op_name(op)) + ": the sets differ in dimension, " +
                S1.class_name() + " of " + std::to_string(S1.dim()) + " and " + S2.class_name() +
                " of " + std::to_string(S2.dim());
     });
-    CORA_CHECK(tol >= 0, Error::wrong_value, [&] {
+    CORA_CHECK(!tol || *tol >= 0, Error::wrong_value, [&] {
         return std::string(binary_op_name(op)) + ": tol must be nonnegative, got " +
-               std::to_string(tol);
+               std::to_string(*tol);
     });
     const int o = static_cast<int>(op), a = static_cast<int>(S1.class_id()),
               b = static_cast<int>(S2.class_id());

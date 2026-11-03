@@ -12,6 +12,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <cmath>
 
@@ -59,7 +60,8 @@ std::vector<Tensor> NonlinearSys::simulate(const SimulationProblem &problem,
     const alg::RungeKutta4 &options = std::get<alg::RungeKutta4>(alg);
     const double time_step = options.time_step;
     const int steps = priv_num_steps(problem.t_final, time_step);
-    const int substeps = static_cast<int>(std::ceil(time_step / options.max_step - 1e-9));
+    const int substeps =
+        static_cast<int>(std::ceil(time_step / options.max_step - numerics::kStepCount));
     const double h = time_step / substeps;
 
     std::vector<Tensor> trajectory{x0};

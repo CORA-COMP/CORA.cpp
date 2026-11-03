@@ -9,6 +9,7 @@
 // Outputs:  hit - true if the zonotope and the polytope have a common point (up to 1e-9)
 // See also: Specification::check
 
+#include "cora/global/tensor/tolerance.h"
 #include "specification/private/priv.h"
 
 #include <algorithm>
@@ -102,15 +103,15 @@ bool priv_zonotope_meets_polytope(const std::vector<double> &c, const std::vecto
         // Bland's rule: the lowest column with a negative reduced cost enters
         int col = -1;
         for (int j = 0; j < cols && col < 0; ++j)
-            if (cost[j] < -1e-12) col = j;
+            if (cost[j] < -numerics::kTableauCost) col = j;
         if (col < 0) break;
         int row = -1;
         double best = 0;
         for (int i = 0; i < rows; ++i) {
-            if (T[i][col] <= 1e-12) continue;
+            if (T[i][col] <= numerics::kTableauPivot) continue;
             const double ratio = T[i][cols] / T[i][col];
-            const bool better = row < 0 || ratio < best - 1e-15 ||
-                                (ratio <= best + 1e-15 && basis[i] < basis[row]);
+            const bool better = row < 0 || ratio < best - numerics::kTableauTie ||
+                                (ratio <= best + numerics::kTableauTie && basis[i] < basis[row]);
             if (better) {
                 row = i;
                 best = ratio;
@@ -124,7 +125,7 @@ bool priv_zonotope_meets_polytope(const std::vector<double> &c, const std::vecto
     // the objective is -cost[cols]; a value near zero means a common point exists
     double scale = 1.0;
     for (double ri : r) scale = std::max(scale, std::abs(ri));
-    return -cost[cols] <= 1e-9 * scale;
+    return -cost[cols] <= numerics::kTableauFeasible * scale;
 }
 
 } // namespace cora

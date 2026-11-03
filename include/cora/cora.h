@@ -37,6 +37,7 @@
 #include "cora/global/rng.h"
 #include "cora/global/settings.h"
 #include "cora/global/tensor/tensor.h"
+#include "cora/global/tensor/tolerance.h"
 #include "cora/global/threads.h"
 #include "cora/global/within_tol.h"
 // neural networks and specifications

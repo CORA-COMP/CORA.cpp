@@ -20,9 +20,10 @@
 #pragma once
 
 #include "cora/cont_set/set.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <functional>
-#include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -67,7 +68,7 @@ BinaryOp binary_op(const std::string &name);
 /// Implementations for classes the table does not know (a Python subclass), by class name; the
 /// table is asked first, so a registered pair never slows down a built-in one.
 using SetFunction = std::function<Set(const ContSet &S1, const ContSet &S2)>;
-using PredicateFunction = std::function<bool(const ContSet &S1, const ContSet &S2, double tol)>;
+using PredicateFunction = std::function<bool(const ContSet &S1, const ContSet &S2, Tol tol)>;
 void register_binary(BinaryOp op, const std::string &left, const std::string &right, SetFunction f);
 void register_binary(BinaryOp op, const std::string &left, const std::string &right,
                      PredicateFunction f);
@@ -87,12 +88,12 @@ Set convex_hull(const ContSet &S1, const ContSet &S2);
 /// The Cartesian product {(x, y) | x in S1, y in S2}.
 Set cart_prod(const ContSet &S1, const ContSet &S2);
 
-/// Whether S2 is a subset of S1 enlarged by tol in the infinity norm (CORA's default 100*eps).
-bool contains(const ContSet &S1, const ContSet &S2,
-              double tol = 100 * std::numeric_limits<double>::epsilon());
+/// Whether S2 is a subset of S1 enlarged by tol in the infinity norm. tol default: the
+/// repository tolerance (docs/architecture.md).
+bool contains(const ContSet &S1, const ContSet &S2, Tol tol = std::nullopt);
 
-/// Whether S1 and S2 intersect, up to tol (CORA's default 1e-8).
-bool is_intersecting(const ContSet &S1, const ContSet &S2, double tol = 1e-8);
+/// Whether S1 and S2 intersect, up to tol (same default).
+bool is_intersecting(const ContSet &S1, const ContSet &S2, Tol tol = std::nullopt);
 
 // Operators of Set, as of the classes: + is plus, & intersect, | unite.
 inline Set operator+(const Set &S1, const Set &S2) { return plus(S1, S2); }
@@ -103,13 +104,13 @@ namespace detail {
 
 /// The implementations the table holds; the operands are of the classes of the entry.
 using SetFn = Set (*)(const ContSet &S1, const ContSet &S2);
-using PredicateFn = bool (*)(const ContSet &S1, const ContSet &S2, double tol);
+using PredicateFn = bool (*)(const ContSet &S1, const ContSet &S2, Tol tol);
 
 /// op(S1, S2) by the table, operands swapped for a commutative op stored the other way round;
 /// Error::noops if the table has neither. The checked entry of every binary operation: the
 /// operands share a dimension (and tol >= 0).
 Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2);
-bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, double tol);
+bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol);
 
 } // namespace detail
 } // namespace cora

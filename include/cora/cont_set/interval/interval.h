@@ -66,8 +66,9 @@ class Interval : public ContSet {
     static Interval stack(const std::vector<Interval> &Is);
 
     /// Whether the point p (..., n, 1) is in the box enlarged by tol in every coordinate (absolute,
-    /// or relative to the bound, as within_tol); for a batch, whether all points are.
-    bool contains(const Tensor &p, double tol = 100 * std::numeric_limits<double>::epsilon()) const;
+    /// or relative to the bound, as within_tol); for a batch, whether all points are. tol
+    /// default: the repository tolerance (docs/architecture.md).
+    bool contains(const Tensor &p, Tol tol = std::nullopt) const;
 
     // Construction and combination ----------------------------------------------------------------
 
@@ -135,21 +136,21 @@ class Interval : public ContSet {
 
     // Comparison and predicates -------------------------------------------------------------------
 
-    /// Whether no coordinate has a width within 1e-8 of zero (CORA's withinTol); false for an
-    /// empty interval; for a batch, whether all members are.
+    /// Whether no coordinate has a width within the repository tolerance of zero (as within_tol);
+    /// false for an empty interval; for a batch, whether all members are.
     bool is_full_dim() const;
 
     /// Whether the boxes meet (CORA's isIntersecting_): per coordinate the bounds overlap, up to
     /// tol as within_tol; false if one is empty. With a point p, whether p is in the box. For a
-    /// batch, whether all members do.
-    bool is_intersecting(const Interval &I2, double tol = kWithinTol) const;
-    bool is_intersecting(const Tensor &p, double tol = kWithinTol) const;
+    /// batch, whether all members do. tol default: the repository tolerance.
+    bool is_intersecting(const Interval &I2, Tol tol = std::nullopt) const;
+    bool is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
 
-    /// Whether the boxes have the same bounds, up to tol as within_tol (CORA's default eps);
-    /// infinite bounds must agree exactly. Boxes of different shape are not equal. A point p is
-    /// the box [p, p].
-    bool isequal(const Interval &I2, double tol = std::numeric_limits<double>::epsilon()) const;
-    bool isequal(const Tensor &p, double tol = std::numeric_limits<double>::epsilon()) const;
+    /// Whether the boxes have the same bounds, up to tol as within_tol; infinite bounds must
+    /// agree exactly. Boxes of different shape are not equal. A point p is the box [p, p]. tol
+    /// default: the repository tolerance.
+    bool isequal(const Interval &I2, Tol tol = std::nullopt) const;
+    bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether this box lies in I2 (CORA's le, I <= I2): inf2 <= inf and sup <= sup2 everywhere.
     bool less_equal(const Interval &I2) const;

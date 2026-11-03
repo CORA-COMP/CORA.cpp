@@ -20,6 +20,7 @@
 #include "cont_dynamics/linear_sys/private/priv_lin_error_bound.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <cmath>
@@ -35,7 +36,6 @@ namespace cora {
 
 namespace {
 
-constexpr double kEps = 2.220446049250313e-16;  // as MATLAB's eps
 constexpr double kNaN =
     std::numeric_limits<double>::quiet_NaN();
 constexpr double kInf =
@@ -110,7 +110,7 @@ double aux_norm2(const Tensor &M) {
             for (int64_t i = 0; i < d; ++i)
                 for (int64_t j = 0; j < d; ++j)
                     (i == j ? diag : off) += a[i * d + j] * a[i * d + j];
-            if (off <= 1e-30 * (diag + 1e-300)) break;
+            if (off <= numerics::kJacobiOffDiagonal * (diag + numerics::kTiny)) break;
             for (int64_t p = 0; p < d; ++p)
                 for (int64_t q = p + 1; q < d; ++q) {
                     if (a[p * d + q] == 0) continue;
@@ -145,7 +145,7 @@ double aux_norm2(const Tensor &M) {
         const double ny = aux_vecnorm(y);
         if (ny == 0) return 0.0;
         for (int64_t i = 0; i < d; ++i) x[i] = y[i] / ny;
-        if (std::abs(ny - lambda) <= 1e-15 * ny) {
+        if (std::abs(ny - lambda) <= numerics::kPowerIteration * ny) {
             lambda = ny;
             break;
         }
@@ -172,7 +172,7 @@ Tensor aux_particular_constant(TaylorLinSys &taylor, const Tensor &u, double tim
         const std::vector<double> add = add_term.data(), sum = Asum.data();
         for (std::size_t i = 0; i < add.size(); ++i) {
             max_abs = std::max(max_abs, std::abs(add[i]));
-            small = small && std::abs(add[i]) <= kEps * std::abs(sum[i]);
+            small = small && std::abs(add[i]) <= machine_eps() * std::abs(sum[i]);
         }
         (void)max_sum;
         // Too large a step size diverges: the sum has not converged after 75 terms.
@@ -202,7 +202,7 @@ bool aux_pu(TaylorLinSys &taylor, const Tensor &GU, double time_step, Tensor &G_
         if (eta == kMaxEta) return false;
         bool stop = true;
         for (std::size_t i = 0; i < PUdiag.size(); ++i) {
-            stop = stop && std::abs(add_diag[i]) <= kEps * std::abs(PUdiag[i]);
+            stop = stop && std::abs(add_diag[i]) <= machine_eps() * std::abs(PUdiag[i]);
             PUdiag[i] += add_diag[i];
         }
         A_sum_error = A_sum_error + add_term;
@@ -343,10 +343,11 @@ double aux_eps_g(const Interval &G, const Tensor &u, Tensor &Gc, Tensor &Gbox) {
     return 2 * aux_vecnorm((Gbox + Gc.abs()).data());
 }
 
-/// The index (1-based, 0 if none) of a step size used before, within 1e-9.
+/// The index (1-based, 0 if none) of a step size used before, within kTimeStepMatch.
 int aux_check_time_step(double time_step, const AdaptiveSaveData &sd) {
     for (std::size_t i = 0; i < sd.time_step.size(); ++i)
-        if (std::abs(sd.time_step[i] - time_step) < 1e-9) return static_cast<int>(i) + 1;
+        if (std::abs(sd.time_step[i] - time_step) < numerics::kTimeStepMatch)
+            return static_cast<int>(i) + 1;
     return 0;
 }
 
@@ -469,7 +470,7 @@ double aux_adjust_time_step(int k, double time_step, bool is_u, double max_time_
         time_step = max_time_step;
         idx = 0;
         for (std::size_t i = 0; i < sd.time_step.size(); ++i)
-            if (std::abs(time_step - sd.time_step[i]) < 1e-14) {
+            if (std::abs(time_step - sd.time_step[i]) < numerics::kTimeRound) {
                 idx = static_cast<int>(i) + 1;
                 break;
             }
@@ -483,7 +484,7 @@ int aux_savedata(AdaptiveSaveData &sd, int kIter, bool fullcomp, const Problem &
                  const SetState &set, const LinErrorBound &errs, int k, double time_step) {
     int idx = 0;
     for (std::size_t i = 0; i < sd.time_step.size(); ++i)
-        if (std::abs(sd.time_step[i] - time_step) < 1e-14) {
+        if (std::abs(sd.time_step[i] - time_step) < numerics::kTimeRound) {
             idx = static_cast<int>(i) + 1;
             break;
         }
@@ -577,7 +578,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
 
     // Steps ---------------------------------------------------------------------------------------
     int k = -1;
-    while (t_final - t > 1e-9) {
+    while (t_final - t > numerics::kStepCount) {
         ++k;
 
         // Where a specification is unverified the step is computed in full, otherwise only the
@@ -641,7 +642,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             // Suitable if both errors are ok and, unless the step is at its maximum, close to
             // the bound (else a larger step size is tried).
             if (errs.bound_acc_ok[k][kIter] && (!fc || errs.bound_nonacc_ok[k][kIter])) {
-                if (std::abs(time_step - max_time_step) < 1e-12) {
+                if (std::abs(time_step - max_time_step) < numerics::kAtMaxStep) {
                     kIterChosen = kIter;
                     break;
                 }
@@ -680,7 +681,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
         if (P.is_u) {
             e_atkplus1 = e_adtk.matmul(*taylor.read_e_adt(t));
             taylor.insert_e_adt(t + time_step, *e_atkplus1);
-        } else if (!fc && std::abs(time_step - max_time_step_spec) < 1e-9) {
+        } else if (!fc && std::abs(time_step - max_time_step_spec) < numerics::kTimeStepMatch) {
             e_atkplus1 = taylor.e_adt(t + time_step);
         }
 
@@ -716,7 +717,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             // No sets in a verified step; the time-point set is needed to restart the full one.
             RcontError.push_back(kNaN);
             RcontTpError.push_back(kNaN);
-            if (std::abs(time_step - max_time_step_spec) < 1e-9)
+            if (std::abs(time_step - max_time_step_spec) < numerics::kTimeStepMatch)
                 set.Hstartp = Zonotope(e_atkplus1->matmul(params.R0.center()) + set.Putotal,
                                        e_atkplus1->matmul(params.R0.generators()));
             out.time_interval.push_back(std::nullopt);

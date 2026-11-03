@@ -16,6 +16,7 @@
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <array>
@@ -38,12 +39,10 @@ namespace {
 
 // Constants and types -----------------------------------------------------------------------------
 
-constexpr double kEps = 2.220446049250313e-16;  // DBL_EPSILON, as MATLAB's eps
 constexpr int kMaxEta = 75;           // Taylor terms before a step size counts as not converged
 constexpr int kStepsStart = 100;      // steps of the first pass
 constexpr double kShrinkFixed = 0.2;  // step size factor of a pass that does not decide
 constexpr double kShrinkNonconverged = 0.2;  // factor when a Taylor sum does not converge
-constexpr double kMinTimeStep = 1e-12;
 
 using Intervals = std::vector<std::array<double, 2>>;
 
@@ -192,7 +191,7 @@ Tensor aux_expm(const Tensor &A, const Expmat &E, double time_step) {
             max_term = std::max(max_term, std::abs(term[i]));
             max_sum = std::max(max_sum, std::abs(sum[i]));
         }
-        if (max_term <= 1e-18 * max_sum) break;
+        if (max_term <= numerics::kExpmTermRatio * max_sum) break;
     }
     // Square back up to e^{A time_step}; sparse products while they are cheaper than a dense one.
     int squared = 0;
@@ -227,8 +226,8 @@ bool aux_sum_step(const std::vector<double> &a, double f, std::vector<double> &p
     const std::size_t nn = a.size();
     bool converged = true;
     for (std::size_t i = 0; i < nn && converged; ++i)
-        converged = f * std::min(a[i], 0.0) <= kEps * pos[i] &&
-                    f * std::max(a[i], 0.0) >= kEps * neg[i];
+        converged = f * std::min(a[i], 0.0) <= machine_eps() * pos[i] &&
+                    f * std::max(a[i], 0.0) >= machine_eps() * neg[i];
     for (std::size_t i = 0; i < nn; ++i) {
         if (converged) {
             rad[i] = 0.5 * (pos[i] - neg[i]);
@@ -282,7 +281,7 @@ std::optional<Tensor> aux_particular(const Tensor &A, const Tensor &X, Expmat &E
         const Tensor add_term = aux_power_tensor(E, A, eta - 1) * (std::pow(time_step, eta) / eta);
         // Too large a step size diverges; an unbounded loop would never end.
         if (std::isinf(aux_max_all(add_term.abs())) || eta > 1000) return std::nullopt;
-        if (aux_all_le(add_term.abs(), Asum.abs() * kEps)) break;
+        if (aux_all_le(add_term.abs(), Asum.abs() * machine_eps())) break;
         Asum = Asum + add_term;
     }
     return Asum.matmul(X);
@@ -300,7 +299,7 @@ std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, 
         const std::vector<double> add_diag = add.abs().sum(-1, true).data();
         bool stop = true;
         for (std::size_t i = 0; i < diag.size(); ++i) {
-            stop = stop && add_diag[i] <= kEps * diag[i];
+            stop = stop && add_diag[i] <= machine_eps() * diag[i];
             diag[i] += add_diag[i];
         }
         parts.push_back(add);
@@ -587,7 +586,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
         if (all_verified) break;
         if (!is_u) t_final = last_unsat;
         time_step *= kShrinkFixed;
-        if (time_step < kMinTimeStep) return finish();
+        if (time_step < numerics::kMinTimeStep) return finish();
     }
     res.verified = true;
     return finish();

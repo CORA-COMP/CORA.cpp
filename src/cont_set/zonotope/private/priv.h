@@ -60,9 +60,6 @@ double priv_containment_sadraddini_tedrake(const HostZonotope &inner, const Host
 /// (the first half of polytope(Z).A); a single zonotope without zero generators.
 Tensor priv_zonotope_facet_normals(const Zonotope &Z);
 
-/// within_tol(x, b, tol) for every entry of x and a finite number b: 1 where it holds, else 0.
-Tensor priv_within_tol(const Tensor &x, double b, double tol);
-
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

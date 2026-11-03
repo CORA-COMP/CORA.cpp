@@ -1,33 +1,38 @@
-// within_tol - whether two numbers agree up to a tolerance, absolutely or relatively
+// within_tol - whether numbers agree up to a tolerance, absolutely or relatively
 //
 // The one comparison behind every `tol` argument, as CORA's withinTol: a and b agree if
-// |a - b| <= tol, or |a - b| / min(|a|, |b|) <= tol, or both are the same infinity.
+// |a - b| <= tol, or |a - b| <= tol * min(|a|, |b|), or both are the same infinity. Opposite
+// infinities and NaN never agree.
 //
 // Syntax:   bool same = within_tol(a, b);   within_tol(a, b, 1e-12);
-// Inputs:   a, b - numbers;  tol - nonnegative tolerance (CORA's default 1e-8)
-// Outputs:  res - true if a and b agree up to tol
-// See also: cont_set/interval/interval.h (contains)
+//           Tensor same = within_tol(A, B);   (elementwise, broadcast; 1 where they agree, else 0)
+// Inputs:   a, b - numbers, or tensors of one dtype;  tol - nonnegative, default: tolerance.h
+// Outputs:  same - whether (where) a and b agree up to tol
+// See also: global/tolerance.h, cont_set/interval/interval.h (contains)
 //
 // CORA: global/functions/matlab/validate/check/withinTol.m
 
 #pragma once
 
+#include "cora/global/tensor/tolerance.h"
 #include <cmath>
+
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
 
-/// CORA's default tolerance of withinTol and of isIntersecting.
-inline constexpr double kWithinTol = 1e-8;
-
 /// |a - b| <= tol, absolutely or relative to the smaller magnitude; equal infinities agree.
-inline bool within_tol(double a, double b, double tol = kWithinTol) noexcept {
+inline bool within_tol(double a, double b, Tol tol = std::nullopt) noexcept {
+    if (a == b) return true; // includes the equal infinities
+    if (std::isinf(a) || std::isinf(b)) return false;
+    const double t = resolve_tol(tol);
     const double difference = std::abs(a - b);
-    if (difference <= tol) return true;
-    if (difference <= tol * std::fmin(std::abs(a), std::abs(b))) return true;
-    return std::isinf(a) && std::isinf(b) && std::signbit(a) == std::signbit(b);
+    return difference <= t || difference <= t * std::fmin(std::abs(a), std::abs(b));
 }
+
+/// within_tol of every entry, as a 0/1 mask; tol resolves for the dtype of a.
+Tensor within_tol(const Tensor &a, const Tensor &b, Tol tol = std::nullopt);
 
 } // namespace cora
 

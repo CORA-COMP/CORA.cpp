@@ -39,7 +39,8 @@ class Predicates(unittest.TestCase):
     def test_is_full_dim(self):
         self.assertTrue(box([0.0, 1.0], [1.0, 3.0]).is_full_dim())
         self.assertFalse(box([0.0, 1.0], [1.0, 1.0]).is_full_dim())
-        self.assertFalse(box([0.0, 1.0], [1.0, 1.0 + 1e-9]).is_full_dim())
+        with cora.tolerance(1e-8):  # CORA's withinTol default
+            self.assertFalse(box([0.0, 1.0], [1.0, 1.0 + 1e-9]).is_full_dim())
         self.assertFalse(cora.Interval.empty(2).is_full_dim())
 
     def test_is_intersecting(self):

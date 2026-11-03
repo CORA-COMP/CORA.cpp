@@ -10,7 +10,7 @@ The constructors and the functions are also plain functions of the package (`cor
 """
 import numpy as np
 
-from ._cora import Expr, current_backend
+from ._cora import Expr, current_backend, _default_tol
 from ._cora import cos as _cos_expr, exp as _exp_expr, sin as _sin_expr
 
 
@@ -30,6 +30,12 @@ def _dtype(dtype):
     if name not in _NAMES:
         raise ValueError(f"cora: unknown dtype {dtype!r}; use 'float64' or 'float32'")
     return _NAMES[name]
+
+
+def default_tol(dtype="float64"):
+    """The tolerance of a dtype when no `tol`, `cora.tolerance` or `cora.set_default_tolerance`
+    says otherwise: 100 machine epsilons of the dtype."""
+    return _default_tol(_dtype(dtype))
 
 
 def _device(device):

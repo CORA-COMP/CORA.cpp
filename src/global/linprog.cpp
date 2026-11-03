@@ -12,6 +12,7 @@
 
 #include "cora/global/linprog.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <cmath>
@@ -27,9 +28,6 @@ namespace {
 
 constexpr double kInf =
     std::numeric_limits<double>::infinity();
-constexpr double kPivotTol = 1e-9;     // smallest usable tableau entry in a ratio test
-constexpr double kOptTol = 1e-9;       // reduced costs above -kOptTol are optimal
-constexpr double kFeasTol = 1e-8;      // phase-1 residual (relative) below which it is feasible
 constexpr int kMaxPivots = 200000;
 
 /// How one original variable is written with nonnegative ones: x = offset + s1 y[c1] + s2 y[c2].
@@ -73,12 +71,12 @@ int aux_simplex(
         // Reduced costs r_j = c_j - c_B' T[:, j]; entering column by Dantzig or Bland.
         const bool bland = stall > 100;
         int enter = -1;
-        double best = -kOptTol;
+        double best = -numerics::kSimplexOptimal;
         for (int j = 0; j < N; ++j) {
             if (!allowed[j]) continue;
             double r = cost[j];
             for (int i = 0; i < m; ++i) r -= cost[basis[i]] * T[std::size_t(i) * W + j];
-            if (bland ? r < -kOptTol : r < best) {
+            if (bland ? r < -numerics::kSimplexOptimal : r < best) {
                 best = r;
                 enter = j;
                 if (bland) break;
@@ -90,19 +88,19 @@ int aux_simplex(
         double min_ratio = kInf;
         for (int i = 0; i < m; ++i) {
             const double a = T[std::size_t(i) * W + enter];
-            if (a <= kPivotTol) continue;
+            if (a <= numerics::kSimplexPivot) continue;
             const double ratio = std::max(T[std::size_t(i) * W + N], 0.0) / a;
-            if (leave < 0 || ratio < min_ratio - 1e-12 * (1 + min_ratio)) {
+            if (leave < 0 || ratio < min_ratio - numerics::kSimplexTie * (1 + min_ratio)) {
                 min_ratio = ratio;
                 leave = i;
-            } else if (ratio <= min_ratio + 1e-12 * (1 + min_ratio) &&
+            } else if (ratio <= min_ratio + numerics::kSimplexTie * (1 + min_ratio) &&
                        (bland ? basis[i] < basis[leave] : a > T[std::size_t(leave) * W + enter])) {
                 min_ratio = std::min(ratio, min_ratio);
                 leave = i;
             }
         }
         if (leave < 0) return 1;
-        stall = min_ratio < 1e-12 ? stall + 1 : 0;
+        stall = min_ratio < numerics::kSimplexTie ? stall + 1 : 0;
         aux_pivot(T, m, W, leave, enter);
         basis[leave] = enter;
     }
@@ -231,13 +229,13 @@ LinProgResult linprog(const LinProg &lp) {
             if (basis[i] >= s.N) infeasibility += std::abs(T[std::size_t(i) * W + W - 1]);
             scale = std::max(scale, std::abs(s.r[i]));
         }
-        if (infeasibility > kFeasTol * scale) return result;
+        if (infeasibility > numerics::kSimplexFeasible * scale) return result;
         // Basic artificials at zero leave the basis if a real column can replace them; a row
         // without one is redundant and keeps its zero artificial.
         for (int i = 0; i < s.m; ++i) {
             if (basis[i] < s.N) continue;
             for (int j = 0; j < s.N; ++j)
-                if (std::abs(T[std::size_t(i) * W + j]) > 1e-7) {
+                if (std::abs(T[std::size_t(i) * W + j]) > numerics::kSimplexDrive) {
                     aux_pivot(T, s.m, W, i, j);
                     basis[i] = j;
                     break;

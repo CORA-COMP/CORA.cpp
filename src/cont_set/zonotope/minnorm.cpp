@@ -12,6 +12,7 @@
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <limits>
 
@@ -22,9 +23,6 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-/// The tolerance of CORA's polytope(Z) for a generator matrix to count as rank deficient.
-constexpr double kFlatTol = 1e-12;
 
 } // namespace
 
@@ -40,7 +38,7 @@ std::pair<Tensor, Tensor> Zonotope::minnorm() const {
     // CORA's polytope(Z - c): without zero generators; a flat zonotope has a facet through c
     const Zonotope compacted = compact();
     const Tensor &G = compacted.generators();
-    if (G.shape().back() == 0 || G.matrix_rank(kFlatTol) < dim())
+    if (G.shape().back() == 0 || G.matrix_rank(resolve_tol({}, G.dtype())) < dim())
         return {c_.zeros_like({1, 1}), c_};
     const Tensor C = priv_zonotope_facet_normals(compacted);
     // the offset of each facet of Z - c: sum |C G|, and the nearest one (the first on a tie)

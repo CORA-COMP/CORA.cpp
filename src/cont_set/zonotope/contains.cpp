@@ -5,8 +5,9 @@
 //           method - "exact" (default), "exact:venum", "approx", "approx:st"; CORA's
 //                    "exact:polymax" needs Polytope; "approx:stDual", "sampling" and "opt" are not
 //                    supported
-//           tol - CORA's default 100*eps: relaxes the norm of the points (as within_tol) and the
-//                 flatness of Z (a zonotope that is not full-dimensional is enlarged by tol)
+//           tol - relaxes the norm of the points (as within_tol) and the flatness of Z (a
+//                 zonotope that is not full-dimensional is enlarged by tol); default: the
+//                 repository tolerance (docs/architecture.md)
 // Outputs:  res - true if all points (S) are in Z; "exact" decides, "approx" says true only when it
 //           is certain. A linear program per point; the vertex search and the sufficient test of
 //           Sadraddini and Tedrake for a set. Not for a batch
@@ -98,15 +99,14 @@ bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::stri
     return scaling <= 1 + tol;
 }
 
-/// Why the call is refused, if it is: a batch, a negative tol, a method not known for the operand
-/// (points or a set) or not supported.
+/// Why the call is refused, if it is: a batch, a method not known for the operand (points or a
+/// set) or not supported.
 std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const std::string &method,
-                                                              bool points, double tol) {
+                                                              bool points) {
     using Refusal = std::pair<Error::Id, std::string>;
     if (batch)
         return Refusal{Error::not_supported, "a linear program per set: it supports a single "
                                              "zonotope, not a batch"};
-    if (!(tol >= 0)) return Refusal{Error::wrong_value, "tol must be nonnegative"};
     const bool for_sets = method == "approx:st" || method == "approx:stDual" ||
                           method == "sampling" || method == "sampling:primal" ||
                           method == "sampling:dual" || method == "opt";
@@ -126,36 +126,39 @@ std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const s
 
 // ===========================================  MAIN  =========================================== //
 
-bool Zonotope::contains(const Tensor &p, const std::string &method, double tol) const {
+bool Zonotope::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
     CORA_CHECK(p.ndim() == 2 && p.shape()[0] == dim(), Error::dimension_mismatch, [&] {
         return "contains: the points must be a matrix (" + std::to_string(dim()) +
                ", N) of columns, got the shape " + shape_text(p.shape());
     });
-    const auto refusal = aux_refusal(c_.ndim() != 2, method, true, tol);
+    const auto refusal = aux_refusal(c_.ndim() != 2, method, true);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     return aux_contains_matrix(*this, p, tol);
 }
 
-bool Zonotope::contains(const Zonotope &S, const std::string &method, double tol) const {
+bool Zonotope::contains(const Zonotope &S, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
-    // the dimensions, then the batch, the tolerance and the method
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
+    // the dimensions, then the batch and the method
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
         return "contains: the zonotopes differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S.dim());
     });
-    const auto refusal = aux_refusal(c_.ndim() != 2 || S.center().ndim() != 2, method, false, tol);
+    const auto refusal = aux_refusal(c_.ndim() != 2 || S.center().ndim() != 2, method, false);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     return aux_contains_zonotope(*this, S, method, tol);
 }
 
-bool Zonotope::contains(const Interval &I, const std::string &method, double tol) const {
+bool Zonotope::contains(const Interval &I, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
     CORA_CHECK(I.dim() == dim() && I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
         return "contains: the interval must be a box of the dimension " + std::to_string(dim()) +
                " of the zonotope, got bounds of the shape " + shape_text(I.inf().shape());
     });
-    const auto refusal = aux_refusal(c_.ndim() != 2 || I.inf().ndim() != 2, method, false, tol);
+    const auto refusal = aux_refusal(c_.ndim() != 2 || I.inf().ndim() != 2, method, false);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a box is the zonotope of its axes
     return aux_contains_zonotope(*this, priv_zonotope_of_interval(I), method, tol);

@@ -96,6 +96,21 @@ void bind_settings(py::module_ &m) {
     m.def("set_checks_enabled", &set_checks_enabled, py::arg("enabled"),
           "The process default of the input checks (CORACPP_CHECKS=0 in the environment: off)");
     m.def("checks_enabled", &checks_enabled, "Whether this thread checks inputs");
+    using Tolerance = PyScope<ToleranceScope, double>;
+    bind_scope<ToleranceScope, double>(m, "_ToleranceScope", "A tolerance in a with block");
+    m.def(
+        "tolerance", [](double tol) { return new Tolerance{tol, std::nullopt}; }, py::arg("tol"),
+        "with cora.tolerance(1e-10): the tol of every operation in the block that is given none");
+    m.def("set_default_tolerance", &set_default_tolerance, py::arg("tol"),
+          "The tolerance of threads without a cora.tolerance block (None: default_tol(dtype))");
+    m.def("current_tolerance", &current_tolerance,
+          "The tolerance set by a block or set_default_tolerance on this thread, else None");
+    m.def(
+        "_default_tol",
+        [](const std::string &dtype) {
+            return default_tol(dtype == "float32" ? DType::float32 : DType::float64);
+        },
+        py::arg("dtype"), "The tolerance of a dtype ('float64' or 'float32') without any override");
     m.def(
         "backend",
         [](const std::string &spec) {
@@ -266,18 +281,19 @@ void bind_registry(py::module_ &m) {
     m.def("cart_prod", &binary<&cart_prod>, py::arg("S1"), py::arg("S2"), "The Cartesian product");
     m.def(
         "contains",
-        [](const py::object &S1, const py::object &S2, double tol) {
+        [](const py::object &S1, const py::object &S2, Tol tol) {
             return contains(set_of(S1), set_of(S2), tol);
         },
-        py::arg("S1"), py::arg("S2"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
-        "Whether S2 is a subset of S1 enlarged by tol (infinity norm)");
+        py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(),
+        "Whether S2 is a subset of S1 enlarged by tol (infinity norm); tol=None: the "
+        "repository tolerance");
     m.def(
         "is_intersecting",
-        [](const py::object &S1, const py::object &S2, double tol) {
+        [](const py::object &S1, const py::object &S2, Tol tol) {
             return is_intersecting(set_of(S1), set_of(S2), tol);
         },
-        py::arg("S1"), py::arg("S2"), py::arg("tol") = 1e-8,
-        "Whether S1 and S2 intersect, up to tol");
+        py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(),
+        "Whether S1 and S2 intersect, up to tol (None: the repository tolerance)");
     m.def(
         "binary_pairs",
         [] {
@@ -310,9 +326,10 @@ void bind_registry(py::module_ &m) {
             if (o == BinaryOp::contains || o == BinaryOp::is_intersecting) {
                 register_binary(
                     o, l, r,
-                    PredicateFunction([fn, ref](const ContSet &S1, const ContSet &S2, double tol) {
+                    PredicateFunction([fn, ref](const ContSet &S1, const ContSet &S2, Tol tol) {
                         py::gil_scoped_acquire gil;
-                        return py::cast<bool>((*fn)(ref(S1), ref(S2), tol));
+                        // a Python function always gets a number: the repository tolerance
+                        return py::cast<bool>((*fn)(ref(S1), ref(S2), resolve_tol(tol)));
                     }));
             } else {
                 register_binary(o, l, r,
@@ -530,20 +547,20 @@ void bind_interval(py::module_ &m) {
         .def("is_full_dim", &Interval::is_full_dim, "Whether the box has a nonempty interior")
         .def(
             "is_intersecting",
-            [](const Interval &I, const py::object &other, double tol) {
+            [](const Interval &I, const py::object &other, Tol tol) {
                 if (py::isinstance<Interval>(other))
                     return I.is_intersecting(py::cast<Interval>(other), tol);
                 return I.is_intersecting(vector_of(other, "the point"), tol);
             },
-            py::arg("other"), py::arg("tol") = kWithinTol,
+            py::arg("other"), py::arg("tol") = py::none(),
             "Whether the box meets another box or contains a point, up to tol")
         .def(
             "isequal",
-            [](const Interval &I, const py::object &other, double tol) {
+            [](const Interval &I, const py::object &other, Tol tol) {
                 if (py::isinstance<Interval>(other)) return I.isequal(py::cast<Interval>(other), tol);
                 return I.isequal(tensor_of(other, "the point"), tol);
             },
-            py::arg("other"), py::arg("tol") = std::numeric_limits<double>::epsilon(),
+            py::arg("other"), py::arg("tol") = py::none(),
             "Whether the bounds agree up to tol; infinite bounds must be the same")
         .def("less_equal", &Interval::less_equal, py::arg("I2"), "Whether the box lies in I2")
         .def("less", &Interval::less, py::arg("I2"), "Whether the box lies strictly in I2")
@@ -614,10 +631,10 @@ void bind_interval(py::module_ &m) {
         .def("log", &Interval::log, "The image under the natural logarithm")
         .def(
             "contains",
-            [](const Interval &I, const py::object &p, double tol) {
+            [](const Interval &I, const py::object &p, Tol tol) {
                 return I.contains(vector_of(p, "the point"), tol);
             },
-            py::arg("p"), py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
+            py::arg("p"), py::arg("tol") = py::none(),
             "Whether p is in the box enlarged by tol per coordinate");
 }
 
@@ -670,7 +687,7 @@ void bind_zonotope(py::module_ &m) {
         .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
         .def("box", &Zonotope::box, "The box around the zonotope, as a zonotope")
         .def("compact", &Zonotope::compact, py::arg("method") = "zeros",
-             py::arg("tol") = std::numeric_limits<double>::epsilon(),
+             py::arg("tol") = py::none(),
              "Without zero generators ('zeros'); 'all' also merges aligned ones; 'aligned': as is")
         .def(
             "cart_prod",
@@ -736,13 +753,13 @@ void bind_zonotope(py::module_ &m) {
             "n generators (columns) that span a tight parallelotope around the zonotope")
         .def(
             "contains",
-            [](const Zonotope &Z, const py::object &S, const std::string &method, double tol) {
+            [](const Zonotope &Z, const py::object &S, const std::string &method, Tol tol) {
                 if (py::isinstance<Zonotope>(S)) return Z.contains(py::cast<Zonotope>(S), method, tol);
                 if (py::isinstance<Interval>(S)) return Z.contains(py::cast<Interval>(S), method, tol);
                 return Z.contains(tensor_of(S, "the points"), method, tol);
             },
             py::arg("S"), py::arg("method") = "exact",
-            py::arg("tol") = 100 * std::numeric_limits<double>::epsilon(),
+            py::arg("tol") = py::none(),
             "Whether the zonotope contains the point(s) (n,) or (n, N), a zonotope or a box")
         .def(
             "boundary_point",
@@ -764,34 +781,34 @@ void bind_zonotope(py::module_ &m) {
             [](const Zonotope &Z) { return matrix(Z.generator_length().squeeze(-2)); },
             "The Euclidean length of every generator, (..., m)")
         .def("is_bounded", &Zonotope::is_bounded, "Always true")
-        .def("is_full_dim", &Zonotope::is_full_dim, py::arg("tol") = 1e-6,
+        .def("is_full_dim", &Zonotope::is_full_dim, py::arg("tol") = py::none(),
              "Whether the generators span the space (singular values up to tol count as zero)")
         .def(
             "is_full_dim_subspace",
-            [](const Zonotope &Z, double tol) {
+            [](const Zonotope &Z, Tol tol) {
                 const auto [res, subspace] = Z.is_full_dim_subspace(tol);
                 return py::make_tuple(res, matrix(subspace));
             },
-            py::arg("tol") = 1e-6, "(res, subspace): is_full_dim and a basis (n, r) of the span")
+            py::arg("tol") = py::none(), "(res, subspace): is_full_dim and a basis (n, r) of the span")
         .def(
             "isequal",
-            [](const Zonotope &Z, const py::object &S, double tol) {
+            [](const Zonotope &Z, const py::object &S, Tol tol) {
                 if (py::isinstance<Zonotope>(S)) return Z.isequal(py::cast<Zonotope>(S), tol);
                 if (py::isinstance<Interval>(S)) return Z.isequal(py::cast<Interval>(S), tol);
                 return Z.isequal(tensor_of(S, "the point"), tol);
             },
-            py::arg("S"), py::arg("tol") = std::numeric_limits<double>::epsilon(),
+            py::arg("S"), py::arg("tol") = py::none(),
             "Whether S (a zonotope, a box or a point) is the same set, up to tol")
         .def(
             "is_intersecting",
-            [](const Zonotope &Z, const py::object &S, const std::string &type, double tol) {
+            [](const Zonotope &Z, const py::object &S, const std::string &type, Tol tol) {
                 if (py::isinstance<Zonotope>(S))
                     return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
                 if (py::isinstance<Interval>(S))
                     return Z.is_intersecting(py::cast<Interval>(S), type, tol);
                 return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
             },
-            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = 1e-8,
+            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
             "Whether Z and a zonotope, a box or points intersect; 'exact' (default) or 'approx'")
         .def("lift", &Zonotope::lift, py::arg("N"), py::arg("dims"),
              "In N dimensions, with state i at position dims[i] (a permutation)")

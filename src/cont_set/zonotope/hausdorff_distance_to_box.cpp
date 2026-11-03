@@ -11,6 +11,7 @@
 // CORA: contSet/@zonotope/dH2box.m
 
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
 #include <cmath>
@@ -57,7 +58,7 @@ Tensor aux_exact(const Tensor &G) {
     const int64_t n = G.shape()[G.ndim() - 2];
     if (n == 1) return G.abs_sum().zeros_like();
     // nthroot(10000, n - 1), cut to an integer; at least one section
-    const double root = std::pow(double(kDirections), 1.0 / double(n - 1)) + 1e-9;
+    const double root = std::pow(double(kDirections), 1.0 / double(n - 1)) + numerics::kRootFloor;
     const int64_t sections = std::max<int64_t>(int64_t(std::floor(root)), 1);
     const std::vector<double> flat = aux_directions(n, sections);
     const int64_t count = int64_t(flat.size()) / n;

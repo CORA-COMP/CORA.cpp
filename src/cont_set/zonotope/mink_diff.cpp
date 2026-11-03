@@ -17,6 +17,7 @@
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/linprog.h"
+#include "cora/global/tensor/tolerance.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
 
@@ -31,8 +32,6 @@ namespace cora {
 
 namespace {
 
-constexpr double kEps = std::numeric_limits<double>::epsilon();
-
 [[noreturn]] void aux_empty(const std::string &why) {
     CORA_FAIL(Error::empty_set, "mink_diff: " + why + " and CORA.cpp has no empty set yet");
 }
@@ -45,7 +44,7 @@ bool aux_are_aligned(const Tensor &Gmin, const Tensor &Gsub) {
                  norm_sub = Gsub.vector_norm(Tensor::Norm::two, -2).max().item();
     if (within_tol(norm_min, 0) && within_tol(norm_sub, 0)) return true;
     if (within_tol(norm_min, 0) || within_tol(norm_sub, 0)) return false;
-    return (Gmin / norm_min - Gsub / norm_sub).abs().max().item() <= kEps;
+    return (Gmin / norm_min - Gsub / norm_sub).abs().max().item() <= machine_eps(Gmin.dtype());
 }
 
 // The programs ------------------------------------------------------------------------------------

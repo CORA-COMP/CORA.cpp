@@ -134,6 +134,7 @@ changed, and the reasons are listed below.
 | `CORAwarning('CORA:...', ...)` | `cora::warn(identifier, message)` | `cora.CORAWarning` |
 | `CHECKS_ENABLED` | `ChecksScope`, `set_checks_enabled`, CMake `CORACPP_CHECKS` | `with cora.checks(False):` |
 | `withinTol(a, b, tol)` | `within_tol(a, b, tol)` | — |
+| default `tol` of each function (eps, 100*eps, 1e-8, ...) | `ToleranceScope`, `set_default_tolerance`, `default_tol(dtype)` | `with cora.tolerance(1e-10):`, `cora.set_default_tolerance`, `cora.default_tol(dtype)` |
 | `CORAcolor(identifier)` | `cora_color(identifier)` | `cora.cora_color` |
 | `useCORAcolors(scheme)` | `use_cora_colors(scheme)` | `cora.use_cora_colors` |
 | `plot(S, dims, ...)` | `plot(fig, S, dims, options)` | `cora.plot(S, dims, ...)`, `S.plot(dims, ...)` |

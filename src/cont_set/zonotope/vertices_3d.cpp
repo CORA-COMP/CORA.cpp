@@ -10,6 +10,7 @@
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/vec.h"
 
 #include <algorithm>
@@ -22,6 +23,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// Faces -------------------------------------------------------------------------------------------
 
 // The corners of the face of the zonotope whose outer normal is d: the generators not parallel to
 // that face add with the sign of g'd; those in its plane form a planar zonotope, whose corners
@@ -49,7 +52,7 @@ void aux_face_corners(const Point3 &c, const std::vector<Point3> &g, const Point
     std::sort(angles.begin(), angles.end());
     for (std::size_t i = 0; i < angles.size(); ++i) {
         const double next = i + 1 < angles.size() ? angles[i + 1] : angles[0] + 2 * pi;
-        if (next - angles[i] < 1e-9) continue; // parallel generators flip together
+        if (next - angles[i] < numerics::kAngleMerge) continue; // parallel generators flip together
         const double phi = (angles[i] + next) / 2;
         const Point3 w = add(scale(e1, std::cos(phi)), e2, std::sin(phi));
         Point3 v = base;
@@ -57,6 +60,8 @@ void aux_face_corners(const Point3 &c, const std::vector<Point3> &g, const Point
         out.push_back(v);
     }
 }
+
+// Corners -----------------------------------------------------------------------------------------
 
 // The corners of c + sum [-1, 1] g_k, without repeats.
 std::vector<Point3> aux_corners(const Point3 &c, const std::vector<Point3> &g) {
@@ -68,11 +73,11 @@ std::vector<Point3> aux_corners(const Point3 &c, const std::vector<Point3> &g) {
         for (std::size_t j = i + 1; j < g.size(); ++j) {
             Point3 d = cross(g[i], g[j]);
             const double len = norm(d);
-            if (len <= 1e-10 * norm(g[i]) * norm(g[j])) continue; // parallel
+            if (len <= numerics::kParallel3d * norm(g[i]) * norm(g[j])) continue; // parallel
             d = scale(d, 1 / len);
             found = true;
-            aux_face_corners(c, g, d, 1e-10, out);
-            aux_face_corners(c, g, scale(d, -1), 1e-10, out);
+            aux_face_corners(c, g, d, numerics::kParallel3d, out);
+            aux_face_corners(c, g, scale(d, -1), numerics::kParallel3d, out);
         }
     if (!found && !g.empty()) { // all parallel: a segment
         Point3 s = {0, 0, 0};
@@ -84,7 +89,7 @@ std::vector<Point3> aux_corners(const Point3 &c, const std::vector<Point3> &g) {
     std::vector<Point3> unique;
     for (const Point3 &p : out) {
         const bool seen = std::any_of(unique.begin(), unique.end(), [&](const Point3 &q) {
-            return norm(sub(p, q)) <= 1e-9 * (extent + 1e-300);
+            return norm(sub(p, q)) <= numerics::kCornerMerge * (extent + numerics::kTiny);
         });
         if (!seen) unique.push_back(p);
     }
@@ -106,7 +111,7 @@ std::vector<std::vector<Point3>> Zonotope::vertices_3d_impl() const {
         std::vector<Point3> g;
         for (int64_t j = 0; j < m; ++j) {
             const Point3 p = {G[j], G[m + j], G[2 * m + j]};
-            if (cora::norm(p) > 1e-14) g.push_back(p);
+            if (cora::norm(p) > numerics::kGeneratorZero) g.push_back(p);
         }
         out.push_back(aux_corners({cs[3 * b], cs[3 * b + 1], cs[3 * b + 2]}, g));
     }

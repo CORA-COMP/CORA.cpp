@@ -2,7 +2,8 @@
 //
 // Syntax:   res = Z.is_full_dim();   res = Z.is_full_dim(tol);
 //           [res, subspace] = Z.is_full_dim_subspace(tol);
-// Inputs:   tol - singular values of the generators up to tol count as zero (CORA's default 1e-6)
+// Inputs:   tol - singular values of the generators up to tol count as zero; default: the
+//                 repository tolerance (docs/architecture.md)
 // Outputs:  res - true if the generators span the space, i.e. their rank is the dimension;
 //           subspace - the identity if so, else an orthonormal basis (n, r) of the span of the
 //           generators (the leading left singular vectors)
@@ -12,6 +13,7 @@
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/tensor/tolerance.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -21,13 +23,11 @@ namespace cora {
 
 namespace {
 
-/// Why the call is refused, if it is: a batch (a rank per zonotope), a negative tol.
-Refusal aux_refusal(const Tensor &G, double tol) {
+/// Why the call is refused, if it is: a batch (a rank per zonotope).
+Refusal aux_refusal(const Tensor &G) {
     if (G.ndim() != 2)
         return std::pair{Error::not_supported, std::string("a rank per zonotope: it supports a "
                                                            "single zonotope, not a batch")};
-    if (!(tol >= 0))
-        return std::pair{Error::wrong_value, "tol must be nonnegative, got " + std::to_string(tol)};
     return std::nullopt;
 }
 
@@ -36,16 +36,18 @@ Refusal aux_refusal(const Tensor &G, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Zonotope::is_full_dim(double tol) const {
+bool Zonotope::is_full_dim(Tol tol_arg) const {
     detail::Entry entry;
-    const Refusal refusal = aux_refusal(G_, tol);
+    const double tol = resolve_tol(entry, tol_arg, G_.dtype(), "is_full_dim");
+    const Refusal refusal = aux_refusal(G_);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_full_dim: " + refusal->second; });
     return G_.shape().back() > 0 && G_.matrix_rank(tol) == dim();
 }
 
-std::pair<bool, Tensor> Zonotope::is_full_dim_subspace(double tol) const {
+std::pair<bool, Tensor> Zonotope::is_full_dim_subspace(Tol tol_arg) const {
     detail::Entry entry;
-    const Refusal refusal = aux_refusal(G_, tol);
+    const double tol = resolve_tol(entry, tol_arg, G_.dtype(), "is_full_dim");
+    const Refusal refusal = aux_refusal(G_);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_full_dim: " + refusal->second; });
     const int64_t n = dim();
     if (G_.shape().back() == 0) return {n == 0, G_.zeros_like({n, 0})};

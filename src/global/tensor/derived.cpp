@@ -9,6 +9,7 @@
 
 #include "global/tensor/derived.h"
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
 #include <cmath>
@@ -331,10 +332,9 @@ Tensor Tensor::lstsq(const Tensor &B) const {
 // V diag(1/s) U^T over the singular values above max(n, m) eps max(s).
 Tensor Tensor::pinv() const {
     const auto [U, S, V] = svd();
-    const double eps = dtype() == DType::float32 ? std::numeric_limits<float>::epsilon()
-                                                 : std::numeric_limits<double>::epsilon();
-    const Tensor tol = S.detach().max(-2, true) * (eps * double(std::max(size(-2), size(-1))));
-    const Tensor keep = S.detach().greater(tol);
+    const Tensor bound =
+        S.detach().max(-2, true) * (machine_eps(dtype()) * double(std::max(size(-2), size(-1))));
+    const Tensor keep = S.detach().greater(bound);
     // the reciprocal of a kept value only, so that no infinity meets a gradient
     const Tensor inv_s = where(keep, 1.0 / where(keep, S, S.ones_like({1})), S.zeros_like({1}));
     return V.multiply(inv_s.matrix_transpose()).matmul(U.matrix_transpose());
@@ -345,9 +345,8 @@ int64_t Tensor::matrix_rank(double tol) const {
     if (x.ndim() != 2) CORA_FAIL(Error::wrong_value, "CoraTensor::matrix_rank: one matrix (n, m)");
     const std::vector<double> s = x.svd()[1].data();
     if (s.empty()) return 0;
-    const double eps = dtype() == DType::float32 ? std::numeric_limits<float>::epsilon()
-                                                 : std::numeric_limits<double>::epsilon();
-    const double bound = tol >= 0 ? tol : double(std::max(size(-2), size(-1))) * eps * s[0];
+    const double bound =
+        tol >= 0 ? tol : double(std::max(size(-2), size(-1))) * machine_eps(dtype()) * s[0];
     return std::count_if(s.begin(), s.end(), [&](double v) { return v > bound; });
 }
 

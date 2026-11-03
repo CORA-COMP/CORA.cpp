@@ -11,6 +11,7 @@
 
 #include "cont_set/interval/private/priv_empty.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
 #include <limits>
@@ -30,7 +31,7 @@ Interval Interval::intersect(const Interval &I2) const {
     });
     if (is_empty() || I2.is_empty()) return priv_empty(is_empty() ? inf_ : I2.inf());
     const Tensor lb = inf_.maximum(I2.inf()), ub = sup_.minimum(I2.sup());
-    const double kEps = std::numeric_limits<double>::epsilon();
+    const double kEps = machine_eps(inf_.dtype());
     // 1 where a member's boxes meet, 0 where they are apart by more than eps
     const Tensor meet =
         (lb - ub).less_equal(lb.full_like(lb.shape(), kEps)).all(-2, true).all(-1, true);

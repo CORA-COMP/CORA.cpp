@@ -397,6 +397,52 @@ def check_factories(path, code_lines, issues):
                           f"like an operand (zeros_like, Tensor::like) or mark the function {FROM_NUMBERS}")
 
 
+# The one place of numeric tolerances; see check_tolerance_literals.
+TOLERANCE_HEADER = "include/cora/global/tensor/tolerance.h"
+# A floating-point literal with a negative exponent (1e-8, 2.2e-16), or the machine epsilon.
+SMALL_LITERAL = re.compile(r"(?<![\w.])\d+(?:\.\d*)?[eE]-(?:[4-9]|\d\d+)\b|\b(?:DBL|FLT)_EPSILON\b"
+                           r"|numeric_limits\s*<[^>]*>\s*::\s*epsilon\s*\(")
+# A tolerance or epsilon named thing set from an expression with a nonzero floating-point literal.
+NAMED_LITERAL = re.compile(r"\b\w*(?:[Tt]ol|[Ee]ps)\w*\s*(?:=|\{)\s*([^;,]*)")
+FLOAT_LITERAL = re.compile(r"(?<![\w.])(?:\d+\.\d*|\.\d+|\d+[eE][-+]?\d+)(?:[fF])?(?![\w.])")
+# The Python default of a tol argument: py::arg("tol") = ..., "tol"_a = ..., def f(tol=...).
+TOL_DEFAULT = re.compile(r"\"\w*tol\w*\"\s*(?:\)\s*|_a\s*)=\s*(py::none\(\)|[^,;)]+)"
+                         r"|\bdef\b[^#]*?\b\w*tol\w*\s*=\s*([^,)]+)")
+
+
+def is_zero_literal(text):
+    return re.fullmatch(r"\s*-?0(?:\.0*)?\s*", text) is not None
+
+
+def check_tolerance_literals(path, lines, issues):
+    """No tolerance is a number of its own: the repository tolerance and the thresholds of the
+    numerical methods live in tolerance.h (default_tol, machine_eps, numerics::k...), and a `tol`
+    argument defaults to unset. Flagged outside it: a literal with a negative exponent, the machine
+    epsilon, a tol or eps named thing set from a nonzero floating-point literal, and a tol argument
+    in the bindings or the Python package that defaults to something but None (0 is exact)."""
+    if rel(path) == TOLERANCE_HEADER:
+        return
+    code = code_only("\n".join(lines)).split("\n") if path.endswith((".h", ".cpp")) else []
+    for i, line in enumerate(code):
+        if SMALL_LITERAL.search(line):
+            issues.append(f"line {i + 1}: a tolerance literal or the machine epsilon; use "
+                          "default_tol, machine_eps or a numerics:: threshold (tolerance.h)")
+            continue
+        for m in NAMED_LITERAL.finditer(line):
+            if any(not is_zero_literal(f) for f in FLOAT_LITERAL.findall(m.group(1))):
+                issues.append(f"line {i + 1}: a tolerance set from a number; take it from "
+                              "tolerance.h (default_tol, a numerics:: threshold) or leave it unset")
+                break
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith(("//", "#")):
+            continue
+        for m in TOL_DEFAULT.finditer(line):
+            value = (m.group(1) or m.group(2) or "").strip()
+            if value not in ("py::none()", "None", "std::nullopt") and not is_zero_literal(value):
+                issues.append(f"line {i + 1}: the tol argument defaults to {value}; it defaults "
+                              "to unset (None), the repository tolerance")
+
+
 def check_source(path):
     lines = read_lines(path)
     code_lines = code_only("\n".join(lines)).split("\n")
@@ -412,6 +458,7 @@ def check_source(path):
     check_options(path, lines, issues)
     check_one_code_path(path, code_lines, issues)
     check_factories(path, code_lines, issues)
+    check_tolerance_literals(path, lines, issues)
     return issues
 
 
@@ -504,6 +551,7 @@ def check_python_files(issues_by_file):
             found.append(f"the docstring should start with '{stem} - <what it tests>'")
         if "/src/" in path.replace("\\", "/"):
             check_line_length(path, lines, found)
+            check_tolerance_literals(path, lines, found)
         elif is_test:
             check_line_length(path, lines, found, limit=110)
         if not stem.startswith("_"):
@@ -628,6 +676,17 @@ def check_clones(issues_by_file):
             i += 1
 
 
+def check_build_jobs(issues_by_file):
+    """A build names its number of jobs: a bare `--parallel` (or `-j`) means unlimited with make,
+    which runs a CI runner out of memory."""
+    bare = re.compile(r"(--parallel|\s-j)(?=\s*(\\|$|&&|\||;|--\s))")
+    for path in files("scripts/**/*.sh") + files(".github/workflows/*.yml") + files("cmake/**/*.cmake"):
+        for i, line in enumerate(read_lines(path)):
+            if not line.lstrip().startswith("#") and "cmake --build" in line and bare.search(line):
+                issues_by_file.setdefault(rel(path), []).append(
+                    f"line {i + 1}: a build without a number of jobs; pass --parallel <n>")
+
+
 def main():
     issues_by_file = {}
     for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h"):
@@ -638,6 +697,7 @@ def main():
             check_file_name(path, found)
             check_naming(path, code_only("\n".join(lines)).split("\n"), found)
             check_checks(path, code_only("\n".join(lines)).split("\n"), found)
+            check_tolerance_literals(path, lines, found)
         else:
             found = check_source(path)
         if found:
@@ -647,6 +707,7 @@ def main():
     check_python_files(issues_by_file)
     check_python_tests_cover_the_api(issues_by_file)
     check_clones(issues_by_file)
+    check_build_jobs(issues_by_file)
     check_tensor_ops(issues_by_file)
     for path in files("examples/cpp/**/*.cpp") + files("examples/python/example_*.py"):
         if "/benchmarks/" in rel(path):
