@@ -60,6 +60,7 @@ struct Decode<Fullspace> {
         return Fullspace::from_json(dt, j);
     }
 };
+// The sets with a from_json of their own: their wire form, read in the reply's dtype.
 template <>
 struct Decode<Zonotope> {
     static Zonotope of(const std::string &dt, const Json &j) { return Zonotope::from_json(dt, j); }
