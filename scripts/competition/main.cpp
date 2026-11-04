@@ -5,9 +5,9 @@
 //     coracpp env                          what the worker runs on
 //     coracpp check                        every operation once, as an install smoke test
 
+#include "cora/global/threads.h"
 #include "instance.h"
 #include "server.h"
-#include "cora/global/threads.h"
 
 #include <iostream>
 #include <string>

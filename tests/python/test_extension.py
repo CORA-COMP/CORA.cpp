@@ -9,9 +9,8 @@ errors, warnings and the scoped settings."""
 import unittest
 import warnings
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 class Box(cora.ContSet):

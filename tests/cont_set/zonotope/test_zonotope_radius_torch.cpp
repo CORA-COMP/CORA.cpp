@@ -10,8 +10,8 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(51);
-    test::gradcheck("radius",
-                    [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).radius()}; },
-                    test::random_zonotope(3, 4));
+    test::gradcheck(
+        "radius", [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).radius()}; },
+        test::random_zonotope(3, 4));
     return test::finish("zonotope radius (torch)");
 }

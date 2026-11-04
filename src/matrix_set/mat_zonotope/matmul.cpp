@@ -42,8 +42,8 @@ Tensor aux_all_matrices(const Tensor &C, const Tensor &G) {
 MatZonotope MatZonotope::matmul(const MatZonotope &B) const {
     detail::Entry entry;
     // the inner dimensions, CORA's scalar expansion of a 1 x 1 factor, and the batches
-    CORA_CHECK(cols() == B.rows() || aux_scalar(*this) || aux_scalar(B),
-               Error::dimension_mismatch, [&] {
+    CORA_CHECK(cols() == B.rows() || aux_scalar(*this) || aux_scalar(B), Error::dimension_mismatch,
+               [&] {
                    return "matmul: the inner dimensions differ, " + shape_text(C_.shape()) +
                           " times " + shape_text(B.C_.shape());
                });

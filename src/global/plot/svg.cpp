@@ -82,6 +82,7 @@ std::string aux_path(const Frame &f, const Polygon &p, bool close) {
 // The layers, stacked by zorder (regions at the bottom), those of one zorder as added.
 std::vector<const Figure::Layer *> aux_stacked(const std::vector<Figure::Layer> &layers) {
     std::vector<const Figure::Layer *> stacked;
+    stacked.reserve(layers.size());
     for (const Figure::Layer &l : layers) stacked.push_back(&l);
     std::stable_sort(
         stacked.begin(), stacked.end(),

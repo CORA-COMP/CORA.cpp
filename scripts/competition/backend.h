@@ -15,8 +15,8 @@
 #include <string>
 
 #include "catalog.h"
-#include "sets/mask.h"
 #include "cora/global/rng.h"
+#include "sets/mask.h"
 
 namespace cora::comp {
 

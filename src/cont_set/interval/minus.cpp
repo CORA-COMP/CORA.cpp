@@ -21,8 +21,8 @@ namespace {
 
 /// Whether v is a number or has the matrix shape (n, k) of the bounds (batches broadcast).
 bool aux_fits(const Tensor &v, const Tensor &bounds) {
-    return v.numel() == 1 || (v.ndim() >= 2 && v.size(-2) == bounds.size(-2) &&
-                              v.size(-1) == bounds.size(-1));
+    return v.numel() == 1 ||
+           (v.ndim() >= 2 && v.size(-2) == bounds.size(-2) && v.size(-1) == bounds.size(-1));
 }
 
 /// What the check of v says.

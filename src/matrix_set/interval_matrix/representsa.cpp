@@ -10,9 +10,9 @@
 //
 // CORA: matrixSet/@intervalMatrix/representsa.m
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "cont_set/cont_set/private/priv_set_type.h"
 #include "cora/global/within_tol.h"
+#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "matrix_set/interval_matrix/private/priv_vec.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //

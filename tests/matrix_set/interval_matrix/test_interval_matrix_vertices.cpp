@@ -39,8 +39,8 @@ void vertices_span_the_set(const std::string &b) {
         inside = inside && A.contains(V.slice(0, k, k + 1).reshape({2, 3}), "exact", 0.0);
     check(inside, b + ": every vertex is in the set");
     check(close(V.sum(0) * (1.0 / 64), A.center(), 1e-12), b + ": the mean is the center");
-    const IntervalMatrix E(Interval(test::matrix({1, -1, 0, 1, 2, 2}, 2, 3),
-                                    test::matrix({2, 1, 3, 1, 2, 3}, 2, 3)));
+    const IntervalMatrix E(
+        Interval(test::matrix({1, -1, 0, 1, 2, 2}, 2, 3), test::matrix({2, 1, 3, 1, 2, 3}, 2, 3)));
     const std::vector<Tensor> batch =
         IntervalMatrix(Interval::stack({A.interval(), E.interval()})).vertices();
     check(batch.size() == 2 && batch[0].size(0) == 64 && batch[1].size(0) == 16, b + ": a batch");

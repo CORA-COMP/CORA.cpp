@@ -14,7 +14,7 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("interval.partition", [](test::oracle::Random &rnd) {
-        for (const auto [n, splits] : {std::pair{1, 7}, {2, 3}, {3, 4}}) {
+        for (const auto &[n, splits] : {std::pair{1, 7}, {2, 3}, {3, 4}}) {
             const Interval I = rnd.box(n);
             const std::vector<Interval> pieces = I.partition(splits);
             for (std::size_t k = 0; k < pieces.size(); ++k) {

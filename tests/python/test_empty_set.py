@@ -33,10 +33,9 @@ import unittest
 import matplotlib
 
 matplotlib.use("Agg")
+import cora
 import matplotlib.pyplot as plt
 import numpy as np
-
-import cora
 
 INF = float("inf")
 

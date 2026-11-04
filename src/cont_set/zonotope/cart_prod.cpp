@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonotope/cartProd_.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
-#include "cont_set/zonotope/private/priv.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -63,9 +63,11 @@ Zonotope Zonotope::cart_prod(const Interval &I) const {
     detail::Entry entry;
     CORA_CHECK(I.inf().shape().back() == 1 && aux_batch(c_) == aux_batch(I.inf()),
                Error::dimension_mismatch, [&] {
-        return "cart_prod: the interval must be a box with column bounds and the batch shape of "
-               "the zonotope, got the shape " + shape_text(I.inf().shape());
-    });
+                   return "cart_prod: the interval must be a box with column bounds and the batch "
+                          "shape of "
+                          "the zonotope, got the shape " +
+                          shape_text(I.inf().shape());
+               });
     return aux_blocks(*this, I.zonotope());
 }
 
@@ -90,9 +92,10 @@ Zonotope Zonotope::cart_prod(const Tensor &p, const Zonotope &Z) {
     });
     const int64_t n1 = p.shape()[p.ndim() - 2];
     // the point has no generators: its rows are zero
-    return {Tensor::concat({p, Z.center()}, -2),
-            Tensor::concat({aux_zeros(Z.generators(), n1, Z.generators().shape().back()),
-                            Z.generators()}, -2)};
+    return {
+        Tensor::concat({p, Z.center()}, -2),
+        Tensor::concat(
+            {aux_zeros(Z.generators(), n1, Z.generators().shape().back()), Z.generators()}, -2)};
 }
 
 } // namespace cora

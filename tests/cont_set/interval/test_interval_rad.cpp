@@ -17,7 +17,8 @@ namespace {
 void rad_is_half_the_width(const std::string &b) {
     const Interval I(column({1.0, -2.0}), column({3.0, 2.0}));
     check(close(I.rad(), std::vector<double>{1.0, 2.0}), b + ": (sup - inf) / 2");
-    const Interval M(Tensor::from_data({0, 1, 2, 3}, {2, 2}), Tensor::from_data({2, 1, 2, 7}, {2, 2}));
+    const Interval M(Tensor::from_data({0, 1, 2, 3}, {2, 2}),
+                     Tensor::from_data({2, 1, 2, 7}, {2, 2}));
     check(close(M.rad(), Tensor::from_data({1, 0, 0, 2}, {2, 2})), b + ": an interval matrix");
     const Interval U(column({0.0}), column({std::numeric_limits<double>::infinity()}));
     check(U.rad().data()[0] == std::numeric_limits<double>::infinity(), b + ": unbounded");

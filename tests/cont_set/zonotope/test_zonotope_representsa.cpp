@@ -1,4 +1,5 @@
-// test_zonotope_representsa - zonotope representsa: whether a zonotope is also a set of another type
+// test_zonotope_representsa - zonotope representsa: whether a zonotope is also a set of another
+// type
 //
 // CORA: contSet/@zonotope/representsa_.m
 // CORA: contSet/@contSet/representsa.m
@@ -28,7 +29,8 @@ void points_and_the_origin(const std::string &b) {
     check(near.representsa("origin", 1e-9) && !near.representsa("origin", 0) &&
               near.representsa("point", 1e-9) && !near.representsa("point", 0),
           b + ": the tolerance of a width and of the origin");
-    check(origin.representsa("origin") && !seg.representsa("origin"), b + ": the repository tolerance");
+    check(origin.representsa("origin") && !seg.representsa("origin"),
+          b + ": the repository tolerance");
 }
 
 void intervals_parallelotopes_and_capsules(const std::string &b) {
@@ -62,7 +64,8 @@ void sets_that_every_zonotope_is(const std::string &b) {
 /// An unknown type, the unsupported ones, a batch and a negative tolerance are refused.
 void checks_and_their_switch() {
     const Zonotope Z = zonotope({0, 0}, Tensor({{1.0}, {0.0}}));
-    check(test::raises([&] { Z.representsa("circle"); }, Error::wrong_value), "representsa: a type");
+    check(test::raises([&] { Z.representsa("circle"); }, Error::wrong_value),
+          "representsa: a type");
     for (const char *type : {"conHyperplane", "ellipsoid", "polygon"})
         check(test::raises([&] { Z.representsa(type); }, Error::not_supported),
               std::string("representsa: ") + type);

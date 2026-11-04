@@ -29,7 +29,8 @@ void bound_grows_with_the_radius(const std::string &b) {
     const Tensor C = test::matrix({0.1, -0.05, 0.02, 0.08}, 2, 2);
     const IntervalMatrix thin(C, test::matrix({0.01, 0.01, 0.01, 0.01}, 2, 2));
     const IntervalMatrix wide(C, test::matrix({0.05, 0.05, 0.05, 0.05}, 2, 2));
-    check(thin.expm_norm_infinity(1.0).item() < wide.expm_norm_infinity(1.0).item(), b + ": monotone");
+    check(thin.expm_norm_infinity(1.0).item() < wide.expm_norm_infinity(1.0).item(),
+          b + ": monotone");
     const IntervalMatrix T = test::random_matrix(rng, 2, 0.05);
     const IntervalMatrix batch(Interval::stack({wide.interval(), T.interval()}));
     const Tensor v = batch.expm_norm_infinity(1.0);
@@ -45,7 +46,8 @@ void checks_and_their_switch() {
           "expm_norm_infinity: a negative time");
     const Tensor on = A.expm_norm_infinity(1.0);
     ChecksScope off(false);
-    check(close(A.expm_norm_infinity(1.0), on, 0), "expm_norm_infinity: the same with the checks off");
+    check(close(A.expm_norm_infinity(1.0), on, 0),
+          "expm_norm_infinity: the same with the checks off");
 }
 
 } // namespace

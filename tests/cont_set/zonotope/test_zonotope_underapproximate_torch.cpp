@@ -11,11 +11,10 @@ namespace {
 void underapproximate_gradient() {
     const std::vector<torch::Tensor> Z = test::random_zonotope(2, 3);
     const torch::Tensor S = torch::randn({2, 2}, torch::kDouble);
-    test::gradcheck("underapproximate",
-                    [](const Inputs &x) {
-                        return Inputs{Zonotope(x[0], x[1]).underapproximate(x[2])};
-                    },
-                    {Z[0], Z[1], S});
+    test::gradcheck(
+        "underapproximate",
+        [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).underapproximate(x[2])}; },
+        {Z[0], Z[1], S});
 }
 
 } // namespace

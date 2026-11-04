@@ -143,6 +143,7 @@ void thinning_removes_needless_vertices() {
 
 std::vector<Point3> cube_corners() {
     std::vector<Point3> p;
+    p.reserve(8);
     for (int k = 0; k < 8; ++k)
         p.push_back({double(k & 1), double((k >> 1) & 1), double((k >> 2) & 1)});
     return p;
@@ -213,7 +214,7 @@ void the_hull_of_a_zonotope() {
         for (const auto &f : faces) edges += f.size();
         check(corners.size() - edges / 2 + faces.size() == 2,
               "Euler's formula for m = " + std::to_string(m));
-        check(faces.size() == static_cast<std::size_t>(m * (m - 1)),
+        check(faces.size() == static_cast<std::size_t>(m) * static_cast<std::size_t>(m - 1),
               "m (m - 1) faces for generic generators");
         Point3 c = {0, 0, 0};
         for (const Point3 &p : corners)

@@ -109,9 +109,8 @@ constexpr Table aux_build() {
             return Z1.contains(Z2, "exact", tol);
         });
     aux_add_predicate<BinaryOp::contains, Zonotope, Interval>(
-        t, [](const Zonotope &Z, const Interval &I, Tol tol) {
-            return Z.contains(I, "exact", tol);
-        });
+        t,
+        [](const Zonotope &Z, const Interval &I, Tol tol) { return Z.contains(I, "exact", tol); });
     // the product is not commutative: the zonotope comes first
     aux_add_set<BinaryOp::cart_prod, Zonotope, Zonotope>(
         t, [](const Zonotope &Z1, const Zonotope &Z2) { return Z1.cart_prod(Z2); });
@@ -154,17 +153,11 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::contains, EmptySet, Zonotope>(
         t, [](const EmptySet &E, const Zonotope &Z, Tol tol) { return E.contains(Z, tol); });
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, EmptySet>(
-        t, [](const EmptySet &E, const EmptySet &S, Tol tol) {
-            return E.is_intersecting(S, tol);
-        });
+        t, [](const EmptySet &E, const EmptySet &S, Tol tol) { return E.is_intersecting(S, tol); });
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Interval>(
-        t, [](const EmptySet &E, const Interval &I, Tol tol) {
-            return E.is_intersecting(I, tol);
-        });
+        t, [](const EmptySet &E, const Interval &I, Tol tol) { return E.is_intersecting(I, tol); });
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Zonotope>(
-        t, [](const EmptySet &E, const Zonotope &Z, Tol tol) {
-            return E.is_intersecting(Z, tol);
-        });
+        t, [](const EmptySet &E, const Zonotope &Z, Tol tol) { return E.is_intersecting(Z, tol); });
     // the pairs of the empty set with the whole space, the empty set first
     aux_add_set<BinaryOp::plus, EmptySet, Fullspace>(
         t, [](const EmptySet &E, const Fullspace &F) { return E.plus(F); });
@@ -177,9 +170,8 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::contains, Fullspace, EmptySet>(
         t, [](const Fullspace &F, const EmptySet &E, Tol tol) { return F.contains(E, tol); });
     aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Fullspace>(
-        t, [](const EmptySet &E, const Fullspace &F, Tol tol) {
-            return E.is_intersecting(F, tol);
-        });
+        t,
+        [](const EmptySet &E, const Fullspace &F, Tol tol) { return E.is_intersecting(F, tol); });
     // the whole space is of the lowest precedence of these classes: it comes first
     aux_add_set<BinaryOp::plus, Fullspace, Fullspace>(
         t, [](const Fullspace &F1, const Fullspace &F2) { return F1.plus(F2); });
@@ -212,13 +204,11 @@ constexpr Table aux_build() {
             return F1.is_intersecting(F2, tol);
         });
     aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Zonotope>(
-        t, [](const Fullspace &F, const Zonotope &Z, Tol tol) {
-            return F.is_intersecting(Z, tol);
-        });
+        t,
+        [](const Fullspace &F, const Zonotope &Z, Tol tol) { return F.is_intersecting(Z, tol); });
     aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Interval>(
-        t, [](const Fullspace &F, const Interval &I, Tol tol) {
-            return F.is_intersecting(I, tol);
-        });
+        t,
+        [](const Fullspace &F, const Interval &I, Tol tol) { return F.is_intersecting(I, tol); });
     // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
     // operations are exact
     aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(
@@ -309,7 +299,7 @@ std::string aux_noops(BinaryOp op, const ContSet &S1, const ContSet &S2) {
 
 /// The name of an operation, as in Python and in the messages.
 const char *binary_op_name(BinaryOp op) noexcept {
-    constexpr const char *names[] = {"plus",      "intersect", "unite",          "convex_hull",
+    constexpr const char *names[] = {"plus",      "intersect", "unite",           "convex_hull",
                                      "cart_prod", "contains",  "is_intersecting", "isequal"};
     return names[static_cast<int>(op)];
 }

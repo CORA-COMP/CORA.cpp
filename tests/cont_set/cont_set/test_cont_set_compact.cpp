@@ -29,20 +29,26 @@ void compact_of_a_zonotope(const std::string &b) {
     check(zeros.generators().shape() == std::vector<int64_t>({2, 3}), b + ": zeros dropped");
     check(test::close(zeros.generators(), Z.compact("zeros").generators(), 0), b + ": the default");
     check(all.generators().shape() == std::vector<int64_t>({2, 2}), b + ": parallel merged");
-    check(test::close(all.generators(), Z.compact("all").generators(), 0), b + ": all, as the class");
+    check(test::close(all.generators(), Z.compact("all").generators(), 0),
+          b + ": all, as the class");
     check(test::close(aligned.generators(), Z.generators(), 0), b + ": aligned keeps them");
     // tol: a generator of length 0.5 is zero for tol 0.6
     const Zonotope small(column({0.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 1.0}, {2, 2}));
-    check(static_cast<const ContSet &>(small).compact("zeros", 0.6).as<Zonotope>().generators().size(-1) == 1,
+    check(static_cast<const ContSet &>(small)
+                  .compact("zeros", 0.6)
+                  .as<Zonotope>()
+                  .generators()
+                  .size(-1) == 1,
           b + ": tol 0.6");
 }
 
 /// A box, the empty set and the whole space are returned as they are, whatever the arguments.
 void compact_of_the_others() {
     const Interval I(column({0.0, 0.0}), column({1.0, 1.0}));
-    check(test::close(static_cast<const ContSet &>(I).compact("anything", -1.0).as<Interval>().sup(),
-                      I.sup(), 0),
-          "a box");
+    check(
+        test::close(static_cast<const ContSet &>(I).compact("anything", -1.0).as<Interval>().sup(),
+                    I.sup(), 0),
+        "a box");
     check(static_cast<const ContSet &>(EmptySet(2)).compact().is<EmptySet>(), "the empty set");
     check(static_cast<const ContSet &>(Fullspace(2)).compact().is<Fullspace>(), "the whole space");
 }

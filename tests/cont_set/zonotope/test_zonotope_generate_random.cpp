@@ -33,19 +33,20 @@ void generate_random_follows_cora(const std::string &b) {
           b + ": successive sets differ");
 }
 
-/// The options: the center given (it sets the dimension), the number of generators, the distribution.
+/// The options: the center given (it sets the dimension), the number of generators, the
+/// distribution.
 void generate_random_options(const std::string &b) {
     cora::Rng rng(9);
     const Tensor center = test::column({1.0, -2.0, 3.0});
     const Zonotope Z = Zonotope::generate_random(rng, std::nullopt, center);
     check(close(Z.center(), {1.0, -2.0, 3.0}, 1e-12), b + ": the given center");
-    check(Z.generators().shape() == std::vector<int64_t>({3, 6}), b + ": 2 n generators by default");
+    check(Z.generators().shape() == std::vector<int64_t>({3, 6}),
+          b + ": 2 n generators by default");
     double longest = 0.0;
     for (const char *distribution : {"exp", "gamma"}) {
         const Zonotope W = Zonotope::generate_random(rng, 2, std::nullopt, 400, distribution);
         const std::vector<double> G = W.generators().data();
-        for (int j = 0; j < 400; ++j)
-            longest = std::max(longest, std::hypot(G[j], G[400 + j]));
+        for (int j = 0; j < 400; ++j) longest = std::max(longest, std::hypot(G[j], G[400 + j]));
     }
     check(longest > 1.0, b + ": exponential and gamma lengths exceed the uniform bound");
     check(test::raises([&] { Zonotope::generate_random(rng, 2, center); }, Error::wrong_value),
@@ -58,7 +59,8 @@ void generate_random_options(const std::string &b) {
 /// A dimension below one is refused; with the checks off the draw is the same.
 void checks_and_their_switch() {
     cora::Rng rng(4), again(4);
-    check(test::raises([&] { Zonotope::generate_random(rng, 0, std::nullopt, 2); }, Error::wrong_value),
+    check(test::raises([&] { Zonotope::generate_random(rng, 0, std::nullopt, 2); },
+                       Error::wrong_value),
           "generate_random: dimension 0");
     const Tensor on = Zonotope::generate_random(rng, 3, std::nullopt, 2).center();
     ChecksScope off(false);

@@ -11,7 +11,8 @@ using test::close;
 
 namespace {
 
-/// The exponential of every member is inside enclosure; the zero matrix gives I; the powers start at 1.
+/// The exponential of every member is inside enclosure; the zero matrix gives I; the powers start
+/// at 1.
 void expm_independent_encloses(const std::string &b) {
     Rng rng(19);
     const IntervalMatrix A = test::random_matrix(rng, 3, 0.3);
@@ -32,9 +33,11 @@ void expm_independent_encloses(const std::string &b) {
     check(R.first_order == 1 && R.powers.size() == 8, b + ": the powers of order 1 to 8");
     check(close(R.powers[0].center(), A.center()), b + ": the first power is A");
     const ExpmResult zero = IntervalMatrix(test::matrix({0, 0, 0, 0}, 2, 2)).expm_independent(5);
-    check(close(zero.enclosure.center(), std::vector<double>{1, 0, 0, 1}, 1e-14), b + ": exp(0) = I");
+    check(close(zero.enclosure.center(), std::vector<double>{1, 0, 0, 1}, 1e-14),
+          b + ": exp(0) = I");
     const IntervalMatrix coarse = IntervalMatrix(A.center()).expm_independent(14).enclosure;
-    check(close(coarse.center(), A.center().expm(), 1e-9), b + ": a point matrix is its exponential");
+    check(close(coarse.center(), A.center().expm(), 1e-9),
+          b + ": a point matrix is its exponential");
 }
 
 /// A matrix that is not square and a negative order are refused; the checks off give the same.

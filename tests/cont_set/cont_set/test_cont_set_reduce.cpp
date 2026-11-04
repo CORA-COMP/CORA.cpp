@@ -1,4 +1,5 @@
-// test_cont_set_reduce - ContSet::reduce: an enclosure with fewer generators, in the class of the set
+// test_cont_set_reduce - ContSet::reduce: an enclosure with fewer generators, in the class of the
+// set
 //
 // CORA: contSet/@contSet/reduce.m
 

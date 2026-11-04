@@ -20,18 +20,29 @@ void aux_dump_string(const std::string &s, std::string &out) {
     out += '"';
     for (const char ch : s) {
         if (ch == '"' || ch == '\\') out += '\\';
-        if (ch == '\n') out += "\\n";
-        else out += ch;
+        if (ch == '\n')
+            out += "\\n";
+        else
+            out += ch;
     }
     out += '"';
 }
 
 void aux_dump(const Json &j, std::string &out) {
     switch (j.kind) {
-    case Json::Kind::null: out += "null"; break;
-    case Json::Kind::boolean: out += j.boolean ? "true" : "false"; break;
-    case Json::Kind::number: out += j.text; break;
-    case Json::Kind::string: aux_dump_string(j.text, out); break;
+    case Json::Kind::null:
+        out += "null";
+        break;
+    case Json::Kind::boolean:
+        out += j.boolean ? "true" : "false";
+        break;
+    // the scalars
+    case Json::Kind::number:
+        out += j.text;
+        break;
+    case Json::Kind::string:
+        aux_dump_string(j.text, out);
+        break;
     case Json::Kind::array:
         // the items separated by commas
         out += '[';
@@ -71,7 +82,10 @@ struct Parser {
     // Consumes `ch` after whitespace if it comes next.
     bool eat(char ch) {
         skip();
-        if (i < s.size() && s[i] == ch) { ++i; return true; }
+        if (i < s.size() && s[i] == ch) {
+            ++i;
+            return true;
+        }
         return false;
     }
 
@@ -96,7 +110,8 @@ struct Parser {
         if (eat('[')) {
             Json a = Json::array();
             if (eat(']')) return a;
-            do a.push(value()); while (eat(','));
+            do a.push(value());
+            while (eat(','));
             if (!eat(']')) fail("expected ']'");
             return a;
         }

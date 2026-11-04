@@ -38,7 +38,7 @@ void minnorm_known(const std::string &b) {
 /// distance.
 void minnorm_is_the_inradius(const std::string &b) {
     cora::Rng rng(17);
-    for (const auto [n, m] : {std::pair{2, 4}, {3, 5}}) {
+    for (const auto &[n, m] : {std::pair{2, 4}, {3, 5}}) {
         const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
         const auto [value, x] = Z.minnorm();
         const double val = value.item();

@@ -23,9 +23,7 @@ Set ContSet::uminus() const {
     return uminus_impl();
 }
 
-Set ContSet::uminus_impl() const {
-    return linear_map_impl(-center_impl().eye_like(dim_impl()));
-}
+Set ContSet::uminus_impl() const { return linear_map_impl(-center_impl().eye_like(dim_impl())); }
 
 } // namespace cora
 

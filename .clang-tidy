@@ -1,0 +1,45 @@
+# clang-tidy (scripts/ci/check_quality.py tidy): bugs, performance and the modernizations that match the
+# house style. Every finding fails; fix it, or suppress one line with `// NOLINT(check): reason`.
+# Left out, one reason each:
+#   bugprone-easily-swappable-parameters         (Tensor, Tensor, Tensor) signatures follow CORA's argument order
+#   bugprone-narrowing-conversions, bugprone-implicit-widening-of-multiplication-result
+#                                                int dimensions meet std::size_t sizes at every Eigen and std::vector call
+#   bugprone-unchecked-optional-access           optional members are set by construction or by CORA_CHECK, which it cannot see
+#   bugprone-exception-escape                    main of an example lets an error terminate the program
+#   performance-inefficient-string-concatenation  a message is built once, a + b + c reads better than append
+#   readability-redundant-string-init, readability-redundant-member-init
+#                                                an explicit "" keeps an aggregate fully initialised (-Wmissing-field-initializers)
+#   performance-no-automatic-move                Tensor and Zonotope are handles of shared data: a const local copies cheaply
+#   performance-enum-size                        the enums are part of the bound API; their width saves nothing
+#   readability-simplify-boolean-expr            !(a <= b) is not a > b for NaN, which the code relies on
+#   misc-const-correctness                       the house style does not const-qualify locals
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-unchecked-optional-access,
+  -bugprone-exception-escape,
+  performance-*,
+  -performance-enum-size,
+  -performance-no-automatic-move,
+  -performance-inefficient-string-concatenation,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-emplace,
+  modernize-loop-convert,
+  modernize-use-using,
+  modernize-make-unique,
+  modernize-use-default-member-init,
+  modernize-use-equals-default,
+  readability-redundant-*,
+  -readability-redundant-string-init,
+  -readability-redundant-member-init,
+  readability-container-size-empty,
+  readability-else-after-return,
+  readability-misleading-indentation,
+  misc-unused-using-decls,
+  misc-redundant-expression
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/(include|src|tests)/.*'

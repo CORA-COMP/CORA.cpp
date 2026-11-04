@@ -34,9 +34,8 @@
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 def con_zonotope(c, G, A=None, b=None):

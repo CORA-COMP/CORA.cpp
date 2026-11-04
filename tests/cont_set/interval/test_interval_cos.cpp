@@ -62,6 +62,7 @@ void cos_of_points(const std::string &b) {
     const std::vector<double> x{0.0, kPi, 2 * kPi, -kPi, 5.0};
     const Interval R = Interval(column(x), column(x)).cos();
     std::vector<double> c;
+    c.reserve(x.size());
     for (const double v : x) c.push_back(std::cos(v));
     check(close(R.inf(), c, 1e-12) && close(R.sup(), c, 1e-12), b + ": cos of points");
 }

@@ -13,11 +13,11 @@ using test::check;
 
 namespace {
 
-const char *const kTrue[] = {"capsule", "conHyperplane", "conPolyZono", "conZonotope", "ellipsoid",
-                             "interval", "polytope", "polyZonotope", "zonoBundle", "zonotope",
-                             "convexSet", "emptySet"};
-const char *const kFalse[] = {"origin", "point", "halfspace", "probZonotope", "hyperplane",
-                              "parallelotope", "fullspace"};
+const char *const kTrue[] = {"capsule",    "conHyperplane", "conPolyZono", "conZonotope",
+                             "ellipsoid",  "interval",      "polytope",    "polyZonotope",
+                             "zonoBundle", "zonotope",      "convexSet",   "emptySet"};
+const char *const kFalse[] = {"origin",     "point",         "halfspace", "probZonotope",
+                              "hyperplane", "parallelotope", "fullspace"};
 
 void the_table_of_cora(const std::string &b) {
     const EmptySet E(3);
@@ -33,17 +33,20 @@ void the_answer_depends_on_the_type_alone() {
     for (int trial = 0; trial < 20; ++trial) {
         const EmptySet E = EmptySet::generate_random(rng);
         const double tol = 1e-3 * trial;
-        for (const char *type : kTrue) check(E.representsa(type, tol), std::string("true: ") + type);
+        for (const char *type : kTrue)
+            check(E.representsa(type, tol), std::string("true: ") + type);
         for (const char *type : kFalse)
             check(!E.representsa(type, tol), std::string("false: ") + type);
         check(E.representsa("emptySet") && !Fullspace(E.dim()).representsa("emptySet"),
               "the complement is not empty");
-        check(E.representsa("fullspace") == Fullspace(E.dim()).complement().representsa("fullspace"),
+        check(E.representsa("fullspace") ==
+                  Fullspace(E.dim()).complement().representsa("fullspace"),
               "the same answer for the complement of the whole space");
     }
 }
 
-/// An unknown type, a level set and a polygon are refused; with the checks off the answer is the same.
+/// An unknown type, a level set and a polygon are refused; with the checks off the answer is the
+/// same.
 void checks_and_their_switch() {
     const EmptySet E(2);
     check(test::raises([&] { E.representsa("circle"); }, Error::wrong_value), "an unknown type");

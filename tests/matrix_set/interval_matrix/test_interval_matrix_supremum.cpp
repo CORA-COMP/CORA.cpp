@@ -12,7 +12,8 @@ using test::close;
 namespace {
 
 void supremum_of_the_example(const std::string &b) {
-    check(close(test::example().supremum(), std::vector<double>{2, 1, 3, 2}), b + ": the upper bound");
+    check(close(test::example().supremum(), std::vector<double>{2, 1, 3, 2}),
+          b + ": the upper bound");
 }
 
 /// The supremum is a member above every other one; a batch is per member.
@@ -26,7 +27,8 @@ void supremum_is_the_largest_member(const std::string &b) {
     check(above, b + ": above every member");
     const IntervalMatrix T = test::random_matrix(rng, 2, 1.0);
     const IntervalMatrix batch(Interval::stack({T.interval(), test::example().interval()}));
-    check(close(batch.supremum().slice(0, 1, 2).reshape({2, 2}), test::example().supremum()), b + ": batch");
+    check(close(batch.supremum().slice(0, 1, 2).reshape({2, 2}), test::example().supremum()),
+          b + ": batch");
 }
 
 /// supremum has no input to refuse; with the checks off the result is the same.

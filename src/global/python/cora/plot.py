@@ -92,9 +92,9 @@ def _data(obj):
 
 def _draw_polygons(ax, layer, style):
     """All polygons of the layer as one path, so that holes stay open and the fill is one region."""
+    import numpy as np
     from matplotlib.patches import PathPatch
     from matplotlib.path import Path
-    import numpy as np
     paths = [Path(polygon, closed=len(polygon) >= 3) for polygon in layer["polygons"]]
     face = layer["face"]
     patch = PathPatch(
@@ -109,8 +109,8 @@ def _draw_polygons(ax, layer, style):
 
 
 def _draw_region(ax, layer, style):
-    from matplotlib.patches import Polygon
     import numpy as np
+    from matplotlib.patches import Polygon
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
     corners = np.array([[x0, y0], [x1, y0], [x1, y1], [x0, y1]])

@@ -19,12 +19,14 @@ namespace {
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
 void times_takes_the_hull_of_the_corners(const std::string &b) {
-    const Interval A(column({1.0, -2.0}), column({3.0, 4.0})), B(column({2.0, 0.0}), column({5.0, 1.0}));
+    const Interval A(column({1.0, -2.0}), column({3.0, 4.0})),
+        B(column({2.0, 0.0}), column({5.0, 1.0}));
     const Interval R = A.times(B);
     check(close(R.inf(), std::vector<double>{2, -2}) && close(R.sup(), std::vector<double>{15, 4}),
           b + ": box times box");
     const Interval N = A.times(column({-2.0, 3.0}));
-    check(close(N.inf(), std::vector<double>{-6, -6}) && close(N.sup(), std::vector<double>{-2, 12}),
+    check(close(N.inf(), std::vector<double>{-6, -6}) &&
+              close(N.sup(), std::vector<double>{-2, 12}),
           b + ": box times numbers");
     const Interval Z = A.times(Tensor::from_data({0.0}, {1, 1}));
     check(close(Z.inf(), std::vector<double>{0, 0}) && close(Z.sup(), std::vector<double>{0, 0}),

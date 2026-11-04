@@ -11,7 +11,8 @@ using test::check;
 namespace {
 
 void box_is_the_set_itself() {
-    check(Fullspace(3).box().dim() == 3 && Fullspace(0).box().dim() == 0, "box: the same dimension");
+    check(Fullspace(3).box().dim() == 3 && Fullspace(0).box().dim() == 0,
+          "box: the same dimension");
     check(Fullspace(3).box().isequal(Fullspace(3)), "box: still the whole space");
 }
 

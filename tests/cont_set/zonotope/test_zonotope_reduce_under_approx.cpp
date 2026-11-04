@@ -20,7 +20,7 @@ namespace {
 /// CORA's unit test: eight generators in two dimensions reduced to order 1.
 Zonotope example() {
     return {column({1.0, 0.0}), Tensor({{1.0, 3.0, -2.0, 3.0, -1.0, 0.0, 2.0, 3.0},
-                                       {2.0, -1.0, 1.0, 0.0, 3.0, -2.0, 1.0, 2.0}})};
+                                        {2.0, -1.0, 1.0, 0.0, 3.0, -2.0, 1.0, 2.0}})};
 }
 
 /// kochdumper by hand: the longest generator (3, 2) stays, the others (signed by their first
@@ -43,8 +43,9 @@ void raghuraman_by_hand(const std::string &b) {
           b + ": generators (2, 4) and (5, 0)");
     // a small generator orthogonal to the big one: CORA divides 0/0 and gets NaN, this drops it
     const Zonotope Z(column({0.0, 0.0}), Tensor({{3.0, 0.0}, {0.0, 1.0}}));
-    check(close(Z.reduce_under_approx("raghuraman", 0.5).generators(), std::vector<double>{3, 0}, 0),
-          b + ": an orthogonal small generator is dropped");
+    check(
+        close(Z.reduce_under_approx("raghuraman", 0.5).generators(), std::vector<double>{3, 0}, 0),
+        b + ": an orthogonal small generator is dropped");
 }
 
 /// Few enough generators: the zonotope without its zero generators.
@@ -62,7 +63,7 @@ void nothing_to_reduce(const std::string &b) {
 void result_is_inside(const std::string &b) {
     cora::Rng rng(121);
     for (const char *name : {"yang", "raghuraman", "kochdumper"})
-        for (const auto [n, m, order] : {std::tuple{2, 8, 1.0}, {3, 9, 2.0}, {2, 12, 2.5}}) {
+        for (const auto &[n, m, order] : {std::tuple{2, 8, 1.0}, {3, 9, 2.0}, {2, 12, 2.5}}) {
             const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
             const Zonotope R = Z.reduce_under_approx(name, order);
             check(double(R.generators().shape().back()) <= order * n,
@@ -80,7 +81,8 @@ void checks_and_their_switch() {
                              "cluster", "linProg", "wetzlinger"})
         check(test::raises([&] { Z.reduce_under_approx(name, 1); }, Error::not_supported),
               std::string("reduce_under_approx: ") + name);
-    check(test::raises([&] { Z.reduce_under_approx("boxNLP", 1); }, Error::wrong_value), "an unknown method");
+    check(test::raises([&] { Z.reduce_under_approx("boxNLP", 1); }, Error::wrong_value),
+          "an unknown method");
     check(test::raises([&] { Z.reduce_under_approx("yang", 0); }, Error::wrong_value), "order 0");
     check(test::raises([&] { Z.reduce_under_approx("yang", -1); }, Error::wrong_value), "order -1");
     check(test::raises([&] { Z.reduce_under_approx("kochdumper", 0.4); }, Error::wrong_value),

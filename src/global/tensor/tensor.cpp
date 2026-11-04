@@ -40,7 +40,6 @@ std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec)
     const std::string option = comma == std::string::npos ? "" : spec.substr(comma + 1);
     const std::size_t colon = head.find(':');
     const std::string name = head.substr(0, colon);
-    const std::string device = colon == std::string::npos ? "cpu" : head.substr(colon + 1);
 
     if (!option.empty() && option != "custom_backward")
         CORA_FAIL(Error::wrong_value,
@@ -60,7 +59,10 @@ std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec)
     }
     // libtorch, where it is built in.
 #ifdef CORACPP_TORCH
-    if (name == "torch") return torch_backend(torch_device(device), option == "custom_backward");
+    if (name == "torch") {
+        const std::string device = colon == std::string::npos ? "cpu" : head.substr(colon + 1);
+        return torch_backend(torch_device(device), option == "custom_backward");
+    }
 #endif
 #ifdef CORACPP_TORCH
     const std::string others = "lean or torch";
@@ -89,7 +91,8 @@ Device aux_device(const std::string &name) {
 
 /// The parts joined along `axis`: checked to share one place and rank, passed on without a heap
 /// copy of the list when it is short.
-template <class It> Tensor aux_concat(It first, It last, int axis) {
+template <class It>
+Tensor aux_concat(It first, It last, int axis) {
     const std::size_t count = static_cast<std::size_t>(last - first);
     if (count == 0) CORA_FAIL(Error::wrong_value, "CoraTensor::concat: no tensors given");
     const Tensor &head = *first;
@@ -177,8 +180,8 @@ void detail::check_pair(const Tensor &a, const Tensor &b, const char *op) {
     if (x.backend == y.backend && x.device == y.device && x.dtype == y.dtype) return;
     CORA_FAIL(Error::wrong_value, std::string("CoraTensor::") + op +
                                       ": expected all tensors on one backend, device and dtype, "
-                                      "but the first is on " + aux_place(x, y) +
-                                      " and the second on " + aux_place(y, x));
+                                      "but the first is on " +
+                                      aux_place(x, y) + " and the second on " + aux_place(y, x));
 }
 
 int detail::axis_of(int axis, int64_t rank, const char *op) {
@@ -311,9 +314,7 @@ Tensor Tensor::eye_like() const {
 
 // Access ------------------------------------------------------------------------------------------
 
-int64_t Tensor::size(int axis) const {
-    return impl_->shape[detail::axis_of(axis, ndim(), "size")];
-}
+int64_t Tensor::size(int axis) const { return impl_->shape[detail::axis_of(axis, ndim(), "size")]; }
 
 const char *Tensor::backend_name() const { return aux_backend_name(impl_->backend); }
 

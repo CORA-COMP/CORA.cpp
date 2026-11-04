@@ -31,8 +31,10 @@ Tensor Zonotope::underapproximate() const {
     const int64_t nonzero =
         int64_t(G_.detach().not_equal(G_.zeros_like()).any(-2).count_nonzero(-1).item());
     CORA_CHECK(nonzero >= n, Error::degenerate_set, [&] {
-        return "underapproximate: " + std::to_string(nonzero) + " nonzero generators span fewer "
-               "than the " + std::to_string(n) + " dimensions of the zonotope";
+        return "underapproximate: " + std::to_string(nonzero) +
+               " nonzero generators span fewer "
+               "than the " +
+               std::to_string(n) + " dimensions of the zonotope";
     });
     return underapproximate(dominant_directions());
 }

@@ -52,7 +52,8 @@ class SelectionTest(unittest.TestCase):
 
     def test_source_selects_tests_of_its_header(self):
         self.assertEqual(pick("src/cont_set/zonotope/plus.cpp"),
-                         {"cont_set/zonotope/test_zonotope_plus", "examples/example_zonotope_01", "conventions", "python"})
+                         {"cont_set/zonotope/test_zonotope_plus", "examples/example_zonotope_01", "conventions",
+                          "python"})
 
     def test_private_source_is_reached_through_its_private_header(self):
         self.assertIn("cont_set/zonotope/test_zonotope_plus", pick("src/cont_set/zonotope/private/priv_sum.cpp"))

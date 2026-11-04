@@ -24,7 +24,6 @@ namespace cora::lean {
 
 class Zonotope {
   public:
-
     /// An exact zonotope (empty error box) in the current dtype.
     Zonotope(const cora::Tensor &c, const cora::Tensor &G);
     Zonotope(const cora::Zonotope &Z) : Zonotope(Z.center(), Z.generators()) {}

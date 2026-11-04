@@ -37,7 +37,7 @@ class ConZonotope : public ContSet {
 
     /// The constrained zonotope of the center c (..., n, 1), the generators G (..., n, m) and the
     /// constraints A b = b (A (..., p, m), b (..., p, 1)); without A and b no constraint.
-    ConZonotope(Tensor c, Tensor G);
+    ConZonotope(const Tensor &c, const Tensor &G);
     ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b);
 
     /// A zonotope or a box as a constrained zonotope without constraints (CORA's conversions).

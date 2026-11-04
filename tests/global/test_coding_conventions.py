@@ -21,6 +21,7 @@ Checks:   layout - every file starts its docstring with its own name; an operati
           the data decides - library code makes tensors from raw numbers on the current backend
           (Tensor::zeros, from_data, Tensor({...})) only in a raw-number entry point, a function
           marked CORA_FROM_NUMBERS, or in the tensor, backend and binding folders;
+          lint - a NOLINT (clang-tidy suppression) names its checks and its reason;
           tensor operations - every operation of ops.def that passes gradients has a gradcheck
           test, and docs/tensor.md lists every operation with the tags of ops.def.
 Exit code: 0 if all conventions hold, else 1, with the files and what is wrong.
@@ -155,7 +156,8 @@ def functions(code_lines):
             while j < len(code_lines) and "{" not in code_lines[j] and not code_lines[j].rstrip().endswith(";"):
                 j += 1
             if j < len(code_lines) and "{" in code_lines[j]:
-                if code_lines[j].rstrip().endswith("}") and j == i and code_lines[j].count("{") == code_lines[j].count("}"):
+                one_line = code_lines[j].count("{") == code_lines[j].count("}")
+                if code_lines[j].rstrip().endswith("}") and j == i and one_line:
                     found.append((m.group(1), i, j))
                     i = j + 1
                     continue
@@ -241,7 +243,8 @@ def check_markers(path, lines, issues, needs_main=True, library=True):
         elif line.rstrip() == "} // namespace" and in_anon:
             in_anon = False
             anon_lines.append(i)
-        elif in_anon and library and line and not line.startswith((" ", "//", "}", "using", "struct", "class", "enum", "#")):
+        elif in_anon and library and line and not line.startswith(
+                (" ", "//", "}", "using", "struct", "class", "enum", "#")):
             m = re.match(r"^(?:[\w:<>,*&]+\s+)+[*&]?(\w+)\(", line)
             if not m or not line.rstrip().endswith(("{", ";", ",", "(")):
                 continue
@@ -298,7 +301,8 @@ def check_naming(path, code_lines, issues):
         # a camelCase name that the code defines or calls itself (not a member of another library)
         for m in re.finditer(r"(?<![\w.>~])(?:([A-Za-z_]\w*)::)?([a-z][a-z0-9]*[A-Z]\w*)\b", code):
             scope, name = m.group(1), m.group(2)
-            if name in FOREIGN_NAMES or re.match(r"^k[A-Z]", name) or (scope and scope[0].islower() and scope not in ("cora", "detail")):
+            foreign_scope = scope and scope[0].islower() and scope not in ("cora", "detail")
+            if name in FOREIGN_NAMES or re.match(r"^k[A-Z]", name) or foreign_scope:
                 continue
             if m.start() > 0 and code[m.start() - 1] == ":":  # a::b::name, the scope is a library
                 continue
@@ -347,8 +351,8 @@ def check_checks(path, code_lines, issues):
         if not rest or not re.match(r"^(const )?detail::(Entry|Validation) entry;", rest[0]):
             if body[opened].rstrip().endswith("}"):
                 continue  # a one-line forwarding body
-            if len(rest) == 2 and re.match(r"^return detail::\w+\(.*\);$", rest[0]):
-                continue  # forwards to a guarded entry of the library (detail::dispatch)
+            if len(rest) == 2 and re.match(r"^return (detail::\w+|aux_\w+)\(.*\);$", rest[0]):
+                continue  # forwards to a guarded entry (detail::dispatch) or to the aux_ that holds it
             issues.append(f"line {first + 1}: {name} should begin with 'detail::Entry entry;'")
 
 
@@ -691,6 +695,18 @@ def check_build_jobs(issues_by_file):
                     f"line {i + 1}: a build without a number of jobs; pass --parallel <n>")
 
 
+def check_nolint(issues_by_file):
+    """A clang-tidy suppression names the checks and the reason: `// NOLINT(check): reason`
+    (also NOLINTNEXTLINE, NOLINTBEGIN); a bare NOLINT silences every check without a word."""
+    marker = re.compile(r"\bNOLINT(?:NEXTLINE|BEGIN)?\b(?!\([^)]+\):\s*\S)")
+    for path in (files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h") +
+                 files("tests/**/*.cpp") + files("tests/**/*.h") + files("examples/**/*.cpp")):
+        for i, line in enumerate(read_lines(path)):
+            if marker.search(line):
+                issues_by_file.setdefault(rel(path), []).append(
+                    f"line {i + 1}: NOLINT without checks and a reason: // NOLINT(check): why")
+
+
 def check_portable_types(issues_by_file):
     """C++ that builds with MSVC: `ssize_t` is POSIX (MSVC has none); use py::ssize_t in the
     bindings and std::ptrdiff_t elsewhere."""
@@ -724,6 +740,7 @@ def main():
     check_clones(issues_by_file)
     check_build_jobs(issues_by_file)
     check_portable_types(issues_by_file)
+    check_nolint(issues_by_file)
     check_tensor_ops(issues_by_file)
     for path in files("examples/cpp/**/*.cpp") + files("examples/python/example_*.py"):
         if "/benchmarks/" in rel(path):

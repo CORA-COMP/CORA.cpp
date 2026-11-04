@@ -121,7 +121,7 @@ int main() {
         for (int i = 0; i < 2; ++i)
             for (int k = 0; k < 2; ++k) {
                 T[i].push_back(rnd.matrix(2, 2));
-                theirs_T[i].push_back(T[i].back());
+                theirs_T[i].emplace_back(T[i].back());
             }
         aux_check_cub_map(a.cubic_map(T), lean::ConZonotope(a).cub_map(theirs_T));
     });

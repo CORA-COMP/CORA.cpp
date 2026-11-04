@@ -29,7 +29,7 @@ bool safe(const Zonotope &Z, const std::vector<Halfspace> &P) {
 }
 
 void unsafe_polytope(const std::string &b) {
-    const Zonotope Z1(Tensor({2.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));  // [1, 3] x [0, 2]
+    const Zonotope Z1(Tensor({2.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})); // [1, 3] x [0, 2]
     check(safe(Z1, box(0, 0, 0.5, 2)), b + ": disjoint box");
     check(!safe(Z1, box(2.5, 0.5, 5, 1)), b + ": overlapping box");
     check(!safe(Z1, box(3, 0, 5, 2)), b + ": touching counts");

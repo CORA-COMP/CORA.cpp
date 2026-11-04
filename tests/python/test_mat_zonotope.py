@@ -38,9 +38,8 @@ sums, the powers and the matrix exponential."""
 import math
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 # C = [[1, 2], [3, 4]] with the generators [[1, 0], [0, 1]] and [[0, 1], [1, 0]]
 EXAMPLE = cora.MatZonotope(np.array([[1.0, 2.0], [3.0, 4.0]]),

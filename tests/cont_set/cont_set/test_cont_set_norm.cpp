@@ -52,7 +52,7 @@ void the_bound_holds_for_random_points(const std::string &b) {
             const double bound = static_cast<const ContSet &>(Z).norm(type).data()[0];
             for (int k = 0; k < 25; ++k) {
                 const double a = std::abs(x[k]), c = std::abs(x[25 + k]), d = std::abs(x[50 + k]);
-                const double value = type == N::one ? a + c + d
+                const double value = type == N::one   ? a + c + d
                                      : type == N::two ? std::sqrt(a * a + c * c + d * d)
                                                       : std::max({a, c, d});
                 check(value <= bound * (1.0 + 1e-12), b + ": a point of the zonotope");

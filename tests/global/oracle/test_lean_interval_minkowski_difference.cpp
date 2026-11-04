@@ -24,7 +24,8 @@ int main() {
                 test::oracle::check_exact("interval.minkDiff", R, O);
             } else {
                 const auto [inf, sup] = O.gather();
-                test::oracle::check_enclosed("interval.minkDiff", Interval(inf, sup), lean::Interval(R));
+                test::oracle::check_enclosed("interval.minkDiff", Interval(inf, sup),
+                                             lean::Interval(R));
             }
         }
     });

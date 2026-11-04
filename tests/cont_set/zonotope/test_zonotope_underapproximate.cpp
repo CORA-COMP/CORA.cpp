@@ -67,12 +67,14 @@ void a_batch(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
     check(test::raises([&] { Z.underapproximate(Tensor({{1.0}, {2.0}, {3.0}})); },
-                       Error::dimension_mismatch), "underapproximate: directions of dimension 3");
+                       Error::dimension_mismatch),
+          "underapproximate: directions of dimension 3");
     check(test::raises([&] { Zonotope::stack({Z, Z}).underapproximate(); }, Error::not_supported),
           "underapproximate: default directions of a batch");
     const Tensor on = Z.underapproximate(Tensor({{1.0}, {0.0}}));
     ChecksScope off(false);
-    check(close(Z.underapproximate(Tensor({{1.0}, {0.0}})), on, 0), "underapproximate: same with checks off");
+    check(close(Z.underapproximate(Tensor({{1.0}, {0.0}})), on, 0),
+          "underapproximate: same with checks off");
 }
 
 } // namespace

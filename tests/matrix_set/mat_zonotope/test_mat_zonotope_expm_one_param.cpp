@@ -1,4 +1,5 @@
-// test_mat_zonotope_expm_one_param - MatZonotope expm_one_param: the Taylor series for one parameter
+// test_mat_zonotope_expm_one_param - MatZonotope expm_one_param: the Taylor series for one
+// parameter
 //
 // CORA: matrixSet/@matZonotope/expmOneParam.m
 // PROPERTY: matrixSet/@matZonotope/expmOneParam.m
@@ -17,7 +18,8 @@ namespace {
 /// whose half is moved to the center.
 std::vector<double> generator_coefficients(double b, int64_t order) {
     std::vector<double> c;
-    for (int64_t l = 1; l <= order; ++l) c.push_back(l % 2 ? std::pow(b, l) : 2 * std::pow(b, l) - 1);
+    for (int64_t l = 1; l <= order; ++l)
+        c.push_back(l % 2 ? std::pow(b, l) : 2 * std::pow(b, l) - 1);
     return c;
 }
 
@@ -33,15 +35,17 @@ Tensor taylor(const Tensor &M, double r, int64_t N) {
     return sum;
 }
 
-/// A 1 x 1 set M = 1 + b at r = 1 and N = 2: 1 + M + M^2 / 2 = 2.5 + 2 b + b^2 / 2, so the generator
-/// of b^2 is 0.5 (halved: 0.25, and 0.25 more in the center): K = 2.75 + 2 b + 0.25 (2 b^2 - 1).
-/// CORA starts the sum of b^2 at the coefficient of b in M^2 and gets 3 + 2 b + 0.5 (2 b^2 - 1).
+/// A 1 x 1 set M = 1 + b at r = 1 and N = 2: 1 + M + M^2 / 2 = 2.5 + 2 b + b^2 / 2, so the
+/// generator of b^2 is 0.5 (halved: 0.25, and 0.25 more in the center): K = 2.75 + 2 b + 0.25 (2
+/// b^2 - 1). CORA starts the sum of b^2 at the coefficient of b in M^2 and gets 3 + 2 b + 0.5 (2
+/// b^2 - 1).
 void scalar_example(const std::string &b) {
     const MatZonotope A = test::set_of({1}, {1}, 1, 1);
     const auto R = A.expm_one_param(1.0, 2);
     check(close(R.enclosure.center(), {2.75}) && close(R.enclosure.generators(), {2, 0.25}),
           b + ": K = 2.75 + 2 b + 0.25 (2 b^2 - 1)");
-    check(R.powers.size() == 2 && close(R.powers[0].center(), {1}) && close(R.powers[0].generators(), {1}),
+    check(R.powers.size() == 2 && close(R.powers[0].center(), {1}) &&
+              close(R.powers[0].generators(), {1}),
           b + ": the first power is A r");
     check(close(R.powers[1].center(), {1}) && close(R.powers[1].generators(), {2, 1}),
           b + ": the second power, 1 + 2 b + b^2");
@@ -53,7 +57,8 @@ void scalar_example(const std::string &b) {
     check(close(S.enclosure.center(), {1.25}) && close(S.enclosure.generators(), {1, 0.25}),
           b + ": K = 1.25 + b + 0.25 (2 b^2 - 1)");
     const IntervalMatrix total(S.enclosure.interval_matrix().interval() + S.remainder.interval());
-    check(total.contains(test::matrix({std::exp(1.0)}, 1, 1), "exact", 1e-12), b + ": exp(1) is enclosed");
+    check(total.contains(test::matrix({std::exp(1.0)}, 1, 1), "exact", 1e-12),
+          b + ": exp(1) is enclosed");
 }
 
 /// For every parameter b in [-1, 1] the Taylor polynomial of r M(b) is the matrix of K for the
@@ -77,14 +82,14 @@ void series_for_one_parameter(const std::string &bname) {
                 for (int64_t l = 1; l <= k; ++l) powers_of_b.push_back(std::pow(b, l));
                 Tensor power = M;
                 for (int64_t j = 1; j < k; ++j) power = power.matmul(M);
-                powers_exact = powers_exact &&
-                               close(test::member(R.powers[k - 1], powers_of_b),
-                                     power * std::pow(r, double(k)), 1e-12);
+                powers_exact = powers_exact && close(test::member(R.powers[k - 1], powers_of_b),
+                                                     power * std::pow(r, double(k)), 1e-12);
             }
             const Tensor rest = test::exponential(M * r) - taylor(M, r, N);
             enclosed = enclosed && R.remainder.contains(rest, "exact", 1e-12);
         }
-        check(exact, bname + ": the Taylor polynomial is K for the coefficients, N = " + std::to_string(N));
+        check(exact, bname + ": the Taylor polynomial is K for the coefficients, N = " +
+                         std::to_string(N));
         check(powers_exact, bname + ": the powers, N = " + std::to_string(N));
         check(enclosed, bname + ": the remainder bounds the rest, N = " + std::to_string(N));
     }
@@ -114,14 +119,16 @@ void series_with_an_input(const std::string &bname) {
         }
         const Zonotope &Z = *R.constant_input;
         std::vector<double> coeff = generator_coefficients(b, N);
-        const Tensor point = Z.center() + Z.generators().matmul(Tensor::like(Z.center(), coeff, {N, 1}));
+        const Tensor point =
+            Z.center() + Z.generators().matmul(Tensor::like(Z.center(), coeff, {N, 1}));
         exact = exact && close(point, expected, 1e-12);
     }
     check(exact, bname + ": the input terms for every parameter");
     const auto fixed = A.expm_one_param(r, N, Zonotope(c, c.zeros_like()));
     const auto zero_generators = A.expm_one_param(r, N, Zonotope(c, Tensor::zeros({3, 0})));
     check(close(zero_generators.constant_input->center(), fixed.constant_input->center(), 0) &&
-              close(zero_generators.constant_input->generators(), fixed.constant_input->generators(), 0) &&
+              close(zero_generators.constant_input->generators(),
+                    fixed.constant_input->generators(), 0) &&
               test::same_set(fixed.enclosure, R.enclosure, 0),
           bname + ": a zonotope without generators is a column");
     const MatZonotope batch = test::batch_of(A, A);
@@ -141,7 +148,8 @@ void checks_and_their_switch() {
     const MatZonotope wide(test::matrix({1, 2, 3}, 1, 3), Tensor::zeros({1, 1, 3}));
     check(test::raises([&] { wide.expm_one_param(1.0, 3); }, Error::dimension_mismatch),
           "expm_one_param: a non-square set");
-    check(test::raises([&] { A.expm_one_param(1.0, 0); }, Error::wrong_value), "expm_one_param: the order 0");
+    check(test::raises([&] { A.expm_one_param(1.0, 0); }, Error::wrong_value),
+          "expm_one_param: the order 0");
     const Zonotope too_long(test::matrix({1, 2, 3}, 3, 1), test::matrix({0, 0, 0}, 3, 1));
     const Zonotope two(test::matrix({1, 2}, 2, 1), test::matrix({1, 0, 0, 1}, 2, 2));
     check(test::raises([&] { A.expm_one_param(1.0, 2, too_long); }, Error::dimension_mismatch),

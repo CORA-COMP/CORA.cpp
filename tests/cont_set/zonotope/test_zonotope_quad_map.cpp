@@ -18,7 +18,8 @@ namespace {
 void quad_map_by_hand(const std::string &b) {
     const Zonotope Z1(column({-4.0, 1.0}), Tensor({{-3.0, -2.0}, {2.0, 3.0}}));
     const Zonotope Z2(column({1.0, -3.0}), Tensor({{4.0, 2.0}, {2.0, -1.0}}));
-    const std::vector<Tensor> Q{Tensor({{1.0, -2.0}, {-3.0, 4.0}}), Tensor({{0.5, 0.0}, {2.0, -1.0}})};
+    const std::vector<Tensor> Q{Tensor({{1.0, -2.0}, {-3.0, 4.0}}),
+                                Tensor({{0.5, 0.0}, {2.0, -1.0}})};
     const Zonotope R = Z1.quad_map(Q);
     check(close(R.center(), std::vector<double>{102.5, -16.25}, 1e-13), b + ": the center");
     check(close(R.generators(),
@@ -27,7 +28,8 @@ void quad_map_by_hand(const std::string &b) {
     const Zonotope M = Z1.quad_map(Z2, Q);
     check(close(M.center(), std::vector<double>{-43, 3}, 1e-13), b + ": mixed: the center");
     check(close(M.generators(),
-                std::vector<double>{-51, -59, -4, -8, -12, -26, -32, -38, 8.5, 14, -2, 6, 14, 1, 7, 13},
+                std::vector<double>{-51, -59, -4, -8, -12, -26, -32, -38, 8.5, 14, -2, 6, 14, 1, 7,
+                                    13},
                 1e-13),
           b + ": mixed: the generators");
 }
@@ -37,7 +39,8 @@ void quad_map_by_hand(const std::string &b) {
 void special_cases(const std::string &b) {
     const Zonotope I(column({0.0}), Tensor({{1.0}}));
     const Zonotope R = I.quad_map({Tensor({{2.0}})});
-    check(close(R.center(), std::vector<double>{1}, 0) && close(R.generators(), std::vector<double>{1}, 0),
+    check(close(R.center(), std::vector<double>{1}, 0) &&
+              close(R.generators(), std::vector<double>{1}, 0),
           b + ": 2 x^2 on [-1, 1] is enclosed by [0, 2]");
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {0.5}}));
     const Zonotope S = Z.quad_map({Tensor({{1.0, 0.0}, {0.0, 0.0}}), Tensor::zeros({2, 2})});
@@ -47,7 +50,8 @@ void special_cases(const std::string &b) {
               close(S.center(), std::vector<double>{1.5, 0}, 1e-14),
           b + ": (1 + b)^2 is enclosed by [-1, 4]; the zero output stays 0");
     const Zonotope P(column({3.0, 1.0}), Tensor::zeros({2, 0}));
-    const Zonotope Pq = P.quad_map({Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{0.0, 1.0}, {0.0, 0.0}})});
+    const Zonotope Pq =
+        P.quad_map({Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{0.0, 1.0}, {0.0, 0.0}})});
     check(close(Pq.center(), std::vector<double>{10, 3}, 0) && Pq.generators().shape().back() == 0,
           b + ": no generators: the image of the point");
     const Zonotope T(column({0.5, 1.0}), Tensor({{0.5, 0.0}, {0.0, 1.0}}));
@@ -76,9 +80,11 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
     for (int k = 0; k < 60; ++k) {
         const Tensor p = x.slice(-1, k, k + 1), q = y.slice(-1, k, k + 1);
         Tensor image = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(p),
-                                       p.matrix_transpose().matmul(Q[1]).matmul(p)}, 0);
+                                       p.matrix_transpose().matmul(Q[1]).matmul(p)},
+                                      0);
         Tensor mixed = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(q),
-                                       p.matrix_transpose().matmul(Q[1]).matmul(q)}, 0);
+                                       p.matrix_transpose().matmul(Q[1]).matmul(q)},
+                                      0);
         check(R.contains(image, "exact", 1e-9), b + ": the image of a point of Z");
         check(M.contains(mixed, "exact", 1e-9), b + ": the image of points of Z and Z2");
     }

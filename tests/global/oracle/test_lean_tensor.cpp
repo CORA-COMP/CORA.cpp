@@ -33,7 +33,8 @@ int main() {
             lean::Tensor::from_json("dyadic:60", matrix(1, 1, {"9007199254740993*2^0"}));
         test::check(throws([&] { wide.gather(); }), "a 54-bit value throws");
         const lean::Tensor fine = lean::Tensor::from_json("dyadic:8", matrix(1, 1, {"3*2^-2"}));
-        test::check(test::close(fine.gather(), std::vector<double>{0.75}, 0), "an exact dyadic gathers");
+        test::check(test::close(fine.gather(), std::vector<double>{0.75}, 0),
+                    "an exact dyadic gathers");
 
         // a fixedpoint decimal gathers only if it is also a double
         const lean::Tensor half =
@@ -56,8 +57,10 @@ int main() {
         const lean::Tensor a = lean::Tensor::from(Tensor({{1.0}, {2.0}}));
         const lean::Interval box(a, a);
         const lean::Interval dyadic(fine, fine);
-        test::check(throws([&] { lean::Zonotope(a, a, dyadic); }), "a zonotope of mixed dtypes throws");
-        test::check(throws([&] { lean::Zonotope(a, a, box).plus(dyadic); }), "plus of mixed throws");
+        test::check(throws([&] { lean::Zonotope(a, a, dyadic); }),
+                    "a zonotope of mixed dtypes throws");
+        test::check(throws([&] { lean::Zonotope(a, a, box).plus(dyadic); }),
+                    "plus of mixed throws");
         test::check(throws([&] { lean::Zonotope(a, a, box).reduce(1, "pca"); }), "unknown method");
 
         if (!std::getenv("CORACPP_ORACLE")) return;
@@ -66,7 +69,8 @@ int main() {
         const lean::Tensor tenth = lean::Tensor::from(Tensor({{0.1}}));
         const auto [value, error] = tenth.round_to("dyadic:3");
         const auto [inf, sup] = error.gather();
-        test::check(test::close(value.gather(), std::vector<double>{0.09375}, 0), "0.1 rounds to 3*2^-5");
+        test::check(test::close(value.gather(), std::vector<double>{0.09375}, 0),
+                    "0.1 rounds to 3*2^-5");
         const double gap = 0.1 - 0.09375;
         test::check(inf.data()[0] <= gap && gap <= sup.data()[0], "the error encloses");
 

@@ -16,8 +16,7 @@ namespace {
 /// Boxes and zonotopes through the base class; tol relaxes the width test.
 void full_dimension_of_any_set(const std::string &b) {
     const Interval box(column({-1.0, 0.0}), column({1.0, 2.0})),
-        flat(column({-1.0, 1.0}), column({1.0, 1.0})),
-        thin(column({0.0}), column({1e-4}));
+        flat(column({-1.0, 1.0}), column({1.0, 1.0})), thin(column({0.0}), column({1e-4}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
         segment(column({0.0, 0.0}), Tensor::from_data({1.0, 1.0}, {2, 1}));
     const ContSet &A = box, &B = flat, &D = Z, &E = segment, &T = thin;

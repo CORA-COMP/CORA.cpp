@@ -14,7 +14,8 @@ using test::column;
 namespace {
 
 void min_takes_the_smaller_bounds(const std::string &b) {
-    const Interval I(column({0.0, -1.0}), column({2.0, 1.0})), J(column({1.0, -2.0}), column({3.0, 0.0}));
+    const Interval I(column({0.0, -1.0}), column({2.0, 1.0})),
+        J(column({1.0, -2.0}), column({3.0, 0.0}));
     const Interval R = I.min(J);
     check(close(R.inf(), std::vector<double>{0, -2}) && close(R.sup(), std::vector<double>{2, 0}),
           b + ": [min(inf, inf2), min(sup, sup2)]");

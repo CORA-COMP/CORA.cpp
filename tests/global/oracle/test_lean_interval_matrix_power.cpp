@@ -1,4 +1,5 @@
-// test_lean_interval_matrix_power - Interval::matrix_power against the CORALean oracle (its `mpower`)
+// test_lean_interval_matrix_power - Interval::matrix_power against the CORALean oracle (its
+// `mpower`)
 //
 // ORACLE: contSet/@interval/mpower.m
 

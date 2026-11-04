@@ -220,8 +220,7 @@ std::vector<bool> host_mask(const torch::Tensor &t) {
 /// Replaces the answers `open` marks with what the exact LP says. `r` is `(B, N, n)`, the
 /// points relative to their centres; `g` is `(B, n, m)`.
 torch::Tensor patch_by_lp(const torch::Tensor &g, const torch::Tensor &r,
-                          const torch::Tensor &inside, const torch::Tensor &open,
-                          double tol) {
+                          const torch::Tensor &inside, const torch::Tensor &open, double tol) {
     const int64_t n = g.size(1), m = g.size(2), points = r.size(1);
     const std::vector<double> gh = host(g);
     const std::vector<double> rh = host(r);
@@ -232,8 +231,7 @@ torch::Tensor patch_by_lp(const torch::Tensor &g, const torch::Tensor &r,
     for (std::size_t i = 0; i < answers.size(); ++i) {
         if (!todo[i]) continue;
         const auto set = static_cast<int64_t>(i) / points;
-        const Eigen::MatrixXd block =
-            Eigen::Map<const RowMajor>(gh.data() + set * n * m, n, m);
+        const Eigen::MatrixXd block = Eigen::Map<const RowMajor>(gh.data() + set * n * m, n, m);
         const Eigen::VectorXd point =
             Eigen::Map<const Eigen::VectorXd>(rh.data() + static_cast<int64_t>(i) * n, n);
         answers[i] = contains_lp(block, point, tol);
@@ -249,8 +247,7 @@ torch::Tensor patch_by_lp(const torch::Tensor &g, const torch::Tensor &r,
 }
 
 /// Every point settled by the LP: the answer for a zonotope neither path can describe.
-torch::Tensor all_by_lp(const torch::Tensor &g, const torch::Tensor &c,
-                        const torch::Tensor &p) {
+torch::Tensor all_by_lp(const torch::Tensor &g, const torch::Tensor &c, const torch::Tensor &p) {
     const torch::Tensor all = torch::ones(
         {p.size(0), p.size(1)}, torch::TensorOptions().dtype(torch::kBool).device(g.device()));
     return patch_by_lp(g, p - c.unsqueeze(1), all, all,
@@ -261,8 +258,7 @@ torch::Tensor all_by_lp(const torch::Tensor &g, const torch::Tensor &c,
 /// `|h'(x - c)| <= sum_j |h'g_j|`, one for each `n - 1` generators whose normal `h` —
 /// their generalized cross product — is nonzero. A set whose normals all vanish is flat
 /// and goes to the LP instead.
-torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c,
-                        const torch::Tensor &p) {
+torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c, const torch::Tensor &p) {
     const int64_t b = g.size(0), n = g.size(1), m = g.size(2);
     const torch::Tensor r = p - c.unsqueeze(1); // (B, N, n)
     torch::Tensor inside, flat;
@@ -283,8 +279,8 @@ torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c,
         const torch::Tensor h = small_det(minors) * f.signs; // (B, F, n)
 
         const torch::Tensor reach = h.matmul(g).abs().sum(-1);
-        const torch::Tensor scale = h.abs().amax({-1});       // (B, F)
-        const torch::Tensor top = scale.amax({-1}, true);     // (B, 1)
+        const torch::Tensor scale = h.abs().amax({-1});   // (B, F)
+        const torch::Tensor top = scale.amax({-1}, true); // (B, 1)
         const torch::Tensor valid = scale > top * kFacetTol;
         const torch::Tensor within =
             r.matmul(h.transpose(1, 2)).abs() <= (reach * (1.0 + kFacetTol)).unsqueeze(1);
@@ -364,7 +360,7 @@ torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
     // would be 3.2 GB.
     const bool held = b * m * m <= kMaxProjectorEntries;
     const torch::Tensor pi = // I - G'(G G')^-1 G, the projector onto the null space of G
-        !held ? torch::Tensor()
+        !held  ? torch::Tensor()
         : gram ? torch::eye(m, g.options()) - gt.matmul(torch::cholesky_solve(g, chol))
                : torch::eye(m, g.options()) - q.matmul(q.transpose(-2, -1));
 
@@ -415,7 +411,7 @@ torch::Tensor Zonotope::contains(const torch::Tensor &p) const {
 
     // Fewer generators than dimensions is a flat zonotope: no facet normals to speak of
     // and no full-row-rank QR, so the LP is the only exact answer left.
-    const torch::Tensor inside = m < n            ? all_by_lp(gb, cb, pb)
+    const torch::Tensor inside = m < n ? all_by_lp(gb, cb, pb)
                                  : binomial(m, n - 1) <= kMaxFacetNormals
                                      ? by_facets(gb, cb, pb)
                                      : by_projection(gb, cb, pb);

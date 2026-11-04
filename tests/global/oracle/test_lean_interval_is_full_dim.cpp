@@ -1,4 +1,5 @@
-// test_lean_interval_is_full_dim - Interval::is_full_dim against the CORALean oracle (its `isFullDim`)
+// test_lean_interval_is_full_dim - Interval::is_full_dim against the CORALean oracle (its
+// `isFullDim`)
 //
 // The oracle's strict comparison adds the margin 2^-64 rounding up, which at the dtype nearest is
 // absorbed: it reads a zero width as positive. So the exact mode compares boxes of positive

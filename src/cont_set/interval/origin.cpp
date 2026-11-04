@@ -18,9 +18,8 @@ namespace cora {
 
 CORA_FROM_NUMBERS Interval Interval::origin(int64_t n) {
     detail::Entry entry;
-    CORA_CHECK(n >= 1, Error::wrong_value, [&] {
-        return "origin: the dimension must be positive, got " + std::to_string(n);
-    });
+    CORA_CHECK(n >= 1, Error::wrong_value,
+               [&] { return "origin: the dimension must be positive, got " + std::to_string(n); });
     const Tensor zero = Tensor::zeros({n, 1});
     return {zero, zero};
 }

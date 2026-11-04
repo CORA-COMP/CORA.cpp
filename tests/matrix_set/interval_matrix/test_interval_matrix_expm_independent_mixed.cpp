@@ -21,9 +21,11 @@ void nilpotent_matrix(const std::string &b) {
           b + ": I + A + A^2 / 2");
     check(R.powers.size() == 2 && R.powers2.size() == 3, b + ": the powers of both parts");
     const IntervalMatrix total(R.enclosure.interval() + R.enclosure_rest.interval());
-    check(total.contains(test::matrix({1, 1, 0, 1}, 2, 2), "exact", 1e-9), b + ": exp(A) is inside");
+    check(total.contains(test::matrix({1, 1, 0, 1}, 2, 2), "exact", 1e-9),
+          b + ": exp(A) is inside");
     const std::vector<IntervalMatrix> P = A.powers(2);
-    check(close(R.powers[1].interval().sup(), P[1].interval().sup(), 0), b + ": the powers of powers()");
+    check(close(R.powers[1].interval().sup(), P[1].interval().sup(), 0),
+          b + ": the powers of powers()");
 }
 
 /// The exponentials of members are in the sum of both parts.
@@ -42,8 +44,9 @@ void members_are_enclosed(const std::string &b) {
 /// A matrix that is not square and an order below 1 are refused; with the checks off a valid call
 /// gives the same.
 void checks_and_their_switch() {
-    check(test::raises([&] { IntervalMatrix(test::matrix({1, 2, 3}, 1, 3)).expm_independent_mixed(1, 3); },
-                       Error::dimension_mismatch),
+    check(test::raises(
+              [&] { IntervalMatrix(test::matrix({1, 2, 3}, 1, 3)).expm_independent_mixed(1, 3); },
+              Error::dimension_mismatch),
           "expm_independent_mixed: not square");
     check(test::raises([&] { test::example().expm_independent_mixed(0, 3); }, Error::wrong_value),
           "expm_independent_mixed: intermediate order 0");

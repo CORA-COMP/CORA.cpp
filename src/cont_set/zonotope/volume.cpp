@@ -68,11 +68,10 @@ Tensor aux_gram_volume(const Tensor &G, const Tensor &skip) {
 
 Tensor Zonotope::volume(const std::string &method, int order) const {
     detail::Entry entry;
-    CORA_CHECK(method == "exact" || method == "reduce" || method == "alamo", Error::wrong_value,
-               [&] {
-                   return "volume: the method must be 'exact', 'reduce' or 'alamo', got '" +
-                          method + "'";
-               });
+    CORA_CHECK(
+        method == "exact" || method == "reduce" || method == "alamo", Error::wrong_value, [&] {
+            return "volume: the method must be 'exact', 'reduce' or 'alamo', got '" + method + "'";
+        });
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "volume: the order must be a positive integer, got " + std::to_string(order);
     });
@@ -86,8 +85,8 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
     const Tensor zero = c_.zeros_like(shape);
     if (m < n) return zero;
     const Tensor deficient = aux_rank_deficient(G_);
-    const Tensor value = method == "exact" ? aux_sum_of_determinants(G_)
-                                           : aux_gram_volume(G_, deficient);
+    const Tensor value =
+        method == "exact" ? aux_sum_of_determinants(G_) : aux_gram_volume(G_, deficient);
     // 2^n is a power of two: the scaling is exact
     return Tensor::where(deficient, zero, value * std::ldexp(1.0, int(n)));
 }

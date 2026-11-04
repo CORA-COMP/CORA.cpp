@@ -11,7 +11,7 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("interval.cartProd", [](test::oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {5, 1}, {20, 7}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {5, 1}, {20, 7}}) {
             const Interval I = rnd.box(n), J = rnd.box(m);
             test::oracle::check(I.cart_prod(J), lean::Interval(I).cart_prod(lean::Interval(J)));
         }

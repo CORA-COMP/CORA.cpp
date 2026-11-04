@@ -51,8 +51,8 @@ std::vector<std::vector<Tensor>> aux_coefficients(const Tensor &C, const Tensor 
 }
 
 /// The coefficients of b^i in M(b)^(k-1) u(b) for u(b) = c + b g, as aux_coefficients: [k][i].
-std::vector<std::vector<Tensor>> aux_input_coefficients(
-    const std::vector<std::vector<Tensor>> &T, const Tensor &c, const Tensor &g) {
+std::vector<std::vector<Tensor>> aux_input_coefficients(const std::vector<std::vector<Tensor>> &T,
+                                                        const Tensor &c, const Tensor &g) {
     std::vector<std::vector<Tensor>> U(T.size());
     for (std::size_t k = 1; k < T.size(); ++k)
         for (std::size_t i = 0; i <= k; ++i) {
@@ -121,8 +121,9 @@ MatZonotope::ExpmOneParamResult aux_expm(const MatZonotope &A, double r, int64_t
 
 // ===========================================  MAIN  =========================================== //
 
-MatZonotope::ExpmOneParamResult MatZonotope::expm_one_param(
-    double r, int64_t max_order, const std::optional<Zonotope> &u_trans) const {
+MatZonotope::ExpmOneParamResult
+MatZonotope::expm_one_param(double r, int64_t max_order,
+                            const std::optional<Zonotope> &u_trans) const {
     detail::Entry entry;
     // a square set with one generator, an order, and an input that fits
     CORA_CHECK(rows() == cols(), Error::dimension_mismatch, [&] {

@@ -82,6 +82,7 @@ template <>
 struct Decode<std::vector<int64_t>> {
     static std::vector<int64_t> of(const std::string &, const Json &j) {
         std::vector<int64_t> indices;
+        indices.reserve(j.items.size());
         for (const Json &i : j.items) indices.push_back(std::stoll(i.text));
         return indices;
     }
@@ -90,14 +91,17 @@ template <>
 struct Decode<std::vector<Tensor>> {
     static std::vector<Tensor> of(const std::string &dt, const Json &j) {
         std::vector<Tensor> matrices;
+        matrices.reserve(j.items.size());
         for (const Json &m : j.items) matrices.push_back(Tensor::from_json(dt, m));
         return matrices;
     }
 };
+// The zonotopes of a list.
 template <>
 struct Decode<std::vector<Zonotope>> {
     static std::vector<Zonotope> of(const std::string &dt, const Json &j) {
         std::vector<Zonotope> sets;
+        sets.reserve(j.items.size());
         for (const Json &z : j.items) sets.push_back(Zonotope::from_json(dt, z));
         return sets;
     }

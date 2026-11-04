@@ -35,7 +35,8 @@ void intersect_impl_agrees_with_the_entry(const std::string &b) {
 /// A pair without an entry is noops; the entry checks the dimensions, the unchecked form does not.
 void a_pair_without_an_entry() {
     const Interval I(column({0.0, 0.0}), column({1.0, 1.0})), I1(column({0.0}), column({1.0}));
-    check(test::raises([&] { cora::detail::intersect_impl(I, test::UnregisteredSet()); }, Error::noops),
+    check(test::raises([&] { cora::detail::intersect_impl(I, test::UnregisteredSet()); },
+                       Error::noops),
           "and_: no pair");
     check(test::raises([&] { intersect(I, I1); }, Error::dimension_mismatch),
           "the entry checks the dimensions");

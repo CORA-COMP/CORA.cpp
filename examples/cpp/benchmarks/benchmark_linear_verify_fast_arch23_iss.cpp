@@ -14,8 +14,8 @@
 int main(int argc, char **argv) {
     // Parameters ------------------------------------------------------------------------------
 
-    const std::vector<std::string> family = {
-        "ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01"};
+    const std::vector<std::string> family = {"ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01",
+                                             "ISSF01_ISU01"};
 
     // Verification ----------------------------------------------------------------------------
 

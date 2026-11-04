@@ -1,4 +1,5 @@
-// test_mat_zonotope_expm_independent - MatZonotope expm_independent: the exponential with independent powers
+// test_mat_zonotope_expm_independent - MatZonotope expm_independent: the exponential with
+// independent powers
 //
 // CORA: matrixSet/@matZonotope/expmInd.m
 // PROPERTY: matrixSet/@matZonotope/expmInd.m
@@ -14,7 +15,8 @@ namespace {
 /// A point matrix is its exponential: the nilpotent [[0, 1], [0, 0]] gives [[1, 1], [0, 1]] and the
 /// zero matrix the identity, with the remainder box of width about zero.
 void points(const std::string &b) {
-    const MatZonotope nilpotent(test::matrix({0, 1, 0, 0}, 2, 2)), zero(test::matrix({0, 0, 0, 0}, 2, 2));
+    const MatZonotope nilpotent(test::matrix({0, 1, 0, 0}, 2, 2)),
+        zero(test::matrix({0, 0, 0, 0}, 2, 2));
     const IntervalMatrix E = nilpotent.expm_independent(5).interval_matrix();
     check(close(E.center(), {1, 1, 0, 1}, 1e-12) && E.interval().rad().max().item() < 1e-12,
           b + ": exp of a nilpotent matrix");
@@ -34,15 +36,16 @@ void expm_encloses_the_exponentials(const std::string &b) {
         const IntervalMatrix box = A.expm_independent(order).interval_matrix();
         bool inside = true;
         for (int trial = 0; trial < 20; ++trial)
-            inside = inside && box.contains(
-                                   test::exponential(test::member(A, test::coefficients(rng, 2))),
-                                   "exact", 1e-12);
+            inside = inside &&
+                     box.contains(test::exponential(test::member(A, test::coefficients(rng, 2))),
+                                  "exact", 1e-12);
         check(inside, b + ": exp(M) of every member is inside, order " + std::to_string(order));
     }
     const MatZonotope order2 = A.expm_independent(2);
     check(order2.num_generators() >= 9, b + ": the remainder adds a generator per entry");
     const MatZonotope batch = test::batch_of(A, A).expm_independent(4);
-    check(test::same_set(test::batch_member(batch, 1), A.expm_independent(4), 1e-12), b + ": a batch");
+    check(test::same_set(test::batch_member(batch, 1), A.expm_independent(4), 1e-12),
+          b + ": a batch");
 }
 
 /// A non-square set and a negative order are refused; with the checks off the same result.
@@ -55,7 +58,8 @@ void checks_and_their_switch() {
           "expm_independent: a negative order");
     const Tensor on = A.expm_independent(3).center();
     ChecksScope off(false);
-    check(close(A.expm_independent(3).center(), on, 0), "expm_independent: the same with the checks off");
+    check(close(A.expm_independent(3).center(), on, 0),
+          "expm_independent: the same with the checks off");
 }
 
 } // namespace

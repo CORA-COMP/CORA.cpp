@@ -1,4 +1,5 @@
-// test_fullspace_is_intersecting - fullspace is_intersecting: the whole space meets every nonempty set
+// test_fullspace_is_intersecting - fullspace is_intersecting: the whole space meets every nonempty
+// set
 //
 // CORA: contSet/@fullspace/isIntersecting_.m
 

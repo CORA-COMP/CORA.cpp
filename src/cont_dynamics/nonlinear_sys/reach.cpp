@@ -41,6 +41,7 @@ using Box = Range;
 std::vector<Tensor> aux_entries(const Tensor &column) {
     const Tensor row = column.matrix_transpose();
     std::vector<Tensor> out;
+    out.reserve(column.shape()[0]);
     for (int64_t i = 0; i < column.shape()[0]; ++i) out.push_back(row.slice(-1, i, i + 1));
     return out;
 }
@@ -99,6 +100,7 @@ Box aux_lagrange_remainder(const NonlinearSys &sys, const Box &box, const Tensor
     const std::vector<Tensor> lo = aux_entries(box.lo), hi = aux_entries(box.hi);
     const std::vector<Tensor> c = aux_entries(xs);
     std::vector<Range> delta;
+    delta.reserve(n);
     for (int64_t j = 0; j < n; ++j) delta.emplace_back(lo[j] - c[j], hi[j] - c[j]);
 
     std::vector<Tensor> los, his;
@@ -134,7 +136,7 @@ Tensor aux_series_remainder(const Tensor &norm_a, double dt, int taylor_terms) {
         CORA_FAIL(Error::special_error,
                   "cora: the time step is too large for the Taylor series of the "
                   "linearized system; use a smaller step or more taylor_terms");
-    Tensor term = r.full_like(r.shape(), dt);               // dt * r^(q+1) / (q+2)!
+    Tensor term = r.full_like(r.shape(), dt); // dt * r^(q+1) / (q+2)!
     for (int i = 1; i <= q + 1; ++i) term = term.multiply(r) * (1.0 / (i + 1));
     return term.divide(1.0 - r * (1.0 / (q + 3))) * (1.0 / (q + 2));
 }

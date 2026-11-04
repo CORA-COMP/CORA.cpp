@@ -8,9 +8,8 @@ trip of a 1000 x 1000 array against one copy of it.
 import time
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 try:
     import torch

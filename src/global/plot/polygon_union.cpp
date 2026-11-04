@@ -52,7 +52,7 @@ struct Convex {
         const std::size_t step = std::max<std::size_t>(1, corners.size() / 16);
         for (std::size_t i = 0; i < corners.size(); i += step) {
             core.push_back(corners[i]);
-            lines.push_back({corners[i], corners[(i + 1) % corners.size()]});
+            lines.emplace_back(corners[i], corners[(i + 1) % corners.size()]);
         }
         // The distance from the center to the nearest edge line, and to the farthest corner.
         inner = 1e300;
@@ -227,7 +227,7 @@ void aux_boundary_pieces(const std::vector<Convex> &polys, const std::vector<std
         std::vector<std::pair<double, double>> covered;
         for (std::size_t j : near) {
             double t0 = 0, t1 = 0;
-            if (aux_inside(p, d, polys[j], j < i, eps, t0, t1)) covered.push_back({t0, t1});
+            if (aux_inside(p, d, polys[j], j < i, eps, t0, t1)) covered.emplace_back(t0, t1);
         }
         std::sort(covered.begin(), covered.end());
         // Walk along the edge: what lies before the next covered interval is a piece.
@@ -311,6 +311,7 @@ std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double re
     const double eps = numerics::kUnionExtent * std::max({x1 - x0, y1 - y0, numerics::kTiny});
     // Corners that the picture cannot show are dropped first: fewer edges to test.
     std::vector<Polygon> polygons;
+    polygons.reserve(given.size());
     for (const Polygon &p : given)
         polygons.push_back(thin_polygon(p, {resolution * (x1 - x0), resolution * (y1 - y0)}));
     // The polygons with an area, convex and counter-clockwise; their neighbors.
@@ -331,6 +332,7 @@ std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double re
     std::vector<Polygon> loops;
     if (!aux_chain(pieces, eps, loops)) {
         std::vector<Polygon> same;
+        same.reserve(polys.size());
         for (const Convex &c : polys) same.push_back(c.corners);
         return same;
     }

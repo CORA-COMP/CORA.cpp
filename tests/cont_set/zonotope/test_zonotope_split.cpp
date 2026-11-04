@@ -16,9 +16,7 @@ namespace {
 
 /// CORA's unit test: the zonotope [-4 -3 -2 -1; 1 2 3 4] (center (-4, 1)), cut along the box
 /// coordinates, a direction and a halfspace.
-Zonotope example() {
-    return {column({-4.0, 1.0}), Tensor({{-3.0, -2.0, -1.0}, {2.0, 3.0, 4.0}})};
-}
+Zonotope example() { return {column({-4.0, 1.0}), Tensor({{-3.0, -2.0, -1.0}, {2.0, 3.0, 4.0}})}; }
 
 void split_by_coordinates(const std::string &b) {
     const auto all = example().split();
@@ -36,7 +34,8 @@ void split_by_coordinates(const std::string &b) {
     // coordinates, and both halves of a flat one are the box
     const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0}, {0.0}}));
     const auto [a, c] = flat.split(1);
-    check(close(a.center(), c.center(), 0) && close(a.generators(), std::vector<double>{1, 0, 0, 0}, 0),
+    check(close(a.center(), c.center(), 0) &&
+              close(a.generators(), std::vector<double>{1, 0, 0, 0}, 0),
           b + ": a flat coordinate is not split");
 }
 
@@ -60,7 +59,8 @@ void split_by_a_direction(const std::string &b) {
     check(close(one.center(), std::vector<double>{-5.25, -0.25}, 1e-14) &&
               close(two.center(), std::vector<double>{-2.75, 2.25}, 1e-14),
           b + ": the centers of CORA's example");
-    check(close(one.generators(), std::vector<double>{1.25, -2.5, -2.5, -2.5, 1.25, 2.5, 2.5, 2.5}, 1e-14) &&
+    check(close(one.generators(), std::vector<double>{1.25, -2.5, -2.5, -2.5, 1.25, 2.5, 2.5, 2.5},
+                1e-14) &&
               close(two.generators(),
                     std::vector<double>{-1.25, -2.5, -2.5, -2.5, -1.25, 2.5, 2.5, 2.5}, 1e-14),
           b + ": the generators of CORA's example");
@@ -79,8 +79,10 @@ void split_by_a_halfspace(const std::string &b) {
               close(pieces[0].generators(),
                     std::vector<double>{4.5, -0.5, 0.5, 1.5, -4.5, -0.5, 0.5, 1.5}, 1e-14),
           b + ": CORA's example");
-    check(example().split(column({1.0, 0.0}), 100.0).size() == 1, b + ": a plane that misses: the set");
-    check(example().split(column({1.0, 0.0}), -100.0).size() == 1, b + ": a plane beyond the other side");
+    check(example().split(column({1.0, 0.0}), 100.0).size() == 1,
+          b + ": a plane that misses: the set");
+    check(example().split(column({1.0, 0.0}), -100.0).size() == 1,
+          b + ": a plane beyond the other side");
 }
 
 /// Stated property: every point of Z is in one of the pieces (all kinds of cut), and the pieces of
@@ -90,8 +92,8 @@ void pieces_cover_the_set(const std::string &b) {
     const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Tensor points = Z.rand_point(40, rng);
     const Tensor normal = column({1.0, -2.0, 0.5}), orig = column({0.0, 1.0, 0.0});
-    const std::vector<std::pair<Zonotope, Zonotope>> cuts{
-        Z.split(1, 4), Z.split(normal), Z.split(orig, column({1.0, 1.0, 0.0}))};
+    const std::vector<std::pair<Zonotope, Zonotope>> cuts{Z.split(1, 4), Z.split(normal),
+                                                          Z.split(orig, column({1.0, 1.0, 0.0}))};
     for (const auto &[first, second] : cuts)
         for (int k = 0; k < 40; ++k) {
             const Tensor p = points.slice(-1, k, k + 1);
@@ -125,16 +127,20 @@ void checks_and_their_switch() {
     check(test::raises([&] { Z.split(-1); }, Error::wrong_value), "split: a negative coordinate");
     check(test::raises([&] { Z.split(0, 0); }, Error::wrong_value), "split: an order below 1");
     check(test::raises([&] { Z.split(5, 1); }, Error::wrong_value), "split: a generator beyond");
-    check(test::raises([&] { Z.split(column({0.0, 0.0})); }, Error::wrong_value), "split: dir zero");
+    check(test::raises([&] { Z.split(column({0.0, 0.0})); }, Error::wrong_value),
+          "split: dir zero");
     check(test::raises([&] { Z.split(column({1.0, 0.0, 0.0})); }, Error::dimension_mismatch),
           "split: dir of the wrong size");
-    check(test::raises([&] { Z.split(column({1.0, 2.0}), column({2.0, 4.0})); }, Error::wrong_value),
-          "split: parallel directions");
+    check(
+        test::raises([&] { Z.split(column({1.0, 2.0}), column({2.0, 4.0})); }, Error::wrong_value),
+        "split: parallel directions");
     check(test::raises([&] { Z.split(column({1.0, 0.0, 0.0}), 1.0); }, Error::dimension_mismatch),
           "split: a of the wrong size");
-    check(test::raises([&] { Z.split(column({0.0, 0.0}), 1.0); }, Error::wrong_value), "split: a zero");
+    check(test::raises([&] { Z.split(column({0.0, 0.0}), 1.0); }, Error::wrong_value),
+          "split: a zero");
     const Zonotope batch = Zonotope::stack({Z, Z});
-    check(test::raises([&] { batch.split(column({1.0, 1.0})); }, Error::not_supported), "split: batch dir");
+    check(test::raises([&] { batch.split(column({1.0, 1.0})); }, Error::not_supported),
+          "split: batch dir");
     check(test::raises([&] { batch.split(column({1.0, 1.0}), 0.0); }, Error::not_supported),
           "split: batch halfspace");
     check(batch.split(0).first.center().shape() == std::vector<int64_t>({2, 2, 1}),

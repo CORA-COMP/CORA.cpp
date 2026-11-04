@@ -43,8 +43,8 @@ void aux_check_set(const A &mine, const B &theirs) {
     oracle::check(mine.interval(), theirs.enclosure().interval());
 }
 
-/// enclose and convex_hull: CORA lists the generators (G+G2)/2, (c-c2)/2, (G-G2)/2, CORALean's linComb
-/// (G+G2)/2, (G-G2)/2, (c-c2)/2: the same center and the same generators, in another order.
+/// enclose and convex_hull: CORA lists the generators (G+G2)/2, (c-c2)/2, (G-G2)/2, CORALean's
+/// linComb (G+G2)/2, (G-G2)/2, (c-c2)/2: the same center and the same generators, in another order.
 void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &theirs) {
     if (oracle::mode() != oracle::Mode::exact) return aux_check_set(mine, theirs);
     const Zonotope other = theirs.gather().first;
@@ -79,36 +79,36 @@ int main() {
     if (!oracle::available()) return 0;
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 200}};
     oracle::run("zonotope.abs", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             aux_check_set(Z.abs(), lean::Zonotope(Z).abs());
         }
     });
     oracle::run("zonotope.box", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             oracle::check(Z.box().interval(), lean::Zonotope(Z).interval());
         }
     });
     oracle::run("zonotope.cartProd", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n + 1, m + 2);
             aux_check_set(Z.cart_prod(Z2), lean::Zonotope(Z).cart_prod(lean::Zonotope(Z2)));
         }
     });
     oracle::run("zonotope.compact", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            const Tensor G = Z.generators();
+            const Tensor &G = Z.generators();
             // a generator of zeros in the middle and at the end
             const Tensor zero = G.slice(-1, 0, 1).zeros_like();
-            const Zonotope Zz(Z.center(), Tensor::concat({G.slice(-1, 0, 2), zero,
-                                                           G.slice(-1, 2, m), zero}, -1));
+            const Zonotope Zz(
+                Z.center(), Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1));
             aux_check_set(Zz.compact("zeros", 0.0), lean::Zonotope(Zz).compact("zeros", 0.0));
         }
     });
     oracle::run("zonotope.constrSat", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor C = rnd.matrix(3, n);
             const Tensor sup = Z.linear_map(C).interval().sup();
@@ -119,44 +119,46 @@ int main() {
         }
     });
     oracle::run("zonotope.enclose", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             aux_check_same_generators(Z.enclose(Z2), lean::Zonotope(Z).enclose(lean::Zonotope(Z2)));
         }
     });
     oracle::run("zonotope.convexHull", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             aux_check_same_generators(Z.convex_hull(Z2),
                                       lean::Zonotope(Z).convex_hull(lean::Zonotope(Z2)));
         }
     });
     oracle::run("zonotope.contains", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 5}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             // half of Z about its center is in Z, one and a half times is not
             const Zonotope inner(Z.center(), Z.generators() * 0.5);
             const Zonotope outer(Z.center(), Z.generators() * 1.5);
-            oracle::check(Z.contains(inner, "approx:st"), lean::Zonotope(Z).contains(lean::Zonotope(inner)));
-            oracle::check(Z.contains(outer, "approx:st"), lean::Zonotope(Z).contains(lean::Zonotope(outer)));
+            oracle::check(Z.contains(inner, "approx:st"),
+                          lean::Zonotope(Z).contains(lean::Zonotope(inner)));
+            oracle::check(Z.contains(outer, "approx:st"),
+                          lean::Zonotope(Z).contains(lean::Zonotope(outer)));
         }
     });
     oracle::run("zonotope.cubMap", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 2}, {3, 3}, {3, 6}}) {
+        for (const auto &[n, m] : {std::pair{2, 2}, {3, 3}, {3, 6}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             std::vector<std::vector<Tensor>> T(2);
             std::vector<std::vector<lean::Tensor>> theirs_T(2);
             for (std::size_t i = 0; i < 2; ++i)
                 for (int k = 0; k < n; ++k) {
                     T[i].push_back(rnd.matrix(n, n));
-                    theirs_T[i].push_back(T[i].back());
+                    theirs_T[i].emplace_back(T[i].back());
                 }
             aux_check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
         }
     });
     oracle::run("zonotope.dominantDirections", [&](oracle::Random &rnd) {
         if (oracle::mode() != oracle::Mode::exact) return; // a choice of columns has no enclosure
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 9}, {4, 12}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 9}, {4, 12}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const auto theirs = lean::Zonotope(Z).dominant_directions();
             test::check(theirs.has_value(), "dominantDirections: the oracle found directions");

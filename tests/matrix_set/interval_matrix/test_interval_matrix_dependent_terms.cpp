@@ -1,4 +1,5 @@
-// test_interval_matrix_dependent_terms - IntervalMatrix dependent_terms: r^2 M^2 and I + M r + (M r)^2 / 2
+// test_interval_matrix_dependent_terms - IntervalMatrix dependent_terms: r^2 M^2 and I + M r + (M
+// r)^2 / 2
 //
 // CORA: matrixSet/@intervalMatrix/dependentTerms.m
 // PROPERTY: matrixSet/@intervalMatrix/dependentTerms.m
@@ -18,9 +19,11 @@ void terms_of_a_point_matrix(const std::string &b) {
     check(close(sq1.center(), std::vector<double>{7, 10, 15, 22}), b + ": r = 1, the square");
     check(close(H1.center(), std::vector<double>{5.5, 7, 10.5, 16}), b + ": r = 1, H");
     const auto [sq2, H2] = M.dependent_terms(0.5);
-    check(close(sq2.center(), std::vector<double>{1.75, 2.5, 3.75, 5.5}), b + ": r = 0.5, the square");
+    check(close(sq2.center(), std::vector<double>{1.75, 2.5, 3.75, 5.5}),
+          b + ": r = 0.5, the square");
     check(close(H2.center(), std::vector<double>{2.375, 2.25, 3.375, 5.75}), b + ": r = 0.5, H");
-    check(close(H2.interval().rad(), std::vector<double>{0, 0, 0, 0}), b + ": a point stays a point");
+    check(close(H2.interval().rad(), std::vector<double>{0, 0, 0, 0}),
+          b + ": a point stays a point");
 }
 
 /// The terms of every member M are in the results; the diagonal range includes the vertex -1/r.
@@ -38,7 +41,8 @@ void terms_enclose_the_members(const std::string &b) {
         }
         check(inside, b + ": members inside, r = " + std::to_string(r));
     }
-    // -1/r inside the diagonal entry: the lower end of H is I - 1/2 there (a r + (a r)^2 / 2 >= -1/2)
+    // -1/r inside the diagonal entry: the lower end of H is I - 1/2 there (a r + (a r)^2 / 2 >=
+    // -1/2)
     const IntervalMatrix V(Interval(test::matrix({-3}, 1, 1), test::matrix({-1}, 1, 1)));
     check(close(V.dependent_terms(1.0).second.infimum(), std::vector<double>{0.5}, 1e-9),
           b + ": the vertex of the parabola");

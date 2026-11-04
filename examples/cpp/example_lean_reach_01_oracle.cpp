@@ -5,8 +5,9 @@
 // in binary32, the nominal part and the error box are taken apart, and both are compared with
 // CORA.cpp's own reachable set. A value crosses back into CORA.cpp only when it is exact.
 //
-// Syntax:   CORACPP_ORACLE="cd CORALean && lake exe oracle" build/examples/cpp/example_lean_reach_01_oracle
-// Outputs:  per dtype the final interval of the nominal part, the width of the error box, and
+// Syntax:   CORACPP_ORACLE="cd CORALean && lake exe oracle"
+// build/examples/cpp/example_lean_reach_01_oracle Outputs:  per dtype the final interval of the
+// nominal part, the width of the error box, and
 //           whether the lean set encloses CORA.cpp's; without an oracle a note and exit code 0
 // See also: example_linear_reach_01_5dim, lean/zonotope.h
 

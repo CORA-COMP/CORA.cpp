@@ -102,7 +102,8 @@ Tensor Zonotope::hausdorff_distance_to_box(const std::optional<std::string> &cho
                    method == "wopt",
                Error::wrong_value, [&] {
                    return "hausdorff_distance_to_box: the method must be 'exact', 'naive', "
-                          "'ell', 'wgreedy' or 'wopt', got '" + method + "'";
+                          "'ell', 'wgreedy' or 'wopt', got '" +
+                          method + "'";
                });
     CORA_CHECK(method != "ell", Error::not_supported, [] {
         return std::string("hausdorff_distance_to_box: method 'ell' (a row reduced echelon form "

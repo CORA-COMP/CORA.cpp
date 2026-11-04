@@ -74,7 +74,8 @@ void atan2_encloses_the_image_off_the_cut(const std::string &b) {
 /// Boxes of different shape are refused; with the checks off a valid call gives the same.
 void checks_and_their_switch() {
     const Interval I(column({0.5, 1.0}), column({1.0, 2.0})), I3(column({0.5}), column({1.0}));
-    check(test::raises([&] { I.atan2(I3); }, Error::dimension_mismatch), "atan2: dimensions 2 and 1");
+    check(test::raises([&] { I.atan2(I3); }, Error::dimension_mismatch),
+          "atan2: dimensions 2 and 1");
     const Tensor on = I.atan2(I).sup();
     ChecksScope off(false);
     check(close(I.atan2(I).sup(), on, 0), "atan2: the same with the checks off");

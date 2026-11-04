@@ -21,7 +21,8 @@ void expm_mixed_encloses_the_exponentials(const std::string &b) {
     const std::vector<std::tuple<double, int, int>> cases{{1.0, 2, 8}, {0.5, 3, 9}, {2.0, 4, 10}};
     for (const auto &[r, intermediate, maximum] : cases) {
         const auto R = A.expm_mixed(r, intermediate, maximum);
-        const Interval total = R.enclosure.interval_matrix().interval() + R.enclosure_rest.interval();
+        const Interval total =
+            R.enclosure.interval_matrix().interval() + R.enclosure_rest.interval();
         bool inside = true;
         for (int trial = 0; trial < 20; ++trial)
             inside = inside && IntervalMatrix(total).contains(
@@ -39,7 +40,8 @@ void expm_mixed_encloses_the_exponentials(const std::string &b) {
     check(test::same_set(R.enclosure, A.dependent_terms(1.0).second, 1e-12),
           b + ": the first part of the order 2 is the dependent terms");
     const auto batch = test::batch_of(A, A).expm_mixed(1.0, 3, 6);
-    check(test::same_set(test::batch_member(batch.enclosure, 1), A.expm_mixed(1.0, 3, 6).enclosure, 1e-12),
+    check(test::same_set(test::batch_member(batch.enclosure, 1), A.expm_mixed(1.0, 3, 6).enclosure,
+                         1e-12),
           b + ": a batch");
 }
 
@@ -50,8 +52,10 @@ void checks_and_their_switch() {
     check(test::raises([&] { MatZonotope(test::matrix({1, 2, 3}, 1, 3)).expm_mixed(1.0, 2, 5); },
                        Error::dimension_mismatch),
           "expm_mixed: a non-square set");
-    check(test::raises([&] { A.expm_mixed(0.0, 2, 5); }, Error::wrong_value), "expm_mixed: the step 0");
-    check(test::raises([&] { A.expm_mixed(1.0, 1, 5); }, Error::wrong_value), "expm_mixed: the order 1");
+    check(test::raises([&] { A.expm_mixed(0.0, 2, 5); }, Error::wrong_value),
+          "expm_mixed: the step 0");
+    check(test::raises([&] { A.expm_mixed(1.0, 1, 5); }, Error::wrong_value),
+          "expm_mixed: the order 1");
     check(test::raises([&] { A.expm_mixed(1.0, 2, -1); }, Error::wrong_value),
           "expm_mixed: a negative maximum");
     const Tensor on = A.expm_mixed(1.0, 2, 4).enclosure.center();

@@ -49,10 +49,12 @@ void random_members(const std::string &b) {
 void checks_and_their_switch() {
     const MatZonotope A = test::example();
     const Tensor M = A.center();
-    check(test::raises([&] { A.contains(M, "sampling"); }, Error::wrong_value), "contains: the type");
+    check(test::raises([&] { A.contains(M, "sampling"); }, Error::wrong_value),
+          "contains: the type");
     check(test::raises([&] { A.contains(M, "exact", -1.0); }, Error::wrong_value), "contains: tol");
-    check(test::raises([&] { A.contains(test::matrix({1, 2, 3}, 1, 3)); }, Error::dimension_mismatch),
-          "contains: the size of the matrix");
+    check(
+        test::raises([&] { A.contains(test::matrix({1, 2, 3}, 1, 3)); }, Error::dimension_mismatch),
+        "contains: the size of the matrix");
     check(test::raises([&] { test::batch_of(A, A).contains(M); }, Error::not_supported),
           "contains: a batch of sets");
     const bool on = A.contains(M);

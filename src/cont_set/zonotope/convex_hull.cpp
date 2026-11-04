@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/convHull_.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
-#include "cont_set/zonotope/private/priv.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,9 +30,8 @@ Zonotope Zonotope::convex_hull(const Zonotope &Z2) const {
 Zonotope Zonotope::convex_hull(const Interval &I) const {
     detail::Entry entry;
     CORA_CHECK(I.dim() == dim() && I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
-        return "convex_hull: the interval must be a box of the dimension " +
-               std::to_string(dim()) + " of the zonotope, got bounds of the shape " +
-               shape_text(I.inf().shape());
+        return "convex_hull: the interval must be a box of the dimension " + std::to_string(dim()) +
+               " of the zonotope, got bounds of the shape " + shape_text(I.inf().shape());
     });
     // a box is the zonotope of its axis generators
     return enclose(I.zonotope());
@@ -41,8 +40,8 @@ Zonotope Zonotope::convex_hull(const Interval &I) const {
 Zonotope Zonotope::convex_hull(const Tensor &p) const {
     detail::Entry entry;
     CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
-        return "convex_hull: the point must be a column of the dimension " +
-               std::to_string(dim()) + " of the zonotope, got the shape " + shape_text(p.shape());
+        return "convex_hull: the point must be a column of the dimension " + std::to_string(dim()) +
+               " of the zonotope, got the shape " + shape_text(p.shape());
     });
     // a point is the zonotope without generators
     return enclose(priv_zonotope_of_point(p));

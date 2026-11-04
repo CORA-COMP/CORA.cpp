@@ -51,8 +51,10 @@ bool aux_nearly_inside(const Interval &a, const lean::Interval &b) {
 /// The check of the mode: the same bits, or inside the oracle's enclosure up to kSlack.
 void aux_check(const Interval &a, const lean::Interval &b) {
     const std::string &op = test::oracle::op_name();
-    if (test::oracle::mode() == test::oracle::Mode::exact) test::oracle::check_exact(op, a, b);
-    else test::check(aux_nearly_inside(a, b), op + ": inside the enclosure up to kSlack");
+    if (test::oracle::mode() == test::oracle::Mode::exact)
+        test::oracle::check_exact(op, a, b);
+    else
+        test::check(aux_nearly_inside(a, b), op + ": inside the enclosure up to kSlack");
 }
 
 /// An interval matrix of rows x cols entries: a center and a radius in [0, 1].
@@ -107,15 +109,13 @@ int main() {
     test::oracle::run("interval.tril", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 12}) {
             const Interval M = aux_matrix(rnd, n, n);
-            for (const int K : {0, 1, 3})
-                test::oracle::check(M.tril(K), lean::Interval(M).tril(K));
+            for (const int K : {0, 1, 3}) test::oracle::check(M.tril(K), lean::Interval(M).tril(K));
         }
     });
     test::oracle::run("interval.triu", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 12}) {
             const Interval M = aux_matrix(rnd, n, n);
-            for (const int K : {0, 1, 3})
-                test::oracle::check(M.triu(K), lean::Interval(M).triu(K));
+            for (const int K : {0, 1, 3}) test::oracle::check(M.triu(K), lean::Interval(M).triu(K));
         }
     });
     test::oracle::run("interval.vertcat", [](test::oracle::Random &rnd) {
@@ -146,9 +146,11 @@ int main() {
             const Interval I = rnd.box(n);
             const Zonotope Z = I.zonotope();
             const lean::Zonotope O = lean::Interval(I).zonotope();
-            if (test::oracle::mode() == test::oracle::Mode::exact) test::oracle::check(Z, O);
-            else test::check(aux_nearly_inside(Z.interval(), O.enclosure().interval()),
-                             "interval.zonotope: inside the enclosure up to kSlack");
+            if (test::oracle::mode() == test::oracle::Mode::exact)
+                test::oracle::check(Z, O);
+            else
+                test::check(aux_nearly_inside(Z.interval(), O.enclosure().interval()),
+                            "interval.zonotope: inside the enclosure up to kSlack");
         }
     });
     return test::finish("lean interval structure");

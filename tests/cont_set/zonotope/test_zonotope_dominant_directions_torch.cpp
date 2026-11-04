@@ -10,9 +10,9 @@ namespace {
 /// The columns are generators, chosen on detached values: the gradient is one on the chosen ones.
 void dominant_directions_gradient() {
     const std::vector<torch::Tensor> Z = test::random_zonotope(3, 8);
-    test::gradcheck("dominant_directions",
-                    [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).dominant_directions()}; },
-                    Z);
+    test::gradcheck(
+        "dominant_directions",
+        [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).dominant_directions()}; }, Z);
 }
 
 } // namespace

@@ -42,7 +42,8 @@ void product_of_two_sets(const std::string &b) {
     const IntervalMatrix CD = C * D;
     bool inside = true;
     for (int trial = 0; trial < 30; ++trial)
-        inside = inside && CD.contains(test::member(C, rng).matmul(test::member(D, rng)), "exact", 1e-12);
+        inside = inside &&
+                 CD.contains(test::member(C, rng).matmul(test::member(D, rng)), "exact", 1e-12);
     check(inside, b + ": products of members are inside");
     const Tensor M = test::member(C, rng);
     check(close((IntervalMatrix(M) * IntervalMatrix(M)).center(), M.matmul(M), 1e-12),
@@ -60,7 +61,8 @@ void product_with_other_sets(const std::string &b) {
     Rng rng(13);
     bool inside = true;
     for (int trial = 0; trial < 30; ++trial)
-        inside = inside && R.contains(test::member(A, rng).matmul(Z.rand_point(1, rng)), "exact", 1e-12);
+        inside =
+            inside && R.contains(test::member(A, rng).matmul(Z.rand_point(1, rng)), "exact", 1e-12);
     check(inside, b + ": the products of members and points are inside");
     check(A.matmul(EmptySet(2)).dim() == 2, b + ": the empty set stays empty");
     const Tensor six = test::matrix({1, 2, 3, 4, 5, 6}, 3, 2);
@@ -72,7 +74,8 @@ void product_with_other_sets(const std::string &b) {
 void checks_and_their_switch() {
     const IntervalMatrix A = test::example();
     const Tensor wrong = test::matrix({1, 2, 3}, 3, 1);
-    check(test::raises([&] { A.matmul(wrong); }, Error::dimension_mismatch), "matmul: a matrix of 3 rows");
+    check(test::raises([&] { A.matmul(wrong); }, Error::dimension_mismatch),
+          "matmul: a matrix of 3 rows");
     check(test::raises([&] { IntervalMatrix::matmul(wrong, A); }, Error::dimension_mismatch),
           "matmul: M * A with M of 1 column");
     check(test::raises([&] { A.matmul(IntervalMatrix(wrong)); }, Error::dimension_mismatch),

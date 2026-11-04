@@ -80,66 +80,66 @@ namespace numerics {
 
 // Time and steps ----------------------------------------------------------------------------------
 
-inline constexpr double kStepCount = 1e-9; ///< slack of ceil(T / dt - slack): 0.3 / 0.1 is 3
+inline constexpr double kStepCount = 1e-9;     ///< slack of ceil(T / dt - slack): 0.3 / 0.1 is 3
 inline constexpr double kTimeStepMatch = 1e-9; ///< adaptive reach: step sizes this close are one
-inline constexpr double kTimeRound = 1e-14; ///< times this close are the same instant
-inline constexpr double kAtMaxStep = 1e-12; ///< a step this close to the maximum is the maximum
-inline constexpr double kMinTimeStep = 1e-12; ///< below this step size an adaptive pass gives up
+inline constexpr double kTimeRound = 1e-14;    ///< times this close are the same instant
+inline constexpr double kAtMaxStep = 1e-12;    ///< a step this close to the maximum is the maximum
+inline constexpr double kMinTimeStep = 1e-12;  ///< below this step size an adaptive pass gives up
 inline constexpr double kTaylorStepMatch = 1e-10; ///< step sizes this close share a cache entry
-inline constexpr double kBoxMargin = 1e-10; ///< the absolute margin of an inflated enclosure
+inline constexpr double kBoxMargin = 1e-10;       ///< the absolute margin of an inflated enclosure
 inline constexpr double kInternalConsistency = 1e-9; ///< recomputed bounds agree up to this
 
 // Series and iterations ---------------------------------------------------------------------------
 
 inline constexpr double kExpmTermRatio = 1e-18; ///< a term below this part of the sum ends a series
 inline constexpr double kJacobiOffDiagonal = 1e-30; ///< squared off-diagonal part that ends Jacobi
-inline constexpr double kPowerIteration = 1e-15; ///< relative change that ends a power iteration
-inline constexpr double kTiny = 1e-300; ///< keeps a denominator or a range off zero
+inline constexpr double kPowerIteration = 1e-15;    ///< relative change that ends a power iteration
+inline constexpr double kTiny = 1e-300;             ///< keeps a denominator or a range off zero
 inline constexpr double kOdeRelTol = 1e-3; ///< relative tolerance of the step control (ode45)
 inline constexpr double kOdeAbsTol = 1e-6; ///< absolute tolerance of the step control (ode45)
 
 // Powers and pieces -------------------------------------------------------------------------------
 
 inline constexpr int64_t kPowerProduct = 64; ///< integer powers up to this many factors: products
-inline constexpr int64_t kMaxPieces = int64_t{1} << 24; ///< most boxes that partition returns
+inline constexpr int64_t kMaxPieces = int64_t{1} << 24;   ///< most boxes that partition returns
 inline constexpr int64_t kSubsetBlock = int64_t{1} << 22; ///< entries per block of volume
 
 // Linear programs ---------------------------------------------------------------------------------
 
-inline constexpr double kSimplexPivot = 1e-9; ///< smallest usable tableau entry in a ratio test
-inline constexpr double kSimplexOptimal = 1e-9; ///< reduced costs above -this are optimal
+inline constexpr double kSimplexPivot = 1e-9;    ///< smallest usable tableau entry in a ratio test
+inline constexpr double kSimplexOptimal = 1e-9;  ///< reduced costs above -this are optimal
 inline constexpr double kSimplexFeasible = 1e-8; ///< relative phase-1 residual that is feasible
-inline constexpr double kSimplexTie = 1e-12; ///< relative gap under which two ratios tie
-inline constexpr double kSimplexDrive = 1e-7; ///< entry that lets an artificial leave the basis
-inline constexpr double kTableauCost = 1e-12; ///< Bland's rule: a reduced cost below -this enters
+inline constexpr double kSimplexTie = 1e-12;     ///< relative gap under which two ratios tie
+inline constexpr double kSimplexDrive = 1e-7;    ///< entry that lets an artificial leave the basis
+inline constexpr double kTableauCost = 1e-12;  ///< Bland's rule: a reduced cost below -this enters
 inline constexpr double kTableauPivot = 1e-12; ///< Bland's rule: a column entry above this leaves
-inline constexpr double kTableauTie = 1e-15; ///< Bland's rule: ratios this close tie
-inline constexpr double kTableauFeasible = 1e-9; ///< a common point exists if the cost is below
-inline constexpr double kLpDistanceZero = 1e-9; ///< a program distance below this counts as 0
+inline constexpr double kTableauTie = 1e-15;   ///< Bland's rule: ratios this close tie
+inline constexpr double kTableauFeasible = 1e-9;   ///< a common point exists if the cost is below
+inline constexpr double kLpDistanceZero = 1e-9;    ///< a program distance below this counts as 0
 inline constexpr double kPolytopeContains = 1e-12; ///< a point beyond a facet by less is inside
-inline constexpr double kFixedFactor = 1e-9; ///< a factor whose range is this narrow is fixed
+inline constexpr double kFixedFactor = 1e-9;       ///< a factor whose range is this narrow is fixed
 inline constexpr double kBoundTighter = 1e-8; ///< Fourier-Motzkin: bounds that move less end it
 
 // Geometry of zonotopes and pictures --------------------------------------------------------------
 
-inline constexpr double kGeneratorZero = 1e-14; ///< a generator shorter than this is dropped
+inline constexpr double kGeneratorZero = 1e-14;      ///< a generator shorter than this is dropped
 inline constexpr double kDegenerateZonotope = 1e-12; ///< polytope(Z): twice this and below is flat
-inline constexpr double kParallel2d = 1e-12; ///< sine below which 2d generators are parallel
-inline constexpr double kParallel3d = 1e-10; ///< the same in 3d, and the face plane distance
-inline constexpr double kAngleMerge = 1e-9; ///< angles this close are one
-inline constexpr double kCornerMerge = 1e-9; ///< corners this close (of the extent) are one
-inline constexpr double kRootFloor = 1e-9; ///< keeps floor(root) from missing an integer root
-inline constexpr double kHullExtent = 1e-10; ///< hull points this close (of the extent) are flat
-inline constexpr double kCoplanar = 1e-9; ///< 1 - cos of the angle below which faces are flat
-inline constexpr double kUnionExtent = 1e-9; ///< distance (of the extent) at which polygons merge
+inline constexpr double kParallel2d = 1e-12;   ///< sine below which 2d generators are parallel
+inline constexpr double kParallel3d = 1e-10;   ///< the same in 3d, and the face plane distance
+inline constexpr double kAngleMerge = 1e-9;    ///< angles this close are one
+inline constexpr double kCornerMerge = 1e-9;   ///< corners this close (of the extent) are one
+inline constexpr double kRootFloor = 1e-9;     ///< keeps floor(root) from missing an integer root
+inline constexpr double kHullExtent = 1e-10;   ///< hull points this close (of the extent) are flat
+inline constexpr double kCoplanar = 1e-9;      ///< 1 - cos of the angle below which faces are flat
+inline constexpr double kUnionExtent = 1e-9;   ///< distance (of the extent) at which polygons merge
 inline constexpr double kConvexCorner = 1e-12; ///< a corner turning back by less is convex
 inline constexpr double kPlotResolution = 1e-4; ///< part of the extent that union_polygons thins
-inline constexpr double kThinTolerance = 1e-3; ///< part of the extent that tikz thinning drops
-inline constexpr double kColorEqual = 5e-5; ///< colors this close in every channel are the same
-inline constexpr double kPlotEqual = 1e-9; ///< a style number this close to its default is it
-inline constexpr double kAxisRange = 1e-12; ///< an axis range below this is a point
-inline constexpr double kPrintZero = 1e-12; ///< a coordinate below this prints as 0
-inline constexpr double kTickSlack = 1e-9; ///< part of a step that the last tick may overshoot
+inline constexpr double kThinTolerance = 1e-3;  ///< part of the extent that tikz thinning drops
+inline constexpr double kColorEqual = 5e-5;     ///< colors this close in every channel are the same
+inline constexpr double kPlotEqual = 1e-9;      ///< a style number this close to its default is it
+inline constexpr double kAxisRange = 1e-12;     ///< an axis range below this is a point
+inline constexpr double kPrintZero = 1e-12;     ///< a coordinate below this prints as 0
+inline constexpr double kTickSlack = 1e-9;      ///< part of a step that the last tick may overshoot
 
 } // namespace numerics
 

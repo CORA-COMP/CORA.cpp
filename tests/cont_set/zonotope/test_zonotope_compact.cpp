@@ -19,7 +19,8 @@ void zeros_drops_small_generators(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0, 1e-20, 0.5}, {0.0, 0.0, 0.0, 0.5}}));
     check(close(Z.compact().generators(), std::vector<double>{1, 0.5, 0, 0.5}, 0),
           b + ": zeros drops the zero and the tiny generator (norm <= eps)");
-    check(Z.compact("zeros", 0.0).generators().shape().back() == 3, b + ": tol 0 keeps the tiny one");
+    check(Z.compact("zeros", 0.0).generators().shape().back() == 3,
+          b + ": tol 0 keeps the tiny one");
     check(Z.compact("zeros", 0.6).generators().shape().back() == 2, b + ": tol 0.6 keeps two");
     check(Z.compact("zeros", 0.8).generators().shape().back() == 1, b + ": tol 0.8 keeps one");
     check(close(Z.compact().center(), Z.center(), 0), b + ": the center stays");
@@ -59,10 +60,11 @@ void compact_keeps_the_set(const std::string &b) {
     cora::Rng rng(14);
     const int n = 3;
     Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 5);
-    const Tensor g = Z.generators();
+    const Tensor &g = Z.generators();
     // repeated and opposite generators and a zero one
-    const Zonotope R(Z.center(), Tensor::concat({g, g.slice(-1, 0, 1) * -2.0, g * 0.0,
-                                                  g.slice(-1, 1, 2) * 3.0}, -1));
+    const Zonotope R(
+        Z.center(),
+        Tensor::concat({g, g.slice(-1, 0, 1) * -2.0, g * 0.0, g.slice(-1, 1, 2) * 3.0}, -1));
     for (const std::string method : {"zeros", "all"}) {
         const Zonotope C = R.compact(method, 1e-10);
         check(C.generators().shape().back() < R.generators().shape().back(),
@@ -78,7 +80,8 @@ void compact_keeps_the_set(const std::string &b) {
 /// Wrong arguments are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}}));
-    check(test::raises([&] { Z.compact("sorted"); }, Error::wrong_value), "compact: unknown method");
+    check(test::raises([&] { Z.compact("sorted"); }, Error::wrong_value),
+          "compact: unknown method");
     check(test::raises([&] { Z.compact("zeros", -1.0); }, Error::wrong_value), "compact: tol < 0");
     check(test::raises([&] { Zonotope::stack({Z, Z}).compact("all"); }, Error::not_supported),
           "compact: all for a batch");

@@ -16,11 +16,10 @@ void compact_gradient() {
     Z[1].index_put_({torch::indexing::Slice(), 2}, 1e-9);
     Z[1].index_put_({torch::indexing::Slice(), 4}, -2 * Z[1].index({torch::indexing::Slice(), 0}));
     for (const std::string method : {"zeros", "all"})
-        test::gradcheck("compact " + method,
-                        [&](const Inputs &x) {
-                            return test::parts(Zonotope(x[0], x[1]).compact(method, tol));
-                        },
-                        Z);
+        test::gradcheck(
+            "compact " + method,
+            [&](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).compact(method, tol)); },
+            Z);
 }
 
 } // namespace

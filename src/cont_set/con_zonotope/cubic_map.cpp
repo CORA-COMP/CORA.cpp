@@ -43,6 +43,7 @@ std::vector<int64_t> aux_linear_positions(const std::array<int64_t, 3> &m, int s
     const int64_t N1 = m[0] + 1, Nq = N1 * (m[1] + 1);
     const int64_t stride = s == 0 ? 1 : s == 1 ? N1 : Nq;
     std::vector<int64_t> positions;
+    positions.reserve(static_cast<std::size_t>(m[s]));
     // monomial index (factor + 1) * stride, and the center is not a generator
     for (int64_t j = 0; j < m[s]; ++j) positions.push_back((j + 1) * stride - 1);
     return positions;
@@ -62,6 +63,7 @@ ConZonotope ConZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     const int64_t m = G_.shape().back(), total = Z.generators().shape().back();
     // the monomials of the factors alone are the first generators
     std::vector<int64_t> linear;
+    linear.reserve(static_cast<std::size_t>(m));
     for (int64_t j = 0; j < m; ++j) linear.push_back(j);
     return {Z.center(), Z.generators(), aux_scatter(A_, linear, total), b_};
 }

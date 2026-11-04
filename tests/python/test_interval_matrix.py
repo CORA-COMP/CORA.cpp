@@ -65,9 +65,8 @@ squares, the powers and the matrix exponential."""
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 # [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]
 EXAMPLE = cora.IntervalMatrix(cora.Interval.matrix(np.array([[1.0, -1.0], [0.0, 2.0]]),
@@ -457,7 +456,7 @@ class Gradients(unittest.TestCase):
         self.check(lambda A: A.expm_norm_infinity(0.5), center, delta)
         self.check(lambda A: A.expm_absolute_bound(0.5), center, delta)
         for style in (0, 1, 2):
-            self.check(lambda A: A.expm_taylor_horner_scaling(6, style), center, delta)
+            self.check(lambda A, style=style: A.expm_taylor_horner_scaling(6, style), center, delta)
         self.check(lambda A: A.expm_independent_mixed(2, 6).enclosure, center, delta)
 
 

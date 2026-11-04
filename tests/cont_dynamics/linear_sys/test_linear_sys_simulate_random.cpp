@@ -11,7 +11,6 @@ using namespace cora;
 using test::check;
 using test::close;
 using namespace test::lin;
-using matlab_reference::System;
 
 namespace {
 

@@ -47,6 +47,7 @@ int main() {
     });
     ChecksScope off(false);
     const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -3.0}, {-2.0, 0.5}}));
-    check(close(Z.abs().center(), std::vector<double>{1, 2}, 0), "abs: the same with the checks off");
+    check(close(Z.abs().center(), std::vector<double>{1, 2}, 0),
+          "abs: the same with the checks off");
     return test::finish("zonotope abs");
 }

@@ -1,4 +1,5 @@
-// test_interval_matrix_exponential_remainder - IntervalMatrix exponential_remainder: the series tail
+// test_interval_matrix_exponential_remainder - IntervalMatrix exponential_remainder: the series
+// tail
 //
 // CORA: matrixSet/@intervalMatrix/exponentialRemainder.m
 // PROPERTY: matrixSet/@intervalMatrix/exponentialRemainder.m
@@ -21,7 +22,8 @@ void remainder_by_hand(const std::string &b) {
     const Interval E = S.exponential_remainder(2).interval();
     check(close(E.sup().item(), W, 1e-12) && close(E.inf().item(), -W, 1e-12), b + ": [-W, W]");
     const IntervalMatrix zero(test::matrix({0, 0, 0, 0}, 2, 2));
-    check(close(zero.exponential_remainder(3).interval().sup(), std::vector<double>{0, 0, 0, 0}, 1e-15),
+    check(close(zero.exponential_remainder(3).interval().sup(), std::vector<double>{0, 0, 0, 0},
+                1e-15),
           b + ": the zero matrix");
 }
 
@@ -45,7 +47,8 @@ void remainder_encloses_the_tail(const std::string &b) {
     }
     check(inside, b + ": the tail of every member is inside");
     check(A.exponential_remainder(8).interval().sup().max().item() <
-              E.interval().sup().max().item(), b + ": a higher order has a smaller remainder");
+              E.interval().sup().max().item(),
+          b + ": a higher order has a smaller remainder");
     const IntervalMatrix not_a_number(
         Tensor::from_data({std::numeric_limits<double>::quiet_NaN(), 0, 0, 0}, {2, 2}));
     check(not_a_number.exponential_remainder(3).interval().sup().min().item() ==

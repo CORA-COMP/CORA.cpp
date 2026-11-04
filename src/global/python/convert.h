@@ -3,10 +3,10 @@
 // Arrays: a torch tensor runs on the libtorch backend (when the package is built against torch,
 // CORACPP_PYTHON_TORCH), a numpy array on Eigen over the array's own memory, and results come
 // back as numpy arrays over the tensor's memory: no copy either way. A vector is 1-D in Python, a
-// column (..., n, 1) in C++. Sets: any cora set, a Python subclass of ContSet included, becomes a cora::Set and comes
-// back as the object of its class. Option structs: a problem and an algorithm are filled from
-// keyword arguments through their field lists; a keyword that fits none is refused with the
-// closest name. Only conversion lives here, no computation.
+// column (..., n, 1) in C++. Sets: any cora set, a Python subclass of ContSet included, becomes a
+// cora::Set and comes back as the object of its class. Option structs: a problem and an algorithm
+// are filled from keyword arguments through their field lists; a keyword that fits none is refused
+// with the closest name. Only conversion lives here, no computation.
 //
 // Syntax:   Tensor t = tensor_of(obj);   py::object o = vector(t);   Set S = set_of(obj);
 //           ReachProblem p = fill<ReachProblem>(kwargs);   auto alg =
@@ -45,7 +45,7 @@ namespace py = pybind11;
 
 /// A numpy array or torch tensor in a signature: the stubs (scripts/stubs.py) show it as `Array`.
 class Array : public py::object {
-public:
+  public:
     PYBIND11_OBJECT_CVT(Array, py::object, any_object, share_object)
     Array() = default;
     static bool any_object(PyObject *) { return true; }
@@ -90,7 +90,7 @@ inline Tensor host_tensor(const py::handle &o, bool column) {
     const bool f32 = a.dtype().is(py::dtype::of<float>()) && id == backend_id::eigen;
     const bool usable = f32 || a.dtype().is(py::dtype::of<double>());
     if (!usable || !(a.flags() & py::array::c_style))
-        a = py::array_t<double, py::array::c_style | py::array::forcecast>::ensure(o);
+        a = py::array_t < double, py::array::c_style | py::array::forcecast > ::ensure(o);
     Shape shape(std::vector<int64_t>(a.shape(), a.shape() + a.ndim()));
     if (column && a.ndim() == 1) shape.push_back(1);
     return host_borrow(a.data(), f32 ? DType::float32 : DType::float64, shape, keep_alive(a), id);
@@ -194,13 +194,15 @@ inline Tensor vector_of(const py::handle &o, const char *what) {
     py::detail::make_caster<torch::Tensor> torch_caster;
     if (torch_caster.load(o, /*convert=*/false)) return column(py::cast<torch::Tensor>(o));
 #endif
-    if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) || py::isinstance<py::tuple>(o)) {
+    if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) ||
+        py::isinstance<py::tuple>(o)) {
         py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
         if (a && a.ndim() >= 1) return host_tensor(o, false).expand_dims(-1);
         if (a && a.ndim() == 0) return host_tensor(a.reshape({1}), true);
     }
-    CORA_FAIL(Error::wrong_value, std::string("cora: ") + what +
-                                      " must be a vector: a torch tensor (..., n) or a numpy array");
+    CORA_FAIL(Error::wrong_value,
+              std::string("cora: ") + what +
+                  " must be a vector: a torch tensor (..., n) or a numpy array");
 }
 
 // Sets --------------------------------------------------------------------------------------------
@@ -218,7 +220,7 @@ inline Set set_of(const py::handle &o) {
         py::object keep = py::reinterpret_borrow<py::object>(o);
         auto release = [keep](const ContSet *) mutable {
             if (!python_alive()) {
-                keep.release();  // the interpreter is gone: leak, as Python does at exit
+                keep.release(); // the interpreter is gone: leak, as Python does at exit
                 return;
             }
             py::gil_scoped_acquire gil;
@@ -226,19 +228,26 @@ inline Set set_of(const py::handle &o) {
         };
         return Set(std::shared_ptr<const ContSet>(S, release));
     }
-    CORA_FAIL(Error::wrong_value, "cora: expected a set (Zonotope, ConZonotope, Interval, EmptySet, Fullspace, a ContSet), got " +
+    CORA_FAIL(Error::wrong_value, "cora: expected a set (Zonotope, ConZonotope, Interval, "
+                                  "EmptySet, Fullspace, a ContSet), got " +
                                       std::string(py::str(py::type::of(o).attr("__name__"))));
 }
 
 /// A Set as the Python object of its class.
 inline py::object object_of(const Set &S) {
     switch (S.class_id()) {
-    case ClassId::zonotope: return py::cast(S.as<Zonotope>());
-    case ClassId::con_zonotope: return py::cast(S.as<ConZonotope>());
-    case ClassId::interval: return py::cast(S.as<Interval>());
-    case ClassId::empty_set: return py::cast(S.as<EmptySet>());
-    case ClassId::fullspace: return py::cast(S.as<Fullspace>());
-    default: return py::cast(&S.get(), py::return_value_policy::reference);
+    case ClassId::zonotope:
+        return py::cast(S.as<Zonotope>());
+    case ClassId::con_zonotope:
+        return py::cast(S.as<ConZonotope>());
+    case ClassId::interval:
+        return py::cast(S.as<Interval>());
+    case ClassId::empty_set:
+        return py::cast(S.as<EmptySet>());
+    case ClassId::fullspace:
+        return py::cast(S.as<Fullspace>());
+    default:
+        return py::cast(&S.get(), py::return_value_policy::reference);
     }
 }
 

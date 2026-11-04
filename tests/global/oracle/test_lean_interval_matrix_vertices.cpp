@@ -17,8 +17,10 @@ using namespace cora;
 namespace {
 
 /// The matrices of the oracle (row-major values), sorted by the entries stacked column by column.
-std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64_t rows, int64_t cols) {
+std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64_t rows,
+                                            int64_t cols) {
     std::vector<std::vector<double>> matrices;
+    matrices.reserve(L.V.size());
     for (const lean::Tensor &V : L.V) matrices.push_back(V.gather().data());
     const auto stacked = [&](const std::vector<double> &M) {
         std::vector<double> v;
@@ -36,14 +38,15 @@ std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.vertices", [](test::oracle::Random &rnd) {
-        for (const auto [m, n] : {std::pair{2, 2}, std::pair{1, 3}, std::pair{3, 2}}) {
+        for (const auto &[m, n] : {std::pair{2, 2}, std::pair{1, 3}, std::pair{3, 2}}) {
             const IntervalMatrix A(rnd.box_matrix(m, n));
             const lean::IntervalMatrix L{lean::Interval(A.interval())};
             const std::vector<std::vector<double>> theirs = aux_sorted(L.vertices(), m, n);
             const std::vector<double> mine = A.vertices()[0].data();
             bool same = mine.size() == theirs.size() * m * n;
             for (std::size_t k = 0; same && k < theirs.size(); ++k)
-                same = std::memcmp(mine.data() + k * m * n, theirs[k].data(), m * n * sizeof(double)) == 0;
+                same = std::memcmp(mine.data() + k * m * n, theirs[k].data(),
+                                   m * n * sizeof(double)) == 0;
             test::check(same, "intervalMatrix.vertices: the same matrices as the oracle's");
         }
     });

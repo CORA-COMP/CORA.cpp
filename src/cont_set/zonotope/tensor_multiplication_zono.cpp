@@ -27,9 +27,8 @@ Zonotope Zonotope::tensor_multiplication_zono(const Tensor &M_center,
                [&] { return "tensor_multiplication_zono: " + refusal->second; });
     for (const Tensor &M : M_generators) {
         const Refusal generator = priv_tensor_multiplication_refusal(*this, M, list);
-        CORA_CHECK(!generator, generator->first, [&] {
-            return "tensor_multiplication_zono: a generator: " + generator->second;
-        });
+        CORA_CHECK(!generator, generator->first,
+                   [&] { return "tensor_multiplication_zono: a generator: " + generator->second; });
     }
     Zonotope result = priv_tensor_multiplication(*this, M_center, list);
     for (const Tensor &M : M_generators)

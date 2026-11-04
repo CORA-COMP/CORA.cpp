@@ -53,15 +53,14 @@ std::pair<MatZonotope, MatZonotope> MatZonotope::dependent_terms(double r) const
     // the squares of the generators, whose half goes to the center
     const Tensor squares = G_.matmul(G_);
     const Tensor sq_center = C_.matmul(C_) * r_squared + (squares.sum(-3) * 0.5) * r_squared;
-    Tensor sq_generators = priv_join((C.matmul(G_) + G_.matmul(C)) * r_squared,
-                                     (squares * 0.5) * r_squared);
+    Tensor sq_generators =
+        priv_join((C.matmul(G_) + G_.matmul(C)) * r_squared, (squares * 0.5) * r_squared);
     if (h >= 2) sq_generators = priv_join(sq_generators, aux_pair_products(G_) * r_squared);
     const Tensor H_center = C_.eye_like(rows()) + C_ * r + sq_center * 0.5;
     // the first h generators of H also hold G_i r
     const Tensor half = sq_generators * 0.5;
     const Tensor H_generators =
-        h == 0 ? half
-               : priv_join(half.slice(-3, 0, h) + G_ * r, half.slice(-3, h, half.size(-3)));
+        h == 0 ? half : priv_join(half.slice(-3, 0, h) + G_ * r, half.slice(-3, h, half.size(-3)));
     return {MatZonotope(sq_center, sq_generators), MatZonotope(H_center, H_generators)};
 }
 

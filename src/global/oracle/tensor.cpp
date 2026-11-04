@@ -26,10 +26,13 @@ std::string aux_encode(double x) {
         CORA_FAIL(Error::wrong_value, "lean: NaN and infinity are not lean values");
     if (x == 0) return "0*2^0";
     int e;
-    const double frac = std::frexp(x, &e);  // x = frac * 2^e with 0.5 <= |frac| < 1
+    const double frac = std::frexp(x, &e); // x = frac * 2^e with 0.5 <= |frac| < 1
     long long m = static_cast<long long>(std::ldexp(frac, 53));
     e -= 53;
-    while (m % 2 == 0) { m /= 2; ++e; }
+    while (m % 2 == 0) {
+        m /= 2;
+        ++e;
+    }
     return std::to_string(m) + "*2^" + std::to_string(e);
 }
 
@@ -53,7 +56,10 @@ std::string aux_encode_decimal(double x) {
     // 2^e with e < 0 is 5^-e * 10^e; with e >= 0 the integer m * 2^e, at 10^0
     for (long long i = 0; i < std::abs(e); ++i) m = aux_times(m, e < 0 ? 5 : 2, dyadic);
     long long exponent = e < 0 ? e : 0;
-    while (m % 10 == 0) { m /= 10; ++exponent; }
+    while (m % 10 == 0) {
+        m /= 10;
+        ++exponent;
+    }
     std::string digits;
     for (; m > 0; m /= 10) digits.insert(0, 1, static_cast<char>('0' + static_cast<int>(m % 10)));
     return (negative ? "-" : "") + digits + "*10^" + std::to_string(exponent);
@@ -65,7 +71,7 @@ double aux_decode(const std::string &s) {
     if (s == "inf" || s == "-inf")
         return s[0] == '-' ? -std::numeric_limits<double>::infinity()
                            : std::numeric_limits<double>::infinity();
-    const std::size_t star = s.find("*");
+    const std::size_t star = s.find('*');
     const bool decimal = star != std::string::npos && s.compare(star, 4, "*10^") == 0;
     if (star == std::string::npos || (!decimal && s.compare(star, 3, "*2^") != 0))
         CORA_FAIL(Error::wrong_value, "lean: expected a value m*2^e or m*10^e, got '" + s + "'");
@@ -77,7 +83,10 @@ double aux_decode(const std::string &s) {
     const long long e = std::stoll(s.substr(star + (decimal ? 4 : 3)));
     // trailing zero bits of the mantissa move into the binary exponent
     long long binary = decimal ? 0 : e;
-    while (m != 0 && m % 2 == 0) { m /= 2; ++binary; }
+    while (m != 0 && m % 2 == 0) {
+        m /= 2;
+        ++binary;
+    }
     if (decimal) {
         // m*10^e is m*5^e*2^e: multiply by 5^e, or 5^-e must divide m
         binary += e;
@@ -118,7 +127,7 @@ Tensor Tensor::from(const cora::Tensor &x) {
     if (T.dtype_ == "binary64") return T;
     Json request = Json::object();
     request.set("op", "from").set("dtype", T.dtype_).set("x", T.to_json());
-    call(request);  // the oracle throws if a value is not representable
+    call(request); // the oracle throws if a value is not representable
     return T;
 }
 
@@ -133,6 +142,7 @@ double Tensor::decode(const std::string &text) { return aux_decode(text); }
 
 CORA_FROM_NUMBERS cora::Tensor Tensor::gather() const {
     std::vector<double> values;
+    values.reserve(data_.size());
     for (const std::string &s : data_) values.push_back(aux_decode(s));
     return cora::Tensor::from_data(values, {rows_, cols_});
 }

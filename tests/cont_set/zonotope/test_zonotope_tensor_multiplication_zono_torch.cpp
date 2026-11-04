@@ -16,8 +16,8 @@ void tensor_multiplication_zono_gradient() {
     test::gradcheck("tensor_multiplication_zono",
                     [](const Inputs &x) {
                         const Zonotope centered(x[0] * 0.0, x[1]);
-                        return test::parts(centered.tensor_multiplication_zono(
-                            x[2], {x[3]}, test::triples(2)));
+                        return test::parts(
+                            centered.tensor_multiplication_zono(x[2], {x[3]}, test::triples(2)));
                     },
                     {Z[0], Z[1], M, M1});
 }

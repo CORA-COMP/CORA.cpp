@@ -13,9 +13,10 @@ using test::check;
 int main() {
     const BackendScope scope("torch");
     int warnings = 0;
-    const WarningHandler previous = set_warning_handler([&](const std::string &id, const std::string &) {
-        if (id == "CORA:notDifferentiable") ++warnings;
-    });
+    const WarningHandler previous =
+        set_warning_handler([&](const std::string &id, const std::string &) {
+            if (id == "CORA:notDifferentiable") ++warnings;
+        });
     const Tensor x = from_torch(torch::randn({3, 4}, torch::kDouble).requires_grad_(true));
     check(x.requires_grad(), "a tensor that needs gradients");
     const Tensor order = x.argsort(-1);

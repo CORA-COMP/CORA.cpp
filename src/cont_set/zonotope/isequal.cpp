@@ -78,8 +78,7 @@ bool Zonotope::isequal(const Interval &I, Tol tol_arg) const {
     const Refusal refusal = aux_refusal(c_, I.inf());
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
     // a box is the zonotope of its axes; the empty box is no zonotope
-    return I.dim() == dim() && !I.is_empty() &&
-           aux_isequal(*this, I.zonotope(), tol);
+    return I.dim() == dim() && !I.is_empty() && aux_isequal(*this, I.zonotope(), tol);
 }
 
 bool Zonotope::isequal(const Tensor &p, Tol tol_arg) const {

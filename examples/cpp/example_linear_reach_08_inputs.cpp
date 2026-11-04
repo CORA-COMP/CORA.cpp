@@ -23,8 +23,8 @@ int main() {
     // Parameters ------------------------------------------------------------------------------
 
     const double t_final = 5;
-    const Zonotope R0(Tensor({0, 0}), Tensor({{0.2, 0}, {0, 0.2}}));  // position, velocity
-    const Zonotope U(Tensor({0.5}), Tensor({{0.25}}));                // force in [0.25, 0.75]
+    const Zonotope R0(Tensor({0, 0}), Tensor({{0.2, 0}, {0, 0.2}})); // position, velocity
+    const Zonotope U(Tensor({0.5}), Tensor({{0.25}}));               // force in [0.25, 0.75]
 
     // Reachability Settings -------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ int main() {
 
     const Tensor A({{0, 1}, {-4, -0.4}});
     const Tensor B({{0}, {1}});
-    const Tensor C({{1, 0}});  // the position
+    const Tensor C({{1, 0}}); // the position
     const LinearSys sys(A, B, C);
 
     // Reachability Analysis -------------------------------------------------------------------

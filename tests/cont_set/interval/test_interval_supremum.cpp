@@ -15,7 +15,8 @@ namespace {
 void supremum_is_the_upper_bound(const std::string &b) {
     const Interval I(column({-1.0, 0.0}), column({2.0, 0.5}));
     check(close(I.supremum(), std::vector<double>{2.0, 0.5}), b + ": the upper bound");
-    const Interval M(Tensor::from_data({1, 2, 3, 4}, {2, 2}), Tensor::from_data({5, 6, 7, 8}, {2, 2}));
+    const Interval M(Tensor::from_data({1, 2, 3, 4}, {2, 2}),
+                     Tensor::from_data({5, 6, 7, 8}, {2, 2}));
     check(M.supremum().shape() == std::vector<int64_t>({2, 2}), b + ": a matrix keeps its shape");
     check(Interval::stack({I, I}).supremum().shape() == std::vector<int64_t>({2, 2, 1}),
           b + ": a batch keeps its batch shape");

@@ -22,9 +22,8 @@ import os
 import unittest
 import warnings
 
-import numpy as np
-
 import cora
+import numpy as np
 
 AVAILABLE = bool(os.environ.get("CORACPP_ORACLE") and os.environ.get("CORACPP_ORACLE_UNSOUND"))
 needs_oracle = unittest.skipUnless(AVAILABLE, "needs CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND")
@@ -105,7 +104,7 @@ def same_bits(what, a, b):
     if isinstance(b, (tuple, list)):
         if len(a) != len(b):
             raise AssertionError(f"{what}: {len(a)} results in CORA.cpp, {len(b)} in the oracle")
-        for i, (x, y) in enumerate(zip(a, b)):
+        for i, (x, y) in enumerate(zip(a, b, strict=True)):
             same_bits(f"{what}.{i + 1}", x, y)
     elif a is None or b is None:
         if (a is None) != (b is None):
@@ -133,7 +132,7 @@ def enclosed(what, a, b):
         if b and not a:
             raise AssertionError(f"{what}: CORA.cpp says {a}, the oracle says {b}")
     elif isinstance(b, tuple):
-        for i, (x, y) in enumerate(zip(a, b)):
+        for i, (x, y) in enumerate(zip(a, b, strict=True)):
             enclosed(f"{what}.{i + 1}", x, y)
     elif isinstance(b, cora.lean.Fullspace):
         same_bits(what, a, b)  # the whole space has no enclosure but itself

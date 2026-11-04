@@ -7,8 +7,8 @@
 //
 // See also: derived.h, derived.cpp, ops.def
 
-#include "global/tensor/derived.h"
 #include "cora/global/error.h"
+#include "global/tensor/derived.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -70,15 +70,14 @@ Tensor aux_with_batch(const Tensor &t, const Shape &batch) {
 
 std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::zonotope_linear_map(const Impl &c,
                                                                       const Impl &G) const {
-    const auto [Mc, MG] = derived::zonotope_linear_map(Tensor(self()), Tensor(c.self()),
-                                                       Tensor(G.self()));
+    const auto [Mc, MG] =
+        derived::zonotope_linear_map(Tensor(self()), Tensor(c.self()), Tensor(G.self()));
     return {Mc.ptr(), MG.ptr()};
 }
 
 // The zonotope maps and the linear combination
-std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::zonotope_interval_map(const Impl &sup,
-                                                                        const Impl &c,
-                                                                        const Impl &G) const {
+std::pair<Tensor::Ptr, Tensor::Ptr>
+Tensor::Impl::zonotope_interval_map(const Impl &sup, const Impl &c, const Impl &G) const {
     const auto [Tc, TG] = derived::zonotope_interval_map(Tensor(self()), Tensor(sup.self()),
                                                          Tensor(c.self()), Tensor(G.self()));
     return {Tc.ptr(), TG.ptr()};
@@ -94,15 +93,15 @@ Tensor::Impl::zonotope_linear_combination(const Impl &G1, const Impl &c2, const 
 // The interval products, both ways round
 std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::interval_matmul(const Impl &sup,
                                                                   const Impl &M) const {
-    const auto [lo, hi] = derived::interval_matmul(Tensor(self()), Tensor(sup.self()),
-                                                   Tensor(M.self()));
+    const auto [lo, hi] =
+        derived::interval_matmul(Tensor(self()), Tensor(sup.self()), Tensor(M.self()));
     return {lo.ptr(), hi.ptr()};
 }
 
 std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::matmul_interval(const Impl &inf,
                                                                   const Impl &sup) const {
-    const auto [lo, hi] = derived::matmul_interval(Tensor(self()), Tensor(inf.self()),
-                                                   Tensor(sup.self()));
+    const auto [lo, hi] =
+        derived::matmul_interval(Tensor(self()), Tensor(inf.self()), Tensor(sup.self()));
     return {lo.ptr(), hi.ptr()};
 }
 

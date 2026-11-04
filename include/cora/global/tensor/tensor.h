@@ -129,6 +129,7 @@ enum class TensorOp : uint16_t {
 
 /// The number of operations.
 inline constexpr std::size_t kOpCount = 0
+// NOLINTNEXTLINE(bugprone-macro-parentheses): +1 is a term of the sum over ops.def, not an operand
 #define CORA_TENSOR_OP(name, kind, gradient, agreement, k, summary) +1
 #include "cora/global/tensor/ops.def"
 #undef CORA_TENSOR_OP
@@ -167,13 +168,49 @@ class Tensor {
   public:
     /// The elementwise operations of two operands.
     enum class Binary : uint8_t {
-        add, subtract, multiply, divide, pow, maximum, minimum, remainder, atan2,
-        equal, not_equal, less, less_equal, greater, greater_equal
+        add,
+        subtract,
+        multiply,
+        divide,
+        pow,
+        maximum,
+        minimum,
+        remainder,
+        atan2,
+        equal,
+        not_equal,
+        less,
+        less_equal,
+        greater,
+        greater_equal
     };
     /// The elementwise functions.
     enum class Unary : uint8_t {
-        negative, abs, sign, floor, ceil, round, sqrt, exp, log, sin, cos, tan, asin, acos, atan,
-        sinh, cosh, tanh, asinh, acosh, atanh, isnan, isinf, isfinite
+        negative,
+        abs,
+        sign,
+        floor,
+        ceil,
+        round,
+        sqrt,
+        exp,
+        log,
+        // the trigonometric and hyperbolic functions
+        sin,
+        cos,
+        tan,
+        asin,
+        acos,
+        atan,
+        sinh,
+        cosh,
+        tanh,
+        asinh,
+        acosh,
+        atanh,
+        isnan,
+        isinf,
+        isfinite
     };
     /// The reductions along an axis.
     enum class Reduce : uint8_t { sum, prod, max, min, argmax, argmin };

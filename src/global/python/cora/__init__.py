@@ -28,23 +28,63 @@ except ImportError:  # numpy and Eigen only
     pass
 
 from . import banner, errors
-from ._cora import (ConZonotope, ContSet, EmptySet, Expr, ExpmMixedResult, ExpmResult,
-                    Falsification, Fullspace, Interval, IntervalMatrix, LinearSys, MatZonotope,
-                    MatZonotopeExpmMixedResult, MatZonotopeExpmOneParamResult, NeuralNetwork,
-                    NonlinearSys, ReachProblem,
-                    ReachSet, Rng, Specification, VerifyResult, Zonotope, backend, binary_pairs,
-                    cart_prod, checks, checks_enabled, contains, convex_hull, cora_color,
-                    current_backend, current_tolerance, generate_random, has_torch, intersect,
-                    is_intersecting, isequal, lean, num_threads, plus, register_binary,
-                    set_checks_enabled,
-                    set_default_backend, set_default_tolerance, set_num_threads, strict_gradients,
-                    tensor_ops, tolerance, unite, use_cora_colors)
+from ._cora import (
+    ContSet,
+    ConZonotope,
+    EmptySet,
+    ExpmMixedResult,
+    ExpmResult,
+    Expr,
+    Falsification,
+    Fullspace,
+    Interval,
+    IntervalMatrix,
+    LinearSys,
+    MatZonotope,
+    MatZonotopeExpmMixedResult,
+    MatZonotopeExpmOneParamResult,
+    NeuralNetwork,
+    NonlinearSys,
+    ReachProblem,
+    ReachSet,
+    Rng,
+    Specification,
+    VerifyResult,
+    Zonotope,
+    backend,
+    binary_pairs,
+    cart_prod,
+    checks,
+    checks_enabled,
+    contains,
+    convex_hull,
+    cora_color,
+    current_backend,
+    current_tolerance,
+    generate_random,
+    has_torch,
+    intersect,
+    is_intersecting,
+    isequal,
+    lean,
+    num_threads,
+    plus,
+    register_binary,
+    set_checks_enabled,
+    set_default_backend,
+    set_default_tolerance,
+    set_num_threads,
+    strict_gradients,
+    tensor_ops,
+    tolerance,
+    unite,
+    use_cora_colors,
+)
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
-from .tensor import Tensor, cos, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
 from .figure import Figure, subplots, to_tikz
-from .tensor import default_tol
 from .plot import plot, plot_over_time, plot_rand_point
+from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
 
 # An example prints its CORA START block here and its CORA END block on exit.
 banner.install(current_backend)

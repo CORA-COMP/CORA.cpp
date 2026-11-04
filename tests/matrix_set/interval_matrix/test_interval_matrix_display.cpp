@@ -26,7 +26,8 @@ void text_of_the_example(const std::string &b) {
 void text_shows_the_bounds(const std::string &b) {
     Rng rng(26);
     const std::string small = test::example().display();
-    check(small.find("-1") != std::string::npos && small.find('3') != std::string::npos, b + ": bounds");
+    check(small.find("-1") != std::string::npos && small.find('3') != std::string::npos,
+          b + ": bounds");
     const std::string large = test::random_matrix(rng, 4, 1.0).display();
     check(large.size() > small.size() && large.find("dimension: 4  4") != std::string::npos,
           b + ": a 4 x 4 set");

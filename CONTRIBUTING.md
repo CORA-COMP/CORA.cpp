@@ -169,17 +169,37 @@ Options (`scripts/build.sh -D...`, see `CMakeLists.txt`): `CORACPP_CHECKS` (OFF 
 `CORACPP_BLAS`; `.coracpp-build` names another build directory. Tests run on every backend and the GPU;
 the `_torch` ones need libtorch.
 
+## Code quality
+
+Three tools, pinned in `scripts/requirements-quality.txt` (`scripts/setup_local.sh` installs them); one script runs them,
+on the files you changed since `origin/main` (`--base REV` another base, `--all` every file; CI: the changed files of a
+pull request, everything every night):
+
+```bash
+scripts/with_env.sh python scripts/ci/check_quality.py format        # clang-format (.clang-format)
+scripts/with_env.sh python scripts/ci/check_quality.py lint          # ruff (ruff.toml) on scripts/, tests/ and cora/
+scripts/with_env.sh python scripts/ci/check_quality.py tidy          # clang-tidy (.clang-tidy); needs cmake --preset python
+```
+
+- **Warnings are errors.** The presets set `CORACPP_WERROR=ON` (`-Werror`, MSVC `/W4 /WX`); fix the warning, or opt out
+  of a local build with `-DCORACPP_WERROR=OFF`.
+- **clang-format** checks the layout of every C++ file; `format --fix` rewrites it. Never format by hand.
+- **clang-tidy** checks bugprone-*, performance-* and a few modernize-*/readability-* (`.clang-tidy` says what is left out
+  and why). A header is checked through one source that includes it. `tidy --fix` applies the repairs it has; a
+  suppression is `// NOLINT(check): reason` on the line, never bare (the conventions test fails on a bare one).
+- **ruff** checks pyflakes, pycodestyle errors, bugbear and import order at 120 columns; `lint --fix` repairs most findings.
+
 ## CI
 
 Two tiers (`.github/workflows/`); the one check to require in the ruleset is `ci-gate`.
-- **Every push to a pull request, and the merge queue** (`ci.yml`, under 10 minutes): `checks` (format, conventions,
-  coverage when `scripts/coverage/coverage.py` exists), then `linux-core` and `linux-python`, which
+- **Every push to a pull request, and the merge queue** (`ci.yml`, under 10 minutes): `checks` (whitespace, clang-format,
+  ruff, conventions, coverage when `scripts/coverage/coverage.py` exists), `tidy` (clang-tidy on the changed sources), then `linux-core` and `linux-python`, which
   build everything and run only the tests the change can affect, and `instructions`, which fails
   when a micro-benchmark of `benchmarks/micro` runs more than 3% more instructions than at the base
   commit. A documentation-only change skips the builds. A new push cancels the older run. In the
   merge queue the same jobs test the group on the `main` it lands on (no `instructions`).
 - **Every night** (`nightly.yml`): the full matrix of three operating systems, ASan and UBSan, the
-  competition binary; skipped when `main` has not moved since the last successful night. A failed
+  competition binary, clang-format, ruff and clang-tidy over the whole tree; skipped when `main` has not moved since the last successful night. A failed
   night opens an issue labelled `nightly`. A breakage that only another platform or preset shows
   lands on `main` and is fixed from that issue the next day.
 

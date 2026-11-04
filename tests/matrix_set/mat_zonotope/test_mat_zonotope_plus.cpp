@@ -18,7 +18,8 @@ void sum_of_two_sets(const std::string &b) {
     const MatZonotope S = A.plus(B);
     check(close(S.center(), {2, 2, 3, 5}), b + ": the centers add");
     check(S.num_generators() == 3, b + ": the generators are joined");
-    check(close(S.generators(), {1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0}), b + ": the first set's first");
+    check(close(S.generators(), {1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0}),
+          b + ": the first set's first");
     check(test::same_set(A + B, S), b + ": the operator");
 }
 
@@ -26,12 +27,14 @@ void sum_of_two_sets(const std::string &b) {
 void sum_with_numbers(const std::string &b) {
     const MatZonotope A = test::example();
     const MatZonotope S = A.plus(test::matrix({1, 1, 1, 1}, 2, 2));
-    check(close(S.center(), {2, 3, 4, 5}) && close(S.generators(), A.generators()), b + ": a matrix shifts");
-    check(close(A.plus(test::matrix({10}, 1, 1)).center(), {11, 12, 13, 14}), b + ": a 1 x 1 number");
+    check(close(S.center(), {2, 3, 4, 5}) && close(S.generators(), A.generators()),
+          b + ": a matrix shifts");
+    check(close(A.plus(test::matrix({10}, 1, 1)).center(), {11, 12, 13, 14}),
+          b + ": a 1 x 1 number");
 }
 
-/// Members add: a member of A plus a member of B is a member of the sum with the stacked coefficients;
-/// a batch adds per set.
+/// Members add: a member of A plus a member of B is a member of the sum with the stacked
+/// coefficients; a batch adds per set.
 void members_add(const std::string &b) {
     Rng rng(11);
     const MatZonotope A = test::random_set(rng, 3, 2, 0.5), B = test::random_set(rng, 3, 3, 0.5);

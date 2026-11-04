@@ -43,9 +43,10 @@ bool aux_agree(const std::string &what, const Interval &a, const lean::Interval 
     const std::vector<double> mine_lo = a.inf().data(), mine_hi = a.sup().data();
     const std::vector<double> lo = theirs.first.data(), hi = theirs.second.data();
     for (std::size_t i = 0; i < lo.size(); ++i)
-        for (const auto [x, y] : {std::pair{mine_lo[i], lo[i]}, {mine_hi[i], hi[i]}})
+        for (const auto &[x, y] : {std::pair{mine_lo[i], lo[i]}, {mine_hi[i], hi[i]}})
             if (std::abs(x - y) > agree * std::max(1.0, std::abs(y))) {
-                std::cerr << "  " << what << ": " << x << " in CORA.cpp, " << y << " in the oracle\n";
+                std::cerr << "  " << what << ": " << x << " in CORA.cpp, " << y
+                          << " in the oracle\n";
                 ok = false;
             }
     return ok;
@@ -54,7 +55,8 @@ bool aux_agree(const std::string &what, const Interval &a, const lean::Interval 
 /// One function on boxes drawn from [low, high]: inside the sound enclosure, and within `agree`
 /// of the oracle's bounds.
 template <class F, class G>
-void aux_function(const std::string &name, double agree, double low, double high, F mine, G theirs) {
+void aux_function(const std::string &name, double agree, double low, double high, F mine,
+                  G theirs) {
     test::oracle::run("interval." + name, [&](test::oracle::Random &rnd) {
         const bool sound = test::oracle::mode() == test::oracle::Mode::sound;
         for (const int n : {1, 4}) {
@@ -83,7 +85,8 @@ int main() {
             const bool sound = test::oracle::mode() == test::oracle::Mode::sound;
             const Interval I = aux_box(rnd, n, -2, 2);
             const Interval across(I.inf().abs().negative() - 0.5, I.sup().abs() + 0.5);
-            test::oracle::check_exact("sign across 0", across.sign(), lean::Interval(across).sign());
+            test::oracle::check_exact("sign across 0", across.sign(),
+                                      lean::Interval(across).sign());
             if (sound) test::oracle::check_enclosed("sign", I.sign(), lean::Interval(I).sign());
         }
     });

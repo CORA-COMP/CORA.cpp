@@ -61,8 +61,11 @@ void a_shared_tensor_is_copied_first() {
 
 void the_standard_reach_allocates_a_fixed_number_per_step() {
     const BackendScope scope("eigen");
-    const LinearSys sys(Tensor({{-1, -4, 0, 0, 0}, {4, -1, 0, 0, 0}, {0, 0, -3, 1, 0},
-                                {0, 0, -1, -3, 0}, {0, 0, 0, 0, -2}}));
+    const LinearSys sys(Tensor({{-1, -4, 0, 0, 0},
+                                {4, -1, 0, 0, 0},
+                                {0, 0, -3, 1, 0},
+                                {0, 0, -1, -3, 0},
+                                {0, 0, 0, 0, -2}}));
     const Zonotope X0(Tensor({1, 1, 1, 1, 1}), Tensor::eye(5) * 0.1);
     long long counts[2];
     for (int k = 0; k < 2; ++k) {

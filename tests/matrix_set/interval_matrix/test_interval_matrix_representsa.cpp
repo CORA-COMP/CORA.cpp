@@ -15,8 +15,10 @@ namespace {
 void types_of_the_example(const std::string &b) {
     const IntervalMatrix A = test::example(), P(test::matrix({1, 2, 3, 4}, 2, 2)),
                          O(test::matrix({0, 0, 0, 0}, 2, 2));
-    check(!A.representsa("point") && P.representsa("point") && O.representsa("point"), b + ": point");
-    check(!A.representsa("origin") && !P.representsa("origin") && O.representsa("origin"), b + ": origin");
+    check(!A.representsa("point") && P.representsa("point") && O.representsa("point"),
+          b + ": point");
+    check(!A.representsa("origin") && !P.representsa("origin") && O.representsa("origin"),
+          b + ": origin");
     check(!A.representsa("emptySet") && !P.representsa("emptySet"), b + ": emptySet");
     check(A.representsa("interval") && A.representsa("zonotope"), b + ": every box is an interval");
     check(!A.representsa("fullspace") && !A.representsa("halfspace"), b + ": no unbounded set");
@@ -46,7 +48,8 @@ void random_sets(const std::string &b) {
     for (int trial = 0; trial < 10; ++trial) {
         const IntervalMatrix A = test::random_matrix(rng, 3, 1.0);
         const IntervalMatrix P(A.center());
-        ok = ok && !A.representsa("point", 1e-12) && P.representsa("point") && !P.representsa("origin");
+        ok = ok && !A.representsa("point", 1e-12) && P.representsa("point") &&
+             !P.representsa("origin");
     }
     check(ok, b + ": random sets");
 }

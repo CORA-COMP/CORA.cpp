@@ -15,7 +15,8 @@ namespace {
 void the_parts_enclose_the_exponentials(const std::string &b) {
     Rng rng(20);
     const IntervalMatrix A = test::random_matrix(rng, 3, 0.3);
-    for (const auto [r, intermediate] : {std::pair{1.0, 3}, std::pair{0.5, 4}, std::pair{2.0, 2}}) {
+    for (const auto &[r, intermediate] :
+         {std::pair{1.0, 3}, std::pair{0.5, 4}, std::pair{2.0, 2}}) {
         const ExpmMixedResult R = A.expm_mixed(r, intermediate, 9);
         const IntervalMatrix total(R.enclosure.interval() + R.enclosure_rest.interval());
         bool inside = true;
@@ -28,7 +29,8 @@ void the_parts_enclose_the_exponentials(const std::string &b) {
         check(R.powers2.size() == static_cast<std::size_t>(9 - intermediate),
               b + ": the powers of the second" + order);
     }
-    const ExpmMixedResult zero = IntervalMatrix(test::matrix({0, 0, 0, 0}, 2, 2)).expm_mixed(1.0, 3, 6);
+    const ExpmMixedResult zero =
+        IntervalMatrix(test::matrix({0, 0, 0, 0}, 2, 2)).expm_mixed(1.0, 3, 6);
     const IntervalMatrix sum(zero.enclosure.interval() + zero.enclosure_rest.interval());
     check(close(sum.center(), std::vector<double>{1, 0, 0, 1}, 1e-14), b + ": exp(0) = I");
 }
@@ -52,7 +54,8 @@ void checks_and_their_switch() {
     const IntervalMatrix wide(test::matrix({1, 2, 3}, 1, 3)), A = test::example();
     check(test::raises([&] { wide.expm_mixed(1.0, 3, 6); }, Error::dimension_mismatch),
           "expm_mixed: a non-square matrix");
-    check(test::raises([&] { A.expm_mixed(0.0, 3, 6); }, Error::wrong_value), "expm_mixed: the step 0");
+    check(test::raises([&] { A.expm_mixed(0.0, 3, 6); }, Error::wrong_value),
+          "expm_mixed: the step 0");
     check(test::raises([&] { A.expm_mixed(1.0, 1, 6); }, Error::wrong_value),
           "expm_mixed: an intermediate order of 1");
     const Tensor on = A.expm_mixed(1.0, 3, 6).enclosure_rest.center();

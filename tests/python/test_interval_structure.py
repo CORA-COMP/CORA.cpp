@@ -23,9 +23,8 @@ uminus, uplus, vertcat, volume and zonotope of an interval in Python."""
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 INF = float("inf")
 

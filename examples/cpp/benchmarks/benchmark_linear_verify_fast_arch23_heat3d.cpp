@@ -14,8 +14,7 @@
 int main(int argc, char **argv) {
     // Parameters ------------------------------------------------------------------------------
 
-    const std::vector<std::string> family = {
-        "HEAT01", "HEAT02"};
+    const std::vector<std::string> family = {"HEAT01", "HEAT02"};
 
     // Verification ----------------------------------------------------------------------------
 

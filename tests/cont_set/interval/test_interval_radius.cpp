@@ -18,7 +18,8 @@ namespace {
 void radius_is_the_norm_of_rad(const std::string &b) {
     const Interval I(column({0.0, 1.0}), column({2.0, 9.0}));
     check(close(I.radius(), std::vector<double>{std::sqrt(1.0 + 16.0)}), b + ": ||rad||_2");
-    const Interval M(Tensor::from_data({0, 1, 2, 3}, {2, 2}), Tensor::from_data({2, 1, 2, 7}, {2, 2}));
+    const Interval M(Tensor::from_data({0, 1, 2, 3}, {2, 2}),
+                     Tensor::from_data({2, 1, 2, 7}, {2, 2}));
     check(close(M.radius(), std::vector<double>{std::sqrt(5.0)}), b + ": over all entries");
     const Interval J(column({0.0, 0.0}), column({1.0, 1.0}));
     const Tensor R = Interval::stack({I, J}).radius();
@@ -37,7 +38,7 @@ void radius_bounds_the_distance(const std::string &b) {
         double farthest = 0;
         for (const double d : distances) farthest = std::max(farthest, d);
         check(farthest <= r * (1 + 1e-12), b + ": the sampled points are within the radius");
-        const Tensor corner = I.sup();
+        const Tensor &corner = I.sup();
         check(close((corner - c).square().sum().sqrt().data()[0], r), b + ": a corner attains it");
     }
 }
@@ -46,7 +47,8 @@ void radius_bounds_the_distance(const std::string &b) {
 void checks_and_their_switch() {
     const Interval I(column({0.0, 1.0}), column({2.0, 9.0}));
     ChecksScope off(false);
-    check(close(I.radius(), std::vector<double>{std::sqrt(17.0)}), "radius: the same with the checks off");
+    check(close(I.radius(), std::vector<double>{std::sqrt(17.0)}),
+          "radius: the same with the checks off");
 }
 
 } // namespace

@@ -42,8 +42,10 @@ void enclose_many_known(const std::string &b) {
 void enclose_many_encloses(const std::string &b) {
     cora::Rng rng(44);
     std::vector<Zonotope> Zs;
+    Zs.reserve(4);
     for (int k = 0; k < 4; ++k)
-        Zs.push_back(Zonotope::generate_random(rng, 3, std::nullopt, 5) + column({1.0 * k, -2.0 * k, 0.5}));
+        Zs.push_back(Zonotope::generate_random(rng, 3, std::nullopt, 5) +
+                     column({1.0 * k, -2.0 * k, 0.5}));
     const Tensor direction = column({1.0, -2.0, 0.5});
     const auto [E, inverse] = Zonotope::enclose_many(Zs, direction);
     for (const Zonotope &Z : Zs) {

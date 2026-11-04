@@ -148,8 +148,8 @@ bool supports(const std::string &device) {
 std::string describe() {
     std::ostringstream out;
     out << "libtorch " << TORCH_VERSION_MAJOR << "." << TORCH_VERSION_MINOR << "."
-        << TORCH_VERSION_PATCH << ", element type: "
-        << (dtype() == torch::kDouble ? "double" : "float");
+        << TORCH_VERSION_PATCH
+        << ", element type: " << (dtype() == torch::kDouble ? "double" : "float");
     if (torch::cuda::is_available()) {
         out << ", cuda: " << static_cast<int>(torch::cuda::device_count()) << " device(s)";
     } else {
@@ -159,8 +159,7 @@ std::string describe() {
 }
 
 std::unique_ptr<Runner> prepare(const Params &in) {
-    const auto opts =
-        torch::TensorOptions().dtype(dtype()).device(device_of(in.device));
+    const auto opts = torch::TensorOptions().dtype(dtype()).device(device_of(in.device));
     torch::manual_seed(kSeed);
     return std::make_unique<TorchRunner>(in, opts);
 }
@@ -173,11 +172,11 @@ void warm_up() {
             for (const char *op : kOperations) {
                 for (int batch : {1, 2}) {
                     const std::string params =
-                        std::string("{\"set\": \"") + set + "\", \"operation\": \"" + op
-                        + "\", \"dim\": 3, \"generators\": 6, \"device\": \"" + device
-                        + "\", \"repetition\": 1, \"points\": 2, \"batch_size\": "
-                        + std::to_string(batch) + ", \"type\": \""
-                        + (std::string(op) == "supportFunc" ? "upper" : "standard") + "\"}";
+                        std::string("{\"set\": \"") + set + "\", \"operation\": \"" + op +
+                        "\", \"dim\": 3, \"generators\": 6, \"device\": \"" + device +
+                        "\", \"repetition\": 1, \"points\": 2, \"batch_size\": " +
+                        std::to_string(batch) + ", \"type\": \"" +
+                        (std::string(op) == "supportFunc" ? "upper" : "standard") + "\"}";
                     const Params in(params);
                     prepare(in)->run();
                 }
@@ -195,13 +194,12 @@ void check_gradients(const std::string &device) {
                torch::randn({4, 7}, opts.requires_grad(true))};
     z.support_func(d).backward();
 
-    const torch::Tensor want_g =
-        d.unsqueeze(-1) * d.unsqueeze(0).matmul(z.g).sign();
+    const torch::Tensor want_g = d.unsqueeze(-1) * d.unsqueeze(0).matmul(z.g).sign();
     const double err_c = (z.c.grad() - d).abs().max().item<double>();
     const double err_g = (z.g.grad() - want_g).abs().max().item<double>();
     if (!(err_c < 1e-12 && err_g < 1e-12))
-        throw std::runtime_error("libtorch on " + device
-                                 + ": the gradient of supportFunc is wrong");
+        throw std::runtime_error("libtorch on " + device +
+                                 ": the gradient of supportFunc is wrong");
 }
 
 } // namespace cora::comp::torch_backend

@@ -22,7 +22,8 @@ void embedding_known(const std::string &b) {
     check(close(R.center(), std::vector<double>{0, 2, 0, 1}, 0), b + ": the center");
     check(close(R.generators(), std::vector<double>{0, 0, 0, 3, 0, 0, 1, 0}, 0),
           b + ": the generators");
-    check(close(Z.project_high_dim(2, {0, 1}).generators(), Z.generators(), 0), b + ": the identity");
+    check(close(Z.project_high_dim(2, {0, 1}).generators(), Z.generators(), 0),
+          b + ": the identity");
     check(close(Z.project_high_dim(2, {1, 1}).center(), std::vector<double>{0, 2}, 0),
           b + ": a repeated position keeps the last state");
     const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0})}).project_high_dim(3, {2, 0});
@@ -51,7 +52,8 @@ void embedding_keeps_the_support(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {0.0}}));
     check(test::raises([&] { Z.project_high_dim(1, {0, 0}); }, Error::wrong_value), "N below dim");
-    check(test::raises([&] { Z.project_high_dim(3, {0}); }, Error::wrong_value), "one position short");
+    check(test::raises([&] { Z.project_high_dim(3, {0}); }, Error::wrong_value),
+          "one position short");
     check(test::raises([&] { Z.project_high_dim(3, {0, 3}); }, Error::wrong_value), "beyond N");
     check(test::raises([&] { Z.project_high_dim(3, {-1, 0}); }, Error::wrong_value), "negative");
     ChecksScope off(false);

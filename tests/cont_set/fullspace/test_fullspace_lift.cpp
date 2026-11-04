@@ -23,7 +23,8 @@ void checks_and_their_switch() {
     check(test::raises([&] { F.lift(1, {0, 0}); }, Error::wrong_value), "lift: N below n");
     check(test::raises([&] { F.lift(3, {0}); }, Error::wrong_value), "lift: one position for two");
     check(test::raises([&] { F.lift(3, {0, 3}); }, Error::wrong_value), "lift: position 3 of 3");
-    check(test::raises([&] { F.lift(3, {-1, 0}); }, Error::wrong_value), "lift: a negative position");
+    check(test::raises([&] { F.lift(3, {-1, 0}); }, Error::wrong_value),
+          "lift: a negative position");
     ChecksScope off(false);
     check(F.lift(3, {2, 0}).dim() == 3, "lift: the same with the checks off");
 }

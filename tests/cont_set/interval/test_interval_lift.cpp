@@ -34,10 +34,13 @@ void lift_places_the_coordinates(const std::string &b) {
 /// refused; the checks off give the same.
 void checks_and_their_switch() {
     const Interval I(column({1.0, 3.0}), column({2.0, 4.0}));
-    check(test::raises([&] { I.lift(1, {0, 0}); }, Error::wrong_value), "lift: N below the dimension");
-    check(test::raises([&] { I.lift(3, {0}); }, Error::wrong_value), "lift: one coordinate for two");
+    check(test::raises([&] { I.lift(1, {0, 0}); }, Error::wrong_value),
+          "lift: N below the dimension");
+    check(test::raises([&] { I.lift(3, {0}); }, Error::wrong_value),
+          "lift: one coordinate for two");
     check(test::raises([&] { I.lift(3, {0, 3}); }, Error::wrong_value), "lift: coordinate 3 of 3");
-    check(test::raises([&] { I.lift(3, {-1, 0}); }, Error::wrong_value), "lift: a negative coordinate");
+    check(test::raises([&] { I.lift(3, {-1, 0}); }, Error::wrong_value),
+          "lift: a negative coordinate");
     check(test::raises([&] { Interval::empty(2).lift(3, {0, 1}); }, Error::not_supported),
           "lift: an empty interval");
     const std::vector<double> on = I.lift(3, {2, 0}).inf().data();

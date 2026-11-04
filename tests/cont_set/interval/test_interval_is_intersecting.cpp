@@ -47,8 +47,10 @@ void is_intersecting_with_points_and_batches(const std::string &b) {
 
 /// CORA tests the first max(rows, columns) entries of an interval matrix; every entry counts here.
 void is_intersecting_looks_at_every_matrix_entry(const std::string &b) {
-    const Interval A(Tensor::from_data({0, 0, 0, 0}, {2, 2}), Tensor::from_data({1, 1, 1, 1}, {2, 2}));
-    const Interval B(Tensor::from_data({0, 5, 0, 5}, {2, 2}), Tensor::from_data({1, 6, 1, 6}, {2, 2}));
+    const Interval A(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
+                     Tensor::from_data({1, 1, 1, 1}, {2, 2}));
+    const Interval B(Tensor::from_data({0, 5, 0, 5}, {2, 2}),
+                     Tensor::from_data({1, 6, 1, 6}, {2, 2}));
     check(!A.is_intersecting(B) && A.is_intersecting(A), b + ": the second column is disjoint");
 }
 

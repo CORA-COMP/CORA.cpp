@@ -27,13 +27,14 @@ void one_dimension_by_hand(const std::string &b) {
 void every_member_of_the_tensor_zonotope_is_enclosed(const std::string &b) {
     cora::Rng rng(32);
     const int n = 2, m = 2;
-    const Zonotope Z(column({0.0, 0.0}), Zonotope::generate_random(rng, n, std::nullopt, m).generators());
+    const Zonotope Z(column({0.0, 0.0}),
+                     Zonotope::generate_random(rng, n, std::nullopt, m).generators());
     const Tensor Mc = test::random_tensor(rng, n), M1 = test::random_tensor(rng, n),
                  M2 = test::random_tensor(rng, n);
     const Zonotope::TensorLists list = test::triples(m);
     const Zonotope R = Z.tensor_multiplication_zono(Mc, {M1, M2}, list);
     check(R.generators().shape().back() == 3 * int64_t(list.comb.size()), b + ": three parts");
-    for (const auto [a1, a2] : {std::pair{0.7, -0.4}, {1.0, 1.0}, {-1.0, 0.2}}) {
+    for (const auto &[a1, a2] : {std::pair{0.7, -0.4}, {1.0, 1.0}, {-1.0, 0.2}}) {
         const Zonotope member = Z.tensor_multiplication(Mc + M1 * a1 + M2 * a2, list);
         for (int t = 0; t < 10; ++t) {
             const std::vector<double> d = test::random_direction(rng, n);
@@ -56,7 +57,8 @@ void checks_and_their_switch() {
               Error::dimension_mismatch),
           "tensor_multiplication_zono: a generator's shape");
     check(test::raises([&] { Z.tensor_multiplication_zono(M, {M}, {list.perm, list.comb, {}}); },
-                       Error::wrong_value), "tensor_multiplication_zono: map shorter than perm");
+                       Error::wrong_value),
+          "tensor_multiplication_zono: map shorter than perm");
     const Tensor on = Z.tensor_multiplication_zono(M, {M}, list).generators();
     ChecksScope off(false);
     check(close(Z.tensor_multiplication_zono(M, {M}, list).generators(), on, 0),

@@ -15,7 +15,8 @@ namespace {
 
 /// A = [[[1, 2], [0, 1]], [0, [1, 1]]].
 Interval upper_triangular() {
-    return Interval(Tensor::from_data({1, 0, 0, 1}, {2, 2}), Tensor::from_data({2, 1, 0, 1}, {2, 2}));
+    return Interval(Tensor::from_data({1, 0, 0, 1}, {2, 2}),
+                    Tensor::from_data({2, 1, 0, 1}, {2, 2}));
 }
 
 void matrix_power_multiplies_the_intervals(const std::string &b) {

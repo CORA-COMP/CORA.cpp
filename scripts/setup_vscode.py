@@ -1,7 +1,7 @@
 """setup_vscode - writes the machine-specific VS Code settings of this checkout
 
 Syntax:   scripts/with_env.sh python scripts/setup_vscode.py     (scripts/setup_local.sh runs it)
-          Windows: .venv\Scripts\python scripts\setup_vscode.py  (the .venv of the msvc-cuda preset)
+          Windows: .venv\\Scripts\\python scripts\\setup_vscode.py  (the .venv of the msvc-cuda preset)
 Writes:   .vscode/settings.json          the paths tasks.json and launch.json read (coracpp.*), the
                                          interpreter, and the terminal environment
           .vscode/c_cpp_properties.json  IntelliSense: include paths of Eigen and libtorch

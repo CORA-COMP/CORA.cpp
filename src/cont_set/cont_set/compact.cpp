@@ -28,8 +28,8 @@ Set ContSet::compact(const std::optional<std::string> &method, Tol tol) const {
     detail::Entry entry;
     if (const auto methods = compact_methods_impl()) {
         resolve_tol(entry, tol, "compact"); // the check of tol
-        const bool known = !method || std::find(methods->begin(), methods->end(), *method) !=
-                                          methods->end();
+        const bool known =
+            !method || std::find(methods->begin(), methods->end(), *method) != methods->end();
         CORA_CHECK(known, Error::wrong_value, [&] {
             return "compact: the method '" + *method + "' is not one of the class's";
         });

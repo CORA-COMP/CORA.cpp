@@ -114,18 +114,19 @@ std::map<std::string, Case> aux_cases() {
     c["full"] = {1, [](O &o) { return V{o.matrix(1, 1).full_like({2, 3}, 0.1)}; }};
     c["arange"] = {1, [](O &o) { return V{o.matrix(1, 1).arange_like(5)}; }};
     c["eye"] = {1, [](O &o) { return V{o.matrix(1, 1).eye_like(4), o.batch(2, 3, 3).eye_like()}; }};
-    c["to"] = {1, [](O &o) { return V{o.matrix(3, 2).to("cpu"), o.matrix(2, 2).to(DType::float64)}; }};
+    c["to"] = {1,
+               [](O &o) { return V{o.matrix(3, 2).to("cpu"), o.matrix(2, 2).to(DType::float64)}; }};
     c["data"] = {1, [](O &o) {
-        const Tensor x = o.matrix(3, 4);
-        return V{Tensor::like(x, x.data(), x.shape())};
-    }};
+                     const Tensor x = o.matrix(3, 4);
+                     return V{Tensor::like(x, x.data(), x.shape())};
+                 }};
     // elementwise, with broadcasting and a batch
-    const auto binary = [](std::function<Tensor(const Tensor &, const Tensor &)> f) {
+    const auto binary = [](const std::function<Tensor(const Tensor &, const Tensor &)> &f) {
         return Case{1, [f](O &o) {
-            const Tensor a = o.matrix(3, 4), b = o.matrix(3, 1), z = o.batch(2, 3, 4);
-            const Tensor w = o.matrix(3, 4);
-            return V{f(a, w), f(a, b), f(z, a), f(b, z)};
-        }};
+                        const Tensor a = o.matrix(3, 4), b = o.matrix(3, 1), z = o.batch(2, 3, 4);
+                        const Tensor w = o.matrix(3, 4);
+                        return V{f(a, w), f(a, b), f(z, a), f(b, z)};
+                    }};
     };
     c["add"] = binary([](const Tensor &a, const Tensor &b) { return a + b; });
     c["subtract"] = binary([](const Tensor &a, const Tensor &b) { return a - b; });
@@ -136,17 +137,19 @@ std::map<std::string, Case> aux_cases() {
     c["remainder"] = binary([](const Tensor &a, const Tensor &b) { return a.remainder(b); });
     c["atan2"] = binary([](const Tensor &a, const Tensor &b) { return a.atan2(b); });
     c["equal"] = binary([](const Tensor &a, const Tensor &b) { return a.equal(b.maximum(a)); });
-    c["not_equal"] = binary([](const Tensor &a, const Tensor &b) { return a.not_equal(b.maximum(a)); });
+    c["not_equal"] =
+        binary([](const Tensor &a, const Tensor &b) { return a.not_equal(b.maximum(a)); });
     c["less"] = binary([](const Tensor &a, const Tensor &b) { return a.less(b); });
-    c["less_equal"] = binary([](const Tensor &a, const Tensor &b) { return a.less_equal(b.maximum(a)); });
+    c["less_equal"] =
+        binary([](const Tensor &a, const Tensor &b) { return a.less_equal(b.maximum(a)); });
     c["greater"] = binary([](const Tensor &a, const Tensor &b) { return a.greater(b); });
     c["greater_equal"] =
         binary([](const Tensor &a, const Tensor &b) { return a.greater_equal(b.minimum(a)); });
     c["pow"] = {1, [](O &o) {
-        const Tensor base = o.within(3, 4, 0.1, 3.0), p = o.matrix(3, 4);
-        return V{base.pow(p), base.pow(2.5)};
-    }};
-    const auto unary = [](std::function<Tensor(const Tensor &)> f, double lo, double hi) {
+                    const Tensor base = o.within(3, 4, 0.1, 3.0), p = o.matrix(3, 4);
+                    return V{base.pow(p), base.pow(2.5)};
+                }};
+    const auto unary = [](const std::function<Tensor(const Tensor &)> &f, double lo, double hi) {
         return Case{1, [f, lo, hi](O &o) { return V{f(o.within(4, 5, lo, hi))}; }};
     };
     c["negative"] = unary([](const Tensor &x) { return x.negative(); }, -3, 3);
@@ -173,26 +176,27 @@ std::map<std::string, Case> aux_cases() {
     c["square"] = unary([](const Tensor &x) { return x.square(); }, -3, 3);
     c["sigmoid"] = unary([](const Tensor &x) { return x.sigmoid(); }, -6, 6);
     c["clip"] = unary([](const Tensor &x) { return x.clip(-1, 0.5); }, -3, 3);
-    const auto special = [](std::function<Tensor(const Tensor &)> f) {
+    const auto special = [](const std::function<Tensor(const Tensor &)> &f) {
         return Case{1, [f](O &o) {
-            const Tensor x = o.matrix(1, 4);
-            const double inf = std::numeric_limits<double>::infinity();
-            return V{f(Tensor::concat({x, Tensor::like(x, {std::nan(""), inf, -inf, 0.0}, {1, 4})}, -1))};
-        }};
+                        const Tensor x = o.matrix(1, 4);
+                        const double inf = std::numeric_limits<double>::infinity();
+                        return V{f(Tensor::concat(
+                            {x, Tensor::like(x, {std::nan(""), inf, -inf, 0.0}, {1, 4})}, -1))};
+                    }};
     };
     c["isnan"] = special([](const Tensor &x) { return x.isnan(); });
     c["isinf"] = special([](const Tensor &x) { return x.isinf(); });
     c["isfinite"] = special([](const Tensor &x) { return x.isfinite(); });
     c["where"] = {1, [](O &o) {
-        const Tensor a = o.matrix(3, 4), b = o.batch(2, 3, 4), m = o.matrix(3, 1);
-        return V{Tensor::where(m.scalar_op(Tensor::Binary::greater, 0.0), a, b)};
-    }};
+                      const Tensor a = o.matrix(3, 4), b = o.batch(2, 3, 4), m = o.matrix(3, 1);
+                      return V{Tensor::where(m.scalar_op(Tensor::Binary::greater, 0.0), a, b)};
+                  }};
     // reductions along every axis of a batch
-    const auto along = [](std::function<Tensor(const Tensor &, int)> f) {
+    const auto along = [](const std::function<Tensor(const Tensor &, int)> &f) {
         return Case{6, [f](O &o) {
-            const Tensor x = o.batch(3, 4, 6);
-            return V{f(x, 0), f(x, 1), f(x, -1)};
-        }};
+                        const Tensor x = o.batch(3, 4, 6);
+                        return V{f(x, 0), f(x, 1), f(x, -1)};
+                    }};
     };
     c["sum"] = along([](const Tensor &x, int a) { return x.sum(a, true); });
     c["prod"] = along([](const Tensor &x, int a) { return x.prod(a); });
@@ -203,11 +207,11 @@ std::map<std::string, Case> aux_cases() {
     c["cumsum"] = along([](const Tensor &x, int a) { return x.cumsum(a); });
     c["mean"] = along([](const Tensor &x, int a) { return x.mean(a); });
     c["softmax"] = along([](const Tensor &x, int a) { return x.softmax(a); });
-    const auto counting = [](std::function<Tensor(const Tensor &, int)> f) {
+    const auto counting = [](const std::function<Tensor(const Tensor &, int)> &f) {
         return Case{1, [f](O &o) {
-            const Tensor x = o.batch(3, 4, 6).scalar_op(Tensor::Binary::greater, 0.5);
-            return V{f(x, 0), f(x, 1), f(x, -1)};
-        }};
+                        const Tensor x = o.batch(3, 4, 6).scalar_op(Tensor::Binary::greater, 0.5);
+                        return V{f(x, 0), f(x, 1), f(x, -1)};
+                    }};
     };
     c["any"] = counting([](const Tensor &x, int a) { return x.any(a); });
     c["all"] = counting([](const Tensor &x, int a) { return x.all(a); });
@@ -217,118 +221,139 @@ std::map<std::string, Case> aux_cases() {
     c["permute_dims"] = {1, [](O &o) { return V{o.batch(2, 3, 4).permute_dims({2, 0, 1})}; }};
     c["broadcast_to"] = {1, [](O &o) { return V{o.matrix(3, 1).broadcast_to({2, 3, 4})}; }};
     c["slice"] = {1, [](O &o) {
-        const Tensor x = o.batch(2, 5, 7);
-        return V{x.slice(-1, 1, 7, 2), x.slice(1, 2, 3)};
-    }};
+                      const Tensor x = o.batch(2, 5, 7);
+                      return V{x.slice(-1, 1, 7, 2), x.slice(1, 2, 3)};
+                  }};
     c["take"] = {1, [](O &o) {
-        const Tensor x = o.batch(2, 5, 7);
-        return V{x.take({6, 0, 3, 3}, -1), x.take({4}, 1)};
-    }};
+                     const Tensor x = o.batch(2, 5, 7);
+                     return V{x.take({6, 0, 3, 3}, -1), x.take({4}, 1)};
+                 }};
     c["take_along_axis"] = {1, [](O &o) {
-        const Tensor x = o.batch(2, 5, 7);
-        const Tensor idx = Tensor::like(x, {6, 0, 3}, {1, 1, 3});
-        return V{x.take_along_axis(idx, -1)};
-    }};
+                                const Tensor x = o.batch(2, 5, 7);
+                                const Tensor idx = Tensor::like(x, {6, 0, 3}, {1, 1, 3});
+                                return V{x.take_along_axis(idx, -1)};
+                            }};
     c["concat"] = {1, [](O &o) {
-        const Tensor a = o.batch(2, 3, 4), b = o.batch(2, 3, 2), d = o.batch(2, 1, 4);
-        return V{Tensor::concat({a, b}, -1), Tensor::concat({a, d}, 1), Tensor::concat({a, a}, 0)};
-    }};
+                       const Tensor a = o.batch(2, 3, 4), b = o.batch(2, 3, 2),
+                                    d = o.batch(2, 1, 4);
+                       return V{Tensor::concat({a, b}, -1), Tensor::concat({a, d}, 1),
+                                Tensor::concat({a, a}, 0)};
+                   }};
     c["matrix_transpose"] = {1, [](O &o) { return V{o.batch(2, 3, 4).matrix_transpose()}; }};
     c["expand_dims"] = {1, [](O &o) { return V{o.matrix(3, 4).expand_dims(1)}; }};
     c["squeeze"] = {1, [](O &o) { return V{o.batch(3, 1, 4).squeeze(1)}; }};
     c["stack"] = {1, [](O &o) {
-        const Tensor a = o.matrix(3, 4), b = o.matrix(3, 4);
-        return V{Tensor::stack({a, b}), Tensor::stack({a, b}, -1)};
-    }};
+                      const Tensor a = o.matrix(3, 4), b = o.matrix(3, 4);
+                      return V{Tensor::stack({a, b}), Tensor::stack({a, b}, -1)};
+                  }};
     c["flip"] = {1, [](O &o) { return V{o.batch(2, 3, 4).flip(-1)}; }};
     c["tile"] = {1, [](O &o) { return V{o.matrix(2, 3).tile({2, 3})}; }};
     c["diag"] = {1, [](O &o) { return V{o.batch(2, 4, 1).diag()}; }};
-    c["diagonal"] = {1, [](O &o) { return V{o.batch(2, 3, 5).diagonal(), o.matrix(5, 3).diagonal()}; }};
+    c["diagonal"] = {
+        1, [](O &o) { return V{o.batch(2, 3, 5).diagonal(), o.matrix(5, 3).diagonal()}; }};
     c["tril"] = {1, [](O &o) { return V{o.batch(2, 4, 5).tril(), o.matrix(4, 4).tril(-1)}; }};
     c["triu"] = {1, [](O &o) { return V{o.batch(2, 4, 5).triu(1), o.matrix(4, 4).triu()}; }};
-    c["block_diag"] = {1, [](O &o) {
-        return V{Tensor::block_diag({o.matrix(2, 3), o.matrix(1, 1), o.matrix(3, 2)})};
-    }};
+    c["block_diag"] = {
+        1, [](O &o) {
+            return V{Tensor::block_diag({o.matrix(2, 3), o.matrix(1, 1), o.matrix(3, 2)})};
+        }};
     // sorting, with ties
     c["argsort"] = {1, [](O &o) {
-        const Tensor x = o.batch(2, 3, 8).round();
-        return V{x.argsort(-1), x.argsort(1, true)};
-    }};
+                        const Tensor x = o.batch(2, 3, 8).round();
+                        return V{x.argsort(-1), x.argsort(1, true)};
+                    }};
     c["sort"] = {1, [](O &o) {
-        const Tensor x = o.batch(2, 3, 8).round();
-        return V{x.sort(-1), x.sort(0, true)};
-    }};
+                     const Tensor x = o.batch(2, 3, 8).round();
+                     return V{x.sort(-1), x.sort(0, true)};
+                 }};
     c["topk"] = {1, [](O &o) {
-        const auto [v, i] = o.batch(2, 3, 8).round().topk(3);
-        const auto [w, j] = o.batch(2, 3, 8).topk(2, 1, false);
-        return V{v, i, w, j};
-    }};
+                     const auto [v, i] = o.batch(2, 3, 8).round().topk(3);
+                     const auto [w, j] = o.batch(2, 3, 8).topk(2, 1, false);
+                     return V{v, i, w, j};
+                 }};
     c["nonzero"] = {1, [](O &o) {
-        const Tensor x = o.matrix(4, 5).scalar_op(Tensor::Binary::greater, 0.3);
-        return V{aux_indices(x, x.nonzero())};
-    }};
+                        const Tensor x = o.matrix(4, 5).scalar_op(Tensor::Binary::greater, 0.3);
+                        return V{aux_indices(x, x.nonzero())};
+                    }};
     // linear algebra
     c["matmul"] = {7, [](O &o) {
-        const Tensor A = o.matrix(5, 7), B = o.matrix(7, 3), Z = o.batch(2, 7, 3);
-        return V{A.matmul(B), A.matmul(Z)};
-    }};
+                       const Tensor A = o.matrix(5, 7), B = o.matrix(7, 3), Z = o.batch(2, 7, 3);
+                       return V{A.matmul(B), A.matmul(Z)};
+                   }};
     c["solve"] = {5, [](O &o) { return V{o.regular(5).solve(o.matrix(5, 2))}; }};
     c["inv"] = {5, [](O &o) { return V{o.regular(5).inv()}; }};
     c["lstsq"] = {7, [](O &o) { return V{o.matrix(7, 3).lstsq(o.matrix(7, 2))}; }};
     c["cholesky"] = {5, [](O &o) { return V{o.spd(5).cholesky()}; }};
-    c["qr"] = {5, [](O &o) { const auto [Q, R] = o.regular(5).qr(); return V{Q, R}; }};
-    c["svd"] = {5, [](O &o) { const auto [U, S, W] = o.regular(5).svd(); return V{U, S, W}; }};
-    c["eigh"] = {5, [](O &o) { const auto [w, V_] = o.spd(5).eigh(); return V{w, V_}; }};
+    c["qr"] = {5, [](O &o) {
+                   const auto [Q, R] = o.regular(5).qr();
+                   return V{Q, R};
+               }};
+    c["svd"] = {5, [](O &o) {
+                    const auto [U, S, W] = o.regular(5).svd();
+                    return V{U, S, W};
+                }};
+    c["eigh"] = {5, [](O &o) {
+                     const auto [w, V_] = o.spd(5).eigh();
+                     return V{w, V_};
+                 }};
     c["pinv"] = {5, [](O &o) { return V{o.regular(5).pinv()}; }};
     c["matrix_rank"] = {1, [](O &o) {
-        const Tensor A = o.matrix(5, 2);
-        const Tensor low = A.matmul(A.matrix_transpose());
-        return V{Tensor::like(low, {double(low.matrix_rank())}, {1, 1})};
-    }};
+                            const Tensor A = o.matrix(5, 2);
+                            const Tensor low = A.matmul(A.matrix_transpose());
+                            return V{Tensor::like(low, {double(low.matrix_rank())}, {1, 1})};
+                        }};
     c["trace"] = {5, [](O &o) { return V{o.batch(2, 5, 5).trace()}; }};
     c["kron"] = {1, [](O &o) {
-        return V{o.matrix(2, 3).kron(o.matrix(3, 2)), o.batch(2, 2, 2).kron(o.matrix(2, 1))};
-    }};
-    c["expm"] = {4, [](O &o) { return V{(o.matrix(4, 4) * 0.5).expm(), (o.batch(2, 3, 3) * 3.0).expm()}; }};
+                     return V{o.matrix(2, 3).kron(o.matrix(3, 2)),
+                              o.batch(2, 2, 2).kron(o.matrix(2, 1))};
+                 }};
+    c["expm"] = {
+        4, [](O &o) { return V{(o.matrix(4, 4) * 0.5).expm(), (o.batch(2, 3, 3) * 3.0).expm()}; }};
     c["matrix_norm"] = {6, [](O &o) {
-        const Tensor A = o.batch(2, 6, 4);
-        return V{A.matrix_norm(Norm::one), A.matrix_norm(Norm::inf), A.matrix_norm(Norm::fro),
-                 A.matrix_norm(Norm::two)};
-    }};
+                            const Tensor A = o.batch(2, 6, 4);
+                            return V{A.matrix_norm(Norm::one), A.matrix_norm(Norm::inf),
+                                     A.matrix_norm(Norm::fro), A.matrix_norm(Norm::two)};
+                        }};
     c["vector_norm"] = {6, [](O &o) {
-        const Tensor x = o.batch(2, 6, 4);
-        return V{x.vector_norm(Norm::one, 1), x.vector_norm(Norm::inf, -1),
-                 x.vector_norm(Norm::two, 1, true)};
-    }};
+                            const Tensor x = o.batch(2, 6, 4);
+                            return V{x.vector_norm(Norm::one, 1), x.vector_norm(Norm::inf, -1),
+                                     x.vector_norm(Norm::two, 1, true)};
+                        }};
     // fused primitives
     c["zonotope_linear_map"] = {5, [](O &o) {
-        const auto [Mc, MG] = Tensor::zonotope_linear_map(o.matrix(4, 5), o.matrix(5, 1), o.batch(2, 5, 9));
-        return V{Mc, MG};
-    }};
+                                    const auto [Mc, MG] = Tensor::zonotope_linear_map(
+                                        o.matrix(4, 5), o.matrix(5, 1), o.batch(2, 5, 9));
+                                    return V{Mc, MG};
+                                }};
     c["zonotope_interval_map"] = {6, [](O &o) {
-        const Tensor lo = o.batch(2, 4, 4), w = o.batch(2, 4, 4).abs();
-        const auto [Tc, TG] = Tensor::zonotope_interval_map(lo, lo + w, o.batch(2, 4, 1), o.batch(2, 4, 6));
-        return V{Tc, TG};
-    }};
+                                      const Tensor lo = o.batch(2, 4, 4),
+                                                   w = o.batch(2, 4, 4).abs();
+                                      const auto [Tc, TG] = Tensor::zonotope_interval_map(
+                                          lo, lo + w, o.batch(2, 4, 1), o.batch(2, 4, 6));
+                                      return V{Tc, TG};
+                                  }};
     c["zonotope_linear_combination"] = {1, [](O &o) {
-        const auto [c, G] = Tensor::zonotope_linear_combination(o.batch(2, 4, 1), o.batch(2, 4, 5),
-                                                                o.batch(2, 4, 1), o.batch(2, 4, 5));
-        return V{c, G};
-    }};
+                                            const auto [c, G] = Tensor::zonotope_linear_combination(
+                                                o.batch(2, 4, 1), o.batch(2, 4, 5),
+                                                o.batch(2, 4, 1), o.batch(2, 4, 5));
+                                            return V{c, G};
+                                        }};
     c["interval_matmul"] = {6, [](O &o) {
-        const Tensor lo = o.batch(2, 4, 6), w = o.batch(2, 4, 6).abs();
-        const auto [a, b] = Tensor::interval_matmul(lo, lo + w, o.matrix(6, 3));
-        return V{a, b};
-    }};
+                                const Tensor lo = o.batch(2, 4, 6), w = o.batch(2, 4, 6).abs();
+                                const auto [a, b] =
+                                    Tensor::interval_matmul(lo, lo + w, o.matrix(6, 3));
+                                return V{a, b};
+                            }};
     c["matmul_interval"] = {6, [](O &o) {
-        const Tensor lo = o.matrix(6, 3), w = o.matrix(6, 3).abs();
-        const auto [a, b] = Tensor::matmul_interval(o.batch(2, 4, 6), lo, lo + w);
-        return V{a, b};
-    }};
+                                const Tensor lo = o.matrix(6, 3), w = o.matrix(6, 3).abs();
+                                const auto [a, b] =
+                                    Tensor::matmul_interval(o.batch(2, 4, 6), lo, lo + w);
+                                return V{a, b};
+                            }};
     c["girard_split"] = {1, [](O &o) {
-        const auto [kept, rest] = o.batch(2, 4, 11).girard_split(5);
-        return V{kept, rest};
-    }};
+                             const auto [kept, rest] = o.batch(2, 4, 11).girard_split(5);
+                             return V{kept, rest};
+                         }};
     c["abs_sum"] = {9, [](O &o) { return V{o.batch(2, 4, 9).abs_sum()}; }};
     return c;
 }
@@ -345,7 +370,8 @@ std::vector<Tensor> aux_run(const std::string &name, const Case &c, bool abs) {
 int main() {
     const std::map<std::string, Case> cases = aux_cases();
     for (const OpInfo &info : tensor_ops())
-        check(cases.count(info.name) == 1, std::string(info.name) + ": a case of the equivalence test");
+        check(cases.count(info.name) == 1,
+              std::string(info.name) + ": a case of the equivalence test");
     for (const OpInfo &info : tensor_ops()) {
         const auto found = cases.find(info.name);
         if (found == cases.end()) continue;
@@ -365,7 +391,8 @@ int main() {
             const std::vector<Tensor> got = aux_run(b, c, false);
             check(got.size() == ref.size(), std::string(info.name) + " on " + b + ": the results");
             for (std::size_t i = 0; i < std::min(got.size(), ref.size()); ++i)
-                aux_agree(info, c.n, ref[i], got[i].to("cpu"), scale.empty() ? ref[i] : scale[i].abs(),
+                aux_agree(info, c.n, ref[i], got[i].to("cpu"),
+                          scale.empty() ? ref[i] : scale[i].abs(),
                           std::string(info.name) + " on " + b + ", result " + std::to_string(i));
         }
     }

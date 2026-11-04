@@ -52,8 +52,8 @@ std::string aux_unknown(const std::string &spec) {
 
 struct Process {
     bool running = false;
-    FILE *in = nullptr;   // the oracle's stdout
-    FILE *out = nullptr;  // the oracle's stdin
+    FILE *in = nullptr;  // the oracle's stdout
+    FILE *out = nullptr; // the oracle's stdin
 #ifdef _WIN32
     HANDLE handle = nullptr;
 #else

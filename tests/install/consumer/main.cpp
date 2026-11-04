@@ -13,9 +13,10 @@ int main() {
     // a reachable set of x' = A x from a box
     const LinearSys sys(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}));
     const Zonotope X0(Tensor({1.0, 0.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
-    const ReachSet R = sys.reach({.initial_set = X0, .t_final = 1.0}, alg::Standard{.time_step = 0.1});
-    std::cout << "consumer: " << R.time_point.size() << " time points, checks "
-              << CORACPP_CHECKS << "\n";
+    const ReachSet R =
+        sys.reach({.initial_set = X0, .t_final = 1.0}, alg::Standard{.time_step = 0.1});
+    std::cout << "consumer: " << R.time_point.size() << " time points, checks " << CORACPP_CHECKS
+              << "\n";
     // an input error carries CORA's identifier
     try {
         sys.reach({.initial_set = X0, .t_final = -1.0}, alg::Standard{.time_step = 0.1});

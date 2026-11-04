@@ -13,10 +13,10 @@
 // CORA: contSet/@zonotope/and_.m
 // CORA: contSet/@zonotope/private/priv_andAveraging.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
-#include "cont_set/zonotope/private/priv.h"
 
 #include <limits>
 
@@ -49,8 +49,8 @@ Zonotope aux_average(const Zonotope &Z1, const Zonotope &Z2) {
     const Tensor w1 = 1.0 / t1.multiply(inverse_sum), w2 = 1.0 / t2.multiply(inverse_sum);
     const Tensor total = w1 + w2;
     const Tensor c = w1.multiply(Z1.center()).add(w2.multiply(Z2.center())).divide(total);
-    const Tensor G = Tensor::concat(
-        {w1.multiply(Z1.generators()), w2.multiply(Z2.generators())}, -1);
+    const Tensor G =
+        Tensor::concat({w1.multiply(Z1.generators()), w2.multiply(Z2.generators())}, -1);
     return {c, (1.0 / total).multiply(G)};
 }
 

@@ -30,7 +30,8 @@ void batches_are_their_members(const std::string &name) {
         const Tensor Ab = aux_member(A, b), Bb = aux_member(B, b);
         const std::string at = name + ", member " + std::to_string(b);
         check(close(aux_member(A.matmul(B), b), Ab.matmul(Bb), product_tol), at + ": matmul");
-        check(close(aux_member(A.matmul(single), b), Ab.matmul(single), product_tol), at + ": broadcast");
+        check(close(aux_member(A.matmul(single), b), Ab.matmul(single), product_tol),
+              at + ": broadcast");
         check(close(aux_member(A.solve(B), b), Ab.solve(Bb), 1e-12), at + ": solve");
         check(close(aux_member(A.sum(-1, true), b), Ab.sum(-1, true), 0), at + ": sum");
         check(close(aux_member(A.diagonal(), b), Ab.diagonal(), 0), at + ": diagonal");
@@ -46,7 +47,7 @@ void batches_are_their_members(const std::string &name) {
 
 int main() {
     std::vector<std::string> all = test::backends();
-    all.push_back("lean");
+    all.emplace_back("lean");
     for (const std::string &b : all) {
         const BackendScope scope(b);
         batches_are_their_members(b);

@@ -21,8 +21,9 @@ void cart_prod_of_known_sets(const std::string &b) {
     const Zonotope Z2(column({5.0}), Tensor({{6.0, 7.0, 8.0}}));
     const Zonotope P = Z.cart_prod(Z2);
     check(close(P.center(), std::vector<double>{1, 2, 5}, 0), b + ": centers stack");
-    check(close(P.generators(), std::vector<double>{1, 2, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 6, 7, 8}, 0),
-          b + ": block diagonal generators");
+    check(
+        close(P.generators(), std::vector<double>{1, 2, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 6, 7, 8}, 0),
+        b + ": block diagonal generators");
 
     const Zonotope with_point = Z.cart_prod(column({9.0}));
     check(close(with_point.generators(), std::vector<double>{1, 2, 3, 4, 0, 0}, 0),
@@ -38,7 +39,8 @@ void cart_prod_of_known_sets(const std::string &b) {
     check(with_box.generators().shape() == std::vector<int64_t>({4, 4}), b + ": a box: two axes");
 
     const Set via_sets = cart_prod(Z, I);
-    check(via_sets.is<Zonotope>() && via_sets.as<Zonotope>().dim() == 4, b + ": through the registry");
+    check(via_sets.is<Zonotope>() && via_sets.as<Zonotope>().dim() == 4,
+          b + ": through the registry");
 }
 
 /// A batch of products, member by member.
@@ -77,7 +79,8 @@ void checks_and_their_switch() {
           "cart_prod: a batch and a single zonotope");
     const Tensor on = Z.cart_prod(Z).generators();
     ChecksScope off(false);
-    check(test::close(Z.cart_prod(Z).generators(), on, 0), "cart_prod: the same with the checks off");
+    check(test::close(Z.cart_prod(Z).generators(), on, 0),
+          "cart_prod: the same with the checks off");
 }
 
 } // namespace

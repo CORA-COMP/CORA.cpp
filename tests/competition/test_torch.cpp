@@ -1,5 +1,5 @@
-// test_torch - the libtorch backend: its operations against their definitions, its containment against
-// the Eigen backend's, and its gradients against the analytic ones.
+// test_torch - the libtorch backend: its operations against their definitions, its containment
+// against the Eigen backend's, and its gradients against the analytic ones.
 //
 // The cross-check is the point of this file. Each backend already agrees with the LP on
 // its own, which catches an inconsistency inside one of them but not a shared misreading
@@ -81,7 +81,7 @@ void the_two_backends_agree(const torch::TensorOptions &opts, const std::string 
     // takes the factored form that the catalog's largest instances run on; every smaller
     // shape here takes the held one. Both paths are checked against the same LP.
     const Shape shapes[] = {{1, 2}, {2, 4}, {3, 6}, {5, 10}, {10, 20}, {30, 60}, {5, 2500}};
-    for (const auto [n, m] : shapes) {
+    for (const auto &[n, m] : shapes) {
         const Eigen::Index batch = 3, points = 12;
         const EigenZonotope set = cora::comp::random_zonotope(rng, n, m, batch);
         const cora::comp::Mat<double> probes = cora::comp::across_the_boundary(set, points, rng);
@@ -102,9 +102,8 @@ void the_two_backends_agree(const torch::TensorOptions &opts, const std::string 
         bool same = true;
         for (std::size_t k = 0; k < from_eigen.size(); ++k)
             same &= (from_eigen[k] != 0) == answers[k];
-        check(same,
-              where + ": the backends disagreed about containment at " + std::to_string(n)
-                  + "x" + std::to_string(m));
+        check(same, where + ": the backends disagreed about containment at " + std::to_string(n) +
+                        "x" + std::to_string(m));
     }
 }
 
@@ -115,8 +114,10 @@ int main() {
     if (torch::cuda::is_available()) devices.emplace_back("gpu");
 
     for (const std::string &device : devices) {
-        const auto opts = torch::TensorOptions().dtype(torch::kDouble).device(
-            device == "gpu" ? torch::Device(torch::kCUDA, 0) : torch::Device(torch::kCPU));
+        const auto opts = torch::TensorOptions()
+                              .dtype(torch::kDouble)
+                              .device(device == "gpu" ? torch::Device(torch::kCUDA, 0)
+                                                      : torch::Device(torch::kCPU));
         torch::manual_seed(7);
         the_operations_match_their_definitions(opts, device);
         the_two_backends_agree(opts, device);

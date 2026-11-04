@@ -28,7 +28,7 @@ void the_text_names_dimension_center_and_generators(const std::string &b) {
 }
 
 void a_batch_is_described_by_its_shape(const std::string &b) {
-    if (b == "eigen") return;  // Eigen has no batches
+    if (b == "eigen") return; // Eigen has no batches
     const Zonotope Z(Tensor({1.0, 0.0}), Tensor::eye(2));
     const Zonotope batch = Zonotope::stack({Z, Z, Z});
     check(batch.display().find("batch of shape (3, 2, 1)") != std::string::npos,

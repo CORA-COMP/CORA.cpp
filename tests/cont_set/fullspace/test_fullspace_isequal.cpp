@@ -20,7 +20,8 @@ void isequal_recognizes_the_whole_space(const std::string &b) {
     const Fullspace F(2);
     check(F.isequal(Fullspace(2)) && !F.isequal(Fullspace(3)), b + ": another fullspace");
     check(F.isequal(Interval::unbounded(2)), b + ": the unbounded box");
-    check(!F.isequal(Interval(column({-kInf, 0.0}), column({kInf, kInf}))), b + ": one finite bound");
+    check(!F.isequal(Interval(column({-kInf, 0.0}), column({kInf, kInf}))),
+          b + ": one finite bound");
     check(!F.isequal(Interval(column({-1e300, -1e300}), column({1e300, 1e300}))), b + ": huge");
     check(!F.isequal(Interval::empty(2)), b + ": the empty interval (CORA says true)");
     check(!F.isequal(Interval::unbounded(3)), b + ": another dimension");

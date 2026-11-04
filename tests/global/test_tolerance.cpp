@@ -21,7 +21,8 @@ constexpr DType f32 = DType::float32;
 
 void defaults_follow_the_dtype() {
     check(machine_eps(f64) == std::numeric_limits<double>::epsilon(), "machine eps of float64");
-    check(machine_eps(f32) == double(std::numeric_limits<float>::epsilon()), "machine eps of float32");
+    check(machine_eps(f32) == double(std::numeric_limits<float>::epsilon()),
+          "machine eps of float32");
     check(default_tol(f64) == 100 * machine_eps(f64), "float64: 100 machine epsilons");
     check(default_tol(f32) == 100 * machine_eps(f32), "float32: 100 machine epsilons of float32");
     check(default_tol(f32) > 1e6 * default_tol(f64), "float32 has the larger default");
@@ -131,7 +132,8 @@ void operations_resolve_at_the_entry() {
     const Zonotope Z(Tensor({{0.0}, {0.0}}), Tensor({{1.0, 0.2, 1e-12}, {0.5, 1.0, 0.0}}));
     check(Z.contains(Z) && Z.contains(Zonotope(Z.center(), Z.generators() * 1.0)),
           "zonotope: contains itself and its copy");
-    check(Z.compact().generators().shape().back() == 3, "a generator of norm 1e-12 stays by default");
+    check(Z.compact().generators().shape().back() == 3,
+          "a generator of norm 1e-12 stays by default");
     {
         ToleranceScope scope(1e-10);
         check(Z.compact().generators().shape().back() == 2, "... and goes within a scope");

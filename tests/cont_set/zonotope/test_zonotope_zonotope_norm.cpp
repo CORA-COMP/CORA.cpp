@@ -30,10 +30,12 @@ void cora_unit_test(const std::string &b) {
     check(close(shifted.zonotope_norm(column({5.0, 3.0})), std::vector<double>{2.2}, 1e-9),
           b + ": the center is ignored");
     const Zonotope point(column({0.0, 0.0}), Tensor::zeros({2, 0}));
-    check(close(point.zonotope_norm(column({0.0, 0.0})), std::vector<double>{0}, 0), b + ": a point: 0");
+    check(close(point.zonotope_norm(column({0.0, 0.0})), std::vector<double>{0}, 0),
+          b + ": a point: 0");
     check(point.zonotope_norm(column({1.0, 0.0})).item() == kInf, b + ": a point: infinity");
     const Zonotope line(column({0.0, 0.0}), Tensor({{1.0}, {0.0}}));
-    check(line.zonotope_norm(column({0.0, 1.0})).item() == kInf, b + ": outside the span: infinity");
+    check(line.zonotope_norm(column({0.0, 1.0})).item() == kInf,
+          b + ": outside the span: infinity");
     check(line.zonotope_norm_minimizer(column({0.0, 1.0})).second.shape() == Shape{0, 1},
           b + ": no minimizer then");
 }
@@ -61,13 +63,16 @@ void the_minimizer_reaches_the_point(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Zonotope::stack({Z, Z}).zonotope_norm(column({1.0, 0.0})); },
-                       Error::not_supported), "zonotope_norm: a batch");
-    check(test::raises([&] { Z.zonotope_norm(column({1.0, 0.0, 0.0})); }, Error::dimension_mismatch),
-          "zonotope_norm: a point of dimension 3");
+                       Error::not_supported),
+          "zonotope_norm: a batch");
+    check(
+        test::raises([&] { Z.zonotope_norm(column({1.0, 0.0, 0.0})); }, Error::dimension_mismatch),
+        "zonotope_norm: a point of dimension 3");
     int warnings = 0;
     const WarningHandler previous =
         set_warning_handler([&](const std::string &, const std::string &) { ++warnings; });
-    Zonotope(column({1.0, 0.0}), Tensor({{1.0}, {0.0}})).zonotope_norm_minimizer(column({1.0, 0.0}));
+    Zonotope(column({1.0, 0.0}), Tensor({{1.0}, {0.0}}))
+        .zonotope_norm_minimizer(column({1.0, 0.0}));
     Z.zonotope_norm_minimizer(column({1.0, 0.0}));
     set_warning_handler(previous);
     check(warnings == 1, "zonotope_norm_minimizer: one warning, for the shifted zonotope");

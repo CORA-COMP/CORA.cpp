@@ -56,6 +56,9 @@ else
 fi
 "$CONDA" run -n "$ENV_NAME" --no-capture-output python -m pip install --quiet torch --index-url "$index"
 
+# --- the code-quality tools (clang-format, clang-tidy, ruff; pinned in the requirements file) ---------
+"$CONDA" run -n "$ENV_NAME" --no-capture-output python -m pip install --quiet -r "$SCRIPTS/requirements-quality.txt"
+
 # --- a fast build directory when the sources are on a slow drive ------------------------
 case "$ROOT" in
     /mnt/*)

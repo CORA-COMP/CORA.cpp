@@ -24,7 +24,8 @@ void known_rays(const std::string &b) {
     check(close(Z.boundary_point(column({3.0, 3.0})), std::vector<double>{1, 1}, 1e-9),
           b + ": the direction need not be a unit vector");
     check(close(Z.boundary_point(column({1.0, 1.0}), column({1.0, 0.0})),
-                std::vector<double>{1.5, 0.5}, 1e-9), b + ": from (1, 0) along (1, 1)");
+                std::vector<double>{1.5, 0.5}, 1e-9),
+          b + ": from (1, 0) along (1, 1)");
     const Zonotope Z1(column({3.0}), Tensor({{1.0, -2.0}}));
     check(close(Z1.boundary_point(column({-1.0})), std::vector<double>{0}, 0), b + ": 1-D, left");
     check(close(Z1.boundary_point(column({2.0})), std::vector<double>{6}, 0), b + ": 1-D, right");
@@ -37,7 +38,8 @@ void the_point_is_on_the_boundary(const std::string &b) {
     for (int trial = 0; trial < 8; ++trial) {
         const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
         const std::vector<double> dir = test::random_direction(rng, 3);
-        const Tensor d = column(dir), c = Z.center();
+        const Tensor d = column(dir);
+        const Tensor &c = Z.center();
         const Tensor start = c + (Z.rand_point(1, rng) - c) * 0.5; // an interior point
         for (const Tensor &s : {c, start}) {
             const Tensor x = Z.boundary_point(d, s);
@@ -59,13 +61,17 @@ void checks_and_their_switch() {
     check(test::raises([&] { Z.boundary_point(column({0.0, 0.0})); }, Error::wrong_value),
           "boundary_point: the zero direction");
     check(test::raises([&] { Z.boundary_point(column({1.0, 0.0}), column({5.0, 0.0})); },
-                       Error::wrong_value), "boundary_point: a start outside");
-    check(test::raises([&] { Z.boundary_point(column({1.0, 0.0, 0.0})); }, Error::dimension_mismatch),
-          "boundary_point: a direction of dimension 3");
+                       Error::wrong_value),
+          "boundary_point: a start outside");
+    check(
+        test::raises([&] { Z.boundary_point(column({1.0, 0.0, 0.0})); }, Error::dimension_mismatch),
+        "boundary_point: a direction of dimension 3");
     check(test::raises([&] { Z.boundary_point(column({1.0, 0.0}), column({0.0})); },
-                       Error::dimension_mismatch), "boundary_point: a start of dimension 1");
+                       Error::dimension_mismatch),
+          "boundary_point: a start of dimension 1");
     check(test::raises([&] { Zonotope::stack({Z, Z}).boundary_point(column({1.0, 0.0})); },
-                       Error::not_supported), "boundary_point: a batch");
+                       Error::not_supported),
+          "boundary_point: a batch");
     const Tensor on = Z.boundary_point(column({1.0, 0.0}));
     ChecksScope off(false);
     check(close(Z.boundary_point(column({1.0, 0.0})), on, 0), "boundary_point: checks off");

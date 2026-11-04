@@ -18,7 +18,8 @@ void the_projection_keeps_only_the_dimension(const std::string &b) {
           b + ": a repeated entry gives the enclosure, as in CORA");
 }
 
-/// A dimension outside 0..n-1, none, and R^0 are refused; with the checks off the result is the same.
+/// A dimension outside 0..n-1, none, and R^0 are refused; with the checks off the result is the
+/// same.
 void checks_and_their_switch() {
     const Fullspace F(3);
     check(test::raises([&] { F.project({3}); }, Error::wrong_value), "project: dimension 3 of 3");

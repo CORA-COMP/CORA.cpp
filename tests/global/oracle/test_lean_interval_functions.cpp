@@ -51,7 +51,7 @@ bool aux_agree(const std::string &what, const Interval &a, const lean::Interval 
     const std::pair<Tensor, Tensor> theirs = b.gather();
     const std::vector<double> lo = theirs.first.data(), hi = theirs.second.data();
     for (std::size_t i = 0; i < lo.size(); ++i)
-        for (const auto [x, y] : {std::pair{mine.first[i], lo[i]}, {mine.second[i], hi[i]}})
+        for (const auto &[x, y] : {std::pair{mine.first[i], lo[i]}, {mine.second[i], hi[i]}})
             if (std::abs(x - y) > agree * std::max(1.0, std::abs(y))) {
                 std::cerr << "  " << what << ": " << x << " in CORA.cpp, " << y
                           << " in the oracle\n";

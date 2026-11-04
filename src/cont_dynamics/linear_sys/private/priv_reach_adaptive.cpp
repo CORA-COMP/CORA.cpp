@@ -36,19 +36,17 @@ namespace cora {
 
 namespace {
 
-constexpr double kNaN =
-    std::numeric_limits<double>::quiet_NaN();
-constexpr double kInf =
-    std::numeric_limits<double>::infinity();
-constexpr int kMaxEta = 75;  // Taylor terms of the particular solution before it counts as slow
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr int kMaxEta = 75; // Taylor terms of the particular solution before it counts as slow
 
-using Cols = std::vector<std::vector<double>>;  // the columns of a matrix
+using Cols = std::vector<std::vector<double>>; // the columns of a matrix
 
 /// The auxiliary sets of the running step, and the solution propagated over the steps.
 struct SetState {
     // Propagated over the steps.
     std::optional<Zonotope> startset, Hstartp, enc;
-    Tensor Pu, Putotal, G_PUtotal_infty;  // (n, 1)
+    Tensor Pu, Putotal, G_PUtotal_infty; // (n, 1)
     // The particular solution of U, reduced: columns of G, of G without its largest entry, and
     // their girard metric; the box part G_PUtotal_infty is kept as a vector.
     Cols G_PUtotal_zero, Ghat_PUtotal_zero;
@@ -312,8 +310,8 @@ double aux_reduce(TaylorLinSys &taylor, double t, SetState &set, const Chosen &c
 /// What the errors of a step depend on besides the step size.
 struct Problem {
     TaylorLinSys *taylor;
-    Tensor GU, u;     ///< generators of U (n, mU) and the constant input offset (n, 1)
-    bool is_u, isu;   ///< whether U has generators, and whether the offset is nonzero
+    Tensor GU, u;   ///< generators of U (n, mU) and the constant input offset (n, 1)
+    bool is_u, isu; ///< whether U has generators, and whether the offset is nonzero
 };
 
 /// Sets list[k][it], growing the lists.
@@ -493,9 +491,9 @@ int aux_savedata(AdaptiveSaveData &sd, int kIter, bool fullcomp, const Problem &
         sd.time_step.push_back(time_step);
         sd.fullcomp.push_back(0);
         sd.e_g.push_back(kNaN);
-        for (auto *v : {&sd.GuTrans_center, &sd.GuTrans_Gbox, &sd.Pu, &sd.G_PU_zero,
-                        &sd.G_PU_infty, &sd.PU_A_sum_error})
-            v->push_back(std::nullopt);
+        for (auto *v : {&sd.GuTrans_center, &sd.GuTrans_Gbox, &sd.Pu, &sd.G_PU_zero, &sd.G_PU_infty,
+                        &sd.PU_A_sum_error})
+            v->emplace_back(std::nullopt);
     }
     // What the step size needs: the input curvature (full steps) and the particular solution.
     sd.time_step[idx - 1] = time_step;
@@ -570,7 +568,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
     }
 
     auto map_c = [&](const Tensor &M) { return params.C ? params.C->matmul(M) : M; };
-    out.time_point.push_back(Zonotope(map_c(params.R0.center()), map_c(params.R0.generators())));
+    out.time_point.emplace_back(Zonotope(map_c(params.R0.center()), map_c(params.R0.generators())));
     out.time_point_error.push_back(0.0);
     out.time.push_back(0.0);
     std::vector<char> fullcomp;
@@ -720,9 +718,9 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             if (std::abs(time_step - max_time_step_spec) < numerics::kTimeStepMatch)
                 set.Hstartp = Zonotope(e_atkplus1->matmul(params.R0.center()) + set.Putotal,
                                        e_atkplus1->matmul(params.R0.generators()));
-            out.time_interval.push_back(std::nullopt);
+            out.time_interval.emplace_back(std::nullopt);
             out.time_interval_error.push_back(kNaN);
-            out.time_point.push_back(std::nullopt);
+            out.time_point.emplace_back(std::nullopt);
             out.time_point_error.push_back(kNaN);
         } else {
             set.Hstartp = Zonotope(e_adtk.matmul(set.startset->center()) + set.Pu,
@@ -748,10 +746,10 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
                 Gtp.push_back(map_c(infty.diag()));
             }
             Gout.push_back(map_c(boxes.diag()));
-            out.time_interval.push_back(
+            out.time_interval.emplace_back(
                 Zonotope(map_c(set.enc->center() + ch.box_fc + ch.GuC), Tensor::concat(Gout, -1)));
             out.time_interval_error.push_back(err_r2_y * Rc);
-            out.time_point.push_back(
+            out.time_point.emplace_back(
                 Zonotope(map_c(set.Hstartp->center()), Tensor::concat(Gtp, -1)));
             out.time_point_error.push_back(err_r2_y * Rtp);
         }

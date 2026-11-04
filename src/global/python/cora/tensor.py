@@ -12,9 +12,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ._cora import Expr, current_backend, _default_tol
-from ._cora import cos as _cos_expr, exp as _exp_expr, sin as _sin_expr
-
+from ._cora import Expr, _default_tol, current_backend
+from ._cora import cos as _cos_expr
+from ._cora import exp as _exp_expr
+from ._cora import sin as _sin_expr
 
 if TYPE_CHECKING:
     from ._cora import Array

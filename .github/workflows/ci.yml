@@ -1,6 +1,7 @@
 # CI, tier 1: every push to a pull request and every merge-queue group (target: under 10 minutes)
 #
-# `checks` needs no build. The Linux jobs build everything but run the tests the change can affect
+# `checks` needs no build (it includes clang-format and ruff on the changed files); `tidy` configures the
+# python preset and runs clang-tidy on the changed translation units. The Linux jobs build everything but run the tests the change can affect
 # (scripts/ci/affected_tests.py); a documentation-only change skips them. In the merge queue the
 # change is the group against the main it lands on, so semantic conflicts between pull requests
 # show there. `instructions` compares the micro-benchmarks with the base commit's (pull requests
@@ -30,9 +31,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - run: python3 -m pip install --quiet pyyaml
+      - run: python3 -m pip install --quiet pyyaml -r scripts/requirements-quality.txt
       - name: format
         run: python3 scripts/ci/check_format.py
+      - name: clang-format
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: python3 scripts/ci/check_quality.py format --base "$BASE"
+      - name: ruff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: python3 scripts/ci/check_quality.py lint --base "$BASE"
       - name: conventions
         run: python3 tests/global/test_coding_conventions.py
       - name: coverage
@@ -55,6 +64,20 @@ jobs:
           else
             echo "perf=false" >> "$GITHUB_OUTPUT"
           fi
+
+  tidy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - run: python3 -m pip install --quiet -r scripts/requirements-quality.txt
+      - name: configure (the compile database, with the Python bindings)
+        run: cmake --preset python -DCORACPP_NATIVE=OFF
+      - name: clang-tidy
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: python3 scripts/ci/check_quality.py tidy --base "$BASE" -j "$(nproc)"
 
   linux-core:
     needs: checks
@@ -93,7 +116,7 @@ jobs:
   # documentation-only change skips the builds), a failure otherwise.
   ci-gate:
     if: always()
-    needs: [checks, linux-core, linux-python, instructions]
+    needs: [checks, tidy, linux-core, linux-python, instructions]
     runs-on: ubuntu-24.04
     steps:
       - env:

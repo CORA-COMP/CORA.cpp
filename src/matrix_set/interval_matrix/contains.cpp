@@ -9,8 +9,8 @@
 //
 // CORA: matrixSet/@intervalMatrix/contains.m
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "cora/global/within_tol.h"
+#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //

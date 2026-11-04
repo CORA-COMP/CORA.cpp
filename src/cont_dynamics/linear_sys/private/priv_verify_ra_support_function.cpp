@@ -39,10 +39,10 @@ namespace {
 
 // Constants and types -----------------------------------------------------------------------------
 
-constexpr int kMaxEta = 75;           // Taylor terms before a step size counts as not converged
-constexpr int kStepsStart = 100;      // steps of the first pass
-constexpr double kShrinkFixed = 0.2;  // step size factor of a pass that does not decide
-constexpr double kShrinkNonconverged = 0.2;  // factor when a Taylor sum does not converge
+constexpr int kMaxEta = 75;          // Taylor terms before a step size counts as not converged
+constexpr int kStepsStart = 100;     // steps of the first pass
+constexpr double kShrinkFixed = 0.2; // step size factor of a pass that does not decide
+constexpr double kShrinkNonconverged = 0.2; // factor when a Taylor sum does not converge
 
 using Intervals = std::vector<std::array<double, 2>>;
 
@@ -64,7 +64,7 @@ struct Csr {
 
 /// A^i / i!, kept over the passes; A^-1 if A is invertible.
 struct Expmat {
-    std::vector<std::vector<double>> Apower;  // row-major (n, n), on the host
+    std::vector<std::vector<double>> Apower; // row-major (n, n), on the host
     std::optional<Tensor> Ainv;
     // A by rows (CSR) when it is sparse: the powers then cost n nnz(A) instead of n^3.
     bool sparse_a = false;
@@ -385,6 +385,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
     if (isu && N > 0) {
         std::vector<Tensor> cols;
         Tensor P = Pu.zeros_like();
+        cols.reserve(N);
         for (int k = 0; k < N; ++k) cols.push_back(P = Delta.matmul(P) + Pu);
         PuProj = l_t.matmul(Tensor::concat(cols, -1)).data();
     }

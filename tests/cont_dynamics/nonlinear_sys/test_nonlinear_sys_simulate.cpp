@@ -14,7 +14,8 @@ namespace {
 
 /// The harmonic oscillator x' = (x2, -x1) has the solution (cos t, -sin t) from (1, 0).
 void follows_the_harmonic_oscillator(const std::string &b) {
-    const NonlinearSys sys([](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
+    const NonlinearSys sys(
+        [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
     const std::vector<Tensor> x =
         sys.simulate({.initial_state = Tensor({{1.0, 0.0}, {0.0, 1.0}}), .t_final = 2.0},
                      alg::RungeKutta4{.time_step = 0.1});
@@ -22,7 +23,7 @@ void follows_the_harmonic_oscillator(const std::string &b) {
     double worst = 0;
     for (std::size_t k = 0; k < x.size(); ++k) {
         const double t = 0.1 * double(k);
-        const std::vector<double> d = x[k].data();  // rows (x1; x2), columns the two start points
+        const std::vector<double> d = x[k].data(); // rows (x1; x2), columns the two start points
         worst = std::max({worst, std::abs(d[0] - std::cos(t)), std::abs(d[2] + std::sin(t)),
                           std::abs(d[1] - std::sin(t)), std::abs(d[3] - std::cos(t))});
     }
@@ -42,11 +43,13 @@ void van_der_pol_stays_on_its_limit_cycle(const std::string &b) {
     double amplitude = 0;
     for (std::size_t k = x.size() / 2; k < x.size(); ++k)
         amplitude = std::max(amplitude, std::abs(x[k].data()[0]));
-    check(amplitude > 1.9 && amplitude < 2.2, b + ": the amplitude is " + std::to_string(amplitude));
+    check(amplitude > 1.9 && amplitude < 2.2,
+          b + ": the amplitude is " + std::to_string(amplitude));
 }
 
 void wrong_arguments_are_described(const std::string &b) {
-    const NonlinearSys sys([](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
+    const NonlinearSys sys(
+        [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
     check(test::throws([&] {
               sys.simulate({.initial_state = Tensor({1.0, 0.0, 1.0}), .t_final = 1.0},
                            alg::RungeKutta4{.time_step = 0.1});
@@ -69,7 +72,9 @@ void wrong_arguments_are_described(const std::string &b) {
 void checks_and_their_switch() {
     const NonlinearSys sys = NonlinearSys(
         [](const std::vector<Expr> &x) {
-            { return std::vector<Expr>{{x[1], -x[0]}}; }
+            {
+                return std::vector<Expr>{{x[1], -x[0]}};
+            }
         },
         2);
     const Tensor x0({{1.0}, {0.0}});

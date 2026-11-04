@@ -48,6 +48,7 @@ int main() {
     });
     ChecksScope off(false);
     const Zonotope Z(column({0.0}), Tensor({{1.0, -2.0}}));
-    check(close(Z.box().generators(), std::vector<double>{3}, 0), "box: the same with the checks off");
+    check(close(Z.box().generators(), std::vector<double>{3}, 0),
+          "box: the same with the checks off");
     return test::finish("zonotope box");
 }

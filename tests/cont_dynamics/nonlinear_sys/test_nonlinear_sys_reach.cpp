@@ -29,12 +29,13 @@ Zonotope van_der_pol_start() {
 }
 
 /// Whether the column j of the points (n, N) lies in the box of Z, up to `tol`.
-bool in_box(const Zonotope &Z, const std::vector<double> &points, int64_t N, int64_t j, double tol) {
+bool in_box(const Zonotope &Z, const std::vector<double> &points, int64_t N, int64_t j,
+            double tol) {
     const Interval I = Z.interval();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     for (std::size_t i = 0; i < lo.size(); ++i) {
         const double v = points[i * N + j];
-        if (!(v >= lo[i] - tol && v <= hi[i] + tol)) return false;  // a NaN is outside
+        if (!(v >= lo[i] - tol && v <= hi[i] + tol)) return false; // a NaN is outside
     }
     return true;
 }
@@ -83,8 +84,8 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
                 if (k % 5 == 0) outside += !in_box(R.time_point[k / 5], d, 30, j, 1e-9);
             }
         }
-        check(outside == 0, b + ": " + type + " points left the enclosure " +
-                                std::to_string(outside) + " times");
+        check(outside == 0,
+              b + ": " + type + " points left the enclosure " + std::to_string(outside) + " times");
     }
 }
 
@@ -140,7 +141,9 @@ void wrong_arguments_are_described(const std::string &b) {
 void checks_and_their_switch() {
     const NonlinearSys sys = NonlinearSys(
         [](const std::vector<Expr> &x) {
-            { return std::vector<Expr>{{x[1], -x[0]}}; }
+            {
+                return std::vector<Expr>{{x[1], -x[0]}};
+            }
         },
         2);
     const Zonotope X0 = Zonotope(Tensor({1.0, 1.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}}));
@@ -167,7 +170,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         a_linear_system_gives_the_linear_result(b);
         simulations_stay_in_the_enclosures(b);
-        if (b == "eigen") the_enclosure_stays_tight(b);  // the slowest test, on one backend
+        if (b == "eigen") the_enclosure_stays_tight(b); // the slowest test, on one backend
         the_zonotope_order_limits_the_generators(b);
         wrong_arguments_are_described(b);
     });

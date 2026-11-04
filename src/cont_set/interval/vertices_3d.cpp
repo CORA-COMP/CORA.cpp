@@ -22,6 +22,7 @@ std::vector<std::vector<Point3>> Interval::vertices_3d_impl() const {
     std::vector<std::vector<Point3>> out;
     for (std::size_t b = 0; b + 2 < lo.size(); b += 3) { // (x, y, z) of each batch member
         std::vector<Point3> corners;
+        corners.reserve(8);
         for (int k = 0; k < 8; ++k) // bit i of k picks the upper bound of coordinate i
             corners.push_back(
                 {(k & 1 ? hi : lo)[b], (k & 2 ? hi : lo)[b + 1], (k & 4 ? hi : lo)[b + 2]});

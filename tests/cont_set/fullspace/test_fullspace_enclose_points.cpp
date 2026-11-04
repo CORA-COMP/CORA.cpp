@@ -1,4 +1,5 @@
-// test_fullspace_enclose_points - fullspace enclose_points: the whole space of the points' dimension
+// test_fullspace_enclose_points - fullspace enclose_points: the whole space of the points'
+// dimension
 //
 // CORA: contSet/@fullspace/enclosePoints.m
 
@@ -15,7 +16,8 @@ void enclose_points_takes_the_number_of_rows(const std::string &b) {
     const Fullspace F = Fullspace::enclose_points(points);
     check(F.dim() == 3, b + ": three rows");
     check(F.contains(Interval(points, points)), b + ": the points are in it");
-    check(Fullspace::enclose_points(Tensor::zeros({2, 3, 4})).dim() == 3, b + ": a batch of points");
+    check(Fullspace::enclose_points(Tensor::zeros({2, 3, 4})).dim() == 3,
+          b + ": a batch of points");
 }
 
 /// Points that are no matrix are refused; the checks off give the same answer elsewhere.

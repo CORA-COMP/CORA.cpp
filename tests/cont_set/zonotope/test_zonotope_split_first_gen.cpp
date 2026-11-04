@@ -29,7 +29,8 @@ void first_generator_by_hand(const std::string &b) {
     check(a.generators().shape().back() == 0 && c.generators().shape().back() == 0,
           b + ": no generator: the set twice");
     // equal scores: the first generator
-    const auto [t, u] = Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})).split_first_gen();
+    const auto [t, u] =
+        Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})).split_first_gen();
     check(close(t.center(), std::vector<double>{-0.5, 0}, 0), b + ": ties split the first");
 }
 
@@ -52,7 +53,8 @@ void halves_cover_the_set(const std::string &b) {
         if (score > best_score) best_score = score, best = j;
     }
     const auto [l2, u2] = Z.split(best, 100);
-    check(close(lower.center(), l2.center(), 1e-13) && close(upper.generators(), u2.generators(), 1e-13),
+    check(close(lower.center(), l2.center(), 1e-13) &&
+              close(upper.generators(), u2.generators(), 1e-13),
           b + ": the generator of the largest score");
     const Tensor points = Z.rand_point(40, rng);
     for (int k = 0; k < 40; ++k) {

@@ -1,4 +1,5 @@
-// test_lean_interval_matrix_dependent_terms - IntervalMatrix::dependent_terms against the CORALean oracle
+// test_lean_interval_matrix_dependent_terms - IntervalMatrix::dependent_terms against the CORALean
+// oracle
 //
 // ORACLE: matrixSet/@intervalMatrix/dependentTerms.m
 

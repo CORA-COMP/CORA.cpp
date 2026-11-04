@@ -24,7 +24,8 @@ Interval Interval::tan() const {
     detail::Entry entry;
     constexpr double kInf = std::numeric_limits<double>::infinity();
     const Tensor lo = inf_.tan(), hi = sup_.tan();
-    const Tensor no_pole = (sup_ - inf_).less(inf_.full_like(inf_.shape(), std::numbers::pi))
+    const Tensor no_pole = (sup_ - inf_)
+                               .less(inf_.full_like(inf_.shape(), std::numbers::pi))
                                .multiply(lo.less_equal(hi));
     return {Tensor::where(no_pole, lo, inf_.full_like(inf_.shape(), -kInf)),
             Tensor::where(no_pole, hi, inf_.full_like(inf_.shape(), kInf))};

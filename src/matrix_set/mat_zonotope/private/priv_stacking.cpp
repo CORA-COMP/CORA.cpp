@@ -24,8 +24,8 @@ Tensor priv_stack_columns(const Tensor &T) {
 
 Tensor priv_stack_generators(const Tensor &Gs) {
     const int64_t h = Gs.size(-3);
-    const Tensor rows = Gs.matrix_transpose().reshape(
-        priv_replace_tail(Gs, 3, {h, Gs.size(-2) * Gs.size(-1)}));
+    const Tensor rows =
+        Gs.matrix_transpose().reshape(priv_replace_tail(Gs, 3, {h, Gs.size(-2) * Gs.size(-1)}));
     return rows.matrix_transpose();
 }
 

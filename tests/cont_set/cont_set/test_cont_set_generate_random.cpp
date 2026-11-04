@@ -43,9 +43,9 @@ void errors_and_their_switch() {
               T = ContSet::generate_random(c, 3, {"zonotope"});
     check(test::close(S.get().center(), T.get().center(), 0.0), "the same seed, the same set");
     Rng rng(1);
-    check(test::raises([&] { ContSet::generate_random(rng, 2, {"polytope"}); },
-                       Error::not_supported),
-          "a class that is not implemented");
+    check(
+        test::raises([&] { ContSet::generate_random(rng, 2, {"polytope"}); }, Error::not_supported),
+        "a class that is not implemented");
     check(test::raises([&] { ContSet::generate_random(rng, 2, {}); }, Error::wrong_value),
           "no admissible class");
     check(test::raises([&] { ContSet::generate_random(rng, 0); }, Error::wrong_value),

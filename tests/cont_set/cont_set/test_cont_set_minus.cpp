@@ -19,7 +19,8 @@ void minus_shifts_the_set(const std::string &b) {
     const Interval I(column({-1.0, 0.0}), column({1.0, 2.0}));
     const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const Tensor p = column({1.0, 1.0});
-    const Set A = static_cast<const ContSet &>(I).minus(p), B = static_cast<const ContSet &>(Z).minus(p);
+    const Set A = static_cast<const ContSet &>(I).minus(p),
+              B = static_cast<const ContSet &>(Z).minus(p);
     check(test::close(A.as<Interval>().inf(), {-2.0, -1.0}) &&
               test::close(A.as<Interval>().sup(), {0.0, 1.0}),
           b + ": a box minus a vector");

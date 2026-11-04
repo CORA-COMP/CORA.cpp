@@ -1,7 +1,8 @@
 // test_lean_linear_sys - lean::LinearSys::reach: the argument checks, and with the oracle set the
 // enclosure of CORA.cpp's own reachable sets
 //
-// CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet ORACLE)
+// CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet
+// ORACLE)
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/oracle/linear_sys.h"
@@ -49,8 +50,7 @@ int main() {
                                alg::Standard{.time_step = time_step, .taylor_terms = 8});
         for (std::size_t k = 0; k < R.time_point.size(); ++k)
             test::oracle::check_enclosed("time point " + std::to_string(k),
-                                         ref.time_point[k].interval(),
-                                         R.time_point[k].interval());
+                                         ref.time_point[k].interval(), R.time_point[k].interval());
     });
     return test::finish("lean linearSys");
 }

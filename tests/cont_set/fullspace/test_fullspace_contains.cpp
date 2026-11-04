@@ -33,7 +33,8 @@ void checks_and_their_switch() {
     const Fullspace F(2);
     check(test::raises([] { Fullspace(0).contains(Fullspace(0)); }, Error::not_supported), "R^0");
     check(test::raises([&] { F.contains(Fullspace(3)); }, Error::dimension_mismatch), "dimension");
-    check(test::raises([&] { F.contains(Fullspace(2), -1.0); }, Error::wrong_value), "negative tol");
+    check(test::raises([&] { F.contains(Fullspace(2), -1.0); }, Error::wrong_value),
+          "negative tol");
     ChecksScope off(false);
     check(F.contains(Fullspace(2)), "contains: the same with the checks off");
 }

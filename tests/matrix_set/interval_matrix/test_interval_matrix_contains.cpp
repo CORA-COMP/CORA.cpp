@@ -47,8 +47,9 @@ void members_are_in(const std::string &b) {
 /// A wrong size, a wrong type and a negative tolerance are refused; the checks off give the same.
 void checks_and_their_switch() {
     const IntervalMatrix A = test::example();
-    check(test::raises([&] { A.contains(test::matrix({1, 2, 3}, 1, 3)); }, Error::dimension_mismatch),
-          "contains: a matrix of another size");
+    check(
+        test::raises([&] { A.contains(test::matrix({1, 2, 3}, 1, 3)); }, Error::dimension_mismatch),
+        "contains: a matrix of another size");
     check(test::raises([&] { A.contains(A.center(), "other"); }, Error::wrong_value),
           "contains: an unknown type");
     check(test::raises([&] { A.contains(A.center(), "exact", -1.0); }, Error::wrong_value),

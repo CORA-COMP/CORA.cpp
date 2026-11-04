@@ -83,6 +83,7 @@ std::vector<std::pair<Zonotope, Zonotope>> Zonotope::split() const {
     detail::Entry entry;
     const Zonotope box = aux_box(*this);
     std::vector<std::pair<Zonotope, Zonotope>> pieces;
+    pieces.reserve(dim());
     for (int64_t N = 0; N < dim(); ++N) pieces.push_back(priv_split_generator(box, N));
     return pieces;
 }
@@ -109,8 +110,10 @@ std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &dir) const {
         return std::string("split: a split by a direction supports a single zonotope");
     });
     CORA_CHECK(is_column(dir, dim()), Error::dimension_mismatch, [&] {
-        return "split: dir must be a column of " + std::to_string(dim()) + " entries, got the "
-               "shape " + shape_text(dir.shape());
+        return "split: dir must be a column of " + std::to_string(dim()) +
+               " entries, got the "
+               "shape " +
+               shape_text(dir.shape());
     });
     CORA_CHECK(dir.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: dir must not be zero"); });
@@ -120,20 +123,19 @@ std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &dir) const {
 
 std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &orig_dir, const Tensor &aux_dir) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(orig_dir, dim()) && is_column(aux_dir, dim()), Error::dimension_mismatch,
-               [&] {
-                   return "split: the directions must be columns of " + std::to_string(dim()) +
-                          " entries";
-               });
+    CORA_CHECK(
+        is_column(orig_dir, dim()) && is_column(aux_dir, dim()), Error::dimension_mismatch, [&] {
+            return "split: the directions must be columns of " + std::to_string(dim()) + " entries";
+        });
+    // the split direction is not zero
     CORA_CHECK(orig_dir.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: orig_dir must not be zero"); });
     // aux_dir minus its part along orig_dir, as CORA computes it
     const Tensor length = orig_dir.vector_norm(Tensor::Norm::two, -2, true);
     const Tensor part = aux_dir.matrix_transpose().matmul(orig_dir).divide(length);
     const Tensor perpendicular = aux_dir - orig_dir.multiply(part).divide(length);
-    CORA_CHECK(perpendicular.abs().sum().item() > 0, Error::wrong_value, [] {
-        return std::string("split: aux_dir must not be parallel to orig_dir");
-    });
+    CORA_CHECK(perpendicular.abs().sum().item() > 0, Error::wrong_value,
+               [] { return std::string("split: aux_dir must not be parallel to orig_dir"); });
     return split(perpendicular);
 }
 
@@ -143,8 +145,10 @@ std::vector<Zonotope> Zonotope::split(const Tensor &a, double d) const {
         return std::string("split: a split by a halfspace supports a single zonotope");
     });
     CORA_CHECK(is_column(a, dim()), Error::dimension_mismatch, [&] {
-        return "split: a must be a column of " + std::to_string(dim()) + " entries, got the "
-               "shape " + shape_text(a.shape());
+        return "split: a must be a column of " + std::to_string(dim()) +
+               " entries, got the "
+               "shape " +
+               shape_text(a.shape());
     });
     CORA_CHECK(a.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: a must not be zero"); });

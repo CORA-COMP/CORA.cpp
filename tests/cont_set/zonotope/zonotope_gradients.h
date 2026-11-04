@@ -1,6 +1,7 @@
 // zonotope_gradients - what the torch tests of the zonotope operations share: a gradient check
 //
-// Syntax:   gradcheck("abs", [](const Inputs &x) { return Outputs{Zonotope(x[0], x[1]).abs()...}; },
+// Syntax:   gradcheck("abs", [](const Inputs &x) { return Outputs{Zonotope(x[0], x[1]).abs()...};
+// },
 //                     {center, generators});
 // Checks:   the gradient that autograd gives through the torch backend, of a fixed random weighting
 //           of all outputs, equals central differences (step 1e-6, float64); the inputs are chosen
@@ -41,7 +42,8 @@ inline void gradcheck(const std::string &name, const Function &f,
     std::vector<torch::Tensor> x, weights;
     for (const torch::Tensor &t : inputs) x.push_back(t.detach().clone().requires_grad_(true));
     const torch::Tensor loss = weighted_sum(f, x, weights);
-    const std::vector<torch::Tensor> grads = torch::autograd::grad({loss}, x, {}, false, false, true);
+    const std::vector<torch::Tensor> grads =
+        torch::autograd::grad({loss}, x, {}, false, false, true);
     const double h = 1e-6;
     bool ok = true;
     for (std::size_t k = 0; k < x.size() && ok; ++k) {
@@ -55,7 +57,8 @@ inline void gradcheck(const std::string &name, const Function &f,
             plus[k].view(-1)[j] += h;
             minus[k].view(-1)[j] -= h;
             const double numeric = (weighted_sum(f, plus, weights).item<double>() -
-                                    weighted_sum(f, minus, weights).item<double>()) / (2 * h);
+                                    weighted_sum(f, minus, weights).item<double>()) /
+                                   (2 * h);
             const double analytic = grads[k].defined() ? grads[k].flatten()[j].item<double>() : 0.0;
             if (std::abs(numeric - analytic) > 1e-5 + 1e-4 * std::abs(numeric)) {
                 std::cerr << "  " << name << ": input " << k << " entry " << j << ": autograd "

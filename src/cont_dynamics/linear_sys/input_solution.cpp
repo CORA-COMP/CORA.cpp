@@ -61,8 +61,7 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
     // The constant part is the last column of e^{M dt} for M = [A Bc; 0 0], the input as a state.
     const int64_t n = A.shape().back();
     const Tensor top = Tensor::concat({A, u}, -1);
-    const Tensor M =
-        Tensor::concat({top, A.zeros_like({1, n + 1})}, -2);
+    const Tensor M = Tensor::concat({top, A.zeros_like({1, n + 1})}, -2);
     const Tensor input = (M * time_step).expm().slice(-1, n, n + 1);
     const Tensor Pu = input.slice(-2, 0, n);
 

@@ -12,7 +12,8 @@ using test::check;
 namespace {
 
 NonlinearSys decay() {
-    return NonlinearSys([](const std::vector<Expr> &x) { return std::vector<Expr>{-x[0], -2 * x[1]}; }, 2);
+    return NonlinearSys(
+        [](const std::vector<Expr> &x) { return std::vector<Expr>{-x[0], -2 * x[1]}; }, 2);
 }
 
 void the_start_points_lie_in_the_set_and_repeat(const std::string &b) {
@@ -35,7 +36,9 @@ void the_start_points_lie_in_the_set_and_repeat(const std::string &b) {
 void checks_and_their_switch() {
     const NonlinearSys sys = NonlinearSys(
         [](const std::vector<Expr> &x) {
-            { return std::vector<Expr>{{x[1], -x[0]}}; }
+            {
+                return std::vector<Expr>{{x[1], -x[0]}};
+            }
         },
         2);
     const RandomSimulationProblem problem{
@@ -58,7 +61,8 @@ void checks_and_their_switch() {
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { the_start_points_lie_in_the_set_and_repeat(b); });
+    test::for_each_backend(
+        [](const std::string &b) { the_start_points_lie_in_the_set_and_repeat(b); });
     checks_and_their_switch();
     return test::finish("nonlinearSys simulate_random");
 }

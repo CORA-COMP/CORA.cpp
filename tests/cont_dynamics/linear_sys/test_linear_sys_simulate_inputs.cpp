@@ -35,10 +35,12 @@ void follows_the_closed_form(const std::string &b) {
     double worst = 0.0;
     for (std::size_t k = 0; k < x.size(); ++k) {
         const Eigen::MatrixXd E = (A * dt * double(k)).exp();
-        const Eigen::MatrixXd exact = E * x0 + A.inverse() * (E - Eigen::MatrixXd::Identity(3, 3)) * B * u;
+        const Eigen::MatrixXd exact =
+            E * x0 + A.inverse() * (E - Eigen::MatrixXd::Identity(3, 3)) * B * u;
         worst = std::max(worst, (host_of(x[k]) - exact).cwiseAbs().maxCoeff());
     }
-    check(worst < 1e-12, b + ": a trajectory differs from the closed form by " + std::to_string(worst));
+    check(worst < 1e-12,
+          b + ": a trajectory differs from the closed form by " + std::to_string(worst));
 }
 
 /// x' = -x + u from 0 with u = 1 is 1 - e^{-t}; a single input column serves every trajectory.

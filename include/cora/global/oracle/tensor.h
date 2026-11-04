@@ -54,7 +54,7 @@ class Tensor {
   private:
     std::string dtype_;
     int64_t rows_ = 0, cols_ = 0;
-    std::vector<std::string> data_;  // row-major "m*2^e"
+    std::vector<std::string> data_; // row-major "m*2^e"
 };
 
 } // namespace cora::lean

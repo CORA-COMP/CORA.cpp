@@ -12,9 +12,8 @@ cart_prod, compact, constraints_satisfied, enclose, convex_hull, contains, domin
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 import oracle_testing as oracle
 
 SIZES = [(2, 3), (5, 30), (20, 200)]

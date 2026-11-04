@@ -33,12 +33,14 @@ struct Banner {
 
     Banner() {
         std::cout << block("CORA START") << prefix() << "default backend: " << backend().name()
-                  << "\n" << std::string(width, '=') << "\n\n";
+                  << "\n"
+                  << std::string(width, '=') << "\n\n";
     }
 
     ~Banner() {
         const std::chrono::duration<double> run = std::chrono::steady_clock::now() - start;
-        std::cout << "\n" << block("CORA END") << prefix() << "runtime: " << run.count() << " s\n"
+        std::cout << "\n"
+                  << block("CORA END") << prefix() << "runtime: " << run.count() << " s\n"
                   << std::string(width, '=') << "\n";
     }
 

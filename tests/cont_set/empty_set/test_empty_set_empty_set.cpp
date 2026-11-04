@@ -16,7 +16,7 @@ void the_constructor_keeps_the_dimension(const std::string &b) {
     check(E.dim() == 3 && E.class_id() == ClassId::empty_set, b + ": dimension and class");
     check(E.class_name() == "EmptySet", b + ": the class name");
     check(EmptySet(0).dim() == 0, b + ": dimension 0 is allowed");
-    const EmptySet copy(E);
+    const EmptySet &copy(E);
     check(copy.dim() == 3, b + ": the copy constructor, as CORA's emptySet(O)");
     const Set S(E);
     check(S.is<EmptySet>() && S.as<EmptySet>().dim() == 3, b + ": as a Set");

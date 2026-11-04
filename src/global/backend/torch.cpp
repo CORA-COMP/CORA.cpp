@@ -94,12 +94,12 @@ struct TorchTensor : Tensor::Impl {
     }
     Ptr to(Device d) const override {
         return wrap(t.to(d.type == Device::Type::cpu ? torch::Device(torch::kCPU)
-                                                      : torch::Device(torch::kCUDA, d.index)));
+                                                     : torch::Device(torch::kCUDA, d.index)));
     }
     Ptr to(DType d) const override { return wrap(t.to(aux_scalar(d))); }
     Ptr like(const double *v, const Shape &s) const override {
-        const torch::Tensor host = torch::from_blob(const_cast<double *>(v),
-                                                    std::vector<int64_t>(s), torch::kDouble);
+        const torch::Tensor host =
+            torch::from_blob(const_cast<double *>(v), std::vector<int64_t>(s), torch::kDouble);
         return wrap(host.to(t.device(), t.scalar_type(), false, true));
     }
     Ptr full(const Shape &s, double value) const override {
@@ -114,21 +114,38 @@ struct TorchTensor : Tensor::Impl {
     // Elementwise
     static torch::Tensor apply(Binary op, const torch::Tensor &a, const torch::Tensor &b) {
         switch (op) {
-        case Binary::add: return a + b;
-        case Binary::subtract: return a - b;
-        case Binary::multiply: return a * b;
-        case Binary::divide: return a / b;
-        case Binary::pow: return torch::pow(a, b);
-        case Binary::maximum: return torch::maximum(a, b);
-        case Binary::minimum: return torch::minimum(a, b);
-        case Binary::remainder: return torch::remainder(a, b);
-        case Binary::atan2: return torch::atan2(a, b);
-        case Binary::equal: return torch::eq(a, b).to(a.scalar_type());
-        case Binary::not_equal: return torch::ne(a, b).to(a.scalar_type());
-        case Binary::less: return torch::lt(a, b).to(a.scalar_type());
-        case Binary::less_equal: return torch::le(a, b).to(a.scalar_type());
-        case Binary::greater: return torch::gt(a, b).to(a.scalar_type());
-        case Binary::greater_equal: return torch::ge(a, b).to(a.scalar_type());
+        case Binary::add:
+            return a + b;
+        case Binary::subtract:
+            return a - b;
+        case Binary::multiply:
+            return a * b;
+        case Binary::divide:
+            return a / b;
+        case Binary::pow:
+            return torch::pow(a, b);
+        // the extrema, the remainder and atan2
+        case Binary::maximum:
+            return torch::maximum(a, b);
+        case Binary::minimum:
+            return torch::minimum(a, b);
+        case Binary::remainder:
+            return torch::remainder(a, b);
+        case Binary::atan2:
+            return torch::atan2(a, b);
+        // the comparisons give 1 or 0 of the operand type
+        case Binary::equal:
+            return torch::eq(a, b).to(a.scalar_type());
+        case Binary::not_equal:
+            return torch::ne(a, b).to(a.scalar_type());
+        case Binary::less:
+            return torch::lt(a, b).to(a.scalar_type());
+        case Binary::less_equal:
+            return torch::le(a, b).to(a.scalar_type());
+        case Binary::greater:
+            return torch::gt(a, b).to(a.scalar_type());
+        case Binary::greater_equal:
+            return torch::ge(a, b).to(a.scalar_type());
         }
         CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise operation");
     }
@@ -145,31 +162,56 @@ struct TorchTensor : Tensor::Impl {
     }
     Ptr unary(Unary op) const override {
         switch (op) {
-        case Unary::negative: return wrap(-t);
-        case Unary::abs: return wrap(t.abs());
-        case Unary::sign: return wrap(t.sign());
-        case Unary::floor: return wrap(t.floor());
-        case Unary::ceil: return wrap(t.ceil());
-        case Unary::round: return wrap(round(t));
-        case Unary::sqrt: return wrap(t.sqrt());
-        case Unary::exp: return wrap(t.exp());
-        case Unary::log: return wrap(t.log());
+        case Unary::negative:
+            return wrap(-t);
+        case Unary::abs:
+            return wrap(t.abs());
+        case Unary::sign:
+            return wrap(t.sign());
+        case Unary::floor:
+            return wrap(t.floor());
+        case Unary::ceil:
+            return wrap(t.ceil());
+        case Unary::round:
+            return wrap(round(t));
+        case Unary::sqrt:
+            return wrap(t.sqrt());
+        case Unary::exp:
+            return wrap(t.exp());
+        case Unary::log:
+            return wrap(t.log());
         // the functions of torch, within the ulp bounds of ops.def of the C library's
-        case Unary::sin: return wrap(t.sin());
-        case Unary::cos: return wrap(t.cos());
-        case Unary::tan: return wrap(t.tan());
-        case Unary::asin: return wrap(t.asin());
-        case Unary::acos: return wrap(t.acos());
-        case Unary::atan: return wrap(t.atan());
-        case Unary::sinh: return wrap(t.sinh());
-        case Unary::cosh: return wrap(t.cosh());
-        case Unary::tanh: return wrap(t.tanh());
-        case Unary::asinh: return wrap(t.asinh());
-        case Unary::acosh: return wrap(t.acosh());
-        case Unary::atanh: return wrap(t.atanh());
-        case Unary::isnan: return values(t.isnan());
-        case Unary::isinf: return values(t.isinf());
-        case Unary::isfinite: return values(t.isfinite());
+        case Unary::sin:
+            return wrap(t.sin());
+        case Unary::cos:
+            return wrap(t.cos());
+        case Unary::tan:
+            return wrap(t.tan());
+        case Unary::asin:
+            return wrap(t.asin());
+        case Unary::acos:
+            return wrap(t.acos());
+        case Unary::atan:
+            return wrap(t.atan());
+        // the hyperbolic functions, then the tests
+        case Unary::sinh:
+            return wrap(t.sinh());
+        case Unary::cosh:
+            return wrap(t.cosh());
+        case Unary::tanh:
+            return wrap(t.tanh());
+        case Unary::asinh:
+            return wrap(t.asinh());
+        case Unary::acosh:
+            return wrap(t.acosh());
+        case Unary::atanh:
+            return wrap(t.atanh());
+        case Unary::isnan:
+            return values(t.isnan());
+        case Unary::isinf:
+            return values(t.isinf());
+        case Unary::isfinite:
+            return values(t.isfinite());
         }
         CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise function");
     }
@@ -180,12 +222,18 @@ struct TorchTensor : Tensor::Impl {
     // Reductions
     Ptr reduce(Reduce op, int axis, bool keepdims) const override {
         switch (op) {
-        case Reduce::sum: return wrap(t.sum(axis, keepdims));
-        case Reduce::prod: return wrap(t.prod(axis, keepdims));
-        case Reduce::max: return wrap(std::get<0>(t.max(axis, keepdims)));
-        case Reduce::min: return wrap(std::get<0>(t.min(axis, keepdims)));
-        case Reduce::argmax: return values(t.argmax(axis, keepdims));
-        case Reduce::argmin: return values(t.argmin(axis, keepdims));
+        case Reduce::sum:
+            return wrap(t.sum(axis, keepdims));
+        case Reduce::prod:
+            return wrap(t.prod(axis, keepdims));
+        case Reduce::max:
+            return wrap(std::get<0>(t.max(axis, keepdims)));
+        case Reduce::min:
+            return wrap(std::get<0>(t.min(axis, keepdims)));
+        case Reduce::argmax:
+            return values(t.argmax(axis, keepdims));
+        case Reduce::argmin:
+            return values(t.argmin(axis, keepdims));
         }
         CORA_FAIL(Error::wrong_value, "CoraTensor: unknown reduction");
     }

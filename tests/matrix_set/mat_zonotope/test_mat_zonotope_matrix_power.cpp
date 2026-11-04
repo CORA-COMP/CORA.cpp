@@ -55,7 +55,8 @@ void checks_and_their_switch() {
     check(test::raises([&] { MatZonotope(test::matrix({1, 2, 3}, 1, 3)).matrix_power(2); },
                        Error::dimension_mismatch),
           "matrix_power: a non-square set");
-    check(test::raises([&] { A.matrix_power(-1); }, Error::wrong_value), "matrix_power: a negative exponent");
+    check(test::raises([&] { A.matrix_power(-1); }, Error::wrong_value),
+          "matrix_power: a negative exponent");
     const Tensor on = A.matrix_power(2).center();
     ChecksScope off(false);
     check(close(A.matrix_power(2).center(), on, 0), "matrix_power: the same with the checks off");

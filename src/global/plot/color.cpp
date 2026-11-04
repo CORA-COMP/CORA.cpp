@@ -9,6 +9,7 @@
 #include "cora/global/plot/color.h"
 #include "cora/global/error.h"
 
+#include <cmath>
 #include <cstdio>
 #include <map>
 #include <sstream>
@@ -82,7 +83,7 @@ Color::Color(const std::string &identifier) : Color(cora_color(identifier)) {}
 // Each component as two hex digits.
 std::string Color::hex() const {
     char out[8];
-    auto byte = [](double v) { return static_cast<int>(v * 255 + 0.5); };
+    auto byte = [](double v) { return static_cast<int>(std::lround(v * 255)); };
     std::snprintf(out, sizeof out, "#%02x%02x%02x", byte(r), byte(g), byte(b));
     return out;
 }

@@ -50,28 +50,31 @@ int main() {
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 50}};
 
     oracle::run("zonotope.radius", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const double mine = Z.radius().item(), bound = lean::Zonotope(Z).radius();
             test::check(mine <= bound * (1 + kSlack), "radius: " + std::to_string(mine) +
-                                                          " exceeds the bound " + std::to_string(bound));
+                                                          " exceeds the bound " +
+                                                          std::to_string(bound));
             test::check(mine >= bound * (1 - 1e-6), "radius: the bound " + std::to_string(bound) +
                                                         " is far above " + std::to_string(mine));
         }
     });
 
     oracle::run("zonotope.quadMap", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 4}, {4, 6}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 4}, {4, 6}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const std::vector<Tensor> Q{rnd.matrix(n, n), rnd.matrix(n, n)};
             std::vector<lean::Tensor> LQ;
+            LQ.reserve(Q.size());
             for (const Tensor &M : Q) LQ.push_back(lean::Tensor::from(M));
-            oracle::check_enclosed("zonotope.quadMap", Z.quad_map(Q), lean::Zonotope(Z).quad_map(LQ));
+            oracle::check_enclosed("zonotope.quadMap", Z.quad_map(Q),
+                                   lean::Zonotope(Z).quad_map(LQ));
         }
     });
 
     oracle::run("zonotope.rotate", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const double angle = rnd.uniform(-3, 3);
             aux_hull_agrees("rotate", Z.rotate({0, int64_t(n - 1)}, angle),

@@ -70,7 +70,7 @@ bool priv_zonotope_meets_polytope(const std::vector<double> &c, const std::vecto
     std::vector<int> basis(rows);
     int art = 0;
     for (int i = 0; i < p; ++i) {
-        const double sign = r[i] < 0 ? -1.0 : 1.0;  // the right-hand side must be nonnegative
+        const double sign = r[i] < 0 ? -1.0 : 1.0; // the right-hand side must be nonnegative
         for (int j = 0; j < m; ++j) T[i][j] = sign * a_g[i][j];
         T[i][m + i] = sign;
         T[i][cols] = sign * r[i];

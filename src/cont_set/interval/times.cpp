@@ -8,8 +8,8 @@
 //
 // CORA: contSet/@interval/times.m
 
-#include "cont_set/interval/private/priv_times.h"
 #include "cont_set/interval/private/priv_broadcastable.h"
+#include "cont_set/interval/private/priv_times.h"
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
 

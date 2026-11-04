@@ -1,4 +1,5 @@
-// test_fullspace_plus - fullspace plus: the sum with any set is the whole space, with an empty set empty
+// test_fullspace_plus - fullspace plus: the sum with any set is the whole space, with an empty set
+// empty
 //
 // CORA: contSet/@fullspace/plus.m
 
@@ -41,8 +42,10 @@ void the_sum_with_an_empty_set_is_empty(const std::string &b) {
 /// R^0 and another dimension are refused.
 void checks_and_their_switch() {
     const Fullspace F(2);
-    check(test::raises([&] { Fullspace(0).plus(Fullspace(0)); }, Error::not_supported), "plus: R^0");
-    check(test::raises([&] { F.plus(Fullspace(3)); }, Error::dimension_mismatch), "plus: dimension");
+    check(test::raises([&] { Fullspace(0).plus(Fullspace(0)); }, Error::not_supported),
+          "plus: R^0");
+    check(test::raises([&] { F.plus(Fullspace(3)); }, Error::dimension_mismatch),
+          "plus: dimension");
     check(test::raises([&] { F.plus(EmptySet(3)); }, Error::dimension_mismatch),
           "plus: an empty set of another dimension");
     ChecksScope off(false);

@@ -43,9 +43,8 @@ int64_t aux_uniform_index(Rng &rng, int64_t count) {
 CORA_FROM_NUMBERS Set ContSet::generate_random(Rng &rng, std::optional<int64_t> dimension,
                                                const std::vector<std::string> &admissible) {
     detail::Entry entry;
-    CORA_CHECK(!admissible.empty(), Error::wrong_value, [] {
-        return std::string("generate_random: name at least one admissible class");
-    });
+    CORA_CHECK(!admissible.empty(), Error::wrong_value,
+               [] { return std::string("generate_random: name at least one admissible class"); });
     CORA_CHECK(!dimension || *dimension >= 1, Error::wrong_value, [&] {
         return "generate_random: the dimension must be at least 1, got " +
                std::to_string(*dimension);

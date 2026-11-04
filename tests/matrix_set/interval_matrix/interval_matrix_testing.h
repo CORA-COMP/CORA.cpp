@@ -1,7 +1,8 @@
 // interval_matrix_testing - what the tests of the interval matrix operations share
 //
 // Syntax:   const IntervalMatrix A = test::example();   test::for_each_backend_and_lean(body);
-//           const Tensor M = test::member(A, rng);   IntervalMatrix B = test::random_matrix(rng, 3, 0.2);
+//           const Tensor M = test::member(A, rng);   IntervalMatrix B = test::random_matrix(rng, 3,
+//           0.2);
 // Provides: a hand-computed 2 x 2 example, the lean backend next to the others, a random
 //           matrix set around a random center and a random matrix inside a set
 
@@ -15,9 +16,8 @@ namespace test {
 
 /// A = [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]: inf [[1, -1], [0, 2]], sup [[2, 1], [3, 2]].
 inline cora::IntervalMatrix example() {
-    return cora::IntervalMatrix(
-        cora::Interval(cora::Tensor::from_data({1, -1, 0, 2}, {2, 2}),
-                       cora::Tensor::from_data({2, 1, 3, 2}, {2, 2})));
+    return cora::IntervalMatrix(cora::Interval(cora::Tensor::from_data({1, -1, 0, 2}, {2, 2}),
+                                               cora::Tensor::from_data({2, 1, 3, 2}, {2, 2})));
 }
 
 /// The matrix of rows x cols numbers, row by row.

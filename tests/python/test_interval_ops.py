@@ -21,9 +21,8 @@
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 INF = float("inf")
 
@@ -81,9 +80,9 @@ class Predicates(unittest.TestCase):
         self.assertTrue(small <= small)
         self.assertFalse(small < small)
         with self.assertRaises(cora.errors.DimensionMismatch):
-            small <= box([0.0], [1.0])
+            _ = small <= box([0.0], [1.0])
         with self.assertRaises(TypeError):
-            small <= 1.0
+            _ = small <= 1.0
 
 
 class Arithmetic(unittest.TestCase):

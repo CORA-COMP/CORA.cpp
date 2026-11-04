@@ -18,7 +18,8 @@ void strict_inequality_on_a_box(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Tensor C({{1.0, 1.0}});
     check(Z.constraints_satisfied(C, column({3.0})), b + ": x1 + x2 < 3");
-    check(!Z.constraints_satisfied(C, column({2.0})), b + ": x1 + x2 < 2 is not certain (equality)");
+    check(!Z.constraints_satisfied(C, column({2.0})),
+          b + ": x1 + x2 < 2 is not certain (equality)");
     check(!Z.constraints_satisfied(C, column({1.9})), b + ": x1 + x2 < 1.9 fails");
     const Tensor C2({{1.0, 1.0}, {1.0, -1.0}});
     check(Z.constraints_satisfied(C2, column({2.5, 2.5})), b + ": two constraints");
@@ -50,9 +51,11 @@ void true_is_sound(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Z.constraints_satisfied(Tensor({{1.0, 1.0, 1.0}}), column({1.0})); },
-                       Error::dimension_mismatch), "constraints_satisfied: C with 3 columns");
+                       Error::dimension_mismatch),
+          "constraints_satisfied: C with 3 columns");
     check(test::raises([&] { Z.constraints_satisfied(Tensor({{1.0, 1.0}}), column({1.0, 2.0})); },
-                       Error::dimension_mismatch), "constraints_satisfied: d with 2 rows");
+                       Error::dimension_mismatch),
+          "constraints_satisfied: d with 2 rows");
     const bool on = Z.constraints_satisfied(Tensor({{1.0, 1.0}}), column({3.0}));
     ChecksScope off(false);
     check(Z.constraints_satisfied(Tensor({{1.0, 1.0}}), column({3.0})) == on,

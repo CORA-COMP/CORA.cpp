@@ -43,7 +43,7 @@ Refusal priv_gain_refusal(int64_t n, const Tensor &C, const Tensor &lambda) {
                                                     ", " + std::to_string(C.shape()[0]) +
                                                     "), got the shape " +
                                                     shape_text(lambda.shape())};
-// the observer matrices must be two-dimensional and fit the dimension
+    // the observer matrices must be two-dimensional and fit the dimension
 }
 
 Refusal priv_observer_refusal(int64_t n, const Zonotope::StripObserver &aux) {

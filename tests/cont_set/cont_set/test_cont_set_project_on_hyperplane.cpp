@@ -67,8 +67,7 @@ void samples_land_on_the_hyperplane(const std::string &b) {
         const Tensor p = x - n * (n.matrix_transpose().matmul(x) - d / length).item();
         for (int k = 0; k < 4; ++k) {
             const std::vector<double> dir = test::random_direction(rng, 4);
-            check(p.matrix_transpose().matmul(column(dir)).item() <=
-                      test::support(R, dir) + 1e-9,
+            check(p.matrix_transpose().matmul(column(dir)).item() <= test::support(R, dir) + 1e-9,
                   b + ": the projected sample lies in the image");
         }
     }
@@ -79,8 +78,9 @@ void errors_and_their_switch() {
     const Interval I(column({0.0, 0.0}), column({1.0, 1.0}));
     const ContSet &S = I;
     const Tensor one = Tensor::from_data({1.0}, {1, 1});
-    check(test::raises([&] { S.project_on_hyperplane(column({0.0, 0.0}), one); }, Error::wrong_value),
-          "zero normal");
+    check(
+        test::raises([&] { S.project_on_hyperplane(column({0.0, 0.0}), one); }, Error::wrong_value),
+        "zero normal");
     check(test::raises([&] { S.project_on_hyperplane(column({1.0}), one); },
                        Error::dimension_mismatch),
           "normal of one entry");

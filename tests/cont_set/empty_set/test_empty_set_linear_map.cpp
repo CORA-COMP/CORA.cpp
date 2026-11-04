@@ -30,7 +30,8 @@ void the_image_has_the_rows_of_the_matrix(const std::string &b) {
     check(Set(E.linear_map(M)).is<EmptySet>(), b + ": the result is an EmptySet");
 }
 
-/// A matrix with the wrong number of columns is refused; with the checks off the result is the same.
+/// A matrix with the wrong number of columns is refused; with the checks off the result is the
+/// same.
 void checks_and_their_switch() {
     const EmptySet E(3);
     check(test::raises([&] { E.linear_map(Tensor({{1.0, 2.0}, {3.0, 4.0}})); },
@@ -40,7 +41,8 @@ void checks_and_their_switch() {
                        Error::dimension_mismatch),
           "linear_map: a vector, not a matrix");
     ChecksScope off(false);
-    check(E.linear_map(Tensor({{1.0, 0.0, 0.0}})).dim() == 1, "linear_map: the same with checks off");
+    check(E.linear_map(Tensor({{1.0, 0.0, 0.0}})).dim() == 1,
+          "linear_map: the same with checks off");
 }
 
 } // namespace

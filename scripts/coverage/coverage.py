@@ -65,7 +65,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 `ctest` runs `coverage.py --check` first: a row may not fall below the status in `status.json`
 (`--accept-drop <row>` records a drop), and no row may become **oracle debt**, `ported` or
 `property` while CORALean has it (`--accept-debt`). `coverage.py --summary` prints the totals.
-"""
+"""  # noqa: E501 (the table rows of the generated README are one line each)
 
 
 # ------------------------------------------------------------------------------------ the tree
@@ -434,7 +434,7 @@ def run(root, check=True, accept_drop=(), accept_debt=False, cora=None):
     root = Path(root)
     inventory = load_json(root / "coverage" / "cora-inventory.json")
     if "groups" not in inventory:
-        return [f"coverage/cora-inventory.json: missing; run scripts/coverage/inventory.py"], []
+        return ["coverage/cora-inventory.json: missing; run scripts/coverage/inventory.py"], []
     groups, lean = inventory["groups"], load_json(root / "coverage" / "coralean-status.json").get("rows", {})
     evidence, problems = scan(root, groups)
     problems += untagged_operations(root, conventions())

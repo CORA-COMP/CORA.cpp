@@ -26,15 +26,18 @@ void isequal_compares_the_bounds(const std::string &b) {
           b + ": 1e-9 apart is more than eps");
     check(I.isequal(Interval(column({0.0, -1.0}), column({1.0 + 1e-9, 2.0})), 1e-8),
           b + ": but not for tol 1e-8");
-    check(!I.isequal(Interval(column({0.0}), column({1.0}))), b + ": another dimension is not equal");
+    check(!I.isequal(Interval(column({0.0}), column({1.0}))),
+          b + ": another dimension is not equal");
     check(I.isequal(I, 0.0), b + ": tol 0");
 }
 
 void isequal_with_infinite_bounds_points_and_batches(const std::string &b) {
     const Interval H(column({0.0, -kInf}), column({kInf, 1.0}));
     check(H.isequal(H), b + ": the same infinities");
-    check(!H.isequal(Interval(column({0.0, -kInf}), column({1e300, 1.0}))), b + ": Inf against finite");
-    check(!H.isequal(Interval(column({0.0, -1e300}), column({kInf, 1.0}))), b + ": -Inf against finite");
+    check(!H.isequal(Interval(column({0.0, -kInf}), column({1e300, 1.0}))),
+          b + ": Inf against finite");
+    check(!H.isequal(Interval(column({0.0, -1e300}), column({kInf, 1.0}))),
+          b + ": -Inf against finite");
     check(Interval::empty(2).isequal(Interval::empty(2)) && !Interval::empty(2).isequal(H),
           b + ": the empty interval");
     check(Interval(column({1.0, 2.0}), column({1.0, 2.0})).isequal(column({1.0, 2.0})),

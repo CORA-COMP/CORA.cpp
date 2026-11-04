@@ -28,7 +28,8 @@ void longest_generator_by_hand(const std::string &b) {
     const auto [a, c] = Zonotope(column({1.0}), Tensor::zeros({1, 0})).split_longest_gen();
     check(a.generators().shape().back() == 0 && c.generators().shape().back() == 0,
           b + ": no generator: the set twice");
-    const auto [t, u] = Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})).split_longest_gen();
+    const auto [t, u] =
+        Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})).split_longest_gen();
     check(close(t.center(), std::vector<double>{0.5, 0}, 0), b + ": ties split the first");
 }
 
@@ -40,7 +41,8 @@ void halves_cover_the_set(const std::string &b) {
     const auto [first, second] = Z.split_longest_gen();
     const Tensor length = Z.generator_length();
     const auto [lower, upper] = Z.split(int64_t(length.argmax(-1).item()), 100);
-    check(close(second.center(), lower.center(), 1e-13) && close(first.center(), upper.center(), 1e-13),
+    check(close(second.center(), lower.center(), 1e-13) &&
+              close(first.center(), upper.center(), 1e-13),
           b + ": the longest generator");
     const Tensor points = Z.rand_point(40, rng);
     for (int k = 0; k < 40; ++k) {

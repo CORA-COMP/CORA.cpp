@@ -19,8 +19,7 @@ namespace cora {
 
 Tensor within_tol(const Tensor &a, const Tensor &b, Tol tol) {
     const Tensor difference = (a - b).abs();
-    const Tensor bound =
-        difference.full_like(difference.shape(), resolve_tol(tol, a.dtype()));
+    const Tensor bound = difference.full_like(difference.shape(), resolve_tol(tol, a.dtype()));
     const Tensor relative = difference.divide(a.abs().minimum(b.abs()));
     // equal values include the equal infinities, where the difference is NaN
     return difference.less_equal(bound).maximum(relative.less_equal(bound)).maximum(a.equal(b));

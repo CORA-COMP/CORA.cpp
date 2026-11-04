@@ -14,7 +14,7 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.representsa", [](test::oracle::Random &rnd) {
-        for (const auto [m, n] : {std::pair{2, 2}, std::pair{3, 1}, std::pair{1, 4}}) {
+        for (const auto &[m, n] : {std::pair{2, 2}, std::pair{3, 1}, std::pair{1, 4}}) {
             const Tensor M = rnd.matrix(m, n);
             const Tensor thin = M.full_like(M.shape(), 1e-3);
             const auto compare = [&](const IntervalMatrix &A, bool positive_radius) {

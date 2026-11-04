@@ -91,10 +91,12 @@ void checks_and_their_switch() {
     check(test::raises([&] { Z.cubic_map({{M, M}}, {{0, 5}}); }, Error::wrong_value),
           "cubic_map: ind out of range");
     check(test::raises([&] { Z.cubic_map(Zonotope(column({1.0}), Tensor({{1.0}})), Z, {{M, M}}); },
-                       Error::dimension_mismatch), "cubic_map: mixed, dimension 1");
+                       Error::dimension_mismatch),
+          "cubic_map: mixed, dimension 1");
     const Tensor on = Z.cubic_map({{M, M}}).generators();
     ChecksScope off(false);
-    check(test::close(Z.cubic_map({{M, M}}).generators(), on, 0), "cubic_map: same with checks off");
+    check(test::close(Z.cubic_map({{M, M}}).generators(), on, 0),
+          "cubic_map: same with checks off");
 }
 
 } // namespace

@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@interval/zonotope.m
 
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/interval/interval.h"
-#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //

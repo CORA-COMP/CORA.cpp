@@ -33,8 +33,8 @@ Zonotope Zonotope::enclose(const Zonotope &Z2) const {
     const bool second_shorter = m2 <= m;
     const Tensor &longer = second_shorter ? G_ : G2, &shorter = second_shorter ? G2 : G_;
     const int64_t common = second_shorter ? m2 : m, total = second_shorter ? m : m2;
-    const Tensor half_distance = second_shorter ? (c_ - Z2.center()) / 2.0
-                                                : (Z2.center() - c_) / 2.0;
+    const Tensor half_distance =
+        second_shorter ? (c_ - Z2.center()) / 2.0 : (Z2.center() - c_) / 2.0;
     const Tensor cut = longer.slice(-1, 0, common);
     std::vector<Tensor> parts{(cut + shorter) / 2.0, half_distance, (cut - shorter) / 2.0};
     if (total > common) parts.push_back(longer.slice(-1, common, total));

@@ -19,11 +19,11 @@ namespace cora {
 /// A linear program; an empty bound vector means no bound (-inf / +inf), and an empty
 /// constraint matrix means no constraints of that kind.
 struct LinProg {
-    int n = 0;                       ///< number of variables
-    std::vector<double> f;           ///< cost (n)
+    int n = 0;                        ///< number of variables
+    std::vector<double> f;            ///< cost (n)
     std::vector<double> Aineq, bineq; ///< (m_ineq, n) row-major, and (m_ineq)
     std::vector<double> Aeq, beq;     ///< (m_eq, n) row-major, and (m_eq)
-    std::vector<double> lb, ub;      ///< (n) each, or empty
+    std::vector<double> lb, ub;       ///< (n) each, or empty
 };
 
 /// The outcome: x and fval are only set if the status is Optimal.

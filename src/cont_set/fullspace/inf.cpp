@@ -18,9 +18,8 @@ namespace cora {
 
 Fullspace Fullspace::inf(int64_t n) {
     detail::Entry entry;
-    CORA_CHECK(n >= 0, Error::wrong_value, [&] {
-        return "inf: the dimension must be nonnegative, got " + std::to_string(n);
-    });
+    CORA_CHECK(n >= 0, Error::wrong_value,
+               [&] { return "inf: the dimension must be nonnegative, got " + std::to_string(n); });
     return Fullspace(n);
 }
 

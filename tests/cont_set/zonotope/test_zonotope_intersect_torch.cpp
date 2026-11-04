@@ -9,7 +9,8 @@ namespace {
 
 /// The weights 1 / trace(G G') and the averaged center and generators: differentiable.
 void averaging_gradient() {
-    const std::vector<torch::Tensor> A = test::random_zonotope(2, 3), B = test::random_zonotope(2, 2);
+    const std::vector<torch::Tensor> A = test::random_zonotope(2, 3),
+                                     B = test::random_zonotope(2, 2);
     test::gradcheck("intersect (averaging)",
                     [](const Inputs &x) {
                         return test::parts(

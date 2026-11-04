@@ -135,12 +135,12 @@ std::string aux_style(Writer &w, const Figure::Layer &l) {
         if (l.filled) {
             o.push_back("fill=" + w.color(l.face));
             if (l.face_alpha < 1) o.push_back("fill opacity=" + aux_fixed(l.face_alpha, 4));
-            if (!l.label.empty()) o.push_back("area legend");
+            if (!l.label.empty()) o.emplace_back("area legend");
         }
     }
     if (std::abs(l.line_width - 1) > numerics::kPlotEqual)
         o.push_back("line width=" + aux_fixed(0.4 * l.line_width, 3) + "pt");
-    if (l.dashed) o.push_back("dashed");
+    if (l.dashed) o.emplace_back("dashed");
     std::string text;
     for (std::size_t i = 0; i < o.size(); ++i) text += (i ? ", " : "") + o[i];
     return text;
@@ -185,7 +185,7 @@ void aux_addplot(std::ostringstream &out, Writer &w, const std::string &options,
     // With external data the table goes to a file and the picture reads it.
     if (w.options.external_data) {
         const std::string file = w.table_prefix + "_" + std::to_string(++w.plots) + ".dat";
-        if (w.tables) w.tables->push_back({file, names + "\n" + rows("\n")});
+        if (w.tables) w.tables->emplace_back(file, names + "\n" + rows("\n"));
         out << "  " << cmd << "[" << options << jump << "] table[x=x, y=y" << (three ? ", z=z" : "")
             << "] {" << file << "};\n";
     } else if (paths.size() == 1) {
@@ -238,7 +238,7 @@ void aux_surface_layer(std::ostringstream &out, Writer &w, const Figure &fig,
             fig.view(p, &d);
             depth += d / static_cast<double>(face.size());
         }
-        faces.push_back({depth, &face});
+        faces.emplace_back(depth, &face);
     }
     std::stable_sort(faces.begin(), faces.end(),
                      [](const auto &p, const auto &q) { return p.first < q.first; });
@@ -325,7 +325,7 @@ std::string aux_axis_options(const Figure &fig, const Axes &a, bool x_label, boo
         o.push_back("view={" + aux_fixed(fig.azimuth, 2) + "}{" + aux_fixed(fig.elevation, 2) +
                     "}");
     } else if (fig.equal_axes) {
-        o.push_back("axis equal image");
+        o.emplace_back("axis equal image");
     }
     std::string text;
     for (const std::string &s : o) text += "  " + s + ",\n";
@@ -360,6 +360,7 @@ std::string aux_tikz(const std::vector<const Figure *> &figures, int rows, int c
     const bool group = rows * cols > 1;
     // The limits of the cells; a shared axis has the union of the limits of all of them.
     std::vector<Figure::Limits> limits;
+    limits.reserve(figures.size());
     for (const Figure *f : figures) limits.push_back(f->limits());
     for (Figure::Limits &l : limits)
         for (const Figure::Limits &o : limits) {
@@ -443,6 +444,7 @@ void Figure::save_tikz(const std::string &path, const TikzOptions &options) cons
 // A grid of several figures is one groupplot.
 std::string FigureGrid::tikz(const TikzOptions &options) const {
     std::vector<const Figure *> figures;
+    figures.reserve(cells_.size());
     for (const Figure &f : cells_) figures.push_back(&f);
     return aux_tikz(figures, rows_, cols_, share_x, share_y, options, "", nullptr);
 }
@@ -450,6 +452,7 @@ std::string FigureGrid::tikz(const TikzOptions &options) const {
 // The same with the tables.
 void FigureGrid::save_tikz(const std::string &path, const TikzOptions &options) const {
     std::vector<const Figure *> figures;
+    figures.reserve(cells_.size());
     for (const Figure &f : cells_) figures.push_back(&f);
     std::vector<std::pair<std::string, std::string>> tables;
     const std::string text =

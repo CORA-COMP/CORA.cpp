@@ -31,7 +31,8 @@ void sum_adds_the_bounds(const std::string &b) {
               close(along.sup(), std::vector<double>{9, 18}),
           b + ": dim 2 sums along the columns");
     const Interval v(column({1.0, 2.0, 3.0}), column({2.0, 3.0, 4.0}));
-    check(close(v.sum().inf(), std::vector<double>{6}) && close(v.sum().sup(), std::vector<double>{9}),
+    check(close(v.sum().inf(), std::vector<double>{6}) &&
+              close(v.sum().sup(), std::vector<double>{9}),
           b + ": a column sums to one entry by default");
     const Interval row = v.transpose();
     check(row.sum().inf().shape() == std::vector<int64_t>({1, 1}) &&

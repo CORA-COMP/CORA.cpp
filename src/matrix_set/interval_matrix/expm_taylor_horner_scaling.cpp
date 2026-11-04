@@ -68,8 +68,9 @@ IntervalMatrix aux_horner(const IntervalMatrix &A, const Tensor &a, int64_t N) {
 
 // ===========================================  MAIN  =========================================== //
 
-std::optional<IntervalMatrix> IntervalMatrix::expm_taylor_horner_scaling(
-    int64_t max_order, int64_t style, int64_t scaling_exponent) const {
+std::optional<IntervalMatrix>
+IntervalMatrix::expm_taylor_horner_scaling(int64_t max_order, int64_t style,
+                                           int64_t scaling_exponent) const {
     detail::Entry entry;
     if (entry.check()) check_series_input(max_order, style, scaling_exponent, false);
     const Tensor a = norm(Tensor::Norm::inf);

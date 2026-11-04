@@ -4,9 +4,8 @@ and Falsification (the algorithms themselves are tested in C++)."""
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 class Verify(unittest.TestCase):

@@ -2,9 +2,8 @@
 import threading
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 
 def box(lo, hi, dtype="float64"):

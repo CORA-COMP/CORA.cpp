@@ -30,8 +30,8 @@ NeuralNetwork random_network(cora::Rng &rng, const std::vector<int64_t> &sizes) 
 }
 
 void points_follow_the_layers(const std::string &b) {
-    const NeuralNetwork nn({{Tensor({{1, -1}, {2, 0}}), Tensor({0.0, -1.0})},
-                            {Tensor({{1, 1}}), Tensor({0.5})}});
+    const NeuralNetwork nn(
+        {{Tensor({{1, -1}, {2, 0}}), Tensor({0.0, -1.0})}, {Tensor({{1, 1}}), Tensor({0.5})}});
     const Tensor y = nn.evaluate(Tensor({{1.0, 3.0}, {2.0, 1.0}}));
     // (1, 2): hidden (-1, 1) -> (0, 1) -> 1.5;  (3, 1): hidden (2, 5) -> 7.5
     check(y.shape() == std::vector<int64_t>({1, 2}), b + ": one output per point");
@@ -61,7 +61,8 @@ void stable_neurons_are_exact(const std::string &b) {
         const std::vector<double> d = test::random_direction(rng, 2);
         check(test::close(test::support(nn.evaluate(positive), d), test::support(positive, d)),
               b + ": a positive set passes unchanged");
-        check(test::close(test::support(nn.evaluate(negative), d), 0.0), b + ": a negative set gives 0");
+        check(test::close(test::support(nn.evaluate(negative), d), 0.0),
+              b + ": a negative set gives 0");
     }
 }
 
@@ -94,7 +95,8 @@ void the_enclosure_contains_the_outputs(const std::string &b) {
 
 void wrong_arguments_are_described(const std::string &b) {
     const Tensor W = Tensor({{1, 2}, {3, 4}}), bias = Tensor({0.0, 0.0});
-    check(test::throws([&] { NeuralNetwork(std::vector<NeuralNetwork::Layer>{}); }), b + ": no layers");
+    check(test::throws([&] { NeuralNetwork(std::vector<NeuralNetwork::Layer>{}); }),
+          b + ": no layers");
     check(test::throws([&] { NeuralNetwork({{W, Tensor({0.0, 0.0, 0.0})}}); }),
           b + ": a bias of another size");
     check(test::throws([&] { NeuralNetwork({{W, bias}, {Tensor({{1, 2, 3}}), Tensor({0.0})}}); }),

@@ -22,7 +22,7 @@ class Json {
 
     Kind kind = Kind::null;
     bool boolean = false;
-    std::string text;  // the string, or the number as written
+    std::string text; // the string, or the number as written
     std::vector<Json> items;
     std::vector<std::pair<std::string, Json>> members;
 
@@ -43,7 +43,10 @@ class Json {
     }
 
     /// Appends to an array.
-    Json &push(Json v) { items.insert(items.end(), std::move(v)); return *this; }
+    Json &push(Json v) {
+        items.insert(items.end(), std::move(v));
+        return *this;
+    }
 
     /// Sets a member of an object (appended; keys are not deduplicated).
     Json &set(const std::string &key, Json v) {

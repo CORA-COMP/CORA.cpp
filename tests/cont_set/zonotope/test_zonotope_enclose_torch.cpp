@@ -10,7 +10,8 @@ namespace {
 /// Averages and differences of the generators: differentiable in both zonotopes, also when they
 /// have different numbers of generators.
 void enclose_gradient() {
-    const std::vector<torch::Tensor> A = test::random_zonotope(3, 4), B = test::random_zonotope(3, 2);
+    const std::vector<torch::Tensor> A = test::random_zonotope(3, 4),
+                                     B = test::random_zonotope(3, 2);
     test::gradcheck("enclose",
                     [](const Inputs &x) {
                         return test::parts(Zonotope(x[0], x[1]).enclose(Zonotope(x[2], x[3])));

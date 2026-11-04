@@ -31,9 +31,8 @@ MatZonotope::ExpmMixedResult MatZonotope::expm_mixed(double r, int64_t intermedi
                shape_text(C_.shape());
     });
     // CORA asks for a nonnegative step and divides by it, which fails for 0
-    CORA_CHECK(r > 0, Error::wrong_value, [&] {
-        return "expm_mixed: the step must be positive, got " + format_number(r);
-    });
+    CORA_CHECK(r > 0, Error::wrong_value,
+               [&] { return "expm_mixed: the step must be positive, got " + format_number(r); });
     CORA_CHECK(intermediate_order >= 2, Error::wrong_value, [&] {
         return "expm_mixed: the intermediate order is too low, give at least 2, got " +
                std::to_string(intermediate_order);

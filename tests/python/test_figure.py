@@ -6,9 +6,8 @@ import unittest
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
 import cora
+import matplotlib.pyplot as plt
 
 
 class Subplots(unittest.TestCase):

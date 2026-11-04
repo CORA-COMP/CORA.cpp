@@ -22,6 +22,7 @@ namespace {
 std::vector<Tensor> aux_columns(const Tensor &X) {
     const Tensor rows = X.matrix_transpose();
     std::vector<Tensor> out;
+    out.reserve(X.shape()[0]);
     for (int64_t i = 0; i < X.shape()[0]; ++i) out.push_back(rows.slice(-1, i, i + 1));
     return out;
 }
@@ -30,6 +31,7 @@ std::vector<Tensor> aux_columns(const Tensor &X) {
 std::vector<Range> aux_scalars(const Range &box) {
     const std::vector<Tensor> lo = aux_columns(box.lo), hi = aux_columns(box.hi);
     std::vector<Range> out;
+    out.reserve(lo.size());
     for (std::size_t i = 0; i < lo.size(); ++i) out.emplace_back(lo[i], hi[i]);
     return out;
 }
@@ -53,6 +55,7 @@ NonlinearSys::NonlinearSys(const Dynamics &f, int64_t n) : n_(n) {
         return "NonlinearSys: needs at least one state, got n = " + std::to_string(n);
     });
     std::vector<Expr> x;
+    x.reserve(n);
     for (int i = 0; i < n; ++i) x.push_back(Expr::var(i));
     f_ = f(x);
     CORA_CHECK(static_cast<int64_t>(f_.size()) == n, Error::wrong_input_in_constructor, [&] {
@@ -78,6 +81,7 @@ Tensor NonlinearSys::dynamics(const Tensor &x) const {
     });
     const std::vector<Tensor> states = aux_columns(x);
     std::vector<Tensor> f;
+    f.reserve(f_.size());
     for (const Expr &fi : f_) f.push_back(fi.eval_tensor(states));
     return Tensor::concat(f, -1).matrix_transpose();
 }
@@ -91,6 +95,7 @@ Tensor NonlinearSys::jacobian(const Tensor &x) const {
     std::vector<Tensor> rows;
     for (int64_t i = 0; i < n_; ++i) {
         std::vector<Tensor> row;
+        row.reserve(n_);
         for (int64_t j = 0; j < n_; ++j) row.push_back(jacobian_[i * n_ + j].eval_tensor(states));
         rows.push_back(Tensor::concat(row, -1));
     }
@@ -120,6 +125,7 @@ std::vector<std::optional<Range>> NonlinearSys::hessian_enclosure(const Range &b
                [&] { return aux_column_message(box.lo, n_, "hessian_enclosure: the box"); });
     const std::vector<Range> states = aux_scalars(box);
     std::vector<std::optional<Range>> out;
+    out.reserve(hessian_.size());
     for (const Expr &h : hessian_)
         out.push_back(h.is_zero() ? std::nullopt : std::optional<Range>(h.enclose(states)));
     return out;

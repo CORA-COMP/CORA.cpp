@@ -8,9 +8,9 @@
 // Outputs:  the queries of priv_verifyTime.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
 
+#include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/tensor/tolerance.h"
 #include "cora/global/within_tol.h"
-#include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 
 #include <algorithm>
 #include <cmath>
@@ -19,12 +19,6 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
-
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-} // namespace
 
 
 // ===========================================  MAIN  =========================================== //

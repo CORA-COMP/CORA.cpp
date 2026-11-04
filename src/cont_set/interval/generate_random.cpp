@@ -45,15 +45,18 @@ CORA_FROM_NUMBERS Interval Interval::generate_random(Rng &rng, std::optional<int
         return "generate_random: the dimension must be at least 1, got " +
                std::to_string(*dimension);
     });
-    CORA_CHECK(!max_radius || max_radius->min().item() >= 0, Error::wrong_value, [] {
-        return std::string("generate_random: max_radius must be nonnegative");
-    });
+    CORA_CHECK(!max_radius || max_radius->min().item() >= 0, Error::wrong_value,
+               [] { return std::string("generate_random: max_radius must be nonnegative"); });
     // the dimension: given, else that of the center or the radii, else random
     int64_t n = 0;
-    if (dimension) n = *dimension;
-    else if (center) n = center->size(-2);
-    else if (max_radius && max_radius->numel() > 1) n = max_radius->size(-2);
-    else n = priv_random_dimension(rng);
+    if (dimension)
+        n = *dimension;
+    else if (center)
+        n = center->size(-2);
+    else if (max_radius && max_radius->numel() > 1)
+        n = max_radius->size(-2);
+    else
+        n = priv_random_dimension(rng);
     // what is drawn lives where the given center or radii do, else on the current backend
     const Tensor *given = center ? &*center : max_radius ? &*max_radius : nullptr;
     const auto column = [&](double low, double high) {
@@ -64,11 +67,11 @@ CORA_FROM_NUMBERS Interval Interval::generate_random(Rng &rng, std::optional<int
     Tensor r = max_radius ? *max_radius : column(0.0, 10.0);
     if (r.numel() == 1) r = r.reshape({1, 1}).tile({n, 1});
     const Shape vector{n, 1};
-    CORA_CHECK(c.shape() == vector && r.shape() == vector,
-               Error::wrong_value, [&] {
-                   return "generate_random: the center and max_radius must be vectors of the "
-                          "dimension " + std::to_string(n);
-               });
+    CORA_CHECK(c.shape() == vector && r.shape() == vector, Error::wrong_value, [&] {
+        return "generate_random: the center and max_radius must be vectors of the "
+               "dimension " +
+               std::to_string(n);
+    });
     // the radius, symmetric to keep the center
     const Tensor radius = (r * 0.5).multiply(column(0.0, 1.0));
     return {c - radius, c + radius};

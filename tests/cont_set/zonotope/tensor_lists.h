@@ -1,7 +1,7 @@
 // tensor_lists - what the tests of tensor_multiplication share: CORA's lists and random tensors
 //
-// Syntax:   Zonotope::TensorLists list = test::triples(3);   Tensor M = test::random_tensor(rng, n);
-// Outputs:  list - the ordered triples of m generators (perm), the sorted ones (comb) and the
+// Syntax:   Zonotope::TensorLists list = test::triples(3);   Tensor M = test::random_tensor(rng,
+// n); Outputs:  list - the ordered triples of m generators (perm), the sorted ones (comb) and the
 //           column of the sorted triple of each (map);  M - a normal random tensor (n, n, n, n)
 // See also: test_zonotope_tensor_multiplication.cpp
 //

@@ -30,7 +30,8 @@ void reduce_encloses_the_zonotope(const std::string &b) {
     const Zonotope R = Z.reduce(3);
     for (int k = 0; k < 40; ++k) {
         const std::vector<double> d = random_direction(rng, n);
-        check(support(R, d) >= support(Z, d) - 1e-9, b + ": the support along a direction only grows");
+        check(support(R, d) >= support(Z, d) - 1e-9,
+              b + ": the support along a direction only grows");
     }
 }
 
@@ -53,7 +54,7 @@ void a_batch_reduces_member_by_member(const std::string &b) {
     const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 9);
     const Zonotope Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 9);
     const Zonotope batch = Zonotope::stack({Z1, Z2}).reduce(2);
-    const Tensor G = batch.generators();
+    const Tensor &G = batch.generators();
     check(test::close(G.slice(0, 0, 1).squeeze(0), Z1.reduce(2).generators(), 0), b + ": member 1");
     check(test::close(G.slice(0, 1, 2).squeeze(0), Z2.reduce(2).generators(), 0), b + ": member 2");
 }

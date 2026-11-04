@@ -23,7 +23,8 @@ void batches_broadcast() {
     check(B.matmul(S).shape() == std::vector<int64_t>({3, 2, 2}), "matmul broadcasts the batch");
     check((B + S).shape() == std::vector<int64_t>({3, 2, 2}), "add broadcasts the batch");
     check(max_diff(to_torch(B.matmul(S)), batch.matmul(single)) < 1e-14, "the batched product");
-    check(B.matrix_transpose().shape() == std::vector<int64_t>({3, 2, 2}), "transpose keeps the batch");
+    check(B.matrix_transpose().shape() == std::vector<int64_t>({3, 2, 2}),
+          "transpose keeps the batch");
     check(B.sum(-1, true).shape() == std::vector<int64_t>({3, 2, 1}), "sum_last keeps the batch");
     check(B.eye_like().shape() == std::vector<int64_t>({3, 2, 2}),
           "eye_like takes the batch shape");
