@@ -12,8 +12,8 @@ using test::close;
 namespace {
 
 /// A = I + b [[0, 1], [0, 0]] times B = 2 I + b1 [[1, 0], [0, 0]] + b2 [[0, 0], [0, 1]]: the
-/// matrices are [I, GA] and [2I, GB1, GB2], the product's center is 2 I and its generators are,
-/// with A's index fastest, GA 2I, I GB1, GA GB1, I GB2, GA GB2.
+/// matrices are [I, GA] and [2I, GB1, GB2], the product's center is 2 I and its generators are, in
+/// CORALean's order, GA 2I, I GB1, I GB2, GA GB1, GA GB2.
 void product_of_two_sets(const std::string &b) {
     const MatZonotope A = test::set_of({1, 0, 0, 1}, {0, 1, 0, 0}, 2, 2);
     const MatZonotope B = test::set_of({2, 0, 0, 2}, {1, 0, 0, 0, 0, 0, 0, 1}, 2, 2);
@@ -22,10 +22,10 @@ void product_of_two_sets(const std::string &b) {
     check(P.num_generators() == 5, b + ": (1 + 1)(1 + 2) - 1 generators");
     check(close(P.generators(), {0, 2, 0, 0,   // GA 2I
                                  1, 0, 0, 0,   // I GB1
-                                 0, 0, 0, 0,   // GA GB1
                                  0, 0, 0, 1,   // I GB2
+                                 0, 0, 0, 0,   // GA GB1
                                  0, 1, 0, 0}), // GA GB2
-          b + ": the generators, A's index fastest");
+          b + ": the generators, in CORALean's order");
     check(test::same_set(A * B, P, 0), b + ": the operator");
 }
 
@@ -35,12 +35,12 @@ void members_multiply(const std::string &b) {
     Rng rng(21);
     const MatZonotope A = test::random_set(rng, 3, 2, 0.5), B = test::random_set(rng, 3, 3, 0.5);
     const std::vector<double> ca = test::coefficients(rng, 2), cb = test::coefficients(rng, 3);
-    // A's index runs fastest over [1, ca], B's over [1, cb]; the first entry is the center
-    std::vector<double> A1{1.0}, B1{1.0}, both;
-    A1.insert(A1.end(), ca.begin(), ca.end());
-    B1.insert(B1.end(), cb.begin(), cb.end());
-    for (const double bj : B1)
-        for (const double ai : A1) both.push_back(ai * bj);
+    // the coefficients of the center, of G_A(i) C_B, of C_A G_B(j) and of G_A(i) G_B(j), j fastest
+    std::vector<double> both{1.0};
+    both.insert(both.end(), ca.begin(), ca.end());
+    both.insert(both.end(), cb.begin(), cb.end());
+    for (const double ai : ca)
+        for (const double bj : cb) both.push_back(ai * bj);
     const Tensor expected = test::member(A, ca).matmul(test::member(B, cb));
     const Tensor center = A.matmul(B).center();
     const MatZonotope P = A.matmul(B);

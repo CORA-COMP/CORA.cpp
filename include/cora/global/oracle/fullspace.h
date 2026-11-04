@@ -48,6 +48,17 @@ class Fullspace {
     Certified is_intersecting(const Interval &I) const;
     bool isequal(const Fullspace &F2, double tol = 0) const;
 
+    /// The image under a matrix (m, n): the whole space of m dimensions; the support function:
+    /// Inf, 0 for the zero direction.
+    Fullspace linear_map(const Tensor &M) const;
+    double support_function(const Tensor &dir, const std::string &type = "upper") const;
+
+    /// Whether the set is also a set of the type "emptySet", "point", "origin" or "fullspace":
+    /// true for "fullspace" only (n > 0). The corners of [-Inf, Inf]^n as the columns of V
+    /// (n, 2^n), for n up to 20.
+    bool representsa(const std::string &type, double tol = 0) const;
+    Tensor vertices() const;
+
     bool is_bounded() const;
     bool is_full_dim() const;
     Tensor center() const;

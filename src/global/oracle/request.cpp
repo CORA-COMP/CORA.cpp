@@ -70,6 +70,12 @@ struct Decode<ConZonotope> {
         return ConZonotope::from_json(dt, j);
     }
 };
+template <>
+struct Decode<MatZonotope> {
+    static MatZonotope of(const std::string &dt, const Json &j) {
+        return MatZonotope::from_json(dt, j);
+    }
+};
 // The empty set is its dimension, {"n": n}.
 template <>
 struct Decode<EmptySet> {
@@ -131,6 +137,7 @@ Wire::Wire(const Interval &I) : json(I.to_json()), dtype(I.inf().dtype()) {}
 Wire::Wire(const Fullspace &F) : json(F.to_json()) {}
 Wire::Wire(const Zonotope &Z) : json(Z.to_json()), dtype(Z.center().dtype()) {}
 Wire::Wire(const ConZonotope &cz) : json(cz.to_json()), dtype(cz.dtype()) {}
+Wire::Wire(const MatZonotope &A) : json(A.to_json()), dtype(A.center().dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
 
@@ -148,6 +155,9 @@ Wire::Wire(const std::vector<std::vector<Tensor>> &Tss) {
 // Indices are a JSON array of numbers.
 Wire::Wire(const std::vector<int64_t> &indices) : json(Json::array()) {
     for (const int64_t i : indices) json.push(Json(i));
+}
+Wire::Wire(const std::vector<std::vector<int64_t>> &index_lists) : json(Json::array()) {
+    for (const std::vector<int64_t> &indices : index_lists) json.push(Wire(indices).json);
 }
 
 Wire number(double x) {
@@ -174,6 +184,7 @@ template Interval Reply::get<Interval>(const char *) const;
 template Fullspace Reply::get<Fullspace>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
 template ConZonotope Reply::get<ConZonotope>(const char *) const;
+template MatZonotope Reply::get<MatZonotope>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
@@ -182,6 +193,15 @@ template std::optional<double> Reply::get<std::optional<double>>(const char *) c
 template std::optional<Tensor> Reply::get<std::optional<Tensor>>(const char *) const;
 template std::optional<Interval> Reply::get<std::optional<Interval>>(const char *) const;
 template std::optional<Zonotope> Reply::get<std::optional<Zonotope>>(const char *) const;
+
+// Replies ----------------------------------------------------------------------------------------
+
+// The elements of an array member, as replies.
+std::vector<Reply> Reply::list(const char *key) const {
+    std::vector<Reply> replies;
+    for (const Json &item : json_.at(key).items) replies.emplace_back(dtype_, item);
+    return replies;
+}
 
 // A contains proves with true, an isIntersecting (disjoint) proves with false.
 Certified Reply::proved_contains() const {

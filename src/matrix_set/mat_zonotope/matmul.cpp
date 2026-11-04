@@ -4,9 +4,10 @@
 //           P = A.matmul(s);   Zonotope Z2 = A.matmul(Z);   P = A * B;
 // Inputs:   B - matrix zonotope;  M - matrix of numbers;  s - number;  Z - zonotope (columns, as
 //           many dimensions as A has columns); the inner dimensions agree and the batches are equal
-// Outputs:  P - for B the enclosure of {M_A M_B}: the center C_A C_B and, for the matrices
-//           Z_A = [C_A, G_A] and Z_B = [C_B, G_B], every other product Z_A(i) Z_B(j) with i the
-//           fastest index; for M and s the exact product; Z2 - the zonotope with the center
+// Outputs:  P - for B the enclosure of {M_A M_B}: the center C_A C_B and the generators G_A(i) C_B,
+//           C_A G_B(j) and G_A(i) G_B(j) (j the fastest index), in CORALean's order; CORA lists
+//           them in the order Z_A(i) Z_B(j), i fastest, for Z_A = [C_A, G_A], Z_B = [C_B, G_B]:
+//           the same set. For M and s the exact product; Z2 - the zonotope with the center
 //           C_A c and the generators [C_A G, G_i c, G_i g_j (i fastest)], an enclosure of A Z.
 //           A 1 x 1 matrix zonotope as a scalar factor is refused (Error::not_supported)
 // See also: plus, matrix_power
@@ -26,11 +27,6 @@ namespace cora {
 namespace {
 
 bool aux_scalar(const MatZonotope &A) { return A.rows() == 1 && A.cols() == 1; }
-
-/// The center and the generators as one list of matrices (..., h + 1, rows, cols).
-Tensor aux_all_matrices(const Tensor &C, const Tensor &G) {
-    return priv_join(C.expand_dims(-3), G);
-}
 
 } // namespace
 
@@ -55,12 +51,13 @@ MatZonotope MatZonotope::matmul(const MatZonotope &B) const {
                    return "matmul: the batches differ, " + shape_text(C_.shape()) + " and " +
                           shape_text(B.C_.shape());
                });
-    const int64_t count = (num_generators() + 1) * (B.num_generators() + 1);
-    // the products of every matrix of A with every one of B, A's index fastest
-    const Tensor products = aux_all_matrices(C_, G_).expand_dims(-4).matmul(
-        aux_all_matrices(B.C_, B.G_).expand_dims(-3));
-    const Tensor flat = products.reshape(priv_replace_tail(products, 4, {count, rows(), B.cols()}));
-    return MatZonotope(flat.slice(-3, 0, 1).squeeze(-3), flat.slice(-3, 1, count));
+    const int64_t both = num_generators() * B.num_generators();
+    // G_A(i) C_B, then C_A G_B(j), then every G_A(i) G_B(j) with j fastest
+    const Tensor on_center = G_.matmul(B.C_.expand_dims(-3));
+    const Tensor of_center = C_.expand_dims(-3).matmul(B.G_);
+    const Tensor crossed = G_.expand_dims(-3).matmul(B.G_.expand_dims(-4));
+    const Tensor cross = crossed.reshape(priv_replace_tail(crossed, 4, {both, rows(), B.cols()}));
+    return MatZonotope(C_.matmul(B.C_), Tensor::concat({on_center, of_center, cross}, -3));
 }
 
 

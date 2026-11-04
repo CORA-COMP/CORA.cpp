@@ -34,6 +34,11 @@ class Oracle(unittest.TestCase):
                 oracle.check(I.plus(J), cora.lean.Interval(I).plus(cora.lean.Interval(J)))
         oracle.run("interval.plus", body)
 
+    def test_serves(self):
+        """The op list of the oracle: a served op, and one that no oracle has."""
+        self.assertTrue(cora.lean.serves("zonotope.supportFunc"))
+        self.assertFalse(cora.lean.serves("zonotope.noSuchOperation"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 # Differences from CORA
 
-Where CORA.cpp deliberately differs from CORA's MATLAB code, because CORA's result is wrong or unsound.
+Where CORA.cpp deliberately differs from CORA's MATLAB code, because CORA's result is wrong or unsound, or lists the same set in the order of the CORALean oracle.
 
 | CORA file | What CORA does | What CORA.cpp does | Minimal input |
 |---|---|---|---|
@@ -32,3 +32,4 @@ Where CORA.cpp deliberately differs from CORA's MATLAB code, because CORA's resu
 | `contSet/@conZonotope/isFullDim.m` | Tests `rank(G * null(A)) = n`, which ignores that the box `\|x\|_inf <= 1` can pin the factors: a set that the box pins to a point, or an empty set, counts as full-dimensional (read from the source, not run) | The generators restricted to the factors that the constraints and the box leave free must span the space; an empty set has no interior | `cZ = conZonotope(0, [1 2], [1 1], 2)`: the box forces `x1 = x2 = 1`, the set is the point 3; CORA gives true |
 | `contSet/@conZonotope/approximateBoundsWithGPU.m` | With `batch_union_conzonotope_bounds = false` and `numUnionConst > 1` the bounds of the factors start from `-1` and `1` and are combined with `min`/`max`, so they never get tighter than `[-1, 1]` (read from the source, not run) | Starts from the empty bounds, so the union takes the least and the largest bound of its rows, as the batched form does | `numUnionConst = 2`, `batch_union_conzonotope_bounds = false`, factor bounds tighter than `[-1, 1]`: CORA returns `bl <= -1`, `bu >= 1` |
 | `contSet/@conZonotope/cubMap.m` | The constraint matrix of the image gets the column of a factor only if the map has a linear monomial of it; for another factor the column is zero, so the constraint row loses that term instead of the row being kept whole, which cuts points off the image (read from the source, not run) | Every factor keeps its constraint columns | `cZ = conZonotope(0, [1 0], [1 1], 0)`, `T = {{1}}`: the image is `[-1, 1]`, CORA's constraint becomes `x1 = 0` and gives `{0}` |
+| `matrixSet/@matZonotope/mtimes.m` | Lists the generators of a product of two matrix zonotopes as the products `Z_A(i) Z_B(j)` of `[C, G]` with `i` fastest | Lists `G_A(i) C_B`, `C_A G_B(j)`, then `G_A(i) G_B(j)` with `j` fastest, as CORALean does: the same set, in the order of the oracle so that the generators agree bit for bit (`mpower` and `powers` follow) | `A = matZonotope(I, G1)`, `B = matZonotope(I, [H1 H2])`: CORA lists `G1, H1, G1 H1, H2, G1 H2`, CORA.cpp `G1, H1, H2, G1 H1, G1 H2` |

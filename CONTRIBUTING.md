@@ -255,13 +255,22 @@ cmake --preset core -DCORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle
 cmake --build --preset core && ctest --preset core -R lean
 ```
 
-`CORACPP_ORACLE` (and `CORACPP_ORACLE_UNSOUND`) is OFF, `DOWNLOAD`, or the executable or a shell
+`CORACPP_ORACLE` (and `CORACPP_ORACLE_UNSOUND`) is a CMake cache value (an environment variable of that name
+is read only by a test binary run by hand, outside CMake), and is OFF, `DOWNLOAD`, or the executable or a shell
 command that starts it (`cd /path/to/coralean && lake exe oracle`); without an oracle the tests and
 examples named `*lean*` skip. Outside CMake, set the environment variable of the same name. From WSL,
 the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pinned in
 `scripts/coralean.cmake` (Linux x86_64) and checks its hash. Protocol and operations:
 `experiments/oracle/README.md` in CORALean; the C++ side is `src/global/oracle/`. A dtype is set with
 `lean::DTypeScope s("ieee:binary32")` (Python: `with cora.lean.dtype("ieee:binary32"):`); values cross into CORA.cpp only when they are exact doubles.
+
+**A newer oracle.** CORALean grows by batches of ops; point the build at a newer pair and rerun the
+tests (`cmake --preset core -DCORACPP_ORACLE=<dir>/oracle -DCORACPP_ORACLE_UNSOUND=<dir>/oracle-unsound`,
+then build and `ctest --preset core -R lean`; the path is a local cache value, never committed).
+`echo '{"op":"ping"}' | <dir>/oracle` lists what it serves (`ops`) and its `version`.
+A test of an op the running oracle does not serve skips it and names the op on stderr
+(`lean::serves(op)`, `cora.lean.serves(op)`), so an older oracle still passes; a check that depends on
+newer behaviour (`test::oracle::nearest_is_strict()`) skips the same way.
 
 ### Oracle tests
 
@@ -279,6 +288,12 @@ test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) {
     test::oracle::check(Z.support_function(d), lean::Zonotope(Z).support_function(d));
 });
 ```
+
+`run` skips an op the oracle does not serve; a name without a dot (`"isBounded"`) labels a test of several ops
+and is never skipped. A result that CORA.cpp computes in another order than CORALean (a few ulp) is
+compared by `check_hull`, and one CORALean gives as a bound (`tan`, `zonotopeNorm`, `boundaryPoint`) by
+enclosure or bound, in files named `*_agreement`, `*_enclosure`, `*_bound`: neither is bit-exact, so neither
+carries an ORACLE tag.
 
 In Python: `@oracle_testing.needs_oracle`, `oracle_testing.run(op, body)` and
 `oracle_testing.check(a, b)`. Examples: `tests/global/oracle/test_lean_zonotope_support_function.cpp`

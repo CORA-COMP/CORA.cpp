@@ -71,6 +71,12 @@ class ConZonotope {
 
     bool is_bounded() const;
 
+    /// Whether the oracle proves that the point (n, 1) is in the set, and that the set has an
+    /// interior point: the certificate is a right inverse of G; a set with an equality row is
+    /// never proved (false says only that no proof was found).
+    bool contains(const Tensor &point, double tol = 0) const;
+    bool is_full_dim(double tol = 0) const;
+
     Json to_json() const;
     static ConZonotope from_json(const std::string &dtype, const Json &j);
 

@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <mutex>
+#include <set>
 #include <string>
 
 #ifdef _WIN32
@@ -212,6 +213,18 @@ Json call(const Json &request) {
         CORA_FAIL(Error::special_error, "lean: the oracle failed: " + message);
     }
     return response;
+}
+
+// The op list of `ping`, read at the first question.
+bool serves(const std::string &op) {
+    static std::mutex mutex;
+    static std::set<std::string> ops;
+    std::lock_guard<std::mutex> lock(mutex);
+    if (ops.empty()) {
+        const Json ping = call(Json::object().set("op", "ping"));
+        for (const Json &name : ping.at("ops").items) ops.insert(name.text);
+    }
+    return ops.count(op) > 0;
 }
 
 void shutdown() {

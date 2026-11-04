@@ -30,6 +30,8 @@ bool aux_bool(const char *op, std::initializer_list<Operand> operands) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Wire form and construction ---------------------------------------------------------------------
+
 // The wire form is {n}.
 Json Fullspace::to_json() const {
     Json j = Json::object();
@@ -71,6 +73,24 @@ Certified Fullspace::is_intersecting(const Interval &I) const {
 }
 bool Fullspace::isequal(const Fullspace &F2, double tol) const {
     return aux_bool("fullspace.isequal", {{"n", n_}, {"S", F2}, {"tol", number(tol)}});
+}
+
+// Maps and support -------------------------------------------------------------------------------
+
+// The image under a matrix is the whole space of its rows, whatever the rank.
+Fullspace Fullspace::linear_map(const Tensor &M) const {
+    return aux_space("fullspace.mtimes", {{"n", n_}, {"M", M}});
+}
+double Fullspace::support_function(const Tensor &dir, const std::string &type) const {
+    return ask("fullspace.supportFunc", {{"n", n_}, {"dir", dir}, {"type", type}})
+        .get<double>("value");
+}
+
+bool Fullspace::representsa(const std::string &type, double tol) const {
+    return aux_bool("fullspace.representsa", {{"n", n_}, {"type", type}, {"tol", number(tol)}});
+}
+Tensor Fullspace::vertices() const {
+    return ask("fullspace.vertices", {{"n", n_}}).get<Tensor>("V");
 }
 
 // Exact answers and the center, which is the origin.

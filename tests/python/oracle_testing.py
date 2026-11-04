@@ -14,11 +14,14 @@ Modes:    run calls the body twice with the same random operands: "exact" (CORA.
 Results:  CORA.cpp's result and the oracle's, as float, array, cora.Interval / lean.Interval,
           cora.Zonotope / lean.Zonotope, bool and lean.Certified (a proof only when `proved`), a
           list of indices, a pair of halves or None.
-Skip:     needs_oracle skips a test unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND are set.
+Skip:     needs_oracle skips a test unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND are set. run skips an
+          op the oracle does not serve (`cora.lean.serves`, an older oracle), naming it once on stderr;
+          a name without a dot labels a test of several ops and is never skipped.
 """
 
 import contextlib
 import os
+import sys
 import unittest
 import warnings
 
@@ -171,9 +174,23 @@ def check(cora_result, lean_result):
     (check_exact if _state["mode"] == "exact" else check_enclosed)(_state["op"], cora_result, lean_result)
 
 
+_skipped = set()
+
+
+def serves(op):
+    """Whether the oracle serves `op`; names an op it does not serve once, on stderr."""
+    ok = cora.lean.serves(op)
+    if not ok and op not in _skipped:
+        _skipped.add(op)
+        print(f"skipped: the oracle does not serve {op}", file=sys.stderr)
+    return ok
+
+
 def run(op, body, seed=7):
     """Calls body(Random) in both modes with the same seed: exact (lean backend, dtype nearest)
     and sound (default backend, dtype binary64); what the body builds follows the mode."""
+    if "." in op and not serves(op):
+        return
     _state["op"] = op
     for mode, backend, dtype in (("exact", "lean", "nearest"),
                                  ("sound", cora.current_backend(), "binary64")):

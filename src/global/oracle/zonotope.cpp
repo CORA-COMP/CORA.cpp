@@ -169,6 +169,66 @@ std::vector<int64_t> Zonotope::filter_out(const std::vector<Zonotope> &Zs) {
 
 Zonotope Zonotope::origin(int64_t n) { return aux_set("zonotope.origin", {{"n", n}}); }
 
+// Scaling, shifting and projection onto a hyperplane.
+Zonotope Zonotope::enlarge(double factor) const {
+    return aux_set("zonotope.enlarge", {{"Z", *this}, {"factor", factor}});
+}
+Zonotope Zonotope::enlarge(const Tensor &factor) const {
+    return aux_set("zonotope.enlarge", {{"Z", *this}, {"factor", factor}});
+}
+Zonotope Zonotope::minus(const Tensor &v) const {
+    return aux_set("zonotope.minus", {{"Z", *this}, {"v", v}});
+}
+Zonotope Zonotope::project_on_hyperplane(const Tensor &c, double d) const {
+    return aux_set("zonotope.projectOnHyperplane", {{"Z", *this}, {"c", c}, {"d", d}});
+}
+
+std::optional<Interval> Zonotope::boundary_point(const Tensor &dir) const {
+    return ask("zonotope.boundaryPoint", {{"Z", *this}, {"dir", dir}})
+        .get<std::optional<Interval>>("I");
+}
+std::optional<Interval> Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
+    return ask("zonotope.boundaryPoint", {{"Z", *this}, {"dir", dir}, {"start", start}})
+        .get<std::optional<Interval>>("I");
+}
+
+// The Minkowski difference by the aligned generators (Althoff, Prop. 5), or nothing.
+std::optional<Zonotope> Zonotope::mink_diff_aligned(const Zonotope &Z2, double rho) const {
+    return ask("zonotope.minkDiff", {{"Z", *this}, {"Z2", Z2}, {"method", "aligned"}, {"rho", rho}})
+        .get<std::optional<Zonotope>>("Z");
+}
+
+// Tensor images: the third-order tensor is a list of blocks of matrices.
+Zonotope Zonotope::tensor_multiplication(const Tensor3 &M, const TensorLists &list) const {
+    return aux_set("zonotope.tensorMultiplication",
+                   {{"Z", *this}, {"M", M}, {"perm", list.perm}, {"map", list.map}, {"C", list.C}});
+}
+
+// A tensor zonotope is {"c": the center tensor, "G": the list of generator tensors}.
+Zonotope Zonotope::tensor_multiplication_zono(const Tensor3 &M_center,
+                                              const std::vector<Tensor3> &M_generators,
+                                              const TensorLists &list) const {
+    const Wire center(M_center);
+    Json generators = Json::array();
+    for (const Tensor3 &G : M_generators) generators.push(Wire(G).json);
+    Json M = Json::object();
+    M.set("c", center.json).set("G", generators);
+    return aux_set("zonotope.tensorMultiplication_zono", {{"Z", *this},
+                                                          {"M", Wire(M, center.dtype)},
+                                                          {"perm", list.perm},
+                                                          {"map", list.map},
+                                                          {"C", list.C}});
+}
+
+// One {"plus", "minus"} object per direction; a vertex that is not certified is null.
+std::vector<Zonotope::VertexPair> Zonotope::underapproximate(const std::vector<Tensor> &S) const {
+    std::vector<VertexPair> pairs;
+    for (const Reply &r : ask("zonotope.underapproximate", {{"Z", *this}, {"S", S}}).list("V"))
+        pairs.push_back(
+            {r.get<std::optional<Tensor>>("plus"), r.get<std::optional<Tensor>>("minus")});
+    return pairs;
+}
+
 // Selection and reshaping --------------------------------------------------------------------
 
 Zonotope Zonotope::project(const std::vector<int64_t> &dims) const {
@@ -237,6 +297,9 @@ double Zonotope::radius(int k) const {
 }
 std::optional<double> Zonotope::minnorm(int p) const {
     return ask("zonotope.minnorm", {{"Z", *this}, {"p", p}}).get<std::optional<double>>("value");
+}
+double Zonotope::zonotope_norm(const Tensor &p) const {
+    return ask("zonotope.zonotopeNorm", {{"Z", *this}, {"p", p}}).get<double>("value");
 }
 Tensor Zonotope::center_value() const {
     return ask("zonotope.center", {{"Z", *this}}).get<Tensor>("value");

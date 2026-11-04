@@ -15,7 +15,9 @@
 //             is a proof only when `proved`
 // Skip:       available() is false, with a note, unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND
 // are
-//             set; a test then returns at once
+//             set; a test then returns at once. run skips an op the oracle does not serve (an older
+//             oracle; `lean::serves`), naming it once on stderr; serves(op) asks for another op,
+//             and nearest_is_strict() for a check that needs the machine's strict order at nearest
 // See also:   testing.h, cora/global/oracle/request.h
 
 #pragma once
@@ -24,16 +26,19 @@
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/interval_matrix.h"
+#include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "testing.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <optional>
 #include <random>
+#include <set>
 #include <sstream>
 
 namespace test::oracle {
@@ -57,6 +62,35 @@ inline bool available() {
     const bool ok = std::getenv("CORACPP_ORACLE") && std::getenv("CORACPP_ORACLE_UNSOUND");
     if (!ok) std::cerr << "skipped: set CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND\n";
     return ok;
+}
+
+/// Says on stderr that a check is skipped, once per reason: an older oracle is still a valid one,
+/// its tests skip what it lacks.
+inline void skipped(const std::string &reason) {
+    static std::set<std::string> said;
+    if (said.insert(reason).second) std::cerr << "skipped: " << reason << "\n";
+}
+
+/// Whether the oracle serves `op`; names an op it does not serve once.
+inline bool serves(const std::string &op) {
+    const bool ok = lean::serves(op);
+    if (!ok) skipped("the oracle does not serve " + op);
+    return ok;
+}
+
+/// Whether the oracle at nearest compares strictly by the machine's order, so that a box is not
+/// below itself and a flat box is not full dimensional. The oracles before batch 5 added a margin
+/// there that rounds away at nearest, and read both as true; the checks of such degenerate cases
+/// are skipped with them.
+inline bool nearest_is_strict() {
+    static const bool strict = [] {
+        const lean::DTypeScope dtype("nearest");
+        const cora::Tensor one = cora::Tensor::from_data({1.0}, {1, 1}), two = one + one;
+        const lean::Interval box(cora::Interval(one, two));
+        return !box.lt(box);
+    }();
+    if (!strict) skipped("the oracle's strict order at nearest has a margin (older oracle)");
+    return strict;
 }
 
 /// Random operands from a fixed seed: normal numbers, which are exact doubles, on the current
@@ -99,6 +133,13 @@ class Random {
         }
         return {vector(n), matrix(n, m), cora::Tensor::from_data(A, {p, m}),
                 cora::Tensor::from_data(b, {p, 1})};
+    }
+
+    /// A matrix zonotope of rows x cols matrices with h generators.
+    cora::MatZonotope mat_zonotope(int64_t rows, int64_t cols, int64_t h) {
+        std::vector<double> data(h * rows * cols);
+        for (double &x : data) x = scalar();
+        return {matrix(rows, cols), cora::Tensor::from_data(data, {h, rows, cols})};
     }
 
     /// A box of n dimensions: a center and a radius in [0, 1].
@@ -213,6 +254,16 @@ inline bool same_bits(const std::string &what, const cora::ConZonotope &a,
     return same_bits(what + ".b", a.b(), other.b()) && same;
 }
 
+/// The nominal part of the oracle's matrix zonotope: the center and the generators in their order.
+inline bool same_bits(const std::string &what, const cora::MatZonotope &a,
+                      const lean::MatZonotope &b) {
+    const cora::MatZonotope other = b.gather().first;
+    // both compared, so that both mismatches are reported
+    const bool center = same_bits(what + ".C", a.center(), other.center());
+    const bool generators = same_bits(what + ".G", a.generators(), other.generators());
+    return center && generators;
+}
+
 /// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
@@ -302,6 +353,12 @@ inline bool enclosed(const std::string &what, const cora::Tensor &a, const lean:
     return enclosed(what, cora::Interval(a, a), b);
 }
 
+/// Inside the box of the oracle's matrix zonotope (its error box included).
+inline bool enclosed(const std::string &what, const cora::MatZonotope &a,
+                     const lean::MatZonotope &b) {
+    return enclosed(what + " (box)", a.interval_matrix(), b.interval_matrix());
+}
+
 /// Inside nominal + error box: the oracle proves the containment, or else (when it cannot) the
 /// interval hull of CORA.cpp's set at least lies in the hull of the enclosure.
 inline bool enclosed(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
@@ -359,6 +416,22 @@ inline bool enclosed(const std::string &what, const cora::Tensor &a, double boun
     return enclosed(what, a.data()[0], bound);
 }
 
+/// The interval hull of CORA.cpp's result against the oracle's, to a relative `rel`, for an
+/// operation that sums in another order than CORALean's (a few ulp of the sums, not bits), in both
+/// modes: the box of CORA.cpp's zonotope and of the oracle's enclosure, bound by bound.
+inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
+                       double rel = 1e-10) {
+    const cora::Interval box = mine.interval();
+    const auto [inf, sup] = theirs.interval().gather();
+    const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
+                              d = sup.data();
+    bool ok = a.size() == b.size();
+    for (std::size_t i = 0; ok && i < a.size(); ++i)
+        ok = std::abs(a[i] - b[i]) <= rel * (1 + std::abs(b[i])) &&
+             std::abs(c[i] - d[i]) <= rel * (1 + std::abs(d[i]));
+    test::check(ok, op_name() + ": the box of the oracle's result");
+}
+
 // The checks a test calls --------------------------------------------------------------------
 
 /// CORA.cpp's result equals the oracle's bit for bit (run it on the lean backend, oracle at
@@ -387,6 +460,9 @@ void check(const A &cora_result, const B &lean_result) {
 /// sound (default backend, dtype binary64); what the body builds follows the mode.
 template <class F>
 void run(const std::string &op, F body, uint64_t seed = 7) {
+    // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without labels a generic
+    // test
+    if (op.find('.') != std::string::npos && !serves(op)) return;
     op_name() = op;
     for (const Mode m : {Mode::exact, Mode::sound}) {
         mode() = m;

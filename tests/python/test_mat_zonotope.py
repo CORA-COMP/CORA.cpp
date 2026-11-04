@@ -151,12 +151,13 @@ class Products(unittest.TestCase):
         np.testing.assert_array_equal(P.center, 2 * np.eye(2))
         self.assertEqual(P.num_generators, 5)
         np.testing.assert_array_equal(P.generators[0], [[0, 2], [0, 0]])
-        np.testing.assert_array_equal(P.generators[3], [[0, 0], [0, 1]])
+        np.testing.assert_array_equal(P.generators[2], [[0, 0], [0, 1]])
         rng = np.random.default_rng(3)
         Q, R = random_set(rng, 3, 2, 0.5), random_set(rng, 3, 3, 0.5)
         P = Q @ R
         ca, cb = rng.uniform(-1, 1, 2), rng.uniform(-1, 1, 3)
-        weights = np.outer(np.r_[1.0, ca], np.r_[1.0, cb]).T.reshape(-1)  # A's index fastest
+        # the center, G_A(i) C_B, C_A G_B(j), G_A(i) G_B(j) with j fastest
+        weights = np.r_[1.0, ca, cb, np.outer(ca, cb).reshape(-1)]
         point = P.center * weights[0] + np.tensordot(weights[1:], P.generators, axes=1)
         np.testing.assert_allclose(point, member(Q, ca) @ member(R, cb), atol=1e-12)
 

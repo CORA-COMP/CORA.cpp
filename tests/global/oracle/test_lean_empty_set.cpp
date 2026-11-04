@@ -18,11 +18,14 @@
 // ORACLE: contSet/@emptySet/isIntersecting_.m
 // ORACLE: contSet/@emptySet/isequal.m
 // ORACLE: contSet/@emptySet/lift_.m
+// ORACLE: contSet/@emptySet/mtimes.m
 // ORACLE: contSet/@emptySet/not.m
 // ORACLE: contSet/@emptySet/plus.m
 // ORACLE: contSet/@emptySet/project.m
 // ORACLE: contSet/@emptySet/projectHighDim_.m
 // ORACLE: contSet/@emptySet/radius.m
+// ORACLE: contSet/@emptySet/representsa_.m
+// ORACLE: contSet/@emptySet/supportFunc_.m
 // ORACLE: contSet/@emptySet/vertices_.m
 // ORACLE: contSet/@emptySet/volume_.m
 
@@ -143,6 +146,27 @@ int main() {
                       }));
     test::oracle::run("emptySet.volume", each_dimension([](Random &, int64_t n) {
                           check(EmptySet(n).volume(), lean::EmptySet(n).volume());
+                      }));
+    // the image has the dimension of the rows of M; the support function is -Inf in every direction
+    test::oracle::run("emptySet.mtimes", each_dimension([](Random &rnd, int64_t n) {
+                          for (const int64_t m : {1, 3, 7}) {
+                              const Tensor M = rnd.matrix(m, n);
+                              check(EmptySet(n).linear_map(M).dim(),
+                                    lean::EmptySet(n).linear_map(M).dim());
+                          }
+                      }));
+    test::oracle::run(
+        "emptySet.supportFunc", each_dimension([](Random &rnd, int64_t n) {
+            const Tensor dir = rnd.direction(n);
+            check(EmptySet(n).support_function(dir), lean::EmptySet(n).support_function(dir));
+            const Tensor zero = dir.zeros_like();
+            check(EmptySet(n).support_function(zero), lean::EmptySet(n).support_function(zero));
+        }));
+    // the types the oracle answers: it proves the empty set is the empty set and no other
+    test::oracle::run("emptySet.representsa", each_dimension([](Random &, int64_t n) {
+                          for (const char *type : {"emptySet", "point", "origin", "fullspace"})
+                              check(EmptySet(n).representsa(type, 0.0),
+                                    lean::EmptySet(n).representsa(type));
                       }));
     test::oracle::run("emptySet.not", each_dimension([](Random &, int64_t n) {
                           check(EmptySet(n).complement(), lean::EmptySet(n).complement());

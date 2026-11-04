@@ -35,7 +35,9 @@ bool aux_bool(const char *op, std::initializer_list<Operand> operands, const cha
 
 // ===========================================  MAIN  =========================================== //
 
-// Construction and the set operations: the result set is its dimension.
+// Construction and set operations ----------------------------------------------------------------
+
+// The result set is its dimension.
 EmptySet EmptySet::empty(int64_t n) { return aux_set("emptySet.empty", {{"n", n}}); }
 
 EmptySet EmptySet::intersect(const cora::ContSet &S) const {
@@ -67,6 +69,21 @@ bool EmptySet::is_intersecting(const cora::ContSet &S, double tol) const {
 
 bool EmptySet::isequal(const cora::ContSet &S, double tol) const {
     return aux_bool("emptySet.isequal", {{"n", n_}, {"S", aux_other(S)}, {"tol", number(tol)}});
+}
+
+// Maps and support -------------------------------------------------------------------------------
+
+// The image under a matrix has the dimension of its rows; no point, so no support.
+EmptySet EmptySet::linear_map(const Tensor &M) const {
+    return aux_set("emptySet.mtimes", {{"n", n_}, {"M", M}});
+}
+double EmptySet::support_function(const Tensor &dir, const std::string &type) const {
+    return ask("emptySet.supportFunc", {{"n", n_}, {"dir", dir}, {"type", type}})
+        .get<double>("value");
+}
+
+bool EmptySet::representsa(const std::string &type, double tol) const {
+    return aux_bool("emptySet.representsa", {{"n", n_}, {"type", type}, {"tol", number(tol)}});
 }
 
 // Boundedness and dimension of the interior.

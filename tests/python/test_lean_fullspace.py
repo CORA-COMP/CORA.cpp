@@ -44,7 +44,7 @@ class Oracle(unittest.TestCase):
                 oracle.check(F.intersect(I), L.intersect(cora.lean.Interval(I)))
                 oracle.check(F.lift(n + 2, list(range(n))), L.lift(n + 2, list(range(n))))
                 oracle.check(F.center, L.center())
-        oracle.run("fullspace.sets", body)
+        oracle.run("fullspace sets", body)
 
     def test_predicates(self):
         def body(rnd):
@@ -58,7 +58,7 @@ class Oracle(unittest.TestCase):
                 oracle.check(F.is_full_dim(), L.is_full_dim())
                 oracle.check(cora.Fullspace.enclose_points(rnd.matrix(n, 3)),
                              cora.lean.Fullspace.enclose_points(rnd.matrix(n, 3)))
-        oracle.run("fullspace.predicates", body)
+        oracle.run("fullspace predicates", body)
 
     def test_projections_measures_and_complement(self):
         def body(rnd):
@@ -73,7 +73,7 @@ class Oracle(unittest.TestCase):
             for n in (0, 1, 5):
                 oracle.check(cora.Fullspace(n).complement().dim == n,
                              cora.lean.Fullspace(n).complement().dim == n)
-        oracle.run("fullspace.projections", body)
+        oracle.run("fullspace projections", body)
 
 
 if __name__ == "__main__":

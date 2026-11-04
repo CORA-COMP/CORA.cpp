@@ -41,6 +41,10 @@ std::string dtype();
 /// returns the response; throws with the oracle's message if it answers {"ok":false,...}.
 Json call(const Json &request);
 
+/// Whether the running oracle serves the op (`ping` lists it), e.g. "zonotope.enlarge"; an older
+/// oracle does not serve the newer ops. Asked once per oracle process.
+bool serves(const std::string &op);
+
 /// Stops the oracle process (the next call starts a new one).
 void shutdown();
 

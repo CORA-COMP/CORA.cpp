@@ -57,22 +57,6 @@ void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &their
                 oracle::op_name() + ": the same generators, in another order");
 }
 
-/// The interval hull of CORA.cpp's cubic map against the oracle's: CORA lists N(N+1)(N+2)/6
-/// generators and sums them in its own order, CORALean N^3 with the closed form of the sums, so
-/// the bits differ but the box they span agrees to a relative 1e-10 (a few hundred ulp of the sums
-/// of cubes).
-void aux_check_hull(const Zonotope &mine, const lean::Zonotope &theirs) {
-    const Interval box = mine.interval();
-    const auto [inf, sup] = theirs.interval().gather();
-    const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
-                              d = sup.data();
-    bool ok = a.size() == b.size();
-    for (std::size_t i = 0; ok && i < a.size(); ++i)
-        ok = std::abs(a[i] - b[i]) <= 1e-10 * (1 + std::abs(b[i])) &&
-             std::abs(c[i] - d[i]) <= 1e-10 * (1 + std::abs(d[i]));
-    test::check(ok, oracle::op_name() + ": the box of the oracle's cubic map");
-}
-
 } // namespace
 
 int main() {
@@ -124,7 +108,7 @@ int main() {
             aux_check_same_generators(Z.enclose(Z2), lean::Zonotope(Z).enclose(lean::Zonotope(Z2)));
         }
     });
-    oracle::run("zonotope.convexHull", [&](oracle::Random &rnd) {
+    oracle::run("zonotope.convHull", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             aux_check_same_generators(Z.convex_hull(Z2),
@@ -153,7 +137,7 @@ int main() {
                     T[i].push_back(rnd.matrix(n, n));
                     theirs_T[i].emplace_back(T[i].back());
                 }
-            aux_check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
+            oracle::check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
         }
     });
     oracle::run("zonotope.dominantDirections", [&](oracle::Random &rnd) {
