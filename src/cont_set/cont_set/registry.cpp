@@ -239,6 +239,8 @@ constexpr Table aux_build() {
         t, [](const ConZonotope &A, const Interval &I, Tol tol) {
             return A.contains(I, "exact", tol);
         });
+    // Bundles and Constrained Zonotopes -----------------------------------------------------------
+
     // the bundle has a lower precedence than the zonotope and the box, so it comes first: the
     // intersection and the product keep the members, containment and intersection tests are
     // exact; the two bundles are compared member by member, else by containment
