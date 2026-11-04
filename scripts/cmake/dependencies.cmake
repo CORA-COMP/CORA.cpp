@@ -71,6 +71,9 @@ else()
   endif()
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(cora_flags INTERFACE -Wno-maybe-uninitialized -Wno-array-bounds)
+    # GCC 12-13 report the copy of a std::vector<std::array<...>> as a stringop overflow (GCC bugs
+    # 107138, 108197); it stays a warning, not an error.
+    target_compile_options(cora_flags INTERFACE -Wno-error=stringop-overflow)
   endif()
   target_compile_options(cora_flags INTERFACE "$<$<CONFIG:Release>:-O3>" "$<$<CONFIG:Debug>:-O0;-g>")
   target_compile_definitions(cora_flags INTERFACE "$<$<CONFIG:Release>:NDEBUG;EIGEN_NO_DEBUG>")
