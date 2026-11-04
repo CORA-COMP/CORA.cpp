@@ -1,11 +1,20 @@
 // test_con_zonotope_linear_map_torch - ConZonotope linear_map: gradients through torch
 //
 // The image is a product with the matrix: differentiable in the set and the matrix.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -17,3 +26,5 @@ int main() {
         [](const Inputs &x) { return test::parts(test::set(x, 0).linear_map(x[4])); }, x);
     return test::finish("con zonotope linear_map (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

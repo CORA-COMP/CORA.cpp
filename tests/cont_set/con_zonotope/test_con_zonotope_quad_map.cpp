@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@conZonotope/quadMap.m
 // PROPERTY: contSet/@conZonotope/quadMap.m
+//
+// CORA authors:  Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -53,6 +63,9 @@ void quad_map_property(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         quad_map_known(b);
@@ -66,3 +79,5 @@ int main() {
     check(a.quad_map({Tensor({{1.0, 0.0}, {0.0, 1.0}})}).dim() == 1, "quad_map: checks off");
     return test::finish("con_zonotope quad_map");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

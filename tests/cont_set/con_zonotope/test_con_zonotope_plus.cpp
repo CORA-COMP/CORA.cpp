@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@conZonotope/plus.m
 // PROPERTY: contSet/@conZonotope/plus.m
+//
+// CORA authors:  Dmitry Grebenyuk, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -27,6 +37,7 @@ void plus_known(const std::string &b) {
     const Zonotope Z(column({1.0, 1.0}), Tensor({{1.0}, {0.0}}));
     check(close(a.plus(Z).generators(), {1, 0, 1, 0, 1, 0}, 0) && a.plus(Z).A().shape()[1] == 3,
           b + ": a zonotope joins as a set without constraints");
+    // a box is a set without constraints whose generators are its radius
     const Interval I(column({0.0, 0.0}), column({2.0, 4.0}));
     check(close(a.plus(I).c(), {2, 4}, 0), b + ": a box adds its center");
     check(close((a + column({1.0, 1.0})).c(), {2, 3}, 0) && close((column({1.0, 1.0}) + a).c(), {2, 3}, 0)
@@ -68,6 +79,9 @@ void checks_and_batches() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         plus_known(b);
@@ -76,3 +90,5 @@ int main() {
     checks_and_batches();
     return test::finish("con_zonotope plus");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

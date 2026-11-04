@@ -1,12 +1,22 @@
 // test_con_zonotope_origin - ConZonotope::origin: the set {0}
 //
 // CORA: contSet/@conZonotope/origin.m
+//
+// CORA authors:  Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -22,3 +32,5 @@ int main() {
     check(ConZonotope::origin(2).dim() == 2, "origin: the same with the checks off");
     return test::finish("con_zonotope origin");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

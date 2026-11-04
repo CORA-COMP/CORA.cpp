@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@conZonotope/split.m
 // PROPERTY: contSet/@conZonotope/split.m
+//
+// CORA authors:  Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,6 +55,9 @@ void split_property(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         split_known(b);
@@ -57,3 +70,5 @@ int main() {
     check(a.split(0).first.dim() == 1, "split: the same with the checks off");
     return test::finish("con_zonotope split");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

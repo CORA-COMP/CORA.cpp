@@ -14,6 +14,11 @@
 // ORACLE: contSet/@conZonotope/isequal.m
 // ORACLE: contSet/@conZonotope/isIntersecting_.m
 // ORACLE: contSet/@conZonotope/representsa_.m
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/global/oracle/con_zonotope.h"
@@ -21,6 +26,10 @@
 
 using namespace cora;
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -31,6 +40,7 @@ int main() {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2), b = rnd.con_zonotope(3, 4, 1);
         oracle::check(a.plus(b), lean::ConZonotope(a).plus(b));
     });
+    // the maps are exact: the same bits at nearest, inside the enclosure when sound
     oracle::run("conZonotope.mtimes", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
         const Tensor M = rnd.matrix(2, 3);
@@ -44,6 +54,7 @@ int main() {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
         oracle::check(a.lift(3, {1, 2, 0}), lean::ConZonotope(a).lift(3, {1, 2, 0}));
     });
+    // the predicates agree where CORALean decides: equal sets, and a proof of disjointness
     oracle::run("conZonotope.isequal", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2), b = rnd.con_zonotope(3, 5, 2);
         oracle::check(a.isequal(a), lean::ConZonotope(a).isequal(a));
@@ -64,6 +75,7 @@ int main() {
         oracle::check(a.representsa("emptySet"), lean::ConZonotope(a).representsa_empty());
         oracle::check(none.representsa("emptySet"), lean::ConZonotope(none).representsa_empty());
     });
+    // reduce, quadMap and split are enclosures of CORA.cpp's set: the layout of the new factors differs
     oracle::run("conZonotope.reduce", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(2, 8, 2);
         oracle::check_enclosed("reduce", a.reduce(2), lean::ConZonotope(a).reduce(2));
@@ -83,3 +95,5 @@ int main() {
     });
     return test::finish("lean con zonotope maps");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

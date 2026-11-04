@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@conZonotope/rescale.m
 // PROPERTY: contSet/@conZonotope/rescale.m
+//
+// CORA authors:  Dmitry Grebenyuk, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,6 +54,9 @@ void rescale_property(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         rescale_known(b);
@@ -60,3 +73,5 @@ int main() {
     check(close(a.rescale().b(), {0}, 1e-9), "rescale: the same with the checks off");
     return test::finish("con_zonotope rescale");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

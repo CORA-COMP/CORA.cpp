@@ -1,12 +1,22 @@
 // test_con_zonotope_isequal - ConZonotope::isequal: whether two sets are the same
 //
 // CORA: contSet/@conZonotope/isequal.m
+//
+// CORA authors:  Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,6 +39,7 @@ void isequal_known(const std::string &b) {
     check(square.isequal(pinned) && pinned.isequal(square), b + ": another representation");
     check(!square.isequal(ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}))),
           b + ": another box");
+    // empty sets are equal to each other only
     const ConZonotope none = ConZonotope::empty(2);
     check(none.isequal(ConZonotope::empty(2)) && !none.isequal(square) && !square.isequal(none),
           b + ": empty sets");
@@ -45,6 +56,9 @@ void isequal_known(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(isequal_known);
     const ConZonotope a(column({0.0}), Tensor({{1.0}}));
@@ -55,3 +69,5 @@ int main() {
     check(a.isequal(a), "isequal: the same with the checks off");
     return test::finish("con_zonotope isequal");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

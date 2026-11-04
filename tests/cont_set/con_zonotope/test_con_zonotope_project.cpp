@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@conZonotope/project.m
 // PROPERTY: contSet/@conZonotope/project.m
+//
+// CORA authors:  Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,6 +48,9 @@ void project_property(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         project_known(b);
@@ -49,3 +62,5 @@ int main() {
     check(a.project({1}).as<ConZonotope>().dim() == 1, "project: the same with the checks off");
     return test::finish("con_zonotope project");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -2,11 +2,20 @@
 //
 // The enclosure is built of products and sums: differentiable in the set and in Q. A set with
 // constraints is rescaled first by bounds from the host, so the check uses one without.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -19,3 +28,5 @@ int main() {
         [](const Inputs &x) { return test::parts(test::set(x, 0).quad_map({x[4], x[5]})); }, x);
     return test::finish("con zonotope quad_map (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

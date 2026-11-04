@@ -1,12 +1,22 @@
 // test_con_zonotope_representsa - ConZonotope::representsa: whether it is a set of another type
 //
 // CORA: contSet/@conZonotope/representsa_.m
+//
+// CORA authors:  Mark Wetzlinger, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -26,6 +36,7 @@ void representsa_known(const std::string &b) {
     check(point.representsa("point") && !box.representsa("point") && !point.representsa("origin") &&
               ConZonotope::origin(2).representsa("origin"),
           b + ": point and origin");
+    // the types that every constrained zonotope is, and the ones that none is
     check(box.representsa("conZonotope") && box.representsa("polytope") && box.representsa("convexSet") &&
               !box.representsa("halfspace") && !box.representsa("fullspace"),
           b + ": the constant types");
@@ -37,6 +48,9 @@ void representsa_known(const std::string &b) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend(representsa_known);
@@ -50,3 +64,5 @@ int main() {
     check(box.representsa("zonotope"), "representsa: the same with the checks off");
     return test::finish("con_zonotope representsa");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

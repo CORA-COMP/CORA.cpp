@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@conZonotope/mtimes.m
 // PROPERTY: contSet/@conZonotope/mtimes.m
+//
+// CORA authors:  Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -50,6 +60,9 @@ void checks_and_batches() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         linear_map_known(b);
@@ -58,3 +71,5 @@ int main() {
     checks_and_batches();
     return test::finish("con_zonotope linear_map");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@conZonotope/or.m
 // PROPERTY: contSet/@conZonotope/or.m
+//
+// CORA authors:  Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 #include "cora/cont_set/registry.h"
@@ -9,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -41,6 +51,9 @@ void unite_property(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         unite_known(b);
@@ -56,3 +69,5 @@ int main() {
     check(a.unite(a).dim() == 2, "unite: the same with the checks off");
     return test::finish("con_zonotope unite");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

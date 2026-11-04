@@ -1,4 +1,12 @@
-"""test_con_zonotope - the ConZonotope class in Python: constructors, queries and set operations."""
+"""test_con_zonotope - the ConZonotope class in Python: constructors, queries and set operations
+
+CORA authors:  Dmitry Grebenyuk, Niklas Kochdumper, Lukas Koller, Adrian Kulmburg, Mark Wetzlinger,
+               Tobias Ladner, Matthias Althoff, Ivan Brkan
+Authors:       Claude Sonnet 5.5
+Written:       04-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@conZonotope/and_.m
 # CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
 # CORA: contSet/@conZonotope/cartProd_.m
@@ -65,6 +73,9 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def con_zonotope(c, G, A=None, b=None):
     A = None if A is None else np.array(A, dtype=float)
@@ -102,6 +113,8 @@ def sample(cZ, rng, count):
             points.append(c + G @ xi)
     return np.array(points).T
 
+
+# -===========================================  MAIN  ===========================================- #
 
 class ConZonotope(unittest.TestCase):
     def setUp(self):
@@ -327,7 +340,7 @@ class ConZonotope(unittest.TestCase):
         B = random_set(rng, 3, 4, 1)
         total = A.plus(B)
         self.assertTrue(total.contains(sample(A, rng, 10) + sample(B, rng, 10), tol=1e-7))
-        self.assertTrue(A.linear_map(M[:, :1].T @ np.ones((1, 3))).dim == 3)
+        self.assertEqual(A.linear_map(np.ones((2, 3))).dim, 2)
 
     def test_project_lift_and_reduce(self):
         a = con_zonotope([1.0, 2.0, 3.0], [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]], [[1.0, 1.0]], [0.5])
@@ -479,3 +492,5 @@ class ConZonotope(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

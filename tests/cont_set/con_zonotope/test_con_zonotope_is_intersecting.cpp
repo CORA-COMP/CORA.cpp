@@ -1,6 +1,12 @@
 // test_con_zonotope_is_intersecting - ConZonotope::is_intersecting: whether two sets meet
 //
 // CORA: contSet/@conZonotope/isIntersecting_.m
+//
+// CORA authors:  Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 #include "cora/cont_set/registry.h"
@@ -8,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -22,6 +32,7 @@ void is_intersecting_known(const std::string &b) {
     check(seg.is_intersecting(misses, "approx"), b + ": the boxes overlap");
     check(!seg.is_intersecting(Interval(column({2.0, 2.0}), column({3.0, 3.0})), "approx"),
           b + ": the boxes are apart");
+    // a zonotope and a constrained zonotope, then a point and the empty set
     const Zonotope Z(column({1.0, 1.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     check(seg.is_intersecting(Z) && !seg.is_intersecting(Zonotope(column({3.0, 3.0}), Z.generators())),
           b + ": a zonotope");
@@ -35,6 +46,9 @@ void is_intersecting_known(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(is_intersecting_known);
     const ConZonotope a(column({0.0}), Tensor({{1.0}}));
@@ -47,3 +61,5 @@ int main() {
     check(a.is_intersecting(a), "is_intersecting: the same with the checks off");
     return test::finish("con_zonotope is_intersecting");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,6 +1,12 @@
 // test_con_zonotope_lift - ConZonotope::lift: the states at given positions
 //
 // CORA: contSet/@conZonotope/lift_.m
+//
+// CORA authors:  Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -8,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -26,6 +36,9 @@ void lift_known(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(lift_known);
     const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0}, {2.0}}));
@@ -36,3 +49,5 @@ int main() {
     check(a.lift(2, {1, 0}).dim() == 2, "lift: the same with the checks off");
     return test::finish("con_zonotope lift");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
