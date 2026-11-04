@@ -28,8 +28,6 @@ namespace cora {
 
 namespace {
 
-constexpr int64_t kMaxCornerGenerators = 12; // 2^12 corners, a linear program each
-
 // Checks ------------------------------------------------------------------------------------------
 
 /// Why the method is refused, if it is: an unknown one, or one that is not ported.
@@ -105,17 +103,6 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         .contains(Tensor::concat({P, offsets}, -2), "exact", tol);
 }
 
-// Sets --------------------------------------------------------------------------------------------
-
-/// The corners c + G s of a zonotope for every sign vector s, as columns (n, 2^m).
-Tensor aux_corners(const Zonotope &Z) {
-    const int64_t m = Z.generators().shape().back(), count = int64_t{1} << m;
-    std::vector<double> signs(std::size_t(m * count));
-    for (int64_t j = 0; j < m; ++j)
-        for (int64_t k = 0; k < count; ++k) signs[j * count + k] = ((k >> j) & 1) ? 1.0 : -1.0;
-    return Z.center() + Z.generators().matmul(Tensor::like(Z.center(), signs, {m, count}));
-}
-
 } // namespace
 
 
@@ -135,7 +122,7 @@ bool ConZonotope::contains(const Zonotope &S, const std::string &method, Tol tol
     const detail::Refusal refusal = aux_zonotope_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a convex set holds a zonotope exactly if it holds its corners
-    return aux_contains_points(*this, aux_corners(S.compact()), tol);
+    return aux_contains_points(*this, priv_corners(S.compact()), tol);
 }
 
 bool ConZonotope::contains(const Interval &I, const std::string &method, Tol tol_arg) const {
@@ -149,7 +136,7 @@ bool ConZonotope::contains(const Interval &I, const std::string &method, Tol tol
     const Zonotope Z = I.zonotope();
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_contains_points(*this, aux_corners(Z.compact()), tol);
+    return aux_contains_points(*this, priv_corners(Z.compact()), tol);
 }
 
 } // namespace cora

@@ -153,6 +153,60 @@ ConZonotope ConZonotope::compact(const std::string &method, double tol) const {
 
 ConZonotope ConZonotope::empty(int64_t n) { return aux_set(ask("conZonotope.empty", {{"n", n}})); }
 
+ConZonotope ConZonotope::origin(int64_t n) {
+    return aux_set(ask("conZonotope.origin", {{"n", n}}));
+}
+
+// Maps and predicates ------------------------------------------------------------------------
+
+ConZonotope ConZonotope::plus(const ConZonotope &cz2) const {
+    return aux_set(ask("conZonotope.plus", {{"cZ", *this}, {"cZ2", cz2}}));
+}
+
+ConZonotope ConZonotope::mtimes(const Tensor &M) const {
+    return aux_set(ask("conZonotope.mtimes", {{"cZ", *this}, {"M", M}}));
+}
+
+// the index maps send the dimensions as 0-based indices
+ConZonotope ConZonotope::project(const std::vector<int64_t> &dims) const {
+    return aux_set(ask("conZonotope.project", {{"cZ", *this}, {"dims", dims}}));
+}
+
+ConZonotope ConZonotope::lift(int64_t N, const std::vector<int64_t> &dims) const {
+    return aux_set(ask("conZonotope.lift", {{"cZ", *this}, {"N", N}, {"dims", dims}}));
+}
+
+// the maps with an order or matrices as operands
+ConZonotope ConZonotope::reduce(int order) const {
+    return aux_set(ask("conZonotope.reduce", {{"cZ", *this}, {"order", order}}));
+}
+
+ConZonotope ConZonotope::quad_map(const std::vector<Tensor> &Q) const {
+    return aux_set(ask("conZonotope.quadMap", {{"cZ", *this}, {"Q", Q}}));
+}
+
+// a split answers with the two halves cZ1 and cZ2
+std::pair<ConZonotope, ConZonotope> ConZonotope::split(int64_t dim) const {
+    const Reply reply = ask("conZonotope.split", {{"cZ", *this}, {"dim", dim}});
+    return {reply.get<ConZonotope>("cZ1"), reply.get<ConZonotope>("cZ2")};
+}
+
+// the predicates answer with a Boolean `value`; a proof of disjointness reads as Certified
+bool ConZonotope::isequal(const ConZonotope &cz2, double tol) const {
+    return ask("conZonotope.isequal", {{"cZ", *this}, {"cZ2", cz2}, {"tol", number(tol)}})
+        .get<bool>("value");
+}
+
+bool ConZonotope::representsa_empty() const {
+    return ask("conZonotope.representsa", {{"cZ", *this}, {"type", "emptySet"}, {"tol", number(0)}})
+        .get<bool>("value");
+}
+
+Certified ConZonotope::is_intersecting(const ConZonotope &cz2, double tol) const {
+    return ask("conZonotope.isIntersecting", {{"cZ", *this}, {"cZ2", cz2}, {"tol", number(tol)}})
+        .proved_disjoint();
+}
+
 // the conversions of a zonotope and of a box
 
 ConZonotope ConZonotope::from_zonotope(const Zonotope &Z) {

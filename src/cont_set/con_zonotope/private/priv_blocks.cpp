@@ -9,6 +9,9 @@
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "global/format.h"
+
+#include <algorithm>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,6 +32,8 @@ std::vector<int64_t> aux_positions(const Tensor &keep, int64_t count) {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// Blocks ------------------------------------------------------------------------------------------
 
 Tensor priv_zeros(const Tensor &like, int64_t rows, int64_t cols) {
     Shape shape = like.shape();
@@ -65,6 +70,35 @@ Tensor priv_select_columns(const Tensor &A, const std::vector<int64_t> &columns)
     return A.take(columns, -1);
 }
 
+// Pairs and corners -------------------------------------------------------------------------------
+
+detail::Refusal priv_pair_refusal(const char *operation, const ConZonotope &a, const ConZonotope &b,
+                                  bool same_dim) {
+    const std::string name = std::string(operation) + ": ";
+    // the leading axes are the batch
+    const Shape shape_a = a.c().shape(), shape_b = b.c().shape();
+    if (!std::equal(shape_a.begin(), shape_a.end() - 2, shape_b.begin(), shape_b.end() - 2))
+        return std::pair{Error::dimension_mismatch,
+                         name + "the sets must have the same batch shape, got " +
+                             shape_text(shape_a) + " and " + shape_text(shape_b)};
+    if (same_dim && a.dim() != b.dim())
+        return std::pair{Error::dimension_mismatch, name + "the sets differ in dimension, " +
+                                                        std::to_string(a.dim()) + " and " +
+                                                        std::to_string(b.dim())};
+    return std::nullopt;
+}
+
+Tensor priv_corners(const Zonotope &Z) {
+    // bit j of the corner index k is the sign of generator j
+    const int64_t m = Z.generators().shape().back(), count = int64_t{1} << m;
+    std::vector<double> signs(std::size_t(m * count));
+    for (int64_t j = 0; j < m; ++j)
+        for (int64_t k = 0; k < count; ++k) signs[j * count + k] = ((k >> j) & 1) ? 1.0 : -1.0;
+    return Z.center() + Z.generators().matmul(Tensor::like(Z.center(), signs, {m, count}));
+}
+
+// Compacting --------------------------------------------------------------------------------------
+
 std::vector<int64_t> priv_nonzero_rows(const Tensor &A, const Tensor &b) {
     // a row is kept if [A b] has a nonzero entry
     const Tensor rows = Tensor::concat({A, b}, -1);
@@ -86,6 +120,8 @@ ConZonotope priv_compact(const ConZonotope &cz) {
     const Tensor kept_b = rows.empty() ? priv_zeros(cz.b(), 0, 1) : cz.b().take(rows, -2);
     return {cz.c(), priv_select_columns(cz.generators(), cols), kept_A, kept_b};
 }
+
+// Set maps ----------------------------------------------------------------------------------------
 
 ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
                               const std::optional<Tensor> &t) {

@@ -21,6 +21,36 @@
 namespace cora {
 
 
+namespace detail {
+
+LiftPlan lift_plan(int64_t n, int64_t N, const std::vector<int64_t> &dims) {
+    LiftPlan plan;
+    plan.refusal = project_high_dim_refusal(n, N, dims, "lift");
+    if (plan.refusal) return plan;
+    if (int64_t(dims.size()) != N) {
+        plan.refusal = std::pair{Error::not_defined,
+                                 std::string("lift: the new dimensions cannot be unbounded, as the "
+                                             "set is always bounded; dims must be a permutation of "
+                                             "all N states")};
+        return plan;
+    }
+    // the state at position j of the result is the state i with dims[i] = j
+    plan.source.assign(std::size_t(N), -1);
+    for (int64_t i = 0; i < N; ++i) {
+        if (plan.source[dims[i]] >= 0) {
+            const std::string position = std::to_string(dims[i]);
+            plan.refusal =
+                std::pair{Error::wrong_value, "lift: the position " + position + " is used twice"};
+            return plan;
+        }
+        plan.source[dims[i]] = i;
+    }
+    return plan;
+}
+
+} // namespace detail
+
+
 // ===========================================  MAIN  =========================================== //
 
 Set ContSet::lift(int64_t N, const std::optional<std::vector<int64_t>> &proj) const {

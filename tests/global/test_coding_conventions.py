@@ -636,18 +636,41 @@ CLONE_EXEMPT = {"src/global/error.cpp": "the table of CORA's error identifiers"}
 TOKEN = re.compile(r"[A-Za-z_]\w*|\d[\w.]*|::|->|[^\s\w]")
 
 
+DECLARATION_START = re.compile(r"^\s+(?:static\s+|virtual\s+|explicit\s+)*[\w:<>,*&\s]+?[\w~]+\(")
+
+
+def declaration_lines(code, begin, end):
+    """The lines of a header's member function declarations that have no body: from a line that
+    opens `type name(` to the line that ends the statement with `;`, with no `{` and no `return`
+    on the way."""
+    out, i = set(), begin + 1
+    while i < end:
+        if DECLARATION_START.match(code[i]):
+            j = i
+            while j < end and not code[j].rstrip().endswith((";", "{", "}")):
+                j += 1
+            block = code[i:j + 1]
+            if j < end and code[j].rstrip().endswith(";") and not any("{" in l or "return" in l for l in block):
+                out.update(range(i, j + 1))
+                i = j + 1
+                continue
+        i += 1
+    return out
+
+
 def tokens(path):
     """The tokens of the code between BEGIN CODE and END OF CODE, literals abstracted, with the
-    line of each. Preprocessor lines and declarations of overrides (`... override;`, no body)
-    are left out: every class of an interface repeats the same declarations."""
+    line of each. Preprocessor lines and, in a header, declarations without a body (a member
+    function declared over one or more lines up to `;`) are left out: every class of an
+    interface repeats the same declarations, which is not repeated logic."""
     lines = read_lines(path)
     begin = lines.index(BEGIN_MARKER) if BEGIN_MARKER in lines else 0
     end = lines.index(END_MARKER) if END_MARKER in lines else len(lines)
     code = code_only("\n".join(lines)).split("\n")
+    skip = declaration_lines(code, begin, end) if path.endswith(".h") else set()
     out = []
     for i in range(begin + 1, end):
-        if code[i].lstrip().startswith("#") or code[i].rstrip().endswith(") const override;") \
-                or code[i].rstrip().endswith(") override;"):
+        if code[i].lstrip().startswith("#") or i in skip:
             continue
         for t in TOKEN.findall(code[i]):
             out.append(("0" if t[0].isdigit() else t, i + 1))

@@ -64,6 +64,28 @@ class ConZonotope {
     ConZonotope compact(const std::string &method = "zeros", double tol = 0) const;
 
     static ConZonotope empty(int64_t n);
+    static ConZonotope origin(int64_t n);
+
+    /// The sum with a constrained zonotope and the image M * this.
+    ConZonotope plus(const ConZonotope &cz2) const;
+    ConZonotope mtimes(const Tensor &M) const;
+
+    /// The projection onto dims and the lift to N dimensions with state i at position dims[i].
+    ConZonotope project(const std::vector<int64_t> &dims) const;
+    ConZonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// Girard's reduction to the order, and the quadratic map with the matrices Q.
+    ConZonotope reduce(int order) const;
+    ConZonotope quad_map(const std::vector<Tensor> &Q) const;
+
+    /// The halves of the set cut at the center of the box in coordinate dim.
+    std::pair<ConZonotope, ConZonotope> split(int64_t dim) const;
+
+    /// Structural equality; a proof of emptiness (a true proves it); whether the sets intersect,
+    /// proved only when disjoint (the value false with proved set).
+    bool isequal(const ConZonotope &cz2, double tol = 0) const;
+    bool representsa_empty() const;
+    Certified is_intersecting(const ConZonotope &cz2, double tol = 0) const;
 
     /// A zonotope or a box as a constrained zonotope without constraints.
     static ConZonotope from_zonotope(const Zonotope &Z);
