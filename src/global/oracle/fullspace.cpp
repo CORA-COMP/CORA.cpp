@@ -86,6 +86,13 @@ double Fullspace::support_function(const Tensor &dir, const std::string &type) c
         .get<double>("value");
 }
 
+bool Fullspace::representsa(const std::string &type, double tol) const {
+    return aux_bool("fullspace.representsa", {{"n", n_}, {"type", type}, {"tol", number(tol)}});
+}
+Tensor Fullspace::vertices() const {
+    return ask("fullspace.vertices", {{"n", n_}}).get<Tensor>("V");
+}
+
 // Exact answers and the center, which is the origin.
 bool Fullspace::is_bounded() const { return aux_bool("fullspace.isBounded", {{"n", n_}}); }
 bool Fullspace::is_full_dim() const { return aux_bool("fullspace.isFullDim", {{"n", n_}}); }

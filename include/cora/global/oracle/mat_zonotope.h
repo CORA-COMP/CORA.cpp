@@ -49,6 +49,11 @@ class MatZonotope {
     /// The power P A^k: the initial power P times A, k times from the right.
     MatZonotope powers(const MatZonotope &P, int64_t k) const;
 
+    /// The enclosure of exp(A) of a square set (CORA's expm calls expmInd): the Taylor series to
+    /// max_order and a remainder box from a bound of the norm, coarser than CORA's.
+    MatZonotope expm(int64_t max_order) const;
+    MatZonotope expm_independent(int64_t max_order) const;
+
     /// An upper bound of the norm "1", "inf" or "fro" of every matrix of the set; `steps` tunes the
     /// square root of the Frobenius norm (CORA has no such argument).
     double norm(const std::string &type, int64_t steps = 20) const;

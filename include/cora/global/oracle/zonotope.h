@@ -121,6 +121,11 @@ class Zonotope {
     std::optional<Interval> boundary_point(const Tensor &dir) const;
     std::optional<Interval> boundary_point(const Tensor &dir, const Tensor &start) const;
 
+    /// The Minkowski difference of aligned generators with equal counts (method "aligned"): the
+    /// generators of this one minus those of Z2, shrunk by rho, certified inside by the oracle;
+    /// nothing if the check does not go through.
+    std::optional<Zonotope> mink_diff_aligned(const Zonotope &Z2, double rho) const;
+
     // Tensor images ------------------------------------------------------------------------------
 
     /// The lists of CORA's options.list: perm (rows of generator indices), map (the combination

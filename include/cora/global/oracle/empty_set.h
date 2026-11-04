@@ -49,6 +49,10 @@ class EmptySet {
     EmptySet linear_map(const Tensor &M) const;
     double support_function(const Tensor &dir, const std::string &type = "upper") const;
 
+    /// Whether the set is also a set of the type "emptySet", "point", "origin" or "fullspace":
+    /// true for "emptySet" only.
+    bool representsa(const std::string &type, double tol = 0) const;
+
     bool is_bounded(double tol = 0) const;
     bool is_full_dim(double tol = 0) const;
 

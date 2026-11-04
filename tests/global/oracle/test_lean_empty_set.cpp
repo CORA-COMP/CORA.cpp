@@ -24,6 +24,7 @@
 // ORACLE: contSet/@emptySet/project.m
 // ORACLE: contSet/@emptySet/projectHighDim_.m
 // ORACLE: contSet/@emptySet/radius.m
+// ORACLE: contSet/@emptySet/representsa_.m
 // ORACLE: contSet/@emptySet/supportFunc_.m
 // ORACLE: contSet/@emptySet/vertices_.m
 // ORACLE: contSet/@emptySet/volume_.m
@@ -158,6 +159,11 @@ int main() {
         check(EmptySet(n).support_function(dir), lean::EmptySet(n).support_function(dir));
         const Tensor zero = dir.zeros_like();
         check(EmptySet(n).support_function(zero), lean::EmptySet(n).support_function(zero));
+    }));
+    // the types the oracle answers: it proves the empty set is the empty set and no other
+    test::oracle::run("emptySet.representsa", each_dimension([](Random &, int64_t n) {
+        for (const char *type : {"emptySet", "point", "origin", "fullspace"})
+            check(EmptySet(n).representsa(type, 0.0), lean::EmptySet(n).representsa(type));
     }));
     test::oracle::run("emptySet.not", each_dimension([](Random &, int64_t n) {
                           check(EmptySet(n).complement(), lean::EmptySet(n).complement());

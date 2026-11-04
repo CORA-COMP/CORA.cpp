@@ -74,6 +74,10 @@ class IntervalMatrix {
     /// The power of order k + 1 from the initial power P: P * A^k, the factors from the right.
     Interval powers(const Interval &P, int64_t k) const;
 
+    /// The enclosure of exp(A) of a square set: the Taylor series to max_order and a remainder
+    /// from a bound of the norm (coarser than CORA's exponentialRemainder).
+    Interval expm_independent(int64_t max_order) const;
+
     // Norms --------------------------------------------------------------------------------------
 
     /// An upper bound of the infinity norm, and of the norm of type 1, "inf" or "fro".

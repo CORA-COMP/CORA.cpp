@@ -82,6 +82,10 @@ double EmptySet::support_function(const Tensor &dir, const std::string &type) co
         .get<double>("value");
 }
 
+bool EmptySet::representsa(const std::string &type, double tol) const {
+    return aux_bool("emptySet.representsa", {{"n", n_}, {"type", type}, {"tol", number(tol)}});
+}
+
 // Boundedness and dimension of the interior.
 bool EmptySet::is_bounded(double tol) const {
     return aux_bool("emptySet.isBounded", {{"n", n_}, {"tol", number(tol)}});

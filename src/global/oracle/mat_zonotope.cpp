@@ -77,6 +77,14 @@ MatZonotope MatZonotope::powers(const MatZonotope &P, int64_t k) const {
     return aux_set("matZonotope.powers", {{"mZ", *this}, {"mZ2", P}, {"k", k}});
 }
 
+// The exponential has one op for CORA's expm and expmInd.
+MatZonotope MatZonotope::expm(int64_t max_order) const {
+    return aux_set("matZonotope.expm", {{"mZ", *this}, {"maxOrder", max_order}});
+}
+MatZonotope MatZonotope::expm_independent(int64_t max_order) const {
+    return aux_set("matZonotope.expmInd", {{"mZ", *this}, {"maxOrder", max_order}});
+}
+
 // The norm of the box, and the exact test of a point or the origin.
 double MatZonotope::norm(const std::string &type, int64_t steps) const {
     return ask("matZonotope.norm", {{"mZ", *this}, {"type", type}, {"steps", steps}})

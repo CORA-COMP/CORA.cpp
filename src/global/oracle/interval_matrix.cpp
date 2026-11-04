@@ -81,6 +81,11 @@ Interval IntervalMatrix::matmul(const Interval &B) const {
     return aux_matrix("intervalMatrix.mtimes", {{"IM", bounds_}, {"IM2", B}});
 }
 
+// The matrix exponential.
+Interval IntervalMatrix::expm_independent(int64_t max_order) const {
+    return aux_matrix("intervalMatrix.expmInd", {{"IM", bounds_}, {"maxOrder", max_order}});
+}
+
 // Norms.
 double IntervalMatrix::infinity_norm() const {
     return ask("intervalMatrix.infNorm", {{"IM", bounds_}}).get<double>("value");

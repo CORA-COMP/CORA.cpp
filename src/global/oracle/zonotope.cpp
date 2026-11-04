@@ -192,6 +192,12 @@ std::optional<Interval> Zonotope::boundary_point(const Tensor &dir, const Tensor
         .get<std::optional<Interval>>("I");
 }
 
+// The Minkowski difference by the aligned generators (Althoff, Prop. 5), or nothing.
+std::optional<Zonotope> Zonotope::mink_diff_aligned(const Zonotope &Z2, double rho) const {
+    return ask("zonotope.minkDiff", {{"Z", *this}, {"Z2", Z2}, {"method", "aligned"}, {"rho", rho}})
+        .get<std::optional<Zonotope>>("Z");
+}
+
 // Tensor images: the third-order tensor is a list of blocks of matrices.
 Zonotope Zonotope::tensor_multiplication(const Tensor3 &M, const TensorLists &list) const {
     return aux_set("zonotope.tensorMultiplication", {{"Z", *this}, {"M", M}, {"perm", list.perm},
