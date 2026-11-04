@@ -15,7 +15,8 @@ namespace {
 void the_parts_enclose_the_exponentials(const std::string &b) {
     Rng rng(20);
     const IntervalMatrix A = test::random_matrix(rng, 3, 0.3);
-    for (const auto &[r, intermediate] : {std::pair{1.0, 3}, std::pair{0.5, 4}, std::pair{2.0, 2}}) {
+    for (const auto &[r, intermediate] :
+         {std::pair{1.0, 3}, std::pair{0.5, 4}, std::pair{2.0, 2}}) {
         const ExpmMixedResult R = A.expm_mixed(r, intermediate, 9);
         const IntervalMatrix total(R.enclosure.interval() + R.enclosure_rest.interval());
         bool inside = true;
