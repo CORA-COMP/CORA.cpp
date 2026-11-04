@@ -111,63 +111,72 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
 
 const std::map<std::string, Benchmark> &benchmarks() {
     static const std::map<std::string, Benchmark> table = [] {
-    std::map<std::string, Benchmark> sets = {
-        {"zonotope_linear_map", [] {
-             Rng rng(1);
-             const Zonotope Z = Zonotope::generate_random(rng, 10, std::nullopt, 40);
-             const Tensor M = Zonotope::generate_random(rng, 10, std::nullopt, 10).generators();
-             return Work([=] {
-                 double s = 0;
-                 for (int k = 0; k < 2000; ++k) s += sum_of(Z.linear_map(M).generators());
-                 return s;
-             });
-         }},
-        {"zonotope_plus", [] {
-             Rng rng(2);
-             const Zonotope A = Zonotope::generate_random(rng, 10, std::nullopt, 40),
-                            B = Zonotope::generate_random(rng, 10, std::nullopt, 40);
-             return Work([=] {
-                 double s = 0;
-                 for (int k = 0; k < 20000; ++k) s += sum_of(A.plus(B).generators());
-                 return s;
-             });
-         }},
-        {"zonotope_reduce", [] {
-             Rng rng(3);
-             const Zonotope Z = Zonotope::generate_random(rng, 10, std::nullopt, 100);
-             return Work([=] {
-                 double s = 0;
-                 for (int k = 0; k < 1000; ++k) s += sum_of(Z.reduce(2).generators());
-                 return s;
-             });
-         }},
-        {"linear_sys_reach_5dim", [] {
-             const LinearSys sys(Tensor({{-1, -4, 0, 0, 0}, {4, -1, 0, 0, 0}, {0, 0, -3, 1, 0},
-                                         {0, 0, -1, -3, 0}, {0, 0, 0, 0, -2}}));
-             const Zonotope X0(Tensor({1, 1, 1, 1, 1}), 0.1 * Tensor::eye(5));
-             return Work([=] {
-                 double s = 0;
-                 for (int k = 0; k < 20; ++k) {
-                     const ReachSet R = sys.reach({.initial_set = X0, .t_final = 1.0},
-                                                  alg::Standard{.time_step = 0.02, .taylor_terms = 4});
-                     s += sum_of(R.time_interval.back().interval().sup());
-                 }
-                 return s;
-             });
-         }},
-        {"interval_matrix_product", [] {
-             Rng rng(4);
-             const Tensor M = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators(),
-                          C = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators();
-             const Tensor w = 0.1 * Tensor::ones({20, 20});
-             const Interval I(C - w, C + w);
-             return Work([=] {
-                 double s = 0;
-                 for (int k = 0; k < 5000; ++k) s += sum_of(I.linear_map(M).sup());
-                 return s;
-             });
-         }},
-    };
+        std::map<std::string, Benchmark> sets = {
+            {"zonotope_linear_map",
+             [] {
+                 Rng rng(1);
+                 const Zonotope Z = Zonotope::generate_random(rng, 10, std::nullopt, 40);
+                 const Tensor M = Zonotope::generate_random(rng, 10, std::nullopt, 10).generators();
+                 return Work([=] {
+                     double s = 0;
+                     for (int k = 0; k < 2000; ++k) s += sum_of(Z.linear_map(M).generators());
+                     return s;
+                 });
+             }},
+            {"zonotope_plus",
+             [] {
+                 Rng rng(2);
+                 const Zonotope A = Zonotope::generate_random(rng, 10, std::nullopt, 40),
+                                B = Zonotope::generate_random(rng, 10, std::nullopt, 40);
+                 return Work([=] {
+                     double s = 0;
+                     for (int k = 0; k < 20000; ++k) s += sum_of(A.plus(B).generators());
+                     return s;
+                 });
+             }},
+            {"zonotope_reduce",
+             [] {
+                 Rng rng(3);
+                 const Zonotope Z = Zonotope::generate_random(rng, 10, std::nullopt, 100);
+                 return Work([=] {
+                     double s = 0;
+                     for (int k = 0; k < 1000; ++k) s += sum_of(Z.reduce(2).generators());
+                     return s;
+                 });
+             }},
+            {"linear_sys_reach_5dim",
+             [] {
+                 const LinearSys sys(Tensor({{-1, -4, 0, 0, 0},
+                                             {4, -1, 0, 0, 0},
+                                             {0, 0, -3, 1, 0},
+                                             {0, 0, -1, -3, 0},
+                                             {0, 0, 0, 0, -2}}));
+                 const Zonotope X0(Tensor({1, 1, 1, 1, 1}), 0.1 * Tensor::eye(5));
+                 return Work([=] {
+                     double s = 0;
+                     for (int k = 0; k < 20; ++k) {
+                         const ReachSet R =
+                             sys.reach({.initial_set = X0, .t_final = 1.0},
+                                       alg::Standard{.time_step = 0.02, .taylor_terms = 4});
+                         s += sum_of(R.time_interval.back().interval().sup());
+                     }
+                     return s;
+                 });
+             }},
+            {"interval_matrix_product",
+             [] {
+                 Rng rng(4);
+                 const Tensor M = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators(),
+                              C = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators();
+                 const Tensor w = 0.1 * Tensor::ones({20, 20});
+                 const Interval I(C - w, C + w);
+                 return Work([=] {
+                     double s = 0;
+                     for (int k = 0; k < 5000; ++k) s += sum_of(I.linear_map(M).sup());
+                     return s;
+                 });
+             }},
+        };
 #if __has_include("cora/global/tensor/ops.def")
         aux_tensor_benchmarks(sets);
 #endif

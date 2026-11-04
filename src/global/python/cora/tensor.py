@@ -17,7 +17,6 @@ from ._cora import cos as _cos_expr
 from ._cora import exp as _exp_expr
 from ._cora import sin as _sin_expr
 
-
 if TYPE_CHECKING:
     from ._cora import Array
 

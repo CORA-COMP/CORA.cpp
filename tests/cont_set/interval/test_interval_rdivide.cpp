@@ -67,7 +67,8 @@ void rdivide_encloses_the_image(const std::string &b) {
     cora::Rng rng(52);
     for (int trial = 0; trial < 20; ++trial) {
         const Interval I = Interval::generate_random(rng, 2);
-        const Interval D(column({0.5 + trial % 3, -3.0 - trial % 2}), column({1.5 + trial % 3, -0.5}));
+        const Interval D(column({0.5 + trial % 3, -3.0 - trial % 2}),
+                         column({1.5 + trial % 3, -0.5}));
         const Interval R = I.rdivide(D);
         const Tensor x = I.rand_point(20, rng), y = D.rand_point(20, rng);
         bool inside = true;

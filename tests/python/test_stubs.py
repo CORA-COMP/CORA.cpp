@@ -24,8 +24,8 @@ def mypy(folder, *files):
         import mypy  # noqa: F401
     except ImportError:
         if os.environ.get("CI"):
-            raise AssertionError("mypy is not installed: the CI python job must install it")
-        raise unittest.SkipTest("mypy is not installed (pip install mypy)")
+            raise AssertionError("mypy is not installed: the CI python job must install it") from None
+        raise unittest.SkipTest("mypy is not installed (pip install mypy)") from None
     env = dict(os.environ, MYPYPATH=os.path.dirname(PACKAGE))
     result = subprocess.run(
         [sys.executable, "-m", "mypy", "--strict", "--allow-untyped-calls", "--follow-imports=silent",

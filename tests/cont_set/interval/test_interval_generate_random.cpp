@@ -32,20 +32,24 @@ void generate_random_follows_cora(const std::string &b) {
 void generate_random_options(const std::string &b) {
     cora::Rng rng(5);
     const Tensor center = test::column({1.0, -1.0, 0.5});
-    const Interval I = Interval::generate_random(rng, std::nullopt, center, test::column({2, 0, 4}));
+    const Interval I =
+        Interval::generate_random(rng, std::nullopt, center, test::column({2, 0, 4}));
     check(I.dim() == 3, b + ": the dimension of the center");
     const std::vector<double> c = I.center().data(), r = I.rad().data();
     check(close(I.center(), {1.0, -1.0, 0.5}, 1e-12), b + ": the given center");
     check(r[0] <= 1.0 && r[1] == 0.0 && r[2] <= 2.0, b + ": radius at most max_radius / 2");
-    const Interval S = Interval::generate_random(rng, 4, std::nullopt, Tensor::from_data({6.0}, {1, 1}));
+    const Interval S =
+        Interval::generate_random(rng, 4, std::nullopt, Tensor::from_data({6.0}, {1, 1}));
     bool small = true;
     for (const double x : S.rad().data()) small &= x >= 0.0 && x <= 3.0;
     check(S.dim() == 4 && small, b + ": one number for all radii");
     check(test::raises([&] { Interval::generate_random(rng, 2, center); }, Error::wrong_value),
           b + ": the center does not match the dimension");
-    check(test::raises([&] { Interval::generate_random(rng, std::nullopt, std::nullopt,
-                                                       test::column({-1.0})); },
-                       Error::wrong_value),
+    check(test::raises(
+              [&] {
+                  Interval::generate_random(rng, std::nullopt, std::nullopt, test::column({-1.0}));
+              },
+              Error::wrong_value),
           b + ": a negative radius");
 }
 

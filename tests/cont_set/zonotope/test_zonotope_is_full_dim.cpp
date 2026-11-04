@@ -43,7 +43,8 @@ void full_dim_known(const std::string &b) {
 void full_dim_property(const std::string &b) {
     cora::Rng rng(8);
     check(Zonotope::generate_random(rng, 4, std::nullopt, 6).is_full_dim(), b + ": random 4 x 6");
-    const Zonotope Z = Zonotope::generate_random(rng, 4, std::nullopt, 3); // 3 generators in 4 dimensions
+    const Zonotope Z =
+        Zonotope::generate_random(rng, 4, std::nullopt, 3); // 3 generators in 4 dimensions
     check(!Z.is_full_dim(), b + ": fewer generators than dimensions");
     const auto [res, basis] = Z.is_full_dim_subspace();
     check(!res && basis.shape() == std::vector<int64_t>({4, 3}), b + ": a basis of 3 vectors");

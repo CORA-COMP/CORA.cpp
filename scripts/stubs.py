@@ -83,7 +83,7 @@ def annotation(text, module):
     members = split_top(text, "|")
     if len(members) > 1:
         names = [re.sub(r"^typing\.", "", m) for m in members]
-        members = [m for m, n in zip(members, names) if not (n == "SupportsIndex" and
+        members = [m for m, n in zip(members, names, strict=True) if not (n == "SupportsIndex" and
                                                               {"SupportsInt", "SupportsFloat"} & set(names))]
         shown = [annotation(m, module) for m in members]
         return "Any" if "Any" in shown else " | ".join(dict.fromkeys(shown))
@@ -161,7 +161,8 @@ def functions(name, doc, module, indent, kind, text=None):
             out.append(pad + "@overload")
         if kind in ("static", "property"):
             out.append(pad + "@" + ("staticmethod" if kind == "static" else "property"))
-        out.append(f"{pad}def {name}({', '.join(shown)}) -> {'None' if name == '__init__' else annotation(ret, module)}:")
+        returns = "None" if name == "__init__" else annotation(ret, module)
+        out.append(f"{pad}def {name}({', '.join(shown)}) -> {returns}:")
         out.append(docstring(text, pad + "    ") if text else pad + "    ...")
     return out
 
@@ -218,8 +219,9 @@ def is_private(name):
 
 def lacking(module=None, prefix=""):
     """What a user of the stubs misses: the public functions and methods (not private names, not
-    the dunder methods, which the class docstring covers) of the compiled modules that have no docstring, and the parameters that pybind11
-    called `arg0`, `arg1`, ... because the binding gave no `py::arg`."""
+    the dunder methods, which the class docstring covers) of the compiled modules that have no
+    docstring, and the parameters that pybind11 called `arg0`, `arg1`, ... because the binding gave
+    no `py::arg`."""
     module = module or importlib.import_module(ROOT_MODULE)
     found = []
 

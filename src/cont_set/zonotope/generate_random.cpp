@@ -71,19 +71,21 @@ CORA_FROM_NUMBERS Zonotope Zonotope::generate_random(Rng &rng, std::optional<int
     CORA_CHECK(distribution == "uniform" || distribution == "exp" || distribution == "gamma",
                Error::wrong_value, [&] {
                    return "generate_random: the distribution must be 'uniform', 'exp' or "
-                          "'gamma', got '" + distribution + "'";
+                          "'gamma', got '" +
+                          distribution + "'";
                });
     // the dimension: given, else that of the center, else random
     int64_t n = 0;
-    if (dimension) n = *dimension;
-    else if (center) n = center->size(-2);
-    else n = priv_random_dimension(rng);
+    if (dimension)
+        n = *dimension;
+    else if (center)
+        n = center->size(-2);
+    else
+        n = priv_random_dimension(rng);
     const Shape vector{n, 1};
-    CORA_CHECK(!center || center->shape() == vector,
-               Error::wrong_value, [&] {
-                   return "generate_random: the center must be a vector of the dimension " +
-                          std::to_string(n);
-               });
+    CORA_CHECK(!center || center->shape() == vector, Error::wrong_value, [&] {
+        return "generate_random: the center must be a vector of the dimension " + std::to_string(n);
+    });
     const int64_t m = nr_generators ? *nr_generators : 2 * n;
     std::vector<double> c(n);
     if (!center) rng.normal(c.data(), c.size(), 10.0);

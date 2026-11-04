@@ -45,7 +45,7 @@ namespace py = pybind11;
 
 /// A numpy array or torch tensor in a signature: the stubs (scripts/stubs.py) show it as `Array`.
 class Array : public py::object {
-public:
+  public:
     PYBIND11_OBJECT_CVT(Array, py::object, any_object, share_object)
     Array() = default;
     static bool any_object(PyObject *) { return true; }

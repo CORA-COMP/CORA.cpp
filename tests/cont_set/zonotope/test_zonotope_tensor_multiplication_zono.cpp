@@ -27,7 +27,8 @@ void one_dimension_by_hand(const std::string &b) {
 void every_member_of_the_tensor_zonotope_is_enclosed(const std::string &b) {
     cora::Rng rng(32);
     const int n = 2, m = 2;
-    const Zonotope Z(column({0.0, 0.0}), Zonotope::generate_random(rng, n, std::nullopt, m).generators());
+    const Zonotope Z(column({0.0, 0.0}),
+                     Zonotope::generate_random(rng, n, std::nullopt, m).generators());
     const Tensor Mc = test::random_tensor(rng, n), M1 = test::random_tensor(rng, n),
                  M2 = test::random_tensor(rng, n);
     const Zonotope::TensorLists list = test::triples(m);
