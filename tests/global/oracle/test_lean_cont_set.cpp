@@ -314,7 +314,8 @@ int main() {
     oracle::run("interval.contains", [](oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
-            const Tensor inside = I.center(), corner = I.inf(), outside = rnd.vector(n) * 3.0;
+            const Tensor inside = I.center(), outside = rnd.vector(n) * 3.0;
+            const Tensor &corner = I.inf();
             for (const Tensor &p : {inside, corner, outside})
                 oracle::check(I.contains(p, 0.0),
                               lean::Interval(I).contains(lean::Interval(Interval(p, p)), 0.0));

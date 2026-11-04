@@ -258,8 +258,10 @@ inline bool same_bits(const std::string &what, const cora::ConZonotope &a,
 inline bool same_bits(const std::string &what, const cora::MatZonotope &a,
                       const lean::MatZonotope &b) {
     const cora::MatZonotope other = b.gather().first;
-    return same_bits(what + ".C", a.center(), other.center()) &
-           same_bits(what + ".G", a.generators(), other.generators());
+    // both compared, so that both mismatches are reported
+    const bool center = same_bits(what + ".C", a.center(), other.center());
+    const bool generators = same_bits(what + ".G", a.generators(), other.generators());
+    return center && generators;
 }
 
 /// The two halves of a split.

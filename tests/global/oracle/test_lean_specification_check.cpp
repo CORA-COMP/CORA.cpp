@@ -20,6 +20,7 @@ namespace {
 /// The halfspaces of the rows of A x <= b: each row a column, with its offset.
 std::vector<Halfspace> aux_halfspaces(const Tensor &A, const Tensor &b) {
     std::vector<Halfspace> halfspaces;
+    halfspaces.reserve(static_cast<std::size_t>(A.size(-2)));
     for (int64_t i = 0; i < A.size(-2); ++i)
         halfspaces.push_back({A.slice(-2, i, i + 1).matrix_transpose(), b.data()[i]});
     return halfspaces;

@@ -27,6 +27,7 @@ Interval aux_zero_box(int64_t rows, int64_t cols, const std::string &dtype) {
 // The generator matrices of a tensor (h, rows, cols), in the current dtype.
 std::vector<Tensor> aux_generators(const cora::Tensor &G) {
     std::vector<Tensor> list;
+    list.reserve(static_cast<std::size_t>(G.size(-3)));
     for (int64_t i = 0; i < G.size(-3); ++i)
         list.push_back(Tensor::from(G.slice(-3, i, i + 1).reshape({G.size(-2), G.size(-1)})));
     return list;
@@ -120,6 +121,7 @@ MatZonotope MatZonotope::from_json(const std::string &dtype, const Json &j) {
 std::pair<cora::MatZonotope, cora::Interval> MatZonotope::gather() const {
     const cora::Tensor c = c_.gather();
     std::vector<cora::Tensor> parts;
+    parts.reserve(G_.size());
     for (const Tensor &G : G_) parts.push_back(G.gather());
     const cora::Tensor G =
         parts.empty() ? c.zeros_like({0, c.size(-2), c.size(-1)}) : cora::Tensor::stack(parts, 0);
