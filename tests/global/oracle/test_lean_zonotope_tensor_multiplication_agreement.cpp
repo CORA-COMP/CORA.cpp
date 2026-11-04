@@ -56,7 +56,7 @@ Zonotope aux_origin_centered(oracle::Random &rnd, int n, int m) {
 int main() {
     if (!oracle::available()) return 0;
     oracle::run("zonotope.tensorMultiplication", [](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{1, 2}, {2, 2}, {3, 3}}) {
+        for (const auto &[n, m] : {std::pair{1, 2}, {2, 2}, {3, 3}}) {
             const Zonotope Z = aux_origin_centered(rnd, n, m);
             const Tensor4 M = aux_tensor(rnd, n);
             const Zonotope::TensorLists list = test::triples(m);
@@ -65,7 +65,7 @@ int main() {
         }
     });
     oracle::run("zonotope.tensorMultiplication_zono", [](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{1, 2}, {2, 2}, {3, 3}}) {
+        for (const auto &[n, m] : {std::pair{1, 2}, {2, 2}, {3, 3}}) {
             const Zonotope Z = aux_origin_centered(rnd, n, m);
             const Tensor4 center = aux_tensor(rnd, n), first = aux_tensor(rnd, n),
                           second = aux_tensor(rnd, n);

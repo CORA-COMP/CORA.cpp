@@ -27,7 +27,7 @@ int main() {
     if (!oracle::available()) return 0;
     oracle::run("zonotope.underapproximate", [](oracle::Random &rnd) {
         int compared = 0;
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 5}, {5, 12}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}, {5, 12}}) {
             const Zonotope Z(aux_eighths(rnd.vector(n)), aux_eighths(rnd.matrix(n, m)));
             const int directions = 4;
             std::vector<Tensor> S;

@@ -19,7 +19,7 @@ int main() {
     if (!oracle::available()) return 0;
     oracle::run("conZonotope.contains", [](oracle::Random &rnd) {
         int proved = 0;
-        for (const auto [n, m] : {std::pair{2, 2}, {3, 3}, {2, 3}}) {
+        for (const auto &[n, m] : {std::pair{2, 2}, {3, 3}, {2, 3}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const ConZonotope cz(Z);
             const lean::ConZonotope theirs = lean::ConZonotope::from_zonotope(lean::Zonotope(Z));
@@ -38,7 +38,7 @@ int main() {
     });
     oracle::run("conZonotope.isFullDim", [](oracle::Random &rnd) {
         int proved = 0;
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 3}, {3, 2}, {4, 2}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 3}, {3, 2}, {4, 2}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const bool theirs = lean::ConZonotope::from_zonotope(lean::Zonotope(Z)).is_full_dim();
             proved += theirs;

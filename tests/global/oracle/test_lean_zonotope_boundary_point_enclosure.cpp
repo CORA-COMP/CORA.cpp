@@ -15,7 +15,7 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("zonotope.boundaryPoint", [](test::oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 6}, {4, 8}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 6}, {4, 8}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor dir = rnd.vector(n);
             // from the center, and from a point of the zonotope off the center

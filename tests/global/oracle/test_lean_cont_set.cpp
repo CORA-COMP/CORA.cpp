@@ -188,7 +188,7 @@ int main() {
     });
 
     oracle::run("zonotope.enlarge", [](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             for (const double factor : {0.0, 0.5, 1.0, 2.5})
                 aux_check_set(aux_set(Z).enlarge(factor).as<Zonotope>(),
@@ -201,7 +201,7 @@ int main() {
     });
 
     oracle::run("zonotope.minus", [](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor p = rnd.vector(n);
             aux_check_set(aux_set(Z).minus(p).as<Zonotope>(), lean::Zonotope(Z).minus(p));

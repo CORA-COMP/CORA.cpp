@@ -109,7 +109,7 @@ int main() {
         }
     });
     oracle::run("zonotope.convHull", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             aux_check_same_generators(Z.convex_hull(Z2),
                                       lean::Zonotope(Z).convex_hull(lean::Zonotope(Z2)));

@@ -68,7 +68,7 @@ int main() {
             ++bounded;
             test::check(std::isfinite(a[i]) && std::isfinite(b[i]),
                         "tan: the oracle's bound is finite, so CORA's is");
-            for (const auto [x, y] : {std::pair{a[i], c[i]}, {b[i], d[i]}})
+            for (const auto &[x, y] : {std::pair{a[i], c[i]}, {b[i], d[i]}})
                 test::check(std::abs(x - y) <= kAgree * std::max(1.0, std::abs(y)),
                             "tan: the bounds agree");
         }

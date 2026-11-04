@@ -23,7 +23,7 @@ constexpr double kRelative = 4 * std::numeric_limits<double>::epsilon();
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("matZonotope.norm", [](test::oracle::Random &rnd) {
-        for (const auto [r, c, h] : {std::array<int64_t, 3>{2, 2, 1}, {3, 4, 2}, {5, 1, 3}}) {
+        for (const auto &[r, c, h] : {std::array<int64_t, 3>{2, 2, 1}, {3, 4, 2}, {5, 1, 3}}) {
             const MatZonotope A = rnd.mat_zonotope(r, c, h);
             const lean::MatZonotope L(A);
             test::oracle::check(A.norm(Tensor::Norm::one), L.norm("1"));
