@@ -113,11 +113,11 @@ class Polytope(unittest.TestCase):
         T = triangle()
         np.testing.assert_allclose(T.interval().sup, [2.0, 2.0], atol=1e-9)
         np.testing.assert_allclose(T.box().b, [2.0, 2.0, 0.0, 0.0], atol=1e-9)
-        np.testing.assert_allclose(square_vertices().center("avg"), [0.5, 0.5])
-        np.testing.assert_allclose(square_halfspaces().center(), [0.5, 0.5], atol=1e-8)
-        np.testing.assert_allclose(T.center("avg"), [2 / 3, 2 / 3], atol=1e-9)
+        np.testing.assert_allclose(square_vertices().center_by("avg"), [0.5, 0.5])
+        np.testing.assert_allclose(square_halfspaces().center, [0.5, 0.5], atol=1e-8)
+        np.testing.assert_allclose(T.center_by("avg"), [2 / 3, 2 / 3], atol=1e-9)
         with self.assertRaises(cora.errors.WrongValue):
-            T.center("mean")
+            T.center_by("mean")
 
     def test_compact(self):
         P = cora.Polytope(np.array([[1.0, 0.0], [2.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, -1.0],
@@ -208,7 +208,7 @@ class Polytope(unittest.TestCase):
         self.assertAlmostEqual(square_vertices().hausdorff_distance(big), np.sqrt(2.0), places=8)
         self.assertAlmostEqual(square_vertices().hausdorff_distance(np.array([[3.0], [0.0]])), 2.0, places=8)
         with self.assertRaises(cora.errors.WrongValue):
-            cora.Polytope.enclose_points(np.zeros(3))
+            cora.Polytope.enclose_points(np.zeros((2, 2, 3)))
 
     def test_the_generic_interface(self):
         S = cora.intersect(square_halfspaces(), square_halfspaces())
@@ -233,7 +233,7 @@ class Polytope(unittest.TestCase):
             for probe in rng.uniform(-1.2, 1.2, (30, n)):
                 self.assertEqual(V.contains(probe.reshape(-1, 1)), H.contains(probe.reshape(-1, 1)))
             mean = points.mean(axis=1)
-            np.testing.assert_allclose(V.center("avg"), mean, atol=1e-12)
+            np.testing.assert_allclose(V.center_by("avg"), mean, atol=1e-12)
             shift = rng.uniform(-1.0, 1.0, (n, 1))
             moved = cora.Polytope(points + shift)
             self.assertAlmostEqual(V.hausdorff_distance(moved), np.linalg.norm(shift), places=6)

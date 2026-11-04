@@ -2227,9 +2227,9 @@ void bind_polytope(py::module_ &m) {
             "(A, b, Ae, be): the halfspaces, from the vertices if need be")
         .def("box", &Polytope::box, "The polytope of the tightest box")
         .def(
-            "center",
+            "center_by",
             [](const Polytope &P, const std::string &method) { return bounds(P.center(method)); },
-            py::arg("method") = "chebyshev", "The Chebyshev center or the mean ('avg') of the vertices")
+            py::arg("method"), "The Chebyshev center ('chebyshev') or the mean of the vertices ('avg')")
         .def("compact", &Polytope::compact, py::arg("method") = "all", py::arg("tol") = py::none(),
              "Without redundancy: all, A, Ae, aligned, zeros, AtoAe or V")
         .def(

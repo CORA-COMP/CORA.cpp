@@ -22,6 +22,7 @@
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/oracle/polytope.h"
+#include "cora/global/tensor/tolerance.h"
 #include "oracle_testing.h"
 
 #include <cmath>
@@ -92,10 +93,19 @@ int main() {
     });
     oracle::run("polytope.center", [](oracle::Random &rnd) {
         const Polytope P(aux_sphere(rnd, 3, 7));
-        // the mean of the vertices is the oracle's box at nearest, inside it when sound
+        // the mean of the vertices is the oracle's box at nearest; a float mean on another backend
+        // sums in another order, so sound mode allows a few ulp around the oracle's box
         const Tensor mean = P.center("avg");
         const lean::Interval theirs = lean::Polytope(P).center();
-        oracle::check(mean, theirs);
+        if (oracle::mode() == oracle::Mode::exact)
+            return oracle::check_exact("center", mean, theirs);
+        const auto [lo, hi] = theirs.gather();
+        const std::vector<double> m = mean.data(), a = lo.data(), b = hi.data();
+        bool ok = true;
+        for (std::size_t i = 0; i < m.size(); ++i)
+            ok = ok && a[i] - 16 * machine_eps() * std::abs(a[i]) <= m[i] &&
+                 m[i] <= b[i] + 16 * machine_eps() * std::abs(b[i]);
+        test::check(ok, "center: the mean within a few ulp of the oracle's box");
     });
     oracle::run("polytope.contains", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);

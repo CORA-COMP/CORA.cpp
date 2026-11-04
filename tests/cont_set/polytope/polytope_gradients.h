@@ -9,6 +9,7 @@
 #pragma once
 
 #include "cont_set/zonotope/zonotope_gradients.h"
+#include "polytope_testing.h"
 #include "cora/cont_set/polytope/polytope.h"
 
 namespace test {

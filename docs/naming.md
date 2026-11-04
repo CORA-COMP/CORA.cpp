@@ -112,6 +112,7 @@ changed, and the reasons are listed below.
 | `polytope.empty(n)`, `polytope.Inf(n)` | `Polytope::empty(n)`, `Polytope::inf(n)` | `cora.Polytope.empty(n)`, `cora.Polytope.inf(n)` |
 | `enclosePoints(P, points)` | `Polytope::enclose_points(points)` | `cora.Polytope.enclose_points(points)` |
 | `constraints(P)` | `P.constraints()` | `P.constraints()` |
+| `center(P, method)` | `P.center(method)` | `P.center` (Chebyshev), `P.center_by(method)` |
 | `compact(P, method, tol)` | `P.compact(method, tol)` | `P.compact(method, tol)` |
 | `conZonotope(P, method, box)` | `P.con_zonotope(method, box)` | `P.con_zonotope(method, box)` |
 | `and(P, S)` | `P.intersect(S, tol)` | `P.intersect(S, tol)` |

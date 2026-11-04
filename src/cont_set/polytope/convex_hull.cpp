@@ -59,7 +59,8 @@ struct Operand {
     bool empty = false;
     bool fullspace = false;
     Polytope set;
-    std::function<Rows()> list; // the vertices, asked for when the hull is formed
+    std::function<Rows()> list;      // the vertices, asked for when the hull is formed
+    std::optional<Tensor> vertices;  // the vertices as given, if the operand has them
 };
 
 /// The hull of the vertices of two sets in n dimensions: a vertex polytope of the extreme ones.
@@ -71,6 +72,12 @@ Polytope aux_hull(const Polytope &P, const Operand &S) {
     if (p_empty) return S.set;
     if (S.empty) return P;
     if (priv_is_fullspace(P) || S.fullspace) return Polytope::inf(n);
+    // vertices on both sides: the hull takes its columns from them, which keeps the gradients
+    if (P.is_v_rep() && S.vertices) {
+        const Tensor given = Tensor::concat({P.V(), *S.vertices}, -1);
+        if (n == 1) return Polytope(given);
+        return Polytope(given.take(priv_extreme_points(priv_host_points(given)), -1));
+    }
     Rows all = priv_polytope_vertices(P);
     const Rows second = S.list();
     all.insert(all.end(), second.begin(), second.end());
@@ -103,7 +110,8 @@ Polytope Polytope::convex_hull(const Polytope &P2) const {
     const detail::Refusal refusal = aux_refusal(*this, P2.dim());
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     Operand S{priv_polytope_is_empty(P2), priv_is_fullspace(P2), P2,
-              [&] { return priv_polytope_vertices(P2); }};
+              [&] { return priv_polytope_vertices(P2); },
+              P2.is_v_rep() ? std::optional<Tensor>(P2.V()) : std::nullopt};
     return aux_hull(*this, S);
 }
 
@@ -113,7 +121,7 @@ Polytope Polytope::convex_hull(const Interval &I) const {
     const detail::Refusal refusal = aux_refusal(*this, I.dim());
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     Operand S{I.is_empty(), aux_interval_fullspace(I), priv_polytope_of_interval(I),
-              [&] { return aux_corners(I); }};
+              [&] { return aux_corners(I); }, std::nullopt};
     return aux_hull(*this, S);
 }
 
@@ -124,7 +132,7 @@ Polytope Polytope::convex_hull(const Tensor &p) const {
         return "convex_hull: the point must be a column (" + std::to_string(dim()) + ", 1)";
     });
     // a point is the polytope of one vertex
-    Operand S{false, false, Polytope(p), [&] { return priv_host_points(p); }};
+    Operand S{false, false, Polytope(p), [&] { return priv_host_points(p); }, p};
     return aux_hull(*this, S);
 }
 
