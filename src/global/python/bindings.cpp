@@ -570,9 +570,11 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const ZonoBundle &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<Polytope>(S1))
                 return py::cast<const Polytope &>(S1).contains(tensor_of(S2, "the points"));
+            if (py::isinstance<Ellipsoid>(S1))
+                return py::cast<const Ellipsoid &>(S1).contains(tensor_of(S2, "the points"));
             CORA_FAIL(Error::not_supported,
                       "point containment is implemented for intervals, zonotopes, constrained "
-                      "zonotopes, zonotope bundles and polytopes only");
+                      "zonotopes, zonotope bundles, polytopes and ellipsoids only");
         });
     bind_registry(m);
 }
@@ -2297,12 +2299,140 @@ void bind_polytope(py::module_ &m) {
             py::arg("S"), "The Hausdorff distance to a polytope, a box or the points (n, N)");
 }
 
+// Ellipsoid ---------------------------------------------------------------------------------------
+
+/// The measurement model of the method of Liu from a Python dict with the keys V and bar_V.
+Ellipsoid::StripMeasurement strip_measurement_of(const py::handle &o) {
+    if (!py::isinstance<py::dict>(o))
+        CORA_FAIL(Error::wrong_value, "intersect_strip: the method 'Liu2016' takes a dict with "
+                                      "the matrices V and bar_V as the width");
+    const py::dict d = py::cast<py::dict>(o);
+    for (const char *key : {"V", "bar_V"})
+        if (!d.contains(key))
+            CORA_FAIL(Error::wrong_field_value,
+                      std::string("intersect_strip: the model needs the key '") + key + "'");
+    return {tensor_of(d["V"], "V"), tensor_of(d["bar_V"], "bar_V")};
+}
+
+/// An ellipsoid from a Python value: the ellipsoid itself.
+Ellipsoid ellipsoid_of(const py::handle &o) { return py::cast<Ellipsoid>(o); }
+
+void bind_ellipsoid(py::module_ &m) {
+    py::class_<Ellipsoid, ContSet>(m, "Ellipsoid",
+                                   "The ellipsoid {x : (x - q)' Q^+ (x - q) <= 1} of the shape "
+                                   "matrix Q and the center q.")
+        .def(py::init([](const py::object &Q, const py::object &q, Tol tol) {
+                 if (q.is_none()) return Ellipsoid(tensor_of(Q, "Q"), tol);
+                 return Ellipsoid(tensor_of(Q, "Q"), vector_of(q, "the center"), tol);
+             }),
+             py::arg("Q"), py::arg("q") = py::none(), py::arg("tol") = py::none(),
+             "shape matrix Q (..., n, n), center q (..., n), default 0; tol bounds the asymmetry "
+             "and the negative eigenvalues of Q")
+        .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
+                    "The empty ellipsoid of n dimensions")
+        .def_property_readonly("Q", [](const Ellipsoid &E) { return matrix(E.Q()); },
+                               "The shape matrix Q (..., n, n)")
+        .def_property_readonly("q", [](const Ellipsoid &E) { return vector(E.q()); },
+                               "The center q (..., n)")
+        .def_property_readonly("tol", &Ellipsoid::tol, "The tolerance of the object")
+        .def("is_bounded", &Ellipsoid::is_bounded, "Always true")
+        .def("is_full_dim", &Ellipsoid::is_full_dim, py::arg("tol") = py::none(),
+             "Whether the shape matrix has full rank; tol replaces the tolerance of the object")
+        .def("generators", [](const Ellipsoid &E) { return matrix(E.generators()); },
+             "A matrix G with G G' = Q from the singular value decomposition")
+        .def(
+            "ellipsoid_norm",
+            [](const Ellipsoid &E, const py::object &p) {
+                return scalar(E.ellipsoid_norm(vector_of(p, "p")));
+            },
+            py::arg("p"), "The norm of p whose unit ball is the ellipsoid shifted to the origin")
+        .def("is_bigger", &Ellipsoid::is_bigger, py::arg("E2"),
+             "Whether E2 - q2 lies in E - q")
+        .def(
+            "is_bad_dir",
+            [](const Ellipsoid &E, const Ellipsoid &E2, const py::object &L) {
+                return E.is_bad_dir(E2, tensor_of(L, "L"));
+            },
+            py::arg("E2"), py::arg("L"),
+            "For every column of L whether it is a bad direction of the Minkowski difference")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points, const std::string &method) {
+                return Ellipsoid::enclose_points(tensor_of(points, "points"), method);
+            },
+            py::arg("points"), py::arg("method") = "cov",
+            "An ellipsoid that contains the points (n, p); method 'cov'")
+        .def(
+            "intersect_strip",
+            [](const Ellipsoid &E, const py::object &C, const py::object &phi, const py::object &y,
+               double sigma_sq_prev, const std::optional<std::string> &method) {
+                const bool liu = py::isinstance<py::dict>(phi);
+                if (method && *method != (liu ? "Liu2016" : "Gollamudi1996"))
+                    CORA_FAIL(Error::wrong_value,
+                              "intersect_strip: the method '" + *method +
+                                  "' does not go with this width (a number: 'Gollamudi1996', "
+                                  "a dict of V and bar_V: 'Liu2016')");
+                const Tensor Ct = tensor_of(C, "C"), yt = vector_of(y, "y");
+                const auto result =
+                    liu ? E.intersect_strip(Ct, strip_measurement_of(phi), yt, sigma_sq_prev)
+                        : E.intersect_strip(Ct, py::cast<double>(phi), yt, sigma_sq_prev);
+                return py::make_tuple(result.first, result.second);
+            },
+            py::arg("C"), py::arg("phi"), py::arg("y"), py::arg("sigma_sq_prev") = 0.0,
+            py::arg("method") = py::none(),
+            "(E2, sigma_sq): an ellipsoid with the intersection with the strip |C x - y| <= phi "
+            "(method 'Gollamudi1996', a number phi) or the measurement model {V, bar_V} "
+            "(method 'Liu2016')")
+        .def(
+            "intersect",
+            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
+                if (py::isinstance<Ellipsoid>(S)) return E.intersect(ellipsoid_of(S), mode);
+                return E.intersect(vector_of(S, "the point"));
+            },
+            py::arg("S"), py::arg("mode") = "outer",
+            "The intersection with an ellipsoid or a point (an ellipsoid with Q = 0 or empty)")
+        .def(
+            "cart_prod",
+            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
+                if (py::isinstance<Ellipsoid>(S)) return E.cart_prod(ellipsoid_of(S), mode);
+                return E.cart_prod(vector_of(S, "the point"), mode);
+            },
+            py::arg("S"), py::arg("mode") = "outer",
+            "The Cartesian product with an ellipsoid (of the bounding boxes) or a point (exact)")
+        .def(
+            "contains",
+            [](const Ellipsoid &E, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<Zonotope>(S)) return E.contains(py::cast<Zonotope>(S), method, tol);
+                if (py::isinstance<Interval>(S)) return E.contains(py::cast<Interval>(S), method, tol);
+                if (py::isinstance<Ellipsoid>(S)) return E.contains(ellipsoid_of(S), method, tol);
+                return E.contains(tensor_of(S, "the points"), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the ellipsoid contains the points (n, N), a zonotope, a box or an ellipsoid")
+        .def(
+            "enclose",
+            [](const Ellipsoid &E, const ContSet &S2) {
+                if (S2.class_id() == ClassId::ellipsoid)
+                    return object_of(Set(E.enclose(static_cast<const Ellipsoid &>(S2))));
+                return object_of(static_cast<const ContSet &>(E).enclose(S2));
+            },
+            py::arg("S2"), "The outer union of E and S2; needs an SDP solver")
+        .def(
+            "enclose",
+            [](const Ellipsoid &E, const py::object &M, const Ellipsoid &Eplus) {
+                return E.enclose(tensor_of(M, "the matrix"), Eplus);
+            },
+            py::arg("M"), py::arg("Eplus"),
+            "The outer union of E and M Eplus (CORA's code); needs an SDP solver");
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
     const py::object CZ = m.attr("ConZonotope");
     CZ.attr("__array_ufunc__") = py::none(); // numpy defers to its operators
     m.attr("Polytope").attr("__array_ufunc__") = py::none();
+    m.attr("Ellipsoid").attr("__array_ufunc__") = py::none();
     Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
@@ -3615,6 +3745,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_con_zonotope(m);
     bind_zono_bundle(m);
     bind_polytope(m);
+    bind_ellipsoid(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
     bind_operators(m);

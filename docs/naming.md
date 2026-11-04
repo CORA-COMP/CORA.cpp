@@ -119,6 +119,11 @@ changed, and the reasons are listed below.
 | `cartProd(P, S)` | `P.cart_prod(S)` | `P.cart_prod(S)` |
 | `convHull(P, S)`, `enclose(P, P2)` | `P.convex_hull(S)`, `P.enclose(P2)` | `P.convex_hull(S)`, `P.enclose(P2)` |
 | `hausdorffDist(P, S)` | `P.hausdorff_distance(S)` | `P.hausdorff_distance(S)` |
+| `ellipsoid(Q, q, TOL)`, `ellipsoid.empty(n)` | `Ellipsoid(Q, q, tol)`, `Ellipsoid::empty(n)` | `cora.Ellipsoid(Q, q, tol)`, `cora.Ellipsoid.empty(n)` |
+| `E.Q`, `E.q`, `E.TOL`, `generators(E)`, `ellipsoidNorm(E, p)` | `E.Q()`, `E.q()`, `E.tol()`, `E.generators()`, `E.ellipsoid_norm(p)` | `E.Q`, `E.q`, `E.tol`, `E.generators()`, `E.ellipsoid_norm(p)` |
+| `isBigger(E1, E2)`, `isBadDir(E1, E2, L)` | `E1.is_bigger(E2)`, `E1.is_bad_dir(E2, L)` | the same |
+| `ellipsoid.enclosePoints(P, method)` | `Ellipsoid::enclose_points(P, method)` | `cora.Ellipsoid.enclose_points(P, method)` |
+| `intersectStrip(E, C, phi, y, sigma_sq_prev, method)` | `E.intersect_strip(C, phi, y, sigma_sq_prev)`, with a `StripMeasurement` for `phi` (the method of Liu) | `E.intersect_strip(C, phi, y, sigma_sq_prev, method)`, a dict `{V, bar_V}` for `phi` |
 | `boundaryPoint(Z, dir, start)` | `Z.boundary_point(dir, start)` | `Z.boundary_point(dir, start)` |
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
 | `zonotope.generateRandom` | `Zonotope::generate_random(rng, dimension, center, nr_generators, distribution)` | `cora.Zonotope.generate_random` |
