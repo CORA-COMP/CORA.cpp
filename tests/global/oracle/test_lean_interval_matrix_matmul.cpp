@@ -13,7 +13,7 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.mtimes", [](test::oracle::Random &rnd) {
-        for (const auto [m, n, p] :
+        for (const auto &[m, n, p] :
              {std::tuple{2, 2, 2}, std::tuple{3, 4, 2}, std::tuple{1, 5, 3}}) {
             const IntervalMatrix A(rnd.box_matrix(m, n)), B(rnd.box_matrix(n, p));
             const lean::IntervalMatrix LA{lean::Interval(A.interval())},

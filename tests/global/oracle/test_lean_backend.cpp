@@ -30,7 +30,7 @@ int main() {
     if (test::oracle::available()) {
         const lean::DTypeScope nearest("nearest");
         test::oracle::Random rnd(7);
-        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 200}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {20, 200}}) {
             const std::string size = ", n=" + std::to_string(n) + ", m=" + std::to_string(m);
             const Tensor M = rnd.matrix(n, n);
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);

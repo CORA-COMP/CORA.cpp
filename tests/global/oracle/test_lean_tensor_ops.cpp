@@ -47,7 +47,7 @@ void aux_elementwise(test::oracle::Random &rnd) {
 
 /// Sums and products along both axes (the oracle answers columns), and the matrix product.
 void aux_sums(test::oracle::Random &rnd) {
-    for (const auto [n, m] : {std::pair<int64_t, int64_t>{2, 3}, {7, 30}}) {
+    for (const auto &[n, m] : {std::pair<int64_t, int64_t>{2, 3}, {7, 30}}) {
         const Tensor x = rnd.matrix(n, m), y = rnd.matrix(m, n), v = rnd.vector(n);
         const lean::Interval X = aux_point(x);
         aux_case("sum(-2)",

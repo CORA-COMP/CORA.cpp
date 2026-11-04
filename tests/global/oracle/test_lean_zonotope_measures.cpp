@@ -44,7 +44,7 @@ int main() {
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 200}};
 
     oracle::run("zonotope.exactPlus", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m + 2);
             for (const int k : {0, 2, m + 5})
                 aux_check_set(Z.exact_plus(Z2, k),
@@ -58,7 +58,7 @@ int main() {
     });
 
     oracle::run("zonotope.isFullDim", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {4, 2}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {4, 2}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             // the oracle proves full dimension or says nothing: a proof is never contradicted
             if (lean::Zonotope(Z).is_full_dim())
@@ -68,7 +68,7 @@ int main() {
     });
 
     oracle::run("zonotope.isequal", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             // the oracle's test is structural and certified when true; CORA's accepts more
             test::check(Z.isequal(Z) && lean::Zonotope(Z).isequal(lean::Zonotope(Z)),
@@ -79,7 +79,7 @@ int main() {
     });
 
     oracle::run("zonotope.norm", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             // the oracle returns the square of the bound; its sum of squares is CORA.cpp's, so
             // the root of it is the same double

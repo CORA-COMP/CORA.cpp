@@ -70,7 +70,7 @@ void other_operands_and_odd_counts(const std::string &b) {
 /// they are flat.
 void union_contains_the_sets(const std::string &b) {
     cora::Rng rng(131);
-    for (const auto [n, m] : {std::pair{2, 3}, {3, 4}}) {
+    for (const auto &[n, m] : {std::pair{2, 3}, {3, 4}}) {
         std::vector<Zonotope> Zs;
         Zs.reserve(3);
         for (int k = 0; k < 3; ++k)

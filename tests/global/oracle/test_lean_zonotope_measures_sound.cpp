@@ -58,7 +58,7 @@ int main() {
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 200}};
 
     oracle::run("zonotope.generatorLength", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const std::vector<double> mine = Z.generator_length().data(),
                                       theirs = lean::Zonotope(Z).generator_length().gather().data();
@@ -69,7 +69,7 @@ int main() {
     });
 
     oracle::run("zonotope.minnorm", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 4}, {3, 6}, {4, 7}}) {
+        for (const auto &[n, m] : {std::pair{2, 4}, {3, 6}, {4, 7}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const std::optional<double> theirs = lean::Zonotope(Z).minnorm();
             test::check(theirs.has_value(), "minnorm: the oracle found a facet");
@@ -78,7 +78,7 @@ int main() {
     });
 
     oracle::run("zonotope.intersectStrip", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor C = rnd.matrix(2, n), Lambda = rnd.matrix(n, 2), y = rnd.vector(2);
             const Tensor phi = Tensor::from_data({0.5, 1.5}, {2, 1});
@@ -89,7 +89,7 @@ int main() {
 
     oracle::run("zonotope.isIntersecting", [&](oracle::Random &rnd) {
         if (oracle::mode() == oracle::Mode::exact) return; // the oracle proves disjointness only
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 5}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             const Zonotope far(Z2.center() * 40.0, Z2.generators());
             for (const Zonotope &S : {Z2, far}) {

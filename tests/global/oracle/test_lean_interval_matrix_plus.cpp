@@ -13,7 +13,7 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.plus", [](test::oracle::Random &rnd) {
-        for (const auto [m, n] : {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}}) {
+        for (const auto &[m, n] : {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}}) {
             const IntervalMatrix A(rnd.box_matrix(m, n)), B(rnd.box_matrix(m, n));
             const lean::IntervalMatrix LA{lean::Interval(A.interval())};
             test::oracle::check(A.plus(B), LA.plus(lean::Interval(B.interval())));

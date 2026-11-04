@@ -63,7 +63,7 @@ int main() {
         }
     });
     oracle::run("zonotope.center", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             oracle::check(aux_set(Z).center(), lean::Zonotope(Z).center_value());
         }
@@ -86,7 +86,7 @@ int main() {
             const Interval flat(lo, hi);
             oracle::check(aux_set(flat).is_full_dim(0.0), lean::Interval(flat).is_full_dim(0.0));
         }
-        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {4, 2}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {4, 2}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             // the oracle proves full dimension or says nothing: a proof is never contradicted
             if (lean::Zonotope(Z).is_full_dim())
@@ -102,7 +102,7 @@ int main() {
                 oracle::check(aux_set(I).reduce(order).as<Interval>(),
                               lean::Interval(I).reduce(order));
         }
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             for (const int order : {1, 2})
                 aux_check_set(aux_set(Z).reduce(order).as<Zonotope>(),
@@ -111,7 +111,7 @@ int main() {
     });
 
     oracle::run("mtimes", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Tensor M = rnd.matrix(n, n);
             const Interval I = rnd.box(n);
             oracle::check(aux_set(I).linear_map(M).as<Interval>(), lean::Interval(I).linear_map(M));
@@ -162,7 +162,7 @@ int main() {
                 oracle::check(ne(I, *K, 0.0), !lean::Interval(I).isequal(lean::Interval(*K), 0.0));
             }
         }
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             // the oracle's test is structural and certified when true; CORA's accepts more
             test::check(eq(Z, Z) && lean::Zonotope(Z).isequal(lean::Zonotope(Z)),
@@ -213,7 +213,7 @@ int main() {
     });
 
     oracle::run("zonotope.contains", [](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 5}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             // a scaled copy about the center lies inside (0.1) or outside (3) a random zonotope
             const Zonotope Z = rnd.zonotope(n, m);
             const Zonotope inner(Z.center(), Z.generators() * 0.1),
@@ -234,7 +234,7 @@ int main() {
     });
 
     oracle::run("supportFunc", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Interval I = rnd.box(n);
             const Tensor d = rnd.direction(n);
             oracle::check(aux_set(I).support_function(d), lean::Interval(I).support_function(d));
@@ -245,7 +245,7 @@ int main() {
 
     // -S is the matrix -I times S (a box: its own negation), S .* f the matrix diag(f) times S
     oracle::run("uminus", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Interval I = rnd.box(n);
             oracle::check(aux_set(I).uminus().as<Interval>(), lean::Interval(I).uminus());
             const Zonotope Z = rnd.zonotope(n, m);
@@ -262,7 +262,7 @@ int main() {
     });
 
     oracle::run("times", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Tensor f = rnd.vector(n);
             const Interval I = rnd.box(n);
             oracle::check(aux_set(I).times(f).as<Interval>(),

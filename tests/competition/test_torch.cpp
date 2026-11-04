@@ -81,7 +81,7 @@ void the_two_backends_agree(const torch::TensorOptions &opts, const std::string 
     // takes the factored form that the catalog's largest instances run on; every smaller
     // shape here takes the held one. Both paths are checked against the same LP.
     const Shape shapes[] = {{1, 2}, {2, 4}, {3, 6}, {5, 10}, {10, 20}, {30, 60}, {5, 2500}};
-    for (const auto [n, m] : shapes) {
+    for (const auto &[n, m] : shapes) {
         const Eigen::Index batch = 3, points = 12;
         const EigenZonotope set = cora::comp::random_zonotope(rng, n, m, batch);
         const cora::comp::Mat<double> probes = cora::comp::across_the_boundary(set, points, rng);

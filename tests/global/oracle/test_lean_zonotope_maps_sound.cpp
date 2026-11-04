@@ -50,7 +50,7 @@ int main() {
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 50}};
 
     oracle::run("zonotope.radius", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const double mine = Z.radius().item(), bound = lean::Zonotope(Z).radius();
             test::check(mine <= bound * (1 + kSlack), "radius: " + std::to_string(mine) +
@@ -62,7 +62,7 @@ int main() {
     });
 
     oracle::run("zonotope.quadMap", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {3, 4}, {4, 6}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 4}, {4, 6}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const std::vector<Tensor> Q{rnd.matrix(n, n), rnd.matrix(n, n)};
             std::vector<lean::Tensor> LQ;
@@ -74,7 +74,7 @@ int main() {
     });
 
     oracle::run("zonotope.rotate", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const double angle = rnd.uniform(-3, 3);
             aux_hull_agrees("rotate", Z.rotate({0, int64_t(n - 1)}, angle),

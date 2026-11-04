@@ -52,7 +52,7 @@ int main() {
     });
 
     oracle::run("zonotope.projectHighDim", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             std::vector<int64_t> dims(n); // the states reversed into the last n of n + 3
             for (int i = 0; i < n; ++i) dims[i] = n + 2 - i;
@@ -62,7 +62,7 @@ int main() {
     });
 
     oracle::run("zonotope.representsa", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Tensor zeros = Tensor::zeros({n, m}), c = rnd.vector(n);
             const Zonotope random = rnd.zonotope(n, m), point(c, zeros),
                            origin(c.zeros_like(), zeros);
@@ -73,7 +73,7 @@ int main() {
     });
 
     oracle::run("zonotope.split", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             for (const int64_t gen : {int64_t(0), int64_t(m - 1)})
                 aux_check_halves(Z.split(gen, 1000), lean::Zonotope(Z).split(gen));
@@ -81,14 +81,14 @@ int main() {
     });
 
     oracle::run("zonotope.splitFirstGen", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             aux_check_halves(Z.split_first_gen(), lean::Zonotope(Z).split_first_gen());
         }
     });
 
     oracle::run("zonotope.splitLongestGen", [&](oracle::Random &rnd) {
-        for (const auto [n, m] : sizes) {
+        for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const auto mine = Z.split_longest_gen();
             aux_check_halves(std::pair{mine.second, mine.first},

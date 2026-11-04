@@ -38,7 +38,7 @@ std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.vertices", [](test::oracle::Random &rnd) {
-        for (const auto [m, n] : {std::pair{2, 2}, std::pair{1, 3}, std::pair{3, 2}}) {
+        for (const auto &[m, n] : {std::pair{2, 2}, std::pair{1, 3}, std::pair{3, 2}}) {
             const IntervalMatrix A(rnd.box_matrix(m, n));
             const lean::IntervalMatrix L{lean::Interval(A.interval())};
             const std::vector<std::vector<double>> theirs = aux_sorted(L.vertices(), m, n);

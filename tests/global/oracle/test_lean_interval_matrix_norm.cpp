@@ -25,7 +25,7 @@ int main() {
     if (!test::oracle::available()) return 0;
     cora::Rng rng(4);
     test::oracle::run("intervalMatrix.norm", [&](test::oracle::Random &rnd) {
-        for (const auto [m, n] : {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}}) {
+        for (const auto &[m, n] : {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}}) {
             const IntervalMatrix A(rnd.box_matrix(m, n));
             const lean::IntervalMatrix L{lean::Interval(A.interval())};
             test::oracle::check(A.norm(Tensor::Norm::one), L.norm("1"));

@@ -11,7 +11,7 @@ using namespace cora;
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("zonotope.box", [](test::oracle::Random &rnd) {
-        for (const auto [n, m] : {std::pair{2, 3}, {5, 30}, {20, 200}}) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {20, 200}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             test::oracle::check(Z.interval(), lean::Zonotope(Z).interval());
         }
