@@ -13,6 +13,7 @@
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reduceGirard.m
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"
 #include "global/format.h"
@@ -32,12 +33,8 @@ Zonotope Zonotope::reduce(int order) const {
     const int64_t n = dim(), m = G_.shape().back();
     if (m <= order * n) return *this;
 
-    // The kept generators come first, by Girard's score (the choice carries no gradient), then
-    // one box generator per dimension for the rest; per member of a batch.
-    const int64_t keep = order * n - n;
-    const auto [kept, rest] = G_.detach().girard_split(keep);
-    const Tensor box = G_.take_along_axis(rest, -1).abs_sum().diag();
-    return {c_, keep == 0 ? box : Tensor::concat({G_.take_along_axis(kept, -1), box}, -1)};
+    // the longest generators stay and the rest becomes a box
+    return {c_, priv_girard_generators(G_, order * n - n)};
 }
 
 Set Zonotope::reduce_impl(int order) const { return reduce(order); }

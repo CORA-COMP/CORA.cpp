@@ -27,16 +27,6 @@ namespace cora {
 
 namespace {
 
-/// Why the call is refused, if it is: the type, a batch (a linear program per pair).
-Refusal aux_refusal(const std::string &type, const Tensor &c, const Tensor &other) {
-    if (type != "exact" && type != "approx")
-        return std::pair{Error::wrong_value,
-                         "the type must be 'exact' or 'approx', got '" + type + "'"};
-    if (c.ndim() != 2 || other.ndim() != 2)
-        return std::pair{Error::not_supported, std::string("it supports single sets, not a batch")};
-    return std::nullopt;
-}
-
 /// Whether the boxes around Z and S, S enlarged by tol, overlap in every coordinate.
 bool aux_boxes_overlap(const Zonotope &Z, const Interval &S, double tol) {
     const Interval box = Z.interval();
@@ -68,7 +58,7 @@ bool Zonotope::is_intersecting(const Zonotope &S, const std::string &type, Tol t
         return "is_intersecting: the zonotopes differ in dimension, " + std::to_string(dim()) +
                " and " + std::to_string(S.dim());
     });
-    const Refusal refusal = aux_refusal(type, c_, S.center());
+    const Refusal refusal = priv_intersecting_refusal(type, c_, S.center());
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return type == "exact" ? aux_overlap_exact(*this, S, tol)
                            : aux_boxes_overlap(*this, S.interval(), tol);
@@ -83,7 +73,7 @@ bool Zonotope::is_intersecting(const Interval &I, const std::string &type, Tol t
                shape_text(I.inf().shape());
     });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
-    const Refusal refusal = aux_refusal(type, c_, I.inf());
+    const Refusal refusal = priv_intersecting_refusal(type, c_, I.inf());
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     if (I.is_empty()) return false;
     return type == "exact" ? aux_overlap_exact(*this, I.zonotope(), tol)
@@ -94,11 +84,7 @@ bool Zonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // points are in the set or not: both types decide by containment
-    CORA_CHECK(p.ndim() == 2 && p.shape()[0] == dim(), Error::dimension_mismatch, [&] {
-        return "is_intersecting: the points must be a matrix (" + std::to_string(dim()) +
-               ", N) of columns, got the shape " + shape_text(p.shape());
-    });
-    const Refusal refusal = aux_refusal(type, c_, p);
+    const Refusal refusal = priv_intersecting_points_refusal(type, c_, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return contains(p, "exact", tol);
 }

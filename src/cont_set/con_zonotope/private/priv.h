@@ -36,6 +36,11 @@ Tensor priv_block_diag(const Tensor &A, const Tensor &B);
 /// The columns of A (..., p, m) at the positions of `columns` kept, the others dropped.
 Tensor priv_select_columns(const Tensor &A, const std::vector<int64_t> &columns);
 
+/// Why a binary operation of two constrained zonotopes is refused, if it is: the sets must have
+/// one batch shape and, if same_dim, one dimension. `operation` names it in the message.
+detail::Refusal priv_pair_refusal(const char *operation, const ConZonotope &a, const ConZonotope &b,
+                                  bool same_dim);
+
 /// The rows of [A, b] that are not all zero, as host indices (of a batch, those that some member
 /// keeps).
 std::vector<int64_t> priv_nonzero_rows(const Tensor &A, const Tensor &b);
@@ -63,6 +68,21 @@ ConZonotope priv_minkowski_sum(const ConZonotope &cz1, const ConZonotope &cz2);
 /// (n2, m1) are the center and generators of the image of cz1.
 ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const Tensor &Mc,
                            const Tensor &MG);
+
+// Corners and vertices ----------------------------------------------------------------------------
+
+/// Most generators of a zonotope whose corners are listed (2^12 of them, a program each).
+inline constexpr int64_t kMaxCornerGenerators = 12;
+
+/// The corners c + G s of a zonotope for every sign vector s, as columns (n, 2^m).
+Tensor priv_corners(const Zonotope &Z);
+
+/// Points of a single constrained zonotope that contain its vertices, as columns (n, K): the
+/// images c + G x of the x with |x|_inf <= 1 and A x = b that fix all but rank(A) factors at +-1
+/// (without the same point twice). None (K = 0) if the set is empty; at most numerics::
+/// kVertexCandidates before Error::not_supported. A convex set contains the set exactly if it
+/// contains these points.
+Tensor priv_vertex_candidates(const ConZonotope &cz);
 
 // Linear programs ---------------------------------------------------------------------------------
 

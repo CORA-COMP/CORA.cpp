@@ -1889,6 +1889,79 @@ void bind_con_zonotope(py::module_ &m) {
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the set contains the points (n, N), a zonotope or a box; method 'exact'")
+        .def_static("origin", &ConZonotope::origin, py::arg("n"), "The set {0} of n dimensions")
+        .def(
+            "plus",
+            [](const ConZonotope &Z, const py::object &S) {
+                if (py::isinstance<ContSet>(S)) return Z.plus(con_zonotope_of(S));
+                return Z.plus(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The Minkowski sum with a constrained zonotope, a zonotope, a box or a point")
+        .def(
+            "reduce",
+            [](const ConZonotope &Z, int order, const std::string &method) {
+                return Z.reduce(order, method);
+            },
+            py::arg("order") = 1, py::arg("method") = "girard",
+            "A set that encloses Z with about order * dim generators (Girard's rule on [G; A])")
+        .def(
+            "quad_map",
+            [](const ConZonotope &Z, const py::list &Q) { return Z.quad_map(matrix_list_of(Q)); },
+            py::arg("Q"), "An enclosure of (x' Q[i] x) for x in Z; Q[i] are (n, n) matrices")
+        .def(
+            "quad_map",
+            [](const ConZonotope &Z, const ConZonotope &Z2, const py::list &Q) {
+                return Z.quad_map(Z2, matrix_list_of(Q));
+            },
+            py::arg("Z2"), py::arg("Q"), "An enclosure of (x1' Q[i] x2) for x1 in Z, x2 in Z2")
+        .def("rescale", &ConZonotope::rescale, py::arg("method") = "exact",
+             "The same set with every factor scaled to its range; method 'exact' or 'iter'")
+        .def("representsa", &ConZonotope::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the set is also a set of the CORA type ('origin', 'point', 'interval', "
+             "'zonotope', 'emptySet', ...)")
+        .def(
+            "isequal",
+            [](const ConZonotope &Z, const py::object &S, Tol tol) {
+                if (py::isinstance<Interval>(S)) return Z.isequal(py::cast<Interval>(S), tol);
+                return Z.isequal(con_zonotope_of(S), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether S (a constrained zonotope, a zonotope or a box) is the same set, up to tol")
+        .def(
+            "is_intersecting",
+            [](const ConZonotope &Z, const py::object &S, const std::string &type, Tol tol) {
+                if (py::isinstance<ContSet>(S)) return Z.is_intersecting(con_zonotope_of(S), type, tol);
+                return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
+            },
+            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            "Whether Z and a set or points (n, N) intersect; 'exact' (default) or 'approx'")
+        .def("split", py::overload_cast<>(&ConZonotope::split, py::const_),
+             "One pair of halves of the set cut at the box center per coordinate")
+        .def("split", py::overload_cast<int64_t>(&ConZonotope::split, py::const_), py::arg("N"),
+             "The halves of the set cut at the center of the box in coordinate N")
+        .def(
+            "unite",
+            [](const ConZonotope &Z, const py::object &S, const std::string &method,
+               const std::optional<int> &order) {
+                if (py::isinstance<py::list>(S) || py::isinstance<py::tuple>(S)) {
+                    std::vector<ConZonotope> others;
+                    for (const py::handle &o : S) others.push_back(con_zonotope_of(o));
+                    return Z.unite(others, method, order);
+                }
+                if (py::isinstance<ContSet>(S)) return Z.unite(con_zonotope_of(S), method, order);
+                return Z.unite(vector_of(S, "the point"), method, order);
+            },
+            py::arg("S"), py::arg("method") = "linprog", py::arg("order") = py::none(),
+            "A set without constraints that contains the union with S (a set, a point or a list)")
+        .def(
+            "minkowski_difference",
+            [](const ConZonotope &Z, const py::object &S2, const std::optional<std::string> &type) {
+                if (py::isinstance<ContSet>(S2))
+                    return object_of(Z.minkowski_difference(set_of(S2), type));
+                return py::cast(Z.minkowski_difference(vector_of(S2, "the point")));
+            },
+            py::arg("S2"), py::arg("type") = py::none(),
+            "The Minkowski difference {x | x + S2 in Z} with a zonotope, a box or a point")
         .def("compact", &ConZonotope::compact, py::arg("method") = py::none(),
              py::arg("tol") = py::none(),
              "Without the rows 0 = 0 and the generators that are zero and in no constraint")
@@ -2097,7 +2170,8 @@ void bind_zono_bundle(py::module_ &m) {
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
-    m.attr("ConZonotope").attr("__array_ufunc__") = py::none(); // numpy defers to its operators
+    const py::object CZ = m.attr("ConZonotope");
+    CZ.attr("__array_ufunc__") = py::none(); // numpy defers to its operators
     Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
@@ -2105,6 +2179,29 @@ void bind_operators(py::module_ &m) {
     const auto method = [](const py::object &cls, const char *name, auto f) {
         cls.attr(name) = py::cpp_function(f, py::is_method(cls));
     };
+
+    // ConZonotope: a point shifts it, a matrix or number maps it
+    const auto con_zonotope_sum = [](const ConZonotope &A, const py::object &o) -> py::object {
+        if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A + *v);
+        return not_implemented();
+    };
+    method(CZ, "__add__", con_zonotope_sum);
+    method(CZ, "__radd__", con_zonotope_sum);
+    method(CZ, "__sub__", [](const ConZonotope &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A - *v);
+        return not_implemented();
+    });
+    const auto con_zonotope_product = [](const ConZonotope &A, const py::object &o) -> py::object {
+        if (is_number(o)) {
+            const double s = py::cast<double>(o);
+            return py::cast(ConZonotope(A.c() * s, A.generators() * s, A.A(), A.b()));
+        }
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
+        return not_implemented();
+    };
+    method(CZ, "__rmul__", con_zonotope_product);
+    method(CZ, "__rmatmul__", con_zonotope_product);
 
     // Zonotope
     const auto zonotope_sum = [](const Zonotope &A, const py::object &o) -> py::object {

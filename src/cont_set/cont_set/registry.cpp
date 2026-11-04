@@ -282,6 +282,39 @@ constexpr Table aux_build() {
     // two bundles are equal member by member, else by containment both ways
     aux_add_predicate<BinaryOp::isequal, ZonoBundle, ZonoBundle>(
         t, [](const ZonoBundle &A, const ZonoBundle &B, Tol tol) { return A.isequal(B, tol); });
+    // the sum and the union with a constrained zonotope, a zonotope or a box
+    aux_add_set<BinaryOp::plus, ConZonotope, ConZonotope>(
+        t, [](const ConZonotope &A, const ConZonotope &B) { return A.plus(B); });
+    aux_add_set<BinaryOp::plus, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z) { return A.plus(Z); });
+    aux_add_set<BinaryOp::plus, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I) { return A.plus(I); });
+    aux_add_set<BinaryOp::unite, ConZonotope, ConZonotope>(
+        t, [](const ConZonotope &A, const ConZonotope &B) { return A.unite(B); });
+    aux_add_set<BinaryOp::unite, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z) { return A.unite(Z); });
+    aux_add_set<BinaryOp::unite, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I) { return A.unite(I); });
+    // the exact test of the intersection with a set of its own or the next classes
+    aux_add_predicate<BinaryOp::is_intersecting, ConZonotope, ConZonotope>(
+        t, [](const ConZonotope &A, const ConZonotope &B, Tol tol) {
+            return A.is_intersecting(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z, Tol tol) {
+            return A.is_intersecting(Z, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I, Tol tol) {
+            return A.is_intersecting(I, "exact", tol);
+        });
+    // the same data, or the same set
+    aux_add_predicate<BinaryOp::isequal, ConZonotope, ConZonotope>(
+        t, [](const ConZonotope &A, const ConZonotope &B, Tol tol) { return A.isequal(B, tol); });
+    aux_add_predicate<BinaryOp::isequal, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z, Tol tol) { return A.isequal(Z, tol); });
+    aux_add_predicate<BinaryOp::isequal, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I, Tol tol) { return A.isequal(I, tol); });
     // equality: the pair of the class of lower precedence, which the other converts to
     aux_add_predicate<BinaryOp::isequal, Interval, Interval>(
         t, [](const Interval &I1, const Interval &I2, Tol tol) { return I1.isequal(I2, tol); });

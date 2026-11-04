@@ -9,6 +9,7 @@
 
 #include "cora/cont_set/zonotope/zonotope.h"
 
+#include <functional>
 #include <optional>
 #include <utility>
 
@@ -25,6 +26,36 @@ using Refusal = std::optional<std::pair<Error::Id, std::string>>;
 
 /// The given columns of G (..., n, m), in that order; none is allowed.
 Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns);
+
+/// Why is_intersecting refuses a call, if it does: a type other than "exact" and "approx", or a
+/// batch (a linear program per pair); c and other are the centers of the two sets.
+Refusal priv_intersecting_refusal(const std::string &type, const Tensor &c, const Tensor &other);
+
+/// The same for points p (n, N) of a set of dimension n: p must be a matrix of that many rows.
+Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &c,
+                                         const Tensor &p);
+
+/// The generators (..., r, keep + r) after Girard's reduction of G (..., r, m): the keep generators
+/// of the largest score ||g||_1 - ||g||_inf, then a box generator per row for the others.
+Tensor priv_girard_generators(const Tensor &G, int64_t keep);
+
+/// The shape of the batch of `like` followed by (rows, cols).
+Shape priv_batch_shape(const Tensor &like, int64_t rows, int64_t cols);
+
+/// One output of a quadratic map: its center (..., 1, 1) and a row of generators (..., 1, width).
+using QuadRow = std::pair<Tensor, Tensor>;
+
+/// The output of the single map from M = [c G]' Q [c G] (..., N+1, N+1): the center is M(0,0) plus
+/// the halved squares, which are the first N generators, then the strictly lower triangle of M + M'
+/// in the order of MATLAB's column-major vector.
+QuadRow priv_quad_map_single_row(const Tensor &M, int64_t N);
+
+/// The zonotope of CORA's 'linprog' union: the iterative enclosure `iterative` with unit generators
+/// scaled and the center moved, by a linear program, to the least that still cover every set along
+/// the facet normals of the enclosure; support(A) is the largest support value of the sets along
+/// each row of A (k, n), a column (k, 1).
+Zonotope priv_union_linprog(const Zonotope &iterative,
+                            const std::function<Tensor(const Tensor &)> &support);
 
 /// The zonotope of a point p (..., n, 1), as CORA's zonotope(p): center p and no generator.
 Zonotope priv_zonotope_of_point(const Tensor &p);

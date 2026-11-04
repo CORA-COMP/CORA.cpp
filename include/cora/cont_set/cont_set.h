@@ -282,6 +282,18 @@ using Refusal = std::optional<std::pair<Error::Id, std::string>>;
 Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj,
                                  const char *operation = "project_high_dim");
 
+// Details -----------------------------------------------------------------------------------------
+
+/// The lift of a set that cannot grow (a zonotope has no unbounded new dimensions) is a
+/// permutation: the state of position j of the lifted set is state source[j]. The plan holds what
+/// refuses the call, if anything (project_high_dim_refusal, positions that are not a permutation of
+/// all N), or else the source.
+struct LiftPlan {
+    Refusal refusal;
+    std::vector<int64_t> source;
+};
+LiftPlan lift_plan(int64_t n, int64_t N, const std::vector<int64_t> &dims);
+
 } // namespace detail
 
 } // namespace cora

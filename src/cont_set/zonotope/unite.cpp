@@ -14,12 +14,7 @@
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "cora/global/linprog.h"
-#include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
-
-#include <algorithm>
-#include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -42,47 +37,19 @@ Zonotope aux_iterative(std::vector<Zonotope> Zs) {
     return Zs.front();
 }
 
-/// The enclosure of the iterative union with the least generator scalings and the center that
-/// cover every set along the facet normals of that enclosure (CORA's aux_unionLinprog).
+/// The iterative enclosure with the least generator scalings and the center that cover every set
+/// along its facet normals (CORA's aux_unionLinprog).
 Zonotope aux_linprog(const std::vector<Zonotope> &Zs) {
-    const DType dtype = Zs.front().center().dtype();
-    const Zonotope enclosure = aux_iterative(Zs).compact("zeros", machine_eps(dtype));
-    const Tensor &G0 = enclosure.generators();
-    const Tensor length = G0.square().sum(-2, true).sqrt();
-    const Tensor G = G0.multiply(length.ones_like().divide(length)); // unit generators
-    const int64_t n = enclosure.dim(), ng = G.shape().back();
-    const auto [A, unused] = priv_zonotope_halfspaces({enclosure.center().zeros_like(), G0});
-
-    // the support value of every set along every normal, and the largest of them
-    const auto support = [&](const Zonotope &Z) {
-        return A.matmul(Z.center()) + A.matmul(Z.generators()).abs().sum(-1, true);
+    // the support value of every set along every row of A, and the largest of them
+    const auto support = [&](const Tensor &A) {
+        const auto of = [&](const Zonotope &Z) {
+            return A.matmul(Z.center()) + A.matmul(Z.generators()).abs().sum(-1, true);
+        };
+        Tensor d = of(Zs.front());
+        for (std::size_t j = 1; j < Zs.size(); ++j) d = d.maximum(of(Zs[j]));
+        return d;
     };
-    Tensor d = support(Zs.front());
-    for (std::size_t j = 1; j < Zs.size(); ++j) d = d.maximum(support(Zs[j]));
-
-    // min sum(scal) s.t. A c + |A G| scal >= d, scal >= 0
-    const Tensor AG = A.matmul(G).abs();
-    const int64_t k = A.shape()[0];
-    LinProg lp;
-    lp.n = int(n + ng);
-    lp.f.assign(lp.n, 0.0);
-    std::fill(lp.f.begin() + n, lp.f.end(), 1.0);
-    const std::vector<double> a = A.data(), ag = AG.data(), dv = d.data();
-    for (int64_t i = 0; i < k; ++i) {
-        for (int64_t j = 0; j < n; ++j) lp.Aineq.push_back(-a[i * n + j]);
-        for (int64_t j = 0; j < ng; ++j) lp.Aineq.push_back(-ag[i * ng + j]);
-        lp.bineq.push_back(-dv[i]);
-    }
-    for (int64_t j = 0; j < ng; ++j) {
-        for (int64_t l = 0; l < n + ng; ++l) lp.Aineq.push_back(l == n + j ? -1.0 : 0.0);
-        lp.bineq.push_back(0.0);
-    }
-    const LinProgResult r = linprog(lp);
-    if (r.status != LinProgResult::Status::optimal)
-        CORA_FAIL(Error::solver_issue, "unite: the linear program of 'linprog' has no solution");
-    const Tensor c = Tensor::like(G, std::vector<double>(r.x.begin(), r.x.begin() + n), {n, 1});
-    const Tensor scal = Tensor::like(G, std::vector<double>(r.x.begin() + n, r.x.end()), {1, ng});
-    return {c, G.multiply(scal)};
+    return priv_union_linprog(aux_iterative(Zs), support);
 }
 
 /// The box around all sets in the frame of the principal axes of their generators (CORA's

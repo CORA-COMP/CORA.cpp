@@ -28,44 +28,16 @@ namespace {
 /// [c G]: the center as the first column.
 Tensor aux_full(const Zonotope &Z) { return Tensor::concat({Z.center(), Z.generators()}, -1); }
 
-/// The shape of the batch of `like` followed by (rows, cols).
-Shape aux_shape(const Tensor &like, int64_t rows, int64_t cols) {
-    Shape shape;
-    for (int64_t i = 0; i + 2 < like.ndim(); ++i) shape.push_back(like.shape()[i]);
-    shape.push_back(rows);
-    shape.push_back(cols);
-    return shape;
-}
-
 /// Whether any entry of the matrix is nonzero (CORA's any(Q{i}(:))).
 bool aux_nonempty(const Tensor &Q) { return Q.abs().sum().item() != 0; }
 
 // The rows of the outputs -------------------------------------------------------------------------
 
-/// One output: its center (..., 1, 1) and a row of generators (..., 1, width).
-using Row = std::pair<Tensor, Tensor>;
-
-/// The single map from M = [c G]' Q [c G] (..., N+1, N+1): the center is M(0,0) plus the halved
-/// squares, which are the first N generators, then the strictly lower triangle of M + M' in the
-/// order of MATLAB's column-major vector.
-Row aux_single_row(const Tensor &M, int64_t N) {
-    const Tensor squares = M.slice(-2, 1, N + 1).slice(-1, 1, N + 1).diagonal() * 0.5;
-    const Tensor center = M.slice(-2, 0, 1).slice(-1, 0, 1) + squares.sum(-2, true);
-    std::vector<int64_t> lower;
-    for (int64_t j = 0; j <= N; ++j)
-        for (int64_t r = j + 1; r <= N; ++r) lower.push_back(r * (N + 1) + j);
-    const Tensor mixed = lower.empty() ? M.zeros_like(aux_shape(M, 1, 0))
-                                       : (M + M.matrix_transpose())
-                                             .reshape(aux_shape(M, 1, (N + 1) * (N + 1)))
-                                             .take(lower, -1);
-    return {center, Tensor::concat({squares.matrix_transpose(), mixed}, -1)};
-}
-
 /// The mixed map from M = [c1 G1]' Q [c2 G2]: the entries in MATLAB's column-major order, the
 /// first one is the center.
-Row aux_mixed_row(const Tensor &M) {
+QuadRow aux_mixed_row(const Tensor &M) {
     const int64_t width = M.shape()[M.ndim() - 2] * M.shape().back();
-    const Tensor all = M.matrix_transpose().reshape(aux_shape(M, 1, width));
+    const Tensor all = M.matrix_transpose().reshape(priv_batch_shape(M, 1, width));
     return {all.slice(-1, 0, 1), all.slice(-1, 1, width)};
 }
 
@@ -77,9 +49,9 @@ Zonotope aux_outputs(const Tensor &like, int64_t width, const std::vector<Tensor
     for (const Tensor &M : Q) {
         const bool used = aux_nonempty(M);
         nonempty += used ? 1 : 0;
-        Row row = used ? row_of(M)
-                       : Row{like.zeros_like(aux_shape(like, 1, 1)),
-                             like.zeros_like(aux_shape(like, 1, width))};
+        QuadRow row = used ? row_of(M)
+                       : QuadRow{like.zeros_like(priv_batch_shape(like, 1, 1)),
+                             like.zeros_like(priv_batch_shape(like, 1, width))};
         centers.push_back(row.first);
         rows.push_back(row.second);
     }
@@ -101,7 +73,7 @@ Zonotope Zonotope::quad_map(const std::vector<Tensor> &Q) const {
     const Tensor full = aux_full(*this), full_t = full.matrix_transpose();
     const int64_t N = G_.shape().back();
     return aux_outputs(full, N + N * (N + 1) / 2, Q, [&](const Tensor &Qi) {
-        return aux_single_row(full_t.matmul(Qi).matmul(full), N);
+        return priv_quad_map_single_row(full_t.matmul(Qi).matmul(full), N);
     });
 }
 

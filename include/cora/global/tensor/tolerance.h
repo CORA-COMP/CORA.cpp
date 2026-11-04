@@ -102,6 +102,7 @@ inline constexpr double kOdeAbsTol = 1e-6; ///< absolute tolerance of the step c
 
 inline constexpr int64_t kPowerProduct = 64; ///< integer powers up to this many factors: products
 inline constexpr int64_t kMaxPieces = int64_t{1} << 24;   ///< most boxes that partition returns
+inline constexpr int64_t kVertexCandidates = int64_t{1} << 20; ///< most bases that vertices try
 inline constexpr int64_t kSubsetBlock = int64_t{1} << 22; ///< entries per block of volume
 
 // Linear programs ---------------------------------------------------------------------------------

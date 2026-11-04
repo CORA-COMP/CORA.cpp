@@ -103,17 +103,13 @@ ConZonotope ConZonotope::from_matrix(const Tensor &Z, const std::optional<Tensor
 
 // Not ported yet ----------------------------------------------------------------------------------
 
-// Not yet ported: the support function, random points, projections and vertices.
+// Not yet ported: the support function, random points and vertices.
 Tensor ConZonotope::support_function_impl(const Tensor &) const {
     CORA_FAIL(Error::not_supported, "ConZonotope: support_function is not ported yet");
 }
 
 Tensor ConZonotope::rand_point_impl(int64_t, Rng &) const {
     CORA_FAIL(Error::not_supported, "ConZonotope: rand_point is not ported yet");
-}
-
-Set ConZonotope::project_impl(const std::vector<int64_t> &) const {
-    CORA_FAIL(Error::not_supported, "ConZonotope: project is not ported yet");
 }
 
 std::vector<Polygon> ConZonotope::vertices_impl() const {
