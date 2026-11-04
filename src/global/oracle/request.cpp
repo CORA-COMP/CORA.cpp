@@ -60,6 +60,7 @@ struct Decode<Fullspace> {
         return Fullspace::from_json(dt, j);
     }
 };
+// The sets with a from_json of their own: their wire form, read in the reply's dtype.
 template <>
 struct Decode<Zonotope> {
     static Zonotope of(const std::string &dt, const Json &j) { return Zonotope::from_json(dt, j); }
@@ -74,6 +75,12 @@ template <>
 struct Decode<MatZonotope> {
     static MatZonotope of(const std::string &dt, const Json &j) {
         return MatZonotope::from_json(dt, j);
+    }
+};
+template <>
+struct Decode<ZonoBundle> {
+    static ZonoBundle of(const std::string &dt, const Json &j) {
+        return ZonoBundle::from_json(dt, j);
     }
 };
 // The empty set is its dimension, {"n": n}.
@@ -138,6 +145,8 @@ Wire::Wire(const Fullspace &F) : json(F.to_json()) {}
 Wire::Wire(const Zonotope &Z) : json(Z.to_json()), dtype(Z.center().dtype()) {}
 Wire::Wire(const ConZonotope &cz) : json(cz.to_json()), dtype(cz.dtype()) {}
 Wire::Wire(const MatZonotope &A) : json(A.to_json()), dtype(A.center().dtype()) {}
+Wire::Wire(const ZonoBundle &bundle)
+    : json(bundle.to_json()), dtype(bundle.zonotopes().front().center().dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
 
@@ -185,6 +194,7 @@ template Fullspace Reply::get<Fullspace>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
 template ConZonotope Reply::get<ConZonotope>(const char *) const;
 template MatZonotope Reply::get<MatZonotope>(const char *) const;
+template ZonoBundle Reply::get<ZonoBundle>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;

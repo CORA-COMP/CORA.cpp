@@ -566,8 +566,11 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const Zonotope &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<ConZonotope>(S1))
                 return py::cast<const ConZonotope &>(S1).contains(tensor_of(S2, "the points"));
-            CORA_FAIL(Error::not_supported, "point containment is implemented for intervals, "
-                                            "zonotopes and constrained zonotopes only");
+            if (py::isinstance<ZonoBundle>(S1))
+                return py::cast<const ZonoBundle &>(S1).contains(tensor_of(S2, "the points"));
+            CORA_FAIL(Error::not_supported,
+                      "point containment is implemented for intervals, "
+                      "zonotopes, constrained zonotopes and zonotope bundles only");
         });
     bind_registry(m);
 }
@@ -1995,6 +1998,102 @@ void bind_con_zonotope(py::module_ &m) {
             "the first num_union_const rows of A are a union");
 }
 
+// ZonoBundle --------------------------------------------------------------------------------------
+
+/// The zonotopes of a Python list: Zonotope objects.
+std::vector<Zonotope> zonotopes_of(const py::handle &list) {
+    std::vector<Zonotope> out;
+    for (const py::handle &o : py::reinterpret_borrow<py::sequence>(list)) {
+        if (!py::isinstance<Zonotope>(o))
+            CORA_FAIL(Error::wrong_input_in_constructor,
+                      "ZonoBundle: the first input argument has to be a list of Zonotope objects.");
+        out.push_back(py::cast<Zonotope>(o));
+    }
+    return out;
+}
+
+void bind_zono_bundle(py::module_ &m) {
+    py::class_<ZonoBundle, ContSet>(m, "ZonoBundle",
+                                    "The intersection of a list of zonotopes (a zonotope bundle).")
+        .def(
+            py::init([](const py::list &zonotopes) { return ZonoBundle(zonotopes_of(zonotopes)); }),
+            py::arg("zonotopes"), "The intersection of the zonotopes (one dimension, at least one)")
+        .def_property_readonly(
+            "zonotopes",
+            [](const ZonoBundle &bundle) {
+                py::list out;
+                for (const Zonotope &Z : bundle.zonotopes()) out.append(Z);
+                return out;
+            },
+            "The member zonotopes")
+        .def_property_readonly("parallel_sets", &ZonoBundle::parallel_sets,
+                               "The number of member zonotopes")
+        .def_static("empty", &ZonoBundle::empty, py::arg("n"),
+                    "The empty set of n >= 1 dimensions: two zonotopes {0} and {e_1}")
+        .def("con_zonotope", &ZonoBundle::con_zonotope, "The same set as a constrained zonotope")
+        .def(
+            "contains",
+            [](const ZonoBundle &Z, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<Zonotope>(S))
+                    return Z.contains(py::cast<Zonotope>(S), method, tol);
+                if (py::isinstance<Interval>(S))
+                    return Z.contains(py::cast<Interval>(S), method, tol);
+                if (py::isinstance<ZonoBundle>(S))
+                    return Z.contains(py::cast<ZonoBundle>(S), method, tol);
+                return Z.contains(tensor_of(S, "the points"), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the bundle contains the points (n, N), a zonotope, a box or a bundle")
+        .def(
+            "is_intersecting",
+            [](const ZonoBundle &Z, const py::object &S, const std::string &type, Tol tol) {
+                if (py::isinstance<Zonotope>(S))
+                    return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
+                if (py::isinstance<Interval>(S))
+                    return Z.is_intersecting(py::cast<Interval>(S), type, tol);
+                if (py::isinstance<ZonoBundle>(S))
+                    return Z.is_intersecting(py::cast<ZonoBundle>(S), type, tol);
+                return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
+            },
+            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            "Whether the bundle and the points, zonotope, box or bundle S intersect")
+        .def("isequal", &ZonoBundle::isequal, py::arg("S"), py::arg("tol") = py::none(),
+             "Whether the bundles are the same set, up to tol")
+        .def(
+            "intersect",
+            [](const ZonoBundle &Z, const py::object &S) {
+                if (py::isinstance<Zonotope>(S)) return Z.intersect(py::cast<Zonotope>(S));
+                if (py::isinstance<Interval>(S)) return Z.intersect(py::cast<Interval>(S));
+                return Z.intersect(py::cast<ZonoBundle>(S));
+            },
+            py::arg("S"),
+            "The intersection with a bundle, a zonotope or a box: the members of both")
+        .def(
+            "cart_prod",
+            [](const ZonoBundle &Z, const py::object &S) {
+                if (py::isinstance<Zonotope>(S)) return Z.cart_prod(py::cast<Zonotope>(S));
+                if (py::isinstance<Interval>(S)) return Z.cart_prod(py::cast<Interval>(S));
+                if (py::isinstance<ZonoBundle>(S)) return Z.cart_prod(py::cast<ZonoBundle>(S));
+                return Z.cart_prod(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The Cartesian product with a bundle, a zonotope, a box or a point")
+        .def(
+            "enclose",
+            [](const ZonoBundle &Z, const ContSet &S2) {
+                return object_of(static_cast<const ContSet &>(Z).enclose(S2));
+            },
+            py::arg("S2"), "A bundle that encloses both, member by member")
+        .def(
+            "enclose",
+            [](const ZonoBundle &Z, const py::object &M, const py::object &S) {
+                if (py::isinstance<Zonotope>(S))
+                    return Z.enclose(tensor_of(M, "the matrix"), py::cast<Zonotope>(S));
+                return Z.enclose(tensor_of(M, "the matrix"), py::cast<ZonoBundle>(S));
+            },
+            py::arg("M"), py::arg("S"),
+            "A bundle that encloses Z and M Z + S for a zonotope or a bundle S");
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
@@ -3286,6 +3385,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_fullspace(m);
     bind_zonotope(m);
     bind_con_zonotope(m);
+    bind_zono_bundle(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
     bind_operators(m);

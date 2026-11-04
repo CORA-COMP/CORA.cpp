@@ -18,6 +18,7 @@
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 
 #include <array>
@@ -238,6 +239,49 @@ constexpr Table aux_build() {
         t, [](const ConZonotope &A, const Interval &I, Tol tol) {
             return A.contains(I, "exact", tol);
         });
+    // the bundle has a lower precedence than the zonotope and the box, so it comes first: the
+    // intersection and the product keep the members, containment and intersection tests are
+    // exact; the two bundles are compared member by member, else by containment
+    aux_add_set<BinaryOp::intersect, ZonoBundle, ZonoBundle>(
+        t, [](const ZonoBundle &A, const ZonoBundle &B) { return A.intersect(B); });
+    aux_add_set<BinaryOp::intersect, ZonoBundle, Zonotope>(
+        t, [](const ZonoBundle &A, const Zonotope &Z) { return A.intersect(Z); });
+    aux_add_set<BinaryOp::intersect, ZonoBundle, Interval>(
+        t, [](const ZonoBundle &A, const Interval &I) { return A.intersect(I); });
+    aux_add_set<BinaryOp::cart_prod, ZonoBundle, ZonoBundle>(
+        t, [](const ZonoBundle &A, const ZonoBundle &B) { return A.cart_prod(B); });
+    aux_add_set<BinaryOp::cart_prod, ZonoBundle, Zonotope>(
+        t, [](const ZonoBundle &A, const Zonotope &Z) { return A.cart_prod(Z); });
+    aux_add_set<BinaryOp::cart_prod, ZonoBundle, Interval>(
+        t, [](const ZonoBundle &A, const Interval &I) { return A.cart_prod(I); });
+    // containment and intersection tests of the bundle are exact
+    aux_add_predicate<BinaryOp::contains, ZonoBundle, ZonoBundle>(
+        t, [](const ZonoBundle &A, const ZonoBundle &B, Tol tol) {
+            return A.contains(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, ZonoBundle, Zonotope>(
+        t, [](const ZonoBundle &A, const Zonotope &Z, Tol tol) {
+            return A.contains(Z, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, ZonoBundle, Interval>(
+        t, [](const ZonoBundle &A, const Interval &I, Tol tol) {
+            return A.contains(I, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, ZonoBundle, ZonoBundle>(
+        t, [](const ZonoBundle &A, const ZonoBundle &B, Tol tol) {
+            return A.is_intersecting(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, ZonoBundle, Zonotope>(
+        t, [](const ZonoBundle &A, const Zonotope &Z, Tol tol) {
+            return A.is_intersecting(Z, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, ZonoBundle, Interval>(
+        t, [](const ZonoBundle &A, const Interval &I, Tol tol) {
+            return A.is_intersecting(I, "exact", tol);
+        });
+    // two bundles are equal member by member, else by containment both ways
+    aux_add_predicate<BinaryOp::isequal, ZonoBundle, ZonoBundle>(
+        t, [](const ZonoBundle &A, const ZonoBundle &B, Tol tol) { return A.isequal(B, tol); });
     // equality: the pair of the class of lower precedence, which the other converts to
     aux_add_predicate<BinaryOp::isequal, Interval, Interval>(
         t, [](const Interval &I1, const Interval &I2, Tol tol) { return I1.isequal(I2, tol); });
