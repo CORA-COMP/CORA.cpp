@@ -31,6 +31,8 @@ Wire aux_list(const std::vector<T> &items) {
     return Wire(std::move(list), dtype);
 }
 
+// Decoding ----------------------------------------------------------------------------------------
+
 // Decoding by type: the dtype names what the response's values are in.
 template <class T>
 struct Decode;
@@ -61,6 +63,12 @@ struct Decode<Fullspace> {
 template <>
 struct Decode<Zonotope> {
     static Zonotope of(const std::string &dt, const Json &j) { return Zonotope::from_json(dt, j); }
+};
+template <>
+struct Decode<ConZonotope> {
+    static ConZonotope of(const std::string &dt, const Json &j) {
+        return ConZonotope::from_json(dt, j);
+    }
 };
 // The empty set is its dimension, {"n": n}.
 template <>
@@ -118,6 +126,7 @@ Wire::Wire(const Tensor &T) : json(T.to_json()), dtype(T.dtype()) {}
 Wire::Wire(const Interval &I) : json(I.to_json()), dtype(I.inf().dtype()) {}
 Wire::Wire(const Fullspace &F) : json(F.to_json()) {}
 Wire::Wire(const Zonotope &Z) : json(Z.to_json()), dtype(Z.center().dtype()) {}
+Wire::Wire(const ConZonotope &cz) : json(cz.to_json()), dtype(cz.dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
 
@@ -160,6 +169,7 @@ template Tensor Reply::get<Tensor>(const char *) const;
 template Interval Reply::get<Interval>(const char *) const;
 template Fullspace Reply::get<Fullspace>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
+template ConZonotope Reply::get<ConZonotope>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;

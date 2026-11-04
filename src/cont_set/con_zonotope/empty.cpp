@@ -1,0 +1,32 @@
+// empty - the empty constrained zonotope of n dimensions, as CORA's conZonotope.empty
+//
+// Syntax:   ConZonotope cz = ConZonotope::empty(n);
+// Inputs:   n - dimension, n >= 0 (default 0)
+// Outputs:  cz - the origin without generators and the one constraint 0 = 1, which no factor
+//           vector satisfies; CORA's has a center without columns, which and_ and cartProd_
+//           turn into a nonempty set (docs/cora-differences.md)
+// See also: ConZonotope::ConZonotope, EmptySet::empty
+//
+// CORA: contSet/@conZonotope/empty.m
+
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+
+// ===========================================  MAIN  =========================================== //
+
+CORA_FROM_NUMBERS ConZonotope ConZonotope::empty(int64_t n) {
+    detail::Entry entry;
+    CORA_CHECK(n >= 0, Error::wrong_value, [&] {
+        return "empty: the dimension must be nonnegative, got " + std::to_string(n);
+    });
+    return {Tensor::zeros({n, 1}), Tensor::zeros({n, 0}), Tensor::ones({1, 0}),
+            Tensor::ones({1, 1})};
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

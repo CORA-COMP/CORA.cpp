@@ -14,6 +14,7 @@
 // CORA: contSet/@contSet/reorder.m
 
 #include "cora/cont_set/registry.h"
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
@@ -217,6 +218,35 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Interval>(
         t, [](const Fullspace &F, const Interval &I, Tol tol) {
             return F.is_intersecting(I, tol);
+        });
+    // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
+    // operations are exact
+    aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(
+        t, [](const ConZonotope &A, const ConZonotope &B) { return A.intersect(B); });
+    aux_add_set<BinaryOp::intersect, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z) { return A.intersect(Z); });
+    aux_add_set<BinaryOp::intersect, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I) { return A.intersect(I); });
+    aux_add_set<BinaryOp::convex_hull, ConZonotope, ConZonotope>(
+        t, [](const ConZonotope &A, const ConZonotope &B) { return A.convex_hull(B); });
+    aux_add_set<BinaryOp::convex_hull, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z) { return A.convex_hull(Z); });
+    aux_add_set<BinaryOp::convex_hull, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I) { return A.convex_hull(I); });
+    aux_add_set<BinaryOp::cart_prod, ConZonotope, ConZonotope>(
+        t, [](const ConZonotope &A, const ConZonotope &B) { return A.cart_prod(B); });
+    aux_add_set<BinaryOp::cart_prod, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z) { return A.cart_prod(Z); });
+    aux_add_set<BinaryOp::cart_prod, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I) { return A.cart_prod(I); });
+    // a constrained zonotope contains a zonotope or a box by the corners of that set
+    aux_add_predicate<BinaryOp::contains, ConZonotope, Zonotope>(
+        t, [](const ConZonotope &A, const Zonotope &Z, Tol tol) {
+            return A.contains(Z, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, ConZonotope, Interval>(
+        t, [](const ConZonotope &A, const Interval &I, Tol tol) {
+            return A.contains(I, "exact", tol);
         });
     // equality: the pair of the class of lower precedence, which the other converts to
     aux_add_predicate<BinaryOp::isequal, Interval, Interval>(

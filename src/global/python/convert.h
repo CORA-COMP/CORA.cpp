@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
@@ -186,6 +187,7 @@ inline Tensor vector_of(const py::handle &o, const char *what) {
 /// Any cora set as a Set: a copy of a library set, the object itself for a Python subclass.
 inline Set set_of(const py::handle &o) {
     if (py::isinstance<Zonotope>(o)) return Set(py::cast<Zonotope>(o));
+    if (py::isinstance<ConZonotope>(o)) return Set(py::cast<ConZonotope>(o));
     if (py::isinstance<Interval>(o)) return Set(py::cast<Interval>(o));
     if (py::isinstance<EmptySet>(o)) return Set(py::cast<EmptySet>(o));
     if (py::isinstance<Fullspace>(o)) return Set(py::cast<Fullspace>(o));
@@ -203,7 +205,7 @@ inline Set set_of(const py::handle &o) {
         };
         return Set(std::shared_ptr<const ContSet>(S, release));
     }
-    CORA_FAIL(Error::wrong_value, "cora: expected a set (Zonotope, Interval, EmptySet, Fullspace, a ContSet), got " +
+    CORA_FAIL(Error::wrong_value, "cora: expected a set (Zonotope, ConZonotope, Interval, EmptySet, Fullspace, a ContSet), got " +
                                       std::string(py::str(py::type::of(o).attr("__name__"))));
 }
 
@@ -211,6 +213,7 @@ inline Set set_of(const py::handle &o) {
 inline py::object object_of(const Set &S) {
     switch (S.class_id()) {
     case ClassId::zonotope: return py::cast(S.as<Zonotope>());
+    case ClassId::con_zonotope: return py::cast(S.as<ConZonotope>());
     case ClassId::interval: return py::cast(S.as<Interval>());
     case ClassId::empty_set: return py::cast(S.as<EmptySet>());
     case ClassId::fullspace: return py::cast(S.as<Fullspace>());

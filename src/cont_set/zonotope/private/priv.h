@@ -16,8 +16,12 @@
 
 namespace cora {
 
+// Refusals ----------------------------------------------------------------------------------------
+
 /// Why an input is refused, if it is: the identifier and the text, for CORA_CHECK in the entry.
 using Refusal = std::optional<std::pair<Error::Id, std::string>>;
+
+// Helpers -----------------------------------------------------------------------------------------
 
 /// The given columns of G (..., n, m), in that order; none is allowed.
 Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns);
@@ -32,6 +36,17 @@ bool priv_is_box(const Zonotope &Z, double tol);
 /// What is wrong with the matrices Q of a quadratic map of sets of dimension n (CORA's quadMap
 /// checks), or an empty text if nothing.
 std::string priv_quad_map_problem(const std::vector<Tensor> &Q, int64_t n);
+
+/// What is wrong with the matrices T[i][k] and the index lists of a cubic map of sets of dimension
+/// n (CORA's cubMap checks), or an empty text if nothing.
+std::string priv_cubic_map_problem(const std::vector<std::vector<Tensor>> &T,
+                                   const std::vector<std::vector<int64_t>> &ind, int64_t n);
+
+/// Why the strips |C x - y| <= phi (C (k, n), phi and y (k, 1)) of a set of dimension n, a gain
+/// (n, k) or the matrices of an observer are refused by intersect_strip, if they are.
+Refusal priv_strip_refusal(int64_t n, const Tensor &C, const Tensor &phi, const Tensor &y);
+Refusal priv_gain_refusal(int64_t n, const Tensor &C, const Tensor &lambda);
+Refusal priv_observer_refusal(int64_t n, const Zonotope::StripObserver &aux);
 
 /// The n-subsets of {0, ..., total - 1} in lexicographic order, produced in blocks (CORA's
 /// batchCombinator): next(count) returns up to `count` subsets as one flat list, empty when done.

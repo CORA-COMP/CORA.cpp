@@ -551,8 +551,10 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const Interval &>(S1).contains(vector_of(S2, "the point"));
             if (py::isinstance<Zonotope>(S1))
                 return py::cast<const Zonotope &>(S1).contains(tensor_of(S2, "the points"));
-            CORA_FAIL(Error::not_supported,
-                      "point containment is implemented for intervals and zonotopes only");
+            if (py::isinstance<ConZonotope>(S1))
+                return py::cast<const ConZonotope &>(S1).contains(tensor_of(S2, "the points"));
+            CORA_FAIL(Error::not_supported, "point containment is implemented for intervals, "
+                                            "zonotopes and constrained zonotopes only");
         });
     bind_registry(m);
 }
@@ -1730,9 +1732,182 @@ void bind_zonotope(py::module_ &m) {
 /// The operators with numbers and arrays, as CORA writes them: s * S, M * S and M @ S (the linear
 /// map), S + v, S - v, -S. What an operator does not understand it hands back to Python
 /// (NotImplemented), which raises the TypeError.
+// ConZonotope -------------------------------------------------------------------------------------
+
+/// A constrained zonotope from Python: a ConZonotope, or a zonotope or a box as one.
+ConZonotope con_zonotope_of(const py::handle &o) {
+    if (py::isinstance<ConZonotope>(o)) return py::cast<ConZonotope>(o);
+    if (py::isinstance<Zonotope>(o)) return ConZonotope(py::cast<Zonotope>(o));
+    if (py::isinstance<Interval>(o)) return ConZonotope(py::cast<Interval>(o));
+    CORA_FAIL(Error::wrong_value, "cora: expected a ConZonotope, a Zonotope or an Interval");
+}
+
+void bind_con_zonotope(py::module_ &m) {
+    py::class_<ConZonotope, ContSet>(m, "ConZonotope",
+                                     "The constrained zonotope {c + G x : |x|_inf <= 1, A x = b}.")
+        .def(py::init([](const py::object &c, const py::object &G, const py::object &A,
+                         const py::object &b) {
+                 if (A.is_none() != b.is_none())
+                     CORA_FAIL(Error::wrong_input_in_constructor,
+                               "ConZonotope: give the constraint matrix and the offset together");
+                 if (A.is_none()) return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"));
+                 return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"),
+                                    tensor_of(A, "A"), vector_of(b, "b"));
+             }),
+             py::arg("c"), py::arg("G"), py::arg("A") = py::none(), py::arg("b") = py::none(),
+             "center c (..., n), generators G (..., n, m) and the constraints A x = b")
+        .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope as a constrained zonotope")
+        .def(py::init<const Interval &>(), py::arg("I"), "A box as a constrained zonotope")
+        .def_static(
+            "from_matrix",
+            [](const py::object &Z, const py::object &A, const py::object &b) {
+                if (A.is_none() != b.is_none())
+                    CORA_FAIL(Error::wrong_input_in_constructor,
+                              "ConZonotope: give the constraint matrix and the offset together");
+                return ConZonotope::from_matrix(
+                    tensor_of(Z, "Z"),
+                    A.is_none() ? std::nullopt : std::optional<Tensor>(tensor_of(A, "A")),
+                    b.is_none() ? std::nullopt : std::optional<Tensor>(vector_of(b, "b")));
+            },
+            py::arg("Z"), py::arg("A") = py::none(), py::arg("b") = py::none(),
+            "CORA's legacy form: Z = [c G] (..., n, 1 + m)")
+        .def_static("empty", &ConZonotope::empty, py::arg("n") = 0,
+                    "The empty set of n dimensions: no generators and the constraint 0 = 1")
+        .def_property_readonly("c", [](const ConZonotope &Z) { return vector(Z.c()); },
+                               "The stored center c (..., n)")
+        .def_property_readonly("generators", [](const ConZonotope &Z) { return matrix(Z.generators()); })
+        .def_property_readonly("A", [](const ConZonotope &Z) { return matrix(Z.A()); },
+                               "The constraint matrix (..., p, m)")
+        .def_property_readonly("b", [](const ConZonotope &Z) { return vector(Z.b()); },
+                               "The constraint offset (..., p)")
+        .def("is_bounded", &ConZonotope::is_bounded, "Always true")
+        .def("is_full_dim", &ConZonotope::is_full_dim, py::arg("tol") = py::none(),
+             "Whether the set has a nonempty interior")
+        .def(
+            "is_full_dim_subspace",
+            [](const ConZonotope &Z, Tol tol) {
+                const auto [res, subspace] = Z.is_full_dim_subspace(tol);
+                return py::make_tuple(res, matrix(subspace));
+            },
+            py::arg("tol") = py::none(), "(res, subspace): is_full_dim and a basis (n, r) of the span")
+        .def(
+            "contains",
+            [](const ConZonotope &Z, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<Zonotope>(S)) return Z.contains(py::cast<Zonotope>(S), method, tol);
+                if (py::isinstance<Interval>(S)) return Z.contains(py::cast<Interval>(S), method, tol);
+                return Z.contains(tensor_of(S, "the points"), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the set contains the points (n, N), a zonotope or a box; method 'exact'")
+        .def("compact", &ConZonotope::compact, py::arg("method") = "zeros", py::arg("tol") = py::none(),
+             "Without the rows 0 = 0 and the generators that are zero and in no constraint")
+        .def(
+            "cart_prod",
+            [](const ConZonotope &Z, const py::object &S) {
+                if (py::isinstance<ContSet>(S)) return Z.cart_prod(con_zonotope_of(S));
+                return Z.cart_prod(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The Cartesian product with a constrained zonotope, a zonotope, a box or a point")
+        .def(
+            "intersect",
+            [](const ConZonotope &Z, const py::object &S) { return Z.intersect(con_zonotope_of(S)); },
+            py::arg("S"), "The intersection with a constrained zonotope, a zonotope or a box")
+        .def(
+            "con_intersect",
+            [](const ConZonotope &Z, const ConZonotope &Z2, const py::object &M) {
+                return Z.con_intersect(Z2, tensor_of(M, "M"));
+            },
+            py::arg("Z2"), py::arg("M"), "The points x of the set with M x in Z2")
+        .def(
+            "enclose",
+            [](const ConZonotope &Z, const py::object &first, const py::object &second) {
+                if (second.is_none()) return Z.enclose(py::cast<ConZonotope>(first));
+                if (py::isinstance<ConZonotope>(second))
+                    return Z.enclose(tensor_of(first, "M"), py::cast<ConZonotope>(second));
+                return Z.enclose(tensor_of(first, "M"), vector_of(second, "t"));
+            },
+            py::arg("S"), py::arg("t") = py::none(),
+            "Encloses the set and a linear image of it: enclose(Z2), or enclose(M, S) for M Z + S "
+            "with a constrained zonotope or a point S")
+        .def(
+            "convex_hull",
+            [](const ConZonotope &Z, const py::object &S, const std::string &method) {
+                if (py::isinstance<py::list>(S)) {
+                    std::vector<ConZonotope> others;
+                    for (const py::handle &o : S) others.push_back(con_zonotope_of(o));
+                    return Z.convex_hull(others);
+                }
+                if (py::isinstance<ContSet>(S)) return Z.convex_hull(con_zonotope_of(S), method);
+                return Z.convex_hull(vector_of(S, "the point"), method);
+            },
+            py::arg("S"), py::arg("method") = "exact:Raghuraman",
+            "The exact convex hull with a set, a point or a list of constrained zonotopes")
+        .def(
+            "cubic_map",
+            [](const ConZonotope &Z, const py::list &T, const std::optional<Indices> &ind) {
+                return Z.cubic_map(matrices_of(T), ind.value_or(Indices{}));
+            },
+            py::arg("T"), py::arg("ind") = py::none(),
+            "An enclosure of z_i = sum_k x_k (x' T[i][k] x); ind[i] lists the k of output i")
+        .def(
+            "cubic_map",
+            [](const ConZonotope &Z, const ConZonotope &Z2, const ConZonotope &Z3, const py::list &T,
+               const std::optional<Indices> &ind) {
+                return Z.cubic_map(Z2, Z3, matrices_of(T), ind.value_or(Indices{}));
+            },
+            py::arg("Z2"), py::arg("Z3"), py::arg("T"), py::arg("ind") = py::none(),
+            "An enclosure of (x1' T[i] x2) x3 for x1 in Z, x2 in Z2, x3 in Z3")
+        .def(
+            "intersect_strip",
+            [](const ConZonotope &Z, const py::object &C, const py::object &phi, const py::object &y,
+               const py::object &method) {
+                const Tensor Ct = tensor_of(C, "C"), pt = vector_of(phi, "phi"),
+                             yt = vector_of(y, "y");
+                if (py::isinstance<py::str>(method))
+                    return Z.intersect_strip(Ct, pt, yt, py::cast<std::string>(method));
+                if (py::isinstance<py::dict>(method)) {
+                    const py::dict d = py::cast<py::dict>(method);
+                    const auto field = [&](const char *key) {
+                        if (!d.contains(key))
+                            CORA_FAIL(Error::wrong_field_value,
+                                      std::string("intersect_strip: the observer needs the key '") +
+                                          key + "'");
+                        return tensor_of(d[key], key);
+                    };
+                    return Z.intersect_strip(Ct, pt, yt,
+                                             {field("E"), field("F"), field("A"), field("C")});
+                }
+                return Z.intersect_strip(Ct, pt, yt, tensor_of(method, "the gain"));
+            },
+            py::arg("C"), py::arg("phi"), py::arg("y"), py::arg("method") = "normGen",
+            "The intersection with |C x - y| <= phi; method: a name, a gain (n, k) or a dict with "
+            "the observer matrices E, F, A, C ('wang-FRad')")
+        .def_static(
+            "approximate_bounds",
+            [](const py::object &c, const py::object &G, const py::object &A, const py::object &b,
+               const py::object &dr, int num_union_const, const std::string &method, int max_iter,
+               bool batch_union) {
+                ConZonotope::BoundsOptions options;
+                options.method = method;
+                options.max_iter = max_iter;
+                options.batch_union = batch_union;
+                const ConZonotope::Bounds r = ConZonotope::approximate_bounds(
+                    vector_of(c, "c"), tensor_of(G, "G"), tensor_of(A, "A"), vector_of(b, "b"),
+                    dr.is_none() ? std::nullopt : std::optional<Tensor>(vector_of(dr, "dr")),
+                    num_union_const, options);
+                return py::make_tuple(vector(r.l), vector(r.u), vector(r.bl), vector(r.bu));
+            },
+            py::arg("c"), py::arg("G"), py::arg("A"), py::arg("b"), py::arg("dr") = py::none(),
+            py::arg("num_union_const") = 1, py::arg("method") = "fourier-motzkin",
+            py::arg("max_iter") = 4, py::arg("batch_union") = true,
+            "(l, u, bl, bu): bounds of c + G x + [-dr, dr], |x|_inf <= 1, A x <= b for a batch; "
+            "the first num_union_const rows of A are a union");
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
+    m.attr("ConZonotope").attr("__array_ufunc__") = py::none(); // numpy defers to its operators
     Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
@@ -2877,6 +3052,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_empty_set(m);
     bind_fullspace(m);
     bind_zonotope(m);
+    bind_con_zonotope(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
     bind_operators(m);

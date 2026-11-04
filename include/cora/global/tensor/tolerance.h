@@ -117,6 +117,8 @@ inline constexpr double kTableauTie = 1e-15; ///< Bland's rule: ratios this clos
 inline constexpr double kTableauFeasible = 1e-9; ///< a common point exists if the cost is below
 inline constexpr double kLpDistanceZero = 1e-9; ///< a program distance below this counts as 0
 inline constexpr double kPolytopeContains = 1e-12; ///< a point beyond a facet by less is inside
+inline constexpr double kFixedFactor = 1e-9; ///< a factor whose range is this narrow is fixed
+inline constexpr double kBoundTighter = 1e-8; ///< Fourier-Motzkin: bounds that move less end it
 
 // Geometry of zonotopes and pictures --------------------------------------------------------------
 

@@ -95,6 +95,11 @@ changed, and the reasons are listed below.
 | `dH2box(Z, method)` | `Z.hausdorff_distance_to_box(method)` | `Z.hausdorff_distance_to_box(method)` |
 | `dominantDirections(Z, l1, l2)` | `Z.dominant_directions(l1, l2)` | `Z.dominant_directions(l1, l2)` |
 | `contains(Z, S, method, tol)` | `Z.contains(S, method, tol)` | `Z.contains(S, method, tol)`, `p in Z` |
+| `conZonotope(c, G, A, b)`, `conZonotope(Z)`, `conZonotope(Z, A, b)` | `ConZonotope(c, G, A, b)`, `ConZonotope(Z)`, `ConZonotope::from_matrix(Z, A, b)` | `cora.ConZonotope(c, G, A, b)`, `cora.ConZonotope.from_matrix(Z, A, b)` |
+| `conZonotope.empty(n)` | `ConZonotope::empty(n)` | `cora.ConZonotope.empty(n)` |
+| `conIntersect(cZ, cZ2, M)` | `cz.con_intersect(cz2, M)` | `cz.con_intersect(cz2, M)` |
+| `intersectStrip(cZ, C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` |
+| `approximateBoundsWithGPU(...)` | `ConZonotope::approximate_bounds(c, G, A, b, dr, num_union_const, options)` | `cora.ConZonotope.approximate_bounds(...)` |
 | `boundaryPoint(Z, dir, start)` | `Z.boundary_point(dir, start)` | `Z.boundary_point(dir, start)` |
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
 | `zonotope.generateRandom` | `Zonotope::generate_random(n, m, rng)` | `cora.Zonotope.generate_random` |
