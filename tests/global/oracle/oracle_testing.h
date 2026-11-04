@@ -207,9 +207,10 @@ inline bool same_bits(const std::string &what, const cora::Zonotope &a, const le
 inline bool same_bits(const std::string &what, const cora::ConZonotope &a,
                       const lean::ConZonotope &b) {
     const cora::ConZonotope other = b.nominal();
-    return same_bits(what + ".c", a.c(), other.c()) &
-           same_bits(what + ".G", a.generators(), other.generators()) &
-           same_bits(what + ".A", a.A(), other.A()) & same_bits(what + ".b", a.b(), other.b());
+    bool same = same_bits(what + ".c", a.c(), other.c()); // all are reported
+    same = same_bits(what + ".G", a.generators(), other.generators()) && same;
+    same = same_bits(what + ".A", a.A(), other.A()) && same;
+    return same_bits(what + ".b", a.b(), other.b()) && same;
 }
 
 /// The two halves of a split.

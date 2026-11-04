@@ -79,7 +79,7 @@ ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
 }
 
-ConZonotope::ConZonotope(Tensor c, Tensor G)
+ConZonotope::ConZonotope(const Tensor &c, const Tensor &G)
     : ConZonotope(c, G, priv_zeros(G, 0, G.shape().back()), priv_zeros(c, 0, 1)) {}
 
 ConZonotope::ConZonotope(const Zonotope &Z) : ConZonotope(Z.center(), Z.generators()) {}
