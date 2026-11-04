@@ -103,6 +103,8 @@ changed, and the reasons are listed below.
 | `contains(Z, S, method, tol)` | `Z.contains(S, method, tol)` | `Z.contains(S, method, tol)`, `p in Z` |
 | `conZonotope(c, G, A, b)`, `conZonotope(Z)`, `conZonotope(Z, A, b)` | `ConZonotope(c, G, A, b)`, `ConZonotope(Z)`, `ConZonotope::from_matrix(Z, A, b)` | `cora.ConZonotope(c, G, A, b)`, `cora.ConZonotope.from_matrix(Z, A, b)` |
 | `conZonotope.empty(n)` | `ConZonotope::empty(n)` | `cora.ConZonotope.empty(n)` |
+| `zonoBundle(list)`, `zB.Z`, `zB.parallelSets` | `ZonoBundle(zonotopes)`, `zB.zonotopes()`, `zB.parallel_sets()` | `cora.ZonoBundle(zonotopes)`, `zB.zonotopes`, `zB.parallel_sets` |
+| `zonoBundle.empty(n)`, `conZonotope(zB)` | `ZonoBundle::empty(n)`, `zB.con_zonotope()` | `cora.ZonoBundle.empty(n)`, `zB.con_zonotope()` |
 | `conIntersect(cZ, cZ2, M)` | `cz.con_intersect(cz2, M)` | `cz.con_intersect(cz2, M)` |
 | `intersectStrip(cZ, C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` |
 | `approximateBoundsWithGPU(...)` | `ConZonotope::approximate_bounds(c, G, A, b, dr, num_union_const, options)` | `cora.ConZonotope.approximate_bounds(...)` |
