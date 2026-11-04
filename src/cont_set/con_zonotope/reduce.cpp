@@ -29,9 +29,8 @@ ConZonotope ConZonotope::reduce(int order, const std::string &method) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "reduce: the order must be at least 1, got " + std::to_string(order);
     });
-    CORA_CHECK(method == "girard", Error::not_supported, [&] {
-        return "reduce: the method '" + method + "' is not ported; use 'girard'";
-    });
+    CORA_CHECK(method == "girard", Error::not_supported,
+               [&] { return "reduce: the method '" + method + "' is not ported; use 'girard'"; });
     const ConZonotope cz = priv_compact(*this);
     const int64_t n = cz.dim(), p = cz.A().shape()[cz.A().ndim() - 2];
     if (cz.generators().shape().back() <= order * n + p) return cz;

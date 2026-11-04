@@ -87,7 +87,8 @@ ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::
     // the generic entry has checked the dimension; the rest is this class's own
     if (type != "exact" && type != "inner:vertices" && type != "inner:Vinod")
         CORA_FAIL(Error::wrong_value, "minkowski_difference: the type must be exact, "
-                                      "inner:vertices or inner:Vinod, got '" + type + "'");
+                                      "inner:vertices or inner:Vinod, got '" +
+                                          type + "'");
     if (cz.c().ndim() != 2 || S.center().ndim() != 2)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: it supports single sets, not a batch");
@@ -115,8 +116,8 @@ Set ConZonotope::minkowski_difference_impl(const ContSet &S2,
         return aux_difference(*this, static_cast<const Zonotope &>(S2), method);
     if (S2.class_id() == ClassId::interval)
         return aux_difference(*this, static_cast<const Interval &>(S2).zonotope(), method);
-    CORA_FAIL(Error::noops, "minkowski_difference is not implemented for ConZonotope and " +
-                                S2.class_name());
+    CORA_FAIL(Error::noops,
+              "minkowski_difference is not implemented for ConZonotope and " + S2.class_name());
 }
 
 } // namespace cora

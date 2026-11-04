@@ -68,11 +68,12 @@ ConZonotope ConZonotope::quad_map(const std::vector<Tensor> &Q) const {
     const Tensor full = aux_full(cz), full_t = full.matrix_transpose();
     const int64_t N = cz.generators().shape().back(), p = cz.A().shape()[cz.A().ndim() - 2];
     std::vector<QuadRow> rows;
+    rows.reserve(Q.size());
     for (const Tensor &Qi : Q)
         rows.push_back(priv_quad_map_single_row(full_t.matmul(Qi).matmul(full), N));
     // the constraints sit on the linear block, between the N squares and the N(N-1)/2 products
-    const Tensor A = Tensor::concat({priv_zeros(cz.A(), p, N), cz.A(),
-                                     priv_zeros(cz.A(), p, N * (N - 1) / 2)}, -1);
+    const Tensor A = Tensor::concat(
+        {priv_zeros(cz.A(), p, N), cz.A(), priv_zeros(cz.A(), p, N * (N - 1) / 2)}, -1);
     return aux_outputs(rows, A, cz.b());
 }
 
@@ -89,13 +90,16 @@ ConZonotope ConZonotope::quad_map(const ConZonotope &cz2, const std::vector<Tens
     const int64_t p1 = first.A().shape()[first.A().ndim() - 2];
     const int64_t p2 = second.A().shape()[second.A().ndim() - 2];
     std::vector<QuadRow> rows;
+    rows.reserve(Q.size());
     for (const Tensor &Qi : Q) rows.push_back(aux_mixed_row(full_t.matmul(Qi).matmul(full2)));
     // the constraints of cz2 sit on the first N2 factors and those of cz on the next N1
     const int64_t width = (N1 + 1) * (N2 + 1) - 1;
-    const Tensor A = Tensor::concat(
-        {Tensor::concat({second.A(), priv_zeros(second.A(), p2, width - N2)}, -1),
-         Tensor::concat({priv_zeros(first.A(), p1, N2), first.A(),
-                         priv_zeros(first.A(), p1, width - N2 - N1)}, -1)}, -2);
+    const Tensor A =
+        Tensor::concat({Tensor::concat({second.A(), priv_zeros(second.A(), p2, width - N2)}, -1),
+                        Tensor::concat({priv_zeros(first.A(), p1, N2), first.A(),
+                                        priv_zeros(first.A(), p1, width - N2 - N1)},
+                                       -1)},
+                       -2);
     return aux_outputs(rows, A, Tensor::concat({second.b(), first.b()}, -2));
 }
 

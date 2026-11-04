@@ -34,9 +34,8 @@ bool ConZonotope::representsa(const std::string &type, Tol tol_arg) const {
     CORA_CHECK(priv_is_set_type(type), Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "representsa");
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported, [] {
-        return std::string("representsa: it supports a single set, not a batch");
-    });
+    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+               [] { return std::string("representsa: it supports a single set, not a batch"); });
     CORA_CHECK(type != "conHyperplane" && type != "capsule" && type != "ellipsoid" &&
                    type != "levelSet" && type != "parallelotope" && type != "polygon",
                Error::not_supported, [&] {

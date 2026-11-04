@@ -1896,7 +1896,8 @@ void bind_con_zonotope(py::module_ &m) {
                 if (py::isinstance<ContSet>(S)) return Z.plus(con_zonotope_of(S));
                 return Z.plus(vector_of(S, "the point"));
             },
-            py::arg("S"), "The Minkowski sum with a constrained zonotope, a zonotope, a box or a point")
+            py::arg("S"),
+            "The Minkowski sum with a constrained zonotope, a zonotope, a box or a point")
         .def(
             "reduce",
             [](const ConZonotope &Z, int order, const std::string &method) {
@@ -1930,7 +1931,8 @@ void bind_con_zonotope(py::module_ &m) {
         .def(
             "is_intersecting",
             [](const ConZonotope &Z, const py::object &S, const std::string &type, Tol tol) {
-                if (py::isinstance<ContSet>(S)) return Z.is_intersecting(con_zonotope_of(S), type, tol);
+                if (py::isinstance<ContSet>(S))
+                    return Z.is_intersecting(con_zonotope_of(S), type, tol);
                 return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
             },
             py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
@@ -2172,7 +2174,7 @@ void bind_operators(py::module_ &m) {
                      F = m.attr("Fullspace");
     const py::object CZ = m.attr("ConZonotope");
     CZ.attr("__array_ufunc__") = py::none(); // numpy defers to its operators
-    Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
+    Z.attr("__array_ufunc__") = py::none();  // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
     F.attr("__array_ufunc__") = py::none();

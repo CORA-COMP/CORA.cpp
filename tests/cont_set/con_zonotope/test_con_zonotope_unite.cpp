@@ -28,7 +28,8 @@ void unite_known(const std::string &b) {
     const ConZonotope right(column({2.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope u = left.unite(right);
     check(u.A().numel() == 0, b + ": no constraints");
-    check(u.contains(left.interval()) && u.contains(right.interval()), b + ": both boxes are inside");
+    check(u.contains(left.interval()) && u.contains(right.interval()),
+          b + ": both boxes are inside");
     check(u.contains(column({0.0, 0.0})), b + ": and the gap, the set is convex");
     check(left.unite(Interval(column({1.0, -1.0}), column({3.0, 1.0}))).contains(right.interval()),
           b + ": with a box");
@@ -44,7 +45,8 @@ void unite_property(const std::string &b) {
         const ConZonotope p = test::random_con_zonotope(rng, 2, 4, 1);
         const ConZonotope q = test::random_con_zonotope(rng, 2, 3, 1);
         const ConZonotope u = p.unite(q);
-        check(u.contains(test::sample_points(p, rng, 15)) && u.contains(test::sample_points(q, rng, 15)),
+        check(u.contains(test::sample_points(p, rng, 15)) &&
+                  u.contains(test::sample_points(q, rng, 15)),
               b + ": both sets are inside");
     }
 }

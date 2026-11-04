@@ -1,10 +1,12 @@
-// test_lean_con_zonotope_maps - plus, mtimes, origin, project, lift and the predicates of ConZonotope
+// test_lean_con_zonotope_maps - plus, mtimes, origin, project, lift and the predicates of
+// ConZonotope
 //
 // Bit for bit where CORALean builds the same set: origin, plus, mtimes, project, lift (the sound
 // run: inside the enclosure). isequal and the two proofs (isIntersecting: a proved disjointness;
 // representsa: a proved emptiness) agree where CORALean decides. reduce, quadMap and split build
 // another form of the set (CORALean's layout of the new factors; the bounds of split from a
-// program), so they are checked as enclosures of CORA.cpp's set (the interval hulls; no ORACLE tag).
+// program), so they are checked as enclosures of CORA.cpp's set (the interval hulls; no ORACLE
+// tag).
 //
 // ORACLE: contSet/@conZonotope/origin.m
 // ORACLE: contSet/@conZonotope/plus.m
@@ -75,7 +77,8 @@ int main() {
         oracle::check(a.representsa("emptySet"), lean::ConZonotope(a).representsa_empty());
         oracle::check(none.representsa("emptySet"), lean::ConZonotope(none).representsa_empty());
     });
-    // reduce, quadMap and split are enclosures of CORA.cpp's set: the layout of the new factors differs
+    // reduce, quadMap and split are enclosures of CORA.cpp's set: the layout of the new factors
+    // differs
     oracle::run("conZonotope.reduce", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(2, 8, 2);
         oracle::check_enclosed("reduce", a.reduce(2), lean::ConZonotope(a).reduce(2));

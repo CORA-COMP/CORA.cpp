@@ -22,8 +22,8 @@ int main() {
     std::vector<torch::Tensor> x = test::random_con_zonotope_parts(2, 3, 1);
     x.push_back(torch::randn({3, 2}, torch::kDouble));
     test::gradcheck(
-        "linear_map",
-        [](const Inputs &x) { return test::parts(test::set(x, 0).linear_map(x[4])); }, x);
+        "linear_map", [](const Inputs &x) { return test::parts(test::set(x, 0).linear_map(x[4])); },
+        x);
     return test::finish("con zonotope linear_map (torch)");
 }
 

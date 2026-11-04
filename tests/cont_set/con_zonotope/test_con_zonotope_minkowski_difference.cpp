@@ -36,9 +36,12 @@ void minkowski_difference_known(const std::string &b) {
               ConZonotope(column({-1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))),
           b + ": a zonotope with a center");
     check(close(big.minkowski_difference(column({1.0, 1.0})).c(), {-1, -1}, 0), b + ": a point");
-    // a subtrahend that does not fit: the exact difference has no point, the Vinod scaling gives empty
+    // a subtrahend that does not fit: the exact difference has no point, the Vinod scaling gives
+    // empty
     const Interval wide(column({-3.0, -3.0}), column({3.0, 3.0}));
-    check(big.minkowski_difference(Set(wide), "inner:Vinod").as<ConZonotope>().representsa("emptySet"),
+    check(big.minkowski_difference(Set(wide), "inner:Vinod")
+              .as<ConZonotope>()
+              .representsa("emptySet"),
           b + ": too big for the Vinod scaling");
     check(big.minkowski_difference(Set(wide)).as<ConZonotope>().representsa("emptySet"),
           b + ": too big for the exact difference");
@@ -48,8 +51,9 @@ void minkowski_difference_known(const std::string &b) {
 void minkowski_difference_property(const std::string &b) {
     cora::Rng rng(49);
     for (int k = 0; k < 3; ++k) {
-        const ConZonotope cz = test::random_con_zonotope(rng, 2, 4, 1).plus(
-            ConZonotope(column({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 4.0}})));
+        const ConZonotope cz =
+            test::random_con_zonotope(rng, 2, 4, 1)
+                .plus(ConZonotope(column({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 4.0}})));
         const Zonotope S(column({0.0, 0.0}), Tensor({{0.2, 0.1}, {0.0, 0.2}}));
         const ConZonotope r = cz.minkowski_difference(Set(S)).as<ConZonotope>();
         if (r.representsa("emptySet")) continue;
@@ -82,7 +86,8 @@ int main() {
                        Error::dimension_mismatch),
           "minkowski_difference: dimension");
     ChecksScope off(false);
-    check(a.minkowski_difference(Set(I)).as<ConZonotope>().dim() == 1, "minkowski_difference: checks off");
+    check(a.minkowski_difference(Set(I)).as<ConZonotope>().dim() == 1,
+          "minkowski_difference: checks off");
     return test::finish("con_zonotope minkowski_difference");
 }
 

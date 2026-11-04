@@ -71,6 +71,7 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
 
     // the support value of every set along every row of A, and the largest of them
     std::vector<HostConZonotope> hosts;
+    hosts.reserve(sets.size());
     for (const ConZonotope &S : sets) hosts.push_back(priv_host_con_zonotope(S));
     const auto support = [&](const Tensor &A) {
         const int64_t k = A.shape()[0], n = A.shape()[1];

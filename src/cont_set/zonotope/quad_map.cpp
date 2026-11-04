@@ -50,8 +50,8 @@ Zonotope aux_outputs(const Tensor &like, int64_t width, const std::vector<Tensor
         const bool used = aux_nonempty(M);
         nonempty += used ? 1 : 0;
         QuadRow row = used ? row_of(M)
-                       : QuadRow{like.zeros_like(priv_batch_shape(like, 1, 1)),
-                             like.zeros_like(priv_batch_shape(like, 1, width))};
+                           : QuadRow{like.zeros_like(priv_batch_shape(like, 1, 1)),
+                                     like.zeros_like(priv_batch_shape(like, 1, width))};
         centers.push_back(row.first);
         rows.push_back(row.second);
     }

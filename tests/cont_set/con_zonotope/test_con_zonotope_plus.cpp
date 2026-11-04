@@ -27,7 +27,8 @@ namespace {
 void plus_known(const std::string &b) {
     const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         column({0.5}));
-    const ConZonotope s(column({10.0, 20.0}), Tensor({{2.0}, {3.0}}), Tensor({{4.0}}), column({1.0}));
+    const ConZonotope s(column({10.0, 20.0}), Tensor({{2.0}, {3.0}}), Tensor({{4.0}}),
+                        column({1.0}));
     const ConZonotope r = a.plus(s);
     check(close(r.c(), {11, 22}, 0), b + ": the centers add");
     check(close(r.generators(), {1, 0, 2, 0, 1, 3}, 0), b + ": the generators join");
@@ -40,12 +41,13 @@ void plus_known(const std::string &b) {
     // a box is a set without constraints whose generators are its radius
     const Interval I(column({0.0, 0.0}), column({2.0, 4.0}));
     check(close(a.plus(I).c(), {2, 4}, 0), b + ": a box adds its center");
-    check(close((a + column({1.0, 1.0})).c(), {2, 3}, 0) && close((column({1.0, 1.0}) + a).c(), {2, 3}, 0)
-              && close((a - column({1.0, 1.0})).c(), {0, 1}, 0),
+    check(close((a + column({1.0, 1.0})).c(), {2, 3}, 0) &&
+              close((column({1.0, 1.0}) + a).c(), {2, 3}, 0) &&
+              close((a - column({1.0, 1.0})).c(), {0, 1}, 0),
           b + ": the operators");
     const ConZonotope negated = Set(a)->uminus().as<ConZonotope>();
-    check(close(negated.c(), {-1, -2}, 0) && close(negated.generators(), a.generators() * -1.0, 0) &&
-              close(negated.A(), a.A(), 0),
+    check(close(negated.c(), {-1, -2}, 0) &&
+              close(negated.generators(), a.generators() * -1.0, 0) && close(negated.A(), a.A(), 0),
           b + ": uminus negates the center and the generators");
 }
 

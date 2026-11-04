@@ -24,17 +24,20 @@ namespace {
 
 /// Hand-computed: the segment from (0, 1) to (1, 0) cut at x1 = 0.5 gives two halves.
 void split_known(const std::string &b) {
-    const ConZonotope seg(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                          column({1.0}));
+    const ConZonotope seg(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+                          Tensor({{1.0, 1.0}}), column({1.0}));
     const auto [low, high] = seg.split(0);
-    check(close(low.interval().sup(), {0.5, 1.0}, 1e-9) && close(low.interval().inf(), {0, 0.5}, 1e-9),
+    check(close(low.interval().sup(), {0.5, 1.0}, 1e-9) &&
+              close(low.interval().inf(), {0, 0.5}, 1e-9),
           b + ": the lower half");
-    check(close(high.interval().inf(), {0.5, 0}, 1e-9) && close(high.interval().sup(), {1, 0.5}, 1e-9),
+    check(close(high.interval().inf(), {0.5, 0}, 1e-9) &&
+              close(high.interval().sup(), {1, 0.5}, 1e-9),
           b + ": the upper half");
     check(seg.split().size() == 2, b + ": one pair per coordinate");
 }
 
-/// Stated property: every sampled point is in one of the halves, and each half is in its half of the box.
+/// Stated property: every sampled point is in one of the halves, and each half is in its half of
+/// the box.
 void split_property(const std::string &b) {
     cora::Rng rng(47);
     for (int k = 0; k < 3; ++k) {

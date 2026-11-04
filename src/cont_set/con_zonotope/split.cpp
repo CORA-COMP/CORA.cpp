@@ -66,6 +66,7 @@ std::vector<std::pair<ConZonotope, ConZonotope>> ConZonotope::split() const {
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     const Interval I = interval();
     std::vector<std::pair<ConZonotope, ConZonotope>> pieces;
+    pieces.reserve(std::size_t(dim()));
     for (int64_t d = 0; d < dim(); ++d) pieces.push_back(aux_split_dim(*this, I, d));
     return pieces;
 }

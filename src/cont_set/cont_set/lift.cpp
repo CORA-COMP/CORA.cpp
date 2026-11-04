@@ -39,8 +39,8 @@ LiftPlan lift_plan(int64_t n, int64_t N, const std::vector<int64_t> &dims) {
     for (int64_t i = 0; i < N; ++i) {
         if (plan.source[dims[i]] >= 0) {
             const std::string position = std::to_string(dims[i]);
-            plan.refusal = std::pair{Error::wrong_value,
-                                     "lift: the position " + position + " is used twice"};
+            plan.refusal =
+                std::pair{Error::wrong_value, "lift: the position " + position + " is used twice"};
             return plan;
         }
         plan.source[dims[i]] = i;

@@ -37,8 +37,9 @@ void representsa_known(const std::string &b) {
               ConZonotope::origin(2).representsa("origin"),
           b + ": point and origin");
     // the types that every constrained zonotope is, and the ones that none is
-    check(box.representsa("conZonotope") && box.representsa("polytope") && box.representsa("convexSet") &&
-              !box.representsa("halfspace") && !box.representsa("fullspace"),
+    check(box.representsa("conZonotope") && box.representsa("polytope") &&
+              box.representsa("convexSet") && !box.representsa("halfspace") &&
+              !box.representsa("fullspace"),
           b + ": the constant types");
     const ConZonotope line(column({0.0}), Tensor({{1.0}}));
     const ConZonotope dot(column({1.0}), Tensor({{0.0}}));
@@ -55,11 +56,13 @@ void representsa_known(const std::string &b) {
 int main() {
     test::for_each_backend(representsa_known);
     const ConZonotope box(column({0.0}), Tensor({{1.0}}));
-    check(test::raises([&] { box.representsa("cube"); }, Error::wrong_value), "representsa: a type");
+    check(test::raises([&] { box.representsa("cube"); }, Error::wrong_value),
+          "representsa: a type");
     for (const char *type : {"conHyperplane", "capsule", "ellipsoid", "levelSet", "parallelotope"})
         check(test::raises([&] { box.representsa(type); }, Error::not_supported),
               std::string("representsa: ") + type);
-    check(test::raises([&] { box.representsa("point", -1.0); }, Error::wrong_value), "representsa: tol");
+    check(test::raises([&] { box.representsa("point", -1.0); }, Error::wrong_value),
+          "representsa: tol");
     ChecksScope off(false);
     check(box.representsa("zonotope"), "representsa: the same with the checks off");
     return test::finish("con_zonotope representsa");

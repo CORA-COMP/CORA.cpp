@@ -32,8 +32,7 @@ Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &colum
 Refusal priv_intersecting_refusal(const std::string &type, const Tensor &c, const Tensor &other);
 
 /// The same for points p (n, N) of a set of dimension n: p must be a matrix of that many rows.
-Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &c,
-                                         const Tensor &p);
+Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &c, const Tensor &p);
 
 /// The generators (..., r, keep + r) after Girard's reduction of G (..., r, m): the keep generators
 /// of the largest score ||g||_1 - ||g||_inf, then a box generator per row for the others.

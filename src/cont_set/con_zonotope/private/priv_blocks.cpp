@@ -82,9 +82,9 @@ detail::Refusal priv_pair_refusal(const char *operation, const ConZonotope &a, c
                          name + "the sets must have the same batch shape, got " +
                              shape_text(shape_a) + " and " + shape_text(shape_b)};
     if (same_dim && a.dim() != b.dim())
-        return std::pair{Error::dimension_mismatch,
-                         name + "the sets differ in dimension, " + std::to_string(a.dim()) +
-                             " and " + std::to_string(b.dim())};
+        return std::pair{Error::dimension_mismatch, name + "the sets differ in dimension, " +
+                                                        std::to_string(a.dim()) + " and " +
+                                                        std::to_string(b.dim())};
     return std::nullopt;
 }
 

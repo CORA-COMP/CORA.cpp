@@ -55,7 +55,8 @@ void checks_and_batches() {
         {Tensor({{1.0, 0.0}}).expand_dims(0), Tensor({{0.0, 2.0}}).expand_dims(0)}, 0);
     check(a.linear_map(M).c().shape() == Shape{2, 1, 1}, "linear_map: a batch of matrices");
     ChecksScope off(false);
-    check(a.linear_map(Tensor({{1.0, 1.0}})).dim() == 1, "linear_map: the same with the checks off");
+    check(a.linear_map(Tensor({{1.0, 1.0}})).dim() == 1,
+          "linear_map: the same with the checks off");
 }
 
 } // namespace

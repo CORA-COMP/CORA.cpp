@@ -198,8 +198,8 @@ bool ConZonotope::isequal(const ConZonotope &cz2, double tol) const {
 }
 
 bool ConZonotope::representsa_empty() const {
-    return ask("conZonotope.representsa",
-               {{"cZ", *this}, {"type", "emptySet"}, {"tol", number(0)}}).get<bool>("value");
+    return ask("conZonotope.representsa", {{"cZ", *this}, {"type", "emptySet"}, {"tol", number(0)}})
+        .get<bool>("value");
 }
 
 Certified ConZonotope::is_intersecting(const ConZonotope &cz2, double tol) const {

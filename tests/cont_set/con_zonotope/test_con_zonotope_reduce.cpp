@@ -34,7 +34,8 @@ void reduce_known(const std::string &b) {
     check(close(r.generators(), {3.5, 0}, 0), b + ": a box generator for the row of G");
     check(close(r.A(), {0, 3}, 0) && close(r.b(), {0.5}, 0), b + ": and one for the row of A");
     check(close(r.c(), {3}, 0), b + ": the center stays");
-    check(close(many.reduce(1, "girard").generators(), r.generators(), 0), b + ": girard is the default");
+    check(close(many.reduce(1, "girard").generators(), r.generators(), 0),
+          b + ": girard is the default");
     // without constraints it is the zonotope's reduction
     const ConZonotope plain(column({0.0, 0.0}), Tensor({{1.0, 0.0, 3.0}, {0.0, 1.0, 1.0}}));
     const Zonotope Z(plain.c(), plain.generators());

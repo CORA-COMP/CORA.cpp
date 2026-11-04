@@ -23,9 +23,7 @@ using test::column;
 namespace {
 
 /// The image x' Q x of every column of the points, as a row.
-Tensor aux_image(const Tensor &Q, const Tensor &x) {
-    return x.multiply(Q.matmul(x)).sum(0, true);
-}
+Tensor aux_image(const Tensor &Q, const Tensor &x) { return x.multiply(Q.matmul(x)).sum(0, true); }
 
 /// Hand-computed: x^2 for x in [-1, 1] has the center 1/2 and two generators 1/2 (the square and
 /// the linear term, which is 0); a constraint x1 + x2 = 0 stays on the linear block.
@@ -49,14 +47,15 @@ void quad_map_property(const std::string &b) {
     for (int k = 0; k < 3; ++k) {
         const ConZonotope cz = test::random_con_zonotope(rng, 2, 3, 1);
         const ConZonotope other = test::random_con_zonotope(rng, 2, 3, 1);
-        const std::vector<Tensor> Q{Tensor({{1.0, 0.5}, {-1.0, 2.0}}), Tensor({{0.0, 1.0}, {1.0, 0.0}})};
+        const std::vector<Tensor> Q{Tensor({{1.0, 0.5}, {-1.0, 2.0}}),
+                                    Tensor({{0.0, 1.0}, {1.0, 0.0}})};
         const Tensor x = test::sample_points(cz, rng, 10), y = test::sample_points(other, rng, 10);
         const ConZonotope r = cz.quad_map(Q);
         const ConZonotope mixed = cz.quad_map(other, Q);
         const Tensor images = Tensor::concat({aux_image(Q[0], x), aux_image(Q[1], x)}, 0);
         check(r.contains(images), b + ": the single map encloses");
-        const Tensor cross = Tensor::concat({x.multiply(Q[0].matmul(y)).sum(0, true),
-                                             x.multiply(Q[1].matmul(y)).sum(0, true)}, 0);
+        const Tensor cross = Tensor::concat(
+            {x.multiply(Q[0].matmul(y)).sum(0, true), x.multiply(Q[1].matmul(y)).sum(0, true)}, 0);
         check(mixed.contains(cross), b + ": the mixed map encloses");
     }
 }

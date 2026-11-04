@@ -44,7 +44,8 @@ void rescale_property(const std::string &b) {
         const ConZonotope cz = test::random_con_zonotope(rng, 3, 5, 2);
         for (const char *method : {"exact", "iter"}) {
             const ConZonotope r = cz.rescale(method);
-            check(r.contains(test::sample_points(cz, rng, 15)), b + ": same points (" + method + ")");
+            check(r.contains(test::sample_points(cz, rng, 15)),
+                  b + ": same points (" + method + ")");
             check(close(r.interval().inf(), cz.interval().inf(), 1e-7) &&
                       close(r.interval().sup(), cz.interval().sup(), 1e-7),
                   b + ": same box (" + method + ")");

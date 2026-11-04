@@ -27,7 +27,7 @@ void project_known(const std::string &b) {
     const ConZonotope a(column({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {2.0, 2.0}}),
                         Tensor({{1.0, 1.0}}), column({0.5}));
     const Set s = a.project({2, 0});
-    const ConZonotope r = s.as<ConZonotope>();
+    const ConZonotope &r = s.as<ConZonotope>();
     check(close(r.c(), {3, 1}, 0) && close(r.generators(), {2, 2, 1, 0}, 0),
           b + ": the rows in order");
     check(close(r.A(), a.A(), 0) && close(r.b(), a.b(), 0), b + ": the constraints stay");
@@ -57,7 +57,8 @@ int main() {
         project_property(b);
     });
     const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    check(test::raises([&] { a.project({2}); }, Error::wrong_value), "project: a dimension too big");
+    check(test::raises([&] { a.project({2}); }, Error::wrong_value),
+          "project: a dimension too big");
     ChecksScope off(false);
     check(a.project({1}).as<ConZonotope>().dim() == 1, "project: the same with the checks off");
     return test::finish("con_zonotope project");
