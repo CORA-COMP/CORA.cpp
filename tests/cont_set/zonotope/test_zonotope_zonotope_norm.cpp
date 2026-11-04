@@ -42,7 +42,8 @@ void cora_unit_test(const std::string &b) {
 /// boundary point of the support function in a direction has norm 1.
 void the_minimizer_reaches_the_point(const std::string &b) {
     cora::Rng rng(71);
-    const Zonotope Z(column({0.0, 0.0, 0.0}), Zonotope::generate_random(3, 5, rng).generators());
+    const Zonotope Z(column({0.0, 0.0, 0.0}),
+                     Zonotope::generate_random(rng, 3, std::nullopt, 5).generators());
     for (int k = 0; k < 10; ++k) {
         const Tensor p = column(test::random_direction(rng, 3));
         const auto [value, beta] = Z.zonotope_norm_minimizer(p);

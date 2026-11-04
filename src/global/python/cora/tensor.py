@@ -8,10 +8,16 @@
 The constructors and the functions are also plain functions of the package (`cora.zeros`,
 `cora.sin`, ...); `cora.sin`, `cos` and `exp` also take the symbolic states of a NonlinearSys.
 """
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from ._cora import Expr, current_backend, _default_tol
 from ._cora import cos as _cos_expr, exp as _exp_expr, sin as _sin_expr
+
+
+if TYPE_CHECKING:
+    from ._cora import Array
 
 
 def _torch():
@@ -128,7 +134,8 @@ class Tensor:
     the torch backend and a numpy array on eigen. The constructors and the elementwise functions
     are its static methods: `Tensor.eye(2)`, `Tensor.ones(2, 3)`, `Tensor.cos(0.2)`."""
 
-    def __new__(cls, data, dtype="float64", device=None, requires_grad=False):
+    def __new__(cls, data, dtype="float64", device=None,  # type: ignore[misc]
+                requires_grad=False) -> "Array":
         return _tensor(data, dtype, device, requires_grad)
 
     zeros = staticmethod(zeros)

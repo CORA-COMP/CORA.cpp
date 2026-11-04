@@ -31,7 +31,7 @@ void lift_known(const std::string &b) {
 /// direction; a batch is member-wise.
 void lift_is_a_permutation(const std::string &b) {
     cora::Rng rng(12);
-    const Zonotope Z = Zonotope::generate_random(4, 5, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 4, std::nullopt, 5);
     const std::vector<int64_t> dims{2, 0, 3, 1};
     const Zonotope L = Z.lift(4, dims);
     for (int k = 0; k < 20; ++k) {

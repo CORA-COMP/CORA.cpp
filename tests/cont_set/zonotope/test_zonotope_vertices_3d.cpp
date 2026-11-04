@@ -17,7 +17,7 @@ namespace {
 void corners_attain_the_support(const std::string &b) {
     cora::Rng rng(8);
     for (int m : {3, 4, 7}) {
-        const Zonotope Z = Zonotope::generate_random(3, m, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, m);
         const std::vector<Point3> V = Z.vertices_3d()[0];
         check(V.size() == static_cast<std::size_t>(m * (m - 1) + 2),
               b + ": m (m - 1) + 2 corners for m = " + std::to_string(m));

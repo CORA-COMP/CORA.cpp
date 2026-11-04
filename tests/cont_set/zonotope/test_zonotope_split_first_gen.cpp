@@ -37,7 +37,7 @@ void first_generator_by_hand(const std::string &b) {
 /// score (found by the definition).
 void halves_cover_the_set(const std::string &b) {
     cora::Rng rng(101);
-    const Zonotope Z = Zonotope::generate_random(3, 5, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     const auto [lower, upper] = Z.split_first_gen();
     const std::vector<double> G = Z.generators().data();
     int best = 0;

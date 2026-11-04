@@ -16,7 +16,7 @@ namespace {
 void reduce_limits_the_generators(const std::string &b) {
     cora::Rng rng(5);
     const int n = 3;
-    const Zonotope Z = Zonotope::generate_random(n, 20, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 20);
     const Zonotope R = Z.reduce(2);
     check(R.generators().shape() == std::vector<int64_t>({n, 2 * n}),
           b + ": order 2 leaves 2 n generators");
@@ -26,7 +26,7 @@ void reduce_limits_the_generators(const std::string &b) {
 void reduce_encloses_the_zonotope(const std::string &b) {
     cora::Rng rng(6);
     const int n = 3;
-    const Zonotope Z = Zonotope::generate_random(n, 25, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 25);
     const Zonotope R = Z.reduce(3);
     for (int k = 0; k < 40; ++k) {
         const std::vector<double> d = random_direction(rng, n);
@@ -36,7 +36,7 @@ void reduce_encloses_the_zonotope(const std::string &b) {
 
 void a_small_zonotope_stays_as_it_is(const std::string &b) {
     cora::Rng rng(7);
-    const Zonotope Z = Zonotope::generate_random(2, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
     check(Z.reduce(2).generators().shape() == Z.generators().shape(),
           b + ": 4 generators fit into order 2 in 2-D");
     check(test::close(Z.reduce(2).generators(), Z.generators()), b + ": and are not changed");
@@ -44,14 +44,14 @@ void a_small_zonotope_stays_as_it_is(const std::string &b) {
 
 void wrong_arguments_are_described(const std::string &b) {
     cora::Rng rng(8);
-    const Zonotope Z = Zonotope::generate_random(2, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
     check(test::throws([&] { Z.reduce(0); }), b + ": order 0 is refused");
 }
 
 void a_batch_reduces_member_by_member(const std::string &b) {
     cora::Rng rng(9);
-    const Zonotope Z1 = Zonotope::generate_random(3, 9, rng);
-    const Zonotope Z2 = Zonotope::generate_random(3, 9, rng);
+    const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 9);
+    const Zonotope Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 9);
     const Zonotope batch = Zonotope::stack({Z1, Z2}).reduce(2);
     const Tensor G = batch.generators();
     check(test::close(G.slice(0, 0, 1).squeeze(0), Z1.reduce(2).generators(), 0), b + ": member 1");

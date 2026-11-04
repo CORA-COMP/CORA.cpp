@@ -30,7 +30,7 @@ void radius_is_the_norm_of_rad(const std::string &b) {
 void radius_bounds_the_distance(const std::string &b) {
     cora::Rng rng(12);
     for (int trial = 0; trial < 20; ++trial) {
-        const Interval I = Interval::generate_random(4, rng);
+        const Interval I = Interval::generate_random(rng, 4);
         const double r = I.radius().data()[0];
         const Tensor x = I.rand_point(30, rng), c = I.center();
         const std::vector<double> distances = (x - c).square().sum(-2).sqrt().data();

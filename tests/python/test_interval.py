@@ -99,9 +99,20 @@ class Interval(unittest.TestCase):
         self.assertLess(float((P.mean(-1) - I.center).abs().max()), 0.1)
 
     def test_generate_random(self):
-        I = cora.Interval.generate_random(4, cora.Rng(2))
+        I = cora.Interval.generate_random(cora.Rng(2), 4)
         self.assertEqual(I.dim, 4)
         self.assertTrue(bool((I.inf <= I.sup).all()))
+
+    def test_generate_random_takes_the_options_of_cora(self):
+        rng = cora.Rng(2)
+        I = cora.Interval.generate_random(rng, center=[1.0, -1.0, 0.5], max_radius=[2.0, 0.0, 4.0])
+        self.assertEqual(I.dim, 3)
+        self.assertTrue(np.allclose(np.asarray(I.center), [1.0, -1.0, 0.5]))
+        self.assertTrue(bool((np.asarray(I.rad) <= [1.0, 0.0, 2.0]).all()))
+        S = cora.Interval.generate_random(rng, 4, max_radius=6.0)
+        self.assertTrue(bool((np.asarray(S.rad) <= 3.0).all()))
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.Interval.generate_random(rng, 2, center=[1.0, 2.0, 3.0])
 
     def test_an_interval_can_be_a_matrix(self):
         # The correction matrix of a system is an Interval whose bounds are matrices.

@@ -35,7 +35,7 @@ void single_cubic_map_by_hand(const std::string &b) {
 void count_and_ind(const std::string &b) {
     cora::Rng rng(22);
     const int n = 3, m = 3;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     Grid T(2, std::vector<Tensor>());
     for (auto &row : T)
         for (int k = 0; k < n; ++k) {
@@ -57,7 +57,7 @@ void count_and_ind(const std::string &b) {
 void the_map_of_the_set_is_enclosed(const std::string &b) {
     cora::Rng rng(23);
     const int n = 3, m = 4;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     Grid T(2, std::vector<Tensor>());
     for (auto &row : T)
         for (int k = 0; k < n; ++k) {

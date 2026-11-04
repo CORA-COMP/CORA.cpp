@@ -46,7 +46,7 @@ void by_hand(const std::string &b) {
 void the_volume_is_the_area(const std::string &b) {
     cora::Rng rng(61);
     for (int m = 2; m <= 6; ++m) {
-        const Zonotope Z = Zonotope::generate_random(2, m, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, m);
         const Polygon p = Z.vertices()[0];
         double area = 0;
         for (std::size_t i = 0; i < p.size(); ++i) {
@@ -56,7 +56,7 @@ void the_volume_is_the_area(const std::string &b) {
         check(close(Z.volume().item(), std::abs(area) / 2, 1e-9), b + ": the area, m = " + std::to_string(m));
         check(Z.volume("alamo").item() <= Z.volume().item() + 1e-9, b + ": alamo is a lower bound");
     }
-    const Zonotope P = Zonotope::generate_random(3, 3, rng);
+    const Zonotope P = Zonotope::generate_random(rng, 3, std::nullopt, 3);
     const std::vector<double> g = P.generators().data();
     const double det = g[0] * (g[4] * g[8] - g[5] * g[7]) - g[1] * (g[3] * g[8] - g[5] * g[6]) +
                        g[2] * (g[3] * g[7] - g[4] * g[6]);
@@ -66,7 +66,7 @@ void the_volume_is_the_area(const std::string &b) {
 /// A batch is the volume of each member, including the members of rank below n.
 void a_batch(const std::string &b) {
     cora::Rng rng(62);
-    const Zonotope A = Zonotope::generate_random(2, 4, rng);
+    const Zonotope A = Zonotope::generate_random(rng, 2, std::nullopt, 4);
     const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 2.0, 3.0, 1.0}, {2.0, 4.0, 6.0, 2.0}}));
     const Zonotope batch = Zonotope::stack({A, flat});
     for (const std::string method : {"exact", "alamo"}) {

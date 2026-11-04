@@ -29,7 +29,7 @@ double dot_column(const std::vector<double> &points, int n, int N, int j,
 void rand_point_samples_the_set(const std::string &b) {
     cora::Rng rng(8);
     const int n = 3, m = 4, N = 3000;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     const Tensor P = Z.rand_point(N, rng);
     check(P.shape() == std::vector<int64_t>({n, N}), b + ": rand_point shape");
     const std::vector<double> points = P.data(), c = Z.center().data();
@@ -54,7 +54,7 @@ void rand_point_samples_the_set(const std::string &b) {
     }
     check(!close(Z.rand_point(N, rng), P), b + ": successive draws differ");
     cora::Rng again(8);
-    Zonotope::generate_random(n, m, again);
+    Zonotope::generate_random(again, n, std::nullopt, m);
     check(close(Z.rand_point(N, again), P), b + ": the same seed gives the same points");
 }
 
@@ -62,7 +62,7 @@ void rand_point_samples_the_set(const std::string &b) {
 void extreme_points_are_corners(const std::string &b) {
     cora::Rng rng(9);
     const int n = 3, m = 4, N = 40;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     const std::vector<double> points = Z.rand_point(N, rng, "extreme").data();
     const std::vector<double> c = Z.center().data(), G = Z.generators().data();
     double worst = 0.0;

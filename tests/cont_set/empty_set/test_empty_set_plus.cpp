@@ -19,7 +19,7 @@ void the_sum_is_empty(const std::string &b) {
     check(E.plus(E).dim() == 2, b + ": with itself");
     Rng rng(12);
     for (int trial = 0; trial < 10; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(2, 3, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 3);
         check(plus(E, Z).is<EmptySet>() && plus(Z, E).is<EmptySet>(), b + ": random zonotope");
         check((Set(E) + Set(Z)).as<EmptySet>().dim() == 2, b + ": the operator + of sets");
     }

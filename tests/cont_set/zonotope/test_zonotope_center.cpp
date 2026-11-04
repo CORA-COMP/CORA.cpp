@@ -26,7 +26,7 @@ void dim_and_center(const std::string &b) {
 /// Stated property: the center is the midpoint of the support function along d and along -d.
 void center_is_the_midpoint(const std::string &b) {
     cora::Rng rng(13);
-    const Zonotope Z = Zonotope::generate_random(3, 5, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     for (int k = 0; k < 10; ++k) {
         const std::vector<double> d = test::random_direction(rng, 3);
         std::vector<double> minus(d);

@@ -30,7 +30,7 @@ void abs_of_known_zonotopes(const std::string &b) {
 void abs_corner_bounds_the_set(const std::string &b) {
     cora::Rng rng(11);
     const int n = 4;
-    const Zonotope Z = Zonotope::generate_random(n, 6, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 6);
     const Zonotope A = Z.abs();
     const Tensor corner = A.center() + A.generators().abs_sum();
     const Tensor x = Z.rand_point(200, rng);

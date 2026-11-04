@@ -58,7 +58,7 @@ void a_batch_keeps_what_some_member_keeps(const std::string &b) {
 void compact_keeps_the_set(const std::string &b) {
     cora::Rng rng(14);
     const int n = 3;
-    Zonotope Z = Zonotope::generate_random(n, 5, rng);
+    Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 5);
     const Tensor g = Z.generators();
     // repeated and opposite generators and a zero one
     const Zonotope R(Z.center(), Tensor::concat({g, g.slice(-1, 0, 1) * -2.0, g * 0.0,

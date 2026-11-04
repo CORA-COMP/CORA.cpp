@@ -63,7 +63,7 @@ void result_is_inside(const std::string &b) {
     cora::Rng rng(121);
     for (const char *name : {"yang", "raghuraman", "kochdumper"})
         for (const auto [n, m, order] : {std::tuple{2, 8, 1.0}, {3, 9, 2.0}, {2, 12, 2.5}}) {
-            const Zonotope Z = Zonotope::generate_random(n, m, rng);
+            const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
             const Zonotope R = Z.reduce_under_approx(name, order);
             check(double(R.generators().shape().back()) <= order * n,
                   b + ": " + name + ": at most order * n generators");

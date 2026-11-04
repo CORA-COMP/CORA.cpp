@@ -46,7 +46,7 @@ void the_projection_of_a_square(const std::string &b) {
 void samples_land_on_the_hyperplane(const std::string &b) {
     Rng rng(11);
     for (int trial = 0; trial < 5; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(4, 6, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 4, std::nullopt, 6);
         const Tensor c = column(test::random_direction(rng, 4)),
                      d = Tensor::from_data({test::random_direction(rng, 1)[0]}, {1, 1});
         const Set R = static_cast<const ContSet &>(Z).project_on_hyperplane(c, d);

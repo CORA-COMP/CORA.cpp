@@ -48,7 +48,7 @@ void times_takes_the_hull_of_the_corners(const std::string &b) {
 void times_encloses_the_products(const std::string &b) {
     cora::Rng rng(111);
     for (int trial = 0; trial < 10; ++trial) {
-        const Interval A = Interval::generate_random(3, rng), B = Interval::generate_random(3, rng);
+        const Interval A = Interval::generate_random(rng, 3), B = Interval::generate_random(rng, 3);
         const Interval R = A.times(B);
         const Tensor x = A.rand_point(20, rng), y = B.rand_point(20, rng);
         bool inside = true;

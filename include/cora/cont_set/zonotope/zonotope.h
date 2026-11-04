@@ -3,7 +3,7 @@
 // The center c is a column (..., n, 1); the generators G are (..., n, m), one per column.
 // Immutable: every operation returns a new zonotope.
 //
-// Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generate_random(n, m, rng);
+// Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generate_random(rng);
 // Operators:  M * Z (linear_map), s * Z, Z + Z2 and Z + I (plus), Z + v, Z - v, -Z, as in CORA
 // Operations: linear_map, plus, linear_combination, support_function, interval, rand_point,
 //             generate_random, stack, project, vertices, reduce, display, abs, box, center,
@@ -45,9 +45,14 @@ class Zonotope : public ContSet {
     /// The zonotope of the center c (..., n, 1) and the generators G (..., n, m).
     Zonotope(Tensor c, Tensor G);
 
-    /// A random zonotope with m generators in n dimensions (CORA: center 10*randn, generators of
-    /// uniformly random direction and length ~ U[0, 1]).
-    static Zonotope generate_random(int64_t n, int64_t m, Rng &rng);
+    /// A random zonotope, as CORA's generateRandom: dimension (default that of center, else random
+    /// in 1..10), center (default 10 N(0, 1) per entry), nr_generators (default 2 dimension),
+    /// distribution of the generator lengths ("uniform", "exp" or "gamma"; default "uniform");
+    /// the generators have uniformly random directions.
+    static Zonotope generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
+                                    const std::optional<Tensor> &center = std::nullopt,
+                                    std::optional<int64_t> nr_generators = std::nullopt,
+                                    const std::string &distribution = "uniform");
 
     // Construction --------------------------------------------------------------------------------
 
@@ -81,7 +86,7 @@ class Zonotope : public ContSet {
 
     /// A zonotope of at most order * n generators (n the dimension) that contains this one, by
     /// Girard's method: the longest generators stay, the others become a box. Not a batch.
-    Zonotope reduce(int order) const;
+    Zonotope reduce(int order = 1) const;
 
     /// Encloses the segments between matching points of Z and Z2 = M*Z + t (same generator
     /// factors): 2m + 1 generators.
@@ -94,11 +99,12 @@ class Zonotope : public ContSet {
     /// dimension with the radius of that dimension.
     Zonotope box() const;
 
-    /// Without the generators of norm <= tol (method "zeros"); "all" also merges the generators
-    /// that are parallel up to tol, "aligned" leaves the set as it is (as CORA). A batch drops
-    /// what every member drops; "all" is not for a batch.
+    /// Without the generators of norm <= tol (method "zeros", the default); "all" also merges the
+    /// generators that are parallel up to tol, "aligned" leaves the set as it is (as CORA). A batch
+    /// drops what every member drops; "all" is not for a batch.
     /// tol default: the repository tolerance (docs/architecture.md).
-    Zonotope compact(const std::string &method = "zeros", Tol tol = std::nullopt) const;
+    Zonotope compact(const std::optional<std::string> &method = std::nullopt,
+                     Tol tol = std::nullopt) const;
 
     // Combining with other sets -------------------------------------------------------------------
 

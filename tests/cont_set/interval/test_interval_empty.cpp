@@ -21,7 +21,7 @@ void empty_has_no_points(const std::string &b) {
     // random boxes of the same dimension: neutral for the hull, absorbing for the meet
     cora::Rng rng(36);
     for (int trial = 0; trial < 10; ++trial) {
-        const Interval I = Interval::generate_random(3, rng);
+        const Interval I = Interval::generate_random(rng, 3);
         check(E.convex_hull(I).sup().data() == I.sup().data() &&
                   I.convex_hull(E).inf().data() == I.inf().data(),
               b + ": neutral for the hull");

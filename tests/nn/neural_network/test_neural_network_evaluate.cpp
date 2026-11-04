@@ -43,7 +43,7 @@ void points_follow_the_layers(const std::string &b) {
 void an_affine_network_maps_the_set_exactly(const std::string &b) {
     cora::Rng rng(1);
     const NeuralNetwork nn = random_network(rng, {3, 2});
-    const Zonotope X = Zonotope::generate_random(3, 4, rng);
+    const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Zonotope Y = nn.evaluate(X);
     const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b;
     check(test::close(Y.center(), want.center()) && test::close(Y.generators(), want.generators()),
@@ -77,7 +77,7 @@ void a_crossing_neuron_gets_the_tightest_parallelogram(const std::string &b) {
 void the_enclosure_contains_the_outputs(const std::string &b) {
     cora::Rng rng(3);
     const NeuralNetwork nn = random_network(rng, {3, 6, 5, 2});
-    const Zonotope X = Zonotope::generate_random(3, 5, rng);
+    const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     const Zonotope Y = nn.evaluate(X);
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {

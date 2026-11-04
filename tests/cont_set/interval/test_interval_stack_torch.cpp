@@ -12,8 +12,8 @@ namespace {
 
 void stack_keeps_each_member() {
     cora::Rng rng(2);
-    const std::vector<Interval> Is = {Interval::generate_random(3, rng),
-                                      Interval::generate_random(3, rng)};
+    const std::vector<Interval> Is = {Interval::generate_random(rng, 3),
+                                      Interval::generate_random(rng, 3)};
     const Interval S = Interval::stack(Is);
     check(S.inf().shape() == std::vector<int64_t>({2, 3, 1}), "stack: bounds shape");
     for (int64_t b = 0; b < 2; ++b) {

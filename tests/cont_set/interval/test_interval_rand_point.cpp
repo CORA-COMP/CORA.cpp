@@ -19,7 +19,7 @@ namespace {
 void rand_point_samples_the_box(const std::string &b) {
     cora::Rng rng(4);
     const int n = 3, N = 2000;
-    const Interval I = Interval::generate_random(n, rng);
+    const Interval I = Interval::generate_random(rng, n);
     const Tensor P = I.rand_point(N, rng);
     check(P.shape() == std::vector<int64_t>({n, N}), b + ": rand_point shape");
     const std::vector<double> points = P.data(), lo = I.inf().data(), hi = I.sup().data();

@@ -16,7 +16,7 @@ namespace {
 
 void generate_random_follows_cora(const std::string &b) {
     cora::Rng rng(3);
-    const Interval I = Interval::generate_random(6, rng);
+    const Interval I = Interval::generate_random(rng, 6);
     check(I.inf().shape() == std::vector<int64_t>({6, 1}), b + ": shape");
     bool ordered = true;
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
@@ -29,21 +29,45 @@ void generate_random_follows_cora(const std::string &b) {
     check(in_range, b + ": centre and radius ranges");
 }
 
+/// The options: the center and the radii given, the dimension taken from them.
+void generate_random_options(const std::string &b) {
+    cora::Rng rng(5);
+    const Tensor center = test::column({1.0, -1.0, 0.5});
+    const Interval I = Interval::generate_random(rng, std::nullopt, center, test::column({2, 0, 4}));
+    check(I.dim() == 3, b + ": the dimension of the center");
+    const std::vector<double> c = I.center().data(), r = I.rad().data();
+    check(close(I.center(), {1.0, -1.0, 0.5}, 1e-12), b + ": the given center");
+    check(r[0] <= 1.0 && r[1] == 0.0 && r[2] <= 2.0, b + ": radius at most max_radius / 2");
+    const Interval S = Interval::generate_random(rng, 4, std::nullopt, Tensor::from_data({6.0}, {1, 1}));
+    bool small = true;
+    for (const double x : S.rad().data()) small &= x >= 0.0 && x <= 3.0;
+    check(S.dim() == 4 && small, b + ": one number for all radii");
+    check(test::raises([&] { Interval::generate_random(rng, 2, center); }, Error::wrong_value),
+          b + ": the center does not match the dimension");
+    check(test::raises([&] { Interval::generate_random(rng, std::nullopt, std::nullopt,
+                                                       test::column({-1.0})); },
+                       Error::wrong_value),
+          b + ": a negative radius");
+}
+
 /// A dimension below one is refused; with the checks off the draw is the same.
 void checks_and_their_switch() {
     cora::Rng rng(4), again(4);
-    check(test::raises([&] { Interval::generate_random(0, rng); }, Error::wrong_value),
+    check(test::raises([&] { Interval::generate_random(rng, 0); }, Error::wrong_value),
           "generate_random: dimension 0");
-    const Tensor on = Interval::generate_random(3, rng).center();
+    const Tensor on = Interval::generate_random(rng, 3).center();
     ChecksScope off(false);
-    check(test::close(Interval::generate_random(3, again).center(), on, 0),
+    check(test::close(Interval::generate_random(again, 3).center(), on, 0),
           "generate_random: the same with the checks off");
 }
 
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { generate_random_follows_cora(b); });
+    test::for_each_backend([](const std::string &b) {
+        generate_random_follows_cora(b);
+        generate_random_options(b);
+    });
     checks_and_their_switch();
     return test::finish("interval generate_random");
 }

@@ -43,7 +43,7 @@ void volume_is_the_product_of_the_widths(const std::string &b) {
 void volume_scales(const std::string &b) {
     cora::Rng rng(61);
     for (int trial = 0; trial < 10; ++trial) {
-        const Interval I = Interval::generate_random(3, rng);
+        const Interval I = Interval::generate_random(rng, 3);
         const Tensor v = I.volume();
         check(close(v, (I.rad() * 2.0).prod(-2, true), 1e-12), b + ": 2 rad multiplied");
         check(close((I + column({1.0, -2.0, 3.0})).volume(), v, 1e-12), b + ": a shift keeps it");

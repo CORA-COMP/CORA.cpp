@@ -55,7 +55,7 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
     const int n = 3, N = 60, refine = 5;
     const double dt = 0.2, t_final = 2.0;
     const Tensor A = tensor_of(oscillator3());
-    const Zonotope X0 = Zonotope::generate_random(n, 4, rng);
+    const Zonotope X0 = Zonotope::generate_random(rng, n, std::nullopt, 4);
     const LinearSys sys(A);
 
     Eigen::MatrixXd dirs(n, 40);

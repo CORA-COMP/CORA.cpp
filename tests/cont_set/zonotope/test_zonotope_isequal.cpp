@@ -51,7 +51,7 @@ void isequal_other_sets(const std::string &b) {
 void isequal_property(const std::string &b) {
     cora::Rng rng(30);
     for (int k = 0; k < 10; ++k) {
-        const Zonotope Z = Zonotope::generate_random(3, 5, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
         const Tensor flipped =
             Z.generators().flip(-1).multiply(Tensor::like(Z.center(), {-1, 1, -1, 1, 1}, {1, 5}));
         const Zonotope W(Z.center(), flipped);

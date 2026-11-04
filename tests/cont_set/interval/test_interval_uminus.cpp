@@ -30,7 +30,7 @@ void uminus_swaps_and_negates(const std::string &b) {
 void uminus_is_the_set_of_negations(const std::string &b) {
     cora::Rng rng(41);
     for (int trial = 0; trial < 10; ++trial) {
-        const Interval I = Interval::generate_random(3, rng), R = -I;
+        const Interval I = Interval::generate_random(rng, 3), R = -I;
         const Tensor x = I.rand_point(20, rng);
         bool inside = true;
         for (int k = 0; k < 20; ++k) inside = inside && R.contains(-x.slice(-1, k, k + 1));

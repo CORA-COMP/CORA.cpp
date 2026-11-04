@@ -61,7 +61,7 @@ void atan2_encloses_the_image_off_the_cut(const std::string &b) {
         rng.uniform(lo.data(), 2, 0.1, 3.0);
         rng.uniform(hi.data(), 2, 3.0, 6.0);
         const Interval X(column({lo[0], lo[1]}), column({hi[0], hi[1]}));
-        const Interval Y = Interval::generate_random(2, rng);
+        const Interval Y = Interval::generate_random(rng, 2);
         const Interval R = Y.atan2(X);
         const Tensor y = Y.rand_point(15, rng), x = X.rand_point(15, rng);
         bool inside = true;

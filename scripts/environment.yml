@@ -15,4 +15,5 @@ dependencies:
   - glpk          # only the competition needs it
   - numpy
   - matplotlib-base
+  - mypy          # type-checks the Python examples against the stubs (tests/python/test_stubs.py)
   - pip

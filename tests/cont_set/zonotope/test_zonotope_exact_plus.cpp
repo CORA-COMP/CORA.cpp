@@ -34,8 +34,8 @@ void exact_plus_known(const std::string &b) {
 /// Stated property: the result lies in the plus, and equals it for k = 0; a batch is member-wise.
 void exact_plus_is_inside_the_plus(const std::string &b) {
     cora::Rng rng(21);
-    const Zonotope Z = Zonotope::generate_random(3, 5, rng),
-                   Z2 = Zonotope::generate_random(3, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5),
+                   Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     for (const int64_t k : {0, 2, 4}) {
         const Zonotope S = Z.exact_plus(Z2, k), P = Z.plus(Z2);
         check(S.generators().shape().back() == 5 + 4 - std::min<int64_t>(4, k),

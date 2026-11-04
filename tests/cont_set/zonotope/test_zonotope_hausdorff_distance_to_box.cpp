@@ -45,7 +45,7 @@ void a_batch_gives_a_number_per_member(const std::string &b) {
 void bounded_by_the_generator_lengths(const std::string &b) {
     cora::Rng rng(24);
     for (int n = 2; n <= 3; ++n) {
-        const Zonotope Z = Zonotope::generate_random(n, 5, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 5);
         double sum = 0;
         const std::vector<double> G = Z.generators().data();
         for (int j = 0; j < 5; ++j) {

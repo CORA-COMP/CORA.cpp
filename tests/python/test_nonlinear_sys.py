@@ -93,7 +93,7 @@ class ReachSet(unittest.TestCase):
         self.assertIn("too large", str(caught.exception))
 
     def test_reduce_encloses_the_zonotope(self):
-        Z = cora.Zonotope.generate_random(3, 20, cora.Rng(1))
+        Z = cora.Zonotope.generate_random(cora.Rng(1), 3, nr_generators=20)
         R = Z.reduce(2)
         self.assertEqual(np.asarray(R.generators).shape, (3, 6))
         for k in range(20):

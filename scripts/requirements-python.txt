@@ -1,3 +1,4 @@
 # The Python package on numpy and Eigen, without torch (see requirements-python-torch.txt for torch).
 numpy
 matplotlib
+mypy  # type-checks the examples against the stubs (tests/python/test_stubs.py)

@@ -127,6 +127,19 @@ then checks the problem and calls it (see `src/global/python/cora/extend.py`).
 the model) and register it in `aux_make_backend` (`src/global/tensor/tensor.cpp`). Only the backend and tensor
 folders may know it.
 
+## Python stubs
+
+The build writes the type stubs of the compiled module into the package (`cora/_cora/__init__.pyi`,
+`cora/_cora/lean.pyi`, and `py.typed`, PEP 561), so editors complete and type-check `cora`. They are
+made from the bindings themselves by `scripts/stubs.py` (standard library only), which parses the
+signatures pybind11 prints: an argument without `py::arg` or a function without a docstring is
+reported by `stubs.py --lacking` and fails `tests/python/test_stubs.py`, so give every binding both.
+`Array` is a numpy float64 array or a torch tensor, which is what the module takes and returns
+(`cora.Tensor(...)` is annotated to return it); a `py::object` parameter is `Any`, and a parameter that
+takes arrays should be typed `Array` in the binding. The test also checks that the shipped stubs equal
+fresh ones and, with `mypy` installed, that `mypy --strict` accepts
+`examples/python/example_linear_reach_09_prototype.py` and refuses wrong calls.
+
 ## Tensor
 
 Sets and dynamics are written once against `Tensor`, a runtime type-erased wrapper of Eigen

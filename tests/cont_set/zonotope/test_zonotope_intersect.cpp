@@ -59,8 +59,8 @@ void averaging_contains_the_intersection(const std::string &b) {
     cora::Rng rng(21);
     int shared = 0;
     for (int trial = 0; trial < 20; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(2, 4, rng);
-        const Zonotope other = Zonotope::generate_random(2, 4, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
+        const Zonotope other = Zonotope::generate_random(rng, 2, std::nullopt, 4);
         const Zonotope Z2(Z.center() + column({0.3, -0.2}),
                           Z.generators() * 0.8 + other.generators() * 0.4);
         const Zonotope R = Z.intersect(Z2, "averaging");

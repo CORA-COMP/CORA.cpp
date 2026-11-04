@@ -38,7 +38,7 @@ void abs_of_a_batch_and_a_matrix(const std::string &b) {
 void abs_encloses_the_image_exactly(const std::string &b) {
     cora::Rng rng(11);
     for (const int n : {1, 3, 6}) {
-        const Interval I = Interval::generate_random(n, rng);
+        const Interval I = Interval::generate_random(rng, n);
         const Interval A = I.abs();
         const Tensor x = I.rand_point(40, rng); // (n, 40)
         bool inside = true;

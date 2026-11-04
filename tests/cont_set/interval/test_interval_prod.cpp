@@ -52,7 +52,7 @@ void prod_with_infinite_factors(const std::string &b) {
 void prod_encloses_the_image(const std::string &b) {
     cora::Rng rng(61);
     for (int trial = 0; trial < 20; ++trial) {
-        const Interval I = Interval::generate_random(4, rng), P = I.prod();
+        const Interval I = Interval::generate_random(rng, 4), P = I.prod();
         const Tensor x = I.rand_point(20, rng);
         bool inside = true;
         for (int k = 0; k < 20; ++k)

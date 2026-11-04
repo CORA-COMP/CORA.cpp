@@ -17,7 +17,7 @@ namespace {
 /// kept dimensions, in the order they were asked for.
 void project_selects_and_orders_dimensions(const std::string &b) {
     cora::Rng rng(5);
-    const Zonotope Z = Zonotope::generate_random(3, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Set P = Z.project({2, 0});
     check(P->dim() == 2, b + ": two dimensions remain");
     for (int k = 0; k < 10; ++k) {
@@ -29,7 +29,7 @@ void project_selects_and_orders_dimensions(const std::string &b) {
 
 void project_rejects_unknown_dimensions(const std::string &b) {
     cora::Rng rng(5);
-    const Zonotope Z = Zonotope::generate_random(3, 2, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 2);
     check(test::throws([&] { Z.project({0, 3}); }), b + ": dimension 3 does not exist");
     check(test::throws([&] { Z.project({-1, 0}); }), b + ": dimensions are not negative");
 }

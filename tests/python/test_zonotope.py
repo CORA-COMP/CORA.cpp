@@ -177,10 +177,27 @@ class RandomSets(unittest.TestCase):
 
     def test_generate_random_follows_the_current_backend(self):
         with cora.backend("eigen"):
-            Z = cora.Zonotope.generate_random(3, 4, cora.Rng(0))
+            Z = cora.Zonotope.generate_random(cora.Rng(0), 3, nr_generators=4)
             self.assertIsInstance(Z.center, np.ndarray)
             self.assertEqual(Z.generators.shape, (3, 4))
-        self.assertIsInstance(cora.Zonotope.generate_random(3, 4, cora.Rng(0)).center, torch.Tensor)
+        Z = cora.Zonotope.generate_random(cora.Rng(0), 3, nr_generators=4)
+        self.assertIsInstance(Z.center, torch.Tensor)
+
+    def test_generate_random_takes_the_options_of_cora(self):
+        rng = cora.Rng(0)
+        Z = cora.Zonotope.generate_random(rng, center=[1.0, -2.0, 3.0])
+        self.assertEqual(Z.generators.shape, (3, 6))
+        self.assertTrue(np.allclose(np.asarray(Z.center), [1.0, -2.0, 3.0]))
+        for distribution in ("uniform", "exp", "gamma"):
+            W = cora.Zonotope.generate_random(rng, 2, nr_generators=5, distribution=distribution)
+            self.assertEqual(W.generators.shape, (2, 5))
+        with self.assertRaises(cora.errors.WrongValue):
+            cora.Zonotope.generate_random(rng, 2, distribution="normal")
+
+    def test_reduce_and_compact_default_as_the_generic_ones(self):
+        Z = cora.Zonotope.generate_random(cora.Rng(1), 2, nr_generators=7)
+        self.assertEqual(Z.reduce().generators.shape, cora.ContSet.reduce(Z).generators.shape)
+        self.assertEqual(Z.compact().generators.shape, cora.ContSet.compact(Z).generators.shape)
 
 
 class Stack(unittest.TestCase):

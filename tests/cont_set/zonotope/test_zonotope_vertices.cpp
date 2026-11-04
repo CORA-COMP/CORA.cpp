@@ -24,7 +24,7 @@ double area(const Polygon &p) {
 /// The corners attain the support function in every direction, and run counter-clockwise.
 void vertices_attain_the_support(const std::string &b) {
     cora::Rng rng(8);
-    const Zonotope Z = Zonotope::generate_random(2, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
     const std::vector<Polygon> V = Z.vertices();
     check(V.size() == 1, b + ": one polygon for one zonotope");
     check(V[0].size() == 8, b + ": two vertices per generator direction");
@@ -47,7 +47,7 @@ void vertices_of_degenerate_zonotopes(const std::string &b) {
 
 void vertices_need_two_dimensions(const std::string &b) {
     cora::Rng rng(1);
-    check(test::throws([&] { Zonotope::generate_random(3, 2, rng).vertices(); }),
+    check(test::throws([&] { Zonotope::generate_random(rng, 3, std::nullopt, 2).vertices(); }),
           b + ": a three-dimensional zonotope has no polygon");
 }
 

@@ -39,7 +39,7 @@ void norm_known(const std::string &b) {
 /// box.
 void norm_bounds_the_points(const std::string &b) {
     cora::Rng rng(15);
-    const Zonotope Z = Zonotope::generate_random(3, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Tensor points = Z.rand_point(200, rng, "extreme");
     const std::vector<double> x = points.data();
     for (const double type : {1.0, 2.0, kInf}) {

@@ -30,7 +30,7 @@ void a_known_choice(const std::string &b) {
 void the_parallelotope_encloses_the_zonotope(const std::string &b) {
     cora::Rng rng(25);
     const int n = 3, m = 9;
-    const Zonotope Z = Zonotope::generate_random(n, m, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     const Tensor P = Z.dominant_directions();
     const Tensor R = P.inv().matmul(Z.generators()).abs_sum(); // radius of the box of P^-1 Z
     for (int k = 0; k < n; ++k) {

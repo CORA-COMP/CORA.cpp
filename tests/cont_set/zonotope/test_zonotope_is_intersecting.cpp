@@ -52,10 +52,10 @@ void intersecting_known(const std::string &b) {
 void intersecting_property(const std::string &b) {
     cora::Rng rng(26);
     for (int k = 0; k < 30; ++k) {
-        const Zonotope Z1 = Zonotope::generate_random(3, 4, rng);
+        const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 4);
         std::vector<double> shift(3);
         rng.uniform(shift.data(), 3, -15.0, 15.0);
-        const Zonotope Z2 = Zonotope::generate_random(3, 3, rng) + column(shift);
+        const Zonotope Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 3) + column(shift);
         const bool res = Z1.is_intersecting(Z2);
         check(res == Z2.is_intersecting(Z1), b + ": symmetric");
         if (Z1.contains(Z2.rand_point(5, rng), "exact", 0.0))

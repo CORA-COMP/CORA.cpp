@@ -1,7 +1,7 @@
 // is_full_dim - whether the empty set has a nonempty interior, as CORA's emptySet.isFullDim
 //
-// Syntax:   bool b = E.is_full_dim();
-// Inputs:   -
+// Syntax:   bool b = E.is_full_dim();   bool b = E.is_full_dim(tol);
+// Inputs:   tol - ignored
 // Outputs:  b - false
 // See also: is_bounded, Interval::is_full_dim
 //
@@ -16,10 +16,8 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-bool EmptySet::is_full_dim() const {
-    detail::Entry entry;
-    return false;
-}
+/// The generic entry has checked tol; the answer does not depend on it.
+bool EmptySet::is_full_dim_impl(Tol) const { return false; }
 
 } // namespace cora
 

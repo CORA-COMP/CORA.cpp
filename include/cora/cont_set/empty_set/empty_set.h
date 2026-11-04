@@ -47,12 +47,9 @@ class EmptySet : public detail::DimensionSet {
     /// Whether the set is bounded: always.
     bool is_bounded() const;
 
-    /// Whether the set has a nonempty interior: never.
-    bool is_full_dim() const;
-
-    /// The empty set of dimension n, drawn as CORA's generateRandom does: n is given, or a random
+    /// The empty set of dimension n, drawn as CORA's generateRandom does: given, or a random
     /// integer in 1..10 (CORA's randi(10)) taken from rng.
-    static EmptySet generate_random(Rng &rng, std::optional<int64_t> n = std::nullopt);
+    static EmptySet generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt);
 
     /// The radius of the smallest ball around the set: 0, the supremum over no point (CORA's
     /// radius).
@@ -122,6 +119,7 @@ class EmptySet : public detail::DimensionSet {
     Set linear_map_impl(const Tensor &M) const override;
     Set translate_impl(const Tensor &v) const override;
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
+    bool is_full_dim_impl(Tol tol) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
 

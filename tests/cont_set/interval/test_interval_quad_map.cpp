@@ -34,7 +34,7 @@ void quad_map_by_hand(const std::string &b) {
 /// map of sampled points.
 void quad_map_is_the_hull_of_the_zonotope_map(const std::string &b) {
     cora::Rng rng(141);
-    const Interval I = Interval::generate_random(3, rng), J = Interval::generate_random(3, rng);
+    const Interval I = Interval::generate_random(rng, 3), J = Interval::generate_random(rng, 3);
     std::vector<Tensor> Q;
     for (int i = 0; i < 2; ++i) {
         std::vector<double> data(9);

@@ -25,9 +25,15 @@ changed, and the reasons are listed below.
   - `// CORA.cpp only: <reason>`, if CORA has no such file.
 - **Python** uses the C++ names. Sets have properties (`Z.center`, `Z.generators`, `Z.dim`), and
   options are keyword arguments with the same names as the fields of the C++ structs.
+- **Overrides:** a method of a `ContSet` subclass accepts every argument that `ContSet`'s method
+  accepts (it may add keyword arguments with defaults); `tests/python/test_stubs.py` checks it by
+  type-checking the stubs with mypy.
 - **Options** have the same names in C++ (struct fields) and in Python (keywords):
   - `time_step`, `t_final`, `taylor_terms`, `zonotope_order`;
   - the problem: `initial_set`, `input_set`, `initial_state`, `input`.
+  - `generate_random` of every class takes `rng` first, then CORA's name-value options
+    (`'Dimension'` is `dimension`, `'NrGenerators'` is `nr_generators`) as optional arguments with
+    CORA's defaults.
   - The CORALean oracle's JSON protocol keeps CORA's keys (`timeStep`, `tFinal`, ...), and so do
     the benchmark data files.
 
@@ -82,7 +88,7 @@ changed, and the reasons are listed below.
 | `norm(S, type, mode)` | `S.norm(type, mode)` | `S.norm(type, mode)` |
 | `enclose(S1, S2)`, `enclose(Z, M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` |
 | `projectOnHyperplane(S, hyp)` | `S.project_on_hyperplane(c, d)` (the constraint) | `S.project_on_hyperplane(c, d)` |
-| `contSet.generateRandom(...)` | `ContSet::generate_random(rng, n, admissible)` | `cora.ContSet.generate_random(rng, n, admissible)` |
+| `contSet.generateRandom(...)` | `ContSet::generate_random(rng, dimension, admissible)` | `cora.generate_random(rng, dimension, admissible)` |
 | `and_`, `contains_`, `isIntersecting_` | `detail::intersect_impl`, `contains_impl`, `is_intersecting_impl` | - |
 | `abs(Z)`, `box(Z)` | `Z.abs()`, `Z.box()` | `Z.abs()`, `Z.box()` |
 | `compact(Z, method, tol)` | `Z.compact(method, tol)` | `Z.compact(method, tol)` |
@@ -102,8 +108,8 @@ changed, and the reasons are listed below.
 | `approximateBoundsWithGPU(...)` | `ConZonotope::approximate_bounds(c, G, A, b, dr, num_union_const, options)` | `cora.ConZonotope.approximate_bounds(...)` |
 | `boundaryPoint(Z, dir, start)` | `Z.boundary_point(dir, start)` | `Z.boundary_point(dir, start)` |
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
-| `zonotope.generateRandom` | `Zonotope::generate_random(n, m, rng)` | `cora.Zonotope.generate_random` |
-| `interval.generateRandom` | `Interval::generate_random(n, rng)` | `cora.Interval.generate_random` |
+| `zonotope.generateRandom` | `Zonotope::generate_random(rng, dimension, center, nr_generators, distribution)` | `cora.Zonotope.generate_random` |
+| `interval.generateRandom` | `Interval::generate_random(rng, dimension, center, max_radius)` | `cora.Interval.generate_random` |
 | `interval.Inf(n)` | `Interval::unbounded(n)` | `cora.Interval.unbounded(n)` |
 | `cat(dim, I1, I2)` | `Interval::cat(dim, {I1, I2})` | `cora.Interval.cat(dim, [I1, I2])` |
 | `horzcat(I1, I2)` | `Interval::horzcat({I1, I2})` | `cora.Interval.horzcat([I1, I2])` |

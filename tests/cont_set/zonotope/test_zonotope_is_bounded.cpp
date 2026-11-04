@@ -13,9 +13,9 @@ using test::column;
 int main() {
     test::for_each_backend([](const std::string &b) {
         cora::Rng rng(1);
-        check(Zonotope::generate_random(3, 5, rng).is_bounded(), b + ": a random zonotope");
+        check(Zonotope::generate_random(rng, 3, std::nullopt, 5).is_bounded(), b + ": a random zonotope");
         check(Zonotope(column({1.0, 2.0}), Tensor::zeros({2, 0})).is_bounded(), b + ": a point");
-        check(Zonotope::stack({Zonotope::generate_random(2, 3, rng)}).is_bounded(),
+        check(Zonotope::stack({Zonotope::generate_random(rng, 2, std::nullopt, 3)}).is_bounded(),
               b + ": a batch");
     });
     const Zonotope Z(column({0.0}), Tensor({{1.0}}));

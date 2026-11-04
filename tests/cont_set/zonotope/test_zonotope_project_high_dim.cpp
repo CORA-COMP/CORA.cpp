@@ -37,7 +37,7 @@ void embedding_known(const std::string &b) {
 /// Stated property: the support function along d is that of Z along the entries of d at dims.
 void embedding_keeps_the_support(const std::string &b) {
     cora::Rng rng(71);
-    const Zonotope Z = Zonotope::generate_random(3, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const std::vector<int64_t> dims{4, 0, 2};
     const Zonotope R = Z.project_high_dim(6, dims);
     for (int k = 0; k < 20; ++k) {

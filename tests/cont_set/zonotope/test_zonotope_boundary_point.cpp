@@ -35,7 +35,7 @@ void known_rays(const std::string &b) {
 void the_point_is_on_the_boundary(const std::string &b) {
     cora::Rng rng(27);
     for (int trial = 0; trial < 8; ++trial) {
-        const Zonotope Z = Zonotope::generate_random(3, 5, rng);
+        const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
         const std::vector<double> dir = test::random_direction(rng, 3);
         const Tensor d = column(dir), c = Z.center();
         const Tensor start = c + (Z.rand_point(1, rng) - c) * 0.5; // an interior point

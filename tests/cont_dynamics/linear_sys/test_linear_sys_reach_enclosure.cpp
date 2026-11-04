@@ -38,7 +38,7 @@ void encloses_the_trajectories(const std::string &b) {
     rotation(2, 2) = -0.5;
 
     for (const Case &tc : {Case{gentle, 0.1, "gentle"}, Case{rotation, 0.3, "fast rotation"}}) {
-        const Zonotope X0 = Zonotope::generate_random(n, m, rng);
+        const Zonotope X0 = Zonotope::generate_random(rng, n, std::nullopt, m);
         const Eigen::MatrixXd c0 = host_matrix(X0.center().data(), n, 1),
                               g0 = host_matrix(X0.generators().data(), n, m);
         const Tensor A = tensor_of(tc.A);
@@ -70,7 +70,7 @@ void encloses_the_trajectories(const std::string &b) {
 void encloses_both_time_points(const std::string &b) {
     cora::Rng rng(7);
     const System &s = matlab_reference::three_dimensional();
-    const Zonotope X0 = Zonotope::generate_random(3, 4, rng);
+    const Zonotope X0 = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     Eigen::MatrixXd dirs(3, 40);
     rng.normal(dirs.data(), dirs.size(), 1.0);
     for (const std::string &algorithm : kAlgorithms) {

@@ -34,7 +34,7 @@ void split_cuts_at_the_center(const std::string &b) {
 void split_halves_cover_the_box(const std::string &b) {
     cora::Rng rng(71);
     for (int trial = 0; trial < 10; ++trial) {
-        const Interval I = Interval::generate_random(4, rng);
+        const Interval I = Interval::generate_random(rng, 4);
         const int64_t n = trial % 4;
         const auto [I1, I2] = I.split(n);
         check(I1.convex_hull(I2).isequal(I, 0.0), b + ": the hull of the halves is the box");

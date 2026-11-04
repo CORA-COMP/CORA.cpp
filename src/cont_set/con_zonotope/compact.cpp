@@ -20,8 +20,9 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-ConZonotope ConZonotope::compact(const std::string &method, Tol tol_arg) const {
+ConZonotope ConZonotope::compact(const std::optional<std::string> &method_arg, Tol tol_arg) const {
     detail::Entry entry;
+    const std::string method = method_arg.value_or("zeros");
     static_cast<void>(resolve_tol(entry, tol_arg, c_.dtype(), "compact"));
     CORA_CHECK(
         method == "zeros" || method == "all" || method == "aligned", Error::wrong_value, [&] {

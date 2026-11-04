@@ -87,7 +87,7 @@ void split_by_a_halfspace(const std::string &b) {
 /// a coordinate cut cover the zonotope's box part along it.
 void pieces_cover_the_set(const std::string &b) {
     cora::Rng rng(91);
-    const Zonotope Z = Zonotope::generate_random(3, 4, rng);
+    const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Tensor points = Z.rand_point(40, rng);
     const Tensor normal = column({1.0, -2.0, 0.5}), orig = column({0.0, 1.0, 0.0});
     const std::vector<std::pair<Zonotope, Zonotope>> cuts{
