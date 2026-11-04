@@ -33,6 +33,12 @@ def capsule(c, g, r):
     return cora.Capsule(np.array(c, dtype=float), np.array(g, dtype=float), r)
 
 
+def empty(n):
+    """The empty capsule on the backend of numpy arrays, which the other capsules here are on."""
+    with cora.backend("eigen"):
+        return cora.Capsule.empty(n)
+
+
 def sample(C, rng, count):
     """Points of a capsule as columns (n, count): a point of the axis plus a point of the ball."""
     n = C.c.shape[0]
@@ -74,7 +80,7 @@ class Constructor(unittest.TestCase):
 
 class EmptyAndOrigin(unittest.TestCase):
     def test_empty(self):
-        E = cora.Capsule.empty(3)
+        E = empty(3)
         self.assertTrue(E.is_empty())
         self.assertEqual(E.dim, 3)
         self.assertEqual(E.r, -1.0)
@@ -113,7 +119,7 @@ class Queries(unittest.TestCase):
         self.assertTrue(capsule([0, 0], [1, 0], 0.1).is_full_dim())
         self.assertFalse(capsule([0, 0], [1, 0], 0.0).is_full_dim())
         self.assertTrue(capsule([0], [1], 0.0).is_full_dim())
-        self.assertFalse(cora.Capsule.empty(2).is_full_dim())
+        self.assertFalse(empty(2).is_full_dim())
         with self.assertRaises(cora.errors.WrongValue):
             capsule([0, 0], [1, 0], 0.1).is_full_dim(tol=-1.0)
 
@@ -123,8 +129,8 @@ class Queries(unittest.TestCase):
         self.assertTrue(C == capsule([1, 2], [3, 4], 0.5))
         self.assertTrue(C != capsule([1, 2], [3, 4], 0.6))
         self.assertTrue(C.isequal(capsule([1, 2.001], [3, 4], 0.5), tol=1e-2))
-        self.assertTrue(cora.Capsule.empty(2).isequal(cora.Capsule.empty(2)))
-        self.assertFalse(cora.Capsule.empty(2).isequal(C))
+        self.assertTrue(empty(2).isequal(empty(2)))
+        self.assertFalse(empty(2).isequal(C))
 
     def test_display(self):
         text = repr(capsule([1, 2], [3, 4], 0.5))
@@ -154,8 +160,8 @@ class Containment(unittest.TestCase):
         self.assertTrue(cora.contains(outer, capsule([0.5, 0], [1, 0], 0.5)))
         self.assertTrue(cora.contains(outer, cora.EmptySet(2)))
         self.assertFalse(cora.contains(outer, cora.Fullspace(2)))
-        self.assertTrue(outer.contains(cora.Capsule.empty(2)))
-        self.assertFalse(cora.Capsule.empty(2).contains(outer))
+        self.assertTrue(outer.contains(empty(2)))
+        self.assertFalse(empty(2).contains(outer))
 
     def test_property(self):
         rng = np.random.default_rng(5)
@@ -169,7 +175,7 @@ class Containment(unittest.TestCase):
         self.assertFalse(C1.is_intersecting(capsule([0, 1], [1, 0], 0.4)))
         self.assertTrue(C1.is_intersecting(capsule([0, 1], [1, 0], 0.9)))
         self.assertTrue(C1.is_intersecting(np.array([0.5, 0.05])))
-        self.assertFalse(C1.is_intersecting(cora.Capsule.empty(2)))
+        self.assertFalse(C1.is_intersecting(empty(2)))
         self.assertTrue(cora.is_intersecting(C1, capsule([0.5, 0], [0, 1], 0.1)))
 
     def test_is_intersecting_property(self):
@@ -197,7 +203,7 @@ class Combination(unittest.TestCase):
         self.assertAlmostEqual(H.r, 1.5)
         self.assertTrue(C1.enclose(C2).isequal(H))
         self.assertTrue(cora.convex_hull(C1, C2).isequal(H))
-        self.assertTrue(C1.convex_hull(cora.Capsule.empty(2)).isequal(C1))
+        self.assertTrue(C1.convex_hull(empty(2)).isequal(C1))
         with self.assertRaises(cora.errors.DimensionMismatch):
             C1.convex_hull(cora.Capsule(np.array([1.0])))
 
