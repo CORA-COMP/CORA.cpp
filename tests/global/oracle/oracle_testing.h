@@ -28,6 +28,7 @@
 #include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/oracle/oracle.h"
+#include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "testing.h"
@@ -140,6 +141,20 @@ class Random {
         std::vector<double> data(h * rows * cols);
         for (double &x : data) x = scalar();
         return {matrix(rows, cols), cora::Tensor::from_data(data, {h, rows, cols})};
+    }
+
+    /// A bundle of k zonotopes of n dimensions and m generators each, all containing one common
+    /// point (the intersection is not empty).
+    cora::ZonoBundle zono_bundle(int64_t n, int64_t k, int64_t m) {
+        const cora::Tensor x0 = vector(n);
+        std::vector<cora::Zonotope> members;
+        for (int64_t i = 0; i < k; ++i) {
+            const cora::Tensor G = matrix(n, m);
+            std::vector<double> b(m);
+            for (double &x : b) x = uniform(-1, 1);
+            members.emplace_back(x0 - G.matmul(cora::Tensor::from_data(b, {m, 1})), G);
+        }
+        return cora::ZonoBundle(std::move(members));
     }
 
     /// A box of n dimensions: a center and a radius in [0, 1].
@@ -264,6 +279,19 @@ inline bool same_bits(const std::string &what, const cora::MatZonotope &a,
     return center && generators;
 }
 
+/// The members of a bundle, one by one, and their number.
+inline bool same_bits(const std::string &what, const cora::ZonoBundle &a, const lean::ZonoBundle &b) {
+    if (a.parallel_sets() != int64_t(b.zonotopes().size())) {
+        std::cerr << "  " << what << ": " << a.parallel_sets() << " members in CORA.cpp, "
+                  << b.zonotopes().size() << " in the oracle\n";
+        return false;
+    }
+    bool ok = true;
+    for (std::size_t i = 0; i < b.zonotopes().size(); ++i)
+        ok &= same_bits(what + "[" + std::to_string(i) + "]", a.zonotopes()[i], b.zonotopes()[i]);
+    return ok;
+}
+
 /// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
@@ -371,6 +399,15 @@ inline bool enclosed(const std::string &what, const cora::Zonotope &a, const lea
 inline bool enclosed(const std::string &what, const cora::ConZonotope &a,
                      const lean::ConZonotope &b) {
     return enclosed(what + " (hull)", a.interval(), b.interval());
+}
+
+/// Every member inside the oracle's member of the same position.
+inline bool enclosed(const std::string &what, const cora::ZonoBundle &a, const lean::ZonoBundle &b) {
+    if (a.parallel_sets() != int64_t(b.zonotopes().size())) return same_bits(what, a, b);
+    bool ok = true;
+    for (std::size_t i = 0; i < b.zonotopes().size(); ++i)
+        ok &= enclosed(what + "[" + std::to_string(i) + "]", a.zonotopes()[i], b.zonotopes()[i]);
+    return ok;
 }
 
 /// A certified answer must not be contradicted: if the oracle proves it, CORA.cpp says the same.
