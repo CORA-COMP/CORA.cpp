@@ -102,6 +102,16 @@ bool ConZonotope::is_bounded() const {
     return ask("conZonotope.isBounded", {{"cZ", *this}}).get<bool>("value");
 }
 
+// The certified predicates: a true is a proof; the default certificate is a right inverse of G.
+bool ConZonotope::contains(const Tensor &point, double tol) const {
+    return ask("conZonotope.contains", {{"cZ", *this}, {"point", point}, {"tol", number(tol)}})
+        .get<bool>("contains");
+}
+
+bool ConZonotope::is_full_dim(double tol) const {
+    return ask("conZonotope.isFullDim", {{"cZ", *this}, {"tol", number(tol)}}).get<bool>("value");
+}
+
 ConZonotope ConZonotope::intersect(const ConZonotope &cz2) const {
     return aux_set(ask("conZonotope.and", {{"cZ", *this}, {"cZ2", cz2}}));
 }
