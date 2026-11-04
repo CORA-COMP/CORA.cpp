@@ -572,9 +572,11 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const Polytope &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<Ellipsoid>(S1))
                 return py::cast<const Ellipsoid &>(S1).contains(tensor_of(S2, "the points"));
+            if (py::isinstance<Capsule>(S1))
+                return py::cast<const Capsule &>(S1).contains(tensor_of(S2, "the points"));
             CORA_FAIL(Error::not_supported,
                       "point containment is implemented for intervals, zonotopes, constrained "
-                      "zonotopes, zonotope bundles, polytopes and ellipsoids only");
+                      "zonotopes, zonotope bundles, polytopes, ellipsoids and capsules only");
         });
     bind_registry(m);
 }
@@ -2428,6 +2430,72 @@ void bind_ellipsoid(py::module_ &m) {
             "The outer union of E and M Eplus (CORA's code); needs an SDP solver");
 }
 
+// Capsule -----------------------------------------------------------------------------------------
+
+/// The radius of a capsule from Python: a number for every member, or an array of the batch.
+Tensor capsule_radius_of(const py::object &r) {
+    return vector_of(r, "the radius").expand_dims(-1);
+}
+
+void bind_capsule(py::module_ &m) {
+    py::class_<Capsule, ContSet>(m, "Capsule",
+                                 "The capsule: the points within r of the segment c - g .. c + g.")
+        .def(py::init([](const py::object &c, const py::object &g, const py::object &r) {
+                 const Tensor center = vector_of(c, "the center");
+                 const Tensor generator =
+                     g.is_none() ? center.zeros_like() : vector_of(g, "the generator");
+                 if (r.is_none()) return Capsule(center, generator);
+                 if (is_number(r)) return Capsule(center, generator, py::cast<double>(r));
+                 return Capsule(center, generator, capsule_radius_of(r));
+             }),
+             py::arg("c"), py::arg("g") = py::none(), py::arg("r") = py::none(),
+             "center c (..., n), generator g (..., n; default 0) and radius r (default 0)")
+        .def_static("empty", &Capsule::empty, py::arg("n") = 0,
+                    "The empty capsule of n dimensions: the radius -1")
+        .def_static("origin", &Capsule::origin, py::arg("n"),
+                    "The capsule that is the origin of R^n")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points) {
+                return Capsule::enclose_points(tensor_of(points, "the points"));
+            },
+            py::arg("points"),
+            "A capsule that contains the points (..., n, N): mean, farthest point, largest "
+            "distance from the axis")
+        .def_property_readonly("c", [](const Capsule &C) { return vector(C.c()); },
+                               "The stored center c (..., n)")
+        .def_property_readonly("generator", [](const Capsule &C) { return vector(C.generator()); },
+                               "The generator g (..., n)")
+        .def_property_readonly("r", [](const Capsule &C) { return scalar(C.r()); },
+                               "The radius r (-1 for the empty capsule)")
+        .def("is_empty", &Capsule::is_empty, "Whether the capsule is empty (of a batch: every member)")
+        .def(
+            "isequal",
+            [](const Capsule &C, const Capsule &S, Tol tol) { return C.isequal(S, tol); },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the capsules are equal up to tol, or both empty")
+        .def(
+            "contains",
+            [](const Capsule &C, const py::object &S, Tol tol) {
+                if (py::isinstance<Capsule>(S)) return C.contains(py::cast<Capsule>(S), tol);
+                if (py::isinstance<Zonotope>(S)) return C.contains(py::cast<Zonotope>(S), tol);
+                if (py::isinstance<Interval>(S)) return C.contains(py::cast<Interval>(S), tol);
+                return C.contains(tensor_of(S, "the points"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the capsule contains the points (n, N), a capsule, a zonotope or a box")
+        .def(
+            "is_intersecting",
+            [](const Capsule &C, const py::object &S, Tol tol) {
+                if (py::isinstance<Capsule>(S)) return C.is_intersecting(py::cast<Capsule>(S), tol);
+                return C.is_intersecting(tensor_of(S, "the points"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the capsule meets a capsule or contains the points (n, N), up to tol")
+        .def("convex_hull", &Capsule::convex_hull, py::arg("S"),
+             "A capsule that encloses the capsule and S");
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
@@ -2435,6 +2503,7 @@ void bind_operators(py::module_ &m) {
     CZ.attr("__array_ufunc__") = py::none(); // numpy defers to its operators
     m.attr("Polytope").attr("__array_ufunc__") = py::none();
     m.attr("Ellipsoid").attr("__array_ufunc__") = py::none();
+    m.attr("Capsule").attr("__array_ufunc__") = py::none();
     Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
@@ -2553,6 +2622,13 @@ void bind_operators(py::module_ &m) {
     method(I, "__rmul__", interval_product);
     method(I, "__rmatmul__", interval_product);
 
+    // Capsule: a matrix maps it
+    const auto capsule_product = [](const Capsule &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
+        return not_implemented();
+    };
+    method(m.attr("Capsule"), "__rmul__", capsule_product);
+    method(m.attr("Capsule"), "__rmatmul__", capsule_product);
     // EmptySet
     const auto empty_set_product = [](const EmptySet &A, const py::object &o) -> py::object {
         if (is_number(o)) return py::cast(py::cast<double>(o) * A);
@@ -3748,6 +3824,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_zono_bundle(m);
     bind_polytope(m);
     bind_ellipsoid(m);
+    bind_capsule(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
     bind_operators(m);

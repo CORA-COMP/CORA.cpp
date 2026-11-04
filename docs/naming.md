@@ -124,6 +124,10 @@ changed, and the reasons are listed below.
 | `isBigger(E1, E2)`, `isBadDir(E1, E2, L)` | `E1.is_bigger(E2)`, `E1.is_bad_dir(E2, L)` | the same |
 | `ellipsoid.enclosePoints(P, method)` | `Ellipsoid::enclose_points(P, method)` | `cora.Ellipsoid.enclose_points(P, method)` |
 | `intersectStrip(E, C, phi, y, sigma_sq_prev, method)` | `E.intersect_strip(C, phi, y, sigma_sq_prev)`, with a `StripMeasurement` for `phi` (the method of Liu) | `E.intersect_strip(C, phi, y, sigma_sq_prev, method)`, a dict `{V, bar_V}` for `phi` |
+| `capsule(c, g, r)`, `capsule(c)` | `Capsule(c, g, r)`, `Capsule(c)` | `cora.Capsule(c, g, r)` |
+| `capsule.empty(n)`, `capsule.origin(n)`, `capsule.enclosePoints(P)` | `Capsule::empty(n)`, `Capsule::origin(n)`, `Capsule::enclose_points(P)` | `cora.Capsule.empty(n)`, `.origin(n)`, `.enclose_points(P)` |
+| `contains_(C, S)`, `isIntersecting_(C, S)`, `convHull_(C, S)`, `isequal(C, S)` | `C.contains(S, tol)`, `C.is_intersecting(S, tol)`, `C.convex_hull(S)`, `C.isequal(S, tol)` | the same, `p in C`, `C == S` |
+| `mtimes(M, C)`, `lift_(C, N, proj)` | `C.linear_map(M)`, `M * C`, `C.lift(N, dims)` | `M @ C`, `C.linear_map(M)`, `C.lift(N, dims)` |
 | `boundaryPoint(Z, dir, start)` | `Z.boundary_point(dir, start)` | `Z.boundary_point(dir, start)` |
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
 | `zonotope.generateRandom` | `Zonotope::generate_random(rng, dimension, center, nr_generators, distribution)` | `cora.Zonotope.generate_random` |

@@ -17,6 +17,7 @@
 // CORA: contSet/@conZonotope/contains_.m
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
 

@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "cora/cont_set/capsule/capsule.h"
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -217,6 +218,7 @@ inline Set set_of(const py::handle &o) {
     if (py::isinstance<ZonoBundle>(o)) return Set(py::cast<ZonoBundle>(o));
     if (py::isinstance<Polytope>(o)) return Set(py::cast<Polytope>(o));
     if (py::isinstance<Ellipsoid>(o)) return Set(py::cast<Ellipsoid>(o));
+    if (py::isinstance<Capsule>(o)) return Set(py::cast<Capsule>(o));
     if (py::isinstance<Interval>(o)) return Set(py::cast<Interval>(o));
     if (py::isinstance<EmptySet>(o)) return Set(py::cast<EmptySet>(o));
     if (py::isinstance<Fullspace>(o)) return Set(py::cast<Fullspace>(o));
@@ -235,7 +237,7 @@ inline Set set_of(const py::handle &o) {
         return Set(std::shared_ptr<const ContSet>(S, release));
     }
     CORA_FAIL(Error::wrong_value,
-              "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Ellipsoid, "
+              "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Ellipsoid, Capsule, "
               "Interval, EmptySet, Fullspace, a ContSet), got " +
                   std::string(py::str(py::type::of(o).attr("__name__"))));
 }
@@ -253,6 +255,8 @@ inline py::object object_of(const Set &S) {
         return py::cast(S.as<Polytope>());
     case ClassId::ellipsoid:
         return py::cast(S.as<Ellipsoid>());
+    case ClassId::capsule:
+        return py::cast(S.as<Capsule>());
     case ClassId::interval:
         return py::cast(S.as<Interval>());
     case ClassId::empty_set:

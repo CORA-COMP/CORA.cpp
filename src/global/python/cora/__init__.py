@@ -29,6 +29,7 @@ except ImportError:  # numpy and Eigen only
 
 from . import banner, errors
 from ._cora import (
+    Capsule,
     ContSet,
     ConZonotope,
     Ellipsoid,
@@ -93,9 +94,8 @@ from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, s
 banner.install(current_backend)
 
 __all__ = [
-    "CORAError", "CORAWarning", "ConZonotope", "ContSet", "Ellipsoid", "EmptySet", "Expr",
-    "ExpmMixedResult",
-    "ExpmResult",
+    "CORAError", "CORAWarning", "Capsule", "ConZonotope", "ContSet", "Ellipsoid", "EmptySet",
+    "Expr", "ExpmMixedResult", "ExpmResult",
     "Falsification", "Figure", "Fullspace", "Interval", "IntervalMatrix", "LinearSys",
     "MatZonotope", "MatZonotopeExpmMixedResult", "MatZonotopeExpmOneParamResult",
     "NeuralNetwork", "NonlinearSys", "Polytope", "ReachProblem", "ReachSet", "Rng",
