@@ -18,6 +18,7 @@
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 
@@ -210,6 +211,32 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Interval>(
         t,
         [](const Fullspace &F, const Interval &I, Tol tol) { return F.is_intersecting(I, tol); });
+    // the polytope has the lowest precedence of its pairs here, so it comes first
+    aux_add_set<BinaryOp::intersect, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.intersect(B); });
+    aux_add_set<BinaryOp::intersect, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.intersect(I); });
+    aux_add_set<BinaryOp::convex_hull, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.convex_hull(B); });
+    aux_add_set<BinaryOp::convex_hull, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.convex_hull(I); });
+    aux_add_set<BinaryOp::cart_prod, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.cart_prod(B); });
+    aux_add_set<BinaryOp::cart_prod, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.cart_prod(I); });
+    // a polytope contains a polytope, a box or a zonotope by the support functions along its rows
+    aux_add_predicate<BinaryOp::contains, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B, Tol tol) {
+            return A.contains(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I, Tol tol) {
+            return A.contains(I, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, Polytope, Zonotope>(
+        t, [](const Polytope &A, const Zonotope &Z, Tol tol) {
+            return A.contains(Z, "exact", tol);
+        });
     // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
     // operations are exact
     aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(
