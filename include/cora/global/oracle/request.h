@@ -7,7 +7,8 @@
 //             sets the request's dtype, all lean operands must agree, none means lean::dtype()
 // Results:    Reply::get<T>(key) decodes double, bool, int64 list, Tensor, Interval, Fullspace,
 //             Zonotope, ConZonotope, MatZonotope, ZonoBundle, Zonotope list, or std::optional of
-//             one of them (a JSON null is nothing); list(key) splits an array of objects into replies
+//             one of them (a JSON null is nothing); list(key) splits an array of objects into
+//             replies
 // See also:   lean/oracle.h, lean/interval.h, lean/zonotope.h
 
 #pragma once
