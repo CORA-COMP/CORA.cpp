@@ -1,7 +1,9 @@
 // test_polytope_enclose_points - Polytope::enclose_points: the hull of a cloud of points
 //
 // CORA: contSet/@polytope/enclosePoints.m
-// PROPERTY: the vertices are the extreme points of the cloud, and every point is inside
+// PROPERTY: contSet/@polytope/enclosePoints.m
+//
+// Property: the vertices are the extreme points of the cloud, and every point is inside
 
 #include "polytope_testing.h"
 
@@ -52,10 +54,29 @@ void refusals() {
           "enclose_points: the same with the checks off");
 }
 
+/// Every point of the cloud is in the hull and the vertices are points of the cloud; points that
+/// are convex combinations of the others are dropped.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3, 4}) {
+        const Tensor sphere = test::sphere_points(rng, n, n + 4);
+        const Tensor weights = Tensor::ones({n + 4, 3}) * (1.0 / (n + 4));
+        const Tensor inner = sphere.matmul(weights);
+        const Polytope P = Polytope::enclose_points(Tensor::concat({sphere, inner}, -1));
+        check(test::same_columns(P.V(), sphere),
+              b + ": only the sphere stays, " + std::to_string(n) + "D");
+        check(P.contains(inner, "exact", 1e-8),
+              b + ": the inner points are inside, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { clouds(b); });
+    test::for_each_backend([](const std::string &b) {
+        clouds(b);
+        properties(b);
+    });
     refusals();
     return test::finish("polytope enclose_points");
 }

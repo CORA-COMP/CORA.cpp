@@ -1,8 +1,11 @@
 // test_polytope_constraints - Polytope::constraints: the halfspaces of either representation
 //
 // CORA: contSet/@polytope/constraints.m
-// PROPERTY: the halfspaces hold exactly the vertices and nothing beyond them (hand-computed rows,
-//           and random clouds: the points are inside, the facets are tight at their vertices)
+// PROPERTY: contSet/@polytope/constraints.m
+
+// Property: the halfspaces hold exactly the vertices and nothing beyond them (hand-computed
+//           rows, and random clouds: the points are inside, the facets are tight at their
+//           vertices)
 
 #include "polytope_testing.h"
 

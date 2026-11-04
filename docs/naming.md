@@ -108,6 +108,16 @@ changed, and the reasons are listed below.
 | `conIntersect(cZ, cZ2, M)` | `cz.con_intersect(cz2, M)` | `cz.con_intersect(cz2, M)` |
 | `intersectStrip(cZ, C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` |
 | `approximateBoundsWithGPU(...)` | `ConZonotope::approximate_bounds(c, G, A, b, dr, num_union_const, options)` | `cora.ConZonotope.approximate_bounds(...)` |
+| `polytope(V)`, `polytope(A, b)`, `polytope(A, b, Ae, be)`, `polytope(I)` | `Polytope(V)`, `Polytope(A, b)`, `Polytope(A, b, Ae, be)`, `Polytope(I)` | `cora.Polytope(V)`, `cora.Polytope(A, b, Ae, be)`, `cora.Polytope(I)` |
+| `polytope.empty(n)`, `polytope.Inf(n)` | `Polytope::empty(n)`, `Polytope::inf(n)` | `cora.Polytope.empty(n)`, `cora.Polytope.inf(n)` |
+| `enclosePoints(P, points)` | `Polytope::enclose_points(points)` | `cora.Polytope.enclose_points(points)` |
+| `constraints(P)` | `P.constraints()` | `P.constraints()` |
+| `compact(P, method, tol)` | `P.compact(method, tol)` | `P.compact(method, tol)` |
+| `conZonotope(P, method, box)` | `P.con_zonotope(method, box)` | `P.con_zonotope(method, box)` |
+| `and(P, S)` | `P.intersect(S, tol)` | `P.intersect(S, tol)` |
+| `cartProd(P, S)` | `P.cart_prod(S)` | `P.cart_prod(S)` |
+| `convHull(P, S)`, `enclose(P, P2)` | `P.convex_hull(S)`, `P.enclose(P2)` | `P.convex_hull(S)`, `P.enclose(P2)` |
+| `hausdorffDist(P, S)` | `P.hausdorff_distance(S)` | `P.hausdorff_distance(S)` |
 | `boundaryPoint(Z, dir, start)` | `Z.boundary_point(dir, start)` | `Z.boundary_point(dir, start)` |
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
 | `zonotope.generateRandom` | `Zonotope::generate_random(rng, dimension, center, nr_generators, distribution)` | `cora.Zonotope.generate_random` |

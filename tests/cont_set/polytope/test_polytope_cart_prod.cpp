@@ -1,7 +1,9 @@
 // test_polytope_cart_prod - Polytope::cart_prod: the Cartesian product
 //
 // CORA: contSet/@polytope/cartProd_.m
-// PROPERTY: (x, y) is in the product iff x is in the first and y in the second set
+// PROPERTY: contSet/@polytope/cartProd_.m
+//
+// Property: (x, y) is in the product iff x is in the first and y in the second set
 
 #include "polytope_testing.h"
 
@@ -70,10 +72,27 @@ void refusals() {
     check(S.cart_prod(S).dim() == 4, "cart_prod: the same with the checks off");
 }
 
+/// (x, y) is in the product iff x is in the first and y in the second set.
+void properties(const std::string &b) {
+    Rng rng(4);
+    const Polytope P1 = test::random_polytope(rng, 2, 4), P2 = test::random_polytope(rng, 3, 5);
+    const Polytope product = P1.cart_prod(P2);
+    bool same = true;
+    for (int k = 0; k < 60; ++k) {
+        std::vector<double> x(5);
+        rng.uniform(x.data(), x.size(), -3.5, 3.5);
+        const Tensor p = column(x);
+        same = same && product.contains(p) ==
+                           (P1.contains(p.take({0, 1}, 0)) && P2.contains(p.take({2, 3, 4}, 0)));
+    }
+    check(same, b + ": the product holds exactly the pairs");
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) {
+        properties(b);
         products(b);
         batches(b);
     });

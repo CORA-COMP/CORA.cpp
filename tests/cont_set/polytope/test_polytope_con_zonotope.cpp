@@ -1,7 +1,9 @@
 // test_polytope_con_zonotope - Polytope::con_zonotope: the polytope as a constrained zonotope
 //
 // CORA: contSet/@polytope/conZonotope.m
-// PROPERTY: the constrained zonotope holds the points of the polytope and no others; it is the
+// PROPERTY: contSet/@polytope/conZonotope.m
+//
+// Property: the constrained zonotope holds the points of the polytope and no others; it is the
 //           same set whichever method and box are used
 
 #include "polytope_testing.h"
@@ -70,10 +72,33 @@ void refusals() {
           "con_zonotope: the same with the checks off");
 }
 
+/// The constrained zonotope holds the probes the polytope holds, and has its box.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Polytope Q = test::random_polytope(rng, n, n + 2);
+        for (const char *method : {"exact:supportFunc", "exact:vertices"}) {
+            const ConZonotope cz = Q.con_zonotope(method);
+            const Interval box = Q.interval(), hull = cz.interval();
+            check(close(hull.inf(), box.inf(), 1e-6) && close(hull.sup(), box.sup(), 1e-6),
+                  b + ": " + method + ": the same box, " + std::to_string(n) + "D");
+            bool same = true;
+            for (int k = 0; k < 30; ++k) {
+                std::vector<double> x(static_cast<std::size_t>(n));
+                rng.uniform(x.data(), x.size(), -3.5, 3.5);
+                const Tensor p = column(x);
+                same = same && cz.contains(p, "exact", 1e-9) == Q.contains(p, "exact", 1e-9);
+            }
+            check(same, b + ": " + method + ": the same probes, " + std::to_string(n) + "D");
+        }
+    }
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) {
+        properties(b);
         methods(b);
         special(b);
     });

@@ -1,7 +1,9 @@
 // test_polytope_center - Polytope::center: the Chebyshev center or the mean of the vertices
 //
 // CORA: contSet/@polytope/center.m
-// PROPERTY: the Chebyshev center is the center of the largest ball (its distance to every facet
+// PROPERTY: contSet/@polytope/center.m
+//
+// Property: the Chebyshev center is the center of the largest ball (its distance to every facet
 //           is the radius); 'avg' is the mean of the extreme vertices
 
 #include "polytope_testing.h"
@@ -63,10 +65,31 @@ void refusals() {
           "center: a batch of halfspace polytopes");
 }
 
+/// The Chebyshev center is inside and has the largest distance to the facets among the samples;
+/// the mean of the vertices is the mean of the extreme ones.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Polytope Q = test::random_polytope(rng, n, 2 * n);
+        const Tensor c = Q.center("chebyshev");
+        check(Q.contains(c), b + ": the center is inside, " + std::to_string(n) + "D");
+        const Tensor norms = Q.A().square().sum(-1, true).sqrt();
+        const double radius = (Q.b() - Q.A().matmul(c)).divide(norms).min().item();
+        const Tensor samples = test::sample_points(Q, rng, 40);
+        const double sampled = (Q.b() - Q.A().matmul(samples)).divide(norms).min(0).max().item();
+        check(radius >= sampled - 1e-9,
+              b + ": no sample has a larger ball, " + std::to_string(n) + "D");
+        const Tensor points = test::sphere_points(rng, n, n + 3);
+        check(close(Polytope(points).center("avg"), points.mean(-1, true), 1e-12),
+              b + ": avg: the mean of the vertices, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) {
+        properties(b);
         methods(b);
         special(b);
     });

@@ -185,6 +185,24 @@ Json Json::parse(const std::string &s) {
     return j;
 }
 
+// Whether every number of a wire-form value is zero.
+bool zero_valued(const Json &j) {
+    if (j.kind == Json::Kind::object) {
+        for (const auto &member : j.members)
+            if (member.first == "data")
+                return zero_valued(member.second);
+            else if (!zero_valued(member.second))
+                return false;
+        return true;
+    }
+    if (j.kind == Json::Kind::array) {
+        for (const Json &item : j.items)
+            if (!zero_valued(item)) return false;
+        return true;
+    }
+    return j.kind != Json::Kind::string || j.text.rfind("0*", 0) == 0;
+}
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

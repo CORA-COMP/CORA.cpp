@@ -9,7 +9,9 @@
 // CORA: contSet/@polytope/private/priv_compact_2D.m
 // CORA: contSet/@polytope/private/priv_compact_nD.m
 // CORA: contSet/@polytope/private/priv_compact_all.m
-// PROPERTY: the compacted set is the same set (same points inside) with fewer rows
+// PROPERTY: contSet/@polytope/compact_.m
+//
+// Property: the compacted set is the same set (same points inside) with fewer rows
 
 #include "polytope_testing.h"
 
@@ -120,10 +122,36 @@ void refusals() {
     check(rows(P.compact("all")) == 4, "compact: the same with the checks off");
 }
 
+/// Redundant rows (scaled copies, loose rows) change no point: the compacted set holds the same
+/// probes, with fewer rows.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Polytope Q = test::random_polytope(rng, n, 2 * n);
+        const Tensor A =
+            Tensor::concat({Q.A(), Q.A().take({0, 1}, 0) * 2.0, Q.A().take({0}, 0)}, 0);
+        const Tensor offsets =
+            Tensor::concat({Q.b(), Q.b().take({0, 1}, 0) * 2.0, Q.b().take({0}, 0) + 5.0}, 0);
+        const Polytope redundant_rows(A, offsets);
+        for (const char *method : {"all", "A", "aligned"}) {
+            const Polytope C = redundant_rows.compact(method);
+            check(C.A().shape()[0] < A.shape()[0], b + ": " + method + ": fewer rows");
+            const Tensor probes = test::sample_points(Q.box(), rng, 40) * 1.2;
+            bool same = true;
+            for (int k = 0; k < 40; ++k) {
+                const Tensor p = probes.take({k}, -1);
+                same = same && C.contains(p) == Q.contains(p);
+            }
+            check(same, b + ": " + method + ": the same probes, " + std::to_string(n) + "D");
+        }
+    }
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) {
+        properties(b);
         methods(b);
         equalities(b);
         dimensions(b);

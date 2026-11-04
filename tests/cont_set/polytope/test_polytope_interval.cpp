@@ -1,7 +1,9 @@
 // test_polytope_interval - Polytope::interval: the tightest box around the set
 //
 // CORA: contSet/@polytope/interval.m
-// PROPERTY: the box of vertices is their coordinate-wise extremes; of halfspaces it is the 2n
+// PROPERTY: contSet/@polytope/interval.m
+//
+// Property: the box of vertices is their coordinate-wise extremes; of halfspaces it is the 2n
 //           linear programs, whose bounds are met by points of the set
 
 #include "polytope_testing.h"
@@ -52,10 +54,35 @@ void refusals() {
         "interval: a batch of halfspace polytopes");
 }
 
+/// A halfspace polytope built from random vertices has the box of those vertices; the samples of a
+/// random halfspace polytope lie in its box.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3, 4}) {
+        const Tensor points = test::sphere_points(rng, n, n + 4);
+        const Interval box = Polytope(points).interval();
+        check(close(box.inf(), points.min(-1, true), 0) &&
+                  close(box.sup(), points.max(-1, true), 0),
+              b + ": vertices: the extremes, " + std::to_string(n) + "D");
+        const Polytope::Constraints C = Polytope(points).constraints();
+        const Interval from_rows = Polytope(C.A, C.b).interval();
+        check(close(from_rows.inf(), box.inf(), 1e-7) && close(from_rows.sup(), box.sup(), 1e-7),
+              b + ": the programs of the rows give the box of the vertices, " + std::to_string(n) +
+                  "D");
+        const Polytope Q = test::random_polytope(rng, n, 2 * n);
+        const Interval hull = Q.interval();
+        const Tensor samples = test::sample_points(Q, rng, 30);
+        check((samples - hull.inf()).min().item() >= -1e-9 &&
+                  (hull.sup() - samples).min().item() >= -1e-9,
+              b + ": samples lie in the box, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) {
+        properties(b);
         vertices(b);
         halfspaces(b);
     });

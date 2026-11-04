@@ -1,7 +1,9 @@
 // test_polytope_hausdorff_distance - Polytope::hausdorff_distance: the Hausdorff distance
 //
 // CORA: contSet/@polytope/hausdorffDist.m
-// PROPERTY: the distance is symmetric, zero for equal sets, and the largest distance of a vertex
+// PROPERTY: contSet/@polytope/hausdorffDist.m
+//
+// Property: the distance is symmetric, zero for equal sets, and the largest distance of a vertex
 //           of one set to the other set
 
 #include "polytope_testing.h"
@@ -59,10 +61,34 @@ void refusals() {
           "hausdorff_distance: the same with the checks off");
 }
 
+/// Symmetric, zero for the same set, and the distance of a set and its translate is the length of
+/// the translation.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Tensor points = test::sphere_points(rng, n, n + 3);
+        const Polytope P(points);
+        std::vector<double> t(static_cast<std::size_t>(n));
+        rng.uniform(t.data(), t.size(), -1.0, 1.0);
+        double length = 0.0;
+        for (const double x : t) length += x * x;
+        const Polytope shifted(points + column(t));
+        check(close(P.hausdorff_distance(shifted), std::sqrt(length), 1e-6),
+              b + ": a translate: the length, " + std::to_string(n) + "D");
+        check(close(shifted.hausdorff_distance(P), P.hausdorff_distance(shifted), 1e-6),
+              b + ": symmetric, " + std::to_string(n) + "D");
+        check(close(P.hausdorff_distance(P), 0.0, 1e-8),
+              b + ": zero for itself, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { distances(b); });
+    test::for_each_backend([](const std::string &b) {
+        distances(b);
+        properties(b);
+    });
     refusals();
     return test::finish("polytope hausdorff_distance");
 }

@@ -1,7 +1,9 @@
 // test_polytope_convex_hull - Polytope::convex_hull: the hull with a polytope, a box or a point
 //
 // CORA: contSet/@polytope/convHull_.m
-// PROPERTY: the hull holds both sets and its vertices are vertices of one of them
+// PROPERTY: contSet/@polytope/convHull_.m
+//
+// Property: the hull holds both sets and its vertices are vertices of one of them
 
 #include "polytope_testing.h"
 
@@ -66,10 +68,34 @@ void refusals() {
           "convex_hull: the same with the checks off");
 }
 
+/// The hull holds both sets and its vertices are vertices of one of them; the mix of a point of
+/// each is inside.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Tensor first = test::sphere_points(rng, n, n + 3),
+                     second = test::sphere_points(rng, n, n + 3, 0.5, 2.0);
+        const Polytope hull = Polytope(first).convex_hull(Polytope(second));
+        check(hull.contains(first, "exact", 1e-8) && hull.contains(second, "exact", 1e-8),
+              b + ": it holds both sets, " + std::to_string(n) + "D");
+        const Tensor mix = first.take({0}, -1) * 0.3 + second.take({1}, -1) * 0.7;
+        check(hull.contains(mix, "exact", 1e-8),
+              b + ": a mix of two points, " + std::to_string(n) + "D");
+        const Tensor all = Tensor::concat({first, second}, -1);
+        check(hull.V().shape()[1] <= all.shape()[1],
+              b + ": no new vertices, " + std::to_string(n) + "D");
+        check(!hull.contains(second.take({0}, -1) * 3.0, "exact", 1e-8),
+              b + ": a far point, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { hulls(b); });
+    test::for_each_backend([](const std::string &b) {
+        hulls(b);
+        properties(b);
+    });
     refusals();
     return test::finish("polytope convex_hull");
 }

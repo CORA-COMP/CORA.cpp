@@ -568,9 +568,11 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const ConZonotope &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<ZonoBundle>(S1))
                 return py::cast<const ZonoBundle &>(S1).contains(tensor_of(S2, "the points"));
+            if (py::isinstance<Polytope>(S1))
+                return py::cast<const Polytope &>(S1).contains(tensor_of(S2, "the points"));
             CORA_FAIL(Error::not_supported,
-                      "point containment is implemented for intervals, "
-                      "zonotopes, constrained zonotopes and zonotope bundles only");
+                      "point containment is implemented for intervals, zonotopes, constrained "
+                      "zonotopes, zonotope bundles and polytopes only");
         });
     bind_registry(m);
 }
@@ -2169,12 +2171,123 @@ void bind_zono_bundle(py::module_ &m) {
             "A bundle that encloses Z and M Z + S for a zonotope or a bundle S");
 }
 
+// Polytope ----------------------------------------------------------------------------------------
+
+/// The polytope of the vertices (a matrix), the halfspaces (A, b) with the equalities (Ae, be) or
+/// a box.
+Polytope polytope_of(const py::object &first, const py::object &b, const py::object &Ae,
+                     const py::object &be) {
+    if (Ae.is_none() != be.is_none())
+        CORA_FAIL(Error::wrong_input_in_constructor,
+                  "Polytope: give the equality matrix and the offset together");
+    if (py::isinstance<Interval>(first)) return Polytope(py::cast<Interval>(first));
+    if (b.is_none()) return Polytope(tensor_of(first, "the vertices V"));
+    if (Ae.is_none()) return Polytope(tensor_of(first, "A"), vector_of(b, "b"));
+    return Polytope(tensor_of(first, "A"), vector_of(b, "b"), tensor_of(Ae, "Ae"),
+                    vector_of(be, "be"));
+}
+
+/// A polytope from Python: a Polytope, or a box as one.
+Polytope polytope_arg(const py::handle &o) {
+    if (py::isinstance<Polytope>(o)) return py::cast<Polytope>(o);
+    if (py::isinstance<Interval>(o)) return Polytope(py::cast<Interval>(o));
+    CORA_FAIL(Error::wrong_value, "cora: expected a Polytope or an Interval");
+}
+
+void bind_polytope(py::module_ &m) {
+    py::class_<Polytope, ContSet>(m, "Polytope",
+                                  "The polytope {x : A x <= b, Ae x = be} or the hull of vertices V.")
+        .def(py::init([](const py::object &first, const py::object &b, const py::object &Ae,
+                         const py::object &be) { return polytope_of(first, b, Ae, be); }),
+             py::arg("A"), py::arg("b") = py::none(), py::arg("Ae") = py::none(),
+             py::arg("be") = py::none(),
+             "Polytope(V): vertices (n, p); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a box")
+        .def_static("empty", &Polytope::empty, py::arg("n") = 0, "The empty set of n dimensions")
+        .def_static("inf", &Polytope::inf, py::arg("n") = 0, "R^n")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points) { return Polytope::enclose_points(tensor_of(points, "points")); },
+            py::arg("points"), "The hull of the points (n, N), by its extreme points")
+        .def_property_readonly("A", [](const Polytope &P) { return matrix(P.A()); },
+                               "The inequality matrix (..., m, n)")
+        .def_property_readonly("b", [](const Polytope &P) { return vector(P.b()); },
+                               "The inequality offset (..., m)")
+        .def_property_readonly("Ae", [](const Polytope &P) { return matrix(P.Ae()); },
+                               "The equality matrix (..., me, n)")
+        .def_property_readonly("be", [](const Polytope &P) { return vector(P.be()); },
+                               "The equality offset (..., me)")
+        .def_property_readonly("V", [](const Polytope &P) { return matrix(P.V()); },
+                               "The vertices (..., n, p)")
+        .def(
+            "constraints",
+            [](const Polytope &P) {
+                const Polytope::Constraints C = P.constraints();
+                return py::make_tuple(matrix(C.A), vector(C.b), matrix(C.Ae), vector(C.be));
+            },
+            "(A, b, Ae, be): the halfspaces, from the vertices if need be")
+        .def("box", &Polytope::box, "The polytope of the tightest box")
+        .def(
+            "center",
+            [](const Polytope &P, const std::string &method) { return bounds(P.center(method)); },
+            py::arg("method") = "chebyshev", "The Chebyshev center or the mean ('avg') of the vertices")
+        .def("compact", &Polytope::compact, py::arg("method") = "all", py::arg("tol") = py::none(),
+             "Without redundancy: all, A, Ae, aligned, zeros, AtoAe or V")
+        .def(
+            "con_zonotope",
+            [](const Polytope &P, const std::string &method, const std::optional<Interval> &box) {
+                return P.con_zonotope(method, box);
+            },
+            py::arg("method") = "exact:supportFunc", py::arg("box") = py::none(),
+            "The polytope as a constrained zonotope: exact:supportFunc or exact:vertices")
+        .def(
+            "contains",
+            [](const Polytope &P, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<ContSet>(S)) return P.contains(py::cast<const ContSet &>(S), method, tol);
+                return P.contains(tensor_of(S, "the points"), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the polytope contains the points (n, N) or a set")
+        .def(
+            "intersect",
+            [](const Polytope &P, const py::object &S, Tol tol) {
+                if (py::isinstance<ContSet>(S)) return P.intersect(polytope_arg(S));
+                return P.intersect(tensor_of(S, "the point"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "The intersection with a polytope, a box or a point")
+        .def(
+            "cart_prod",
+            [](const Polytope &P, const py::object &S) {
+                if (py::isinstance<ContSet>(S)) return P.cart_prod(polytope_arg(S));
+                return P.cart_prod(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The Cartesian product with a polytope, a box or a point")
+        .def(
+            "convex_hull",
+            [](const Polytope &P, const py::object &S) {
+                if (py::isinstance<ContSet>(S)) return P.convex_hull(polytope_arg(S));
+                return P.convex_hull(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The convex hull with a polytope, a box or a point")
+        .def("enclose", py::overload_cast<const Polytope &>(&Polytope::enclose, py::const_),
+             py::arg("P2"), "The convex hull of the polytope and P2")
+        .def(
+            "hausdorff_distance",
+            [](const Polytope &P, const py::object &S) {
+                if (py::isinstance<Interval>(S)) return P.hausdorff_distance(py::cast<Interval>(S));
+                if (py::isinstance<Polytope>(S)) return P.hausdorff_distance(py::cast<Polytope>(S));
+                return P.hausdorff_distance(tensor_of(S, "the points"));
+            },
+            py::arg("S"), "The Hausdorff distance to a polytope, a box or the points (n, N)");
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
     const py::object CZ = m.attr("ConZonotope");
     CZ.attr("__array_ufunc__") = py::none(); // numpy defers to its operators
-    Z.attr("__array_ufunc__") = py::none();  // numpy defers to the operators below
+    m.attr("Polytope").attr("__array_ufunc__") = py::none();
+    Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
     F.attr("__array_ufunc__") = py::none();
@@ -3485,6 +3598,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_zonotope(m);
     bind_con_zonotope(m);
     bind_zono_bundle(m);
+    bind_polytope(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
     bind_operators(m);

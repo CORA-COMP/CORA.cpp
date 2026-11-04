@@ -1,7 +1,9 @@
 // test_polytope_contains - Polytope::contains: points and sets
 //
 // CORA: contSet/@polytope/contains_.m
-// PROPERTY: the points of the set are contained and points outside are not; sets are contained
+// PROPERTY: contSet/@polytope/contains_.m
+//
+// Property: the points of the set are contained and points outside are not; sets are contained
 //           iff their support function stays below every row
 
 #include "polytope_testing.h"
@@ -102,10 +104,36 @@ void refusals() {
     check(H.contains(column({0.5, 0.5})), "contains: the same with the checks off");
 }
 
+/// Samples are contained, probes beyond the box are not, the vertex route agrees with the
+/// halfspace route, and a polytope contains the boxes of its inner scaling.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Polytope Q = test::random_polytope(rng, n, 2 * n);
+        check(Q.contains(test::sample_points(Q, rng, 30)),
+              b + ": samples, " + std::to_string(n) + "D");
+        check(!Q.contains(Q.interval().sup() + 0.5),
+              b + ": beyond the box, " + std::to_string(n) + "D");
+        const Tensor points = test::sphere_points(rng, n, n + 3);
+        const Polytope V(points), H(V.constraints().A, V.constraints().b);
+        bool same = true;
+        for (int k = 0; k < 30; ++k) {
+            std::vector<double> x(static_cast<std::size_t>(n));
+            rng.uniform(x.data(), x.size(), -1.2, 1.2);
+            const Tensor p = column(x);
+            same = same && V.contains(p) == H.contains(p);
+        }
+        check(same, b + ": vertices and halfspaces agree, " + std::to_string(n) + "D");
+        const Interval inner(Q.center() - 0.05, Q.center() + 0.05);
+        check(Q.contains(inner), b + ": a small box about the center, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) {
+        properties(b);
         points(b);
         sets(b);
     });

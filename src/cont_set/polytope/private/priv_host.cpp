@@ -199,7 +199,9 @@ Polytope priv_polytope_of_interval(const Interval &I) {
     if (I.is_empty()) return Polytope::empty(n);
     // x <= sup and -x <= -inf; the rows with an infinite offset are dropped by the constructor
     const Tensor eye = priv_identity(I.inf(), n);
-    return {Tensor::concat({eye, -eye}, -2), Tensor::concat({I.sup(), -I.inf()}, -2)};
+    // the negative identity as 0 - I, so that its zeros are +0 as in CORALean
+    const Tensor negative = priv_zeros(I.inf(), n, n) - eye;
+    return {Tensor::concat({eye, negative}, -2), Tensor::concat({I.sup(), -I.inf()}, -2)};
 }
 
 } // namespace cora

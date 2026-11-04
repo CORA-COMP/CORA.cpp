@@ -30,8 +30,9 @@ inline cora::Polytope random_polytope(cora::Rng &rng, int n, int m) {
     return {cora::Tensor::from_data(A, {rows, n}), cora::Tensor::from_data(b, {rows, 1})};
 }
 
-/// k points (n, k) on the sphere of the given radius around the origin: all of them are vertices.
-inline cora::Tensor sphere_points(cora::Rng &rng, int n, int k, double radius = 1.0) {
+/// k points (n, k) on the sphere of the radius about the point (shift, ..., shift): all vertices.
+inline cora::Tensor sphere_points(cora::Rng &rng, int n, int k, double radius = 1.0,
+                                  double shift = 0.0) {
     std::vector<double> points(std::size_t(n) * k);
     rng.normal(points.data(), points.size(), 1.0);
     for (int c = 0; c < k; ++c) {
@@ -39,7 +40,8 @@ inline cora::Tensor sphere_points(cora::Rng &rng, int n, int k, double radius = 
         for (int i = 0; i < n; ++i)
             norm += points[std::size_t(i) * k + c] * points[std::size_t(i) * k + c];
         norm = std::sqrt(norm);
-        for (int i = 0; i < n; ++i) points[std::size_t(i) * k + c] *= radius / norm;
+        for (int i = 0; i < n; ++i)
+            points[std::size_t(i) * k + c] = shift + radius * points[std::size_t(i) * k + c] / norm;
     }
     return cora::Tensor::from_data(points, {n, k});
 }

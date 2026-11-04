@@ -1,7 +1,9 @@
 // test_polytope_box - Polytope::box: the polytope of the tightest box
 //
 // CORA: contSet/@polytope/box.m
-// PROPERTY: the result is the polytope of the box of the set, and contains the set
+// PROPERTY: contSet/@polytope/box.m
+//
+// Property: the result is the polytope of the box of the set, and contains the set
 
 #include "polytope_testing.h"
 
@@ -34,10 +36,27 @@ void refusals() {
           "box: a batch of halfspace polytopes");
 }
 
+/// The box of a random polytope holds its samples, and its box is the polytope's box.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Polytope Q = test::random_polytope(rng, n, 2 * n);
+        const Polytope B = Q.box();
+        check(test::inside_halfspaces(test::sample_points(Q, rng, 30), B.constraints()),
+              b + ": the box holds the samples, " + std::to_string(n) + "D");
+        check(close(B.interval().inf(), Q.interval().inf(), 1e-8) &&
+                  close(B.interval().sup(), Q.interval().sup(), 1e-8),
+              b + ": the box of the box, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { box_of(b); });
+    test::for_each_backend([](const std::string &b) {
+        box_of(b);
+        properties(b);
+    });
     refusals();
     return test::finish("polytope box");
 }

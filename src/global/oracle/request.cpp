@@ -83,6 +83,10 @@ struct Decode<ZonoBundle> {
         return ZonoBundle::from_json(dt, j);
     }
 };
+template <>
+struct Decode<Polytope> {
+    static Polytope of(const std::string &dt, const Json &j) { return Polytope::from_json(dt, j); }
+};
 // The empty set is its dimension, {"n": n}.
 template <>
 struct Decode<EmptySet> {
@@ -147,6 +151,7 @@ Wire::Wire(const ConZonotope &cz) : json(cz.to_json()), dtype(cz.dtype()) {}
 Wire::Wire(const MatZonotope &A) : json(A.to_json()), dtype(A.center().dtype()) {}
 Wire::Wire(const ZonoBundle &bundle)
     : json(bundle.to_json()), dtype(bundle.zonotopes().front().center().dtype()) {}
+Wire::Wire(const Polytope &P) : json(P.to_json()), dtype(P.dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
 
@@ -195,6 +200,7 @@ template Zonotope Reply::get<Zonotope>(const char *) const;
 template ConZonotope Reply::get<ConZonotope>(const char *) const;
 template MatZonotope Reply::get<MatZonotope>(const char *) const;
 template ZonoBundle Reply::get<ZonoBundle>(const char *) const;
+template Polytope Reply::get<Polytope>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;

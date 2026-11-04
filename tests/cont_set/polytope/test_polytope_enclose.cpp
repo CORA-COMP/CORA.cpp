@@ -1,7 +1,9 @@
 // test_polytope_enclose - Polytope::enclose: the convex hull of a set and another
 //
 // CORA: contSet/@polytope/enclose.m
-// PROPERTY: the result is the convex hull of the two sets
+// PROPERTY: contSet/@polytope/enclose.m
+//
+// Property: the result is the convex hull of the two sets
 
 #include "polytope_testing.h"
 
@@ -34,10 +36,26 @@ void refusals() {
     check(S.enclose(S).V().shape() == Shape{2, 3}, "enclose: the same with the checks off");
 }
 
+/// The enclosure of two random vertex sets is their convex hull.
+void properties(const std::string &b) {
+    Rng rng(4);
+    const Tensor first = test::sphere_points(rng, 3, 6),
+                 second = test::sphere_points(rng, 3, 6, 0.5, 2.0);
+    const Polytope P1(first), P2(second);
+    check(test::same_columns(P1.enclose(P2).V(), P1.convex_hull(P2).V()),
+          b + ": the same vertices");
+    check(P1.enclose(P2).contains(first, "exact", 1e-8) &&
+              P1.enclose(P2).contains(second, "exact", 1e-8),
+          b + ": it holds both sets");
+}
+
 } // namespace
 
 int main() {
-    test::for_each_backend([](const std::string &b) { enclosing(b); });
+    test::for_each_backend([](const std::string &b) {
+        enclosing(b);
+        properties(b);
+    });
     refusals();
     return test::finish("polytope enclose");
 }

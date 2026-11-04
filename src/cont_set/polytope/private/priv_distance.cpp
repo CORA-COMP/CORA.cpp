@@ -7,7 +7,7 @@
 //           to nonnegative least squares
 // See also: Polytope::hausdorff_distance, priv_linear_programs
 //
-// CORA: contSet/@polytope/hausdorffDist.m:aux_distPolyPoint
+// CORA: contSet/@polytope/hausdorffDist.m
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

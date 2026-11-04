@@ -15,24 +15,6 @@ namespace cora::lean {
 
 namespace {
 
-// Whether a wire-form tensor or box has only zero entries ("0*2^0" is the text of zero).
-bool aux_zero(const Json &j) {
-    if (j.kind == Json::Kind::object) {
-        for (const auto &member : j.members)
-            if (member.first == "data")
-                return aux_zero(member.second);
-            else if (!aux_zero(member.second))
-                return false;
-        return true;
-    }
-    if (j.kind == Json::Kind::array) {
-        for (const Json &item : j.items)
-            if (!aux_zero(item)) return false;
-        return true;
-    }
-    return j.kind != Json::Kind::string || j.text.rfind("0*", 0) == 0;
-}
-
 // The constrained zonotope `cZ` of the response to `op` on the operands.
 ConZonotope aux_set(const Reply &reply) { return reply.get<ConZonotope>("cZ"); }
 
@@ -53,9 +35,9 @@ ConZonotope::ConZonotope(const cora::ConZonotope &cz)
 bool ConZonotope::exact() const {
     const Json *P = json_.find("P");
     if (!P) return true;
-    if (!aux_zero(json_.at("E"))) return false;
-    return aux_zero(P->at("E")) && aux_zero(P->at("be_error")) && aux_zero(P->at("b_error")) &&
-           P->at("A").at("rows").text == "0";
+    if (!zero_valued(json_.at("E"))) return false;
+    return zero_valued(P->at("E")) && zero_valued(P->at("be_error")) &&
+           zero_valued(P->at("b_error")) && P->at("A").at("rows").text == "0";
 }
 
 // The equalities of an oracle result are P.Ae x = P.be; a set made of {c, G, A, b} has A, b.

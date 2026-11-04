@@ -1,7 +1,9 @@
 // test_polytope_intersect - Polytope::intersect: the intersection with a polytope, a box or a point
 //
 // CORA: contSet/@polytope/and_.m
-// PROPERTY: a point is in the intersection iff it is in both sets
+// PROPERTY: contSet/@polytope/and_.m
+//
+// Property: a point is in the intersection iff it is in both sets
 
 #include "polytope_testing.h"
 
@@ -62,10 +64,29 @@ void refusals() {
     check(S.intersect(S).A().shape() == Shape{2, 2}, "intersect: the same with the checks off");
 }
 
+/// A probe is in the intersection iff it is in both sets.
+void properties(const std::string &b) {
+    Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Polytope P1 = test::random_polytope(rng, n, 2 * n),
+                       P2 = test::random_polytope(rng, n, 2 * n);
+        const Polytope both = P1.intersect(P2);
+        bool same = true;
+        for (int k = 0; k < 60; ++k) {
+            std::vector<double> x(static_cast<std::size_t>(n));
+            rng.uniform(x.data(), x.size(), -3.5, 3.5);
+            const Tensor p = column(x);
+            same = same && both.contains(p) == (P1.contains(p) && P2.contains(p));
+        }
+        check(same, b + ": exactly the common points, " + std::to_string(n) + "D");
+    }
+}
+
 } // namespace
 
 int main() {
     test::for_each_backend([](const std::string &b) {
+        properties(b);
         intersections(b);
         batches(b);
     });

@@ -28,6 +28,7 @@
 #include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/oracle/oracle.h"
+#include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
@@ -294,6 +295,19 @@ inline bool same_bits(const std::string &what, const cora::ZonoBundle &a,
 }
 
 /// The two halves of a split.
+/// The nominal part of the oracle's polytope (its error boxes are not compared): the vertices, or
+/// the rows and the equalities.
+inline bool same_bits(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
+    const cora::Polytope other = b.nominal();
+    if (a.is_h_rep() != other.is_h_rep()) {
+        std::cerr << "  " << what << ": the form differs\n";
+        return false;
+    }
+    if (!a.is_h_rep()) return same_bits(what + ".V", a.V(), other.V());
+    return same_bits(what + ".A", a.A(), other.A()) & same_bits(what + ".b", a.b(), other.b()) &
+           same_bits(what + ".Ae", a.Ae(), other.Ae()) & same_bits(what + ".be", a.be(), other.be());
+}
+
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
     const bool first = same_bits(what + ".1", a.first, b.first); // both are reported
@@ -410,6 +424,11 @@ inline bool enclosed(const std::string &what, const cora::ZonoBundle &a,
     for (std::size_t i = 0; i < b.zonotopes().size(); ++i)
         ok &= enclosed(what + "[" + std::to_string(i) + "]", a.zonotopes()[i], b.zonotopes()[i]);
     return ok;
+}
+
+/// A polytope with error boxes has no nominal rows to compare; one without is the same one.
+inline bool enclosed(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
+    return !b.exact() || same_bits(what, a, b);
 }
 
 /// A certified answer must not be contradicted: if the oracle proves it, CORA.cpp says the same.
