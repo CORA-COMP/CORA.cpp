@@ -1,13 +1,21 @@
 // isequal - whether two zonotope bundles are the same set
 //
-// Syntax:   res = zB.isequal(S);   res = zB.isequal(S, tol);
-// Inputs:   S - a bundle;  tol - default: the repository tolerance (docs/architecture.md)
-// Outputs:  res - false if the dimensions differ; true if the bundles have as many members and
-//           they agree one by one (Zonotope::isequal with tol, where CORA uses its default);
-//           else whether each contains the other (contains). Not a batch
+// False for other dimensions; true if the members agree one by one (Zonotope::isequal with tol,
+// where CORA uses its default); else each bundle must contain the other.
+//
+// Syntax:   res = bundle.isequal(S);   res = bundle.isequal(S, tol);
+// Inputs:   S - a bundle
+//           tol - default: the repository tolerance (docs/architecture.md)
+// Outputs:  res - whether the bundles are equal; not for a batch
 // See also: contains, Zonotope::isequal
 //
 // CORA: contSet/@zonoBundle/isequal.m
+//
+// CORA authors: Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
 
@@ -20,10 +28,10 @@ namespace cora {
 namespace {
 
 /// Whether the bundles have as many members and every pair of the same position is equal.
-bool aux_members_equal(const ZonoBundle &zB, const ZonoBundle &S, double tol) {
-    if (zB.parallel_sets() != S.parallel_sets()) return false;
-    for (std::size_t i = 0; i < zB.zonotopes().size(); ++i)
-        if (!zB.zonotopes()[i].isequal(S.zonotopes()[i], tol)) return false;
+bool aux_members_equal(const ZonoBundle &bundle, const ZonoBundle &S, double tol) {
+    if (bundle.parallel_sets() != S.parallel_sets()) return false;
+    for (std::size_t i = 0; i < bundle.zonotopes().size(); ++i)
+        if (!bundle.zonotopes()[i].isequal(S.zonotopes()[i], tol)) return false;
     return true;
 }
 

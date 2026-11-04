@@ -1,13 +1,21 @@
 // lift - a zonotope bundle in a space of higher dimension, with its states at given positions
 //
-// Syntax:   ZonoBundle zBl = zB.lift(N, dims);
-// Inputs:   N - the dimension of the new space;  dims - the position (0-based) of each state in it;
-//           N positions, each used once: new dimensions would be unbounded
-// Outputs:  zBl - every member lifted (Zonotope::lift, a permutation of the states). CORA's lift_
-//           projects onto dims instead, the inverse permutation (docs/cora-differences.md)
+// Every member is lifted by Zonotope::lift. CORA's lift_ projects onto dims instead, the inverse
+// permutation (docs/cora-differences.md).
+//
+// Syntax:   ZonoBundle zBl = bundle.lift(N, dims);
+// Inputs:   N - the dimension of the new space
+//           dims - the position (0-based) of each state; N positions, each used once
+// Outputs:  zBl - the bundle whose state dims[i] is state i of bundle
 // See also: Zonotope::lift
 //
 // CORA: contSet/@zonoBundle/lift_.m
+//
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 

@@ -22,7 +22,9 @@ namespace {
 void cart_prod_gradient() {
     test::gradcheck(
         "cart_prod",
-        [](const Inputs &x) { return test::parts(test::bundle(x, 0, 2).cart_prod(test::bundle(x, 4, 2))); },
+        [](const Inputs &x) {
+            return test::parts(test::bundle(x, 0, 2).cart_prod(test::bundle(x, 4, 2)));
+        },
         test::joined(test::random_bundle_parts(2, 2, 3), test::random_bundle_parts(2, 3, 2)));
 }
 

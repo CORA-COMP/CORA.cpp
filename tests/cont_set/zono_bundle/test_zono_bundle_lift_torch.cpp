@@ -21,7 +21,8 @@ namespace {
 /// The gradient of the lifted bundle with respect to its members.
 void lift_gradient() {
     test::gradcheck(
-        "lift", [](const Inputs &x) { return test::parts(test::bundle(x, 0, 2).lift(3, {2, 0, 1})); },
+        "lift",
+        [](const Inputs &x) { return test::parts(test::bundle(x, 0, 2).lift(3, {2, 0, 1})); },
         test::random_bundle_parts(2, 3, 2));
 }
 

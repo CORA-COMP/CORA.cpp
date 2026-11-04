@@ -1,6 +1,7 @@
 // zono_bundle_gradients - what the torch tests of the zonotope bundle share
 //
-// Syntax:   gradcheck("cart_prod", [](const Inputs &x) { return test::parts(bundle(x, 0, 2).cart_prod(bundle(x, 4, 2))); },
+// Syntax:   gradcheck("cart_prod", [](const Inputs &x) { return test::parts(bundle(x, 0,
+// 2).cart_prod(bundle(x, 4, 2))); },
 //                     test::random_bundle_parts(2, 2, 3));
 // Sets:     two inputs (c, G) per member; parts are the center and generators of every member
 // See also: cont_set/zonotope/zonotope_gradients.h
@@ -20,9 +21,9 @@
 namespace test {
 
 /// The center and generators of every member, as the outputs of a function.
-inline Inputs parts(const cora::ZonoBundle &zB) {
+inline Inputs parts(const cora::ZonoBundle &bundle) {
     Inputs out;
-    for (const cora::Zonotope &Z : zB.zonotopes()) {
+    for (const cora::Zonotope &Z : bundle.zonotopes()) {
         out.push_back(Z.center());
         out.push_back(Z.generators());
     }
@@ -32,12 +33,13 @@ inline Inputs parts(const cora::ZonoBundle &zB) {
 /// The bundle of the k members made of the inputs from `first` on.
 inline cora::ZonoBundle bundle(const Inputs &x, std::size_t first, std::size_t k) {
     std::vector<cora::Zonotope> members;
-    for (std::size_t i = 0; i < k; ++i) members.emplace_back(x[first + 2 * i], x[first + 2 * i + 1]);
+    for (std::size_t i = 0; i < k; ++i)
+        members.emplace_back(x[first + 2 * i], x[first + 2 * i + 1]);
     return cora::ZonoBundle(std::move(members));
 }
 
-/// k members (c, G) with centers in [-0.5, 0.5] and generator entries of magnitude in [0.5, 1.5], so
-/// the members overlap and no entry is near zero.
+/// k members (c, G) with centers in [-0.5, 0.5] and generator entries of magnitude in [0.5, 1.5],
+/// so the members overlap and no entry is near zero.
 inline std::vector<torch::Tensor> random_bundle_parts(int64_t k, int64_t n, int64_t m) {
     std::vector<torch::Tensor> out;
     for (int64_t i = 0; i < k; ++i) {
@@ -49,7 +51,8 @@ inline std::vector<torch::Tensor> random_bundle_parts(int64_t k, int64_t n, int6
 }
 
 /// The inputs of two lists joined.
-inline std::vector<torch::Tensor> joined(std::vector<torch::Tensor> a, const std::vector<torch::Tensor> &b) {
+inline std::vector<torch::Tensor> joined(std::vector<torch::Tensor> a,
+                                         const std::vector<torch::Tensor> &b) {
     a.insert(a.end(), b.begin(), b.end());
     return a;
 }

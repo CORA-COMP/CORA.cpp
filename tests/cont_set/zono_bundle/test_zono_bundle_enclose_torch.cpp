@@ -24,7 +24,9 @@ void enclose_gradient() {
                                      B = test::random_bundle_parts(2, 2, 2);
     test::gradcheck(
         "enclose",
-        [](const Inputs &x) { return test::parts(test::bundle(x, 0, 2).enclose(test::bundle(x, 4, 2))); },
+        [](const Inputs &x) {
+            return test::parts(test::bundle(x, 0, 2).enclose(test::bundle(x, 4, 2)));
+        },
         test::joined(A, B));
     test::gradcheck(
         "enclose (M, Zplus)",

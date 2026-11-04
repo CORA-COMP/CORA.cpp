@@ -1,13 +1,20 @@
 // zono_bundle - the constructor of a zonotope bundle, checked, as CORA's zonoBundle
 //
-// Syntax:   ZonoBundle zB({Z1, Z2});
+// CORA also takes an empty list (a bundle of dimension 0 that it treats as the empty set); the
+// intersection of no sets is the whole space, so CORA.cpp refuses it.
+//
+// Syntax:   ZonoBundle bundle({Z1, Z2});
 // Inputs:   zonotopes - a nonempty list of zonotopes of one dimension and one batch shape
-// Outputs:  zB - the intersection of the zonotopes (CORA also takes an empty list, a bundle with
-//           dimension 0 that it treats as the empty set; the intersection of nothing is the whole
-//           space, so CORA.cpp refuses it)
+// Outputs:  bundle - the intersection of the zonotopes
 // See also: empty, Zonotope::Zonotope
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
+//
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
 

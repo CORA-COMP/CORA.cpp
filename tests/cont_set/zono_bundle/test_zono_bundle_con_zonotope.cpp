@@ -26,8 +26,8 @@ namespace {
 /// Two squares [0, 2]^2 and [1, 3]^2 meet in [1, 2]^2: one equality per dimension joins them.
 void two_squares(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    const ZonoBundle zB({Zonotope(column({1.0, 1.0}), I2), Zonotope(column({2.0, 2.0}), I2)});
-    const ConZonotope cz = zB.con_zonotope();
+    const ZonoBundle bundle({Zonotope(column({1.0, 1.0}), I2), Zonotope(column({2.0, 2.0}), I2)});
+    const ConZonotope cz = bundle.con_zonotope();
     check(cz.generators().shape() == Shape{2, 4}, b + ": the generators of both members");
     check(cz.A().shape() == Shape{2, 4}, b + ": one equality per dimension");
     const Interval box = cz.interval();
@@ -49,13 +49,14 @@ void single_member(const std::string &b) {
 void same_points(const std::string &b) {
     Rng rng(21);
     Tensor common;
-    const ZonoBundle zB = test::random_zono_bundle(rng, 3, 3, 4, &common);
-    const ConZonotope cz = zB.con_zonotope();
-    const Tensor inside = test::bundle_points(zB, rng, 12, common);
+    const ZonoBundle bundle = test::random_zono_bundle(rng, 3, 3, 4, &common);
+    const ConZonotope cz = bundle.con_zonotope();
+    const Tensor inside = test::bundle_points(bundle, rng, 12, common);
     check(cz.contains(inside), b + ": every point of the bundle is in the constrained zonotope");
     // a point of the first member only: the others cut it off
-    const Tensor far = zB.zonotopes()[0].center() + zB.zonotopes()[0].generators().slice(-1, 0, 1) * 1.0;
-    check(cz.contains(far) == test::in_every_member(zB, far), b + ": a boundary point agrees");
+    const Tensor far =
+        bundle.zonotopes()[0].center() + bundle.zonotopes()[0].generators().slice(-1, 0, 1) * 1.0;
+    check(cz.contains(far) == test::in_every_member(bundle, far), b + ": a boundary point agrees");
     check(!cz.contains(common + common.ones_like() * 100.0), b + ": a far point is outside");
 }
 

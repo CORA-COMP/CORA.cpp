@@ -280,7 +280,8 @@ inline bool same_bits(const std::string &what, const cora::MatZonotope &a,
 }
 
 /// The members of a bundle, one by one, and their number.
-inline bool same_bits(const std::string &what, const cora::ZonoBundle &a, const lean::ZonoBundle &b) {
+inline bool same_bits(const std::string &what, const cora::ZonoBundle &a,
+                      const lean::ZonoBundle &b) {
     if (a.parallel_sets() != int64_t(b.zonotopes().size())) {
         std::cerr << "  " << what << ": " << a.parallel_sets() << " members in CORA.cpp, "
                   << b.zonotopes().size() << " in the oracle\n";
@@ -402,7 +403,8 @@ inline bool enclosed(const std::string &what, const cora::ConZonotope &a,
 }
 
 /// Every member inside the oracle's member of the same position.
-inline bool enclosed(const std::string &what, const cora::ZonoBundle &a, const lean::ZonoBundle &b) {
+inline bool enclosed(const std::string &what, const cora::ZonoBundle &a,
+                     const lean::ZonoBundle &b) {
     if (a.parallel_sets() != int64_t(b.zonotopes().size())) return same_bits(what, a, b);
     bool ok = true;
     for (std::size_t i = 0; i < b.zonotopes().size(); ++i)

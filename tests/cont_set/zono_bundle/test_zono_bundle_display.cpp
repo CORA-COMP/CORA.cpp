@@ -25,8 +25,8 @@ namespace {
 /// The text names the class, the dimension, the number of members and shows every member.
 void text_of_a_bundle(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {3.0}}));
-    const ZonoBundle zB({Z, Z});
-    const std::string text = zB.display();
+    const ZonoBundle bundle({Z, Z});
+    const std::string text = bundle.display();
     check(text.find("zonotope bundle") == 0, b + ": starts with the class");
     check(text.find("- dimension: 2") != std::string::npos &&
               text.find("- zonotopes: 2") != std::string::npos,
@@ -35,7 +35,7 @@ void text_of_a_bundle(const std::string &b) {
               text.find("    zonotope\n") != std::string::npos,
           b + ": every member, indented");
     std::ostringstream out;
-    out << zB;
+    out << bundle;
     check(out.str() == text, b + ": the stream operator prints it");
 }
 

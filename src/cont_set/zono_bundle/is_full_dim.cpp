@@ -1,14 +1,20 @@
 // is_full_dim - whether a zonotope bundle has a nonempty interior
 //
-// Syntax:   res = zB.is_full_dim();   res = zB.is_full_dim(tol);
-// Inputs:   tol - the rank tolerance of the members and of the intersection; default: the
-//           repository tolerance (docs/architecture.md)
-// Outputs:  res - true if every member is full-dimensional and so is the intersection, which is
-//           decided on its constrained zonotope (CORA decides it on the polytope of the bundle;
-//           there is no Polytope yet). Not a batch
-// See also: con_zonotope, Zonotope::is_full_dim, ConZonotope::is_full_dim
+// Every member must be full-dimensional and so must the intersection, which is decided on its
+// constrained zonotope (CORA decides it on the polytope of the bundle; there is no Polytope yet).
+//
+// Syntax:   res = bundle.is_full_dim();   res = bundle.is_full_dim(tol);
+// Inputs:   tol - the rank tolerance; default: the repository tolerance (docs/architecture.md)
+// Outputs:  res - true if the bundle has a nonempty interior; not for a batch
+// See also: con_zonotope, ConZonotope::is_full_dim
 //
 // CORA: contSet/@zonoBundle/isFullDim.m
+//
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
 

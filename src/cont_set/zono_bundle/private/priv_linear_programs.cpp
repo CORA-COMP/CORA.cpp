@@ -1,11 +1,17 @@
 // priv_linear_programs - the linear programs of a zonotope bundle on the host
 //
-// Syntax:   bool empty = priv_bundle_is_empty(zB);   bool in = priv_con_zonotope_in_zonotope(A, B, tol);
-// Inputs:   zB - a bundle;  A, B - a constrained zonotope and a zonotope (single sets)
+// Syntax:   bool empty = priv_bundle_is_empty(bundle);   bool in = priv_con_zonotope_in_zonotope(A,
+// B, tol); Inputs:   bundle - a bundle;  A, B - a constrained zonotope and a zonotope (single sets)
 // Outputs:  whether the bundle has no point, whether A lies in B
 // See also: ZonoBundle::con_zonotope, ConZonotope
 //
-// CORA.cpp only: CORA asks the polytope of the bundle (isempty, contains); there is no Polytope here
+// CORA.cpp only: CORA asks the polytope of the bundle (isempty, contains); there is no Polytope
+// here
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zono_bundle/private/priv.h"
@@ -19,8 +25,8 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-bool priv_bundle_is_empty(const ZonoBundle &zB) {
-    return priv_is_empty(priv_host_con_zonotope(zB.con_zonotope()));
+bool priv_bundle_is_empty(const ZonoBundle &bundle) {
+    return priv_is_empty(priv_host_con_zonotope(bundle.con_zonotope()));
 }
 
 bool priv_con_zonotope_in_zonotope(const ConZonotope &A, const Zonotope &B, double tol) {

@@ -3,8 +3,13 @@
 // Not for callers of the class: the operations of the class use them. The linear programs run on
 // the host, on one (unbatched) set.
 //
-// Syntax:   Refusal r = priv_members_refusal(Zs);   bool empty = priv_bundle_is_empty(zB);
+// Syntax:   Refusal r = priv_members_refusal(Zs);   bool empty = priv_bundle_is_empty(bundle);
 // See also: zono_bundle.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -21,10 +26,10 @@ namespace cora {
 /// batch shape. The constructor raises it.
 detail::Refusal priv_members_refusal(const std::vector<Zonotope> &zonotopes);
 
-/// Why `zB` and a set of dimension n whose tensors are like `like` cannot be combined by the
+/// Why `bundle` and a set of dimension n whose tensors are like `like` cannot be combined by the
 /// operation `who`, if they cannot: the dimension (unless `same_dimension` is false, for a
 /// product) or the batch shape differs.
-detail::Refusal priv_operand_refusal(const ZonoBundle &zB, int64_t n, const Tensor &like,
+detail::Refusal priv_operand_refusal(const ZonoBundle &bundle, int64_t n, const Tensor &like,
                                      const char *who, bool same_dimension = true);
 
 /// Why a linear program per set cannot run on a set whose tensors are like `like` (a batch), if it
@@ -33,8 +38,8 @@ detail::Refusal priv_batch_refusal(const Tensor &like, const char *who);
 
 // Linear programs ---------------------------------------------------------------------------------
 
-/// Whether no point lies in all members of the bundle (CORA's representsa_(zB, 'emptySet')).
-bool priv_bundle_is_empty(const ZonoBundle &zB);
+/// Whether no point lies in all members of the bundle (CORA's representsa_(bundle, 'emptySet')).
+bool priv_bundle_is_empty(const ZonoBundle &bundle);
 
 /// Whether the constrained zonotope A lies in the zonotope B (plus tol, as within_tol): the
 /// support function of A along every facet normal of B stays below the facet's offset. An empty A

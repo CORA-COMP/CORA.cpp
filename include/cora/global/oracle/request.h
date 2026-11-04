@@ -47,7 +47,7 @@ struct Wire {
     Wire(const Zonotope &Z);
     Wire(const ConZonotope &cz);
     Wire(const MatZonotope &A);
-    Wire(const ZonoBundle &zB);
+    Wire(const ZonoBundle &bundle);
     Wire(const std::vector<Tensor> &Ts);
     Wire(const std::vector<std::vector<Tensor>> &Tss);
     Wire(const std::vector<Zonotope> &Zs);

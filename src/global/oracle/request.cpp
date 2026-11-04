@@ -144,8 +144,8 @@ Wire::Wire(const Fullspace &F) : json(F.to_json()) {}
 Wire::Wire(const Zonotope &Z) : json(Z.to_json()), dtype(Z.center().dtype()) {}
 Wire::Wire(const ConZonotope &cz) : json(cz.to_json()), dtype(cz.dtype()) {}
 Wire::Wire(const MatZonotope &A) : json(A.to_json()), dtype(A.center().dtype()) {}
-Wire::Wire(const ZonoBundle &zB)
-    : json(zB.to_json()), dtype(zB.zonotopes().front().center().dtype()) {}
+Wire::Wire(const ZonoBundle &bundle)
+    : json(bundle.to_json()), dtype(bundle.zonotopes().front().center().dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
 

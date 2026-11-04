@@ -26,42 +26,46 @@ namespace {
 /// A bundle, a zonotope and a box are appended in order; a box becomes its zonotope.
 void members_are_appended(const std::string &b) {
     const Zonotope Z1(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        Z2(column({1.0, 0.0}), Tensor({{1.0}, {1.0}})), Z3(column({0.0, 1.0}), Tensor({{2.0}, {0.0}}));
-    const ZonoBundle zB({Z1, Z2});
-    const ZonoBundle with_bundle = zB.intersect(ZonoBundle({Z3, Z1}));
+        Z2(column({1.0, 0.0}), Tensor({{1.0}, {1.0}})),
+        Z3(column({0.0, 1.0}), Tensor({{2.0}, {0.0}}));
+    const ZonoBundle bundle({Z1, Z2});
+    const ZonoBundle with_bundle = bundle.intersect(ZonoBundle({Z3, Z1}));
     check(with_bundle.parallel_sets() == 4 &&
               close(with_bundle.zonotopes()[2].center(), Z3.center(), 0),
           b + ": a bundle: the members of both");
-    check(zB.intersect(Z3).parallel_sets() == 3 &&
-              close(zB.intersect(Z3).zonotopes()[2].generators(), Z3.generators(), 0),
+    check(bundle.intersect(Z3).parallel_sets() == 3 &&
+              close(bundle.intersect(Z3).zonotopes()[2].generators(), Z3.generators(), 0),
           b + ": a zonotope: one more member");
     const Interval I(column({-1.0, -1.0}), column({1.0, 3.0}));
-    check(close(zB.intersect(I).zonotopes()[2].center(), I.zonotope().center(), 0),
+    check(close(bundle.intersect(I).zonotopes()[2].center(), I.zonotope().center(), 0),
           b + ": a box: its zonotope");
-    check(zB.parallel_sets() == 2, b + ": the operand is unchanged");
+    check(bundle.parallel_sets() == 2, b + ": the operand is unchanged");
 }
 
 /// The registry finds the pairs in either order, as CORA's precedence puts the bundle first.
 void through_the_registry(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    const ZonoBundle zB({Z, Z});
-    const Set left = intersect(Set(zB), Set(Z)), right = intersect(Set(Z), Set(zB));
-    check(left.is<ZonoBundle>() && left.as<ZonoBundle>().parallel_sets() == 3, b + ": bundle, zonotope");
-    check(right.is<ZonoBundle>() && right.as<ZonoBundle>().parallel_sets() == 3, b + ": zonotope, bundle");
-    check((Set(zB) & Set(zB)).as<ZonoBundle>().parallel_sets() == 4, b + ": the operator &");
+    const ZonoBundle bundle({Z, Z});
+    const Set left = intersect(Set(bundle), Set(Z)), right = intersect(Set(Z), Set(bundle));
+    check(left.is<ZonoBundle>() && left.as<ZonoBundle>().parallel_sets() == 3,
+          b + ": bundle, zonotope");
+    check(right.is<ZonoBundle>() && right.as<ZonoBundle>().parallel_sets() == 3,
+          b + ": zonotope, bundle");
+    check((Set(bundle) & Set(bundle)).as<ZonoBundle>().parallel_sets() == 4,
+          b + ": the operator &");
 }
 
 /// Stated property: a point is in the result if and only if it is in the bundle and in the set.
 void points_of_the_intersection(const std::string &b) {
     Rng rng(26);
     Tensor common, other;
-    const ZonoBundle zB = test::random_zono_bundle(rng, 3, 2, 3, &common);
+    const ZonoBundle bundle = test::random_zono_bundle(rng, 3, 2, 3, &common);
     const Zonotope Z = test::random_zono_bundle(rng, 3, 1, 3, &other).zonotopes()[0];
-    const ZonoBundle R = zB.intersect(Z);
-    const Tensor points = test::bundle_points(zB, rng, 20, common);
+    const ZonoBundle R = bundle.intersect(Z);
+    const Tensor points = test::bundle_points(bundle, rng, 20, common);
     for (int k = 0; k < 20; ++k) {
         const Tensor p = points.slice(-1, k, k + 1);
-        check(test::in_every_member(R, p) == (test::in_every_member(zB, p) && Z.contains(p)),
+        check(test::in_every_member(R, p) == (test::in_every_member(bundle, p) && Z.contains(p)),
               b + ": membership of a sampled point");
     }
 }
@@ -70,19 +74,20 @@ void points_of_the_intersection(const std::string &b) {
 /// checks off.
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    const ZonoBundle zB({Z});
-    check(test::raises([&] { zB.intersect(Zonotope(column({0.0}), Tensor({{1.0}}))); },
+    const ZonoBundle bundle({Z});
+    check(test::raises([&] { bundle.intersect(Zonotope(column({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "intersect: another dimension");
-    check(test::raises([&] { zB.intersect(Zonotope::stack({Z, Z})); }, Error::dimension_mismatch),
-          "intersect: another batch shape");
-    check(test::raises([&] { zB.intersect(Interval::empty(2)); }, Error::not_supported),
+    check(
+        test::raises([&] { bundle.intersect(Zonotope::stack({Z, Z})); }, Error::dimension_mismatch),
+        "intersect: another batch shape");
+    check(test::raises([&] { bundle.intersect(Interval::empty(2)); }, Error::not_supported),
           "intersect: an empty box");
-    check(test::raises([&] { intersect(Set(zB), Set(Interval::unbounded(3))); },
+    check(test::raises([&] { intersect(Set(bundle), Set(Interval::unbounded(3))); },
                        Error::dimension_mismatch),
           "intersect: the registry checks the dimension");
     ChecksScope off(false);
-    check(zB.intersect(Z).parallel_sets() == 2, "intersect: the same with the checks off");
+    check(bundle.intersect(Z).parallel_sets() == 2, "intersect: the same with the checks off");
 }
 
 } // namespace

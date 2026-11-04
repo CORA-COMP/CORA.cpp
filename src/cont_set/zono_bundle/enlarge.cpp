@@ -1,12 +1,19 @@
 // enlarge - a zonotope bundle with every member scaled about its own center
 //
-// Syntax:   Set R = zB.enlarge(factor);
+// Not the enlargement of the intersection about a common center.
+//
+// Syntax:   Set R = bundle.enlarge(factor);
 // Inputs:   factor - a number or a column (..., n, 1): the scaling of every coordinate
-// Outputs:  R - the bundle of the enlarged members (each about its own center, so not the
-//           enlargement of the intersection about a common center)
+// Outputs:  R - the bundle of the enlarged members
 // See also: ContSet::enlarge
 //
 // CORA: contSet/@zonoBundle/enlarge.m
+//
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 

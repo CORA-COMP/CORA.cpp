@@ -568,8 +568,9 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const ConZonotope &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<ZonoBundle>(S1))
                 return py::cast<const ZonoBundle &>(S1).contains(tensor_of(S2, "the points"));
-            CORA_FAIL(Error::not_supported, "point containment is implemented for intervals, "
-                                            "zonotopes, constrained zonotopes and zonotope bundles only");
+            CORA_FAIL(Error::not_supported,
+                      "point containment is implemented for intervals, "
+                      "zonotopes, constrained zonotopes and zonotope bundles only");
         });
     bind_registry(m);
 }
@@ -2014,13 +2015,14 @@ std::vector<Zonotope> zonotopes_of(const py::handle &list) {
 void bind_zono_bundle(py::module_ &m) {
     py::class_<ZonoBundle, ContSet>(m, "ZonoBundle",
                                     "The intersection of a list of zonotopes (a zonotope bundle).")
-        .def(py::init([](const py::list &zonotopes) { return ZonoBundle(zonotopes_of(zonotopes)); }),
-             py::arg("zonotopes"), "The intersection of the zonotopes (one dimension, at least one)")
+        .def(
+            py::init([](const py::list &zonotopes) { return ZonoBundle(zonotopes_of(zonotopes)); }),
+            py::arg("zonotopes"), "The intersection of the zonotopes (one dimension, at least one)")
         .def_property_readonly(
             "zonotopes",
-            [](const ZonoBundle &zB) {
+            [](const ZonoBundle &bundle) {
                 py::list out;
-                for (const Zonotope &Z : zB.zonotopes()) out.append(Z);
+                for (const Zonotope &Z : bundle.zonotopes()) out.append(Z);
                 return out;
             },
             "The member zonotopes")
@@ -2028,13 +2030,14 @@ void bind_zono_bundle(py::module_ &m) {
                                "The number of member zonotopes")
         .def_static("empty", &ZonoBundle::empty, py::arg("n"),
                     "The empty set of n >= 1 dimensions: two zonotopes {0} and {e_1}")
-        .def("con_zonotope", &ZonoBundle::con_zonotope,
-             "The same set as a constrained zonotope")
+        .def("con_zonotope", &ZonoBundle::con_zonotope, "The same set as a constrained zonotope")
         .def(
             "contains",
             [](const ZonoBundle &Z, const py::object &S, const std::string &method, Tol tol) {
-                if (py::isinstance<Zonotope>(S)) return Z.contains(py::cast<Zonotope>(S), method, tol);
-                if (py::isinstance<Interval>(S)) return Z.contains(py::cast<Interval>(S), method, tol);
+                if (py::isinstance<Zonotope>(S))
+                    return Z.contains(py::cast<Zonotope>(S), method, tol);
+                if (py::isinstance<Interval>(S))
+                    return Z.contains(py::cast<Interval>(S), method, tol);
                 if (py::isinstance<ZonoBundle>(S))
                     return Z.contains(py::cast<ZonoBundle>(S), method, tol);
                 return Z.contains(tensor_of(S, "the points"), method, tol);
@@ -2063,7 +2066,8 @@ void bind_zono_bundle(py::module_ &m) {
                 if (py::isinstance<Interval>(S)) return Z.intersect(py::cast<Interval>(S));
                 return Z.intersect(py::cast<ZonoBundle>(S));
             },
-            py::arg("S"), "The intersection with a bundle, a zonotope or a box: the members of both")
+            py::arg("S"),
+            "The intersection with a bundle, a zonotope or a box: the members of both")
         .def(
             "cart_prod",
             [](const ZonoBundle &Z, const py::object &S) {
@@ -2077,7 +2081,8 @@ void bind_zono_bundle(py::module_ &m) {
             "enclose",
             [](const ZonoBundle &Z, const py::object &first, const py::object &second) {
                 if (second.is_none()) {
-                    if (py::isinstance<Zonotope>(first)) return Z.enclose(py::cast<Zonotope>(first));
+                    if (py::isinstance<Zonotope>(first))
+                        return Z.enclose(py::cast<Zonotope>(first));
                     return Z.enclose(py::cast<ZonoBundle>(first));
                 }
                 if (py::isinstance<Zonotope>(second))

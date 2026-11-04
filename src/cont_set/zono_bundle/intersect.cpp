@@ -1,12 +1,19 @@
 // intersect - the intersection of a zonotope bundle with a set, as CORA's zonoBundle.and_
 //
-// Syntax:   ZonoBundle R = zB.intersect(S);
-// Inputs:   S - a bundle, a zonotope or a box of the same dimension (and batch shape)
-// Outputs:  R - exact: the members of both, which is what a bundle denotes (an empty box has no
-//           zonotope and is Error::not_supported)
+// Exact: the result lists the members of both, which is what a bundle denotes.
+//
+// Syntax:   ZonoBundle R = bundle.intersect(S);
+// Inputs:   S - a bundle, a zonotope or a nonempty box of the same dimension and batch shape
+// Outputs:  R - the bundle of the members of bundle and of S (a box as its zonotope)
 // See also: con_zonotope, Zonotope::intersect
 //
 // CORA: contSet/@zonoBundle/and_.m
+//
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
 
@@ -18,9 +25,9 @@ namespace cora {
 
 namespace {
 
-/// The members of zB followed by the zonotopes `more`.
-ZonoBundle aux_appended(const ZonoBundle &zB, const std::vector<Zonotope> &more) {
-    std::vector<Zonotope> members = zB.zonotopes();
+/// The members of bundle followed by the zonotopes `more`.
+ZonoBundle aux_appended(const ZonoBundle &bundle, const std::vector<Zonotope> &more) {
+    std::vector<Zonotope> members = bundle.zonotopes();
     members.insert(members.end(), more.begin(), more.end());
     return ZonoBundle(std::move(members));
 }

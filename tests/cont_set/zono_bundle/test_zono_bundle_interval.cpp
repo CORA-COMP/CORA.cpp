@@ -26,7 +26,8 @@ void intersection_of_boxes(const std::string &b) {
     const Zonotope Z1(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const Zonotope Z2(column({1.0, 0.0}), Tensor({{1.0, 1.0}, {0.0, 1.0}}));
     const Interval I = ZonoBundle({Z1, Z2}).interval();
-    check(close(I.inf(), {-1.0, -1.0}, 0) && close(I.sup(), {2.0, 1.0}, 0), b + ": [-1, 2] x [-1, 1]");
+    check(close(I.inf(), {-1.0, -1.0}, 0) && close(I.sup(), {2.0, 1.0}, 0),
+          b + ": [-1, 2] x [-1, 1]");
     check(ZonoBundle({Z1}).interval().inf().data() == Z1.interval().inf().data(),
           b + ": one member: its own box");
     const Zonotope far(column({10.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
@@ -41,17 +42,20 @@ void batch(const std::string &b) {
                    A2 = Zonotope::generate_random(rng, 2, std::nullopt, 3);
     const Zonotope B1 = Zonotope::generate_random(rng, 2, std::nullopt, 3),
                    B2 = Zonotope::generate_random(rng, 2, std::nullopt, 3);
-    const Interval boxes = ZonoBundle({Zonotope::stack({A1, A2}), Zonotope::stack({B1, B2})}).interval();
+    const Interval boxes =
+        ZonoBundle({Zonotope::stack({A1, A2}), Zonotope::stack({B1, B2})}).interval();
     const Interval second = ZonoBundle({A2, B2}).interval();
     if (second.is_empty() || boxes.is_empty()) return;
-    check(close(boxes.inf().slice(0, 1, 2).squeeze(0), second.inf(), 0), b + ": member 2 of a batch");
+    check(close(boxes.inf().slice(0, 1, 2).squeeze(0), second.inf(), 0),
+          b + ": member 2 of a batch");
 }
 
 /// The call takes no input; with the checks off the box is the same.
 void switch_off() {
     const Zonotope Z(column({0.0}), Tensor({{1.0}}));
     ChecksScope off(false);
-    check(close(ZonoBundle({Z, Z}).interval().sup(), {1.0}, 0), "interval: the same with the checks off");
+    check(close(ZonoBundle({Z, Z}).interval().sup(), {1.0}, 0),
+          "interval: the same with the checks off");
 }
 
 } // namespace

@@ -1,7 +1,8 @@
 // zono_bundle - lean::ZonoBundle, a zonotope bundle of exact values, computed by CORALean
 //
-// Syntax:   lean::ZonoBundle zB(cora_zB);   lean::ZonoBundle r = zB.intersect(zB2);   r.nominal();
-// Operations: one method per `zonoBundle.*` op of the oracle, named as CORA.cpp names CORA's (`and`
+// Syntax:   lean::ZonoBundle bundle(cora_bundle);   lean::ZonoBundle r = bundle.intersect(other);
+// r.nominal(); Operations: one method per `zonoBundle.*` op of the oracle, named as CORA.cpp names
+// CORA's (`and`
 //             is intersect, `cartProd` cart_prod); the ops of CORA's methods that CORA.cpp ports
 // Parts:      the oracle's bundle is a list of lean zonotopes, each with its own error box (at
 //             dtype nearest they are empty); interval() is the box the oracle proves to enclose it
@@ -30,7 +31,7 @@ namespace cora::lean {
 class ZonoBundle {
   public:
     /// An exact bundle (empty error boxes) in the current dtype.
-    ZonoBundle(const cora::ZonoBundle &zB);
+    ZonoBundle(const cora::ZonoBundle &bundle);
     explicit ZonoBundle(std::vector<Zonotope> zonotopes);
 
     /// The members, each a lean zonotope with its error box.
@@ -41,11 +42,11 @@ class ZonoBundle {
 
     // Operations ---------------------------------------------------------------------------------
 
-    ZonoBundle intersect(const ZonoBundle &zB2) const;
-    ZonoBundle cart_prod(const ZonoBundle &zB2) const;
+    ZonoBundle intersect(const ZonoBundle &other) const;
+    ZonoBundle cart_prod(const ZonoBundle &other) const;
 
-    /// The enclosure of this bundle and M * this + zB2 (the oracle's `enclose`).
-    ZonoBundle enclose(const Tensor &M, const ZonoBundle &zB2) const;
+    /// The enclosure of this bundle and M * this + other (the oracle's `enclose`).
+    ZonoBundle enclose(const Tensor &M, const ZonoBundle &other) const;
 
     /// Every member scaled about its center by factor (n, 1).
     ZonoBundle enlarge(const Tensor &factor) const;
@@ -65,9 +66,9 @@ class ZonoBundle {
 
     /// A true `disjoint` proves the boxes around the two bundles are apart (the answer of CORA's
     /// "approx"): the result is certified, true (intersecting) unproved, false proved.
-    Certified is_intersecting(const ZonoBundle &zB2, double tol = 0) const;
+    Certified is_intersecting(const ZonoBundle &other, double tol = 0) const;
 
-    bool isequal(const ZonoBundle &zB2, double tol = 0) const;
+    bool isequal(const ZonoBundle &other, double tol = 0) const;
 
     Json to_json() const;
     static ZonoBundle from_json(const std::string &dtype, const Json &j);

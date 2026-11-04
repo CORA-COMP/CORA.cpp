@@ -25,8 +25,7 @@ namespace {
 /// sets and other dimensions are not equal.
 void known_bundles(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    const Zonotope A(column({0.0, 0.0}), I2), B(column({1.0, 1.0}), I2),
-        C(column({0.0, 0.5}), I2);
+    const Zonotope A(column({0.0, 0.0}), I2), B(column({1.0, 1.0}), I2), C(column({0.0, 0.5}), I2);
     check(ZonoBundle({A, B}).isequal(ZonoBundle({A, B})), b + ": the same members");
     check(ZonoBundle({A, B}).isequal(ZonoBundle({B, A})), b + ": the members reordered");
     check(ZonoBundle({A, B}).isequal(ZonoBundle({A, B, A})), b + ": a redundant member");
@@ -51,12 +50,14 @@ void tolerance(const std::string &b) {
 /// A negative tol and a batch are refused; the same call with the checks off.
 void checks_and_their_switch() {
     const Zonotope A(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    const ZonoBundle zB({A});
-    check(test::raises([&] { zB.isequal(zB, -1.0); }, Error::wrong_value), "isequal: tol < 0");
-    check(test::raises([&] { zB.isequal(ZonoBundle({Zonotope::stack({A, A})})); }, Error::not_supported),
+    const ZonoBundle bundle({A});
+    check(test::raises([&] { bundle.isequal(bundle, -1.0); }, Error::wrong_value),
+          "isequal: tol < 0");
+    check(test::raises([&] { bundle.isequal(ZonoBundle({Zonotope::stack({A, A})})); },
+                       Error::not_supported),
           "isequal: a batch");
     ChecksScope off(false);
-    check(zB.isequal(zB), "isequal: the same with the checks off");
+    check(bundle.isequal(bundle), "isequal: the same with the checks off");
 }
 
 } // namespace

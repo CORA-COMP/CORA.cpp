@@ -43,23 +43,25 @@ void known_bundles(const std::string &b) {
 void ball_around_the_center(const std::string &b) {
     Rng rng(25);
     for (int trial = 0; trial < 4; ++trial) {
-        const ZonoBundle zB = test::random_zono_bundle(rng, 2, 2, 4);
-        const Tensor c = zB.center();
+        const ZonoBundle bundle = test::random_zono_bundle(rng, 2, 2, 4);
+        const Tensor c = bundle.center();
         const Tensor r = c.full_like({2, 1}, 1e-4);
-        const bool ball = zB.contains(Interval(c - r, c + r));
-        check(!ball || zB.is_full_dim(), b + ": a ball inside means full-dimensional");
+        const bool ball = bundle.contains(Interval(c - r, c + r));
+        check(!ball || bundle.is_full_dim(), b + ": a ball inside means full-dimensional");
     }
 }
 
 /// A negative tolerance and a batch are refused; the same call with the checks off.
 void checks_and_their_switch() {
-    const ZonoBundle zB({square(0.0, 0.0), square(0.25, 0.0)});
-    check(test::raises([&] { zB.is_full_dim(-1.0); }, Error::wrong_value), "is_full_dim: tol < 0");
-    check(test::raises([&] { ZonoBundle({Zonotope::stack({square(0, 0), square(0, 0)})}).is_full_dim(); },
-                       Error::not_supported),
+    const ZonoBundle bundle({square(0.0, 0.0), square(0.25, 0.0)});
+    check(test::raises([&] { bundle.is_full_dim(-1.0); }, Error::wrong_value),
+          "is_full_dim: tol < 0");
+    check(test::raises(
+              [&] { ZonoBundle({Zonotope::stack({square(0, 0), square(0, 0)})}).is_full_dim(); },
+              Error::not_supported),
           "is_full_dim: a batch");
     ChecksScope off(false);
-    check(zB.is_full_dim(), "is_full_dim: the same with the checks off");
+    check(bundle.is_full_dim(), "is_full_dim: the same with the checks off");
 }
 
 } // namespace

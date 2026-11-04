@@ -1,12 +1,17 @@
 // con_zonotope - the constrained zonotope of a zonotope bundle, as CORA's zonoBundle.conZonotope
 //
-// Syntax:   ConZonotope cz = zB.con_zonotope();
+// Syntax:   ConZonotope cz = bundle.con_zonotope();
 // Inputs:   -
-// Outputs:  cz - the first member as a constrained zonotope, intersected exactly with the others
-//           in order (ConZonotope::intersect)
-// See also: ConZonotope::intersect, interval
+// Outputs:  cz - the first member intersected exactly with the others in order
+// (ConZonotope::intersect) See also: ConZonotope::intersect, interval
 //
 // CORA: contSet/@zonoBundle/conZonotope.m
+//
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"

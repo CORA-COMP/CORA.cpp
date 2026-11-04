@@ -32,8 +32,8 @@ void single_member(const std::string &b) {
 void center_is_in_the_bundle(const std::string &b) {
     Rng rng(22);
     for (int trial = 0; trial < 5; ++trial) {
-        const ZonoBundle zB = test::random_zono_bundle(rng, 2 + trial % 2, 2, 3);
-        check(zB.center().shape() == Shape{zB.dim(), 1} && zB.contains(zB.center()),
+        const ZonoBundle bundle = test::random_zono_bundle(rng, 2 + trial % 2, 2, 3);
+        check(bundle.center().shape() == Shape{bundle.dim(), 1} && bundle.contains(bundle.center()),
               b + ": the center is a point of the bundle");
     }
 }
@@ -44,8 +44,8 @@ void empty_bundle_and_switch() {
     check(ZonoBundle::empty(2).center().shape() == Shape{2, 0}, "center: empty bundle, no column");
     ChecksScope off(false);
     Rng rng(23);
-    const ZonoBundle zB = test::random_zono_bundle(rng, 2, 2, 3);
-    check(zB.contains(zB.center()), "center: the same with the checks off");
+    const ZonoBundle bundle = test::random_zono_bundle(rng, 2, 2, 3);
+    check(bundle.contains(bundle.center()), "center: the same with the checks off");
 }
 
 } // namespace

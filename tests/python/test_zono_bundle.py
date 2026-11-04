@@ -30,9 +30,8 @@ Reviewed:      ---
 
 import unittest
 
-import numpy as np
-
 import cora
+import numpy as np
 
 # ----------------------------------------  BEGIN CODE  ---------------------------------------- #
 
@@ -133,7 +132,8 @@ class ZonoBundle(unittest.TestCase):
         self.assertEqual(S.parallel_sets, 2)
         M = np.array([[0.0, -1.0], [1.0, 0.0]])
         self.assertEqual(zB.enclose(M, zonotope([0.5, 0.5], [[0.1], [0.0]])).parallel_sets, 2)
-        self.assertEqual(zB.enclose(M, cora.ZonoBundle([zonotope([0.5, 0.5], np.eye(2))] * 3)).parallel_sets, 2)
+        shift = cora.ZonoBundle([zonotope([0.5, 0.5], np.eye(2))] * 3)
+        self.assertEqual(zB.enclose(M, shift).parallel_sets, 2)
         self.assertIsInstance(zB.enclose(zonotope([0.0, 0.0], np.eye(2))), cora.ZonoBundle)
         with self.assertRaises(cora.errors.WrongValue):
             zB.enclose(cora.ZonoBundle([zonotope([0.0, 0.0], np.eye(2))]))

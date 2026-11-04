@@ -30,24 +30,25 @@ ZonoBundle squares() {
 /// The exact test decides: sets that meet the intersection, sets that meet one member only, and
 /// sets that touch it.
 void exact_test(const std::string &b) {
-    const ZonoBundle zB = squares();
+    const ZonoBundle bundle = squares();
     const Tensor I2({{0.5, 0.0}, {0.0, 0.5}});
     const Zonotope inside(column({0.5, 0.5}), I2), in_one(column({-0.75, -0.75}), I2),
         touching(column({1.5, 0.5}), I2), apart(column({5.0, 5.0}), I2);
-    check(zB.is_intersecting(inside), b + ": a zonotope inside");
-    check(!zB.is_intersecting(in_one), b + ": a zonotope that meets one member only");
-    check(zB.is_intersecting(touching), b + ": a zonotope that touches the border");
-    check(!zB.is_intersecting(apart), b + ": a far zonotope");
-    check(zB.is_intersecting(Interval(column({0.9, 0.9}), column({3.0, 3.0}))), b + ": a box");
-    check(!zB.is_intersecting(Interval(column({-2.0, -2.0}), column({-0.5, -0.5}))),
+    check(bundle.is_intersecting(inside), b + ": a zonotope inside");
+    check(!bundle.is_intersecting(in_one), b + ": a zonotope that meets one member only");
+    check(bundle.is_intersecting(touching), b + ": a zonotope that touches the border");
+    check(!bundle.is_intersecting(apart), b + ": a far zonotope");
+    check(bundle.is_intersecting(Interval(column({0.9, 0.9}), column({3.0, 3.0}))), b + ": a box");
+    check(!bundle.is_intersecting(Interval(column({-2.0, -2.0}), column({-0.5, -0.5}))),
           b + ": a box in the first member only");
-    check(!zB.is_intersecting(Interval::empty(2)), b + ": the empty box meets nothing");
-    check(zB.is_intersecting(ZonoBundle({inside, inside})), b + ": a bundle");
-    check(!zB.is_intersecting(ZonoBundle({in_one})), b + ": a bundle that misses");
-    check(zB.is_intersecting(column({0.5, 0.5})) && !zB.is_intersecting(column({-0.5, -0.5})),
+    check(!bundle.is_intersecting(Interval::empty(2)), b + ": the empty box meets nothing");
+    check(bundle.is_intersecting(ZonoBundle({inside, inside})), b + ": a bundle");
+    check(!bundle.is_intersecting(ZonoBundle({in_one})), b + ": a bundle that misses");
+    check(bundle.is_intersecting(column({0.5, 0.5})) &&
+              !bundle.is_intersecting(column({-0.5, -0.5})),
           b + ": a point");
-    check(!ZonoBundle::empty(2).is_intersecting(zB), b + ": the empty bundle meets nothing");
-    check(is_intersecting(Set(zB), Set(inside)) && is_intersecting(Set(inside), Set(zB)),
+    check(!ZonoBundle::empty(2).is_intersecting(bundle), b + ": the empty bundle meets nothing");
+    check(is_intersecting(Set(bundle), Set(inside)) && is_intersecting(Set(inside), Set(bundle)),
           b + ": through the registry, in both orders");
 }
 
@@ -56,34 +57,38 @@ void exact_test(const std::string &b) {
 void approximate_test(const std::string &b) {
     const Tensor I2({{5.0, 0.0}, {0.0, 5.0}});
     const Zonotope diagonal(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    const ZonoBundle zB({diagonal, Zonotope(column({0.0, 0.0}), I2)});
+    const ZonoBundle bundle({diagonal, Zonotope(column({0.0, 0.0}), I2)});
     const Zonotope off_diagonal(column({0.9, -0.9}), Tensor({{0.01}, {0.0}}));
-    check(!zB.is_intersecting(off_diagonal), b + ": exact: they are apart");
-    check(zB.is_intersecting(off_diagonal, "approx"), b + ": approx: the boxes overlap");
-    check(!zB.is_intersecting(Zonotope(column({9.0, 9.0}), Tensor({{1.0}, {1.0}})), "approx"),
+    check(!bundle.is_intersecting(off_diagonal), b + ": exact: they are apart");
+    check(bundle.is_intersecting(off_diagonal, "approx"), b + ": approx: the boxes overlap");
+    check(!bundle.is_intersecting(Zonotope(column({9.0, 9.0}), Tensor({{1.0}, {1.0}})), "approx"),
           b + ": approx: the boxes are apart");
-    check(zB.is_intersecting(Interval(column({1.0001, 0.0}), column({2.0, 1.0})), "approx", 0.01),
-          b + ": approx: the box enlarged by tol");
-    check(!zB.is_intersecting(Interval(column({1.0001, 0.0}), column({2.0, 1.0})), "approx", 0.0),
-          b + ": approx: not without it");
-    check(zB.is_intersecting(ZonoBundle({off_diagonal}), "approx"), b + ": approx: a bundle");
+    check(
+        bundle.is_intersecting(Interval(column({1.0001, 0.0}), column({2.0, 1.0})), "approx", 0.01),
+        b + ": approx: the box enlarged by tol");
+    check(
+        !bundle.is_intersecting(Interval(column({1.0001, 0.0}), column({2.0, 1.0})), "approx", 0.0),
+        b + ": approx: not without it");
+    check(bundle.is_intersecting(ZonoBundle({off_diagonal}), "approx"), b + ": approx: a bundle");
 }
 
 /// A type that is neither, a batch and sets of another size are refused; the same call with the
 /// checks off.
 void checks_and_their_switch() {
-    const ZonoBundle zB = squares();
+    const ZonoBundle bundle = squares();
     const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25}, {0.0}}));
-    check(test::raises([&] { zB.is_intersecting(Z, "fast"); }, Error::wrong_value), "is_intersecting: type");
-    check(test::raises([&] { zB.is_intersecting(Zonotope(column({0.5}), Tensor({{1.0}}))); },
+    check(test::raises([&] { bundle.is_intersecting(Z, "fast"); }, Error::wrong_value),
+          "is_intersecting: type");
+    check(test::raises([&] { bundle.is_intersecting(Zonotope(column({0.5}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "is_intersecting: another dimension");
-    check(test::raises([&] { zB.is_intersecting(Zonotope::stack({Z, Z})); }, Error::dimension_mismatch),
+    check(test::raises([&] { bundle.is_intersecting(Zonotope::stack({Z, Z})); },
+                       Error::dimension_mismatch),
           "is_intersecting: a batch operand");
-    check(test::raises([&] { zB.is_intersecting(Z, "exact", -1.0); }, Error::wrong_value),
+    check(test::raises([&] { bundle.is_intersecting(Z, "exact", -1.0); }, Error::wrong_value),
           "is_intersecting: tol < 0");
     ChecksScope off(false);
-    check(zB.is_intersecting(Z), "is_intersecting: the same with the checks off");
+    check(bundle.is_intersecting(Z), "is_intersecting: the same with the checks off");
 }
 
 } // namespace

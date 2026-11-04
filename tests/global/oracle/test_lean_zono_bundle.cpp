@@ -1,9 +1,9 @@
 // test_lean_zono_bundle - the operations of ZonoBundle that the CORALean oracle serves
 //
-// Bit for bit where CORALean builds the same set: and, cartProd, empty, enlarge, interval, isBounded,
-// isIntersecting (CORA's "approx": the oracle tests the boxes), isequal (members) and lift. The
-// constrained zonotope is checked as CORALean's form of the same set (inequality rows for the
-// agreement of the points, as for conZonotope.and). enclose is not compared: CORALean's is the
+// Bit for bit where CORALean builds the same set: and, cartProd, empty, enlarge, interval,
+// isBounded, isIntersecting (CORA's "approx": the oracle tests the boxes), isequal (members) and
+// lift. The constrained zonotope is checked as CORALean's form of the same set (inequality rows for
+// the agreement of the points, as for conZonotope.and). enclose is not compared: CORALean's is the
 // generic route (all combinations of members), CORA's is member by member, so the sets differ.
 //
 // ORACLE: contSet/@zonoBundle/and_.m
@@ -17,10 +17,8 @@
 // ORACLE: contSet/@zonoBundle/isequal.m
 // ORACLE: contSet/@zonoBundle/lift_.m
 //
-// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
-// Written:       04-November-2026
-// Last update:   ---
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg, Tobias
+// Ladner Authors:       Claude Sonnet 5.5 Written:       04-November-2026 Last update:   ---
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -40,9 +38,10 @@ namespace {
 Tensor aux_rows(const Tensor &T, int64_t from, int64_t to) { return T.slice(0, from, to); }
 
 /// The bundle with every member shifted by `offset` (n, 1): the same shape, far from the original.
-ZonoBundle aux_shifted(const ZonoBundle &zB, const Tensor &offset) {
+ZonoBundle aux_shifted(const ZonoBundle &bundle, const Tensor &offset) {
     std::vector<Zonotope> members;
-    for (const Zonotope &Z : zB.zonotopes()) members.emplace_back(Z.center() + offset, Z.generators());
+    for (const Zonotope &Z : bundle.zonotopes())
+        members.emplace_back(Z.center() + offset, Z.generators());
     return ZonoBundle(std::move(members));
 }
 
@@ -60,7 +59,8 @@ void aux_check_con_zonotope(const ConZonotope &mine, const lean::ConZonotope &th
     oracle::check_exact("conZonotope.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));
     oracle::check_exact("conZonotope.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n));
     oracle::check_exact("conZonotope.-A", -aux_rows(mine.A(), pe, pe + n), aux_rows(A, n, 2 * n));
-    oracle::check_exact("conZonotope.-b", -aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, n, 2 * n));
+    oracle::check_exact("conZonotope.-b", -aux_rows(mine.b(), pe, pe + n),
+                        aux_rows(b_ineq, n, 2 * n));
 }
 
 } // namespace
@@ -88,7 +88,8 @@ int main() {
     oracle::run("zonoBundle.enlarge", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 3, 4);
         const Tensor factor = rnd.vector(3);
-        oracle::check(Set(a)->enlarge(factor).as<ZonoBundle>(), lean::ZonoBundle(a).enlarge(factor));
+        oracle::check(Set(a)->enlarge(factor).as<ZonoBundle>(),
+                      lean::ZonoBundle(a).enlarge(factor));
     });
     oracle::run("zonoBundle.interval", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 3, 4);
@@ -102,7 +103,8 @@ int main() {
         const ZonoBundle a = rnd.zono_bundle(3, 2, 4), b = rnd.zono_bundle(3, 2, 3);
         const ZonoBundle far = aux_shifted(b, Tensor::from_data({100.0, 100.0, 100.0}, {3, 1}));
         oracle::check(a.is_intersecting(b, "approx", 0.0), lean::ZonoBundle(a).is_intersecting(b));
-        oracle::check(a.is_intersecting(far, "approx", 0.0), lean::ZonoBundle(a).is_intersecting(far));
+        oracle::check(a.is_intersecting(far, "approx", 0.0),
+                      lean::ZonoBundle(a).is_intersecting(far));
     });
     oracle::run("zonoBundle.isequal", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 2, 4), b = rnd.zono_bundle(3, 2, 4);

@@ -19,14 +19,14 @@ namespace cora::lean {
 
 namespace {
 
-// The bundle `zB` of the response to `op` on the operands.
+// The bundle `bundle` of the response to `op` on the operands.
 ZonoBundle aux_set(const char *op, std::initializer_list<Operand> operands) {
     return ask(op, operands).get<ZonoBundle>("zB");
 }
 
-std::vector<Zonotope> aux_members(const cora::ZonoBundle &zB) {
+std::vector<Zonotope> aux_members(const cora::ZonoBundle &bundle) {
     std::vector<Zonotope> members;
-    for (const cora::Zonotope &Z : zB.zonotopes()) members.emplace_back(Z);
+    for (const cora::Zonotope &Z : bundle.zonotopes()) members.emplace_back(Z);
     return members;
 }
 
@@ -37,7 +37,7 @@ std::vector<Zonotope> aux_members(const cora::ZonoBundle &zB) {
 
 // Construction and crossing ------------------------------------------------------------------
 
-ZonoBundle::ZonoBundle(const cora::ZonoBundle &zB) : Z_(aux_members(zB)) {}
+ZonoBundle::ZonoBundle(const cora::ZonoBundle &bundle) : Z_(aux_members(bundle)) {}
 
 ZonoBundle::ZonoBundle(std::vector<Zonotope> zonotopes) : Z_(std::move(zonotopes)) {}
 
@@ -63,18 +63,19 @@ ZonoBundle ZonoBundle::from_json(const std::string &dtype, const Json &j) {
 
 // Operations ---------------------------------------------------------------------------------
 
-ZonoBundle ZonoBundle::intersect(const ZonoBundle &zB2) const {
-    return aux_set("zonoBundle.and", {{"zB", *this}, {"zB2", zB2}});
+ZonoBundle ZonoBundle::intersect(const ZonoBundle &other) const {
+    return aux_set("zonoBundle.and", {{"zB", *this}, {"zB2", other}});
 }
 
-ZonoBundle ZonoBundle::cart_prod(const ZonoBundle &zB2) const {
-    return aux_set("zonoBundle.cartProd", {{"zB", *this}, {"zB2", zB2}});
+ZonoBundle ZonoBundle::cart_prod(const ZonoBundle &other) const {
+    return aux_set("zonoBundle.cartProd", {{"zB", *this}, {"zB2", other}});
 }
 
-ZonoBundle ZonoBundle::enclose(const Tensor &M, const ZonoBundle &zB2) const {
-    return aux_set("zonoBundle.enclose", {{"zB", *this}, {"M", M}, {"zB2", zB2}});
+ZonoBundle ZonoBundle::enclose(const Tensor &M, const ZonoBundle &other) const {
+    return aux_set("zonoBundle.enclose", {{"zB", *this}, {"M", M}, {"zB2", other}});
 }
 
+// the oracle scales every member about its own center, and lifts it by a permutation
 ZonoBundle ZonoBundle::enlarge(const Tensor &factor) const {
     return aux_set("zonoBundle.enlarge", {{"zB", *this}, {"factor", factor}});
 }
@@ -93,17 +94,19 @@ Interval ZonoBundle::interval() const {
     return ask("zonoBundle.interval", {{"zB", *this}}).get<Interval>("I");
 }
 
+// the constant true, as a Boolean `value`
 bool ZonoBundle::is_bounded() const {
     return ask("zonoBundle.isBounded", {{"zB", *this}}).get<bool>("value");
 }
 
-Certified ZonoBundle::is_intersecting(const ZonoBundle &zB2, double tol) const {
-    return ask("zonoBundle.isIntersecting", {{"zB", *this}, {"zB2", zB2}, {"tol", number(tol)}})
+// a disjoint box pair is a proof; the rest is not
+Certified ZonoBundle::is_intersecting(const ZonoBundle &other, double tol) const {
+    return ask("zonoBundle.isIntersecting", {{"zB", *this}, {"zB2", other}, {"tol", number(tol)}})
         .proved_disjoint();
 }
 
-bool ZonoBundle::isequal(const ZonoBundle &zB2, double tol) const {
-    return ask("zonoBundle.isequal", {{"zB", *this}, {"zB2", zB2}, {"tol", number(tol)}})
+bool ZonoBundle::isequal(const ZonoBundle &other, double tol) const {
+    return ask("zonoBundle.isequal", {{"zB", *this}, {"zB2", other}, {"tol", number(tol)}})
         .get<bool>("value");
 }
 

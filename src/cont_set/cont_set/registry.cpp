@@ -254,6 +254,7 @@ constexpr Table aux_build() {
         t, [](const ZonoBundle &A, const Zonotope &Z) { return A.cart_prod(Z); });
     aux_add_set<BinaryOp::cart_prod, ZonoBundle, Interval>(
         t, [](const ZonoBundle &A, const Interval &I) { return A.cart_prod(I); });
+    // containment and intersection tests of the bundle are exact
     aux_add_predicate<BinaryOp::contains, ZonoBundle, ZonoBundle>(
         t, [](const ZonoBundle &A, const ZonoBundle &B, Tol tol) {
             return A.contains(B, "exact", tol);
@@ -278,6 +279,7 @@ constexpr Table aux_build() {
         t, [](const ZonoBundle &A, const Interval &I, Tol tol) {
             return A.is_intersecting(I, "exact", tol);
         });
+    // two bundles are equal member by member, else by containment both ways
     aux_add_predicate<BinaryOp::isequal, ZonoBundle, ZonoBundle>(
         t, [](const ZonoBundle &A, const ZonoBundle &B, Tol tol) { return A.isequal(B, tol); });
     // equality: the pair of the class of lower precedence, which the other converts to
