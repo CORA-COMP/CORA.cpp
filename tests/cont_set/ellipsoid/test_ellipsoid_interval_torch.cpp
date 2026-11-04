@@ -1,0 +1,21 @@
+// test_ellipsoid_interval_torch - Ellipsoid interval: gradients through torch
+//
+// The bounds q -+ sqrt(diag Q): differentiable in Q and q.
+
+#include "ellipsoid_gradients.h"
+
+using namespace cora;
+using test::Inputs;
+
+int main() {
+    const BackendScope backend_scope("torch");
+    torch::manual_seed(11);
+    test::gradcheck(
+        "interval",
+        [](const Inputs &x) {
+            const Interval I = test::ellipsoid_of(x).interval();
+            return Inputs{I.inf(), I.sup()};
+        },
+        test::random_ellipsoid_factors(3));
+    return test::finish("ellipsoid interval (torch)");
+}

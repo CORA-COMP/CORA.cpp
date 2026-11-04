@@ -18,6 +18,7 @@
 // sets, the type-erased Set and the binary registry
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/cont_set.h"
+#include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"

@@ -130,6 +130,12 @@ inline constexpr double kPolytopeHausdorff = 1e-10; ///< polytope: CORA's tol fo
 inline constexpr double kFixedFactor = 1e-9;  ///< a factor whose range is this narrow is fixed
 inline constexpr double kBoundTighter = 1e-8; ///< Fourier-Motzkin: bounds that move less end it
 
+// Ellipsoids --------------------------------------------------------------------------------------
+
+inline constexpr double kEllipsoidNormZero = 1e-10; ///< ellipsoid_norm: smaller values count as 0
+inline constexpr double kStripWeight = 1e-4; ///< intersect_strip: the largest weight of Gollamudi
+inline constexpr double kBoxRadiusMin = 5e-3; ///< a box is widened to this radius for an ellipsoid
+
 // Geometry of zonotopes and pictures --------------------------------------------------------------
 
 inline constexpr double kGeneratorZero = 1e-14;      ///< a generator shorter than this is dropped

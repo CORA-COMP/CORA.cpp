@@ -15,6 +15,7 @@
 
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
+#include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
@@ -234,6 +235,24 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::contains, Polytope, Zonotope>(
         t,
         [](const Polytope &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
+    // the ellipsoid has the lowest precedence of its pairs, so it comes first; the cases that need
+    // a solver are Error::not_supported
+    aux_add_set<BinaryOp::intersect, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.intersect(B); });
+    aux_add_set<BinaryOp::cart_prod, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.cart_prod(B); });
+    aux_add_predicate<BinaryOp::contains, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B, Tol tol) {
+            return A.contains(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, Ellipsoid, Zonotope>(
+        t, [](const Ellipsoid &A, const Zonotope &Z, Tol tol) {
+            return A.contains(Z, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, Ellipsoid, Interval>(
+        t, [](const Ellipsoid &A, const Interval &I, Tol tol) {
+            return A.contains(I, "exact", tol);
+        });
     // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
     // operations are exact
     aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(
