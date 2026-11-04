@@ -88,9 +88,11 @@ class ConZonotope : public ContSet {
     // Combining with other sets -------------------------------------------------------------------
 
     /// Without the constraint rows 0 = 0 and the generators that are zero and appear in no
-    /// constraint (method "zeros", "all"); "aligned" leaves the set as it is. Only exact zeros
-    /// count, as CORA's compact_; tol is checked. A batch drops what every member drops.
-    ConZonotope compact(const std::string &method = "zeros", Tol tol = std::nullopt) const;
+    /// constraint (method "zeros", the default, or "all"); "aligned" leaves the set as it is.
+    /// Only exact zeros count, as CORA's compact_; tol is checked. A batch drops what every
+    /// member drops.
+    ConZonotope compact(const std::optional<std::string> &method = std::nullopt,
+                        Tol tol = std::nullopt) const;
 
     /// The Cartesian product with a constrained zonotope, a zonotope, a box or a point (n2, 1):
     /// exact; centers stack, generators and constraints sit on the block diagonal.

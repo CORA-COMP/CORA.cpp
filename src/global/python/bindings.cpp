@@ -1811,7 +1811,8 @@ void bind_con_zonotope(py::module_ &m) {
                     "The empty set of n dimensions: no generators and the constraint 0 = 1")
         .def_property_readonly("c", [](const ConZonotope &Z) { return vector(Z.c()); },
                                "The stored center c (..., n)")
-        .def_property_readonly("generators", [](const ConZonotope &Z) { return matrix(Z.generators()); })
+        .def_property_readonly("generators", [](const ConZonotope &Z) { return matrix(Z.generators()); },
+                               "The generators (..., n, m)")
         .def_property_readonly("A", [](const ConZonotope &Z) { return matrix(Z.A()); },
                                "The constraint matrix (..., p, m)")
         .def_property_readonly("b", [](const ConZonotope &Z) { return vector(Z.b()); },
@@ -1835,7 +1836,7 @@ void bind_con_zonotope(py::module_ &m) {
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the set contains the points (n, N), a zonotope or a box; method 'exact'")
-        .def("compact", &ConZonotope::compact, py::arg("method") = "zeros", py::arg("tol") = py::none(),
+        .def("compact", &ConZonotope::compact, py::arg("method") = py::none(), py::arg("tol") = py::none(),
              "Without the rows 0 = 0 and the generators that are zero and in no constraint")
         .def(
             "cart_prod",
