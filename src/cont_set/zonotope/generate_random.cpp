@@ -87,8 +87,10 @@ CORA_FROM_NUMBERS Zonotope Zonotope::generate_random(Rng &rng, std::optional<int
     const int64_t m = nr_generators ? *nr_generators : 2 * n;
     std::vector<double> c(n);
     if (!center) rng.normal(c.data(), c.size(), 10.0);
-    return {center ? *center : Tensor::from_data(c, {n, 1}),
-            Tensor::from_data(aux_generators(n, m, distribution, rng), {n, m})};
+    // the generators live where the given center does, else on the current backend
+    const std::vector<double> G = aux_generators(n, m, distribution, rng);
+    if (center) return {*center, Tensor::like(*center, G, {n, m})};
+    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(G, {n, m})};
 }
 
 } // namespace cora

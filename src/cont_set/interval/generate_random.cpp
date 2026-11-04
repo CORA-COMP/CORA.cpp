@@ -54,8 +54,14 @@ CORA_FROM_NUMBERS Interval Interval::generate_random(Rng &rng, std::optional<int
     else if (center) n = center->size(-2);
     else if (max_radius && max_radius->numel() > 1) n = max_radius->size(-2);
     else n = priv_random_dimension(rng);
-    const Tensor c = center ? *center : Tensor::from_data(aux_uniform(rng, n, -2.0, 2.0), {n, 1});
-    Tensor r = max_radius ? *max_radius : Tensor::from_data(aux_uniform(rng, n, 0.0, 10.0), {n, 1});
+    // what is drawn lives where the given center or radii do, else on the current backend
+    const Tensor *given = center ? &*center : max_radius ? &*max_radius : nullptr;
+    const auto column = [&](double low, double high) {
+        const std::vector<double> values = aux_uniform(rng, n, low, high);
+        return given ? Tensor::like(*given, values, {n, 1}) : Tensor::from_data(values, {n, 1});
+    };
+    const Tensor c = center ? *center : column(-2.0, 2.0);
+    Tensor r = max_radius ? *max_radius : column(0.0, 10.0);
     if (r.numel() == 1) r = r.reshape({1, 1}).tile({n, 1});
     const Shape vector{n, 1};
     CORA_CHECK(c.shape() == vector && r.shape() == vector,
@@ -64,8 +70,7 @@ CORA_FROM_NUMBERS Interval Interval::generate_random(Rng &rng, std::optional<int
                           "dimension " + std::to_string(n);
                });
     // the radius, symmetric to keep the center
-    const Tensor u = Tensor::from_data(aux_uniform(rng, n, 0.0, 1.0), {n, 1});
-    const Tensor radius = (r * 0.5).multiply(u);
+    const Tensor radius = (r * 0.5).multiply(column(0.0, 1.0));
     return {c - radius, c + radius};
 }
 
