@@ -17,7 +17,8 @@ namespace oracle = test::oracle;
 
 namespace {
 
-/// The numbers rounded to multiples of 1/8 (of magnitude below 2^10, so that sums of them are exact).
+/// The numbers rounded to multiples of 1/8 (of magnitude below 2^10, so that sums of them are
+/// exact).
 Tensor aux_eighths(const Tensor &x) { return (x * 8.0).round() * 0.125; }
 
 } // namespace
@@ -40,10 +41,12 @@ int main() {
                 lean::Zonotope(Z).underapproximate(theirs_S);
             test::check(pairs.size() == S.size(), "underapproximate: a pair per direction");
             for (int k = 0; k < directions; ++k) {
-                const std::array<std::optional<lean::Tensor>, 2> vertices{pairs[k].plus, pairs[k].minus};
+                const std::array<std::optional<lean::Tensor>, 2> vertices{pairs[k].plus,
+                                                                          pairs[k].minus};
                 for (int side = 0; side < 2; ++side)
                     if (vertices[side] && ++compared)
-                        oracle::check_exact(oracle::op_name(), V.slice(-1, 2 * k + side, 2 * k + side + 1),
+                        oracle::check_exact(oracle::op_name(),
+                                            V.slice(-1, 2 * k + side, 2 * k + side + 1),
                                             *vertices[side]);
             }
         }

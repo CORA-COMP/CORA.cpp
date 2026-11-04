@@ -1,12 +1,12 @@
-// test_lean_con_zonotope_certified_enclosure - ConZonotope::contains (a point) and is_full_dim against
-// the CORALean oracle, as proofs that are never contradicted
+// test_lean_con_zonotope_certified_enclosure - ConZonotope::contains (a point) and is_full_dim
+// against the CORALean oracle, as proofs that are never contradicted
 //
-// The oracle's answers are sufficient only (`ConZonotope.containsPoint`, `isFullDim`): a true proves the
-// point inside, or an interior point of the set, by a right inverse of G and a ball around the
-// center that is not the whole set, and a set with an equality row is never proved. So a proof of the
-// oracle must agree with CORA.cpp, and some are proved; the answers are not equal otherwise (a point
-// inside but far from the center is not proved), so there is no ORACLE tag. The sets are zonotopes as
-// constrained zonotopes, in both modes.
+// The oracle's answers are sufficient only (`ConZonotope.containsPoint`, `isFullDim`): a true
+// proves the point inside, or an interior point of the set, by a right inverse of G and a ball
+// around the center that is not the whole set, and a set with an equality row is never proved. So a
+// proof of the oracle must agree with CORA.cpp, and some are proved; the answers are not equal
+// otherwise (a point inside but far from the center is not proved), so there is no ORACLE tag. The
+// sets are zonotopes as constrained zonotopes, in both modes.
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/global/oracle/con_zonotope.h"

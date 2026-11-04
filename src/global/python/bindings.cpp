@@ -2853,7 +2853,8 @@ void bind_lean(py::module_ &top) {
           "The dtype of threads without a cora.lean.dtype block");
     m.def("current_dtype", &lean::dtype, "This thread's dtype");
     m.def("serves", &lean::serves, py::arg("op"),
-          "Whether the running oracle serves the op, e.g. 'zonotope.enlarge' (an older one does not)");
+          "Whether the running oracle serves the op, e.g. 'zonotope.enlarge' (an older one does "
+          "not)");
 
     using namespace pybind11::literals;
     using LI = lean::Interval;

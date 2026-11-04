@@ -1,11 +1,11 @@
 // test_lean_interval_tan_enclosure - Interval::tan against the CORALean oracle, as enclosure
 //
-// The oracle's tan (from batch 5) is an extended box: a coordinate whose range is not certified free
-// of the poles k pi + pi/2 is (-Inf, Inf), else `tanDown` at the lower end and `tanUp` at the upper
-// one (`Interval.tan`, `tan_outer`). CORA's box is the tangent of the corners where the range is
-// narrower than pi and holds no pole, else (-Inf, Inf). So the check is the Lean statement: CORA.cpp's
-// box lies inside the oracle's, which is unbounded wherever CORA's is; where the oracle is
-// bounded, CORA's is too and the bounds agree to kAgree, relative (libm against the oracle's
+// The oracle's tan (from batch 5) is an extended box: a coordinate whose range is not certified
+// free of the poles k pi + pi/2 is (-Inf, Inf), else `tanDown` at the lower end and `tanUp` at the
+// upper one (`Interval.tan`, `tan_outer`). CORA's box is the tangent of the corners where the range
+// is narrower than pi and holds no pole, else (-Inf, Inf). So the check is the Lean statement:
+// CORA.cpp's box lies inside the oracle's, which is unbounded wherever CORA's is; where the oracle
+// is bounded, CORA's is too and the bounds agree to kAgree, relative (libm against the oracle's
 // halvings). No bit-exact test exists, so there is no ORACLE tag. The boxes run over several poles.
 // The oracles before batch 5 gave inverted bounds over a pole; with them the test is skipped.
 
@@ -61,7 +61,10 @@ int main() {
         int bounded = 0, unbounded = 0;
         for (std::size_t i = 0; i < a.size(); ++i) {
             const bool oracle_bounded = std::isfinite(c[i]) && std::isfinite(d[i]);
-            if (!oracle_bounded) { ++unbounded; continue; }
+            if (!oracle_bounded) {
+                ++unbounded;
+                continue;
+            }
             ++bounded;
             test::check(std::isfinite(a[i]) && std::isfinite(b[i]),
                         "tan: the oracle's bound is finite, so CORA's is");
@@ -70,7 +73,8 @@ int main() {
                             "tan: the bounds agree");
         }
         test::check(bounded > 20 && unbounded > 20, "tan: boxes with and without poles");
-        std::cerr << "  tan: " << bounded << " bounded, " << unbounded << " unbounded coordinates\n";
+        std::cerr << "  tan: " << bounded << " bounded, " << unbounded
+                  << " unbounded coordinates\n";
     });
     return test::finish("lean interval tan enclosure");
 }

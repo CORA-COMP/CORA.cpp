@@ -1,5 +1,5 @@
-// test_lean_zonotope_tensor_multiplication_agreement - tensor_multiplication and its tensor-zonotope form
-// of Zonotope against the CORALean oracle, by the interval hull
+// test_lean_zonotope_tensor_multiplication_agreement - tensor_multiplication and its
+// tensor-zonotope form of Zonotope against the CORALean oracle, by the interval hull
 //
 // The zonotope is centered at the origin, as CORA requires; the lists are CORA's options.list for
 // m generators (the ordered triples, the sorted ones and the column of each). The oracle's M is the
@@ -61,7 +61,7 @@ int main() {
             const Tensor4 M = aux_tensor(rnd, n);
             const Zonotope::TensorLists list = test::triples(m);
             oracle::check_hull(Z.tensor_multiplication(M.tensor, list),
-                          lean::Zonotope(Z).tensor_multiplication(M.blocks, aux_lists(list)));
+                               lean::Zonotope(Z).tensor_multiplication(M.blocks, aux_lists(list)));
         }
     });
     oracle::run("zonotope.tensorMultiplication_zono", [](oracle::Random &rnd) {
@@ -70,10 +70,10 @@ int main() {
             const Tensor4 center = aux_tensor(rnd, n), first = aux_tensor(rnd, n),
                           second = aux_tensor(rnd, n);
             const Zonotope::TensorLists list = test::triples(m);
-            oracle::check_hull(Z.tensor_multiplication_zono(center.tensor,
-                                                            {first.tensor, second.tensor}, list),
-                          lean::Zonotope(Z).tensor_multiplication_zono(
-                              center.blocks, {first.blocks, second.blocks}, aux_lists(list)));
+            oracle::check_hull(
+                Z.tensor_multiplication_zono(center.tensor, {first.tensor, second.tensor}, list),
+                lean::Zonotope(Z).tensor_multiplication_zono(
+                    center.blocks, {first.blocks, second.blocks}, aux_lists(list)));
         }
     });
     return test::finish("lean zonotope tensor_multiplication");

@@ -13,10 +13,11 @@
 // Results:    CORA.cpp's result and the oracle's, as double, Tensor, Interval, Zonotope, bool, the
 //             indices of filter_out, a pair of halves, or Vertices; an oracle Certified answer
 //             is a proof only when `proved`
-// Skip:       available() is false, with a note, unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND are
+// Skip:       available() is false, with a note, unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND
+// are
 //             set; a test then returns at once. run skips an op the oracle does not serve (an older
-//             oracle; `lean::serves`), naming it once on stderr; serves(op) asks for another op, and
-//             nearest_is_strict() for a check that needs the machine's strict order at nearest
+//             oracle; `lean::serves`), naming it once on stderr; serves(op) asks for another op,
+//             and nearest_is_strict() for a check that needs the machine's strict order at nearest
 // See also:   testing.h, cora/global/oracle/request.h
 
 #pragma once
@@ -413,10 +414,11 @@ inline bool enclosed(const std::string &what, const cora::Tensor &a, double boun
     return enclosed(what, a.data()[0], bound);
 }
 
-/// The interval hull of CORA.cpp's result against the oracle's, to a relative `rel`, for an operation
-/// that sums in another order than CORALean's (a few ulp of the sums, not bits), in both modes: the
-/// box of CORA.cpp's zonotope and of the oracle's enclosure, bound by bound.
-inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs, double rel = 1e-10) {
+/// The interval hull of CORA.cpp's result against the oracle's, to a relative `rel`, for an
+/// operation that sums in another order than CORALean's (a few ulp of the sums, not bits), in both
+/// modes: the box of CORA.cpp's zonotope and of the oracle's enclosure, bound by bound.
+inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
+                       double rel = 1e-10) {
     const cora::Interval box = mine.interval();
     const auto [inf, sup] = theirs.interval().gather();
     const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
@@ -456,7 +458,8 @@ void check(const A &cora_result, const B &lean_result) {
 /// sound (default backend, dtype binary64); what the body builds follows the mode.
 template <class F>
 void run(const std::string &op, F body, uint64_t seed = 7) {
-    // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without labels a generic test
+    // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without labels a generic
+    // test
     if (op.find('.') != std::string::npos && !serves(op)) return;
     op_name() = op;
     for (const Mode m : {Mode::exact, Mode::sound}) {

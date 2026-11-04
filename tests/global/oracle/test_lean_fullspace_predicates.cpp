@@ -50,8 +50,8 @@ int main() {
                 test::oracle::check(Fullspace(n).representsa(type, 0.0),
                                     lean::Fullspace(n).representsa(type));
     });
-    // the plane has four corners (+-Inf, +-Inf); the oracle lists them as the columns of V, CORA.cpp
-    // as a polygon, so they are compared as a set
+    // the plane has four corners (+-Inf, +-Inf); the oracle lists them as the columns of V,
+    // CORA.cpp as a polygon, so they are compared as a set
     test::oracle::run("fullspace.vertices", [](test::oracle::Random &) {
         const std::vector<double> V = lean::Fullspace(2).vertices().gather().data();
         std::set<std::pair<double, double>> theirs, mine;

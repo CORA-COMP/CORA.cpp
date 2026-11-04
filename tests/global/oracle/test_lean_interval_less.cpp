@@ -1,8 +1,8 @@
 // test_lean_interval_less - Interval::less against the CORALean oracle (its `lt`)
 //
-// The box against itself is checked in both modes where the oracle compares strictly by the machine's
-// order at nearest; the oracles before batch 5 add a margin there that rounds away, and read equal
-// bounds as strictly inside, so with them the exact mode leaves it out.
+// The box against itself is checked in both modes where the oracle compares strictly by the
+// machine's order at nearest; the oracles before batch 5 add a margin there that rounds away, and
+// read equal bounds as strictly inside, so with them the exact mode leaves it out.
 //
 // ORACLE: contSet/@interval/lt.m
 
@@ -20,7 +20,8 @@ int main() {
             test::oracle::check(I.less(big), lean::Interval(I).lt(lean::Interval(big)));
             test::oracle::check(big.less(I), lean::Interval(big).lt(lean::Interval(I)));
             test::oracle::check(I.less(J), lean::Interval(I).lt(lean::Interval(J)));
-            if (test::oracle::mode() == test::oracle::Mode::sound || test::oracle::nearest_is_strict())
+            if (test::oracle::mode() == test::oracle::Mode::sound ||
+                test::oracle::nearest_is_strict())
                 test::oracle::check(I.less(I), lean::Interval(I).lt(lean::Interval(I)));
         }
     });

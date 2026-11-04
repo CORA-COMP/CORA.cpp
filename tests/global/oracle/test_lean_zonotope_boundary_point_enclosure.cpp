@@ -1,5 +1,5 @@
-// test_lean_zonotope_boundary_point_enclosure - Zonotope::boundary_point against the CORALean oracle,
-// as enclosure
+// test_lean_zonotope_boundary_point_enclosure - Zonotope::boundary_point against the CORALean
+// oracle, as enclosure
 //
 // The oracle gives the box swept from `start` to an upper bound of the exit step (`boundaryPoint`),
 // nothing if no facet row bounds the ray, and states that CORA's single point lies in it. So the
@@ -22,10 +22,11 @@ int main() {
             const Tensor inside = Z.center() + Z.generators().slice(-1, 0, 1) * 0.5;
             for (const Tensor &start : {Z.center(), inside}) {
                 const Tensor x = Z.boundary_point(dir, start);
-                const std::optional<lean::Interval> box =
-                    lean::Zonotope(Z).boundary_point(lean::Tensor::from(dir), lean::Tensor::from(start));
+                const std::optional<lean::Interval> box = lean::Zonotope(Z).boundary_point(
+                    lean::Tensor::from(dir), lean::Tensor::from(start));
                 test::check(box.has_value(), "zonotope.boundaryPoint: the oracle bounds the ray");
-                if (box) test::oracle::check_enclosed(test::oracle::op_name(), Interval(x, x), *box);
+                if (box)
+                    test::oracle::check_enclosed(test::oracle::op_name(), Interval(x, x), *box);
             }
         }
     });

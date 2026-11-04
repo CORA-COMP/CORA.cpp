@@ -11,8 +11,8 @@ using test::close;
 
 namespace {
 
-/// A = I + b [[0, 1], [0, 0]] times B = 2 I + b1 [[1, 0], [0, 0]] + b2 [[0, 0], [0, 1]]: the matrices
-/// are [I, GA] and [2I, GB1, GB2], the product's center is 2 I and its generators are, in
+/// A = I + b [[0, 1], [0, 0]] times B = 2 I + b1 [[1, 0], [0, 0]] + b2 [[0, 0], [0, 1]]: the
+/// matrices are [I, GA] and [2I, GB1, GB2], the product's center is 2 I and its generators are, in
 /// CORALean's order, GA 2I, I GB1, I GB2, GA GB1, GA GB2.
 void product_of_two_sets(const std::string &b) {
     const MatZonotope A = test::set_of({1, 0, 0, 1}, {0, 1, 0, 0}, 2, 2);
@@ -20,11 +20,11 @@ void product_of_two_sets(const std::string &b) {
     const MatZonotope P = A.matmul(B);
     check(close(P.center(), {2, 0, 0, 2}), b + ": the center");
     check(P.num_generators() == 5, b + ": (1 + 1)(1 + 2) - 1 generators");
-    check(close(P.generators(), {0, 2, 0, 0,     // GA 2I
-                                 1, 0, 0, 0,     // I GB1
-                                 0, 0, 0, 1,     // I GB2
-                                 0, 0, 0, 0,     // GA GB1
-                                 0, 1, 0, 0}),   // GA GB2
+    check(close(P.generators(), {0, 2, 0, 0,   // GA 2I
+                                 1, 0, 0, 0,   // I GB1
+                                 0, 0, 0, 1,   // I GB2
+                                 0, 0, 0, 0,   // GA GB1
+                                 0, 1, 0, 0}), // GA GB2
           b + ": the generators, in CORALean's order");
     check(test::same_set(A * B, P, 0), b + ": the operator");
 }

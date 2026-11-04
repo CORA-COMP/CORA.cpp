@@ -2,10 +2,11 @@
 // CORALean oracle, as enclosure of the same exponentials
 //
 // The oracle has one op for both (`matZonotope.expm` and `expmInd`): the Taylor series to a maximum
-// order and a remainder box from a norm bound, as for the interval matrix; its box and CORA.cpp's do
-// not contain one another. So the check is that the exponential of the vertices of the set and of
-// random matrices C + sum b_i G_i lies in the oracle's box and in CORA.cpp's, and the two boxes meet.
-// Only the sound mode runs, as the lean backend has no matrix exponential. There is no ORACLE tag.
+// order and a remainder box from a norm bound, as for the interval matrix; its box and CORA.cpp's
+// do not contain one another. So the check is that the exponential of the vertices of the set and
+// of random matrices C + sum b_i G_i lies in the oracle's box and in CORA.cpp's, and the two boxes
+// meet. Only the sound mode runs, as the lean backend has no matrix exponential. There is no ORACLE
+// tag.
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "oracle_testing.h"
@@ -45,8 +46,10 @@ int main() {
             }
             const IntervalMatrix a = mine.interval_matrix();
             const auto [lo, hi] = theirs.interval_matrix().gather();
-            const bool meet = (lo.less_equal(a.interval().sup()).multiply(a.interval().inf().less_equal(hi)))
-                                  .min().item() != 0;
+            const bool meet =
+                (lo.less_equal(a.interval().sup()).multiply(a.interval().inf().less_equal(hi)))
+                    .min()
+                    .item() != 0;
             test::check(meet, std::string(op) + ": the boxes meet");
         });
     return test::finish("lean mat_zonotope expm enclosure");

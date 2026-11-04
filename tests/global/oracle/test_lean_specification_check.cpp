@@ -2,14 +2,14 @@
 // `specification.check`)
 //
 // The specification is the polytope A x <= b (one halfspace per row), checked against a box and a
-// zonotope. The oracle's true proves the set contained in it (safe set, invariant) or disjoint from it
-// (unsafe set); false says that no proof was found, where CORA.cpp decides. So in the sound mode a
-// proof of the oracle is never contradicted; at nearest the answers are the same on these cases.
+// zonotope. The oracle's true proves the set contained in it (safe set, invariant) or disjoint from
+// it (unsafe set); false says that no proof was found, where CORA.cpp decides. So in the sound mode
+// a proof of the oracle is never contradicted; at nearest the answers are the same on these cases.
 //
 // ORACLE: specification/@specification/check.m
 
-#include "cora/specification/specification.h"
 #include "cora/global/oracle/specification.h"
+#include "cora/specification/specification.h"
 #include "oracle_testing.h"
 
 using namespace cora;
@@ -27,7 +27,8 @@ std::vector<Halfspace> aux_halfspaces(const Tensor &A, const Tensor &b) {
 
 /// A specification A x <= b for the set S: the offsets are the support function of S along each row
 /// moved by a random amount, so that the set is inside some of the halfspaces and outside others.
-std::pair<Tensor, Tensor> aux_polytope(oracle::Random &rnd, const ContSet &S, int64_t n, int64_t p) {
+std::pair<Tensor, Tensor> aux_polytope(oracle::Random &rnd, const ContSet &S, int64_t n,
+                                       int64_t p) {
     const Tensor A = rnd.matrix(p, n);
     std::vector<double> b(p);
     for (int64_t i = 0; i < p; ++i)

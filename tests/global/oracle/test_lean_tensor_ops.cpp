@@ -45,26 +45,25 @@ void aux_elementwise(test::oracle::Random &rnd) {
     aux_case("round", [&] { check_exact("round", (a * 3.0).round(), aux_point(a * 3.0).round()); });
 }
 
-/// Sums along both axes (the oracle answers columns), the product along rows, and the matrix product.
+/// Sums along both axes (the oracle answers columns), the product along rows, and the matrix
+/// product.
 void aux_sums(test::oracle::Random &rnd) {
     for (const auto &[n, m] : {std::pair<int64_t, int64_t>{2, 3}, {7, 30}}) {
         const Tensor x = rnd.matrix(n, m), y = rnd.matrix(m, n), v = rnd.vector(n);
         const lean::Interval X = aux_point(x);
-        aux_case("sum(-2)", [&] {
-            check_exact("sum(-2)", x.sum(-2, true).reshape({m, 1}), X.sum(1));
-        });
-        aux_case("sum(-1)", [&] {
-            check_exact("sum(-1)", x.sum(-1, true), X.sum(2));
-        });
+        aux_case("sum(-2)",
+                 [&] { check_exact("sum(-2)", x.sum(-2, true).reshape({m, 1}), X.sum(1)); });
+        aux_case("sum(-1)", [&] { check_exact("sum(-1)", x.sum(-1, true), X.sum(2)); });
         // the product of the rows is a row in the oracle from batch 5, a column before
         aux_case("prod(-2)", [&] {
             const lean::Interval P = X.prod();
-            if (P.inf().rows() == 1) check_exact("prod(-2)", x.prod(-2, true), P);
-            else test::oracle::skipped("the oracle's interval.prod of a matrix is a column (older oracle)");
+            if (P.inf().rows() == 1)
+                check_exact("prod(-2)", x.prod(-2, true), P);
+            else
+                test::oracle::skipped(
+                    "the oracle's interval.prod of a matrix is a column (older oracle)");
         });
-        aux_case("matmul", [&] {
-            check_exact("matmul", y.matmul(v), aux_point(v).linear_map(y));
-        });
+        aux_case("matmul", [&] { check_exact("matmul", y.matmul(v), aux_point(v).linear_map(y)); });
     }
 }
 

@@ -53,8 +53,8 @@ void aux_check_set(const A &mine, const B &theirs) {
 /// A projection onto a hyperplane: CORALean takes the product with the interval matrix I - c c' and
 /// adds the box d c, which leaves n + n zero generators after the m of the set at nearest. So at
 /// nearest the center and the first m generators are CORA.cpp's, bit for bit, and the others are
-/// zero; in the sound mode the interval hulls agree to a relative 1e-13 (the oracle encloses the real
-/// image, CORA.cpp's sums round to nearest in the order of the backend).
+/// zero; in the sound mode the interval hulls agree to a relative 1e-13 (the oracle encloses the
+/// real image, CORA.cpp's sums round to nearest in the order of the backend).
 void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
     if (oracle::mode() == oracle::Mode::sound) return oracle::check_hull(mine, theirs, 1e-13);
     const Zonotope other = theirs.gather().first;
@@ -90,8 +90,10 @@ const ContSet &aux_set(const Zonotope &Z) { return Z; }
 template <class S, class F>
 std::vector<std::pair<S, Tensor>> aux_normals(F make) {
     std::vector<std::pair<S, Tensor>> pairs;
-    for (const std::vector<double> &c : {std::vector<double>{1, 0, 0, 0}, {0, 0, -1, 0},
-                                         {0.5, 0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5, 0.5}})
+    for (const std::vector<double> &c : {std::vector<double>{1, 0, 0, 0},
+                                         {0, 0, -1, 0},
+                                         {0.5, 0.5, 0.5, 0.5},
+                                         {-0.5, 0.5, -0.5, 0.5}})
         pairs.emplace_back(make(4), Tensor::from_data(c, {4, 1}));
     return pairs;
 }
@@ -193,7 +195,8 @@ int main() {
                               lean::Zonotope(Z).enlarge(factor));
             // a factor per coordinate
             const Tensor column = rnd.vector(n).abs();
-            aux_check_set(aux_set(Z).enlarge(column).as<Zonotope>(), lean::Zonotope(Z).enlarge(column));
+            aux_check_set(aux_set(Z).enlarge(column).as<Zonotope>(),
+                          lean::Zonotope(Z).enlarge(column));
         }
     });
 
@@ -214,7 +217,8 @@ int main() {
         }
     });
     oracle::run("zonotope.projectOnHyperplane", [](oracle::Random &rnd) {
-        for (const auto &[Z, c] : aux_normals<Zonotope>([&](int n) { return rnd.zonotope(n, 8); })) {
+        for (const auto &[Z, c] :
+             aux_normals<Zonotope>([&](int n) { return rnd.zonotope(n, 8); })) {
             const Tensor d = rnd.vector(1);
             aux_check_projected(aux_set(Z).project_on_hyperplane(c, d).as<Zonotope>(),
                                 lean::Zonotope(Z).project_on_hyperplane(c, d.item()));

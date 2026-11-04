@@ -85,7 +85,8 @@ int main() {
         }
         // a zero row: the box with that coordinate at 0 is inside the whole space of the oracle
         const Tensor M = Tensor::concat({rnd.matrix(2, 3), Tensor::zeros({1, 3})}, -2);
-        test::oracle::check((*Fullspace(3).linear_map(M)).dim(), lean::Fullspace(3).linear_map(M).dim());
+        test::oracle::check((*Fullspace(3).linear_map(M)).dim(),
+                            lean::Fullspace(3).linear_map(M).dim());
     });
     // Inf in every direction but the zero one, where the support function is 0
     test::oracle::run("fullspace.supportFunc", [](test::oracle::Random &rnd) {

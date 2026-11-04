@@ -200,8 +200,8 @@ std::optional<Zonotope> Zonotope::mink_diff_aligned(const Zonotope &Z2, double r
 
 // Tensor images: the third-order tensor is a list of blocks of matrices.
 Zonotope Zonotope::tensor_multiplication(const Tensor3 &M, const TensorLists &list) const {
-    return aux_set("zonotope.tensorMultiplication", {{"Z", *this}, {"M", M}, {"perm", list.perm},
-                                                     {"map", list.map}, {"C", list.C}});
+    return aux_set("zonotope.tensorMultiplication",
+                   {{"Z", *this}, {"M", M}, {"perm", list.perm}, {"map", list.map}, {"C", list.C}});
 }
 
 // A tensor zonotope is {"c": the center tensor, "G": the list of generator tensors}.
@@ -213,9 +213,11 @@ Zonotope Zonotope::tensor_multiplication_zono(const Tensor3 &M_center,
     for (const Tensor3 &G : M_generators) generators.push(Wire(G).json);
     Json M = Json::object();
     M.set("c", center.json).set("G", generators);
-    return aux_set("zonotope.tensorMultiplication_zono",
-                   {{"Z", *this}, {"M", Wire(M, center.dtype)}, {"perm", list.perm},
-                    {"map", list.map}, {"C", list.C}});
+    return aux_set("zonotope.tensorMultiplication_zono", {{"Z", *this},
+                                                          {"M", Wire(M, center.dtype)},
+                                                          {"perm", list.perm},
+                                                          {"map", list.map},
+                                                          {"C", list.C}});
 }
 
 // One {"plus", "minus"} object per direction; a vertex that is not certified is null.

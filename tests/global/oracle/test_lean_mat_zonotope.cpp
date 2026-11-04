@@ -1,8 +1,8 @@
 // test_lean_mat_zonotope - the operations of MatZonotope against the CORALean oracle (its
 // `matZonotope.*` ops)
 //
-// At nearest the nominal part (the center and the generators, in their order) is the oracle's bit for
-// bit; in the sound mode the box of CORA.cpp's set lies in the box of the oracle's enclosure.
+// At nearest the nominal part (the center and the generators, in their order) is the oracle's bit
+// for bit; in the sound mode the box of CORA.cpp's set lies in the box of the oracle's enclosure.
 //
 // ORACLE: matrixSet/@matZonotope/center.m
 // ORACLE: matrixSet/@matZonotope/intervalMatrix.m
@@ -63,8 +63,8 @@ int main() {
                 check(A.matrix_power(k), lean::MatZonotope(A).matrix_power(k));
         }
     });
-    // CORA.cpp lists the powers P, P A, P A^2 (orders 1 to 3, the first being P); the oracle gives the
-    // one at offset k
+    // CORA.cpp lists the powers P, P A, P A^2 (orders 1 to 3, the first being P); the oracle gives
+    // the one at offset k
     test::oracle::run("matZonotope.powers", [&](Random &rnd) {
         for (const int64_t n : {2, 3}) {
             const MatZonotope A = rnd.mat_zonotope(n, n, 2), P = rnd.mat_zonotope(n, n, 1);
@@ -76,8 +76,8 @@ int main() {
     test::oracle::run("matZonotope.zonotope", [&](Random &rnd) {
         for (const auto &[r, c, h] : shapes) {
             const MatZonotope A = rnd.mat_zonotope(r, c, h);
-            // in the sound mode by the interval hulls: the oracle's certified containment of a zonotope
-            // of 16 dimensions is too slow
+            // in the sound mode by the interval hulls: the oracle's certified containment of a
+            // zonotope of 16 dimensions is too slow
             const lean::Zonotope theirs = lean::MatZonotope(A).zonotope();
             if (test::oracle::mode() == test::oracle::Mode::exact)
                 check(A.zonotope(), theirs);
