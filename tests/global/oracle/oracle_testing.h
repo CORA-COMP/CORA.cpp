@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "cora/global/oracle/capsule.h"
 #include "cora/global/oracle/con_zonotope.h"
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
@@ -156,6 +157,12 @@ class Random {
             members.emplace_back(x0 - G.matmul(cora::Tensor::from_data(b, {m, 1})), G);
         }
         return cora::ZonoBundle(std::move(members));
+    }
+
+    /// A capsule of n dimensions: a center, a generator and a radius in [0.1, 1].
+    cora::Capsule capsule(int64_t n) {
+        const cora::Tensor c = vector(n), g = vector(n);
+        return {c, g, uniform(0.1, 1.0)};
     }
 
     /// A box of n dimensions: a center and a radius in [0, 1].
@@ -312,6 +319,16 @@ inline bool same_bits(const std::string &what, const cora::Polytope &a, const le
     return rows && offsets && equalities && equality_offsets;
 }
 
+
+/// The nominal part of the oracle's capsule: center, generator and radius; the error box is not
+/// compared (at nearest it is empty).
+inline bool same_bits(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
+    const cora::Capsule other = b.nominal();
+    return same_bits(what + ".c", a.c(), other.c()) &
+           same_bits(what + ".g", a.generator(), other.generator()) &
+           same_bits(what + ".r", a.r(), other.r());
+}
+
 /// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
@@ -413,6 +430,11 @@ inline bool enclosed(const std::string &what, const cora::Zonotope &a, const lea
     const lean::Zonotope mine(a), hull = b.enclosure();
     if (hull.contains(mine).proved) return true;
     return enclosed(what + " (hull)", a.interval(), hull.interval());
+}
+
+/// The interval hull of CORA.cpp's capsule inside the box the oracle proves around its capsule.
+inline bool enclosed(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
+    return enclosed(what + " (hull)", a.interval(), b.interval());
 }
 
 /// The interval hull of CORA.cpp's set inside the hull of the oracle's enclosure.
