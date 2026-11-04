@@ -60,7 +60,11 @@ void checks_and_their_switch() {
               [&] { ZonoBundle({Zonotope::stack({square(0, 0), square(0, 0)})}).is_full_dim(); },
               Error::not_supported),
           "is_full_dim: a batch");
+    // the set interface refuses a batch with the checks off too
     ChecksScope off(false);
+    const ZonoBundle batch({Zonotope::stack({square(0, 0), square(0, 0)})});
+    check(test::raises([&] { Set(batch)->is_full_dim(); }, Error::not_supported),
+          "is_full_dim: a batch through the set interface, checks off");
     check(bundle.is_full_dim(), "is_full_dim: the same with the checks off");
 }
 

@@ -31,6 +31,7 @@ ZonoBundle ZonoBundle::lift(int64_t N, const std::vector<int64_t> &dims) const {
     const detail::Refusal r = detail::project_high_dim_refusal(dim(), N, dims, "lift");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     std::vector<Zonotope> lifted;
+    lifted.reserve(Z_.size());
     for (const Zonotope &Z : Z_) lifted.push_back(Z.lift(N, dims));
     return ZonoBundle(std::move(lifted));
 }

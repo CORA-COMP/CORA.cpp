@@ -26,6 +26,7 @@ namespace cora {
 
 Set ZonoBundle::enlarge_impl(const Tensor &factor) const {
     std::vector<Zonotope> enlarged;
+    enlarged.reserve(Z_.size());
     for (const Zonotope &Z : Z_) enlarged.push_back(Z.enlarge(factor).as<Zonotope>());
     return ZonoBundle(std::move(enlarged));
 }

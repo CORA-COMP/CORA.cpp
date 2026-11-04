@@ -43,6 +43,7 @@ ZonoBundle::ZonoBundle(std::vector<Zonotope> zonotopes) : Z_(std::move(zonotopes
 
 cora::ZonoBundle ZonoBundle::nominal() const {
     std::vector<cora::Zonotope> members;
+    members.reserve(Z_.size());
     for (const Zonotope &Z : Z_) members.push_back(Z.gather().first);
     return cora::ZonoBundle(std::move(members));
 }

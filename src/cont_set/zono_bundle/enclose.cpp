@@ -29,6 +29,8 @@ namespace cora {
 
 namespace {
 
+// Checks ------------------------------------------------------------------------------------------
+
 /// Why M is refused, if it is: it is not (..., n, n) of the dimension of the bundle.
 detail::Refusal aux_matrix_refusal(const ZonoBundle &bundle, const Tensor &M) {
     if (M.ndim() >= 2 && M.size(-2) == bundle.dim() && M.size(-1) == bundle.dim())
@@ -52,6 +54,8 @@ detail::Refusal aux_count_refusal(const ZonoBundle &bundle, const ZonoBundle &S)
 
 // ===========================================  MAIN  =========================================== //
 
+// Bundles and zonotopes ---------------------------------------------------------------------------
+
 ZonoBundle ZonoBundle::enclose(const ZonoBundle &S) const {
     detail::Entry entry;
     detail::Refusal r =
@@ -60,6 +64,7 @@ ZonoBundle ZonoBundle::enclose(const ZonoBundle &S) const {
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // member i of the result encloses member i of both bundles
     std::vector<Zonotope> hulls;
+    hulls.reserve(Z_.size());
     for (std::size_t i = 0; i < Z_.size(); ++i) hulls.push_back(Z_[i].enclose(S.zonotopes()[i]));
     return ZonoBundle(std::move(hulls));
 }
@@ -70,9 +75,12 @@ ZonoBundle ZonoBundle::enclose(const Zonotope &Z) const {
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // the zonotope is enclosed with every member
     std::vector<Zonotope> hulls;
+    hulls.reserve(Z_.size());
     for (const Zonotope &A : Z_) hulls.push_back(A.enclose(Z));
     return ZonoBundle(std::move(hulls));
 }
+
+// With a map and a shift --------------------------------------------------------------------------
 
 ZonoBundle ZonoBundle::enclose(const Tensor &M, const Zonotope &Zplus) const {
     detail::Entry entry;
@@ -81,6 +89,7 @@ ZonoBundle ZonoBundle::enclose(const Tensor &M, const Zonotope &Zplus) const {
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // member i of the second set is M Z_i + Zplus
     std::vector<Zonotope> hulls;
+    hulls.reserve(Z_.size());
     for (const Zonotope &A : Z_) hulls.push_back(A.enclose(M, Zplus));
     return ZonoBundle(std::move(hulls));
 }
@@ -98,13 +107,27 @@ ZonoBundle ZonoBundle::enclose(const Tensor &M, const ZonoBundle &S) const {
     const Zonotope around = box.zonotope();
     // then it is a zonotope shift
     std::vector<Zonotope> hulls;
+    hulls.reserve(Z_.size());
     for (const Zonotope &A : Z_) hulls.push_back(A.enclose(M, around));
     return ZonoBundle(std::move(hulls));
 }
 
 Set ZonoBundle::enclose_impl(const ContSet &S2) const {
-    if (S2.class_id() == ClassId::zono_bundle) return enclose(static_cast<const ZonoBundle &>(S2));
-    if (S2.class_id() == ClassId::zonotope) return enclose(static_cast<const Zonotope &>(S2));
+    // the entry of ContSet checked the dimension only: the members must pair up, checks on or off
+    detail::Refusal r;
+    if (S2.class_id() == ClassId::zono_bundle) {
+        const ZonoBundle &S = static_cast<const ZonoBundle &>(S2);
+        r = priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "enclose");
+        if (!r) r = aux_count_refusal(*this, S);
+        if (r) CORA_FAIL(r->first, r->second);
+        return enclose(S);
+    }
+    if (S2.class_id() == ClassId::zonotope) {
+        const Zonotope &Z = static_cast<const Zonotope &>(S2);
+        r = priv_operand_refusal(*this, Z.dim(), Z.center(), "enclose");
+        if (r) CORA_FAIL(r->first, r->second);
+        return enclose(Z);
+    }
     priv_noops("enclose", *this, &S2);
 }
 

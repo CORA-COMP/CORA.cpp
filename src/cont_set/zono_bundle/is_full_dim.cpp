@@ -35,7 +35,12 @@ bool ZonoBundle::is_full_dim(Tol tol_arg) const {
     return con_zonotope().is_full_dim(tol);
 }
 
-bool ZonoBundle::is_full_dim_impl(Tol tol) const { return is_full_dim(tol); }
+bool ZonoBundle::is_full_dim_impl(Tol tol) const {
+    // the entry of ContSet checked the tolerance only: a batch cannot be decided, checks on or off
+    const detail::Refusal batch = priv_batch_refusal(Z_.front().center(), "is_full_dim");
+    if (batch) CORA_FAIL(batch->first, batch->second);
+    return is_full_dim(tol);
+}
 
 } // namespace cora
 

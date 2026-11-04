@@ -2079,19 +2079,19 @@ void bind_zono_bundle(py::module_ &m) {
             py::arg("S"), "The Cartesian product with a bundle, a zonotope, a box or a point")
         .def(
             "enclose",
-            [](const ZonoBundle &Z, const py::object &first, const py::object &second) {
-                if (second.is_none()) {
-                    if (py::isinstance<Zonotope>(first))
-                        return Z.enclose(py::cast<Zonotope>(first));
-                    return Z.enclose(py::cast<ZonoBundle>(first));
-                }
-                if (py::isinstance<Zonotope>(second))
-                    return Z.enclose(tensor_of(first, "M"), py::cast<Zonotope>(second));
-                return Z.enclose(tensor_of(first, "M"), py::cast<ZonoBundle>(second));
+            [](const ZonoBundle &Z, const ContSet &S2) {
+                return object_of(static_cast<const ContSet &>(Z).enclose(S2));
             },
-            py::arg("S"), py::arg("S2") = py::none(),
-            "Encloses the bundle and a second set: enclose(S) for a bundle or zonotope S, or "
-            "enclose(M, S) for the image M Z + S");
+            py::arg("S2"), "A bundle that encloses both, member by member")
+        .def(
+            "enclose",
+            [](const ZonoBundle &Z, const py::object &M, const py::object &S) {
+                if (py::isinstance<Zonotope>(S))
+                    return Z.enclose(tensor_of(M, "the matrix"), py::cast<Zonotope>(S));
+                return Z.enclose(tensor_of(M, "the matrix"), py::cast<ZonoBundle>(S));
+            },
+            py::arg("M"), py::arg("S"),
+            "A bundle that encloses Z and M Z + S for a zonotope or a bundle S");
 }
 
 void bind_operators(py::module_ &m) {

@@ -92,7 +92,13 @@ void checks_and_their_switch() {
             [&] { Set(one).get().enclose(Set(Interval(column({0.0, 0.0}), column({1.0, 1.0})))); },
             Error::noops),
         "enclose: a box is not a class of CORA's bundle enclose");
+    // the set interface pairs the members itself, so it refuses a mismatch with the checks off too
     ChecksScope off(false);
+    check(test::raises([&] { Set(one).get().enclose(Set(two)); }, Error::wrong_value),
+          "enclose: member counts through the set interface, checks off");
+    check(test::raises([&] { Set(one).get().enclose(Set(ZonoBundle({Zonotope::stack({Z, Z})}))); },
+                       Error::dimension_mismatch),
+          "enclose: batch shapes through the set interface, checks off");
     check(one.enclose(Z).parallel_sets() == 1, "enclose: the same with the checks off");
 }
 
