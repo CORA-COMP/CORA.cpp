@@ -21,8 +21,8 @@ namespace {
 // Numbers are drawn in chunks of this size, each from its own stream.
 constexpr std::size_t kStream = 1 << 16;
 
-// Below this many numbers a thread fan-out costs more than the work.
-constexpr std::size_t kGrain = 1 << 14;
+// Below this many numbers a thread fan-out costs more than the work (read by the OpenMP pragma).
+[[maybe_unused]] constexpr std::size_t kGrain = 1 << 14;
 
 /// SplitMix64, to turn a counter into an uncorrelated seed.
 std::uint64_t aux_mix(std::uint64_t z) {

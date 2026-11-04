@@ -215,7 +215,8 @@ inline bool same_bits(const std::string &what, const cora::ConZonotope &a,
 /// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
-    return same_bits(what + ".1", a.first, b.first) & same_bits(what + ".2", a.second, b.second);
+    const bool first = same_bits(what + ".1", a.first, b.first); // both are reported
+    return same_bits(what + ".2", a.second, b.second) && first;
 }
 
 template <class A, class B>
@@ -334,7 +335,8 @@ inline bool enclosed(const std::string &what, int64_t a, int64_t b) {
 
 template <class A, class B>
 bool enclosed(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
-    return enclosed(what + ".1", a.first, b.first) & enclosed(what + ".2", a.second, b.second);
+    const bool first = enclosed(what + ".1", a.first, b.first); // both are reported
+    return enclosed(what + ".2", a.second, b.second) && first;
 }
 
 template <class A, class B>
