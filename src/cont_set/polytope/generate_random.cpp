@@ -161,7 +161,7 @@ Rows2 aux_bounded(Rng &rng, const Options &o) {
         r.A.push_back(e);
         r.b.push_back(1.0);
     }
-    r.A.push_back(Row(n, -1.0 / std::sqrt(double(n))));
+    r.A.emplace_back(n, -1.0 / std::sqrt(double(n)));
     r.b.push_back(1.0);
     for (int64_t i = o.n + 1; i < o.rows; ++i) {
         r.A.push_back(aux_unit(rng, o.n));

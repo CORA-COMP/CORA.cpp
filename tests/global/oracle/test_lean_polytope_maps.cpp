@@ -69,7 +69,7 @@ Polytope aux_extreme(const Polytope &P) { return P.compact("V"); }
 
 /// The columns of a vertex polytope in lexicographic order: a vertex set has no order.
 Polytope aux_sorted(const Polytope &P) {
-    const Tensor V = P.V();
+    const Tensor &V = P.V();
     const int64_t n = V.shape()[0], p = V.shape()[1];
     const std::vector<double> x = V.data();
     std::vector<int64_t> order(static_cast<std::size_t>(p));
