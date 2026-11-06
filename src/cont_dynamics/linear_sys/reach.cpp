@@ -1,19 +1,22 @@
 // reach - the reachable sets of x' = A x (+ B u), as CORA's linearSys.reach
 //
 // input_set is a zonotope of u(t) in R^m; none means no input. alg::Standard has the options
-// time_step, taylor_terms and zonotope_order; alg::WrappingFree time_step and taylor_terms.
+// time_step, taylor_terms and zonotope_order; alg::WrappingFree time_step and taylor_terms;
+// alg::FromStart those of Standard; alg::Decomposition those and the partition of the state.
 // time_point[k] is the set at k*time_step.
 //
 // Syntax:   R = sys.reach(problem, alg);
 //           R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{.time_step = 0.1});
 // Inputs:   problem - initial_set (zonotope), input_set (zonotope of u(t), needs B), t_final
-//           alg - alg::Standard or alg::WrappingFree
+//           alg - alg::Standard, alg::WrappingFree, alg::FromStart or alg::Decomposition
 // Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step]
 // See also: output_set, simulate, correction_matrix_state, private/priv_reach_standard
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA: contDynamics/@linearSys/private/priv_reach_standard.m
 // CORA: contDynamics/@linearSys/private/priv_reach_wrappingfree.m
+// CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
+// CORA: contDynamics/@linearSys/private/priv_reach_decomp.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
@@ -46,6 +49,15 @@ Step aux_step(const LinearSys &sys, double time_step, int taylor_terms, double t
 ReachSet aux_reach(const LinearSys &sys, const ReachProblem &problem, const alg::LinearReach &alg) {
     const Zonotope &X0 = *problem.initial_set;
     const double t_final = problem.t_final;
+    // from_start is decomposition with the whole state as one block
+    if (const auto *a = std::get_if<alg::FromStart>(&alg))
+        return priv_reach_from_start(sys, X0, problem.input_set, a->time_step, a->taylor_terms,
+                                     a->zonotope_order, priv_one_block(sys.dim()),
+                                     priv_num_steps(t_final, a->time_step));
+    if (const auto *a = std::get_if<alg::Decomposition>(&alg))
+        return priv_reach_from_start(sys, X0, problem.input_set, a->time_step, a->taylor_terms,
+                                     a->zonotope_order, a->partition,
+                                     priv_num_steps(t_final, a->time_step));
     if (problem.input_set) {
         // The step's propagation, curvature and input solution are the same for every step.
         const Zonotope &U = *problem.input_set;
@@ -78,6 +90,12 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::LinearReach &a
     if (entry.check()) {
         validate(problem);
         std::visit([](const auto &a) { a.validate(); }, alg);
+        if (const auto *a = std::get_if<alg::Decomposition>(&alg))
+            CORA_CHECK(a->partition.back()[1] == dim() - 1, Error::wrong_value, [&] {
+                return "reach: the partition must end at the last state " +
+                       std::to_string(dim() - 1) + ", got " +
+                       std::to_string(a->partition.back()[1]);
+            });
     }
     ReachSet R = aux_reach(*this, problem, alg);
     R.time_step = std::visit([](const auto &a) { return a.time_step; }, alg);

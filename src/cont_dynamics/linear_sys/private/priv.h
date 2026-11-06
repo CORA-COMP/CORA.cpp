@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "cont_dynamics/linear_sys/private/priv_block.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/tensor/tolerance.h"
 
@@ -35,6 +36,9 @@ inline double priv_extremal_weight(int i, double dt_over_fac) {
 /// The zonotope with center 0 and the generators diag(radius): the box [-radius, radius].
 inline Zonotope priv_box(const Tensor &radius) { return {radius.zeros_like(), radius.diag()}; }
 
+/// Whether M is a square matrix equal to the identity (exact comparison).
+bool priv_is_identity(const Tensor &M);
+
 /// The algorithm "standard" with inputs; reduces to zonotope_order after each step.
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
                              const InputSolution &in, int steps, int zonotope_order);
@@ -49,6 +53,14 @@ ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Inte
 /// The algorithm "wrapping-free".
 ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
                                  int steps);
+
+/// The algorithms "from_start" and "decomposition": each step is the first one mapped forward by
+/// e^{A dt}^(k-1), per block of the partition `blocks` (one block: from_start). The input set,
+/// if any, is split by canonical_form into the constant input and the centered set.
+ReachSet priv_reach_from_start(const LinearSys &sys, const Zonotope &X0,
+                               const std::optional<Zonotope> &input_set, double time_step,
+                               int taylor_terms, int zonotope_order, const Blocks &blocks,
+                               int steps);
 
 } // namespace cora
 

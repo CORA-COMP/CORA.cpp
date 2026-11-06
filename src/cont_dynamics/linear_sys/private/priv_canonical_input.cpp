@@ -8,8 +8,7 @@
 // Outputs:  in - u_trans = B center(U) (n, 1); GU = B generators(U), (n, 0) if all are zero
 // See also: priv_verify_ra_support_function, priv_verify_ra_zonotope
 //
-// CORA: contDynamics/@linearSys/canonicalForm.m
-// CORA authors: Mark Wetzlinger
+// CORA.cpp only: the part of canonicalForm that verify uses, without building the system
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   03-November-2026

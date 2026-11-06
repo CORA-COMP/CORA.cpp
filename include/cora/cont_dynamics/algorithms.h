@@ -10,6 +10,8 @@
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA: contDynamics/@linearSys/verify.m
+// CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
+// CORA: contDynamics/@linearSys/private/priv_reach_decomp.m
 // CORA: contDynamics/@contDynamics/reach.m
 // CORA authors: Mark Wetzlinger, Tobias Ladner, Matthias Althoff, Niklas Kochdumper
 // Authors:       Tobias Ladner
@@ -22,8 +24,11 @@
 #include "cora/global/options.h"
 #include "cora/global/settings.h"
 
+#include <array>
+#include <cstdint>
 #include <string>
 #include <variant>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -45,6 +50,24 @@ inline void validate_order(int value, int least, const char *what, const char *n
         return std::string(name) + ": " + what + " must be at least " + std::to_string(least) +
                ", got " + std::to_string(value);
     });
+}
+
+/// A partition of the state into blocks [first, last] (0-based), non-empty.
+inline void validate_partition(const std::vector<std::array<int64_t, 2>> &partition,
+                               const char *name) {
+    detail::Validation entry;
+    CORA_CHECK(!partition.empty(), Error::wrong_value, [&] {
+        return std::string(name) +
+               ": partition must list the blocks of the state, e.g. {{0, 1}, {2, 2}}";
+    });
+    int64_t next = 0;
+    for (const std::array<int64_t, 2> &block : partition) {
+        CORA_CHECK(block[0] == next && block[1] >= block[0], Error::wrong_value, [&] {
+            return std::string(name) + ": the blocks of partition must follow each other from 0 "
+                                       "without a gap, each [first, last] with first <= last";
+        });
+        next = block[1] + 1;
+    }
 }
 
 // Reachability of linear systems ----------------------------------------------------------------
@@ -81,6 +104,50 @@ struct WrappingFree {
     void validate() const {
         validate_time_step(time_step, "WrappingFree");
         validate_order(taylor_terms, 1, "taylor_terms", "WrappingFree");
+    }
+};
+
+/// CORA's linAlg "fromStart": every step is the first step's solution mapped forward by e^{A k dt},
+/// so the error of the sets does not accumulate; the input solutions are summed and reduced.
+struct FromStart {
+    double time_step = 0;    ///< the step size, required
+    int taylor_terms = 10;   ///< the order of the Taylor series of the curvature enlargement
+    int zonotope_order = 50; ///< with an input set, the order the input solution is reduced to
+
+    static constexpr const char *name = "from_start";
+    static constexpr auto fields() {
+        return std::make_tuple(field("time_step", &FromStart::time_step),
+                               field("taylor_terms", &FromStart::taylor_terms),
+                               field("zonotope_order", &FromStart::zonotope_order));
+    }
+    void validate() const {
+        validate_time_step(time_step, "FromStart");
+        validate_order(taylor_terms, 1, "taylor_terms", "FromStart");
+        validate_order(zonotope_order, 1, "zonotope_order", "FromStart");
+    }
+};
+
+/// CORA's linAlg "decomp": as fromStart, but the state is split into the blocks of `partition`
+/// (0-based [first, last] pairs that cover 0..n-1 in order), and each block is propagated on its
+/// own.
+struct Decomposition {
+    double time_step = 0;    ///< the step size, required
+    int taylor_terms = 10;   ///< the order of the Taylor series of the curvature enlargement
+    int zonotope_order = 50; ///< with an input set, the order the input solution is reduced to
+    std::vector<std::array<int64_t, 2>> partition; ///< the blocks of the state, required
+
+    static constexpr const char *name = "decomposition";
+    static constexpr auto fields() {
+        return std::make_tuple(field("time_step", &Decomposition::time_step),
+                               field("taylor_terms", &Decomposition::taylor_terms),
+                               field("zonotope_order", &Decomposition::zonotope_order),
+                               field("partition", &Decomposition::partition));
+    }
+    void validate() const {
+        validate_time_step(time_step, "Decomposition");
+        validate_order(taylor_terms, 1, "taylor_terms", "Decomposition");
+        validate_order(zonotope_order, 1, "zonotope_order", "Decomposition");
+        validate_partition(partition, "Decomposition");
     }
 };
 
@@ -154,7 +221,7 @@ struct Linearization {
 };
 
 /// The algorithms of each system and operation; the first is the default of Python.
-using LinearReach = std::variant<Standard, WrappingFree>;
+using LinearReach = std::variant<Standard, WrappingFree, FromStart, Decomposition>;
 using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope>;
 using LinearSimulate = std::variant<Exact>;
 using NonlinearReach = std::variant<Linearization>;
