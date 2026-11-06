@@ -13,7 +13,7 @@
 //             bool same = (Set(Z) == Set(I));   for (const BinaryPair &p : binary_pairs()) ...
 // Operations: plus, intersect, unite, convex_hull, cart_prod, contains, is_intersecting, isequal,
 //             eq, ne (one file each in src/cont_set/cont_set/); the table is
-//             src/cont_set/cont_set/registry.cpp. The unchecked forms (CORA's and_, contains_,
+//             src/cont_set/registry.cpp. The unchecked forms (CORA's and_, contains_,
 //             isIntersecting_) are detail::intersect_impl, contains_impl, is_intersecting_impl
 // See also:   cont_set/set.h, cont_set/cont_set.h
 //

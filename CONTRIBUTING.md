@@ -104,7 +104,7 @@ CMake compiles every C++ example with `-include cora/global/banner.h`, which pri
 3. Add it to `set_of`/`object_of` in `src/global/python/convert.h` and bind it.
 
 **A binary pair** (say `plus(Ellipsoid, Zonotope)`): write the function and add one line to
-`aux_build()` in `src/cont_set/cont_set/registry.cpp`:
+`aux_build()` in `src/cont_set/registry.cpp`:
 `aux_add_set<BinaryOp::plus, Ellipsoid, Zonotope>(table, [](const Ellipsoid &E, const Zonotope &Z) { ... })`.
 The lower-precedence class comes first, and a `static_assert` says so. The entry checks the
 dimensions for every pair. From Python, `cora.register_binary("plus", MySet, cora.Zonotope, fn)`

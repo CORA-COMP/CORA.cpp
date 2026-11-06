@@ -45,6 +45,8 @@
 using namespace cora;
 using namespace cora::python;
 
+// NOLINTBEGIN(backend,clones): the bindings convert between numpy or torch arrays and Tensor, and repeat .def rows
+
 namespace {
 
 // Errors, warnings and settings -------------------------------------------------------------------
@@ -3837,5 +3839,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_specification(m);
     bind_lean(m);
 }
+
+// NOLINTEND(backend,clones)
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

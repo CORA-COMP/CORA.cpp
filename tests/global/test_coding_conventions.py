@@ -26,20 +26,19 @@ Checks:   layout - every file starts its docstring with its own name; an operati
           test, and docs/tensor.md lists every operation with the tags of ops.def.
 Exit code: 0 if all conventions hold, else 1, with the files and what is wrong.
 """
+import ast
 import glob
 import os
 import re
 import sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-MAX_LINES_WITHOUT_COMMENT = 25
+sys.path.insert(0, os.path.join(ROOT, "scripts", "ci"))
+import layout  # noqa: E402  (the layout rules: docstring, author block, markers, comments)
+from layout import BEGIN_MARKER, END_MARKER, MAIN_MARKER, SECTION  # noqa: E402
+
 MAX_LINE_LENGTH = 100
 CLONE_TOKENS = 100  # this many tokens repeated (literals abstracted) is duplicated code
-BEGIN_MARKER = "// ----------------------------------------  BEGIN CODE  ---------------------------------------- //"
-END_MARKER = "// ---------------------------------------  END OF CODE  ---------------------------------------- //"
-AUX_MARKER = "// ----------------------------------------  AUXILIARY  ----------------------------------------- //"
-MAIN_MARKER = "// ===========================================  MAIN  =========================================== //"
-SECTION = re.compile(r"^\s*(//|#) [A-Z][A-Za-z ]+ -{10,}$")
 # Directories whose .cpp files are operations, each in a folder named after its class.
 OPERATION_ROOTS = ("src/cont_set/", "src/matrix_set/", "src/cont_dynamics/", "src/specification/",
                    "src/nn/")
@@ -47,31 +46,13 @@ OPERATION_ROOTS = ("src/cont_set/", "src/matrix_set/", "src/cont_dynamics/", "sr
 CLASS_HEADER_ROOTS = ("include/cora/cont_set/", "include/cora/matrix_set/",
                       "include/cora/cont_dynamics/", "include/cora/specification/",
                       "include/cora/nn/")
-# Operations that take no input, so no test can give them an invalid one.
-NO_INPUT_OPERATIONS = {"display", "interval", "abs", "asinh", "atan", "center"}
-# Not an operation of a class: the table of the binary operations.
-NOT_OPERATIONS = {"src/cont_set/cont_set/registry.cpp"}
 CORA_TAG = re.compile(r"^// (CORA: \S+\.m\b|CORA\.cpp only: \S)")
-# The Python bridge for MATLAB CORA keeps CORA's names (intervalMatrix, linearSys, timeInt):
-# toPy/fromPy of MATLAB CORA call them.
-CORA_NAMED_PYTHON = {"src/global/python/cora/matlab.py"}
-# Where code may ask which backend, device or dtype a tensor has.
-BACKEND_FOLDERS = ("src/global/backend/", "src/global/tensor/", "include/cora/global/backend/",
-                   "include/cora/global/tensor/", "src/global/python/",
-                   "include/cora/cora.h")  # the umbrella header includes the torch backend
-# camelCase names of libraries the code calls (Eigen, libtorch, pybind11, the standard library).
-FOREIGN_NAMES = {
-    "cwiseAbs", "cwiseMax", "cwiseMin", "cwiseProduct", "rowwise", "colwise", "setZero", "setOnes",
-    "setIdentity", "maxCoeff", "minCoeff", "squaredNorm", "lpNorm", "asDiagonal", "isApprox",
-    "isZero", "isFinite", "hasNaN", "selfadjointView", "triangularView", "unaryExpr", "binaryExpr",
-    "fullPivLu", "partialPivLu", "colPivHouseholderQr", "householderQr", "jacobiSvd", "bdcSvd",
-    "matrixU", "matrixV", "singularValues", "eigenvalues", "eigenvectors", "isfinite", "isnan",
-    "isinf", "def_static", "def_property_readonly", "def_readonly", "def_readwrite",
-    "noalias", "innerSize", "outerSize", "middleRows", "middleCols", "topRows", "bottomRows",
-    "leftCols", "rightCols", "topLeftCorner", "bottomRightCorner", "segment", "conservativeResize",
-    "mutable_data", "requires_grad_", "manualSeed", "manual_seed", "numpyArray", "setNbThreads",
-    "nbThreads",
-}
+# Where code may ask which backend, device or dtype a tensor has: the folders named backend and
+# tensor. Any other place says why on the line: // NOLINT(backend): <reason>.
+BACKEND_FOLDER = re.compile(r"(^|/)(backend|tensor)/")
+
+# The namespaces of the libraries the code calls: a camelCase name behind one is theirs, not ours.
+FOREIGN_NAMESPACES = ("Eigen", "std", "py", "pybind11", "torch", "at", "c10", "omp")
 
 
 def rel(path):
@@ -99,8 +80,9 @@ def header_comment(lines):
 
 def is_operation_file(r):
     """Whether a file, given by its path relative to the repository, is a public operation."""
+    parts = r.split("/")
     return r.endswith(".cpp") and r.startswith(OPERATION_ROOTS) and "/private/" not in r \
-        and os.path.splitext(os.path.basename(r))[0] != os.path.basename(os.path.dirname(r))
+        and len(parts) == 4 and os.path.splitext(parts[-1])[0] != parts[-2]
 
 
 def needs_cora_tag_file(r):
@@ -173,18 +155,13 @@ def functions(code_lines):
 
 # ---------------------------------------------------------------- the checks of a source file
 
-def check_docstring(path, lines, issues):
+def check_operation_docstring(path, lines, issues):
+    """An operation has Syntax, Inputs, Outputs and See also blocks, and names its CORA file
+    (a class header too); the layout of the docstring is checked for every file by layout.py."""
     stem = os.path.splitext(os.path.basename(path))[0]
     block = header_comment(lines)
-    if not block:
-        issues.append("no docstring at the top")
-        return
-    if not re.match(rf"^// {re.escape(stem)} - \S", block[0]):
-        issues.append(f"the docstring should start with '// {stem} - <summary>'")
-    if len(block) > 1 and block[1] != "//":
-        issues.append("an empty comment line should follow the first docstring line")
     text = "\n".join(block)
-    if is_operation(path) and rel(path) not in NOT_OPERATIONS:
+    if is_operation(path):
         for label in ("Syntax:", "Inputs:", "Outputs:", "See also:"):
             if label not in text:
                 issues.append(f"the {label[:-1]} block is missing from the docstring")
@@ -196,55 +173,19 @@ def check_docstring(path, lines, issues):
                       "'// CORA.cpp only: <reason>'")
 
 
-def check_markers(path, lines, issues, needs_main=True, library=True):
-    """BEGIN CODE ... END OF CODE around the code, the auxiliary functions between the AUXILIARY
-    and the MAIN marker, and the main operation below MAIN (sources only; headers have no MAIN)."""
-    at = {name: [i for i, l in enumerate(lines) if l == m] for name, m in
-          (("BEGIN", BEGIN_MARKER), ("END", END_MARKER), ("AUXILIARY", AUX_MARKER), ("MAIN", MAIN_MARKER))}
-    is_source = path.endswith(".cpp")
-    required = ["BEGIN", "END"] + (["MAIN"] if is_source and needs_main else [])
-    for name in required:
-        if len(at[name]) != 1:
-            issues.append(f"exactly one {name} marker line is expected: "
-                          f"{dict(BEGIN=BEGIN_MARKER, END=END_MARKER, MAIN=MAIN_MARKER)[name]}")
-    for name in ("AUXILIARY", "MAIN"):
-        if len(at[name]) > 1 or (name == "MAIN" and not is_source and at[name]):
-            issues.append(f"unexpected {name} marker line(s)")
-    if any(len(at[name]) != 1 for name in required):
-        return
-    begin, end = at["BEGIN"][0], at["END"][0]
-    if begin > end:
-        issues.append("BEGIN CODE should come before END OF CODE")
-    if any(l.strip() for l in lines[end + 1:]):
-        issues.append("nothing but empty lines should follow END OF CODE")
-    for i, l in enumerate(lines[:begin]):
-        if re.match(r"^(namespace|class|struct|template|inline|static|using|enum)\b", l):
-            issues.append(f"line {i + 1}: code above BEGIN CODE; only the docstring and includes belong there")
-            break
-    main = at["MAIN"][0] if at["MAIN"] else None
+def check_auxiliary_names(lines, issues):
+    """The anonymous namespace of a library file is its auxiliary code: functions named aux_...,
+    defined above MAIN (the markers themselves are checked by layout.py)."""
+    at = layout.marker_lines(lines, "cpp")
     aux = at["AUXILIARY"][0] if at["AUXILIARY"] else None
-    order = [x for x in (begin, aux, main, end) if x is not None]
-    if order != sorted(order):
-        issues.append("the markers should be in the order BEGIN CODE, AUXILIARY, MAIN, END OF CODE")
-    if main is not None and not (main > 2 and lines[main - 1] == "" and lines[main - 2] == ""
-                                 and lines[main - 3] != ""):
-        issues.append("the MAIN marker line should have exactly two empty lines above it")
-    for i in [begin, end] + [x for x in (aux, main) if x is not None]:
-        if (i > 0 and lines[i - 1] != "") or (i + 1 < len(lines) and lines[i + 1] != ""):
-            issues.append("a marker line should have an empty line above and below")
-            break
-
-    # The anonymous namespace is the auxiliary code: functions named aux_..., defined above MAIN.
-    in_anon, anon_lines = False, []
+    main = at["MAIN"][0] if at["MAIN"] else None
+    in_anon = False
     for i, line in enumerate(lines):
         if line == "namespace {":
             in_anon = True
-            anon_lines.append(i)
         elif line.rstrip() == "} // namespace" and in_anon:
             in_anon = False
-            anon_lines.append(i)
-        elif in_anon and library and line and not line.startswith(
-                (" ", "//", "}", "using", "struct", "class", "enum", "#")):
+        elif in_anon and line and not line.startswith((" ", "//", "}", "using", "struct", "class", "enum", "#")):
             m = re.match(r"^(?:[\w:<>,*&]+\s+)+[*&]?(\w+)\(", line)
             if not m or not line.rstrip().endswith(("{", ";", ",", "(")):
                 continue
@@ -256,13 +197,9 @@ def check_markers(path, lines, issues, needs_main=True, library=True):
                 issues.append(f"line {i + 1}: a function in an anonymous namespace should be called aux_{m.group(1)}")
             elif not lines[j].rstrip().endswith("{"):
                 issues.append(f"line {i + 1}: auxiliary functions are defined above MAIN, not declared ahead")
-    if anon_lines and library:
-        if aux is None:
-            issues.append("an anonymous namespace is auxiliary code and needs the AUXILIARY marker line: " + AUX_MARKER)
-        elif main is not None and any(i < aux or i > main for i in anon_lines):
-            issues.append("the anonymous namespace should lie between the AUXILIARY and the MAIN marker")
-    elif aux is not None:
-        issues.append("an AUXILIARY marker without auxiliary code; remove it")
+    if aux is not None and main is not None and not any(line == "namespace {" for line in lines):
+        issues.append("an AUXILIARY marker without an anonymous namespace: auxiliary code of a library "
+                      "file is in one")
 
 
 def check_sections(path, lines, issues):
@@ -275,15 +212,6 @@ def check_sections(path, lines, issues):
     if sections < needed:
         issues.append(f"{len(lines)} lines need at least {needed} section lines "
                       f"('// Title ---...' up to column 100), found {sections}")
-
-
-def check_comment_density(path, lines, issues):
-    run = 0
-    for i, line in enumerate(lines):
-        run = 0 if "//" in line else run + 1
-        if run > MAX_LINES_WITHOUT_COMMENT:
-            issues.append(f"line {i + 1}: more than {MAX_LINES_WITHOUT_COMMENT} lines without a comment")
-            return
 
 
 def check_line_length(path, lines, issues, limit=MAX_LINE_LENGTH):
@@ -301,8 +229,11 @@ def check_naming(path, code_lines, issues):
         # a camelCase name that the code defines or calls itself (not a member of another library)
         for m in re.finditer(r"(?<![\w.>~])(?:([A-Za-z_]\w*)::)?([a-z][a-z0-9]*[A-Z]\w*)\b", code):
             scope, name = m.group(1), m.group(2)
-            foreign_scope = scope and scope[0].islower() and scope not in ("cora", "detail")
-            if name in FOREIGN_NAMES or re.match(r"^k[A-Z]", name) or foreign_scope:
+            foreign_scope = scope in FOREIGN_NAMESPACES or (scope and scope[0].islower()
+                                                            and scope not in ("cora", "detail"))
+            if code[:m.start()].rstrip().endswith("template"):  # obj.template member<...>(): a member
+                continue
+            if re.match(r"^k[A-Z]", name) or foreign_scope:
                 continue
             if m.start() > 0 and code[m.start() - 1] == ":":  # a::b::name, the scope is a library
                 continue
@@ -336,7 +267,7 @@ def check_checks(path, code_lines, issues):
         elif has_check and not guarded:
             issues.append(f"line {first + 1}: CORA_CHECK in {name}, which has no guard "
                           "'detail::Entry entry;'")
-    if not r.startswith(OPERATION_ROOTS) or "/private/" in r or r in NOT_OPERATIONS or not r.endswith(".cpp"):
+    if not is_operation_file(r):
         return
     # below MAIN, every function but an _impl starts with the guard
     main = next((i for i, l in enumerate(read_lines(path)) if l == MAIN_MARKER), None)
@@ -372,7 +303,7 @@ def check_options(path, lines, issues):
 
 def check_one_code_path(path, code_lines, issues):
     r = rel(path)
-    if r.startswith(BACKEND_FOLDERS):
+    if BACKEND_FOLDER.search(r):
         return
     for i, code in enumerate(code_lines):
         if re.search(r"#\s*if(def|ndef)?\s.*CORACPP_(TORCH|PYTHON_TORCH)\b", code) or \
@@ -391,7 +322,7 @@ FROM_NUMBERS = "CORA_FROM_NUMBERS"
 def check_factories(path, code_lines, issues):
     """Library code makes tensors like an operand; only a function marked CORA_FROM_NUMBERS (and
     the tensor, backend and binding folders) makes them from raw numbers."""
-    if rel(path).startswith(BACKEND_FOLDERS):
+    if BACKEND_FOLDER.search(rel(path)):
         return
     marked = set()
     for _, first, last in functions(code_lines):
@@ -403,8 +334,6 @@ def check_factories(path, code_lines, issues):
                           f"like an operand (zeros_like, Tensor::like) or mark the function {FROM_NUMBERS}")
 
 
-# The one place of numeric tolerances; see check_tolerance_literals.
-TOLERANCE_HEADER = "include/cora/global/tensor/tolerance.h"
 # A floating-point literal with a negative exponent (1e-8, 2.2e-16), or the machine epsilon.
 SMALL_LITERAL = re.compile(r"(?<![\w.])\d+(?:\.\d*)?[eE]-(?:[4-9]|\d\d+)\b|\b(?:DBL|FLT)_EPSILON\b"
                            r"|numeric_limits\s*<[^>]*>\s*::\s*epsilon\s*\(")
@@ -426,8 +355,6 @@ def check_tolerance_literals(path, lines, issues):
     argument defaults to unset. Flagged outside it: a literal with a negative exponent, the machine
     epsilon, a tol or eps named thing set from a nonzero floating-point literal, and a tol argument
     in the bindings or the Python package that defaults to something but None (0 is exact)."""
-    if rel(path) == TOLERANCE_HEADER:
-        return
     code = code_only("\n".join(lines)).split("\n") if path.endswith((".h", ".cpp")) else []
     for i, line in enumerate(code):
         if SMALL_LITERAL.search(line):
@@ -449,22 +376,34 @@ def check_tolerance_literals(path, lines, issues):
                               "to unset (None), the repository tolerance")
 
 
+def waiving(rule, check, path, lines, data, issues):
+    """Runs check(path, data, found) and keeps the findings on lines that no
+    `NOLINT(rule): reason` comment waives."""
+    found = []
+    check(path, data, found)
+    skip = layout.waived(lines, rule)
+    for issue in found:
+        m = re.match(r"line (\d+):", issue)
+        if not (m and int(m.group(1)) - 1 in skip):
+            issues.append(issue)
+
+
 def check_source(path):
     lines = read_lines(path)
     code_lines = code_only("\n".join(lines)).split("\n")
     issues = []
-    check_docstring(path, lines, issues)
-    check_markers(path, lines, issues)
-    check_comment_density(path, lines, issues)
+    issues.extend(layout.check_file(rel(path), lines))
+    check_operation_docstring(path, lines, issues)
+    check_auxiliary_names(lines, issues)
     check_sections(path, lines, issues)
     check_line_length(path, lines, issues)
     check_file_name(path, issues)
-    check_naming(path, code_lines, issues)
+    waiving("naming", check_naming, path, lines, code_lines, issues)
     check_checks(path, code_lines, issues)
     check_options(path, lines, issues)
-    check_one_code_path(path, code_lines, issues)
-    check_factories(path, code_lines, issues)
-    check_tolerance_literals(path, lines, issues)
+    waiving("backend", check_one_code_path, path, lines, code_lines, issues)
+    waiving("backend", check_factories, path, lines, code_lines, issues)
+    waiving("tolerance", check_tolerance_literals, path, lines, lines, issues)
     return issues
 
 
@@ -478,9 +417,21 @@ def operation_tests(path):
     return pattern, files(pattern)
 
 
-def declares_no_input(path):
-    """Whether the header of an operation says `Inputs:   -`: it takes no input to get wrong."""
-    return any(re.match(r"^// Inputs:\s+-\s*$", line) for line in header_comment(read_lines(path)))
+def unnamed(parameter):
+    """Whether a parameter of a definition has no name (`const std::string &`, `Tol`): the
+    function ignores it."""
+    return bool(re.search(r"[&*>]\s*$", parameter)) or len(parameter.split()) <= 1
+
+
+def takes_no_input(path):
+    """Whether every definition of the operation in its file has no parameter, or only unnamed
+    ones (`Zonotope Zonotope::abs() const`): it ignores its input, so none can be wrong."""
+    op = os.path.splitext(os.path.basename(path))[0]
+    code = code_only("\n".join(read_lines(path)))
+    signatures = re.findall(rf"::{re.escape(op)}(?:_impl)?\s*\(([^)]*)\)\s*(?:const)?\s*(?:noexcept)?"
+                            r"\s*(?:override)?\s*\{", code)
+    return bool(signatures) and all(
+        all(unnamed(p.strip()) for p in sig.split(",") if p.strip()) for sig in signatures)
 
 
 def check_tests_exist(issues_by_file):
@@ -493,9 +444,7 @@ def check_tests_exist(issues_by_file):
             issues.append(f"no test: expected {pattern}")
             continue
         text = "\n".join("\n".join(read_lines(f)) for f in found)
-        op = os.path.splitext(os.path.basename(path))[0]
-        if op not in NO_INPUT_OPERATIONS and not declares_no_input(path) \
-                and not re.search(r"\braises\(", text):
+        if not takes_no_input(path) and not re.search(r"\braises\(", text):
             issues.append(f"its tests ({pattern}) call it with no invalid input: "
                           "test::raises(f, Error::<identifier>)")
         if "ChecksScope" not in text:
@@ -505,21 +454,11 @@ def check_tests_exist(issues_by_file):
 
 
 def check_example(path):
+    """An example named example_* is split into sections ('// Parameters ----...'); the markers
+    and the docstring are checked for every file by layout.py."""
     lines = read_lines(path)
     issues = []
-    stem = os.path.splitext(os.path.basename(path))[0]
     comment = "//" if path.endswith(".cpp") else "#"
-    first = lines[0].lstrip('"# /') if lines else ""
-    if not first.startswith(stem):
-        issues.append(f"the docstring should start with '{stem} - <summary>'")
-    begin = BEGIN_MARKER if comment == "//" else "# -" + BEGIN_MARKER[3:-3] + "- #"
-    end = END_MARKER if comment == "//" else "# -" + END_MARKER[3:-3] + "- #"
-    if lines.count(begin) != 1 or lines.count(end) != 1:
-        issues.append(f"exactly one BEGIN CODE and one END OF CODE marker line is expected: {begin}")
-    elif lines.index(begin) > lines.index(end) or any(l.strip() for l in lines[lines.index(end) + 1:]):
-        issues.append("BEGIN CODE comes before END OF CODE, and nothing follows END OF CODE")
-    elif any(SECTION.match(l) for l in lines[:lines.index(begin)]):
-        issues.append("the sections belong between BEGIN CODE and END OF CODE")
     if sum(1 for line in lines if SECTION.match(line)) < 2:
         issues.append(f"the example should be split into sections ('{comment} Parameters ----...')")
     check_file_name(path, issues)
@@ -532,14 +471,34 @@ def check_test_files(issues_by_file):
     for path in files("tests/**/test_*.cpp") + files("tests/**/*.h"):
         lines = read_lines(path)
         found = []
-        stem = os.path.splitext(os.path.basename(path))[0]
-        if not lines or not lines[0].startswith(f"// {stem} - "):
-            found.append(f"a test should start with '// {stem} - <what it tests>'")
         check_line_length(path, lines, found, limit=110)
         check_file_name(path, found)
         check_naming(path, code_only("\n".join(lines)).split("\n"), found)
         if found:
             issues_by_file.setdefault(rel(path), []).extend(found)
+
+
+def python_naming(path, lines):
+    """Functions snake_case, classes PascalCase; a method of a class that derives from a library
+    class (`unittest.TestCase`) keeps the library's names (setUp). `NOLINTBEGIN(naming): reason`
+    waives a stretch (a bridge that keeps CORA's names)."""
+    try:
+        tree = ast.parse("\n".join(lines))
+    except SyntaxError as error:
+        return [f"line {error.lineno}: syntax error"]
+    skip, found = layout.waived(lines, "naming"), []
+    foreign = {id(item) for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
+               and any(isinstance(b, ast.Attribute) for b in node.bases) for item in node.body}
+    for node in ast.walk(tree):
+        if node.__class__ not in (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef) \
+                or node.lineno - 1 in skip or id(node) in foreign:
+            continue
+        pattern = r"^_?[A-Z][A-Za-z0-9]*$" if isinstance(node, ast.ClassDef) else r"^_?_?[a-z0-9_]+$"
+        if not re.match(pattern, node.name):
+            kind = "class" if isinstance(node, ast.ClassDef) else "function"
+            found.append(f"line {node.lineno}: the {kind} '{node.name}' is not "
+                         f"{'PascalCase' if kind == 'class' else 'snake_case'}")
+    return found
 
 
 def check_python_files(issues_by_file):
@@ -551,10 +510,6 @@ def check_python_files(issues_by_file):
         found = []
         stem = os.path.splitext(os.path.basename(path))[0]
         is_test = "/tests/" in path.replace("\\", "/")
-        if not lines or not lines[0].startswith('"""'):
-            found.append("the module should start with a docstring")
-        elif is_test and not lines[0].startswith(f'"""{stem} - '):
-            found.append(f"the docstring should start with '{stem} - <what it tests>'")
         if "/src/" in path.replace("\\", "/"):
             check_line_length(path, lines, found)
             check_tolerance_literals(path, lines, found)
@@ -562,28 +517,19 @@ def check_python_files(issues_by_file):
             check_line_length(path, lines, found, limit=110)
         if not stem.startswith("_"):
             check_file_name(path, found)
-        if rel(path) not in CORA_NAMED_PYTHON:
-            for i, line in enumerate(lines):
-                m = re.match(r"^\s*def ([A-Za-z_]\w*)\(", line)
-                if m and not re.match(r"^_?_?[a-z0-9_]+$", m.group(1)) and m.group(1) not in ("setUp", "tearDown"):
-                    found.append(f"line {i + 1}: the function '{m.group(1)}' is not snake_case")
-                m = re.match(r"^\s*class ([A-Za-z_]\w*)", line)
-                if m and not re.match(r"^_?[A-Z][A-Za-z0-9]*$", m.group(1)):
-                    found.append(f"line {i + 1}: the class '{m.group(1)}' is not PascalCase")
+        found.extend(python_naming(path, lines))
         if found:
             issues_by_file.setdefault(rel(path), []).extend(found)
 
 
 def check_python_tests_cover_the_api(issues_by_file):
-    """Every class the package exports has a Python test file: tests/python/test_<class>*.py."""
-    init = "\n".join(read_lines(os.path.join(ROOT, "src/global/python/cora/__init__.py")))
-    for name in ("Zonotope", "Interval", "LinearSys", "NonlinearSys", "NeuralNetwork", "Specification"):
-        if name not in init:
-            continue
-        stem = re.sub(r"(?<!^)([A-Z])", r"_\1", name).lower()
-        if not files(f"tests/python/test_{stem}*.py"):
-            issues_by_file.setdefault("src/global/python/cora/__init__.py", []).append(
-                f"no Python test for {name}: expected tests/python/test_{stem}*.py")
+    """Every class with a header of its own (include/cora/<area>/<class>/<class>.h) has a Python
+    test file: tests/python/test_<class>*.py."""
+    for header in [h for root in CLASS_HEADER_ROOTS for h in files(root + "*/*.h")]:
+        folder = os.path.basename(os.path.dirname(header))
+        if os.path.splitext(os.path.basename(header))[0] == folder and not files(f"tests/python/test_{folder}*.py"):
+            issues_by_file.setdefault(rel(header), []).append(
+                f"no Python test for {folder}: expected tests/python/test_{folder}*.py")
 
 
 # --------------------------------------------------------------- tensor operations
@@ -631,8 +577,6 @@ def check_tensor_ops(issues_by_file):
 
 # --------------------------------------------------------------- duplicated code
 
-# Tables whose rows look alike, with why.
-CLONE_EXEMPT = {"src/global/error.cpp": "the table of CORA's error identifiers"}
 TOKEN = re.compile(r"[A-Za-z_]\w*|\d[\w.]*|::|->|[^\s\w]")
 
 
@@ -667,7 +611,8 @@ def tokens(path):
     begin = lines.index(BEGIN_MARKER) if BEGIN_MARKER in lines else 0
     end = lines.index(END_MARKER) if END_MARKER in lines else len(lines)
     code = code_only("\n".join(lines)).split("\n")
-    skip = declaration_lines(code, begin, end) if path.endswith(".h") else set()
+    skip = (declaration_lines(code, begin, end) if path.endswith(".h") else set()) | layout.waived(
+        lines, "clones")
     out = []
     for i in range(begin + 1, end):
         if code[i].lstrip().startswith("#") or i in skip:
@@ -679,10 +624,10 @@ def tokens(path):
 
 def check_clones(issues_by_file):
     """Code repeated in two places (token clones of CLONE_TOKENS tokens): merge it into one
-    function. The python bindings and the competition entry are left out."""
+    function. Lines under `NOLINTBEGIN(clones): <reason>` are left out (rows that repeat by design)."""
     seen = {}
     sources = [p for p in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h")
-               if not rel(p).startswith("src/global/python/") and rel(p) not in CLONE_EXEMPT]
+               ]
     reported = set()
     for path in sources:
         toks = tokens(path)
@@ -719,13 +664,17 @@ def check_build_jobs(issues_by_file):
 
 
 def check_nolint(issues_by_file):
-    """A clang-tidy suppression names the checks and the reason: `// NOLINT(check): reason`
-    (also NOLINTNEXTLINE, NOLINTBEGIN); a bare NOLINT silences every check without a word."""
+    """A suppression names the checks and the reason: `// NOLINT(check): reason` (also NOLINTNEXTLINE,
+    NOLINTBEGIN, in Python after the comment sign); a bare NOLINT silences every check without a word."""
     marker = re.compile(r"\bNOLINT(?:NEXTLINE|BEGIN)?\b(?!\([^)]+\):\s*\S)")
-    for path in (files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h") +
-                 files("tests/**/*.cpp") + files("tests/**/*.h") + files("examples/**/*.cpp")):
+    paths = [p for pattern in ("src/**/*.cpp", "src/**/*.h", "include/**/*.h", "tests/**/*.cpp",
+                               "tests/**/*.h", "examples/**/*.cpp", "benchmarks/**/*.cpp")
+             for p in files(pattern)]
+    paths += [p for folder in ("src", "tests", "scripts", "examples") for p in files(f"{folder}/**/*.py")]
+    for path in paths:
         for i, line in enumerate(read_lines(path)):
-            if marker.search(line):
+            text = re.search(r"#.*", line) if path.endswith(".py") else re.search(r".*", line)
+            if text and marker.search(text.group(0)):
                 issues_by_file.setdefault(rel(path), []).append(
                     f"line {i + 1}: NOLINT without checks and a reason: // NOLINT(check): why")
 
@@ -741,17 +690,31 @@ def check_portable_types(issues_by_file):
                     f"line {i + 1}: ssize_t is POSIX; use py::ssize_t or std::ptrdiff_t")
 
 
+def check_layout_of_the_rest(issues_by_file):
+    """The layout of every C++ and Python file outside src/ and include/ (checked with their
+    other rules): tests, examples, benchmarks, scripts."""
+    for folder in ("tests", "examples", "benchmarks", "scripts"):
+        for pattern in ("**/*.cpp", "**/*.h", "**/*.py"):
+            for path in files(f"{folder}/{pattern}"):
+                found = layout.check_file(rel(path), read_lines(path))
+                if found:
+                    issues_by_file.setdefault(rel(path), []).extend(found)
+
+
 def main():
     issues_by_file = {}
     for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h"):
         if rel(path).startswith("src/global/python/"):
             found = []
             lines = read_lines(path)
-            check_markers(path, lines, found, needs_main=False, library=False)
+            found.extend(layout.check_file(rel(path), lines))
             check_file_name(path, found)
-            check_naming(path, code_only("\n".join(lines)).split("\n"), found)
-            check_checks(path, code_only("\n".join(lines)).split("\n"), found)
-            check_tolerance_literals(path, lines, found)
+            code_lines = code_only("\n".join(lines)).split("\n")
+            waiving("naming", check_naming, path, lines, code_lines, found)
+            check_checks(path, code_lines, found)
+            waiving("backend", check_one_code_path, path, lines, code_lines, found)
+            waiving("backend", check_factories, path, lines, code_lines, found)
+            waiving("tolerance", check_tolerance_literals, path, lines, lines, found)
         else:
             found = check_source(path)
         if found:
@@ -765,14 +728,11 @@ def main():
     check_portable_types(issues_by_file)
     check_nolint(issues_by_file)
     check_tensor_ops(issues_by_file)
-    for path in files("examples/cpp/**/*.cpp") + files("examples/python/example_*.py"):
-        if "/benchmarks/" in rel(path):
-            found = []
-            check_file_name(path, found)
-        else:
-            found = check_example(path)
+    for path in files("examples/**/example_*.cpp") + files("examples/**/example_*.py"):
+        found = check_example(path)
         if found:
             issues_by_file.setdefault(rel(path), []).extend(found)
+    check_layout_of_the_rest(issues_by_file)
 
     print("Checking the coding conventions of CORA.cpp ..")
     for path in sorted(issues_by_file):

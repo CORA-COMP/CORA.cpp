@@ -21,40 +21,9 @@ struct Names {
     const char *identifier, *name;
 };
 constexpr Names kNames[Error::count] = {
-    // the identifiers of CORA's error messages (global/functions/helper/.../CORAerror.m)
-    {"CORA:wrongInputInConstructor", "wrong_input_in_constructor"},
-    {"CORA:noInputInSetConstructor", "no_input_in_set_constructor"},
-    {"CORA:dimensionMismatch", "dimension_mismatch"},
-    {"CORA:emptySet", "empty_set"},
-    {"CORA:converterIssue", "converter_issue"},
-    {"CORA:configFile", "config_file"},
-    {"CORA:fileNotFound", "file_not_found"},
-    {"CORA:wrongValue", "wrong_value"},
-    {"CORA:noExactAlg", "no_exact_alg"},
-    {"CORA:noSpecificAlg", "no_specific_alg"},
-    {"CORA:solverIssue", "solver_issue"},
-    {"CORA:noSuitableSolver", "no_suitable_solver"},
-    {"CORA:notConverged", "not_converged"},
-    {"CORA:emptyProperty", "empty_property"},
-    {"CORA:wrongFieldValue", "wrong_field_value"},
-    {"CORA:plotProperties", "plot_properties"},
-    {"CORA:evenNumberInputArgs", "even_number_input_args"},
-    {"CORA:oddNumberInputArgs", "odd_number_input_args"},
-    {"CORA:numInputArgsConstructor", "num_input_args_constructor"},
-    {"CORA:redundantNameValuePair", "redundant_name_value_pair"},
-    // further identifiers of CORAerror
-    {"CORA:degenerateSet", "degenerate_set"},
-    {"CORA:YALMIP", "yalmip"},
-    {"CORA:outOfDomain", "out_of_domain"},
-    {"CORA:specialError", "special_error"},
-    {"CORA:notSupported", "not_supported"},
-    {"CORA:notDefined", "not_defined"},
-    {"CORA:nnLayerNotSupported", "nn_layer_not_supported"},
-    {"CORA:reachSetExplosion", "reach_set_explosion"},
-    {"CORA:outOfMemory", "out_of_memory"},
-    {"CORA:noops", "noops"},
-    {"CORA:install", "install"},
-    {"CORA:reportToDev", "report_to_dev"},
+#define CORA_ERROR(name, identifier, meaning) {identifier, #name},
+#include "cora/global/errors.def"
+#undef CORA_ERROR
 };
 
 /// The handler of warnings and the lock that guards replacing it.

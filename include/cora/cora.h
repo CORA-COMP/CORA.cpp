@@ -54,7 +54,7 @@
 // neural networks and specifications
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
-#ifdef CORACPP_TORCH
+#ifdef CORACPP_TORCH // NOLINT(backend): the umbrella header includes the torch backend
 #include "cora/global/backend/torch.h"
 #endif
 

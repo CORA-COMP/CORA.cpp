@@ -27,40 +27,11 @@ namespace cora {
 /// An error of the library: one of CORA's identifiers and a message.
 class Error : public std::runtime_error {
   public:
-    /// CORA's identifiers (CORAerror.m), in CORA's order.
+    /// CORA's identifiers (errors.def), in CORA's order.
     enum Id {
-        wrong_input_in_constructor,  ///< a constructor got arguments it cannot build from
-        no_input_in_set_constructor, ///< a set constructor got no arguments
-        dimension_mismatch,          ///< operands of different dimensions or sizes
-        empty_set,                   ///< the operation is not defined for an empty set
-        converter_issue,             ///< a conversion between formats failed
-        config_file,                 ///< a configuration file could not be written
-        file_not_found,              ///< a file does not exist
-        wrong_value,                 ///< an argument has a value outside its admissible range
-        no_exact_alg,                ///< there is no exact algorithm for these operands
-        no_specific_alg,             ///< the requested algorithm is not implemented for them
-        solver_issue,                ///< a solver failed
-        no_suitable_solver,          ///< no solver for the problem is available
-        not_converged,               ///< an iteration did not converge
-        empty_property,              ///< a property that is needed is empty
-        wrong_field_value,           ///< an option has a value outside its admissible ones
-        plot_properties,             ///< a plot got wrong dimensions or properties
-        even_number_input_args,      ///< name-value pairs: an even number expected
-        odd_number_input_args,       ///< name-value pairs: an odd number expected
-        num_input_args_constructor,  ///< a constructor got the wrong number of arguments
-        redundant_name_value_pair,   ///< an option name that is not one of the known ones
-        degenerate_set,              ///< the operation needs a full-dimensional set
-        yalmip,                      ///< (MATLAB CORA: YALMIP) kept for the numbering
-        out_of_domain,               ///< a value lies outside the domain of a function
-        special_error,               ///< a specific situation described by the message
-        not_supported,               ///< the combination of arguments is not supported
-        not_defined,                 ///< the operation is not defined for these arguments
-        nn_layer_not_supported,      ///< a neural network layer is not supported
-        reach_set_explosion,         ///< the reachable sets grew without bound
-        out_of_memory,               ///< the computation needs more memory than there is
-        noops,                       ///< no implementation for this pair of classes
-        install,                     ///< a dependency is missing from the installation
-        report_to_dev,               ///< an internal inconsistency: please report it
+#define CORA_ERROR(name, identifier, meaning) name,
+#include "cora/global/errors.def"
+#undef CORA_ERROR
     };
 
     Error(Id id, const std::string &message) : std::runtime_error(message), id_(id) {}

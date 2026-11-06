@@ -24,6 +24,8 @@
 
 namespace cora {
 
+// NOLINTBEGIN(tolerance): this header defines the repository tolerances and thresholds
+
 /// A tolerance argument: a nonnegative number, or unset (resolve_tol picks it).
 using Tol = std::optional<double>;
 
@@ -158,6 +160,8 @@ inline constexpr double kPrintZero = 1e-12;     ///< a coordinate below this pri
 inline constexpr double kTickSlack = 1e-9;      ///< part of a step that the last tick may overshoot
 
 } // namespace numerics
+
+// NOLINTEND(tolerance)
 
 } // namespace cora
 
