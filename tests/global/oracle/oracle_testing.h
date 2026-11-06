@@ -22,12 +22,14 @@
 
 #pragma once
 
+#include "cora/global/oracle/capsule.h"
 #include "cora/global/oracle/con_zonotope.h"
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/oracle/oracle.h"
+#include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
@@ -155,6 +157,12 @@ class Random {
             members.emplace_back(x0 - G.matmul(cora::Tensor::from_data(b, {m, 1})), G);
         }
         return cora::ZonoBundle(std::move(members));
+    }
+
+    /// A capsule of n dimensions: a center, a generator and a radius in [0.1, 1].
+    cora::Capsule capsule(int64_t n) {
+        const cora::Tensor c = vector(n), g = vector(n);
+        return {c, g, uniform(0.1, 1.0)};
     }
 
     /// A box of n dimensions: a center and a radius in [0, 1].
@@ -293,6 +301,36 @@ inline bool same_bits(const std::string &what, const cora::ZonoBundle &a,
     return ok;
 }
 
+
+/// The nominal part of the oracle's polytope (its error boxes are not compared): the vertices, or
+/// the rows and the equalities.
+inline bool same_bits(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
+    const cora::Polytope other = b.nominal();
+    if (a.is_h_rep() != other.is_h_rep()) {
+        std::cerr << "  " << what << ": the form differs\n";
+        return false;
+    }
+    if (!a.is_h_rep()) return same_bits(what + ".V", a.V(), other.V());
+    // all four compared, so that every mismatch is reported
+    const bool rows = same_bits(what + ".A", a.A(), other.A());
+    const bool offsets = same_bits(what + ".b", a.b(), other.b());
+    const bool equalities = same_bits(what + ".Ae", a.Ae(), other.Ae());
+    const bool equality_offsets = same_bits(what + ".be", a.be(), other.be());
+    return rows && offsets && equalities && equality_offsets;
+}
+
+
+/// The nominal part of the oracle's capsule: center, generator and radius; the error box is not
+/// compared (at nearest it is empty).
+inline bool same_bits(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
+    const cora::Capsule other = b.nominal();
+    // all three compared, so that every mismatch is reported
+    const bool center = same_bits(what + ".c", a.c(), other.c());
+    const bool generator = same_bits(what + ".g", a.generator(), other.generator());
+    const bool radius = same_bits(what + ".r", a.r(), other.r());
+    return center && generator && radius;
+}
+
 /// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
@@ -396,6 +434,11 @@ inline bool enclosed(const std::string &what, const cora::Zonotope &a, const lea
     return enclosed(what + " (hull)", a.interval(), hull.interval());
 }
 
+/// The interval hull of CORA.cpp's capsule inside the box the oracle proves around its capsule.
+inline bool enclosed(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
+    return enclosed(what + " (hull)", a.interval(), b.interval());
+}
+
 /// The interval hull of CORA.cpp's set inside the hull of the oracle's enclosure.
 inline bool enclosed(const std::string &what, const cora::ConZonotope &a,
                      const lean::ConZonotope &b) {
@@ -410,6 +453,11 @@ inline bool enclosed(const std::string &what, const cora::ZonoBundle &a,
     for (std::size_t i = 0; i < b.zonotopes().size(); ++i)
         ok &= enclosed(what + "[" + std::to_string(i) + "]", a.zonotopes()[i], b.zonotopes()[i]);
     return ok;
+}
+
+/// A polytope with error boxes has no nominal rows to compare; one without is the same one.
+inline bool enclosed(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
+    return !b.exact() || same_bits(what, a, b);
 }
 
 /// A certified answer must not be contradicted: if the oracle proves it, CORA.cpp says the same.

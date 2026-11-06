@@ -118,8 +118,23 @@ inline constexpr double kTableauTie = 1e-15;   ///< Bland's rule: ratios this cl
 inline constexpr double kTableauFeasible = 1e-9;   ///< a common point exists if the cost is below
 inline constexpr double kLpDistanceZero = 1e-9;    ///< a program distance below this counts as 0
 inline constexpr double kPolytopeContains = 1e-12; ///< a point beyond a facet by less is inside
-inline constexpr double kFixedFactor = 1e-9;       ///< a factor whose range is this narrow is fixed
+inline constexpr double kPolytopeAligned = 1e-12;  ///< polytope: rows closer than this are aligned
+inline constexpr double kPolytopeMiddle = 1e-9;    ///< polytope 2D: a row this close is redundant
+inline constexpr double kPolytopeSingular = 1e-10; ///< polytope: a singular value below this is 0
+inline constexpr double kPolytopeRank = 1e-8;      ///< polytope: a pivot below this (relative) is 0
+inline constexpr double kPolytopeVertexInside = 1e-8; ///< polytope: a vertex may break a row by it
+inline constexpr double kPolytopeVertexMerge = 1e-9;  ///< polytope: vertices this close are one
+inline constexpr double kPolytopeFacet = 1e-9; ///< polytope: a point this close is on a facet
+inline constexpr double kPolytopeNnls = 1e-10; ///< polytope: nonnegative least squares stops here
+inline constexpr double kPolytopeHausdorff = 1e-10; ///< polytope: CORA's tol for equal sets
+inline constexpr double kFixedFactor = 1e-9;  ///< a factor whose range is this narrow is fixed
 inline constexpr double kBoundTighter = 1e-8; ///< Fourier-Motzkin: bounds that move less end it
+
+// Ellipsoids --------------------------------------------------------------------------------------
+
+inline constexpr double kEllipsoidNormZero = 1e-10; ///< ellipsoid_norm: smaller values count as 0
+inline constexpr double kStripWeight = 1e-4;  ///< intersect_strip: the largest weight of Gollamudi
+inline constexpr double kBoxRadiusMin = 5e-3; ///< a box is widened to this radius for an ellipsoid
 
 // Geometry of zonotopes and pictures --------------------------------------------------------------
 

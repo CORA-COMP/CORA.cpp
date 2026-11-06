@@ -6,17 +6,20 @@
 //             Zonotope or a list of them; its dtype (that of the lean value, "" for plain data)
 //             sets the request's dtype, all lean operands must agree, none means lean::dtype()
 // Results:    Reply::get<T>(key) decodes double, bool, int64 list, Tensor, Interval, Fullspace,
-//             Zonotope, ConZonotope, MatZonotope, ZonoBundle, Zonotope list, or std::optional of
-//             one of them (a JSON null is nothing); list(key) splits an array of objects into
-//             replies
+//             Zonotope, ConZonotope, MatZonotope, ZonoBundle, Polytope, Ellipsoid, Capsule,
+//             Zonotope list, or std::optional of one of them (a JSON null is nothing); list(key)
+//             splits an array of objects into replies
 // See also:   lean/oracle.h, lean/interval.h, lean/zonotope.h
 
 #pragma once
 
+#include "cora/global/oracle/capsule.h"
 #include "cora/global/oracle/con_zonotope.h"
+#include "cora/global/oracle/ellipsoid.h"
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/mat_zonotope.h"
+#include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
 
@@ -43,12 +46,16 @@ struct Wire {
     Wire(const std::vector<int64_t> &indices);
     Wire(const std::vector<std::vector<int64_t>> &index_lists);
     Wire(const Tensor &T);
+    // the sets, one constructor each
     Wire(const Interval &I);
     Wire(const Fullspace &F);
     Wire(const Zonotope &Z);
     Wire(const ConZonotope &cz);
     Wire(const MatZonotope &A);
     Wire(const ZonoBundle &bundle);
+    Wire(const Polytope &P);
+    Wire(const Ellipsoid &E);
+    Wire(const Capsule &C);
     Wire(const std::vector<Tensor> &Ts);
     Wire(const std::vector<std::vector<Tensor>> &Tss);
     Wire(const std::vector<Zonotope> &Zs);

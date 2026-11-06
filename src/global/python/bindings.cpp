@@ -568,9 +568,15 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const ConZonotope &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<ZonoBundle>(S1))
                 return py::cast<const ZonoBundle &>(S1).contains(tensor_of(S2, "the points"));
+            if (py::isinstance<Polytope>(S1))
+                return py::cast<const Polytope &>(S1).contains(tensor_of(S2, "the points"));
+            if (py::isinstance<Ellipsoid>(S1))
+                return py::cast<const Ellipsoid &>(S1).contains(tensor_of(S2, "the points"));
+            if (py::isinstance<Capsule>(S1))
+                return py::cast<const Capsule &>(S1).contains(tensor_of(S2, "the points"));
             CORA_FAIL(Error::not_supported,
-                      "point containment is implemented for intervals, "
-                      "zonotopes, constrained zonotopes and zonotope bundles only");
+                      "point containment is implemented for intervals, zonotopes, constrained "
+                      "zonotopes, zonotope bundles, polytopes, ellipsoids and capsules only");
         });
     bind_registry(m);
 }
@@ -2169,12 +2175,337 @@ void bind_zono_bundle(py::module_ &m) {
             "A bundle that encloses Z and M Z + S for a zonotope or a bundle S");
 }
 
+// Polytope ----------------------------------------------------------------------------------------
+
+/// The polytope of the vertices (a matrix), the halfspaces (A, b) with the equalities (Ae, be) or
+/// a box.
+Polytope polytope_of(const py::object &first, const py::object &b, const py::object &Ae,
+                     const py::object &be) {
+    if (Ae.is_none() != be.is_none())
+        CORA_FAIL(Error::wrong_input_in_constructor,
+                  "Polytope: give the equality matrix and the offset together");
+    if (py::isinstance<Interval>(first)) return Polytope(py::cast<Interval>(first));
+    if (b.is_none()) return Polytope(tensor_of(first, "the vertices V"));
+    if (Ae.is_none()) return Polytope(tensor_of(first, "A"), vector_of(b, "b"));
+    return Polytope(tensor_of(first, "A"), vector_of(b, "b"), tensor_of(Ae, "Ae"),
+                    vector_of(be, "be"));
+}
+
+/// A polytope from Python: a Polytope, or a box as one.
+Polytope polytope_arg(const py::handle &o) {
+    if (py::isinstance<Polytope>(o)) return py::cast<Polytope>(o);
+    if (py::isinstance<Interval>(o)) return Polytope(py::cast<Interval>(o));
+    CORA_FAIL(Error::wrong_value, "cora: expected a Polytope or an Interval");
+}
+
+void bind_polytope(py::module_ &m) {
+    py::class_<Polytope, ContSet>(
+        m, "Polytope", "The polytope {x : A x <= b, Ae x = be} or the hull of vertices V.")
+        .def(py::init([](const py::object &first, const py::object &b, const py::object &Ae,
+                         const py::object &be) { return polytope_of(first, b, Ae, be); }),
+             py::arg("A"), py::arg("b") = py::none(), py::arg("Ae") = py::none(),
+             py::arg("be") = py::none(),
+             "Polytope(V): vertices (n, p); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a "
+             "box")
+        .def_static("empty", &Polytope::empty, py::arg("n") = 0, "The empty set of n dimensions")
+        .def_static("inf", &Polytope::inf, py::arg("n") = 0, "R^n")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points) {
+                return Polytope::enclose_points(tensor_of(points, "points"));
+            },
+            py::arg("points"), "The hull of the points (n, N), by its extreme points")
+        .def_property_readonly(
+            "A", [](const Polytope &P) { return matrix(P.A()); },
+            "The inequality matrix (..., m, n)")
+        .def_property_readonly(
+            "b", [](const Polytope &P) { return vector(P.b()); }, "The inequality offset (..., m)")
+        .def_property_readonly(
+            "Ae", [](const Polytope &P) { return matrix(P.Ae()); },
+            "The equality matrix (..., me, n)")
+        .def_property_readonly(
+            "be", [](const Polytope &P) { return vector(P.be()); }, "The equality offset (..., me)")
+        .def_property_readonly(
+            "V", [](const Polytope &P) { return matrix(P.V()); }, "The vertices (..., n, p)")
+        .def(
+            "constraints",
+            [](const Polytope &P) {
+                const Polytope::Constraints C = P.constraints();
+                return py::make_tuple(matrix(C.A), vector(C.b), matrix(C.Ae), vector(C.be));
+            },
+            "(A, b, Ae, be): the halfspaces, from the vertices if need be")
+        .def("box", &Polytope::box, "The polytope of the tightest box")
+        .def(
+            "center_by",
+            [](const Polytope &P, const std::string &method) { return bounds(P.center(method)); },
+            py::arg("method"),
+            "The Chebyshev center ('chebyshev') or the mean of the vertices ('avg')")
+        .def(
+            "compact",
+            [](const Polytope &P, const std::optional<std::string> &method, Tol tol) {
+                return P.compact(method.value_or("all"), tol);
+            },
+            py::arg("method") = py::none(), py::arg("tol") = py::none(),
+            "Without redundancy: all (default), A, Ae, aligned, zeros, AtoAe or V")
+        .def(
+            "con_zonotope",
+            [](const Polytope &P, const std::string &method, const std::optional<Interval> &box) {
+                return P.con_zonotope(method, box);
+            },
+            py::arg("method") = "exact:supportFunc", py::arg("box") = py::none(),
+            "The polytope as a constrained zonotope: exact:supportFunc or exact:vertices")
+        .def(
+            "contains",
+            [](const Polytope &P, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<ContSet>(S))
+                    return P.contains(py::cast<const ContSet &>(S), method, tol);
+                return P.contains(tensor_of(S, "the points"), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the polytope contains the points (n, N) or a set")
+        .def(
+            "intersect",
+            [](const Polytope &P, const py::object &S, Tol tol) {
+                if (py::isinstance<ContSet>(S)) return P.intersect(polytope_arg(S));
+                return P.intersect(tensor_of(S, "the point"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "The intersection with a polytope, a box or a point")
+        .def(
+            "cart_prod",
+            [](const Polytope &P, const py::object &S) {
+                if (py::isinstance<ContSet>(S)) return P.cart_prod(polytope_arg(S));
+                return P.cart_prod(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The Cartesian product with a polytope, a box or a point")
+        .def(
+            "convex_hull",
+            [](const Polytope &P, const py::object &S) {
+                if (py::isinstance<ContSet>(S)) return P.convex_hull(polytope_arg(S));
+                return P.convex_hull(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The convex hull with a polytope, a box or a point")
+        .def(
+            "enclose",
+            [](const Polytope &P, const ContSet &S2) {
+                return object_of(static_cast<const ContSet &>(P).enclose(S2));
+            },
+            py::arg("P2"), "The convex hull of the polytope and P2")
+        .def(
+            "hausdorff_distance",
+            [](const Polytope &P, const py::object &S) {
+                if (py::isinstance<Interval>(S)) return P.hausdorff_distance(py::cast<Interval>(S));
+                if (py::isinstance<Polytope>(S)) return P.hausdorff_distance(py::cast<Polytope>(S));
+                return P.hausdorff_distance(tensor_of(S, "the points"));
+            },
+            py::arg("S"), "The Hausdorff distance to a polytope, a box or the points (n, N)");
+}
+
+// Ellipsoid ---------------------------------------------------------------------------------------
+
+/// The measurement model of the method of Liu from a Python dict with the keys V and bar_V.
+Ellipsoid::StripMeasurement strip_measurement_of(const py::handle &o) {
+    if (!py::isinstance<py::dict>(o))
+        CORA_FAIL(Error::wrong_value, "intersect_strip: the method 'Liu2016' takes a dict with "
+                                      "the matrices V and bar_V as the width");
+    const py::dict d = py::cast<py::dict>(o);
+    for (const char *key : {"V", "bar_V"})
+        if (!d.contains(key))
+            CORA_FAIL(Error::wrong_field_value,
+                      std::string("intersect_strip: the model needs the key '") + key + "'");
+    return {tensor_of(d["V"], "V"), tensor_of(d["bar_V"], "bar_V")};
+}
+
+/// An ellipsoid from a Python value: the ellipsoid itself.
+Ellipsoid ellipsoid_of(const py::handle &o) { return py::cast<Ellipsoid>(o); }
+
+void bind_ellipsoid(py::module_ &m) {
+    py::class_<Ellipsoid, ContSet>(m, "Ellipsoid",
+                                   "The ellipsoid {x : (x - q)' Q^+ (x - q) <= 1} of the shape "
+                                   "matrix Q and the center q.")
+        .def(py::init([](const py::object &Q, const py::object &q, Tol tol) {
+                 if (q.is_none()) return Ellipsoid(tensor_of(Q, "Q"), tol);
+                 return Ellipsoid(tensor_of(Q, "Q"), vector_of(q, "the center"), tol);
+             }),
+             py::arg("Q"), py::arg("q") = py::none(), py::arg("tol") = py::none(),
+             "shape matrix Q (..., n, n), center q (..., n), default 0; tol bounds the asymmetry "
+             "and the negative eigenvalues of Q")
+        .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
+                    "The empty ellipsoid of n dimensions")
+        .def_property_readonly(
+            "Q", [](const Ellipsoid &E) { return matrix(E.Q()); }, "The shape matrix Q (..., n, n)")
+        .def_property_readonly(
+            "q", [](const Ellipsoid &E) { return vector(E.q()); }, "The center q (..., n)")
+        .def_property_readonly("tol", &Ellipsoid::tol, "The tolerance of the object")
+        .def("is_bounded", &Ellipsoid::is_bounded, "Always true")
+        .def("is_full_dim", &Ellipsoid::is_full_dim, py::arg("tol") = py::none(),
+             "Whether the shape matrix has full rank; tol replaces the tolerance of the object")
+        .def(
+            "generators", [](const Ellipsoid &E) { return matrix(E.generators()); },
+            "A matrix G with G G' = Q from the singular value decomposition")
+        .def(
+            "ellipsoid_norm",
+            [](const Ellipsoid &E, const py::object &p) {
+                return scalar(E.ellipsoid_norm(vector_of(p, "p")));
+            },
+            py::arg("p"), "The norm of p whose unit ball is the ellipsoid shifted to the origin")
+        .def("is_bigger", &Ellipsoid::is_bigger, py::arg("E2"), "Whether E2 - q2 lies in E - q")
+        .def(
+            "is_bad_dir",
+            [](const Ellipsoid &E, const Ellipsoid &E2, const py::object &L) {
+                return E.is_bad_dir(E2, tensor_of(L, "L"));
+            },
+            py::arg("E2"), py::arg("L"),
+            "For every column of L whether it is a bad direction of the Minkowski difference")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points, const std::string &method) {
+                return Ellipsoid::enclose_points(tensor_of(points, "points"), method);
+            },
+            py::arg("points"), py::arg("method") = "cov",
+            "An ellipsoid that contains the points (n, p); method 'cov'")
+        .def(
+            "intersect_strip",
+            [](const Ellipsoid &E, const py::object &C, const py::object &phi, const py::object &y,
+               double sigma_sq_prev, const std::optional<std::string> &method) {
+                const bool liu = py::isinstance<py::dict>(phi);
+                if (method && *method != (liu ? "Liu2016" : "Gollamudi1996"))
+                    CORA_FAIL(Error::wrong_value,
+                              "intersect_strip: the method '" + *method +
+                                  "' does not go with this width (a number: 'Gollamudi1996', "
+                                  "a dict of V and bar_V: 'Liu2016')");
+                const Tensor Ct = tensor_of(C, "C"), yt = vector_of(y, "y");
+                const auto result =
+                    liu ? E.intersect_strip(Ct, strip_measurement_of(phi), yt, sigma_sq_prev)
+                        : E.intersect_strip(Ct, py::cast<double>(phi), yt, sigma_sq_prev);
+                return py::make_tuple(result.first, result.second);
+            },
+            py::arg("C"), py::arg("phi"), py::arg("y"), py::arg("sigma_sq_prev") = 0.0,
+            py::arg("method") = py::none(),
+            "(E2, sigma_sq): an ellipsoid with the intersection with the strip |C x - y| <= phi "
+            "(method 'Gollamudi1996', a number phi) or the measurement model {V, bar_V} "
+            "(method 'Liu2016')")
+        .def(
+            "intersect",
+            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
+                if (py::isinstance<Ellipsoid>(S)) return E.intersect(ellipsoid_of(S), mode);
+                return E.intersect(vector_of(S, "the point"));
+            },
+            py::arg("S"), py::arg("mode") = "outer",
+            "The intersection with an ellipsoid or a point (an ellipsoid with Q = 0 or empty)")
+        .def(
+            "cart_prod",
+            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
+                if (py::isinstance<Ellipsoid>(S)) return E.cart_prod(ellipsoid_of(S), mode);
+                return E.cart_prod(vector_of(S, "the point"), mode);
+            },
+            py::arg("S"), py::arg("mode") = "outer",
+            "The Cartesian product with an ellipsoid (of the bounding boxes) or a point (exact)")
+        .def(
+            "contains",
+            [](const Ellipsoid &E, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<Zonotope>(S))
+                    return E.contains(py::cast<Zonotope>(S), method, tol);
+                if (py::isinstance<Interval>(S))
+                    return E.contains(py::cast<Interval>(S), method, tol);
+                if (py::isinstance<Ellipsoid>(S)) return E.contains(ellipsoid_of(S), method, tol);
+                return E.contains(tensor_of(S, "the points"), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the ellipsoid contains the points (n, N), a zonotope, a box or an ellipsoid")
+        .def(
+            "enclose",
+            [](const Ellipsoid &E, const ContSet &S2) {
+                if (S2.class_id() == ClassId::ellipsoid)
+                    return object_of(Set(E.enclose(static_cast<const Ellipsoid &>(S2))));
+                return object_of(static_cast<const ContSet &>(E).enclose(S2));
+            },
+            py::arg("S2"), "The outer union of E and S2; needs an SDP solver")
+        .def(
+            "enclose",
+            [](const Ellipsoid &E, const py::object &M, const Ellipsoid &Eplus) {
+                return E.enclose(tensor_of(M, "the matrix"), Eplus);
+            },
+            py::arg("M"), py::arg("Eplus"),
+            "The outer union of E and M Eplus (CORA's code); needs an SDP solver");
+}
+
+// Capsule -----------------------------------------------------------------------------------------
+
+/// The radius of a capsule from Python: a number for every member, or an array of the batch.
+Tensor capsule_radius_of(const py::object &r) { return vector_of(r, "the radius").expand_dims(-1); }
+
+void bind_capsule(py::module_ &m) {
+    py::class_<Capsule, ContSet>(m, "Capsule",
+                                 "The capsule: the points within r of the segment c - g .. c + g.")
+        .def(py::init([](const py::object &c, const py::object &g, const py::object &r) {
+                 const Tensor center = vector_of(c, "the center");
+                 const Tensor generator =
+                     g.is_none() ? center.zeros_like() : vector_of(g, "the generator");
+                 if (r.is_none()) return Capsule(center, generator);
+                 if (is_number(r)) return Capsule(center, generator, py::cast<double>(r));
+                 return Capsule(center, generator, capsule_radius_of(r));
+             }),
+             py::arg("c"), py::arg("g") = py::none(), py::arg("r") = py::none(),
+             "center c (..., n), generator g (..., n; default 0) and radius r (default 0)")
+        .def_static("empty", &Capsule::empty, py::arg("n") = 0,
+                    "The empty capsule of n dimensions: the radius -1")
+        .def_static("origin", &Capsule::origin, py::arg("n"),
+                    "The capsule that is the origin of R^n")
+        .def_static(
+            "enclose_points",
+            [](const py::object &points) {
+                return Capsule::enclose_points(tensor_of(points, "the points"));
+            },
+            py::arg("points"),
+            "A capsule that contains the points (..., n, N): mean, farthest point, largest "
+            "distance from the axis")
+        .def_property_readonly(
+            "c", [](const Capsule &C) { return vector(C.c()); }, "The stored center c (..., n)")
+        .def_property_readonly(
+            "generator", [](const Capsule &C) { return vector(C.generator()); },
+            "The generator g (..., n)")
+        .def_property_readonly(
+            "r", [](const Capsule &C) { return scalar(C.r()); },
+            "The radius r (-1 for the empty capsule)")
+        .def("is_empty", &Capsule::is_empty,
+             "Whether the capsule is empty (of a batch: every member)")
+        .def(
+            "isequal",
+            [](const Capsule &C, const Capsule &S, Tol tol) { return C.isequal(S, tol); },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the capsules are equal up to tol, or both empty")
+        .def(
+            "contains",
+            [](const Capsule &C, const py::object &S, Tol tol) {
+                if (py::isinstance<Capsule>(S)) return C.contains(py::cast<Capsule>(S), tol);
+                if (py::isinstance<Zonotope>(S)) return C.contains(py::cast<Zonotope>(S), tol);
+                if (py::isinstance<Interval>(S)) return C.contains(py::cast<Interval>(S), tol);
+                return C.contains(tensor_of(S, "the points"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the capsule contains the points (n, N), a capsule, a zonotope or a box")
+        .def(
+            "is_intersecting",
+            [](const Capsule &C, const py::object &S, Tol tol) {
+                if (py::isinstance<Capsule>(S)) return C.is_intersecting(py::cast<Capsule>(S), tol);
+                return C.is_intersecting(tensor_of(S, "the points"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the capsule meets a capsule or contains the points (n, N), up to tol")
+        .def("convex_hull", &Capsule::convex_hull, py::arg("S"),
+             "A capsule that encloses the capsule and S");
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
     const py::object CZ = m.attr("ConZonotope");
     CZ.attr("__array_ufunc__") = py::none(); // numpy defers to its operators
-    Z.attr("__array_ufunc__") = py::none();  // numpy defers to the operators below
+    m.attr("Polytope").attr("__array_ufunc__") = py::none();
+    m.attr("Ellipsoid").attr("__array_ufunc__") = py::none();
+    m.attr("Capsule").attr("__array_ufunc__") = py::none();
+    Z.attr("__array_ufunc__") = py::none(); // numpy defers to the operators below
     I.attr("__array_ufunc__") = py::none();
     E.attr("__array_ufunc__") = py::none();
     F.attr("__array_ufunc__") = py::none();
@@ -2292,6 +2623,13 @@ void bind_operators(py::module_ &m) {
     method(I, "__rmul__", interval_product);
     method(I, "__rmatmul__", interval_product);
 
+    // Capsule: a matrix maps it
+    const auto capsule_product = [](const Capsule &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
+        return not_implemented();
+    };
+    method(m.attr("Capsule"), "__rmul__", capsule_product);
+    method(m.attr("Capsule"), "__rmatmul__", capsule_product);
     // EmptySet
     const auto empty_set_product = [](const EmptySet &A, const py::object &o) -> py::object {
         if (is_number(o)) return py::cast(py::cast<double>(o) * A);
@@ -3485,6 +3823,9 @@ PYBIND11_MODULE(_cora, m) {
     bind_zonotope(m);
     bind_con_zonotope(m);
     bind_zono_bundle(m);
+    bind_polytope(m);
+    bind_ellipsoid(m);
+    bind_capsule(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
     bind_operators(m);

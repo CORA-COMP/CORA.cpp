@@ -14,10 +14,13 @@
 // CORA: contSet/@contSet/reorder.m
 
 #include "cora/cont_set/registry.h"
+#include "cora/cont_set/capsule/capsule.h"
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
+#include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 
@@ -210,6 +213,45 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Interval>(
         t,
         [](const Fullspace &F, const Interval &I, Tol tol) { return F.is_intersecting(I, tol); });
+    // the polytope has the lowest precedence of its pairs here, so it comes first
+    aux_add_set<BinaryOp::intersect, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.intersect(B); });
+    aux_add_set<BinaryOp::intersect, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.intersect(I); });
+    aux_add_set<BinaryOp::convex_hull, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.convex_hull(B); });
+    aux_add_set<BinaryOp::convex_hull, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.convex_hull(I); });
+    aux_add_set<BinaryOp::cart_prod, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.cart_prod(B); });
+    aux_add_set<BinaryOp::cart_prod, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.cart_prod(I); });
+    // a polytope contains a polytope, a box or a zonotope by the support functions along its rows
+    aux_add_predicate<BinaryOp::contains, Polytope, Polytope>(
+        t,
+        [](const Polytope &A, const Polytope &B, Tol tol) { return A.contains(B, "exact", tol); });
+    aux_add_predicate<BinaryOp::contains, Polytope, Interval>(
+        t,
+        [](const Polytope &A, const Interval &I, Tol tol) { return A.contains(I, "exact", tol); });
+    aux_add_predicate<BinaryOp::contains, Polytope, Zonotope>(
+        t,
+        [](const Polytope &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
+    // the ellipsoid has the lowest precedence of its pairs, so it comes first; the cases that need
+    // a solver are Error::not_supported
+    aux_add_set<BinaryOp::intersect, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.intersect(B); });
+    aux_add_set<BinaryOp::cart_prod, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.cart_prod(B); });
+    aux_add_predicate<BinaryOp::contains, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B, Tol tol) {
+            return A.contains(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, Ellipsoid, Zonotope>(
+        t,
+        [](const Ellipsoid &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
+    aux_add_predicate<BinaryOp::contains, Ellipsoid, Interval>(
+        t,
+        [](const Ellipsoid &A, const Interval &I, Tol tol) { return A.contains(I, "exact", tol); });
     // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
     // operations are exact
     aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(
@@ -317,7 +359,38 @@ constexpr Table aux_build() {
         t, [](const ConZonotope &A, const Zonotope &Z, Tol tol) { return A.isequal(Z, tol); });
     aux_add_predicate<BinaryOp::isequal, ConZonotope, Interval>(
         t, [](const ConZonotope &A, const Interval &I, Tol tol) { return A.isequal(I, tol); });
+    // the capsule: hull, containment and intersection with its own class, the empty set and the
+    // whole space; it holds a zonotope or a box by their corners
+    aux_add_set<BinaryOp::convex_hull, Capsule, Capsule>(
+        t, [](const Capsule &A, const Capsule &B) { return A.convex_hull(B); });
+    aux_add_set<BinaryOp::convex_hull, EmptySet, Capsule>(
+        t, [](const EmptySet &E, const Capsule &C) { return E.convex_hull(Set(C)); });
+    aux_add_set<BinaryOp::convex_hull, Fullspace, Capsule>(
+        t, [](const Fullspace &F, const Capsule &C) { return F.convex_hull(C); });
+    aux_add_predicate<BinaryOp::contains, Capsule, Capsule>(
+        t, [](const Capsule &A, const Capsule &B, Tol tol) { return A.contains(B, tol); });
+    aux_add_predicate<BinaryOp::contains, Capsule, Zonotope>(
+        t, [](const Capsule &C, const Zonotope &Z, Tol tol) { return C.contains(Z, tol); });
+    aux_add_predicate<BinaryOp::contains, Capsule, Interval>(
+        t, [](const Capsule &C, const Interval &I, Tol tol) { return C.contains(I, tol); });
+    // every capsule holds the empty set, and none holds the whole space
+    aux_add_predicate<BinaryOp::contains, Capsule, EmptySet>(
+        t, [](const Capsule &, const EmptySet &, Tol) { return true; });
+    aux_add_predicate<BinaryOp::contains, Capsule, Fullspace>(
+        t, [](const Capsule &, const Fullspace &, Tol) { return false; });
+    aux_add_predicate<BinaryOp::contains, EmptySet, Capsule>(
+        t, [](const EmptySet &E, const Capsule &C, Tol tol) { return E.contains(C, tol); });
+    aux_add_predicate<BinaryOp::contains, Fullspace, Capsule>(
+        t, [](const Fullspace &F, const Capsule &C, Tol tol) { return F.contains(C, tol); });
+    aux_add_predicate<BinaryOp::is_intersecting, Capsule, Capsule>(
+        t, [](const Capsule &A, const Capsule &B, Tol tol) { return A.is_intersecting(B, tol); });
+    aux_add_predicate<BinaryOp::is_intersecting, EmptySet, Capsule>(
+        t, [](const EmptySet &E, const Capsule &C, Tol tol) { return E.is_intersecting(C, tol); });
+    aux_add_predicate<BinaryOp::is_intersecting, Fullspace, Capsule>(
+        t, [](const Fullspace &F, const Capsule &C, Tol tol) { return F.is_intersecting(C, tol); });
     // equality: the pair of the class of lower precedence, which the other converts to
+    aux_add_predicate<BinaryOp::isequal, Capsule, Capsule>(
+        t, [](const Capsule &A, const Capsule &B, Tol tol) { return A.isequal(B, tol); });
     aux_add_predicate<BinaryOp::isequal, Interval, Interval>(
         t, [](const Interval &I1, const Interval &I2, Tol tol) { return I1.isequal(I2, tol); });
     aux_add_predicate<BinaryOp::isequal, Zonotope, Zonotope>(

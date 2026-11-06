@@ -15,6 +15,7 @@
 // CORA: contSet/@conZonotope/minkDiff.m
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "cont_set/zonotope/private/priv.h"
 #include "global/format.h"
 
 #include <set>

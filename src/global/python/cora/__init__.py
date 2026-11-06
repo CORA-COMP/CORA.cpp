@@ -29,8 +29,10 @@ except ImportError:  # numpy and Eigen only
 
 from . import banner, errors
 from ._cora import (
+    Capsule,
     ContSet,
     ConZonotope,
+    Ellipsoid,
     EmptySet,
     ExpmMixedResult,
     ExpmResult,
@@ -45,6 +47,7 @@ from ._cora import (
     MatZonotopeExpmOneParamResult,
     NeuralNetwork,
     NonlinearSys,
+    Polytope,
     ReachProblem,
     ReachSet,
     Rng,
@@ -91,11 +94,11 @@ from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, s
 banner.install(current_backend)
 
 __all__ = [
-    "CORAError", "CORAWarning", "ConZonotope", "ContSet", "EmptySet", "Expr", "ExpmMixedResult",
-    "ExpmResult",
+    "CORAError", "CORAWarning", "Capsule", "ConZonotope", "ContSet", "Ellipsoid", "EmptySet",
+    "Expr", "ExpmMixedResult", "ExpmResult",
     "Falsification", "Figure", "Fullspace", "Interval", "IntervalMatrix", "LinearSys",
     "MatZonotope", "MatZonotopeExpmMixedResult", "MatZonotopeExpmOneParamResult",
-    "NeuralNetwork", "NonlinearSys", "ReachProblem", "ReachSet", "Rng",
+    "NeuralNetwork", "NonlinearSys", "Polytope", "ReachProblem", "ReachSet", "Rng",
     "Specification", "VerifyResult", "ZonoBundle", "Zonotope", "backend", "binary_pairs",
     "cart_prod", "checks",
     "checks_enabled", "contains", "convex_hull", "cora_color", "current_backend",

@@ -55,6 +55,12 @@ QuadRow priv_quad_map_single_row(const Tensor &M, int64_t N);
 /// each row of A (k, n), a column (k, 1).
 Zonotope priv_union_linprog(const Zonotope &iterative,
                             const std::function<Tensor(const Tensor &)> &support);
+/// The most generators whose 2^m corners a containment test visits.
+inline constexpr int64_t kMaxCornerGenerators = 12;
+
+/// The corners c + G s of a zonotope for every sign vector s in {-1, 1}^m: (..., n, 2^m). They
+/// contain the vertices, and a convex set holds the zonotope exactly if it holds them.
+Tensor priv_corners(const Zonotope &Z);
 
 /// The zonotope of a point p (..., n, 1), as CORA's zonotope(p): center p and no generator.
 Zonotope priv_zonotope_of_point(const Tensor &p);

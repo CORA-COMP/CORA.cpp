@@ -67,6 +67,9 @@ class Json {
     static Json parse(const std::string &s);
 };
 
+/// Whether a wire-form tensor or box has only zero entries ("0*2^0" is the text of zero).
+bool zero_valued(const Json &j);
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

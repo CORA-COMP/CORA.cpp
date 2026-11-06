@@ -1,0 +1,34 @@
+// is_full_dim - whether a capsule has a nonempty interior
+//
+// Syntax:   res = C.is_full_dim();   res = C.is_full_dim(tol);
+// Inputs:   tol - checked, relaxes nothing (CORA's isFullDim has none); default: the repository
+//                 tolerance (docs/architecture.md)
+// Outputs:  res - true if r > 0, or r = 0 and the dimension is 1 with g != 0 (a segment is an
+//           interval there). CORA tests r > 0 and misses the second case; the empty
+//           capsule has no interior. A batch: every member
+// See also: is_bounded
+//
+// CORA: contSet/@capsule/isFullDim.m
+
+#include "cont_set/capsule/private/priv.h"
+#include "cora/cont_set/capsule/capsule.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+
+// ===========================================  MAIN  =========================================== //
+
+bool Capsule::is_full_dim_impl(Tol) const {
+    const Tensor zero = r_.zeros_like();
+    const Tensor ball = r_.greater(zero);
+    if (dim() != 1) return priv_all(ball);
+    // on the line a segment of positive length is an interval
+    const Tensor segment = r_.greater_equal(zero).multiply(g_.abs().greater(zero));
+    return priv_all(ball.maximum(segment));
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

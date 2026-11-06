@@ -5,7 +5,7 @@
 ```
 include/cora/              the public headers (cora/cora.h includes them all; cora/config.h is written by CMake)
   cont_set/                cont_set.h (ContSet), set.h (Set), registry.h (the binary operations)
-    zonotope/  con_zonotope/  zono_bundle/  interval/  empty_set/  fullspace/   the class in its header
+    zonotope/  con_zonotope/  zono_bundle/  polytope/  ellipsoid/  interval/  empty_set/  fullspace/   the class in its header
   matrix_set/              interval_matrix/ (CORA's matrixSet: sets of matrices; not a ContSet)
   cont_dynamics/           cont_dynamics.h (ReachSet, the problems), algorithms.h (the alg:: structs)
     linear_sys/  nonlinear_sys/
@@ -299,7 +299,7 @@ In Python: `@oracle_testing.needs_oracle`, `oracle_testing.run(op, body)` and
 `oracle_testing.check(a, b)`. Examples: `tests/global/oracle/test_lean_zonotope_support_function.cpp`
 and `tests/python/test_lean_oracle.py`. The coverage check requires the helper and the skip guard in
 every ORACLE test. An op without a method is one line of `ask(op, operands)` in
-`src/global/oracle/{interval,zonotope,con_zonotope,zono_bundle}.cpp`.
+`src/global/oracle/{interval,zonotope,con_zonotope,zono_bundle,polytope,ellipsoid}.cpp`.
 
 ### Still to do for a fresh install
 

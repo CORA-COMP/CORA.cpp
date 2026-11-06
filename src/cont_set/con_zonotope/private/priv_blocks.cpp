@@ -88,15 +88,6 @@ detail::Refusal priv_pair_refusal(const char *operation, const ConZonotope &a, c
     return std::nullopt;
 }
 
-Tensor priv_corners(const Zonotope &Z) {
-    // bit j of the corner index k is the sign of generator j
-    const int64_t m = Z.generators().shape().back(), count = int64_t{1} << m;
-    std::vector<double> signs(std::size_t(m * count));
-    for (int64_t j = 0; j < m; ++j)
-        for (int64_t k = 0; k < count; ++k) signs[j * count + k] = ((k >> j) & 1) ? 1.0 : -1.0;
-    return Z.center() + Z.generators().matmul(Tensor::like(Z.center(), signs, {m, count}));
-}
-
 // Compacting --------------------------------------------------------------------------------------
 
 std::vector<int64_t> priv_nonzero_rows(const Tensor &A, const Tensor &b) {

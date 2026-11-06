@@ -108,6 +108,26 @@ changed, and the reasons are listed below.
 | `conIntersect(cZ, cZ2, M)` | `cz.con_intersect(cz2, M)` | `cz.con_intersect(cz2, M)` |
 | `intersectStrip(cZ, C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` | `cz.intersect_strip(C, phi, y, method)` |
 | `approximateBoundsWithGPU(...)` | `ConZonotope::approximate_bounds(c, G, A, b, dr, num_union_const, options)` | `cora.ConZonotope.approximate_bounds(...)` |
+| `polytope(V)`, `polytope(A, b)`, `polytope(A, b, Ae, be)`, `polytope(I)` | `Polytope(V)`, `Polytope(A, b)`, `Polytope(A, b, Ae, be)`, `Polytope(I)` | `cora.Polytope(V)`, `cora.Polytope(A, b, Ae, be)`, `cora.Polytope(I)` |
+| `polytope.empty(n)`, `polytope.Inf(n)` | `Polytope::empty(n)`, `Polytope::inf(n)` | `cora.Polytope.empty(n)`, `cora.Polytope.inf(n)` |
+| `enclosePoints(P, points)` | `Polytope::enclose_points(points)` | `cora.Polytope.enclose_points(points)` |
+| `constraints(P)` | `P.constraints()` | `P.constraints()` |
+| `center(P, method)` | `P.center(method)` | `P.center` (Chebyshev), `P.center_by(method)` |
+| `compact(P, method, tol)` | `P.compact(method, tol)` | `P.compact(method, tol)` |
+| `conZonotope(P, method, box)` | `P.con_zonotope(method, box)` | `P.con_zonotope(method, box)` |
+| `and(P, S)` | `P.intersect(S, tol)` | `P.intersect(S, tol)` |
+| `cartProd(P, S)` | `P.cart_prod(S)` | `P.cart_prod(S)` |
+| `convHull(P, S)`, `enclose(P, P2)` | `P.convex_hull(S)`, `P.enclose(P2)` | `P.convex_hull(S)`, `P.enclose(P2)` |
+| `hausdorffDist(P, S)` | `P.hausdorff_distance(S)` | `P.hausdorff_distance(S)` |
+| `ellipsoid(Q, q, TOL)`, `ellipsoid.empty(n)` | `Ellipsoid(Q, q, tol)`, `Ellipsoid::empty(n)` | `cora.Ellipsoid(Q, q, tol)`, `cora.Ellipsoid.empty(n)` |
+| `E.Q`, `E.q`, `E.TOL`, `generators(E)`, `ellipsoidNorm(E, p)` | `E.Q()`, `E.q()`, `E.tol()`, `E.generators()`, `E.ellipsoid_norm(p)` | `E.Q`, `E.q`, `E.tol`, `E.generators()`, `E.ellipsoid_norm(p)` |
+| `isBigger(E1, E2)`, `isBadDir(E1, E2, L)` | `E1.is_bigger(E2)`, `E1.is_bad_dir(E2, L)` | the same |
+| `ellipsoid.enclosePoints(P, method)` | `Ellipsoid::enclose_points(P, method)` | `cora.Ellipsoid.enclose_points(P, method)` |
+| `intersectStrip(E, C, phi, y, sigma_sq_prev, method)` | `E.intersect_strip(C, phi, y, sigma_sq_prev)`, with a `StripMeasurement` for `phi` (the method of Liu) | `E.intersect_strip(C, phi, y, sigma_sq_prev, method)`, a dict `{V, bar_V}` for `phi` |
+| `capsule(c, g, r)`, `capsule(c)` | `Capsule(c, g, r)`, `Capsule(c)` | `cora.Capsule(c, g, r)` |
+| `capsule.empty(n)`, `capsule.origin(n)`, `capsule.enclosePoints(P)` | `Capsule::empty(n)`, `Capsule::origin(n)`, `Capsule::enclose_points(P)` | `cora.Capsule.empty(n)`, `.origin(n)`, `.enclose_points(P)` |
+| `contains_(C, S)`, `isIntersecting_(C, S)`, `convHull_(C, S)`, `isequal(C, S)` | `C.contains(S, tol)`, `C.is_intersecting(S, tol)`, `C.convex_hull(S)`, `C.isequal(S, tol)` | the same, `p in C`, `C == S` |
+| `mtimes(M, C)`, `lift_(C, N, proj)` | `C.linear_map(M)`, `M * C`, `C.lift(N, dims)` | `M @ C`, `C.linear_map(M)`, `C.lift(N, dims)` |
 | `boundaryPoint(Z, dir, start)` | `Z.boundary_point(dir, start)` | `Z.boundary_point(dir, start)` |
 | `linComb(Z1, Z2)` | `Z.linear_combination(Z2)` | `Z.linear_combination(Z2)` |
 | `zonotope.generateRandom` | `Zonotope::generate_random(rng, dimension, center, nr_generators, distribution)` | `cora.Zonotope.generate_random` |

@@ -71,12 +71,6 @@ ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const
 
 // Corners and vertices ----------------------------------------------------------------------------
 
-/// Most generators of a zonotope whose corners are listed (2^12 of them, a program each).
-inline constexpr int64_t kMaxCornerGenerators = 12;
-
-/// The corners c + G s of a zonotope for every sign vector s, as columns (n, 2^m).
-Tensor priv_corners(const Zonotope &Z);
-
 /// Points of a single constrained zonotope that contain its vertices, as columns (n, K): the
 /// images c + G x of the x with |x|_inf <= 1 and A x = b that fix all but rank(A) factors at +-1
 /// (without the same point twice). None (K = 0) if the set is empty; at most numerics::

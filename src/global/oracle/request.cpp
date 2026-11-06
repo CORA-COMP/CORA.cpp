@@ -77,11 +77,28 @@ struct Decode<MatZonotope> {
         return MatZonotope::from_json(dt, j);
     }
 };
+// A polytope is its wire form, in either representation.
 template <>
 struct Decode<ZonoBundle> {
     static ZonoBundle of(const std::string &dt, const Json &j) {
         return ZonoBundle::from_json(dt, j);
     }
+};
+template <>
+struct Decode<Polytope> {
+    static Polytope of(const std::string &dt, const Json &j) { return Polytope::from_json(dt, j); }
+};
+// An ellipsoid is {Q, q} and its error box.
+template <>
+struct Decode<Ellipsoid> {
+    static Ellipsoid of(const std::string &dt, const Json &j) {
+        return Ellipsoid::from_json(dt, j);
+    }
+};
+// A capsule is its center, generator, radius and error box.
+template <>
+struct Decode<Capsule> {
+    static Capsule of(const std::string &dt, const Json &j) { return Capsule::from_json(dt, j); }
 };
 // The empty set is its dimension, {"n": n}.
 template <>
@@ -147,6 +164,9 @@ Wire::Wire(const ConZonotope &cz) : json(cz.to_json()), dtype(cz.dtype()) {}
 Wire::Wire(const MatZonotope &A) : json(A.to_json()), dtype(A.center().dtype()) {}
 Wire::Wire(const ZonoBundle &bundle)
     : json(bundle.to_json()), dtype(bundle.zonotopes().front().center().dtype()) {}
+Wire::Wire(const Polytope &P) : json(P.to_json()), dtype(P.dtype()) {}
+Wire::Wire(const Ellipsoid &E) : json(E.to_json()), dtype(E.dtype()) {}
+Wire::Wire(const Capsule &C) : json(C.to_json()), dtype(C.dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
 
@@ -194,8 +214,13 @@ template Fullspace Reply::get<Fullspace>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
 template ConZonotope Reply::get<ConZonotope>(const char *) const;
 template MatZonotope Reply::get<MatZonotope>(const char *) const;
+// the sets of the protocol, and the lists and optionals of them
 template ZonoBundle Reply::get<ZonoBundle>(const char *) const;
+template Polytope Reply::get<Polytope>(const char *) const;
+template Ellipsoid Reply::get<Ellipsoid>(const char *) const;
+template Capsule Reply::get<Capsule>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
+// the lists
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
 template std::vector<Zonotope> Reply::get<std::vector<Zonotope>>(const char *) const;
