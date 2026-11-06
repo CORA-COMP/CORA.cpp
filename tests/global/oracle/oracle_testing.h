@@ -526,7 +526,7 @@ inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
 /// c and r nearly cancel.
 inline bool enclosed_rebuilt(const std::string &what, const cora::IntervalMatrix &a,
                              const lean::Interval &b) {
-    const cora::Interval box = a.interval();
+    const cora::Interval &box = a.interval();
     const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
     const std::vector<double> blo = b.inf().gather().data(), bhi = b.sup().gather().data();
     for (std::size_t i = 0; i < lo.size(); ++i) {
