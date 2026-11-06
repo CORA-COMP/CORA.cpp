@@ -187,7 +187,17 @@ changed, and the reasons are listed below.
 | `outputSet(sys, R)` | `sys.output_set(R)` | `sys.output_set(R)` |
 | `taylorMatrices` (F) | `sys.correction_matrix_state(dt, eta)` | `sys.correction_matrix_state` |
 | `taylorMatrices` (G) | `sys.correction_matrix_input(dt, eta)` | `sys.correction_matrix_input` |
-| `particularSolution_*` | `sys.input_solution(U, dt, eta)` | — |
+| `particularSolution_*` of reach's input (through `B`) | `sys.input_solution(U, dt, eta)` | — |
+| `canonicalForm(sys, U, uVec, W, V, vVec)` | `sys.canonical_form(U, u_vec)` | `sys.canonical_form(U, u_vec=None)` |
+| `isCanonicalForm(sys)` | `sys.is_canonical_form()` | `sys.is_canonical_form()` |
+| `homogeneousSolution`, `affineSolution` | `sys.homogeneous_solution(X, dt, eta)`, `sys.affine_solution(X, u, dt, eta)` | the same |
+| `particularSolution_timeVarying`, `particularSolution_constant` | `sys.particular_solution_time_varying(U, dt, eta)`, `sys.particular_solution_constant(U, dt, eta)` | the same |
+| `oneStep`, `errorSolution_adaptive`, `trajectoryError` | `sys.one_step(X, U, u, dt, eta)`, `sys.error_solution_adaptive(...)`, `sys.trajectory_error(...)` | the same |
+| `initReach`, `post` (with `options` as state) | `sys.init_reach(R_init, U, u_trans, alg)`, `sys.post(state, alg)` | `sys.init_reach(R_init, U, u_trans, alg=..., ...)`, `sys.post(state, alg=..., ...)` |
+| `isequal(sys, sys2, tol)`, `eq`, `ne` | `sys.isequal(sys2, tol)`, `==`, `!=` | `sys.isequal(sys2, tol=None)`, `==`, `!=` |
+| `display(sys)` | `sys.display()`, `std::cout << sys` | `repr(sys)` |
+| `generateRandom('StateDimension', n, ...)` | `LinearSys::generate_random(rng, n, m, p, ...)` | `cora.LinearSys.generate_random(rng, ...)` |
+| `nonlinearSys(linsys)` | `sys.nonlinear_sys()` | `sys.nonlinear_sys()` |
 | `priv_expmRemainder` | `sys.expm_remainder(dt, eta)` | `sys.expm_remainder` |
 | `params.R0` | `ReachProblem::initial_set` | keyword `initial_set` (or the first argument) |
 | `params.U` | `ReachProblem::input_set` | keyword `input_set` |
@@ -199,6 +209,8 @@ changed, and the reasons are listed below.
 | `options.zonotopeOrder` | `zonotope_order` | `zonotope_order` |
 | `options.linAlg = 'standard'` | `alg::Standard{...}` | `alg="standard"` |
 | `options.linAlg = 'wrapping-free'` | `alg::WrappingFree{...}` | `alg="wrapping_free"` |
+| `options.linAlg = 'fromStart'` | `alg::FromStart{...}` | `alg="from_start"` |
+| `options.linAlg = 'decomp'`, `options.partition` | `alg::Decomposition{...}`, `partition` (0-based blocks) | `alg="decomposition"`, `partition=[[0, 1], [2, 2]]` |
 | `options.verifyAlg = 'reachavoid:supportFunc'` | `alg::ReachAvoidSupportFunction{}` | `alg="reach_avoid_support_function"` |
 | `options.verifyAlg = 'reachavoid:zonotope'` | `alg::ReachAvoidZonotope{}` | `alg="reach_avoid_zonotope"` |
 | `options.alg = 'lin'` (nonlinearSys) | `alg::Linearization{...}` | `alg="linearization"` |
