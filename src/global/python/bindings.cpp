@@ -2236,8 +2236,13 @@ void bind_polytope(py::module_ &m) {
             [](const Polytope &P, const std::string &method) { return bounds(P.center(method)); },
             py::arg("method"),
             "The Chebyshev center ('chebyshev') or the mean of the vertices ('avg')")
-        .def("compact", &Polytope::compact, py::arg("method") = "all", py::arg("tol") = py::none(),
-             "Without redundancy: all, A, Ae, aligned, zeros, AtoAe or V")
+        .def(
+            "compact",
+            [](const Polytope &P, const std::optional<std::string> &method, Tol tol) {
+                return P.compact(method.value_or("all"), tol);
+            },
+            py::arg("method") = py::none(), py::arg("tol") = py::none(),
+            "Without redundancy: all (default), A, Ae, aligned, zeros, AtoAe or V")
         .def(
             "con_zonotope",
             [](const Polytope &P, const std::string &method, const std::optional<Interval> &box) {
@@ -2276,8 +2281,12 @@ void bind_polytope(py::module_ &m) {
                 return P.convex_hull(vector_of(S, "the point"));
             },
             py::arg("S"), "The convex hull with a polytope, a box or a point")
-        .def("enclose", py::overload_cast<const Polytope &>(&Polytope::enclose, py::const_),
-             py::arg("P2"), "The convex hull of the polytope and P2")
+        .def(
+            "enclose",
+            [](const Polytope &P, const ContSet &S2) {
+                return object_of(static_cast<const ContSet &>(P).enclose(S2));
+            },
+            py::arg("P2"), "The convex hull of the polytope and P2")
         .def(
             "hausdorff_distance",
             [](const Polytope &P, const py::object &S) {

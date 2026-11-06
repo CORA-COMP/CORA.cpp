@@ -44,6 +44,7 @@ struct Wire {
     Wire(const std::vector<int64_t> &indices);
     Wire(const std::vector<std::vector<int64_t>> &index_lists);
     Wire(const Tensor &T);
+    // the sets, one constructor each
     Wire(const Interval &I);
     Wire(const Fullspace &F);
     Wire(const Zonotope &Z);
