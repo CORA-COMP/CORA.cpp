@@ -136,7 +136,7 @@ Capsule::Capsule(const Zonotope &Z) : ContSet(kClassId) {
     });
     const int64_t n = Z.dim();
     // B: the left singular vectors of [-G, G], completed to n columns
-    const Tensor G = Z.generators();
+    const Tensor &G = Z.generators();
     Tensor B = Tensor::concat({G.negative(), G}, 1).svd()[0];
     if (B.shape().back() < n) B = Tensor::concat({B, G.eye_like(n)}, 1).qr().first;
     const Tensor Bt = B.matrix_transpose();
