@@ -23,7 +23,9 @@ int main() {
     // two bundles of two members each
     test::gradcheck(
         "plus",
-        [](const Inputs &x) { return test::parts(test::bundle(x, 0, 2).plus(test::bundle(x, 4, 2))); },
+        [](const Inputs &x) {
+            return test::parts(test::bundle(x, 0, 2).plus(test::bundle(x, 4, 2)));
+        },
         test::joined(test::random_bundle_parts(2, 2, 2), test::random_bundle_parts(2, 2, 2)));
     return test::finish("zono_bundle plus (torch)");
 }

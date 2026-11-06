@@ -26,7 +26,8 @@ namespace cora {
 detail::Refusal priv_rand_point_refusal(int64_t N, const std::string &type) {
     if (N < 0)
         return std::pair{Error::wrong_value, "rand_point: the number of points must be "
-                                             "nonnegative, got " + std::to_string(N)};
+                                             "nonnegative, got " +
+                                                 std::to_string(N)};
     if (type != "standard" && type != "extreme")
         return std::pair{Error::wrong_value, "rand_point: unknown type '" + type +
                                                  "'; use \"standard\" or \"extreme\""};

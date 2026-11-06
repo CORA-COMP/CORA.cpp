@@ -24,7 +24,8 @@ int main() {
     test::gradcheck(
         "project",
         [](const Inputs &x) {
-            const ZonoBundle projected = Set(test::bundle(x, 0, 2))->project({2, 0}).as<ZonoBundle>();
+            const ZonoBundle projected =
+                Set(test::bundle(x, 0, 2))->project({2, 0}).as<ZonoBundle>();
             return test::parts(projected);
         },
         test::random_bundle_parts(2, 3, 2));

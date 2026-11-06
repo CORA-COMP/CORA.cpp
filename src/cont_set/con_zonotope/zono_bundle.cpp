@@ -68,6 +68,7 @@ ZonoBundle ConZonotope::zono_bundle() const {
     const Tensor length = rows.multiply(rows).sum(-1, true).sqrt();
     const std::vector<double> a = rows.divide(length).data(), u = offsets.divide(length).data();
     std::vector<Zonotope> slabs;
+    slabs.reserve(static_cast<std::size_t>(m));
     for (int64_t i = 0; i < m; ++i)
         slabs.push_back(aux_slab(c_,
                                  std::vector<double>(a.begin() + i * p, a.begin() + (i + 1) * p),

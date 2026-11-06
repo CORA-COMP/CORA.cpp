@@ -23,6 +23,7 @@ namespace oracle = test::oracle;
 // the cells as Lean zonotopes
 std::vector<lean::Zonotope> lifted(const std::vector<Zonotope> &cells) {
     std::vector<lean::Zonotope> out;
+    out.reserve(cells.size());
     for (const Zonotope &cell : cells) out.emplace_back(cell);
     return out;
 }

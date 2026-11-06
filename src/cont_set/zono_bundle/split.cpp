@@ -42,7 +42,7 @@ detail::Refusal aux_refusal(const ZonoBundle &bundle) {
 /// half has the middle as its upper end there, the upper half as its lower end.
 std::pair<ZonoBundle, ZonoBundle> aux_split_dim(const ZonoBundle &bundle, const Interval &I,
                                                 int64_t d) {
-    const Tensor lower = I.inf(), upper = I.sup();
+    const Tensor &lower = I.inf(), &upper = I.sup();
     std::vector<double> unit(std::size_t(bundle.dim()), 0.0);
     unit[std::size_t(d)] = 1.0;
     const Tensor at = Tensor::like(lower, unit, {bundle.dim(), 1});
@@ -71,6 +71,7 @@ std::vector<std::pair<ZonoBundle, ZonoBundle>> ZonoBundle::split() const {
     const detail::Refusal refusal = aux_refusal(*this);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     std::vector<std::pair<ZonoBundle, ZonoBundle>> pieces;
+    pieces.reserve(static_cast<std::size_t>(dim()));
     // the pair of each coordinate, each cut from the box of the bundle
     for (int64_t d = 0; d < dim(); ++d) pieces.push_back(split(d));
     return pieces;

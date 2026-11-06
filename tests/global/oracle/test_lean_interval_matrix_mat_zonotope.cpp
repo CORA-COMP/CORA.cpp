@@ -52,9 +52,9 @@ int main() {
                 oracle::check_exact("intervalMatrix.matZonotope", row_major(A.mat_zonotope()),
                                     theirs);
             // the input box is inside the box of the set, as the oracle proves
-            test::check(oracle::enclosed("intervalMatrix.matZonotope input", A,
-                                         theirs.interval_matrix()),
-                        "intervalMatrix.matZonotope: the input box is inside the set");
+            test::check(
+                oracle::enclosed("intervalMatrix.matZonotope input", A, theirs.interval_matrix()),
+                "intervalMatrix.matZonotope: the input box is inside the set");
         }
     });
     return test::finish("lean interval matrix mat_zonotope");

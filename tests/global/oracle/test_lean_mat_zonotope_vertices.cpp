@@ -16,6 +16,7 @@
 #include "oracle_testing.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <tuple>
 
@@ -28,11 +29,20 @@ namespace oracle = test::oracle;
 
 namespace {
 
+/// Whether two doubles have the same bits (NaN and the sign of zero included).
+bool aux_same_bits(double a, double b) {
+    std::uint64_t x = 0, y = 0;
+    std::memcpy(&x, &a, sizeof x);
+    std::memcpy(&y, &b, sizeof y);
+    return x == y;
+}
+
 /// The matrices of the oracle (row-major values), sorted by the entries stacked column by column
 /// and without repeats.
 std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64_t rows,
                                             int64_t cols) {
     std::vector<std::vector<double>> matrices;
+    matrices.reserve(L.V.size());
     for (const lean::Tensor &V : L.V) matrices.push_back(V.gather().data());
     const auto stacked = [&](const std::vector<double> &M) {
         std::vector<double> v;
@@ -60,13 +70,14 @@ int main() {
             const std::vector<std::vector<double>> theirs =
                 aux_sorted(lean::MatZonotope(A).vertices(), m, n);
             const std::vector<double> mine = A.vertices()[0].data();
-            bool same = mine.size() == theirs.size() * m * n;
+            const std::size_t entries = std::size_t(m) * std::size_t(n);
+            bool same = mine.size() == theirs.size() * entries;
             // bit for bit on the lean backend; the sound mode rounds differently: up to 1e-12
             const bool exact = oracle::mode() == oracle::Mode::exact;
             for (std::size_t k = 0; same && k < theirs.size(); ++k)
-                for (std::size_t e = 0; same && e < std::size_t(m * n); ++e) {
-                    const double a = mine[k * m * n + e], b = theirs[k][e];
-                    same = exact ? std::memcmp(&a, &b, sizeof(double)) == 0
+                for (std::size_t e = 0; same && e < entries; ++e) {
+                    const double a = mine[k * entries + e], b = theirs[k][e];
+                    same = exact ? aux_same_bits(a, b)
                                  : std::abs(a - b) <= 1e-12 * (1.0 + std::abs(b));
                 }
             test::check(same, "matZonotope.vertices: the corner matrices, as the oracle's");
