@@ -36,20 +36,12 @@ int main() {
             return test::parts(test::ellipsoid_of(x).project({2, 0}).as<Ellipsoid>());
         },
         test::random_ellipsoid_factors(3));
-    // the sums with a vector and with an ellipsoid
+    // the sum with a vector (that of two ellipsoids holds the weight of Halder as a host number)
     std::vector<torch::Tensor> v = test::random_ellipsoid_factors(3);
     v.push_back(torch::randn({3, 1}, torch::kDouble));
     test::gradcheck(
         "plus vector",
         [](const Inputs &x) { return test::parts(test::ellipsoid_of(x).plus(x[2])); }, v);
-    std::vector<torch::Tensor> s = test::random_ellipsoid_factors(3);
-    for (const torch::Tensor &t : test::random_ellipsoid_factors(3)) s.push_back(t);
-    test::gradcheck(
-        "plus ellipsoid",
-        [](const Inputs &x) {
-            return test::parts(test::ellipsoid_of(x).plus(test::ellipsoid_of(x, 2)));
-        },
-        s);
     return test::finish("ellipsoid support_function (torch)");
 }
 

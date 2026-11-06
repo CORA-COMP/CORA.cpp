@@ -10,6 +10,7 @@
 //           S - ellipsoid
 //           mode - "outer:halder" (the default of CORA for two ellipsoids)
 // Outputs:  Eres - an ellipsoid that holds E + S
+// Gradients: the sum with a vector is differentiable; the weight of Halder is a host number
 // See also: mink_diff, Zonotope::plus
 //
 // CORA: contSet/@ellipsoid/plus.m
