@@ -9,6 +9,11 @@
 //             (nominal()), else interval() is the box the oracle proves to enclose the set
 // Crossing:   gather() returns the nominal part as a cora::ConZonotope, exactly or throws
 // See also:   lean/zonotope.h, lean/request.h, cora/cont_set/con_zonotope/con_zonotope.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -28,6 +33,8 @@ class ConZonotope {
 
     /// The dtype of the values.
     const std::string &dtype() const noexcept { return dtype_; }
+
+    // Crossing ------------------------------------------------------------------------------------
 
     /// The nominal part c, G and the equalities (Ae, be) as the oracle returns them; throws if a
     /// value is not a double. The inequality rows and the error boxes are not looked at.

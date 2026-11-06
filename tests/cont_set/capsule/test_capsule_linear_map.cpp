@@ -2,7 +2,6 @@
 //
 // CORA: contSet/@capsule/mtimes.m
 // PROPERTY: contSet/@capsule/mtimes.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -80,6 +79,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule linear_map");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -37,5 +37,4 @@ inline std::vector<torch::Tensor> random_capsule_parts(int64_t n) {
 
 } // namespace test
 
-
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,3 +1,10 @@
+// lp - the exact containment query as a GLPK linear program
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
+
 #include "lp.h"
 
 #include <glpk.h>
@@ -5,11 +12,19 @@
 #include <mutex>
 #include <stdexcept>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 // GLPK keeps process-wide state, and the containment queries come from several threads.
 std::mutex glpk_lock;
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 bool contains_lp(const Eigen::Ref<const Eigen::MatrixXd> &g,
                  const Eigen::Ref<const Eigen::VectorXd> &r, double tol) {
@@ -50,6 +65,7 @@ bool contains_lp(const Eigen::Ref<const Eigen::MatrixXd> &g,
         }
     }
 
+    // solve with the simplex method, quietly
     glp_smcp options;
     glp_init_smcp(&options);
     options.msg_lev = GLP_MSG_OFF;
@@ -71,3 +87,5 @@ bool contains_lp(const Eigen::Ref<const Eigen::MatrixXd> &g,
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

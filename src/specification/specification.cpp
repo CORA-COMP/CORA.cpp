@@ -1,11 +1,16 @@
 // specification - the constructors of a specification, as CORA's specification(set, type)
 //
 // Syntax:   Specification::safe_set({h1, h2, ...});   Specification::unsafe_set({h1, h2, ...});
-// Inputs:   halfspaces {x | a'x <= b}
-// Outputs:  the specification; an unsafe set of several halfspaces is their intersection
+// Inputs:   halfspaces - {x | a'x <= b}
+// Outputs:  spec - the specification; an unsafe set of several halfspaces is their intersection
 // See also: check
 //
 // CORA: specification/@specification/specification.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   30-September-2026
+// Reviewed:      ---
 
 #include "cora/specification/specification.h"
 

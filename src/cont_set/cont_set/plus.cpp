@@ -6,6 +6,11 @@
 // See also: registry, Zonotope::plus
 //
 // CORA: contSet/@contSet/plus.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 

@@ -3,6 +3,11 @@
 // CORA: contSet/@zonotope/zonotope.m
 // CORA: contSet/@zonotope/center.m
 // PROPERTY: contSet/@zonotope/center.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -12,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -41,6 +50,9 @@ void center_is_the_midpoint(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         dim_and_center(b);
@@ -51,3 +63,5 @@ int main() {
     check(close(Z.center(), std::vector<double>{1, 2}, 0), "center: the same with the checks off");
     return test::finish("zonotope center");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

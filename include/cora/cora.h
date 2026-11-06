@@ -5,6 +5,11 @@
 //
 // Syntax:   #include "cora/cora.h"
 // See also: docs/architecture.md, CMake: find_package(CORA) and target CORA::cora
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -54,7 +59,7 @@
 // neural networks and specifications
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
-#ifdef CORACPP_TORCH
+#ifdef CORACPP_TORCH // NOLINT(backend): the umbrella header includes the torch backend
 #include "cora/global/backend/torch.h"
 #endif
 

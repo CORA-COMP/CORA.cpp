@@ -1,10 +1,17 @@
 // tikz - a figure, or a grid of figures, written as pgfplots code
 //
+// A grid gives a groupplot; with external_data the tables of the coordinates are written.
+//
 // Syntax:   std::string text = figure().tikz({.standalone = true});   figure().save_tikz("a.tikz");
-// Inputs:   the layers of the figure, stacked by their zorder; the TikzOptions
-// Outputs:  a tikzpicture with one \addplot per layer (a groupplot for a grid), or a LaTeX document
-//           around it, and with external_data the tables of the coordinates
+// Inputs:   layers - the layers of the figure, stacked by their zorder
+//           options - the TikzOptions
+// Outputs:  text - a tikzpicture with one \addplot per layer, or a LaTeX document around it
 // See also: cora/global/plot/tikz.h, cora/global/plot/figure.h, src/global/plot/svg.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "cora/global/plot/figure.h"
@@ -28,10 +35,7 @@ namespace {
 
 // Colors ------------------------------------------------------------------------------------------
 
-// The colors that cora-macs names, with its values (experiments/paper/latex/cora-macs.sty of
-// CORALean), one per line: the macro without "CORAcolor", the CORA identifier, r g b. A layer has
-// such a color if it is that of the CORA identifier. The file defines UnsafeLight and Highlight2
-// with other values than CORA's CORAcolor.m, and a standalone file follows cora-macs.
+// The colors cora-macs names (macro name, CORA identifier, r g b); a layer has one if it matches.
 struct NamedColor {
     std::string macro, identifier;
     Color rgb;
@@ -143,6 +147,7 @@ std::string aux_style(Writer &w, const Figure::Layer &l) {
     if (l.dashed) o.emplace_back("dashed");
     std::string text;
     for (std::size_t i = 0; i < o.size(); ++i) text += (i ? ", " : "") + o[i];
+    // the options joined by commas
     return text;
 }
 
@@ -166,8 +171,7 @@ std::string aux_coordinate(const std::array<double, 3> &p, bool three, const Axe
            (three ? sep + aux_fixed(p[2], a.dz) : "");
 }
 
-// The \addplot command for the paths, which pgfplots draws as one path (a jump separates them):
-// inline as coordinates for one path, else as a table; with external data, a table in a file.
+// The \addplot of the paths (a jump separates them): inline for one path, else a table or file.
 void aux_addplot(std::ostringstream &out, Writer &w, const std::string &options,
                  const std::vector<Path> &paths, bool three, const Axes &a,
                  const std::string &label) {
@@ -225,8 +229,7 @@ void aux_polygon_layer(std::ostringstream &out, Writer &w, const Figure::Layer &
                 false, a, paths.empty() ? l.label : "");
 }
 
-// The faces of a surface, the far ones first, each its own \addplot3 (the legend names the layer
-// once).
+// The faces of a surface, far ones first, each its own \addplot3 (the legend names the layer once).
 void aux_surface_layer(std::ostringstream &out, Writer &w, const Figure &fig,
                        const Figure::Layer &l, const Axes &a, const std::string &options) {
     // Each face with its mean depth, far ones first.

@@ -1,4 +1,5 @@
 // test_lean_mat_zonotope - the operations of MatZonotope against the CORALean oracle (its
+//
 // `matZonotope.*` ops)
 //
 // At nearest the nominal part (the center and the generators, in their order) is the oracle's bit
@@ -13,6 +14,10 @@
 // ORACLE: matrixSet/@matZonotope/representsa.m
 // ORACLE: matrixSet/@matZonotope/transpose.m
 // ORACLE: matrixSet/@matZonotope/zonotope.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
@@ -21,6 +26,11 @@
 using namespace cora;
 using test::oracle::check;
 using test::oracle::Random;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -45,6 +55,7 @@ int main() {
         }
     });
     test::oracle::run("matZonotope.plus", [&](Random &rnd) {
+        // sums of matrix zonotopes
         for (const auto &[r, c, h] : shapes) {
             const MatZonotope A = rnd.mat_zonotope(r, c, h), B = rnd.mat_zonotope(r, c, h + 1);
             check(A.plus(B), lean::MatZonotope(A).plus(lean::MatZonotope(B)));
@@ -63,8 +74,7 @@ int main() {
                 check(A.matrix_power(k), lean::MatZonotope(A).matrix_power(k));
         }
     });
-    // CORA.cpp lists the powers P, P A, P A^2 (orders 1 to 3, the first being P); the oracle gives
-    // the one at offset k
+    // CORA.cpp lists the powers P, P A, P A^2 (orders 1 to 3); the oracle gives the one at offset k
     test::oracle::run("matZonotope.powers", [&](Random &rnd) {
         for (const int64_t n : {2, 3}) {
             const MatZonotope A = rnd.mat_zonotope(n, n, 2), P = rnd.mat_zonotope(n, n, 1);
@@ -76,8 +86,7 @@ int main() {
     test::oracle::run("matZonotope.zonotope", [&](Random &rnd) {
         for (const auto &[r, c, h] : shapes) {
             const MatZonotope A = rnd.mat_zonotope(r, c, h);
-            // in the sound mode by the interval hulls: the oracle's certified containment of a
-            // zonotope of 16 dimensions is too slow
+            // sound mode: by interval hulls, the oracle's 16-dim zonotope containment is too slow
             const lean::Zonotope theirs = lean::MatZonotope(A).zonotope();
             if (test::oracle::mode() == test::oracle::Mode::exact)
                 check(A.zonotope(), theirs);
@@ -97,3 +106,5 @@ int main() {
     });
     return test::finish("lean mat_zonotope");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

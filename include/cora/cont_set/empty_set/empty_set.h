@@ -14,6 +14,11 @@
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@emptySet/emptySet.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 
@@ -61,11 +66,8 @@ class EmptySet : public detail::DimensionSet {
     /// The complement (CORA's not; `not` is a C++ keyword): the whole space of the dimension.
     Fullspace complement() const;
 
-    /// Whether the set is also a set of CORA's type ("origin", "zonotope", "fullspace", ...)
-    /// (CORA's representsa_): false for "origin", "point", "halfspace", "hyperplane",
-    /// "parallelotope", "probZonotope" and "fullspace", true for the others. "levelSet" and
-    /// "polygon" are Error::not_supported. tol is checked and relaxes nothing; default: the
-    /// repository tolerance (docs/architecture.md).
+    /// Whether the set is also a set of CORA's type (CORA's representsa_): false for "origin",
+    /// "point", "halfspace", "hyperplane", ..., true for the others; tol is checked.
     bool representsa(const std::string &type, Tol tol = std::nullopt) const;
 
     // Combining with other sets -------------------------------------------------------------------

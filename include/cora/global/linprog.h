@@ -6,6 +6,11 @@
 // Syntax:     LinProgResult r = linprog(lp);
 // Operations: linprog (linprog.cpp)
 // See also:   contDynamics/linear_sys/private/priv_verify_ra_zonotope.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

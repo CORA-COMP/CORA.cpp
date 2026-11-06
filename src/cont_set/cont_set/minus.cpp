@@ -1,11 +1,17 @@
 // minus - a set shifted by a vector, as CORA's contSet.minus
 //
 // Syntax:   R = S.minus(p);   R = ContSet::minus(p, S);
-// Inputs:   S - set of dimension n;  p - a column (..., n, 1)
+// Inputs:   S - set of dimension n
+//           p - a column (..., n, 1)
 // Outputs:  R - S + (-p) and -S + p; the Minkowski difference of two sets is minkowski_difference
 // See also: minkowski_difference, Interval::minus
 //
 // CORA: contSet/@contSet/minus.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/cont_set.h"

@@ -1,15 +1,15 @@
 // enclose - a polytope that encloses a polytope and a second set, as CORA's polytope.enclose
 //
+// CORA's enclose calls convHull. The second form needs the image and the Minkowski sum of
+// polytopes, which are not ported yet: Error::not_supported.
+//
 // Syntax:   Pres = P.enclose(P2);   Pres = P.enclose(M, Pplus);
-// Inputs:   P2 - a polytope of the dimension of P;  M, Pplus - a matrix and a polytope for the
-//           second set M P + Pplus
+// Inputs:   P2 - a polytope of the dimension of P
+//           M, Pplus - a matrix and a polytope for the second set M P + Pplus
 // Outputs:  Pres - the convex hull of P and P2, which is exact because the hull is convex
-//           (CORA's enclose calls convHull). The second form needs the image and the Minkowski sum
-//           of polytopes, which are not ported yet: Error::not_supported
 // See also: convex_hull, Zonotope::enclose
 //
 // CORA: contSet/@polytope/enclose.m
-//
 // CORA authors: Matthias Althoff, Viktor Kotsev
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

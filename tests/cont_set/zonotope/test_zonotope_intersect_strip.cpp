@@ -1,8 +1,14 @@
 // test_zonotope_intersect_strip - zonotope intersect_strip: an enclosure of the intersection with
+//
 // strips
 //
 // CORA: contSet/@zonotope/intersectStrip.m
 // PROPERTY: contSet/@zonotope/intersectStrip.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -12,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,6 +54,7 @@ void strip_known(const std::string &b) {
           b + ": bravo: the candidate of volume 0.25");
     const Zonotope::StripObserver obs{Tensor::zeros({2, 1}), column({1.0}), Tensor::eye(2), s.C};
     const Zonotope W = s.Z.intersect_strip(s.C, s.phi, s.y, obs);
+    // the center and generators of wang-FRad
     check(close(W.center(), std::vector<double>{0.125, 0}, 1e-14), b + ": wang-FRad: center");
     check(close(W.generators(), std::vector<double>{0.5, 0, 0.25, 0, 1, 0}, 1e-14),
           b + ": wang-FRad: generators");
@@ -77,6 +88,7 @@ void strip_encloses_the_intersection(const std::string &b) {
     check_all(Z.intersect_strip(C, phi, y, Tensor::zeros({3, 2})), both, "gain 0");
     check_all(Z.intersect_strip(C, phi, y, "bravo"),
               inside(C.slice(0, 0, 1), phi.slice(0, 0, 1), y.slice(0, 0, 1)), "bravo");
+    // a single strip
     const Tensor C1 = C.slice(0, 0, 1), phi1 = phi.slice(0, 0, 1), y1 = y.slice(0, 0, 1);
     check_all(Z.intersect_strip(C1, phi1, y1, "alamo-FRad"), inside(C1, phi1, y1), "alamo-FRad");
 }
@@ -102,6 +114,7 @@ void strip_refuses() {
     check(test::raises([&] { s.Z.intersect_strip(s.C, s.phi, column({0.5, 0.5})); },
                        Error::dimension_mismatch),
           "intersect_strip: y rows");
+    // gain columns
     check(test::raises([&] { s.Z.intersect_strip(s.C, s.phi, s.y, Tensor::zeros({2, 2})); },
                        Error::dimension_mismatch),
           "intersect_strip: gain columns");
@@ -123,6 +136,9 @@ void strip_refuses() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         strip_known(b);
@@ -131,3 +147,5 @@ int main() {
     strip_refuses();
     return test::finish("zonotope intersect_strip");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

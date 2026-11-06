@@ -82,6 +82,7 @@ void properties(const std::string &b) {
         const Polytope Q = test::random_polytope(rng, n, 2 * n);
         const Interval hull = Q.interval();
         const Tensor samples = test::sample_points(Q, rng, 30);
+        // samples lie in the box
         check((samples - hull.inf()).min().item() >= -1e-9 &&
                   (hull.sup() - samples).min().item() >= -1e-9,
               b + ": samples lie in the box, " + std::to_string(n) + "D");

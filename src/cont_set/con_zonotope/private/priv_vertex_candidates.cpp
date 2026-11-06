@@ -1,16 +1,22 @@
 // priv_vertex_candidates - points of a constrained zonotope that contain its vertices
 //
+// x has |x|_inf <= 1 and A x = b, the fixed factors at +-1; each point appears once and K = 0 for
+// an empty set. A vertex of the set is among them, and a convex set contains the set if it
+// contains them; they are not all vertices. Error::not_supported beyond
+// numerics::kVertexCandidates bases (CORA enumerates the vertices of the polytope of the factors
+// instead).
+//
 // Syntax:   Tensor V = priv_vertex_candidates(cz);
 // Inputs:   cz - a single constrained zonotope
-// Outputs:  V - the images c + G x (n, K) of the factor vectors x with |x|_inf <= 1 and A x = b
-//           that fix all but rank(A) factors at +-1, each point once; K = 0 for an empty set. A
-//           vertex of the set is among them, and a convex set contains the set if it contains
-//           them; they are not all vertices. Error::not_supported beyond
-//           numerics::kVertexCandidates bases (CORA enumerates the vertices of the polytope of
-//           the factors instead)
+// Outputs:  V - the images c + G x (n, K) of the factor vectors x that fix all but rank(A) factors
 // See also: priv_blocks, ConZonotope::isequal
 //
 // CORA: contSet/@conZonotope/private/priv_potVertices.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

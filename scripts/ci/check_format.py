@@ -4,10 +4,20 @@ Syntax:   python scripts/ci/check_format.py
 Checks:   no trailing whitespace, no carriage returns, no tabs in YAML, a final newline, and every
           .github/workflows/*.yml is valid YAML (when PyYAML is installed).
 Exit code: 0 if all hold, else 1, with file:line and what is wrong.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import os
 import subprocess
 import sys
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SUFFIXES = (".cpp", ".h", ".py", ".md", ".yml", ".yaml", ".cmake", ".txt", ".sh", ".json", ".in")
@@ -39,6 +49,7 @@ def workflow_problems():
         import yaml
     except ImportError:
         return []
+    # each workflow file is read in turn
     found = []
     folder = os.path.join(ROOT, ".github", "workflows")
     for name in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
@@ -49,6 +60,8 @@ def workflow_problems():
             found.append(f".github/workflows/{name}: {str(error).splitlines()[0]}")
     return found
 
+
+# ============================================  MAIN  ============================================ #
 
 def main():
     found = []
@@ -63,3 +76,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

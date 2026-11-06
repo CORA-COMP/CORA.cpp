@@ -1,16 +1,16 @@
 // intersect - the intersection of a polytope with a polytope, a box or a point, as CORA's and_
 //
+// A vertex polytope is converted by constraints first, not in a batch. R^n is neutral. A point
+// gives itself as a vertex polytope if P holds it, else the empty set.
+//
 // Syntax:   Pres = P.intersect(P2);   Pres = P.intersect(I);   Pres = P.intersect(p, tol);
-// Inputs:   P2, I - a polytope or a box of the dimension of P;  p - a point (n, 1);  tol - how far
-//           the point may be outside P; default: the repository tolerance (docs/architecture.md)
-// Outputs:  Pres - exact, as halfspaces: the inequalities of both sets stacked, and the
-//           equalities of both stacked (a vertex polytope is converted by constraints first, not
-//           in a batch). R^n is neutral. A point gives itself as a vertex polytope if P holds it,
-//           else the empty set
+// Inputs:   P2, I - a polytope or a box of the dimension of P
+//           p - a point (n, 1)
+//           tol - how far the point may be outside P; default: the repository tolerance
+// Outputs:  Pres - exact, as halfspaces: the inequalities of both sets stacked, and the equalities
 // See also: cart_prod, Polytope::contains
 //
 // CORA: contSet/@polytope/and_.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

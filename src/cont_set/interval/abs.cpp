@@ -6,6 +6,11 @@
 // See also: Zonotope::interval
 //
 // CORA: contSet/@interval/abs.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

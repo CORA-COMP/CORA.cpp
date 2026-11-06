@@ -2,7 +2,6 @@
 //
 // CORA: contSet/@capsule/isIntersecting_.m
 // PROPERTY: contSet/@capsule/isIntersecting_.m
-//
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -24,8 +23,7 @@ namespace {
 /// Hand-computed: parallel and crossing segments, touching, apart, an end against a side.
 void is_intersecting_known(const std::string &b) {
     const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.1);
-    // CORA's quadratic program finds a minimizer at the box and says false here: the axes cross at
-    // (0.5, 0), so the capsules overlap
+    // CORA's quadratic program finds a minimizer at the box and says false; the axes cross
     const Capsule cross(column({0.5, 0.0}), column({0.0, 1.0}), 0.1);
     check(C1.is_intersecting(cross), b + ": crossing axes (CORA says false)");
     const Capsule parallel(column({0.0, 1.0}), column({1.0, 0.0}), 0.4);
@@ -104,6 +102,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule is_intersecting");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

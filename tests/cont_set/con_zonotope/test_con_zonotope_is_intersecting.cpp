@@ -1,8 +1,7 @@
 // test_con_zonotope_is_intersecting - ConZonotope::is_intersecting: whether two sets meet
 //
 // CORA: contSet/@conZonotope/isIntersecting_.m
-//
-// CORA authors:  Niklas Kochdumper
+// CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

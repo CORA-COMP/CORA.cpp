@@ -7,6 +7,11 @@
 //             response, e.g. "cd CORALean && lake exe oracle"; it starts on the first call. The
 //             the dtype nearest (no guarantees) goes to CORACPP_ORACLE_UNSOUND instead
 // See also:   lean/tensor.h, lean/zonotope.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

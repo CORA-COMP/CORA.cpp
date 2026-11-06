@@ -2,11 +2,20 @@
 //
 // CORA: matrixSet/@intervalMatrix/dim.m
 // PROPERTY: matrixSet/@intervalMatrix/dim.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,8 +46,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean(dimensions_of_matrices);
     checks_and_their_switch();
     return test::finish("interval_matrix dim");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

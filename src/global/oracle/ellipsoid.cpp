@@ -1,6 +1,7 @@
 // ellipsoid - lean::Ellipsoid, an ellipsoid of exact values, computed by CORALean
 //
 // See also: lean/con_zonotope.h, lean/request.h
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

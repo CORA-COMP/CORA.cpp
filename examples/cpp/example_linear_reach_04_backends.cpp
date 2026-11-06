@@ -6,6 +6,11 @@
 // Syntax:   build/examples/cpp/example_linear_reach_04_backends
 // Outputs:  the last enclosure's box on each backend, and how much the two differ
 // See also: example_linear_reach_06_gpu
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 
@@ -15,9 +20,12 @@
 #include <string>
 #include <vector>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 /// The reachable set of a damped oscillator, on whichever backend is current.
 ReachSet reach_oscillator() {
@@ -34,6 +42,9 @@ ReachSet reach_oscillator() {
     return sys.reach({.initial_set = R0, .t_final = 1.0},
                      alg::Standard{.time_step = 0.1, .taylor_terms = 8});
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Backends --------------------------------------------------------------------------------

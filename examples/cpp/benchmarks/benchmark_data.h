@@ -7,6 +7,11 @@
 //
 // Syntax:     cora::bench::run_instance("ISSF01_ISS01");
 // See also:   contDynamics/linear_sys/linear_sys.h, cora/specification/specification.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -88,6 +93,7 @@ class JsonParser {
     }
     Json value_() {
         skip_();
+        // one value, by its first character
         Json v;
         if (i_ >= s_.size()) fail_("unexpected end");
         const char c = s_[i_];
@@ -112,6 +118,7 @@ class JsonParser {
             while (s_.at(i_) != ']') {
                 v.array.push_back(value_());
                 skip_();
+                // members are separated by commas
                 if (s_.at(i_) == ',') ++i_;
                 skip_();
             }

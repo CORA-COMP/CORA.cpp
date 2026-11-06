@@ -1,20 +1,27 @@
 // intersect_strip - the intersection of a constrained zonotope with strips |C x - y| <= phi
 //
-// Syntax:   cZres = cz.intersect_strip(C, phi, y);   cZres = cz.intersect_strip(C, phi, y, method);
-//           cZres = cz.intersect_strip(C, phi, y, lambda);   cZres = cz.intersect_strip(C, phi, y,
-//           aux);
+// The gain is chosen as in Zonotope::intersect_strip: "alamo-FRad" with one strip, "wang-FRad"
+// with the matrices E, F, A, C of an observer (aux). "bravo" (one strip) returns the zonotope
+// around the first strip without the constraints, as CORA. "svd" and "radius" (an optimizer) are
+// not supported; a given lambda is used as it is.
+//
+// Syntax:   cZres = cz.intersect_strip(C, phi, y);
+//           cZres = cz.intersect_strip(C, phi, y, method);
+//           cZres = cz.intersect_strip(C, phi, y, lambda);
+//           cZres = cz.intersect_strip(C, phi, y, aux);
 // Inputs:   C (k, n), phi (k, 1), y (k, 1) - the k strips
-//           method - the gain lambda (n, k) is chosen by "normGen" (default), "alamo-FRad" (one
-//                    strip) or "wang-FRad" (with the matrices E, F, A, C of an observer, aux), as
-//                    in Zonotope::intersect_strip; "bravo" (one strip) returns the zonotope
-//                    around the first strip without the constraints, as CORA; "svd" and "radius"
-//                    (an optimizer) are not supported; a given lambda is used as it is
+//           method - the gain: "normGen" (default), "alamo-FRad", "wang-FRad" or "bravo"
 // Outputs:  cZres - exact for every lambda: center c + lambda (y - C c), generators
 //           [(I - lambda C) G, lambda diag(phi)], the constraints of cz and one equality per strip
 //           C G x - phi x_new = y - C c
 // See also: intersect, Zonotope::intersect_strip
 //
 // CORA: contSet/@conZonotope/intersectStrip.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"

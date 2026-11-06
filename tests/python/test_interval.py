@@ -1,4 +1,12 @@
-"""test_interval - the Interval class in Python: a box, or a matrix of intervals."""
+"""test_interval - the Interval class in Python: a box, or a matrix of intervals.
+
+CORA authors: Mark Wetzlinger, Matthias Althoff, Sebastian Mair, Tobias Ladner, Niklas Kochdumper,
+              Adrian Kulmburg, Dmitry Grebenyuk, Maximilian Perschl
+Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+Written:       29-September-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/Inf.m
 # CORA: contSet/@interval/abs.m
 # CORA: contSet/@interval/acos.m
@@ -40,6 +48,7 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
@@ -47,11 +56,18 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 F64 = dict(dtype=torch.float64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Interval(unittest.TestCase):
     def test_bounds_center_and_rad(self):
@@ -101,6 +117,7 @@ class Interval(unittest.TestCase):
         self.assertLess(float((P.mean(-1) - I.center).abs().max()), 0.1)
 
     def test_generate_random(self):
+        # random intervals are ordered
         I = cora.Interval.generate_random(cora.Rng(2), 4)
         self.assertEqual(I.dim, 4)
         self.assertTrue(bool((I.inf <= I.sup).all()))
@@ -150,6 +167,7 @@ class IntervalMethods(unittest.TestCase):
         self.assertEqual(abs(box([-3.0], [-1.0])).sup.tolist(), [3.0])
 
     def test_intersect(self):
+        # intersection
         I, J = box([1.0, -1.0], [2.0, 1.0]), box([1.5, -2.0], [2.5, 0.0])
         self.assertEqual((I & J).inf.tolist(), [1.5, -1.0])
         self.assertEqual(I.intersect(J).sup.tolist(), [2.0, 0.0])
@@ -172,6 +190,7 @@ class IntervalMethods(unittest.TestCase):
             cora.Interval.cat(2, [I, J])
 
     def test_boundary_point(self):
+        # boundary points
         I = box([1.0, -1.0], [4.0, 3.0])
         torch.testing.assert_close(I.boundary_point(torch.tensor([1.0, 1.0], **F64)),
                                    torch.tensor([4.0, 2.5], **F64))
@@ -193,6 +212,7 @@ class IntervalMethods(unittest.TestCase):
         for name, bad in (("acos", ([-1.5], [0.0])), ("asin", ([0.0], [1.5])),
                           ("atanh", ([0.0], [1.5])), ("acosh", ([0.5], [2.0]))):
             with self.assertRaises(cora.errors.OutOfDomain, msg=name):
+                # out of domain
                 getattr(box(*bad), name)()
 
     def test_atan2_is_the_hull_of_the_corners(self):
@@ -234,6 +254,7 @@ class IntervalMethods(unittest.TestCase):
 
     def test_empty_and_is_bounded(self):
         E = cora.Interval.empty(3)
+        # empty and unbounded boxes
         self.assertEqual(tuple(E.inf.shape), (3, 0))
         self.assertTrue(E.is_bounded())
         self.assertTrue(box([0.0], [1.0]).is_bounded())
@@ -256,6 +277,7 @@ class IntervalMethods(unittest.TestCase):
         a, b = box([1.0, 2.0], [3.0, 4.0]), box([5.0, 6.0], [7.0, 8.0])
         M = cora.Interval.horzcat([a, b])
         self.assertEqual(tuple(M.inf.shape), (2, 2))
+        # matrices of intervals
         self.assertEqual(M.inf.tolist(), [[1.0, 5.0], [2.0, 6.0]])
         self.assertEqual(M.ctranspose().sup.tolist(), [[3.0, 4.0], [7.0, 8.0]])
         self.assertEqual(cora.Interval.horzcat([a, torch.tensor([9.0, 9.5], **F64)]).inf.tolist(),
@@ -277,6 +299,7 @@ class IntervalMethods(unittest.TestCase):
         self.assertEqual(I.dirac(1).inf.tolist(), [0.0, -inf, -inf, 0.0])
         self.assertEqual(I.dirac(2).inf.tolist(), [0.0, -inf, -inf, -inf])
         with self.assertRaises(cora.errors.WrongValue):
+            # batches
             I.dirac(-1)
 
     def test_batches(self):
@@ -314,6 +337,7 @@ class IntervalGradients(unittest.TestCase):
         self.check(lambda I: I.enlarge(1.5), lo, hi)
         self.check(lambda I: I.interval_matrix(), lo, hi)
         self.check(lambda I: cora.Interval.horzcat([I, I]).ctranspose(), lo, hi)
+        # gradients of structural operations
         self.check(lambda I: I.diag(), lo, hi)
         self.check(lambda I: cora.Interval.cat(1, [I, I]), lo, hi)
         self.check(lambda I: cora.Interval(I.center, I.center + 1.0), lo, hi)
@@ -326,3 +350,5 @@ class IntervalGradients(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

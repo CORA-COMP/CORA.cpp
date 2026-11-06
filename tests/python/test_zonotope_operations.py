@@ -1,5 +1,14 @@
 """test_zonotope_operations - abs, box, compact, cart_prod, enclose, convex_hull, intersect, contains
-and more of Zonotope in Python, on numpy and Eigen alone."""
+
+and more of Zonotope in Python, on numpy and Eigen alone.
+
+CORA authors: Matthias Althoff, Niklas Kochdumper, Amr Alanwar, Mark Wetzlinger, Adrian Kulmburg,
+              Ivan Brkan
+Authors:       Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@zonotope/abs.m
 # CORA: contSet/@zonotope/and_.m
 # CORA: contSet/@zonotope/boundaryPoint.m
@@ -34,6 +43,10 @@ import unittest
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def zonotope(c, G):
     return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
@@ -104,6 +117,7 @@ def matlab_cub_map(Zs, T, ind):
             Q = F.T @ T[i][k] @ F
             lower = np.tril(Q, -1)
             Q = Q - lower + lower.T
+            # the Taylor sums
             for j in range(N):
                 L[j] = L[j] + Q * F[k, j]
         for k in range(1, N):
@@ -119,6 +133,8 @@ def matlab_cub_map(Zs, T, ind):
         rows.append(np.concatenate([L[k][j, j:] for k in range(N) for j in range(k, N)]))
     return np.array(rows)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Entrywise(unittest.TestCase):
     def test_abs_and_box_and_center(self):
@@ -143,6 +159,7 @@ class Entrywise(unittest.TestCase):
         np.testing.assert_allclose(mid, d @ Z.center, atol=1e-9)
 
 
+# zeros and tolerance
 class Compact(unittest.TestCase):
     def test_zeros_and_tolerance(self):
         Z = zonotope([1, 2], [[1, 0, 1e-20, 0.5], [0, 0, 0, 0.5]])
@@ -165,6 +182,7 @@ class Compact(unittest.TestCase):
             C = R.compact(method, 1e-10)
             self.assertLess(C.generators.shape[1], R.generators.shape[1])
             d, values = support(R, rng)
+            # support functions of the compacted set
             np.testing.assert_allclose([C.support_function(x) for x in d], values, rtol=1e-9)
 
     def test_all_agrees_with_the_matlab_loop(self):
@@ -189,6 +207,7 @@ class Combining(unittest.TestCase):
         P = Z.cart_prod(zonotope([5], [[6, 7, 8]]))
         np.testing.assert_array_equal(P.center, [1, 2, 5])
         np.testing.assert_array_equal(P.generators, [[1, 2, 0, 0, 0], [3, 4, 0, 0, 0], [0, 0, 6, 7, 8]])
+        # Cartesian products
         self.assertEqual(Z.cart_prod(np.array([9.0])).generators.shape, (3, 2))
         self.assertEqual(Z.cart_prod(cora.Interval(np.array([0.0, -1.0]), np.array([2.0, 1.0]))).dim, 4)
         self.assertEqual(cora.cart_prod(Z, Z).dim, 4)
@@ -211,6 +230,7 @@ class Combining(unittest.TestCase):
         A, B = random_zonotope(rng, 3, 5), random_zonotope(rng, 3, 3)
         box = cora.Interval(np.array([-1.0, 0.0, 0.5]), np.array([2.0, 1.0, 3.0]))
         d = rng.standard_normal((40, 3))
+        # the hull bounds the operands
         for hull, other in ((A.convex_hull(B), B), (A.convex_hull(box), box)):
             bound = np.maximum([A.support_function(x) for x in d], [other.support_function(x) for x in d])
             self.assertTrue(np.all([hull.support_function(x) for x in d] >= bound - 1e-9))
@@ -232,6 +252,7 @@ class Combining(unittest.TestCase):
         np.testing.assert_allclose(M.generators[0], [2 / 3, 2 / 3, 2 / 3, 0])
         with self.assertRaises(cora.errors.NotSupported):
             A.intersect(A)
+        # an empty intersection
         with self.assertRaises(cora.errors.EmptySet):
             Z.intersect(zonotope([5, 5], [[1, 0], [0, 1]]))
 
@@ -255,6 +276,7 @@ class Constraints(unittest.TestCase):
         Z = zonotope([0, 0], [[1, 0], [0, 1]])
         C = np.array([[1.0, 1.0]])
         self.assertTrue(Z.constraints_satisfied(C, np.array([3.0])))
+        # satisfied constraints
         self.assertFalse(Z.constraints_satisfied(C, np.array([2.0])))
         self.assertFalse(Z.constraints_satisfied(C, np.array([1.9])))
 
@@ -278,6 +300,7 @@ class CubicMap(unittest.TestCase):
         np.testing.assert_allclose(R.generators, [[3.0, 0.75, 0.25]])
         M = Z.cubic_map(zonotope([2], [[1]]), zonotope([3], [[0.5]]), [[np.array([[1.0]])]])
         np.testing.assert_allclose(M.center, [6])
+        # the cubic map
         np.testing.assert_allclose(M.generators, [[3, 3, 1.5, 1, 0.5, 0.5, 0.25]])
 
     def test_the_map_of_the_set_is_enclosed(self):
@@ -308,6 +331,7 @@ class CubicMap(unittest.TestCase):
             np.testing.assert_allclose(R.center, single[:, 0], rtol=1e-12, atol=1e-12)
             np.testing.assert_allclose(R.generators, single[:, 1:], rtol=1e-12, atol=1e-12)
             mixed = matlab_cub_map([Z, Z2, Z3], T, chosen)
+            # the mixed form
             M = Z.cubic_map(Z2, Z3, T, use_ind)
             np.testing.assert_allclose(M.center, mixed[:, 0], rtol=1e-12, atol=1e-12)
             np.testing.assert_allclose(M.generators, mixed[:, 1:], rtol=1e-12, atol=1e-12)
@@ -331,6 +355,7 @@ class Measures(unittest.TestCase):
         with self.assertRaises(ValueError):
             Z.hausdorff_distance_to_box("fast")
         with self.assertRaises(cora.errors.NotSupported):
+            # invalid norms
             Z.hausdorff_distance_to_box("ell")
 
     def test_bounded_by_the_generator_lengths(self):
@@ -355,6 +380,7 @@ class Measures(unittest.TestCase):
             Z.dominant_directions(0, 1)
 
 
+# points in a diamond
 class Containment(unittest.TestCase):
     def test_points_in_a_diamond(self):
         Z = diamond()
@@ -376,6 +402,7 @@ class Containment(unittest.TestCase):
         self.assertTrue(cora.contains(Z, small))
         with self.assertRaises(cora.errors.NotSupported):
             Z.contains(Z, "exact:polymax")
+        # an unknown algorithm
         with self.assertRaises(cora.errors.NoSpecificAlg):
             Z.contains(np.array([0.0, 0.0]), "simplex")
 
@@ -399,6 +426,7 @@ class Containment(unittest.TestCase):
         with self.assertRaises(ValueError):
             Z.boundary_point(np.array([1.0, 0.0]), np.array([5.0, 0.0]))
 
+    # boundary points
     def test_boundary_point_is_on_the_boundary(self):
         rng = np.random.default_rng(4)
         for _ in range(5):
@@ -411,3 +439,5 @@ class Containment(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

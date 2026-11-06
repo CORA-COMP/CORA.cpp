@@ -1,6 +1,11 @@
 // test_cont_set_is_intersecting_impl - the unchecked intersection test (CORA's isIntersecting_)
 //
 // CORA: contSet/@contSet/isIntersecting_.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -47,8 +56,13 @@ void a_pair_without_an_entry() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(is_intersecting_impl_agrees_with_the_entry);
     a_pair_without_an_entry();
     return test::finish("cont_set is_intersecting_impl");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

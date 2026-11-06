@@ -1,14 +1,21 @@
 // project_high_dim - a set placed into a higher-dimensional space, as CORA's contSet.projectHighDim
 //
+// The generic form is the matrix I(:, proj) applied to S.
+//
 // Syntax:   R = S.project_high_dim(N, proj);
-// Inputs:   S - set of dimension n;  N - dimension of the space, N >= n;  proj - the N-dimensional
-//           coordinate (0-based) of each of the n coordinates of S, n entries in [0, N)
-// Outputs:  R - the set with coordinate proj[j] equal to the j-th coordinate of S and 0 elsewhere;
-//           the generic form is the matrix I(:, proj) applied to S
+// Inputs:   S - set of dimension n
+//           N - dimension of the space, N >= n
+//           proj - the N-dimensional coordinate (0-based) of each of the n coordinates, in [0, N)
+// Outputs:  R - the set with coordinate proj[j] equal to the j-th coordinate of S and 0 elsewhere
 // See also: project, linear_map, Interval::project_high_dim
 //
 // CORA: contSet/@contSet/projectHighDim.m
 // CORA: contSet/@contSet/projectHighDim_.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"
@@ -18,7 +25,10 @@
 namespace cora {
 
 
+// ===========================================  MAIN  =========================================== //
+
 namespace detail {
+
 
 Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj,
                                  const char *operation) {
@@ -44,8 +54,6 @@ Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t
 
 } // namespace detail
 
-
-// ===========================================  MAIN  =========================================== //
 
 Set ContSet::project_high_dim(int64_t N, const std::vector<int64_t> &proj) const {
     detail::Entry entry;

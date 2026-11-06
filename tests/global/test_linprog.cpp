@@ -1,4 +1,9 @@
 // test_linprog - the simplex linear program solver: known optima, statuses, random programs
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       30-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/linprog.h"
 #include "cora/global/rng.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using Status = LinProgResult::Status;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -97,6 +106,7 @@ void known_programs() {
           "a lower bound above its upper bound is refused");
 }
 
+// random planar programs
 void random_planar_programs() {
     Rng rng(3);
     for (int trial = 0; trial < 200; ++trial) {
@@ -123,8 +133,13 @@ void random_planar_programs() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     known_programs();
     random_planar_programs();
     return test::finish("linprog");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

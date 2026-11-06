@@ -12,6 +12,11 @@
 //
 // CORA.cpp only: CORA's loop over perm as one product, shared by tensor_multiplication and
 //                tensor_multiplication_zono
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "global/format.h"

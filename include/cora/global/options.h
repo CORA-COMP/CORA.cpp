@@ -10,6 +10,10 @@
 // See also: cont_dynamics/cont_dynamics.h, cont_dynamics/linear_sys/linear_sys.h
 //
 // CORA.cpp only: MATLAB CORA checks its structs at run time against a table (validateOptions).
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -1,6 +1,11 @@
 // test_cont_set_linear_map - ContSet::linear_map: M S in the class of S, the matrix is checked
 //
 // CORA: contSet/@contSet/mtimes.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -49,8 +58,13 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_image_of_any_set);
     errors_and_their_switch();
     return test::finish("cont_set linear_map");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

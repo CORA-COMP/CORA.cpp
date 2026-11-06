@@ -1,12 +1,18 @@
 // matrix_power - the power of a square matrix zonotope, as CORA's matZonotope.mpower
 //
+// Every product is matmul: an enclosure of the k-th power of every matrix of A.
+//
 // Syntax:   MatZonotope P = A.matrix_power(k);
 // Inputs:   k - the exponent, a nonnegative integer;  A is square
-// Outputs:  P - the identity for k = 0, A for k = 1, else ((A A) A) ... with k factors, every
-//           product matmul: an enclosure of the k-th power of every matrix of A
+// Outputs:  P - the identity for k = 0, A for k = 1, else ((A A) A) ... with k factors
 // See also: matmul, powers
 //
 // CORA: matrixSet/@matZonotope/mpower.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

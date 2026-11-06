@@ -2,6 +2,7 @@
 //
 // G = U sqrt(D) of the singular value decomposition: differentiable in Q for distinct singular
 // values, with the sign convention of the decomposition held fixed by inputs away from ties.
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -13,6 +14,7 @@ using namespace cora;
 using test::Inputs;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 
 // ===========================================  MAIN  =========================================== //
 

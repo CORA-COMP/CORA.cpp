@@ -1,16 +1,22 @@
 // convex_hull - the convex hull of a constrained zonotope and other sets, as CORA's convHull_
 //
+// The hull has one more generator for the weight of the sets and one slack factor per bound. A
+// list of constrained zonotopes gives the hull of them all and this set (CORA's list form leaves
+// the first operand out, docs/cora-differences.md).
+//
 // Syntax:   cZres = cz.convex_hull(S);   cZres = cz.convex_hull(S, "exact:Kochdumper");
 //           cZres = cz.convex_hull({cz2, cz3});
-// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n, 1) of the same dimension;
-//           method - "exact" and "exact:Raghuraman" (default) or "exact:Kochdumper"; a list of
-//           constrained zonotopes gives the hull of them all and this set (CORA's list form
-//           leaves the first operand out, docs/cora-differences.md)
-// Outputs:  cZres - exact: the convex hull as a constrained zonotope with one more generator
-//           for the weight of the sets and one slack factor per bound
+// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n, 1) of the same dimension
+//           method - "exact" and "exact:Raghuraman" (default) or "exact:Kochdumper"
+// Outputs:  cZres - exact: the convex hull as a constrained zonotope
 // See also: enclose, Zonotope::convex_hull
 //
 // CORA: contSet/@conZonotope/convHull_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"
@@ -175,6 +181,7 @@ ConZonotope ConZonotope::convex_hull(const Interval &I, const std::string &metho
 
 ConZonotope ConZonotope::convex_hull(const Tensor &p, const std::string &method) const {
     detail::Entry entry;
+    // the hull of the set and a point
     CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
         // a point is a set without generators
         return "convex_hull: the point must be a column (" + std::to_string(dim()) +

@@ -1,6 +1,11 @@
 // priv_set_type - the set types of CORA's representsa, and whether a type is in a list
 //
 // See also: priv_set_type.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_set_type.h"
 

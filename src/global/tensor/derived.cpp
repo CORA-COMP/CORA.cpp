@@ -6,6 +6,11 @@
 // the signs of factors) are taken on detached values, so gradients flow through the values only.
 //
 // See also: derived.h, tensor.cpp, fused.cpp, docs/tensor.md
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "global/tensor/derived.h"
 #include "cora/global/error.h"
@@ -324,6 +329,7 @@ Tensor Tensor::block_diag(const std::vector<Tensor> &blocks) {
         rows.push_back(concat(parts, -1));
         before += m;
     }
+    // the rows stacked in order
     return concat(rows, -2);
 }
 

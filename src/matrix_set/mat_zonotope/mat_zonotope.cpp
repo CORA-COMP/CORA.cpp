@@ -1,13 +1,19 @@
 // mat_zonotope - the constructors of a matrix zonotope, checked, as CORA's matZonotope
 //
+// Without G no generators; without arguments the empty 0 x 0 set.
+//
 // Syntax:   MatZonotope A(C, G);   MatZonotope A(C);   MatZonotope A;
-// Inputs:   C - center, a matrix (..., rows, cols) without NaN;  G - generators (..., h, rows,
-//           cols) of the same rows, columns and batch
-// Outputs:  A - the matrices C + sum_i b_i G_i with |b|_inf <= 1; without G no generators; without
-//           arguments the empty 0 x 0 set
+// Inputs:   C - center, a matrix (..., rows, cols) without NaN
+//           G - generators (..., h, rows, cols) of the same rows, columns and batch
+// Outputs:  A - the matrices C + sum_i b_i G_i with |b|_inf <= 1
 // See also: IntervalMatrix::IntervalMatrix, Zonotope::Zonotope
 //
 // CORA: matrixSet/@matZonotope/matZonotope.m
+// CORA authors: Matthias Althoff, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

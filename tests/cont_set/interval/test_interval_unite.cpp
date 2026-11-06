@@ -1,6 +1,11 @@
 // test_interval_unite - interval unite: the smallest box around a box and a box or a point (or)
 //
 // CORA: contSet/@interval/or.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,6 +39,7 @@ void unite_is_the_hull(const std::string &b) {
     const Set S = unite(I, J);
     check(close(S.as<Interval>().sup(), R.sup()), b + ": the registry pair");
     const Interval B = Interval::stack({I, J}).unite(J);
+    // a batch
     check(B.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(B.sup().slice(0, 0, 1).reshape({2, 1}), R.sup()),
           b + ": a batch");
@@ -51,8 +61,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(unite_is_the_hull);
     checks_and_their_switch();
     return test::finish("interval unite");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,10 +1,19 @@
 // test_zonotope_abs_torch - zonotope abs: gradients through torch, and a batch on torch
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::check;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -27,6 +36,9 @@ void abs_of_a_batch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(31);
@@ -34,3 +46,5 @@ int main() {
     abs_of_a_batch();
     return test::finish("zonotope abs (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,5 +1,12 @@
-"""test_neural_network_train - a loss over the output set of a network updates its weights"""
+"""test_neural_network_train - a loss over the output set of a network updates its weights
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import unittest
+
 
 try:
     import torch
@@ -9,8 +16,13 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 dtype = torch.float64
 
@@ -39,6 +51,8 @@ def set_loss(m, x, labels, eps, tau):
 x = torch.tensor([[0.1, 0.7], [0.6, 0.9], [0.5, 0.5], [0.9, 0.1]], dtype=dtype)
 labels = torch.tensor([1, 1, 0, 0])
 
+
+# ============================================  MAIN  ============================================ #
 
 class SetBasedTraining(unittest.TestCase):
     def test_one_step_on_the_set_loss_updates_every_weight(self):
@@ -69,3 +83,5 @@ class SetBasedTraining(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

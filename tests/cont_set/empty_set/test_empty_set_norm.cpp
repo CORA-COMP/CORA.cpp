@@ -1,6 +1,11 @@
 // test_empty_set_norm - the norm of the empty set: -Inf, as CORA's contSet.norm returns it
 //
 // CORA: contSet/@contSet/norm.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/interval/interval.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,8 +47,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_norm_is_minus_infinity);
     checks_and_their_switch();
     return test::finish("empty_set norm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

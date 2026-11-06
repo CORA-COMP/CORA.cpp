@@ -1,17 +1,4 @@
-"""plot - plotting in the style of MATLAB CORA: `plot(obj, dims)` draws what it is given on the
-current axes (or `ax`) with matplotlib.
-
-    cora.plot(R)                a reachable set: the ReachSet of LinearSys/NonlinearSys.reach
-    cora.plot(Z)                a Zonotope or an Interval: filled, in the next color of CORA's
-                                order (blue, red, yellow, ...); filled=False leaves it open
-    cora.plot(Z, dims=(0, 1, 2))   the faces of a three-dimensional set (on axes of projection="3d")
-    cora.plot_over_time(R, dim)    a dimension of a ReachSet over time (or of simulations)
-    cora.plot(simulation)       trajectories from simulate, (time points, n, N)
-    cora.plot(points)           points from rand_point, (n, N)
-    cora.plot(spec)             a Specification: the region it forbids
-    cora.use_cora_colors("CORA:contDynamics")   sets as initial sets, reachable sets in blue
-
-The same as methods: `Z.plot(dims)`, `R.plot(dims)`, `R.plot_over_time(dim)`, `spec.plot(dims)`.
+"""plot - plotting in the style of MATLAB CORA: `plot(obj, dims)` draws with matplotlib
 
 This is a thin wrapper: what is drawn, in which color and on top of what is decided by the C++
 library (cora/global/plot/plot.h), the same for every language. It puts everything into a C++ Figure
@@ -21,9 +8,28 @@ as TikZ. `dims` picks the one to three dimensions to show; the options of the co
 `unify`, `filled`, `set`, `time_points`, `step`, `num_colors` and `cidx`; any other keyword
 (`alpha`, `zorder`, ...) goes to matplotlib. Colors are CORA identifiers ("CORA:red"), RGB
 triples or matplotlib colors. Sets must hold one set, not a batch. matplotlib is imported when
-something is drawn.
+something is drawn. Methods too: `Z.plot(dims)`, `R.plot(dims)`, `R.plot_over_time(dim)`.
+
+Syntax:   cora.plot(R)                a reachable set: the ReachSet of LinearSys/NonlinearSys.reach
+          cora.plot(Z)                a Zonotope or an Interval, filled, in the next CORA color
+          cora.plot(Z, dims=(0, 1, 2))   the faces of a 3-D set (axes of projection="3d")
+          cora.plot_over_time(R, dim)    a dimension of a ReachSet over time (or of simulations)
+          cora.plot(simulation)       trajectories from simulate, (time points, n, N)
+          cora.plot(points)           points from rand_point, (n, N)
+          cora.plot(spec)             a Specification: the region it forbids
+          cora.use_cora_colors("CORA:contDynamics")   sets as initial sets, reachable sets in blue
+
+Authors:       Claude Sonnet 5.5
+Written:       01-October-2026
+Last update:   ---
+Reviewed:      ---
 """
 from ._cora import ContSet, Figure, ReachSet, Rng, Specification
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 _CORE_OPTIONS = ("face_alpha", "line_width", "unify", "filled", "set", "time_points", "step",
                  "num_colors", "cidx")
@@ -159,6 +165,8 @@ def _draw(ax, layer, style):
     return line
 
 
+# ============================================  MAIN  ============================================ #
+
 def core_figure(ax):
     """The core figure of the axes: it holds every layer drawn on them, with the choices of the
     core, one per axes so that the sets take one color after another."""
@@ -237,3 +245,5 @@ ContSet.plot_rand_point = _method(plot_rand_point)
 ReachSet.plot = _method(plot)
 ReachSet.plot_over_time = _method(plot_over_time)
 Specification.plot = _method(plot)
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

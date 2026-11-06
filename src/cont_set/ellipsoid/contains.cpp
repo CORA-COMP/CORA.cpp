@@ -1,19 +1,21 @@
 // contains - whether an ellipsoid contains points, a zonotope or a box, as CORA's contains_
 //
+// The default tol is CORA's contains default. For a set: an unbounded set is not contained, an
+// empty one is; a set that is a point as a point; else the zonotope (a box as its zonotope) is
+// contained iff all its vertices are, found by a search over the signs of the generators, longest
+// first, that cuts a branch when no completion can exceed 1 + tol. An ellipsoid that is a point
+// contains only points within tol of it, an empty one only the empty set. A set that is a point
+// is compared with the tolerance (CORA compares exactly, and passes it to a function that takes
+// fewer arguments, docs/cora-differences.md). Error::not_supported: "approx" (an SDP) and an
+// ellipsoid as the contained set unless it is a point or empty. Not a batch.
+//
 // Syntax:   bool res = E.contains(p);   bool res = E.contains(Z, method, tol);   E.contains(I);
-// Inputs:   p - points as columns (n, N), all must be inside;  Z, I - a zonotope, a box;
-//           S - an ellipsoid;  method - "exact" (default; for points the method is not used);
+// Inputs:   p - points as columns (n, N), all must be inside
+//           Z, I - a zonotope, a box
+//           S - an ellipsoid
+//           method - "exact" (default; the points ignore it)
 //           tol - allowed excess of the ellipsoid norm over 1; default: the repository tolerance
-//           (docs/architecture.md; CORA's contains default). Not a batch
-// Outputs:  res - for points, the ellipsoid norm of p - q is at most 1 + tol. For a set: an
-//           unbounded set is not contained, an empty one is; a set that is a point as a point;
-//           else the zonotope (a box as its zonotope) is contained iff all its vertices are,
-//           found by a search over the signs of the generators, longest first, that cuts a branch
-//           when no completion can exceed 1 + tol. An ellipsoid that is a point contains only
-//           points within tol of it, an empty one only the empty set. A set that is a point is
-//           compared with the tolerance (CORA compares exactly, and passes it to a function that
-//           takes fewer arguments, docs/cora-differences.md). Error::not_supported: "approx" (an
-//           SDP) and an ellipsoid as the contained set unless it is a point or empty
+// Outputs:  res - for points, the ellipsoid norm of p - q is at most 1 + tol
 // See also: ellipsoid_norm, Zonotope::contains
 //
 // CORA: contSet/@ellipsoid/contains_.m
@@ -55,10 +57,8 @@ bool aux_contains_points(const Ellipsoid &E, const Tensor &P, double tol) {
     return std::all_of(norms.begin(), norms.end(), [&](double x) { return x <= 1.0 + tol; });
 }
 
-/// Whether the zonotope with the generators G (n, m) (columns), of the center offset first, lies in
-/// the ball of the ellipsoid norm of E, up to tol: no point G nu, |nu|_inf <= 1, is farther out.
-/// A search over the signs of the generators, longest first; `rest` is the sum of the norms
-/// of the generators not yet assigned, the most the partial sum can still grow.
+/// Whether the zonotope with the generators G (n, m) lies in the ball of the ellipsoid norm of E,
+/// up to tol: a search over the signs of the generators, longest first.
 bool aux_inside(const Ellipsoid &E, const Tensor &G, const std::vector<double> &norms,
                 const std::vector<int64_t> &order, std::size_t next, const Tensor &sum, double rest,
                 double tol) {
@@ -120,7 +120,6 @@ std::optional<bool> aux_degenerate(const Ellipsoid &E, bool s_empty, const Tenso
 
 // ===========================================  MAIN  =========================================== //
 
-
 // Entries -----------------------------------------------------------------------------------------
 
 bool Ellipsoid::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
@@ -175,6 +174,7 @@ bool Ellipsoid::contains(const Ellipsoid &S, const std::string &method, Tol tol_
         return *done;
     if (priv_is_empty(S)) return true;
     if (s_point) return aux_contains_points(*this, S.q(), tol);
+    // an ellipsoid in an ellipsoid needs an SDP
     CORA_FAIL(
         Error::not_supported,
         "contains: an ellipsoid in an ellipsoid is decided by an SDP, which is not available");

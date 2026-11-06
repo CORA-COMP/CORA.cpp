@@ -1,12 +1,18 @@
 // log - the natural logarithm of a box, as CORA's interval.log
 //
+// Error::out_of_domain if some bound is negative or NaN.
+//
 // Syntax:   Interval R = I.log();
 // Inputs:   -
-// Outputs:  R - [log(inf), log(sup)] (log increases), log(0) = -Inf;
-//           Error::out_of_domain if some bound is negative or NaN
+// Outputs:  R - [log(inf), log(sup)] (log increases), log(0) = -Inf
 // See also: exp, Tensor::log
 //
 // CORA: contSet/@interval/log.m
+// CORA authors: Dmitry Grebenyuk
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_check_domain.h"
 #include "cora/cont_set/interval/interval.h"

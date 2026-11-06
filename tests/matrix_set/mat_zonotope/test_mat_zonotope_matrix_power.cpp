@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@matZonotope/mpower.m
 // PROPERTY: matrixSet/@matZonotope/mpower.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,6 +54,7 @@ void powers_enclose_the_members(const std::string &b) {
     const MatZonotope batch = test::batch_of(A, A).matrix_power(0);
     check(batch.center().shape() == std::vector<int64_t>({2, 3, 3}), b + ": a batch of identities");
     const MatZonotope squares = test::batch_of(A, A).matrix_power(2);
+    // a batch of squares
     check(test::same_set(test::batch_member(squares, 1), A.matrix_power(2), 1e-12),
           b + ": a batch of squares");
 }
@@ -64,6 +74,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         powers_of_the_example(b);
@@ -72,3 +85,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("mat_zonotope matrix_power");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,24 +1,23 @@
 // compact - fewer rows or vertices for the same polytope, as CORA's polytope.compact
 //
+// "all": a minimal halfspace form; "A" the inequalities only (pairs become equalities first);
+// "Ae" the equalities (aligned ones merged); "aligned" the aligned rows; "zeros" the rows 0 <= b
+// and 0 = b; "AtoAe" pairs a x <= c, -a x <= -c become the equality a x = c; "V" the vertices
+// that are not extreme (needs the vertex form). "Ae" and the equalities of "aligned" compare up
+// to machine precision, as CORA's (its tol is not used there). The halfspace methods return the
+// empty set or R^n if the rows say so; a polytope that also holds vertices keeps them. "V" keeps
+// the extreme vertices in their order (in 1D the least and the greatest, as two columns). Not a
+// batch.
+//
 // Syntax:   Pres = P.compact();   Pres = P.compact("all", tol);   Pres = P.compact("V");
-// Inputs:   method - "all" (default): a minimal halfspace form; "A" the inequalities only (pairs
-//                    become equalities first); "Ae" the equalities (aligned ones merged);
-//                    "aligned" the aligned rows; "zeros" the rows 0 <= b and 0 = b; "AtoAe" pairs
-//                    a x <= c, -a x <= -c become the equality a x = c; "V" the vertices that are
-//                    not extreme (needs the vertex form)
+// Inputs:   method - "all" (default), "A", "Ae", "aligned", "zeros", "AtoAe" or "V"
 //           tol - what counts as zero and as aligned; default: the repository tolerance
-//                 (docs/architecture.md). "Ae" and the equalities of "aligned" compare up to
-//                 machine precision, as CORA's (its tol is not used there)
-// Outputs:  Pres - the halfspace methods normalize every row to unit length and return the empty
-//           set or R^n if the rows say so; a polytope that also holds vertices keeps them.
-//           "V" keeps the extreme vertices in their order (in 1D the least and the greatest, as
-//           two columns). Not a batch
+// Outputs:  Pres - the halfspace methods normalize every row to unit length
 // See also: Polytope::constraints, Zonotope::compact
 //
 // CORA: contSet/@polytope/compact_.m
 // CORA: contSet/@polytope/private/priv_compact_V.m
 // CORA: contSet/@polytope/private/priv_copyProperties.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

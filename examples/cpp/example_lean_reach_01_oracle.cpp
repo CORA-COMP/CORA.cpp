@@ -10,6 +10,11 @@
 // nominal part, the width of the error box, and
 //           whether the lean set encloses CORA.cpp's; without an oracle a note and exit code 0
 // See also: example_linear_reach_01_5dim, lean/zonotope.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       30-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/oracle/linear_sys.h"
@@ -18,9 +23,13 @@
 #include <cstdlib>
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!std::getenv("CORACPP_ORACLE")) {
@@ -76,8 +85,7 @@ int main() {
 
     // Rounding --------------------------------------------------------------------------------
 
-    // 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the
-    // error
+    // 0.1 is no binary32 number: round_to returns the rounded value and an enclosure of the error
     const auto [value, error] = lean::Tensor::from(Tensor({{0.1}})).round_to("ieee:binary32");
     const auto [inf, sup] = error.gather();
     std::cout << "0.1 in binary32 is " << value.gather().data()[0] << ", the error lies in ["

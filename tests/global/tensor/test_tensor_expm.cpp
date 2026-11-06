@@ -1,4 +1,9 @@
 // test_tensor_expm - Tensor expm: the matrix exponential
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "testing.h"
@@ -8,6 +13,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -32,7 +41,12 @@ void matrix_exponential(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { matrix_exponential(b); });
     return test::finish("tensor expm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,4 +1,5 @@
 // test_lean_zonotope_set_operations - abs, box, cart_prod, compact, constraints_satisfied, enclose,
+//
 // convex_hull, contains and dominant_directions of Zonotope against the CORALean oracle
 //
 // ORACLE: contSet/@zonotope/abs.m
@@ -10,6 +11,10 @@
 // ORACLE: contSet/@zonotope/convHull_.m
 // ORACLE: contSet/@zonotope/dominantDirections.m
 // ORACLE: contSet/@zonotope/enclose.m
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
@@ -19,7 +24,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -59,6 +70,9 @@ void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &their
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!oracle::available()) return 0;
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 200}};
@@ -77,6 +91,7 @@ int main() {
     oracle::run("zonotope.cartProd", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n + 1, m + 2);
+            // Cartesian products
             aux_check_set(Z.cart_prod(Z2), lean::Zonotope(Z).cart_prod(lean::Zonotope(Z2)));
         }
     });
@@ -105,6 +120,7 @@ int main() {
     oracle::run("zonotope.enclose", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
+            // enclose
             aux_check_same_generators(Z.enclose(Z2), lean::Zonotope(Z).enclose(lean::Zonotope(Z2)));
         }
     });
@@ -137,6 +153,7 @@ int main() {
                     T[i].push_back(rnd.matrix(n, n));
                     theirs_T[i].emplace_back(T[i].back());
                 }
+            // the cubic map
             oracle::check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
         }
     });
@@ -153,3 +170,5 @@ int main() {
     });
     return test::finish("lean zonotope set operations");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

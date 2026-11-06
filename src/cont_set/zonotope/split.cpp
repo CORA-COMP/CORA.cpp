@@ -1,23 +1,30 @@
 // split - a zonotope cut into zonotopes that together cover it, as CORA's zonotope.split
 //
+// One pair per coordinate of the box (no argument); the pair of halves (c - g/2 and c + g/2, g
+// halved) of the box or the generator; the pair of the direction split, whose generators lose
+// their part along dir, which becomes the generator of the pieces; for a plane both pieces, or Z
+// alone if it misses Z.
+//
+// CORA indexes the nonzero generators of the box by N, so a flat coordinate shifts it or breaks
+// it; CORA.cpp indexes the coordinates. The split with 'bundle' needs zonoBundle and is not
+// supported.
+//
 // Syntax:   pieces = Z.split();   [Z1, Z2] = Z.split(N);   [Z1, Z2] = Z.split(N, max_order);
 //           [Z1, Z2] = Z.split(dir);   [Z1, Z2] = Z.split(orig_dir, aux_dir);
 //           pieces = Z.split(a, d);
-// Inputs:   N - a coordinate of the box around Z, or with max_order a generator of Z reduced to
-//           that order (0-based);  dir - the normal of the cutting plane through the center;
-//           orig_dir, aux_dir - the plane is normal to aux_dir minus its part along orig_dir;
+// Inputs:   N - a coordinate of the box around Z (0-based), or with max_order a generator
+//           dir - the normal of the cutting plane through the center
+//           orig_dir, aux_dir - the plane is normal to aux_dir minus its part along orig_dir
 //           a, d - the plane a'x = d
-// Outputs:  pieces - one pair per coordinate of the box (no argument); the pair of halves
-//           (c - g/2 and c + g/2, g halved) of the box or the generator; the pair of the
-//           direction split, whose generators lose their part along dir, which becomes the
-//           generator of the pieces; or for a plane both pieces, or Z alone if it misses Z.
-//           The pieces of a box cover the box, the others cover Z. CORA indexes the nonzero
-//           generators of the box by N, so a flat coordinate shifts it or breaks it; CORA.cpp
-//           indexes the coordinates. The split with 'bundle' needs zonoBundle and is not
-//           supported. Not a batch, except for N
+// Outputs:  pieces - the pieces that cover Z (or the box); not a batch, except for N
 // See also: split_first_gen, split_longest_gen, reduce
 //
 // CORA: contSet/@zonotope/split.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -125,6 +132,7 @@ std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &orig_dir, const Tens
     detail::Entry entry;
     CORA_CHECK(
         is_column(orig_dir, dim()) && is_column(aux_dir, dim()), Error::dimension_mismatch, [&] {
+            // the directions are columns of the dimension
             return "split: the directions must be columns of " + std::to_string(dim()) + " entries";
         });
     // the split direction is not zero

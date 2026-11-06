@@ -4,14 +4,26 @@ Syntax:   python tests/global/test_check_format.py
 Checks:   trailing whitespace, carriage returns, tabs in YAML and a missing final newline are
           reported with their line; clean text is not.
 Exit code: 0 if all checks pass, else 1.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import os
 import sys
 import unittest
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ci"))
 import check_format as cf  # noqa: E402
 
+
+# ============================================  MAIN  ============================================ #
 
 class CheckFormatTest(unittest.TestCase):
     def test_clean_text(self):
@@ -33,3 +45,5 @@ class CheckFormatTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

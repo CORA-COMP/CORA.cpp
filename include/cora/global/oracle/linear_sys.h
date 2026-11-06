@@ -6,6 +6,11 @@
 //             nominal part and error box together enclose the reachable set
 // Scheme:     CORALean's sound float reach (no input term yet: B and U are not supported)
 // See also:   lean/zonotope.h, contDynamics/linear_sys/linear_sys.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

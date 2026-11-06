@@ -1,11 +1,17 @@
 // rand_point - random points of a set, checked, as CORA's contSet.randPoint
 //
 // Syntax:   x = S.rand_point(N, rng);
-// Inputs:   N - number of points, nonnegative; rng - the random numbers
+// Inputs:   N - number of points, nonnegative
+//           rng - the random numbers
 // Outputs:  x - N points of S as columns (..., n, N)
 // See also: Zonotope::rand_point, Interval::rand_point_impl
 //
 // CORA: contSet/@contSet/randPoint.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"

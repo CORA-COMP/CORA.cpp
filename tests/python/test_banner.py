@@ -1,4 +1,10 @@
-"""test_banner - the CORA START and CORA END blocks of the Python examples"""
+"""test_banner - the CORA START and CORA END blocks of the Python examples
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import os
 import subprocess
 import sys
@@ -6,6 +12,11 @@ import tempfile
 import unittest
 
 import cora
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 PACKAGE_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(cora.__file__)))
 
@@ -19,6 +30,8 @@ def run(name, code):
         env = dict(os.environ, PYTHONPATH=PACKAGE_PARENT)
         return subprocess.run([sys.executable, path], capture_output=True, text=True, env=env)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Banner(unittest.TestCase):
     def test_an_example_prints_header_and_footer(self):
@@ -45,5 +58,8 @@ class Banner(unittest.TestCase):
         self.assertIn("broken on purpose", result.stderr)
 
 
+# run the tests
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

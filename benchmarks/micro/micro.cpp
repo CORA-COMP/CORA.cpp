@@ -1,4 +1,5 @@
 // micro - micro-benchmarks of the public API, run one at a time so a profiler counts its
+//
 // instructions
 //
 // Syntax:   micro            list the benchmarks
@@ -9,6 +10,11 @@
 // op table (cora/global/tensor/ops.def); against an older commit they are left out, and
 // instruction_counts.py reports them as new.
 // See also: scripts/ci/instruction_counts.py, which counts the instructions of the region only
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cora.h"
 
@@ -18,9 +24,12 @@
 #include <numeric>
 #include <string>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -65,6 +74,7 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
     table["tensor_take_concat"] = [=] {
         const Tensor A = matrix(20, 200, 11);
         const Tensor i = A.sum(-2, true).argsort(-1);
+        // repeated: sort by the column sums, gather along that order, concatenate with the original
         return aux_repeat(
             2000, [=] { return sum_of(Tensor::concat({A.take_along_axis(i, -1), A}, -1)); });
     };
@@ -85,6 +95,7 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
     };
     table["fused_zonotope_linear_combination"] = [=] {
         const Tensor c = matrix(10, 1, 20), G = matrix(10, 40, 21), H = matrix(10, 40, 22);
+        // repeated: the second output of the fused linear combination
         return aux_repeat(
             5000, [=] { return sum_of(Tensor::zonotope_linear_combination(c, G, c, H).second); });
     };
@@ -104,6 +115,7 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
     };
     table["fused_abs_sum"] = [=] {
         const Tensor G = matrix(10, 100, 30);
+        // the sum of the absolute values of the generators
         return aux_repeat(20000, [=] { return sum_of(G.abs_sum()); });
     };
 }
@@ -125,6 +137,7 @@ const std::map<std::string, Benchmark> &benchmarks() {
              }},
             {"zonotope_plus",
              [] {
+                 // a seeded random zonotope, 10 dimensions with 40 generators
                  Rng rng(2);
                  const Zonotope A = Zonotope::generate_random(rng, 10, std::nullopt, 40),
                                 B = Zonotope::generate_random(rng, 10, std::nullopt, 40);
@@ -141,6 +154,7 @@ const std::map<std::string, Benchmark> &benchmarks() {
                  return Work([=] {
                      double s = 0;
                      for (int k = 0; k < 1000; ++k) s += sum_of(Z.reduce(2).generators());
+                     // the sum of two zonotopes, 1000 reductions
                      return s;
                  });
              }},
@@ -160,6 +174,7 @@ const std::map<std::string, Benchmark> &benchmarks() {
                                        alg::Standard{.time_step = 0.02, .taylor_terms = 4});
                          s += sum_of(R.time_interval.back().interval().sup());
                      }
+                     // the sum of the reductions
                      return s;
                  });
              }},
@@ -180,6 +195,7 @@ const std::map<std::string, Benchmark> &benchmarks() {
 #if __has_include("cora/global/tensor/ops.def")
         aux_tensor_benchmarks(sets);
 #endif
+        // the table of benchmarks
         return sets;
     }();
     return table;
@@ -191,6 +207,9 @@ const std::map<std::string, Benchmark> &benchmarks() {
 extern "C" __attribute__((noinline)) double micro_measured_region(const Work &work) {
     return work();
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
     if (argc < 2) {

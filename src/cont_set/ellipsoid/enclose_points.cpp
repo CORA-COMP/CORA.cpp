@@ -1,15 +1,16 @@
 // enclose_points - an ellipsoid that contains a point cloud, as CORA's ellipsoid.enclosePoints
 //
+// A degenerate cloud gives a degenerate ellipsoid. In one dimension the ellipsoid is the range;
+// in more, the axes are the singular vectors of the covariance and the radii the largest
+// coordinates, scaled so that the farthest point is on the boundary. Points that all coincide
+// give that point, where CORA raises an error (docs/cora-differences.md). "min-vol" (the minimum-
+// volume ellipsoid, an SDP) is Error::not_supported.
+//
 // Syntax:   Ellipsoid E = Ellipsoid::enclose_points(points);   Ellipsoid::enclose_points(points,
 // "cov"); Inputs:   points - the points as columns (n, p), at least one; method - "cov" (default)
 // or
 //           "min-vol"
-// Outputs:  E - the mean as the center. The points are rotated onto the subspace they span (a
-//           degenerate cloud gives a degenerate ellipsoid). In one dimension the ellipsoid is the
-//           range; in more, the axes are the singular vectors of the covariance and the radii the
-//           largest coordinates, scaled so that the farthest point is on the boundary. Points that
-//           all coincide give that point, where CORA raises an error (docs/cora-differences.md).
-//           "min-vol" (the minimum-volume ellipsoid, an SDP) is Error::not_supported
+// Outputs:  E - the mean as the center, the points rotated onto the subspace they span
 // See also: Interval::enclose_points, Zonotope::enclose_points
 //
 // CORA: contSet/@ellipsoid/enclosePoints.m

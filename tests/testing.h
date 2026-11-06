@@ -5,6 +5,11 @@
 // source, which is what "written once" promises. `raises(f, Error::dimension_mismatch)` checks
 // that a wrong input is refused with the right identifier; a `cora::ChecksScope off(false)`
 // block runs a valid call without the checks.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -24,6 +29,8 @@
 #ifdef CORACPP_TORCH
 #include <torch/torch.h>
 #endif
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -148,3 +155,5 @@ inline int finish(const std::string &what) {
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

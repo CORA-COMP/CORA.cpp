@@ -1,6 +1,11 @@
 // test_zonotope_interval - zonotope interval: the smallest box around a zonotope
 //
 // CORA: contSet/@zonotope/interval.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -12,6 +17,10 @@ using test::close;
 using test::column;
 using test::random_direction;
 using test::support;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -33,6 +42,7 @@ void interval_is_the_hull(const std::string &b) {
         f[i] = -1.0;
         check(close(I.support_function(column(e)).data()[0], support(Z, e), 1e-12),
               b + ": hull, upper");
+        // the hull bounds
         check(close(I.support_function(column(f)).data()[0], support(Z, f), 1e-12),
               b + ": hull, lower");
     }
@@ -53,6 +63,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         hull_of_a_known_zonotope(b);
@@ -61,3 +74,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope interval");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

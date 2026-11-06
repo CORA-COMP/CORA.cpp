@@ -10,6 +10,11 @@
 // Syntax:   plot(R, {0, 1});   figure().save("reach.svg");   figure().save_tikz("reach.tikz");
 //           Figure f;   plot(f, R, {0, 1});   FigureGrid g(2, 2);   plot(g.at(0, 1), R);
 // See also: cora/global/plot/plot.h, plot/color.h, plot/tikz.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

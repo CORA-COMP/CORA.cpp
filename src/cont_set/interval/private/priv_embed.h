@@ -1,11 +1,17 @@
 // priv_embed - a box placed into the coordinates of a higher-dimensional space
 //
 // Syntax:   Interval R = priv_embed(I, N, dims, lower, upper);
-// Inputs:   I - the box (m rows);  N - the dimension of the space;  dims - the coordinate of each
-//           of the m rows, in [0, N) (the shapes are not checked);  lower, upper - the bounds of
-//           the coordinates that I does not occupy
+// Inputs:   I - the box (m rows)
+//           N - the dimension of the space
+//           dims - the coordinate of each of the m rows, in [0, N) (the shapes are not checked)
+//           lower, upper - the bounds of the coordinates that I does not occupy
 // Outputs:  R - the box in N dimensions; for a repeated entry of dims the last one counts
 // See also: lift, project_high_dim
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

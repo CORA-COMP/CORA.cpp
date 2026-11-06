@@ -1,8 +1,14 @@
 // test_linear_sys_correction_matrix_input - the correction matrix G(A, dt, taylor_terms) of
+//
 // linear_sys against MATLAB CORA's `taylorMatrices`, and the properties it has whatever the
 // numbers.
 //
 // CORA: contDynamics/@linearSys/taylorMatrices.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cont_dynamics/linear_sys/matlab_reference_inputs.h"
@@ -15,6 +21,10 @@ using namespace cora;
 using namespace test::lin;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -63,6 +73,7 @@ void shrinks_with_the_time_step(const std::string &b) {
     for (const double dt : {0.4, 0.2, 0.1, 0.05, 0.025}) {
         const double size = max_abs(sys.correction_matrix_input(dt, 8).rad());
         check(size < previous, b + ": G did not shrink at dt = " + std::to_string(dt));
+        // the generators shrink with the time step
         previous = size;
     }
 }
@@ -90,6 +101,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         matches_matlab_cora(b);
@@ -101,3 +115,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("linear_sys correction_matrix_input");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

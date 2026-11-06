@@ -2,8 +2,9 @@
 //
 // Syntax:   bool empty = priv_is_empty(E);   bool point = priv_is_point(E);
 //           detail::Refusal r = priv_unbatched_refusal(E, "is_bigger");
-// Inputs:   E - an ellipsoid;  operation - the name for the message
-// Outputs:  the answer, or the identifier and text of the refusal
+// Inputs:   E - an ellipsoid
+//           operation - the name for the message
+// Outputs:  r - the answer, or the identifier and text of the refusal
 // See also: priv.h, Ellipsoid::contains
 //
 // CORA: contSet/@ellipsoid/representsa_.m
@@ -49,6 +50,7 @@ detail::Refusal priv_pair_refusal(const Ellipsoid &E1, const Ellipsoid &E2, cons
     if (!refusal) refusal = priv_unbatched_refusal(E2, operation);
     if (!refusal && (priv_is_empty(E1) || priv_is_empty(E2)))
         refusal = std::pair{Error::empty_set, name + ": an ellipsoid is empty"};
+    // the refusal, if any
     return refusal;
 }
 

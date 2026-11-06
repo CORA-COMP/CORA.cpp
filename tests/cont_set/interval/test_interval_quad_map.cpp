@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/quadMap.m
 // PROPERTY: contSet/@interval/quadMap.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -14,6 +19,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -52,6 +61,7 @@ void quad_map_is_the_hull_of_the_zonotope_map(const std::string &b) {
     const Tensor x = ZI.rand_point(50, rng), y = ZJ.rand_point(50, rng);
     for (int k = 0; k < 50; ++k) {
         const Tensor p = x.slice(-1, k, k + 1), q = y.slice(-1, k, k + 1);
+        // the image of points of both boxes
         const Tensor image = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(q),
                                              p.matrix_transpose().matmul(Q[1]).matmul(q)},
                                             0);
@@ -80,6 +90,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         quad_map_by_hand(b);
@@ -88,3 +101,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval quad_map");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

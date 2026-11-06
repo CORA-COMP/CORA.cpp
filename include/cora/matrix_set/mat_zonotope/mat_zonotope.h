@@ -9,16 +9,19 @@
 // Syntax:     MatZonotope A(C, G);   MatZonotope A(C);   MatZonotope A;
 // Operators:  A * B, A * Z, A * M, M * A, s * A, A * s (matmul, as CORA's mtimes), A + B, A + M
 //             (plus)
-// Operations: center, contains, dependent_terms, expm, expm_independent, expm_mixed,
-//             expm_one_param, interval_matrix, matmul, matrix_power, norm, plus, powers,
-//             representsa, transpose, zonotope (one file each); the constructors check their
-//             input (mat_zonotope.cpp)
+// Operations: one file each in src/matrix_set/mat_zonotope/, named as CORA's; the constructors
+//             check their input (mat_zonotope.cpp)
 // Gradients:  every operation is differentiable except interval_matrix, norm, expm_independent,
 //             expm_mixed and expm_one_param (piecewise: absolute values) and contains and
 //             representsa (not differentiable: they answer a bool)
 // See also:   cora/matrix_set/interval_matrix/interval_matrix.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: matrixSet/@matZonotope/matZonotope.m
+// CORA authors: Matthias Althoff, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -65,10 +68,8 @@ class MatZonotope {
     /// The box around the set as an interval matrix: C +- sum_i |G_i|.
     IntervalMatrix interval_matrix() const;
 
-    /// Whether the matrices M are in the set: M is (rows, cols) or (p, rows, cols) for p matrices,
-    /// all of which must be inside. type "exact" or "approx", as the zonotope's contains of the
-    /// stacked points, relaxed by tol (CORA's default is 1e-12, here the repository tolerance,
-    /// docs/architecture.md). Not a batch.
+    /// Whether the matrices M are in the set: M is (rows, cols) or (p, rows, cols), all of which
+    /// must be inside; type "exact" or "approx", relaxed by tol. Not a batch.
     bool contains(const Tensor &M, const std::string &type = "exact", Tol tol = std::nullopt) const;
 
     /// Whether the set is also a set of the CORA type ("origin", "point", ...): the zonotope's
@@ -135,14 +136,9 @@ class MatZonotope {
     /// dependent terms of the step r > 0) and the rest up to max_order as interval matrices.
     ExpmMixedResult expm_mixed(double r, int64_t intermediate_order, int64_t max_order) const;
 
-    /// The Taylor series of exp(M r) to max_order for the matrices C + b G_1 of a set with exactly
-    /// one generator, each power's terms in b kept apart (CORALean's K(r), Althoff and Dolan, ACC
-    /// 2012); the remainder box is returned beside it, not added. CORA sums the leading term of
-    /// the l-th generator from the first coefficient of M^l, which is not the coefficient of b^l,
-    /// so its set misses matrices (docs/cora-differences.md): the sum starts at the right one.
-    /// The same with the constant input u(b) = c + b g, a zonotope with at most one generator in
-    /// the same parameter (a column u is the zonotope (u, 0)): constant_input encloses the sum of
-    /// r^k / k! M^(k-1) u over the set.
+    /// The Taylor series of exp(M r) to max_order for the matrices C + b G_1 of a set with one
+    /// generator (CORALean's K(r), Althoff and Dolan, ACC 2012), with the remainder box beside
+    /// it.
     ExpmOneParamResult expm_one_param(double r, int64_t max_order,
                                       const std::optional<Zonotope> &u_trans = std::nullopt) const;
 

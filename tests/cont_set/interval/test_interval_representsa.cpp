@@ -3,6 +3,11 @@
 // CORA: contSet/@interval/representsa_.m
 // CORA: contSet/@contSet/representsa_emptyObject.m
 // CORA: contSet/@contSet/representsa.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -12,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,6 +46,7 @@ void points_and_the_origin(const std::string &b) {
 }
 
 void lines_planes_and_halfspaces(const std::string &b) {
+    // lines, planes and halfspaces
     const Interval full = box({0, 0}, {1, 2}), seg = box({0, 2}, {1, 2}), pt = box({1, 2}, {1, 2});
     const Interval line1 = box({0}, {5});
     for (const char *type : {"capsule", "ellipsoid"})
@@ -57,6 +67,7 @@ void lines_planes_and_halfspaces(const std::string &b) {
 
 void sets_that_every_box_is(const std::string &b) {
     const Interval I = box({0, 0}, {1, 2});
+    // classes a box represents
     for (const char *type : {"interval", "zonotope", "conZonotope", "polytope", "polyZonotope",
                              "zonoBundle", "conPolyZono", "levelSet", "parallelotope", "convexSet"})
         check(I.representsa(type), b + ": " + type);
@@ -100,6 +111,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         points_and_the_origin(b);
@@ -110,3 +124,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval representsa");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -7,6 +7,11 @@
 //
 // CORA: contSet/@contSet/cartProd.m
 // CORA: contSet/@contSet/cartProd_.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 

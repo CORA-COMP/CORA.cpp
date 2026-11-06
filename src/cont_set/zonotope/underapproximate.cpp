@@ -1,13 +1,19 @@
 // underapproximate - vertices of a zonotope in given directions, an inner approximation
 //
+// The default is the generators if there are at least as many as dimensions, else
+// dominant_directions (not for a batch). The vertices lie in Z, and so does their convex hull.
+//
 // Syntax:   V = Z.underapproximate();   V = Z.underapproximate(S);
-// Inputs:   S - directions as columns (n, k); default: the generators if there are at least as
-//           many as dimensions, else dominant_directions (not for a batch)
-// Outputs:  V - (..., n, 2k): the vertices c + sum_j sign(s_i' g_j) g_j and c - the same sum, per
-//           direction in this order; they lie in Z, and so does their convex hull
+// Inputs:   S - directions as columns (n, k); default: the generators, else dominant_directions
+// Outputs:  V - (..., n, 2k): the vertices c + sum_j sign(s_i' g_j) g_j and c - the sum, per s_i
 // See also: dominant_directions, vertices
 //
 // CORA: contSet/@zonotope/underapproximate.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"

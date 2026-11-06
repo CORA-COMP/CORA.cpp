@@ -105,6 +105,7 @@ void dimensions(const std::string &b) {
     check(whole.A().shape()[0] == 0, b + ": no row left: R^n");
     const Polytope sq(Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}}));
     const Polytope compact_v = sq.compact("V");
+    // the extreme vertices
     check(compact_v.is_v_rep() && compact_v.V().shape() == Shape{2, 4},
           b + ": V: the extreme vertices");
     const Polytope with_inner(Tensor({{0.0, 1.0, 0.0, 0.25}, {0.0, 0.0, 1.0, 0.25}}));
@@ -152,6 +153,7 @@ void properties(const std::string &b) {
                 const Tensor p = probes.take({k}, -1);
                 same = same && C.contains(p) == Q.contains(p);
             }
+            // the same probes for every method
             check(same, b + ": " + method + ": the same probes, " + std::to_string(n) + "D");
         }
     }

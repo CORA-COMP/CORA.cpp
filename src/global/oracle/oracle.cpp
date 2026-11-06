@@ -1,6 +1,11 @@
 // oracle - the dtype of new lean objects and the process that computes them (CORALean)
 //
 // See also: lean/tensor.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/error.h"

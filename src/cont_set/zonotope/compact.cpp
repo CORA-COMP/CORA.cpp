@@ -1,17 +1,22 @@
 // compact - fewer generators for the same set, as CORA's zonotope.compact
 //
+// "zeros" drops the generators of norm <= tol, "all" also merges those that are parallel or
+// antiparallel up to tol, "aligned" leaves Z as it is (CORA's compact_ has no branch for it). A
+// batch drops what every member drops.
+//
 // Syntax:   Zres = Z.compact();   Zres = Z.compact("all", tol);
-// Inputs:   method - "zeros" (default) drops the generators of norm <= tol; "all" also merges
-//                    those that are parallel or antiparallel up to tol; "aligned" leaves Z as it
-//                    is (CORA's compact_ has no branch for it)
-//           tol - relaxes "is zero" and "is parallel" (as within_tol); default: the repository
-//                 tolerance (docs/architecture.md)
-// Outputs:  Zres - the zonotope without them; a batch drops what every member drops, and "all"
-//           is not for a batch
+// Inputs:   method - "zeros" (default), "all" or "aligned"
+//           tol - relaxes "is zero" and "is parallel"; default: the repository tolerance
+// Outputs:  Zres - the zonotope without the generators that method drops
 // See also: reduce, box
 //
 // CORA: contSet/@zonotope/compact_.m
 // CORA: contSet/@contSet/compact.m
+// CORA authors: Mark Wetzlinger, Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

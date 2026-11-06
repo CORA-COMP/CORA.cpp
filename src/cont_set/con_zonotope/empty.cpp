@@ -1,13 +1,19 @@
 // empty - the empty constrained zonotope of n dimensions, as CORA's conZonotope.empty
 //
+// CORA's empty set has a center without columns, which and_ and cartProd_ turn into a nonempty
+// set (docs/cora-differences.md)
+//
 // Syntax:   ConZonotope cz = ConZonotope::empty(n);
 // Inputs:   n - dimension, n >= 0 (default 0)
-// Outputs:  cz - the origin without generators and the one constraint 0 = 1, which no factor
-//           vector satisfies; CORA's has a center without columns, which and_ and cartProd_
-//           turn into a nonempty set (docs/cora-differences.md)
+// Outputs:  cz - the origin without generators and the constraint 0 = 1, which no factor satisfies
 // See also: ConZonotope::ConZonotope, EmptySet::empty
 //
 // CORA: contSet/@conZonotope/empty.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 

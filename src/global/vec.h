@@ -3,6 +3,11 @@
 // Syntax:   Point3 n = cross(a, b);   double s = dot(a, b);   double len = norm(a);
 //           double z = cross(p, q);   (the same for Point, with sub and segment_distance)
 // See also: cora/cont_set/cont_set.h (Point, Point3)
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

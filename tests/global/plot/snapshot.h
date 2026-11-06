@@ -4,6 +4,11 @@
 // within a tolerance, so that rounding does not break the test but a changed geometry does; TikZ
 // text is compared exactly. Run the tests with CORACPP_UPDATE_SNAPSHOTS=1 to write the snapshots
 // again after a change that is meant, and look at the difference with git before committing.
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -14,6 +19,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -44,6 +51,7 @@ inline std::string dump_layers(const cora::Figure &fig) {
             out << "\n";
         }
     }
+    // the text
     return out.str();
 }
 
@@ -79,3 +87,5 @@ inline void check_snapshot(const std::string &text, const std::string &path,
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

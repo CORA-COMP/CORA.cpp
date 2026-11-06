@@ -1,13 +1,18 @@
 // split - a box cut in two halves at the center of one coordinate, as CORA's interval.split
 //
+// The center is (inf + sup) / 2, as CORALean's split up to its outward rounding of the midpoint.
+//
 // Syntax:   auto [I1, I2] = I.split(n);
 // Inputs:   n - the coordinate to cut, 0-based; the box is a column (..., n, 1)
 // Outputs:  I1, I2 - the lower half (the center as upper bound in coordinate n) and the upper half
-//           (the center as lower bound); the center is (inf + sup) / 2, as CORALean's split up to
-//           its outward rounding of the midpoint
 // See also: partition, center
 //
 // CORA: contSet/@interval/split.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

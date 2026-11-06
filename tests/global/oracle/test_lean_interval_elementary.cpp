@@ -1,4 +1,5 @@
 // test_lean_interval_elementary - sign, sin and sinh against the CORALean oracle, as enclosure and
+//
 // agreement within a bound
 //
 // CORA evaluates sin and sinh with the platform math library, and CORALean's float definitions are
@@ -9,6 +10,11 @@
 // (measured 3e-15 at p = 20); for sinh by at most kLooseAgree (measured 1.3e-5 on [-3, 3]). For
 // sign, CORA's lower bound is 1 on a positive box where the oracle's is 0 (a float comparison
 // certifies only <=): the boxes agree bit for bit across 0, and CORA.cpp's lies inside elsewhere.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -19,6 +25,10 @@
 #include <iostream>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -71,6 +81,9 @@ void aux_function(const std::string &name, double agree, double low, double high
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!test::oracle::available()) return 0;
     aux_function(
@@ -92,3 +105,5 @@ int main() {
     });
     return test::finish("lean interval elementary");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,17 +1,23 @@
 // is_intersecting - whether a constrained zonotope and a set or points intersect
 //
+// The sets are compared without tol (as CORA). "approx" can say true for disjoint sets. For
+// points all of them must lie in the set (CORA's call to contains_ has a missing argument and
+// fails for a constrained zonotope too). A box without points intersects nothing. Not a batch.
+//
 // Syntax:   res = cz.is_intersecting(S);   res = cz.is_intersecting(S, "approx");
 //           res = cz.is_intersecting(points, "exact", tol);
-// Inputs:   S - a constrained zonotope, a zonotope, a box, or points (n, N);  type - "exact"
-//           (default) or "approx";  tol - for points, the tolerance of contains; the sets are
-//           compared without it (as CORA); default: the repository tolerance
-// Outputs:  res - "exact": the intersection is not empty (a linear program); "approx": the boxes
-//           around the two sets overlap, so it can say true for disjoint sets. For points all of
-//           them must lie in the set (CORA's call to contains_ has a missing argument and fails
-//           for a constrained zonotope too). A box without points intersects nothing. Not a batch
+// Inputs:   S - a constrained zonotope, a zonotope, a box, or points (n, N)
+//           type - "exact" (default) or "approx"
+//           tol - for points, the tolerance of contains; default: the repository tolerance
+// Outputs:  res - "exact": the intersection is not empty (a linear program); "approx": a bound
 // See also: intersect, contains
 //
 // CORA: contSet/@conZonotope/isIntersecting_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"

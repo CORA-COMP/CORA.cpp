@@ -1,9 +1,14 @@
-// Commands the per-instance scripts call:
+// main - the commands the per-instance scripts call
 //
 //     coracpp serve <server dir>           the warm daemon (see server.cpp)
 //     coracpp run <params> <results file>  one instance in this process
 //     coracpp env                          what the worker runs on
 //     coracpp check                        every operation once, as an install smoke test
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/threads.h"
 #include "instance.h"
@@ -13,10 +18,14 @@
 #include <string>
 #include <vector>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
+
 int main(int argc, char **argv) {
     const std::vector<std::string> args(argv + 1, argv + argc);
-    // Before anything measures: the defaults are every hyperthread, which oversubscribes
-    // the cores and makes a small parallel region cost more than the work it splits.
+    // Before anything measures: the default of every hyperthread oversubscribes the cores.
     cora::configure_threads();
     try {
         if (args.size() == 1 && args[0] == "env") {
@@ -37,8 +46,11 @@ int main(int argc, char **argv) {
         }
     } catch (const std::exception &e) {
         std::cerr << "[coracpp] " << e.what() << "\n";
+        // an error ends the run with status 1
         return 1;
     }
     std::cerr << "usage: coracpp serve <dir> | run <params> <results file> | env | check\n";
     return 2;
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

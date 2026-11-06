@@ -1,6 +1,11 @@
 // priv_is_empty_set - whether a set of any class has no point
 //
 // See also: priv_is_empty_set.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/empty_set/private/priv_is_empty_set.h"
 

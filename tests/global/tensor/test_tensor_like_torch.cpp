@@ -1,4 +1,9 @@
 // test_tensor_like_torch - Library code makes its tensors on the backend of the ones it is given
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_set/interval/interval.h"
@@ -14,6 +19,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::throws;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -39,6 +48,7 @@ void tensors_stay_on_their_own_backend() {
                   alg::Standard{.time_step = 0.1, .taylor_terms = 6});
     }),
           "reach on eigen, torch current");
+    // a torch specification builds
     check(!throws([&] { Specification::safe_set(Tensor({1.0, 0.0}), 9.0); }),
           "a torch spec builds");
     set_default_backend("eigen");
@@ -46,8 +56,13 @@ void tensors_stay_on_their_own_backend() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     tensors_stay_on_their_own_backend();
     set_default_backend("eigen");
     return test::finish("tensor like (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -4,11 +4,10 @@
 // n, like, "intersect"); Inputs:   zonotopes - the members
 //           bundle, n, like - a bundle, and the dimension and a tensor of the batch shape of the
 //           other operand
-// Outputs:  the identifier and text for CORA_CHECK, or nothing
+// Outputs:  r - the identifier and text for CORA_CHECK, or nothing
 // See also: ZonoBundle::ZonoBundle
 //
 // CORA.cpp only: the checks of zonoBundle.m (aux_checkInputArgs) and of the operations on bundles
-//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

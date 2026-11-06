@@ -1,12 +1,21 @@
 // test_lean_interval_divide - Interval::divide against the CORALean oracle (its `mrdivide`)
 //
 // ORACLE: contSet/@interval/mrdivide.m
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -19,3 +28,5 @@ int main() {
     });
     return test::finish("lean interval divide");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

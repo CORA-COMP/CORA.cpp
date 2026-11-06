@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
 // PROPERTY: contSet/@conZonotope/approximateBoundsWithGPU.m
+// CORA authors: Lukas Koller
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -10,6 +15,10 @@ using test::check;
 using test::close;
 
 using Options = ConZonotope::BoundsOptions;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -78,6 +87,7 @@ void bounds_property(const std::string &b) {
         check(fm.l.less_equal(ex.l + 1e-9).min().item() == 1.0 &&
                   fm.u.greater_equal(ex.u - 1e-9).min().item() == 1.0,
               b + ": the approximation holds the exact box");
+        // the factor bounds agree
         check(fm.bl.less_equal(ex.bl + 1e-9).min().item() == 1.0,
               b + ": and the exact factor bounds");
     }
@@ -104,6 +114,7 @@ void checks_and_their_switch() {
                        Error::wrong_field_value),
           "approximate_bounds: an unknown method");
     bad.method = "dual-iter";
+    // an unported method
     check(test::raises([&] { ConZonotope::approximate_bounds(c, G, A, rhs, std::nullopt, 1, bad); },
                        Error::not_supported),
           "approximate_bounds: dual-iter is not ported");
@@ -115,6 +126,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         bounds_known(b);
@@ -123,3 +137,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("con_zonotope approximate_bounds");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,10 +1,16 @@
 // priv_join - boxes joined along a dimension: the work of cat and cart_prod
 //
 // Syntax:   bool ok = priv_joinable(A, B, 1);   Interval J = priv_join({I1, I2}, 1);
-// Inputs:   A, B - bounds;  Is - intervals;  dim - 1: stacked (rows), 2: side by side (columns)
+// Inputs:   A, B - bounds
+//           Is - intervals;  dim - 1: stacked (rows), 2: side by side (columns)
 // Outputs:  priv_joinable - whether the shapes agree in every dimension but dim;
 //           priv_join - the interval of the joined bounds (the shapes are not checked)
 // See also: cat, cart_prod
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
 

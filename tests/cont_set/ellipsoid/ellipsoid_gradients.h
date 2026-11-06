@@ -6,6 +6,7 @@
 // Sets:     two inputs (L, q) per set, with Q = L L' + I/2 symmetric by construction; parts are the
 //           outputs of a result
 // See also: cont_set/zonotope/zonotope_gradients.h
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

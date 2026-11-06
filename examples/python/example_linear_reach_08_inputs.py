@@ -6,11 +6,22 @@ measured. The reachable states, the output sets, and simulations with constant f
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_08_inputs.py [--save PREFIX]
 Outputs:  the run time, the range of the output, and a figure (PREFIX.png with --save)
 See also: example_linear_reach_01_5dim, example_linear_simulate_01_random
+
+Authors:       Claude Sonnet 5.5
+Written:       30-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import time
 
 import cora
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figure instead of showing it")
@@ -21,9 +32,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 t_final = 5
 R0 = cora.Zonotope(cora.Tensor([0, 0]), 0.2 * cora.eye(2))            # position, velocity

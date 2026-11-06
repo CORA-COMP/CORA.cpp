@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@fullspace/vertices_.m
 // PROPERTY: contSet/@fullspace/vertices_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -12,6 +17,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -51,9 +60,14 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_corners_are_at_infinity);
     test::for_each_backend(the_corners_are_those_of_the_box);
     checks_and_their_switch();
     return test::finish("fullspace vertices");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

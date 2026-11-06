@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@contSet/supportFunc.m
 // CORA: contSet/@contSet/supportFunc_.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -11,6 +16,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,7 +39,12 @@ void the_direction_is_checked() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_direction_is_checked();
     return test::finish("cont_set support_function");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

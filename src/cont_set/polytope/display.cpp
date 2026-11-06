@@ -1,14 +1,14 @@
 // display - the text that describes a polytope, as CORA's polytope.display
 //
+// As far as they are held (a batch: only the shapes). CORA also lists the properties it has found
+// out; here they are computed when asked for.
+//
 // Syntax:   std::string text = P.display();   std::cout << P;
 // Inputs:   P - polytope
-// Outputs:  text - its dimension, its vertices and its inequality and equality constraints, as far
-//           as they are held (a batch: only the shapes). CORA also lists the properties it has
-//           found out; here they are computed when asked for
+// Outputs:  text - its dimension, its vertices and its inequality and equality constraints
 // See also: Zonotope display, src/global/format.h
 //
 // CORA: contSet/@polytope/display.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -44,6 +44,7 @@ std::string Polytope::display_impl() const {
                 format_matrix(Ae_, "    ");
         text += format_matrix(be_, "    ");
     } else {
+        // without constraints, the text says so
         text += "- constraints: (not computed)\n";
     }
     return text;

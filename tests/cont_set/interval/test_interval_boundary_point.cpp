@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/boundaryPoint.m
 // PROPERTY: contSet/@interval/boundaryPoint.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -14,6 +19,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -102,6 +111,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { I.boundary_point(column({1.0, 1.0}), column({2.0})); },
                        Error::dimension_mismatch),
           "boundary_point: start of dimension 1");
+    // the same with the checks off
     const Tensor on = I.boundary_point(column({1.0, 1.0}));
     ChecksScope off(false);
     check(close(I.boundary_point(column({1.0, 1.0})), on, 0),
@@ -109,6 +119,9 @@ void checks_and_their_switch() {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -120,3 +133,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval boundary_point");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

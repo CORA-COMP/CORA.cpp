@@ -1,6 +1,7 @@
 """test_ellipsoid - the Ellipsoid class in Python: constructors, queries and set operations.
 
-CORA authors: Adrian Kulmburg, Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper, Victor Gassmann
+CORA authors: Adrian Kulmburg, Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper,
+              Victor Gassmann
 Authors:       Claude Sonnet 5.5
 Written:       04-November-2026
 Last update:   ---
@@ -41,9 +42,14 @@ import unittest
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
 # ----------------------------------------  BEGIN CODE  ---------------------------------------- #
 
 # ----------------------------------------  AUXILIARY  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def ellipsoid(Q, q=None, tol=None):
     return cora.Ellipsoid(np.array(Q, dtype=float), None if q is None else np.array(q, dtype=float), tol)
@@ -66,6 +72,9 @@ def boundary_points(E, rng, count):
 
 # ===========================================  MAIN  =========================================== #
 
+
+# ============================================  MAIN  ============================================ #
+
 class Ellipsoid(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -87,6 +96,7 @@ class Ellipsoid(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             ellipsoid([[1.0]], tol=-1.0)
         with cora.checks(False):
+            # the checks off keep the matrix
             np.testing.assert_array_equal(ellipsoid([[1.0, 0.5], [0.0, 1.0]]).Q, [[1.0, 0.5], [0.0, 1.0]])
 
     def test_empty_bounded_and_full_dim(self):
@@ -109,6 +119,7 @@ class Ellipsoid(unittest.TestCase):
             ellipsoid(thin).is_full_dim(tol=-1.0)
 
     def test_center_interval_and_generators(self):
+        # center, interval and generators
         E = ellipsoid([[4.0, 1.0], [1.0, 1.0]], [1.0, 2.0])
         np.testing.assert_array_equal(E.center, [1.0, 2.0])
         box = E.interval()
@@ -130,6 +141,7 @@ class Ellipsoid(unittest.TestCase):
         np.testing.assert_allclose(E.ellipsoid_norm([2.0, 0.0]), 1.0, atol=1e-12)
         np.testing.assert_allclose(E.ellipsoid_norm([2.0, 3.0]), np.sqrt(10.0), atol=1e-12)
         segment = ellipsoid([[1.0, 0.0], [0.0, 0.0]])
+        # the ellipsoid norm of a degenerate set
         np.testing.assert_allclose(segment.ellipsoid_norm([2.0, 1e-12]), 2.0, atol=1e-12)
         self.assertEqual(segment.ellipsoid_norm([0.0, 1.0]), np.inf)
         with self.assertRaises(cora.errors.WrongValue):
@@ -170,6 +182,7 @@ class Ellipsoid(unittest.TestCase):
     def test_enclose_points(self):
         segment = cora.Ellipsoid.enclose_points(np.array([[1.0, 3.0], [0.0, 0.0]]))
         np.testing.assert_allclose(segment.q, [2.0, 0.0], atol=1e-12)
+        # enclosing points
         self.assertFalse(segment.is_full_dim())
         point = cora.Ellipsoid.enclose_points(np.array([[2.0, 2.0], [3.0, 3.0]]))
         np.testing.assert_array_equal(point.q, [2.0, 3.0])
@@ -191,6 +204,7 @@ class Ellipsoid(unittest.TestCase):
     def test_intersect_strip(self):
         E = ellipsoid([[1.0]])
         C, y = np.array([[1.0]]), np.array([2.0])
+        # the strip intersection of an ellipsoid
         R, sigma_sq = E.intersect_strip(C, 3.0, y)
         self.assertAlmostEqual(sigma_sq, (1 + 2e-4) ** 2, places=12)
         self.assertTrue(all(R.ellipsoid_norm(np.array([p]) - R.q) <= 1 + 1e-12 for p in (-1.0, 1.0)))
@@ -231,6 +245,7 @@ class Ellipsoid(unittest.TestCase):
         self.assertEqual((E & point).Q.shape, (2, 2))
         with self.assertRaises(cora.errors.NotSupported):
             E.intersect(ellipsoid(np.eye(2)))
+        # intersection and Cartesian product
         with self.assertRaises(cora.errors.WrongValue):
             E.intersect(E, mode="exact")
         one = ellipsoid([[4.0]], [1.0])
@@ -251,6 +266,7 @@ class Ellipsoid(unittest.TestCase):
         outer = cora.Zonotope(np.array([1.0, 2.0]), np.array([[2.5, 0.0], [0.0, 0.0]]))
         self.assertTrue(E.contains(inner))
         self.assertFalse(E.contains(outer))
+        # containment of sets and points
         self.assertTrue(cora.contains(E, inner))
         self.assertTrue(E.contains(cora.Interval(np.array([0.0, 1.5]), np.array([2.0, 2.5]))))
         self.assertTrue(point.contains(ellipsoid(np.zeros((2, 2)), [1.0, 2.5])))
@@ -270,3 +286,5 @@ if __name__ == "__main__":
     unittest.main()
 
 # ---------------------------------------  END OF CODE  ---------------------------------------- #
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -3,11 +3,18 @@
 // Shared by the Eigen and the libtorch tests so that both are judged on the same points:
 // on a facet, just past one, and scattered across the boundary where only the LP knows
 // the answer.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/global/rng.h"
 #include "sets/sets.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -64,3 +71,5 @@ inline Mat<double> across_the_boundary(const Zonotope<double> &z, Eigen::Index p
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

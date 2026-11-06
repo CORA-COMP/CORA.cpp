@@ -1,6 +1,7 @@
 // test_ellipsoid_interval_torch - Ellipsoid interval: gradients through torch
 //
 // The bounds q -+ sqrt(diag Q): differentiable in Q and q.
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -12,6 +13,7 @@ using namespace cora;
 using test::Inputs;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 
 // ===========================================  MAIN  =========================================== //
 

@@ -8,3 +8,7 @@ extend-exclude = ["build", ".venv"]
 select = ["F", "E", "W", "B", "I"]
 # E741: l, h and I are the bounds and the identity of the interval and matrix tests, as in the math.
 ignore = ["E741"]
+
+[lint.isort]
+# Two empty lines after the imports: the layout puts the MAIN marker there (scripts/ci/layout.py).
+lines-after-imports = 2

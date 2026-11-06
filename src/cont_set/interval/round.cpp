@@ -1,14 +1,20 @@
 // round - the bounds of a box rounded to digits decimals, as CORA's interval.round
 //
+// Halves go away from zero, computed as round(x 10^digits) / 10^digits. The hull of the rounded
+// images, which is not a superset of I.
+//
 // Syntax:   Interval R = I.round();   Interval R = I.round(digits);
-// Inputs:   digits - the number of decimals, 0 (default) or more;  type - "decimals" (default);
-//           "significant" is refused (Error::not_supported)
-// Outputs:  R - [round(inf), round(sup)]: each bound to the nearest multiple of 10^-digits, halves
-//           away from zero, computed as round(x 10^digits) / 10^digits. The hull of the rounded
-//           images, which is not a superset of I
+// Inputs:   digits - the number of decimals, 0 (default) or more
+//           type - "decimals" (default); "significant" is refused (Error::not_supported)
+// Outputs:  R - [round(inf), round(sup)]: each bound to the nearest multiple of 10^-digits
 // See also: sign, Tensor::round
 //
 // CORA: contSet/@interval/round.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

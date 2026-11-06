@@ -1,7 +1,13 @@
 // test_linear_sys_batch_torch - automatic batching ("vmap"): linear_sys is written for one set and
+//
 // one system, and one call over a batch of sets, of systems, or of both equals one call per member.
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -10,6 +16,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -54,6 +64,7 @@ void batches(const torch::TensorOptions &opts, const std::string &where) {
     const torch::Tensor cs = torch::randn({S, n}, opts), Gs = torch::randn({S, n, m}, opts);
 
     for (const std::string &algorithm : kAlgorithms) {
+        // the algorithms run on one system, on a batch and on both
         const std::string what = where + ": " + name(algorithm);
         const ReachSet sets = run(A, cs, Gs, algorithm);
         const ReachSet systems = run(As, cs[0], Gs[0], algorithm);
@@ -85,6 +96,9 @@ void shapes(const torch::TensorOptions &opts, const std::string &where) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     std::vector<torch::TensorOptions> all{torch::TensorOptions().dtype(torch::kDouble)};
     std::vector<std::string> names{"cpu"};
@@ -100,3 +114,5 @@ int main() {
     }
     return test::finish("linear_sys batch");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

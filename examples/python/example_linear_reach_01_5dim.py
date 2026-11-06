@@ -6,11 +6,22 @@ yet): the reachable set, simulations, and two projections of both.
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_01_5dim.py [--save PREFIX]
 Outputs:  the run time and two figures (PREFIX_1.png, PREFIX_2.png with --save)
 See also: example_linear_reach_02_algorithms
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import time
 
 import cora
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figures instead of showing them")
@@ -21,9 +32,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 t_final = 5
 R0 = cora.Zonotope(cora.ones(5), 0.1 * cora.eye(5))

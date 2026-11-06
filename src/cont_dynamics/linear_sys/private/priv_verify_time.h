@@ -4,8 +4,13 @@
 //
 // Syntax:   VerifyTime T({{0, 2}});   T.setdiff(0.5, 1);   bool hit = T.is_intersecting(0, 0.1);
 // Inputs:   bounds - the pairs, in order
-// Outputs:  the queries below
+// Outputs:  R - the queries below
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -1,6 +1,11 @@
 // test_cont_set_is_bounded - ContSet::is_bounded: whether a set is bounded
 //
 // CORA: contSet/@contSet/isBounded.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -12,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,8 +47,13 @@ void noops_and_the_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(bounded_or_not);
     noops_and_the_switch();
     return test::finish("cont_set is_bounded");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

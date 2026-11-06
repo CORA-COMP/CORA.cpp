@@ -1,13 +1,19 @@
 // split_longest_gen - the two halves along the longest generator
 //
+// The first of equal generators g_j; the centers are c + g_j/2 and c - g_j/2 in CORA's order, g_j
+// halved in both. Without generators both are Z. Not a batch.
+//
 // Syntax:   [Z1, Z2] = Z.split_longest_gen();
 // Inputs:   -
-// Outputs:  Z1, Z2 - the halves along the generator g_j of largest squared length (the first of
-//           equal ones), the centers c + g_j/2 and c - g_j/2 in CORA's order, g_j halved in both:
-//           they cover Z. Without generators both are Z. Not a batch
+// Outputs:  Z1, Z2 - the halves along the generator of largest squared length; they cover Z
 // See also: split, split_first_gen
 //
 // CORA: contSet/@zonotope/splitLongestGen.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

@@ -1,17 +1,24 @@
 // enclose_points - a zonotope that contains a cloud of points
 //
+// "maiga" (Maiga et al. 2016) takes the best of 100 compressions of the cloud along its principal
+// direction, by the trace of G'G; "stursberg" the box around the cloud in the frame of the
+// principal axes of its covariance.
+//
 // Syntax:   Z = Zonotope::enclose_points(points);   Z = Zonotope::enclose_points(points,
 // "stursberg");
 //           Z = Zonotope::enclose_points(points, U);
-// Inputs:   points - the points as columns (n, N);  method - "maiga" (default, Maiga et al. 2016:
-//           the best of 100 compressions of the cloud along its principal direction, by the
-//           trace of G'G) or "stursberg" (the box around the cloud in the frame of the principal
-//           axes of its covariance);  U - the frame (n, n) of the orthogonal matrix U, which
-//           gives the "stursberg" zonotope for any orthogonal U
+// Inputs:   points - the points as columns (n, N)
+//           method - "maiga" (default) or "stursberg"
+//           U - an orthogonal frame (n, n), which gives the "stursberg" zonotope for any U
 // Outputs:  Z - a zonotope with every point in it
 // See also: enclose, interval
 //
 // CORA: contSet/@zonotope/enclosePoints.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

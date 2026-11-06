@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@matZonotope/center.m
 // PROPERTY: matrixSet/@matZonotope/center.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,8 +43,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean(center_is_the_member_at_zero);
     checks_and_their_switch();
     return test::finish("mat_zonotope center");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -2,13 +2,19 @@
 //
 // As CORA's linErrorBound.
 // The methods of LinErrorBound: bounds per step, accumulation of the committed errors, the
-// consistency check at the end, the allocation of emax to the reduction error, and the
-// prediction of the next time step size by approximation functions or bisection.
+// consistency check at the end, the allocation of emax to the reduction error, and the prediction
+// of the next time step size by approximation functions or bisection.
 //
 // Syntax:   LinErrorBound errs(emax, t_final);   errs.next_bounds(time_step, t, k, kIter);
-// Inputs:   emax - error margin;  t_final - time horizon
-// Outputs:  the bounds and checks of priv_linErrorBound.h
+// Inputs:   emax - error margin
+//           t_final - time horizon
+// Outputs:  R - the bounds and checks of priv_linErrorBound.h
 // See also: priv_reach_adaptive
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_lin_error_bound.h"
 #include "cora/global/error.h"
@@ -140,6 +146,7 @@ void LinErrorBound::accumulate_errors(int k, int kIter) {
 }
 
 void LinErrorBound::remove_redundant_values(int k, int kIter) {
+    // a step is kept by its chosen iteration only
     for (PerStep *v : {&seq_nonacc, &idv_pu_tkplus1, &idv_f, &idv_g, &idv_lin_comb, &idv_pu_tauk,
                        &step_acc, &bound_rem, &bound_acc, &bound_red})
         (*v)[k] = {(*v)[k][kIter]};
@@ -489,8 +496,7 @@ double LinErrorBound::estimate_time_step_size(double t, int k, int kIter, bool f
                                               double time_step, double max_time_step, bool is_u) {
     if (use_approx_fun) {
         time_step = approx_fun(t, k, kIter, fullcomp, time_step, max_time_step);
-        // The proposal is refused if it lies below a lower bracket, above an upper bracket that
-        // failed, or below an upper bracket that held.
+        // The proposal is refused below a lower bracket, above a failed upper or below a held one.
         const double lbs[2] = {bisect_lb_time_step_acc, bisect_lb_time_step_nonacc};
         const double ubs[2] = {bisect_ub_time_step_acc, bisect_ub_time_step_nonacc};
         const bool oks[2] = {bisect_ub_accok, bisect_ub_nonaccok};

@@ -1,11 +1,8 @@
 // oracle_testing - what a test against the CORALean oracle shares
 //
 // Syntax:     if (!test::oracle::available()) return 0;
-//             test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) {
-//                 const Zonotope Z = rnd.zonotope(3, 5);   const Tensor d = rnd.direction(3);
-//                 test::oracle::check(Z.support_function(d),
-//                 lean::Zonotope(Z).support_function(d));
-//             });
+//             test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) { ... });
+//             test::oracle::check(Z.support_function(d), lean::Zonotope(Z).support_function(d));
 // Modes:      run calls the body twice with the same random operands, "exact" (CORA.cpp on the lean
 //             backend against the oracle at dtype nearest: bit for bit) and "sound" (CORA.cpp on
 //             its default backend against the sound oracle at binary64: inside its enclosure);
@@ -14,11 +11,15 @@
 //             indices of filter_out, a pair of halves, or Vertices; an oracle Certified answer
 //             is a proof only when `proved`
 // Skip:       available() is false, with a note, unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND
-// are
-//             set; a test then returns at once. run skips an op the oracle does not serve (an older
-//             oracle; `lean::serves`), naming it once on stderr; serves(op) asks for another op,
-//             and nearest_is_strict() for a check that needs the machine's strict order at nearest
+//             are set; a test then returns at once. run skips an op the oracle does not serve
+//             (`lean::serves`), naming it once on stderr; serves(op) asks for another op, and
+//             nearest_is_strict() for a check that needs the machine's strict order at nearest
 // See also:   testing.h, cora/global/oracle/request.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 
@@ -44,6 +45,8 @@
 #include <random>
 #include <set>
 #include <sstream>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test::oracle {
 
@@ -83,9 +86,7 @@ inline bool serves(const std::string &op) {
 }
 
 /// Whether the oracle at nearest compares strictly by the machine's order, so that a box is not
-/// below itself and a flat box is not full dimensional. The oracles before batch 5 added a margin
-/// there that rounds away at nearest, and read both as true; the checks of such degenerate cases
-/// are skipped with them.
+/// below itself; the checks of degenerate cases are skipped without it.
 inline bool nearest_is_strict() {
     static const bool strict = [] {
         const lean::DTypeScope dtype("nearest");
@@ -520,10 +521,8 @@ inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
     test::check(ok, op_name() + ": the box of the oracle's result");
 }
 
-/// An interval matrix that CORA rebuilds from its center c and radius r (lo = c - r, hi = c + r)
-/// inside the oracle's, each bound widened by the rebuild's own rounding, eps (|c| + r): the
-/// oracle encloses the real result, which the rebuild in floating point misses by that much when
-/// c and r nearly cancel.
+/// Whether CORA's interval matrix, rebuilt from center c and radius r, lies in the oracle's, each
+/// bound widened by the rebuild's rounding eps (|c| + r): the rebuild misses the result by that.
 inline bool enclosed_rebuilt(const std::string &what, const cora::IntervalMatrix &a,
                              const lean::Interval &b) {
     const cora::Interval &box = a.interval();
@@ -581,8 +580,7 @@ inline void check_rebuilt(const cora::IntervalMatrix &cora_result,
 /// sound (default backend, dtype binary64); what the body builds follows the mode.
 template <class F>
 void run(const std::string &op, F body, uint64_t seed = 7) {
-    // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without labels a generic
-    // test
+    // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without is a generic test
     if (op.find('.') != std::string::npos && !serves(op)) return;
     op_name() = op;
     for (const Mode m : {Mode::exact, Mode::sound}) {
@@ -595,3 +593,5 @@ void run(const std::string &op, F body, uint64_t seed = 7) {
 }
 
 } // namespace test::oracle
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

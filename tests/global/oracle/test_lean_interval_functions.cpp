@@ -1,21 +1,21 @@
-// test_lean_interval_functions - exp, log, cos, cosh, acos, asin, atan, acosh, asinh, atanh, atan2,
-// sqrt, tan and tanh against the CORALean oracle, as agreement within a bound
+// test_lean_interval_functions - the elementary functions of Interval against the CORALean oracle
 //
-// The oracle's floats are a tuned sound enclosure (bisection with k steps, series with p terms),
-// not libm, so no bit-exact test exists. CORA.cpp's bounds (libm, as CORA) lie in the enclosure
-// (sound mode). For acos and atan2 they also differ from the oracle's bounds by at
-// most kAgree, relative, at p = 20, k = 24, in both modes (measured: 1e-6 at k = 24). The oracle's
-// acosh, asinh and atanh go through a logarithm whose bound is loose (up to 0.3 relative at p = k =
-// 20, and not better for larger p), so for these, and for asin and atan (kept short for the run
-// time), only the enclosure is checked. exp, log and cosh differ from the oracle by at most
-// kLooseAgree, relative, at p = 20 (measured: 3e-5 for exp, 1e-5 for log on [1, 40]; the oracle is
-// looser than libm); the oracle's
-// cos is the midpoint form where the box reaches an extremum, far wider than the range (0.63
-// against 0.70 in a bound), so for cos only the enclosure is checked. sqrt and tan are taken on
-// boxes where the oracle's principal branch and CORA's tests agree (inf >= 0, and inside
-// (-1.4, 1.4)): their bounds differ from the oracle's at nearest by kSqrtAgree and kTanAgree,
-// relative (measured: 2e-16 for sqrt, 2e-14 for tan at p = 20); tanh by at most kLooseAgree
-// (measured 3e-7: the oracle's series is looser than libm).
+// exp, log, cos, cosh, acos, asin, atan, acosh, asinh, atanh, atan2, sqrt, tan and tanh, as
+// agreement within a bound. The oracle's floats are a tuned sound enclosure (bisection with k
+// steps, series with p terms), not libm, so no bit-exact test exists. CORA.cpp's bounds (libm, as
+// CORA) lie in the enclosure (sound mode). For acos and atan2 they also differ from the oracle's
+// bounds by at most kAgree, relative, at p = 20, k = 24 (measured: 1e-6). exp, log and cosh
+// differ by at most kLooseAgree (measured: 3e-5 for exp, 1e-5 for log on [1, 40]; the oracle is
+// looser than libm), tanh too (3e-7). sqrt and tan are taken on boxes where the oracle's
+// principal branch and CORA agree (inf >= 0, inside (-1.4, 1.4)): they differ by at most
+// kSqrtAgree and kTanAgree (measured: 2e-16, 2e-14 at p = 20). Only the enclosure is checked for
+// acosh, asinh and atanh (their logarithm is loose: up to 0.3 relative), asin and atan (kept
+// short for the run time) and cos (the oracle's midpoint form is far wider: 0.63 against 0.70).
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -27,6 +27,10 @@
 #include <iostream>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -81,6 +85,9 @@ void aux_function(const std::string &name, double agree, double low, double high
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!test::oracle::available()) return 0;
     aux_function(
@@ -105,6 +112,7 @@ int main() {
     aux_function(
         "atan", 0, -5, 5, [](const Interval &I) { return I.atan(); },
         [](const lean::Interval &I) { return I.atan(kTerms, kFewSteps); });
+    // inverse hyperbolic cosine
     aux_function(
         "acosh", 0, 1, 40, [](const Interval &I) { return I.acosh(); },
         [](const lean::Interval &I) { return I.acosh(kTerms, kFewSteps); });
@@ -129,3 +137,5 @@ int main() {
         [](const lean::Interval &I) { return I.tanh(kTerms); });
     return test::finish("lean interval functions");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

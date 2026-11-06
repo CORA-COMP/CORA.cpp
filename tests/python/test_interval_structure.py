@@ -1,5 +1,14 @@
 """test_interval_structure - split, sqrt, sum, supremum, tan, tanh, times, transpose, tril, triu,
-uminus, uplus, vertcat, volume and zonotope of an interval in Python."""
+
+uminus, uplus, vertcat, volume and zonotope of an interval in Python.
+
+CORA authors: Niklas Kochdumper, Matthias Althoff, Daniel Althoff, Dmitry Grebenyuk,
+              Mark Wetzlinger, Victor Gassmann
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/split.m
 # CORA: contSet/@interval/sqrt.m
 # CORA: contSet/@interval/sum.m
@@ -26,6 +35,11 @@ import unittest
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 INF = float("inf")
 
 
@@ -36,6 +50,8 @@ def box(lo, hi):
 def matrix(lo, hi):
     return cora.Interval.matrix(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Structure(unittest.TestCase):
     def setUp(self):
@@ -60,6 +76,7 @@ class Structure(unittest.TestCase):
             cora.Interval.vertcat([a, M])
 
     def test_sum_and_triangles(self):
+        # sums and triangles
         M = matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
         np.testing.assert_array_equal(M.sum(1).inf, [[5.0, 7.0, 9.0]])
         np.testing.assert_array_equal(M.sum(dim=2).sup, [9.0, 18.0])
@@ -82,6 +99,7 @@ class Structure(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             I.split(2)
 
+    # functions
     def test_functions(self):
         S = box([0.0, 1.0], [4.0, 9.0]).sqrt()
         np.testing.assert_allclose(S.sup, [2.0, 3.0])
@@ -104,6 +122,7 @@ class Structure(unittest.TestCase):
             self.assertTrue(np.all(R.inf[:, None] <= y + 1e-12) and np.all(y <= R.sup[:, None] + 1e-12), name)
 
     def test_times(self):
+        # products
         A, B = box([1.0, -2.0], [3.0, 4.0]), box([2.0, 0.0], [5.0, 1.0])
         R = A.times(B)
         np.testing.assert_array_equal(R.inf, [2.0, -2.0])
@@ -125,6 +144,7 @@ class Structure(unittest.TestCase):
         np.testing.assert_array_equal(Z.generators, [[1.0, 0.0], [0.0, 0.0], [0.0, 2.0]])
         H = Z.interval()
         np.testing.assert_allclose(H.inf, I.inf)
+        # the zonotope of a box
         np.testing.assert_allclose(H.sup, I.sup)
         with self.assertRaises(cora.errors.WrongValue):
             matrix([[0.0, 1.0]], [[1.0, 2.0]]).zonotope()
@@ -140,3 +160,5 @@ class Structure(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

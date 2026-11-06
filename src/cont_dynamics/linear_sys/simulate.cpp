@@ -1,15 +1,21 @@
 // simulate - trajectories of x' = A x (+ B u), as CORA's linearSys.simulate
 //
+// input is a constant input per trajectory, columns (m, N), or one (m, 1) for all. With u the
+// states of x' = A x + B u come from e^{M k time_step} [x0; u] with M = [A B; 0 0].
+//
 // Syntax:   x = sys.simulate(problem, alg);
 //           x = sys.simulate({.initial_state = x0, .t_final = 2}, alg::Exact{.time_step = 0.1});
-// Inputs:   problem - initial_state (start points, columns (..., n, N)), input (a constant input
-//                     per trajectory, columns (m, N), or one (m, 1) for all; needs B), t_final
+// Inputs:   problem - initial_state (columns (..., n, N)), input (needs B), t_final
 //           alg - alg::Exact (time_step)
-// Outputs:  x - x[k] holds the N points at time k*time_step: e^{A k time_step} x0 (exact); with u
-//               the states of x' = A x + B u, from e^{M k time_step} [x0; u] with M = [A B; 0 0]
+// Outputs:  x - x[k] holds the N points at time k*time_step: e^{A k time_step} x0 (exact)
 // See also: simulate_random, reach
 //
 // CORA: contDynamics/@linearSys/simulate.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "global/format.h"

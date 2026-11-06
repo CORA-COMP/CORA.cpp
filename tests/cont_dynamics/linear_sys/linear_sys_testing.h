@@ -1,6 +1,12 @@
 // linear_sys_testing - what the linear_sys tests share: the reference systems as tensors, the
+//
 // conversions between host (Eigen) matrices and tensors on the current backend, and the reach
 // algorithms by name.
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -9,6 +15,8 @@
 #include "testing.h"
 
 #include <unsupported/Eigen/MatrixFunctions>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test::lin {
 
@@ -65,3 +73,5 @@ inline Eigen::MatrixXd oscillator3() {
 }
 
 } // namespace test::lin
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

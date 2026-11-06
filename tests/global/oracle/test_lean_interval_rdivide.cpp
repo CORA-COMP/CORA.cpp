@@ -4,12 +4,20 @@
 // alternate between a positive and a negative box.
 //
 // ORACLE: contSet/@interval/rdivide.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -26,6 +34,9 @@ Interval aux_away_from_zero(test::oracle::Random &rnd, int n) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("interval.rdivide", [](test::oracle::Random &rnd) {
@@ -36,3 +47,5 @@ int main() {
     });
     return test::finish("lean interval rdivide");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

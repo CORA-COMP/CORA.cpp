@@ -1,14 +1,20 @@
 // enlarge - a box scaled about its center, as CORA's interval.enlarge
 //
+// For an interval matrix factor is a matrix of the shape of the bounds. Where r is Inf: f > 1
+// gives (-Inf, Inf), f = 1 keeps the bounds (CORA gives NaN where the center is NaN), and f < 1
+// is refused (Error::not_supported).
+//
 // Syntax:   Interval R = I.enlarge(factor);   Interval R = I.enlarge(f);
-// Inputs:   factor - a number, or a column (..., n, 1) of one factor per dimension (a matrix of
-//           the shape of the bounds for an interval matrix); nonnegative
-// Outputs:  R - [c - r f, c + r f] with the center c and the radius r. Where r is Inf: f > 1
-//           gives (-Inf, Inf), f = 1 keeps the bounds (CORA gives NaN where the center is NaN),
-//           and f < 1 is refused (Error::not_supported)
+// Inputs:   factor - a number, or a column (..., n, 1) of one factor per dimension; nonnegative
+// Outputs:  R - [c - r f, c + r f] with the center c and the radius r
 // See also: center, rad
 //
 // CORA: contSet/@interval/enlarge.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

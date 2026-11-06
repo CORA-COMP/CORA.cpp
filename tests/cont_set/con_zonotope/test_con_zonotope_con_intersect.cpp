@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@conZonotope/conIntersect.m
 // PROPERTY: contSet/@conZonotope/conIntersect.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -66,6 +75,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         con_intersect_known(b);
@@ -74,3 +86,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("con_zonotope con_intersect");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

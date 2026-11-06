@@ -3,11 +3,15 @@
 // Syntax:   bool b = F.contains(S);   bool b = F.contains(S, tol);
 // Inputs:   S - a set of the dimension of F (points p: the interval [p, p])
 //           tol - checked and otherwise unused; default: the repository tolerance
-//           (docs/architecture.md)
 // Outputs:  b - true; Error::not_supported in R^0, as CORA
 // See also: Interval::contains
 //
 // CORA: contSet/@fullspace/contains_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 

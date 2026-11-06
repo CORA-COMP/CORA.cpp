@@ -1,17 +1,21 @@
 // is_intersecting - whether a zonotope and a zonotope, a box or points intersect
 //
+// "approx" can say true for disjoint sets. For points tol is the tolerance of contains (CORA's
+// call to contains_ has a missing argument and fails). Not a batch.
+//
 // Syntax:   res = Z.is_intersecting(S);   res = Z.is_intersecting(S, "approx", tol);
 // Inputs:   S - a zonotope, a box, or points (n, N), of the dimension of Z
-//           type - "exact" (default) decides, by a linear program; "approx" tests only the boxes
-//                  around the two sets, so it can say true for disjoint sets
-//           tol - S enlarged by tol in every coordinate (absolute) is intersected; for points,
-//                 the tolerance of contains; default: the repository tolerance
-//                 (docs/architecture.md). Not a batch
-// Outputs:  res - true if the sets intersect. For points all of them must lie in Z
-//           (CORA's call to contains_ has a missing argument and fails)
+//           type - "exact" (default) decides by a linear program, "approx" tests the boxes only
+//           tol - S enlarged by tol in every coordinate; default: the repository tolerance
+// Outputs:  res - true if the sets intersect; for points all of them must lie in Z
 // See also: contains, intersect
 //
 // CORA: contSet/@zonotope/isIntersecting_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

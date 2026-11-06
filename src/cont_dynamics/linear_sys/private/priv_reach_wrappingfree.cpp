@@ -9,10 +9,18 @@
 //
 // Syntax:   R = priv_reach_wrappingfree(X0, e_adt, F, steps);
 //           R = priv_reach_wrappingfree(X0, e_adt, F, in, steps);
-// Inputs:   X0 - initial set;  e_adt - e^{A dt};  F - correction matrix;  steps - number of steps
+// Inputs:   X0 - initial set
+//           e_adt - e^{A dt}
+//           F - correction matrix
+//           steps - number of steps
 //           in - the input solution of one step
 // Outputs:  R - the reachable sets, see LinearSys::reach
 // See also: priv_reach_standard
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 

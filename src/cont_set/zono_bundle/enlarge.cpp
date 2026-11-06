@@ -8,7 +8,6 @@
 // See also: ContSet::enlarge
 //
 // CORA: contSet/@zonoBundle/enlarge.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

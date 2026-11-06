@@ -10,6 +10,11 @@
 //             Zonotope list, or std::optional of one of them (a JSON null is nothing); list(key)
 //             splits an array of objects into replies
 // See also:   lean/oracle.h, lean/interval.h, lean/zonotope.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

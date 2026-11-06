@@ -1,9 +1,14 @@
 // figure - the layers of one pair of axes and the limits they give
 //
 // Syntax:   figure().add_polygons(...);   Figure::Limits l = figure().limits();
-// Inputs:   the layers, in the order they are drawn: regions first, then sets, lines, points
-// Outputs:  the layers, the limits and the view of the axes
+// Inputs:   layers - in the order they are drawn: regions first, then sets, lines, points
+// Outputs:  fig - the layers, the limits and the view of the axes
 // See also: cora/global/plot/plot.h, src/global/plot/svg.cpp, src/global/plot/tikz.cpp
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/figure.h"
 #include "cora/global/error.h"
@@ -180,8 +185,7 @@ Figure::Limits Figure::limits(double pw, double ph) const {
     return l;
 }
 
-// The orthographic view from the direction of MATLAB's view(azimuth, elevation): the azimuth is
-// turned from the -y axis, counter-clockwise seen from above.
+// The orthographic view of MATLAB's view(azimuth, elevation); azimuth is counter-clockwise from -y.
 Point Figure::view(const Point3 &p, double *depth) const {
     const double pi = std::acos(-1.0);
     const double a = (azimuth - 90) * pi / 180, e = elevation * pi / 180;
@@ -191,8 +195,7 @@ Point Figure::view(const Point3 &p, double *depth) const {
             -(p[0] * std::cos(a) + p[1] * std::sin(a)) * std::sin(e) + p[2] * std::cos(e)};
 }
 
-// The Grid
-// -----------------------------------------------------------------------------------------
+// The Grid ----------------------------------------------------------------------------------------
 
 FigureGrid::FigureGrid(int rows, int cols) : rows_(rows), cols_(cols) {
     if (rows < 1 || cols < 1)

@@ -1,7 +1,6 @@
 // test_capsule_center - Capsule center: the middle of the axis
 //
 // CORA: contSet/@capsule/center.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -62,6 +61,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule center");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

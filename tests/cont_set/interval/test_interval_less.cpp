@@ -1,6 +1,11 @@
 // test_interval_less - interval less: whether a box lies strictly in another (CORA's lt)
 //
 // CORA: contSet/@interval/lt.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -8,6 +13,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,8 +47,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(less_is_strict_containment);
     checks_and_their_switch();
     return test::finish("interval less");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -8,6 +8,10 @@
 // < inf` there, and the unsound mode is compared bit for bit too.
 //
 // ORACLE: contSet/@interval/representsa_.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -16,6 +20,11 @@
 #include <string>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -36,3 +45,5 @@ int main() {
     });
     return test::finish("lean interval representsa");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

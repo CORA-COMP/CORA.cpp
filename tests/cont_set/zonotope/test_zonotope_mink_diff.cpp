@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/minkDiff.m
 // PROPERTY: contSet/@zonotope/minkDiff.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -12,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -99,6 +108,7 @@ void mink_diff_refuses() {
         "mink_diff: a flat minuend");
     check(test::raises([&] { flat.mink_diff(square(1.0)); }, Error::empty_set),
           "mink_diff: flat less full is empty");
+    // a subtrahend too large
     check(test::raises(
               [&] { square(1.0).mink_diff(Zonotope(column({0.0, 0.0}), Tensor({{3.0}, {0.0}}))); },
               Error::empty_set),
@@ -122,6 +132,9 @@ void mink_diff_of_a_box(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         mink_diff_known_2d(b);
@@ -132,3 +145,5 @@ int main() {
     mink_diff_refuses();
     return test::finish("zonotope mink_diff");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

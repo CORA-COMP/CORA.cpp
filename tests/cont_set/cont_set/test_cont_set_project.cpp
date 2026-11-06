@@ -1,6 +1,11 @@
 // test_cont_set_project - ContSet::project: the dimensions are checked, the result is a Set
 //
 // CORA: contSet/@contSet/project.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -28,7 +37,12 @@ void the_dimensions_are_checked() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_dimensions_are_checked();
     return test::finish("cont_set project");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

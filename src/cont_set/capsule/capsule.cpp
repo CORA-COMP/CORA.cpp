@@ -1,12 +1,20 @@
 // capsule - the constructors of a capsule, checked, as CORA's capsule
 //
+// All entries are finite, r is nonnegative, and they share one batch shape.
+//
 // Syntax:   Capsule C(c, g, r);   Capsule C(c, g);   Capsule C(c);
-// Inputs:   c - center (..., n, 1);  g - generator (..., n, 1), default 0;  r - radius
-//           (..., 1, 1) or a number, default 0; all finite, r nonnegative, one batch shape
+// Inputs:   c - center (..., n, 1)
+//           g - generator (..., n, 1), default 0
+//           r - radius (..., 1, 1) or a number, default 0
 // Outputs:  C - the capsule {x | min_t |x - (c + t g)| <= r, t in [-1, 1]}
 // See also: empty, origin, Zonotope::Zonotope
 //
 // CORA: contSet/@capsule/capsule.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
 #include "cont_set/capsule/private/priv.h"
@@ -72,6 +80,8 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &g, const Tensor &r) {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// Constructor -------------------------------------------------------------------------------------
 
 Capsule::Capsule(Unchecked, Tensor c, Tensor g, Tensor r)
     : ContSet(kClassId), c_(std::move(c)), g_(std::move(g)), r_(std::move(r)) {}

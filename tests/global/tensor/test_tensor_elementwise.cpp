@@ -1,5 +1,11 @@
 // test_tensor_elementwise - Tensor::ones, the elementwise functions and the elementwise
+//
 // product, quotient, maximum and minimum, on every backend
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "testing.h"
 
@@ -7,6 +13,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,6 +40,7 @@ void functions_apply_to_every_element(const std::string &b) {
     check(test::close(t.exp(), apply(std::exp)), b + ": exp");
     check(test::close(t.log(), apply(std::log)), b + ": log");
     check(test::close(t.sqrt(), apply(std::sqrt)), b + ": sqrt");
+    // the shape is kept
     check(t.sin().shape() == t.shape(), b + ": the shape is kept");
 }
 
@@ -69,6 +80,9 @@ void maximum_and_minimum_pick_elements(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         ones_fills_the_shape(b);
@@ -79,3 +93,5 @@ int main() {
     });
     return test::finish("tensor elementwise");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

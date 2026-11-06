@@ -44,6 +44,7 @@ void clouds(const std::string &b) {
     Rng rng(5);
     const Tensor sphere = test::sphere_points(rng, 3, 8);
     const Tensor mean = sphere.mean(-1, true);
+    // a sphere and its inside
     const Tensor both = Tensor::concat({sphere, mean + (sphere - mean) * 0.3}, -1);
     check(test::same_columns(Polytope::enclose_points(both).V(), sphere),
           b + ": a sphere and its inside");

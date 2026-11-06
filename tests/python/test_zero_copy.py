@@ -4,6 +4,11 @@ A C-contiguous float64 (or float32) array becomes an Eigen tensor over its own m
 goes back as a numpy array over the tensor's memory: a set built from G hands G's memory back. Only
 an array that is not C-contiguous, or of another dtype, is copied. The benchmark times the round
 trip of a 1000 x 1000 array against one copy of it.
+
+Authors:       Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import time
 import unittest
@@ -11,11 +16,18 @@ import unittest
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 try:
     import torch
 except ImportError:
     torch = None
 
+
+# ============================================  MAIN  ============================================ #
 
 class ZeroCopy(unittest.TestCase):
     def setUp(self):
@@ -63,6 +75,7 @@ class ZeroCopy(unittest.TestCase):
         print(f"\n  1000 x 1000 in and out of a Zonotope: {per_call * 1e6:.1f} us per call; "
               f"one copy of the array: {per_copy * 1e6:.1f} us")
         self.assertTrue(np.shares_memory(G, self.G) and copy.shape == self.G.shape)
+        # the call is cheaper than a copy
         self.assertLess(per_call, per_copy / 5)
 
     @unittest.skipUnless(torch is not None and cora.has_torch, "needs torch")
@@ -76,3 +89,5 @@ class ZeroCopy(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

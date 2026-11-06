@@ -1,4 +1,5 @@
 // test_lean_zonotope_maps - origin, project_high_dim, representsa and the splits of
+//
 // Zonotope against the CORALean oracle
 //
 // ORACLE: contSet/@zonotope/origin.m
@@ -11,6 +12,11 @@
 // The oracle splits along a generator of Z (CORA.cpp: split(N, max_order) with no reduction) and
 // returns the halves c - g/2 first; CORA's splitLongestGen lists c + g/2 first, so its halves
 // are compared swapped.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
@@ -19,7 +25,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -41,6 +53,9 @@ void aux_check_halves(const A &mine, const B &theirs) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -75,6 +90,7 @@ int main() {
     oracle::run("zonotope.split", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
+            // splits at the first and the last generator
             for (const int64_t gen : {int64_t(0), int64_t(m - 1)})
                 aux_check_halves(Z.split(gen, 1000), lean::Zonotope(Z).split(gen));
         }
@@ -97,3 +113,5 @@ int main() {
     });
     return test::finish("lean zonotope maps");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

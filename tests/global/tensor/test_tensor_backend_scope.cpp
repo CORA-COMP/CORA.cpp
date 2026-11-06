@@ -1,4 +1,9 @@
 // test_tensor_backend_scope - BackendScope: a backend is chosen per scope; bad choices are refused
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "testing.h"
@@ -7,6 +12,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::throws;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,6 +43,9 @@ void the_backend_is_chosen_once(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         the_backend_is_chosen_once(b);
@@ -41,3 +53,5 @@ int main() {
     });
     return test::finish("tensor backend scope");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

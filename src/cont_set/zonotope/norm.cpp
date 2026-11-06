@@ -1,15 +1,21 @@
 // norm - an upper bound on the norm of the points of a zonotope
 //
+// "ub" is the norm of the box around the zonotope, so no point has a larger norm; "exact" needs a
+// mixed-integer solver and "ub_convex" a semidefinite one, neither is supported.
+//
 // Syntax:   val = Z.norm();   val = Z.norm(type, "ub");
-// Inputs:   type - 1, 2 (default) or infinity (ContSet::norm also takes fro);  mode - "ub"
-//           (default): the norm of the box around the zonotope, so no point has a larger norm;
-//           "exact" needs a mixed-integer solver and "ub_convex" a semidefinite one, neither is
-//           supported
+// Inputs:   type - 1, 2 (default) or infinity (ContSet::norm also takes fro)
+//           mode - "ub" (default)
 // Outputs:  val - the bound, (..., 1, 1)
 // See also: interval, minnorm
 //
 // CORA: contSet/@zonotope/norm_.m
 // CORA: contSet/@interval/norm_.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

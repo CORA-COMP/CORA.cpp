@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/empty.m
 // PROPERTY: contSet/@interval/empty.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -9,6 +14,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -39,8 +48,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(empty_has_no_points);
     checks_and_their_switch();
     return test::finish("interval empty");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

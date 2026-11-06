@@ -1,12 +1,20 @@
 // main - a program against the installed CORA.cpp: a reachable set, an error identifier, a pair
 //
 // Built by the ctest install/consumer with find_package(CORA) from the install tree only.
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cora.h"
 
 #include <iostream>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     using namespace cora;

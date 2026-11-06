@@ -1,16 +1,21 @@
 // powers - the powers of an interval matrix from a given order, as CORA's intervalMatrix.powers
 //
+// The initial power, then each one the previous times A, from the right (CORA's pow{i} = pow{i-1}
+// * A; matrix_power multiplies from the left), every product the interval matrix product.
+//
 // Syntax:   std::vector<IntervalMatrix> P = A.powers(N);
 //           P = A.powers(N, initial_order, initial_power);
-// Inputs:   N - the last order;  initial_order >= 1, initial_power - the power of that order
-//           (default: 1 and A)
-// Outputs:  P - P[k] is the power of order initial_order + k, up to N (at least the first):
-//           the initial power, then each one the previous times A, from the right (CORA's
-//           pow{i} = pow{i-1} * A; matrix_power multiplies from the left), every product the
-//           interval matrix product
+// Inputs:   N - the last order
+//           initial_order >= 1, initial_power - the power of that order (default: 1 and A)
+// Outputs:  P - P[k] is the power of order initial_order + k, up to N (at least the first)
 // See also: matrix_power, matmul, expm
 //
 // CORA: matrixSet/@intervalMatrix/powers.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

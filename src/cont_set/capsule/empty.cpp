@@ -1,13 +1,19 @@
 // empty - the empty capsule of n dimensions, as CORA's capsule.empty
 //
+// CORA's empty capsule has a center without columns and no radius. center() of it has no columns
+// (n, 0), as in CORA. is_empty() is true for a negative radius (of a batch: every member)
+//
 // Syntax:   Capsule C = Capsule::empty(n);   bool none = C.is_empty();
 // Inputs:   n - dimension, n >= 0 (default 0)
-// Outputs:  C - the origin with the radius -1, which no point is within; CORA's has a center
-//           without columns and no radius. center() of it has no columns (n, 0), as in CORA.
-//           is_empty() is true for a negative radius (of a batch: every member)
+// Outputs:  C - the origin with the radius -1, which no point is within
 // See also: origin, Capsule::is_empty
 //
 // CORA: contSet/@capsule/empty.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "cora/cont_set/capsule/capsule.h"

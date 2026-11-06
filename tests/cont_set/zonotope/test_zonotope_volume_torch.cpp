@@ -1,9 +1,18 @@
 // test_zonotope_volume_torch - zonotope volume: gradients through torch
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -19,9 +28,14 @@ void volume_gradient() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(44);
     volume_gradient();
     return test::finish("zonotope volume (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -6,13 +6,22 @@ hand-written backward pass instead of autograd's own (custom_backward); the grad
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_07_gradient.py
 Outputs:  the total width of the enclosures and its gradient with respect to A
 See also: example_linear_reach_05_batch
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
 

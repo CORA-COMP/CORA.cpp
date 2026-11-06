@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/tan.m
 // PROPERTY: contSet/@interval/tan.m
+// CORA authors: Daniel Althoff, Dmitry Grebenyuk, Matthias Althoff, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -15,6 +20,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -62,6 +71,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         tan_maps_the_bounds_or_gives_the_line(b);
@@ -70,3 +82,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval tan");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

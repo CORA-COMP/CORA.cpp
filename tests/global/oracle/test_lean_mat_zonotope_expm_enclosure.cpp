@@ -1,4 +1,5 @@
 // test_lean_mat_zonotope_expm_enclosure - MatZonotope::expm and expm_independent against the
+//
 // CORALean oracle, as enclosure of the same exponentials
 //
 // The oracle has one op for both (`matZonotope.expm` and `expmInd`): the Taylor series to a maximum
@@ -7,11 +8,21 @@
 // of random matrices C + sum b_i G_i lies in the oracle's box and in CORA.cpp's, and the two boxes
 // meet. Only the sound mode runs, as the lean backend has no matrix exponential. There is no ORACLE
 // tag.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -46,6 +57,7 @@ int main() {
             }
             const IntervalMatrix a = mine.interval_matrix();
             const auto [lo, hi] = theirs.interval_matrix().gather();
+            // the enclosures meet
             const bool meet =
                 (lo.less_equal(a.interval().sup()).multiply(a.interval().inf().less_equal(hi)))
                     .min()
@@ -54,3 +66,5 @@ int main() {
         });
     return test::finish("lean mat_zonotope expm enclosure");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

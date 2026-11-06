@@ -1,14 +1,20 @@
 // priv_linear_programs - the linear programs of a constrained zonotope: ranges, emptiness, center
 //
+// The ranges are those of every factor, the center the Chebyshev center of a polytope.
+//
 // Syntax:   HostConZonotope H = priv_host_con_zonotope(cz);   auto r = priv_range(H, d);
 //           bool empty = priv_is_empty(H);   auto lo_hi = priv_factor_ranges(H);
 //           auto x = priv_chebyshev_center(Aineq, bineq, Aeq, beq, k);
-// Inputs:   H - a single constrained zonotope on the host;  d - a direction (n values)
-// Outputs:  the range of a linear function, whether no factor vector exists, the range of every
-//           factor, the Chebyshev center of a polytope
+// Inputs:   H - a single constrained zonotope on the host
+//           d - a direction (n values)
+// Outputs:  R - the range of a linear function, whether no factor vector exists, or a center
 // See also: priv_blocks, linprog
 //
 // CORA.cpp only: MATLAB hands its matrices to CORAlinprog as they are
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/linprog.h"
@@ -132,6 +138,7 @@ priv_chebyshev_center(const std::vector<double> &Aineq, const std::vector<double
     for (int64_t i = 0; i < rows_eq; ++i)
         for (int64_t j = 0; j < k; ++j) lp.Aeq[i * lp.n + j] = Aeq[i * k + j];
     lp.lb.assign(std::size_t(lp.n), -kInf);
+    // the first variable is free, the last is the slack
     lp.lb[k] = 0.0;
     const LinProgResult r = linprog(lp);
     if (r.status != LinProgResult::Status::optimal) return std::nullopt;

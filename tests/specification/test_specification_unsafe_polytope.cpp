@@ -1,10 +1,16 @@
 // test_specification_unsafe_polytope - an unsafe set of several halfspaces, as CORA's unsafeSet
+//
 // polytope
 //
 // The expected answers are those of MATLAB CORA's check(specification(polytope(A, b),
 // 'unsafe_set'), zonotope(c, G)): safe iff the zonotope and the polytope have no common point.
 //
 // CORA: specification/@specification/specification.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/specification/specification.h"
@@ -14,6 +20,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -57,7 +67,12 @@ void unsafe_polytope(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { unsafe_polytope(b); });
     return test::finish("specification unsafe_polytope");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

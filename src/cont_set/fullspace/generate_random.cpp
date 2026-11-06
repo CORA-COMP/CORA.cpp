@@ -1,12 +1,17 @@
 // generate_random - a random whole space, as CORA's fullspace.generateRandom
 //
 // Syntax:   F = Fullspace::generate_random(rng);   F = Fullspace::generate_random(rng, 3);
-// Inputs:   rng - random numbers (its seed makes the result repeatable);  dimension >= 0
-//           (CORA's name-value pair 'Dimension'); default: a random integer in 1..10, as randi(10)
+// Inputs:   rng - random numbers (its seed makes the result repeatable)
+//           dimension - >= 0 (CORA's 'Dimension'); default: a random integer in 1..10, as randi(10)
 // Outputs:  F - the whole space of n dimensions
 // See also: EmptySet::generate_random, Interval::generate_random
 //
 // CORA: contSet/@fullspace/generateRandom.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 

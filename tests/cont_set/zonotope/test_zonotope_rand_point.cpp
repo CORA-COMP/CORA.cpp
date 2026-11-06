@@ -1,7 +1,13 @@
 // test_zonotope_rand_point - zonotope rand_point: standard points in the set, extreme points at its
+//
 // corners
 //
 // CORA: contSet/@zonotope/randPoint_.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg, Severin Prenitzer
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -15,6 +21,10 @@ using test::check;
 using test::close;
 using test::random_direction;
 using test::support;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -48,6 +58,7 @@ void rand_point_samples_the_set(const std::string &b) {
     check(reached > 0.6, b + ": the points do not fill the set");
 
     std::vector<double> mean(n, 0.0);
+    // the points are centred
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < N; ++j) mean[i] += points[i * N + j] / N;
         check(std::abs(mean[i] - c[i]) < 0.12, b + ": the points are not centred on the set");
@@ -79,6 +90,7 @@ void extreme_points_are_corners(const std::string &b) {
         }
         worst = std::max(worst, nearest);
     }
+    // an extreme point is a corner
     check(worst < 1e-10, b + ": an extreme point is not a corner");
 }
 
@@ -94,6 +106,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         rand_point_samples_the_set(b);
@@ -102,3 +117,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope rand_point");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

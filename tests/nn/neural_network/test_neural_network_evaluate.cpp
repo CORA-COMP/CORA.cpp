@@ -3,6 +3,11 @@
 // CORA: nn/@neuralNetwork/evaluate.m
 // CORA: nn/@neuralNetwork/neuralNetwork.m
 // CORA: nn/layers/nonlinear/nnReLULayer.m
+// CORA authors: Tobias Ladner, Lukas Koller, Sebastian Sigl
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/rng.h"
 #include "cora/nn/neural_network/neural_network.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -104,6 +113,7 @@ void wrong_arguments_are_described(const std::string &b) {
     const NeuralNetwork nn({{W, bias}});
     check(test::throws([&] { nn.evaluate(Tensor({1.0, 2.0, 3.0})); }),
           b + ": a point of another dimension");
+    // a set of another dimension
     check(test::throws([&] { nn.evaluate(Zonotope(Tensor({1.0}), Tensor({{1.0}}))); }),
           b + ": a set of another dimension");
 }
@@ -122,6 +132,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         points_follow_the_layers(b);
@@ -134,3 +147,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("neuralNetwork evaluate");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

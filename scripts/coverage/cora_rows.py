@@ -4,8 +4,17 @@ A row is `group/class/method`. It is one `.m` file of a class of `contSet/`, `co
 `hybridDynamics/`, `specification/`, `nn/` or of the group `others` (`matrixSet/`, `discrDynamics/`,
 `converter/`); `private/` and `global/` have none. The inventory (inventory.py) lists the rows of a
 CORA checkout and the tags (coverage.py) name rows, both through `row_of_path`.
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import re
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 GROUPS = ("contSet", "contDynamics", "hybridDynamics", "nn", "specification", "others")
 OTHERS_DIRS = ("matrixSet", "discrDynamics", "converter")
@@ -14,6 +23,8 @@ PROB_EXAMPLE_DIRS = ("scenarios", "velocityProfiles", "vehicleModels")
 PROB = "ProbOccupancyPrediction"
 ROOT_DIRS = ("contSet", "contDynamics", "hybridDynamics", "nn", "specification") + OTHERS_DIRS
 
+
+# ============================================  MAIN  ============================================ #
 
 def at_class(directory):
     """The class of a folder `@class`, else None."""
@@ -44,6 +55,7 @@ def row_of_path(path):
         dirs = dirs[1:] if dirs[:1] == ["signals"] else dirs
         cls = at_class(dirs[0]) if dirs else None
         found = ("specification", cls, name) if len(dirs) == 1 and cls else None
+        # a specification without a class folder is named after its file
         found = found or (("specification", name, None) if not dirs else None)
     elif parts[0] in OTHERS_DIRS:
         found = other_row(parts[0], dirs, cls, name)
@@ -113,3 +125,5 @@ def inventory_of(cora):
 def key_of(group, cls, method):
     """The name of a row in the JSON files and the ledger."""
     return f"{group}/{cls}/{method}"
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

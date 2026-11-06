@@ -1,7 +1,13 @@
 """test_lean_interval_matrix - IntervalMatrix against the CORALean oracle (cora.lean.IntervalMatrix)
 
 norm is not here as ORACLE: the Frobenius norm is a square root that the oracle bounds from above by
-Newton steps, so CORA.cpp's correctly rounded root is inside the bound but not its bits."""
+Newton steps, so CORA.cpp's correctly rounded root is inside the bound but not its bits.
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # ORACLE: matrixSet/@intervalMatrix/abs.m
 # ORACLE: matrixSet/@intervalMatrix/center.m
 # ORACLE: matrixSet/@intervalMatrix/contains.m
@@ -26,6 +32,11 @@ import cora
 import numpy as np
 import oracle_testing as oracle
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 SHAPES = ((2, 2), (3, 4), (5, 1), (4, 4))
 
 
@@ -42,6 +53,8 @@ def lean_of(A):
 def point(M):
     return cora.Interval.matrix(M, M)
 
+
+# ============================================  MAIN  ============================================ #
 
 @oracle.needs_oracle
 class Oracle(unittest.TestCase):
@@ -66,6 +79,7 @@ class Oracle(unittest.TestCase):
         self.each("intervalMatrix.contains", body)
 
     def test_squares_and_powers(self):
+        # squares and powers
         squares = ((2, 2), (3, 3), (5, 5))
         self.each("intervalMatrix.exactSquare",
                   lambda rnd, A, L: oracle.check(A.exact_square().interval, L.exact_square()), squares)
@@ -90,6 +104,7 @@ class Oracle(unittest.TestCase):
         oracle.run("intervalMatrix.mtimes", run)
 
     def test_sums_and_queries(self):
+        # sums and queries
         self.each("intervalMatrix.rad", lambda rnd, A, L: oracle.check(A.rad, L.rad()))
         self.each("intervalMatrix.supremum", lambda rnd, A, L: oracle.check(A.supremum, L.supremum()))
         self.each("intervalMatrix.volume", lambda rnd, A, L: oracle.check(A.volume(), L.volume()))
@@ -127,6 +142,7 @@ class Oracle(unittest.TestCase):
         self.each("intervalMatrix.vertices", vertices, ((2, 2), (1, 3), (3, 2)))
 
     def test_the_infinity_norm(self):
+        # the infinity norm
         self.each("intervalMatrix.infNorm",
                   lambda rnd, A, L: oracle.check(A.infinity_norm(), L.infinity_norm()))
 
@@ -141,3 +157,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

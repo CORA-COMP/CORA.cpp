@@ -8,6 +8,11 @@
 // Syntax:   build/examples/cpp/example_neuralNetwork_verify_01
 // Outputs:  the output set, whether the samples are inside, the verdict, and the figure as SVG
 // See also: the Python example of the same name (which trains the network), example_zonotope_01
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 #include "cora/global/rng.h"
@@ -15,9 +20,13 @@
 
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Network ---------------------------------------------------------------------------------

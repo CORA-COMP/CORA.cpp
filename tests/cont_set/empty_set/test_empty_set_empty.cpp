@@ -1,12 +1,21 @@
 // test_empty_set_empty - EmptySet::empty: the empty set of n dimensions
 //
 // CORA: contSet/@emptySet/empty.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -24,8 +33,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(empty_makes_the_set_of_n_dimensions);
     checks_and_their_switch();
     return test::finish("empty_set empty");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

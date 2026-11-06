@@ -1,6 +1,10 @@
 // test_tolerance - the tolerance policy: the order of resolution, the scopes, the dtype, within_tol
 //
 // CORA.cpp only: the policy of the repository
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -13,6 +17,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,6 +45,7 @@ void resolution_order() {
         check(resolve_tol(std::nullopt, f32) == 1e-6, "a scope beats the dtype");
         check(resolve_tol(1e-3, f64) == 1e-3, "an argument beats a scope");
         check(resolve_tol(0.0, f64) == 0.0, "an argument of 0 is an argument");
+        // the innermost scope wins
         {
             ToleranceScope inner(1e-9);
             check(resolve_tol(std::nullopt, f64) == 1e-9, "the innermost scope wins");
@@ -58,6 +67,7 @@ void scopes_do_not_leak_into_threads() {
     double seen = 0, seen_default = 0;
     std::thread other([&] { seen = resolve_tol(std::nullopt, f64); });
     other.join();
+    // another thread sees the default
     check(seen == default_tol(f64), "another thread does not see the scope");
     set_default_tolerance(1e-4);
     std::thread third([&] {
@@ -79,6 +89,7 @@ void within_tol_of_numbers_and_tensors() {
     check(within_tol(-inf, -inf), "-Inf and -Inf agree");
     check(!within_tol(inf, -inf), "+Inf and -Inf do not agree");
     check(!within_tol(-inf, inf, 1e300), "... whatever the tolerance");
+    // infinities and NaN
     check(!within_tol(inf, 1.0, 1.0), "an infinity and a number do not agree");
     check(!within_tol(std::nan(""), 1.0), "NaN agrees with nothing");
     check(within_tol(1.0, 1.0 + 1e-9, 1e-8), "absolute");
@@ -101,6 +112,7 @@ void within_tol_of_numbers_and_tensors() {
     }
 }
 
+// operations resolve at the entry
 void operations_resolve_at_the_entry() {
     const Interval I(Tensor({{0.0}, {0.0}}), Tensor({{1.0}, {1.0}}));
     const Tensor p = Tensor({{1.0 + 1e-10}, {0.5}});
@@ -122,6 +134,7 @@ void operations_resolve_at_the_entry() {
     check(I.isequal(I), "isequal with the default");
     const Interval K(Tensor({{0.0}, {0.0}}), Tensor({{1.0 + 1e-10}, {1.0}}));
     check(!I.isequal(K) && I.isequal(K, 1e-9), "isequal: the argument relaxes it");
+    // boxes 1e-10 apart
     check(!I.is_intersecting(Interval(Tensor({{1.0 + 1e-10}, {0.0}}), Tensor({{2.0}, {1.0}}))),
           "is_intersecting: boxes 1e-10 apart do not meet by default");
     {
@@ -145,6 +158,9 @@ void operations_resolve_at_the_entry() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     defaults_follow_the_dtype();
     resolution_order();
@@ -153,3 +169,5 @@ int main() {
     operations_resolve_at_the_entry();
     return test::finish("tolerance");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

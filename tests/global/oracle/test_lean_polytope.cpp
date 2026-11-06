@@ -19,7 +19,6 @@
 // ORACLE: contSet/@polytope/convHull_.m
 // ORACLE: contSet/@polytope/enclosePoints.m
 // ORACLE: contSet/@interval/polytope.m
-//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -105,8 +104,7 @@ int main() {
     });
     oracle::run("polytope.center", [](oracle::Random &rnd) {
         const Polytope P(aux_sphere(rnd, 3, 7));
-        // the mean of the vertices is the oracle's box at nearest; a float mean on another backend
-        // sums in another order, so sound mode allows a few ulp around the oracle's box
+        // the mean of the vertices is the oracle's box at nearest; backends sum in another order
         const Tensor mean = P.center("avg");
         const lean::Interval theirs = lean::Polytope(P).center();
         if (oracle::mode() == oracle::Mode::exact)
@@ -127,6 +125,7 @@ int main() {
         oracle::check(P.contains(outside), lean::Polytope(P).contains(outside));
         const Zonotope near(c, rnd.matrix(3, 4) * 0.05), far(c, rnd.matrix(3, 4) * 5.0);
         oracle::check(P.contains(near), lean::Polytope(P).contains(near));
+        // hulls
         oracle::check(P.contains(far), lean::Polytope(P).contains(far));
     });
     oracle::run("polytope.convHull", [](oracle::Random &rnd) {
@@ -147,6 +146,7 @@ int main() {
         const Interval I = rnd.box(3);
         oracle::check(Polytope(I), lean::Polytope::from_interval(I));
     });
+    // the oracle's set contains the polytope
     oracle::run("polytope.conZonotope", [](oracle::Random &rnd) {
         const Polytope P(aux_sphere(rnd, 3, 7));
         // the oracle's set contains the polytope: CORA.cpp's set lies inside its hull

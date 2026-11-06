@@ -1,14 +1,24 @@
 // test_interval_matrix_dependent_terms - IntervalMatrix dependent_terms: r^2 M^2 and I + M r + (M
+//
 // r)^2 / 2
 //
 // CORA: matrixSet/@intervalMatrix/dependentTerms.m
 // PROPERTY: matrixSet/@intervalMatrix/dependentTerms.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -41,8 +51,7 @@ void terms_enclose_the_members(const std::string &b) {
         }
         check(inside, b + ": members inside, r = " + std::to_string(r));
     }
-    // -1/r inside the diagonal entry: the lower end of H is I - 1/2 there (a r + (a r)^2 / 2 >=
-    // -1/2)
+    // -1/r inside the diagonal entry: the lower end of H is I - 1/2 there
     const IntervalMatrix V(Interval(test::matrix({-3}, 1, 1), test::matrix({-1}, 1, 1)));
     check(close(V.dependent_terms(1.0).second.infimum(), std::vector<double>{0.5}, 1e-9),
           b + ": the vertex of the parabola");
@@ -61,6 +70,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         terms_of_a_point_matrix(b);
@@ -69,3 +81,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix dependent_terms");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

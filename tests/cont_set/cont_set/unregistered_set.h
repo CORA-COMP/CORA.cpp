@@ -4,11 +4,18 @@
 // Purpose:  a pair with it has no entry in the table, whatever classes the library implements
 //           later; tests of "no implementation" and of run-time registration use it
 // See also: cora/cont_set/registry.h
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -33,7 +40,10 @@ class UnregisteredSet : public cora::ContSet {
     cora::Set project_impl(const std::vector<int64_t> &) const override { return *this; }
     std::vector<cora::Polygon> vertices_impl() const override { return {{{0.0, 0.0}}}; }
     std::vector<std::vector<cora::Point3>> vertices_3d_impl() const override { return {}; }
+    // the display of the set
     std::string display_impl() const override { return "UnregisteredSet"; }
 };
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

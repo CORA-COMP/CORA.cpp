@@ -9,6 +9,11 @@
 // Crossing:   round_to(dtype) rounds c and G and grows E; gather() returns the nominal part as
 //             a cora::Zonotope and the error as a cora::Interval, exactly or throws
 // See also:   lean/tensor.h, lean/interval.h, lean/request.h, cora/cont_set/zonotope/zonotope.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

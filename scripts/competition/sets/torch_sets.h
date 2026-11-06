@@ -1,4 +1,4 @@
-// The set representations, as tensors.
+// torch_sets - the set representations, as tensors
 //
 // The libtorch counterpart of sets.h, and a different layout: every set carries leading
 // batch dimensions that may be empty, an `Interval` holding `lo`/`hi` of shape `(..., n)`
@@ -10,6 +10,11 @@
 // Everything is an ordinary tensor expression, so autograd differentiates the operations
 // with respect to a set whose `c`, `G`, `lo` or `hi` requires a gradient — on either
 // device, and without a second implementation.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -20,21 +25,12 @@
 #include <cstddef>
 #include <cstdint>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp::tb {
 
-/// `torch::randn` or `torch::rand`, except that a large host draw goes through this
-/// tool's own generator.
-///
-/// Torch's CPU generator is one Mersenne Twister stream, so a draw runs on a single core
-/// however wide the machine is: the 200M normals a batch of a hundred 1000d zonotopes
-/// needs are nearly all of what `generate_random` is timed doing, and on the competition's
-/// worker they take longer than the catalog allows for the whole instance. `Rng` draws
-/// the same distribution across every core at roughly ten times the rate — the catalog
-/// fixes the distribution, not the stream — and it is what the Eigen backend already
-/// uses, so the two backends now agree on more than the shape of the answer.
-///
-/// A device draw is already parallel and goes to torch untouched, as does anything small
-/// enough that setting up to split it would cost more than drawing it.
+/// `torch::randn` or `torch::rand`, except that a large host draw goes through this tool's own
+/// generator, which fills the same distribution across every core.
 inline torch::Tensor draw(torch::IntArrayRef shape, const torch::TensorOptions &opts, bool normal) {
     constexpr int64_t kGrain = 1 << 16;
 
@@ -43,8 +39,7 @@ inline torch::Tensor draw(torch::IntArrayRef shape, const torch::TensorOptions &
     if (!opts.device().is_cpu() || n <= kGrain || opts.dtype() != torch::kDouble)
         return normal ? torch::randn(shape, opts) : torch::rand(shape, opts);
 
-    // One stream for the process, so repeated draws differ; `Rng` splits each draw into
-    // fixed chunks of its own, so the numbers do not depend on the thread count.
+    // One stream for the process; `Rng` draws fixed chunks, independent of the thread count.
     static Rng rng(kSeed);
     torch::Tensor out = torch::empty(shape, opts);
     const auto count = static_cast<std::size_t>(n);
@@ -106,7 +101,8 @@ struct Interval {
 
     Interval mink_sum(const Interval &other) const { return {lo + other.lo, hi + other.hi}; }
 
-    /// Whether each point of `p` `(..., N, n)` lies in its set: a `(..., N)` mask.
+    /// Whether each point of `p` `(..., N, n)` lies in its set: a `(..., N)` mask, exact through
+    /// the facets or by certified alternating projections with an LP for the rest.
     torch::Tensor contains(const torch::Tensor &p) const {
         return torch::logical_and(p >= lo.unsqueeze(-2), p <= hi.unsqueeze(-2)).all(-1);
     }
@@ -138,8 +134,7 @@ struct Zonotope {
         lengths.push_back(m);
         const torch::Tensor length = draw(lengths, opts, false);
         const torch::Tensor norm = g.norm(2, {-2}, true);
-        // Scaled in place: at 1000d over a hundred sets `g` is 1.6 GB, and this operation
-        // is bound by how often that has to cross memory. Nothing here carries a gradient.
+        // Scaled in place: `g` can be 1.6 GB, bound by memory traffic; no gradient is carried.
         return {c, g.mul_(length / norm)};
     }
 
@@ -165,11 +160,11 @@ struct Zonotope {
         return {c + other.c, torch::cat({g, other.g}, -1)};
     }
 
-    /// Whether each point of `p` `(..., N, n)` lies in its set: a `(..., N)` mask.
-    ///
-    /// Exact either way: through the facets while there are few of them, otherwise by
-    /// certified alternating projections with an LP for the points they leave open.
+    /// Whether each point of `p` `(..., N, n)` lies in its set: a `(..., N)` mask, exact through
+    /// the facets while few, else by certified alternating projections plus an LP for the rest.
     torch::Tensor contains(const torch::Tensor &p) const;
 };
 
 } // namespace cora::comp::tb
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

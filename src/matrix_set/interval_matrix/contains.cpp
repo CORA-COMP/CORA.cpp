@@ -1,13 +1,20 @@
 // contains - whether a matrix is in an interval matrix, as CORA's intervalMatrix.contains
 //
+// CORA's default tol is 1e-12, here the repository tolerance.
+//
 // Syntax:   bool b = A.contains(M);   bool b = A.contains(M, "exact", tol);
-// Inputs:   M - matrix (..., rows, cols);  type - "exact" or "approx", the same for numbers
-//           tol - how far an entry may lie outside, absolutely or relative to the bound (as
-//                 within_tol); CORA's default is 1e-12, here the repository tolerance
+// Inputs:   M - matrix (..., rows, cols)
+//           type - "exact" or "approx", the same for numbers
+//           tol - how far an entry may lie outside (as within_tol); default: the repository one
 // Outputs:  b - true if every entry satisfies inf - tol <= M <= sup + tol; for a batch, if all do
 // See also: Interval::contains
 //
 // CORA: matrixSet/@intervalMatrix/contains.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/within_tol.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"

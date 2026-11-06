@@ -1,7 +1,13 @@
 // test_linear_sys_reach_inputs - linear_sys reach with an input set U, against MATLAB CORA, against
+//
 // simulations with constant and piecewise-constant inputs, and for the errors it reports
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cont_dynamics/linear_sys/matlab_reference_inputs.h"
@@ -16,6 +22,10 @@ using test::check;
 using test::throws;
 using namespace test::lin;
 using matlab_reference::InputSystem;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -53,6 +63,7 @@ void matches_matlab_cora(const std::string &b) {
         const ReachSet R =
             sys.reach({.initial_set = in.X0, .input_set = in.U, .t_final = in.t_final()},
                       test::lin::algorithm(algorithm, s.time_step, s.taylor_terms));
+        // the numbers of steps
         check(R.time_interval.size() == 5 && R.time_point.size() == 6,
               what + ": the number of steps");
 
@@ -110,6 +121,7 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
                         worst = std::max(worst, dirs.col(i).dot(P.col(j)) -
                                                     support(R.time_point[k + 1], dirs.col(i)));
             }
+            // a trajectory stays inside the sets
             check(worst <= 1e-9, b + ": " + name(algorithm) + " order " +
                                      std::to_string(zonotope_order) +
                                      ": a trajectory leaves the sets by " + std::to_string(worst));
@@ -138,6 +150,7 @@ void a_zero_input_changes_nothing(const std::string &b) {
 void reports_errors(const std::string &b) {
     const Setup in(matlab_reference::standard_inputs());
     const Zonotope wrong(Tensor::zeros({3, 1}), Tensor::eye(3));
+    // an input set without B is refused
     check(throws([&] {
               LinearSys(in.A).reach({.initial_set = in.X0, .input_set = in.U, .t_final = 1.0},
                                     alg::Standard{.time_step = 0.2, .taylor_terms = 6});
@@ -153,6 +166,9 @@ void reports_errors(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         matches_matlab_cora(b);
@@ -162,3 +178,5 @@ int main() {
     });
     return test::finish("linear_sys reach (inputs)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

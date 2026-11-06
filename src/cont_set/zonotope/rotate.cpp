@@ -1,12 +1,20 @@
 // rotate - the zonotope turned in the plane of two states
 //
+// The two rows are multiplied by [cos(angle) -sin(angle); sin(angle) cos(angle)]; the other
+// states are unchanged.
+//
 // Syntax:   Zonotope Zr = Z.rotate(dims, angle);
-// Inputs:   dims - the two states (0-based, different) that span the plane;  angle - in radians
-// Outputs:  Zr - the zonotope with the center and every generator multiplied, on those two rows,
-//           by [cos(angle) -sin(angle); sin(angle) cos(angle)]; the other states are unchanged
+// Inputs:   dims - the two states (0-based, different) that span the plane
+//           angle - in radians
+// Outputs:  Zr - the zonotope with the center and every generator rotated on those two rows
 // See also: linear_map
 //
 // CORA: contSet/@zonotope/rotate.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

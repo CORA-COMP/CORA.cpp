@@ -1,12 +1,18 @@
 // linear_map - the linear map M * cz of a constrained zonotope, as CORA's mtimes
 //
+// The constraints stay (the factors are the same).
+//
 // Syntax:   cZres = cz.linear_map(M);   cZres = M * cz;
 // Inputs:   M - a matrix (..., m, n) with the dimension n of cz as its columns
-// Outputs:  cZres - exact: the center and the generators map, the constraints stay (the factors
-//           are the same); of dimension m
+// Outputs:  cZres - exact, of dimension m: the center and the generators map
 // See also: plus, Zonotope::linear_map
 //
 // CORA: contSet/@conZonotope/mtimes.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

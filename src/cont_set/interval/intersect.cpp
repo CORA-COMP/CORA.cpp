@@ -1,13 +1,19 @@
 // intersect - the intersection of two boxes, as CORA's interval.and_
 //
+// For a gap in (0, eps] the bounds are ordered; else the empty interval (bounds without columns).
+// For a batch all members must agree on whether they are empty.
+//
 // Syntax:   Interval R = I.intersect(I2);
 // Inputs:   I2 - interval of the dimension of I
-// Outputs:  R - [max(inf, inf2), min(sup, sup2)] if the gap of the bounds is at most eps (for a gap
-//           in (0, eps] the bounds are ordered); else the empty interval (bounds without columns).
-//           For a batch all members must agree on whether they are empty
+// Outputs:  R - [max(inf, inf2), min(sup, sup2)] if the gap of the bounds is at most eps
 // See also: plus, contains
 //
 // CORA: contSet/@interval/and_.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_empty.h"
 #include "cora/cont_set/interval/interval.h"

@@ -1,17 +1,17 @@
 // center - a point near the middle of a polytope, as CORA's polytope.center
 //
+// "chebyshev": the center of the largest ball in the set, from the halfspaces (a linear program;
+// for equalities alone their solution); "avg": the mean of the extreme vertices. R^n gives the
+// origin; the empty set a column without entries (n, 0); a set whose Chebyshev radius is
+// unbounded, or whose equalities leave a freedom, gives NaN. In 1D the middle of the two
+// vertices. Not a batch, except for "avg" of the vertices of a single set.
+//
 // Syntax:   Tensor c = P.center();   Tensor c = P.center("avg");
 // Inputs:   P - polytope;  method - "chebyshev" (default) or "avg"
-// Outputs:  c - a column (n, 1). "chebyshev": the center of the largest ball in the set, from the
-//           halfspaces (a linear program; for equalities alone their solution); "avg": the mean
-//           of the extreme vertices. R^n gives the origin; the empty set a column without entries
-//           (n, 0); a set whose Chebyshev radius is unbounded, or whose equalities leave a
-//           freedom, gives NaN. In 1D the middle of the two vertices. Not a batch, except for
-//           "avg" of the vertices of a single set
+// Outputs:  c - a column (n, 1)
 // See also: interval, Polytope::contains
 //
 // CORA: contSet/@polytope/center.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -97,6 +97,7 @@ std::optional<Row> aux_equalities_only(const HostH &H) {
             if (i == done) continue;
             const double f = M[i][c] / M[done][c];
             for (std::size_t j = 0; j < n; ++j) M[i][j] -= f * M[done][j];
+            // eliminate the pivot column from the other rows
             r[i] -= f * r[done];
         }
         pivot_column.push_back(c);

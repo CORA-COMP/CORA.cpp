@@ -1,12 +1,18 @@
 // center - the center of a box, as CORA's interval.center
 //
+// The whole space gives the origin, an empty interval (n, 0).
+//
 // Syntax:   Tensor c = I.center();
 // Inputs:   -
-// Outputs:  c - (inf + sup) / 2 elementwise, NaN where it is infinite; the origin for the whole
-//           space, and (n, 0) for an empty interval
+// Outputs:  c - (inf + sup) / 2 elementwise, NaN where it is infinite
 // See also: rad, Zonotope::center
 //
 // CORA: contSet/@interval/center.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

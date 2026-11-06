@@ -1,7 +1,6 @@
 // test_zono_bundle_display - ZonoBundle display: the text that describes the bundle
 //
 // CORA: contSet/@zonoBundle/display.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

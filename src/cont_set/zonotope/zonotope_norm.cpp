@@ -1,14 +1,20 @@
 // zonotope_norm - the norm of a point with the zonotope (centered at the origin) as unit ball
 //
+// A linear program; the center of Z is ignored. With a center other than the origin beta is not a
+// valid minimizer and a warning says so. Not a batch.
+//
 // Syntax:   s = Z.zonotope_norm(p);   [s, beta] = Z.zonotope_norm_minimizer(p);
 // Inputs:   p - a point (n, 1)
-// Outputs:  s - (1, 1): min s with G beta = p and |beta|_inf <= s, by a linear program (the
-//           center of Z is ignored), infinity if p is outside the span of the generators;
-//           beta - the minimizer (m, 1), an empty (0, 1) if s is infinite; with a center other
-//           than the origin it is not a valid minimizer and a warning says so. Not a batch
+// Outputs:  s - (1, 1): min s with G beta = p, |beta|_inf <= s; infinity if p is outside the span
+//           beta - the minimizer (m, 1), an empty (0, 1) if s is infinite
 // See also: contains, minnorm
 //
 // CORA: contSet/@zonotope/zonotopeNorm.m
+// CORA authors: Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

@@ -1,4 +1,5 @@
 // test_lean_con_zonotope_certified_enclosure - ConZonotope::contains (a point) and is_full_dim
+//
 // against the CORALean oracle, as proofs that are never contradicted
 //
 // The oracle's answers are sufficient only (`ConZonotope.containsPoint`, `isFullDim`): a true
@@ -7,13 +8,25 @@
 // proof of the oracle must agree with CORA.cpp, and some are proved; the answers are not equal
 // otherwise (a point inside but far from the center is not proved), so there is no ORACLE tag. The
 // sets are zonotopes as constrained zonotopes, in both modes.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/global/oracle/con_zonotope.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -42,6 +55,7 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             const bool theirs = lean::ConZonotope::from_zonotope(lean::Zonotope(Z)).is_full_dim();
             proved += theirs;
+            // the oracle proves the interior
             oracle::check_enclosed(oracle::op_name(), ConZonotope(Z).is_full_dim(),
                                    lean::Certified{theirs, theirs});
         }
@@ -49,3 +63,5 @@ int main() {
     });
     return test::finish("lean con zonotope certified enclosure");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

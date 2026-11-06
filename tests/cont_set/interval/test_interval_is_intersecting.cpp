@@ -1,6 +1,11 @@
 // test_interval_is_intersecting - interval is_intersecting: whether two boxes meet
 //
 // CORA: contSet/@interval/isIntersecting_.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,6 +38,7 @@ void is_intersecting_compares_the_bounds(const std::string &b) {
           b + ": a gap of 1e-9 within tol 1e-8 (CORA's default)");
     check(!I.is_intersecting(Interval(column({2.0 + 1e-9, 0.0}), column({3.0, 1.0})), 0.0),
           b + ": tol 0 is strict");
+    // an empty interval meets nothing
     check(!I.is_intersecting(Interval::empty(2)) && !Interval::empty(2).is_intersecting(I),
           b + ": an empty interval meets nothing");
 }
@@ -70,6 +80,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         is_intersecting_compares_the_bounds(b);
@@ -79,3 +92,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval is_intersecting");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

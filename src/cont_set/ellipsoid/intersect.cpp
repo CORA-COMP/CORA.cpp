@@ -1,14 +1,16 @@
 // intersect - the intersection of an ellipsoid with a point or an ellipsoid, as CORA's and_
 //
+// The ellipsoids are single, not batched. A point is contained up to the machine epsilon. The
+// same when one of the ellipsoids is a point (also the second, which CORA's solver path handles),
+// and the empty ellipsoid when one is empty. The intersection of two ellipsoids that are no
+// points (the SDP-based outer and inner approximations, and the polytope and hyperplane cases) is
+// Error::not_supported.
+//
 // Syntax:   Ellipsoid R = E.intersect(p);   Ellipsoid R = E.intersect(S, mode);
-// Inputs:   p - a point (n, 1);  S - an ellipsoid;  mode - "outer" (default) or "inner"
-//           (single, not batched ellipsoids)
-// Outputs:  R - the point as an ellipsoid with Q = 0 if the ellipsoid contains it up to the
-//           machine epsilon, else the empty ellipsoid; the same when one of the ellipsoids is a
-//           point (also the second, which CORA's solver path handles), and the empty ellipsoid
-//           when one is empty. The intersection of two ellipsoids that are no points (the
-//           SDP-based outer and inner approximations, and the polytope and hyperplane cases) is
-//           Error::not_supported
+// Inputs:   p - a point (n, 1)
+//           S - an ellipsoid
+//           mode - "outer" (default) or "inner"
+// Outputs:  R - the point as an ellipsoid (Q = 0) if the ellipsoid contains it, else the empty one
 // See also: contains, Zonotope::intersect
 //
 // CORA: contSet/@ellipsoid/and_.m

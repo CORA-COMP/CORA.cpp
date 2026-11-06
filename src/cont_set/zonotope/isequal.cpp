@@ -1,19 +1,25 @@
 // isequal - whether a zonotope equals a zonotope, a box or a point, up to a tolerance
 //
+// The centers agree as within_tol, and so do the generators after compact "all" (up to order and
+// sign).
+//
 // Syntax:   res = Z.isequal(S);   res = Z.isequal(S, tol);
 // Inputs:   S - a zonotope, a box or a point (n, 1)
-//           tol - the centers agree as within_tol, and so do the generators after compact "all"
-//                 (up to order and sign); default: the repository tolerance (docs/architecture.md)
+//           tol - the tolerance of the comparison; default: the repository tolerance
 // Outputs:  res - true if the two sets are the same; a different dimension gives false. Not a batch
 // See also: compact, contains
 //
 // CORA: contSet/@zonotope/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/tensor/tolerance.h"
 #include "cora/global/within_tol.h"
-
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 

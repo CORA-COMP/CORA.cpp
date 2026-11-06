@@ -2,8 +2,7 @@
 //
 // CORA: contSet/@conZonotope/plus.m
 // PROPERTY: contSet/@conZonotope/plus.m
-//
-// CORA authors:  Dmitry Grebenyuk, Niklas Kochdumper
+// CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

@@ -1,8 +1,7 @@
 // test_con_zonotope_origin - ConZonotope::origin: the set {0}
 //
 // CORA: contSet/@conZonotope/origin.m
-//
-// CORA authors:  Mark Wetzlinger
+// CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -15,6 +14,7 @@ using test::check;
 using test::close;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 
 // ===========================================  MAIN  =========================================== //
 

@@ -25,8 +25,7 @@ namespace {
 void intersect_strip_known(const std::string &b) {
     const Ellipsoid E(Tensor({{1.0}}));
     const Tensor C({{1.0}});
-    // Gollamudi: the strip |x - 2| <= 3 holds E; the weight is 1e-4, sigma_sq = (1 + 2 lambda)^2,
-    // the shape sigma_sq and the center 2 lambda (CORA divides by sigma_sq and misses x = -1)
+    // Gollamudi: |x - 2| <= 3 holds E; weight 1e-4, sigma_sq = (1 + 2 lambda)^2, center 2 lambda
     const auto [G, sigma_sq] = E.intersect_strip(C, 3.0, column({2.0}));
     const double lambda = 1e-4;
     check(close(Tensor({{sigma_sq}}), {(1 + 2 * lambda) * (1 + 2 * lambda)}, 1e-12),
@@ -39,8 +38,7 @@ void intersect_strip_known(const std::string &b) {
     const auto [same, level] = E.intersect_strip(C, 3.0, column({0.0}), 0.25);
     check(close(same.Q(), E.Q(), 0) && close(same.q(), E.q(), 0) && level == 0.25,
           b + ": Gollamudi: a strip that does not cut returns E and sigma_sq_prev");
-    // Liu with V = bar_V = 1 and y = 1/2, sigma_sq_prev = 1: lambda = 1/2, sigma_sq = 15/16,
-    // center 1/4, shape 15/16 (CORA's [-1/4, 3/4] misses x = 1 of the intersection [-1/2, 1])
+    // Liu, V = bar_V = 1, y = 1/2, sigma_sq_prev = 1: lambda = 1/2, sigma_sq = 15/16, center 1/4
     const Ellipsoid::StripMeasurement sys{Tensor({{1.0}}), Tensor({{1.0}})};
     const auto [L, sigma_liu] = E.intersect_strip(C, sys, column({0.5}), 1.0);
     check(close(Tensor({{sigma_liu}}), {15.0 / 16.0}, 1e-12), b + ": Liu: the level");
@@ -77,8 +75,7 @@ void intersect_strip_property(const std::string &b) {
                   b + ": Gollamudi: the points of E in the strip are in the result");
     }
     check(updated > 0, b + ": Gollamudi: some strip cut an ellipsoid");
-    // Liu: the prior is the level sigma_sq_prev of E, the measurement (y - C x)' V^-1 (y - C x) <=
-    // 1
+    // Liu: the prior is level sigma_sq_prev of E, the measurement (y - C x)' V^-1 (y - C x) <= 1
     for (const double prior : {1.0, 0.5}) {
         for (int k = 0; k < 8; ++k) {
             const Ellipsoid E = test::random_ellipsoid(rng, 3);
@@ -99,6 +96,7 @@ void intersect_strip_property(const std::string &b) {
             if (S.shape()[1] > 0)
                 check(R.Q().numel() > 0 && test::all_inside(R, S, 1e-9),
                       b + ": Liu: the points in both sets are in the result");
+            // the result is not used further
             static_cast<void>(r);
         }
     }
@@ -124,6 +122,7 @@ void checks_and_their_switch() {
           "intersect_strip: V and bar_V are m x m");
     check(test::raises(
               [] {
+                  // a degenerate set is refused
                   Ellipsoid(Tensor::zeros({2, 2}))
                       .intersect_strip(Tensor({{1.0, 0.0}}), 1.0, column({1.0}));
               },

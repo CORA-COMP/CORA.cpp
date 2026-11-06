@@ -1,8 +1,14 @@
 // test_lean_linear_sys - lean::LinearSys::reach: the argument checks, and with the oracle set the
+//
 // enclosure of CORA.cpp's own reachable sets
 //
 // CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet
 // ORACLE)
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/oracle/linear_sys.h"
@@ -12,6 +18,11 @@
 
 using namespace cora;
 using test::throws;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &) {
@@ -54,3 +65,5 @@ int main() {
     });
     return test::finish("lean linearSys");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -6,6 +6,11 @@
 // See also: Zonotope display, src/global/format.h
 //
 // CORA: contSet/@conZonotope/display.m
+// CORA authors: Dmitry Grebenyuk, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "global/format.h"

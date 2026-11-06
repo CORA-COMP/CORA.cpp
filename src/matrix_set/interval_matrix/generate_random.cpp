@@ -2,14 +2,19 @@
 //
 // Syntax:   IntervalMatrix A = IntervalMatrix::generate_random(rng);
 //           A = IntervalMatrix::generate_random(rng, dimension, center, max_radius);
-// Inputs:   rng - random numbers (its seed makes the result repeatable);  dimension - {rows,
-//           cols}, default the shape of center or of max_radius, else each random in 1..10;
-//           center - matrix, default 10 N(0, 1) per entry;  max_radius - a matrix of radii >= 0,
-//           or one number (a 1 x 1 tensor) for all entries, default 10 U[0, 1] per entry
+// Inputs:   rng - random numbers (its seed makes the result repeatable)
+//           dimension - {rows, cols}, default the shape of center or max_radius, else 1..10
+//           center - matrix, default 10 N(0, 1) per entry
+//           max_radius - radii >= 0, or one number for all entries, default 10 U[0, 1] per entry
 // Outputs:  A - the interval matrix of the center and the radii: center +- radius
 // See also: Interval::generate_random
 //
 // CORA: matrixSet/@intervalMatrix/generateRandom.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/rng.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"

@@ -1,13 +1,20 @@
 // boundary_point - where a ray from a point of a zonotope leaves it, as CORA's boundaryPoint
 //
+// t comes from the zonotope norm of dir for the center, from a linear program for another start,
+// and directly for n = 1.
+//
 // Syntax:   x = Z.boundary_point(dir);   x = Z.boundary_point(dir, start);
 // Inputs:   dir - direction, a nonzero column (n, 1)
 //           start - a point of Z the ray starts at (default: the center)
-// Outputs:  x - start + t dir for the largest t that stays in Z: from the zonotope norm of dir for
-//           the center, from a linear program for another start, directly for n = 1. Not a batch
+// Outputs:  x - start + t dir for the largest t that stays in Z; not for a batch
 // See also: contains, support_function
 //
 // CORA: contSet/@zonotope/boundaryPoint.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -44,6 +51,7 @@ double aux_exit_step(const HostZonotope &Z, const std::vector<double> &dir,
     const LinProgResult r = linprog(lp);
     if (r.status != LinProgResult::Status::optimal)
         CORA_FAIL(Error::solver_issue, "boundary_point: the linear program has no solution");
+    // the boundary is at the negated optimum
     return -r.fval;
 }
 

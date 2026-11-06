@@ -1,7 +1,13 @@
 // test_zonotope_rand_point_torch - zonotope rand_point over a batch of sets: each member's points
+//
 // lie in its own set
 //
 // CORA: contSet/@zonotope/randPoint_.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg, Severin Prenitzer
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/backend/torch.h"
@@ -11,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -48,9 +58,14 @@ void batched_rand_point(const torch::TensorOptions &opts, const std::string &whe
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_device([](const torch::TensorOptions &opts, const std::string &where) {
         batched_rand_point(opts, where);
     });
     return test::finish("zonotope rand_point (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

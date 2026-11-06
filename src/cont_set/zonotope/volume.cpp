@@ -1,13 +1,20 @@
 // volume - the volume of a zonotope, exactly or by an upper bound
 //
+// "exact": 2^n times the sum of |det G_S| over the n-subsets S of the generators, taken in
+// blocks; "alamo": 2^n sqrt(det(G G')), a lower bound; "reduce" is an order reduction by 'pca'.
+//
 // Syntax:   v = Z.volume();   v = Z.volume(method);   v = Z.volume("reduce", order);
-// Inputs:   method - "exact" (default): 2^n times the sum of |det G_S| over the n-subsets S of
-//           the generators, taken in blocks; "alamo": 2^n sqrt(det(G G')), a lower bound;
-//           "reduce" (order reduction by 'pca') is not supported;  order - the order of "reduce"
+// Inputs:   method - "exact" (default) or "alamo"; "reduce" is not supported
+//           order - the order of "reduce"
 // Outputs:  v - (..., 1, 1); 0 if the generators do not span the space (rank below n)
 // See also: is_full_dim, interval
 //
 // CORA: contSet/@zonotope/volume_.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"
@@ -87,6 +94,7 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
     const Tensor zero = c_.zeros_like(shape);
     if (m < n) return zero;
     const Tensor deficient = aux_rank_deficient(G_);
+    // the exact or the Gram volume, zero if the generators are deficient
     const Tensor value =
         method == "exact" ? aux_sum_of_determinants(G_) : aux_gram_volume(G_, deficient);
     // 2^n is a power of two: the scaling is exact

@@ -1,6 +1,11 @@
 // test_specification_check - specification check on any set and on a reachable set
 //
 // CORA: specification/@specification/check.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/specification/specification.h"
@@ -8,6 +13,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,8 +46,7 @@ void on_a_reachable_set(const std::string &b) {
     check(Specification::safe_set(Tensor({1.0}), 1.9).first_violation(R.time_interval) == 0,
           b + ": exceeds 1.9 in the first step");
 
-    // The lowest point decays as e^{-t}, so it passes 0.5 at t = 0.69; the first enclosure to
-    // touch that level is reported, and the ones before it are clear.
+    // The lowest point decays as e^{-t}, passing 0.5 at t = 0.69; the first enclosure touching it.
     const Specification reaches_half = Specification::unsafe_set(Tensor({1.0}), 0.5);
     const int hit = reaches_half.first_violation(R.time_interval);
     check(hit >= 4 && hit <= 7, b + ": the flow reaches x <= 0.5 at step " + std::to_string(hit));
@@ -63,6 +71,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         any_contset(b);
@@ -71,3 +82,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("specification check");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

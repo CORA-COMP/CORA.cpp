@@ -1,6 +1,14 @@
 """test_zonotope_maps_and_splits - origin, radius, rank, representsa, project_high_dim, rotate,
+
 quad_map, split, split_first_gen, split_longest_gen, reduce_under_approx and unite of Zonotope, and
-quad_map of Interval, in Python, on numpy and Eigen alone."""
+quad_map of Interval, in Python, on numpy and Eigen alone.
+
+CORA authors: Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper, Tobias Ladner
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@zonotope/origin.m
 # CORA: contSet/@zonotope/radius.m
 # CORA: contSet/@zonotope/rank.m
@@ -33,6 +41,10 @@ import cora
 import numpy as np
 
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 def zonotope(c, G):
     return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
 
@@ -45,6 +57,8 @@ def example():
     """CORA's example of split: the center (-4, 1) and three generators."""
     return zonotope([-4, 1], [[-3, -2, -1], [2, 3, 4]])
 
+
+# ============================================  MAIN  ============================================ #
 
 class Origin(unittest.TestCase):
     def test_origin(self):
@@ -85,6 +99,7 @@ class Measures(unittest.TestCase):
     def test_rank_of_products(self):
         rng = np.random.default_rng(41)
         for n, m, r in ((4, 6, 2), (5, 5, 5), (3, 7, 1)):
+            # rank
             G = rng.standard_normal((n, r)) @ rng.standard_normal((r, m))
             Z = zonotope(np.zeros(n), G)
             self.assertEqual(Z.rank(), r)
@@ -107,6 +122,7 @@ class Measures(unittest.TestCase):
     def test_representsa_errors(self):
         Z = zonotope([0, 0], [[1], [0]])
         with self.assertRaises(cora.errors.WrongValue):
+            # classes that are refused
             Z.representsa("circle")
         for kind in ("conHyperplane", "ellipsoid", "polygon"):
             with self.assertRaises(cora.errors.NotSupported):
@@ -130,6 +146,7 @@ class Embedding(unittest.TestCase):
         np.testing.assert_allclose(R.center, [0, 1, 5], atol=1e-15)
         np.testing.assert_allclose(R.generators, [[0, -2], [1, 0], [2, 0]], atol=1e-15)
         for dims in ([0], [0, 0], [0, 3], [-1, 1]):
+            # rotation with invalid dims
             with self.assertRaises(cora.errors.WrongValue):
                 Z.rotate(dims, 1.0)
 
@@ -154,6 +171,7 @@ class QuadMap(unittest.TestCase):
         Z2 = zonotope([1, -3], [[4, 2], [2, -1]])
         R = Z1.quad_map(self.Q)
         np.testing.assert_allclose(R.center, [102.5, -16.25])
+        # quadratic maps
         np.testing.assert_allclose(R.generators, [[27.5, 35, 95, 110, 125], [-5.75, -9.5, -14, -26, -32]])
         M = Z1.quad_map(Z2, self.Q)
         np.testing.assert_allclose(M.center, [-43, 3])
@@ -177,6 +195,7 @@ class QuadMap(unittest.TestCase):
             Z.quad_map([np.ones((3, 3))])
 
     def test_interval(self):
+        # the quadratic map of a box
         I = cora.Interval(np.array([-1.0]), np.array([1.0]))
         R = I.quad_map([np.array([[2.0]])])
         np.testing.assert_allclose((R.inf, R.sup), ([0.0], [2.0]))
@@ -200,6 +219,7 @@ class Splits(unittest.TestCase):
         np.testing.assert_allclose(upper.generators, [[6, 0], [0, 4.5]])
 
     def test_along_a_generator(self):
+        # a split along a coordinate
         Z = zonotope([0, 0], [[2, 0], [0, 4]])
         lower, upper = Z.split(1, 2)
         np.testing.assert_allclose((lower.center, upper.center), ([0, -2], [0, 2]))
@@ -223,6 +243,7 @@ class Splits(unittest.TestCase):
     def test_pieces_cover_the_set(self):
         rng = np.random.default_rng(91)
         Z = random_zonotope(rng, 3, 4)
+        # the points lie in one half
         points = Z.rand_point(30, cora.Rng(91))
         for first, second in (Z.split(1, 4), Z.split(np.array([1.0, -2.0, 0.5])), Z.split_first_gen(),
                               Z.split_longest_gen()):
@@ -245,6 +266,7 @@ class Splits(unittest.TestCase):
                      lambda: Z.split(np.zeros(2)), lambda: Z.split(*parallel)):
             with self.assertRaises(cora.errors.WrongValue):
                 call()
+        # a batch is refused
         batch = cora.Zonotope.stack([Z, Z])
         for call in (lambda: batch.split(np.ones(2)), lambda: batch.split_first_gen(),
                      lambda: batch.split_longest_gen()):
@@ -270,6 +292,7 @@ class ReduceUnderApprox(unittest.TestCase):
                 self.assertTrue(Z.contains(R, tol=1e-10), name)
 
     def test_nothing_to_reduce(self):
+        # the under-approximation
         Z = zonotope([0, 0], [[1, 0, 2], [0, 0, 1]])
         np.testing.assert_array_equal(Z.reduce_under_approx("yang", 1).generators, [[1, 2], [0, 1]])
 
@@ -294,6 +317,7 @@ class Unite(unittest.TestCase):
             hull = U.interval()
             np.testing.assert_allclose((hull.inf, hull.sup), ([0, 0], [3, 1]), atol=1e-9)
             self.assertTrue(U.contains(A, tol=1e-9) and U.contains(B, tol=1e-9), method)
+        # the union contains the operand
         self.assertTrue((A | B).contains(B, tol=1e-9))
 
     def test_other_operands(self):
@@ -327,4 +351,7 @@ class Unite(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    # run the tests
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

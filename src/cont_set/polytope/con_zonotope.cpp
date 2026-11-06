@@ -1,20 +1,21 @@
 // con_zonotope - the constrained zonotope of a polytope, as CORA's polytope.conZonotope
 //
+// "exact:supportFunc" takes the box around the set (the argument, else interval()) as the
+// zonotope and the rows as constraints with slack factors; "exact:vertices" does so around the
+// box of the vertices, the slack from their extremes (Theorem 1 of Scott et al., Automatica
+// 2016). The empty set gives ConZonotope::empty(n); R^n and any unbounded set are
+// Error::special_error. Not a batch.
+//
 // Syntax:   ConZonotope cz = P.con_zonotope();   cz = P.con_zonotope("exact:vertices");
 //           cz = P.con_zonotope("exact:supportFunc", box);
-// Inputs:   P - bounded polytope;  method - "exact:supportFunc" (default) takes the box around
-//           the set (the argument, else interval()) as the zonotope and the rows as constraints
-//           with slack factors; "exact:vertices" does so around the box of the vertices, the
-//           slack from their extremes (Theorem 1 of Scott et al., Automatica 2016)
-// Outputs:  cz - the same set as a constrained zonotope; the empty set gives
-//           ConZonotope::empty(n); R^n and any unbounded set are Error::special_error. Not a
-//           batch
+// Inputs:   P - bounded polytope
+//           method - "exact:supportFunc" (default) or "exact:vertices"
+// Outputs:  cz - the same set as a constrained zonotope
 // See also: Polytope::interval, ConZonotope::ConZonotope
 //
 // CORA: contSet/@polytope/conZonotope.m
 // CORA: contSet/@polytope/private/priv_conZonotope_supportFunc.m
 // CORA: contSet/@polytope/private/priv_conZonotope_vertices.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -76,6 +77,7 @@ ConZonotope Polytope::con_zonotope(const std::string &method,
     if (method == "exact:vertices") {
         if (!priv_polytope_is_bounded(*this)) aux_unbounded();
         const Rows vertices = priv_polytope_vertices(*this);
+        // the vertices and the constraints give the bounds of the rows
         if (vertices.empty()) return ConZonotope::empty(n);
         const Constraints C = constraints();
         const Tensor V = priv_points_tensor(like, n, vertices);
@@ -90,8 +92,7 @@ ConZonotope Polytope::con_zonotope(const std::string &method,
         aux_unbounded();
     const Constraints C = constraints();
     const Tensor A_all = Tensor::concat({C.A, C.Ae}, 0), b_all = Tensor::concat({C.b, C.be}, 0);
-    // the least value of an inequality's row over the box: the lower bound where the entry is
-    // positive, the upper where it is negative; an equality's offset is its own
+    // the least value of an inequality's row over the box (lower bound where positive, else upper)
     const Tensor lo = B.inf().matrix_transpose(), hi = B.sup().matrix_transpose();
     const Tensor corner = Tensor::where(C.A.less(C.A.zeros_like()), hi, lo);
     const Tensor sigma_inequalities =

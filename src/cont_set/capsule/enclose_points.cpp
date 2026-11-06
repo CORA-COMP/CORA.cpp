@@ -1,16 +1,21 @@
 // enclose_points - a capsule that contains a cloud of points, as CORA's capsule.enclosePoints
 //
+// Radius the largest distance of a point from the segment c - g to c + g. No points give the
+// empty capsule, one point a capsule that is that point. CORA's radius is the largest length of
+// the projection onto the axis, which is |g|, far more; for n = 1 its generator is max(points) -
+// c, which misses the minimum (docs/cora-differences.md)
+//
 // Syntax:   Capsule C = Capsule::enclose_points(points);
 // Inputs:   points - the points as columns (..., n, N)
-// Outputs:  C - center the mean c; generator g the vector from c to the farthest point (the first
-//           of them); radius the largest distance of a point from the segment c - g to c + g.
-//           No points give the empty capsule, one point a capsule that is that point.
-//           CORA's radius is the largest length of the projection onto the axis, which is |g|, far
-//           more; for n = 1 its generator is max(points) - c, which misses the minimum
-//           (docs/cora-differences.md)
+// Outputs:  C - center the mean c, generator g from c to the farthest point (the first of them)
 // See also: Interval::enclose_points, Zonotope::enclose_points
 //
 // CORA: contSet/@capsule/enclosePoints.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "cora/cont_set/capsule/capsule.h"

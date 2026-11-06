@@ -1,6 +1,11 @@
 // priv_stacking - the helpers of the matrix zonotope that reshape and join matrices
 //
 // See also: priv_stacking.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "matrix_set/mat_zonotope/private/priv_stacking.h"
 

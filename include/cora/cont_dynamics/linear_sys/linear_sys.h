@@ -6,10 +6,8 @@
 // the problem (CORA's params) and the algorithm (CORA's options) apart.
 //
 // Syntax:     LinearSys sys(A);   LinearSys sys(A, B, C);
-//             ReachSet R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{.time_step =
-//             0.1}); VerifyResult r = sys.verify({.initial_set = X0, .input_set = U, .t_final = 2},
-//             specs,
-//                                         alg::ReachAvoidZonotope{});
+//             ReachSet R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{});
+//             VerifyResult r = sys.verify(problem, specs, alg::ReachAvoidZonotope{});
 // Operations: reach, output_set, simulate, simulate_random, verify (one file each); the building
 //             blocks of reach correction_matrix_state, correction_matrix_input, expm_remainder,
 //             input_solution; validate (the checks of a problem); the algorithms behind reach and
@@ -17,6 +15,11 @@
 // See also:   cora/cont_dynamics/algorithms.h, cora/cont_dynamics/cont_dynamics.h
 //
 // CORA: contDynamics/@linearSys/linearSys.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -13,6 +13,11 @@
 //
 // CORA: contDynamics/@contDynamics/contDynamics.m
 // CORA: global/classes/@reachSet/reachSet.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

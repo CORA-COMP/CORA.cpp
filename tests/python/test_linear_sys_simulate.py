@@ -1,10 +1,18 @@
-"""test_linear_sys_simulate - LinearSys.simulate and simulate_random in Python."""
+"""test_linear_sys_simulate - LinearSys.simulate and simulate_random in Python.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contDynamics/@contDynamics/simulateRandom.m
 # CORA: contDynamics/@linearSys/simulate.m
 
 import unittest
 
 import numpy as np
+
 
 try:
     import torch
@@ -13,8 +21,13 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 F64 = dict(dtype=torch.float64)
 
@@ -24,6 +37,8 @@ def system(n=3, m=4, seed=0):
     A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
     return A, torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Simulate(unittest.TestCase):
     def test_follows_the_matrix_exponential(self):
@@ -47,6 +62,7 @@ class Simulate(unittest.TestCase):
         As = torch.stack([A, 0.5 * A, A - 0.1 * torch.eye(3, **F64)])
         x0 = cora.Zonotope(c, G).rand_point(4, cora.Rng(2))
         x = cora.LinearSys(As).simulate(x0, time_step=0.1, t_final=0.5)
+        # a batch of systems
         self.assertEqual(tuple(x.shape), (6, 3, 3, 4))
         for b in range(3):
             torch.testing.assert_close(x[:, b], cora.LinearSys(As[b]).simulate(x0, time_step=0.1,
@@ -104,6 +120,7 @@ class SimulateRandom(unittest.TestCase):
     @unittest.skipUnless(torch.cuda.is_available(), "no CUDA device")
     def test_gpu(self):
         A, c, G = system()
+        # simulation on the GPU
         x0 = cora.Zonotope(c.cuda(), G.cuda()).rand_point(5, cora.Rng(1))
         x = cora.LinearSys(A.cuda()).simulate(x0, time_step=0.1, t_final=1.0)
         self.assertEqual(x.device.type, "cuda")
@@ -112,3 +129,5 @@ class SimulateRandom(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

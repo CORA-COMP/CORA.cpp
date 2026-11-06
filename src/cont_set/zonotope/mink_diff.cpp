@@ -1,18 +1,23 @@
 // mink_diff - the Minkowski difference of a zonotope and a zonotope, a box or a point
 //
+// "approx" is the least squares on the facets; "inner" and "exact" (linear programs; exact for
+// two dimensions or when the generators of both are aligned) give Zres + S in Z; "outer" contains
+// the difference. A box is enclosed by a zonotope. "inner:conZonotope" needs ConZonotope,
+// "inner:RaghuramanKoeln" and "outer:scaling" are not supported, nor a minuend that is not full-
+// dimensional. Where CORA returns the empty set, CORA.cpp raises empty_set.
+//
 // Syntax:   Zres = Z.mink_diff(S);   Zres = Z.mink_diff(S, "outer");
-// Inputs:   S - the subtrahend: a zonotope, a box (enclosed by a zonotope, with a warning) or a
-//           point;  method - the generators of Z are scaled by factors alpha: "approx" (default,
-//           least squares on the facets), "inner" and "exact" (linear programs; exact for two
-//           dimensions or when the generators of both are aligned), "outer", "outer:coarse";
-//           "inner:conZonotope" needs ConZonotope, "inner:RaghuramanKoeln" and "outer:scaling"
-//           are not supported. A minuend that is not full-dimensional is not supported
-// Outputs:  Zres - the center c - c2, the generators of Z scaled; "inner" and "exact" give a set
-//           with Zres + S in Z, "outer" one that contains the difference. Where CORA returns the
-//           empty set, CORA.cpp raises empty_set. Not a batch
+// Inputs:   S - the subtrahend: a zonotope, a box (with a warning) or a point
+//           method - "approx" (default), "inner", "exact", "outer" or "outer:coarse"
+// Outputs:  Zres - the center c - c2 and the generators of Z scaled; not a batch
 // See also: plus, contains
 //
 // CORA: contSet/@zonotope/minkDiff.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -107,8 +112,7 @@ Tensor aux_scalings(const std::string &method, const Zonotope &minuend, const Zo
         if (const auto alpha = aux_solve(f, S, b)) return row(*alpha);
         aux_empty("the inner approximation does not exist");
     }
-    // "outer": each offset tightened to the maximum of its row over the polytope; "outer:coarse"
-    // keeps them
+    // "outer": each offset tightened to its row's maximum over the polytope; "outer:coarse" not
     Tensor offsets = K_new;
     if (method == "outer") {
         const HostMatrix H = aux_host(Tensor::concat({C, C.negative()}, 0));

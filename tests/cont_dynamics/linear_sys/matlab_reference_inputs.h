@@ -6,10 +6,17 @@
 //
 // The system is the MATLAB call `linearSys(A, B, [], C)`, the start set `zonotope(c0, G0)`, the
 // input set `zonotope(c_u, GU)`, step size 0.2, Taylor order 6 and five steps.
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #pragma once
 
 #include <vector>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace matlab_reference {
 
@@ -49,6 +56,7 @@ inline const InputSystem &standard_inputs() {
             {1.2916924369356173, -0.19161031612531348, 1.2366933713628587, 3.2331022188421397},
             {1.2161962332094858, -0.1837509040310461, 1.1130145129518556, 3.1643940406039142}};
         s.state_tp = {
+            // the states at the later time points
             {1.3, -0.099999999999999978, 1.6000000000000001, 3},
             {1.3015322020045024, -0.14663010615312744, 1.465184794511178, 3.0612173984069702},
             {1.2763671474625489, -0.1927722564089196, 1.32948236836851, 3.0716163772543403},
@@ -68,6 +76,7 @@ inline const InputSystem &standard_inputs() {
                        {0.6767148687346064, -0.11779158883553048, 0.99128301428451782}};
         return s;
     }();
+    // the inputs of the system
     return inputs;
 }
 
@@ -90,6 +99,7 @@ inline const InputSystem &wrapping_free_inputs() {
             {1.2916924369356173, -0.19161031612531343, 1.3744168607473641, 3.3213759835423322},
             {1.2161962332094858, -0.18375090403104599, 1.2942429244317604, 3.2657323465191608}};
         s.state_tp = {
+            // the states at the later time points
             {1.3, -0.099999999999999978, 1.6000000000000001, 3},
             {1.3015322020045024, -0.14663010615312744, 1.465184794511178, 3.0612173984069702},
             {1.2763671474625486, -0.19277225640891954, 1.3995397464563459, 3.1412852577579518},
@@ -109,7 +119,10 @@ inline const InputSystem &wrapping_free_inputs() {
                        {0.70807438016074231, -0.062111801014582524, 1.1781553170125107}};
         return s;
     }();
+    // the inputs of the system
     return inputs;
 }
 
 } // namespace matlab_reference
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

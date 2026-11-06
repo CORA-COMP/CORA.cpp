@@ -6,6 +6,11 @@ Writes:   coverage/cora-inventory.json: {"cora_commit": <hash>, "groups": {group
 Checks:   --check compares the committed file with the checkout (CORA_DIR or ~/CORA) and is skipped,
           not failed, without one; --against <file> compares `groups` with a file in that format.
 Exit code: 0, or 1 if a comparison differs.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import json
@@ -14,8 +19,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cora_rows  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = ROOT / "coverage" / "cora-inventory.json"
@@ -55,6 +66,8 @@ def differences(a, b):
                   if a.get(g, {}).get(c) != b.get(g, {}).get(c))
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--cora", help="a CORA checkout (default: CORA_DIR, ~/CORA)")
@@ -75,6 +88,7 @@ def main():
               f"inventory: differs from {args.against} in {', '.join(wrong)}")
         status |= bool(wrong)
     if args.check:
+        # with --check the committed file must be current
         wrong = differences(groups, load())
         print("inventory: the committed file is current" if not wrong else
               f"inventory: the committed file differs from {cora} in {', '.join(wrong)}; "
@@ -90,3 +104,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

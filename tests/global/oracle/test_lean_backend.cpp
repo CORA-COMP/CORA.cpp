@@ -7,6 +7,10 @@
 // ORACLE: contSet/@zonotope/plus.m
 // ORACLE: contSet/@zonotope/reduce.m
 // ORACLE: contSet/@contSet/linComb.m
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/oracle.h"
@@ -16,6 +20,11 @@
 
 using namespace cora;
 using test::throws;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope lean_backend("lean");
@@ -46,3 +55,5 @@ int main() {
     }
     return test::finish("lean backend");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

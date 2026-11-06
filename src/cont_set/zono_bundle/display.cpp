@@ -6,7 +6,6 @@
 // See also: Zonotope::display, src/global/format.h
 //
 // CORA: contSet/@zonoBundle/display.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

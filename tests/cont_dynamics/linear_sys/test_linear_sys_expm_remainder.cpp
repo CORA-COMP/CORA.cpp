@@ -1,11 +1,21 @@
 // test_linear_sys_expm_remainder - the error box of the truncated exponential series, a public
+//
 // building block of reach
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -32,8 +42,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_box_shrinks_with_the_terms();
     checks_and_their_switch();
     return test::finish("linear_sys expm_remainder");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

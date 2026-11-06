@@ -1,12 +1,18 @@
 // is_bounded - whether a box has no infinite bound, as CORA's interval.isBounded
 //
+// NaN is not infinite. For a batch, true if every member is bounded.
+//
 // Syntax:   bool b = I.is_bounded();
 // Inputs:   -
-// Outputs:  b - true for an empty interval, else true if no bound is +-Inf (NaN is not infinite);
-//           for a batch, true if every member is bounded
+// Outputs:  b - true for an empty interval, else true if no bound is +-Inf
 // See also: unbounded
 //
 // CORA: contSet/@interval/isBounded.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

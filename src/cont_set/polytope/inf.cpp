@@ -1,13 +1,14 @@
 // inf - the polytope R^n of n dimensions, as CORA's polytope.Inf
 //
+// CORA also stores its 2^n vertices at infinity for n <= 8; vertices are not ported, so none are
+// held.
+//
 // Syntax:   Polytope P = Polytope::inf(n);
 // Inputs:   n - dimension, n >= 0 (default 0)
-// Outputs:  P - the polytope without constraints, which every point satisfies. CORA also stores
-//           its 2^n vertices at infinity for n <= 8; vertices are not ported, so none are held
+// Outputs:  P - the polytope without constraints, which every point satisfies
 // See also: empty, Polytope::box
 //
 // CORA: contSet/@polytope/Inf.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

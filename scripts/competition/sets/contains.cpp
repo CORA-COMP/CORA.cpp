@@ -1,10 +1,15 @@
-// Exact point containment in a zonotope.
+// contains - exact point containment in a zonotope
 //
 // An LP in CORA; here it is exact without one on all but a handful of points. Two paths,
 // the ones CORA.py and CORA.julia take: through the facets while there are few of them,
 // otherwise by certified alternating projections, with the LP for what neither settles.
 //
 // Each set of a batch is handled on its own, so the batch is one parallel loop.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/threads.h"
 #include "lp.h"
@@ -15,7 +20,12 @@
 #include <limits>
 #include <vector>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// Most facet normals `C(m, n-1)` for which containment goes through the facets; above it,
@@ -68,10 +78,8 @@ void settle_by_lp(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::Matri
         if (open[static_cast<std::size_t>(k)]) out[k] = contains_lp(g, r.col(k), tol) ? 1 : 0;
 }
 
-/// A full-dimensional zonotope is the intersection of the slabs
-/// `|h'(x - c)| <= sum_j |h'g_j|`, one for each `n - 1` generators whose normal `h` — their
-/// generalized cross product — is nonzero. A zonotope whose normals all vanish is flat and
-/// goes to the LP instead.
+/// A full-dimensional zonotope is the intersection of the slabs |h'(x - c)| <= sum_j |h'g_j|, one
+/// for each n - 1 generators with a nonzero normal h; a flat zonotope goes to the LP.
 void by_facets(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::MatrixXd &r,
                const std::vector<std::vector<Index>> &subsets, std::uint8_t *out) {
     const Index n = g.rows(), points = r.cols();
@@ -128,19 +136,8 @@ void by_facets(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::MatrixXd
         out[k] = (projected.col(k).array() <= reach.array()).all() ? 1 : 0;
 }
 
-/// `p` is in the zonotope iff the affine set `A = {b | G b = r}` meets `[-1, 1]^m`.
-///
-/// Alternating projections between `A` and the shrunk box `[-s, s]^m` find a `b` in `A`
-/// with `||b||_inf <= 1` within a few iterations for every point well inside, which proves
-/// containment; a gap `u` between the two sets gives a direction `d` that proves the
-/// opposite if `d'r > ||G'd||_1`. The shrunk box is what makes interior points converge
-/// fast: its intersection with `A` has slack, where `[-1, 1]^m` would only be approached
-/// asymptotically. A point neither proves in `kIterations` goes to the exact LP; in the
-/// dimensions this path serves, hardly any point lies that close to the boundary.
-///
-/// With `G' = Q R` (thin QR, `G` of full row rank), projecting onto `A` is `b - Q Q'b + b0`
-/// with the least-norm solution `b0 = Q R^-T r`, and `d = R^-1 Q'u` gives `d'r = (Q'u)'w`
-/// and `G'd = Q Q'u` without a solve.
+/// `p` is in the zonotope iff the affine set A = {b | G b = r} meets [-1, 1]^m: alternating
+/// projections between A and a shrunk box prove containment or, by a gap, the opposite.
 void by_projection(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::MatrixXd &r,
                    std::uint8_t *out) {
     const Index n = g.rows(), m = g.cols(), points = r.cols();
@@ -197,11 +194,13 @@ void by_projection(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::Matr
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index points) {
     const Index n = s.dim(), m = s.m, batch = s.batch();
     Mask out(static_cast<std::size_t>(points * batch));
-    // Fewer generators than dimensions is a flat zonotope: no facet normals to speak of
-    // and no full-row-rank QR, so the LP is the only exact answer left.
+    // Fewer generators than dimensions: no facet normals or full-row-rank QR, so the LP.
     const bool flat = m < n;
     const bool facets = !flat && binomial(m, n - 1) <= kMaxFacetNormals;
     const auto subsets =
@@ -225,3 +224,5 @@ Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index poin
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

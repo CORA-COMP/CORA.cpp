@@ -1,8 +1,14 @@
 // test_zonotope_representsa - zonotope representsa: whether a zonotope is also a set of another
+//
 // type
 //
 // CORA: contSet/@zonotope/representsa_.m
 // CORA: contSet/@contSet/representsa.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "testing.h"
@@ -10,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,6 +44,7 @@ void points_and_the_origin(const std::string &b) {
 }
 
 void intervals_parallelotopes_and_capsules(const std::string &b) {
+    // parallelotopes and capsules
     const Zonotope box = zonotope({0, 0}, Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     const Zonotope tilted = zonotope({0, 0}, Tensor({{1.0, 0.0}, {1.0, 2.0}}));
     const Zonotope hexagon = zonotope({0, 0}, Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
@@ -54,6 +65,7 @@ void intervals_parallelotopes_and_capsules(const std::string &b) {
 
 void sets_that_every_zonotope_is(const std::string &b) {
     const Zonotope Z = zonotope({0, 0}, Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
+    // classes a zonotope represents
     for (const char *type : {"zonotope", "conZonotope", "polytope", "polyZonotope", "zonoBundle",
                              "conPolyZono", "levelSet", "convexSet"})
         check(Z.representsa(type), b + ": " + type);
@@ -79,6 +91,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         points_and_the_origin(b);
@@ -88,3 +103,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope representsa");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

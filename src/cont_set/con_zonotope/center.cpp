@@ -1,14 +1,20 @@
 // center - a point of the constrained zonotope near its middle, as CORA's conZonotope.center
 //
+// The Chebyshev center is taken over the factors {|x|_inf <= 1, A x = b} (in the null space of A
+// if the set is full-dimensional); an empty set gives a column without entries (n, 0). Not a
+// batch if there are constraints.
+//
 // Syntax:   Tensor c = cz.center();
 // Inputs:   -
-// Outputs:  c - the offset c without constraints; else c + G x with x the Chebyshev center of the
-//           factors {|x|_inf <= 1, A x = b} (in the null space of A if the set is
-//           full-dimensional); a column without entries (n, 0) for an empty set. Not a batch if
-//           there are constraints
+// Outputs:  c - the offset c without constraints; else c + G x with x the Chebyshev center
 // See also: interval, is_full_dim
 //
 // CORA: contSet/@conZonotope/center.m
+// CORA authors: Niklas Kochdumper, Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 

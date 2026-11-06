@@ -1,13 +1,19 @@
 // interval - the interval hull of a constrained zonotope, as CORA's interval(cz)
 //
+// Without constraints the box of the zonotope, else the exact range of every coordinate by two
+// linear programs (the empty box for an empty set). Not a batch if there are constraints.
+//
 // Syntax:   Interval I = cz.interval();
 // Inputs:   -
-// Outputs:  I - the smallest box containing the set: without constraints the box of the zonotope,
-//           else the exact range of every coordinate by two linear programs (the empty box for an
-//           empty set). Not a batch if there are constraints
+// Outputs:  I - the smallest box containing the set
 // See also: center, Zonotope::interval
 //
 // CORA: contSet/@conZonotope/interval.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 

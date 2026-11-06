@@ -6,6 +6,11 @@
 // See also: is_full_dim, Zonotope::is_bounded
 //
 // CORA: contSet/@conZonotope/isBounded.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 

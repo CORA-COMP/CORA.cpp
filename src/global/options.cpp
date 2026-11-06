@@ -1,9 +1,15 @@
 // options - the closest name to a mistyped option, for the messages of the checks
 //
 // Syntax:   std::string hint = did_you_mean("time_stp", {"time_step", "t_final"});
-// Inputs:   name - what was given;  candidates - the names there are
+// Inputs:   name - what was given
+//           candidates - the names there are
 // Outputs:  hint - " (did you mean 'time_step'?)", or "" if no candidate is close
 // See also: cora/global/options.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/options.h"
 

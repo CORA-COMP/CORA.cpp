@@ -7,15 +7,24 @@
 // Syntax:   build/examples/cpp/example_linear_reach_02_algorithms
 // Outputs:  the extent of every enclosure along x1, for both algorithms
 // See also: example_linear_reach_01_5dim
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 
 #include <iomanip>
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Parameters ------------------------------------------------------------------------------

@@ -1,12 +1,18 @@
 // less_equal - whether a box lies in another, as CORA's interval.le
 //
+// For a batch, true if all members do.
+//
 // Syntax:   bool b = I.less_equal(I2);   bool b = I <= I2;
 // Inputs:   I2 - interval of the dimension of I
-// Outputs:  b - true if inf2 <= inf and sup <= sup2 in every coordinate (I is a subset of I2); for
-//           a batch, true if all members do
+// Outputs:  b - true if inf2 <= inf and sup <= sup2 in every coordinate (I is a subset of I2)
 // See also: less, isequal, contains
 //
 // CORA: contSet/@interval/le.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

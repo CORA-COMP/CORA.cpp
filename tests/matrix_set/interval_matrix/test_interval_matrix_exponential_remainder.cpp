@@ -1,8 +1,14 @@
 // test_interval_matrix_exponential_remainder - IntervalMatrix exponential_remainder: the series
+//
 // tail
 //
 // CORA: matrixSet/@intervalMatrix/exponentialRemainder.m
 // PROPERTY: matrixSet/@intervalMatrix/exponentialRemainder.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
@@ -12,6 +18,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -49,6 +59,7 @@ void remainder_encloses_the_tail(const std::string &b) {
     check(A.exponential_remainder(8).interval().sup().max().item() <
               E.interval().sup().max().item(),
           b + ": a higher order has a smaller remainder");
+    // a NaN matrix has an infinite remainder
     const IntervalMatrix not_a_number(
         Tensor::from_data({std::numeric_limits<double>::quiet_NaN(), 0, 0, 0}, {2, 2}));
     check(not_a_number.exponential_remainder(3).interval().sup().min().item() ==
@@ -76,6 +87,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         remainder_by_hand(b);
@@ -84,3 +98,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix exponential_remainder");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

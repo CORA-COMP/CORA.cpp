@@ -1,16 +1,26 @@
 // test_lean_interval_minkowski_difference - Interval::minkowski_difference against the CORALean
+//
 // oracle (its `minkDiff`)
 //
 // The oracle's difference is an inner approximation (the lower bound rounded up, the upper one
 // down), so in the sound mode the oracle's box lies in CORA.cpp's, not the other way round.
 //
 // ORACLE: contSet/@interval/minkDiff.m
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -31,3 +41,5 @@ int main() {
     });
     return test::finish("lean interval minkowski_difference");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

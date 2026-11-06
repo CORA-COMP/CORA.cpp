@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@conZonotope/convHull_.m
 // PROPERTY: contSet/@conZonotope/convHull_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -33,6 +42,7 @@ void convex_hull_known(const std::string &b) {
     check(
         close(A.convex_hull(Interval(column({-2.0}), column({-1.0}))).interval().inf(), {-2}, 1e-9),
         b + ": a box");
+    // hull with a zonotope
     check(
         close(A.convex_hull(Zonotope(column({3.0}), Tensor({{1.0}}))).interval().sup(), {4}, 1e-9),
         b + ": a zonotope");
@@ -99,10 +109,14 @@ void checks_and_their_switch() {
           "convex_hull: a list of other dimensions");
     const Tensor on = A.convex_hull(A).A();
     ChecksScope off(false);
+    // the same with the checks off
     check(close(A.convex_hull(A).A(), on, 0), "convex_hull: the same with the checks off");
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -113,3 +127,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("con_zonotope convex_hull");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

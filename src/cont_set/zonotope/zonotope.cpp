@@ -1,11 +1,17 @@
 // zonotope - the constructor of a zonotope, checked, as CORA's zonotope constructor
 //
 // Syntax:   Zonotope Z(c, G);
-// Inputs:   c - center, a column (..., n, 1);  G - generators (..., n, m), of the backend of c
+// Inputs:   c - center, a column (..., n, 1)
+//           G - generators (..., n, m), of the backend of c
 // Outputs:  Z - the zonotope {c + G b | |b|_inf <= 1}
 // See also: generate_random, Interval::Interval
 //
 // CORA: contSet/@zonotope/zonotope.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"

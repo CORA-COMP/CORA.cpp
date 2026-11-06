@@ -1,7 +1,7 @@
 """test_con_zonotope - the ConZonotope class in Python: constructors, queries and set operations
 
-CORA authors:  Dmitry Grebenyuk, Niklas Kochdumper, Lukas Koller, Adrian Kulmburg, Mark Wetzlinger,
-               Tobias Ladner, Matthias Althoff, Ivan Brkan
+CORA authors: Dmitry Grebenyuk, Niklas Kochdumper, Lukas Koller, Adrian Kulmburg, Mark Wetzlinger,
+              Tobias Ladner, Matthias Althoff, Ivan Brkan
 Authors:       Claude Sonnet 5.5
 Written:       04-November-2026
 Last update:   ---
@@ -73,6 +73,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -116,6 +117,9 @@ def sample(cZ, rng, count):
 
 # -===========================================  MAIN  ===========================================- #
 
+
+# ============================================  MAIN  ============================================ #
+
 class ConZonotope(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -137,6 +141,7 @@ class ConZonotope(unittest.TestCase):
         from_zonotope = cora.ConZonotope(cora.Zonotope(np.array([1.0, 2.0]), np.eye(2)))
         np.testing.assert_array_equal(from_zonotope.generators, np.eye(2))
         from_box = cora.ConZonotope(cora.Interval(np.array([0.0, 1.0]), np.array([2.0, 5.0])))
+        # a box as a constrained zonotope
         np.testing.assert_array_equal(from_box.c, [1.0, 3.0])
         np.testing.assert_array_equal(from_box.generators, [[1.0, 0.0], [0.0, 2.0]])
         self.assertIn("constrained zonotope", repr(S))
@@ -159,6 +164,7 @@ class ConZonotope(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             cora.ConZonotope.empty(-1)
 
+    # center and interval
     def test_center_interval_and_is_full_dim(self):
         S = segment()
         np.testing.assert_allclose(S.center, [0.5, 0.5], atol=1e-9)
@@ -195,6 +201,7 @@ class ConZonotope(unittest.TestCase):
     def test_cart_prod_and_intersect(self):
         A = con_zonotope([1.0], [[2.0]], [[1.0]], [0.5])
         P = A.cart_prod(con_zonotope([3.0, 4.0], np.eye(2)))
+        # Cartesian products
         np.testing.assert_array_equal(P.c, [1.0, 3.0, 4.0])
         np.testing.assert_array_equal(P.A, [[1.0, 0.0, 0.0]])
         self.assertEqual(A.cart_prod(np.array([9.0])).dim, 2)
@@ -216,6 +223,7 @@ class ConZonotope(unittest.TestCase):
             a.intersect(con_zonotope([1.0, 2.0], [[1.0], [1.0]]))
 
     def test_enclose_and_convex_hull(self):
+        # enclose with a matrix and a vector
         A = con_zonotope([0.0], [[1.0]])
         R = A.enclose(np.array([[2.0]]), np.array([4.0]))
         np.testing.assert_array_equal(R.c, [2.0])
@@ -237,6 +245,7 @@ class ConZonotope(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             a.convex_hull(b, "outer")
 
+    # contains points
     def test_contains(self):
         S = segment()
         self.assertTrue(S.contains(np.array([0.5, 0.5])))
@@ -258,6 +267,7 @@ class ConZonotope(unittest.TestCase):
     def test_cubic_map(self):
         T = [[np.array([[0.0, 1.0], [0.0, 0.0]]), np.zeros((2, 2))]]
         plain = con_zonotope([1.0, 2.0], np.eye(2))
+        # the cubic map
         expected = cora.Zonotope(np.array([1.0, 2.0]), np.eye(2)).cubic_map(T)
         np.testing.assert_array_equal(plain.cubic_map(T).generators, expected.generators)
         constrained = con_zonotope([1.0, 2.0], np.eye(2), [[1.0, 1.0]], [0.5])
@@ -279,6 +289,7 @@ class ConZonotope(unittest.TestCase):
         np.testing.assert_allclose(R.b, [0.5], atol=1e-15)
         np.testing.assert_allclose(R.interval().inf, [0.4, -1.0], atol=1e-9)
         self.assertEqual(cZ.intersect_strip(C, phi, y).A.shape, (1, 3))
+        # strip intersection by method
         self.assertEqual(cZ.intersect_strip(C, phi, y, "alamo-FRad").A.shape, (1, 3))
         observer = {"E": np.eye(2), "F": np.ones((1, 1)), "A": np.eye(2), "C": np.array([[1.0, 0.0]])}
         self.assertEqual(cZ.intersect_strip(C, phi, y, observer).dim, 2)
@@ -300,6 +311,7 @@ class ConZonotope(unittest.TestCase):
         np.testing.assert_allclose(u, [[-0.5, -0.5]], atol=1e-12)
         np.testing.assert_allclose(bu, [[-0.5, -0.5]], atol=1e-12)
         e = cora.ConZonotope.approximate_bounds(c, G, A, b, method="exact")
+        # approximate bounds
         np.testing.assert_allclose(e[0], l, atol=1e-9)
         wide = cora.ConZonotope.approximate_bounds(c, G, A, b, dr=np.full((1, 2), 0.25))
         np.testing.assert_allclose(wide[0], [[-1.25, -1.25]], atol=1e-12)
@@ -321,6 +333,7 @@ class ConZonotope(unittest.TestCase):
         np.testing.assert_array_equal(R.A, [[1.0, 1.0, 0.0], [0.0, 0.0, 4.0]])
         np.testing.assert_array_equal((a + s).b, [1.0, 1.0])
         np.testing.assert_array_equal((a + np.array([1.0, 1.0])).c, [1.0, 1.0])
+        # sums with points and sets
         np.testing.assert_array_equal((np.array([1.0, 1.0]) + a).c, [1.0, 1.0])
         np.testing.assert_array_equal((a - np.array([1.0, 1.0])).c, [-1.0, -1.0])
         self.assertEqual(a.plus(cora.Zonotope(np.zeros(2), np.eye(2))).generators.shape, (2, 4))
@@ -342,6 +355,7 @@ class ConZonotope(unittest.TestCase):
         self.assertTrue(total.contains(sample(A, rng, 10) + sample(B, rng, 10), tol=1e-7))
         self.assertEqual(A.linear_map(np.ones((2, 3))).dim, 2)
 
+    # projection, lift and reduce
     def test_project_lift_and_reduce(self):
         a = con_zonotope([1.0, 2.0, 3.0], [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]], [[1.0, 1.0]], [0.5])
         P = a.project([2, 0])
@@ -362,6 +376,7 @@ class ConZonotope(unittest.TestCase):
             many.reduce(1, "pca")
         with self.assertRaises(cora.errors.WrongValue):
             many.reduce(0)
+        # reduce keeps the dimension
         rng = np.random.default_rng(52)
         A = random_set(rng, 2, 7, 2)
         R = A.reduce(2)
@@ -383,6 +398,7 @@ class ConZonotope(unittest.TestCase):
         image = np.vstack([np.sum(x * (Qi @ x), axis=0) for Qi in Q])
         self.assertTrue(A.quad_map(Q).contains(image, tol=1e-7))
         cross = np.vstack([np.sum(x * (Qi @ y), axis=0) for Qi in Q])
+        # quadratic maps and rescale
         self.assertTrue(A.quad_map(B, Q).contains(cross, tol=1e-7))
         a = con_zonotope([0.0, 0.0], np.eye(2), [[1.0, 1.0]], [1.5])
         for method in ("exact", "iter"):
@@ -404,6 +420,7 @@ class ConZonotope(unittest.TestCase):
         self.assertFalse(S.representsa("zonotope"))
         self.assertFalse(S.representsa("emptySet"))
         self.assertTrue(con_zonotope([0.0], [[1.0]], [[1.0]], [3.0]).representsa("emptySet"))
+        # representsa
         self.assertTrue(cora.ConZonotope.origin(2).representsa("origin"))
         with self.assertRaises(cora.errors.NotSupported):
             box.representsa("capsule")
@@ -424,6 +441,7 @@ class ConZonotope(unittest.TestCase):
         misses = cora.Interval(np.array([0.6, 0.6]), np.array([2.0, 2.0]))
         self.assertTrue(S.is_intersecting(meets))
         self.assertFalse(S.is_intersecting(misses))
+        # intersection
         self.assertTrue(S.is_intersecting(misses, "approx"))
         self.assertTrue(S.is_intersecting(np.array([0.5, 0.5])))
         self.assertFalse(S.is_intersecting(S.plus(np.array([2.0, 0.0]))))
@@ -445,6 +463,7 @@ class ConZonotope(unittest.TestCase):
         right = con_zonotope([2.0, 0.0], np.eye(2))
         u = left.unite(right)
         self.assertEqual(u.A.shape[0], 0)
+        # union
         self.assertTrue(u.contains(np.array([0.0, 0.0])))
         self.assertTrue(left.unite([right, left]).contains(np.array([2.0, 0.0])))
         self.assertTrue(left.unite(np.array([5.0, 5.0])).contains(np.array([5.0, 5.0])))
@@ -466,6 +485,7 @@ class ConZonotope(unittest.TestCase):
     def test_properties_on_random_sets(self):
         rng = np.random.default_rng(41)
         for _ in range(3):
+            # random sets stay in the box
             A = random_set(rng, 3, 5, 2)
             points = sample(A, rng, 40)
             box = A.interval()
@@ -486,6 +506,7 @@ class ConZonotope(unittest.TestCase):
             M = rng.standard_normal((2, 3))
             self.assertEqual(A.con_intersect(random_set(rng, 2, 3, 1), M).dim, 3)
             R = A.enclose(rng.standard_normal((3, 3)), np.array([1.0, -2.0, 0.5]))
+            # enclose and compact
             self.assertTrue(R.contains(points, tol=1e-7))
             self.assertEqual(A.compact().generators.shape, A.generators.shape)
 

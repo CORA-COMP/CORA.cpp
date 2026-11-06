@@ -6,6 +6,11 @@
 // See also: convex_hull
 //
 // CORA: contSet/@interval/enclosePoints.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

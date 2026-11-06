@@ -8,12 +8,22 @@ Writes:   coverage/coralean-status.json: {"coralean_commit": <hash>, "rows": {"g
           the order of its table. CORALean can publish the same file with its releases; this script
           runs on demand, not in CI.
 Exit code: 0, or 1 for a checkout without the tables.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "coverage" / "coralean-status.json"
@@ -38,6 +48,8 @@ def rows_of(table, group, cls):
     return out
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     if len(sys.argv) != 2 or not (Path(sys.argv[1]) / "references" / "coverage").is_dir():
         print(__doc__)
@@ -57,3 +69,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

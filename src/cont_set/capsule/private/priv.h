@@ -4,6 +4,11 @@
 //
 // Syntax:   Tensor d = priv_axis_distance(c, g, p);   bool ok = priv_all(priv_at_most(a, b, tol));
 // See also: capsule.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

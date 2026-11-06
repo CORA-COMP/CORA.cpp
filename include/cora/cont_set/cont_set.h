@@ -24,6 +24,11 @@
 // CORA: contSet/@contSet/norm.m
 // CORA: contSet/@contSet/norm_.m
 // CORA: contSet/@contSet/enclose.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 
@@ -168,10 +173,8 @@ class ContSet {
     Set times(const Tensor &factor) const;
     Set times(double factor) const;
 
-    /// The set without redundancy (CORA's compact): method names a variant of the class (default:
-    /// the class's own; a zonotope: "zeros", "all", "aligned"), tol relaxes "is zero" and "is
-    /// parallel" (default: the repository tolerance). A box, the empty set and the whole space
-    /// are returned as they are; Error::noops for a class without it.
+    /// The set without redundancy (CORA's compact): method names a variant of the class, tol
+    /// relaxes "is zero" and "is parallel". Error::noops for a class without it.
     Set compact(const std::optional<std::string> &method = std::nullopt,
                 Tol tol = std::nullopt) const;
 
@@ -284,10 +287,8 @@ Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t
 
 // Details -----------------------------------------------------------------------------------------
 
-/// The lift of a set that cannot grow (a zonotope has no unbounded new dimensions) is a
-/// permutation: the state of position j of the lifted set is state source[j]. The plan holds what
-/// refuses the call, if anything (project_high_dim_refusal, positions that are not a permutation of
-/// all N), or else the source.
+/// The lift of a set that cannot grow is a permutation: the state of position j of the lifted set
+/// is state source[j]; refusal holds what refuses the call, if anything.
 struct LiftPlan {
     Refusal refusal;
     std::vector<int64_t> source;

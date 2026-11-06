@@ -3,19 +3,20 @@
 // The Chebyshev center, boundedness, membership in a hull and the extreme points of a cloud are
 // programs too.
 //
+// The optimum is of a linear function; the center that of the largest ball; the answers also say
+// whether a point is a convex combination and the indices of the extreme points.
+//
 // Syntax:   Support s = priv_support(H, direction, true);   bool empty = priv_is_empty(H);
 //           bool bounded = priv_is_bounded(H);   auto c = priv_chebyshev_center(H);
 //           bool in = priv_in_hull(points, x);   auto kept = priv_extreme_points(points);
-// Inputs:   H - a single polytope in halfspace form;  points - rows of n numbers
-// Outputs:  the optimum of a linear function, whether the set has a point, whether it is bounded,
-//           the center of its largest ball, whether a point is a convex combination, the indices
-//           of the extreme points
+// Inputs:   H - a single polytope in halfspace form
+//           points - rows of n numbers
+// Outputs:  R - the optimum, whether the set has a point or is bounded, a center, extreme points
 // See also: priv_compact, priv_vertices, linprog
 //
 // CORA: contSet/@polytope/private/priv_supportFunc.m
 // CORA: contSet/@polytope/private/priv_representsa_emptySet.m
 // CORA: contSet/@polytope/private/priv_feasiblePoint.m
-//
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

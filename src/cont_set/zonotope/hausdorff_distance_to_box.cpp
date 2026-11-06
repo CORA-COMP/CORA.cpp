@@ -1,14 +1,20 @@
 // hausdorff_distance_to_box - a bound on the Hausdorff distance between a zonotope and its box
 //
+// "exact": the largest gap of the support functions of the box and of Z over about 10000
+// directions on a sphere grid; "naive" (the default above): the norm of the radius of the box;
+// "wgreedy" and "wopt": bounds from the generators; "ell" is not supported.
+//
 // Syntax:   dH = Z.hausdorff_distance_to_box();   dH = Z.hausdorff_distance_to_box("wopt");
-// Inputs:   method - "exact" (CORA's default for dim <= 3): the largest gap of the support
-//                    functions of the box and of Z over about 10000 directions on a sphere grid;
-//                    "naive" (the default above): the norm of the radius of the box;
-//                    "wgreedy" and "wopt": bounds from the generators; "ell" is not supported
+// Inputs:   method - "exact" (CORA's default for dim <= 3), "naive", "wgreedy" or "wopt"
 // Outputs:  dH - the number, (..., 1, 1); 2-norm for "naive", "wgreedy" and "wopt"
 // See also: interval, box
 //
 // CORA: contSet/@zonotope/dH2box.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/tensor/tolerance.h"
@@ -50,6 +56,7 @@ std::vector<double> aux_directions(int64_t n, int64_t sections) {
     }
     std::vector<double> flat;
     for (const std::vector<double> &d : dirs) flat.insert(flat.end(), d.begin(), d.end());
+    // the directions as one flat list
     return flat;
 }
 

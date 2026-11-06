@@ -1,14 +1,15 @@
 // priv_distance - the Euclidean distance of a point to a polytope, by a least-distance program
 //
+// The point's shift z = y - x is the shortest vector with G z >= h, which Lawson and Hanson
+// (Solving Least Squares Problems, ch. 23) reduce to nonnegative least squares.
+//
 // Syntax:   double d = priv_distance_to_polytope(H, x);
-// Inputs:   H - a single nonempty polytope in halfspace form;  x - a point
-// Outputs:  d - min over y in H of |y - x|_2: the point's shift z = y - x is the shortest vector
-//           with G z >= h, which Lawson and Hanson (Solving Least Squares Problems, ch. 23) reduce
-//           to nonnegative least squares
+// Inputs:   H - a single nonempty polytope in halfspace form
+//           x - a point
+// Outputs:  d - min over y in H of |y - x|_2
 // See also: Polytope::hausdorff_distance, priv_linear_programs
 //
 // CORA: contSet/@polytope/hausdorffDist.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -56,6 +57,7 @@ Row aux_least_squares(const Columns &E, const std::vector<std::size_t> &passive,
             continue;
         }
         R[j][j] = norm;
+        // normalize the column, then keep it as a column of Q
         for (double &t : v) t /= norm;
         q.push_back(v);
     }

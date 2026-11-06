@@ -1,12 +1,18 @@
 // interval - the interval hull of a capsule, as CORA's capsule.interval
 //
+// The empty box for the empty capsule. A batch with an empty member has no box and is refused.
+//
 // Syntax:   Interval I = C.interval();
 // Inputs:   -
-// Outputs:  I - the box c +- (|g| + r): the smallest one containing the capsule; the empty box
-//           for the empty capsule. A batch with an empty member has no box and is refused
+// Outputs:  I - the box c +- (|g| + r): the smallest one containing the capsule
 // See also: center, Zonotope::interval
 //
 // CORA: contSet/@capsule/interval.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "cora/cont_set/capsule/capsule.h"

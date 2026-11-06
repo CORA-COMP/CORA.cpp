@@ -7,6 +7,10 @@
 // See also: cont_set/empty_set/empty_set.h, cont_set/fullspace/fullspace.h
 //
 // CORA.cpp only: CORA's emptySet and fullspace each store their dimension themselves.
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

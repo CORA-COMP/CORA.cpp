@@ -8,8 +8,12 @@
 //             (mtimes is matmul, mpower is matrix_power, intervalMatrix is interval_matrix)
 // Crossing:   gather() returns the nominal part as a cora::MatZonotope and the error as an
 //             interval, exactly or throws
-// See also:   lean/zonotope.h, lean/interval_matrix.h, lean/request.h,
-//             cora/matrix_set/mat_zonotope/mat_zonotope.h
+// See also:   lean/zonotope.h, lean/interval_matrix.h, lean/request.h, mat_zonotope/mat_zonotope.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -1,4 +1,4 @@
-// The libtorch backend: one instance, on the CPU or a CUDA device.
+// torch_backend - the libtorch backend: one instance, on the CPU or a CUDA device
 //
 // The same operations as the Eigen backend, through tensors instead. What it buys is the
 // GPU and autograd; what it costs is a dispatch per call, which is why the CPU default
@@ -6,6 +6,11 @@
 //
 // Measurement runs under `NoGradGuard`: recording a graph is what makes the operations
 // differentiable, not what the catalog asks them to time.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "backend.h"
 
@@ -15,7 +20,12 @@
 #include <sstream>
 #include <stdexcept>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp::torch_backend {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 using tb::Interval;
@@ -56,6 +66,7 @@ struct Set {
         return is_box ? box.rand_point(points) : zono.rand_point(points);
     }
 
+    // the first entry of the set
     torch::Tensor first() const { return is_box ? box.lo.flatten()[0] : zono.c.flatten()[0]; }
 };
 
@@ -79,6 +90,7 @@ class TorchRunner : public Runner {
             const torch::Tensor d = torch::randn(shape, opts_);
             direction_ = d / d.norm(2, {-1}, true);
         } else if (in_.operation == "matMul") {
+            // a random square matrix
             matrix_ = torch::randn({in_.n, in_.n}, opts_);
         } else if (in_.operation == "contains") {
             points_ = s_.rand_point(in_.points);
@@ -98,6 +110,7 @@ class TorchRunner : public Runner {
             sink(s_.is_box ? s_.box.support_func(direction_).flatten()[0]
                            : s_.zono.support_func(direction_).flatten()[0]);
         } else if (op == "matMul") {
+            // the sum of two sets
             sink(s_.is_box ? s_.box.mat_mul(matrix_).lo.flatten()[0]
                            : s_.zono.mat_mul(matrix_).c.flatten()[0]);
         } else if (op == "minkSum") {
@@ -138,6 +151,9 @@ class TorchRunner : public Runner {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 bool built() { return true; }
 
 bool supports(const std::string &device) {
@@ -161,6 +177,7 @@ std::string describe() {
 std::unique_ptr<Runner> prepare(const Params &in) {
     const auto opts = torch::TensorOptions().dtype(dtype()).device(device_of(in.device));
     torch::manual_seed(kSeed);
+    // the runner holds the inputs on the device
     return std::make_unique<TorchRunner>(in, opts);
 }
 
@@ -182,6 +199,7 @@ void warm_up() {
                 }
             }
         }
+        // the gradients of the tensor operations are checked on the device
         check_gradients(device);
     }
 }
@@ -203,3 +221,5 @@ void check_gradients(const std::string &device) {
 }
 
 } // namespace cora::comp::torch_backend
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

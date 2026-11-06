@@ -1,14 +1,21 @@
 // generate_random - a random set of an admissible class, as CORA's contSet.generateRandom
 //
+// One of the admissible classes is drawn uniformly.
+//
 // Syntax:   Set S = ContSet::generate_random(rng);
 //           Set S = ContSet::generate_random(rng, 3, {"interval"});
-// Inputs:   rng - random numbers (seedable);  dimension - default uniform in 1..10;
-//           admissible - CORA names of the classes to draw from ("interval", "zonotope"); one is
-//           drawn uniformly
+// Inputs:   rng - random numbers (seedable)
+//           dimension - default uniform in 1..10
+//           admissible - CORA names of the classes to draw from ("interval", "zonotope")
 // Outputs:  S - Interval::generate_random(rng, dimension) or the Zonotope one
 // See also: Interval::generate_random, Zonotope::generate_random
 //
 // CORA: contSet/@contSet/generateRandom.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"

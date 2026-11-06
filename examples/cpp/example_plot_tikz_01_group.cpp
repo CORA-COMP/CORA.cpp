@@ -6,15 +6,24 @@
 // Syntax:   build/examples/cpp/example_plot_tikz_01_group
 // Outputs:  example_plot_tikz_01_group.tikz (a tikzpicture) and _standalone.tikz (a document)
 // See also: example_plot_tikz_01_group of the Python examples, example_plot_reach_01_over_time
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/plot/plot.h"
 
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Reachability Analysis -------------------------------------------------------------------

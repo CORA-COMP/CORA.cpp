@@ -6,6 +6,11 @@
 // See also: Interval::empty
 //
 // CORA: contSet/@emptySet/interval.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 

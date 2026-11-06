@@ -7,6 +7,11 @@
 // Syntax:   build/examples/cpp/example_nonlinear_reach_01_vanDerPol
 // Outputs:  the run time, the widest enclosure, and the figure as an SVG file
 // See also: example_linear_reach_01_5dim, the Python example of the same name (which plots)
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/global/plot/plot.h"
@@ -16,9 +21,13 @@
 #include <chrono>
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Parameters ------------------------------------------------------------------------------

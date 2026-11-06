@@ -1,4 +1,9 @@
 // test_zonotope_stack_torch - zonotope stack: a batch member is the zonotope it was made from
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/backend/torch.h"
@@ -7,6 +12,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,6 +39,7 @@ void stack_keeps_each_member() {
               "stack: member generators");
         check(G[b].slice(-1, m).abs().sum().item<double>() == 0.0, "stack: padding is zero");
         const torch::Tensor d = torch::randn({n, 1}, torch::kDouble);
+        // the member support functions
         check(torch::allclose(to_torch(S.support_function(from_torch(d)))[b],
                               to_torch(Zs[b].support_function(from_torch(d)))),
               "stack: member support function");
@@ -52,6 +62,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     stack_keeps_each_member();
@@ -59,3 +72,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope stack (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

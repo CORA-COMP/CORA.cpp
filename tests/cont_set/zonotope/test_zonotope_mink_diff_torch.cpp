@@ -2,11 +2,21 @@
 //
 // mink_diff is piecewise: "approx" and the aligned "exact" carry gradients (the facets are chosen
 // on the values); the linear-program methods compute on the host and do not.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -22,3 +32,5 @@ int main() {
                     {M[0], M[1], c, G});
     return test::finish("zonotope mink_diff (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

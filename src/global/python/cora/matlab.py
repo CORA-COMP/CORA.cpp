@@ -8,22 +8,31 @@ map onto the keyword API of the package and compute nothing themselves.
 
     m = py.importlib.import_module('cora.matlab')
     Zpy = m.zonotope(m.tensor(c), m.tensor(G))
+
+Authors:       Claude Sonnet 5.5
+Written:       01-October-2026
+Last update:   ---
+Reviewed:      ---
 """
 import numpy as np
 
 from . import Interval, LinearSys, Tensor, Zonotope
 
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
+
+# NOLINTBEGIN(naming): the bridge keeps CORA's names (linearSys, ...), which toPy calls
 def tensor(data):
     """tensor - a Tensor of the current backend from nested lists or a numpy array."""
     return Tensor(data)
 
 
 def zonotope(c, G):
-    """zonotope - the zonotope with center c (n) and generators G (n, m).
-
-    MATLAB hands a scalar or a row for n = 1 or m = 1; the shapes are restored here.
-    """
+    """zonotope - the zonotope with center c (n) and generators G (n, m); MATLAB hands a scalar or
+    a row for n = 1 or m = 1, the shapes are restored here."""
     c = c.reshape(-1)
     return Zonotope(c, G.reshape(c.shape[-1], -1))
 
@@ -73,11 +82,13 @@ def linearSys(A, B=None, C=None):
 
 
 def zonotopes(sets):
-    """zonotopes - (centers (N, n), generators (n, sum m) side by side, counts (N,)) of N zonotopes.
-
-    One call instead of a few per set: MATLAB pays for every crossing into python.
-    """
+    """zonotopes - (centers (N, n), generators (n, sum m) side by side, counts (N,)) of N
+    zonotopes: one call instead of a few per set, as MATLAB pays for every crossing."""
     centers = np.stack([np.asarray(Z.center) for Z in sets])
     generators = np.concatenate([np.asarray(Z.generators) for Z in sets], axis=1)
     counts = np.array([np.asarray(Z.generators).shape[1] for Z in sets], dtype=float)
     return centers, generators, counts
+
+# NOLINTEND(naming)
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

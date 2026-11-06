@@ -1,9 +1,10 @@
 // center - the center of an ellipsoid, as CORA's ellipsoid.center
 //
+// For the empty ellipsoid the column has no entries (n, 0).
+//
 // Syntax:   Tensor c = E.center();
 // Inputs:   -
-// Outputs:  c - the stored center q (..., n, 1), a point of the ellipsoid; for the empty
-//           ellipsoid the column without entries (n, 0)
+// Outputs:  c - the stored center q (..., n, 1), a point of the ellipsoid
 // See also: interval, ContSet::center
 //
 // CORA: contSet/@ellipsoid/center.m

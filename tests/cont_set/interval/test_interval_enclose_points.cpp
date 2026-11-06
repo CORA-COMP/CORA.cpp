@@ -1,6 +1,11 @@
 // test_interval_enclose_points - interval enclose_points: the smallest box around points
 //
 // CORA: contSet/@interval/enclosePoints.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -8,6 +13,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -42,8 +51,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(enclose_points_takes_min_and_max);
     checks_and_their_switch();
     return test::finish("interval enclose_points");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,13 +1,23 @@
 // test_lean_interval_matrix_power - Interval::matrix_power against the CORALean oracle (its
+//
 // `mpower`)
 //
 // ORACLE: contSet/@interval/mpower.m
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -21,3 +31,5 @@ int main() {
     });
     return test::finish("lean interval matrix_power");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

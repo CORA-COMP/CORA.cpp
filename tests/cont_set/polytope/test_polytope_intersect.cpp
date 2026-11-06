@@ -44,6 +44,7 @@ void intersections(const std::string &b) {
           b + ": the empty box");
     const Polytope pt = P.intersect(column({1.0, 1.0}));
     check(pt.is_v_rep() && close(pt.V(), {1, 1}, 0), b + ": a point inside: the point");
+    // a point inside, outside
     check(P.intersect(column({3.0, 1.0})).V().shape() == Shape{2, 0},
           b + ": a point outside: empty");
     check(P.intersect(column({2.0 + 1e-6, 1.0}), 1e-5).V().shape()[1] != 0, b + ": a tolerance");

@@ -1,6 +1,11 @@
 // specification - the oracle's check of a specification on a box or a zonotope (CORALean)
 //
 // See also: lean/request.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/specification.h"
 

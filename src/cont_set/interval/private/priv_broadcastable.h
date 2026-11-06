@@ -4,6 +4,11 @@
 // Inputs:   a, b - shapes (lists of sizes)
 // Outputs:  ok - whether, from the last axis on, each pair of sizes is equal or has a 1
 // See also: rdivide, power
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

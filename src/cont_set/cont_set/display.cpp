@@ -6,6 +6,11 @@
 // See also: Zonotope::display_impl, Interval::display_impl
 //
 // CORA: contSet/@contSet/display.m
+// CORA authors: Matthias Althoff, Victor Gassmann
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"

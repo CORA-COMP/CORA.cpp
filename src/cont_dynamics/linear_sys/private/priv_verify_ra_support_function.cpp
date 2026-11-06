@@ -7,11 +7,19 @@
 // whole horizon or a trajectory of R0 and the centre of U hits one. Supported as in the ARCH
 // benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant zonotope U, no offsets.
 //
+// The statistics are the iterations, the last step size and count, computation_time, and the
+// falsifying initial state and time.
+//
 // Syntax:   res = priv_verify_ra_support_function(sys, params, specs);
-// Inputs:   sys - linear system;  params - R0, U, t_final;  specs - safe and unsafe halfspaces
-// Outputs:  res - verified (false if undecided at a step below 1e-12), iterations, last step
-//           size and count, computation_time, and the falsifying initial state and time
+// Inputs:   sys - linear system;  params - R0, U, t_final
+//           specs - safe and unsafe halfspaces
+// Outputs:  res - verified (false if undecided at a step below 1e-12), and the run's statistics
 // See also: LinearSys::verify
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
@@ -419,6 +427,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
         if (isu) c = (c + lw[r * nw + 2]) + std::abs(lw[r * nw + 3]);
         pass.Cbloat[r] = c;
     }
+    // the pass holds what the step needs
     return pass;
 }
 
@@ -438,8 +447,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
         return res;
     };
 
-    // The system and the input: x' = A x + u with u in B U, split into the constant
-    // u_trans = B center(U) and the uncertain part GU = B generators(U).
+    // The system and input: x' = A x + u, u in B U; u_trans = B center(U), GU = B generators(U).
     const Tensor &A = sys.A();
     const CanonicalInput input = priv_canonical_input(sys, U);
     const int64_t p = input.p;
@@ -501,8 +509,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
             continue;
         }
 
-        // The affine solution at the time points: a positive distance is a hit by the
-        // trajectory from the extreme point of R0 with the centre of U.
+        // The affine solution at the time points: a positive distance is a hit.
         const Pass pass = aux_pass(R0, l_t, ds, isu, Delta, Pu, u, F, G, N);
         for (int k = 1; k <= N; ++k)
             for (int s = 0; s < S; ++s)
@@ -512,8 +519,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
                     return finish();
                 }
 
-        // Outer distance over each step: the larger end point plus curvature and, with an
-        // uncertain input, the outer approximation of its particular solution.
+        // Outer distance per step: the larger end point plus curvature and the particular solution.
         std::vector<double> over_pu(std::size_t(N + 1) * S, 0.0);
         if (is_u) {
             const std::optional<Tensor> under_g = aux_particular(A, GU, E, Delta, time_step);

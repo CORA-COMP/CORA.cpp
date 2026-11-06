@@ -1,14 +1,20 @@
 // representsa - whether an interval matrix is also a set of another type, as CORA's representsa
 //
+// CORA's reshape(I, [], 1), so every type of the interval is available, not only "emptySet" and
+// "origin". The converted set (CORA's second output) is not returned.
+//
 // Syntax:   bool res = A.representsa(type);   bool res = A.representsa(type, tol);
-// Inputs:   type - a type of Interval::representsa;  tol - as there (default: the repository
-//           tolerance)
+// Inputs:   type - a type of Interval::representsa
+//           tol - as there (default: the repository tolerance)
 // Outputs:  res - the answer of Interval::representsa for the entries stacked into one vector
-//           (CORA's reshape(I, [], 1)), so every type of the interval is available, not only
-//           "emptySet" and "origin". The converted set (CORA's second output) is not returned
 // See also: contains, Interval::representsa
 //
 // CORA: matrixSet/@intervalMatrix/representsa.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_set_type.h"
 #include "cora/global/within_tol.h"

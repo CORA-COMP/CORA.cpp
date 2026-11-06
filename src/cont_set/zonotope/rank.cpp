@@ -1,12 +1,18 @@
 // rank - the rank of the generators of a zonotope
 //
+// CORA's own default is 0.
+//
 // Syntax:   r = Z.rank();   r = Z.rank(tol);
 // Inputs:   tol - singular values up to tol count as zero; default: the repository tolerance
-//                 (docs/architecture.md), where CORA's own default is 0
 // Outputs:  r - the number of singular values of the generators above tol; 0 without generators
 // See also: is_full_dim, compact
 //
 // CORA: contSet/@zonotope/rank.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

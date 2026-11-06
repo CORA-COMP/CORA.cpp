@@ -1,10 +1,11 @@
 // is_full_dim - whether an ellipsoid has a nonempty interior, as CORA's isFullDim
 //
+// The default tol is the tolerance of the ellipsoid (CORA's TOL). For a batch, true if every
+// member is.
+//
 // Syntax:   res = E.is_full_dim();   res = E.is_full_dim(tol);
-// Inputs:   tol - singular values of Q up to tol times the largest count as zero; default: the
-//           tolerance of the ellipsoid (CORA's TOL)
-// Outputs:  res - true if the rank of Q is n; false for an empty ellipsoid. For a batch, true if
-//           every member is
+// Inputs:   tol - singular values of Q up to tol times the largest are zero; default: the object's
+// Outputs:  res - true if the rank of Q is n; false for an empty ellipsoid
 // See also: is_bounded, generators
 //
 // CORA: contSet/@ellipsoid/isFullDim.m

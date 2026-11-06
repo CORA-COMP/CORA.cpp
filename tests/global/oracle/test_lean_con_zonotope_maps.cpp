@@ -1,4 +1,5 @@
 // test_lean_con_zonotope_maps - plus, mtimes, origin, project, lift and the predicates of
+//
 // ConZonotope
 //
 // Bit for bit where CORALean builds the same set: origin, plus, mtimes, project, lift (the sound
@@ -16,7 +17,6 @@
 // ORACLE: contSet/@conZonotope/isequal.m
 // ORACLE: contSet/@conZonotope/isIntersecting_.m
 // ORACLE: contSet/@conZonotope/representsa_.m
-//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -30,6 +30,7 @@ using namespace cora;
 namespace oracle = test::oracle;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 
 // ===========================================  MAIN  =========================================== //
 
@@ -77,8 +78,7 @@ int main() {
         oracle::check(a.representsa("emptySet"), lean::ConZonotope(a).representsa_empty());
         oracle::check(none.representsa("emptySet"), lean::ConZonotope(none).representsa_empty());
     });
-    // reduce, quadMap and split are enclosures of CORA.cpp's set: the layout of the new factors
-    // differs
+    // reduce, quadMap and split are enclosures of CORA.cpp's set: the new factors' layout differs
     oracle::run("conZonotope.reduce", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(2, 8, 2);
         oracle::check_enclosed("reduce", a.reduce(2), lean::ConZonotope(a).reduce(2));

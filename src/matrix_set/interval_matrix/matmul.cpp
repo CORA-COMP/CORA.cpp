@@ -1,16 +1,26 @@
 // matmul - the product of an interval matrix with sets, matrices or numbers, as CORA's mtimes
 //
+// C is the bounds of the interval matrix product; for a number the bounds scaled (swapped if s <
+// 0). In Z2, T is the center and S the radius of A.
+//
 // Syntax:   IntervalMatrix C = A.matmul(B);   C = A.matmul(M);   C = IntervalMatrix::matmul(M, A);
 //           C = A.matmul(s);   Zonotope Z2 = A.matmul(Z);   EmptySet E2 = A.matmul(E);
-// Inputs:   B - interval matrix;  M - matrix of numbers;  s - number;  Z - zonotope;
+// Inputs:   B - interval matrix
+//           M - matrix of numbers
+//           s - number
+//           Z - zonotope;
 //           E - empty set; the inner dimensions agree
-// Outputs:  C - each entry the sum over k of the hull of the corner products (the bounds of the
-//           interval matrix product); for a number the bounds scaled (swapped if s < 0);
-//           Z2 - the zonotope T c, [T G, diag(S sum|[c G]|)] with T the center and S the radius of
-//           A, an enclosure of [A] Z; E2 - the empty set of rows(A) dimensions
+// Outputs:  C - each entry the sum over k of the hull of the corner products
+//           Z2 - the zonotope T c, [T G, diag(S sum|[c G]|)], an enclosure of [A] Z
+//           E2 - the empty set of rows(A) dimensions
 // See also: matrix_power, Zonotope::linear_map
 //
 // CORA: matrixSet/@intervalMatrix/mtimes.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_matmul.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
@@ -54,6 +64,7 @@ IntervalMatrix IntervalMatrix::matmul(const Tensor &M, const IntervalMatrix &A) 
         return "matmul: the matrix needs " + std::to_string(A.rows()) + " columns, got the shape " +
                shape_text(M.shape());
     });
+    // the product with a matrix
     return IntervalMatrix(A.int_.linear_map(M));
 }
 

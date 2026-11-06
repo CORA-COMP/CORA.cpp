@@ -6,13 +6,22 @@ Extreme points (corners of the generator cube) are where a set that is too small
 Syntax:   PYTHONPATH=build python examples/python/example_linear_simulate_01_random.py
 Outputs:  the size of the simulation, and whether it stays in the reachable set
 See also: example_linear_reach_01_5dim
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 t_final = 1.0
 R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))

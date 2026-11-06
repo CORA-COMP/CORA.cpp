@@ -4,12 +4,21 @@
 // operations below; time_until_switch, contains, is_intersecting and unify on the results.
 //
 // CORA: contDynamics/@linearSys/verify.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -21,6 +30,9 @@ bool same(const VerifyTime &T, const VerifyTime::Bounds &expected) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // setdiff: the pieces after each removal, as MATLAB returns them.
@@ -43,6 +55,7 @@ int main() {
                                              {{7, 7.5}, {8, 9}}};
     for (int i = 0; i < 13; ++i) {
         T.setdiff(ops[i][0], ops[i][1]);
+        // the set differences
         check(same(T, expected[i]), "setdiff " + std::to_string(i + 1));
     }
 
@@ -79,3 +92,5 @@ int main() {
     check(same(VerifyTime({{0, 1}, {1, 2}, {3, 4}}).compact(), {{0, 2}, {3, 4}}), "compact");
     return test::finish("linear_sys verifyTime");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

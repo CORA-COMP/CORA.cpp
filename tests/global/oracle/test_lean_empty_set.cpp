@@ -28,6 +28,10 @@
 // ORACLE: contSet/@emptySet/supportFunc_.m
 // ORACLE: contSet/@emptySet/vertices_.m
 // ORACLE: contSet/@emptySet/volume_.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -38,6 +42,10 @@ using namespace cora;
 using test::oracle::check;
 using test::oracle::Random;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 // The other operands of dimension n: the empty set, the empty box, a box and a zonotope.
@@ -46,6 +54,9 @@ std::vector<Set> aux_operands(Random &rnd, int64_t n) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -73,8 +84,7 @@ int main() {
                           const Zonotope Z = rnd.zonotope(n, 3);
                           check(EmptySet(n).convex_hull(Set(I)).as<Interval>(),
                                 lean::EmptySet(n).convex_hull(lean::Interval(I)));
-                          // the zonotope comes back as it is, so it is compared exactly also in the
-                          // sound mode (the oracle's certified containment of a zonotope is slow)
+                          // the zonotope comes back as is: compared exactly in the sound mode too
                           test::oracle::check_exact(
                               test::oracle::op_name(),
                               EmptySet(n).convex_hull(Set(Z)).as<Zonotope>(),
@@ -90,8 +100,7 @@ int main() {
                                     lean::EmptySet(n).is_intersecting(*S));
                       }));
     test::oracle::run("emptySet.isequal", each_dimension([](Random &, int64_t n) {
-                          // the oracle reads only the dimension of S, so S is an empty set, as in
-                          // CORALean's row
+                          // the oracle reads only the dimension of S, so S is an empty set
                           for (const Set &S : {Set(EmptySet(n)), Set(Interval::empty(n))})
                               check(EmptySet(n).isequal(*S), lean::EmptySet(n).isequal(*S));
                       }));
@@ -109,8 +118,7 @@ int main() {
         const lean::Tensor V = lean::EmptySet(2).vertices();
         check(EmptySet(2).vertices().empty() && V.rows() == 2, V.cols() == 0);
     });
-    // the oracle's empty box is the crossed one (inf > sup), CORA.cpp's has no columns: both
-    // denote the empty set of dimension n
+    // the oracle's empty box is crossed (inf > sup), CORA.cpp's has no columns: both are empty
     test::oracle::run(
         "emptySet.interval", each_dimension([](Random &, int64_t n) {
             const std::pair<Tensor, Tensor> theirs = lean::EmptySet(n).interval().gather();
@@ -145,6 +153,7 @@ int main() {
                           check(EmptySet(n).radius(), lean::EmptySet(n).radius());
                       }));
     test::oracle::run("emptySet.volume", each_dimension([](Random &, int64_t n) {
+                          // volume and linear maps of the empty set
                           check(EmptySet(n).volume(), lean::EmptySet(n).volume());
                       }));
     // the image has the dimension of the rows of M; the support function is -Inf in every direction
@@ -173,3 +182,5 @@ int main() {
                       }));
     return test::finish("lean empty_set");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

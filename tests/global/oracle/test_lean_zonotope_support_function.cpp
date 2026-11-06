@@ -1,12 +1,21 @@
 // test_lean_zonotope_support_function - Zonotope::support_function against the CORALean oracle
 //
 // ORACLE: contSet/@zonotope/supportFunc_.m
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -20,3 +29,5 @@ int main() {
     });
     return test::finish("lean zonotope support_function");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

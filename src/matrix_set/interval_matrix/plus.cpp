@@ -1,12 +1,20 @@
 // plus - the sum of an interval matrix with a set, a matrix or a number, as CORA's plus
 //
+// CORA's plus is commutative, so M + A and s + A are the same sets.
+//
 // Syntax:   IntervalMatrix C = A.plus(B);   C = A.plus(M);   C = A.plus(s);   C = A + B;
-// Inputs:   B - interval matrix;  M - matrix of numbers;  s - number;  of the shape of A
-// Outputs:  C - the Minkowski sum: the bounds add (a matrix or a number is a point). CORA's plus
-//           is commutative, so M + A and s + A are the same sets
+// Inputs:   B - interval matrix
+//           M - matrix of numbers
+//           s - number;  of the shape of A
+// Outputs:  C - the Minkowski sum: the bounds add (a matrix or a number is a point)
 // See also: matmul, Interval::plus
 //
 // CORA: matrixSet/@intervalMatrix/plus.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"
@@ -39,6 +47,7 @@ IntervalMatrix IntervalMatrix::plus(const Tensor &M) const {
 
 IntervalMatrix IntervalMatrix::plus(double s) const {
     detail::Entry entry;
+    // a scalar shifts both bounds
     return IntervalMatrix(Interval(int_.inf() + s, int_.sup() + s));
 }
 

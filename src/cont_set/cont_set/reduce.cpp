@@ -1,11 +1,17 @@
 // reduce - a set with fewer generators that encloses it, as CORA's contSet.reduce
 //
 // Syntax:   R = S.reduce(order);
-// Inputs:   S - set;  order - generators per dimension that remain (Girard's method), >= 1
+// Inputs:   S - set
+//           order - generators per dimension that remain (Girard's method), >= 1
 // Outputs:  R - a set that contains S (a box stays a box)
 // See also: Interval::reduce, Zonotope::reduce
 //
 // CORA: contSet/@contSet/reduce.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/cont_set.h"

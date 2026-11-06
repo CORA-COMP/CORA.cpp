@@ -1,6 +1,11 @@
 // test_nonlinear_sys_simulate_random - nonlinearSys simulate_random: points of the set, repeatable
 //
 // CORA: contDynamics/@contDynamics/simulateRandom.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/global/rng.h"
@@ -8,6 +13,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -52,6 +61,7 @@ void checks_and_their_switch() {
     const Tensor on =
         sys.simulate_random(problem, alg::RungeKutta4{.time_step = 0.1}, 2, rng).back();
     ChecksScope off(false);
+    // the same with the checks off
     check(test::close(
               sys.simulate_random(problem, alg::RungeKutta4{.time_step = 0.1}, 2, again).back(), on,
               0),
@@ -60,9 +70,14 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(
         [](const std::string &b) { the_start_points_lie_in_the_set_and_repeat(b); });
     checks_and_their_switch();
     return test::finish("nonlinearSys simulate_random");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

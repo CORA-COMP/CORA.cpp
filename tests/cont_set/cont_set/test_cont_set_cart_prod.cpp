@@ -1,8 +1,14 @@
 // test_cont_set_cart_prod - the Cartesian product of two sets: any dimensions; a pair without an
+//
 // entry raises noops
 //
 // CORA: contSet/@contSet/cartProd.m
 // CORA: contSet/@contSet/cartProd_.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -13,6 +19,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,7 +40,12 @@ void an_unknown_pair_is_noops() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     an_unknown_pair_is_noops();
     return test::finish("cont_set cart_prod");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

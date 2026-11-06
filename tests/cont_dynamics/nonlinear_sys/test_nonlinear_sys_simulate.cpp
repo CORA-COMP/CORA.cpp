@@ -1,6 +1,11 @@
 // test_nonlinear_sys_simulate - nonlinearSys simulate: exact on a linear system, and its limits
 //
 // CORA: contDynamics/@nonlinearSys/simulate.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -51,6 +60,7 @@ void wrong_arguments_are_described(const std::string &b) {
     const NonlinearSys sys(
         [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
     check(test::throws([&] {
+              // a start point of the wrong dimension
               sys.simulate({.initial_state = Tensor({1.0, 0.0, 1.0}), .t_final = 1.0},
                            alg::RungeKutta4{.time_step = 0.1});
           }),
@@ -88,11 +98,15 @@ void checks_and_their_switch() {
     const SimulationProblem problem{.initial_state = x0, .t_final = 1};
     const Tensor on = sys.simulate(problem, alg::RungeKutta4{.time_step = 0.1}).back();
     ChecksScope off(false);
+    // the same with the checks off
     check(test::close(sys.simulate(problem, alg::RungeKutta4{.time_step = 0.1}).back(), on, 0),
           "simulate: the same with the checks off");
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -103,3 +117,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("nonlinearSys simulate");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

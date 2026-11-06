@@ -8,6 +8,11 @@
 //             operations; at dtype nearest the box is empty (nominal())
 // Crossing:   gather() returns the nominal part as a cora::Capsule, exactly or throws
 // See also:   lean/request.h, lean/interval.h, cora/cont_set/capsule/capsule.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

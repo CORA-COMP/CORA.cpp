@@ -6,13 +6,24 @@ Checks:   a changed header selects the tests that include it, directly or throug
           them through private headers; the shared code, the build and CI select ALL; documentation
           selects NONE; unknown or deleted files select ALL.
 Exit code: 0 if all checks pass, else 1.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import os
 import sys
 import unittest
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ci"))
 import affected_tests as at  # noqa: E402
+
 
 TREE = {
     "include/cora/cont_set/zonotope/zonotope.h": '#include "cora/global/rng.h"\n',
@@ -36,10 +47,13 @@ TREE = {
 
 def pick(*changed):
     result = at.select(list(changed), sorted(TREE), TREE.__getitem__)
+    # the tests are a set of names
     if result in ("ALL", "NONE"):
         return result
     return set(result[2:-2].split("|"))
 
+
+# ============================================  MAIN  ============================================ #
 
 class SelectionTest(unittest.TestCase):
     def test_header_selects_its_includers(self):
@@ -74,6 +88,7 @@ class SelectionTest(unittest.TestCase):
         for path in ("src/global/tensor/tensor.cpp", "src/global/backend/eigen.cpp", "CMakeLists.txt",
                      "scripts/cmake/python.cmake", "CMakePresets.json", ".github/workflows/ci.yml",
                      "scripts/ci/affected_tests.py"):
+            # changes to the scripts select everything
             self.assertEqual(pick(path), "ALL", path)
 
     def test_documentation_selects_nothing(self):
@@ -94,3 +109,5 @@ class SelectionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

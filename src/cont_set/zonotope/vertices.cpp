@@ -6,6 +6,11 @@
 // See also: project, Interval::vertices
 //
 // CORA: contSet/@zonotope/vertices_.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Daniel Heß
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"
@@ -22,8 +27,7 @@ namespace cora {
 
 namespace {
 
-// The generators, turned into the upper half-plane and sorted by angle, are the edges of the
-// polygon: walk 2 g_i from the vertex c - sum(g) through all of them, and back.
+// The generators, in the upper half-plane by angle, are the edges: walk 2 g_i from c - sum(g).
 Polygon aux_polygon(const double *c, const double *G, int64_t m) {
     std::vector<Point> g; // the generators (G is row-major (2, m))
     for (int64_t j = 0; j < m; ++j) {

@@ -1,6 +1,14 @@
 """test_extension - prototyping in Python: a ContSet subclass, a registered pair and a registered
+
 algorithm run through the checked entries, the registry, plotting and reach like the built-in ones;
-errors, warnings and the scoped settings."""
+errors, warnings and the scoped settings.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@contSet/contSet.m
 # CORA: contSet/@contSet/plus.m
 # CORA: contSet/@contSet/project.m
@@ -12,6 +20,10 @@ import warnings
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 class Box(cora.ContSet):
     """A box c + r [-1, 1]^n written in Python: only the _impl layer."""
@@ -42,6 +54,8 @@ class Box(cora.ContSet):
         (x, y), (a, b) = self.c, self.r
         return [np.array([[x - a, y - b], [x + a, y - b], [x + a, y + b], [x - a, y + b]])]
 
+
+# ============================================  MAIN  ============================================ #
 
 class Subclass(unittest.TestCase):
     def setUp(self):
@@ -79,6 +93,7 @@ class Subclass(unittest.TestCase):
             B & Z
 
     def test_plotting_takes_a_python_set(self):
+        # plotting a Python set
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
@@ -115,6 +130,7 @@ class RegisteredAlgorithm(unittest.TestCase):
         with self.assertRaises(cora.errors.DimensionMismatch):
             self.sys.reach(cora.Zonotope(np.zeros(3), np.eye(3)), t_final=1.0, alg="euler_box")
 
+    # an unknown algorithm
     def test_an_unknown_algorithm_names_the_registered_ones(self):
         with self.assertRaisesRegex(ValueError, "euler_box"):
             self.sys.reach(self.X0, t_final=1.0, alg="euler")
@@ -140,6 +156,7 @@ class ErrorsAndSettings(unittest.TestCase):
 
     def test_warnings_reach_python(self):
         with warnings.catch_warnings(record=True) as caught:
+            # warnings are recorded
             warnings.simplefilter("always")
             cora._cora._warn("CORA:deprecated", "a test warning")
         self.assertTrue(any(issubclass(w.category, cora.CORAWarning) for w in caught))
@@ -160,3 +177,5 @@ class ErrorsAndSettings(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

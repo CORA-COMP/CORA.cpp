@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@conZonotope/contains_.m
 // PROPERTY: contSet/@conZonotope/contains_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Adrian Kulmburg, Ivan Brkan
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 #include "cora/cont_set/registry.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -90,6 +99,7 @@ void checks_and_their_switch() {
           "contains: tol < 0");
     check(test::raises(
               [&] {
+                  // a batch of sets is not supported
                   ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 1}))
                       .contains(column({0.0}));
               },
@@ -105,6 +115,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         contains_known(b);
@@ -113,3 +126,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("con_zonotope contains");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

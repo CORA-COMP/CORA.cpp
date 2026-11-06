@@ -2,11 +2,21 @@
 //
 // enclose_points in a given frame is piecewise: the box follows the points that attain the
 // extremes.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -20,3 +30,5 @@ int main() {
         {points, U});
     return test::finish("zonotope enclose_points (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

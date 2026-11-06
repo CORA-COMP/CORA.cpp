@@ -12,6 +12,11 @@
 //           ReachProblem p = fill<ReachProblem>(kwargs);   auto alg =
 //           algorithm<alg::LinearReach>("standard", kwargs);
 // See also: bindings.cpp, cora/global/options.h
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 
@@ -34,7 +39,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <variant>
-#ifdef CORACPP_PYTHON_TORCH
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
 #include "cora/global/backend/torch.h"
 #include <torch/extension.h>
 #endif
@@ -42,6 +47,8 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::python {
+
+// NOLINTBEGIN(backend,clones): numpy and torch arrays are converted to Tensor; .def rows repeat
 
 namespace py = pybind11;
 
@@ -83,10 +90,9 @@ inline std::shared_ptr<const void> keep_alive(const py::handle &o) {
     });
 }
 
-/// A numpy array (or a list) as a host tensor over the array's memory, without a copy: on eigen,
-/// or on lean under `with cora.backend("lean")` (so that CORA.cpp rounds as the CORALean oracle).
-/// A copy is made only for an array that is not C-contiguous or not float64/float32 (lean:
-/// float64). `column` makes a 1-D array a column (n, 1).
+/// A numpy array (or a list) as a host tensor over the array's memory, without a copy; a copy
+/// only for an array that is not C-contiguous or not float64/float32. `column` makes a 1-D array
+/// a column.
 inline Tensor host_tensor(const py::handle &o, bool column) {
     const uint8_t id = backend().name() == "lean" ? backend_id::lean : backend_id::eigen;
     py::array a = py::array::ensure(o);
@@ -128,13 +134,13 @@ inline Shape vector_shape(const Tensor &t) {
 }
 
 /// A Python vector (..., n) as a column (..., n, 1).
-#ifdef CORACPP_PYTHON_TORCH
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
 inline Tensor column(const torch::Tensor &v) { return from_torch(v.unsqueeze(-1)); }
 #endif
 
 /// A column (..., n, 1) as a Python vector (..., n), in the array type of its backend.
 inline Array vector(const Tensor &t) {
-#ifdef CORACPP_PYTHON_TORCH
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1));
 #endif
     if (is_host(t)) return host_array(t, vector_shape(t));
@@ -144,7 +150,7 @@ inline Array vector(const Tensor &t) {
 
 /// A matrix (or a batch) in the array type of its backend.
 inline Array matrix(const Tensor &t) {
-#ifdef CORACPP_PYTHON_TORCH
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
     if (is_torch(t)) return py::cast(to_torch(t));
 #endif
     if (is_host(t)) return host_array(t, t.shape());
@@ -158,7 +164,7 @@ inline Array bounds(const Tensor &t) { return t.shape().back() == 1 ? vector(t) 
 /// A (..., 1, 1) result as a scalar per batch element: a torch tensor (...), a float for one
 /// matrix, else an array (...).
 inline py::object scalar(const Tensor &t) {
-#ifdef CORACPP_PYTHON_TORCH
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1).squeeze(-1));
 #endif
     if (t.numel() == 1) return py::cast(t.item());
@@ -168,7 +174,7 @@ inline py::object scalar(const Tensor &t) {
 /// A torch tensor or numpy array (or a list of numbers) as a Tensor on its backend, 1-D as a
 /// column; nothing for anything else.
 inline std::optional<Tensor> as_tensor(const py::handle &o) {
-#ifdef CORACPP_PYTHON_TORCH
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
     py::detail::make_caster<torch::Tensor> torch_caster;
     if (torch_caster.load(o, /*convert=*/false)) {
         const torch::Tensor t = py::cast<torch::Tensor>(o);
@@ -194,7 +200,7 @@ inline Tensor tensor_of(const py::handle &o, const char *what) {
 /// A vector (..., n) from Python as a column (..., n, 1): a torch tensor of any batch, or a
 /// numpy array or list (1-D, or a batch (..., n)), or a number.
 inline Tensor vector_of(const py::handle &o, const char *what) {
-#ifdef CORACPP_PYTHON_TORCH
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
     py::detail::make_caster<torch::Tensor> torch_caster;
     if (torch_caster.load(o, /*convert=*/false)) return column(py::cast<torch::Tensor>(o));
 #endif
@@ -264,6 +270,7 @@ inline py::object object_of(const Set &S) {
         return py::cast(S.as<EmptySet>());
     case ClassId::fullspace:
         return py::cast(S.as<Fullspace>());
+    // other sets stay Python references
     default:
         return py::cast(&S.get(), py::return_value_policy::reference);
     }
@@ -360,6 +367,8 @@ inline std::string unknown_algorithm(const std::string &name, const std::vector<
     for (const std::string &k : known) list += (list.empty() ? "'" : ", '") + k + "'";
     return where + ": unknown alg '" + name + "'" + did_you_mean(name, known) + "; use " + list;
 }
+
+// NOLINTEND(backend,clones)
 
 } // namespace cora::python
 

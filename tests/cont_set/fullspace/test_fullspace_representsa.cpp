@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@fullspace/representsa_.m
 // PROPERTY: contSet/@fullspace/representsa_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -69,6 +78,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_table_of_cora);
     test::for_each_backend(the_empty_space_is_every_type_but_a_point);
@@ -76,3 +88,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("fullspace representsa");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

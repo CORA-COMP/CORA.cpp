@@ -4,6 +4,11 @@
 // gives through the torch backend equals central differences, in float64, at points away from the
 // kinks of the piecewise ones. The conventions test requires a gradcheck("<op>", ...) here for
 // each.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -13,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -53,6 +62,7 @@ void gradcheck(const std::string &op, const Fn &f, const std::vector<torch::Tens
             }
             plus[k].view(-1)[j] += h;
             minus[k].view(-1)[j] -= h;
+            // the numeric and the analytic gradient
             const double numeric = (aux_loss(f, plus, weights).item<double>() -
                                     aux_loss(f, minus, weights).item<double>()) /
                                    (2 * h);
@@ -102,6 +112,7 @@ void elementwise() {
               {aux_within({3, 4}, 0.5, 2), aux_randn({3, 4})});
     gradcheck("maximum", [](const V &v) { return V{v[0].maximum(v[1])}; },
               {aux_randn({3, 4}), aux_randn({3, 4}) + 5});
+    // minimum and remainder
     gradcheck("minimum", [](const V &v) { return V{v[0].minimum(v[1])}; },
               {aux_randn({3, 4}), aux_randn({3, 4}) + 5});
     gradcheck("remainder", [](const V &v) { return V{v[0].remainder(v[1])}; },
@@ -122,6 +133,7 @@ void elementwise() {
     gradcheck("log", one(&Tensor::log), {aux_within({3, 4}, 0.5, 4)});
     gradcheck("sin", one(&Tensor::sin), {aux_randn({3, 4})});
     gradcheck("cos", one(&Tensor::cos), {aux_randn({3, 4})});
+    // trigonometric functions
     gradcheck("tan", one(&Tensor::tan), {aux_within({3, 4}, -1, 1)});
     gradcheck("asin", one(&Tensor::asin), {aux_within({3, 4}, -0.8, 0.8)});
     gradcheck("acos", one(&Tensor::acos), {aux_within({3, 4}, -0.8, 0.8)});
@@ -140,6 +152,7 @@ void elementwise() {
                   return V{Tensor::where(v[0].detach().greater(v[1].detach()), v[0], v[1])};
               },
               {aux_randn({3, 4}), aux_randn({3, 4}) + 3});
+    // conversions
     gradcheck("to", [](const V &v) { return V{v[0].to("cpu") * 2.0, v[0].to(DType::float64)}; },
               {aux_randn({3, 2})});
 }
@@ -162,6 +175,7 @@ void shapes() {
     const torch::Tensor x = aux_randn({2, 3, 4});
     gradcheck("reshape", [](const V &v) { return V{v[0].reshape({4, 6})}; }, {x});
     gradcheck("permute_dims", [](const V &v) { return V{v[0].permute_dims({2, 0, 1})}; }, {x});
+    // views of the tensor
     gradcheck("broadcast_to", [](const V &v) { return V{v[0].broadcast_to({2, 3, 4})}; },
               {aux_randn({3, 1})});
     gradcheck("slice", [](const V &v) { return V{v[0].slice(-1, 1, 4, 2)}; }, {x});
@@ -182,6 +196,7 @@ void shapes() {
     gradcheck("tile", [](const V &v) { return V{v[0].tile({2, 1, 3})}; }, {x});
     gradcheck("diag", [](const V &v) { return V{v[0].diag()}; }, {aux_randn({2, 4, 1})});
     gradcheck("diagonal", [](const V &v) { return V{v[0].diagonal()}; }, {x});
+    // triangular and block matrices
     gradcheck("tril", [](const V &v) { return V{v[0].tril()}; }, {x});
     gradcheck("triu", [](const V &v) { return V{v[0].triu(1)}; }, {x});
     gradcheck("block_diag", [](const V &v) { return V{Tensor::block_diag({v[0], v[1]})}; },
@@ -202,6 +217,7 @@ void linear_algebra() {
     gradcheck("pinv", [](const V &v) { return V{v[0].pinv()}; }, {aux_randn({4, 3})});
     gradcheck("cholesky", [](const V &v) { return V{aux_spd(v[0]).cholesky()}; },
               {aux_randn({3, 3})});
+    // the QR factors
     gradcheck("qr",
               [](const V &v) {
                   const auto [Q, R] = v[0].qr();
@@ -221,6 +237,7 @@ void linear_algebra() {
               },
               {aux_randn({4, 4})});
     gradcheck("trace", [](const V &v) { return V{v[0].trace()}; }, {aux_randn({2, 3, 3})});
+    // trace, Kronecker product and exponential
     gradcheck("kron", [](const V &v) { return V{v[0].kron(v[1])}; },
               {aux_randn({2, 3}), aux_randn({2, 2})});
     gradcheck("expm", [](const V &v) { return V{v[0].expm()}; }, {aux_randn({2, 3, 3})});
@@ -242,6 +259,7 @@ void fused() {
     using V = std::vector<Tensor>;
     gradcheck("zonotope_linear_map",
               [](const V &v) {
+                  // the fused zonotope maps
                   const auto [Mc, MG] = Tensor::zonotope_linear_map(v[0], v[1], v[2]);
                   return V{Mc, MG};
               },
@@ -262,6 +280,7 @@ void fused() {
     gradcheck("interval_matmul",
               [](const V &v) {
                   const auto [lo, hi] = Tensor::interval_matmul(v[0], v[0] + v[1].abs(), v[2]);
+                  // the interval products
                   return V{lo, hi};
               },
               {aux_randn({3, 4}), aux_away({3, 4}), aux_away({4, 2})});
@@ -276,6 +295,9 @@ void fused() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope scope("torch");
     torch::manual_seed(5);
@@ -286,3 +308,5 @@ int main() {
     fused();
     return test::finish("tensor gradcheck (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

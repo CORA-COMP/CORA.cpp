@@ -1,4 +1,11 @@
-"""test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python."""
+"""test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python.
+
+CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contDynamics/@contDynamics/reach.m
 # CORA: contDynamics/@contDynamics/simulateRandom.m
 # CORA: contDynamics/@nonlinearSys/nonlinearSys.m
@@ -10,6 +17,7 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
@@ -17,9 +25,13 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def van_der_pol():
     return cora.NonlinearSys(lambda x: [x[1], (1 - x[0] ** 2) * x[1] - x[0]], 2)
@@ -28,6 +40,8 @@ def van_der_pol():
 def start():
     return cora.Zonotope(cora.Tensor([1.4, 2.3]), 0.05 * cora.eye(2))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Expressions(unittest.TestCase):
     def test_python_operators_build_expressions(self):
@@ -54,6 +68,7 @@ class Expressions(unittest.TestCase):
 
 
 class Simulate(unittest.TestCase):
+    # the harmonic oscillator
     def test_follows_the_harmonic_oscillator(self):
         sys = cora.NonlinearSys(lambda x: [x[1], -x[0]], 2)
         x = sys.simulate(cora.Tensor([[1.0], [0.0]]), time_step=0.1, t_final=2.0)
@@ -77,6 +92,7 @@ class Simulate(unittest.TestCase):
 class ReachSet(unittest.TestCase):
     def test_simulations_stay_in_the_enclosures(self):
         R = van_der_pol().reach(start(), time_step=0.005, t_final=1.0)
+        # random simulations stay in the reachable sets
         x = np.asarray(van_der_pol().simulate_random(start(), points=20, time_step=0.005, t_final=1.0,
                                                      rng=cora.Rng(3)))
         self.assertEqual(len(R.time_point), len(R.time_interval) + 1)
@@ -100,8 +116,11 @@ class ReachSet(unittest.TestCase):
         self.assertEqual(np.asarray(R.generators).shape, (3, 6))
         for k in range(20):
             d = torch.randn(3, dtype=torch.float64, generator=torch.Generator().manual_seed(k))
+            # the support functions of the reachable set
             self.assertGreaterEqual(float(R.support_function(d)), float(Z.support_function(d)) - 1e-9)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

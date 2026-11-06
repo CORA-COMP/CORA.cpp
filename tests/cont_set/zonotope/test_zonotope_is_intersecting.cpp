@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/isIntersecting_.m
 // PROPERTY: contSet/@zonotope/isIntersecting_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -12,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -39,6 +48,7 @@ void intersecting_known(const std::string &b) {
           b + ": a segment beyond the corner");
 
     check(diamond.is_intersecting(column({0.5, 0.5})), b + ": a point on the boundary");
+    // points and registry
     check(!diamond.is_intersecting(column({0.6, 0.6})), b + ": a point outside");
     check(!diamond.is_intersecting(Tensor({{0.0, 0.6}, {0.0, 0.6}})),
           b + ": points: all must be in");
@@ -66,6 +76,7 @@ void intersecting_property(const std::string &b) {
             for (double &x : minus) x = -x;
             if (test::support(Z1, d) + test::support(Z2, minus) < 0) check(!res, b + ": separated");
         }
+        // approx never misses an intersection
         if (res)
             check(Z1.is_intersecting(Z2, "approx"), b + ": approx never misses an intersection");
     }
@@ -91,6 +102,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         intersecting_known(b);
@@ -99,3 +113,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope is_intersecting");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

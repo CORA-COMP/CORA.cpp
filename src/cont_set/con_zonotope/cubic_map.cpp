@@ -1,19 +1,25 @@
 // cubic_map - an enclosure of a cubic map of constrained zonotopes, as CORA's conZonotope.cubMap
 //
+// (the monomials of the factors, each a new free factor, the linear ones first); the constraints
+// of every set stay on the factors of its own linear monomials. All of them are kept, which CORA
+// does not for a factor that the map does not depend on (the image could then miss points,
+// docs/cora-differences.md). CORA's first step, tightening the factors (rescale), is not ported
+// yet; it only makes the result smaller.
+//
 // Syntax:   cZres = cz.cubic_map(T);   cZres = cz.cubic_map(T, ind);
 //           cZres = cz.cubic_map(cz2, cz3, T);
 // Inputs:   T - cubic map: T[i][k] is an (n, n) matrix, output i is z_i = sum_k x_k (x' T[i][k] x)
 //           ind - for every output i the k that enter it (CORA's default: all columns of T)
 //           cz2, cz3 - the sets of the second and third factor of (x1' T x2) x3
-// Outputs:  cZres - the generators of the zonotope map (the monomials of the factors, each a new
-//           free factor, the linear ones first); the constraints of every set stay on the factors
-//           of its own linear monomials. All of them are kept, which CORA does not for a factor
-//           that the map does not depend on (the image could then miss points,
-//           docs/cora-differences.md). CORA's first step, tightening the factors (rescale), is not
-//           ported yet; it only makes the result smaller
+// Outputs:  cZres - the generators of the zonotope map; the linear monomials come first
 // See also: Zonotope::cubic_map, quad_map
 //
 // CORA: contSet/@conZonotope/cubMap.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"
@@ -82,6 +88,7 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
                                                   Zonotope(cz3.c(), cz3.generators()), T, ind);
     const int64_t total = Z.generators().shape().back();
     const std::array<const ConZonotope *, 3> sets{this, &cz2, &cz3};
+    // the factors of the three sets are stacked
     const std::array<int64_t, 3> sizes{G_.shape().back(), cz2.generators().shape().back(),
                                        cz3.generators().shape().back()};
     // the rows of each set, on its own factors

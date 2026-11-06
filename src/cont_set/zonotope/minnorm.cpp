@@ -1,14 +1,20 @@
 // minnorm - the distance from the center of a zonotope to its boundary, and a point there
 //
+// val is the least offset of a facet from the center, 0 if the generators do not span the space;
+// x is the center then. Not a batch.
+//
 // Syntax:   [val, x] = Z.minnorm();
 // Inputs:   -
-// Outputs:  val - the least offset of a facet from the center, i.e. the radius of the largest
-//           ball about the center in the zonotope, (1, 1); 0 if the generators do not span the
-//           space;  x - the point of that facet closest to the center, (n, 1) (the center if val
-//           is 0). Not a batch
+// Outputs:  val - the radius (1, 1) of the largest ball about the center in the zonotope
+//           x - the point (n, 1) of the nearest facet closest to the center
 // See also: norm, contains
 //
 // CORA: contSet/@zonotope/minnorm.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

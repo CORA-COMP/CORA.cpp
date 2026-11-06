@@ -1,4 +1,9 @@
 // test_tensor_batch_torch - Tensor on libtorch: batch dimensions broadcast
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -7,6 +12,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,6 +39,7 @@ void batches_broadcast() {
           "eye_like takes the batch shape");
     check(Tensor::concat({B, B}, -1).shape() == std::vector<int64_t>({3, 2, 4}),
           "cat_last per batch");
+    // diagonals per batch
     check(from_torch(torch::randn({3, 2, 1}, torch::kDouble)).diag().shape() ==
               std::vector<int64_t>({3, 2, 2}),
           "diag per batch");
@@ -43,8 +53,13 @@ void batches_broadcast() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     batches_broadcast();
     set_default_backend("eigen");
     return test::finish("tensor batch (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

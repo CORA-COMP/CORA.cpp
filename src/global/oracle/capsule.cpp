@@ -1,6 +1,11 @@
 // capsule - lean::Capsule, a capsule of exact values, computed by CORALean
 //
 // See also: lean/con_zonotope.h, lean/request.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/capsule.h"
 #include "cora/global/error.h"

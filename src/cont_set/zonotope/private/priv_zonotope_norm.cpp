@@ -5,13 +5,19 @@
 //
 // Syntax:   double s = priv_zonotope_norm(Z, p);
 //           ZonotopeNorm r = priv_zonotope_norm_minimizer(Z, p);
-// Inputs:   Z - zonotope (its center is ignored);  p - a point (n values)
-// Outputs:  s - the norm; infinity if p is not in the span of the generators;  r - s and the
-//           coefficients beta (none if s is infinite)
+// Inputs:   Z - zonotope (its center is ignored)
+//           p - a point (n values)
+// Outputs:  s - the norm; infinity if p is not in the span of the generators
+//           r - s and the coefficients beta (none if s is infinite)
 // See also: priv_containment_vertex_enumeration, zonotope_norm
 //
 // CORA.cpp only: the linear program of zonotopeNorm, on the host and unchecked, for contains and
 //                the other callers
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/linprog.h"
@@ -54,6 +60,7 @@ ZonotopeNorm priv_zonotope_norm_minimizer(const HostZonotope &Z, const std::vect
 }
 
 double priv_zonotope_norm(const HostZonotope &Z, const std::vector<double> &p) {
+    // the value of the minimizer
     return priv_zonotope_norm_minimizer(Z, p).value;
 }
 

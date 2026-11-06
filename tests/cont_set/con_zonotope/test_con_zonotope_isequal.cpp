@@ -1,8 +1,7 @@
 // test_con_zonotope_isequal - ConZonotope::isequal: whether two sets are the same
 //
 // CORA: contSet/@conZonotope/isequal.m
-//
-// CORA authors:  Mark Wetzlinger
+// CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

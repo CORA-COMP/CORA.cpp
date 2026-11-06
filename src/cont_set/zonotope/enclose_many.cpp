@@ -1,15 +1,22 @@
 // enclose_many - a box, oriented along a direction, around many zonotopes
 //
+// The first axis of the frame is the direction, the other axes are standard axes (the one most
+// aligned with the direction is left out). CORA reduces each Z with reduce(Z, 'parallelpiped'), a
+// method that does not exist and makes CORA fail; CORA.cpp reduces to order 1 (Girard).
+//
 // Syntax:   [Zenclose, rot_inv] = Zonotope::enclose_many(Zs, direction);
-// Inputs:   Zs - zonotopes of one dimension n;  direction - a nonzero column (n, 1)
-// Outputs:  Zenclose - the smallest box in the frame whose first axis is the direction (the other
-//           axes are standard axes, the one most aligned with the direction left out), as a
-//           zonotope, containing every Z;  rot_inv - the inverse of that frame (n, n).
-//           CORA reduces each Z to a parallelotope with reduce(Z, 'parallelpiped'), a method
-//           that does not exist and makes CORA fail; CORA.cpp reduces to order 1 (Girard)
+// Inputs:   Zs - zonotopes of one dimension n
+//           direction - a nonzero column (n, 1)
+// Outputs:  Zenclose - the smallest box in the frame of the direction containing every Z
+//           rot_inv - the inverse of that frame (n, n)
 // See also: enclose, reduce
 //
 // CORA: contSet/@zonotope/encloseMany.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

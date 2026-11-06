@@ -1,15 +1,23 @@
 // enclose - a constrained zonotope that encloses a set and its image under an affine map
 //
+// The first columns of A and b of both sets agree up to eps; S is a constrained zonotope.
+//
+// The generators in common give (G+G2)/2 and (G-G2)/2, then come (c-c2)/2 and the extra
+// generators of the longer set; the constraints are those of cz on the first factors, none on the
+// new ones.
+//
 // Syntax:   cZres = cz.enclose(cz2);   cZres = cz.enclose(M, S);   cZres = cz.enclose(M, t);
-// Inputs:   cz2 - the second set, which must be a linear image of cz: its constraints are those of
-//           cz (the first columns of A and b agree up to eps); M, S - the second set is M cz + S
-//           for a constrained zonotope S, or M cz + t for a point t (n2, 1)
-// Outputs:  cZres - encloses the union: center (c+c2)/2; the generators in common give (G+G2)/2
-//           and (G-G2)/2, then come (c-c2)/2 and the extra generators of the longer set; the
-//           constraints are those of cz on the first factors, none on the new ones
+// Inputs:   cz2 - the second set, a linear image of cz: its constraints are those of cz
+//           M, S - the second set is M cz + S, or M cz + t for a point t (n2, 1)
+// Outputs:  cZres - encloses the union: center (c+c2)/2
 // See also: convex_hull, Zonotope::enclose
 //
 // CORA: contSet/@conZonotope/enclose.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"
@@ -74,12 +82,16 @@ ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Same constraints --------------------------------------------------------------------------------
+
 ConZonotope ConZonotope::enclose(const ConZonotope &cz2) const {
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(*this, cz2);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_enclosure(*this, cz2);
 }
+
+// Linear image ------------------------------------------------------------------------------------
 
 ConZonotope ConZonotope::enclose(const Tensor &M, const ConZonotope &S) const {
     detail::Entry entry;

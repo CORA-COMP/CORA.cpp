@@ -1,11 +1,17 @@
 // rand_point - random points of a box, as CORA's interval.randPoint
 //
 // Syntax:   P = I.rand_point(N, rng);
-// Inputs:   N - number of points; rng - random numbers (a seed makes them repeatable)
+// Inputs:   N - number of points
+//           rng - random numbers (a seed makes them repeatable)
 // Outputs:  P - points uniform in the box, columns (..., n, N)
 // See also: Zonotope::rand_point
 //
 // CORA: contSet/@interval/randPoint_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

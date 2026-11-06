@@ -1,6 +1,11 @@
 // test_interval_dirac - interval dirac: the Dirac delta and its derivatives on a box
 //
 // CORA: contSet/@interval/dirac.m
+// CORA authors: Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -41,6 +50,7 @@ void dirac_of_order_1(const std::string &b) {
 void dirac_of_higher_order(const std::string &b) {
     for (const int64_t n : {2, 5}) {
         const Interval R = aux_boxes().dirac(n);
+        // orders of the Dirac box
         check(aux_same(R.inf(), std::vector<double>{0, 0, -kInf, -kInf, -kInf, -kInf}) &&
                   aux_same(R.sup(), std::vector<double>{0, 0, kInf, kInf, kInf, kInf}),
               b + ": order " + std::to_string(n) + " is the line on 0");
@@ -60,6 +70,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         dirac_of_order_0(b);
@@ -69,3 +82,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval dirac");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,6 +1,11 @@
 // test_interval_enclose - interval enclose: a box around two boxes
 //
 // CORA: contSet/@interval/enclose.m
+// CORA authors: Maximilian Perschl
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -40,8 +49,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(enclose_is_the_hull);
     checks_and_their_switch();
     return test::finish("interval enclose");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

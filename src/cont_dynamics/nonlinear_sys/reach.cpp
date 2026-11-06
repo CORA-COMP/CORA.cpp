@@ -7,18 +7,23 @@
 //     X_{k+1} = xs + e^{A dt} (X_k - xs) + sum_i A^i dt^{i+1}/(i+1)! U + (Taylor remainder),
 // and the sets in between with the enclosure of linear_sys.reach plus the analogous input terms.
 //
+// taylor_terms is the order of the Taylor series of the linearized system, zonotope_order the
+// bound on the generators of a set (that times n). time_point[k] is the set at k*time_step.
+//
 // Syntax:   R = sys.reach(problem, alg);
-//           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step =
-//           0.01});
+//           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step = .01});
 // Inputs:   problem - initial_set (one zonotope), t_final; no input_set
-//           alg - alg::Linearization: time_step, taylor_terms (order of the Taylor series of the
-//                 linearized system), zonotope_order (a set keeps at most that times n generators)
-// Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step];
-//           time_point[k] is the set at k*time_step
+//           alg - alg::Linearization: time_step, taylor_terms, zonotope_order
+// Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step]
 // See also: simulate, LinearSys::reach
 //
 // CORA: contDynamics/@contDynamics/reach.m
 // CORA: contDynamics/@contDynamics/linReach.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -114,6 +119,7 @@ Box aux_lagrange_remainder(const NonlinearSys &sys, const Box &box, const Tensor
         }
         sum = sum * 0.5;
         los.push_back(sum.lo);
+        // the interval hull of the mean of the sums
         his.push_back(sum.hi);
     }
     return {Tensor::concat(los, -2), Tensor::concat(his, -2)};
@@ -188,8 +194,7 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         const Interval F = LinearSys(A).correction_matrix_state(time_step, taylor_terms);
         const Tensor e_adt = (A * time_step).expm();
 
-        // (ii) the input solution: sum_i A^i dt^{i+1}/(i+1)! U over the step, and over [0, dt]
-        // where the factor t^{i+1}/(i+1)! in [0, dt^{i+1}/(i+1)!] turns U into the zonotope Ubar
+        // (ii) the input solution sum_i A^i dt^{i+1}/(i+1)! U with a factor in [0, dt^{i+1}/(i+1)!]
         const Zonotope Ubar(U.center() * 0.5,
                             Tensor::concat({U.center() * 0.5, U.generators()}, -1));
         Tensor Ai = A.eye_like();

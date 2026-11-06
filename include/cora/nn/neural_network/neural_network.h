@@ -11,6 +11,11 @@
 // See also:   cora/cont_set/zonotope/zonotope.h
 //
 // CORA: nn/@neuralNetwork/neuralNetwork.m
+// CORA authors: Tobias Ladner, Lukas Koller
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

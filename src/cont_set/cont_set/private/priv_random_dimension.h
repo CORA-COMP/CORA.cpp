@@ -6,6 +6,10 @@
 // See also: EmptySet::generate_random, Fullspace::generate_random
 //
 // CORA.cpp only: CORA's generateRandom calls randi inside each class
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

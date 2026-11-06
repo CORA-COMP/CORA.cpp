@@ -1,18 +1,23 @@
 // representsa - whether the whole space is also a set of another type, as fullspace.representsa_
 //
+// "levelSet" (not supported by CORA either) and "polygon" (CORA's switch has no case) are
+// Error::not_supported. In R^0 CORA's emptyObject rule answers first: false for "origin", "point"
+// and "parallelotope", true for the others. The converted set (CORA's second output) is not
+// returned: use the conversions.
+//
 // Syntax:   bool res = F.representsa(type);   bool res = F.representsa(type, tol);
-// Inputs:   type - CORA's name of a set type ("origin", "point", "emptySet", "fullspace",
-//           "interval", "zonotope", "capsule", ...);  tol - checked and relaxes nothing; default:
-//           the repository tolerance
-// Outputs:  res - true for "interval", "convexSet" and "fullspace", false for every other type.
-//           "levelSet" (not supported by CORA either) and "polygon" (CORA's switch has no case)
-//           are Error::not_supported. In R^0 CORA's emptyObject rule answers first: false for
-//           "origin", "point" and "parallelotope", true for the others. The converted set (CORA's
-//           second output) is not returned: use the conversions
+// Inputs:   type - CORA's name of a set type ("origin", "point", "emptySet", "capsule", ...)
+//           tol - checked and relaxes nothing; default: the repository tolerance
+// Outputs:  res - true for "interval", "convexSet" and "fullspace", false for every other type
 // See also: EmptySet::representsa, Interval::representsa
 //
 // CORA: contSet/@fullspace/representsa_.m
 // CORA: contSet/@contSet/representsa.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 

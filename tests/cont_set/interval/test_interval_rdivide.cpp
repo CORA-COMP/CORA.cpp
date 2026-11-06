@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/rdivide.m
 // PROPERTY: contSet/@interval/rdivide.m
+// CORA authors: Dmitry Grebenyuk
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -13,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -100,11 +109,15 @@ void checks_and_their_switch() {
           "rdivide: Inf / Inf");
     const Tensor on = I.rdivide(column({2.0, 4.0})).sup();
     ChecksScope off(false);
+    // the same with the checks off
     check(close(I.rdivide(column({2.0, 4.0})).sup(), on, 0),
           "rdivide: the same with the checks off");
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -116,3 +129,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval rdivide");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

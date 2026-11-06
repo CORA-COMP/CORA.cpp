@@ -1,4 +1,9 @@
 // test_zonotope_tensor_multiplication_torch - zonotope tensor_multiplication: gradients, a batch
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "tensor_lists.h"
 #include "zonotope_gradients.h"
@@ -6,6 +11,10 @@
 using namespace cora;
 using test::check;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,6 +46,9 @@ void tensor_multiplication_of_a_batch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(41);
@@ -44,3 +56,5 @@ int main() {
     tensor_multiplication_of_a_batch();
     return test::finish("zonotope tensor_multiplication (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

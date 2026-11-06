@@ -7,13 +7,22 @@ of the set and of the system, so LinearSys takes a batch of systems the same way
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_05_batch.py
 Outputs:  the shape of the result, and whether each member equals its own single run
 See also: example_linear_reach_01_5dim, example_linear_reach_06_gpu
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 t_final = 3.0
 

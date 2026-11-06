@@ -10,6 +10,11 @@
 // See also: Zonotope::minnorm, Zonotope::mink_diff
 //
 // CORA: contSet/@zonotope/polytope.m
+// CORA authors: Niklas Kochdumper, Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 
@@ -98,8 +103,7 @@ Tensor priv_zonotope_facet_normals(const Zonotope &Z) {
     }
     const int64_t rows = int64_t(columns.size()) / k;
     if (rows == 0) return G.zeros_like({0, H.n});
-    // the normal of each subset by tensor operations, so that it carries the gradient: the part
-    // of the host cross product w orthogonal to the subset Q, w - Q (Q'Q)^-1 Q' w, normalized
+    // each subset's normal by tensor operations (with gradient): w - Q (Q'Q)^-1 Q' w, normalized
     const Tensor Q = G.take(columns, -1).reshape({H.n, rows, k}).permute_dims({1, 0, 2});
     const Tensor w = Tensor::like(G, cross, {rows, H.n, 1});
     const Tensor Qt = Q.matrix_transpose();

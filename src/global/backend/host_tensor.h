@@ -9,6 +9,11 @@
 //
 // Syntax:   auto t = HostTensor<double>::make(shape, backend_id::lean);
 // See also: host_tensor.cpp, eigen.cpp, lean.cpp, cora/global/backend/host.h
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #pragma once
 

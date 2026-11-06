@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/or.m
 // PROPERTY: contSet/@zonotope/or.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -14,6 +19,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,6 +53,7 @@ void unions_by_hand(const std::string &b) {
           b + ": two points give the segment between them");
     const Zonotope same = A.unite(A);
     check(close(same.interval().sup(), std::vector<double>{1, 1}, 1e-9), b + ": a set with itself");
+    // no other set
     check(close(A.unite(std::vector<Zonotope>{}).center(), A.center(), 0), b + ": no other set");
 }
 
@@ -113,6 +123,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         unions_by_hand(b);
@@ -122,3 +135,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope unite");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

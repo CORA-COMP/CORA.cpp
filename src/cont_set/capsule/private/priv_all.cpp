@@ -6,6 +6,10 @@
 // See also: priv_at_most
 //
 // CORA.cpp only: CORA's predicates return one number per set; the batch answers all of them
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 

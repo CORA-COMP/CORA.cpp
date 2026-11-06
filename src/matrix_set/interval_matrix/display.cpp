@@ -1,13 +1,19 @@
 // display - the text that describes an interval matrix, as CORA's intervalMatrix.display
 //
+// CORA prints the interval's display after the dimension. getPrintSetInfo (the abbreviation and
+// property order of that display) has no counterpart: the text is built here.
+//
 // Syntax:   std::string text = A.display();   std::cout << A;
 // Inputs:   -
-// Outputs:  text - the class, the dimension (rows and columns) and both bound matrices; CORA
-//           prints the interval's display after the dimension. getPrintSetInfo (the abbreviation
-//           and property order of that display) has no counterpart: the text is built here
+// Outputs:  text - the class, the dimension (rows and columns) and both bound matrices
 // See also: Interval::display, src/global/format.h
 //
 // CORA: matrixSet/@intervalMatrix/display.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

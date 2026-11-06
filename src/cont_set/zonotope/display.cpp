@@ -6,6 +6,11 @@
 // See also: interval display, src/global/format.h
 //
 // CORA: contSet/@zonotope/display.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"

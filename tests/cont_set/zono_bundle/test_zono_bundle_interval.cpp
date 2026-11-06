@@ -1,7 +1,6 @@
 // test_zono_bundle_interval - ZonoBundle::interval: the box around a bundle
 //
 // CORA: contSet/@zonoBundle/interval.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

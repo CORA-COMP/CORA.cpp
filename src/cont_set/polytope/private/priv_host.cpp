@@ -2,9 +2,8 @@
 //
 // Syntax:   HostH H = priv_host_h(P.constraints());   Rows V = priv_polytope_vertices(P);
 //           bool full = priv_is_fullspace(P);   Polytope B = priv_polytope_of_interval(I);
-// Inputs:   a single polytope (the host form), any polytope (the predicates)
-// Outputs:  the rows of the halfspaces and of the vertices, whether the set is R^n, the polytope
-//           of a box
+// Inputs:   P - a single polytope (the host form), any polytope (the predicates)
+// Outputs:  R - the rows of the halfspaces and vertices, whether the set is R^n, a box's polytope
 // See also: priv_compact, priv_vertices
 //
 // CORA.cpp only: MATLAB reads its matrices as they are; CORA's @interval/polytope.m is the

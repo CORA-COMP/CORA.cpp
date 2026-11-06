@@ -1,6 +1,11 @@
 // test_cont_set_vertices - ContSet::vertices: two-dimensional sets only
 //
 // CORA: contSet/@contSet/vertices.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -27,7 +36,12 @@ void only_two_dimensions() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     only_two_dimensions();
     return test::finish("cont_set vertices");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

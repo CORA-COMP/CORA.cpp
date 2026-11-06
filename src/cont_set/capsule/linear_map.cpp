@@ -1,14 +1,20 @@
 // linear_map - the image of a capsule under a matrix, as CORA's capsule.mtimes
 //
+// The Frobenius norm bounds the operator norm, so the image is enclosed. CORA scales the radius
+// by max(eig(M M')), the square of the operator norm, which is too small for a map that shrinks
+// (docs/cora-differences.md). The empty capsule stays empty.
+//
 // Syntax:   Cres = C.linear_map(M);   Cres = M * C;
 // Inputs:   M - matrix (..., m, n)
-// Outputs:  Cres - the capsule of M c, M g and the radius r |M|_F: the Frobenius norm bounds the
-//           operator norm, so the image is enclosed. CORA scales the radius by max(eig(M M')),
-//           the square of the operator norm, which is too small for a map that shrinks
-//           (docs/cora-differences.md). The empty capsule stays empty
+// Outputs:  Cres - the capsule of M c, M g and the radius r |M|_F
 // See also: lift, Zonotope::linear_map
 //
 // CORA: contSet/@capsule/mtimes.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "cora/cont_set/capsule/capsule.h"

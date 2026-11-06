@@ -6,6 +6,10 @@
 // bits (one case in four differs), so the row is a property, not ORACLE.
 //
 // PROPERTY: matrixSet/@intervalMatrix/norm.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/rng.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
@@ -15,11 +19,18 @@
 
 using namespace cora;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 constexpr double kRelative = 4 * std::numeric_limits<double>::epsilon();
 
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -48,3 +59,5 @@ int main() {
     });
     return test::finish("lean interval_matrix norm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

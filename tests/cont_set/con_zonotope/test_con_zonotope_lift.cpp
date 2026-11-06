@@ -1,8 +1,7 @@
 // test_con_zonotope_lift - ConZonotope::lift: the states at given positions
 //
 // CORA: contSet/@conZonotope/lift_.m
-//
-// CORA authors:  Tobias Ladner
+// CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

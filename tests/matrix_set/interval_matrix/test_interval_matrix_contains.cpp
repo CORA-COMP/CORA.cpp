@@ -2,11 +2,20 @@
 //
 // CORA: matrixSet/@intervalMatrix/contains.m
 // PROPERTY: matrixSet/@intervalMatrix/contains.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -60,6 +69,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         containment_of_the_example(b);
@@ -68,3 +80,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix contains");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -6,6 +6,11 @@
 // See also: empty, Zonotope::origin
 //
 // CORA: contSet/@conZonotope/origin.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 

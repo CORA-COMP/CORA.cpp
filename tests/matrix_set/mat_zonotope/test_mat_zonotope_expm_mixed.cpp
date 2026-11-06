@@ -2,6 +2,11 @@
 //
 // CORA: matrixSet/@matZonotope/expmMixed.m
 // PROPERTY: matrixSet/@matZonotope/expmMixed.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,6 +43,7 @@ void expm_mixed_encloses_the_exponentials(const std::string &b) {
               b + ": the lists of powers");
     }
     const auto R = A.expm_mixed(1.0, 2, 6);
+    // the powers start with A and the square
     check(test::same_set(R.powers[1], A.dependent_terms(1.0).first, 1e-12) &&
               test::same_set(R.powers[0], A, 0),
           b + ": the powers start with A and the square");
@@ -66,8 +76,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(expm_mixed_encloses_the_exponentials);
     checks_and_their_switch();
     return test::finish("mat_zonotope expm_mixed");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

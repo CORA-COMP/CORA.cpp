@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@intervalMatrix/expm.m
 // PROPERTY: matrixSet/@intervalMatrix/expm.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -76,6 +85,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         expm_encloses_the_exponentials(b);
@@ -84,3 +96,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix expm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

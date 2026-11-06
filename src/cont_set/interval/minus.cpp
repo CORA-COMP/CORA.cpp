@@ -2,11 +2,17 @@
 //
 // Syntax:   Interval R = I.minus(I2);   Interval R = I.minus(v);
 //           Interval R = Interval::minus(v, I);   I - I2;   I - v;   v - I;
-// Inputs:   I2 - interval of the shape of I;  v - a number, or an array of the shape of the bounds
+// Inputs:   I2 - interval of the shape of I
+//           v - a number, or an array of the shape of the bounds
 // Outputs:  R - [inf - sup2, sup - inf2]; [inf - v, sup - v]; [v - sup, v - inf]
 // See also: plus, minkowski_difference
 //
 // CORA: contSet/@interval/minus.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

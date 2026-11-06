@@ -10,10 +10,19 @@
 //
 // Syntax:   R = priv_reach_standard(X0, e_adt, F, steps);
 //           R = priv_reach_standard(X0, e_adt, F, in, steps, zonotope_order);
-// Inputs:   X0 - initial set;  e_adt - e^{A dt};  F - correction matrix;  steps - number of steps
-//           in - the input solution of one step;  zonotope_order - order that bounds the sets
+// Inputs:   X0 - initial set
+//           e_adt - e^{A dt}
+//           F - correction matrix
+//           steps - number of steps
+//           in - the input solution of one step
+//           zonotope_order - order that bounds the sets
 // Outputs:  R - the reachable sets, see LinearSys::reach
 // See also: priv_reach_wrappingfree
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 

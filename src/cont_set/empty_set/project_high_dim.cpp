@@ -1,13 +1,18 @@
 // project_high_dim - the empty set placed into a larger space, as CORA's emptySet.projectHighDim_
 //
 // Syntax:   EmptySet R = E.project_high_dim(N, proj);
-// Inputs:   N - dimension of the space, N >= dim;  proj - the N-dimensional coordinates (0-based)
-//           of the dim coordinates of E
+// Inputs:   N - dimension of the space, N >= dim
+//           proj - the N-dimensional coordinates (0-based) of the dim coordinates of E
 // Outputs:  R - the empty set of N dimensions
 // See also: lift, Interval::project_high_dim
 //
 // CORA: contSet/@emptySet/projectHighDim_.m
 // CORA: contSet/@contSet/projectHighDim.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 

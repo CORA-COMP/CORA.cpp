@@ -1,4 +1,5 @@
 // test_lean_fullspace_sets - the set operations and constructors of Fullspace against the CORALean
+//
 // oracle
 //
 // ORACLE: contSet/@fullspace/Inf.m
@@ -17,6 +18,10 @@
 // ORACLE: contSet/@fullspace/radius.m
 // ORACLE: contSet/@fullspace/supportFunc_.m
 // ORACLE: contSet/@fullspace/volume_.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -25,6 +30,11 @@
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -45,6 +55,7 @@ int main() {
         const Interval I = rnd.box(3);
         test::oracle::check(F.intersect(Fullspace(3)).as<Fullspace>(),
                             lean::Fullspace(3).intersect(lean::Fullspace(3)));
+        // intersections of the full space
         test::oracle::check(F.intersect(I).as<Interval>(), lean::Fullspace(3).intersect(I));
     });
     test::oracle::run("fullspace.plus", [](test::oracle::Random &) {
@@ -65,6 +76,7 @@ int main() {
         test::oracle::check(Fullspace(3).lift(6, dims), lean::Fullspace(3).lift(6, dims));
     });
     test::oracle::run("fullspace.project", [](test::oracle::Random &) {
+        // projections of the full space
         const std::vector<int64_t> dims{2, 0};
         test::oracle::check(Fullspace(3).project(dims).as<Fullspace>(),
                             lean::Fullspace(3).project(dims));
@@ -75,8 +87,7 @@ int main() {
         test::oracle::check(Fullspace(3).project_high_dim(3, proj),
                             lean::Fullspace(3).project_high_dim(3, proj));
     });
-    // the image of R^n under a matrix of full row rank is the whole space of its rows; CORALean
-    // gives that for every matrix, CORA a box where M has a zero row (see the next op)
+    // the image of R^n under a full-row-rank matrix is the whole space; CORALean: any matrix
     test::oracle::run("fullspace.mtimes", [](test::oracle::Random &rnd) {
         for (const int64_t m : {1, 3, 7}) {
             const Tensor M = rnd.matrix(m, 3);
@@ -114,3 +125,5 @@ int main() {
     });
     return test::finish("lean fullspace sets");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

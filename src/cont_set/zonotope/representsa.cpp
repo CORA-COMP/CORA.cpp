@@ -1,18 +1,23 @@
 // representsa - whether a zonotope is also a set of another type, as CORA's zonotope.representsa_
 //
+// The norm of a zero generator is up to the machine epsilon. The converted set (CORA's second
+// output) is not returned: use the conversions. "conHyperplane" and "ellipsoid" are refused
+// (Error::not_supported), as CORA does, and so is "polygon", for which CORA's switch has no case.
+// Not a batch.
+//
 // Syntax:   bool res = Z.representsa(type);   bool res = Z.representsa(type, tol);
-// Inputs:   type - CORA's name of a set type ("origin", "point", "interval", "parallelotope",
-//           "capsule", "zonotope", "conZonotope", "polytope", ...);  tol - what counts as zero
-//           (as within_tol); default: the repository tolerance
+// Inputs:   type - CORA's name of a set type ("origin", "point", "interval", "zonotope", ...)
+//           tol - what counts as zero; default: the repository tolerance
 // Outputs:  res - whether the set is exactly such a set, judged without its zero generators
-//           (norm up to the machine epsilon). The converted set (CORA's second output) is not
-//           returned: use the conversions. "conHyperplane" and "ellipsoid" are refused
-//           (Error::not_supported), as CORA does, and so is "polygon", for which CORA's switch
-//           has no case. Not a batch
 // See also: is_full_dim, rank, compact
 //
 // CORA: contSet/@zonotope/representsa_.m
 // CORA: contSet/@contSet/representsa.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

@@ -2,9 +2,15 @@
 //
 // Syntax:   plot(fig, S, dims, options);   plot(fig, R, dims, options);   plot(fig, spec, dims)
 //           plot_over_time(fig, R, dim, options);   plot_rand_point(fig, S, dims, N, rng)
-// Inputs:   dims - the one, two or three dimensions to show (0-based); options - see PlotOptions
-// Outputs:  -, the figure has new layers
+// Inputs:   dims - the one, two or three dimensions to show (0-based)
+//           options - see PlotOptions
+// Outputs:  -   (the figure has new layers)
 // See also: cora/global/plot/figure.h, contSet/zonotope/vertices, contSet/zonotope/project
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 #include "cora/global/error.h"
@@ -29,9 +35,7 @@ Scheme &aux_scheme() {
     return scheme;
 }
 
-// The outline, the fill and its opacity of a set: from the options if given; else, with the
-// scheme "CORA:contDynamics", an initial set (opaque white); else the next color of the figure
-// for both, with a fill of opacity 0.2.
+// Outline, fill and opacity of a set: the options, else white for an initial set, else next color.
 struct SetColors {
     Color edge, face;
     double alpha;
@@ -51,8 +55,7 @@ SetColors aux_set_colors(Figure &fig, const PlotOptions &options) {
     return {options.edge_color.value_or(edge), face, alpha};
 }
 
-// The color of a reachable set: from the options, else CORA's blue shaded by the scheme, else the
-// next color of the figure.
+// The color of a reachable set: the options, else CORA's blue by the scheme, else the next color.
 Color aux_reach_color(Figure &fig, const PlotOptions &options) {
     if (options.face_color) return *options.face_color;
     if (options.color) return *options.color;
@@ -72,8 +75,7 @@ void aux_check_figure(Figure &fig, int dimension) {
     fig.dimension = dimension;
 }
 
-// The number of dimensions must be in fewest..most; the axes are named after them unless they
-// already are. The figure becomes three-dimensional for three dimensions.
+// The dimension is in fewest..most; axes are named unless they are; three make a 3-D figure.
 void aux_check_dims(Figure &fig, const std::vector<int64_t> &dims, std::size_t most = 3,
                     std::size_t fewest = 1) {
     if (dims.size() < fewest || dims.size() > most)
@@ -94,8 +96,7 @@ void aux_time_axes(Figure &fig, int64_t dim) {
     if (fig.ylabel.empty()) fig.ylabel = "x[" + std::to_string(dim) + "]";
 }
 
-// The vertices of S projected onto dims, per batch member: a bar for one dimension, as CORA draws
-// the interval on the x axis.
+// The vertices of S projected onto dims, per batch member: a bar for one dimension, as in CORA.
 std::vector<Polygon> aux_polygons(const ContSet &S, const std::vector<int64_t> &dims) {
     if (dims.size() == 2) return S.project(dims)->vertices();
     const Interval box = S.project(dims)->interval();
@@ -149,8 +150,7 @@ Point aux_normal(const Halfspace &h, const std::vector<int64_t> &dims) {
 
 // Reachable sets ----------------------------------------------------------------------------------
 
-// Which sets of R are drawn: "ti" or "tp", and every step-th of them. The time-interval sets are
-// replaced by the time-point sets if there are none, with a warning, as CORA does.
+// Which sets of R are drawn: "ti" or "tp", every step-th; without time-interval sets, points.
 const std::vector<Zonotope> &aux_sets(const ReachSet &R, const PlotOptions &options) {
     if (options.set != "ti" && options.set != "tp")
         CORA_FAIL(Error::wrong_value, "plot: set must be \"ti\" (the time-interval sets) or "

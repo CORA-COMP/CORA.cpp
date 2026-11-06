@@ -1,8 +1,14 @@
 // test_nonlinear_sys_gradient_torch - gradients through reach and simulate with respect to the
+//
 // initial set, against central differences
 //
 // CORA: contDynamics/@contDynamics/reach.m
 // CORA: contDynamics/@nonlinearSys/simulate.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/global/backend/torch.h"
@@ -10,6 +16,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -67,6 +77,7 @@ double gradient_error(F f, const torch::Tensor &x0) {
 }
 
 void reach_is_differentiable() {
+    // the direction, center and generators of the start set
     const torch::TensorOptions opts = torch::TensorOptions().dtype(torch::kDouble);
     const torch::Tensor d = torch::tensor({0.6, -0.8}, opts);
     const torch::Tensor c0 = torch::tensor({1.4, 2.3}, opts);
@@ -89,9 +100,14 @@ void simulate_is_differentiable() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     reach_is_differentiable();
     simulate_is_differentiable();
     return test::finish("nonlinearSys gradient");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

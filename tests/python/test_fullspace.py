@@ -1,4 +1,11 @@
-"""test_fullspace - the whole space R^n: constructor, set operations, predicates, lift and linear map."""
+"""test_fullspace - the whole space R^n: constructor, set operations, predicates, lift and linear map.
+
+CORA authors: Mark Wetzlinger, Tobias Ladner
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@fullspace/Inf.m
 # CORA: contSet/@fullspace/and_.m
 # CORA: contSet/@fullspace/box.m
@@ -37,12 +44,19 @@ import unittest
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 INF = float("inf")
 
 
 def box(lo, hi):
     return cora.Interval(np.array(lo), np.array(hi))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Construction(unittest.TestCase):
     def setUp(self):
@@ -66,6 +80,7 @@ class Construction(unittest.TestCase):
         self.assertEqual(I.inf.tolist(), [-INF, -INF])
         self.assertEqual(I.sup.tolist(), [INF, INF])
         with self.assertRaises(cora.errors.OutOfDomain):
+            # the full space of dimension 0
             cora.Fullspace(0).interval()
 
     def test_enclose_points_and_lift(self):
@@ -90,6 +105,7 @@ class SetOperations(unittest.TestCase):
         self.assertIsInstance(self.F.intersect(self.Z), cora.Zonotope)
         self.assertIsInstance(self.F & self.I, cora.Interval)
         self.assertIsInstance(cora.intersect(self.I, self.F), cora.Interval)
+        # intersections
         self.assertIsInstance(self.F.intersect(cora.Fullspace(2)), cora.Fullspace)
         with self.assertRaises(cora.errors.DimensionMismatch):
             self.F.intersect(cora.Fullspace(3))
@@ -113,6 +129,7 @@ class SetOperations(unittest.TestCase):
         with self.assertRaises(cora.errors.DimensionMismatch):
             self.F.plus(cora.EmptySet(3))
 
+    # containment
     def test_contains_and_is_intersecting(self):
         self.assertTrue(self.F.contains(self.Z))
         self.assertTrue(self.F.contains(np.array([[1.0, 2.0], [3.0, 4.0]])))
@@ -134,6 +151,7 @@ class SetOperations(unittest.TestCase):
         self.assertFalse(self.F.isequal(cora.Fullspace(3)))
         self.assertTrue(self.F.isequal(cora.Interval.unbounded(2)))
         self.assertFalse(self.F.isequal(box([-INF, 0.0], [INF, INF])))
+        # equality
         self.assertFalse(self.F.isequal(cora.Interval.empty(2)))
         self.assertFalse(self.F.isequal(self.Z))
         self.assertFalse(self.F.isequal(np.array([0.0, 0.0])))
@@ -158,6 +176,7 @@ class LinearMap(unittest.TestCase):
         zero_row = np.array([[1.0, 2.0], [0.0, 0.0]]) @ self.F
         self.assertEqual(zero_row.inf.tolist(), [-INF, 0.0])
         self.assertEqual(zero_row.sup.tolist(), [INF, 0.0])
+        # scaling by zero
         self.assertIsInstance(2.0 * self.F, cora.Fullspace)
         self.assertEqual((0.0 * self.F).sup.tolist(), [0.0, 0.0])
         with self.assertRaises(cora.errors.DimensionMismatch):
@@ -182,6 +201,7 @@ class ContSetInterface(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
 
+    # support function and projection
     def test_support_function_project_and_rand_point(self):
         F = cora.Fullspace(3)
         self.assertEqual(float(F.support_function(np.array([1.0, 0.0, 0.0]))), INF)
@@ -203,6 +223,7 @@ class ContSetInterface(unittest.TestCase):
         for n in (1, 2, 3):
             Z = cora.Zonotope(gen.standard_normal(n), gen.standard_normal((n, 3)))
             for _ in range(5):
+                # the full space has the larger support
                 d = gen.standard_normal(n)
                 self.assertGreaterEqual(float(cora.Fullspace(n).support_function(d)),
                                         float(Z.support_function(d)))
@@ -226,6 +247,7 @@ class ContSetInterface(unittest.TestCase):
         self.assertEqual(E.dim, 2)
 
     def test_representsa(self):
+        # classes it represents
         F = cora.Fullspace(3)
         for type_ in ("interval", "convexSet", "fullspace"):
             self.assertTrue(F.representsa(type_), type_)
@@ -247,6 +269,7 @@ class ContSetInterface(unittest.TestCase):
     def test_generate_random(self):
         rng = cora.Rng(5)
         self.assertEqual(cora.Fullspace.generate_random(rng, dimension=4).dim, 4)
+        # random dimensions
         drawn = {cora.Fullspace.generate_random(rng).dim for _ in range(200)}
         self.assertEqual(drawn, set(range(1, 11)))
         with self.assertRaises(cora.errors.WrongValue):
@@ -261,3 +284,5 @@ class ContSetInterface(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

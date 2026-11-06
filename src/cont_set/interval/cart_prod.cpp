@@ -1,13 +1,20 @@
 // cart_prod - the Cartesian product with a box or a point, as CORA's interval.cartProd_
 //
+// An empty operand returns the other; nothing rounds.
+//
 // Syntax:   Interval P = I.cart_prod(I2);   Interval P = I.cart_prod(p);
 //           Interval P = Interval::cart_prod(p, I);
-// Inputs:   I2 - interval;  p - a point, a column (..., m, 1)
-// Outputs:  P - the columns stacked (I first), or for rows the rows joined side by side; an empty
-//           operand returns the other; nothing rounds
+// Inputs:   I2 - interval
+//           p - a point, a column (..., m, 1)
+// Outputs:  P - the columns stacked (I first), or for rows the rows joined side by side
 // See also: cat, cart_prod (registry)
 //
 // CORA: contSet/@interval/cartProd_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
 #include "cora/cont_set/interval/interval.h"

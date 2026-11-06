@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@intervalMatrix/expmNormInf.m
 // PROPERTY: matrixSet/@intervalMatrix/expmNormInf.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -52,6 +61,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         value_of_the_formula(b);
@@ -60,3 +72,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix expm_norm_infinity");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

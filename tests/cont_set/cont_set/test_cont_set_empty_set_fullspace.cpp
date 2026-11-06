@@ -1,6 +1,11 @@
 // test_cont_set_empty_set_fullspace - the registry pairs of the empty set and the whole space
 //
 // CORA: contSet/@contSet/reorder.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -62,6 +71,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_pairs_are_listed_with_the_empty_set_first();
     test::for_each_backend(the_sets_combine_as_cora_does);
@@ -69,3 +81,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("cont_set empty_set_fullspace");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

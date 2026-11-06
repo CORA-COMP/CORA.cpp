@@ -8,6 +8,11 @@
 //
 // Syntax:   Tensor E = derived::expm(A);   detail::check_pair(a, b, "add");
 // See also: tensor.h, derived.cpp, fused.cpp
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

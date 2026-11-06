@@ -1,4 +1,9 @@
 // test_cont_set_vertices_3d - ContSet::vertices_3d: three-dimensional sets only
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -7,6 +12,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -33,8 +42,13 @@ void through_a_projection() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     only_three_dimensions();
     through_a_projection();
     return test::finish("cont_set vertices_3d");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

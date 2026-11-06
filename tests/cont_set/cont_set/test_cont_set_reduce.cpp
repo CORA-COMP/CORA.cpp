@@ -1,7 +1,13 @@
 // test_cont_set_reduce - ContSet::reduce: an enclosure with fewer generators, in the class of the
+//
 // set
 //
 // CORA: contSet/@contSet/reduce.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -13,6 +19,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -47,8 +57,13 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(reduce_keeps_the_class_and_encloses);
     errors_and_their_switch();
     return test::finish("cont_set reduce");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

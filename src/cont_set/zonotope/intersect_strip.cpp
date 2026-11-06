@@ -1,21 +1,28 @@
 // intersect_strip - a zonotope that encloses the intersection with strips |C x - y| <= phi
 //
-// Syntax:   Zres = Z.intersect_strip(C, phi, y);   Zres = Z.intersect_strip(C, phi, y, method);
-//           Zres = Z.intersect_strip(C, phi, y, lambda);   Zres = Z.intersect_strip(C, phi, y,
-//           aux);
+// It contains the intersection for every lambda. "normGen" weighs the generators against the
+// strip widths; "alamo-FRad" and "bravo" use the first strip only. CORA's "wang-FRad" gain, built
+// from G G' of the zonotope itself, is not the optimal gain of Wang et al. 2018 (every gain gives
+// an enclosure). "svd", "radius" (an optimizer) and "alamo-volume" (a search over the generator
+// subsets) are not supported.
+//
+// Syntax:   Zres = Z.intersect_strip(C, phi, y);
+//           Zres = Z.intersect_strip(C, phi, y, method);
+//           Zres = Z.intersect_strip(C, phi, y, lambda);
+//           Zres = Z.intersect_strip(C, phi, y, aux);
 // Inputs:   C (k, n), phi (k, 1), y (k, 1) - the k strips
-//           method - the gain lambda (n, k) is chosen by "normGen" (default: the generators
-//                    against the strip widths), "alamo-FRad" or "bravo" (the first strip only),
-//                    or "wang-FRad" with the matrices E, F, A, C of an observer (aux);
-//                    (CORA's "wang-FRad" gain, built from G G' of the zonotope itself, is not
-//                    the optimal gain of Wang et al. 2018; every gain gives an enclosure);
-//                    "svd", "radius" (an optimizer) and "alamo-volume" (a search over the
-//                    generator subsets) are not supported; a given lambda is used as it is
-// Outputs:  Zres - center c + lambda (y - C c), generators [(I - lambda C) G, lambda diag(phi)];
-//           it contains the intersection for every lambda
+//           method - the gain lambda: "normGen" (default), "alamo-FRad", "bravo" or "wang-FRad"
+//           lambda - a given gain, used as it is
+//           aux - the matrices E, F, A, C of an observer, for "wang-FRad"
+// Outputs:  Zres - center c + lambda (y - C c), generators [(I - lambda C) G, lambda diag(phi)]
 // See also: intersect, enclose
 //
 // CORA: contSet/@zonotope/intersectStrip.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -139,6 +146,7 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
     CORA_CHECK(method == "normGen" || method == "bravo" || C.shape()[0] == 1, Error::special_error,
                [&] { return "intersect_strip: '" + method + "' is for a single strip"; });
     CORA_CHECK(method != "bravo" || c_.ndim() == 2, Error::not_supported, [] {
+        // a single strip: the other methods differ in the gain only
         return std::string("intersect_strip: 'bravo' chooses among candidates per zonotope; it "
                            "supports a single zonotope, not a batch");
     });

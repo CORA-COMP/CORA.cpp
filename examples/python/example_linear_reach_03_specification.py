@@ -6,13 +6,22 @@ A safe set must contain the reachable set, an unsafe set must not touch it. Both
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_03_specification.py
 Outputs:  whether each specification holds, and the step that first violates it
 See also: example_linear_reach_01_5dim
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 t_final = 6.0
 R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))

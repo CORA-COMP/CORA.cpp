@@ -1,6 +1,11 @@
 // test_interval_linear_map - interval linear_map: the interval hull of the image
 //
 // CORA: contSet/@interval/mtimes.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -67,8 +76,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { mtimes_is_the_hull_of_the_image(b); });
     checks_and_their_switch();
     return test::finish("interval linear_map");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

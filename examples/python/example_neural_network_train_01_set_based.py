@@ -15,14 +15,24 @@ set-based one does not; the boxes it keeps clear are certified by the zonotope p
 Syntax:   PYTHONPATH=build python examples/python/example_neural_network_train_01_set_based.py [--save FILE]
 Outputs:  accuracy and certified share of the training points for both models, and the figure
 See also: example_neuralNetwork_verify_01, example_linear_learn_01_dynamics
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
+import cora
 import torch
 from matplotlib.patches import Rectangle
 from torch import nn
 
-import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -34,14 +44,12 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
 
+
 eps_train = 0.05       # half-width of the input boxes during set-based training
-# tau and epochs are tuned (the paper's Fig. 7 uses tau = 0.1 and 200 epochs): with these, seeds
-# 0-3 all fit the points and the set-based model certifies every box at eps = 0.05, the standard
-# one 60-70%; a tau of 0.3 or more collapses the network to a constant class.
+# tau and epochs are tuned (paper Fig. 7: tau = 0.1, 200 epochs); tau >= 0.3 gives a constant class
 tau = 0.05            # weight of the output-set size against the loss of the center
 epochs = 1500
 batch_size = 10
@@ -51,7 +59,7 @@ dtype = torch.float64
 
 # Data --------------------------------------------------------------------------------------
 
-# The 20 points of the paper (Appendix C) and their classes: the target (1, 0) is class 0, (0, 1) is 1.
+# The paper's 20 points (Appendix C) and classes: the target (1, 0) is class 0, (0, 1) is 1.
 points = torch.tensor([
     [0.0622, 0.6995], [0.6534, 0.9409], [0.4759, 0.7163], [0.8812, 0.1020], [0.5047, 0.4685],
     [0.1470, 0.3275], [0.3439, 0.1395], [0.9098, 0.5422], [0.8588, 0.8696], [0.0545, 0.0825],

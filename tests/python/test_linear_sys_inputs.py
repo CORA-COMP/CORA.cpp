@@ -1,5 +1,13 @@
 """test_linear_sys_inputs - LinearSys(A, B, C) in Python: reach with an input set U against MATLAB CORA
-(R2025b), output_set, correction_matrix_input, simulate with inputs, and the errors."""
+
+(R2025b), output_set, correction_matrix_input, simulate with inputs, and the errors.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contDynamics/@contDynamics/simulateRandom.m
 # CORA: contDynamics/@linearSys/outputSet.m
 # CORA: contDynamics/@linearSys/reach.m
@@ -10,6 +18,11 @@ import unittest
 
 import cora
 import numpy as np
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 # The system of the MATLAB call linearSys(A, B, [], C), reach with params.U, step 0.2, order 6.
 A = np.array([[-0.3, 1, 0], [-1, -0.2, 0.4], [0, -0.5, -0.1]])
@@ -35,6 +48,7 @@ REFERENCE = {
             [1.3532149504229656, -0.14293319207735772, 1.3721796966330588, 3.233587186134407],
             [1.2916924369356173, -0.19161031612531348, 1.2366933713628587, 3.2331022188421397],
             [1.2161962332094858, -0.1837509040310461, 1.1130145129518556, 3.1643940406039142]]),
+        # the states at the time points
         "state_tp": np.array([
             [1.3, -0.099999999999999978, 1.6000000000000001, 3],
             [1.3015322020045024, -0.14663010615312744, 1.465184794511178, 3.0612173984069702],
@@ -42,6 +56,7 @@ REFERENCE = {
             [1.2290023031838353, -0.23556951670869042, 1.2007715500077052, 3.09229466699589],
             [1.1638538958537934, -0.26344108861257948, 1.084007195218873, 3.043550523367847],
             [1.0908853632952158, -0.23791342985575714, 0.9836676762064267, 2.9344425990577068]]),
+        # the outputs
         "output_ti": np.array([
             [1.1612650790591732, 0.13585329905924443, 1.8222029622505813],
             [1.0320496228946543, 0.019212344807178428, 1.7130653288335793],
@@ -56,6 +71,7 @@ REFERENCE = {
             [0.71990537413718736, -0.14656385222330875, 1.0464205669513251],
             [0.6767148687346064, -0.11779158883553048, 0.99128301428451782]]),
     },
+    # the algorithm "wrapping-free"
     "wrapping_free": {
         "state_ti": np.array([
             [1.4094432951328197, -0.031777261599073237, 1.6694419529637321, 3.2080338181438424],
@@ -63,6 +79,7 @@ REFERENCE = {
             [1.3532149504229656, -0.14293319207735772, 1.4747804198319274, 3.314545503711277],
             [1.2916924369356173, -0.19161031612531343, 1.3744168607473641, 3.3213759835423322],
             [1.2161962332094858, -0.18375090403104599, 1.2942429244317604, 3.2657323465191608]]),
+        # the states at the time points
         "state_tp": np.array([
             [1.3, -0.099999999999999978, 1.6000000000000001, 3],
             [1.3015322020045024, -0.14663010615312744, 1.465184794511178, 3.0612173984069702],
@@ -70,6 +87,7 @@ REFERENCE = {
             [1.2290023031838353, -0.23556951670869036, 1.3033722732065738, 3.1732529845727595],
             [1.1638538958537934, -0.26344108861257937, 1.2217306846033782, 3.13182428806804],
             [1.0908853632952158, -0.23791342985575703, 1.1648960876863312, 3.0357809049729538]]),
+        # the outputs
         "output_ti": np.array([
             [1.1612650790591732, 0.13585329905924443, 1.8222029622505813],
             [1.0570476518921785, 0.036945042890052848, 1.7955469523559866],
@@ -91,6 +109,8 @@ def supports(sets, dirs):
     """The support function of every zonotope along every row of dirs: (sets, directions)."""
     return np.array([[d @ Z.center + np.abs(Z.generators.T @ d).sum() for d in dirs] for Z in sets])
 
+
+# ============================================  MAIN  ============================================ #
 
 class ReachWithInputs(unittest.TestCase):
     def setUp(self):
@@ -156,6 +176,7 @@ class ReachWithInputs(unittest.TestCase):
         self.assertEqual(x.shape, (6, 3, 6))
 
     def test_errors(self):
+        # an input set needs B
         with self.assertRaises(cora.errors.CORAError):
             cora.LinearSys(A).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6,
                                     input_set=U)            # U needs B
@@ -176,3 +197,5 @@ def expm(M):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

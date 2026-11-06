@@ -1,12 +1,18 @@
 // cosh - the hyperbolic cosine of a box, as CORA's interval.cosh
 //
+// Else [1, cosh(max(|inf|, |sup|))].
+//
 // Syntax:   Interval R = I.cosh();
 // Inputs:   -
-// Outputs:  R - [cosh(sup), cosh(inf)] if sup <= 0, [cosh(inf), cosh(sup)] if inf >= 0, else
-//           [1, cosh(max(|inf|, |sup|))]
+// Outputs:  R - [cosh(sup), cosh(inf)] if sup <= 0, [cosh(inf), cosh(sup)] if inf >= 0
 // See also: cos, exp
 //
 // CORA: contSet/@interval/cosh.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

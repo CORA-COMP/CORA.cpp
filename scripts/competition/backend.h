@@ -1,4 +1,4 @@
-// The two ways CORA.cpp can run an instance.
+// backend - the two ways CORA.cpp can run an instance
 //
 // The Eigen backend is plain `double` on the CPU: no dispatch between an operation and
 // its arithmetic, which is what makes the small instances fast, and templated on the
@@ -8,6 +8,11 @@
 //
 // A backend only has to hand back a `Runner`: the instance's inputs, generated and bound,
 // and the one call the harness measures.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -17,6 +22,8 @@
 #include "catalog.h"
 #include "cora/global/rng.h"
 #include "sets/mask.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -62,3 +69,5 @@ void check_gradients(const std::string &device);
 } // namespace torch_backend
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

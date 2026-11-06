@@ -1,6 +1,11 @@
 // test_zonotope_reduce - zonotope reduce: fewer generators, and a superset of the original
 //
 // CORA: contSet/@zonotope/reduce.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::random_direction;
 using test::support;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,6 +39,7 @@ void reduce_encloses_the_zonotope(const std::string &b) {
     const Zonotope R = Z.reduce(3);
     for (int k = 0; k < 40; ++k) {
         const std::vector<double> d = random_direction(rng, n);
+        // the support only grows
         check(support(R, d) >= support(Z, d) - 1e-9,
               b + ": the support along a direction only grows");
     }
@@ -53,6 +63,7 @@ void a_batch_reduces_member_by_member(const std::string &b) {
     cora::Rng rng(9);
     const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 9);
     const Zonotope Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 9);
+    // a batch reduces per member
     const Zonotope batch = Zonotope::stack({Z1, Z2}).reduce(2);
     const Tensor &G = batch.generators();
     check(test::close(G.slice(0, 0, 1).squeeze(0), Z1.reduce(2).generators(), 0), b + ": member 1");
@@ -70,6 +81,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         reduce_limits_the_generators(b);
@@ -81,3 +95,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope reduce");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,5 +1,11 @@
 // test_plot_tikz - the options of the TikZ export: colors, standalone documents, thinning, tables,
+//
 // sizes and the shared axes of a group, and what each kind of layer is written as
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 #include "testing.h"
@@ -10,6 +16,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -55,6 +65,7 @@ void layers_are_written_as_their_kind() {
     check(has(text, "draw=CORAcolorBlue, fill=CORAcolorBlue, fill opacity=0.2") == false,
           "and not spelled out");
     check(count(text, "\\addplot") == 4, "one \\addplot per layer");
+    // one addplot per layer
     for (const char *label : {"set", "unsafe", "points", "line"})
         check(has(text, std::string("\\addlegendentry{") + label + "}"),
               std::string("legend: ") + label);
@@ -79,6 +90,7 @@ void colors_by_name_or_value() {
 void standalone_documents() {
     const Figure fig = every_layer();
     const std::string doc = fig.tikz({.standalone = true});
+    // a standalone document
     check(doc.rfind("\\documentclass", 0) == 0 && has(doc, "\\begin{document}") &&
               has(doc, "\\end{document}"),
           "a document");
@@ -100,6 +112,7 @@ void thinning_and_numbers() {
     for (int i = 0; i < 100; ++i) square.push_back({1, i * 0.01});
     for (int i = 0; i < 100; ++i) square.push_back({1 - i * 0.01, 1});
     for (int i = 0; i < 100; ++i) square.push_back({0, 1 - i * 0.01});
+    // collinear points are thinned
     fig.add_polygons({square}, Color(0, 0, 0), std::nullopt, 1, "", false);
     check(count(fig.tikz(), "(") == 5, "a square of 400 collinear points is its four corners");
     check(count(fig.tikz({.thin = false}), "(") == 401,
@@ -121,6 +134,7 @@ void size_and_labels_and_sharing() {
     Figure fig = every_layer();
     fig.xlabel = "$x_1$";
     fig.ylabel = "$\\dot{x}$";
+    // sizes and labels
     fig.title = "a {title}";
     const std::string text = fig.tikz({.width = "6cm", .height = "0.5\\linewidth"});
     check(has(text, "width=6cm") && has(text, "height=0.5\\linewidth"), "sizes are TeX lengths");
@@ -141,6 +155,7 @@ void size_and_labels_and_sharing() {
     check(count(separate, "xlabel=") == 4 && count(separate, "ylabel=") == 4,
           "each axes has its labels");
     grid.share_x = true;
+    // shared axes
     grid.share_y = true;
     const std::string shared = grid.tikz();
     check(has(shared, "x descriptions at=edge bottom") &&
@@ -162,6 +177,7 @@ void a_three_dimensional_figure() {
     fig.azimuth = -60;
     fig.elevation = 20;
     const std::string text = fig.tikz();
+    // the 3-D figure
     check(count(text, "\\addplot3") == 6 && count(text, "forget plot") == 5,
           "six faces, one legend entry");
     check(has(text, "view={-60}{20}") && has(text, "zmin=") && has(text, "\\addlegendentry{cube}"),
@@ -183,6 +199,7 @@ void tables_beside_the_file() {
         std::remove(("test_plot_tikz_output_" + std::to_string(k) + ".dat").c_str());
     std::remove(path.c_str());
     check(test::throws([&] { fig.save_tikz("/nonexistent-folder/f.tikz"); }), "an unwritable path");
+    // saving grids
     FigureGrid grid(1, 2);
     plot(grid.at(0, 0), shifted(0));
     plot(grid.at(0, 1), shifted(1));
@@ -196,6 +213,9 @@ void tables_beside_the_file() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     layers_are_written_as_their_kind();
     colors_by_name_or_value();
@@ -206,3 +226,5 @@ int main() {
     tables_beside_the_file();
     return test::finish("plot tikz");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

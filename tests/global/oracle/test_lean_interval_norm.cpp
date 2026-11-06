@@ -6,6 +6,10 @@
 // exceed the root of the upper bound by the rounding of the root and the sum, kRelative (4 eps).
 //
 // ORACLE: contSet/@interval/norm_.m
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -16,11 +20,18 @@
 
 using namespace cora;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 constexpr double kRelative = 4 * std::numeric_limits<double>::epsilon();
 
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -37,3 +48,5 @@ int main() {
     });
     return test::finish("lean interval norm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

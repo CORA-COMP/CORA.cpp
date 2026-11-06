@@ -6,6 +6,11 @@
 // See also: cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h, reach.cpp
 //
 // CORA: contDynamics/@nonlinearSys/nonlinearSys.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "global/format.h"

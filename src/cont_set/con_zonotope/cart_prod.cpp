@@ -1,13 +1,19 @@
 // cart_prod - the Cartesian product of a constrained zonotope with a set or a point
 //
+// The centers stack, the generators and the constraints sit on the block diagonal. As the first
+// operand the point p is (n1, 1); one batch shape.
+//
 // Syntax:   cZres = cz.cart_prod(S);   cZres = ConZonotope::cart_prod(p, cz);
-// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n2, 1) of any dimension;
-//           as the first operand, the point p (n1, 1); one batch shape
-// Outputs:  cZres - exact: the centers stack, the generators and the constraints sit on the
-//           block diagonal; of dimension n + n2, in the order of the operands
+// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n2, 1), of any dimension
+// Outputs:  cZres - exact, of dimension n + n2, in the order of the operands
 // See also: intersect, Zonotope::cart_prod
 //
 // CORA: contSet/@conZonotope/cartProd_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"
@@ -80,6 +86,7 @@ ConZonotope ConZonotope::cart_prod(const Interval &I) const {
     return aux_product(*this, S);
 }
 
+// the point is refused before the product is formed
 ConZonotope ConZonotope::cart_prod(const Tensor &p) const {
     // the refusal of a point and of the dimensions comes before the product
     detail::Entry entry;

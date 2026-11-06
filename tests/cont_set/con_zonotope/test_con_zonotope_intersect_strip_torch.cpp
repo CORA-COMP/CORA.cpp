@@ -2,11 +2,21 @@
 //
 // For a given gain the set is built of matrix products: differentiable in the set, the strips and
 // the gain.
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -25,3 +35,5 @@ int main() {
         x);
     return test::finish("con zonotope intersect_strip (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

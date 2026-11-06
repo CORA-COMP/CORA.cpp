@@ -7,6 +7,11 @@
 // Inputs:   A - matrix (n, n)
 // Outputs:  Ainv - the inverse, or empty if A is (numerically) singular
 // See also: priv_verify_ra_support_function, priv_reach_adaptive
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cora/global/tensor/tolerance.h"
@@ -50,6 +55,7 @@ std::optional<Tensor> priv_inverse(const Tensor &A) {
             for (int64_t c = 0; c < n; ++c) inv[i * n + c] -= f * inv[j * n + c];
         }
     }
+    // the inverse as a tensor of the shape of A
     return Tensor::like(A, inv, {n, n});
 }
 

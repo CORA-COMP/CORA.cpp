@@ -13,15 +13,27 @@ block (sys.correction_matrix_state, sys.expm_remainder, Zonotope.linear_map, ...
     R = sys.reach(initial_set=X0, t_final=1.0, alg="my_euler", time_step=0.05)
 
 The keywords that are not fields of the problem go to the function as its options.
+
+Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+Written:       02-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
 """
 
 from typing import Any, Callable, TypeVar
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 Function = TypeVar("Function", bound=Callable[..., Any])
 
 # {(system class name, operation, algorithm name): function(system, problem, **options)}
 ALGORITHMS = {}
 
+
+# ============================================  MAIN  ============================================ #
 
 def register_algorithm(system: type, name: str,
                        operation: str = "reach") -> Callable[[Function], Function]:
@@ -30,3 +42,5 @@ def register_algorithm(system: type, name: str,
         ALGORITHMS[(system.__name__, operation, name)] = function
         return function
     return register
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

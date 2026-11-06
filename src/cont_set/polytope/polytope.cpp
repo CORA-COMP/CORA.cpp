@@ -1,18 +1,19 @@
 // polytope - the constructors of a polytope, checked, as CORA's polytope
 //
+// The halfspaces share one batch shape. A row of A with the offset +Inf is dropped (it holds
+// everywhere; not in a batch); an offset -Inf in b or +-Inf in be makes the set empty, which then
+// also holds no vertices. In 1D only the least and the greatest vertex are kept (one if they
+// agree).
+//
 // Syntax:   Polytope P(A, b);   Polytope P(A, b, Ae, be);   Polytope P(V);   Polytope P(I);
-// Inputs:   A (..., m, n), b (..., m, 1), Ae (..., k, n), be (..., k, 1) - the halfspaces
-//           A x <= b, Ae x = be, one batch shape; V (..., n, p) - the vertices, p = 0 for none,
-//           finite unless n = 1; I - a box (n, 1) bounds
-// Outputs:  P - the polytope; no rows is R^n. A row of A with the offset +Inf is dropped (it
-//           holds everywhere; not in a batch); an offset -Inf in b or +-Inf in be makes the set
-//           empty, which then also holds no vertices. In 1D only the least and the greatest
-//           vertex are kept (one if they agree)
+// Inputs:   A (..., m, n), b (..., m, 1), Ae (..., k, n), be (..., k, 1) - A x <= b, Ae x = be
+//           V (..., n, p) - the vertices, p = 0 for none, finite unless n = 1
+//           I - a box (n, 1) bounds
+// Outputs:  P - the polytope; no rows is R^n
 // See also: empty, inf, constraints
 //
 // CORA: contSet/@polytope/polytope.m
 // CORA: contSet/@interval/polytope.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

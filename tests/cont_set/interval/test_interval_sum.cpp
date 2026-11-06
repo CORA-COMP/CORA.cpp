@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/sum.m
 // PROPERTY: contSet/@interval/sum.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -11,6 +16,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,6 +43,7 @@ void sum_adds_the_bounds(const std::string &b) {
     check(close(v.sum().inf(), std::vector<double>{6}) &&
               close(v.sum().sup(), std::vector<double>{9}),
           b + ": a column sums to one entry by default");
+    // a row sums along its columns
     const Interval row = v.transpose();
     check(row.sum().inf().shape() == std::vector<int64_t>({1, 1}) &&
               close(row.sum().sup(), std::vector<double>{9}),
@@ -66,6 +76,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         sum_adds_the_bounds(b);
@@ -74,3 +87,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval sum");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

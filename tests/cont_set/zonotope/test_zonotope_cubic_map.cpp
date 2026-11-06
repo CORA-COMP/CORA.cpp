@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/cubMap.m
 // PROPERTY: contSet/@zonotope/cubMap.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -11,6 +16,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -74,6 +83,7 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
             for (int k = 0; k < n; ++k)
                 z[i] += x.data()[k] * x.matrix_transpose().matmul(T[i][k]).matmul(x).item();
         for (int t = 0; t < 10; ++t) {
+            // mapped points stay in the enclosure
             const std::vector<double> d = test::random_direction(rng, 2);
             check(d[0] * z[0] + d[1] * z[1] <= test::support(R, d) + 1e-9,
                   b + ": a mapped point leaves the enclosure");
@@ -101,6 +111,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         single_cubic_map_by_hand(b);
@@ -110,3 +123,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope cubic_map");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -20,8 +20,6 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
 namespace test {
 
 /// A bounded polytope of n dimensions in halfspace form with m random rows and the box |x| <= 3.
@@ -76,6 +74,7 @@ inline cora::Tensor sample_points(const cora::Polytope &P, cora::Rng &rng, int N
         if (inside) kept.push_back(x);
     }
     std::vector<double> flat(std::size_t(n) * N);
+    // the points as a matrix
     for (int k = 0; k < N; ++k)
         for (int64_t i = 0; i < n; ++i)
             flat[std::size_t(i) * N + k] = kept[std::size_t(k)][std::size_t(i)];

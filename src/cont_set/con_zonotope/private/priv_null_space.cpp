@@ -1,12 +1,17 @@
 // priv_null_space - an orthonormal basis of the null space of a matrix, as MATLAB's null
 //
+// The threshold is relative to the largest singular value; k = 0 if A has full column rank.
+//
 // Syntax:   Tensor N = priv_null_space(A);
 // Inputs:   A - a matrix (p, m)
-// Outputs:  N - (m, k): the right singular vectors of the singular values that are at most
-//           max(p, m) eps times the largest; k = 0 if A has full column rank
+// Outputs:  N - (m, k): the right singular vectors of the singular values at most max(p, m) eps
 // See also: priv_linear_programs, is_full_dim
 //
 // CORA.cpp only: MATLAB calls null(A)
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

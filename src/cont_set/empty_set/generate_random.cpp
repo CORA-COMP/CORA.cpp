@@ -1,12 +1,17 @@
 // generate_random - a random empty set, as CORA's emptySet.generateRandom
 //
 // Syntax:   E = EmptySet::generate_random(rng);   E = EmptySet::generate_random(rng, 3);
-// Inputs:   rng - random numbers (its seed makes the result repeatable);  dimension >= 0
-//           (CORA's name-value pair 'Dimension'); default: a random integer in 1..10, as randi(10)
+// Inputs:   rng - random numbers (its seed makes the result repeatable)
+//           dimension - >= 0 (CORA's 'Dimension'); default: a random integer in 1..10, as randi(10)
 // Outputs:  E - the empty set of n dimensions
 // See also: Fullspace::generate_random, Interval::generate_random
 //
 // CORA: contSet/@emptySet/generateRandom.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 

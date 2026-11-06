@@ -44,6 +44,7 @@ void products(const std::string &b) {
     check(Polytope(Tensor::zeros({2, 0})).cart_prod(V2).V().shape() == Shape{4, 0},
           b + ": an empty vertex set");
     const Polytope boxed = H1.cart_prod(Interval(column({0.0, 0.0}), column({1.0, 2.0})));
+    // the product with a box
     check(boxed.dim() == 3 && boxed.contains(column({0.5, 0.5, 1.5})) &&
               !boxed.contains(column({0.5, 1.5, 1.5})),
           b + ": with a box");

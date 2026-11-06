@@ -1,13 +1,19 @@
 """stubs - the type stubs (.pyi) of the compiled module `cora._cora`, written from the bindings
 
-Syntax:   python scripts/stubs.py --out <package dir>      writes _cora/__init__.pyi, _cora/lean.pyi, py.typed
+pybind11 prints every signature in the docstring of the function; those are parsed here, with the
+standard library only. `Array` is a numpy float64 array or a torch tensor, `object` is `Any`, an
+int is any `SupportsInt` (written `int`), a default that is no literal is `...`.
+
+Syntax:   python scripts/stubs.py --out <package dir>      writes the stubs and py.typed there
           python scripts/stubs.py --check <package dir>    exit 1 if the stubs there differ from fresh ones
-Inputs:   the built package (its build directory on PYTHONPATH). pybind11 prints every signature in
-          the docstring of the function; those are parsed here, with the standard library only.
-Outputs:  one stub per compiled module (the submodule cora._cora.lean has its own) and py.typed.
-          `Array` is a numpy float64 array or a torch tensor, `object` is `Any`, an int is any
-          `SupportsInt` (written `int`), a default that is no literal is `...`.
+Inputs:   the built package (its build directory on PYTHONPATH)
+Outputs:  one stub per compiled module (the submodule cora._cora.lean has its own) and py.typed
 See also: CONTRIBUTING.md (Python stubs), tests/python/test_stubs.py
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       04-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import importlib
@@ -16,6 +22,11 @@ import os
 import re
 import sys
 import types
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT_MODULE = "cora._cora"
 
@@ -97,6 +108,7 @@ def annotation(text, module):
         if head == "Optional":
             return annotation(parts[0], module) + " | None"
         if head == "Union":
+            # a parameterized type: the arguments are annotated in turn
             return annotation(" | ".join(parts), module)
         shown = [("[" + ", ".join(annotation(a, module) for a in split_top(p[1:-1])) + "]") if p.startswith("[")
                  else annotation(p, module) for p in parts]
@@ -191,6 +203,7 @@ def class_stub(cls, module):
 
 
 def submodules(module):
+    # the submodules of a module
     return sorted(n for n, v in vars(module).items()
                   if isinstance(v, types.ModuleType) and v.__name__.startswith(module.__name__ + "."))
 
@@ -218,10 +231,9 @@ def is_private(name):
 
 
 def lacking(module=None, prefix=""):
-    """What a user of the stubs misses: the public functions and methods (not private names, not
-    the dunder methods, which the class docstring covers) of the compiled modules that have no
-    docstring, and the parameters that pybind11 called `arg0`, `arg1`, ... because the binding gave
-    no `py::arg`."""
+    """What a user of the stubs misses: the public functions and methods of the compiled modules
+    that have no docstring, and the parameters pybind11 called `arg0`, ... for want of a
+    `py::arg`."""
     module = module or importlib.import_module(ROOT_MODULE)
     found = []
 
@@ -244,6 +256,7 @@ def lacking(module=None, prefix=""):
                     continue
                 dunder = attribute.startswith("__")
                 function = item.fget if isinstance(item, property) else getattr(item, "__func__", item)
+                # a public method is documented like a function
                 if callable(function) and not dunder:
                     label = f"{prefix}{name}.{attribute}"
                     check(label, function.__doc__, item.__doc__ if isinstance(item, property) else None,
@@ -265,6 +278,8 @@ def generate():
     return files
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--out", help="the package directory the stubs are written to")
@@ -285,8 +300,11 @@ def main():
                  or open(os.path.join(args.check, path), encoding="utf-8").read() != text]
         if stale:
             print("stale stubs: " + ", ".join(stale), file=sys.stderr)
+            # stale stubs fail the check
             sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -1,17 +1,23 @@
 // is_full_dim - whether a constrained zonotope has a nonempty interior, and the subspace it spans
 //
+// The free directions are those that the equalities and the unit box leave to the factors. CORA
+// tests rank(G null(A)) = n, which holds for a set that the box pins to a point and for an empty
+// one; the factors that the programs fix are left out here (docs/cora-differences.md). Not a
+// batch.
+//
 // Syntax:   res = cz.is_full_dim();   res = cz.is_full_dim(tol);
 //           [res, subspace] = cz.is_full_dim_subspace(tol);
-// Inputs:   tol - singular values of the generators up to tol count as zero; default: the
-//           repository tolerance (docs/architecture.md)
-// Outputs:  res - true if the generators, restricted to the directions that the equalities and
-//           the unit box leave to the factors, have rank n; subspace - the identity if so, else
-//           an orthonormal basis (n, r) of their span. CORA tests rank(G null(A)) = n, which
-//           holds for a set that the box pins to a point and for an empty one; the factors that
-//           the programs fix are left out here (docs/cora-differences.md). Not a batch
+// Inputs:   tol - singular values up to tol count as zero; default: the repository tolerance
+// Outputs:  res - true if the generators, restricted to the free directions, have rank n
+//           subspace - the identity if so, else an orthonormal basis (n, r) of their span
 // See also: is_bounded, Zonotope::is_full_dim
 //
 // CORA: contSet/@conZonotope/isFullDim.m
+// CORA authors: Niklas Kochdumper, Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

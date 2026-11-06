@@ -1,18 +1,27 @@
 // matmul - the product of a matrix zonotope with matrix zonotopes, zonotopes, matrices or numbers
 //
+// The inner dimensions agree and the batches are equal. P has the center C_A C_B and the
+// generators G_A(i) C_B, C_A G_B(j) and G_A(i) G_B(j) (j the fastest index), in CORALean's order;
+// CORA lists them in the order Z_A(i) Z_B(j), i fastest, for Z_A = [C_A, G_A], Z_B = [C_B, G_B]:
+// the same set. Z2 has the generators [C_A G, G_i c, G_i g_j (i fastest)]. A 1 x 1 matrix
+// zonotope as a scalar factor is refused (Error::not_supported).
+//
 // Syntax:   MatZonotope P = A.matmul(B);   P = A.matmul(M);   P = MatZonotope::matmul(M, A);
 //           P = A.matmul(s);   Zonotope Z2 = A.matmul(Z);   P = A * B;
-// Inputs:   B - matrix zonotope;  M - matrix of numbers;  s - number;  Z - zonotope (columns, as
-//           many dimensions as A has columns); the inner dimensions agree and the batches are equal
-// Outputs:  P - for B the enclosure of {M_A M_B}: the center C_A C_B and the generators G_A(i) C_B,
-//           C_A G_B(j) and G_A(i) G_B(j) (j the fastest index), in CORALean's order; CORA lists
-//           them in the order Z_A(i) Z_B(j), i fastest, for Z_A = [C_A, G_A], Z_B = [C_B, G_B]:
-//           the same set. For M and s the exact product; Z2 - the zonotope with the center
-//           C_A c and the generators [C_A G, G_i c, G_i g_j (i fastest)], an enclosure of A Z.
-//           A 1 x 1 matrix zonotope as a scalar factor is refused (Error::not_supported)
+// Inputs:   B - matrix zonotope
+//           M - matrix of numbers
+//           s - number
+//           Z - zonotope (columns, as many dimensions as A has columns)
+// Outputs:  P - for B the enclosure of {M_A M_B}; for M and s the exact product
+//           Z2 - the zonotope with the center C_A c, an enclosure of A Z
 // See also: plus, matrix_power
 //
 // CORA: matrixSet/@matZonotope/mtimes.m
+// CORA authors: Matthias Althoff, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

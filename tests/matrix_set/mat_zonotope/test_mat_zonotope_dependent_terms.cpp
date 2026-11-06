@@ -1,14 +1,24 @@
 // test_mat_zonotope_dependent_terms - MatZonotope dependent_terms: the square and the second-order
+//
 // terms
 //
 // CORA: matrixSet/@matZonotope/dependentTerms.m
 // PROPERTY: matrixSet/@matZonotope/dependentTerms.m
+// CORA authors: Matthias Althoff, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -60,6 +70,7 @@ void members_are_enclosed(const std::string &b) {
         }
         check(exact, b + ": the matrices of the members, h = " + std::to_string(h));
     }
+    // a batch gives the same terms
     Rng again(52);
     const MatZonotope A = test::random_set(again, 2, 2, 0.5);
     const auto [sq, H] = test::batch_of(A, A).dependent_terms(0.5);
@@ -85,6 +96,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         scalar_example(b);
@@ -93,3 +107,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("mat_zonotope dependent_terms");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

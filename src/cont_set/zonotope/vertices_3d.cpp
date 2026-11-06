@@ -1,12 +1,18 @@
 // vertices_3d - the corners of a three-dimensional zonotope, as CORA's zonotope.vertices_
 //
+// A flat zonotope gives its polygon, a segment its two ends, a point itself.
+//
 // Syntax:   V = Z.vertices_3d();
 // Inputs:   -
-// Outputs:  V - one list of corners per batch member (a flat zonotope gives its polygon, a
-//               segment its two ends, a point itself)
+// Outputs:  V - one list of corners per batch member
 // See also: vertices, Interval::vertices_3d
 //
 // CORA: contSet/@zonotope/vertices_.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Daniel Heß
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"
@@ -26,10 +32,7 @@ namespace {
 
 // Faces -------------------------------------------------------------------------------------------
 
-// The corners of the face of the zonotope whose outer normal is d: the generators not parallel to
-// that face add with the sign of g'd; those in its plane form a planar zonotope, whose corners
-// are found by turning a direction u around d and taking the sign of g'u between the angles at
-// which one of them flips.
+// Corners of the face with outer normal d: generators not parallel to it add with sign g'd.
 void aux_face_corners(const Point3 &c, const std::vector<Point3> &g, const Point3 &d, double tol,
                       std::vector<Point3> &out) {
     Point3 base = c;

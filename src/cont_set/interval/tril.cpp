@@ -6,6 +6,11 @@
 // See also: triu, Tensor::tril
 //
 // CORA: contSet/@interval/tril.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

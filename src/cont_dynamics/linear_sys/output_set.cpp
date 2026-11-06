@@ -6,6 +6,11 @@
 // See also: reach, priv_outputSet_canonicalForm in CORA
 //
 // CORA: contDynamics/@linearSys/outputSet.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 

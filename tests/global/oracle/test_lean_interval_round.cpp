@@ -3,12 +3,21 @@
 // The oracle rounds to integers (0 decimals), halves away from zero.
 //
 // ORACLE: contSet/@interval/round.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -26,3 +35,5 @@ int main() {
     });
     return test::finish("lean interval round");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

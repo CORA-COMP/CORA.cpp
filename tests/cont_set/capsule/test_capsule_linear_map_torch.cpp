@@ -28,5 +28,4 @@ int main() {
     return test::finish("capsule linear_map (torch)");
 }
 
-
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

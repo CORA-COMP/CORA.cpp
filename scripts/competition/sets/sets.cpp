@@ -1,8 +1,20 @@
+// sets - random batches of intervals and zonotopes as Eigen matrices
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
+
 #include "sets.h"
 
 #include "cora/global/threads.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+
+// ===========================================  MAIN  =========================================== //
 
 Interval<double> random_interval(Rng &rng, Eigen::Index n, Eigen::Index batch) {
     Interval<double> s{Mat<double>(n, batch), Mat<double>(n, batch)};
@@ -25,6 +37,7 @@ Zonotope<double> random_zonotope(Rng &rng, Eigen::Index n, Eigen::Index m, Eigen
     rng.normal(s.g.data(), static_cast<std::size_t>(n) * m * batch, 1.0);
     Eigen::VectorXd length(m * batch);
     rng.uniform(length.data(), static_cast<std::size_t>(m) * batch, 0.0, 1.0);
+    // each generator is scaled to a random length, in parallel
     const Eigen::Index cols = m * batch;
 #pragma omp parallel for schedule(static) if (n * cols >= (1 << 14))
     for (Eigen::Index j = 0; j < cols; ++j) {
@@ -47,12 +60,12 @@ Mat<double> rand_point(const Interval<double> &s, Eigen::Index points, Rng &rng)
 }
 
 Mat<double> rand_point(const Zonotope<double> &s, Eigen::Index points, Rng &rng) {
+    // the weights of the points are uniform in [-1, 1]
     const Eigen::Index n = s.dim(), m = s.m, batch = s.batch();
     Mat<double> beta(m, points * batch);
     rng.uniform(beta.data(), static_cast<std::size_t>(beta.size()), -1.0, 1.0);
     Mat<double> out(n, points * batch);
-    // One set per thread while there are enough of them to be worth it; a single product
-    // gets all of them, since Eigen leaves its own threading off inside a parallel region.
+    // One set per thread while there are enough; a single product gets all threads.
     const int nt = threads_for(batch, batch * points * n * m);
 #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
     for (Eigen::Index b = 0; b < batch; ++b) {
@@ -74,7 +87,10 @@ Mask contains(const Interval<double> &s, const Mat<double> &p, Eigen::Index poin
                                                ? 1
                                                : 0;
     }
+    // the points of all sets, side by side
     return out;
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

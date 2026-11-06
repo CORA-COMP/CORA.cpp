@@ -4,6 +4,11 @@
 // Supports:   null, booleans, strings (with \" \ \n escapes), numbers (kept as text), arrays and
 //             objects (insertion order)
 // See also:   lean/oracle.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

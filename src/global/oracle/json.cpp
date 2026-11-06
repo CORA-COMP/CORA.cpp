@@ -1,6 +1,11 @@
 // json - a minimal JSON value with parse and dump, the wire format of the CORALean oracle
 //
 // See also: lean/oracle.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/json.h"
 #include "cora/global/error.h"
@@ -76,6 +81,7 @@ struct Parser {
     }
 
     void skip() {
+        // whitespace is skipped
         while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
     }
 

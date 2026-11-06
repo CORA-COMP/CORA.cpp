@@ -1,14 +1,20 @@
 // isequal - whether two capsules are the same set
 //
+// A different dimension gives false. CORA compares with a strict <, so a tolerance of 0 never
+// holds there. Of a batch: every member.
+//
 // Syntax:   res = C.isequal(S);   res = C.isequal(S, tol);
-// Inputs:   S - capsule;  tol - the centers, generators and radii agree as within_tol; default:
-//           the repository tolerance (docs/architecture.md)
-// Outputs:  res - true if both are empty, or neither is and the centers, generators and radii
-//           agree up to tol; a different dimension gives false. CORA compares with a strict <,
-//           so a tolerance of 0 never holds there. Of a batch: every member
+// Inputs:   S - capsule
+//           tol - centers, generators and radii agree as within_tol; default: the repository one
+// Outputs:  res - true if both are empty, or neither is and they agree up to tol
 // See also: contains, Interval::isequal
 //
 // CORA: contSet/@capsule/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "cora/cont_set/capsule/capsule.h"

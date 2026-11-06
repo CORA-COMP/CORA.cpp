@@ -1,13 +1,19 @@
 // plus - the Minkowski sum of a constrained zonotope with a set or a point, as CORA's plus
 //
+// The constraints sit on the block diagonal; a point moves the center. One batch shape.
+//
 // Syntax:   cZres = cz.plus(S);   cZres = cz.plus(v);   cZres = cz + S;
-// Inputs:   S - a constrained zonotope, a zonotope or a box of the dimension of cz, one batch
-//           shape;  v - a column (..., n, 1)
-// Outputs:  cZres - exact: the centers add, the generators of both join and the constraints sit
-//           on the block diagonal; a point moves the center
+// Inputs:   S - a constrained zonotope, a zonotope or a box of the dimension of cz
+//           v - a column (..., n, 1)
+// Outputs:  cZres - exact: the centers add, the generators of both join
 // See also: linear_map, Zonotope::plus
 //
 // CORA: contSet/@conZonotope/plus.m
+// CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

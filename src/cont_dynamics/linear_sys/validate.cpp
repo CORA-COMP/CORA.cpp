@@ -9,6 +9,10 @@
 // See also: reach
 //
 // CORA.cpp only: MATLAB CORA checks params inside each reach (validateOptions).
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 

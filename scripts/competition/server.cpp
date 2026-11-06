@@ -1,4 +1,4 @@
-// The warm CORA.cpp daemon.
+// server - the warm CORA.cpp daemon
 //
 // Process start is cheap here, but the thread pool, the first allocations and the page
 // faults of a fresh process are not free, and the harness times all of it.
@@ -13,6 +13,11 @@
 //
 // Requests are served one at a time, so a daemon still busy with an instance the harness
 // gave up on does not answer `ping`; `prepare_instance.sh` then replaces it.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "server.h"
 
@@ -31,7 +36,12 @@
 #include <stdexcept>
 #include <string>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 std::string read_line(int fd) {
@@ -42,6 +52,9 @@ std::string read_line(int fd) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int port() {
     if (const char *env = std::getenv("CORACPP_PORT")) return std::atoi(env);
@@ -65,6 +78,7 @@ std::string run_logged(const std::string &params, const std::string &results_fil
 
 int serve(const std::string &srv_dir) {
     {
+        // the pid file lets the harness stop the server
         std::ofstream pid(srv_dir + "/server.pid", std::ios::trunc);
         pid << ::getpid() << "\n";
     }
@@ -88,6 +102,7 @@ int serve(const std::string &srv_dir) {
     while (true) {
         const int conn = ::accept(listener, nullptr, nullptr);
         if (conn < 0) continue;
+        // each request is one line: ping, run or stop
         const std::string request = read_line(conn);
         std::string reply;
         if (request == "ping") {
@@ -97,8 +112,7 @@ int serve(const std::string &srv_dir) {
             if (split == std::string::npos) {
                 reply = "unknown request \"run\"";
             } else {
-                // The instance's own output belongs in the job log, not the daemon's; the
-                // tool scripts print it when the verdict is not `finished`.
+                // The instance's own output belongs in the job log, not the daemon's.
                 std::ostringstream log;
                 reply = run_logged(request.substr(split + 1), request.substr(4, split - 4), log);
                 std::ofstream(log_path, std::ios::trunc) << log.str();
@@ -114,3 +128,5 @@ int serve(const std::string &srv_dir) {
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

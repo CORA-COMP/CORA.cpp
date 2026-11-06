@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@intervalMatrix/rad.m
 // PROPERTY: matrixSet/@intervalMatrix/rad.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,6 +53,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         rad_of_the_example(b);
@@ -52,3 +64,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix rad");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

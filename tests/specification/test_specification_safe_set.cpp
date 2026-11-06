@@ -1,6 +1,11 @@
 // test_specification_safe_set - specification safe_set: one halfspace and polytopes
 //
 // CORA: specification/@specification/specification.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/specification/specification.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -43,6 +52,9 @@ void safe_polytope(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         safe_set(b);
@@ -50,3 +62,5 @@ int main() {
     });
     return test::finish("specification safe_set");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

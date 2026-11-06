@@ -1,10 +1,11 @@
 // priv_compact - the removal of redundant halfspaces of a polytope on the host
 //
+// The function returns true if the set is found to be empty (H is then cleared).
+//
 // Syntax:   priv_normalize_rows(H);   bool empty = priv_compact_all(H, tol, minimal);
-// Inputs:   H - a single polytope in halfspace form;  tol - the tolerance of "is zero" and "is
-//           aligned"
-// Outputs:  H without rows 0 <= b, aligned rows and rows that no point needs; true if the set is
-//           found to be empty (H is then cleared)
+// Inputs:   H - a single polytope in halfspace form
+//           tol - the tolerance of "is zero" and "is aligned"
+// Outputs:  H - without rows 0 <= b, aligned rows and rows that no point needs
 // See also: Polytope::compact, priv_linear_programs
 //
 // CORA: contSet/@polytope/private/priv_normalizeConstraints.m
@@ -17,7 +18,6 @@
 // CORA: contSet/@polytope/private/priv_compact_2D.m
 // CORA: contSet/@polytope/private/priv_compact_nD.m
 // CORA: contSet/@polytope/private/priv_compact_all.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -263,6 +263,7 @@ std::pair<Rows, Row> priv_equality_to_inequality(const HostH &H) {
         A.push_back(negated);
         b.push_back(-H.be[i]);
     }
+    // the rows as A x <= b
     return {A, b};
 }
 
@@ -440,8 +441,7 @@ bool priv_compact_1d(HostH &H, double tol) {
                 aux_clear(H);
                 return true;
             }
-            // all equalities are the first one: keep it as x = be / a (CORA divides by the 1 it has
-            // just assigned, and keeps x = be, docs/cora-differences.md)
+            // all equalities are the first: keep it as x = be / a (CORA keeps x = be)
             const double a = H.Ae[0][0], offset = H.be[0] / a;
             H.Ae = {{1.0}};
             H.be = {offset};

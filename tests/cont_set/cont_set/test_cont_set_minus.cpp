@@ -1,6 +1,11 @@
 // test_cont_set_minus - ContSet::minus: a set shifted by a vector, from either side
 //
 // CORA: contSet/@contSet/minus.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -31,6 +40,7 @@ void minus_shifts_the_set(const std::string &b) {
     check(test::close(C.as<Interval>().inf(), {0.0, -1.0}) &&
               test::close(C.as<Interval>().sup(), {2.0, 1.0}),
           b + ": a vector minus a box");
+    // a vector minus a zonotope
     check(test::close(D.as<Zonotope>().center(), {0.0, 1.0}) &&
               test::close(test::support(D, {1.0, 0.0}), 0.5) &&
               test::close(test::support(D, {-1.0, 0.0}), 0.5),
@@ -53,8 +63,13 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(minus_shifts_the_set);
     errors_and_their_switch();
     return test::finish("cont_set minus");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

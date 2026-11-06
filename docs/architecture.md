@@ -63,7 +63,7 @@ convex_hull, cart_prod, contains and is_intersecting dispatch on the classes of 
 - `binary_pairs()` lists everything, and `cora::Set` is the type-erased value these operations
   return.
 - Files: `include/cora/cont_set/registry.h`, `include/cora/cont_set/set.h`,
-  `src/cont_set/cont_set/registry.cpp`.
+  `src/cont_set/registry.cpp`.
 
 **Scoped, thread-local settings.** The backend, the checks and the CORALean dtype each have a
 process default and a per-thread scope:

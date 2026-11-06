@@ -12,6 +12,11 @@
 //
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reduceGirard.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

@@ -17,6 +17,11 @@ Results:  CORA.cpp's result and the oracle's, as float, array, cora.Interval / l
 Skip:     needs_oracle skips a test unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND are set. run skips an
           op the oracle does not serve (`cora.lean.serves`, an older oracle), naming it once on stderr;
           a name without a dot labels a test of several ops and is never skipped.
+
+Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+Written:       02-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
 """
 
 import contextlib
@@ -28,11 +33,18 @@ import warnings
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 AVAILABLE = bool(os.environ.get("CORACPP_ORACLE") and os.environ.get("CORACPP_ORACLE_UNSOUND"))
 needs_oracle = unittest.skipUnless(AVAILABLE, "needs CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND")
 
 _state = {"mode": "exact", "op": ""}
 
+
+# ============================================  MAIN  ============================================ #
 
 class Random:
     """Operands from a fixed seed: normal numbers, which are exact doubles."""
@@ -201,3 +213,5 @@ def run(op, body, seed=7):
             scopes.enter_context(cora.backend(backend))
             scopes.enter_context(cora.lean.dtype(dtype))
             body(Random(seed))
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

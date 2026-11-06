@@ -30,5 +30,4 @@ int main() {
     return test::finish("capsule interval (torch)");
 }
 
-
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

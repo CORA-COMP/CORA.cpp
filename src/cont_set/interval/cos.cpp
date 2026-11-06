@@ -1,14 +1,20 @@
 // cos - the cosine of a box, as CORA's interval.cos
 //
+// maxcos shifts the box by the multiple of 2 pi that puts its lower bound in (-2 pi, 0], gives 1
+// if the shifted upper bound is positive and else the larger cosine of the two bounds. The
+// multiples of 2 pi are computed in floating point and nothing rounds outward, as in CORA.
+//
 // Syntax:   Interval R = I.cos();
 // Inputs:   -
-// Outputs:  R - [-maxcos(I - pi), maxcos(I)], where maxcos shifts the box by the multiple of 2 pi
-//           that puts its lower bound in (-2 pi, 0], gives 1 if the shifted upper bound is
-//           positive and else the larger cosine of the two bounds. The multiples of 2 pi are
-//           computed in floating point and nothing rounds outward, as in CORA
+// Outputs:  R - [-maxcos(I - pi), maxcos(I)]
 // See also: cosh, exp
 //
 // CORA: contSet/@interval/cos.m
+// CORA authors: Matthias Althoff, Dmitry Grebenyuk, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

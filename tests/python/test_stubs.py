@@ -1,4 +1,10 @@
-"""test_stubs - the type stubs of the compiled module: shipped, fresh, documented, and they type-check"""
+"""test_stubs - the type stubs of the compiled module: shipped, fresh, documented, and they type-check
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       04-November-2026
+Last update:   06-November-2026
+Reviewed:      ---
+"""
 import ast
 import importlib.util
 import os
@@ -9,6 +15,11 @@ import tempfile
 import unittest
 
 import cora
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 PACKAGE = os.path.dirname(os.path.abspath(cora.__file__))
@@ -59,6 +70,8 @@ def names_defined(path):
     return names
 
 
+# ============================================  MAIN  ============================================ #
+
 class Stubs(unittest.TestCase):
     def test_the_package_ships_stubs_and_py_typed(self):
         for name in ("py.typed", os.path.join("_cora", "__init__.pyi"), os.path.join("_cora", "lean.pyi")):
@@ -83,6 +96,7 @@ class Stubs(unittest.TestCase):
             self.assertTrue(name in compiled or name in written or any(map(os.path.exists, module)),
                             f"cora.{name} has no class or function in the stubs or the package")
 
+    # the stubs are valid Python
     def test_the_stubs_are_valid_python(self):
         for path in stubs.generate():
             if path.endswith(".pyi"):
@@ -103,8 +117,7 @@ class Stubs(unittest.TestCase):
             self.assertEqual(sum(f"[{code}]" in line for line in errors), 1, "\n".join(errors))
 
     def test_every_set_class_accepts_what_contset_accepts(self):
-        # A method of a ContSet subclass takes every argument of ContSet's (mypy's override check),
-        # so code written against ContSet works on each class.
+        # A method of a ContSet subclass takes every argument of ContSet's (mypy's override check).
         with tempfile.TemporaryDirectory() as folder:
             errors = mypy(folder)
         self.assertEqual(errors, [], "\n".join(errors))
@@ -112,3 +125,5 @@ class Stubs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

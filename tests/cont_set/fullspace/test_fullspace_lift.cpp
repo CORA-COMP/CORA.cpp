@@ -1,12 +1,21 @@
 // test_fullspace_lift - fullspace lift: the whole space in more dimensions
 //
 // CORA: contSet/@fullspace/lift_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -31,8 +40,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     lift_is_the_space_of_the_new_dimension();
     checks_and_their_switch();
     return test::finish("fullspace lift");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

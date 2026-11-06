@@ -1,8 +1,15 @@
-"""test_tensor - cora.Tensor: constructors and elementwise functions as static methods."""
+"""test_tensor - cora.Tensor: constructors and elementwise functions as static methods.
+
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       29-September-2026
+Last update:   03-November-2026
+Reviewed:      ---
+"""
 import math
 import unittest
 
 import numpy as np
+
 
 try:
     import torch
@@ -11,9 +18,14 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 class Constructors(unittest.TestCase):
     def test_a_tensor_is_made_from_data_and_stays_callable(self):
@@ -38,6 +50,7 @@ class Constructors(unittest.TestCase):
 
     def test_a_wrong_dtype_is_described(self):
         with self.assertRaises(ValueError) as caught:
+            # an unknown dtype
             cora.Tensor.ones(2, dtype="int8")
         self.assertIn("unknown dtype", str(caught.exception))
 
@@ -62,6 +75,7 @@ class Functions(unittest.TestCase):
         self.assertAlmostEqual(cora.sin(x).eval([0.3]), math.sin(0.3))
         self.assertAlmostEqual(float(cora.sin(0.3)), math.sin(0.3))
         with self.assertRaises(TypeError):
+            # functions follow the backend
             cora.tan(x)
 
     def test_functions_follow_the_backend(self):
@@ -71,3 +85,5 @@ class Functions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -5,6 +5,11 @@
 // oracle bounds from above by Newton steps: CORA.cpp's correctly rounded root is inside the bound
 // and within kRelative of it, but not its bits, so there is no ORACLE tag (as for the interval
 // matrix).
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
@@ -14,11 +19,18 @@
 
 using namespace cora;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 constexpr double kRelative = 4 * std::numeric_limits<double>::epsilon();
 
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -36,3 +48,5 @@ int main() {
     });
     return test::finish("lean mat_zonotope norm bound");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

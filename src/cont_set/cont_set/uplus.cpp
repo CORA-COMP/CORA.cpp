@@ -1,12 +1,18 @@
 // uplus - the set itself, as CORA's contSet.uplus
 //
+// It is the translation by -0, which changes no number (x + (-0) = x).
+//
 // Syntax:   R = S.uplus();
 // Inputs:   S - a set of dimension n
-// Outputs:  R - S, in the class of S, with every number as it was: the translation by -0, which
-//           changes no number (x + (-0) = x)
+// Outputs:  R - S, in the class of S, with every number as it was
 // See also: uminus, minus
 //
 // CORA: contSet/@contSet/uplus.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"

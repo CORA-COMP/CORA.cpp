@@ -1,14 +1,20 @@
 // convex_hull - a capsule that encloses two capsules, as CORA's capsule.convHull_
 //
+// The radius is max(|g| + r, |S.g| + S.r): every point of each capsule is within that of its
+// center. The hull with an empty capsule is the other one (CORA stops with an unassigned output
+// there).
+//
 // Syntax:   Cres = C.convex_hull(S);
 // Inputs:   S - capsule of the dimension of C
-// Outputs:  Cres - the axis between the two centers, c_ = (c + S.c)/2 and g_ = (c - S.c)/2, with
-//           the radius max(|g| + r, |S.g| + S.r): every point of each capsule is within that of
-//           its center. The hull with an empty capsule is the other one (CORA stops with an
-//           unassigned output there)
+// Outputs:  Cres - the axis between the two centers, c_ = (c + S.c)/2 and g_ = (c - S.c)/2
 // See also: enclose, Interval::convex_hull
 //
 // CORA: contSet/@capsule/convHull_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "cora/cont_set/capsule/capsule.h"

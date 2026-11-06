@@ -5,11 +5,17 @@
 // extremal on [0, dt], and adds the remainder of the series past order taylor_terms.
 //
 // Syntax:   Interval F = sys.correction_matrix_state(time_step, taylor_terms);
-// Inputs:   time_step - step size;  taylor_terms - order of the Taylor series
+// Inputs:   time_step - step size
+//           taylor_terms - order of the Taylor series
 // Outputs:  F - interval matrix (..., n, n)
 // See also: reach
 //
 // CORA: contDynamics/@linearSys/taylorMatrices.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 

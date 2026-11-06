@@ -1,12 +1,18 @@
 // convex_hull - the convex hull of two boxes, as CORA's interval.convHull_
 //
+// An empty operand returns the other; nothing rounds.
+//
 // Syntax:   Interval R = I.convex_hull(I2);
 // Inputs:   I2 - interval of the dimension of I
-// Outputs:  R - [min(inf, inf2), max(sup, sup2)], CORA's or; an empty operand returns the other;
-//           nothing rounds
+// Outputs:  R - [min(inf, inf2), max(sup, sup2)], CORA's or
 // See also: enclose, Interval::intersect
 //
 // CORA: contSet/@interval/convHull_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

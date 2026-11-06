@@ -2,11 +2,15 @@
 //
 // Syntax:   Tensor Z = priv_zeros(like, rows, cols);   Tensor B = priv_block_diag(A, B);
 //           ConZonotope c = priv_compact(cz);   ConZonotope s = priv_minkowski_sum(cz1, cz2);
-// Inputs:   tensors of one batch shape, constrained zonotopes
-// Outputs:  the block matrix, the compacted set, the sum, the intersection with agreement rows
+// Inputs:   czs - constrained zonotopes, or their tensors, of one batch shape
+// Outputs:  R - the block matrix, the compacted set, the sum or the intersection
 // See also: con_zonotope.h
 //
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"
@@ -58,6 +62,7 @@ Tensor priv_identity(const Tensor &like, int64_t k) {
 
 Tensor priv_block_diag(const Tensor &A, const Tensor &B) {
     const int64_t rows_a = A.shape()[A.ndim() - 2], rows_b = B.shape()[B.ndim() - 2];
+    // the blocks on the diagonal
     const int64_t cols_a = A.shape().back(), cols_b = B.shape().back();
     // A with zeros to its right, zeros to the left of B
     const Tensor top = Tensor::concat({A, priv_zeros(A, rows_a, cols_b)}, -1);

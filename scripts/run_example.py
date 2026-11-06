@@ -4,11 +4,21 @@ Syntax:   scripts/with_env.sh python scripts/run_example.py examples/<cpp|python
           (Windows: python scripts/run_example.py ..., with CORACPP_BUILD the preset's build folder)
 Runs:     a Python example after scripts/build.sh python, in this process, so that breakpoints in it work
           under the Python debugger; a C++ one built with scripts/build.sh <name>, then run.
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   01-October-2026
+Reviewed:      ---
 """
 import os
 import runpy
 import subprocess
 import sys
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 WITH_ENV = os.path.join(ROOT, "scripts", "with_env.sh")
@@ -35,6 +45,8 @@ def build(target):
     return call([WITH_ENV, "scripts/build.sh", target])
 
 
+# ============================================  MAIN  ============================================ #
+
 def main(argv):
     if not argv:
         sys.exit("run_example: name an example, e.g. examples/python/example_linear_reach_01_5dim.py")
@@ -57,3 +69,5 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

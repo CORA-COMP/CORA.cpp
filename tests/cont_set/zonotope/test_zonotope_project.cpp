@@ -1,6 +1,11 @@
 // test_zonotope_project - zonotope project: the selected dimensions, exactly
 //
 // CORA: contSet/@zonotope/project.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -47,6 +56,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         project_selects_and_orders_dimensions(b);
@@ -55,3 +67,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope project");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

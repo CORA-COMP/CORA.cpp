@@ -6,6 +6,11 @@
 //
 // Syntax:   BackendScope scope("torch");   Tensor t({{1, 2}, {3, 4}});   Tensor z = t.zeros_like();
 // See also: tensor.h, derived.cpp, eigen.cpp, torch.cpp
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "cora/global/error.h"
@@ -111,6 +116,7 @@ Tensor aux_concat(It first, It last, int axis) {
             CORA_FAIL(Error::dimension_mismatch, "CoraTensor::concat: the parts differ in rank");
         impls[i] = &it->impl();
     }
+    // the parts concatenated along the axis
     return Tensor(head.impl().concat({impls, count}, a));
 }
 
@@ -214,8 +220,7 @@ void set_backend_threads([[maybe_unused]] int n) {
 }
 } // namespace detail
 
-// This thread's backend: a scope's, else the process default ($CORACPP_BACKEND or the best built
-// in).
+// This thread's backend: a scope's, else the process default ($CORACPP_BACKEND, else the best).
 const Tensor::Backend &backend() {
     if (aux_scoped) return *aux_scoped;
     const Tensor::Backend *current = aux_default().load(std::memory_order_acquire);

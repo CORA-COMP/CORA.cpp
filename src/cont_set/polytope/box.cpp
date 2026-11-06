@@ -1,14 +1,14 @@
 // box - the smallest box around a polytope, as a polytope, as CORA's polytope.box
 //
+// A row with an infinite bound is left out; R^n for R^n, the empty set for the empty set. A
+// vertex polytope may be a batch, a halfspace polytope may not.
+//
 // Syntax:   Polytope B = P.box();
 // Inputs:   P - polytope
-// Outputs:  B - the polytope of the rows x <= sup and -x <= -inf of the bounds of interval (a row
-//           with an infinite bound is left out); R^n for R^n, the empty set for the empty set.
-//           A vertex polytope may be a batch, a halfspace polytope may not
+// Outputs:  B - the polytope of the rows x <= sup and -x <= -inf of the bounds of interval
 // See also: interval, Polytope::Polytope
 //
 // CORA: contSet/@polytope/box.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

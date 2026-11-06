@@ -25,8 +25,7 @@ void is_full_dim_known(const std::string &b) {
     check(!Ellipsoid(Tensor({{1.0, 0.0}, {0.0, 0.0}})).is_full_dim(), b + ": a segment");
     check(!Ellipsoid(Tensor::zeros({2, 2})).is_full_dim(), b + ": a point");
     check(!Ellipsoid::empty(2).is_full_dim(), b + ": the empty ellipsoid");
-    // the second singular value is 1e-8 of the largest: full rank for the default tolerance, lost
-    // for CORA's 1e-6 of the object and for an explicit tolerance
+    // the second singular value is 1e-8 of the largest: full rank by default, lost for CORA's 1e-6
     const Tensor Q({{1.0, 0.0}, {0.0, 1e-8}});
     check(Ellipsoid(Q).is_full_dim(), b + ": a thin ellipsoid at the default tolerance");
     check(!Ellipsoid(Q, 1e-6).is_full_dim(), b + ": a thin ellipsoid at the tolerance 1e-6");

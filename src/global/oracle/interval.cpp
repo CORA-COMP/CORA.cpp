@@ -1,6 +1,11 @@
 // interval - lean::Interval, a box (or interval matrix) of exact values, and its oracle operations
 //
 // See also: lean/request.h, lean/zonotope.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/global/oracle/interval.h"
 #include "cora/global/error.h"
@@ -165,6 +170,7 @@ Interval Interval::enclose(const Interval &I2) const {
     return aux_pair("interval.enclose", *this, I2);
 }
 Interval Interval::cart_prod(const Interval &I2) const {
+    // the product of two boxes
     return aux_pair("interval.cartProd", *this, I2);
 }
 

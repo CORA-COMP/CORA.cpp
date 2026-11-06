@@ -1,14 +1,20 @@
 // compact - fewer rows and generators for the same constrained zonotope, as CORA's compact_
 //
+// "zeros" and "all" drop the constraint rows 0 = 0 and the generators that are zero in G and in
+// A; "aligned" leaves the set as it is.
+//
 // Syntax:   cZres = cz.compact();   cZres = cz.compact("all", tol);
-// Inputs:   method - "zeros" (default) and "all" drop the constraint rows 0 = 0 and the generators
-//                    that are zero in G and in A; "aligned" leaves the set as it is
-//           tol - checked only: CORA's compact_ drops exact zeros; default: the repository
-//                 tolerance (docs/architecture.md)
+// Inputs:   method - "zeros" (default), "all" or "aligned"
+//           tol - checked only (CORA's compact_ drops exact zeros); default: the repository one
 // Outputs:  cZres - the set without them; a batch drops what every member drops
 // See also: Zonotope::compact, intersect
 //
 // CORA: contSet/@conZonotope/compact_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

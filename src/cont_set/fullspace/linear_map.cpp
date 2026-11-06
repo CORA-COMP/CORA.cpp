@@ -1,15 +1,21 @@
 // linear_map - the image of the whole space under a matrix, as CORA's fullspace.mtimes
 //
+// A matrix with a zero row gives the box with the zero rows of M at 0 and the other coordinates
+// unbounded, else the whole space of dimension m. This is an enclosure, and exact only for M of
+// full row rank, as CORA. Error::not_supported in R^0; an Interval factor (CORA: an
+// intervalMatrix) is Error::noops.
+//
 // Syntax:   Set R = F.linear_map(M);
 // Inputs:   M - a matrix (m, n), or a 1 x 1 matrix (a scalar, whatever n)
-// Outputs:  R - a scalar: the origin {0} (an Interval) for 0, else F. A matrix: the box with the
-//           zero rows of M at 0 and the other coordinates unbounded if M has a zero row, else the
-//           whole space of dimension m. This is an enclosure, and exact only for M of full row
-//           rank, as CORA. Error::not_supported in R^0; an Interval factor (CORA: an
-//           intervalMatrix) is Error::noops
+// Outputs:  R - for a scalar the origin {0} (an Interval) if 0, else F; for a matrix a box or F
 // See also: Interval::linear_map
 //
 // CORA: contSet/@fullspace/mtimes.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/global/within_tol.h"

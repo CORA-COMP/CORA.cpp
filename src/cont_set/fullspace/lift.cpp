@@ -1,12 +1,19 @@
 // lift - the whole space in a space of higher dimension, as CORA's fullspace.lift_
 //
+// CORA does not check dims, CORA.cpp as Interval::lift.
+//
 // Syntax:   Fullspace R = F.lift(N, dims);
-// Inputs:   N - the dimension of the new space, N >= n;  dims - the position (0-based) of each
-//           dimension of F in it; CORA does not check it, CORA.cpp as Interval::lift
+// Inputs:   N - the dimension of the new space, N >= n
+//           dims - the position (0-based) of each dimension of F in it
 // Outputs:  R - R^N: the new dimensions are unbounded, as the old ones already are
 // See also: Interval::lift
 //
 // CORA: contSet/@fullspace/lift_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 

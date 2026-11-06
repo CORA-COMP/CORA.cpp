@@ -7,12 +7,19 @@
 // Provides: a hand-computed 2 x 2 example with two generators, the lean backend next to the others,
 //           a random square set, the matrix C + sum b_i G_i for given coefficients, a batch of two
 //           sets and one set of a batch
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/global/rng.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "testing.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -93,3 +100,5 @@ void for_each_backend_and_lean(F body) {
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

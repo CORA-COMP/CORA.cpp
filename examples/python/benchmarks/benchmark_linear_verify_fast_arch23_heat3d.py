@@ -6,12 +6,21 @@ benchmarks/data and verified with LinearSys.verify.
 Syntax:   python benchmarks/python/benchmark_linear_verifyFast_ARCH23_heat3D.py [instance ...]
 Outputs:  one line 'benchmark,instance,result,time' per instance, as the MATLAB scripts
 See also: the C++ program of the same name (benchmarks/cpp)
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import benchmark_data
+
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 family = ["HEAT01", "HEAT02"]
 

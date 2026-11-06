@@ -1,15 +1,20 @@
 // isequal - whether a set is the whole space, as CORA's fullspace.isequal
 //
+// False for any other set, a point or another dimension. An empty interval is not the whole space
+// (CORA says it is).
+//
 // Syntax:   bool b = F.isequal(S);   bool b = F.isequal(S, tol);
 // Inputs:   S - a set (a point p: the interval [p, p])
 //           tol - checked and otherwise unused; default: the repository tolerance
-//           (docs/architecture.md)
-// Outputs:  b - true for a Fullspace of the same dimension and for an Interval of that dimension
-//           whose bounds are all infinite; false for any other set, a point or another dimension.
-//           An empty interval is not the whole space (CORA says it is)
+// Outputs:  b - true for a Fullspace or an Interval of that dimension with all bounds infinite
 // See also: Interval::isequal
 //
 // CORA: contSet/@fullspace/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 

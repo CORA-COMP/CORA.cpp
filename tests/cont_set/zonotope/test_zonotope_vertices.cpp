@@ -1,6 +1,11 @@
 // test_zonotope_vertices - zonotope vertices: the corners of a planar zonotope, counter-clockwise
 //
 // CORA: contSet/@zonotope/vertices_.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Daniel Heß
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -64,6 +73,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         vertices_attain_the_support(b);
@@ -73,3 +85,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope vertices");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

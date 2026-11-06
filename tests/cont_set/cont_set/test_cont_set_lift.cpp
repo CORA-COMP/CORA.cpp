@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@contSet/lift.m
 // CORA: contSet/@contSet/lift_.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -16,6 +21,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -42,6 +51,7 @@ void lift_by_class(const std::string &b) {
     check(static_cast<const ContSet &>(Z).lift(3).as<Zonotope>().isequal(Z),
           b + ": the default positions of a zonotope");
     const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0, 1.0})});
+    // lift of a batch
     check(static_cast<const ContSet &>(batch)
                   .lift(3, std::vector<int64_t>{1, 2, 0})
                   .as<Zonotope>()
@@ -82,9 +92,14 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(lift_by_class);
     lift_the_extremes();
     errors_and_their_switch();
     return test::finish("cont_set lift");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

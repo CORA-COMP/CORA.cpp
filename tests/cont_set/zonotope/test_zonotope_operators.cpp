@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/mtimes.m
 // CORA: contSet/@zonotope/plus.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -31,6 +40,7 @@ void numbers_scale(const std::string &b) {
               close(Z.generators(), Tensor({{-1.0, 0.0}, {0.0, -0.5}})),
           b + ": s * Z");
     check(close((box() * 2.0).center(), Tensor({2.0, 4.0})), b + ": Z * s");
+    // unary minus negates center and generators
     check(close((-box()).center(), Tensor({-1.0, -2.0})) &&
               close((-box()).generators(), Tensor({{-0.5, 0.0}, {0.0, -0.25}})),
           b + ": -Z negates centre and generators (CORA's uminus)");
@@ -51,6 +61,9 @@ void sums_and_translations(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         a_matrix_maps_the_zonotope(b);
@@ -59,3 +72,5 @@ int main() {
     });
     return test::finish("zonotope operators");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

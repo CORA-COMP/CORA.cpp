@@ -1,4 +1,12 @@
-"""test_zonotope - the Zonotope class in Python: one set or a batch, on torch or numpy."""
+"""test_zonotope - the Zonotope class in Python: one set or a batch, on torch or numpy.
+
+CORA authors: Tobias Ladner, Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg,
+              Severin Prenitzer, Niklas Kochdumper
+Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+Written:       29-September-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@contSet/linComb.m
 # CORA: contSet/@zonotope/generateRandom.m
 # CORA: contSet/@zonotope/interval.m
@@ -13,6 +21,7 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
@@ -20,8 +29,13 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 F64 = dict(dtype=torch.float64)
 
@@ -36,6 +50,8 @@ def random_zonotope(n=3, m=4, seed=0):
     g = torch.Generator().manual_seed(seed)
     return torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Construction(unittest.TestCase):
     def test_torch_arrays_stay_torch(self):
@@ -59,6 +75,7 @@ class Construction(unittest.TestCase):
         c, G = torch.randn(5, 3, **F64), torch.randn(5, 3, 4, **F64)
         Z = cora.Zonotope(c, G)
         self.assertEqual(tuple(Z.center.shape), (5, 3))
+        # a batch of zonotopes
         self.assertEqual(tuple(Z.generators.shape), (5, 3, 4))
         self.assertEqual(Z.dim, 3)
         self.assertEqual(tuple(Z.center.shape), (5, 3))
@@ -83,6 +100,7 @@ class SupportFunc(unittest.TestCase):
         c, G = torch.randn(4, 3, **F64), torch.randn(4, 3, 2, **F64)
         d = torch.randn(3, **F64)
         rho = cora.Zonotope(c, G).support_function(d)
+        # support functions per member
         self.assertEqual(tuple(rho.shape), (4,))
         for b in range(4):
             self.assertAlmostEqual(float(rho[b]), brute_support(c[b], G[b], d), places=10)
@@ -125,6 +143,7 @@ class Operations(unittest.TestCase):
         Z2 = cora.Zonotope(mapped.center + torch.tensor([1.0, -1.0, 0.5], **F64), mapped.generators)
         hull = Z.linear_combination(Z2)
         self.assertEqual(hull.generators.shape[-1], 2 * G.shape[-1] + 1)
+        # the hull bounds the support functions
         for _ in range(20):
             d = torch.randn(3, **F64)
             self.assertGreaterEqual(float(hull.support_function(d)),
@@ -149,6 +168,7 @@ class RandomSets(unittest.TestCase):
 
     def test_extreme_points_are_corners(self):
         c, G = random_zonotope(3, 3)
+        # extreme points are corners
         P = cora.Zonotope(c, G).rand_point(30, cora.Rng(0), type="extreme")
         signs = itertools.product([-1.0, 1.0], repeat=3)
         corners = torch.stack([c + G @ torch.tensor(b, **F64) for b in signs])
@@ -172,6 +192,7 @@ class RandomSets(unittest.TestCase):
         c, G = torch.randn(3, 2, **F64), torch.randn(3, 2, 2, **F64)
         Z = cora.Zonotope(c, G)
         P = Z.rand_point(200, cora.Rng(0))
+        # the best of many points
         self.assertEqual(tuple(P.shape), (3, 2, 200))
         d = torch.randn(2, **F64)
         best = (d @ P).max(-1).values
@@ -194,6 +215,7 @@ class RandomSets(unittest.TestCase):
             W = cora.Zonotope.generate_random(rng, 2, nr_generators=5, distribution=distribution)
             self.assertEqual(W.generators.shape, (2, 5))
         with self.assertRaises(cora.errors.WrongValue):
+            # reduce and compact default to the generic ones
             cora.Zonotope.generate_random(rng, 2, distribution="normal")
 
     def test_reduce_and_compact_default_as_the_generic_ones(self):
@@ -230,3 +252,5 @@ class Stack(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

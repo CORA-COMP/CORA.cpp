@@ -1,10 +1,12 @@
 // is_bad_dir - which directions are bad for the Minkowski difference of two ellipsoids
 //
+// lambda is the largest generalized eigenvalue of Q2 against Q1, tol the least tolerance of the
+// two.
+//
 // Syntax:   std::vector<bool> res = E1.is_bad_dir(E2, L);
 // Inputs:   E2 - an ellipsoid of the dimension of E1, E1 with Q positive definite;
 //           L - directions as columns (n, k). Not a batch
-// Outputs:  res - per column l: sqrt(l' Q1 l) / sqrt(l' Q2 l) > 1 / lambda + tol, lambda the
-//           largest generalized eigenvalue of Q2 against Q1, tol the least tolerance of the two
+// Outputs:  res - per column l: sqrt(l' Q1 l) / sqrt(l' Q2 l) > 1 / lambda + tol
 // See also: is_bigger
 //
 // CORA: contSet/@ellipsoid/isBadDir.m

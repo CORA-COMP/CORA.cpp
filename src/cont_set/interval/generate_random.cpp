@@ -2,14 +2,19 @@
 //
 // Syntax:   Interval I = Interval::generate_random(rng);
 //           I = Interval::generate_random(rng, dimension, center, max_radius);
-// Inputs:   rng - random numbers (its seed makes the result repeatable);  dimension - default
-//           the dimension of center or max_radius, else random in 1..10;  center - a vector,
-//           default U[-2, 2] per entry;  max_radius - a vector of radii >= 0, or one number (a
-//           1 x 1 tensor) for all entries, default U[0, 10] per entry
+// Inputs:   rng - random numbers (its seed makes the result repeatable)
+//           dimension - default the dimension of center or max_radius, else random in 1..10
+//           center - a vector, default U[-2, 2] per entry
+//           max_radius - radii >= 0, or one number for all entries, default U[0, 10] per entry
 // Outputs:  I - box with the center and radius max_radius/2*u, u ~ U[0, 1] per entry
 // See also: Zonotope::generate_random
 //
 // CORA: contSet/@interval/generateRandom.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

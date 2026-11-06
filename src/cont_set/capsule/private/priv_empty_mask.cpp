@@ -6,6 +6,10 @@
 // See also: Capsule::empty, Capsule::is_empty
 //
 // CORA.cpp only: MATLAB marks the empty capsule by an empty radius; here it is the radius -1
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 

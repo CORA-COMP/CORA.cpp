@@ -1,16 +1,21 @@
 // quad_map - an enclosure of a quadratic map of zonotopes, as CORA's zonotope.quadMap
 //
+// Output i is x' Q[i] x (or x1' Q[i] x2 for the zonotopes Z and Z2). For N generators the single
+// map has the center x0' Q x0 plus the squares, the N squares halved and the N(N+1)/2 mixed terms
+// as generators; the mixed map has the (N+1)(N2+1) - 1 products. With at most one nonzero Q the
+// generators are one box generator, else those that are not zero.
+//
 // Syntax:   Zres = Z.quad_map(Q);   Zres = Z.quad_map(Z2, Q);
-// Inputs:   Q - the matrices of the outputs, Q[i] (n, n): output i is x' Q[i] x (or x1' Q[i] x2 for
-//           the zonotopes Z and Z2); a CORA matZonotope entry is not supported
-// Outputs:  Zres - a zonotope with one dimension per matrix that encloses the image. For N
-//           generators the single map has the center x0' Q x0 plus the squares, the N squares
-//           halved and the N(N+1)/2 mixed terms as generators; the mixed map has the
-//           (N+1)(N2+1) - 1 products. With at most one nonzero Q the generators are one box
-//           generator, else those that are not zero
+// Inputs:   Q - the matrices of the outputs, Q[i] (n, n); a CORA matZonotope entry is not supported
+// Outputs:  Zres - a zonotope with one dimension per matrix that encloses the image
 // See also: cubic_map, linear_map
 //
 // CORA: contSet/@zonotope/quadMap.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

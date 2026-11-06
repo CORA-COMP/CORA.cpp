@@ -1,12 +1,18 @@
 // horzcat - intervals joined side by side, as CORA's interval.horzcat
 //
+// Nothing rounds (a number is a point interval, made by the caller).
+//
 // Syntax:   Interval I = Interval::horzcat({I1, I2, ...});
 // Inputs:   Is - the intervals, which agree in the number of rows
-// Outputs:  I - the bounds joined as columns; nothing rounds (a number is a point interval, made
-//           by the caller)
+// Outputs:  I - the bounds joined as columns
 // See also: cat, cart_prod
 //
 // CORA: contSet/@interval/horzcat.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
 #include "cora/cont_set/interval/interval.h"

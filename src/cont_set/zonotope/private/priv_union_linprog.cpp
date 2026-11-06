@@ -1,14 +1,20 @@
 // priv_union_linprog - the zonotope of CORA's 'linprog' union, from an enclosing zonotope
 //
+// A linear program scales and moves them to the least that still covers every set along the facet
+// normals of the enclosure.
+//
 // Syntax:   Zonotope Zu = priv_union_linprog(enclosure, support);
 // Inputs:   enclosure - a zonotope that contains every set of the union (the iterative union);
 //           support - the largest support value over the sets along each row of A (k, n): (k, 1)
-// Outputs:  Zu - the generators of the enclosure, unit length, scaled and the center moved, by a
-//           linear program, to the least that still cover every set along the facet normals of
-//           the enclosure
+// Outputs:  Zu - the generators of the enclosure, unit length, scaled, with the center moved
 // See also: Zonotope::unite, ConZonotope::unite
 //
 // CORA: contSet/@zonotope/or.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/linprog.h"
@@ -55,6 +61,7 @@ Zonotope priv_union_linprog(const Zonotope &iterative,
     if (r.status != LinProgResult::Status::optimal)
         CORA_FAIL(Error::solver_issue, "unite: the linear program of 'linprog' has no solution");
     const Tensor c = Tensor::like(G, std::vector<double>(r.x.begin(), r.x.begin() + n), {n, 1});
+    // the scaling of the generators is the second part of the solution
     const Tensor scal = Tensor::like(G, std::vector<double>(r.x.begin() + n, r.x.end()), {1, ng});
     return {c, G.multiply(scal)};
 }

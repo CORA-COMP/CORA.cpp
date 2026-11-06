@@ -1,20 +1,25 @@
 // representsa - whether a box is also a set of another type, as CORA's interval.representsa_
 //
+// A matrix of intervals is supported for "emptySet" and "origin" only. The converted set (CORA's
+// second output) is not returned: use the conversions. "polygon" is refused
+// (Error::not_supported), CORA's switch has no case for it. "capsule" and "ellipsoid": at most
+// one coordinate has a width (CORA counts the zero widths instead, and accepts every box with
+// fewer than two flat coordinates).
+//
 // Syntax:   bool res = I.representsa(type);   bool res = I.representsa(type, tol);
-// Inputs:   type - CORA's name of a set type ("origin", "point", "emptySet", "fullspace",
-//           "interval", "zonotope", "capsule", ...);  tol - width that counts as zero (absolute,
-//           or relative to the bound, as within_tol); default: the repository tolerance
-// Outputs:  res - whether the set is exactly such a set, for a batch whether all members are. A
-//           matrix of intervals is supported for "emptySet" and "origin" only. The converted set
-//           (CORA's second output) is not returned: use the conversions. "polygon" is refused
-//           (Error::not_supported), CORA's switch has no case for it. "capsule" and "ellipsoid":
-//           at most one coordinate has a width (CORA counts the zero widths instead, and
-//           accepts every box with fewer than two flat coordinates)
+// Inputs:   type - CORA's name of a set type ("origin", "point", "emptySet", "zonotope", ...)
+//           tol - width that counts as zero (as within_tol); default: the repository tolerance
+// Outputs:  res - whether the set is exactly such a set; for a batch whether all members are
 // See also: is_full_dim, is_bounded
 //
 // CORA: contSet/@interval/representsa_.m
 // CORA: contSet/@contSet/representsa_emptyObject.m
 // CORA: contSet/@contSet/representsa.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"

@@ -1,14 +1,20 @@
 // exact_square - the entrywise range of M * M over an interval matrix, as CORA's exactSquare
 //
+// Each entry of M occurs once in it but the diagonal, which is squared as a number, so the
+// diagonal term is exact; the lower end of a diagonal square is 0 unless the interval is on one
+// side of 0.
+//
 // Syntax:   IntervalMatrix S = A.exact_square();
-// Inputs:   -;  A is square
-// Outputs:  S - entry (i, j) is the hull of the values of (M * M)(i, j) over the matrices M of A:
-//           each entry of M occurs once in it but the diagonal, which is squared as a number, so
-//           the diagonal term is exact; the lower end of a diagonal square is 0 unless the
-//           interval is on one side of 0
+// Inputs:   -   (A is square)
+// Outputs:  S - entry (i, j) is the hull of the values of (M * M)(i, j) over the matrices M of A
 // See also: dependent_terms, matmul
 //
 // CORA: matrixSet/@intervalMatrix/exactSquare.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_times.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"

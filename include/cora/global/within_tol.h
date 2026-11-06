@@ -6,17 +6,22 @@
 //
 // Syntax:   bool same = within_tol(a, b);   within_tol(a, b, 1e-12);
 //           Tensor same = within_tol(A, B);   (elementwise, broadcast; 1 where they agree, else 0)
-// Inputs:   a, b - numbers, or tensors of one dtype;  tol - nonnegative, default: tolerance.h
+// Inputs:   a, b - numbers, or tensors of one dtype
+//           tol - nonnegative, default: tolerance.h
 // Outputs:  same - whether (where) a and b agree up to tol
 // See also: global/tolerance.h, cont_set/interval/interval.h (contains)
 //
 // CORA: global/functions/matlab/validate/check/withinTol.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/global/tensor/tolerance.h"
 #include <cmath>
-
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 

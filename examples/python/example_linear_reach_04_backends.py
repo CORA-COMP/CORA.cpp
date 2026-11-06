@@ -7,10 +7,18 @@ Nothing else in the code changes, and the results come back as the array type of
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_04_backends.py
 Outputs:  the last center on each backend, and how much the two differ
 See also: example_linear_reach_06_gpu
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def reach_oscillator():
     """The reachable set of a damped oscillator, on whichever backend is current."""
@@ -27,6 +35,9 @@ def reach_oscillator():
     return sys.reach(R0, time_step=0.1, t_final=1.0, taylor_terms=8)
 
 # Backends ----------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 backends = ["eigen", "torch"]
 

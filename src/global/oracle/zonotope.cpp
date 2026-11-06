@@ -1,6 +1,11 @@
 // zonotope - lean::Zonotope, a zonotope of exact values plus an error box, computed by CORALean
 //
 // See also: lean/tensor.h, lean/oracle.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/zonotope.h"
 #include "cora/global/error.h"
@@ -252,6 +257,7 @@ std::pair<Zonotope, Zonotope> Zonotope::split_first_gen() const {
     return aux_halves("zonotope.splitFirstGen", {{"Z", *this}});
 }
 std::pair<Zonotope, Zonotope> Zonotope::split_longest_gen() const {
+    // the halves of the split
     return aux_halves("zonotope.splitLongestGen", {{"Z", *this}});
 }
 
@@ -304,6 +310,7 @@ double Zonotope::zonotope_norm(const Tensor &p) const {
 Tensor Zonotope::center_value() const {
     return ask("zonotope.center", {{"Z", *this}}).get<Tensor>("value");
 }
+// the length of a generator
 Tensor Zonotope::generator_length(int k) const {
     return ask("zonotope.generatorLength", {{"Z", *this}, {"k", k}}).get<Tensor>("value");
 }

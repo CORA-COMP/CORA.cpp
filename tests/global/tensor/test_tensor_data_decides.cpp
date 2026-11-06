@@ -2,6 +2,11 @@
 //
 // A tensor keeps its backend, device and dtype whatever scope is current; tensors made like it
 // follow it; operands of two backends or dtypes are an error that names both places.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "testing.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -35,6 +44,7 @@ void stays_where_it_lives() {
     check(std::string((a + a).backend_name()) == "lean",
           "an operation runs on its operands' backend");
     check(std::string(a.zeros_like({3, 1}).backend_name()) == "lean", "zeros like it are lean");
+    // the backend is decided by the data
     check(std::string(a.eye_like().backend_name()) == "lean", "the identity like it is lean");
     check(std::string(Tensor::like(a, {1, 2}, {2, 1}).backend_name()) == "lean",
           "host values like it are lean");
@@ -56,6 +66,7 @@ void mixing_is_an_error() {
     check(!aux_message([&] { (void)a.matmul(b); }).empty(), "matmul of two backends");
     check(!aux_message([&] { (void)Tensor::concat({a, b}, -1); }).empty(),
           "concat of two backends");
+    // mixed dtypes are refused
     const Tensor f = b.to(DType::float32);
     const std::string dtypes = aux_message([&] { (void)(f + b); });
     check(dtypes.find("float32") != std::string::npos &&
@@ -80,6 +91,9 @@ void float32_follows_the_data(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     stays_where_it_lives();
     mixing_is_an_error();
@@ -93,3 +107,5 @@ int main() {
     check(test::throws([] { (void)Tensor({{1.0}}).to(DType::float32); }), "lean has no float32");
     return test::finish("tensor data decides");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

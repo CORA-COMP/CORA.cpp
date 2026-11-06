@@ -3,6 +3,11 @@
 // CORA: contSet/@zonotope/lift_.m
 // CORA: contSet/@contSet/lift.m
 // PROPERTY: contSet/@zonotope/lift_.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -12,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -66,6 +75,9 @@ void lift_refuses(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         lift_known(b);
@@ -74,3 +86,5 @@ int main() {
     });
     return test::finish("zonotope lift");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

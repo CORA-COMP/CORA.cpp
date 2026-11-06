@@ -1,4 +1,5 @@
 // test_cont_set_generic_torch - the generic operations of ContSet on a zonotope: gradients through
+//
 // torch
 //
 // linear_map, enlarge, minus, project_high_dim, project_on_hyperplane and decompose are linear or
@@ -12,6 +13,11 @@
 // CORA: contSet/@contSet/projectOnHyperplane.m
 // CORA: contSet/@contSet/decompose.m
 // CORA: contSet/@contSet/reduce.m
+// CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/zonotope_gradients.h"
 
@@ -20,12 +26,19 @@
 using namespace cora;
 using test::Inputs;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// The center and generators of the Zonotope that a Set holds.
 Inputs aux_parts(const Set &S) { return test::parts(S.as<Zonotope>()); }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -45,6 +58,7 @@ int main() {
             return aux_parts(S(zonotope(x)).enlarge(Tensor::from_data({2.0, 0.5, 3.0}, {3, 1})));
         },
         test::random_zonotope(3, 4));
+    // gradients of minus and decompose
     test::gradcheck(
         "minus", [&](const Inputs &x) { return aux_parts(S(zonotope(x)).minus(p)); },
         test::random_zonotope(3, 4));
@@ -64,6 +78,7 @@ int main() {
         "decompose",
         [&](const Inputs &x) {
             Inputs out;
+            // gradient of decompose
             for (const Set &part : S(zonotope(x)).decompose({{0, 1}, {2, 2}}))
                 for (const Tensor &t : aux_parts(part)) out.push_back(t);
             return out;
@@ -74,3 +89,5 @@ int main() {
         test::random_zonotope(2, 5));
     return test::finish("cont_set generic (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

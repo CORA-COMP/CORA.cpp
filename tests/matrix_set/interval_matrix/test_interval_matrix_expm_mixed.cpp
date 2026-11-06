@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@intervalMatrix/expmMixed.m
 // PROPERTY: matrixSet/@intervalMatrix/expmMixed.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -32,6 +41,7 @@ void the_parts_enclose_the_exponentials(const std::string &b) {
     const ExpmMixedResult zero =
         IntervalMatrix(test::matrix({0, 0, 0, 0}, 2, 2)).expm_mixed(1.0, 3, 6);
     const IntervalMatrix sum(zero.enclosure.interval() + zero.enclosure_rest.interval());
+    // exp(0) is the identity
     check(close(sum.center(), std::vector<double>{1, 0, 0, 1}, 1e-14), b + ": exp(0) = I");
 }
 
@@ -66,6 +76,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         the_parts_enclose_the_exponentials(b);
@@ -74,3 +87,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix expm_mixed");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

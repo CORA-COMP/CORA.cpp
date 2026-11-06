@@ -1,12 +1,18 @@
 // norm - an upper bound of the norm of a matrix zonotope, as CORA's matZonotope.norm
 //
+// No matrix of A has a larger norm, but the bound is not attained in general.
+//
 // Syntax:   Tensor n = A.norm(Tensor::Norm::fro);
 // Inputs:   type - one, inf or fro; the 2-norm is NP-hard for interval matrices and refused
-// Outputs:  n - the norm of the interval matrix around A (norm(|center| + rad, type)), (..., 1, 1):
-//           no matrix of A has a larger norm, but the bound is not attained in general
+// Outputs:  n - the norm of the interval matrix around A (norm(|center| + rad, type)), (..., 1, 1)
 // See also: interval_matrix, IntervalMatrix::norm
 //
 // CORA: matrixSet/@matZonotope/norm.m
+// CORA authors: Matthias Althoff, Victor Gassmann
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 

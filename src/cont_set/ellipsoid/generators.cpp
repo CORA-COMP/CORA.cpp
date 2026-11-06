@@ -1,9 +1,10 @@
 // generators - the generator matrix of an ellipsoid, as CORA's ellipsoid.generators
 //
+// The empty ellipsoid has the matrix without columns (n, 0).
+//
 // Syntax:   Tensor G = E.generators();
 // Inputs:   -
-// Outputs:  G - U sqrt(D) for the singular value decomposition Q = U D U', so that G G' = Q
-//           (..., n, n); the empty ellipsoid has the matrix without columns (n, 0)
+// Outputs:  G - U sqrt(D) for the singular value decomposition Q = U D U', G G' = Q (..., n, n)
 // See also: ellipsoid_norm, Zonotope::generators
 //
 // CORA: contSet/@ellipsoid/generators.m

@@ -7,13 +7,23 @@
 // sums are exact and the oracle certifies them.
 //
 // ORACLE: contSet/@zonotope/underapproximate.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -22,6 +32,9 @@ namespace {
 Tensor aux_eighths(const Tensor &x) { return (x * 8.0).round() * 0.125; }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -43,6 +56,7 @@ int main() {
             for (int k = 0; k < directions; ++k) {
                 const std::array<std::optional<lean::Tensor>, 2> vertices{pairs[k].plus,
                                                                           pairs[k].minus};
+                // vertices of the under-approximation
                 for (int side = 0; side < 2; ++side)
                     if (vertices[side] && ++compared)
                         oracle::check_exact(oracle::op_name(),
@@ -54,3 +68,5 @@ int main() {
     });
     return test::finish("lean zonotope underapproximate");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

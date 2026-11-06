@@ -1,4 +1,5 @@
 // test_lean_specification_check - Specification::check against the CORALean oracle (its
+//
 // `specification.check`)
 //
 // The specification is the polytope A x <= b (one halfspace per row), checked against a box and a
@@ -7,13 +8,23 @@
 // a proof of the oracle is never contradicted; at nearest the answers are the same on these cases.
 //
 // ORACLE: specification/@specification/check.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/specification.h"
 #include "cora/specification/specification.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -40,6 +51,9 @@ std::pair<Tensor, Tensor> aux_polytope(oracle::Random &rnd, const ContSet &S, in
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!oracle::available()) return 0;
     oracle::run("specification.check", [](oracle::Random &rnd) {
@@ -58,6 +72,7 @@ int main() {
                             const Specification spec = safe ? Specification::safe_set(halfspaces)
                                                             : Specification::unsafe_set(halfspaces);
                             const lean::Tensor LA(A), Lb(b);
+                            // the oracle proves the verdict
                             const bool theirs =
                                 box ? lean::check_specification(kind, LA, Lb, lean::Interval(I))
                                     : lean::check_specification(kind, LA, Lb, lean::Zonotope(Z));
@@ -74,3 +89,5 @@ int main() {
     });
     return test::finish("lean specification check");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

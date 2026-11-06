@@ -6,6 +6,11 @@
 // See also: Zonotope::support_function
 //
 // CORA: contSet/@interval/supportFunc_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

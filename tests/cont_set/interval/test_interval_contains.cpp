@@ -1,6 +1,11 @@
 // test_interval_contains - interval contains: a point in a box
 //
 // CORA: contSet/@interval/contains_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,8 +43,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { contains_a_point(b); });
     checks_and_their_switch();
     return test::finish("interval contains");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

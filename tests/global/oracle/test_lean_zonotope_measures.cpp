@@ -1,4 +1,5 @@
 // test_lean_zonotope_measures - exact_plus, is_bounded, is_full_dim, isequal, norm, enclose_points,
+//
 // enclose_many and lift of Zonotope against the CORALean oracle
 //
 // ORACLE: contSet/@zonotope/exactPlus.m
@@ -9,6 +10,10 @@
 // ORACLE: contSet/@zonotope/enclosePoints.m
 // ORACLE: contSet/@zonotope/encloseMany.m
 // ORACLE: contSet/@zonotope/lift_.m
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
@@ -17,7 +22,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,6 +49,9 @@ void aux_check_bound(double mine, double bound) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -81,8 +95,7 @@ int main() {
     oracle::run("zonotope.norm", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            // the oracle returns the square of the bound; its sum of squares is CORA.cpp's, so
-            // the root of it is the same double
+            // the oracle returns the square of the bound, CORA.cpp's sum of squares: roots agree
             const double bound = std::sqrt(lean::Zonotope(Z).norm());
             if (oracle::mode() == oracle::Mode::exact)
                 oracle::check(Z.norm().item(), bound);
@@ -124,3 +137,5 @@ int main() {
     });
     return test::finish("lean zonotope measures");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

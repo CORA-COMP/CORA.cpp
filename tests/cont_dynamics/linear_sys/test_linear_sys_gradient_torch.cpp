@@ -1,8 +1,14 @@
 // test_linear_sys_gradient_torch - gradients through the whole reachability computation, with
+//
 // autograd and with the hand-written backward pass of the matrix exponential, against central
 // differences.
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -12,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,6 +55,7 @@ void gradients(const torch::TensorOptions &opts, const std::string &where) {
         const torch::Tensor c0 = torch::randn({n}, opts), G0 = torch::randn({n, m}, opts);
 
         std::vector<torch::Tensor> grads[2];
+        // the gradients of both implementations are compared
         for (const bool custom : {false, true}) {
             torch::Tensor A = A0.clone().requires_grad_(true), c = c0.clone().requires_grad_(true),
                           G = G0.clone().requires_grad_(true);
@@ -105,6 +116,9 @@ void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts,
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     std::vector<torch::TensorOptions> all{torch::TensorOptions().dtype(torch::kDouble)};
     std::vector<std::string> names{"cpu"};
@@ -120,3 +134,5 @@ int main() {
     }
     return test::finish("linear_sys gradient");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

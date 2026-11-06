@@ -1,4 +1,9 @@
 // test_tensor_arithmetic - Tensor operations: arithmetic, matmul, elementwise, joins
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "testing.h"
@@ -6,6 +11,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,6 +38,7 @@ void arithmetic(const std::string &b) {
     check(close(Tensor({1.0, 2.0}).diag(), std::vector<double>{1, 0, 0, 2}), b + ": diag");
     check(close(A.eye_like(), Tensor::eye(2)), b + ": eye_like");
     check(close(rect.zeros_like(), Tensor::zeros({2, 3})), b + ": zeros_like");
+    // zeros and concatenation
     check(close(Tensor::concat({A, Tensor({{9.0}, {8.0}})}, -1),
                 std::vector<double>{1, -2, 9, 3, 4, 8}),
           b + ": cat_last");
@@ -36,7 +46,12 @@ void arithmetic(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { arithmetic(b); });
     return test::finish("tensor arithmetic");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,6 +1,11 @@
 // test_cont_set_enclose - ContSet::enclose: the checked entry of every set's enclose
 //
 // CORA: contSet/@contSet/enclose.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/interval/interval.h"
@@ -13,6 +18,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -40,6 +49,7 @@ void enclose_by_class(const std::string &b) {
 
     const Tensor M = Tensor::from_data({1.0, 2.0, 0.0, 0.5, -1.0, 1.0, 0.0, 0.0, 2.0}, {3, 3});
     const Zonotope Zplus = Zonotope::generate_random(rng, 3, std::nullopt, 2);
+    // enclose with a matrix equals the linear map and sum
     check(Z1.enclose(M, Zplus).isequal(Z1.enclose(Z1.linear_map(M) + Zplus)),
           b + ": enclose(M, Zplus)");
 }
@@ -68,8 +78,13 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(enclose_by_class);
     errors_and_their_switch();
     return test::finish("cont_set enclose");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

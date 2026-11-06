@@ -1,13 +1,19 @@
 // support_function - the support function of the whole space, as CORA's fullspace.supportFunc_
 //
+// CORA's type 'upper'. CORA answers Inf along the zero direction too, where the supremum of 0'x
+// is 0; CORA.cpp follows CORALean (docs/cora-differences.md).
+//
 // Syntax:   rho = F.support_function(d);
 // Inputs:   d - direction, a column (..., n, 1)
 // Outputs:  rho - Inf along a nonzero direction and 0 along the zero one, shape (..., 1, 1)
-//           (CORA's type 'upper'). CORA answers Inf along the zero direction too, where the
-//           supremum of 0'x is 0; CORA.cpp follows CORALean (docs/cora-differences.md)
 // See also: EmptySet::support_function, Interval::support_function
 //
 // CORA: contSet/@fullspace/supportFunc_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 

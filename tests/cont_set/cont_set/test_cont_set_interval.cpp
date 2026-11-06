@@ -1,6 +1,11 @@
 // test_cont_set_interval - ContSet::interval: the box of any set
 //
 // CORA: contSet/@contSet/interval.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -24,7 +33,12 @@ void the_box_of_a_set() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_box_of_a_set();
     return test::finish("cont_set interval");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

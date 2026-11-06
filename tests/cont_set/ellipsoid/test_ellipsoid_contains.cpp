@@ -87,6 +87,7 @@ void contains_property(const std::string &b) {
         bool corners = true;
         for (int mask = 0; mask < 8; ++mask) {
             std::vector<double> sel;
+            // the corners of the box are contained
             sel.reserve(3);
             for (int j = 0; j < 3; ++j) sel.push_back(((mask >> j) & 1) ? 1.0 : 0.0);
             const Tensor w = Tensor::like(I.inf(), sel, {3, 1});
@@ -117,6 +118,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { Ellipsoid(Tensor::zeros({2, 2, 2})).contains(column({0.0, 0.0})); },
                        Error::not_supported),
           "contains: a batch is not supported");
+    // an ellipsoid in an ellipsoid needs an SDP
     check(test::raises([&] { E.contains(Ellipsoid(Tensor({{0.25, 0.0}, {0.0, 0.25}}))); },
                        Error::not_supported),
           "contains: an ellipsoid in an ellipsoid needs an SDP solver");

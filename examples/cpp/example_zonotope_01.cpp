@@ -6,14 +6,23 @@
 // Syntax:   build/examples/cpp/example_zonotope_01
 // Outputs:  the matrix and the zonotope as text, and the figure as an SVG file
 // See also: example_zonotope_01 of the Python examples, example_linear_reach_01_5dim
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Init ------------------------------------------------------------------------------------

@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@conZonotope/interval.m
 // PROPERTY: contSet/@conZonotope/interval.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -67,6 +76,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         interval_known(b);
@@ -75,3 +87,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("con_zonotope interval");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

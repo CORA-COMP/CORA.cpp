@@ -8,7 +8,6 @@
 // See also: con_zonotope, Zonotope::intersect
 //
 // CORA: contSet/@zonoBundle/and_.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -58,6 +57,7 @@ ZonoBundle ZonoBundle::intersect(const Interval &I) const {
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     CORA_CHECK(!I.is_empty(), Error::not_supported,
                [] { return std::string("intersect: the empty box has no zonotope"); });
+    // the box joins the bundle as a zonotope
     return aux_appended(*this, {I.zonotope()});
 }
 

@@ -1,10 +1,16 @@
 // color - CORA's colors, as MATLAB CORA's CORAcolor
 //
 // Syntax:   Color c = cora_color("CORA:reachSet", num_colors, cidx);
-// Inputs:   identifier - "CORA:<name>[:light|:dark]"; num_colors, cidx - shading of "reachSet";
+// Inputs:   identifier - "CORA:<name>[:light|:dark]"
+//           num_colors, cidx - shading of "reachSet";
 //           alpha - the mix of the ":light" and ":dark" variants
 // Outputs:  c - the RGB color
 // See also: cora/global/plot/plot.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/color.h"
 #include "cora/global/error.h"
@@ -53,6 +59,7 @@ Color aux_named(const std::string &name, const std::string &identifier, int num_
         if (cidx > num_colors)
             CORA_FAIL(Error::wrong_value, "cora_color: the color index must not exceed the number "
                                           "of colors");
+        // the first and last color are the extremes
         if (cidx == num_colors) return main;
         if (cidx == 1) return worse;
         // In between, the shade moves linearly from the light to the full blue.
@@ -77,8 +84,12 @@ Color aux_named(const std::string &name, const std::string &identifier, int num_
 
 // ===========================================  MAIN  =========================================== //
 
+// Construction ------------------------------------------------------------------------------------
+
 Color::Color(const char *identifier) : Color(cora_color(identifier)) {}
 Color::Color(const std::string &identifier) : Color(cora_color(identifier)) {}
+
+// Output ------------------------------------------------------------------------------------------
 
 // Each component as two hex digits.
 std::string Color::hex() const {
@@ -108,6 +119,7 @@ Color cora_color(const std::string &identifier, int num_colors, int cidx, double
     else if (variant != "none")
         CORA_FAIL(Error::wrong_value, "cora_color: unknown color variant '" + variant +
                                           "'; use \":light\" or \":dark\"");
+    // the color of the variant
     return c;
 }
 

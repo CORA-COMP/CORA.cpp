@@ -6,8 +6,13 @@
 //
 // Syntax:   TaylorLinSys taylor(A);   Tensor e_adt = taylor.e_adt(0.1);   auto F = taylor.F(0.1);
 // Inputs:   A - system matrix (n, n)
-// Outputs:  the cached quantities of priv_taylorLinSys.h
+// Outputs:  R - the cached quantities of priv_taylorLinSys.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_taylor_lin_sys.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"

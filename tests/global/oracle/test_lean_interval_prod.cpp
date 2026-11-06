@@ -4,12 +4,21 @@
 // CORA.cpp. The oracles before gave a column; with them the matrix is not compared.
 //
 // ORACLE: contSet/@interval/prod.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -29,3 +38,5 @@ int main() {
     });
     return test::finish("lean interval prod");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

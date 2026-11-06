@@ -6,6 +6,11 @@
 // See also: is_full_dim, Interval::is_bounded
 //
 // CORA: contSet/@emptySet/isBounded.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 

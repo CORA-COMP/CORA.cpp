@@ -7,11 +7,22 @@ for one period; simulations from the initial set must stay inside it.
 Syntax:   PYTHONPATH=build python examples/python/example_nonlinear_reach_01_van_der_pol.py [--save FILE]
 Outputs:  the run time and the figure (FILE with --save)
 See also: example_linear_reach_01_5dim
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import time
 
 import cora
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -22,9 +33,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 t_final = 6.74
 R0 = cora.Zonotope(cora.Tensor([1.4, 2.3]), 0.05 * cora.eye(2))

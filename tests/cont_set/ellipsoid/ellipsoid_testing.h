@@ -4,6 +4,7 @@
 // rng, N); Sets:     full rank (Q = A A' + I/2) or of rank r (Q = A A', A of n x r), a normal
 // center Points:   q + G u r, u of unit length and r uniform in [0, 1] (inside), r = 1 (on the
 // boundary) See also: testing.h
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

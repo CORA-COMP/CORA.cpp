@@ -5,6 +5,11 @@
 // points placed just inside and just outside the boundary, where an approximation breaks.
 //
 //   ctest (with -DCORACPP_COMPETITION=ON)
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/rng.h"
 #include "probes.h"
@@ -20,6 +25,10 @@
 using namespace cora::comp;
 using cora::Rng;
 using Eigen::Index;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -46,6 +55,7 @@ void the_operations_match_their_definitions() {
     rng.normal(matrix.data(), static_cast<std::size_t>(matrix.size()), 1.0);
 
     const auto box_support = support_func(box, d);
+    // the support functions of both sets
     const auto zono_support = support_func(zono, d);
     const Interval<double> image = mat_mul(box, matrix);
     const Zonotope<double> mapped = mat_mul(zono, matrix);
@@ -160,6 +170,9 @@ void the_random_numbers_are_what_they_claim() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_operations_match_their_definitions();
     zonotope_containment_is_exact();
@@ -167,3 +180,5 @@ int main() {
     if (failures == 0) std::cout << "all tests passed\n";
     return failures == 0 ? 0 : 1;
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

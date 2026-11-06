@@ -7,12 +7,17 @@
 // verification loop hands from one run to the next.
 //
 // Syntax:   AdaptiveResult R = priv_reach_adaptive(taylor, params, spec_times, error, verify, sd);
-// Inputs:   see the declaration below
-// Outputs:  the output sets per step with their errors, the step sizes
+// Inputs:   see - the declaration below
+// Outputs:  R - the output sets per step with their errors, and the step sizes
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
 //        outer-approximations of reachable sets", TAC, 2023.
 // See also: priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -58,10 +63,8 @@ struct AdaptiveResult {
     bool internal_checks_ok = true; ///< the error bookkeeping was consistent
 };
 
-/// The reachable output sets with errors below `error` (Hausdorff distance to the exact
-/// output sets). With verify, the time horizon ends at the last time where some specification
-/// is unverified (spec_times, one VerifyTime per specification) and steps where all are verified
-/// are skipped (no sets). savedata is read at the start and extended.
+/// The reachable output sets with errors below `error` (Hausdorff distance to the exact output
+/// sets). With verify, steps where all specifications are verified are skipped.
 AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &params,
                                    const std::vector<VerifyTime> &spec_times, double error,
                                    bool verify, AdaptiveSaveData &savedata);

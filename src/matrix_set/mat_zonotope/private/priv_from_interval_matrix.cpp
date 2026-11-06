@@ -1,6 +1,11 @@
 // priv_from_interval_matrix - an interval matrix as a matrix zonotope
 //
 // See also: priv_from_interval_matrix.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "matrix_set/mat_zonotope/private/priv_from_interval_matrix.h"
 #include "matrix_set/mat_zonotope/private/priv_stacking.h"

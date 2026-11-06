@@ -1,12 +1,18 @@
 // radius - the Euclidean radius of a box, as CORA's interval.radius
 //
+// The radius of the smallest ball about the center that holds the box.
+//
 // Syntax:   Tensor r = I.radius();
 // Inputs:   -
-// Outputs:  r - the 2-norm of rad(I) over all entries, (..., 1, 1): the radius of the smallest
-//           ball about the center that holds the box
+// Outputs:  r - the 2-norm of rad(I) over all entries, (..., 1, 1)
 // See also: rad, norm
 //
 // CORA: contSet/@interval/radius.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

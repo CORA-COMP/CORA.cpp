@@ -1,14 +1,22 @@
 // priv_expm_series - the Taylor series of the interval matrix exponential, from a given start
 //
+// The series continues from [A]^initial_order, its term divided by the factorial. The result also
+// holds the powers first_order..N (at least the first) and the remainder.
+//
 // Syntax:   ExpmResult R = priv_expm_series(A, start, first_order, first_power, loop_from, N);
 //           ExpmResult R = priv_expm_continued(A, N, initial_order, initial_power);
-// Inputs:   A - square interval matrix;  start - the sum of the terms already counted;
-//           first_order, first_power - the power of A that the list of powers starts with;
-//           loop_from - the first order whose term is added;  N - the last order added
-//           (continued: the series from [A]^initial_order, its term divided by the factorial)
-// Outputs:  R - start plus the terms loop_from..N, [A]^i / i!, plus the remainder box; the powers
-//           first_order..N (at least the first) and the remainder
+// Inputs:   A - square interval matrix
+//           start - the sum of the terms already counted
+//           first_order, first_power - the power of A that the list of powers starts with
+//           loop_from - the first order whose term is added
+//           N - the last order added
+// Outputs:  R - start plus the terms loop_from..N, [A]^i / i!, plus the remainder box
 // See also: expm, expm_independent, expm_mixed
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

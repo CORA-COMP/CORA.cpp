@@ -17,8 +17,11 @@
 // ORACLE: contSet/@zonoBundle/isequal.m
 // ORACLE: contSet/@zonoBundle/lift_.m
 //
-// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg, Tobias
 // Ladner Authors:       Claude Sonnet 5.5 Written:       04-November-2026 Last update:   ---
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -88,6 +91,7 @@ int main() {
     oracle::run("zonoBundle.enlarge", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 3, 4);
         const Tensor factor = rnd.vector(3);
+        // enlarge a bundle
         oracle::check(Set(a)->enlarge(factor).as<ZonoBundle>(),
                       lean::ZonoBundle(a).enlarge(factor));
     });
@@ -108,6 +112,7 @@ int main() {
     });
     oracle::run("zonoBundle.isequal", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 2, 4), b = rnd.zono_bundle(3, 2, 4);
+        // isequal of bundles
         oracle::check(a.isequal(a), lean::ZonoBundle(a).isequal(a));
         oracle::check(a.isequal(b), lean::ZonoBundle(a).isequal(b));
     });

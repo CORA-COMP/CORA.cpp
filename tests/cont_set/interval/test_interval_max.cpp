@@ -1,6 +1,11 @@
 // test_interval_max - interval max: the elementwise larger of two boxes
 //
 // CORA: contSet/@interval/max.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,6 +39,7 @@ void max_takes_the_larger_bounds(const std::string &b) {
           b + ": another set by its interval hull");
     check(close(I.max(), I.sup()), b + ": without an argument the upper bound");
     const Interval S = Interval::stack({I, J}).max(J);
+    // a batch
     check(S.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(S.sup().slice(0, 0, 1).reshape({2, 1}), R.sup()),
           b + ": a batch");
@@ -50,8 +60,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(max_takes_the_larger_bounds);
     checks_and_their_switch();
     return test::finish("interval max");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

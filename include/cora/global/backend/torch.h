@@ -5,6 +5,11 @@
 // Syntax:   BackendScope scope("torch");   Tensor t = from_torch(x);
 //           torch::Tensor x = to_torch(t);
 // See also: tensor.h, eigen.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #pragma once
 

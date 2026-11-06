@@ -1,6 +1,11 @@
 // linear_sys - lean::LinearSys, the reachability of x' = A x computed by CORALean
 //
 // See also: lean/zonotope.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/error.h"

@@ -16,7 +16,6 @@
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

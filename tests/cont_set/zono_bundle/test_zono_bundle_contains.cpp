@@ -2,7 +2,6 @@
 //
 // CORA: contSet/@zonoBundle/contains_.m
 // PROPERTY: contSet/@zonoBundle/contains_.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -102,6 +101,7 @@ void checks_and_their_switch() {
                        Error::wrong_value),
           "contains: tol < 0");
     ChecksScope off(false);
+    // the same with the checks off
     check(bundle.contains(column({0.5, 0.5})), "contains: the same with the checks off");
 }
 

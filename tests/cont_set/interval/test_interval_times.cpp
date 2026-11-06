@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/times.m
 // PROPERTY: contSet/@interval/times.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -13,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -35,6 +44,7 @@ void times_takes_the_hull_of_the_corners(const std::string &b) {
     check(close(S.inf(), std::vector<double>{-3, -4}) && close(S.sup(), std::vector<double>{-1, 2}),
           b + ": a negative scalar swaps the bounds");
     const Interval U(column({0.0}), column({kInf}));
+    // 0 * Inf is 0
     check(close(U.times(Interval(column({0.0}), column({0.0}))).sup(), std::vector<double>{0}),
           b + ": 0 * Inf is 0");
     const Interval W = A.times(Interval(column({2.0}), column({3.0})));
@@ -80,6 +90,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         times_takes_the_hull_of_the_corners(b);
@@ -88,3 +101,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval times");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

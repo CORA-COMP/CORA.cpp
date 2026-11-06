@@ -1,4 +1,11 @@
-"""test_operators - the operators of Zonotope and Interval in Python, as CORA writes them."""
+"""test_operators - the operators of Zonotope and Interval in Python, as CORA writes them.
+
+CORA authors: Matthias Althoff
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       29-September-2026
+Last update:   03-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/mtimes.m
 # CORA: contSet/@interval/plus.m
 # CORA: contSet/@zonotope/mtimes.m
@@ -8,6 +15,7 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
@@ -15,13 +23,19 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def box():
     return cora.Zonotope(cora.Tensor([1.0, 2.0]), cora.Tensor([[0.5, 0.0], [0.0, 0.25]]))
 
+
+# ============================================  MAIN  ============================================ #
 
 class ZonotopeOperators(unittest.TestCase):
     def test_a_matrix_times_a_zonotope_is_the_linear_map(self):
@@ -45,6 +59,7 @@ class ZonotopeOperators(unittest.TestCase):
         torch.testing.assert_close((box() - v).center, torch.tensor([0.0, 3.0], dtype=torch.float64))
 
     def test_an_interval_matrix_widens(self):
+        # an interval matrix times a zonotope
         M = cora.Interval.matrix(-torch.ones(2, 2, dtype=torch.float64),
                                  torch.ones(2, 2, dtype=torch.float64))
         self.assertEqual(tuple((M * box()).generators.shape), (2, 4))
@@ -87,6 +102,7 @@ class IntervalOperators(unittest.TestCase):
         J = cora.Tensor([[0.0, 1.0], [1.0, 0.0]]) * self.I
         torch.testing.assert_close(J.inf, torch.tensor([0.0, -1.0], dtype=torch.float64))
 
+    # an interval matrix times a zonotope
     def test_an_interval_matrix_times_a_zonotope(self):
         M = cora.Interval.matrix(-torch.ones(2, 2, dtype=torch.float64),
                                  torch.ones(2, 2, dtype=torch.float64))
@@ -96,3 +112,5 @@ class IntervalOperators(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

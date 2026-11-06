@@ -11,6 +11,11 @@
 // See also:   cora/cont_set/cont_set.h, cora/cont_dynamics/linear_sys/linear_sys.h
 //
 // CORA: specification/@specification/specification.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

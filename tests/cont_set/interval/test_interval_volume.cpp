@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/volume_.m
 // PROPERTY: contSet/@interval/volume_.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -13,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,6 +43,7 @@ void volume_is_the_product_of_the_widths(const std::string &b) {
     check(close(Interval(lo, lo + 2.0).volume(), std::vector<double>{16}),
           b + ": an interval matrix multiplies all entries");
     const Interval S = Interval::stack({I, Interval(column({0.0, 0.0}), column({1.0, 2.0}))});
+    // a batch has a volume per member
     check(S.volume().shape() == std::vector<int64_t>({2, 1, 1}) &&
               close(S.volume(), std::vector<double>{12, 2}),
           b + ": a batch has a volume per member");
@@ -61,6 +71,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         volume_is_the_product_of_the_widths(b);
@@ -69,3 +82,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval volume");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

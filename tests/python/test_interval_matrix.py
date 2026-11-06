@@ -1,5 +1,13 @@
 """test_interval_matrix - cora.IntervalMatrix: the constructors, the bounds, the sums, the norms, the
-squares, the powers and the matrix exponential."""
+
+squares, the powers and the matrix exponential.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner, Ivan Brkan, Victor Gassmann
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: matrixSet/@intervalMatrix/abs.m
 # CORA: matrixSet/@intervalMatrix/center.m
 # CORA: matrixSet/@intervalMatrix/contains.m
@@ -68,6 +76,11 @@ import unittest
 import cora
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 # [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]
 EXAMPLE = cora.IntervalMatrix(cora.Interval.matrix(np.array([[1.0, -1.0], [0.0, 2.0]]),
                                                    np.array([[2.0, 1.0], [3.0, 2.0]])))
@@ -90,6 +103,8 @@ def exponential(M):
         total = total + term
     return total
 
+
+# ============================================  MAIN  ============================================ #
 
 class Bounds(unittest.TestCase):
     def setUp(self):
@@ -114,6 +129,7 @@ class Bounds(unittest.TestCase):
         self.assertTrue(A.contains(A.center))
         self.assertTrue(all(np.all(np.abs(member(A, rng)) <= A.abs() + 1e-15) for _ in range(20)))
 
+    # containment
     def test_contains(self):
         out = np.array([[1.0, -1.0], [3.5, 2.0]])
         self.assertTrue(EXAMPLE.contains(EXAMPLE.center))
@@ -159,6 +175,7 @@ class Squares(unittest.TestCase):
         for _ in range(30):
             X = member(A, rng)
             self.assertTrue(square.contains(X @ X, tol=1e-12))
+            # dependent terms contain the powers
             self.assertTrue(H.contains(np.eye(3) + X + X @ X / 2, tol=1e-12))
 
     def test_matrix_power(self):
@@ -181,6 +198,7 @@ class Squares(unittest.TestCase):
         P = EXAMPLE @ EXAMPLE
         self.assertTrue(P.contains(EXAMPLE.center @ EXAMPLE.center))
         Z = cora.Zonotope(np.array([1.0, 1.0]), np.eye(2))
+        # products with sets
         R = EXAMPLE @ Z
         np.testing.assert_allclose(R.center, [1.5, 3.5])
         self.assertEqual((EXAMPLE @ cora.EmptySet(2)).dim, 2)
@@ -220,6 +238,7 @@ class Exponential(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             A.expm(4, r=0.0)
         with self.assertRaises(cora.errors.WrongValue):
+            # the initial order needs the initial power
             A.expm(4, initial_order=2)
 
     def test_expm_independent_from_a_power(self):
@@ -244,6 +263,7 @@ class Exponential(unittest.TestCase):
 
 
 class SumsAndQueries(unittest.TestCase):
+    # sums and queries
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
 
@@ -266,6 +286,7 @@ class SumsAndQueries(unittest.TestCase):
             EXAMPLE + "x"
 
     def test_powers(self):
+        # powers
         P = EXAMPLE.powers(3)
         self.assertEqual(len(P), 3)
         np.testing.assert_allclose(P[0].interval.inf, EXAMPLE.interval.inf)
@@ -288,6 +309,7 @@ class SumsAndQueries(unittest.TestCase):
 
     def test_representsa(self):
         point = cora.IntervalMatrix(np.array([[1.0, 2.0], [3.0, 4.0]]))
+        # the classes it represents
         zero = cora.IntervalMatrix(np.zeros((2, 2)))
         self.assertTrue(point.representsa("point") and zero.representsa("origin"))
         self.assertFalse(EXAMPLE.representsa("point") or point.representsa("origin"))
@@ -310,6 +332,7 @@ class SumsAndQueries(unittest.TestCase):
         self.assertEqual(len(V), 1)
         self.assertEqual(V[0].shape, (8, 2, 2))
         np.testing.assert_allclose(V[0][0], [[1, -1], [0, 2]])
+        # vertices
         np.testing.assert_allclose(V[0][1], [[1, 1], [0, 2]])
         np.testing.assert_allclose(V[0][7], [[2, 1], [3, 2]])
         self.assertTrue(all(EXAMPLE.contains(v, tol=0.0) for v in V[0]))
@@ -335,6 +358,7 @@ class MoreOperations(unittest.TestCase):
         self.assertTrue(text.startswith("intervalMatrix\n- dimension: 2  2\n- infimum:\n"))
         self.assertIn("- supremum:", text)
 
+    # random matrices
     def test_generate_random(self):
         rng = cora.Rng(28)
         for _ in range(20):
@@ -356,6 +380,7 @@ class MoreOperations(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongInputInConstructor):
             cora.IntervalMatrix.generate_random(rng, center=np.ones((1, 2)), max_radius=np.ones((2, 2)))
 
+    # closed-form bounds
     def test_closed_form_bounds(self):
         A = cora.IntervalMatrix(np.array([[0.2]]), np.array([[0.1]]))
         self.assertAlmostEqual(float(A.expm_norm_infinity(1.0)), 0.01 / 0.765 + 0.1 / 0.85, places=12)
@@ -377,6 +402,7 @@ class MoreOperations(unittest.TestCase):
         for style in (0, 1):
             E = A.expm_taylor_horner_scaling(2, style)
             np.testing.assert_allclose([E.interval.inf[0], E.interval.sup[0]], [5 / 18, 13 / 18], rtol=1e-12)
+        # the Taylor Horner scaling
         self.assertTrue(A.expm_taylor_horner_scaling(2, 2).contains(np.array([[np.exp(-1.0)]])))
         self.assertIsNone(cora.IntervalMatrix(np.array([[5.0]])).expm_taylor_horner_scaling(2, 0))
         rng = np.random.default_rng(38)
@@ -398,6 +424,7 @@ class MoreOperations(unittest.TestCase):
 
     def test_independent_mixed(self):
         N = cora.IntervalMatrix(np.array([[0.0, 1.0], [0.0, 0.0]]))
+        # the mixed independent exponential
         R = N.expm_independent_mixed(2, 5)
         np.testing.assert_allclose(R.enclosure.interval.inf, [[1, 1], [0, 1]])
         self.assertEqual((len(R.powers), len(R.powers2)), (2, 3))
@@ -442,6 +469,7 @@ class Gradients(unittest.TestCase):
         self.check(lambda A: A.infinity_norm(), center, delta)
         self.check(lambda A: A.norm("fro"), center, delta)
         self.check(lambda A: A.exact_square(), center, delta)
+        # gradients of the matrix operations
         self.check(lambda A: A.matrix_power(3), center, delta)
         self.check(lambda A: A @ A, center, delta)
         self.check(lambda A: A.dependent_terms(0.5)[1], center, delta)
@@ -462,3 +490,5 @@ class Gradients(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

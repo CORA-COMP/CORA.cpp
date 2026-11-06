@@ -1,11 +1,21 @@
 // test_zonotope_exact_plus_torch - zonotope exact_plus: gradients through torch
 //
 // exact_plus is differentiable: sums and copies of the inputs.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -19,3 +29,5 @@ int main() {
                     {Z[0], Z[1], Z2[0], Z2[1]});
     return test::finish("zonotope exact_plus (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

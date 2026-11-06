@@ -1,4 +1,5 @@
 // test_lean_interval_structure - uminus, uplus, transpose, supremum, sum, tril, triu, vertcat,
+//
 // volume, split and zonotope against the CORALean oracle
 //
 // Each result equals the oracle's bit for bit at nearest and lies in its sound enclosure; volume
@@ -17,6 +18,10 @@
 // ORACLE: contSet/@interval/volume_.m
 // ORACLE: contSet/@interval/split.m
 // ORACLE: contSet/@interval/zonotope.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -28,6 +33,10 @@
 #include <iostream>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -68,6 +77,9 @@ Interval aux_matrix(test::oracle::Random &rnd, int64_t rows, int64_t cols) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("interval.uminus", [](test::oracle::Random &rnd) {
@@ -86,6 +98,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n), M = aux_matrix(rnd, n, 3);
             test::oracle::check(I.transpose(), lean::Interval(I).transpose());
+            // transposes
             test::oracle::check(M.transpose(), lean::Interval(M).transpose());
         }
     });
@@ -118,6 +131,7 @@ int main() {
             for (const int K : {0, 1, 3}) test::oracle::check(M.triu(K), lean::Interval(M).triu(K));
         }
     });
+    // vertical concatenation
     test::oracle::run("interval.vertcat", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n), J = rnd.box(n + 1), M = aux_matrix(rnd, n, 3);
@@ -136,6 +150,7 @@ int main() {
     test::oracle::run("interval.split", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
+            // split at a coordinate
             for (const int j : {0, n / 2, n - 1})
                 test::oracle::check(I.split(j), lean::Interval(I).split(j));
         }
@@ -155,3 +170,5 @@ int main() {
     });
     return test::finish("lean interval structure");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -6,6 +6,10 @@
 //
 // ORACLE: contSet/@interval/rad.m
 // ORACLE: contSet/@interval/radius.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -15,6 +19,11 @@
 #include <limits>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -36,5 +45,8 @@ int main() {
                             "interval.radius: not above the oracle's bound");
         }
     });
+    // the result
     return test::finish("lean interval rad");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

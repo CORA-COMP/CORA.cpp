@@ -1,6 +1,11 @@
 // neural_network - the class of feed-forward networks: construction and its checks
 //
 // See also: neuralNetwork.h, evaluate.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"
@@ -30,6 +35,7 @@ NeuralNetwork::NeuralNetwork(std::vector<Layer> layers) : layers_(std::move(laye
         });
         CORA_CHECK(k == 0 || w[1] == layers_[k - 1].W.shape()[0], Error::wrong_input_in_constructor,
                    [&] {
+                       // a layer needs as many inputs as the one before gives
                        return "NeuralNetwork: layer " + std::to_string(k) + " takes " +
                               std::to_string(w[1]) + " inputs, the layer before gives " +
                               std::to_string(layers_[k - 1].W.shape()[0]);

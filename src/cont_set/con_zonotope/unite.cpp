@@ -1,18 +1,24 @@
 // unite - a constrained zonotope that encloses the union of constrained zonotopes, as CORA's or
 //
+// The sets with constraints are rescaled and their zonotopes enclosed pairwise (the iterative
+// union); the generators of that enclosure, of unit length, are scaled and its center moved, by a
+// linear program, to the least that still cover every set along the facet normals of the
+// enclosure (the support function of each set is a linear program). "tedrake" fails in CORA (it
+// uses a variable it never sets) and is Error::not_supported, as is an order reduction (order).
+// Not a batch.
+//
 // Syntax:   cZu = cz.unite(S);   cZu = cz.unite({S2, S3}, "linprog");   cZu = cz.unite(p);
-// Inputs:   S - a constrained zonotope, a zonotope, a box, a point (n, 1), or a list of
-//           constrained zonotopes;  method - "linprog" (default): see below; "tedrake" fails in
-//           CORA (it uses a variable it never sets) and is Error::not_supported, as is an order
-//           reduction (order)
-// Outputs:  cZu - a set without constraints that contains the union: the sets with constraints
-//           are rescaled and their zonotopes enclosed pairwise (the iterative union); the
-//           generators of that enclosure, of unit length, are scaled and its center moved, by a
-//           linear program, to the least that still cover every set along the facet normals of
-//           the enclosure (the support function of each set is a linear program). Not a batch
+// Inputs:   S - a constrained zonotope, a zonotope, a box, a point (n, 1), or a list of them
+//           method - "linprog" (default)
+// Outputs:  cZu - a set without constraints that contains the union
 // See also: rescale, Zonotope::unite
 //
 // CORA: contSet/@conZonotope/or.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"

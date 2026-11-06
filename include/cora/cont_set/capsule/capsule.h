@@ -16,6 +16,11 @@
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@capsule/capsule.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -59,11 +64,8 @@ class Capsule : public ContSet {
     /// Whether the capsule is empty (a negative radius); for a batch, whether every member is.
     bool is_empty() const;
 
-    /// A capsule that contains the points (..., n, N) (CORA's enclosePoints): the center is their
-    /// mean, the generator runs to the point farthest from it, and the radius is the largest
-    /// distance of a point from the segment. No points give the empty capsule. CORA's radius is
-    /// |g|, far more, and in one dimension its generator misses the minimum
-    /// (docs/cora-differences.md).
+    /// A capsule that contains the points (..., n, N) (CORA's enclosePoints): the mean as center,
+    /// the generator to the farthest point, the largest distance from the segment as radius.
     static Capsule enclose_points(const Tensor &points);
 
     // Queries -------------------------------------------------------------------------------------
@@ -73,22 +75,15 @@ class Capsule : public ContSet {
     /// tol default: the repository tolerance.
     bool isequal(const Capsule &S, Tol tol = std::nullopt) const;
 
-    /// Whether the capsule contains the points p (..., n, N) (all of them), a capsule, a
-    /// zonotope or a box, up to tol in the distance to the axis. A zonotope or a box is inside
-    /// exactly if its corners are, of at most 12 generators. The empty capsule contains only
-    /// the empty set. For a batch, whether every member contains. CORA's second and third
-    /// outputs (the certificate and the scaling) are not returned. tol default: the repository
-    /// tolerance.
+    /// Whether the capsule contains the points p (..., n, N), a capsule, a zonotope or a box, up
+    /// to tol in the distance to the axis; for a batch, every member.
     bool contains(const Tensor &p, Tol tol = std::nullopt) const;
     bool contains(const Capsule &S, Tol tol = std::nullopt) const;
     bool contains(const Zonotope &Z, Tol tol = std::nullopt) const;
     bool contains(const Interval &I, Tol tol = std::nullopt) const;
 
     /// Whether the capsule meets the points p (all of them in it) or a capsule: the least
-    /// distance of the two axes is at most the sum of the radii, up to tol. Exact, by the closed
-    /// form of the nearest points of two segments; CORA's quadratic program has a wrong Hessian
-    /// and misses intersections (docs/cora-differences.md). For a batch, whether every pair
-    /// meets. tol default: the repository tolerance.
+    /// distance of the two axes is at most the sum of the radii, up to tol. Exact.
     bool is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
     bool is_intersecting(const Capsule &S, Tol tol = std::nullopt) const;
 
@@ -105,10 +100,8 @@ class Capsule : public ContSet {
     Capsule enclose(const Capsule &S) const;
     Capsule enclose(const Tensor &M, const Capsule &Cplus) const;
 
-    /// M * C for a matrix M (..., m, n) (CORA's mtimes): the center and generator map by M and the
-    /// radius scales by the Frobenius norm of M, an upper bound of its operator norm. CORA scales
-    /// by the largest eigenvalue of M M', the square of that norm, which is too small for a map
-    /// that shrinks (docs/cora-differences.md).
+    /// M * C for a matrix M (..., m, n) (CORA's mtimes): center and generator map by M, the
+    /// radius scales by the Frobenius norm of M, an upper bound of its operator norm.
     Capsule linear_map(const Tensor &M) const;
 
     /// The capsule with its coordinates permuted: coordinate i of this one becomes coordinate

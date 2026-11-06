@@ -1,22 +1,29 @@
 // approximate_bounds - bounds of a batch of constrained zonotopes with inequality constraints
 //
+// The sets are c + G x + [-dr, dr] with |x|_inf <= 1 and A x <= b (q >= m: the factors without
+// generators are padded). "fourier-motzkin" tightens the factor bounds row by row, at most
+// max_iter times, and the box follows from them; "exact" is a linear program per bound on the
+// host. batch_union treats each union row as a batch member (else a loop), as CORA's options.nn.
+//
+// NaN and 0 for a member without a point. A union takes the least and the largest bound of its
+// rows (CORA's loop over the union rows starts from -1 and 1, so it never tightens: docs/cora-
+// differences.md). Any batch shape works, the result has it too.
+//
 // Syntax:   Bounds r = ConZonotope::approximate_bounds(c, G, A, b);
 //           Bounds r = ConZonotope::approximate_bounds(c, G, A, b, dr, num_union_const, options);
 // Inputs:   c (B, n, 1), G (B, n, m), A (B, p, q), b (B, p, 1) - the batch of the sets
-//           c + G x + [-dr, dr] with |x|_inf <= 1 and A x <= b (q >= m: the factors without
-//           generators are padded); dr (B, n, 1) - the interval error (default: 0);
-//           num_union_const - the first rows of A are a union, the others an intersection;
-//           options - the method: "fourier-motzkin" (default; the factor bounds are tightened row
-//           by row, at most max_iter times, the box follows from them) or "exact" (a linear
-//           program per bound on the host); "dual-iter" is not supported; batch_union treats
-//           each union row as a batch member (else a loop), as CORA's options.nn
-// Outputs:  r - the box (l, u) (B, n, 1) and the bounds (bl, bu) (B, q, 1) of the factors; NaN and
-//           0 for a member without a point. A union takes the least and the largest bound of
-//           its rows (CORA's loop over the union rows starts from -1 and 1, so it never
-//           tightens: docs/cora-differences.md). Any batch shape works, the result has it too
+//           dr (B, n, 1) - the interval error (default: 0)
+//           num_union_const - the first rows of A are a union, the others an intersection
+//           options - the method: "fourier-motzkin" (default) or "exact"
+// Outputs:  r - the box (l, u) (B, n, 1) and the bounds (bl, bu) (B, q, 1) of the factors
 // See also: interval, Koller, ICLR 2026, Prop. 3
 //
 // CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
+// CORA authors: Lukas Koller
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/linprog.h"
@@ -184,6 +191,7 @@ Bounds aux_union(const Tensor &c, const Tensor &G, const Tensor &dr, const Tenso
         }
         s = {Tensor::stack(l, 0), Tensor::stack(u_, 0), Tensor::stack(bl, 0), Tensor::stack(bu, 0)};
     }
+    // the four bounds are reduced
     return {aux_reduce(s.l, true), aux_reduce(s.u, false), aux_reduce(s.bl, true),
             aux_reduce(s.bu, false)};
 }
@@ -210,6 +218,7 @@ ConZonotope::approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &
                           shape_text(c.shape()) + ", " + shape_text(G.shape()) + ", " +
                           shape_text(A.shape()) + " and " + shape_text(b.shape());
                });
+    // the sets share one batch shape
     CORA_CHECK(batch(c) == batch(G) && batch(c) == batch(A) && batch(c) == batch(b) &&
                    (!dr_arg ||
                     (batch(*dr_arg) == batch(c) && is_column(*dr_arg, c.shape()[c.ndim() - 2]))),

@@ -5,6 +5,11 @@
 // other backend, and the results agree as the table says: exact (the same bits), ulp (at most k
 // ulp of lean's), sum (at most k n u times the operation on |operands|, n its length) or norm (at
 // most k n u times lean's largest entry). Every operation of the table has a case here.
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "global/oracle/oracle_testing.h"
@@ -19,6 +24,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -91,6 +100,7 @@ void aux_agree(const OpInfo &info, int64_t n, const Tensor &ref, const Tensor &g
         if (info.agreement == Agreement::sum) bound = info.k * n * u * std::fabs(s[i]);
         if (info.agreement == Agreement::norm) bound = info.k * n * u * largest;
         if (!(diff <= bound) && !(std::isnan(r[i]) && std::isnan(g[i]))) {
+            // the comparison against lean
             check(false, what + " [" + std::to_string(i) + "]: " + std::to_string(g[i]) +
                              " against lean's " + std::to_string(r[i]) + ", beyond the bound " +
                              std::to_string(bound));
@@ -143,6 +153,7 @@ std::map<std::string, Case> aux_cases() {
     c["not_equal"] =
         binary([](const Tensor &a, const Tensor &b) { return a.not_equal(b.maximum(a)); });
     c["less"] = binary([](const Tensor &a, const Tensor &b) { return a.less(b); });
+    // comparisons
     c["less_equal"] =
         binary([](const Tensor &a, const Tensor &b) { return a.less_equal(b.maximum(a)); });
     c["greater"] = binary([](const Tensor &a, const Tensor &b) { return a.greater(b); });
@@ -163,6 +174,7 @@ std::map<std::string, Case> aux_cases() {
     c["round"] = unary([](const Tensor &x) { return (x * 2.0).round(); }, -3, 3);
     c["sqrt"] = unary([](const Tensor &x) { return x.sqrt(); }, 0, 9);
     c["exp"] = unary([](const Tensor &x) { return x.exp(); }, -5, 5);
+    // elementwise functions with their ranges
     c["log"] = unary([](const Tensor &x) { return x.log(); }, 0.01, 50);
     c["sin"] = unary([](const Tensor &x) { return x.sin(); }, -6, 6);
     c["cos"] = unary([](const Tensor &x) { return x.cos(); }, -6, 6);
@@ -183,6 +195,7 @@ std::map<std::string, Case> aux_cases() {
         return Case{1, [f](O &o) {
                         const Tensor x = o.matrix(1, 4);
                         const double inf = std::numeric_limits<double>::infinity();
+                        // special values appended to the data
                         return V{f(Tensor::concat(
                             {x, Tensor::like(x, {std::nan(""), inf, -inf, 0.0}, {1, 4})}, -1))};
                     }};
@@ -213,6 +226,7 @@ std::map<std::string, Case> aux_cases() {
     const auto counting = [](const std::function<Tensor(const Tensor &, int)> &f) {
         return Case{1, [f](O &o) {
                         const Tensor x = o.batch(3, 4, 6).scalar_op(Tensor::Binary::greater, 0.5);
+                        // reductions along axes
                         return V{f(x, 0), f(x, 1), f(x, -1)};
                     }};
     };
@@ -239,6 +253,7 @@ std::map<std::string, Case> aux_cases() {
     c["concat"] = {1, [](O &o) {
                        const Tensor a = o.batch(2, 3, 4), b = o.batch(2, 3, 2),
                                     d = o.batch(2, 1, 4);
+                       // concatenation along axes
                        return V{Tensor::concat({a, b}, -1), Tensor::concat({a, d}, 1),
                                 Tensor::concat({a, a}, 0)};
                    }};
@@ -258,6 +273,7 @@ std::map<std::string, Case> aux_cases() {
     c["triu"] = {1, [](O &o) { return V{o.batch(2, 4, 5).triu(1), o.matrix(4, 4).triu()}; }};
     c["block_diag"] = {
         1, [](O &o) {
+            // block diagonals
             return V{Tensor::block_diag({o.matrix(2, 3), o.matrix(1, 1), o.matrix(3, 2)})};
         }};
     // sorting, with ties
@@ -299,6 +315,7 @@ std::map<std::string, Case> aux_cases() {
                      const auto [w, V_] = o.spd(5).eigh();
                      return V{w, V_};
                  }};
+    // pseudo-inverse and rank
     c["pinv"] = {5, [](O &o) { return V{o.regular(5).pinv()}; }};
     c["matrix_rank"] = {1, [](O &o) {
                             const Tensor A = o.matrix(5, 2);
@@ -319,6 +336,7 @@ std::map<std::string, Case> aux_cases() {
                         }};
     c["vector_norm"] = {6, [](O &o) {
                             const Tensor x = o.batch(2, 6, 4);
+                            // norms
                             return V{x.vector_norm(Norm::one, 1), x.vector_norm(Norm::inf, -1),
                                      x.vector_norm(Norm::two, 1, true)};
                         }};
@@ -343,6 +361,7 @@ std::map<std::string, Case> aux_cases() {
                                         }};
     c["interval_matmul"] = {6, [](O &o) {
                                 const Tensor lo = o.batch(2, 4, 6), w = o.batch(2, 4, 6).abs();
+                                // the interval product
                                 const auto [a, b] =
                                     Tensor::interval_matmul(lo, lo + w, o.matrix(6, 3));
                                 return V{a, b};
@@ -369,6 +388,9 @@ std::vector<Tensor> aux_run(const std::string &name, const Case &c, bool abs) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const std::map<std::string, Case> cases = aux_cases();
@@ -399,5 +421,8 @@ int main() {
                           std::string(info.name) + " on " + b + ", result " + std::to_string(i));
         }
     }
+    // the result
     return test::finish("tensor equivalence");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

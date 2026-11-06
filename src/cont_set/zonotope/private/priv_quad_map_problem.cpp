@@ -1,11 +1,17 @@
 // priv_quad_map_problem - what is wrong with the matrices of a quadratic map
 //
 // Syntax:   std::string problem = priv_quad_map_problem(Q, n);
-// Inputs:   Q - the matrices of the outputs;  n - dimension of the sets
+// Inputs:   Q - the matrices of the outputs
+//           n - dimension of the sets
 // Outputs:  problem - empty if Q is one or more (n, n) matrices, else what is wrong
 // See also: Zonotope::quad_map, Interval::quad_map
 //
 // CORA: contSet/@zonotope/quadMap.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "global/format.h"

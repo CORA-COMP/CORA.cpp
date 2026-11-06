@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/minnorm.m
 // PROPERTY: contSet/@zonotope/minnorm.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -11,6 +16,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -56,6 +65,7 @@ void minnorm_is_the_inradius(const std::string &b) {
         check(least <= val * 1.5 + 1e-9, b + ": sampled directions come close to the inradius");
         double distance = 0;
         for (int i = 0; i < n; ++i) distance += std::pow(x.data()[i] - Z.center().data()[i], 2);
+        // the point lies at the distance
         check(close(std::sqrt(distance), val, 1e-9), b + ": the point lies at distance minnorm");
         check(Z.contains(x, "exact", 1e-9), b + ": and in the zonotope");
     }
@@ -73,6 +83,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         minnorm_known(b);
@@ -81,3 +94,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope minnorm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

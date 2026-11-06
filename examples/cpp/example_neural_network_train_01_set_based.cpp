@@ -1,4 +1,5 @@
 // example_neural_network_train_01_set_based - set-based training pushes decision boundaries off the
+//
 // samples
 //
 // The loss of set-based training (Koller, Ladner, Althoff: "Set-Based Training for Neural Network
@@ -15,6 +16,11 @@
 // Syntax:   build/examples/cpp/example_neuralNetwork_train_01_setBased [epochs, default 300]
 // Outputs:  accuracy and certified share of the training points for both models
 // See also: the Python example of the same name, example_neuralNetwork_verify_01
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/nn/neural_network/neural_network.h"
@@ -23,9 +29,12 @@
 #include <string>
 #include <vector>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 /// The four hidden layers of 100 ReLUs and the output layer of the paper's nn-med.
 torch::nn::Sequential new_model() {
@@ -68,6 +77,9 @@ torch::Tensor certified(const torch::nn::Sequential &model, const torch::Tensor 
     const Zonotope Y = output_set(model, points, eps);
     return to_torch(Y.support_function(from_torch(direction.unsqueeze(-1)))).flatten() < 0;
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
     const BackendScope backend_scope("torch");

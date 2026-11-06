@@ -9,7 +9,6 @@
 // See also: empty, Zonotope::Zonotope
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

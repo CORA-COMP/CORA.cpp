@@ -8,12 +8,19 @@
 // differentiable.
 //
 // Syntax:   y = nn.evaluate(x);   Y = nn.evaluate(X);
-// Inputs:   x - points, columns (in, N);  X - a zonotope of dimension in (or a batch)
-// Outputs:  y - the outputs (out, N);  Y - a zonotope that contains the outputs of all points of X
+// Inputs:   x - points, columns (in, N)
+//           X - a zonotope of dimension in (or a batch)
+// Outputs:  y - the outputs (out, N)
+//           Y - a zonotope that contains the outputs of all points of X
 // See also: cora/nn/neural_network/neural_network.h, Zonotope::interval
 //
 // CORA: nn/@neuralNetwork/evaluate.m
 // CORA: nn/layers/nonlinear/nnReLULayer.m
+// CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
 #include "cora/nn/neural_network/neural_network.h"

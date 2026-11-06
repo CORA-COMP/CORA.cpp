@@ -6,6 +6,11 @@
 // See also: generators, ContSet::center
 //
 // CORA: contSet/@zonotope/center.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

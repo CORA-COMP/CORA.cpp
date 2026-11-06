@@ -1,6 +1,11 @@
 // test_interval_minus - interval minus: the difference of a box and a box or a point
 //
 // CORA: contSet/@interval/minus.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,6 +38,7 @@ void minus_subtracts_the_opposite_bounds(const std::string &b) {
     check(close(W.inf(), std::vector<double>{-1, -3}) && close(W.sup(), std::vector<double>{1, 0}),
           b + ": a point minus a box is [v - sup, v - inf]");
     const Interval S = Interval::stack({I, J}) - column({1.0, 1.0});
+    // a batch
     check(S.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(S.sup().slice(0, 1, 2).reshape({2, 1}), std::vector<double>{0, 2}),
           b + ": a batch");
@@ -53,8 +63,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(minus_subtracts_the_opposite_bounds);
     checks_and_their_switch();
     return test::finish("interval minus");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

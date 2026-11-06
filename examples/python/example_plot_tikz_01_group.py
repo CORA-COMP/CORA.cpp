@@ -2,16 +2,26 @@
 
 cora.subplots is plt.subplots that remembers what CORA drew on each axes; to_tikz writes it as one
 groupplot with shared axes, CORA's colors by their names in cora-macs and thinned coordinates. The
-text comes from the C++ core, the same as for its own figures.
+text comes from the C++ core, the same as for its own figures. Without --save the figure is shown.
 
 Syntax:   PYTHONPATH=build python examples/python/example_plot_tikz_01_group.py [--save PREFIX]
-Outputs:  PREFIX.tikz (a tikzpicture) and PREFIX_standalone.tikz (a document); the figure is shown
-          without --save
+Outputs:  PREFIX.tikz (a tikzpicture) and PREFIX_standalone.tikz (a document)
 See also: example_plot_tikz_01_group of the C++ examples, example_plot_reach_01_over_time
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
 import cora
+
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the TikZ files instead of showing")
@@ -22,9 +32,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Reachability Analysis ---------------------------------------------------------------------
+
 
 X0 = cora.Zonotope(cora.Tensor([1, 0]), 0.1 * cora.eye(2))
 sys = cora.LinearSys(cora.Tensor([[-0.1, 1], [-1, -0.1]]))

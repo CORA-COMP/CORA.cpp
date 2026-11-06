@@ -1,6 +1,11 @@
 // test_cont_set_is_full_dim - ContSet::is_full_dim: whether a set has a nonempty interior
 //
 // CORA: contSet/@contSet/isFullDim.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,8 +47,13 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(full_dimension_of_any_set);
     errors_and_their_switch();
     return test::finish("cont_set is_full_dim");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,12 +1,17 @@
 // interval_matrix - the constructors of an interval matrix, checked, as CORA's intervalMatrix
 //
 // Syntax:   IntervalMatrix A(C, D);   IntervalMatrix A(C);   IntervalMatrix A(I);
-// Inputs:   C, D - center and delta, matrices (..., rows, cols) of one shape;  I - an Interval
-//           of matrix bounds
+// Inputs:   C, D - center and delta, matrices (..., rows, cols) of one shape
+//           I - an Interval of matrix bounds
 // Outputs:  A - [C - |D|, C + |D|]; for C alone the point matrix C; for I the set of its bounds
 // See also: Interval::interval_matrix
 //
 // CORA: matrixSet/@intervalMatrix/intervalMatrix.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

@@ -6,6 +6,11 @@
 // See also: Interval::cart_prod
 //
 // CORA: contSet/@interval/Inf.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@matZonotope/expm.m
 // PROPERTY: matrixSet/@matZonotope/expm.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -43,8 +52,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(expm_is_the_independent_series);
     checks_and_their_switch();
     return test::finish("mat_zonotope expm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

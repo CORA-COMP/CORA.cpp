@@ -3,6 +3,11 @@
 // Syntax:   BackendScope scope("eigen");   Tensor t = from_eigen(m);
 //           Eigen::MatrixXd m = to_eigen(t);
 // See also: tensor.h, host.h, torch.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -8,6 +8,10 @@
 // ORACLE: contSet/@fullspace/isequal.m
 // ORACLE: contSet/@fullspace/representsa_.m
 // ORACLE: contSet/@fullspace/vertices_.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/global/oracle/fullspace.h"
@@ -16,6 +20,11 @@
 #include <set>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -37,6 +46,7 @@ int main() {
     });
     test::oracle::run("fullspace.isIntersecting", [](test::oracle::Random &rnd) {
         const Interval I = rnd.box(3);
+        // the full space meets a box
         test::oracle::check(Fullspace(3).is_intersecting(I), lean::Fullspace(3).is_intersecting(I));
     });
     test::oracle::run("fullspace.isequal", [](test::oracle::Random &) {
@@ -50,8 +60,7 @@ int main() {
                 test::oracle::check(Fullspace(n).representsa(type, 0.0),
                                     lean::Fullspace(n).representsa(type));
     });
-    // the plane has four corners (+-Inf, +-Inf); the oracle lists them as the columns of V,
-    // CORA.cpp as a polygon, so they are compared as a set
+    // the plane has four corners (+-Inf, +-Inf); the oracle lists columns, CORA.cpp a polygon
     test::oracle::run("fullspace.vertices", [](test::oracle::Random &) {
         const std::vector<double> V = lean::Fullspace(2).vertices().gather().data();
         std::set<std::pair<double, double>> theirs, mine;
@@ -62,3 +71,5 @@ int main() {
     });
     return test::finish("lean fullspace predicates");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

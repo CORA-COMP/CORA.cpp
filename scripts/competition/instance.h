@@ -1,8 +1,13 @@
-// One catalog instance: generate its inputs, then repeat the operation.
+// instance - one catalog instance: generate its inputs, then repeat the operation
 //
 // `run_instance` is the whole instance, called by the daemon (or directly, when no daemon
 // is up) inside the region the harness times. A batched instance holds its `batch_size`
 // sets in one matrix, so every repetition is one call over the whole batch.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -10,6 +15,8 @@
 #include <string>
 
 #include "catalog.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -32,3 +39,5 @@ void print_env(std::ostream &out);
 void write_error(const std::string &results_file);
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

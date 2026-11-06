@@ -1,13 +1,19 @@
 // sign - the sign of a box, as CORA's interval.sign
 //
+// It is tighter than CORALean's float definition, which reads a strictly positive lower bound as
+// 0 because a float comparison certifies only <=.
+//
 // Syntax:   Interval R = I.sign();
 // Inputs:   -
-// Outputs:  R - [sign(inf), sign(sup)] elementwise, the hull of the image (sign is monotone). It
-//           is tighter than CORALean's float definition, which reads a strictly positive lower
-//           bound as 0 because a float comparison certifies only <=
+// Outputs:  R - [sign(inf), sign(sup)] elementwise, the hull of the image (sign is monotone)
 // See also: abs, round
 //
 // CORA: contSet/@interval/sign.m
+// CORA authors: Sebastian Mair, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

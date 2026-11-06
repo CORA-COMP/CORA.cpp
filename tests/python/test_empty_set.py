@@ -1,4 +1,11 @@
-"""test_empty_set - the EmptySet class in Python: a set without points of n dimensions."""
+"""test_empty_set - the EmptySet class in Python: a set without points of n dimensions.
+
+CORA authors: Mark Wetzlinger, Tobias Ladner
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@emptySet/and_.m
 # CORA: contSet/@emptySet/center.m
 # CORA: contSet/@emptySet/contains_.m
@@ -32,10 +39,16 @@ import unittest
 
 import matplotlib
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 matplotlib.use("Agg")
 import cora
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 INF = float("inf")
 
@@ -43,6 +56,8 @@ INF = float("inf")
 def box(lo, hi):
     return cora.Interval(np.array(lo), np.array(hi))
 
+
+# ============================================  MAIN  ============================================ #
 
 class EmptySet(unittest.TestCase):
     def setUp(self):
@@ -66,6 +81,7 @@ class EmptySet(unittest.TestCase):
         self.assertEqual(self.E.center.shape[-1], 0)
         self.assertEqual(self.E.rand_point(3, cora.Rng(1)).shape[-1], 0)
         self.assertEqual(self.E.support_function(np.array([1.0, 2.0])), -INF)
+        # the interval of the empty set
         self.assertTrue(self.E.interval().is_bounded())
         with self.assertRaises(cora.errors.DimensionMismatch):
             self.E.support_function(np.array([1.0, 2.0, 3.0]))
@@ -88,6 +104,7 @@ class EmptySet(unittest.TestCase):
         Z = cora.Zonotope(np.zeros(2), np.eye(2))
         self.assertFalse(self.E.is_intersecting(Z))
         self.assertFalse(cora.is_intersecting(Z, self.E))
+        # equality with empty sets
         self.assertTrue(self.E.isequal(cora.EmptySet(2)))
         self.assertFalse(self.E.isequal(cora.EmptySet(3)))
         self.assertTrue(self.E.isequal(cora.Interval.empty(2)))
@@ -110,6 +127,7 @@ class EmptySet(unittest.TestCase):
         Z = cora.Zonotope(np.zeros(2), np.eye(2))
         I = box([0.0, 0.0], [1.0, 1.0])
         for S in (Z, I, cora.EmptySet(2)):
+            # sums and intersections with the empty set
             self.assertIsInstance(self.E + S, cora.EmptySet)
             self.assertIsInstance(S + self.E, cora.EmptySet)
             self.assertIsInstance(self.E & S, cora.EmptySet)
@@ -131,6 +149,7 @@ class EmptySet(unittest.TestCase):
         self.assertEqual(E.linear_map(M).dim, 2)
         self.assertEqual((2.5 * E).dim, 3)
         self.assertEqual((cora.Interval.matrix(0.5 * M, 2 * M) @ E).dim, 2)
+        # linear maps of the empty set
         with self.assertRaises(cora.errors.DimensionMismatch):
             E.linear_map(np.ones((2, 2)))
 
@@ -153,6 +172,7 @@ class EmptySet(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             self.E.representsa("circle")
         with self.assertRaises(cora.errors.WrongValue):
+            # invalid tolerances and types
             self.E.representsa("zonotope", tol=-1.0)
         with self.assertRaises(cora.errors.NotSupported):
             self.E.representsa("levelSet")
@@ -175,6 +195,7 @@ class EmptySet(unittest.TestCase):
         drawn = {cora.EmptySet.generate_random(rng).dim for _ in range(200)}
         self.assertEqual(drawn, set(range(1, 11)))
         with self.assertRaises(cora.errors.WrongValue):
+            # a negative dimension
             cora.EmptySet.generate_random(rng, dimension=-1)
 
     def test_is_full_dim_takes_a_tolerance(self):
@@ -198,6 +219,7 @@ class EmptySet(unittest.TestCase):
         fig, ax = plt.subplots()
         cora.plot(cora.EmptySet(2), ax=ax)
         self.assertEqual([len(p.get_path().vertices) for p in ax.patches], [0])
+        # the registry lists the pairs
         plt.close(fig)
 
     def test_the_registry_lists_the_pairs(self):
@@ -208,3 +230,5 @@ class EmptySet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

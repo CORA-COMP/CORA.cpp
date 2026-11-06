@@ -1,18 +1,19 @@
 // hausdorff_distance - the Hausdorff distance of a polytope to a polytope, a box or points
 //
+// The largest distance of a vertex of one set to the other set, each a quadratic program (a
+// least-distance problem). Inf if a set is unbounded and the other is not or they differ, or if
+// exactly one is empty (the empty set to the empty set, and an unbounded P to no points, are 0
+// and Inf as in CORA). Two unbounded sets are at distance 0 if each holds the other (up to
+// 1e-10). Not a batch.
+//
 // Syntax:   double d = P.hausdorff_distance(P2);   d = P.hausdorff_distance(I);
 //           d = P.hausdorff_distance(points);
-// Inputs:   P2, I - a polytope or a box of the dimension of P;  points - the columns (n, N)
-// Outputs:  d - the Euclidean Hausdorff distance: the largest distance of a vertex of one set to
-//           the other set, each a quadratic program (a least-distance problem). Inf if a set is
-//           unbounded and the other is not or they differ, or if exactly one is empty (the empty
-//           set to the empty set, and an unbounded P to no points, are 0 and Inf as in CORA).
-//           Two unbounded sets are at distance 0 if each holds the other (up to 1e-10). Not a
-//           batch
+// Inputs:   P2, I - a polytope or a box of the dimension of P
+//           points - the columns (n, N)
+// Outputs:  d - the Euclidean Hausdorff distance
 // See also: Polytope::contains, Zonotope::hausdorff_distance_to_box
 //
 // CORA: contSet/@polytope/hausdorffDist.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -69,6 +70,7 @@ double Polytope::hausdorff_distance(const Polytope &P2) const {
     });
     const bool empty = priv_polytope_is_empty(*this), other_empty = priv_polytope_is_empty(P2);
     if (empty) return other_empty ? 0.0 : kInf;
+    // two nonempty sets: the distance is finite only if both are bounded
     if (other_empty) return kInf;
     if (!priv_polytope_is_bounded(*this)) {
         if (priv_polytope_is_bounded(P2)) return kInf;

@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/isequal.m
 // PROPERTY: contSet/@zonotope/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -73,6 +82,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         isequal_known(b);
@@ -82,3 +94,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope isequal");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,4 +1,10 @@
-"""test_benchmark_data - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency."""
+"""test_benchmark_data - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import glob
 import json
 import os
@@ -9,9 +15,15 @@ import unittest
 
 import numpy as np
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 sys.path.insert(0, os.path.join(ROOT, "examples", "python", "benchmarks"))
 import benchmark_data  # noqa: E402
+
 
 DATA = os.path.join(ROOT, "examples", "benchmarks", "data")
 INSTANCES = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01", "CBC01", "CBC02",
@@ -41,6 +53,8 @@ def write(folder, name, matrices, specs):
         json.dump(meta, f)
 
 
+# ============================================  MAIN  ============================================ #
+
 class Format(unittest.TestCase):
     def test_dense_and_coordinate_matrices_round_trip(self):
         rng = np.random.default_rng(0)
@@ -62,6 +76,7 @@ class Format(unittest.TestCase):
             meta["format"] = "other"
             with open(path, "w") as f:
                 json.dump(meta, f)
+            # a bad meta file is refused
             with self.assertRaises(ValueError):
                 benchmark_data.load_instance("t", folder)
 
@@ -86,6 +101,7 @@ class Instances(unittest.TestCase):
             with self.subTest(name):
                 inst = benchmark_data.load_instance(name)
                 mat = inst["matrices"]
+                # the matrices of an instance
                 self.assertEqual(sorted(mat), sorted(NAMES))
                 n = mat["A"].shape[0]
                 self.assertEqual(mat["A"].shape, (n, n))
@@ -108,3 +124,5 @@ class Instances(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

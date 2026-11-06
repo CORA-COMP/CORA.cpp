@@ -1,9 +1,16 @@
-// The answer of a containment query.
+// mask - the answer of a containment query
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include <cstdint>
 #include <vector>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -12,3 +19,5 @@ namespace cora::comp {
 using Mask = std::vector<std::uint8_t>;
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

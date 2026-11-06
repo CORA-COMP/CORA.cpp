@@ -1,6 +1,11 @@
 // test_cont_set_rand_point - ContSet::rand_point: the number of points is checked
 //
 // CORA: contSet/@contSet/randPoint.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -26,7 +35,12 @@ void the_count_is_checked() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_count_is_checked();
     return test::finish("cont_set rand_point");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

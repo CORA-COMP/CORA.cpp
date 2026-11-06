@@ -1,13 +1,23 @@
-// The libtorch backend when the tool was built without libtorch.
+// torch_none - the libtorch backend when the tool was built without libtorch
 //
 // Built in its place, so the rest of the tool never asks whether it exists: the Eigen
 // backend still runs every `cpu` instance, and `gpu` instances report `unsupported`.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "backend.h"
 
 #include <stdexcept>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp::torch_backend {
+
+
+// ===========================================  MAIN  =========================================== //
 
 bool built() { return false; }
 
@@ -24,3 +34,5 @@ void warm_up() {}
 void check_gradients(const std::string &) {}
 
 } // namespace cora::comp::torch_backend
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

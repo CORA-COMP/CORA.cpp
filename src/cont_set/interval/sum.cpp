@@ -1,13 +1,18 @@
 // sum - the sum of the entries of an interval matrix along a dimension, as CORA's interval.sum
 //
+// The sums nest to the right, as CORALean's sum, so the roundings agree with it.
+//
 // Syntax:   Interval R = I.sum();   Interval R = I.sum(dim);
-// Inputs:   dim - 1: down the rows (a row of column sums), 2: along the columns (a column of row
-//           sums); default: 1, or 2 for a single row
-// Outputs:  R - the bounds summed; the sums nest to the right, as CORALean's sum, so the roundings
-//           agree with it
+// Inputs:   dim - 1: down the rows, 2: along the columns; default: 1, or 2 for a single row
+// Outputs:  R - the bounds summed
 // See also: prod, plus
 //
 // CORA: contSet/@interval/sum.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

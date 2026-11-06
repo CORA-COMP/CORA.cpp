@@ -1,6 +1,11 @@
 // test_interval_project - interval project: the bounds of the selected dimensions
 //
 // CORA: contSet/@interval/project.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,6 +54,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         project_keeps_the_selected_bounds(b);
@@ -54,3 +66,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval project");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

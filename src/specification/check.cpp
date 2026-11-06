@@ -8,10 +8,16 @@
 //
 // Syntax:   ok = spec.check(S);   each = spec.holds(S);
 // Inputs:   S - any set; a batch of sets gives one answer per member in holds
-// Outputs:  ok - whether all members satisfy the specification; each - one flag per member
+// Outputs:  ok - whether all members satisfy the specification
+//           each - one flag per member
 // See also: Specification::first_violation, ContSet::support_function
 //
 // CORA: specification/@specification/check.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   30-September-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/specification/specification.h"
@@ -84,6 +90,7 @@ std::vector<bool> aux_clear_of_polytope(const ContSet &S,
         const std::vector<double> G(GData.begin() + gi, GData.begin() + gi + n * m);
         clear[i] = !priv_zonotope_meets_polytope(c, G, static_cast<int>(m), a, b);
     }
+    // the sets that stay clear of the polytope
     return clear;
 }
 

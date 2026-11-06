@@ -7,6 +7,11 @@
 //           of all outputs, equals central differences (step 1e-6, float64); the inputs are chosen
 //           away from the kinks of the piecewise operations
 // See also: tests/global/tensor/test_tensor_gradcheck_torch.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -15,6 +20,8 @@
 #include "testing.h"
 
 #include <functional>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -56,6 +63,7 @@ inline void gradcheck(const std::string &name, const Function &f,
             }
             plus[k].view(-1)[j] += h;
             minus[k].view(-1)[j] -= h;
+            // the numeric and the analytic gradient
             const double numeric = (weighted_sum(f, plus, weights).item<double>() -
                                     weighted_sum(f, minus, weights).item<double>()) /
                                    (2 * h);
@@ -83,3 +91,5 @@ inline std::vector<torch::Tensor> random_zonotope(int64_t n, int64_t m) {
 inline Inputs parts(const cora::Zonotope &Z) { return {Z.center(), Z.generators()}; }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

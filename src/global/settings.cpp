@@ -2,6 +2,11 @@
 //
 // Syntax:   set_checks_enabled(false);   ChecksScope off(false);   checks_enabled();
 // See also: cora/global/settings.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/settings.h"
 

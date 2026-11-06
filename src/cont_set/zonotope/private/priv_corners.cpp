@@ -1,12 +1,17 @@
 // priv_corners - the corners of a zonotope
 //
+// The corners contain the vertices, so a convex set holds Z exactly if it holds them.
+//
 // Syntax:   Tensor corners = priv_corners(Z);
 // Inputs:   Z - zonotope with m generators
-// Outputs:  corners - c + G s for the 2^m sign vectors s in {-1, 1}^m, as columns (..., n, 2^m);
-//           they contain the vertices, so a convex set holds Z exactly if it holds them
+// Outputs:  corners - c + G s for the 2^m sign vectors s in {-1, 1}^m, as columns (..., n, 2^m)
 // See also: Capsule::contains, ConZonotope::contains, ConZonotope::minkowski_difference
 //
 // CORA.cpp only: containment tests need only the corners, which MATLAB takes from vertices
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

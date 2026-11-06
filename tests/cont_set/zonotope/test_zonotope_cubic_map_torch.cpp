@@ -1,10 +1,19 @@
 // test_zonotope_cubic_map_torch - zonotope cubic_map: gradients through torch, and a batch
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::check;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -46,6 +55,9 @@ void cubic_map_of_a_batch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(35);
@@ -53,3 +65,5 @@ int main() {
     cubic_map_of_a_batch();
     return test::finish("zonotope cubic_map (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

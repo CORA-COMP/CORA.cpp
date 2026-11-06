@@ -5,8 +5,13 @@
 //
 // Syntax:   VerifyTime T({{0, 2}});   T.setdiff(0.5, 1);   bool hit = T.is_intersecting(0, 0.1);
 // Inputs:   bounds - the pairs, in order
-// Outputs:  the queries of priv_verifyTime.h
+// Outputs:  R - the queries of priv_verifyTime.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/tensor/tolerance.h"

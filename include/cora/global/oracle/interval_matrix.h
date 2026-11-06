@@ -8,6 +8,11 @@
 // Options:    CORA's option names; `tol` is a plain number; `steps` tunes the square root of the
 //             Frobenius norm (CORA has no such argument)
 // See also:   lean/interval.h, lean/request.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

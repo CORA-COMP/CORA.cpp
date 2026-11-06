@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/tensorMultiplication.m
 // PROPERTY: contSet/@zonotope/tensorMultiplication.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "tensor_lists.h"
 #include "testing.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -80,6 +89,7 @@ void checks_and_their_switch() {
     bad = list;
     bad.perm[0].pop_back();
     check(raises(Z, M, bad, Error::wrong_value), "tensor_multiplication: a pair, not a triple");
+    // center and pair errors
     const Zonotope shifted(column({1.0}), Tensor({{1.0, 2.0}}));
     check(raises(shifted, M, list, Error::wrong_value), "tensor_multiplication: center not 0");
     const Tensor on = Z.tensor_multiplication(M, list).generators();
@@ -90,6 +100,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         one_dimension_by_hand(b);
@@ -98,3 +111,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope tensor_multiplication");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

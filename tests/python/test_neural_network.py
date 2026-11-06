@@ -1,8 +1,16 @@
-"""test_neural_network - NeuralNetwork in Python: points, the zonotope enclosure and its gradients."""
+"""test_neural_network - NeuralNetwork in Python: points, the zonotope enclosure and its gradients.
+
+CORA authors: Tobias Ladner, Lukas Koller
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: nn/@neuralNetwork/evaluate.m
 # CORA: nn/@neuralNetwork/neuralNetwork.m
 
 import unittest
+
 
 try:
     import torch
@@ -11,8 +19,13 @@ except ImportError:  # numpy-only build: test_numpy.py covers it
 
 import cora
 
+
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 torch.manual_seed(0)
 
@@ -30,6 +43,8 @@ def torch_forward(parameters, x):
             x = torch.relu(x)
     return x
 
+
+# ============================================  MAIN  ============================================ #
 
 class Evaluate(unittest.TestCase):
     def test_points_agree_with_torch(self):
@@ -53,6 +68,7 @@ class Evaluate(unittest.TestCase):
         parameters = layers([2, 6, 2])
         net = cora.NeuralNetwork(parameters)
         c = torch.randn(4, 2, dtype=torch.float64)
+        # a batch of sets
         G = 0.1 * torch.eye(2, dtype=torch.float64).expand(4, 2, 2)
         batch = net.evaluate(cora.Zonotope(c, G)).interval()
         for i in range(4):
@@ -75,6 +91,7 @@ class Evaluate(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "bias"):
             cora.NeuralNetwork([(W, torch.zeros(3, dtype=torch.float64))])
         with self.assertRaisesRegex(ValueError, "inputs"):
+            # layers must fit
             cora.NeuralNetwork([(W, torch.zeros(2, dtype=torch.float64)),
                                 (torch.ones(1, 3, dtype=torch.float64), torch.zeros(1, dtype=torch.float64))])
         net = cora.NeuralNetwork([(W, torch.zeros(2, dtype=torch.float64))])
@@ -84,3 +101,5 @@ class Evaluate(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

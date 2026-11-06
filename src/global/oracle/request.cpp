@@ -1,6 +1,11 @@
 // request - the one place that builds an oracle request and reads its response
 //
 // See also: lean/oracle.h, lean/interval.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/global/oracle/request.h"
 #include "cora/global/error.h"

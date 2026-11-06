@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@intervalMatrix/expmIndMixed.m
 // PROPERTY: matrixSet/@intervalMatrix/expmIndMixed.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -58,6 +67,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     // the remainder box uses exp, which the lean backend has not
     test::for_each_backend([](const std::string &b) {
@@ -67,3 +79,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix expm_independent_mixed");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

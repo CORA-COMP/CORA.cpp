@@ -1,15 +1,21 @@
 // partition - a box cut into equal boxes, as CORA's interval.partition
 //
+// The first coordinate is the slowest. Piece k of a coordinate runs from inf + r(k) w to inf +
+// r(k+1) w for the width w = sup - inf, where the fraction r(k) is the smaller (larger) of
+// k/splits and 1 - (splits-k)/splits for a lower (upper) bound, as CORALean's partition. The
+// neighbours then overlap or touch, so the pieces cover the box in any rounding.
+//
 // Syntax:   std::vector<Interval> P = I.partition(splits);
 // Inputs:   splits - the number of pieces per coordinate, at least 1
-// Outputs:  P - the splits^n boxes, in the order of nested loops over the coordinates (the first
-//           is the slowest). Piece k of a coordinate runs from inf + r(k) w to inf + r(k+1) w
-//           for the width w = sup - inf, where the fraction r(k) is the smaller (larger) of
-//           k/splits and 1 - (splits-k)/splits for a lower (upper) bound, as CORALean's partition.
-//           The neighbours then overlap or touch, so the pieces cover the box in any rounding
+// Outputs:  P - the splits^n boxes, in the order of nested loops over the coordinates
 // See also: split, enclose_points
 //
 // CORA: contSet/@interval/partition.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/tensor/tolerance.h"
@@ -63,6 +69,7 @@ std::vector<Interval> Interval::partition(int64_t splits) const {
     const auto [smaller, larger] = aux_fractions(splits);
     const Tensor width = sup_ - inf_;
     std::vector<Interval> pieces;
+    // one cut counter per coordinate
     std::vector<int64_t> cut(n, 0);
     for (int64_t piece = 0; piece < count; ++piece) {
         // the cuts of the piece, the first coordinate counting slowest

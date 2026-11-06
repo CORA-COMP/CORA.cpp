@@ -10,6 +10,11 @@
 // See also: priv_containment_vertex_enumeration
 //
 // CORA: contSet/@zonotope/private/priv_zonotopeContainment_SadraddiniTedrake.m
+// CORA authors: Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/linprog.h"

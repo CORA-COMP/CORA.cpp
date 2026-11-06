@@ -1,14 +1,19 @@
 // is_intersecting - whether the whole space meets a set, as CORA's fullspace.isIntersecting_
 //
+// Error::not_supported in R^0. CORA's type argument has no effect and is not offered.
+//
 // Syntax:   bool b = F.is_intersecting(S);   bool b = F.is_intersecting(S, tol);
 // Inputs:   S - a set of the dimension of F (points p: the interval [p, p])
 //           tol - checked and otherwise unused; default: the repository tolerance
-//           (docs/architecture.md)
-// Outputs:  b - true unless S is empty (an EmptySet or an interval without columns);
-//           Error::not_supported in R^0. CORA's type argument has no effect and is not offered
+// Outputs:  b - true unless S is empty (an EmptySet or an interval without columns)
 // See also: contains, Interval::is_intersecting
 //
 // CORA: contSet/@fullspace/isIntersecting_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 

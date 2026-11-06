@@ -1,4 +1,5 @@
 // test_lean_cont_set - the operations every set has (ContSet) on a box and a zonotope against the
+//
 // CORALean oracle
 //
 // The oracle serves them per class (`interval.*`, `zonotope.*`); the generic entry of CORA.cpp must
@@ -29,6 +30,10 @@
 // ORACLE: contSet/@contSet/uminus.m
 // ORACLE: contSet/@contSet/uplus.m
 // ORACLE: contSet/@contSet/times.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -38,7 +43,13 @@
 #include "oracle_testing.h"
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -50,11 +61,8 @@ void aux_check_set(const A &mine, const B &theirs) {
     oracle::check(mine.interval(), theirs.enclosure().interval());
 }
 
-/// A projection onto a hyperplane: CORALean takes the product with the interval matrix I - c c' and
-/// adds the box d c, which leaves n + n zero generators after the m of the set at nearest. So at
-/// nearest the center and the first m generators are CORA.cpp's, bit for bit, and the others are
-/// zero; in the sound mode the interval hulls agree to a relative 1e-13 (the oracle encloses the
-/// real image, CORA.cpp's sums round to nearest in the order of the backend).
+/// A projection onto a hyperplane: at nearest the center and the first m generators are
+/// CORA.cpp's, bit for bit, and the others are zero; in the sound mode the hulls agree to 1e-13.
 void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
     if (oracle::mode() == oracle::Mode::sound) return oracle::check_hull(mine, theirs, 1e-13);
     const Zonotope other = theirs.gather().first;
@@ -100,6 +108,9 @@ std::vector<std::pair<S, Tensor>> aux_normals(F make) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!oracle::available()) return 0;
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 200}};
@@ -121,6 +132,7 @@ int main() {
         const Interval I = rnd.box(3);
         oracle::check(aux_set(I).is_bounded(), lean::Interval(I).is_bounded());
         const Zonotope Z = rnd.zonotope(3, 5);
+        // boundedness of each class
         oracle::check(aux_set(Z).is_bounded(), lean::Zonotope(Z).is_bounded());
     });
 
@@ -159,6 +171,7 @@ int main() {
     });
 
     oracle::run("mtimes", [&](oracle::Random &rnd) {
+        // the linear map of boxes
         for (const auto &[n, m] : sizes) {
             const Tensor M = rnd.matrix(n, n);
             const Interval I = rnd.box(n);
@@ -249,6 +262,7 @@ int main() {
             }
         }
         for (const auto &[n, m] : sizes) {
+            // isequal is structural
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             // the oracle's test is structural and certified when true; CORA's accepts more
             test::check(eq(Z, Z) && lean::Zonotope(Z).isequal(lean::Zonotope(Z)),
@@ -273,6 +287,7 @@ int main() {
 
     oracle::run("project", [&](oracle::Random &rnd) {
         for (const int n : {3, 5}) {
+            // decompose into blocks
             const std::vector<std::array<int64_t, 2>> blocks{{0, 1}, {2, n - 1}};
             const Interval I = rnd.box(n);
             const Zonotope Z = rnd.zonotope(n, 2 * n);
@@ -333,6 +348,7 @@ int main() {
 
     oracle::run("supportFunc", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
+            // support functions of boxes and zonotopes
             const Interval I = rnd.box(n);
             const Tensor d = rnd.direction(n);
             oracle::check(aux_set(I).support_function(d), lean::Interval(I).support_function(d));
@@ -363,6 +379,7 @@ int main() {
         for (const auto &[n, m] : sizes) {
             const Tensor f = rnd.vector(n);
             const Interval I = rnd.box(n);
+            // times with a factor
             oracle::check(aux_set(I).times(f).as<Interval>(),
                           lean::Interval(I).times(lean::Interval(Interval(f, f))));
             const Zonotope Z = rnd.zonotope(n, m);
@@ -373,3 +390,5 @@ int main() {
 
     return test::finish("lean cont_set");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

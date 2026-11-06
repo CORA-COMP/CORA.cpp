@@ -1,15 +1,17 @@
 // expm_taylor_horner_scaling - the matrix exponential by Taylor, Horner or scaling and squaring
 //
+// A is square. Each product is the interval matrix product; for style 2 the result is raised to
+// the power 2^p. f = (a^(N+1) / (N+1)!) / (1 - a / (N + 2)) with a = norm(A, Inf); nothing
+// (CORA's []) where a >= N + 2 (for scaling: where a >= (N + 2) 2^p), for a batch where it holds
+// for any member. CORA's box for a point matrix is the point f, which excludes exp(A); here it is
+// [-f, f] always (docs/cora-differences.md). Another style: refused.
+//
 // Syntax:   std::optional<IntervalMatrix> E = A.expm_taylor_horner_scaling(N, style);
 //           E = A.expm_taylor_horner_scaling(N, 2, scaling_exponent);
-// Inputs:   N - the order of the series (>= 1 for the Horner styles);  style - 0 the Taylor
-//           series, 1 Horner's scheme, 2 Horner on [A] / 2^p, the result to the power 2^p
-//           (scaling_exponent p >= 0, default 1); A is square
-// Outputs:  E - the series to order N, each product the interval matrix product, plus the box
-//           [-f, f] with f = (a^(N+1) / (N+1)!) / (1 - a / (N + 2)), a = norm(A, Inf); nothing
-//           (CORA's []) where a >= N + 2 (for scaling: where a >= (N + 2) 2^p), for a batch where
-//           it holds for any member. CORA's box for a point matrix is the point f, which excludes
-//           exp(A); here it is [-f, f] always (docs/cora-differences.md). Another style: refused
+// Inputs:   N - the order of the series (>= 1 for the Horner styles)
+//           style - 0 the Taylor series, 1 Horner's scheme, 2 Horner on [A] / 2^p
+//           scaling_exponent - p >= 0, default 1, for style 2
+// Outputs:  E - the series to order N plus the box [-f, f]; nothing where a >= N + 2
 // See also: expm_different_algorithms, expm, expm_independent
 //
 // CORA: matrixSet/@intervalMatrix/expmTaylorHornerScaling.m
@@ -17,6 +19,11 @@
 // CORA: matrixSet/@intervalMatrix/private/priv_hornerTaylorSeries.m
 // CORA: matrixSet/@intervalMatrix/private/priv_scalingSquaringHornerTaylorSeries.m
 // CORA: matrixSet/@intervalMatrix/private/priv_intervalMatrixRemainder.m
+// CORA authors: Ivan Brkan
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"
@@ -30,6 +37,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// Helpers -----------------------------------------------------------------------------------------
 
 /// Whether the series of order N converges for the norm bound a (CORA: a < N + 2) in every member.
 bool aux_converges(const Tensor &a, int64_t N) { return a.max().item() < double(N + 2); }
@@ -67,6 +76,8 @@ IntervalMatrix aux_horner(const IntervalMatrix &A, const Tensor &a, int64_t N) {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// Series ------------------------------------------------------------------------------------------
 
 std::optional<IntervalMatrix>
 IntervalMatrix::expm_taylor_horner_scaling(int64_t max_order, int64_t style,

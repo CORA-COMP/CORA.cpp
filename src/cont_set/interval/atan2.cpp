@@ -8,6 +8,11 @@
 // See also: atan, Tensor::atan2
 //
 // CORA: contSet/@interval/atan2.m
+// CORA authors: Sebastian Mair
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/tensor/tolerance.h"

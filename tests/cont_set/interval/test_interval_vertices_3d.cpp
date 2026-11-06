@@ -1,10 +1,19 @@
 // test_interval_vertices_3d - interval vertices_3d: the eight corners of a box
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,13 +38,19 @@ void invalid_input_and_checks_off() {
     check(test::raises([&] { I2.vertices_3d(); }, Error::not_supported), "a plane is refused");
     const Interval I = Interval(test::column({0, 0, 0}), test::column({1, 1, 1}));
     ChecksScope off(false);
+    // the same with the checks off
     check(I.vertices_3d()[0].size() == 8, "the same with the checks off");
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) { the_corners_of_a_box(b); });
     invalid_input_and_checks_off();
     return test::finish("interval vertices_3d");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

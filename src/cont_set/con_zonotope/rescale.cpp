@@ -1,19 +1,25 @@
 // rescale - the same constrained zonotope with every factor scaled to the range it takes
 //
+// "exact" finds the range of each factor by two linear programs; "iter" does a Gauss-Jordan
+// elimination of [A b] with full pivoting (the generators follow the columns), then one pass of
+// interval arithmetic over the constraints. The result has center c + G m, generators G diag(r)
+// and constraints A diag(r) x = b - A m for the middle m and radius r of the ranges. A set
+// without constraints is Error::special_error and an empty one Error::empty_set, as in CORA.
+// CORA's cache of the ranges is not kept. Not a batch.
+//
 // Syntax:   cZres = cz.rescale();   cZres = cz.rescale("iter");
-// Inputs:   method - "exact" (default): the range of each factor is found by two linear programs;
-//           "iter": a Gauss-Jordan elimination of [A b] with full pivoting (the generators follow
-//           the columns), then one pass of interval arithmetic over the constraints
-// Outputs:  cZres - the same set with factors in [-1, 1] that take every value of it: center
-//           c + G m, generators G diag(r), constraints A diag(r) x = b - A m for the middle m and
-//           radius r of the ranges. A set without constraints is Error::special_error and an
-//           empty one Error::empty_set, as in CORA. CORA's cache of the ranges is not kept.
-//           Not a batch
+// Inputs:   method - "exact" (default) or "iter"
+// Outputs:  cZres - the same set with factors in [-1, 1] that take every value of it
 // See also: quad_map, compact
 //
 // CORA: contSet/@conZonotope/rescale.m
 // CORA: contSet/@conZonotope/private/priv_ksi_optimizer.m
 // CORA: contSet/@conZonotope/private/priv_ksi_iterative.m
+// CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"
@@ -77,6 +83,7 @@ Eliminated aux_eliminate(const HostConZonotope &H, double eps) {
         if (best <= tol) continue;
         for (int64_t k = 0; k < w; ++k) std::swap(e.M[i * w + k], e.M[row_best * w + k]);
         for (int64_t r = 0; r < p; ++r) std::swap(e.M[r * w + i], e.M[r * w + col_best]);
+        // pivot rows and columns are swapped into place
         std::swap(e.order[i], e.order[col_best]);
         // the pivot row, scaled to 1, leaves every other row without this column
         const double pivot = e.M[i * w + i];
@@ -118,6 +125,7 @@ bool aux_iterate(const std::vector<double> &M, int64_t p, int64_t m, std::vector
             range_hi[j] = std::min(range_hi[j], std::max(u, v));
             lo[j] = std::max(lo[j], range_lo[j]);
             hi[j] = std::min(hi[j], range_hi[j]);
+            // the ranges are intersected; empty means infeasible
             if (lo[j] > hi[j]) return false;
         }
     }
@@ -173,6 +181,7 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
     }
     std::vector<double> middle(lo.size()), radius(lo.size());
     for (std::size_t j = 0; j < lo.size(); ++j) {
+        // middle and radius of the ranges
         middle[j] = (hi[j] + lo[j]) / 2;
         radius[j] = (hi[j] - lo[j]) / 2;
     }

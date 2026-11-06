@@ -1,8 +1,14 @@
 // test_mat_zonotope_expm_one_param - MatZonotope expm_one_param: the Taylor series for one
+//
 // parameter
 //
 // CORA: matrixSet/@matZonotope/expmOneParam.m
 // PROPERTY: matrixSet/@matZonotope/expmOneParam.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
@@ -11,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -35,10 +45,8 @@ Tensor taylor(const Tensor &M, double r, int64_t N) {
     return sum;
 }
 
-/// A 1 x 1 set M = 1 + b at r = 1 and N = 2: 1 + M + M^2 / 2 = 2.5 + 2 b + b^2 / 2, so the
-/// generator of b^2 is 0.5 (halved: 0.25, and 0.25 more in the center): K = 2.75 + 2 b + 0.25 (2
-/// b^2 - 1). CORA starts the sum of b^2 at the coefficient of b in M^2 and gets 3 + 2 b + 0.5 (2
-/// b^2 - 1).
+/// A 1 x 1 set M = 1 + b at r = 1 and N = 2: K = 2.75 + 2 b + 0.25 (2 b^2 - 1); CORA starts the
+/// sum of b^2 at the coefficient of b in M^2 and gets 3 + 2 b + 0.5 (2 b^2 - 1).
 void scalar_example(const std::string &b) {
     const MatZonotope A = test::set_of({1}, {1}, 1, 1);
     const auto R = A.expm_one_param(1.0, 2);
@@ -50,8 +58,7 @@ void scalar_example(const std::string &b) {
     check(close(R.powers[1].center(), {1}) && close(R.powers[1].generators(), {2, 1}),
           b + ": the second power, 1 + 2 b + b^2");
     check(!R.constant_input.has_value(), b + ": no input without one");
-    // M = b at r = 1, N = 2: 1 + b + b^2 / 2 reaches 2.5 and exp(1) is in K + remainder; CORA's sum
-    // gives 1 + b, so its K + remainder ends at 2.218 < exp(1)
+    // M = b at r = 1, N = 2: 1 + b + b^2 / 2 reaches 2.5; exp(1) is in K + remainder, CORA misses
     const MatZonotope M(test::matrix({0}, 1, 1), Tensor::from_data({1}, {1, 1, 1}));
     const auto S = M.expm_one_param(1.0, 2);
     check(close(S.enclosure.center(), {1.25}) && close(S.enclosure.generators(), {1, 0.25}),
@@ -82,6 +89,7 @@ void series_for_one_parameter(const std::string &bname) {
                 for (int64_t l = 1; l <= k; ++l) powers_of_b.push_back(std::pow(b, l));
                 Tensor power = M;
                 for (int64_t j = 1; j < k; ++j) power = power.matmul(M);
+                // the exact powers
                 powers_exact = powers_exact && close(test::member(R.powers[k - 1], powers_of_b),
                                                      power * std::pow(r, double(k)), 1e-12);
             }
@@ -117,6 +125,7 @@ void series_with_an_input(const std::string &bname) {
             factorial *= double(k);
             expected = expected + power * (std::pow(r, double(k)) / factorial);
         }
+        // a point of the constant input
         const Zonotope &Z = *R.constant_input;
         std::vector<double> coeff = generator_coefficients(b, N);
         const Tensor point =
@@ -158,11 +167,15 @@ void checks_and_their_switch() {
           "expm_one_param: an input with two generators");
     const Tensor on = A.expm_one_param(1.0, 3).enclosure.center();
     ChecksScope off(false);
+    // the same with the checks off
     check(close(A.expm_one_param(1.0, 3).enclosure.center(), on, 0),
           "expm_one_param: the same with the checks off");
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -173,3 +186,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("mat_zonotope expm_one_param");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

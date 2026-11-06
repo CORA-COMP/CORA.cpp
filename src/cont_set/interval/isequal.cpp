@@ -1,14 +1,20 @@
 // isequal - whether two boxes are equal, as CORA's interval.isequal
 //
+// False for boxes of different shape; for a batch, true if every member is equal.
+//
 // Syntax:   bool b = I.isequal(I2);   bool b = I.isequal(I2, tol);   bool b = I.isequal(p, tol);
-// Inputs:   I2 - interval;  p - a point, the box [p, p]
-//           tol - how far finite bounds may differ, as within_tol; default: the repository
-//                 tolerance (docs/architecture.md)
-// Outputs:  b - true if the bounds agree up to tol and the infinite ones are the same; false for
-//           boxes of different shape; for a batch, true if every member is equal
+// Inputs:   I2 - interval
+//           p - a point, the box [p, p]
+//           tol - how far finite bounds may differ (within_tol); default: the repository one
+// Outputs:  b - true if the bounds agree up to tol and the infinite ones are the same
 // See also: is_intersecting, less_equal
 //
 // CORA: contSet/@interval/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"

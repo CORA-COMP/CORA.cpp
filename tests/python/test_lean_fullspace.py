@@ -1,4 +1,10 @@
-"""test_lean_fullspace - Fullspace against the CORALean oracle (its fullspace.* operations)"""
+"""test_lean_fullspace - Fullspace against the CORALean oracle (its fullspace.* operations)
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # ORACLE: contSet/@fullspace/Inf.m
 # ORACLE: contSet/@fullspace/and_.m
 # ORACLE: contSet/@fullspace/box.m
@@ -26,6 +32,11 @@ import cora
 import oracle_testing as oracle
 
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
+
 @oracle.needs_oracle
 class Oracle(unittest.TestCase):
     """Each run is exact on the lean backend at nearest and consistent with the sound oracle."""
@@ -51,6 +62,7 @@ class Oracle(unittest.TestCase):
             for n in (1, 5):
                 F, L = cora.Fullspace(n), cora.lean.Fullspace(n)
                 I = rnd.box(n)
+                # predicates of the full space
                 oracle.check(F.contains(I), L.contains(cora.lean.Interval(I)))
                 oracle.check(F.is_intersecting(I), L.is_intersecting(cora.lean.Interval(I)))
                 oracle.check(F.isequal(cora.Fullspace(n)), L.isequal(cora.lean.Fullspace(n)))
@@ -78,3 +90,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #
