@@ -150,7 +150,7 @@ class Operations(unittest.TestCase):
     def test_distance_and_intersection(self):
         # -1 at the center, 0 on the boundary, positive outside
         d = self.E.distance(np.array([[1.0, 3.0, 1.0], [2.0, 2.0, 4.0]]))
-        np.testing.assert_allclose(d, [[-1.0, 3.0, 3.0]], atol=1e-12)
+        np.testing.assert_allclose(d, [[-1.0, 0.0, 3.0]], atol=1e-12)
         point = ellipsoid(np.zeros((2, 2)), [1.0, 3.0])
         self.assertTrue(self.E.is_intersecting(point))
         self.assertTrue(self.E.is_intersecting(np.array([1.0, 2.0])))
@@ -168,9 +168,9 @@ class Operations(unittest.TestCase):
         with self.assertRaises(cora.errors.NotSupported):
             F.zonotope("outer:norm")
         # random points, the box and the zonotope converted
-        points = F.rand_point(20, rng)
+        points = F.rand_point(20, cora.Rng(7))
         self.assertTrue(F.contains(points, tol=1e-6))
-        self.assertTrue(F.contains(F.rand_point(20, rng, type="extreme"), tol=1e-6))
+        self.assertTrue(F.contains(F.rand_point(20, cora.Rng(8), type="extreme"), tol=1e-6))
         # the ellipsoids of a box and of a zonotope
         box = cora.Interval(np.array([0.0, 0.0]), np.array([2.0, 1.0]))
         np.testing.assert_allclose(cora.Ellipsoid(box).Q, 2 * np.diag([1.0, 0.25]), atol=1e-12)

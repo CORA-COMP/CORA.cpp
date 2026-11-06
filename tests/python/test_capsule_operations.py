@@ -119,7 +119,7 @@ class Operations(unittest.TestCase):
         self.assertAlmostEqual(self.C.support_function(np.array([1.0, 0.0])), 4.5)
         self.assertAlmostEqual(self.C.support_function(np.array([0.0, 2.0])), 13.0)
         # random points: standard ones inside, extreme ones on the boundary
-        rng = np.random.default_rng(5)
+        rng = cora.Rng(5)
         points = self.C.rand_point(30, rng)
         self.assertTrue(self.C.contains(points))
         extreme = self.C.rand_point(10, rng, type="extreme")
