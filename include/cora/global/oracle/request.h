@@ -31,6 +31,7 @@
 #include <initializer_list>
 #include <optional>
 #include <type_traits>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -99,6 +100,9 @@ class Reply {
 
 /// Sends {"op", "dtype", operands...} and returns the response; throws with the oracle's message.
 Reply ask(const char *op, std::initializer_list<Operand> operands = {});
+
+/// The same for operands collected at run time (an optional operand is left out).
+Reply ask(const char *op, const std::vector<Operand> &operands);
 
 } // namespace cora::lean
 

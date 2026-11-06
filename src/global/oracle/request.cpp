@@ -256,6 +256,10 @@ Certified Reply::proved_disjoint() const {
 
 // The dtype is that of the lean operands, which must agree; else the current one.
 Reply ask(const char *op, std::initializer_list<Operand> operands) {
+    return ask(op, std::vector<Operand>(operands));
+}
+
+Reply ask(const char *op, const std::vector<Operand> &operands) {
     std::string dtype;
     for (const Operand &o : operands) {
         if (o.wire.dtype.empty()) continue;
