@@ -46,7 +46,8 @@ inline Tensor tensor_of(const Eigen::MatrixXd &M) {
     return Tensor::from_data({rows.data(), rows.data() + rows.size()}, {M.rows(), M.cols()});
 }
 
-inline Eigen::MatrixXd host_matrix(const std::vector<double> &row_major, int rows, int cols) {
+inline Eigen::MatrixXd host_matrix(const std::vector<double> &row_major, Eigen::Index rows,
+                                   Eigen::Index cols) {
     return Eigen::Map<const Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>(row_major.data(), rows,
                                                                             cols);
 }

@@ -47,7 +47,8 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
     const Zonotope point = Z.linear_map(Interval(C, C));
     const Zonotope plain = Z.linear_map(C);
     check(close(point.center(), plain.center()) &&
-              close(point.generators().data().size(), plain.generators().data().size() + n * n),
+              point.generators().data().size() ==
+                  plain.generators().data().size() + static_cast<std::size_t>(n * n),
           b + ": a degenerate interval matrix adds only zero generators");
     for (int k = 0; k < 5; ++k) {
         const std::vector<double> d = random_direction(rng, n);

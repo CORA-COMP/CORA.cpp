@@ -19,7 +19,7 @@ namespace {
 
 /// `max_b dᵀ(c + G b)` over the corners `b ∈ {-1, 1}^m`, on the host.
 double brute_support(const Zonotope &Z, const std::vector<double> &d) {
-    const int n = Z.dim();
+    const int n = static_cast<int>(Z.dim());
     const std::vector<double> c = Z.center().data(), G = Z.generators().data();
     const int m = static_cast<int>(G.size()) / n;
     double best = -1e300;
