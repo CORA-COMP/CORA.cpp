@@ -32,6 +32,10 @@ on:
         description: suffix of the compiler cache key
         type: string
         default: ""
+      oracle:
+        description: also run the lean tests, against the CORALean oracle pinned in scripts/coralean.cmake (Linux)
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -46,12 +50,19 @@ jobs:
         if: runner.os != 'Windows'
         with:
           key: ${{ inputs.preset }}-${{ inputs.os }}${{ inputs.ccache_key }}
+      # the oracle archive (about 50 MB), fetched once per pinned version
+      - uses: actions/cache@v4
+        if: inputs.oracle
+        with:
+          path: build/${{ inputs.preset }}/coralean
+          key: coralean-${{ hashFiles('scripts/coralean.cmake') }}
       - name: configure
         env:
           CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
           BUILD_TYPE: ${{ inputs.build_type }}
           CXX_FLAGS: ${{ inputs.cxx_flags }}
-        run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS"
+          ORACLE: ${{ inputs.oracle && '-DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD' || '' }}
+        run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS" $ORACLE
       - run: cmake --build --preset ${{ inputs.preset }}
       - name: test
         env:
