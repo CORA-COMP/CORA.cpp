@@ -21,6 +21,12 @@
 // ORACLE: contSet/@capsule/lift_.m
 // ORACLE: contSet/@capsule/mtimes.m
 // ORACLE: contSet/@capsule/origin.m
+//
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
 #include "cora/global/oracle/capsule.h"
@@ -30,6 +36,10 @@
 
 using namespace cora;
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -48,6 +58,9 @@ Tensor aux_point(oracle::Random &rnd, const Capsule &C, double offset) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -126,3 +139,6 @@ int main() {
     });
     return test::finish("lean capsule");
 }
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

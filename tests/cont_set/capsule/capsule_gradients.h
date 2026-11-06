@@ -4,11 +4,18 @@
 //                     test::random_capsule_parts(3));
 // Sets:     three inputs (c, g, r) per capsule; parts are the three outputs of a result
 // See also: cont_set/zonotope/zonotope_gradients.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cont_set/zonotope/zonotope_gradients.h"
 #include "cora/cont_set/capsule/capsule.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -29,3 +36,6 @@ inline std::vector<torch::Tensor> random_capsule_parts(int64_t n) {
 }
 
 } // namespace test
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

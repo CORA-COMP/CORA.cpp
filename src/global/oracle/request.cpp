@@ -95,6 +95,7 @@ struct Decode<Ellipsoid> {
         return Ellipsoid::from_json(dt, j);
     }
 };
+// A capsule is its center, generator, radius and error box.
 template <>
 struct Decode<Capsule> {
     static Capsule of(const std::string &dt, const Json &j) { return Capsule::from_json(dt, j); }

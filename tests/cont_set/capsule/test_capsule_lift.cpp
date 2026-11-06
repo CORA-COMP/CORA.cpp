@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@capsule/lift_.m
 // CORA: contSet/@contSet/lift.m
+//
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "capsule_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -55,6 +65,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         lift_known(b);
@@ -63,3 +76,6 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule lift");
 }
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

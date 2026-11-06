@@ -1,4 +1,11 @@
-"""test_capsule - the Capsule class in Python: constructors, queries and set operations."""
+"""test_capsule - the Capsule class in Python: constructors, queries and set operations.
+
+CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger, Tobias Ladner
+Authors:       Claude Sonnet 5.5
+Written:       04-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@capsule/capsule.m
 # CORA: contSet/@capsule/center.m
 # CORA: contSet/@capsule/contains_.m
@@ -24,10 +31,12 @@
 
 import unittest
 
+import cora
 import numpy as np
 
-import cora
+# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
 
+# ----------------------------------------  AUXILIARY  ----------------------------------------- #
 
 def capsule(c, g, r):
     return cora.Capsule(np.array(c, dtype=float), np.array(g, dtype=float), r)
@@ -47,6 +56,8 @@ def sample(C, rng, count):
     direction /= np.linalg.norm(direction, axis=0)
     return C.c[:, None] + C.generator[:, None] * t + C.r * rng.uniform(0, 1, count) * direction
 
+
+# ===========================================  MAIN  =========================================== #
 
 class Constructor(unittest.TestCase):
     def test_forms(self):
@@ -257,3 +268,6 @@ class Combination(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------  END OF CODE  ---------------------------------------- #

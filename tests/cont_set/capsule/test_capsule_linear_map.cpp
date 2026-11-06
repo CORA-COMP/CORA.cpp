@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@capsule/mtimes.m
 // PROPERTY: contSet/@capsule/mtimes.m
+//
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "capsule_testing.h"
 
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -59,6 +69,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         linear_map_known(b);
@@ -67,3 +80,6 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule linear_map");
 }
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,12 +1,23 @@
 // test_capsule_is_bounded - Capsule is_bounded: always true
 //
 // CORA: contSet/@capsule/isBounded.m
+//
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "capsule_testing.h"
 
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -21,3 +32,6 @@ int main() {
     check(Capsule::origin(2).is_bounded(), "is_bounded: the same with the checks off");
     return test::finish("capsule is_bounded");
 }
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

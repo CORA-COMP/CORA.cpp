@@ -1,6 +1,12 @@
 // test_capsule_origin - Capsule::origin: the capsule that is the origin
 //
 // CORA: contSet/@capsule/origin.m
+//
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "capsule_testing.h"
 
@@ -8,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -32,8 +42,14 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(origin_known);
     checks_and_their_switch();
     return test::finish("capsule origin");
 }
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

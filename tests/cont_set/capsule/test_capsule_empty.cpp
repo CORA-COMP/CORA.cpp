@@ -1,6 +1,12 @@
 // test_capsule_empty - Capsule::empty: the capsule without points
 //
 // CORA: contSet/@capsule/empty.m
+//
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "capsule_testing.h"
 
@@ -8,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,6 +54,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         empty_known(b);
@@ -52,3 +65,6 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule empty");
 }
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

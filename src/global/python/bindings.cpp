@@ -2433,9 +2433,7 @@ void bind_ellipsoid(py::module_ &m) {
 // Capsule -----------------------------------------------------------------------------------------
 
 /// The radius of a capsule from Python: a number for every member, or an array of the batch.
-Tensor capsule_radius_of(const py::object &r) {
-    return vector_of(r, "the radius").expand_dims(-1);
-}
+Tensor capsule_radius_of(const py::object &r) { return vector_of(r, "the radius").expand_dims(-1); }
 
 void bind_capsule(py::module_ &m) {
     py::class_<Capsule, ContSet>(m, "Capsule",
@@ -2462,13 +2460,16 @@ void bind_capsule(py::module_ &m) {
             py::arg("points"),
             "A capsule that contains the points (..., n, N): mean, farthest point, largest "
             "distance from the axis")
-        .def_property_readonly("c", [](const Capsule &C) { return vector(C.c()); },
-                               "The stored center c (..., n)")
-        .def_property_readonly("generator", [](const Capsule &C) { return vector(C.generator()); },
-                               "The generator g (..., n)")
-        .def_property_readonly("r", [](const Capsule &C) { return scalar(C.r()); },
-                               "The radius r (-1 for the empty capsule)")
-        .def("is_empty", &Capsule::is_empty, "Whether the capsule is empty (of a batch: every member)")
+        .def_property_readonly(
+            "c", [](const Capsule &C) { return vector(C.c()); }, "The stored center c (..., n)")
+        .def_property_readonly(
+            "generator", [](const Capsule &C) { return vector(C.generator()); },
+            "The generator g (..., n)")
+        .def_property_readonly(
+            "r", [](const Capsule &C) { return scalar(C.r()); },
+            "The radius r (-1 for the empty capsule)")
+        .def("is_empty", &Capsule::is_empty,
+             "Whether the capsule is empty (of a batch: every member)")
         .def(
             "isequal",
             [](const Capsule &C, const Capsule &S, Tol tol) { return C.isequal(S, tol); },

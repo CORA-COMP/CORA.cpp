@@ -4,6 +4,11 @@
 //           double d = test::axis_distance(C, p);
 // Sets:     the center and the generator are standard normal, the radius uniform in [0.2, 1]
 // See also: testing.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -14,6 +19,8 @@
 #include "testing.h"
 
 #include <cmath>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -69,3 +76,6 @@ inline cora::Tensor sample_points(const cora::Capsule &C, cora::Rng &rng, int N)
 }
 
 } // namespace test
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

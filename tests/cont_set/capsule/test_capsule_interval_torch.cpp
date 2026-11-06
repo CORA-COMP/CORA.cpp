@@ -1,11 +1,21 @@
 // test_capsule_interval_torch - Capsule interval: gradients through torch
 //
 // The bounds are c -+ (|g| + r): piecewise differentiable (the absolute value).
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "capsule_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -19,3 +29,6 @@ int main() {
         test::random_capsule_parts(3));
     return test::finish("capsule interval (torch)");
 }
+
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
