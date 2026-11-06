@@ -1,6 +1,11 @@
 // priv_times - the entrywise product of two boxes
 //
 // See also: priv_times.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_times.h"
 

@@ -1,7 +1,8 @@
 // priv_compact - the removal of redundant halfspaces of a polytope on the host
 //
 // Syntax:   priv_normalize_rows(H);   bool empty = priv_compact_all(H, tol, minimal);
-// Inputs:   H - a single polytope in halfspace form;  tol - the tolerance of "is zero" and "is
+// Inputs:   H - a single polytope in halfspace form
+//           tol - the tolerance of "is zero" and "is
 //           aligned"
 // Outputs:  H without rows 0 <= b, aligned rows and rows that no point needs; true if the set is
 //           found to be empty (H is then cleared)
@@ -17,7 +18,6 @@
 // CORA: contSet/@polytope/private/priv_compact_2D.m
 // CORA: contSet/@polytope/private/priv_compact_nD.m
 // CORA: contSet/@polytope/private/priv_compact_all.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

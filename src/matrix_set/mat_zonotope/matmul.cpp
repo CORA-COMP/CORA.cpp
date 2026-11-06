@@ -2,7 +2,10 @@
 //
 // Syntax:   MatZonotope P = A.matmul(B);   P = A.matmul(M);   P = MatZonotope::matmul(M, A);
 //           P = A.matmul(s);   Zonotope Z2 = A.matmul(Z);   P = A * B;
-// Inputs:   B - matrix zonotope;  M - matrix of numbers;  s - number;  Z - zonotope (columns, as
+// Inputs:   B - matrix zonotope
+//           M - matrix of numbers
+//           s - number
+//           Z - zonotope (columns, as
 //           many dimensions as A has columns); the inner dimensions agree and the batches are equal
 // Outputs:  P - for B the enclosure of {M_A M_B}: the center C_A C_B and the generators G_A(i) C_B,
 //           C_A G_B(j) and G_A(i) G_B(j) (j the fastest index), in CORALean's order; CORA lists
@@ -13,6 +16,11 @@
 // See also: plus, matrix_power
 //
 // CORA: matrixSet/@matZonotope/mtimes.m
+// CORA authors: Matthias Althoff, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

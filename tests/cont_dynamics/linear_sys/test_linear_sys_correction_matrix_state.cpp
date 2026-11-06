@@ -1,7 +1,13 @@
 // test_linear_sys_correction_matrix_state - the correction matrix F(A, Δt, η) of linear_sys against
+//
 // MATLAB CORA's `taylorMatrices`, and the properties it has whatever the numbers.
 //
 // CORA: contDynamics/@linearSys/taylorMatrices.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/matlab_reference.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -13,6 +19,10 @@ using namespace cora;
 using matlab_reference::System;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -83,6 +93,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         matches_matlab_cora(b);
@@ -94,3 +107,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("linear_sys correction_matrix_state");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

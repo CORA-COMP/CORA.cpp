@@ -11,6 +11,11 @@
 // See also: enclose, Zonotope::convex_hull
 //
 // CORA: contSet/@conZonotope/convHull_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

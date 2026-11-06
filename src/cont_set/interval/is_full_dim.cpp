@@ -8,6 +8,11 @@
 // See also: is_bounded, isequal
 //
 // CORA: contSet/@interval/isFullDim.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"

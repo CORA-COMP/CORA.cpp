@@ -3,11 +3,17 @@
 // x' = A x + B u with u in U becomes x' = A x + u' with u' in u_trans + GU [-1, 1]^k.
 //
 // Syntax:   CanonicalInput in = priv_canonical_input(sys, U);
-// Inputs:   sys - linear system;  U - input zonotope (checked by verify; without B it is zero)
+// Inputs:   sys - linear system
+//           U - input zonotope (checked by verify; without B it is zero)
 // Outputs:  in - u_trans = B center(U) (n, 1); GU = B generators(U), (n, 0) if all are zero
 // See also: priv_verify_ra_support_function, priv_verify_ra_zonotope
 //
 // CORA: contDynamics/@linearSys/canonicalForm.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 

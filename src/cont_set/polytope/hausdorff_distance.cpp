@@ -2,7 +2,8 @@
 //
 // Syntax:   double d = P.hausdorff_distance(P2);   d = P.hausdorff_distance(I);
 //           d = P.hausdorff_distance(points);
-// Inputs:   P2, I - a polytope or a box of the dimension of P;  points - the columns (n, N)
+// Inputs:   P2, I - a polytope or a box of the dimension of P
+//           points - the columns (n, N)
 // Outputs:  d - the Euclidean Hausdorff distance: the largest distance of a vertex of one set to
 //           the other set, each a quadratic program (a least-distance problem). Inf if a set is
 //           unbounded and the other is not or they differ, or if exactly one is empty (the empty
@@ -12,7 +13,6 @@
 // See also: Polytope::contains, Zonotope::hausdorff_distance_to_box
 //
 // CORA: contSet/@polytope/hausdorffDist.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

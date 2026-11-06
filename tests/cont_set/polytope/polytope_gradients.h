@@ -19,8 +19,6 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
 namespace test {
 
 /// The rows and offsets of a halfspace polytope, or its vertices, as the outputs of a function.

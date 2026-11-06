@@ -25,12 +25,21 @@ Checks:   layout - every file starts its docstring with its own name; an operati
           tensor operations - every operation of ops.def that passes gradients has a gradcheck
           test, and docs/tensor.md lists every operation with the tags of ops.def.
 Exit code: 0 if all conventions hold, else 1, with the files and what is wrong.
+
+Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
+Written:       02-November-2026
+Last update:   06-November-2026
+Reviewed:      ---
 """
 import ast
 import glob
 import os
 import re
 import sys
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "scripts", "ci"))
@@ -701,6 +710,8 @@ def check_layout_of_the_rest(issues_by_file):
                     issues_by_file.setdefault(rel(path), []).extend(found)
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     issues_by_file = {}
     for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h"):
@@ -748,3 +759,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -7,6 +7,11 @@
 // See also: expm_independent, expm_mixed
 //
 // CORA: matrixSet/@matZonotope/expm.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

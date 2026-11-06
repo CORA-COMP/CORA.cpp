@@ -1,6 +1,11 @@
 // test_specification_check - specification check on any set and on a reachable set
 //
 // CORA: specification/@specification/check.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/specification/specification.h"
@@ -8,6 +13,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -63,6 +72,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         any_contset(b);
@@ -71,3 +83,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("specification check");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

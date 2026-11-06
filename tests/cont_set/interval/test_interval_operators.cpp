@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/mtimes.m
 // CORA: contSet/@interval/plus.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -41,6 +50,9 @@ void a_matrix_maps_the_box(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         sums_and_translations(b);
@@ -49,3 +61,5 @@ int main() {
     });
     return test::finish("interval operators");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

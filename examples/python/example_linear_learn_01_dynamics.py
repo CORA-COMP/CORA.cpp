@@ -9,6 +9,11 @@ LinearSys.reach.
 Syntax:   PYTHONPATH=build python examples/python/example_linear_learn_01_dynamics.py [--save FILE]
 Outputs:  the loss while learning, the learned matrix, and the figure (FILE with --save)
 See also: example_linear_reach_01_5dim, example_linear_simulate_01_random
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
@@ -16,6 +21,11 @@ import torch
 from torch import nn
 
 import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -26,9 +36,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Ground Truth ------------------------------------------------------------------------------
+
 
 time_step = 0.1
 t_final = 2.0

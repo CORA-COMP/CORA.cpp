@@ -6,10 +6,18 @@
 // Syntax:   build/benchmarks/benchmark_linear_verifyFast_ARCH23_heat3D [instance ...]
 // Outputs:  one line 'benchmark,instance,result,time' per instance, as the MATLAB scripts
 // See also: benchmark_data.h, the Python script of the same name
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "benchmark_data.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
     // Parameters ------------------------------------------------------------------------------

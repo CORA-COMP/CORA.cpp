@@ -1,12 +1,19 @@
 // capsule - the constructors of a capsule, checked, as CORA's capsule
 //
 // Syntax:   Capsule C(c, g, r);   Capsule C(c, g);   Capsule C(c);
-// Inputs:   c - center (..., n, 1);  g - generator (..., n, 1), default 0;  r - radius
+// Inputs:   c - center (..., n, 1)
+//           g - generator (..., n, 1), default 0
+//           r - radius
 //           (..., 1, 1) or a number, default 0; all finite, r nonnegative, one batch shape
 // Outputs:  C - the capsule {x | min_t |x - (c + t g)| <= r, t in [-1, 1]}
 // See also: empty, origin, Zonotope::Zonotope
 //
 // CORA: contSet/@capsule/capsule.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
 #include "cont_set/capsule/private/priv.h"

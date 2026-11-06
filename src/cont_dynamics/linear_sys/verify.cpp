@@ -13,6 +13,11 @@
 // CORA: contDynamics/@linearSys/verify.m
 // CORA: contDynamics/@linearSys/private/priv_verifyRA_supportFunc.m
 // CORA: contDynamics/@linearSys/private/priv_verifyRA_zonotope.m
+// CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "global/format.h"

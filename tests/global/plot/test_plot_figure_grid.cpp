@@ -1,5 +1,11 @@
 // test_plot_figure_grid - FigureGrid: figures in rows and columns written as one SVG, the limits
+//
 // and the view of a figure
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 #include "testing.h"
@@ -12,6 +18,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -102,6 +112,9 @@ void limits_and_view(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         cells_are_figures_of_their_own(b);
@@ -111,3 +124,5 @@ int main() {
     });
     return test::finish("plot figure grid");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -6,6 +6,11 @@
 // See also: project, Interval::vertices
 //
 // CORA: contSet/@zonotope/vertices_.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Daniel Heß
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"

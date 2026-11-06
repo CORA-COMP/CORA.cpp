@@ -1,7 +1,6 @@
 // test_zono_bundle_empty - ZonoBundle::empty: the bundle without points
 //
 // CORA: contSet/@zonoBundle/empty.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

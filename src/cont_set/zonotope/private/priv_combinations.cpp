@@ -2,7 +2,8 @@
 //
 // Syntax:   Combinations subsets(total, n);   flat = subsets.next(count);
 //           Tensor P = priv_column_subsets(G, members);   Tensor d = priv_abs_det(P);
-// Inputs:   total, n - the subsets of size n of total indices;  count - how many to produce;
+// Inputs:   total, n - the subsets of size n of total indices
+//           count - how many to produce;
 //           G - (..., r, m) columns;  members - (B, n) column indices, one subset per row
 // Outputs:  next - up to `count` subsets in lexicographic order as one flat list (empty when
 //           done);  P - (..., B, r, n), the columns G(:, members(b, :));  d - |det| of the
@@ -11,6 +12,11 @@
 //
 // CORA.cpp only: CORA's batchCombinator and its determinants, shared by volume and
 //                dominant_directions
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

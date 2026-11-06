@@ -1,4 +1,10 @@
-"""test_tikz - the TikZ export the C++ core writes for Python figures, and that LaTeX reads it"""
+"""test_tikz - the TikZ export the C++ core writes for Python figures, and that LaTeX reads it
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import os
 import shutil
 import subprocess
@@ -6,6 +12,10 @@ import tempfile
 import unittest
 
 import matplotlib
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 matplotlib.use("Agg")
 import cora
@@ -42,6 +52,8 @@ class Square(cora.ContSet):
         return [np.concatenate([np.stack([t, z], 1), np.stack([o, t], 1), np.stack([1 - t, o], 1),
                                 np.stack([z, 1 - t], 1)])]
 
+
+# ============================================  MAIN  ============================================ #
 
 class Tikz(unittest.TestCase):
     def setUp(self):
@@ -174,3 +186,5 @@ class Tikz(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

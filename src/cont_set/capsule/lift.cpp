@@ -12,6 +12,11 @@
 //
 // CORA: contSet/@capsule/lift_.m
 // CORA: contSet/@contSet/lift.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
 

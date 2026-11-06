@@ -9,6 +9,11 @@ set. All test points are verified in one call, as a batch.
 Syntax:   PYTHONPATH=build python examples/python/example_neural_network_verify_01.py [--save FILE]
 Outputs:  the share of certified points per perturbation size, and the figure (FILE with --save)
 See also: example_linear_learn_01_dynamics, example_zonotope_01
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
@@ -16,6 +21,11 @@ import torch
 from torch import nn
 
 import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -26,9 +36,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 radius = 0.7                       # the circle that separates the classes
 epsilons = [0.01, 0.03, 0.06, 0.1]  # half-widths of the perturbation boxes

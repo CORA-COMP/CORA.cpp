@@ -3,6 +3,11 @@
 // CORA: contSet/@conZonotope/conZonotope.m
 // CORA: contSet/@interval/conZonotope.m
 // CORA: contSet/@zonotope/conZonotope.m
+// CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -83,6 +92,9 @@ void batches(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         constructor_forms(b);
@@ -91,3 +103,5 @@ int main() {
     refusals();
     return test::finish("con_zonotope class");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

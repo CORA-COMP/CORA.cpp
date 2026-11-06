@@ -8,6 +8,11 @@
 // See also: intersect, Zonotope::cart_prod
 //
 // CORA: contSet/@conZonotope/cartProd_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

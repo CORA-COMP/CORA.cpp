@@ -6,6 +6,11 @@
 //
 // Syntax:   BackendScope scope("torch");   Tensor t({{1, 2}, {3, 4}});   Tensor z = t.zeros_like();
 // See also: tensor.h, derived.cpp, eigen.cpp, torch.cpp
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "cora/global/error.h"

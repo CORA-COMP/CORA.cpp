@@ -5,6 +5,11 @@
 // other backend, and the results agree as the table says: exact (the same bits), ulp (at most k
 // ulp of lean's), sum (at most k n u times the operation on |operands|, n its length) or norm (at
 // most k n u times lean's largest entry). Every operation of the table has a case here.
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "global/oracle/oracle_testing.h"
@@ -19,6 +24,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -370,6 +379,9 @@ std::vector<Tensor> aux_run(const std::string &name, const Case &c, bool abs) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const std::map<std::string, Case> cases = aux_cases();
     for (const OpInfo &info : tensor_ops())
@@ -401,3 +413,5 @@ int main() {
     }
     return test::finish("tensor equivalence");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

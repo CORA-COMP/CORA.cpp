@@ -1,5 +1,11 @@
 // test_plot_geometry - the union of polygons, the thinning of polygons and the hull of points
+//
 // in space, which a plot computes once for every front end
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/plot/geometry.h"
@@ -11,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -227,6 +237,9 @@ void the_hull_of_a_zonotope() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     overlapping_polygons_have_one_outline();
     shared_edges_vanish();
@@ -241,3 +254,5 @@ int main() {
     the_hull_of_a_zonotope();
     return test::finish("plot geometry");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,4 +1,11 @@
-"""test_operators - the operators of Zonotope and Interval in Python, as CORA writes them."""
+"""test_operators - the operators of Zonotope and Interval in Python, as CORA writes them.
+
+CORA authors: Matthias Althoff
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       29-September-2026
+Last update:   03-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/mtimes.m
 # CORA: contSet/@interval/plus.m
 # CORA: contSet/@zonotope/mtimes.m
@@ -18,10 +25,15 @@ import cora
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def box():
     return cora.Zonotope(cora.Tensor([1.0, 2.0]), cora.Tensor([[0.5, 0.0], [0.0, 0.25]]))
 
+
+# ============================================  MAIN  ============================================ #
 
 class ZonotopeOperators(unittest.TestCase):
     def test_a_matrix_times_a_zonotope_is_the_linear_map(self):
@@ -96,3 +108,5 @@ class IntervalOperators(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

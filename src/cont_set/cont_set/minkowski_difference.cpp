@@ -1,12 +1,18 @@
 // minkowski_difference - the Minkowski difference of two sets, as CORA's contSet.minkDiff
 //
 // Syntax:   R = S.minkowski_difference(S2);   R = S.minkowski_difference(S2, type);
-// Inputs:   S, S2 - sets of one dimension;  type - the algorithm of the class of S (Interval:
+// Inputs:   S, S2 - sets of one dimension
+//           type - the algorithm of the class of S (Interval:
 //           "inner", "exact"; Zonotope: "approx", "inner", "outer", ...); default: the class's own
 // Outputs:  R - {x | x + S2 in S}, or an inner or outer approximation as the class defines
 // See also: minus, Interval::minkowski_difference, Zonotope::mink_diff
 //
 // CORA: contSet/@contSet/minkDiff.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/cont_set.h"

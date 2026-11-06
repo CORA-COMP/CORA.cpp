@@ -1,7 +1,17 @@
-"""test_plot - cora.plot draws what the C++ plotting core decided, with matplotlib"""
+"""test_plot - cora.plot draws what the C++ plotting core decided, with matplotlib
+
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       29-September-2026
+Last update:   02-November-2026
+Reviewed:      ---
+"""
 import unittest
 
 import matplotlib
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 matplotlib.use("Agg")
 import cora
@@ -24,6 +34,8 @@ def regions(ax):
     """The patches of specifications."""
     return [p for p in ax.patches if not isinstance(p, PathPatch)]
 
+
+# ============================================  MAIN  ============================================ #
 
 class Plot(unittest.TestCase):
     def setUp(self):
@@ -276,3 +288,5 @@ class Display(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

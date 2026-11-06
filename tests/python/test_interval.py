@@ -1,4 +1,12 @@
-"""test_interval - the Interval class in Python: a box, or a matrix of intervals."""
+"""test_interval - the Interval class in Python: a box, or a matrix of intervals.
+
+CORA authors: Mark Wetzlinger, Matthias Althoff, Sebastian Mair, Tobias Ladner, Niklas Kochdumper,
+              Adrian Kulmburg, Dmitry Grebenyuk, Maximilian Perschl
+Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+Written:       29-September-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/Inf.m
 # CORA: contSet/@interval/abs.m
 # CORA: contSet/@interval/acos.m
@@ -50,8 +58,14 @@ import cora
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 F64 = dict(dtype=torch.float64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Interval(unittest.TestCase):
     def test_bounds_center_and_rad(self):
@@ -326,3 +340,5 @@ class IntervalGradients(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

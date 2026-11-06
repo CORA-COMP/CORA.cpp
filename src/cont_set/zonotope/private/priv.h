@@ -4,6 +4,11 @@
 //
 // Syntax:   Tensor Gs = priv_select_generators(G, columns);
 // See also: zonotope.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

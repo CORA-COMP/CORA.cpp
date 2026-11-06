@@ -5,12 +5,21 @@
 // read equal bounds as strictly inside, so with them the exact mode leaves it out.
 //
 // ORACLE: contSet/@interval/lt.m
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -27,3 +36,5 @@ int main() {
     });
     return test::finish("lean interval less");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -7,6 +7,11 @@
 // See also: horzcat, cat
 //
 // CORA: contSet/@interval/vertcat.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
 #include "cora/cont_set/interval/interval.h"

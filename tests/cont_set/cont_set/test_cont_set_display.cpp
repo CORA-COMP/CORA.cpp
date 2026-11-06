@@ -1,6 +1,11 @@
 // test_cont_set_display - ContSet::display: the text of a set, as `std::cout << S` prints it
 //
 // CORA: contSet/@contSet/display.m
+// CORA authors: Matthias Althoff, Victor Gassmann
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -26,7 +35,12 @@ void the_text_names_the_class() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_text_names_the_class();
     return test::finish("cont_set display");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

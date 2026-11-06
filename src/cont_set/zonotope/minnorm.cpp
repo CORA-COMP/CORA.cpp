@@ -9,6 +9,11 @@
 // See also: norm, contains
 //
 // CORA: contSet/@zonotope/minnorm.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

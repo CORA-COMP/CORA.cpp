@@ -19,6 +19,11 @@
 //
 // CORA: contDynamics/@contDynamics/reach.m
 // CORA: contDynamics/@contDynamics/linReach.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"

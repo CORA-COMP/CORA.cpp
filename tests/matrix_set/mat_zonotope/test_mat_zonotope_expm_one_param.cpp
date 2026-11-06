@@ -1,8 +1,14 @@
 // test_mat_zonotope_expm_one_param - MatZonotope expm_one_param: the Taylor series for one
+//
 // parameter
 //
 // CORA: matrixSet/@matZonotope/expmOneParam.m
 // PROPERTY: matrixSet/@matZonotope/expmOneParam.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
@@ -11,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -164,6 +174,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         scalar_example(b);
@@ -173,3 +186,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("mat_zonotope expm_one_param");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

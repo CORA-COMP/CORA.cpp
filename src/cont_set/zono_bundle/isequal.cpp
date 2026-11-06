@@ -10,7 +10,6 @@
 // See also: contains, Zonotope::isequal
 //
 // CORA: contSet/@zonoBundle/isequal.m
-//
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

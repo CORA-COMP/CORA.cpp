@@ -12,7 +12,6 @@
 // ORACLE: contSet/@ellipsoid/cartProd_.m
 // ORACLE: contSet/@ellipsoid/isFullDim.m
 // ORACLE: contSet/@ellipsoid/isBigger.m
-// CORA authors: Victor Gassmann, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

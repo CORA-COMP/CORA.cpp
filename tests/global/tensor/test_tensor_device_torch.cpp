@@ -1,5 +1,11 @@
 // test_tensor_device_torch - Tensor devices: allocation on cpu and gpu, moving, and what does not
+//
 // mix
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -9,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::throws;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -54,8 +64,13 @@ void devices() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     devices();
     set_default_backend("eigen");
     return test::finish("tensor device (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

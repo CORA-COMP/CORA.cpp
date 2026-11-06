@@ -1,14 +1,26 @@
-"""test_figure - cora.subplots: a figure of several axes that remembers what CORA drew on each"""
+"""test_figure - cora.subplots: a figure of several axes that remembers what CORA drew on each
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import os
 import tempfile
 import unittest
 
 import matplotlib
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 matplotlib.use("Agg")
 import cora
 import matplotlib.pyplot as plt
 
+
+# ============================================  MAIN  ============================================ #
 
 class Subplots(unittest.TestCase):
     def setUp(self):
@@ -101,3 +113,5 @@ class Subplots(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

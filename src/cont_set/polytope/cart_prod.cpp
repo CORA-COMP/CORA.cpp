@@ -2,7 +2,8 @@
 //
 // Syntax:   Pres = P.cart_prod(P2);   Pres = P.cart_prod(I);   Pres = P.cart_prod(p);
 //           Pres = Polytope::cart_prod(p, P);
-// Inputs:   P2, I - a polytope or a box;  p - a point (n2, 1) of any dimension, as the second
+// Inputs:   P2, I - a polytope or a box
+//           p - a point (n2, 1) of any dimension, as the second
 //           operand or, with the static form, the first; one batch shape
 // Outputs:  Pres - exact, of dimension n + n2, in the order of the operands: the halfspaces on
 //           the block diagonal (a vertex polytope is converted by constraints first), or all
@@ -12,7 +13,6 @@
 //
 // CORA: contSet/@polytope/cartProd_.m
 // CORA: contSet/@polytope/private/priv_cartProd.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

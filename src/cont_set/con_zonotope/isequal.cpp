@@ -1,7 +1,8 @@
 // isequal - whether a constrained zonotope equals a set, as CORA's conZonotope.isequal
 //
 // Syntax:   bool res = cz.isequal(S);   bool res = cz.isequal(S, tol);
-// Inputs:   S - a constrained zonotope, a zonotope or a box;  tol - what counts as equal (as
+// Inputs:   S - a constrained zonotope, a zonotope or a box
+//           tol - what counts as equal (as
 //           within_tol); default: the repository tolerance (CORA's own is 1e-12)
 // Outputs:  res - two empty sets are equal and an empty and a nonempty one are not; two points
 //           are equal if they agree; two sets are equal if the centers agree and the columns of
@@ -13,6 +14,11 @@
 // See also: contains, Zonotope::isequal
 //
 // CORA: contSet/@conZonotope/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

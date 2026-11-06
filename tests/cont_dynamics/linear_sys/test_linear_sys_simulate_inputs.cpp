@@ -1,7 +1,13 @@
 // test_linear_sys_simulate_inputs - linear_sys simulate and simulate_random with constant inputs:
+//
 // exact against the closed form, one input per trajectory, and the errors
 //
 // CORA: contDynamics/@linearSys/simulate.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"
@@ -14,6 +20,10 @@ using test::check;
 using test::close;
 using test::throws;
 using namespace test::lin;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -94,6 +104,9 @@ void reports_errors(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         follows_the_closed_form(b);
@@ -103,3 +116,5 @@ int main() {
     });
     return test::finish("linear_sys simulate (inputs)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

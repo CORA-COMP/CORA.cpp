@@ -77,5 +77,4 @@ inline cora::Tensor sample_points(const cora::Capsule &C, cora::Rng &rng, int N)
 
 } // namespace test
 
-
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -19,6 +19,11 @@
 // See also:   cora/matrix_set/interval_matrix/interval_matrix.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: matrixSet/@matZonotope/matZonotope.m
+// CORA authors: Matthias Althoff, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

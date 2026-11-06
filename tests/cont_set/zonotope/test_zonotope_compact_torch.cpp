@@ -1,9 +1,18 @@
 // test_zonotope_compact_torch - zonotope compact: gradients through torch
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -24,9 +33,14 @@ void compact_gradient() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(38);
     compact_gradient();
     return test::finish("zonotope compact (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

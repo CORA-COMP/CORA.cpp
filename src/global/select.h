@@ -1,6 +1,11 @@
 // select - the matrix that picks dimensions, shared by the projections of the sets
 //
 // project(dims) of every set is a product with this matrix, so it runs on every backend.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

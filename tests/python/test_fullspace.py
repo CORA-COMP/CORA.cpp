@@ -1,4 +1,11 @@
-"""test_fullspace - the whole space R^n: constructor, set operations, predicates, lift and linear map."""
+"""test_fullspace - the whole space R^n: constructor, set operations, predicates, lift and linear map.
+
+CORA authors: Mark Wetzlinger, Tobias Ladner
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@fullspace/Inf.m
 # CORA: contSet/@fullspace/and_.m
 # CORA: contSet/@fullspace/box.m
@@ -37,12 +44,18 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 INF = float("inf")
 
 
 def box(lo, hi):
     return cora.Interval(np.array(lo), np.array(hi))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Construction(unittest.TestCase):
     def setUp(self):
@@ -261,3 +274,5 @@ class ContSetInterface(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

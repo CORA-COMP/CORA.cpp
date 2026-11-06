@@ -3,6 +3,11 @@
 // The tensors are HostTensors (host_tensor.h) of the eigen id; the products, the sums along the
 // last axis, the matrix exponential and the fused primitives are Eigen's kernels here, matrix by
 // matrix over the batch. Nothing else in the library includes Eigen for its own use.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/eigen.h"
 #include "cora/global/backend/host.h"

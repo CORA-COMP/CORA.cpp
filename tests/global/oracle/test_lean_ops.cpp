@@ -3,6 +3,11 @@
 // Calls each method once on the examples of the oracle's README and checks the shape of the answer
 // (and the values that are known by hand), so that a change of an op's wire form shows up here.
 // Skips without CORACPP_ORACLE.
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/oracle.h"
@@ -11,6 +16,10 @@
 #include "testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,6 +38,9 @@ bool aux_shape(const lean::Zonotope &Z, int64_t n, int64_t m) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -146,3 +158,5 @@ int main() {
                 "dominant_directions, vertices, interval");
     return test::finish("lean ops");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

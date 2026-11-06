@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/isIntersecting_.m
 // PROPERTY: contSet/@zonotope/isIntersecting_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -12,6 +17,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -91,6 +100,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         intersecting_known(b);
@@ -99,3 +111,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope is_intersecting");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

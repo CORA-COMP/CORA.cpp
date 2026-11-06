@@ -9,6 +9,11 @@
 // See also: cosh, exp
 //
 // CORA: contSet/@interval/cos.m
+// CORA authors: Matthias Althoff, Dmitry Grebenyuk, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

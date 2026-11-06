@@ -1,4 +1,5 @@
 // test_lean_mat_zonotope - the operations of MatZonotope against the CORALean oracle (its
+//
 // `matZonotope.*` ops)
 //
 // At nearest the nominal part (the center and the generators, in their order) is the oracle's bit
@@ -13,6 +14,10 @@
 // ORACLE: matrixSet/@matZonotope/representsa.m
 // ORACLE: matrixSet/@matZonotope/transpose.m
 // ORACLE: matrixSet/@matZonotope/zonotope.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
@@ -21,6 +26,11 @@
 using namespace cora;
 using test::oracle::check;
 using test::oracle::Random;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -97,3 +107,5 @@ int main() {
     });
     return test::finish("lean mat_zonotope");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

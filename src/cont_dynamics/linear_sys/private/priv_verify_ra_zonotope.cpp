@@ -9,13 +9,19 @@
 // zonotope U, no offsets; every specification applies over the whole horizon [0, t_final].
 //
 // Syntax:   res = priv_verify_ra_zonotope(sys, params, specs);
-// Inputs:   sys - linear system;  params - R0, U, t_final;  specs - safe and unsafe sets
+// Inputs:   sys - linear system;  params - R0, U, t_final
+//           specs - safe and unsafe sets
 // Outputs:  res - verified, the refinements (iterations), the smallest step size and the
 //           number of steps of the last run, computation_time
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
 //        outer-approximations of reachable sets", TAC, 2023.
 // See also: LinearSys::verify, priv_reach_adaptive
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"

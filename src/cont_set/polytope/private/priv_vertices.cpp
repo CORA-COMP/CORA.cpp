@@ -2,7 +2,8 @@
 //
 // Syntax:   Row v = priv_vertices_1d(H, empty);   Rows V = priv_vertices(H);
 //           HostH H = priv_constraints_of_points(like, points, n);
-// Inputs:   H - a single polytope in halfspace form (bounded for priv_vertices);  points - rows
+// Inputs:   H - a single polytope in halfspace form (bounded for priv_vertices)
+//           points - rows
 //           of n numbers;  like - a tensor of the backend that does the singular value
 //           decomposition
 // Outputs:  the vertices; the halfspaces of their convex hull
@@ -11,7 +12,6 @@
 // CORA: contSet/@polytope/private/priv_vertices_1D.m
 // CORA: contSet/@polytope/vertices_.m
 // CORA: contSet/@polytope/constraints.m
-//
 // CORA authors: Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper, Viktor Kotsev
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

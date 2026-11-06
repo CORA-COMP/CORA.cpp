@@ -1,7 +1,9 @@
 // is_intersecting - whether a capsule meets points or a capsule
 //
 // Syntax:   res = C.is_intersecting(S);   res = C.is_intersecting(S, tol);   C.is_intersecting(p)
-// Inputs:   S - capsule of the dimension of C;  p - points (..., n, N);  tol - the distance of the
+// Inputs:   S - capsule of the dimension of C
+//           p - points (..., n, N)
+//           tol - the distance of the
 //           axes may exceed the sum of the radii by tol (as within_tol); default: the repository
 //           tolerance (docs/architecture.md)
 // Outputs:  res - true if the least distance of the two axes is at most r + S.r; for points, if
@@ -12,6 +14,11 @@
 // See also: contains
 //
 // CORA: contSet/@capsule/isIntersecting_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "global/format.h"

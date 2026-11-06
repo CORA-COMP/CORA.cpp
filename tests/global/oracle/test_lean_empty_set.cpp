@@ -28,6 +28,10 @@
 // ORACLE: contSet/@emptySet/supportFunc_.m
 // ORACLE: contSet/@emptySet/vertices_.m
 // ORACLE: contSet/@emptySet/volume_.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -38,6 +42,10 @@ using namespace cora;
 using test::oracle::check;
 using test::oracle::Random;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 // The other operands of dimension n: the empty set, the empty box, a box and a zonotope.
@@ -46,6 +54,9 @@ std::vector<Set> aux_operands(Random &rnd, int64_t n) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -173,3 +184,5 @@ int main() {
                       }));
     return test::finish("lean empty_set");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

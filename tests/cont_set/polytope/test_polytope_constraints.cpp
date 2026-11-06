@@ -2,7 +2,6 @@
 //
 // CORA: contSet/@polytope/constraints.m
 // PROPERTY: contSet/@polytope/constraints.m
-//
 // CORA authors: Viktor Kotsev
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

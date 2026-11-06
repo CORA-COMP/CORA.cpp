@@ -5,6 +5,11 @@
 // Outputs:  lo, hi - the hull of the four corner products, a NaN corner (0 * Inf) taken as 0, as
 //           CORA's times
 // See also: priv_matmul, prod, rdivide
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

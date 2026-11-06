@@ -6,11 +6,18 @@
 //           points of the set are drawn by rejection; b comes from a factor vector inside the box,
 //           so the set is nonempty
 // See also: testing.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "testing.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -76,3 +83,5 @@ inline bool inside_box(const cora::Tensor &P, const cora::Interval &I, double sl
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

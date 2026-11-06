@@ -1,6 +1,11 @@
 // priv_vec - the bounds of an interval matrix stacked into one column
 //
 // See also: priv_vec.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "matrix_set/interval_matrix/private/priv_vec.h"
 

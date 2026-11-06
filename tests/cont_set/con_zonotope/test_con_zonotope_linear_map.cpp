@@ -2,8 +2,7 @@
 //
 // CORA: contSet/@conZonotope/mtimes.m
 // PROPERTY: contSet/@conZonotope/mtimes.m
-//
-// CORA authors:  Niklas Kochdumper
+// CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

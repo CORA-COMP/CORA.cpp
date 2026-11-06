@@ -10,6 +10,11 @@
 // Operations: + - * / (also with numbers), pow(e, n) for integer n, sin, cos, exp; diff, eval,
 //             eval_tensor, enclose. Range is the interval of tensors (rounding is not directed).
 // See also:   cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

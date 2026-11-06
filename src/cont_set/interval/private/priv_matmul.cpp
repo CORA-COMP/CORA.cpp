@@ -1,6 +1,11 @@
 // priv_matmul - the product of two interval matrices
 //
 // See also: priv_matmul.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_matmul.h"
 #include "cont_set/interval/private/priv_times.h"

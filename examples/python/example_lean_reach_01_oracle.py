@@ -9,6 +9,11 @@ Syntax:   CORACPP_ORACLE="cd CORALean && lake exe oracle" PYTHONPATH=build pytho
 Outputs:  per dtype the final interval of the nominal part, the radius of the error box and whether
           the lean sets enclose CORA.cpp's; without an oracle a note and exit code 0
 See also: example_linear_reach_01_5dim, example_lean_reach_01_oracle of the C++ examples
+
+Authors:       Claude Sonnet 5.5
+Written:       30-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import os
 import sys
@@ -17,13 +22,18 @@ import numpy as np
 
 import cora
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
+
 if not os.environ.get("CORACPP_ORACLE"):
     print("set CORACPP_ORACLE to the command that starts the CORALean oracle")
     sys.exit(0)
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 # every value is a dyadic number, so it is exact in binary64 and in binary32
 A = np.array([[0.0, 1.0], [-1.0, -0.25]])

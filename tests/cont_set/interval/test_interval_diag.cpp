@@ -1,6 +1,11 @@
 // test_interval_diag - interval diag: the diagonal matrix of a vector, the diagonal of a matrix
 //
 // CORA: contSet/@interval/diag.m
+// CORA authors: Matthias Althoff, Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -63,6 +72,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         diag_of_a_vector(b);
@@ -71,3 +83,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval diag");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

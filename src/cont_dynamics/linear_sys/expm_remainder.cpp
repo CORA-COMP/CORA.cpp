@@ -4,12 +4,18 @@
 // value keeps the difference free of cancellation.
 //
 // Syntax:   Interval E = sys.expm_remainder(time_step, taylor_terms);
-// Inputs:   time_step - step size, positive;  taylor_terms - order of the series, at least 1
+// Inputs:   time_step - step size, positive
+//           taylor_terms - order of the series, at least 1
 // Outputs:  E - the box [-W, W] around zero with W = |e^{|A| dt} - series|, a building block of
 //           reach
 // See also: correction_matrix_input, input_solution
 //
 // CORA: contDynamics/@linearSys/private/priv_expmRemainder.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 

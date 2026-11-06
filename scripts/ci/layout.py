@@ -8,6 +8,7 @@ Syntax:   issues = check_file(rel_path, lines)       the problems of one file, a
           body, start = read_doc(lines, "cpp")        the docstring lines without comment signs
 Outputs:  the messages, each saying what to do; an empty list for a file in the layout
 See also: tests/global/test_coding_conventions.py, tests/global/test_layout.py, CONTRIBUTING.md
+
 Authors:       Claude Sonnet 5.5
 Written:       06-November-2026
 Last update:   ---
@@ -42,7 +43,7 @@ TAG_LABELS = ("CORA", "CORA.cpp only", "PROPERTY", "ORACLE")  # the tags above t
 AUTHOR_LABELS = ("CORA authors", "Authors", "Written", "Last update", "Reviewed")
 FIELD_COLUMN = 15  # the author block's values start here, after the comment sign and a blank
 SECTION = re.compile(r"^\s*(//|#) [A-Z][A-Za-z ]+ -{10,}$")
-INCLUDE_LIKE = re.compile(r"^\s*(#|using\b|extern\b)")
+INCLUDE_LIKE = re.compile(r"^\s*(#|using\b|extern\b|namespace\s+\w+\s*=)")
 
 
 # ============================================  MAIN  ============================================ #
@@ -292,6 +293,8 @@ def check_docstring(path, lines, lang, issues):
     """The name line, the prose limit, one line per entry and the author block."""
     body, start = read_doc(lines, lang)
     stem = os.path.splitext(os.path.basename(path))[0]
+    if stem == "__init__":  # a package is named by its folder
+        stem = os.path.basename(os.path.dirname(path))
     if not body:
         issues.append("no docstring at the top" + (' (""")' if lang == "py" else ""))
         return
@@ -475,7 +478,8 @@ def check_auxiliary(lines, lang, begin, aux, main, end, issues):
 def check_main_position(lines, lang, main, begin, end, issues):
     """MAIN stands right above what the file offers: `int main`, the test classes, `def main`."""
     code = scan(lines, lang)
-    after = next((i for i in range(main + 1, end) if lines[i].strip()), None)
+    skipped = "#" if lang == "py" else "//"  # comments right under MAIN belong to what follows
+    after = next((i for i in range(main + 1, end) if lines[i].strip() and not lines[i].startswith(skipped)), None)
     if after is None:
         issues.append("nothing follows the MAIN marker")
         return

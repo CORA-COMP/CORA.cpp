@@ -6,6 +6,11 @@
 // See also: vertices, project
 //
 // CORA: contSet/@contSet/vertices.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"

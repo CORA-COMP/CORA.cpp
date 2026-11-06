@@ -4,11 +4,18 @@
 // Purpose:  a pair with it has no entry in the table, whatever classes the library implements
 //           later; tests of "no implementation" and of run-time registration use it
 // See also: cora/cont_set/registry.h
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -37,3 +44,5 @@ class UnregisteredSet : public cora::ContSet {
 };
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

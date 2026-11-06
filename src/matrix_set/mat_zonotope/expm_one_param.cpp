@@ -1,7 +1,9 @@
 // expm_one_param - the Taylor series of the matrix exponential for one parameter, as CORA's
 //
 // Syntax:   auto R = A.expm_one_param(r, max_order);   R = A.expm_one_param(r, max_order, u);
-// Inputs:   r - the step;  max_order - the order of the series, at least 1;  A - a square set
+// Inputs:   r - the step
+//           max_order - the order of the series, at least 1
+//           A - a square set
 //           with exactly one generator: the matrices M(b) = C + b G, |b| <= 1;  u - an input
 //           zonotope c + b g with at most one generator, in the same b (a column u is (u, 0))
 // Outputs:  R - enclosure: the matrix zonotope K of the sum of r^k M(b)^k / k! for k = 0 to
@@ -16,6 +18,12 @@
 // CORA: matrixSet/@matZonotope/expmOneParam.m
 // CORA starts the l-th generator's sum at the coefficient of b^1 of M^l, not of b^l, and drops
 // the generators after the first (docs/cora-differences.md); CORALean's definition is followed.
+//
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "matrix_set/interval_matrix/private/priv_factorial.h"

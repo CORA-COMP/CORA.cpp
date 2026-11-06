@@ -2,6 +2,11 @@
 //
 // On torch, an operation tagged not_differentiable that gets a tensor needing gradients computes
 // on the detached tensor and warns once per operation; under GradientsScope it is an error.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -9,6 +14,11 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope scope("torch");
@@ -39,3 +49,5 @@ int main() {
     set_warning_handler(previous);
     return test::finish("tensor gradients (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

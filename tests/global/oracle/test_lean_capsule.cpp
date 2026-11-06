@@ -21,8 +21,6 @@
 // ORACLE: contSet/@capsule/lift_.m
 // ORACLE: contSet/@capsule/mtimes.m
 // ORACLE: contSet/@capsule/origin.m
-//
-// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -139,6 +137,5 @@ int main() {
     });
     return test::finish("lean capsule");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

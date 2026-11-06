@@ -8,12 +8,18 @@
 // Indices k (step) and kIter (trial of a step size within the step) are 0-based here.
 //
 // Syntax:   LinErrorBound errs(emax, t_final);   errs.next_bounds(time_step, t, k, kIter);
-// Inputs:   emax - error margin;  t_final - time horizon
+// Inputs:   emax - error margin
+//           t_final - time horizon
 // Outputs:  the bounds and checks below
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner-
 //        and outer-approximations of reachable sets", TAC, 2023.
 // See also: priv_reach_adaptive
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

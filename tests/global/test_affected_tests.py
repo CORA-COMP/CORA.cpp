@@ -6,10 +6,19 @@ Checks:   a changed header selects the tests that include it, directly or throug
           them through private headers; the shared code, the build and CI select ALL; documentation
           selects NONE; unknown or deleted files select ALL.
 Exit code: 0 if all checks pass, else 1.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import os
 import sys
 import unittest
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ci"))
 import affected_tests as at  # noqa: E402
@@ -40,6 +49,8 @@ def pick(*changed):
         return result
     return set(result[2:-2].split("|"))
 
+
+# ============================================  MAIN  ============================================ #
 
 class SelectionTest(unittest.TestCase):
     def test_header_selects_its_includers(self):
@@ -94,3 +105,5 @@ class SelectionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

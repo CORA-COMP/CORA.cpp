@@ -1,4 +1,10 @@
-"""test_stubs - the type stubs of the compiled module: shipped, fresh, documented, and they type-check"""
+"""test_stubs - the type stubs of the compiled module: shipped, fresh, documented, and they type-check
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       04-November-2026
+Last update:   06-November-2026
+Reviewed:      ---
+"""
 import ast
 import importlib.util
 import os
@@ -9,6 +15,10 @@ import tempfile
 import unittest
 
 import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 PACKAGE = os.path.dirname(os.path.abspath(cora.__file__))
@@ -58,6 +68,8 @@ def names_defined(path):
             names.add(node.target.id)
     return names
 
+
+# ============================================  MAIN  ============================================ #
 
 class Stubs(unittest.TestCase):
     def test_the_package_ships_stubs_and_py_typed(self):
@@ -112,3 +124,5 @@ class Stubs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

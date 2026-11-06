@@ -1,11 +1,18 @@
-// What the catalog asks for: the names it uses and one instance's parameters.
+// catalog - what the catalog asks for: the names it uses and one instance's parameters
 //
 // Kept apart from the set representations so that both backends — Eigen and libtorch —
 // read an instance the same way without sharing anything else.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include <string>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -29,3 +36,5 @@ struct Params {
 bool known(const char *const *list, std::size_t n, const std::string &name);
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

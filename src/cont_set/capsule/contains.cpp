@@ -1,7 +1,8 @@
 // contains - whether a capsule contains points, a capsule, a zonotope or a box
 //
 // Syntax:   res = C.contains(p);   res = C.contains(S, tol);
-// Inputs:   p - points (..., n, N);  S, Z, I - a capsule, a zonotope or a box of the dimension of C
+// Inputs:   p - points (..., n, N)
+//           S, Z, I - a capsule, a zonotope or a box of the dimension of C
 //           tol - how far a point may lie outside, in the distance to the axis (absolutely or
 //                 relative to r, as within_tol); default: the repository tolerance
 //                 (docs/architecture.md)
@@ -14,6 +15,11 @@
 // See also: is_intersecting, Zonotope::contains
 //
 // CORA: contSet/@capsule/contains_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"

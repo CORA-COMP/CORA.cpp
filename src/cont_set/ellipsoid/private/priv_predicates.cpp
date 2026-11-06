@@ -2,7 +2,8 @@
 //
 // Syntax:   bool empty = priv_is_empty(E);   bool point = priv_is_point(E);
 //           detail::Refusal r = priv_unbatched_refusal(E, "is_bigger");
-// Inputs:   E - an ellipsoid;  operation - the name for the message
+// Inputs:   E - an ellipsoid
+//           operation - the name for the message
 // Outputs:  the answer, or the identifier and text of the refusal
 // See also: priv.h, Ellipsoid::contains
 //

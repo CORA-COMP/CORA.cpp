@@ -6,6 +6,11 @@
 // Syntax:   build/examples/cpp/example_linear_simulate_01_random
 // Outputs:  the size of the simulation, and whether it stays in the reachable set
 // See also: example_linear_reach_01_5dim
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       29-September-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/rng.h"
@@ -13,9 +18,13 @@
 #include <algorithm>
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Parameters ------------------------------------------------------------------------------

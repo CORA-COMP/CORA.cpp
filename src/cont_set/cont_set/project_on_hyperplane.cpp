@@ -1,13 +1,19 @@
 // project_on_hyperplane - the orthogonal projection onto a hyperplane, as CORA's contSet
 //
 // Syntax:   R = S.project_on_hyperplane(c, d);
-// Inputs:   S - set of dimension n;  c - normal of the hyperplane {x | c'x = d}, a nonzero column
+// Inputs:   S - set of dimension n
+//           c - normal of the hyperplane {x | c'x = d}, a nonzero column
 //           (..., n, 1) of any length;  d - its offset, (..., 1, 1). CORA takes the hyperplane as
 //           a set and normalizes its constraint; CORA.cpp takes the constraint
 // Outputs:  R - (I - c c') S + d c with c and d divided by the length of c
 // See also: linear_map, minus
 //
 // CORA: contSet/@contSet/projectOnHyperplane.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"

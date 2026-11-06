@@ -7,6 +7,11 @@
 // See also: radius, Interval::norm
 //
 // CORA: contSet/@contSet/norm.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 

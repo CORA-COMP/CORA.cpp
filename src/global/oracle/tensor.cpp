@@ -1,6 +1,11 @@
 // tensor - lean::Tensor, a matrix of exact values in a CORALean dtype
 //
 // See also: lean/oracle.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/tensor.h"
 #include "cora/global/error.h"

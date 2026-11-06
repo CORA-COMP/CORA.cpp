@@ -17,6 +17,11 @@
 // See also: interval, Koller, ICLR 2026, Prop. 3
 //
 // CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
+// CORA authors: Lukas Koller
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/linprog.h"

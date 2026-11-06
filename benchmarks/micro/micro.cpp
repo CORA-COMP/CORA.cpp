@@ -1,4 +1,5 @@
 // micro - micro-benchmarks of the public API, run one at a time so a profiler counts its
+//
 // instructions
 //
 // Syntax:   micro            list the benchmarks
@@ -9,6 +10,11 @@
 // op table (cora/global/tensor/ops.def); against an older commit they are left out, and
 // instruction_counts.py reports them as new.
 // See also: scripts/ci/instruction_counts.py, which counts the instructions of the region only
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cora.h"
 
@@ -18,9 +24,12 @@
 #include <numeric>
 #include <string>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -191,6 +200,9 @@ const std::map<std::string, Benchmark> &benchmarks() {
 extern "C" __attribute__((noinline)) double micro_measured_region(const Work &work) {
     return work();
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
     if (argc < 2) {

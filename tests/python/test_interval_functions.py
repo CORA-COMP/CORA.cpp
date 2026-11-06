@@ -1,4 +1,11 @@
-"""test_interval_functions - sin, sinh, sign, round, power, rdivide and prod of an interval in Python."""
+"""test_interval_functions - sin, sinh, sign, round, power, rdivide and prod of an interval in Python.
+
+CORA authors: Dmitry Grebenyuk, Tobias Ladner, Sebastian Mair, Mark Wetzlinger, Matthias Althoff
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/power.m
 # CORA: contSet/@interval/prod.m
 # CORA: contSet/@interval/rdivide.m
@@ -19,12 +26,18 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 INF = float("inf")
 
 
 def box(lo, hi):
     return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Functions(unittest.TestCase):
     def setUp(self):
@@ -114,3 +127,5 @@ class Functions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

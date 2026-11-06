@@ -1,7 +1,13 @@
 // test_zonotope_linear_combination - zonotope linear_combination: the enclosure of the segments
+//
 // between two zonotopes
 //
 // CORA: contSet/@contSet/linComb.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -15,6 +21,10 @@ using test::close;
 using test::column;
 using test::random_direction;
 using test::support;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -55,8 +65,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { linear_combination_encloses_both(b); });
     checks_and_their_switch();
     return test::finish("zonotope linear_combination");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

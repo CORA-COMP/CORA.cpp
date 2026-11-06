@@ -27,5 +27,4 @@ int main() {
     return test::finish("capsule enclose_points (torch)");
 }
 
-
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

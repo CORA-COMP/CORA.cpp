@@ -1,4 +1,5 @@
 // test_lean_interval_is_full_dim - Interval::is_full_dim against the CORALean oracle (its
+//
 // `isFullDim`)
 //
 // The flat box is checked in both modes where the oracle compares strictly by the machine's order
@@ -7,12 +8,21 @@
 // a `true` of the oracle is a proof of full dimension and may not be contradicted.
 //
 // ORACLE: contSet/@interval/isFullDim.m
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -32,3 +42,5 @@ int main() {
     });
     return test::finish("lean interval is_full_dim");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

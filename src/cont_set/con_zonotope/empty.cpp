@@ -8,6 +8,11 @@
 // See also: ConZonotope::ConZonotope, EmptySet::empty
 //
 // CORA: contSet/@conZonotope/empty.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 

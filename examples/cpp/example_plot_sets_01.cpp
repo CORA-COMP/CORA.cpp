@@ -6,14 +6,23 @@
 // Syntax:   build/examples/cpp/example_plot_sets_01
 // Outputs:  example_plot_sets_01_1d.svg, _2d.svg and _3d.svg
 // See also: example_plot_sets_01 of the Python examples, example_plot_tikz_01_group
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Sets ------------------------------------------------------------------------------------

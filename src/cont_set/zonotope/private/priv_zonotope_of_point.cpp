@@ -6,6 +6,10 @@
 // See also: Zonotope::convex_hull
 //
 // CORA.cpp only: the conversion is CORA's zonotope(p) of the constructor, which takes a point
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

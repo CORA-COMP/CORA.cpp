@@ -4,6 +4,11 @@
 // each matrix of the batch, on eigen, lean and torch alike; batch axes broadcast as in numpy.
 // Products are bit-identical on eigen and lean; libtorch picks its BLAS kernel for a batched and
 // a single product per CPU, so on torch they agree to rounding only.
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "testing.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,6 +54,9 @@ void batches_are_their_members(const std::string &name) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     std::vector<std::string> all = test::backends();
     all.emplace_back("lean");
@@ -54,3 +66,5 @@ int main() {
     }
     return test::finish("tensor batch");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

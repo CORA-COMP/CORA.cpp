@@ -4,6 +4,11 @@
 // core operations (global/tensor/derived.h). A backend may replace one by its own (eigen: expm and
 // the fused primitives; torch: expm, sort, diag, the norms and the interval products). On every
 // backend, the operation and its default give the same result within the agreement of ops.def.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "global/oracle/oracle_testing.h"
@@ -15,6 +20,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -97,6 +106,9 @@ void aux_overrides(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     std::vector<std::string> all = test::backends();
     all.emplace_back("lean");
@@ -106,3 +118,5 @@ int main() {
     }
     return test::finish("tensor overrides");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

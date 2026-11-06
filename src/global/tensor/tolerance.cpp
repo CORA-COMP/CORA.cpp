@@ -2,6 +2,11 @@
 //
 // Syntax:   resolve_tol(tol, dtype);   ToleranceScope loose(1e-10);   set_default_tolerance(t);
 // See also: cora/global/tensor/tolerance.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
 

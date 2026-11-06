@@ -2,7 +2,6 @@
 //
 // CORA: contSet/@zonoBundle/center.m
 // PROPERTY: contSet/@zonoBundle/center.m
-//
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

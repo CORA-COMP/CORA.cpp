@@ -6,6 +6,11 @@
 // are the reference HostTensors (host_tensor.h) with every operation as defined there, the derived
 // and fused ones as their portable defaults: the result of an operation then equals the oracle's
 // bit for bit. It is a reference, not a fast backend.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/lean.h"
 #include "cora/global/error.h"

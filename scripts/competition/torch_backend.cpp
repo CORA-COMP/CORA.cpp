@@ -1,4 +1,4 @@
-// The libtorch backend: one instance, on the CPU or a CUDA device.
+// torch_backend - the libtorch backend: one instance, on the CPU or a CUDA device
 //
 // The same operations as the Eigen backend, through tensors instead. What it buys is the
 // GPU and autograd; what it costs is a dispatch per call, which is why the CPU default
@@ -6,6 +6,11 @@
 //
 // Measurement runs under `NoGradGuard`: recording a graph is what makes the operations
 // differentiable, not what the catalog asks them to time.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "backend.h"
 
@@ -15,7 +20,12 @@
 #include <sstream>
 #include <stdexcept>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp::torch_backend {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 using tb::Interval;
@@ -138,6 +148,9 @@ class TorchRunner : public Runner {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 bool built() { return true; }
 
 bool supports(const std::string &device) {
@@ -203,3 +216,5 @@ void check_gradients(const std::string &device) {
 }
 
 } // namespace cora::comp::torch_backend
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

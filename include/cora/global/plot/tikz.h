@@ -2,6 +2,11 @@
 //
 // Syntax:   figure().save_tikz("reach.tikz", {.standalone = true});
 // See also: cora/global/plot/figure.h, experiments/paper/latex/cora-macs.sty (CORA's colors)
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #pragma once
 

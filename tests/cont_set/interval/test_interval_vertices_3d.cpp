@@ -1,10 +1,19 @@
 // test_interval_vertices_3d - interval vertices_3d: the eight corners of a box
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,8 +43,13 @@ void invalid_input_and_checks_off() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { the_corners_of_a_box(b); });
     invalid_input_and_checks_off();
     return test::finish("interval vertices_3d");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

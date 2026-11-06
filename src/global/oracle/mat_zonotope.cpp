@@ -1,6 +1,11 @@
 // mat_zonotope - lean::MatZonotope, a matrix zonotope of exact values plus an error box (CORALean)
 //
 // See also: lean/request.h, lean/zonotope.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/error.h"

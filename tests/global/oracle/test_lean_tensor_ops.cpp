@@ -7,6 +7,10 @@
 // M I of an interval.
 //
 // ORACLE: contSet/@interval/mtimes.m
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -14,6 +18,10 @@
 
 using namespace cora;
 using test::oracle::check_exact;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -113,6 +121,9 @@ void aux_interval_products(test::oracle::Random &rnd) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!test::oracle::available()) return 0;
     const BackendScope lean_backend("lean");
@@ -124,3 +135,5 @@ int main() {
     aux_interval_products(rnd);
     return test::finish("lean tensor primitives against the oracle");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

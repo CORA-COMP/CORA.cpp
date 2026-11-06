@@ -6,10 +6,17 @@
 //
 // The system is the MATLAB call `linearSys(A, B, [], C)`, the start set `zonotope(c0, G0)`, the
 // input set `zonotope(c_u, GU)`, step size 0.2, Taylor order 6 and five steps.
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #pragma once
 
 #include <vector>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace matlab_reference {
 
@@ -113,3 +120,5 @@ inline const InputSystem &wrapping_free_inputs() {
 }
 
 } // namespace matlab_reference
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

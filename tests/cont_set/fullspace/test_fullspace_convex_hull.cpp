@@ -1,6 +1,11 @@
 // test_fullspace_convex_hull - fullspace convex_hull: the hull with any set is the whole space
 //
 // CORA: contSet/@fullspace/convHull_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/registry.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -32,8 +41,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(convex_hull_is_the_whole_space);
     checks_and_their_switch();
     return test::finish("fullspace convex_hull");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,14 +1,24 @@
 // test_interval_matrix_dependent_terms - IntervalMatrix dependent_terms: r^2 M^2 and I + M r + (M
+//
 // r)^2 / 2
 //
 // CORA: matrixSet/@intervalMatrix/dependentTerms.m
 // PROPERTY: matrixSet/@intervalMatrix/dependentTerms.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -61,6 +71,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         terms_of_a_point_matrix(b);
@@ -69,3 +82,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix dependent_terms");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

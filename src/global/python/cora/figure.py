@@ -1,4 +1,5 @@
 """figure - a figure of several axes that keeps what CORA drew on each, so that it can be written as
+
 TikZ
 
     fig = cora.subplots(2, 2, sharex=True)       # like plt.subplots, but one object
@@ -12,10 +13,19 @@ records the layers the C++ core decided on in each axes; the TikZ and SVG text i
 core from those, in the same way for every language. Titles, axis labels and limits set with
 matplotlib are taken over when the text is written. `cora.to_tikz(path)` does the same for the
 current matplotlib figure, however its axes were made.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 from ._cora import FigureGrid as _CoreGrid
 from .plot import core_figure
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 class Figure:
     """The axes of a matplotlib figure and the layers CORA drew on them."""
@@ -135,3 +145,5 @@ def to_tikz(path, fig=None, **options):
     """Writes a matplotlib figure (the current one) as pgfplots code; see `Figure.to_tikz`."""
     import matplotlib.pyplot as plt
     Figure.of(plt.gcf() if fig is None else fig).to_tikz(path, **options)
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

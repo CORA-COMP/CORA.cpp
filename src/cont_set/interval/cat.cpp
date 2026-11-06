@@ -1,12 +1,18 @@
 // cat - intervals joined along a dimension, as CORA's cat for intervals
 //
 // Syntax:   Interval I = Interval::cat(dim, {I1, I2, ...});
-// Inputs:   dim - 1 (stack the rows) or 2 (join the columns);  Is - the intervals, which agree
+// Inputs:   dim - 1 (stack the rows) or 2 (join the columns)
+//           Is - the intervals, which agree
 //           in the other dimensions
 // Outputs:  I - the interval of the concatenated bounds; nothing rounds
 // See also: cart_prod
 //
 // CORA: contSet/@interval/cat.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
 #include "cora/cont_set/interval/interval.h"

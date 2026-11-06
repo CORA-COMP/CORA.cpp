@@ -13,7 +13,6 @@
 // See also: is_intersecting, Zonotope::contains, ConZonotope::contains
 //
 // CORA: contSet/@zonoBundle/contains_.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

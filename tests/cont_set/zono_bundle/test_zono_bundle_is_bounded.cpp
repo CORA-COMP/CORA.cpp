@@ -1,7 +1,6 @@
 // test_zono_bundle_is_bounded - ZonoBundle::is_bounded: always true
 //
 // CORA: contSet/@zonoBundle/isBounded.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

@@ -1,11 +1,16 @@
 // priv_select_generators - some columns of a generator matrix, in order
 //
 // Syntax:   Tensor Gs = priv_select_generators(G, columns);
-// Inputs:   G - generators (..., n, m);  columns - indices in [0, m), a host list
+// Inputs:   G - generators (..., n, m)
+//           columns - indices in [0, m), a host list
 // Outputs:  Gs - (..., n, k): those columns, also none (k = 0)
 // See also: Zonotope::compact
 //
 // CORA.cpp only: MATLAB selects with G(:, idx), which needs no function
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

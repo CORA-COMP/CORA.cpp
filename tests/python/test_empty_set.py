@@ -1,4 +1,11 @@
-"""test_empty_set - the EmptySet class in Python: a set without points of n dimensions."""
+"""test_empty_set - the EmptySet class in Python: a set without points of n dimensions.
+
+CORA authors: Mark Wetzlinger, Tobias Ladner
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@emptySet/and_.m
 # CORA: contSet/@emptySet/center.m
 # CORA: contSet/@emptySet/contains_.m
@@ -32,6 +39,10 @@ import unittest
 
 import matplotlib
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 matplotlib.use("Agg")
 import cora
 import matplotlib.pyplot as plt
@@ -43,6 +54,8 @@ INF = float("inf")
 def box(lo, hi):
     return cora.Interval(np.array(lo), np.array(hi))
 
+
+# ============================================  MAIN  ============================================ #
 
 class EmptySet(unittest.TestCase):
     def setUp(self):
@@ -208,3 +221,5 @@ class EmptySet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

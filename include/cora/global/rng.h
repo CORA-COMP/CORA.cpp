@@ -8,6 +8,11 @@
 //
 // Syntax:   Rng rng(seed);   rng.uniform(out, n, lo, hi);   rng.normal(out, n, scale);
 // See also: contSet/zonotope/generate_random.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

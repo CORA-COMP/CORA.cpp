@@ -8,12 +8,21 @@ Checks:   on a small fake tree (two CORA methods, a source, a C++ and a Python t
           out-of-scope row that is implemented each
           fail with a clear message.
 Exit code: 0 if all pass.
+
+Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
+Written:       02-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
 """
 import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "coverage"))
@@ -51,6 +60,8 @@ def make_tree(root, lean=True):
     problems, _ = cov.run(root, check=False)
     assert not problems, problems
 
+
+# ============================================  MAIN  ============================================ #
 
 class Checker(unittest.TestCase):
     def setUp(self):
@@ -191,3 +202,5 @@ class Checker(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

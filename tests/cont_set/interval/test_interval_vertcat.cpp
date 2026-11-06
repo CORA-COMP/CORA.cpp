@@ -1,6 +1,11 @@
 // test_interval_vertcat - interval vertcat: intervals stacked
 //
 // CORA: contSet/@interval/vertcat.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -47,8 +56,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(vertcat_stacks_the_rows);
     checks_and_their_switch();
     return test::finish("interval vertcat");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -10,7 +10,6 @@
 // See also: Zonotope::lift
 //
 // CORA: contSet/@zonoBundle/lift_.m
-//
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

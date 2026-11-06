@@ -8,7 +8,6 @@
 // See also: ZonoBundle::ZonoBundle
 //
 // CORA.cpp only: the checks of zonoBundle.m (aux_checkInputArgs) and of the operations on bundles
-//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

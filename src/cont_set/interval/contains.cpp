@@ -9,6 +9,11 @@
 // See also: Specification::check
 //
 // CORA: contSet/@interval/contains_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"

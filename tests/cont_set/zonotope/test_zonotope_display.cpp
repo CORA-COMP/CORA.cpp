@@ -1,6 +1,11 @@
 // test_zonotope_display - zonotope display: the text that describes a zonotope
 //
 // CORA: contSet/@zonotope/display.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,6 +54,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         the_text_names_dimension_center_and_generators(b);
@@ -53,3 +65,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope display");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

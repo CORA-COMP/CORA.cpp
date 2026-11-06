@@ -8,6 +8,11 @@
 // See also: rad, center
 //
 // CORA: contSet/@interval/norm_.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

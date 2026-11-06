@@ -18,6 +18,11 @@
 // A backend implements the core operations of Tensor::Impl (ops.def, docs/tensor.md); the derived
 // ones have portable defaults (src/global/tensor/) that a backend may override. Storage is shared
 // and immutable to users; an operation on an rvalue tensor that alone owns its memory may reuse it.
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -32,12 +37,13 @@
 #include <utility>
 #include <vector>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 /// Marks a raw-number entry point: a function that makes tensors from host numbers on the current
 /// backend (Tensor::zeros, from_data, Tensor({...})) because no tensor is there to follow, as a
 /// random set or an oracle's answer. The conventions test allows that only in functions so marked.
 #define CORA_FROM_NUMBERS
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
 

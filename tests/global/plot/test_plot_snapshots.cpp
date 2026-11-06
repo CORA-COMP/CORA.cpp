@@ -1,5 +1,11 @@
 // test_plot_snapshots - the layers (geometry within a tolerance) and the TikZ text (exactly) of a
+//
 // zonotope, a reachable set over time, a 2 x 2 group of axes and a three-dimensional zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/plot/plot.h"
@@ -8,6 +14,10 @@
 using namespace cora;
 using test::check_snapshot;
 using test::dump_layers;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -110,8 +120,13 @@ void snapshots_of_the_tikz_text() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     snapshots_of_the_layers();
     snapshots_of_the_tikz_text();
     return test::finish("plot snapshots");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

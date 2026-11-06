@@ -8,6 +8,11 @@ Outputs:  one stub per compiled module (the submodule cora._cora.lean has its ow
           `Array` is a numpy float64 array or a torch tensor, `object` is `Any`, an int is any
           `SupportsInt` (written `int`), a default that is no literal is `...`.
 See also: CONTRIBUTING.md (Python stubs), tests/python/test_stubs.py
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       04-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import importlib
@@ -16,6 +21,10 @@ import os
 import re
 import sys
 import types
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT_MODULE = "cora._cora"
 
@@ -265,6 +274,8 @@ def generate():
     return files
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--out", help="the package directory the stubs are written to")
@@ -290,3 +301,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

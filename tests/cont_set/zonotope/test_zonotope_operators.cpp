@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/mtimes.m
 // CORA: contSet/@zonotope/plus.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -51,6 +60,9 @@ void sums_and_translations(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         a_matrix_maps_the_zonotope(b);
@@ -59,3 +71,5 @@ int main() {
     });
     return test::finish("zonotope operators");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -8,6 +8,11 @@
 // See also: zonotope, Zonotope::contains
 //
 // CORA: matrixSet/@matZonotope/contains.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

@@ -2,11 +2,21 @@
 //
 // intersect_strip is differentiable for a given gain and for "normGen" (matrix products, an
 // inverse).
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -29,3 +39,5 @@ int main() {
                     {Z[0], Z[1], C, phi, y, lambda});
     return test::finish("zonotope intersect_strip (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

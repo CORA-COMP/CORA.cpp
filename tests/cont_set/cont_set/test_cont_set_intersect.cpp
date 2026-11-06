@@ -1,7 +1,13 @@
 // test_cont_set_intersect - the intersection of two sets (CORA's and): a pair without an entry
+//
 // raises noops
 //
 // CORA: contSet/@contSet/and.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -12,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,7 +39,12 @@ void an_unknown_pair_is_noops() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     an_unknown_pair_is_noops();
     return test::finish("cont_set intersect");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

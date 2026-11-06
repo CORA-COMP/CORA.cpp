@@ -1,6 +1,11 @@
 // test_interval_rand_point_torch - interval rand_point over a batch of boxes
 //
 // CORA: contSet/@interval/randPoint_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/backend/torch.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -27,9 +36,14 @@ void batched_interval_rand_point(const torch::TensorOptions &opts, const std::st
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_device([](const torch::TensorOptions &opts, const std::string &where) {
         batched_interval_rand_point(opts, where);
     });
     return test::finish("interval rand_point (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

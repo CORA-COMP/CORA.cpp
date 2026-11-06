@@ -1,5 +1,11 @@
 // test_plot_tikz - the options of the TikZ export: colors, standalone documents, thinning, tables,
+//
 // sizes and the shared axes of a group, and what each kind of layer is written as
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 #include "testing.h"
@@ -10,6 +16,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -196,6 +206,9 @@ void tables_beside_the_file() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     layers_are_written_as_their_kind();
     colors_by_name_or_value();
@@ -206,3 +219,5 @@ int main() {
     tables_beside_the_file();
     return test::finish("plot tikz");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

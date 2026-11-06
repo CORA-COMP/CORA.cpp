@@ -1,6 +1,11 @@
 // test_cont_set_plus - plus of two sets: the registry picks the pair, operands in CORA's order
 //
 // CORA: contSet/@contSet/plus.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -30,7 +39,12 @@ void the_registry_dispatches() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_registry_dispatches();
     return test::finish("cont_set plus");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

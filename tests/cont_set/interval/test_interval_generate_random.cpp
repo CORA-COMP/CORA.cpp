@@ -1,6 +1,11 @@
 // test_interval_generate_random - interval generate_random
 //
 // CORA: contSet/@interval/generateRandom.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -67,6 +76,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         generate_random_follows_cora(b);
@@ -75,3 +87,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval generate_random");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

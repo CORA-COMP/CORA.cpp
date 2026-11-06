@@ -2,7 +2,6 @@
 //
 // CORA: contSet/@capsule/contains_.m
 // PROPERTY: contSet/@capsule/contains_.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -149,6 +148,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule contains");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

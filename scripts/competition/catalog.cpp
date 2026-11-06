@@ -1,8 +1,20 @@
+// catalog - the parameters of one catalog instance, read from its JSON
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
+
 #include "catalog.h"
 
 #include "json.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+
+// ===========================================  MAIN  =========================================== //
 
 Params::Params(const std::string &params) {
     const auto text = [&](const char *key, const char *fallback) {
@@ -29,3 +41,5 @@ bool known(const char *const *list, std::size_t n, const std::string &name) {
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

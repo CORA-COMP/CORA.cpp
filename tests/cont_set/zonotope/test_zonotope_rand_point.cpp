@@ -1,7 +1,13 @@
 // test_zonotope_rand_point - zonotope rand_point: standard points in the set, extreme points at its
+//
 // corners
 //
 // CORA: contSet/@zonotope/randPoint_.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg, Severin Prenitzer
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -15,6 +21,10 @@ using test::check;
 using test::close;
 using test::random_direction;
 using test::support;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -94,6 +104,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         rand_point_samples_the_set(b);
@@ -102,3 +115,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope rand_point");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

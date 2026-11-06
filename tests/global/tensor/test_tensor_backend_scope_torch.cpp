@@ -1,4 +1,9 @@
 // test_tensor_backend_scope_torch - backend specs for libtorch, and backends that do not mix
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -8,6 +13,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::throws;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -28,8 +37,13 @@ void backend_specs() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     backend_specs();
     set_default_backend("eigen");
     return test::finish("tensor backend scope (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

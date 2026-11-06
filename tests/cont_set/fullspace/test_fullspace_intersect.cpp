@@ -1,6 +1,11 @@
 // test_fullspace_intersect - fullspace intersect: the intersection with any set is that set
 //
 // CORA: contSet/@fullspace/and_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/registry.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,8 +47,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(intersect_returns_the_operand);
     checks_and_their_switch();
     return test::finish("fullspace intersect");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

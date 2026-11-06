@@ -14,6 +14,11 @@
 // CORA: contSet/@zonotope/private/priv_lengthFilter.m
 // CORA: contSet/@zonotope/private/priv_generatorVolumeFilter.m
 // CORA: contSet/@zonotope/private/priv_volumeFilter.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

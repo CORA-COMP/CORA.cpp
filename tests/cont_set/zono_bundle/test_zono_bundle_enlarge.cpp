@@ -1,7 +1,6 @@
 // test_zono_bundle_enlarge - ZonoBundle::enlarge: every member scaled about its own center
 //
 // CORA: contSet/@zonoBundle/enlarge.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

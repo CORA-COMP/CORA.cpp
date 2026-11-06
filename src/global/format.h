@@ -2,6 +2,11 @@
 //
 // Syntax:   std::string s = format_matrix(t, "    ");
 // See also: src/cont_set/zonotope/display.cpp, src/cont_set/interval/display.cpp
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       29-September-2026
+// Last update:   02-November-2026
+// Reviewed:      ---
 
 #pragma once
 

@@ -7,14 +7,22 @@
 // is verified only propagate the time-point set (verify).
 //
 // Syntax:   R = priv_reach_adaptive(taylor, params, spec_times, error, verify, savedata);
-// Inputs:   taylor - Taylor cache of A;  params - canonical model parameters;
-//           spec_times - unverified times per specification (verify);  error - error bound
-//           verify - called from verify;  savedata - step sizes and sets of earlier runs
+// Inputs:   taylor - Taylor cache of A
+//           params - canonical model parameters;
+//           spec_times - unverified times per specification (verify)
+//           error - error bound
+//           verify - called from verify
+//           savedata - step sizes and sets of earlier runs
 // Outputs:  R - time-interval and time-point output sets with errors, and the time points
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
 //        outer-approximations of reachable sets", TAC, 2023.
 // See also: priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
 #include "cont_dynamics/linear_sys/private/priv_lin_error_bound.h"

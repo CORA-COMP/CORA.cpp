@@ -1,5 +1,11 @@
 // test_tensor_custom_backward_torch - Tensor expm: the hand-written backward pass against
+//
 // autograd's own
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -8,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,7 +44,12 @@ void custom_backward_matches_autograd() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     custom_backward_matches_autograd();
     return test::finish("tensor custom_backward (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

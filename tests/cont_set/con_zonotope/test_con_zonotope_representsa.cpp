@@ -1,8 +1,7 @@
 // test_con_zonotope_representsa - ConZonotope::representsa: whether it is a set of another type
 //
 // CORA: contSet/@conZonotope/representsa_.m
-//
-// CORA authors:  Mark Wetzlinger, Niklas Kochdumper
+// CORA authors: Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

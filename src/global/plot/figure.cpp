@@ -4,6 +4,11 @@
 // Inputs:   the layers, in the order they are drawn: regions first, then sets, lines, points
 // Outputs:  the layers, the limits and the view of the axes
 // See also: cora/global/plot/plot.h, src/global/plot/svg.cpp, src/global/plot/tikz.cpp
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/figure.h"
 #include "cora/global/error.h"

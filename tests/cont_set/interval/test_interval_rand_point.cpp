@@ -1,6 +1,11 @@
 // test_interval_rand_point - interval rand_point: points uniform in the box
 //
 // CORA: contSet/@interval/randPoint_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -11,6 +16,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -53,8 +62,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { rand_point_samples_the_box(b); });
     checks_and_their_switch();
     return test::finish("interval rand_point");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,7 +1,13 @@
 // test_linear_sys_simulate_random - linear_sys simulate_random: seeded trajectories from any
+//
 // initial set
 //
 // CORA: contDynamics/@contDynamics/simulateRandom.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"
@@ -11,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using namespace test::lin;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -56,8 +66,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { simulate_random_is_seeded(b); });
     checks_and_their_switch();
     return test::finish("linear_sys simulate_random");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

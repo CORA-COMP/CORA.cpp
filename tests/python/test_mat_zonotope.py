@@ -1,5 +1,13 @@
 """test_mat_zonotope - cora.MatZonotope: the constructor, the box and the stacking, products and
-sums, the powers and the matrix exponential."""
+
+sums, the powers and the matrix exponential.
+
+CORA authors: Matthias Althoff, Tobias Ladner, Victor Gassmann, Niklas Kochdumper
+Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: matrixSet/@matZonotope/matZonotope.m
 # CORA: matrixSet/@matZonotope/center.m
 # CORA: matrixSet/@matZonotope/contains.m
@@ -41,6 +49,10 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 # C = [[1, 2], [3, 4]] with the generators [[1, 0], [0, 1]] and [[0, 1], [1, 0]]
 EXAMPLE = cora.MatZonotope(np.array([[1.0, 2.0], [3.0, 4.0]]),
                            np.array([[[1.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [1.0, 0.0]]]))
@@ -62,6 +74,8 @@ def exponential(M):
         total = total + term
     return total
 
+
+# ============================================  MAIN  ============================================ #
 
 class Construction(unittest.TestCase):
     def test_forms(self):
@@ -320,3 +334,5 @@ class Gradients(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

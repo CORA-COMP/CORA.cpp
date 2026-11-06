@@ -1,7 +1,6 @@
 // test_zono_bundle_class - ZonoBundle: the constructor, its checks and the interface of a set
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

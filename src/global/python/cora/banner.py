@@ -7,14 +7,25 @@ the C++ examples (cora/global/banner.h) do not either.
 
     ==== CORA START ====   CORA.cpp | <example> | default backend: <name>
     ==== CORA END ====     CORA.cpp | <example> | runtime: <seconds>
+
+Authors:       Claude Sonnet 5.5
+Written:       01-October-2026
+Last update:   ---
+Reviewed:      ---
 """
 import atexit
 import os
 import sys
 import time
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 WIDTH = 70
 
+
+# ============================================  MAIN  ============================================ #
 
 def block(title):
     """A line of `=` of the block's width with the title in its middle."""
@@ -50,3 +61,5 @@ def install(backend_name):
             print("=" * WIDTH, flush=True)
 
     atexit.register(footer)
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

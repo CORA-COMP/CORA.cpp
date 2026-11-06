@@ -8,11 +8,20 @@ map onto the keyword API of the package and compute nothing themselves.
 
     m = py.importlib.import_module('cora.matlab')
     Zpy = m.zonotope(m.tensor(c), m.tensor(G))
+
+Authors:       Claude Sonnet 5.5
+Written:       01-October-2026
+Last update:   ---
+Reviewed:      ---
 """
 import numpy as np
 
 from . import Interval, LinearSys, Tensor, Zonotope
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 def tensor(data):
     """tensor - a Tensor of the current backend from nested lists or a numpy array."""
@@ -81,3 +90,5 @@ def zonotopes(sets):
     generators = np.concatenate([np.asarray(Z.generators) for Z in sets], axis=1)
     counts = np.array([np.asarray(Z.generators).shape[1] for Z in sets], dtype=float)
     return centers, generators, counts
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

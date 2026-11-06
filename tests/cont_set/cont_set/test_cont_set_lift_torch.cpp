@@ -1,4 +1,5 @@
 // test_cont_set_lift_torch - the generic lift, norm and enclose of a zonotope: gradients through
+//
 // torch
 //
 // lift permutes rows and enclose combines centers and generators linearly: differentiable. norm
@@ -10,6 +11,11 @@
 // CORA: contSet/@contSet/norm.m
 // CORA: contSet/@contSet/norm_.m
 // CORA: contSet/@contSet/enclose.m
+// CORA authors: Tobias Ladner, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/zonotope_gradients.h"
 
@@ -17,6 +23,11 @@
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -43,3 +54,5 @@ int main() {
         test::random_zonotope(3, 4));
     return test::finish("cont_set lift, norm and enclose (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

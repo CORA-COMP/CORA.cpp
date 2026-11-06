@@ -1,10 +1,16 @@
 // test_lean_interval_support_function_bound - Interval::support_function against the CORALean
+//
 // oracle, as a bound
 //
 // The oracle's value is `Interval.boundDot`, an upper bound on the support function that sums in
 // its own order, so CORA.cpp's value (the same sum in another order) differs by a few ulp.
 // CORA.cpp's value does not exceed the oracle's upper bound (sound mode) and agrees with it to a
 // relative 1e-12 (both modes). No bit-exact test exists, so there is no ORACLE tag.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -14,6 +20,11 @@
 #include <cmath>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -31,3 +42,5 @@ int main() {
     });
     return test::finish("lean interval support_function");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -2,7 +2,8 @@
 //
 // Syntax:   Interval R = I.rdivide(d);   Interval R = Interval::rdivide(n, D);
 //           Interval R = I.rdivide(D);
-// Inputs:   d - numbers that broadcast to the bounds;  n - numbers, one or of the shape of the
+// Inputs:   d - numbers that broadcast to the bounds
+//           n - numbers, one or of the shape of the
 //           bounds of D;  D - the denominator, a box
 // Outputs:  R - the hull of the quotients, in the shape of the broadcast operands. I ./ d is
 //           [min(inf/d, sup/d), max(...)] and (-Inf, Inf) where d = 0; n ./ D is the hull of
@@ -12,6 +13,11 @@
 // See also: divide, times
 //
 // CORA: contSet/@interval/rdivide.m
+// CORA authors: Dmitry Grebenyuk
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_broadcastable.h"
 #include "cont_set/interval/private/priv_check_nan.h"

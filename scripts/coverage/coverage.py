@@ -15,6 +15,11 @@ Checks:   --check: the files above are current; every tag names an inventory row
           has a tag or a `CORA.cpp only:` reason; no row falls below its committed status (`--accept-drop
           <row>` records a drop); no row becomes oracle debt (`--accept-debt` accepts it).
 Exit code: 0 if all holds (or the files are written), else 1 with what is wrong.
+
+Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
+Written:       02-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
 """
 import argparse
 import importlib.util
@@ -22,6 +27,10 @@ import json
 import re
 import sys
 from pathlib import Path
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -491,6 +500,8 @@ def write(root, expected):
         target.write_text(text, encoding="utf-8")
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--check", action="store_true", help="verify, write nothing")
@@ -520,3 +531,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

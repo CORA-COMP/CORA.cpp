@@ -1,4 +1,5 @@
 // test_lean_zonotope_mink_diff_enclosure - Zonotope::mink_diff against the CORALean oracle, as an
+//
 // inner approximation
 //
 // For generators that are aligned (the subtrahend's are those of the minuend scaled by one factor)
@@ -6,13 +7,24 @@
 // Prop. 5) gives the generators g1 - g2 shrunk by rho < 1 and certified, so a subset of the
 // difference, or nothing where its check fails. The check is that the oracle's set lies in
 // CORA.cpp's. The two do not compute the same set (rho), so there is no ORACLE tag.
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -36,3 +48,5 @@ int main() {
     });
     return test::finish("lean zonotope mink_diff enclosure");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

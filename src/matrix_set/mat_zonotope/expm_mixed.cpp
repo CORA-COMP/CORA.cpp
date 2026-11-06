@@ -1,7 +1,8 @@
 // expm_mixed - the matrix exponential of a matrix zonotope in two parts, as CORA's expmMixed
 //
 // Syntax:   auto R = A.expm_mixed(r, intermediate_order, max_order);
-// Inputs:   r - the step, positive;  intermediate_order - where the first part ends, at least 2;
+// Inputs:   r - the step, positive
+//           intermediate_order - where the first part ends, at least 2;
 //           max_order - the order of the series, nonnegative;  A is square
 // Outputs:  R - enclosure: I + M + M^2 / 2 with the dependent terms of A / r at the step r, plus
 //           the terms to the intermediate order, as a matrix zonotope; enclosure_rest: the series
@@ -11,6 +12,11 @@
 // See also: expm, dependent_terms, IntervalMatrix::expm
 //
 // CORA: matrixSet/@matZonotope/expmMixed.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

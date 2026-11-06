@@ -6,7 +6,8 @@
 // Syntax:   Support s = priv_support(H, direction, true);   bool empty = priv_is_empty(H);
 //           bool bounded = priv_is_bounded(H);   auto c = priv_chebyshev_center(H);
 //           bool in = priv_in_hull(points, x);   auto kept = priv_extreme_points(points);
-// Inputs:   H - a single polytope in halfspace form;  points - rows of n numbers
+// Inputs:   H - a single polytope in halfspace form
+//           points - rows of n numbers
 // Outputs:  the optimum of a linear function, whether the set has a point, whether it is bounded,
 //           the center of its largest ball, whether a point is a convex combination, the indices
 //           of the extreme points
@@ -15,7 +16,6 @@
 // CORA: contSet/@polytope/private/priv_supportFunc.m
 // CORA: contSet/@polytope/private/priv_representsa_emptySet.m
 // CORA: contSet/@polytope/private/priv_feasiblePoint.m
-//
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

@@ -1,4 +1,11 @@
-"""test_interval_geometry - rad, radius, partition, project_high_dim, reduce and representsa in Python."""
+"""test_interval_geometry - rad, radius, partition, project_high_dim, reduce and representsa in Python.
+
+CORA authors: Matthias Althoff, Tobias Ladner, Mark Wetzlinger
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/partition.m
 # CORA: contSet/@interval/projectHighDim_.m
 # CORA: contSet/@interval/rad.m
@@ -14,12 +21,18 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 INF = float("inf")
 
 
 def box(lo, hi):
     return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Geometry(unittest.TestCase):
     def setUp(self):
@@ -68,3 +81,5 @@ class Geometry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

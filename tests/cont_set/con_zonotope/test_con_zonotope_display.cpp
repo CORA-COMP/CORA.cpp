@@ -1,6 +1,11 @@
 // test_con_zonotope_display - ConZonotope::display: the text that describes the set
 //
 // CORA: contSet/@conZonotope/display.m
+// CORA authors: Dmitry Grebenyuk, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -9,6 +14,11 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const ConZonotope cz(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}), Tensor({{1.0, 1.0}}),
@@ -29,3 +39,5 @@ int main() {
     check(cz.display() == text, "display: the same with the checks off");
     return test::finish("con_zonotope display");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,4 +1,5 @@
 // test_lean_interval_functions - exp, log, cos, cosh, acos, asin, atan, acosh, asinh, atanh, atan2,
+//
 // sqrt, tan and tanh against the CORALean oracle, as agreement within a bound
 //
 // The oracle's floats are a tuned sound enclosure (bisection with k steps, series with p terms),
@@ -16,6 +17,11 @@
 // (-1.4, 1.4)): their bounds differ from the oracle's at nearest by kSqrtAgree and kTanAgree,
 // relative (measured: 2e-16 for sqrt, 2e-14 for tan at p = 20); tanh by at most kLooseAgree
 // (measured 3e-7: the oracle's series is looser than libm).
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -27,6 +33,10 @@
 #include <iostream>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -81,6 +91,9 @@ void aux_function(const std::string &name, double agree, double low, double high
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!test::oracle::available()) return 0;
     aux_function(
@@ -129,3 +142,5 @@ int main() {
         [](const lean::Interval &I) { return I.tanh(kTerms); });
     return test::finish("lean interval functions");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

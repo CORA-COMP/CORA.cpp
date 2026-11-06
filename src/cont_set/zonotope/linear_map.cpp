@@ -1,11 +1,17 @@
 // linear_map - the linear map M * Z, as CORA's zonotope.mtimes
 //
 // Syntax:   Zres = Z.linear_map(M);   Zres = Z.linear_map(I);
-// Inputs:   M - matrix (..., n, n);  I - interval matrix: an Interval with (..., n, n) bounds
+// Inputs:   M - matrix (..., n, n)
+//           I - interval matrix: an Interval with (..., n, n) bounds
 // Outputs:  Zres - M * Z exactly; for an interval matrix, a zonotope enclosing [I] * Z
 // See also: plus, linear_combination, Interval::linear_map
 //
 // CORA: contSet/@zonotope/mtimes.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"

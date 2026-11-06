@@ -14,6 +14,10 @@
 // ORACLE: contSet/@conZonotope/isBounded.m
 // ORACLE: contSet/@zonotope/conZonotope.m
 // ORACLE: contSet/@interval/conZonotope.m
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/global/oracle/con_zonotope.h"
@@ -22,7 +26,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -56,6 +66,9 @@ void aux_check_cub_map(const ConZonotope &mine, const lean::ConZonotope &theirs)
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -143,3 +156,5 @@ int main() {
     });
     return test::finish("lean con zonotope");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

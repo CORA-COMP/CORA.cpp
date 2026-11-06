@@ -11,6 +11,11 @@
 // model file is not part of this repository).
 //
 // CORA: contDynamics/@linearSys/verify.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"
@@ -19,6 +24,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -90,6 +99,9 @@ void checks_and_their_switch() {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const Zonotope R0 = zono({1, 0}, {0.1, 0, 0, 0.1}, 2);
@@ -210,3 +222,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("linear_sys verify");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

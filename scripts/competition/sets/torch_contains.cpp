@@ -1,4 +1,4 @@
-// Exact point containment in a zonotope, on tensors.
+// torch_contains - exact point containment in a zonotope, on tensors
 //
 // The libtorch counterpart of contains.cpp, and the same two paths — the facets while
 // there are few of them, otherwise certified alternating projections, with the LP for
@@ -8,6 +8,11 @@
 //
 // The LP runs on the host. It settles a handful of points at most, and only the points
 // the certificates leave open ever reach it.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "torch_sets.h"
 
@@ -22,7 +27,12 @@
 #include <tuple>
 #include <vector>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp::tb {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// Most facet normals `C(m, n-1)` for which containment goes through the facets; above
@@ -398,6 +408,9 @@ torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 torch::Tensor Zonotope::contains(const torch::Tensor &p) const {
     const int64_t n = g.size(-2), m = g.size(-1);
     const std::vector<int64_t> batch(g.sizes().begin(), g.sizes().end() - 2);
@@ -422,3 +435,5 @@ torch::Tensor Zonotope::contains(const torch::Tensor &p) const {
 }
 
 } // namespace cora::comp::tb
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

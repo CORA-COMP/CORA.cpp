@@ -2,7 +2,8 @@
 //
 // Syntax:   ExpmResult R = A.expm_independent(max_order);
 //           R = A.expm_independent(max_order, initial_order, initial_power);
-// Inputs:   max_order - the order of the series;  initial_order, initial_power - continue from
+// Inputs:   max_order - the order of the series
+//           initial_order, initial_power - continue from
 //           [A]^initial_order, as given;  A is square
 // Outputs:  R - enclosure: the sum of [A]^i / i! from the initial order (from order 0 with the
 //           identity) to max_order, every power the interval matrix product, plus the remainder
@@ -10,6 +11,11 @@
 // See also: expm, exponential_remainder
 //
 // CORA: matrixSet/@intervalMatrix/expmInd.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

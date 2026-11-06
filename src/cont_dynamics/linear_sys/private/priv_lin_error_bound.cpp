@@ -6,9 +6,15 @@
 // prediction of the next time step size by approximation functions or bisection.
 //
 // Syntax:   LinErrorBound errs(emax, t_final);   errs.next_bounds(time_step, t, k, kIter);
-// Inputs:   emax - error margin;  t_final - time horizon
+// Inputs:   emax - error margin
+//           t_final - time horizon
 // Outputs:  the bounds and checks of priv_linErrorBound.h
 // See also: priv_reach_adaptive
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_lin_error_bound.h"
 #include "cora/global/error.h"

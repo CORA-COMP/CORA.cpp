@@ -1,4 +1,12 @@
-"""test_interval_ops - the comparisons, differences, quotients, norms and embeddings of an interval."""
+"""test_interval_ops - the comparisons, differences, quotients, norms and embeddings of an interval.
+
+CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Victor Gassmann,
+              Tobias Ladner, Dmitry Grebenyuk
+Authors:       Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/isFullDim.m
 # CORA: contSet/@interval/isIntersecting_.m
 # CORA: contSet/@interval/isequal.m
@@ -24,12 +32,18 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 INF = float("inf")
 
 
 def box(lo, hi):
     return cora.Interval(np.array(lo), np.array(hi))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Predicates(unittest.TestCase):
     def setUp(self):
@@ -263,3 +277,5 @@ class Gradients(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

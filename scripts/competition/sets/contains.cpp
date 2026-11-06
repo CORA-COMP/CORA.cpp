@@ -1,10 +1,15 @@
-// Exact point containment in a zonotope.
+// contains - exact point containment in a zonotope
 //
 // An LP in CORA; here it is exact without one on all but a handful of points. Two paths,
 // the ones CORA.py and CORA.julia take: through the facets while there are few of them,
 // otherwise by certified alternating projections, with the LP for what neither settles.
 //
 // Each set of a batch is handled on its own, so the batch is one parallel loop.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/threads.h"
 #include "lp.h"
@@ -15,7 +20,12 @@
 #include <limits>
 #include <vector>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// Most facet normals `C(m, n-1)` for which containment goes through the facets; above it,
@@ -197,6 +207,9 @@ void by_projection(const Eigen::Ref<const Eigen::MatrixXd> &g, const Eigen::Matr
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index points) {
     const Index n = s.dim(), m = s.m, batch = s.batch();
     Mask out(static_cast<std::size_t>(points * batch));
@@ -225,3 +238,5 @@ Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index poin
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

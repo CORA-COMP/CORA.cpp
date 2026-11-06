@@ -1,7 +1,13 @@
 // test_linear_sys_reach_enclosure - linear_sys reach encloses: the true trajectories, both time
+//
 // points of a step, and a known 1-D flow tightly
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"
@@ -14,6 +20,10 @@ using namespace cora;
 using test::check;
 using namespace test::lin;
 using matlab_reference::System;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -114,6 +124,9 @@ void is_tight_in_one_dimension(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         encloses_the_trajectories(b);
@@ -122,3 +135,5 @@ int main() {
     });
     return test::finish("linear_sys reach (enclosure)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

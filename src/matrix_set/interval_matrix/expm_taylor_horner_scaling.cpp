@@ -17,6 +17,11 @@
 // CORA: matrixSet/@intervalMatrix/private/priv_hornerTaylorSeries.m
 // CORA: matrixSet/@intervalMatrix/private/priv_scalingSquaringHornerTaylorSeries.m
 // CORA: matrixSet/@intervalMatrix/private/priv_intervalMatrixRemainder.m
+// CORA authors: Ivan Brkan
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

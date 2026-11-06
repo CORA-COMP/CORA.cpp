@@ -5,6 +5,10 @@
 // it out.
 //
 // ORACLE: contSet/@interval/dirac.m
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -13,6 +17,11 @@
 #include <cmath>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -30,3 +39,5 @@ int main() {
     });
     return test::finish("lean interval dirac");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

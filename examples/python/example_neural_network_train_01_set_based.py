@@ -15,6 +15,11 @@ set-based one does not; the boxes it keeps clear are certified by the zonotope p
 Syntax:   PYTHONPATH=build python examples/python/example_neural_network_train_01_set_based.py [--save FILE]
 Outputs:  accuracy and certified share of the training points for both models, and the figure
 See also: example_neuralNetwork_verify_01, example_linear_learn_01_dynamics
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
@@ -23,6 +28,11 @@ from matplotlib.patches import Rectangle
 from torch import nn
 
 import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -34,9 +44,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 eps_train = 0.05       # half-width of the input boxes during set-based training
 # tau and epochs are tuned (the paper's Fig. 7 uses tau = 0.1 and 200 epochs): with these, seeds

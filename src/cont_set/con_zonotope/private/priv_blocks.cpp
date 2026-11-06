@@ -7,6 +7,10 @@
 // See also: con_zonotope.h
 //
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

@@ -1,12 +1,18 @@
 // rand_point - random points of a zonotope, as CORA's zonotope.randPoint
 //
 // Syntax:   P = Z.rand_point(N, rng);   P = Z.rand_point(N, rng, "extreme");
-// Inputs:   N - number of points; rng - random numbers (a seed makes them repeatable)
+// Inputs:   N - number of points
+//           rng - random numbers (a seed makes them repeatable)
 //           type - "standard": c + G b, b ~ U[-1, 1]^m;  "extreme": b in {-1, 1}^m
 // Outputs:  P - points as columns (..., n, N)
 // See also: Interval::rand_point, LinearSys::simulate_random
 //
 // CORA: contSet/@zonotope/randPoint_.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg, Severin Prenitzer
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"

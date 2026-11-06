@@ -1,6 +1,11 @@
 // test_cont_set_uplus - ContSet::uplus: the set itself, with every number as it was
 //
 // CORA: contSet/@contSet/uplus.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -16,6 +21,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -50,9 +59,14 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(uplus_is_the_identity);
     uplus_of_the_extremes();
     errors_and_their_switch();
     return test::finish("cont_set uplus");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

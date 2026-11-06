@@ -2,7 +2,8 @@
 //
 // Syntax:   Interval R = I.power(e);   Interval R = I.power(E);   Interval R = I.power(E2);
 //           Interval R = Interval::power(b, E2);
-// Inputs:   e - a number;  E - numbers of the shape of the bounds (or one box with a matrix of
+// Inputs:   e - a number
+//           E - numbers of the shape of the bounds (or one box with a matrix of
 //           exponents);  E2 - a box of exponents;  b - numbers, the base
 // Outputs:  R - the image of x^e. For an integer e >= 0 the hull of inf^e and sup^e, with lower
 //           bound 0 for an even e > 0 over a box with inf < 0 < sup; the powers are products of e
@@ -13,6 +14,11 @@
 // See also: rdivide, matrix_power
 //
 // CORA: contSet/@interval/power.m
+// CORA authors: Dmitry Grebenyuk
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_broadcastable.h"
 #include "cont_set/interval/private/priv_check_nan.h"

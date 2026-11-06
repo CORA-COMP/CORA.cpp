@@ -21,6 +21,12 @@
 // CORA: contSet/@zonotope/zonotope.m
 //
 // Not the competition's zonotope (competition/sets): that one is tuned for speed on one library.
+//
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

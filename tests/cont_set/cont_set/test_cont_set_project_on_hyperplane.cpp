@@ -1,8 +1,14 @@
 // test_cont_set_project_on_hyperplane - ContSet::project_on_hyperplane: the orthogonal projection
+//
 // onto {x | c'x = d}
 //
 // CORA: contSet/@contSet/projectOnHyperplane.m
 // PROPERTY: contSet/@contSet/projectOnHyperplane.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -15,6 +21,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -93,9 +103,14 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_projection_of_a_square);
     test::for_each_backend(samples_land_on_the_hyperplane);
     errors_and_their_switch();
     return test::finish("cont_set project_on_hyperplane");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

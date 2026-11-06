@@ -1,13 +1,19 @@
 // contains - whether a set contains another one, as CORA's contSet.contains
 //
 // Syntax:   res = contains(S1, S2);   res = contains(S1, S2, tol);
-// Inputs:   S1, S2 - sets of one dimension;  tol - how far outside S2 may lie; default: the
+// Inputs:   S1, S2 - sets of one dimension
+//           tol - how far outside S2 may lie; default: the
 //           repository tolerance (docs/architecture.md)
 //           (docs/architecture.md)
 // Outputs:  res - true if S2 is a subset of S1 + tol * B_inf (B_inf the unit box)
 // See also: registry, is_intersecting, Interval::contains
 //
 // CORA: contSet/@contSet/contains.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 

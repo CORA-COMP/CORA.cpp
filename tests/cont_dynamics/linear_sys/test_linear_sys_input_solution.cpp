@@ -1,14 +1,24 @@
 // test_linear_sys_input_solution - what an input set adds over one step, a public building block of
+//
 // reach
 //
 // CORA: contDynamics/@linearSys/particularSolution_constant.m
 // CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,8 +54,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_input_adds_its_solution();
     checks_and_their_switch();
     return test::finish("linear_sys input_solution");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

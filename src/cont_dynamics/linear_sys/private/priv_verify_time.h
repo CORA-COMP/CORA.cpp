@@ -6,6 +6,11 @@
 // Inputs:   bounds - the pairs, in order
 // Outputs:  the queries below
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

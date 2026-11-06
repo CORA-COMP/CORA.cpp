@@ -6,6 +6,11 @@
 //             disjoint from the specification's set (unsafeSet); false says only that no proof was
 //             found
 // See also:   lean/request.h, cora/specification/specification.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

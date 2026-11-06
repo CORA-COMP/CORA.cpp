@@ -3,12 +3,22 @@
 // The oracle's empty box is the crossed one (inf = 1 > sup = 0 in every coordinate), as CORALean
 // has no n x 0 matrix; CORA.cpp's has no columns. The bounds cannot agree bit for bit, so the test
 // checks that both denote the empty set and have the dimension n.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -25,3 +35,5 @@ int main() {
     });
     return test::finish("lean interval empty");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

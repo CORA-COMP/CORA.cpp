@@ -19,7 +19,6 @@
 // ORACLE: contSet/@polytope/convHull_.m
 // ORACLE: contSet/@polytope/enclosePoints.m
 // ORACLE: contSet/@interval/polytope.m
-//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

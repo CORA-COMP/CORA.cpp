@@ -1,4 +1,11 @@
-"""test_lean - cora.lean: the exact crossing and the dtype rules; the oracle when CORACPP_ORACLE is set"""
+"""test_lean - cora.lean: the exact crossing and the dtype rules; the oracle when CORACPP_ORACLE is set
+
+CORA authors: Mark Wetzlinger
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       30-September-2026
+Last update:   02-November-2026
+Reviewed:      ---
+"""
 # CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet ORACLE)
 
 import unittest
@@ -7,6 +14,10 @@ import cora
 import numpy as np
 import oracle_testing
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 class Crossing(unittest.TestCase):
     def setUp(self):
@@ -60,3 +71,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

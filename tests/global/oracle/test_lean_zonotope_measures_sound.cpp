@@ -1,4 +1,5 @@
 // test_lean_zonotope_measures_sound - generator_length, minnorm, intersect_strip and
+//
 // is_intersecting of Zonotope against the CORALean oracle, within a stated bound
 //
 // CORA: contSet/@zonotope/generatorLength.m
@@ -11,6 +12,12 @@
 // rounded up (one ulp from the correctly rounded one); intersect_strip is the oracle's
 // (I - L C) Z + L strip with an interval matrix (more generators, other roundings) where CORA
 // computes c + L (y - C c); is_intersecting is certified one way only (disjointness).
+//
+// CORA authors: Matthias Althoff, Victor Gassmann, Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
@@ -19,7 +26,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -52,6 +65,9 @@ void aux_hull_agrees(const Zonotope &mine, const lean::Zonotope &theirs) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -103,3 +119,5 @@ int main() {
     });
     return test::finish("lean zonotope measures (bounds)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

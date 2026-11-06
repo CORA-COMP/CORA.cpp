@@ -8,7 +8,6 @@
 // See also: con_zonotope, Zonotope::intersect
 //
 // CORA: contSet/@zonoBundle/and_.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

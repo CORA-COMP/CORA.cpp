@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/cos.m
 // PROPERTY: contSet/@interval/cos.m
+// CORA authors: Matthias Althoff, Dmitry Grebenyuk, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -14,6 +19,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -77,6 +86,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         cos_on_known_boxes(b);
@@ -86,3 +98,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval cos");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

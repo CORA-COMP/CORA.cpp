@@ -9,6 +9,11 @@
 // See also: abs
 //
 // CORA: contSet/@interval/dirac.m
+// CORA authors: Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

@@ -6,6 +6,10 @@
 // See also: test_zonotope_tensor_multiplication.cpp
 //
 // CORA.cpp only: CORA builds options.list outside the function
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -14,6 +18,8 @@
 
 #include <algorithm>
 #include <array>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -46,3 +52,5 @@ inline cora::Tensor random_tensor(cora::Rng &rng, int n) {
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -6,6 +6,11 @@
 //           the products A(i, k) A(k, j), bounds (lo, hi);
 //           priv_diagonal_pair_sums: entry (i, j) is A(i, i) + A(j, j), bounds (s, S)
 // See also: exact_square, dependent_terms
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

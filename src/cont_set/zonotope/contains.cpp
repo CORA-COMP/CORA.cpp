@@ -15,6 +15,11 @@
 //
 // CORA: contSet/@zonotope/contains_.m
 // CORA: contSet/@zonotope/private/priv_zonotopeContainment_pointContainment.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

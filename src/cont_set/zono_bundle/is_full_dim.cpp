@@ -9,7 +9,6 @@
 // See also: con_zonotope, ConZonotope::is_full_dim
 //
 // CORA: contSet/@zonoBundle/isFullDim.m
-//
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

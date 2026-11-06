@@ -108,7 +108,6 @@ Interval aux_boxes(const Ellipsoid &E1, const Ellipsoid &E2) {
 
 // ===========================================  MAIN  =========================================== //
 
-
 // Entries -----------------------------------------------------------------------------------------
 
 Ellipsoid Ellipsoid::cart_prod(const Ellipsoid &S, const std::string &mode) const {

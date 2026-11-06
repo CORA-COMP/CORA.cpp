@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/dH2box.m
 // PROPERTY: contSet/@zonotope/dH2box.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -13,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -82,6 +91,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         each_method_on_one_generator(b);
@@ -91,3 +103,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope hausdorff_distance_to_box");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

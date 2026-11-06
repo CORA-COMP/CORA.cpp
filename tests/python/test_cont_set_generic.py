@@ -1,7 +1,15 @@
 """test_cont_set_generic - the operations every set has (ContSet) on a box, a zonotope and a set
+
 written in Python: center, dim, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
 minkowski_difference, isequal, eq, ne, decompose, project_high_dim, project_on_hyperplane,
-generate_random, lift, norm, enclose and the unchecked and_, contains_ and isIntersecting_ forms."""
+generate_random, lift, norm, enclose and the unchecked and_, contains_ and isIntersecting_ forms.
+
+CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@contSet/center.m
 # CORA: contSet/@contSet/dim.m
 # CORA: contSet/@contSet/isBounded.m
@@ -43,6 +51,9 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def box(lo, hi):
     return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
@@ -61,6 +72,8 @@ class Custom(cora.ContSet):
     def _center(self):
         return np.zeros(2)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Generic(unittest.TestCase):
     def setUp(self):
@@ -292,3 +305,5 @@ class Generic(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

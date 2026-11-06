@@ -6,6 +6,11 @@
 // See also: infimum, center
 //
 // CORA: matrixSet/@intervalMatrix/supremum.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 

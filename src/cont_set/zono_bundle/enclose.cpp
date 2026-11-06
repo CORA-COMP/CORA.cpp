@@ -10,7 +10,6 @@
 // See also: Zonotope::enclose, intersect
 //
 // CORA: contSet/@zonoBundle/enclose.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

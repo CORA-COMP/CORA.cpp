@@ -1,7 +1,13 @@
 // test_linear_sys_backends_torch - the same code on different backends and devices gives the same
+//
 // answer: the algorithms are written once, so this is what tells the backends apart.
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -12,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -40,6 +50,9 @@ double max_diff(const std::vector<double> &a, const std::vector<double> &b) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     for (const std::string &algorithm : test::lin::kAlgorithms) {
@@ -74,3 +87,5 @@ int main() {
 
     return test::finish("linear_sys backends");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

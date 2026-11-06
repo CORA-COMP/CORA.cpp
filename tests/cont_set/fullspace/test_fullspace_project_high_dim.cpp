@@ -1,12 +1,21 @@
 // test_fullspace_project_high_dim - fullspace project_high_dim: only into the same dimension
 //
 // CORA: contSet/@fullspace/projectHighDim_.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,8 +38,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(only_the_same_dimension_is_defined);
     checks_and_their_switch();
     return test::finish("fullspace project_high_dim");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

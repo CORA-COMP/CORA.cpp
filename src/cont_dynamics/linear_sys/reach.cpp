@@ -13,6 +13,11 @@
 // CORA: contDynamics/@linearSys/reach.m
 // CORA: contDynamics/@linearSys/private/priv_reach_standard.m
 // CORA: contDynamics/@linearSys/private/priv_reach_wrappingfree.m
+// CORA authors: Mark Wetzlinger, Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 

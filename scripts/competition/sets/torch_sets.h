@@ -1,4 +1,4 @@
-// The set representations, as tensors.
+// torch_sets - the set representations, as tensors
 //
 // The libtorch counterpart of sets.h, and a different layout: every set carries leading
 // batch dimensions that may be empty, an `Interval` holding `lo`/`hi` of shape `(..., n)`
@@ -10,6 +10,11 @@
 // Everything is an ordinary tensor expression, so autograd differentiates the operations
 // with respect to a set whose `c`, `G`, `lo` or `hi` requires a gradient — on either
 // device, and without a second implementation.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -19,6 +24,8 @@
 
 #include <cstddef>
 #include <cstdint>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp::tb {
 
@@ -173,3 +180,5 @@ struct Zonotope {
 };
 
 } // namespace cora::comp::tb
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

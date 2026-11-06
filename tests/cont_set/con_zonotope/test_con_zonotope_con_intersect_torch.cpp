@@ -1,11 +1,21 @@
 // test_con_zonotope_con_intersect_torch - ConZonotope con_intersect: gradients through torch
 //
 // The constraint rows are products with the matrix R: differentiable in both sets and R.
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -23,3 +33,5 @@ int main() {
         x);
     return test::finish("con zonotope con_intersect (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

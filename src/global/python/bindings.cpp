@@ -19,6 +19,11 @@
 // Expr,
 //           ReachSet, Specification, VerifyResult, Rng, backend, checks, plus, register_binary
 // See also: convert.h, the C++ headers, which document every method
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "global/python/convert.h"
 
@@ -40,12 +45,15 @@
 
 #include <limits>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
 using namespace cora::python;
 
 // NOLINTBEGIN(backend,clones): the bindings convert between numpy or torch arrays and Tensor, and repeat .def rows
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -3798,6 +3806,9 @@ void bind_lean(py::module_ &top) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 PYBIND11_MODULE(_cora, m) {
     m.doc() = "CORA.cpp: set-based computing on Eigen (numpy), and on libtorch (torch) when built "

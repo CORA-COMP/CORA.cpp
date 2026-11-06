@@ -1,7 +1,13 @@
 // test_linear_sys_reach_steps - linear_sys reach: the time points are exact, the number of steps,
+//
 // and a system that does not move
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"
@@ -12,6 +18,10 @@ using test::check;
 using test::close;
 using namespace test::lin;
 using matlab_reference::System;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -92,6 +102,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         time_points_are_exact(b);
@@ -101,3 +114,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("linear_sys reach (steps)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

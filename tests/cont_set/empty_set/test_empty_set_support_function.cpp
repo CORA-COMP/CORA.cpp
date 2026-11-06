@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@emptySet/supportFunc_.m
 // PROPERTY: contSet/@emptySet/supportFunc_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -11,6 +16,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -54,9 +63,14 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_support_function_is_minus_infinity);
     test::for_each_backend(the_empty_set_lies_below_every_set);
     checks_and_their_switch();
     return test::finish("empty_set support_function");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

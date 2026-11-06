@@ -2,9 +2,15 @@
 //
 // Syntax:   plot(fig, S, dims, options);   plot(fig, R, dims, options);   plot(fig, spec, dims)
 //           plot_over_time(fig, R, dim, options);   plot_rand_point(fig, S, dims, N, rng)
-// Inputs:   dims - the one, two or three dimensions to show (0-based); options - see PlotOptions
+// Inputs:   dims - the one, two or three dimensions to show (0-based)
+//           options - see PlotOptions
 // Outputs:  -, the figure has new layers
 // See also: cora/global/plot/figure.h, contSet/zonotope/vertices, contSet/zonotope/project
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
 #include "cora/global/error.h"

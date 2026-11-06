@@ -12,6 +12,11 @@
 //           ReachProblem p = fill<ReachProblem>(kwargs);   auto alg =
 //           algorithm<alg::LinearReach>("standard", kwargs);
 // See also: bindings.cpp, cora/global/options.h
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

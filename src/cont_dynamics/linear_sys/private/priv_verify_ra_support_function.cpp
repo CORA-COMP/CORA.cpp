@@ -8,10 +8,16 @@
 // benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant zonotope U, no offsets.
 //
 // Syntax:   res = priv_verify_ra_support_function(sys, params, specs);
-// Inputs:   sys - linear system;  params - R0, U, t_final;  specs - safe and unsafe halfspaces
+// Inputs:   sys - linear system;  params - R0, U, t_final
+//           specs - safe and unsafe halfspaces
 // Outputs:  res - verified (false if undecided at a step below 1e-12), iterations, last step
 //           size and count, computation_time, and the falsifying initial state and time
 // See also: LinearSys::verify
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"

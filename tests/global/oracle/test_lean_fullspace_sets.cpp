@@ -1,4 +1,5 @@
 // test_lean_fullspace_sets - the set operations and constructors of Fullspace against the CORALean
+//
 // oracle
 //
 // ORACLE: contSet/@fullspace/Inf.m
@@ -17,6 +18,10 @@
 // ORACLE: contSet/@fullspace/radius.m
 // ORACLE: contSet/@fullspace/supportFunc_.m
 // ORACLE: contSet/@fullspace/volume_.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -25,6 +30,11 @@
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -114,3 +124,5 @@ int main() {
     });
     return test::finish("lean fullspace sets");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

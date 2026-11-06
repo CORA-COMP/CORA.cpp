@@ -1,6 +1,11 @@
 // priv_empty - the empty interval of the shape of a tensor
 //
 // See also: priv_empty.h
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_empty.h"
 

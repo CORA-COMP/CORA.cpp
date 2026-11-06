@@ -1,12 +1,22 @@
 // test_con_zonotope_is_bounded - ConZonotope::is_bounded: always true
 //
 // CORA: contSet/@conZonotope/isBounded.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -23,3 +33,5 @@ int main() {
     check(ConZonotope::empty(1).is_bounded(), "is_bounded: the same with the checks off");
     return test::finish("con_zonotope is_bounded");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

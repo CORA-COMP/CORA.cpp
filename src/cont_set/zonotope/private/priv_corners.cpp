@@ -7,6 +7,10 @@
 // See also: Capsule::contains, ConZonotope::contains, ConZonotope::minkowski_difference
 //
 // CORA.cpp only: containment tests need only the corners, which MATLAB takes from vertices
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

@@ -7,6 +7,11 @@
 // See also: center, rad
 //
 // CORA: contSet/@interval/intervalMatrix.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

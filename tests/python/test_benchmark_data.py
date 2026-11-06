@@ -1,4 +1,10 @@
-"""test_benchmark_data - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency."""
+"""test_benchmark_data - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import glob
 import json
 import os
@@ -8,6 +14,10 @@ import tempfile
 import unittest
 
 import numpy as np
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 sys.path.insert(0, os.path.join(ROOT, "examples", "python", "benchmarks"))
@@ -40,6 +50,8 @@ def write(folder, name, matrices, specs):
     with open(os.path.join(folder, name + ".json"), "w") as f:
         json.dump(meta, f)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Format(unittest.TestCase):
     def test_dense_and_coordinate_matrices_round_trip(self):
@@ -108,3 +120,5 @@ class Instances(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -2,11 +2,21 @@
 //
 // quad_map is polynomial in the center and the generators: differentiable (the generators that
 // are exactly zero are dropped on the values).
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -24,3 +34,5 @@ int main() {
                      test::random_zonotope(3, 3)[0], test::random_zonotope(3, 3)[1]});
     return test::finish("zonotope quad_map (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

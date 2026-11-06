@@ -1,6 +1,11 @@
 // test_interval_display - interval display: the text that describes an interval
 //
 // CORA: contSet/@interval/display.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -42,6 +51,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         a_box_lists_its_bounds_per_dimension(b);
@@ -50,3 +62,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval display");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -6,6 +6,11 @@
 // torch.cpp), within the agreement of ops.def.
 //
 // See also: derived.h, derived.cpp, ops.def
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "global/tensor/derived.h"

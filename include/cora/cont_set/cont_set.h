@@ -24,6 +24,11 @@
 // CORA: contSet/@contSet/norm.m
 // CORA: contSet/@contSet/norm_.m
 // CORA: contSet/@contSet/enclose.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

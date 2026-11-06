@@ -1,4 +1,5 @@
 // test_lean_interval_matrix_expm_independent_enclosure - IntervalMatrix::expm_independent against
+//
 // the CORALean oracle, as enclosure of the same exponentials
 //
 // The statement of CORALean (`exp_mem_expIntervalEnclosure`) is that exp(M) lies in the enclosure
@@ -8,11 +9,20 @@
 // matrices of the set lies in the box of the oracle and in CORA.cpp's, and the two boxes meet. Only
 // the sound mode runs, as the lean backend has no matrix exponential. No bit-exact test exists: no
 // ORACLE tag.
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -56,3 +66,5 @@ int main() {
     });
     return test::finish("lean interval_matrix expm_independent enclosure");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

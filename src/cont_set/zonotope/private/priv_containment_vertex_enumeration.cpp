@@ -6,11 +6,17 @@
 // exceed 1 + tol.
 //
 // Syntax:   bool res = priv_containment_vertex_enumeration(inner, outer, tol);
-// Inputs:   inner, outer - zonotopes;  tol - allowed excess of the outer norm over 1
+// Inputs:   inner, outer - zonotopes
+//           tol - allowed excess of the outer norm over 1
 // Outputs:  res - true if inner is in outer (up to tol)
 // See also: priv_zonotope_norm
 //
 // CORA: contSet/@zonotope/private/priv_zonotopeContainment_vertexEnumeration.m
+// CORA authors: Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

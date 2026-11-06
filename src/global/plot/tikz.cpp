@@ -5,6 +5,11 @@
 // Outputs:  a tikzpicture with one \addplot per layer (a groupplot for a grid), or a LaTeX document
 //           around it, and with external_data the tables of the coordinates
 // See also: cora/global/plot/tikz.h, cora/global/plot/figure.h, src/global/plot/svg.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "cora/global/plot/figure.h"

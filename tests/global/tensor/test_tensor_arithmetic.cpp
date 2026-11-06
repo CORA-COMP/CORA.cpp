@@ -1,4 +1,9 @@
 // test_tensor_arithmetic - Tensor operations: arithmetic, matmul, elementwise, joins
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "testing.h"
@@ -6,6 +11,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -36,7 +45,12 @@ void arithmetic(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { arithmetic(b); });
     return test::finish("tensor arithmetic");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

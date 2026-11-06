@@ -1,12 +1,19 @@
-// Just enough JSON for the catalog's `params`.
+// json - just enough JSON for the catalog's `params`
 //
 // Every instance is a flat object of strings and numbers, so a scanner for one key at a
 // time is all this needs — and it keeps the tool to Eigen and GLPK.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include <optional>
 #include <string>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -17,3 +24,5 @@ std::optional<std::string> json_string(const std::string &doc, const std::string
 std::optional<double> json_number(const std::string &doc, const std::string &key);
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

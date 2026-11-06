@@ -6,6 +6,11 @@
 // svd, eigh, cholesky) have no CORALean counterpart: they are Eigen's, matrix by matrix.
 //
 // See also: host_tensor.h, eigen.cpp, lean.cpp
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "global/backend/host_tensor.h"
 

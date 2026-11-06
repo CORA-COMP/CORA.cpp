@@ -1,9 +1,16 @@
-// The warm daemon; see server.cpp for the protocol.
+// server - the warm daemon; see server.cpp for the protocol
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include <iosfwd>
 #include <string>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -18,3 +25,5 @@ std::string run_logged(const std::string &params, const std::string &results_fil
                        std::ostream &log);
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

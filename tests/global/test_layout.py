@@ -5,6 +5,7 @@ Checks:   on small fake files: a file in the layout passes; each of the docstrin
           marker, comment and doc limits fails with a message that says what to do; a waiver
           with a reason excuses its lines and one without does not.
 Exit code: 0 if all pass.
+
 Authors:       Claude Sonnet 5.5
 Written:       06-November-2026
 Last update:   ---
@@ -14,13 +15,14 @@ import sys
 import unittest
 from pathlib import Path
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "ci"))
 import layout  # noqa: E402
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 AUTHORS = ("// Authors:       Claude Sonnet 5.5\n// Written:       05-November-2026\n"
            "// Last update:   ---\n// Reviewed:      ---\n")
@@ -38,6 +40,8 @@ PY_MODULE = ('"""plus - the sum\n\nAuthors:       Claude Sonnet 5.5\nWritten:   
 def check(text, name="test_plus.cpp"):
     return layout.check_file(name, text.split("\n"))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Accepts(unittest.TestCase):
     def test_a_file_in_the_layout_passes(self):

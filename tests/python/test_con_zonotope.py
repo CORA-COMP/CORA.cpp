@@ -1,7 +1,7 @@
 """test_con_zonotope - the ConZonotope class in Python: constructors, queries and set operations
 
-CORA authors:  Dmitry Grebenyuk, Niklas Kochdumper, Lukas Koller, Adrian Kulmburg, Mark Wetzlinger,
-               Tobias Ladner, Matthias Althoff, Ivan Brkan
+CORA authors: Dmitry Grebenyuk, Niklas Kochdumper, Lukas Koller, Adrian Kulmburg, Mark Wetzlinger,
+              Tobias Ladner, Matthias Althoff, Ivan Brkan
 Authors:       Claude Sonnet 5.5
 Written:       04-November-2026
 Last update:   ---
@@ -115,6 +115,9 @@ def sample(cZ, rng, count):
 
 
 # -===========================================  MAIN  ===========================================- #
+
+
+# ============================================  MAIN  ============================================ #
 
 class ConZonotope(unittest.TestCase):
     def setUp(self):

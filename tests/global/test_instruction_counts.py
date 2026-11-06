@@ -4,14 +4,25 @@ Syntax:   python tests/global/test_instruction_counts.py
 Checks:   the counts of callgrind's and perf's output are read; growth above the threshold is
           reported, a decrease or growth below it is not.
 Exit code: 0 if all checks pass, else 1.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   03-November-2026
+Reviewed:      ---
 """
 import os
 import sys
 import unittest
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ci"))
 import instruction_counts as ic  # noqa: E402
 
+
+# ============================================  MAIN  ============================================ #
 
 class InstructionCountsTest(unittest.TestCase):
     def test_callgrind_output(self):
@@ -45,3 +56,5 @@ class InstructionCountsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

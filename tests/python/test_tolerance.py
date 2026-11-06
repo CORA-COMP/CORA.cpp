@@ -1,14 +1,25 @@
-"""test_tolerance - cora.tolerance, set_default_tolerance, default_tol and tol=None in Python."""
+"""test_tolerance - cora.tolerance, set_default_tolerance, default_tol and tol=None in Python.
+
+Authors:       Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import threading
 import unittest
 
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def box(lo, hi, dtype="float64"):
     return cora.Interval(np.array(lo, dtype=dtype), np.array(hi, dtype=dtype))
 
+
+# ============================================  MAIN  ============================================ #
 
 class ToleranceTest(unittest.TestCase):
     def tearDown(self):
@@ -105,3 +116,5 @@ class ToleranceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

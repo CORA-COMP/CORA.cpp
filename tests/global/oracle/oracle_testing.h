@@ -19,6 +19,11 @@
 //             oracle; `lean::serves`), naming it once on stderr; serves(op) asks for another op,
 //             and nearest_is_strict() for a check that needs the machine's strict order at nearest
 // See also:   testing.h, cora/global/oracle/request.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 
@@ -44,6 +49,8 @@
 #include <random>
 #include <set>
 #include <sstream>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test::oracle {
 
@@ -595,3 +602,5 @@ void run(const std::string &op, F body, uint64_t seed = 7) {
 }
 
 } // namespace test::oracle
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

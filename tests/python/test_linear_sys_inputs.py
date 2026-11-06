@@ -1,5 +1,13 @@
 """test_linear_sys_inputs - LinearSys(A, B, C) in Python: reach with an input set U against MATLAB CORA
-(R2025b), output_set, correction_matrix_input, simulate with inputs, and the errors."""
+
+(R2025b), output_set, correction_matrix_input, simulate with inputs, and the errors.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contDynamics/@contDynamics/simulateRandom.m
 # CORA: contDynamics/@linearSys/outputSet.m
 # CORA: contDynamics/@linearSys/reach.m
@@ -10,6 +18,10 @@ import unittest
 
 import cora
 import numpy as np
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 # The system of the MATLAB call linearSys(A, B, [], C), reach with params.U, step 0.2, order 6.
 A = np.array([[-0.3, 1, 0], [-1, -0.2, 0.4], [0, -0.5, -0.1]])
@@ -91,6 +103,8 @@ def supports(sets, dirs):
     """The support function of every zonotope along every row of dirs: (sets, directions)."""
     return np.array([[d @ Z.center + np.abs(Z.generators.T @ d).sum() for d in dirs] for Z in sets])
 
+
+# ============================================  MAIN  ============================================ #
 
 class ReachWithInputs(unittest.TestCase):
     def setUp(self):
@@ -176,3 +190,5 @@ def expm(M):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/isFullDim.m
 // PROPERTY: contSet/@zonotope/isFullDim.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -11,6 +16,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -67,6 +76,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         full_dim_known(b);
@@ -75,3 +87,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope is_full_dim");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

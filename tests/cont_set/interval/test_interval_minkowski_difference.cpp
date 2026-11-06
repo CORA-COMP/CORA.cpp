@@ -1,6 +1,11 @@
 // test_interval_minkowski_difference - interval minkowski_difference: the box of x with x + S in I
 //
 // CORA: contSet/@interval/minkDiff.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -76,6 +85,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         minkowski_difference_of_boxes_and_points(b);
@@ -85,3 +97,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval minkowski_difference");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

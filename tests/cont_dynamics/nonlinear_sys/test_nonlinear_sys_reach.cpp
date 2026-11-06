@@ -1,9 +1,15 @@
 // test_nonlinear_sys_reach - nonlinearSys reach: exact on a linear system, and simulations of the
+//
 // van der Pol oscillator stay inside the enclosures
 //
 // CORA: contDynamics/@contDynamics/linReach.m
 // CORA: contDynamics/@contDynamics/reach.m
 // CORA: contDynamics/@nonlinearSys/nonlinearSys.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/global/rng.h"
@@ -13,6 +19,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -166,6 +176,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         a_linear_system_gives_the_linear_result(b);
@@ -177,3 +190,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("nonlinearSys reach");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

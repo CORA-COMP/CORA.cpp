@@ -20,8 +20,6 @@
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
 namespace test {
 
 /// A bounded polytope of n dimensions in halfspace form with m random rows and the box |x| <= 3.

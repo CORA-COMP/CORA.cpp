@@ -2,9 +2,15 @@
 //
 // Syntax:   configure_threads();   int nt = threads_for(iterations, work);   set_num_threads(4);
 //           EigenThreads narrow(work);
-// Inputs:   iterations - the loop length; work - about how many scalar operations its body costs
+// Inputs:   iterations - the loop length
+//           work - about how many scalar operations its body costs
 // Outputs:  nt - the threads to use: the whole pool, or 1
 // See also: threads.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/threads.h"
 #include "global/tensor/derived.h"

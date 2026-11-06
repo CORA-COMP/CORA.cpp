@@ -1,12 +1,20 @@
 // test_threads - the thread count: the cgroup quota parser, the default, and set_num_threads
 //
 // CORA.cpp only: the policy of the repository
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/threads.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,8 +42,13 @@ void setting() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     quota_parser();
     setting();
     return test::finish("threads");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

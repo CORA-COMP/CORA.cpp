@@ -1,4 +1,5 @@
 // test_cont_set_generic_torch - the generic operations of ContSet on a zonotope: gradients through
+//
 // torch
 //
 // linear_map, enlarge, minus, project_high_dim, project_on_hyperplane and decompose are linear or
@@ -12,6 +13,11 @@
 // CORA: contSet/@contSet/projectOnHyperplane.m
 // CORA: contSet/@contSet/decompose.m
 // CORA: contSet/@contSet/reduce.m
+// CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/zonotope_gradients.h"
 
@@ -20,12 +26,19 @@
 using namespace cora;
 using test::Inputs;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// The center and generators of the Zonotope that a Set holds.
 Inputs aux_parts(const Set &S) { return test::parts(S.as<Zonotope>()); }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -74,3 +87,5 @@ int main() {
         test::random_zonotope(2, 5));
     return test::finish("cont_set generic (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

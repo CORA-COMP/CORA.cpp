@@ -2,6 +2,7 @@
 //
 // With a point the product is built of concatenations: differentiable in both operands. With an
 // ellipsoid it is piecewise: the radii of the boxes are widened below 5e-3, which the inputs avoid.
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -13,6 +14,7 @@ using namespace cora;
 using test::Inputs;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 
 // ===========================================  MAIN  =========================================== //
 

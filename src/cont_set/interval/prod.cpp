@@ -9,6 +9,11 @@
 // See also: times, sum
 //
 // CORA: contSet/@interval/prod.m
+// CORA authors: Dmitry Grebenyuk
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_times.h"
 #include "cora/cont_set/interval/interval.h"

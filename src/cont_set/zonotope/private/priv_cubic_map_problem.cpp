@@ -1,12 +1,18 @@
 // priv_cubic_map_problem - what is wrong with the matrices and the indices of a cubic map
 //
 // Syntax:   std::string problem = priv_cubic_map_problem(T, ind, n);
-// Inputs:   T - the (n, n) matrices of the outputs, T[i][k];  ind - the columns k of each output
+// Inputs:   T - the (n, n) matrices of the outputs, T[i][k]
+//           ind - the columns k of each output
 //           (empty: all);  n - dimension of the sets
 // Outputs:  problem - empty if T and ind are consistent, else what is wrong
 // See also: Zonotope::cubic_map, ConZonotope::cubic_map
 //
 // CORA: contSet/@zonotope/cubMap.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "global/format.h"

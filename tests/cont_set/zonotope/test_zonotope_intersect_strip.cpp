@@ -1,8 +1,14 @@
 // test_zonotope_intersect_strip - zonotope intersect_strip: an enclosure of the intersection with
+//
 // strips
 //
 // CORA: contSet/@zonotope/intersectStrip.m
 // PROPERTY: contSet/@zonotope/intersectStrip.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -12,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -123,6 +133,9 @@ void strip_refuses() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         strip_known(b);
@@ -131,3 +144,5 @@ int main() {
     strip_refuses();
     return test::finish("zonotope intersect_strip");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

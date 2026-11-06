@@ -1,12 +1,18 @@
 // times - the entrywise product of a box with a box or with numbers, as CORA's interval.times
 //
 // Syntax:   Interval R = I.times(I2);   Interval R = I.times(F);
-// Inputs:   I2 - a box;  F - numbers (a 1 x 1 factor is a scalar);  the operands broadcast
+// Inputs:   I2 - a box
+//           F - numbers (a 1 x 1 factor is a scalar);  the operands broadcast
 // Outputs:  R - the hull of the four corner products (the numbers are a point box), a corner
 //           0 * Inf taken as 0; nothing rounds outward
 // See also: prod, rdivide, linear_map
 //
 // CORA: contSet/@interval/times.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_broadcastable.h"
 #include "cont_set/interval/private/priv_times.h"

@@ -1,12 +1,17 @@
 // within_tol - within_tol elementwise on tensors, as CORA's withinTol
 //
 // Syntax:   Tensor same = within_tol(a, b, tol);
-// Inputs:   a, b - tensors of one dtype (broadcast);  tol - nonnegative, default: tolerance.h
+// Inputs:   a, b - tensors of one dtype (broadcast)
+//           tol - nonnegative, default: tolerance.h
 // Outputs:  same - 1 where |a - b| <= tol, or |a - b| / min(|a|, |b|) <= tol, or a and b are the
 //           same infinity, else 0 (NaN never agrees)
 // See also: cora/global/within_tol.h
 //
 // CORA.cpp only: the tensor form of withinTol, which MATLAB gets by vectorization
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/within_tol.h"
 

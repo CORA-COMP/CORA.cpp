@@ -1,6 +1,11 @@
 // test_interval_divide - interval divide: a box divided by a number (CORA's mrdivide)
 //
 // CORA: contSet/@interval/mrdivide.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -11,6 +16,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -50,8 +59,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(divide_scales_and_a_negative_number_swaps);
     checks_and_their_switch();
     return test::finish("interval divide");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

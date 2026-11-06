@@ -6,6 +6,11 @@
 // See also: check
 //
 // CORA: specification/@specification/specification.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   30-September-2026
+// Reviewed:      ---
 
 #include "cora/specification/specification.h"
 

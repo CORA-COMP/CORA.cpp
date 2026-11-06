@@ -1,7 +1,8 @@
 // convex_hull - the convex hull of a polytope and a polytope, a box or a point, as CORA's convHull_
 //
 // Syntax:   Pres = P.convex_hull(P2);   Pres = P.convex_hull(I);   Pres = P.convex_hull(p);
-// Inputs:   P2, I - a polytope or a box of the dimension of P (bounded unless in 1D);  p - a point
+// Inputs:   P2, I - a polytope or a box of the dimension of P (bounded unless in 1D)
+//           p - a point
 //           (n, 1)
 // Outputs:  Pres - exact, a vertex polytope of the extreme vertices of both sets in their order
 //           (in 1D the least and the greatest). The vertices of a halfspace polytope are found by
@@ -11,7 +12,6 @@
 // See also: enclose, Polytope::compact
 //
 // CORA: contSet/@polytope/convHull_.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

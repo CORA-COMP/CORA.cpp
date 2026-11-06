@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/mpower.m
 // PROPERTY: contSet/@interval/mpower.m
+// CORA authors: Matthias Althoff, Dmitry Grebenyuk
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -83,6 +92,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         matrix_power_multiplies_the_intervals(b);
@@ -91,3 +103,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval matrix_power");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

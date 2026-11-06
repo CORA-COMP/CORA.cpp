@@ -1,5 +1,14 @@
 """test_interval_structure - split, sqrt, sum, supremum, tan, tanh, times, transpose, tril, triu,
-uminus, uplus, vertcat, volume and zonotope of an interval in Python."""
+
+uminus, uplus, vertcat, volume and zonotope of an interval in Python.
+
+CORA authors: Niklas Kochdumper, Matthias Althoff, Daniel Althoff, Dmitry Grebenyuk,
+              Mark Wetzlinger, Victor Gassmann
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@interval/split.m
 # CORA: contSet/@interval/sqrt.m
 # CORA: contSet/@interval/sum.m
@@ -26,6 +35,10 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 INF = float("inf")
 
 
@@ -36,6 +49,8 @@ def box(lo, hi):
 def matrix(lo, hi):
     return cora.Interval.matrix(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Structure(unittest.TestCase):
     def setUp(self):
@@ -140,3 +155,5 @@ class Structure(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

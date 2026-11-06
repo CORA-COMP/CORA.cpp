@@ -6,6 +6,11 @@
 // See also: ConZonotope display, src/global/format.h
 //
 // CORA: contSet/@capsule/display.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
 #include "global/format.h"

@@ -2,7 +2,8 @@
 //
 // Syntax:   Ellipsoid E(Q);   Ellipsoid E(Q, q);   Ellipsoid E(Q, q, tol);
 // Inputs:   Q - shape matrix (..., n, n), finite, symmetric and positive semidefinite up to tol;
-//           q - center (..., n, 1), finite, default 0; tol - bound of the asymmetry and of the
+//           q - center (..., n, 1), finite, default 0
+//           tol - bound of the asymmetry and of the
 //           negative eigenvalues, kept as the tolerance of the object; default: the repository
 //           tolerance (docs/architecture.md; CORA's is 1e-6). Q without entries needs q without
 //           entries: the empty ellipsoid

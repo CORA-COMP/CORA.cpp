@@ -3,12 +3,21 @@
 // The oracle covers the nonnegative integer exponents, which CORA.cpp multiplies in its order.
 //
 // ORACLE: contSet/@interval/power.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -21,3 +30,5 @@ int main() {
     });
     return test::finish("lean interval power");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -4,6 +4,11 @@
 //
 // Syntax:   bool hit = priv_zonotope_meets_polytope(c, G, m, a, b);
 // See also: specification.h, check.cpp
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       30-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

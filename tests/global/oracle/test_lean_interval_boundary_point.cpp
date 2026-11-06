@@ -1,12 +1,21 @@
 // test_lean_interval_boundary_point - Interval::boundary_point against the CORALean oracle
 //
 // ORACLE: contSet/@interval/boundaryPoint.m
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -24,3 +33,5 @@ int main() {
     });
     return test::finish("lean interval boundary_point");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

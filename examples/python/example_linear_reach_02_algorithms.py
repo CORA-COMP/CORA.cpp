@@ -7,6 +7,11 @@ from an initial set that is not aligned with the axes, shows how far apart they 
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_02_algorithms.py
 Outputs:  the extent of every enclosure along x1, for both algorithms
 See also: example_linear_reach_01_5dim
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 
 import cora
@@ -14,6 +19,9 @@ import cora
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 t_final = 2.4
 R0 = cora.Zonotope(cora.Tensor([1.0, 0.5]),

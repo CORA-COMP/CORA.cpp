@@ -1,7 +1,6 @@
 // test_zono_bundle_isequal - ZonoBundle::isequal: whether two bundles are the same set
 //
 // CORA: contSet/@zonoBundle/isequal.m
-//
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

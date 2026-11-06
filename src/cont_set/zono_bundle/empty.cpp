@@ -8,7 +8,6 @@
 // See also: ZonoBundle::ZonoBundle, ConZonotope::empty
 //
 // CORA: contSet/@zonoBundle/empty.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

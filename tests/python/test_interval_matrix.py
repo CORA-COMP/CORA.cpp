@@ -1,5 +1,13 @@
 """test_interval_matrix - cora.IntervalMatrix: the constructors, the bounds, the sums, the norms, the
-squares, the powers and the matrix exponential."""
+
+squares, the powers and the matrix exponential.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner, Ivan Brkan, Victor Gassmann
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: matrixSet/@intervalMatrix/abs.m
 # CORA: matrixSet/@intervalMatrix/center.m
 # CORA: matrixSet/@intervalMatrix/contains.m
@@ -68,6 +76,10 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 # [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]
 EXAMPLE = cora.IntervalMatrix(cora.Interval.matrix(np.array([[1.0, -1.0], [0.0, 2.0]]),
                                                    np.array([[2.0, 1.0], [3.0, 2.0]])))
@@ -90,6 +102,8 @@ def exponential(M):
         total = total + term
     return total
 
+
+# ============================================  MAIN  ============================================ #
 
 class Bounds(unittest.TestCase):
     def setUp(self):
@@ -462,3 +476,5 @@ class Gradients(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

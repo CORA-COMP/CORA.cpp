@@ -18,6 +18,11 @@
 // See also:   cont_set/set.h, cont_set/cont_set.h
 //
 // CORA: contSet/@contSet/reorder.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #pragma once
 

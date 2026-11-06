@@ -10,6 +10,11 @@
 // See also: priv_axis_distance, Capsule::is_intersecting
 //
 // CORA: contSet/@capsule/isIntersecting_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 

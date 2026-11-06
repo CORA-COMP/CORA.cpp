@@ -1,5 +1,13 @@
 """test_linear_sys_verify - the verify API in Python: keywords, the algorithm names, VerifyResult
-and Falsification (the algorithms themselves are tested in C++)."""
+
+and Falsification (the algorithms themselves are tested in C++).
+
+CORA authors: Tobias Ladner
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contDynamics/@linearSys/verify.m
 
 import unittest
@@ -7,6 +15,10 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 class Verify(unittest.TestCase):
     def setUp(self):
@@ -38,3 +50,5 @@ class Verify(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

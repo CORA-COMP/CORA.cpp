@@ -10,6 +10,11 @@
 // See also: expm_taylor_horner_scaling, expm
 //
 // CORA: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
+// CORA authors: Ivan Brkan
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 

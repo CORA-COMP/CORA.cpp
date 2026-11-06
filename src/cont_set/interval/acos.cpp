@@ -6,6 +6,11 @@
 // sup <= 1 See also: atan2, Tensor::acos
 //
 // CORA: contSet/@interval/acos.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_check_domain.h"
 #include "cora/cont_set/interval/interval.h"

@@ -1,4 +1,10 @@
-"""test_lean_oracle - three CORA.cpp operations against the CORALean oracle (worked examples)"""
+"""test_lean_oracle - three CORA.cpp operations against the CORALean oracle (worked examples)
+
+Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+Written:       02-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # ORACLE: contSet/@zonotope/supportFunc_.m
 # ORACLE: contSet/@zonotope/interval.m
 # ORACLE: contSet/@interval/plus.m
@@ -8,6 +14,10 @@ import unittest
 import cora
 import oracle_testing as oracle
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 @oracle.needs_oracle
 class Oracle(unittest.TestCase):
@@ -42,3 +52,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

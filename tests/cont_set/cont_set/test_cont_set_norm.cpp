@@ -3,6 +3,11 @@
 // CORA: contSet/@contSet/norm.m
 // CORA: contSet/@contSet/norm_.m
 // PROPERTY: contSet/@contSet/norm_.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
@@ -19,6 +24,10 @@ using namespace cora;
 using test::check;
 using test::column;
 using N = Tensor::Norm;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -77,9 +86,14 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(norms_of_a_box_and_a_zonotope);
     test::for_each_backend(the_bound_holds_for_random_points);
     errors_and_their_switch();
     return test::finish("cont_set norm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,4 +1,5 @@
 // test_torch - the libtorch backend: its operations against their definitions, its containment
+//
 // against the Eigen backend's, and its gradients against the analytic ones.
 //
 // The cross-check is the point of this file. Each backend already agrees with the LP on
@@ -8,6 +9,11 @@
 //
 // Built and run by `ctest` whenever the tool was built with libtorch; without it
 // this file is not compiled at all.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "backend.h"
 #include "probes.h"
@@ -17,6 +23,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -109,6 +119,9 @@ void the_two_backends_agree(const torch::TensorOptions &opts, const std::string 
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     std::vector<std::string> devices{"cpu"};
     if (torch::cuda::is_available()) devices.emplace_back("gpu");
@@ -128,3 +141,5 @@ int main() {
     if (failures == 0) std::cout << "all libtorch tests passed\n";
     return failures == 0 ? 0 : 1;
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

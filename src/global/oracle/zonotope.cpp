@@ -1,6 +1,11 @@
 // zonotope - lean::Zonotope, a zonotope of exact values plus an error box, computed by CORALean
 //
 // See also: lean/tensor.h, lean/oracle.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/zonotope.h"
 #include "cora/global/error.h"

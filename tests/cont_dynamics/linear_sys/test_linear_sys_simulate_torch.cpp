@@ -1,6 +1,11 @@
 // test_linear_sys_simulate_torch - linear_sys simulate over batches of systems and start points
 //
 // CORA: contDynamics/@linearSys/simulate.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/backend/torch.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -50,9 +59,14 @@ void batched_simulate(const torch::TensorOptions &opts, const std::string &where
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_device([](const torch::TensorOptions &opts, const std::string &where) {
         batched_simulate(opts, where);
     });
     return test::finish("linear_sys simulate (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -7,11 +7,17 @@
 //
 // Syntax:   Set S = detail::lookup(BinaryOp::plus, S1, S2);   binary_pairs();
 //           register_binary(BinaryOp::plus, "Ball", "Zonotope", f);
-// Inputs:   op - the operation;  S1, S2 - the operands (checked by check_operands in the entry)
+// Inputs:   op - the operation
+//           S1, S2 - the operands (checked by check_operands in the entry)
 // Outputs:  S - the result of the entry for (class of S1, class of S2)
 // See also: cora/cont_set/registry.h, plus, contains
 //
 // CORA: contSet/@contSet/reorder.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/capsule/capsule.h"

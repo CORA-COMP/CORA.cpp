@@ -14,6 +14,11 @@
 // See also:   cora/cont_dynamics/linear_sys/linear_sys.h, cora/global/expr.h
 //
 // CORA: contDynamics/@nonlinearSys/nonlinearSys.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

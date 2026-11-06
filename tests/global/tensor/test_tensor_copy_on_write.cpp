@@ -4,6 +4,11 @@
 // written in place; a shared one is copied first, so no other holder sees the change. The standard
 // linear reach allocates a fixed number of tensors per step on eigen, counted here by the global
 // operator new (Eigen's own aligned buffers are not counted; the fused kernels keep none per step).
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cora.h"
 #include "cora/global/backend/host.h"
@@ -13,6 +18,10 @@
 #include <cstdlib>
 #include <iostream>
 #include <new>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -83,9 +92,14 @@ void the_standard_reach_allocates_a_fixed_number_per_step() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     an_unshared_tensor_is_written_in_place();
     a_shared_tensor_is_copied_first();
     the_standard_reach_allocates_a_fixed_number_per_step();
     return test::finish("tensor copy on write");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

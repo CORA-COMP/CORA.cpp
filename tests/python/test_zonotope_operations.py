@@ -1,5 +1,14 @@
 """test_zonotope_operations - abs, box, compact, cart_prod, enclose, convex_hull, intersect, contains
-and more of Zonotope in Python, on numpy and Eigen alone."""
+
+and more of Zonotope in Python, on numpy and Eigen alone.
+
+CORA authors: Matthias Althoff, Niklas Kochdumper, Amr Alanwar, Mark Wetzlinger, Adrian Kulmburg,
+              Ivan Brkan
+Authors:       Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@zonotope/abs.m
 # CORA: contSet/@zonotope/and_.m
 # CORA: contSet/@zonotope/boundaryPoint.m
@@ -34,6 +43,9 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def zonotope(c, G):
     return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
@@ -119,6 +131,8 @@ def matlab_cub_map(Zs, T, ind):
         rows.append(np.concatenate([L[k][j, j:] for k in range(N) for j in range(k, N)]))
     return np.array(rows)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Entrywise(unittest.TestCase):
     def test_abs_and_box_and_center(self):
@@ -411,3 +425,5 @@ class Containment(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

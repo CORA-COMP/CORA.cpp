@@ -7,6 +7,11 @@
 // See also: tanh, sin
 //
 // CORA: contSet/@interval/tan.m
+// CORA authors: Daniel Althoff, Dmitry Grebenyuk, Matthias Althoff, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

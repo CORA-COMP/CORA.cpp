@@ -6,15 +6,23 @@
 // Syntax:   build/examples/cpp/example_linear_reach_07_gradient
 // Outputs:  the total width of the enclosures and its gradient with respect to A
 // See also: example_linear_reach_05_batch
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/backend/torch.h"
 
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 /// The total width of the enclosures for the system A: a scalar to differentiate.
 torch::Tensor total_width(const torch::Tensor &A, bool custom_backward) {
@@ -34,6 +42,9 @@ torch::Tensor total_width(const torch::Tensor &A, bool custom_backward) {
     for (const Zonotope &Z : R.time_interval) width = width + to_torch(Z.generators()).abs().sum();
     return width;
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");

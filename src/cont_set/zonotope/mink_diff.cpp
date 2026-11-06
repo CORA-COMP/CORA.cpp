@@ -13,6 +13,11 @@
 // See also: plus, contains
 //
 // CORA: contSet/@zonotope/minkDiff.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

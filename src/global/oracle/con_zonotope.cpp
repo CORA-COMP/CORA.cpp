@@ -1,6 +1,11 @@
 // con_zonotope - lean::ConZonotope, a constrained zonotope of exact values, computed by CORALean
 //
 // See also: lean/zonotope.h, lean/request.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/con_zonotope.h"
 #include "cora/global/error.h"

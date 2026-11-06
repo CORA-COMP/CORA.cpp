@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/volume_.m
 // PROPERTY: contSet/@zonotope/volume_.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -13,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -94,6 +103,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         cora_unit_test(b);
@@ -104,3 +116,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope volume");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

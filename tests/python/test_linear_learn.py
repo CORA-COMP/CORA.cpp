@@ -1,4 +1,10 @@
-"""test_linear_learn - the system matrix of a reach computation is a parameter that gradient steps update"""
+"""test_linear_learn - the system matrix of a reach computation is a parameter that gradient steps update
+
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       29-September-2026
+Last update:   03-November-2026
+Reviewed:      ---
+"""
 import unittest
 
 try:
@@ -10,6 +16,10 @@ import cora
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
 A_TRUE = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
@@ -23,6 +33,8 @@ def loss(A, measurements):
     sup = torch.stack([b.sup for b in boxes])[:, :, None]
     return (torch.relu(inf - measurements) + torch.relu(measurements - sup)).mean()
 
+
+# ============================================  MAIN  ============================================ #
 
 class LearnDynamics(unittest.TestCase):
     def setUp(self):
@@ -51,3 +63,5 @@ class LearnDynamics(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

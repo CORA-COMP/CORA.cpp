@@ -1,14 +1,14 @@
 // priv_distance - the Euclidean distance of a point to a polytope, by a least-distance program
 //
 // Syntax:   double d = priv_distance_to_polytope(H, x);
-// Inputs:   H - a single nonempty polytope in halfspace form;  x - a point
+// Inputs:   H - a single nonempty polytope in halfspace form
+//           x - a point
 // Outputs:  d - min over y in H of |y - x|_2: the point's shift z = y - x is the shortest vector
 //           with G z >= h, which Lawson and Hanson (Solving Least Squares Problems, ch. 23) reduce
 //           to nonnegative least squares
 // See also: Polytope::hausdorff_distance, priv_linear_programs
 //
 // CORA: contSet/@polytope/hausdorffDist.m
-//
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

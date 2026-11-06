@@ -2,6 +2,11 @@
 //
 // The parts that need no oracle run always; with CORACPP_ORACLE set, round_to and the zonotope
 // operations are checked against the oracle too.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/zonotope.h"
@@ -13,12 +18,19 @@
 using namespace cora;
 using test::throws;
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 static lean::Json matrix(int64_t rows, int64_t cols, const std::vector<std::string> &values) {
     lean::Json j = lean::Json::object(), data = lean::Json::array();
     for (const std::string &v : values) data.push(v);
     j.set("rows", rows).set("cols", cols).set("data", data);
     return j;
 }
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &) {
@@ -107,3 +119,5 @@ int main() {
     });
     return test::finish("lean tensor");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

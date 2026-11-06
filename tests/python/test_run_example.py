@@ -1,9 +1,19 @@
-"""test_run_example - scripts/run_example.py, the F5 of VS Code, runs Python and C++ examples"""
+"""test_run_example - scripts/run_example.py, the F5 of VS Code, runs Python and C++ examples
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   30-September-2026
+Reviewed:      ---
+"""
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SCRIPT = os.path.join(ROOT, "scripts", "run_example.py")
@@ -14,6 +24,7 @@ def run(path):
     return subprocess.run([sys.executable, SCRIPT, path], capture_output=True, text=True, cwd=ROOT)
 
 
+# ============================================  MAIN  ============================================ #
 
 @unittest.skipIf(sys.platform == "win32", "the helper scripts of the repository need bash")
 class RunExample(unittest.TestCase):
@@ -53,3 +64,5 @@ class RunExample(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

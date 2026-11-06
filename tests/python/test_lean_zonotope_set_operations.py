@@ -1,5 +1,12 @@
 """test_lean_zonotope_set_operations - Zonotope operations against the CORALean oracle: abs, box,
-cart_prod, compact, constraints_satisfied, enclose, convex_hull, contains, dominant_directions."""
+
+cart_prod, compact, constraints_satisfied, enclose, convex_hull, contains, dominant_directions.
+
+Authors:       Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # ORACLE: contSet/@zonotope/abs.m
 # ORACLE: contSet/@zonotope/box.m
 # ORACLE: contSet/@zonotope/cartProd_.m
@@ -15,6 +22,10 @@ import unittest
 import cora
 import numpy as np
 import oracle_testing as oracle
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 SIZES = [(2, 3), (5, 30), (20, 200)]
 
@@ -50,6 +61,8 @@ def check_same_generators(mine, theirs):
     np.testing.assert_array_equal(mine.center, other.center)
     assert sorted_columns(mine.generators) == sorted_columns(other.generators)
 
+
+# ============================================  MAIN  ============================================ #
 
 @oracle.needs_oracle
 class Oracle(unittest.TestCase):
@@ -138,3 +151,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

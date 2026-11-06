@@ -8,6 +8,11 @@
 // See also: lift, Zonotope::project_impl
 //
 // CORA: contSet/@conZonotope/project.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 

@@ -5,6 +5,10 @@
 // nothing here: the boxes have a positive radius).
 //
 // ORACLE: matrixSet/@intervalMatrix/vertices.m
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "oracle_testing.h"
@@ -13,6 +17,10 @@
 #include <cstring>
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -35,6 +43,9 @@ std::vector<std::vector<double>> aux_sorted(const lean::MatrixVertices &L, int64
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.vertices", [](test::oracle::Random &rnd) {
@@ -52,3 +63,5 @@ int main() {
     });
     return test::finish("lean interval_matrix vertices");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

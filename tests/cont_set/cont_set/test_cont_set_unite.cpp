@@ -1,7 +1,13 @@
 // test_cont_set_unite - the union of two sets (CORA's or): a pair without an implementation raises
+//
 // noops
 //
 // CORA: contSet/@contSet/or.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -12,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,7 +39,12 @@ void an_unknown_pair_is_noops() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     an_unknown_pair_is_noops();
     return test::finish("cont_set unite");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

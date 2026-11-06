@@ -4,6 +4,11 @@
 //
 // Syntax:   priv_reach_standard(X0, e_adt, F, steps);   priv_num_steps(t_final, time_step);
 // See also: linear_sys.h, reach.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #pragma once
 

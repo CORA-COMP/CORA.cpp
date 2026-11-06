@@ -1,9 +1,18 @@
 // test_tensor_selection - select_cols, cat_rows and max_last, on every backend
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -32,6 +41,9 @@ void max_last_takes_the_row_maximum(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         select_cols_takes_columns_in_order(b);
@@ -40,3 +52,5 @@ int main() {
     });
     return test::finish("tensor selection");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

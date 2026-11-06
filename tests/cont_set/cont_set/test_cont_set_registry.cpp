@@ -1,8 +1,14 @@
 // test_cont_set_registry - the table of binary operations: its pairs, names, precedence and
+//
 // registration
 //
 // CORA: contSet/@contSet/contSet.m
 // CORA: contSet/@contSet/reorder.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -13,6 +19,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,8 +54,13 @@ void a_registered_pair_is_used() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_table_lists_its_pairs();
     a_registered_pair_is_used();
     return test::finish("cont_set registry");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

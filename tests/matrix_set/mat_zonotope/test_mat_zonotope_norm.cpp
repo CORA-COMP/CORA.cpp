@@ -2,6 +2,11 @@
 //
 // CORA: matrixSet/@matZonotope/norm.m
 // PROPERTY: matrixSet/@matZonotope/norm.m
+// CORA authors: Matthias Althoff, Victor Gassmann
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
 
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -54,6 +63,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         norms_of_the_example(b);
@@ -62,3 +74,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("mat_zonotope norm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

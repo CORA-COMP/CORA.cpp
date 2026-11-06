@@ -5,11 +5,18 @@
 //                     test::random_con_zonotope_parts(2, 3, 1));
 // Sets:     four inputs (c, G, A, b) per set; parts are the four outputs of a result
 // See also: cont_set/zonotope/zonotope_gradients.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cont_set/zonotope/zonotope_gradients.h"
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -33,3 +40,5 @@ inline std::vector<torch::Tensor> random_con_zonotope_parts(int64_t n, int64_t m
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

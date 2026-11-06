@@ -1,9 +1,21 @@
+// json - reads one key of a flat JSON object
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
+
 #include "json.h"
 
 #include <cctype>
 #include <cstdlib>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 /// Where the value of `key` starts, or `npos`.
@@ -24,6 +36,9 @@ std::size_t value_at(const std::string &doc, const std::string &key) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 std::optional<std::string> json_string(const std::string &doc, const std::string &key) {
     const std::size_t at = value_at(doc, key);
@@ -51,3 +66,5 @@ std::optional<double> json_number(const std::string &doc, const std::string &key
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

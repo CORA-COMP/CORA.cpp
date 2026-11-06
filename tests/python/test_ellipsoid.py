@@ -1,6 +1,7 @@
 """test_ellipsoid - the Ellipsoid class in Python: constructors, queries and set operations.
 
-CORA authors: Adrian Kulmburg, Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper, Victor Gassmann
+CORA authors: Adrian Kulmburg, Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper,
+              Victor Gassmann
 Authors:       Claude Sonnet 5.5
 Written:       04-November-2026
 Last update:   ---
@@ -41,9 +42,13 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
 # ----------------------------------------  BEGIN CODE  ---------------------------------------- #
 
 # ----------------------------------------  AUXILIARY  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def ellipsoid(Q, q=None, tol=None):
     return cora.Ellipsoid(np.array(Q, dtype=float), None if q is None else np.array(q, dtype=float), tol)
@@ -65,6 +70,9 @@ def boundary_points(E, rng, count):
 
 
 # ===========================================  MAIN  =========================================== #
+
+
+# ============================================  MAIN  ============================================ #
 
 class Ellipsoid(unittest.TestCase):
     def setUp(self):
@@ -270,3 +278,5 @@ if __name__ == "__main__":
     unittest.main()
 
 # ---------------------------------------  END OF CODE  ---------------------------------------- #
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

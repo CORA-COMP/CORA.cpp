@@ -2,11 +2,20 @@
 //
 // The pieces are linear in the center and the generators once the generator or the coordinate
 // is chosen (on the values): the gradient of the choice made.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -17,6 +26,9 @@ Inputs pieces(const std::pair<Zonotope, Zonotope> &p) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -44,3 +56,5 @@ int main() {
         [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split_longest_gen()); }, input);
     return test::finish("zonotope split (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

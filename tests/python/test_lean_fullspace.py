@@ -1,4 +1,10 @@
-"""test_lean_fullspace - Fullspace against the CORALean oracle (its fullspace.* operations)"""
+"""test_lean_fullspace - Fullspace against the CORALean oracle (its fullspace.* operations)
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # ORACLE: contSet/@fullspace/Inf.m
 # ORACLE: contSet/@fullspace/and_.m
 # ORACLE: contSet/@fullspace/box.m
@@ -25,6 +31,10 @@ import unittest
 import cora
 import oracle_testing as oracle
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 @oracle.needs_oracle
 class Oracle(unittest.TestCase):
@@ -78,3 +88,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

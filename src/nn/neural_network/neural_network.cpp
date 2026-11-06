@@ -1,6 +1,11 @@
 // neural_network - the class of feed-forward networks: construction and its checks
 //
 // See also: neuralNetwork.h, evaluate.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"

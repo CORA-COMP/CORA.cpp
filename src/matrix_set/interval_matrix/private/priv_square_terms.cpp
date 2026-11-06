@@ -1,6 +1,11 @@
 // priv_square_terms - the sums that the square and the second-order terms share
 //
 // See also: priv_square_terms.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "matrix_set/interval_matrix/private/priv_square_terms.h"
 #include "cont_set/interval/private/priv_times.h"

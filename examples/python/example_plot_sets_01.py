@@ -6,10 +6,20 @@ faces of a polytope; the axes need projection="3d"). The sets also plot themselv
 Syntax:   PYTHONPATH=build python examples/python/example_plot_sets_01.py [--save PREFIX]
 Outputs:  three figures (PREFIX_1d.png, PREFIX_2d.png, PREFIX_3d.png with --save)
 See also: example_plot_sets_01 of the C++ examples, example_plot_tikz_01_group
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
 import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figures instead of showing them")
@@ -20,9 +30,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Sets --------------------------------------------------------------------------------------
+
 
 Z = cora.Zonotope(cora.zeros(3),
                   cora.Tensor([[1, 0, 0.5, 0.2], [0, 1, 0.5, -0.3], [0, 0, 1, 0.4]]))

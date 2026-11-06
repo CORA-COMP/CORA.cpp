@@ -4,6 +4,11 @@
 // Inputs:   I - interval of matrix bounds (..., rows, cols)
 // Outputs:  v - the interval of bounds (..., rows * cols, 1), entry (i, j) at position i + rows * j
 // See also: representsa, vertices, volume
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

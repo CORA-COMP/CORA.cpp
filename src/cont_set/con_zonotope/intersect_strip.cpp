@@ -15,6 +15,11 @@
 // See also: intersect, Zonotope::intersect_strip
 //
 // CORA: contSet/@conZonotope/intersectStrip.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"

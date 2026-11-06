@@ -1,12 +1,21 @@
 // test_empty_set_lift - EmptySet lift: the empty set of the larger dimension
 //
 // CORA: contSet/@emptySet/lift_.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -29,8 +38,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_lifted_set_has_the_new_dimension);
     checks_and_their_switch();
     return test::finish("empty_set lift");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

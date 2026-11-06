@@ -1,4 +1,4 @@
-"""CORA.cpp: set-based computing on Eigen (numpy), or on libtorch (torch) if installed.
+"""cora - CORA.cpp: set-based computing on Eigen (numpy), or on libtorch (torch) if installed.
 
     import cora
     X0 = cora.Zonotope(c, G)              # c (..., n), G (..., n, m): one set or a batch
@@ -21,6 +21,11 @@ registered with cora.register_algorithm work like the built-in ones.
 
 Arrays: Tensor(data, dtype) and Tensor.zeros/ones/eye/randn build them on the current backend;
 Tensor.sin/cos/exp/... apply a function to every element (no math or numpy needed).
+
+Authors:       Claude Sonnet 5.5
+Written:       01-October-2026
+Last update:   ---
+Reviewed:      ---
 """
 try:
     import torch  # noqa: F401  registers the tensor type that the compiled module returns
@@ -90,6 +95,11 @@ from .figure import Figure, subplots, to_tikz
 from .plot import plot, plot_over_time, plot_rand_point
 from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
+
 # An example prints its CORA START block here and its CORA END block on exit.
 banner.install(current_backend)
 
@@ -112,3 +122,5 @@ __all__ = [
     "use_cora_colors", "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

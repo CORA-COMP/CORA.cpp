@@ -1,6 +1,11 @@
 // test_fullspace_complement - fullspace complement: the empty set
 //
 // CORA: contSet/@fullspace/not.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -8,6 +13,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -27,8 +36,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(the_complement_is_the_empty_set);
     checks_and_their_switch();
     return test::finish("fullspace complement");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

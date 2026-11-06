@@ -1,13 +1,19 @@
 // priv_axis_parameter - where on the axis of a capsule the points are nearest
 //
 // Syntax:   Tensor t = priv_axis_parameter(g, d);
-// Inputs:   g - the generator (..., n, 1);  d - the points relative to the center (..., n, N)
+// Inputs:   g - the generator (..., n, 1)
+//           d - the points relative to the center (..., n, N)
 // Outputs:  t - (..., 1, N): d'g / g'g clipped to [-1, 1], the parameter of the nearest point
 //           c + t g of the segment c - g to c + g. This is CORA's case split on |proj| < |g|; a
 //           zero generator gives 0
 // See also: priv_axis_distance, Capsule::enclose_points
 //
 // CORA: contSet/@capsule/contains_.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
 

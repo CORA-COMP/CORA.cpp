@@ -17,8 +17,11 @@
 // ORACLE: contSet/@zonoBundle/isequal.m
 // ORACLE: contSet/@zonoBundle/lift_.m
 //
-// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg, Tobias
 // Ladner Authors:       Claude Sonnet 5.5 Written:       04-November-2026 Last update:   ---
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"

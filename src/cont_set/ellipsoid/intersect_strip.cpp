@@ -2,12 +2,15 @@
 //
 // Syntax:   auto [E2, sigma_sq] = E.intersect_strip(C, phi, y, sigma_sq_prev);
 //           auto [E2, sigma_sq] = E.intersect_strip(C, sys, y, sigma_sq_prev);
-// Inputs:   C - the strip's matrix (m, n);  y - its center (m, 1);  phi - the half-width of the
+// Inputs:   C - the strip's matrix (m, n)
+//           y - its center (m, 1)
+//           phi - the half-width of the
 //           strip ||C x - y|| <= phi (method of Gollamudi 1996), or sys - the measurement model
 //           with V and bar_V (m, m) (method of Liu 2016);  sigma_sq_prev - the level of the
 //           previous update (default 0). A single full-dimensional ellipsoid
 // Outputs:  E2 - an ellipsoid with the center and the information matrix of the combination
-//           (1 - lambda) E + lambda strip, scaled to its level sigma_sq; sigma_sq - that level.
+//           (1 - lambda) E + lambda strip, scaled to its level sigma_sq
+//           sigma_sq - that level.
 //           E and sigma_sq_prev are returned if the strip does not cut E or the weight lambda
 //           leaves [0, 1) (Gollamudi) or (0, 1) (Liu); the empty ellipsoid if sigma_sq < 0. CORA's
 //           shapes are too small (Gollamudi: divided by sigma_sq instead of multiplied, and the
@@ -149,7 +152,6 @@ detail::Refusal aux_refusal(const Ellipsoid &E, const Tensor &C, const Tensor &y
 
 
 // ===========================================  MAIN  =========================================== //
-
 
 // Entries -----------------------------------------------------------------------------------------
 

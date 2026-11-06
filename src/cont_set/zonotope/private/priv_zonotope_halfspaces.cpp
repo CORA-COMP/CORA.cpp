@@ -8,10 +8,16 @@
 //
 // Syntax:   auto [C, d] = priv_zonotope_halfspaces(Z);
 // Inputs:   Z - a single zonotope
-// Outputs:  C - the normals as rows (k, n);  d - the offsets (k, 1)
+// Outputs:  C - the normals as rows (k, n)
+//           d - the offsets (k, 1)
 // See also: priv_zonotope_facet_normals, Zonotope::unite
 //
 // CORA: contSet/@zonotope/polytope.m
+// CORA authors: Niklas Kochdumper, Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

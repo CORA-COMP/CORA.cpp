@@ -1,6 +1,14 @@
 """test_extension - prototyping in Python: a ContSet subclass, a registered pair and a registered
+
 algorithm run through the checked entries, the registry, plotting and reach like the built-in ones;
-errors, warnings and the scoped settings."""
+errors, warnings and the scoped settings.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@contSet/contSet.m
 # CORA: contSet/@contSet/plus.m
 # CORA: contSet/@contSet/project.m
@@ -12,6 +20,9 @@ import warnings
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 class Box(cora.ContSet):
     """A box c + r [-1, 1]^n written in Python: only the _impl layer."""
@@ -42,6 +53,8 @@ class Box(cora.ContSet):
         (x, y), (a, b) = self.c, self.r
         return [np.array([[x - a, y - b], [x + a, y - b], [x + a, y + b], [x - a, y + b]])]
 
+
+# ============================================  MAIN  ============================================ #
 
 class Subclass(unittest.TestCase):
     def setUp(self):
@@ -160,3 +173,5 @@ class ErrorsAndSettings(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

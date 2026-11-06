@@ -6,6 +6,11 @@
 // See also: registry, intersect, convex_hull
 //
 // CORA: contSet/@contSet/or.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 

@@ -7,6 +7,11 @@
 // See also: transpose
 //
 // CORA: contSet/@interval/ctranspose.m
+// CORA authors: Dmitry Grebenyuk
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

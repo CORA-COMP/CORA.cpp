@@ -2,6 +2,11 @@
 //
 // Syntax:   Color c = cora_color("CORA:reachSet");   Color c = "CORA:red";   Color c(0.2, 0.4,
 // 0.8); See also: cora/global/plot/plot.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -7,6 +7,11 @@ cora and prints the line 'benchmark,instance,result,time' of the original script
 
 Syntax:   from benchmark_data import run_instance; run_instance("ISSF01_ISS01")
 See also: benchmarks/cpp/benchmark_data.h
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import json
 import os
@@ -16,6 +21,8 @@ import time
 import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 DATA = os.environ.get("CORACPP_BENCHMARK_DATA") or os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "benchmarks", "data")
@@ -112,10 +119,11 @@ def run_instance(name):
     print(detail, file=sys.stderr)
 
 
+# ============================================  MAIN  ============================================ #
+
 def main(family):
     """The instances named on the command line, else all of the family."""
     for name in sys.argv[1:] or family:
         run_instance(name)
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

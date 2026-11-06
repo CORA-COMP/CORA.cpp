@@ -1,6 +1,14 @@
 """test_zonotope_maps_and_splits - origin, radius, rank, representsa, project_high_dim, rotate,
+
 quad_map, split, split_first_gen, split_longest_gen, reduce_under_approx and unite of Zonotope, and
-quad_map of Interval, in Python, on numpy and Eigen alone."""
+quad_map of Interval, in Python, on numpy and Eigen alone.
+
+CORA authors: Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper, Tobias Ladner
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@zonotope/origin.m
 # CORA: contSet/@zonotope/radius.m
 # CORA: contSet/@zonotope/rank.m
@@ -32,6 +40,9 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def zonotope(c, G):
     return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
@@ -45,6 +56,8 @@ def example():
     """CORA's example of split: the center (-4, 1) and three generators."""
     return zonotope([-4, 1], [[-3, -2, -1], [2, 3, 4]])
 
+
+# ============================================  MAIN  ============================================ #
 
 class Origin(unittest.TestCase):
     def test_origin(self):
@@ -328,3 +341,5 @@ class Unite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

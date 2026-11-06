@@ -1,6 +1,11 @@
 // test_interval_lift - interval lift: a box placed into a higher-dimensional space
 //
 // CORA: contSet/@interval/lift_.m
+// CORA authors: Tobias Ladner, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -50,8 +59,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(lift_places_the_coordinates);
     checks_and_their_switch();
     return test::finish("interval lift");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

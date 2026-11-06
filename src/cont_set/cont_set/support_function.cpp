@@ -9,6 +9,11 @@
 //
 // CORA: contSet/@contSet/supportFunc.m
 // CORA: contSet/@contSet/supportFunc_.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"

@@ -1,6 +1,11 @@
 // test_specification_holds_torch - specifications over a batch of sets: one answer per member.
 //
 // CORA: specification/@specification/check.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/backend/torch.h"
@@ -9,6 +14,11 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -41,3 +51,5 @@ int main() {
     check(safe.holds(one).size() == 1, "a single set gives one answer");
     return test::finish("specification (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

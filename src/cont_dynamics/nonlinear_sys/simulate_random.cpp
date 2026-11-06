@@ -1,12 +1,19 @@
 // simulate_random - simulations from random start points, as CORA's simulateRandom
 //
 // Syntax:   x = sys.simulate_random(problem, alg, points, rng);
-// Inputs:   problem - initial_set (any set), t_final;  alg - alg::RungeKutta4
-//           points - number of trajectories;  rng - random numbers (seedable)
+// Inputs:   problem - initial_set (any set), t_final
+//           alg - alg::RungeKutta4
+//           points - number of trajectories
+//           rng - random numbers (seedable)
 // Outputs:  x - as simulate, from `points` random points of the initial set
 // See also: simulate, ContSet::rand_point
 //
 // CORA: contDynamics/@contDynamics/simulateRandom.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 

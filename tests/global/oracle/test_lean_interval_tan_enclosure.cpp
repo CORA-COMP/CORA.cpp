@@ -8,6 +8,11 @@
 // is bounded, CORA's is too and the bounds agree to kAgree, relative (libm against the oracle's
 // halvings). No bit-exact test exists, so there is no ORACLE tag. The boxes run over several poles.
 // The oracles before batch 5 gave inverted bounds over a pole; with them the test is skipped.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
@@ -18,7 +23,13 @@
 #include <iostream>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,6 +55,9 @@ Interval aux_boxes(oracle::Random &rnd, int n) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -78,3 +92,5 @@ int main() {
     });
     return test::finish("lean interval tan enclosure");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

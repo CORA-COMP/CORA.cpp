@@ -1,9 +1,16 @@
 // rng - the random numbers: xoshiro256++ streams per chunk, Box-Muller for the normals
 //
 // Syntax:   rng.uniform(out, n, lo, hi);   rng.normal(out, n, scale);
-// Inputs:   out - n doubles to fill; lo, hi - the range; scale - the standard deviation
+// Inputs:   out - n doubles to fill
+//           lo, hi - the range
+//           scale - the standard deviation
 // Outputs:  -
 // See also: rng.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/rng.h"
 

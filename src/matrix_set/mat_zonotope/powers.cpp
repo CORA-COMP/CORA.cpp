@@ -2,7 +2,8 @@
 //
 // Syntax:   std::vector<MatZonotope> P = A.powers(max_order);
 //           P = A.powers(max_order, initial_order, initial_power);
-// Inputs:   max_order - the last order;  initial_order - the order of initial_power (at least 1);
+// Inputs:   max_order - the last order
+//           initial_order - the order of initial_power (at least 1);
 //           initial_power - a matrix zonotope of A's shape (default: A, with initial_order 1)
 // Outputs:  P - P[k] is the power of order initial_order + k: initial_power, then every next one
 //           the previous times A from the right, up to max_order (just initial_power if max_order
@@ -10,6 +11,11 @@
 // See also: matrix_power, matmul
 //
 // CORA: matrixSet/@matZonotope/powers.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"

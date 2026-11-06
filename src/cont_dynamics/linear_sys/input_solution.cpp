@@ -8,12 +8,18 @@
 //
 // Syntax:   InputSolution in = sys.input_solution(U, time_step, taylor_terms);
 // Inputs:   U - input set (one zonotope of the dimension of the columns of B; needs B)
-//           time_step - step size, positive;  taylor_terms - order of the series, at least 1
+//           time_step - step size, positive
+//           taylor_terms - order of the series, at least 1
 // Outputs:  in - PU, Pu and Cinput (see linear_sys.h), a building block of reach
 // See also: reach, correction_matrix_input, expm_remainder
 //
 // CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
 // CORA: contDynamics/@linearSys/particularSolution_constant.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "global/format.h"

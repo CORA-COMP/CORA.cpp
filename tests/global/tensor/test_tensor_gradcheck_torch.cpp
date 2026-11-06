@@ -4,6 +4,11 @@
 // gives through the torch backend equals central differences, in float64, at points away from the
 // kinks of the piecewise ones. The conventions test requires a gradcheck("<op>", ...) here for
 // each.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -13,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -276,6 +285,9 @@ void fused() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope scope("torch");
     torch::manual_seed(5);
@@ -286,3 +298,5 @@ int main() {
     fused();
     return test::finish("tensor gradcheck (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,4 +1,5 @@
 // test_lean_zonotope_set_operations - abs, box, cart_prod, compact, constraints_satisfied, enclose,
+//
 // convex_hull, contains and dominant_directions of Zonotope against the CORALean oracle
 //
 // ORACLE: contSet/@zonotope/abs.m
@@ -10,6 +11,10 @@
 // ORACLE: contSet/@zonotope/convHull_.m
 // ORACLE: contSet/@zonotope/dominantDirections.m
 // ORACLE: contSet/@zonotope/enclose.m
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
@@ -19,7 +24,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -58,6 +69,9 @@ void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &their
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -153,3 +167,5 @@ int main() {
     });
     return test::finish("lean zonotope set operations");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

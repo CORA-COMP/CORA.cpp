@@ -8,6 +8,11 @@
 // See also: linear_map, Zonotope::plus
 //
 // CORA: contSet/@conZonotope/plus.m
+// CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

@@ -1,6 +1,11 @@
 // test_interval_cat - interval cat: intervals joined along a dimension
 //
 // CORA: contSet/@interval/cat.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -49,6 +58,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         cat_joins_rows_and_columns(b);
@@ -57,3 +69,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval cat");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

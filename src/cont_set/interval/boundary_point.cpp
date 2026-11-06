@@ -1,7 +1,8 @@
 // boundary_point - the point where a ray leaves a box, as CORA's interval.boundaryPoint
 //
 // Syntax:   Tensor x = I.boundary_point(dir);   Tensor x = I.boundary_point(dir, start);
-// Inputs:   dir - direction, a column (..., n, 1), not zero;  start - a point of I, by default its
+// Inputs:   dir - direction, a column (..., n, 1), not zero
+//           start - a point of I, by default its
 //           center (required if that is NaN, for an unbounded box)
 // Outputs:  x - start + s dir for the largest s with x in I, from the bound each coordinate of dir
 //           points to; (n, 0) for an empty box. If the ray never leaves, +-Inf along dir (start
@@ -10,6 +11,11 @@
 // See also: contains, center
 //
 // CORA: contSet/@interval/boundaryPoint.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/tensor/tolerance.h"

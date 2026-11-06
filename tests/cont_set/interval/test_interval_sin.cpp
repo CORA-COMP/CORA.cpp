@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/sin.m
 // PROPERTY: contSet/@interval/sin.m
+// CORA authors: Matthias Althoff, Dmitry Grebenyuk, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -15,6 +20,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -63,6 +72,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         sin_on_known_boxes(b);
@@ -71,3 +83,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval sin");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

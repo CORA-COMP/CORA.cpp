@@ -12,6 +12,11 @@
 //
 // CORA: contSet/@zonotope/and_.m
 // CORA: contSet/@zonotope/private/priv_andAveraging.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Amr Alanwar
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

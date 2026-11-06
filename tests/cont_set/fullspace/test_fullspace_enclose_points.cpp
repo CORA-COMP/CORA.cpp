@@ -1,13 +1,23 @@
 // test_fullspace_enclose_points - fullspace enclose_points: the whole space of the points'
+//
 // dimension
 //
 // CORA: contSet/@fullspace/enclosePoints.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -31,8 +41,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(enclose_points_takes_the_number_of_rows);
     checks_and_their_switch();
     return test::finish("fullspace enclose_points");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

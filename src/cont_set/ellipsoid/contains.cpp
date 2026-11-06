@@ -1,7 +1,8 @@
 // contains - whether an ellipsoid contains points, a zonotope or a box, as CORA's contains_
 //
 // Syntax:   bool res = E.contains(p);   bool res = E.contains(Z, method, tol);   E.contains(I);
-// Inputs:   p - points as columns (n, N), all must be inside;  Z, I - a zonotope, a box;
+// Inputs:   p - points as columns (n, N), all must be inside
+//           Z, I - a zonotope, a box;
 //           S - an ellipsoid;  method - "exact" (default; for points the method is not used);
 //           tol - allowed excess of the ellipsoid norm over 1; default: the repository tolerance
 //           (docs/architecture.md; CORA's contains default). Not a batch
@@ -119,7 +120,6 @@ std::optional<bool> aux_degenerate(const Ellipsoid &E, bool s_empty, const Tenso
 
 
 // ===========================================  MAIN  =========================================== //
-
 
 // Entries -----------------------------------------------------------------------------------------
 

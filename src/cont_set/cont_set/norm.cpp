@@ -1,7 +1,8 @@
 // norm - an upper bound on the norm of the points of a set, as CORA's contSet.norm
 //
 // Syntax:   val = S.norm();   val = S.norm(type, mode);
-// Inputs:   S - set;  type - one, two (default), inf or fro;  mode - "ub" (default), "exact" or
+// Inputs:   S - set
+//           type - one, two (default), inf or fro;  mode - "ub" (default), "exact" or
 //           "ub_convex"; which of them a class offers is its own (a box ignores the mode)
 // Outputs:  val - the bound, (..., 1, 1); -Inf for the empty set; Error::noops for a class
 //           without it
@@ -9,6 +10,11 @@
 //
 // CORA: contSet/@contSet/norm.m
 // CORA: contSet/@contSet/norm_.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/cont_set.h"

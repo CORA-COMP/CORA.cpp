@@ -17,6 +17,11 @@
 // See also:   cora/cont_dynamics/algorithms.h, cora/cont_dynamics/cont_dynamics.h
 //
 // CORA: contDynamics/@linearSys/linearSys.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

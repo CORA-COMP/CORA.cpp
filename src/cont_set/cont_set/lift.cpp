@@ -1,7 +1,9 @@
 // lift - a set placed into a space of higher dimension, as CORA's contSet.lift
 //
 // Syntax:   R = S.lift(N);   R = S.lift(N, proj);
-// Inputs:   S - set of dimension n;  N - dimension of the space, N >= n;  proj - the position
+// Inputs:   S - set of dimension n
+//           N - dimension of the space, N >= n
+//           proj - the position
 //           (0-based) of each coordinate of S in it, n entries in [0, N) (default: 0..n-1)
 // Outputs:  R - the set in N dimensions, as the class defines it (Interval, EmptySet, Fullspace,
 //           Zonotope::lift); Error::noops for a class without it
@@ -9,6 +11,11 @@
 //
 // CORA: contSet/@contSet/lift.m
 // CORA: contSet/@contSet/lift_.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/cont_set.h"
@@ -21,7 +28,10 @@
 namespace cora {
 
 
+// ===========================================  MAIN  =========================================== //
+
 namespace detail {
+
 
 LiftPlan lift_plan(int64_t n, int64_t N, const std::vector<int64_t> &dims) {
     LiftPlan plan;
@@ -50,8 +60,6 @@ LiftPlan lift_plan(int64_t n, int64_t N, const std::vector<int64_t> &dims) {
 
 } // namespace detail
 
-
-// ===========================================  MAIN  =========================================== //
 
 Set ContSet::lift(int64_t N, const std::optional<std::vector<int64_t>> &proj) const {
     detail::Entry entry;

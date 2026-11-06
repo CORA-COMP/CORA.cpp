@@ -6,6 +6,11 @@
 // Syntax:   Tensor Z = priv_zeros(c, 0, 3);   HostConZonotope H = priv_host_con_zonotope(cz);
 //           bool empty = priv_is_empty(H);
 // See also: con_zonotope.h
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

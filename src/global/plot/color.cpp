@@ -1,10 +1,16 @@
 // color - CORA's colors, as MATLAB CORA's CORAcolor
 //
 // Syntax:   Color c = cora_color("CORA:reachSet", num_colors, cidx);
-// Inputs:   identifier - "CORA:<name>[:light|:dark]"; num_colors, cidx - shading of "reachSet";
+// Inputs:   identifier - "CORA:<name>[:light|:dark]"
+//           num_colors, cidx - shading of "reachSet";
 //           alpha - the mix of the ":light" and ":dark" variants
 // Outputs:  c - the RGB color
 // See also: cora/global/plot/plot.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/plot/color.h"
 #include "cora/global/error.h"

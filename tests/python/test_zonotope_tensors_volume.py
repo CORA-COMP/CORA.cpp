@@ -1,5 +1,13 @@
 """test_zonotope_tensors_volume - tensor_multiplication, tensor_multiplication_zono,
-underapproximate, volume and zonotope_norm of Zonotope in Python, on numpy and Eigen alone."""
+
+underapproximate, volume and zonotope_norm of Zonotope in Python, on numpy and Eigen alone.
+
+CORA authors: Matthias Althoff, Adrian Kulmburg
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@zonotope/tensorMultiplication.m
 # CORA: contSet/@zonotope/tensorMultiplication_zono.m
 # CORA: contSet/@zonotope/underapproximate.m
@@ -18,6 +26,9 @@ import warnings
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def zonotope(c, G):
     return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
@@ -29,6 +40,8 @@ def triples(m):
     perm = [list(t) for t in itertools.product(range(m), repeat=3)]
     return perm, comb, [comb.index(sorted(t)) for t in perm]
 
+
+# ============================================  MAIN  ============================================ #
 
 class TensorMultiplication(unittest.TestCase):
     def test_by_hand(self):
@@ -172,3 +185,5 @@ class ZonotopeNorm(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

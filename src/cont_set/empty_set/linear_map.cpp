@@ -1,12 +1,18 @@
 // linear_map - the image of the empty set under a matrix, as CORA's emptySet.mtimes
 //
 // Syntax:   EmptySet R = E.linear_map(M);   EmptySet R = M * E;   EmptySet R = s * E;
-// Inputs:   M - a matrix (..., k, n), or an interval matrix of such bounds; s - a number (or a
+// Inputs:   M - a matrix (..., k, n), or an interval matrix of such bounds
+//           s - a number (or a
 //           1 x 1 matrix)
 // Outputs:  R - the empty set of k dimensions; for a number, E itself
 // See also: lift, Zonotope::linear_map
 //
 // CORA: contSet/@emptySet/mtimes.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "global/format.h"

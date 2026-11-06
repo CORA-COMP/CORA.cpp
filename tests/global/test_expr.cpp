@@ -1,4 +1,9 @@
 // test_expr - symbolic expressions: values, derivatives, and enclosures over boxes
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/expr.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -110,6 +119,9 @@ void errors_are_described() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     values_follow_the_formula();
     derivatives_match_finite_differences();
@@ -120,3 +132,5 @@ int main() {
     errors_are_described();
     return test::finish("expr");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

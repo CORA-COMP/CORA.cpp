@@ -1,4 +1,11 @@
-"""test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python."""
+"""test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python.
+
+CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contDynamics/@contDynamics/reach.m
 # CORA: contDynamics/@contDynamics/simulateRandom.m
 # CORA: contDynamics/@nonlinearSys/nonlinearSys.m
@@ -20,6 +27,9 @@ import cora
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def van_der_pol():
     return cora.NonlinearSys(lambda x: [x[1], (1 - x[0] ** 2) * x[1] - x[0]], 2)
@@ -28,6 +38,8 @@ def van_der_pol():
 def start():
     return cora.Zonotope(cora.Tensor([1.4, 2.3]), 0.05 * cora.eye(2))
 
+
+# ============================================  MAIN  ============================================ #
 
 class Expressions(unittest.TestCase):
     def test_python_operators_build_expressions(self):
@@ -105,3 +117,5 @@ class ReachSet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -1,4 +1,5 @@
 // test_lean_cont_set - the operations every set has (ContSet) on a box and a zonotope against the
+//
 // CORALean oracle
 //
 // The oracle serves them per class (`interval.*`, `zonotope.*`); the generic entry of CORA.cpp must
@@ -29,6 +30,10 @@
 // ORACLE: contSet/@contSet/uminus.m
 // ORACLE: contSet/@contSet/uplus.m
 // ORACLE: contSet/@contSet/times.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -38,7 +43,13 @@
 #include "oracle_testing.h"
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -99,6 +110,9 @@ std::vector<std::pair<S, Tensor>> aux_normals(F make) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -373,3 +387,5 @@ int main() {
 
     return test::finish("lean cont_set");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

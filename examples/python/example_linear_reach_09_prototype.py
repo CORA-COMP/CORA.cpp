@@ -8,12 +8,19 @@ ReachSet. The package ships type stubs, so `mypy --strict` checks this file agai
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_09_prototype.py
 Outputs:  the number of steps and the size of the last set of "euler" next to the built-in "standard"
 See also: example_linear_reach_02_algorithms, CONTRIBUTING.md (Python stubs)
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       04-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Algorithm ---------------------------------------------------------------------------------
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 @cora.register_algorithm(cora.LinearSys, "euler")
 def euler(sys: cora.LinearSys, problem: cora.ReachProblem, time_step: float = 0.1) -> cora.ReachSet:
@@ -28,6 +35,9 @@ def euler(sys: cora.LinearSys, problem: cora.ReachProblem, time_step: float = 0.
     return cora.ReachSet(time_interval=sets[1:], time_point=sets, time_step=time_step)
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 t_final = 2.0
 R0 = cora.Zonotope(cora.Tensor([1.0, 0.5]), cora.Tensor([[0.1, 0.0], [0.0, 0.1]]))

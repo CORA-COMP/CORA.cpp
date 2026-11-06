@@ -8,7 +8,6 @@
 // Zonotope::cart_prod, intersect
 //
 // CORA: contSet/@zonoBundle/cartProd_.m
-//
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

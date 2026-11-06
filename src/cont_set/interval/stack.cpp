@@ -6,6 +6,10 @@
 // See also: contSet/zonotope/stack
 //
 // CORA.cpp only: batching, MATLAB CORA has no batch of sets
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/error.h"

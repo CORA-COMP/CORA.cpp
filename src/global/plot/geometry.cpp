@@ -4,6 +4,11 @@
 // Inputs:   a polygon, or points in space as the sets' vertices give them
 // Outputs:  a polygon with fewer vertices, the faces of the hull
 // See also: cora/global/plot/geometry.h, cora/global/plot/figure.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/plot/geometry.h"
 #include "cora/global/tensor/tolerance.h"

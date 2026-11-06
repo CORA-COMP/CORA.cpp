@@ -1,8 +1,20 @@
+// sets - random batches of intervals and zonotopes as Eigen matrices
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
+
 #include "sets.h"
 
 #include "cora/global/threads.h"
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+
+// ===========================================  MAIN  =========================================== //
 
 Interval<double> random_interval(Rng &rng, Eigen::Index n, Eigen::Index batch) {
     Interval<double> s{Mat<double>(n, batch), Mat<double>(n, batch)};
@@ -78,3 +90,5 @@ Mask contains(const Interval<double> &s, const Mat<double> &p, Eigen::Index poin
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

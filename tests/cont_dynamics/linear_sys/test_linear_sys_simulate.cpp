@@ -1,7 +1,13 @@
 // test_linear_sys_simulate - linear_sys simulate: exact against the matrix exponential, and inside
+//
 // the reachable sets
 //
 // CORA: contDynamics/@linearSys/simulate.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"
@@ -14,6 +20,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using namespace test::lin;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -109,6 +119,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         follows_the_matrix_exponential(b);
@@ -118,3 +131,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("linear_sys simulate");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

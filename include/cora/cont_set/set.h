@@ -9,6 +9,10 @@
 // See also: cont_set/cont_set.h, cont_set/registry.h
 //
 // CORA.cpp only: MATLAB is dynamically typed and needs no wrapper for a set of unknown class.
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

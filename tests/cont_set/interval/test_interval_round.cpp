@@ -1,6 +1,11 @@
 // test_interval_round - interval round: the bounds of a box rounded to decimals
 //
 // CORA: contSet/@interval/round.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -48,6 +57,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         round_to_integers(b);
@@ -56,3 +68,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval round");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

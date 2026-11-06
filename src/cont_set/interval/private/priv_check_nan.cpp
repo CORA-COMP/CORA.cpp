@@ -1,6 +1,11 @@
 // priv_check_nan - raises CORA's out-of-domain error for a result with a NaN bound
 //
 // See also: priv_check_nan.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_check_nan.h"
 

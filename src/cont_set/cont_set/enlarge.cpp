@@ -1,13 +1,19 @@
 // enlarge - a set scaled about its center, as CORA's contSet.enlarge
 //
 // Syntax:   R = S.enlarge(factor);   R = S.enlarge(2.0);
-// Inputs:   S - set of dimension n;  factor - a number or a column (..., n, 1) of one factor per
+// Inputs:   S - set of dimension n
+//           factor - a number or a column (..., n, 1) of one factor per
 //           coordinate
 // Outputs:  R - c + F (S - c) for the center c and F = diag(factor), in the class of S; a class
 //           with its own formula (a box) overrides it
 // See also: minus, linear_map, Interval::enlarge
 //
 // CORA: contSet/@contSet/enlarge.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"

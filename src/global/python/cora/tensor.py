@@ -1,4 +1,4 @@
-"""Backend-agnostic arrays: the Python side of the C++ `Tensor`.
+"""tensor - backend-agnostic arrays: the Python side of the C++ `Tensor`.
 
     Tensor([[1, 2], [3, 4]])               # torch on the torch backend, numpy on eigen
     Tensor.zeros(3, 2, device="gpu")       # like Tensor::zeros(size, device)
@@ -7,6 +7,11 @@
 
 The constructors and the functions are also plain functions of the package (`cora.zeros`,
 `cora.sin`, ...); `cora.sin`, `cos` and `exp` also take the symbolic states of a NonlinearSys.
+
+Authors:       Claude Sonnet 5.5
+Written:       01-October-2026
+Last update:   ---
+Reviewed:      ---
 """
 from typing import TYPE_CHECKING
 
@@ -20,6 +25,9 @@ from ._cora import sin as _sin_expr
 if TYPE_CHECKING:
     from ._cora import Array
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def _torch():
     if not current_backend().startswith("torch"):
@@ -38,6 +46,8 @@ def _dtype(dtype):
         raise ValueError(f"cora: unknown dtype {dtype!r}; use 'float64' or 'float32'")
     return _NAMES[name]
 
+
+# ============================================  MAIN  ============================================ #
 
 def default_tol(dtype="float64"):
     """The tolerance of a dtype when no `tol`, `cora.tolerance` or `cora.set_default_tolerance`
@@ -149,3 +159,5 @@ class Tensor:
     exp = staticmethod(exp)
     log = staticmethod(log)
     sqrt = staticmethod(sqrt)
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

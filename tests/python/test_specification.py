@@ -1,4 +1,11 @@
-"""test_specification - the Specification class in Python: halfspaces against any set."""
+"""test_specification - the Specification class in Python: halfspaces against any set.
+
+CORA authors: Niklas Kochdumper, Tobias Ladner, Mark Wetzlinger
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       29-September-2026
+Last update:   03-November-2026
+Reviewed:      ---
+"""
 # CORA: specification/@specification/check.m
 # CORA: specification/@specification/specification.m
 
@@ -16,6 +23,10 @@ import cora
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 F64 = dict(dtype=torch.float64)
 A = torch.tensor([[-0.1, 1.0], [-1.0, -0.1]], **F64)
 X0 = cora.Zonotope(torch.tensor([1.0, 0.0], **F64), 0.1 * torch.eye(2, **F64))
@@ -25,6 +36,8 @@ OPTIONS = dict(time_step=0.1, t_final=6.0, taylor_terms=8)
 def x1(value):
     return torch.tensor([value, 0.0], **F64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Specification(unittest.TestCase):
     def setUp(self):
@@ -90,3 +103,5 @@ class Specification(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

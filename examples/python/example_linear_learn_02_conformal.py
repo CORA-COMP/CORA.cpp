@@ -11,6 +11,11 @@ error of the model is, as long as trajectories are exchangeable.
 Syntax:   PYTHONPATH=build python examples/python/example_linear_learn_02_conformal.py [--save FILE]
 Outputs:  the learned matrix, the conformal radius, the coverage on test trajectories, and the figure
 See also: example_linear_learn_01_dynamics, example_nonlinear_reach_01_vanDerPol
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import math
@@ -18,6 +23,11 @@ import math
 import torch
 
 import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -28,9 +38,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 time_step = 0.1
 t_final = 3.0

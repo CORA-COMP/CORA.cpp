@@ -1,4 +1,5 @@
 """plot - plotting in the style of MATLAB CORA: `plot(obj, dims)` draws what it is given on the
+
 current axes (or `ax`) with matplotlib.
 
     cora.plot(R)                a reachable set: the ReachSet of LinearSys/NonlinearSys.reach
@@ -22,8 +23,17 @@ as TikZ. `dims` picks the one to three dimensions to show; the options of the co
 (`alpha`, `zorder`, ...) goes to matplotlib. Colors are CORA identifiers ("CORA:red"), RGB
 triples or matplotlib colors. Sets must hold one set, not a batch. matplotlib is imported when
 something is drawn.
+
+Authors:       Claude Sonnet 5.5
+Written:       01-October-2026
+Last update:   ---
+Reviewed:      ---
 """
 from ._cora import ContSet, Figure, ReachSet, Rng, Specification
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 _CORE_OPTIONS = ("face_alpha", "line_width", "unify", "filled", "set", "time_points", "step",
                  "num_colors", "cidx")
@@ -159,6 +169,8 @@ def _draw(ax, layer, style):
     return line
 
 
+# ============================================  MAIN  ============================================ #
+
 def core_figure(ax):
     """The core figure of the axes: it holds every layer drawn on them, with the choices of the
     core, one per axes so that the sets take one color after another."""
@@ -237,3 +249,5 @@ ContSet.plot_rand_point = _method(plot_rand_point)
 ReachSet.plot = _method(plot)
 ReachSet.plot_over_time = _method(plot_over_time)
 Specification.plot = _method(plot)
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

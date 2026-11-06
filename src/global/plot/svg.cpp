@@ -4,6 +4,11 @@
 // Inputs:   the layers of the figure, stacked by their zorder
 // Outputs:  the SVG text, or the file
 // See also: cora/global/plot/figure.h, src/global/plot/figure.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "cora/global/plot/figure.h"

@@ -1,12 +1,21 @@
 // test_fullspace_box - fullspace box: the whole space is its own box
 //
 // CORA: contSet/@fullspace/box.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -24,8 +33,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     box_is_the_set_itself();
     checks_and_their_switch();
     return test::finish("fullspace box");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

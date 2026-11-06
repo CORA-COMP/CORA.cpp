@@ -5,11 +5,20 @@
 // strict comparison is not strict there), so emptySet is compared on boxes of positive radius only.
 //
 // ORACLE: matrixSet/@intervalMatrix/representsa.m
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -31,3 +40,5 @@ int main() {
     });
     return test::finish("lean interval_matrix representsa");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

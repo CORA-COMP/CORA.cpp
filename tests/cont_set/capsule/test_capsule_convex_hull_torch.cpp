@@ -32,5 +32,4 @@ int main() {
     return test::finish("capsule convex_hull (torch)");
 }
 
-
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

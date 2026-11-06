@@ -1,4 +1,9 @@
 // test_tensor_batch_torch - Tensor on libtorch: batch dimensions broadcast
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/tensor/tensor.h"
@@ -7,6 +12,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -43,8 +52,13 @@ void batches_broadcast() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     batches_broadcast();
     set_default_backend("eigen");
     return test::finish("tensor batch (libtorch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

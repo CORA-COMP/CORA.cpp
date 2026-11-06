@@ -7,6 +7,11 @@
 // See also: less_equal, isequal, contains
 //
 // CORA: contSet/@interval/lt.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

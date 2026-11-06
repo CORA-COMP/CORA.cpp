@@ -1,4 +1,11 @@
-"""test_linear_sys_simulate - LinearSys.simulate and simulate_random in Python."""
+"""test_linear_sys_simulate - LinearSys.simulate and simulate_random in Python.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contDynamics/@contDynamics/simulateRandom.m
 # CORA: contDynamics/@linearSys/simulate.m
 
@@ -16,6 +23,10 @@ import cora
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 F64 = dict(dtype=torch.float64)
 
 
@@ -24,6 +35,8 @@ def system(n=3, m=4, seed=0):
     A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
     return A, torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Simulate(unittest.TestCase):
     def test_follows_the_matrix_exponential(self):
@@ -112,3 +125,5 @@ class SimulateRandom(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

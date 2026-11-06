@@ -1,12 +1,21 @@
 // test_lean_interval_unbounded - Interval::unbounded against the CORALean oracle (its `Inf`)
 //
 // ORACLE: contSet/@interval/Inf.m
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -16,3 +25,5 @@ int main() {
     });
     return test::finish("lean interval unbounded");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

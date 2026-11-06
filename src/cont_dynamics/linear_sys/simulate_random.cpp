@@ -3,12 +3,18 @@
 // Syntax:   x = sys.simulate_random(problem, alg, points, rng);
 // Inputs:   problem - initial_set (any set), input_set (any set of constant inputs, needs B; none:
 //                     no input), t_final
-//           alg - alg::Exact (time_step);  points - the number N of trajectories
+//           alg - alg::Exact (time_step)
+//           points - the number N of trajectories
 //           rng - random numbers (a seed makes them repeatable)
 // Outputs:  x - x[k] holds the N points at time k*time_step, as simulate
 // See also: simulate, ContSet::rand_point
 //
 // CORA: contDynamics/@contDynamics/simulateRandom.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 

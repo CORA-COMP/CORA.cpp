@@ -1,3 +1,10 @@
+// instance - runs one catalog instance and writes its result
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
+
 #include "instance.h"
 
 #include "backend.h"
@@ -22,7 +29,12 @@
 #include <omp.h>
 #endif
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 using Index = Eigen::Index;
@@ -165,6 +177,9 @@ std::string fixed(double v, int digits) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 std::unique_ptr<Runner> prepare_eigen(const Params &in, Rng &rng) {
     return std::make_unique<Prepared>(in, rng);
 }
@@ -258,3 +273,5 @@ void print_env(std::ostream &out) {
 void write_error(const std::string &results_file) { write_result(results_file, "error", {}); }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

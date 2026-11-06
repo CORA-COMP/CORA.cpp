@@ -10,6 +10,11 @@
 // See also: Zonotope::minnorm, Zonotope::mink_diff
 //
 // CORA: contSet/@zonotope/polytope.m
+// CORA authors: Niklas Kochdumper, Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

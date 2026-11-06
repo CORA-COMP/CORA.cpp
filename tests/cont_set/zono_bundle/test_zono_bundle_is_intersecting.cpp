@@ -1,7 +1,6 @@
 // test_zono_bundle_is_intersecting - ZonoBundle::is_intersecting: whether it meets a set or points
 //
 // CORA: contSet/@zonoBundle/isIntersecting_.m
-//
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

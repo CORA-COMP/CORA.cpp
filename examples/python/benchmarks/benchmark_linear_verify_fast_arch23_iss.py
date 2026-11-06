@@ -6,12 +6,20 @@ benchmarks/data and verified with LinearSys.verify.
 Syntax:   python benchmarks/python/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 Outputs:  one line 'benchmark,instance,result,time' per instance, as the MATLAB scripts
 See also: the C++ program of the same name (benchmarks/cpp)
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import benchmark_data
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
+
+# ============================================  MAIN  ============================================ #
 
 family = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01"]
 

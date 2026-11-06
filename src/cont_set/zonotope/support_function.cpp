@@ -6,6 +6,11 @@
 // See also: Interval::support_function, Specification::check
 //
 // CORA: contSet/@zonotope/supportFunc_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

@@ -8,6 +8,11 @@
 // See also: contains, support_function
 //
 // CORA: contSet/@zonotope/boundaryPoint.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"

@@ -11,6 +11,11 @@
 // See also: cubic_map, rescale, Zonotope::quad_map
 //
 // CORA: contSet/@conZonotope/quadMap.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"

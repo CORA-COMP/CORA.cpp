@@ -7,6 +7,11 @@
 // See also: convex_hull, Interval::enclose, Zonotope::enclose
 //
 // CORA: contSet/@contSet/enclose.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/cont_set.h"

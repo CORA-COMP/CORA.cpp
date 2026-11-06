@@ -1,6 +1,11 @@
 // test_nonlinear_sys_simulate - nonlinearSys simulate: exact on a linear system, and its limits
 //
 // CORA: contDynamics/@nonlinearSys/simulate.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "testing.h"
@@ -9,6 +14,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -94,6 +103,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         follows_the_harmonic_oscillator(b);
@@ -103,3 +115,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("nonlinearSys simulate");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

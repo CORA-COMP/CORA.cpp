@@ -1,6 +1,11 @@
 // test_interval_isequal - interval isequal: whether two boxes have the same bounds
 //
 // CORA: contSet/@interval/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -61,6 +70,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         isequal_compares_the_bounds(b);
@@ -69,3 +81,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval isequal");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

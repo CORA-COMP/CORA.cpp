@@ -8,6 +8,11 @@
 // Options:    CORA's option names, 0-based indices (as the oracle); `p` and `k` tune the elementary
 //             functions (CORA has no such argument); `tol` is accepted at 0 only
 // See also:   lean/tensor.h, lean/zonotope.h, lean/request.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

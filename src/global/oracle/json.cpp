@@ -1,6 +1,11 @@
 // json - a minimal JSON value with parse and dump, the wire format of the CORALean oracle
 //
 // See also: lean/oracle.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/json.h"
 #include "cora/global/error.h"

@@ -2,7 +2,10 @@
 //
 // Syntax:   IntervalMatrix C = A.matmul(B);   C = A.matmul(M);   C = IntervalMatrix::matmul(M, A);
 //           C = A.matmul(s);   Zonotope Z2 = A.matmul(Z);   EmptySet E2 = A.matmul(E);
-// Inputs:   B - interval matrix;  M - matrix of numbers;  s - number;  Z - zonotope;
+// Inputs:   B - interval matrix
+//           M - matrix of numbers
+//           s - number
+//           Z - zonotope;
 //           E - empty set; the inner dimensions agree
 // Outputs:  C - each entry the sum over k of the hull of the corner products (the bounds of the
 //           interval matrix product); for a number the bounds scaled (swapped if s < 0);
@@ -11,6 +14,11 @@
 // See also: matrix_power, Zonotope::linear_map
 //
 // CORA: matrixSet/@intervalMatrix/mtimes.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_matmul.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"

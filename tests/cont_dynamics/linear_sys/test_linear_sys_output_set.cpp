@@ -1,7 +1,13 @@
 // test_linear_sys_output_set - linear_sys output_set: y = C x is exact on zonotopes, and without C
+//
 // the output is the state
 //
 // CORA: contDynamics/@linearSys/outputSet.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cont_dynamics/linear_sys/matlab_reference_inputs.h"
@@ -11,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using namespace test::lin;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -85,6 +95,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         maps_every_set_by_c(b);
@@ -93,3 +106,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("linear_sys output_set");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

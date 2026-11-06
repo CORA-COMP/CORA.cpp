@@ -3,6 +3,11 @@
 Syntax:   python -m unittest tests.python.test_matlab
 Outputs:  pass or fail
 See also: test_numpy
+
+Authors:       Claude Sonnet 5.5, Tobias Ladner
+Written:       30-September-2026
+Last update:   02-November-2026
+Reviewed:      ---
 """
 import unittest
 
@@ -11,6 +16,8 @@ from cora import matlab
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+
+# ============================================  MAIN  ============================================ #
 
 class TestMatlab(unittest.TestCase):
 

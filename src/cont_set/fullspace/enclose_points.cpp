@@ -6,6 +6,11 @@
 // See also: Interval::enclose_points
 //
 // CORA: contSet/@fullspace/enclosePoints.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "global/format.h"

@@ -19,7 +19,6 @@
 //
 // CORA: contSet/@polytope/polytope.m
 // CORA: contSet/@interval/polytope.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

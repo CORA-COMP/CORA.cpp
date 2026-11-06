@@ -1,6 +1,11 @@
 // test_empty_set_vertices - EmptySet vertices: none
 //
 // CORA: contSet/@emptySet/vertices_.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/global/plot/plot.h"
@@ -8,6 +13,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,6 +46,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         the_empty_set_has_no_polygon(b);
@@ -45,3 +57,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("empty_set vertices");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

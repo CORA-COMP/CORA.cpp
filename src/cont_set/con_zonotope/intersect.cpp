@@ -8,6 +8,11 @@
 // See also: con_intersect, compact, Zonotope::intersect
 //
 // CORA: contSet/@conZonotope/and_.m
+// CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

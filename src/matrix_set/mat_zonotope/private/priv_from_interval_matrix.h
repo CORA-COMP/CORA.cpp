@@ -5,6 +5,11 @@
 // Outputs:  Z - center of A and one generator per entry, the radius of that entry, in column
 //           order (CORA's intervalMatrix/matZonotope)
 // See also: expm_independent, interval_matrix
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

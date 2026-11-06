@@ -1,4 +1,9 @@
 // test_interval_stack_torch - interval stack: a batch member is the interval it was made from
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/backend/torch.h"
@@ -7,6 +12,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,6 +43,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     stack_keeps_each_member();
@@ -41,3 +53,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval stack (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -9,6 +9,11 @@
 // Syntax:   configure_threads();   int nt = threads_for(iterations, work);
 //           EigenThreads narrow(work);   set_num_threads(4);
 // See also: threads.cpp
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

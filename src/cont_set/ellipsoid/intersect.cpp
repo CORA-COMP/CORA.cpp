@@ -1,7 +1,8 @@
 // intersect - the intersection of an ellipsoid with a point or an ellipsoid, as CORA's and_
 //
 // Syntax:   Ellipsoid R = E.intersect(p);   Ellipsoid R = E.intersect(S, mode);
-// Inputs:   p - a point (n, 1);  S - an ellipsoid;  mode - "outer" (default) or "inner"
+// Inputs:   p - a point (n, 1)
+//           S - an ellipsoid;  mode - "outer" (default) or "inner"
 //           (single, not batched ellipsoids)
 // Outputs:  R - the point as an ellipsoid with Q = 0 if the ellipsoid contains it up to the
 //           machine epsilon, else the empty ellipsoid; the same when one of the ellipsoids is a

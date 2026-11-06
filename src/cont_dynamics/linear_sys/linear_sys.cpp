@@ -6,6 +6,11 @@
 // See also: reach, simulate, verify
 //
 // CORA: contDynamics/@linearSys/linearSys.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "global/format.h"

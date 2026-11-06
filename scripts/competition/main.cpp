@@ -1,9 +1,14 @@
-// Commands the per-instance scripts call:
+// main - the commands the per-instance scripts call
 //
 //     coracpp serve <server dir>           the warm daemon (see server.cpp)
 //     coracpp run <params> <results file>  one instance in this process
 //     coracpp env                          what the worker runs on
 //     coracpp check                        every operation once, as an install smoke test
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/threads.h"
 #include "instance.h"
@@ -12,6 +17,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
     const std::vector<std::string> args(argv + 1, argv + argc);
@@ -42,3 +52,5 @@ int main(int argc, char **argv) {
     std::cerr << "usage: coracpp serve <dir> | run <params> <results file> | env | check\n";
     return 2;
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

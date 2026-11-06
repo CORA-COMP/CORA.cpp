@@ -9,6 +9,11 @@
 // See also: interval, box
 //
 // CORA: contSet/@zonotope/dH2box.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/tensor/tolerance.h"

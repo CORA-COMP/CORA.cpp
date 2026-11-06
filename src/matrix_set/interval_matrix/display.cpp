@@ -8,6 +8,11 @@
 // See also: Interval::display, src/global/format.h
 //
 // CORA: matrixSet/@intervalMatrix/display.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

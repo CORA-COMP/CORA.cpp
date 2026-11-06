@@ -7,6 +7,11 @@
 //
 // Syntax:     cora::bench::run_instance("ISSF01_ISS01");
 // See also:   contDynamics/linear_sys/linear_sys.h, cora/specification/specification.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

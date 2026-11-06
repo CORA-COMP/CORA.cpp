@@ -6,6 +6,11 @@
 // See also: Interval::inf
 //
 // CORA: contSet/@interval/infimum.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 

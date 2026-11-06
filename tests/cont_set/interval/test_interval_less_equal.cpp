@@ -1,6 +1,11 @@
 // test_interval_less_equal - interval less_equal: whether a box lies in another (CORA's le)
 //
 // CORA: contSet/@interval/le.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -8,6 +13,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -37,8 +46,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(less_equal_is_containment);
     checks_and_their_switch();
     return test::finish("interval less_equal");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

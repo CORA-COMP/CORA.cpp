@@ -1,6 +1,11 @@
 // test_zonotope_reduce - zonotope reduce: fewer generators, and a superset of the original
 //
 // CORA: contSet/@zonotope/reduce.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -10,6 +15,10 @@ using namespace cora;
 using test::check;
 using test::random_direction;
 using test::support;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -70,6 +79,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         reduce_limits_the_generators(b);
@@ -81,3 +93,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope reduce");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

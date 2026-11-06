@@ -1,7 +1,8 @@
 // project_high_dim - a zonotope placed into a larger space
 //
 // Syntax:   Zonotope R = Z.project_high_dim(N, dims);
-// Inputs:   N - dimension of the space, N >= dim;  dims - the position (0-based) in it of each
+// Inputs:   N - dimension of the space, N >= dim
+//           dims - the position (0-based) in it of each
 //           state of Z, in the order of Z
 // Outputs:  R - the zonotope whose state dims[i] is state i of Z and whose other states are 0
 //           (center and generators); a repeated entry of dims keeps the last state
@@ -9,6 +10,11 @@
 //
 // CORA: contSet/@zonotope/projectHighDim_.m
 // CORA: contSet/@contSet/projectHighDim.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

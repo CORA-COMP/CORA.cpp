@@ -4,6 +4,11 @@
 // Inputs:   n - a nonnegative integer
 // Outputs:  f - the product 1 * 2 * ... * n; Inf from n = 171, as MATLAB's factorial
 // See also: expm, exponential_remainder
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

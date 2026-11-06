@@ -7,6 +7,10 @@
 // See also: priv_linear_programs, is_full_dim
 //
 // CORA.cpp only: MATLAB calls null(A)
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

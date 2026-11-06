@@ -7,6 +7,11 @@
 // See also: Zonotope::linear_map
 //
 // CORA: contSet/@interval/mtimes.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

@@ -8,12 +8,16 @@
 // See also: compact, contains
 //
 // CORA: contSet/@zonotope/isequal.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/tensor/tolerance.h"
 #include "cora/global/within_tol.h"
-
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 

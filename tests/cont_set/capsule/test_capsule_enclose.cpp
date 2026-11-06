@@ -1,7 +1,6 @@
 // test_capsule_enclose - Capsule enclose: a capsule that encloses two capsules
 //
 // CORA: contSet/@capsule/enclose.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -67,6 +66,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule enclose");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

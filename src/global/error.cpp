@@ -2,6 +2,11 @@
 //
 // Syntax:   detail::raise(Error::wrong_value, "...");   warn("CORA:deprecated", "...");
 // See also: cora/global/error.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       02-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cora/global/error.h"
 

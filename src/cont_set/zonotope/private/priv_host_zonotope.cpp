@@ -7,6 +7,10 @@
 // See also: priv_zonotope_norm
 //
 // CORA.cpp only: MATLAB hands its matrices to the solver as they are
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

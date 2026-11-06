@@ -1,4 +1,4 @@
-// The set representations, as Eigen matrices.
+// sets - the set representations, as Eigen matrices
 //
 // Every set holds a batch of `B` sets (`1` when the instance is not batched), laid out so
 // that one call covers the whole batch: an `Interval` keeps `lo`/`hi` as `n × B`, one set
@@ -10,6 +10,11 @@
 // what Eigen vectorizes; the same source instantiates for a differentiable scalar
 // (`Eigen::AutoDiffScalar`, autodiff's `dual`, CoDiPack, …) so the library can be
 // differentiated through, at the usual cost of leaving the vectorized paths behind.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -23,6 +28,8 @@
 #include "cora/global/rng.h"
 #include "cora/global/threads.h"
 #include "mask.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::comp {
 
@@ -144,3 +151,5 @@ Mask contains(const Interval<double> &s, const Mat<double> &p, Eigen::Index poin
 Mask contains(const Zonotope<double> &s, const Mat<double> &p, Eigen::Index points);
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

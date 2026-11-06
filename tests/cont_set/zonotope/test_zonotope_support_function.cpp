@@ -1,7 +1,13 @@
 // test_zonotope_support_function - zonotope support_function: the closed form against the best
+//
 // corner of the generator cube
 //
 // CORA: contSet/@zonotope/supportFunc_.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -14,6 +20,10 @@ using test::check;
 using test::close;
 using test::random_direction;
 using test::support;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -60,8 +70,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { support_function_matches_brute_force(b); });
     checks_and_their_switch();
     return test::finish("zonotope support_function");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

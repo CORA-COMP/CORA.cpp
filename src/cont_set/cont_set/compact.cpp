@@ -1,7 +1,8 @@
 // compact - a set without redundancy, as CORA's contSet.compact and compact_
 //
 // Syntax:   R = S.compact();   R = S.compact("all", tol);
-// Inputs:   S - a set;  method - a variant of the class (default: the class's own; see its
+// Inputs:   S - a set
+//           method - a variant of the class (default: the class's own; see its
 //           compact);  tol - nonnegative, default: the repository tolerance
 // Outputs:  R - the set with the redundant parts removed, in the class of S; a box, the empty
 //           set and the whole space are returned as they are, Error::noops for a class without
@@ -10,6 +11,11 @@
 //
 // CORA: contSet/@contSet/compact.m
 // CORA: contSet/@contSet/compact_.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/cont_set.h"

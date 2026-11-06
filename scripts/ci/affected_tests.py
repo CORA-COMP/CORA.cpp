@@ -9,12 +9,21 @@ Method:   the #include graph of src/, include/, tests/ and examples/ gives, for 
           test that includes one of its own headers (the stem's header, else the headers of its
           mirrored include folder). A change to the tensor, the backends, the public global headers,
           the build (CMake, presets), CI, or to a file this script knows nothing about runs ALL.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import os
 import re
 import subprocess
 import sys
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SOURCE_DIRS = ("src", "include", "tests", "examples")
@@ -166,6 +175,8 @@ def changed_files(base, head):
     return [line for line in out.splitlines() if line]
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("revisions", nargs="*", help="<base> <head>")
@@ -187,3 +198,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

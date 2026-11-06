@@ -12,7 +12,6 @@
 // See also: contains, intersect, Interval::is_intersecting
 //
 // CORA: contSet/@zonoBundle/isIntersecting_.m
-//
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

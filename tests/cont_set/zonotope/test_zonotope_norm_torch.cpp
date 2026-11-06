@@ -1,11 +1,21 @@
 // test_zonotope_norm_torch - zonotope norm: gradients through torch
 //
 // norm is piecewise: the gradient follows the entry that attains the largest magnitude.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -17,3 +27,5 @@ int main() {
     }
     return test::finish("zonotope norm (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

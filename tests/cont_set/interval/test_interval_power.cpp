@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@interval/power.m
 // PROPERTY: contSet/@interval/power.m
+// CORA authors: Dmitry Grebenyuk
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
@@ -14,6 +19,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -158,6 +167,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         power_with_integer_exponents(b);
@@ -171,3 +183,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval power");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

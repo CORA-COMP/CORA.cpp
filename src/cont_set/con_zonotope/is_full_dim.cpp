@@ -12,6 +12,11 @@
 // See also: is_bounded, Zonotope::is_full_dim
 //
 // CORA: contSet/@conZonotope/isFullDim.m
+// CORA authors: Niklas Kochdumper, Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

@@ -1,9 +1,18 @@
 // test_zonotope_hausdorff_distance_to_box_torch - zonotope hausdorff_distance_to_box: gradients
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -22,9 +31,14 @@ void hausdorff_distance_gradient() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(37);
     hausdorff_distance_gradient();
     return test::finish("zonotope hausdorff_distance_to_box (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

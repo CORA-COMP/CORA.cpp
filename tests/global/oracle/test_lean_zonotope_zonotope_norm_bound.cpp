@@ -1,4 +1,5 @@
 // test_lean_zonotope_zonotope_norm_bound - Zonotope::zonotope_norm against the CORALean oracle, as
+//
 // a bound
 //
 // The oracle's value (from batch 5) is a lower bound on min {|g|_inf | G g = p}
@@ -7,6 +8,11 @@
 // CORA.cpp's norm is that minimum from a linear program. So the oracle's value never exceeds CORA's
 // beyond kAgree (relative), is the norm to kAgree for n independent generators, and is infinite
 // only where CORA's is. There is no ORACLE tag: no bit-exact test exists.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
@@ -16,7 +22,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -35,6 +47,9 @@ void aux_check(const Zonotope &Z, const Tensor &p, bool independent) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -58,3 +73,5 @@ int main() {
     });
     return test::finish("lean zonotope zonotope_norm bound");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

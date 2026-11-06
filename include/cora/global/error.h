@@ -9,6 +9,11 @@
 // Syntax:     CORA_CHECK(Z.dim() == n, Error::dimension_mismatch, [&] { return "..."; });
 //             CORA_FAIL(Error::not_converged, "...");   warn("CORA:solver", "...");
 // See also:   global/settings.h, global/within_tol.h
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       02-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #pragma once
 

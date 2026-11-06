@@ -1,7 +1,13 @@
 """test_lean_interval_matrix - IntervalMatrix against the CORALean oracle (cora.lean.IntervalMatrix)
 
 norm is not here as ORACLE: the Frobenius norm is a square root that the oracle bounds from above by
-Newton steps, so CORA.cpp's correctly rounded root is inside the bound but not its bits."""
+Newton steps, so CORA.cpp's correctly rounded root is inside the bound but not its bits.
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # ORACLE: matrixSet/@intervalMatrix/abs.m
 # ORACLE: matrixSet/@intervalMatrix/center.m
 # ORACLE: matrixSet/@intervalMatrix/contains.m
@@ -26,6 +32,10 @@ import cora
 import numpy as np
 import oracle_testing as oracle
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 SHAPES = ((2, 2), (3, 4), (5, 1), (4, 4))
 
 
@@ -42,6 +52,8 @@ def lean_of(A):
 def point(M):
     return cora.Interval.matrix(M, M)
 
+
+# ============================================  MAIN  ============================================ #
 
 @oracle.needs_oracle
 class Oracle(unittest.TestCase):
@@ -141,3 +153,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

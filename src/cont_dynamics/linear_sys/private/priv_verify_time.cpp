@@ -7,6 +7,11 @@
 // Inputs:   bounds - the pairs, in order
 // Outputs:  the queries of priv_verifyTime.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/tensor/tolerance.h"

@@ -6,6 +6,11 @@
 //
 // Syntax:   for (const OpInfo &op : tensor_ops()) ...;   GradientsScope strict;
 // See also: ops.def, tensor.h, docs/tensor.md
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "cora/global/tensor/tensor.h"

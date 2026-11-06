@@ -1,7 +1,13 @@
 // test_linear_sys_reach_matlab - linear_sys reach against MATLAB CORA: the enclosures and time
+//
 // points of three systems
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cora/global/rng.h"
@@ -14,6 +20,10 @@ using namespace cora;
 using test::check;
 using namespace test::lin;
 using matlab_reference::System;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -58,7 +68,12 @@ void matches_matlab_cora(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { matches_matlab_cora(b); });
     return test::finish("linear_sys reach (MATLAB)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

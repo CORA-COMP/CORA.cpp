@@ -1,4 +1,10 @@
-"""test_lean_empty_set - EmptySet against the CORALean oracle (cora.lean.EmptySet): exact answers"""
+"""test_lean_empty_set - EmptySet against the CORALean oracle (cora.lean.EmptySet): exact answers
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # ORACLE: contSet/@emptySet/and_.m
 # ORACLE: contSet/@emptySet/center.m
 # ORACLE: contSet/@emptySet/contains_.m
@@ -24,6 +30,10 @@ import unittest
 import cora
 import oracle_testing as oracle
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 DIMENSIONS = (1, 2, 5, 20)
 
 
@@ -35,6 +45,8 @@ def operands(rnd, n):
 def same_dimension(a, b):
     return oracle.check(a.dim == b.dim, True)
 
+
+# ============================================  MAIN  ============================================ #
 
 @oracle.needs_oracle
 class Oracle(unittest.TestCase):
@@ -134,3 +146,5 @@ class Oracle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

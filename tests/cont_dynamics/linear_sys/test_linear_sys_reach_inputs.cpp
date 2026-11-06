@@ -1,7 +1,13 @@
 // test_linear_sys_reach_inputs - linear_sys reach with an input set U, against MATLAB CORA, against
+//
 // simulations with constant and piecewise-constant inputs, and for the errors it reports
 //
 // CORA: contDynamics/@linearSys/reach.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
 #include "cont_dynamics/linear_sys/matlab_reference_inputs.h"
@@ -16,6 +22,10 @@ using test::check;
 using test::throws;
 using namespace test::lin;
 using matlab_reference::InputSystem;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -153,6 +163,9 @@ void reports_errors(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         matches_matlab_cora(b);
@@ -162,3 +175,5 @@ int main() {
     });
     return test::finish("linear_sys reach (inputs)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

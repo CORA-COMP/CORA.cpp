@@ -1,4 +1,5 @@
 // test_linear_sys_verify_zonotope - linear_sys verify with the zonotope algorithm against MATLAB
+//
 // CORA
 //
 // Reference: MATLAB R2025b, CORA (feature/coracpp-python),
@@ -8,6 +9,11 @@
 // run of verify for RAND01.
 //
 // CORA: contDynamics/@linearSys/verify.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -15,6 +21,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -294,6 +304,9 @@ void rand_instances() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     adaptive_reach_matches_matlab();
     adaptive_reach_rand02_matches_matlab();
@@ -302,3 +315,5 @@ int main() {
     reduction_case_matches_matlab();
     return test::finish("linear_sys verify (zonotope)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

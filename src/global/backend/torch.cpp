@@ -3,6 +3,11 @@
 // TorchTensor implements the operations of Tensor::Impl on torch::Tensor, so autograd
 // differentiates through them; TorchBackend makes tensors from host numbers. Masks and indices
 // are tensors of the operand's dtype, as on the other backends.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
 #include "cora/global/error.h"

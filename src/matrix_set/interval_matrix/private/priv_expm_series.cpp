@@ -1,6 +1,11 @@
 // priv_expm_series - the Taylor series of the interval matrix exponential, from a given start
 //
 // See also: priv_expm_series.h
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "matrix_set/interval_matrix/private/priv_expm_series.h"
 #include "matrix_set/interval_matrix/private/priv_factorial.h"

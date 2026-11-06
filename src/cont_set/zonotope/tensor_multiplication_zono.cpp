@@ -8,6 +8,11 @@
 // See also: tensor_multiplication
 //
 // CORA: contSet/@zonotope/tensorMultiplication_zono.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

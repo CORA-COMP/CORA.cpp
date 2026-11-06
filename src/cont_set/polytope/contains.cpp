@@ -1,7 +1,8 @@
 // contains - whether a polytope contains points or a set, as CORA's polytope.contains
 //
 // Syntax:   res = P.contains(p);   res = P.contains(S, "exact", tol);
-// Inputs:   p - points (n, N);  S - a set of the dimension of P: a box, a zonotope, a polytope
+// Inputs:   p - points (n, N)
+//           S - a set of the dimension of P: a box, a zonotope, a polytope
 //           (any set with a support function);  method - "exact" (default), "exact:venum" (the
 //           vertices of P), "exact:polymax" (the halfspaces of P); "approx" is "exact" for a box
 //           or a zonotope and not supported for others;  tol - see below
@@ -17,7 +18,6 @@
 // See also: Polytope::intersect, ConZonotope::contains
 //
 // CORA: contSet/@polytope/contains_.m
-//
 // CORA authors: Niklas Kochdumper, Viktor Kotsev, Adrian Kulmburg, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

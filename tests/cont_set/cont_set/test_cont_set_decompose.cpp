@@ -1,6 +1,11 @@
 // test_cont_set_decompose - ContSet::decompose: the projections onto blocks of coordinates
 //
 // CORA: contSet/@contSet/decompose.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -45,8 +54,13 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(decompose_projects_each_block);
     errors_and_their_switch();
     return test::finish("cont_set decompose");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

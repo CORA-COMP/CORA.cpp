@@ -6,15 +6,24 @@
 // Syntax:   build/examples/cpp/example_linear_reach_03_specification
 // Outputs:  whether each specification holds, and the step that first violates it
 // See also: example_linear_reach_01_5dim
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/specification/specification.h"
 
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Parameters ------------------------------------------------------------------------------

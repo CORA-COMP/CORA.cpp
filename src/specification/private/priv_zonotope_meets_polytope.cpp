@@ -5,9 +5,15 @@
 // the artificial variables of the rows with r_i < 0 to zero; the set meets the polytope iff it can.
 //
 // Syntax:   bool hit = priv_zonotope_meets_polytope(c, G, m, a, b);
-// Inputs:   c, G (n x m row-major) - the zonotope;  a, b - the halfspaces {x | a[i]'x <= b[i]}
+// Inputs:   c, G (n x m row-major) - the zonotope
+//           a, b - the halfspaces {x | a[i]'x <= b[i]}
 // Outputs:  hit - true if the zonotope and the polytope have a common point (up to 1e-9)
 // See also: Specification::check
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
 #include "specification/private/priv.h"

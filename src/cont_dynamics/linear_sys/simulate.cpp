@@ -10,6 +10,11 @@
 // See also: simulate_random, reach
 //
 // CORA: contDynamics/@linearSys/simulate.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "global/format.h"

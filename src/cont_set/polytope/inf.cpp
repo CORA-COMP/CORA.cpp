@@ -7,7 +7,6 @@
 // See also: empty, Polytope::box
 //
 // CORA: contSet/@polytope/Inf.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

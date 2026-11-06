@@ -7,6 +7,11 @@
 // Syntax:   build/examples/cpp/example_linear_reach_05_batch
 // Outputs:  the shape of the result, and whether each member equals its own single run
 // See also: example_linear_reach_01_5dim, example_linear_reach_06_gpu
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/backend/torch.h"
@@ -14,9 +19,13 @@
 #include <iostream>
 #include <vector>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");

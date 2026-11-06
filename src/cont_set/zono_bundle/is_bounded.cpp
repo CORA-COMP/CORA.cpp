@@ -6,7 +6,6 @@
 // See also: is_full_dim, Zonotope::is_bounded
 //
 // CORA: contSet/@zonoBundle/isBounded.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

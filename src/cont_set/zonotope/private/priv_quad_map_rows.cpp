@@ -7,6 +7,11 @@
 // See also: Zonotope::quad_map, ConZonotope::quad_map
 //
 // CORA: contSet/@zonotope/quadMap.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 

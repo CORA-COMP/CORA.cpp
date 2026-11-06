@@ -1,4 +1,5 @@
 // example_linear_conformal_01_pendulum - a linear model of a nonlinear system with a conformal
+//
 // guarantee
 //
 // Noisy trajectories of a damped pendulum start in a known set. The linearization at the origin is
@@ -11,6 +12,11 @@
 // Syntax:   build/examples/cpp/example_linear_conformal_01_pendulum
 // Outputs:  the conformal radius, the coverage on test trajectories, and the figure as an SVG file
 // See also: example_linear_learn_02_conformal of the Python examples (which learns the model)
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -21,9 +27,13 @@
 #include <cmath>
 #include <iostream>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     // Parameters ------------------------------------------------------------------------------

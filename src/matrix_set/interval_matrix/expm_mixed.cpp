@@ -1,7 +1,8 @@
 // expm_mixed - the matrix exponential in two parts, as CORA's expmMixed
 //
 // Syntax:   ExpmMixedResult R = A.expm_mixed(r, intermediate_order, max_order);
-// Inputs:   r - the step, nonzero;  intermediate_order - where the first part ends, at least 2;
+// Inputs:   r - the step, nonzero
+//           intermediate_order - where the first part ends, at least 2;
 //           max_order - the order of the series;  A is square
 // Outputs:  R - enclosure: I + [A] + [A]^2 / 2 with the dependent terms of [A] / r at the step r,
 //           plus the terms to the intermediate order k; enclosure_rest: the series from the order
@@ -10,6 +11,11 @@
 // See also: expm, dependent_terms
 //
 // CORA: matrixSet/@intervalMatrix/expmMixed.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

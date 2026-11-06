@@ -1,14 +1,24 @@
 // test_interval_matrix_expm_different_algorithms - IntervalMatrix expm_different_algorithms: by
+//
 // style
 //
 // CORA: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
 // PROPERTY: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
+// CORA authors: Ivan Brkan
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -64,6 +74,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     // style 4 is expm, whose remainder box uses exp, which the lean backend has not
     test::for_each_backend([](const std::string &b) {
@@ -73,3 +86,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix expm_different_algorithms");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

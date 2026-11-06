@@ -9,6 +9,11 @@
 // convex (a non-convex one is cut into triangles first), so the part of an edge inside another
 // polygon is one interval, found by clipping the edge against the polygon's half-planes. The
 // uncovered pieces keep their direction and chain into loops.
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/plot/geometry.h"
 #include "cora/global/tensor/tolerance.h"

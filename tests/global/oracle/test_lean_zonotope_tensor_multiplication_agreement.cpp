@@ -1,4 +1,5 @@
 // test_lean_zonotope_tensor_multiplication_agreement - tensor_multiplication and its
+//
 // tensor-zonotope form of Zonotope against the CORALean oracle, by the interval hull
 //
 // The zonotope is centered at the origin, as CORA requires; the lists are CORA's options.list for
@@ -7,6 +8,11 @@
 // CORA.cpp sums the products with a matrix product, CORALean in the order of its permutations, so
 // the generators differ by a few ulp; the box they span agrees to a relative 1e-10 (as the cubic
 // map). No bit-exact test exists, so there is no ORACLE tag.
+//
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "../../cont_set/zonotope/tensor_lists.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -14,7 +20,13 @@
 #include "oracle_testing.h"
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -53,6 +65,9 @@ Zonotope aux_origin_centered(oracle::Random &rnd, int n, int m) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     if (!oracle::available()) return 0;
     oracle::run("zonotope.tensorMultiplication", [](oracle::Random &rnd) {
@@ -78,3 +93,5 @@ int main() {
     });
     return test::finish("lean zonotope tensor_multiplication");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

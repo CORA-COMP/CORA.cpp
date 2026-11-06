@@ -6,6 +6,11 @@
 // See also: registry, unite
 //
 // CORA: contSet/@contSet/and.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 

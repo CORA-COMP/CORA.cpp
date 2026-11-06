@@ -1,4 +1,11 @@
-"""test_specification_polytope - an unsafe set of several halfspaces in Python (numpy, as MATLAB CORA)."""
+"""test_specification_polytope - an unsafe set of several halfspaces in Python (numpy, as MATLAB CORA).
+
+CORA authors: Niklas Kochdumper, Tobias Ladner, Mark Wetzlinger
+Authors:       Claude Sonnet 5.5
+Written:       30-September-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: specification/@specification/check.m
 # CORA: specification/@specification/specification.m
 
@@ -7,10 +14,15 @@ import unittest
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def box(l1, l2, u1, u2):
     return np.array([[1.0, 0], [0, 1], [-1, 0], [0, -1]]), np.array([u1, u2, -l1, -l2])
 
+
+# ============================================  MAIN  ============================================ #
 
 class UnsafePolytope(unittest.TestCase):
     def test_a_zonotope_is_checked_against_the_intersection_of_the_halfspaces(self):
@@ -33,3 +45,5 @@ class UnsafePolytope(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

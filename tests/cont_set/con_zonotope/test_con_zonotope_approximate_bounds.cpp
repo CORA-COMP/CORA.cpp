@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
 // PROPERTY: contSet/@conZonotope/approximateBoundsWithGPU.m
+// CORA authors: Lukas Koller
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_testing.h"
 
@@ -10,6 +15,10 @@ using test::check;
 using test::close;
 
 using Options = ConZonotope::BoundsOptions;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -115,6 +124,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         bounds_known(b);
@@ -123,3 +135,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("con_zonotope approximate_bounds");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

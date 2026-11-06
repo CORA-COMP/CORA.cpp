@@ -8,6 +8,11 @@
 // Inputs:   A - system matrix (n, n)
 // Outputs:  the cached quantities; F and G are empty if their Taylor sums do not converge
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -1,12 +1,18 @@
 // kron - the Kronecker product of interval matrices, as CORA's interval.kron
 //
 // Syntax:   Interval P = I.kron(I2);   Interval P = I.kron(B);   Interval P = Interval::kron(A, I);
-// Inputs:   I2 - interval matrix;  A, B - numeric matrices (..., m, n)
+// Inputs:   I2 - interval matrix
+//           A, B - numeric matrices (..., m, n)
 // Outputs:  P - the entrywise hull of the Kronecker products at the corners: block (i, j) is
 //           [a_ij] * [B]; a numeric factor has the one corner
 // See also: matrix_power
 //
 // CORA: contSet/@interval/kron.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

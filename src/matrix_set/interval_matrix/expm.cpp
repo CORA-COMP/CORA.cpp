@@ -2,7 +2,8 @@
 //
 // Syntax:   ExpmResult R = A.expm();   R = A.expm(max_order);   R = A.expm(r, max_order);
 //           R = A.expm(r, max_order, initial_order, initial_power);
-// Inputs:   max_order - the order of the series (default 10);  r - the step, nonzero (default 1),
+// Inputs:   max_order - the order of the series (default 10)
+//           r - the step, nonzero (default 1),
 //           for the dependent terms of [A] / r;  initial_order, initial_power - continue the series
 //           from [A]^initial_order, as given (r is then not used, as in CORA);  A is square
 // Outputs:  R - enclosure: for every matrix M of A, exp(M) is inside: I + [A] + [A]^2 / 2 with the
@@ -11,6 +12,11 @@
 // See also: expm_independent, expm_mixed, exponential_remainder, dependent_terms
 //
 // CORA: matrixSet/@intervalMatrix/expm.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "global/format.h"

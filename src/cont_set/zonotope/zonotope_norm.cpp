@@ -9,6 +9,11 @@
 // See also: contains, minnorm
 //
 // CORA: contSet/@zonotope/zonotopeNorm.m
+// CORA authors: Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

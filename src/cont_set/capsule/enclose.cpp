@@ -1,7 +1,8 @@
 // enclose - a capsule that encloses a capsule and a second one, as CORA's capsule.enclose
 //
 // Syntax:   Cres = C.enclose(S);   Cres = C.enclose(M, Cplus);
-// Inputs:   S - capsule of the dimension of C;  M, Cplus - a matrix and a capsule for the second
+// Inputs:   S - capsule of the dimension of C
+//           M, Cplus - a matrix and a capsule for the second
 //           form
 // Outputs:  Cres - the convex hull of C and S. The second form is refused: CORA computes the hull
 //           of C and M * Cplus and never adds Cplus, so it misses the documented M * C + Cplus
@@ -9,6 +10,11 @@
 // See also: convex_hull
 //
 // CORA: contSet/@capsule/enclose.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/capsule/capsule.h"

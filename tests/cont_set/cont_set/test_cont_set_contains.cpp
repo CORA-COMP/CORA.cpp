@@ -1,7 +1,13 @@
 // test_cont_set_contains - contains of two sets with a tolerance: tol and the dimensions are
+//
 // checked
 //
 // CORA: contSet/@contSet/contains.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
@@ -12,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -31,7 +41,12 @@ void the_tolerance_is_checked() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     the_tolerance_is_checked();
     return test::finish("cont_set contains");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

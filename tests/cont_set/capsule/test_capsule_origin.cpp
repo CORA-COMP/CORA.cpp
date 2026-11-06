@@ -1,7 +1,6 @@
 // test_capsule_origin - Capsule::origin: the capsule that is the origin
 //
 // CORA: contSet/@capsule/origin.m
-//
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -50,6 +49,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule origin");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

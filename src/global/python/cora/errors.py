@@ -10,8 +10,16 @@ exception that fits, so `except ValueError` catches a wrong value as it would in
         print(e.identifier, e)
 
 Warnings use the category cora.CORAWarning; silence them with the warnings module.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 class CORAError(Exception):
     """An error of CORA.cpp; `identifier` is CORA's ("CORA:dimensionMismatch")."""
@@ -22,6 +30,8 @@ class CORAError(Exception):
 class CORAWarning(UserWarning):
     """A warning of CORA.cpp."""
 
+
+# ============================================  MAIN  ============================================ #
 
 # The C++ name of each identifier (cora::Error::Id), CORA's spelling and the built-in base.
 _IDENTIFIERS = [
@@ -74,3 +84,5 @@ BY_NAME = {name: _make(name, identifier, base) for name, identifier, base in _ID
 globals().update({cls.__name__: cls for cls in BY_NAME.values()})
 
 __all__ = ["CORAError", "CORAWarning"] + [cls.__name__ for cls in BY_NAME.values()]
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

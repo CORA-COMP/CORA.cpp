@@ -7,6 +7,11 @@
 // See also: interval_matrix, IntervalMatrix::norm
 //
 // CORA: matrixSet/@matZonotope/norm.m
+// CORA authors: Matthias Althoff, Victor Gassmann
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 

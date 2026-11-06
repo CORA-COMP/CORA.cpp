@@ -8,6 +8,11 @@
 // See also: linear_combination, convex_hull
 //
 // CORA: contSet/@zonotope/enclose.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cora/cont_set/zonotope/zonotope.h"

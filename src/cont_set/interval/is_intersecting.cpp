@@ -2,7 +2,8 @@
 //
 // Syntax:   bool b = I.is_intersecting(I2);   bool b = I.is_intersecting(I2, tol);
 //           bool b = I.is_intersecting(p, tol);
-// Inputs:   I2 - interval of the dimension of I;  p - a point, a column (..., n, 1)
+// Inputs:   I2 - interval of the dimension of I
+//           p - a point, a column (..., n, 1)
 //           tol - how far apart the bounds of a coordinate may be, as within_tol; default: the
 //                 repository tolerance (docs/architecture.md)
 // Outputs:  b - true if in every coordinate the bounds overlap up to tol; false if one is empty;
@@ -11,6 +12,11 @@
 // See also: contains, intersect
 //
 // CORA: contSet/@interval/isIntersecting_.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"

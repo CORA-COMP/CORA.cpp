@@ -2,6 +2,11 @@
 //
 // A tensor keeps its backend, device and dtype whatever scope is current; tensors made like it
 // follow it; operands of two backends or dtypes are an error that names both places.
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
 #include "testing.h"
@@ -10,6 +15,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -80,6 +89,9 @@ void float32_follows_the_data(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     stays_where_it_lives();
     mixing_is_an_error();
@@ -93,3 +105,5 @@ int main() {
     check(test::throws([] { (void)Tensor({{1.0}}).to(DType::float32); }), "lean has no float32");
     return test::finish("tensor data decides");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

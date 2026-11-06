@@ -1,5 +1,13 @@
 """test_linear_sys_reach - LinearSys.reach in Python: the same call for one set or a batch, on torch
-or numpy, with gradients and the options checked."""
+
+or numpy, with gradients and the options checked.
+
+CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   03-November-2026
+Reviewed:      ---
+"""
 # CORA: contDynamics/@linearSys/linearSys.m
 # CORA: contDynamics/@linearSys/reach.m
 
@@ -17,6 +25,10 @@ import cora
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 F64 = dict(dtype=torch.float64)
 ALGORITHMS = ["standard", "wrapping_free"]
 
@@ -26,6 +38,8 @@ def system(n=3, m=4, seed=0):
     A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
     return A, torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class ReachSet(unittest.TestCase):
     def test_the_result_is_two_lists_of_zonotopes(self):
@@ -136,3 +150,5 @@ class Gradients(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

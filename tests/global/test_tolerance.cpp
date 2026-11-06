@@ -1,6 +1,10 @@
 // test_tolerance - the tolerance policy: the order of resolution, the scopes, the dtype, within_tol
 //
 // CORA.cpp only: the policy of the repository
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -13,6 +17,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -145,6 +153,9 @@ void operations_resolve_at_the_entry() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     defaults_follow_the_dtype();
     resolution_order();
@@ -153,3 +164,5 @@ int main() {
     operations_resolve_at_the_entry();
     return test::finish("tolerance");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

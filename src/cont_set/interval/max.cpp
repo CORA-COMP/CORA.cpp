@@ -7,6 +7,11 @@
 // See also: min, unite
 //
 // CORA: contSet/@interval/max.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

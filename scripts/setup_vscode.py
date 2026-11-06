@@ -6,11 +6,21 @@ Writes:   .vscode/settings.json          the paths tasks.json and launch.json re
                                          interpreter, and the terminal environment
           .vscode/c_cpp_properties.json  IntelliSense: include paths of Eigen and libtorch
 Both are git-ignored: they hold this machine's paths. tasks.json and launch.json are shared.
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   01-October-2026
+Reviewed:      ---
 """
 import json
 import os
 import shutil
 import sys
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 VSCODE = os.path.join(ROOT, ".vscode")
@@ -120,3 +130,5 @@ write("c_cpp_properties.json", {
         "includePath": include,
     }],
 })
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

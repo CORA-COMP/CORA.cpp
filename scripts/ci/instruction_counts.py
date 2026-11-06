@@ -10,12 +10,21 @@ Output:   a table of base, head and the change in percent; exit code 1 if one gr
 Accepting a growth: a commit of the change (git log <base>..HEAD, with --accept-from <base>) names it
           in a line `Accept-instructions: <benchmark>: <reason>`; the reason is required and printed.
           The acceptance lives in the history of that one change, never in a list in the tree.
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   03-November-2026
+Reviewed:      ---
 """
 import argparse
 import re
 import shutil
 import subprocess
 import sys
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 REGION = "micro_measured_region"
 VALGRIND_COUNT = re.compile(r"Collected\s*:\s*(\d+)")
@@ -77,6 +86,8 @@ def compare(base, head, threshold):
     return lines, grown
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--base", required=True, help="the micro program built against the base commit")
@@ -115,3 +126,5 @@ def accepted_growth(base, messages=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

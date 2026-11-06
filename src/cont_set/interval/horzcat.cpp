@@ -7,6 +7,11 @@
 // See also: cat, cart_prod
 //
 // CORA: contSet/@interval/horzcat.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
 #include "cora/cont_set/interval/interval.h"

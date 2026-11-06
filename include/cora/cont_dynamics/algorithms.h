@@ -11,6 +11,11 @@
 // CORA: contDynamics/@linearSys/reach.m
 // CORA: contDynamics/@linearSys/verify.m
 // CORA: contDynamics/@contDynamics/reach.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner, Matthias Althoff, Niklas Kochdumper
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

@@ -9,6 +9,11 @@ Scope:    --base REV: the files changed since the merge base with REV and in the
           (default origin/main); --all: every tracked file (the nightly).
 Options:  --fix rewrites the files (format, lint) or applies the fixes of clang-tidy (tidy).
 Exit code: 0 if clean, 1 with the findings, 2 if a tool or the compile database is missing.
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+Written:       04-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 import json
@@ -18,6 +23,10 @@ import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import affected_tests  # noqa: E402  (the include graph, shared with the test selection)
@@ -154,6 +163,8 @@ def check_tidy(files, everything, fix, build_dir, jobs):
     return 1 if findings else 0
 
 
+# ============================================  MAIN  ============================================ #
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("what", choices=("format", "tidy", "lint"))
@@ -174,3 +185,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

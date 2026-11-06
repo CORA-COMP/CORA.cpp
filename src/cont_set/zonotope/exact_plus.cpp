@@ -1,7 +1,8 @@
 // exact_plus - the Minkowski sum with the coefficients of the first generators shared
 //
 // Syntax:   Zres = Z.exact_plus(Z2);   Zres = Z.exact_plus(Z2, k);
-// Inputs:   Z2 - zonotope of the same dimension;  k - at most this many generator pairs are added
+// Inputs:   Z2 - zonotope of the same dimension
+//           k - at most this many generator pairs are added
 //           (default: all that both have)
 // Outputs:  Zres - the centers add, the first r = min(m, m2, k) generators are added pairwise, and
 //           the others of both follow; the points c + G b + c2 + G2 b with the same b on those r
@@ -9,6 +10,11 @@
 // See also: plus, enclose
 //
 // CORA: contSet/@zonotope/exactPlus.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

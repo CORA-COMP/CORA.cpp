@@ -1,4 +1,4 @@
-// The warm CORA.cpp daemon.
+// server - the warm CORA.cpp daemon
 //
 // Process start is cheap here, but the thread pool, the first allocations and the page
 // faults of a fresh process are not free, and the harness times all of it.
@@ -13,6 +13,11 @@
 //
 // Requests are served one at a time, so a daemon still busy with an instance the harness
 // gave up on does not answer `ping`; `prepare_instance.sh` then replaces it.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       01-October-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "server.h"
 
@@ -31,7 +36,12 @@
 #include <stdexcept>
 #include <string>
 
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 namespace cora::comp {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
 namespace {
 
 std::string read_line(int fd) {
@@ -42,6 +52,9 @@ std::string read_line(int fd) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int port() {
     if (const char *env = std::getenv("CORACPP_PORT")) return std::atoi(env);
@@ -114,3 +127,5 @@ int serve(const std::string &srv_dir) {
 }
 
 } // namespace cora::comp
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

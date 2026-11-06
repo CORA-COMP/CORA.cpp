@@ -6,12 +6,20 @@ stops if the machine has no CUDA device.
 Syntax:   PYTHONPATH=build python examples/python/example_linear_reach_06_gpu.py
 Outputs:  where the result lives, and the last center
 See also: example_linear_reach_05_batch
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import torch
 
 import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 if not torch.cuda.is_available():
     print("no CUDA device: nothing to show")

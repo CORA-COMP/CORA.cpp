@@ -1,12 +1,21 @@
 // test_lean_zonotope_interval - Zonotope::interval against the CORALean oracle (its `box`)
 //
 // ORACLE: contSet/@zonotope/interval.m
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
 #include "oracle_testing.h"
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!test::oracle::available()) return 0;
@@ -18,3 +27,5 @@ int main() {
     });
     return test::finish("lean zonotope interval");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

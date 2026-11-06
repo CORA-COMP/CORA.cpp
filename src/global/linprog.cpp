@@ -9,6 +9,11 @@
 // Inputs:   lp - the program: cost, inequality and equality constraints, bounds
 // Outputs:  r - status (Optimal, Infeasible, Unbounded), the minimizer x and the value fval
 // See also: contDynamics/linear_sys/private/priv_verify_ra_zonotope.cpp
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       30-September-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cora/global/linprog.h"
 #include "cora/global/error.h"

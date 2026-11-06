@@ -13,6 +13,11 @@
 //           use_cora_colors("CORA:contDynamics");   plot(fig, R, {0, 1})  (into a figure of your
 //           own)
 // See also: cora/global/plot/figure.h, cora/global/plot/color.h, cora/cont_set/cont_set.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

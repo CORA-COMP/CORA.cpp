@@ -2,7 +2,9 @@
 //
 // Syntax:   ConZonotope cz(c, G);   ConZonotope cz(c, G, A, b);   ConZonotope cz(Z);
 //           ConZonotope cz = ConZonotope::from_matrix(Zfull, A, b);
-// Inputs:   c - center (..., n, 1);  G - generators (..., n, m);  A - constraint matrix
+// Inputs:   c - center (..., n, 1)
+//           G - generators (..., n, m)
+//           A - constraint matrix
 //           (..., p, m);  b - constraint offset (..., p, 1); all finite, one batch shape
 // Outputs:  cz - the set {c + G x | |x|_inf <= 1, A x = b}; no constraints give p = 0
 // See also: empty, Zonotope::Zonotope
@@ -10,6 +12,11 @@
 // CORA: contSet/@conZonotope/conZonotope.m
 // CORA: contSet/@interval/conZonotope.m
 // CORA: contSet/@zonotope/conZonotope.m
+// CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cont_set/con_zonotope/private/priv.h"

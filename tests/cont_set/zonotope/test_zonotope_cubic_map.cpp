@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@zonotope/cubMap.m
 // PROPERTY: contSet/@zonotope/cubMap.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
@@ -11,6 +16,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -101,6 +110,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         single_cubic_map_by_hand(b);
@@ -110,3 +122,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("zonotope cubic_map");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -9,6 +9,11 @@
 // Syntax:     cora::ChecksScope off(false);   cora::set_checks_enabled(false);
 //             detail::Entry entry;   CORA_CHECK(cond, Error::wrong_value, [&] { return ...; });
 // See also:   global/error.h, global/tensor/tensor.h (BackendScope), global/oracle/oracle.h
+//
+// Authors:       Tobias Ladner, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   06-November-2026
+// Reviewed:      ---
 
 #pragma once
 

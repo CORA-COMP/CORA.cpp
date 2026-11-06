@@ -6,6 +6,11 @@
 // Syntax:   Tensor t = host_borrow(ptr, DType::float64, {n, m}, owner, backend_id::eigen);
 //           HostView v = host_view(t);   // v.data, v.dtype, v.shape, v.keep
 // See also: eigen.h, lean.h, src/global/python/convert.h
+//
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

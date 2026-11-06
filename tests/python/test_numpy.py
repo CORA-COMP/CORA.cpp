@@ -1,9 +1,19 @@
-"""test_numpy - the Python package on numpy and Eigen alone; every test runs without torch."""
+"""test_numpy - the Python package on numpy and Eigen alone; every test runs without torch.
+
+Authors:       Claude Sonnet 5.5
+Written:       30-September-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import unittest
 
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 class NumpyOnly(unittest.TestCase):
     def setUp(self):
@@ -68,3 +78,5 @@ class NumpyOnly(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

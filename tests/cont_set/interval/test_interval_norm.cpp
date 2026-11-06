@@ -1,6 +1,11 @@
 // test_interval_norm - interval norm: the norm of the largest member of a box
 //
 // CORA: contSet/@interval/norm_.m
+// CORA authors: Victor Gassmann
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -12,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -43,8 +52,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(norm_of_the_largest_member);
     checks_and_their_switch();
     return test::finish("interval norm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

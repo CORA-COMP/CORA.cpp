@@ -6,11 +6,16 @@
 //
 // Syntax:   double t = resolve_tol(tol, dtype);   ToleranceScope loose(1e-10);
 //           set_default_tolerance(1e-10);   set_default_tolerance(std::nullopt);
-// Inputs:   tol - an explicit tolerance or std::nullopt;  dtype - the dtype of the data compared
+// Inputs:   tol - an explicit tolerance or std::nullopt
+//           dtype - the dtype of the data compared
 // Outputs:  t - the tolerance to compare with
 // See also: global/within_tol.h, global/settings.h (the same scoping), docs/architecture.md
 //
 // CORA.cpp only: CORA has a default per function; CORA.cpp has one policy
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #pragma once
 

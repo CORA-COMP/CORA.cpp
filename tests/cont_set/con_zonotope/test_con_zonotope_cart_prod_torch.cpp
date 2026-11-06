@@ -1,11 +1,21 @@
 // test_con_zonotope_cart_prod_torch - ConZonotope cart_prod: gradients through torch
 //
 // The product is built of concatenations: differentiable in both operands.
+//
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "con_zonotope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -19,3 +29,5 @@ int main() {
         [](const Inputs &x) { return test::parts(test::set(x, 0).cart_prod(test::set(x, 4))); }, x);
     return test::finish("con zonotope cart_prod (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

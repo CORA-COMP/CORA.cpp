@@ -3,6 +3,11 @@
 // Syntax:   loops = union_polygons(polygons);   p = thin_polygon(p, {0.01, 0.01});
 //           faces = hull_faces(points);
 // See also: cora/global/plot/figure.h, cora/global/plot/plot.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #pragma once
 

@@ -6,10 +6,20 @@ all steps), one state over time, simulations, and an unsafe set.
 Syntax:   PYTHONPATH=build python examples/python/example_plot_reach_01_over_time.py [--save PREFIX]
 Outputs:  two figures (PREFIX_plane.png, PREFIX_x1.png with --save)
 See also: example_plot_reach_01_over_time of the C++ examples, example_plot_tikz_01_group
+
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
 import cora
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figures instead of showing them")
@@ -20,9 +30,9 @@ if args.save:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # Parameters --------------------------------------------------------------------------------
+
 
 t_final, time_step = 6, 0.1
 X0 = cora.Zonotope(cora.Tensor([1, 0]), 0.1 * cora.eye(2))

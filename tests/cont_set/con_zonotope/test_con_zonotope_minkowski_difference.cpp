@@ -2,8 +2,7 @@
 //
 // CORA: contSet/@conZonotope/minkDiff.m
 // PROPERTY: contSet/@conZonotope/minkDiff.m
-//
-// CORA authors:  Niklas Kochdumper, Mark Wetzlinger
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

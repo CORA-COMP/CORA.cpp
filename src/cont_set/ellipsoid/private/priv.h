@@ -5,6 +5,7 @@
 // Syntax:   bool empty = priv_is_empty(E);   Tensor r = priv_rank(E.Q(), E.tol());
 //           auto [T, D] = priv_simdiag(Q1, Q2, tol);
 // See also: ellipsoid.h
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---

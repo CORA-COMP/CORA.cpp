@@ -2,12 +2,21 @@
 //
 // CORA: matrixSet/@intervalMatrix/generateRandom.m
 // PROPERTY: matrixSet/@intervalMatrix/generateRandom.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "interval_matrix_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -78,6 +87,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend_and_lean([](const std::string &b) {
         random_sets_have_the_stated_ranges(b);
@@ -86,3 +98,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval_matrix generate_random");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

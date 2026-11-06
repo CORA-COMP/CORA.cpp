@@ -1,12 +1,18 @@
 // con_intersect - the points of a constrained zonotope whose image lies in another one
 //
 // Syntax:   cZres = cz.con_intersect(cz2, M);
-// Inputs:   cz2 - constrained zonotope (n2 dimensions);  M - the matrix (n2, n)
+// Inputs:   cz2 - constrained zonotope (n2 dimensions)
+//           M - the matrix (n2, n)
 // Outputs:  cZres - exact: the set {x in cz | M x in cz2}; the factors of both sets stay, each with
 //           its constraints, and one equality per dimension of cz2 makes M x and the point agree
 // See also: intersect, Zonotope::linear_map
 //
 // CORA: contSet/@conZonotope/conIntersect.m
+// CORA authors: Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/format.h"

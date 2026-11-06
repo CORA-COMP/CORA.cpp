@@ -2,6 +2,7 @@
 //
 // The norm of a full-rank ellipsoid sqrt(p' Q^-1 p) is differentiable in Q, q and p away from
 // the origin.
+//
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -13,6 +14,7 @@ using namespace cora;
 using test::Inputs;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 
 // ===========================================  MAIN  =========================================== //
 

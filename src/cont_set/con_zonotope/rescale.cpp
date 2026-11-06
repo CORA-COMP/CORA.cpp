@@ -14,6 +14,11 @@
 // CORA: contSet/@conZonotope/rescale.m
 // CORA: contSet/@conZonotope/private/priv_ksi_optimizer.m
 // CORA: contSet/@conZonotope/private/priv_ksi_iterative.m
+// CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

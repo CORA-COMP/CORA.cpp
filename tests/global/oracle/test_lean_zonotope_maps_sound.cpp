@@ -1,4 +1,5 @@
 // test_lean_zonotope_maps_sound - radius, rotate and quad_map of Zonotope against the oracle,
+//
 // within a stated bound
 //
 // CORA: contSet/@zonotope/radius.m
@@ -11,6 +12,12 @@
 // oracle encloses them (an interval rotation matrix); quad_map is CORA's zonotope map, where
 // CORALean maps through a polynomial zonotope (a different, wider set), so it only has to lie
 // inside the oracle's enclosure. Radius and rotate are compared within a relative 1e-12.
+//
+// CORA authors: Matthias Althoff, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/zonotope.h"
@@ -19,7 +26,13 @@
 #include <cmath>
 
 using namespace cora;
+
+
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -44,6 +57,9 @@ void aux_hull_agrees(const std::string &what, const Zonotope &mine, const lean::
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -83,3 +99,5 @@ int main() {
     });
     return test::finish("lean zonotope maps (bounds)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

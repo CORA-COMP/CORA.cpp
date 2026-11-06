@@ -1,7 +1,6 @@
 // test_capsule_class - the constructors of Capsule: forms, batches and refusals
 //
 // CORA: contSet/@capsule/capsule.m
-//
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -98,6 +97,5 @@ int main() {
     refusals();
     return test::finish("capsule class");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

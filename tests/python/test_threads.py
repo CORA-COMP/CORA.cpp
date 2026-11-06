@@ -1,8 +1,18 @@
-"""test_threads - cora.set_num_threads and cora.num_threads."""
+"""test_threads - cora.set_num_threads and cora.num_threads.
+
+Authors:       Tobias Ladner, Claude Sonnet 5.5
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 import unittest
 
 import cora
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 class ThreadsTest(unittest.TestCase):
     def tearDown(self):
@@ -24,3 +34,5 @@ class ThreadsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

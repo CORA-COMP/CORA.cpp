@@ -1,7 +1,8 @@
 // lift - a zonotope in a space of higher dimension, with its states at given positions
 //
 // Syntax:   Zl = Z.lift(N, dims);
-// Inputs:   N - the dimension of the new space;  dims - the position (0-based) of each state of Z
+// Inputs:   N - the dimension of the new space
+//           dims - the position (0-based) of each state of Z
 //           in it; N positions, each used once: new dimensions would be unbounded, which no
 //           zonotope represents
 // Outputs:  Zl - the zonotope whose state dims[i] is state i of Z, exact (a permutation).
@@ -11,9 +12,13 @@
 //
 // CORA: contSet/@zonotope/lift_.m
 // CORA: contSet/@contSet/lift.m
+// CORA authors: Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       03-November-2026
+// Last update:   04-November-2026
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
-
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 

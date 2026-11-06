@@ -1,6 +1,11 @@
 // test_interval_dirac - interval dirac: the Dirac delta and its derivatives on a box
 //
 // CORA: contSet/@interval/dirac.m
+// CORA authors: Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -60,6 +69,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         dirac_of_order_0(b);
@@ -69,3 +81,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("interval dirac");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

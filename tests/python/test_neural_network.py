@@ -1,4 +1,11 @@
-"""test_neural_network - NeuralNetwork in Python: points, the zonotope enclosure and its gradients."""
+"""test_neural_network - NeuralNetwork in Python: points, the zonotope enclosure and its gradients.
+
+CORA authors: Tobias Ladner, Lukas Koller
+Authors:       Tobias Ladner
+Written:       02-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: nn/@neuralNetwork/evaluate.m
 # CORA: nn/@neuralNetwork/neuralNetwork.m
 
@@ -13,6 +20,10 @@ import cora
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 torch.manual_seed(0)
 
@@ -30,6 +41,8 @@ def torch_forward(parameters, x):
             x = torch.relu(x)
     return x
 
+
+# ============================================  MAIN  ============================================ #
 
 class Evaluate(unittest.TestCase):
     def test_points_agree_with_torch(self):
@@ -84,3 +97,5 @@ class Evaluate(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

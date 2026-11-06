@@ -6,12 +6,22 @@ next color of CORA's order, so every copy has its own (blue, red, yellow, ...).
 Syntax:   PYTHONPATH=build python examples/python/example_zonotope_01.py [--save FILE]
 Outputs:  the matrix and the zonotope as text, and the figure
 See also: example_zonotope_01 of the C++ examples, example_linear_reach_01_5dim
+
+Authors:       Claude Sonnet 5.5
+Written:       29-September-2026
+Last update:   ---
+Reviewed:      ---
 """
 import argparse
 
 import matplotlib.pyplot as plt
 
 from cora import Tensor, Zonotope, plot, set_default_backend
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+
+# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -21,7 +31,6 @@ if args.save:
 
     matplotlib.use("Agg")
 
-# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set_default_backend("torch")
 

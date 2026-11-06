@@ -9,6 +9,11 @@
 // See also: simulate_random, reach
 //
 // CORA: contDynamics/@nonlinearSys/simulate.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   03-November-2026
+// Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"

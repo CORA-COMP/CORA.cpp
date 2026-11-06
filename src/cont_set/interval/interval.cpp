@@ -6,6 +6,11 @@
 // See also: generate_random, Zonotope::Zonotope
 //
 // CORA: contSet/@interval/interval.m
+// CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"

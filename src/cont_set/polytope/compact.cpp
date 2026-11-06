@@ -18,7 +18,6 @@
 // CORA: contSet/@polytope/compact_.m
 // CORA: contSet/@polytope/private/priv_compact_V.m
 // CORA: contSet/@polytope/private/priv_copyProperties.m
-//
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

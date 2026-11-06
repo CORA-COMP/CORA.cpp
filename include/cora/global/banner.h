@@ -8,6 +8,11 @@
 // Output:   ==== CORA START ==== with `CORA.cpp | <program> | default backend: <name>`;
 //           ==== CORA END ==== with `CORA.cpp | <program> | runtime: <seconds>`
 // See also: Makefile (the example rule), tensor/tensor.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

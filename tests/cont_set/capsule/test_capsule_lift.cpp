@@ -2,7 +2,6 @@
 //
 // CORA: contSet/@capsule/lift_.m
 // CORA: contSet/@contSet/lift.m
-//
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -76,6 +75,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("capsule lift");
 }
-
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

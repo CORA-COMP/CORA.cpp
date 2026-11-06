@@ -1,5 +1,11 @@
 // test_plot_dimensions - plot of one, two and three dimensions, reachable sets over time, the
+//
 // time-point sets, random points and the options of CORA's plot that the core knows
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/plot/plot.h"
@@ -9,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -156,6 +166,9 @@ void random_points_of_a_set(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         one_dimension_is_a_bar(b);
@@ -168,3 +181,5 @@ int main() {
     });
     return test::finish("plot dimensions");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

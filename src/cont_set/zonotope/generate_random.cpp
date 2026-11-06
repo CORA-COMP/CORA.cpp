@@ -2,7 +2,8 @@
 //
 // Syntax:   Zonotope Z = Zonotope::generate_random(rng);
 //           Z = Zonotope::generate_random(rng, dimension, center, nr_generators, distribution);
-// Inputs:   rng - random numbers (seedable);  dimension - default the dimension of center, else
+// Inputs:   rng - random numbers (seedable)
+//           dimension - default the dimension of center, else
 //           random in 1..10;  center - a vector, default 10 N(0, 1) per entry;  nr_generators -
 //           default 2 dimension;  distribution - of the generator lengths: "uniform" (default,
 //           U[0, 1]), "exp" (exponential, rate 1) or "gamma" (shape 2, scale 1)
@@ -10,6 +11,11 @@
 // See also: Interval::generate_random
 //
 // CORA: contSet/@zonotope/generateRandom.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
 

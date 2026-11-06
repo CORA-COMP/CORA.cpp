@@ -6,6 +6,11 @@
 // Syntax:   build/examples/cpp/example_linear_reach_06_gpu
 // Outputs:  where the system and the result live, and the last center
 // See also: example_linear_reach_05_batch
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/backend/torch.h"
@@ -15,9 +20,13 @@
 #include <string>
 #include <vector>
 
-// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 using namespace cora;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!torch::cuda::is_available()) {

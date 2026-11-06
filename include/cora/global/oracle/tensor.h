@@ -5,6 +5,11 @@
 // Values:     exact rationals m*2^e, held as text; nothing converts to double unless it is exact
 // Errors:     an operation on two dtypes throws; so does a conversion that is not exact
 // See also:   lean/oracle.h, lean/interval.h, lean/zonotope.h
+//
+// Authors:       Tobias Ladner
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

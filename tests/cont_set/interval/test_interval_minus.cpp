@@ -1,6 +1,11 @@
 // test_interval_minus - interval minus: the difference of a box and a box or a point
 //
 // CORA: contSet/@interval/minus.m
+// CORA authors: Matthias Althoff
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -53,8 +62,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(minus_subtracts_the_opposite_bounds);
     checks_and_their_switch();
     return test::finish("interval minus");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,6 +1,11 @@
 // test_interval_is_bounded - interval is_bounded: whether no bound is infinite
 //
 // CORA: contSet/@interval/isBounded.m
+// CORA authors: Mark Wetzlinger, Tobias Ladner
+// Authors:       Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "testing.h"
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -39,8 +48,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(is_bounded_looks_for_infinite_bounds);
     checks_and_their_switch();
     return test::finish("interval is_bounded");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

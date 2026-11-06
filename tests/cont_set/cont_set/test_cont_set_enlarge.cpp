@@ -1,6 +1,11 @@
 // test_cont_set_enlarge - ContSet::enlarge: a set scaled about its center, in the class of the set
 //
 // CORA: contSet/@contSet/enlarge.m
+// CORA authors: Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -11,6 +16,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -51,8 +60,13 @@ void errors_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend(enlarge_scales_about_the_center);
     errors_and_their_switch();
     return test::finish("cont_set enlarge");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

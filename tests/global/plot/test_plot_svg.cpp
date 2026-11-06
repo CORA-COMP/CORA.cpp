@@ -1,5 +1,11 @@
 // test_plot_svg - plot: sets, reachable sets, specifications and trajectories into a figure, the
+//
 // color schemes, and the layers a wrapper takes out of it
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       29-September-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/plot/plot.h"
@@ -12,6 +18,10 @@
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -276,6 +286,9 @@ void colors_are_cora_colors() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         sets_take_the_colors_of_cora_in_turn(b);
@@ -296,3 +309,5 @@ int main() {
     colors_are_cora_colors();
     return test::finish("plot");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

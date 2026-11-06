@@ -1,6 +1,15 @@
 """test_zonotope_more_operations - exact_plus, generator_length, is_bounded, is_full_dim, isequal,
+
 is_intersecting, lift, norm, minnorm, intersect_strip, enclose_points, enclose_many and mink_diff
-of Zonotope in Python, on numpy and Eigen alone."""
+of Zonotope in Python, on numpy and Eigen alone.
+
+CORA authors: Matthias Althoff, Mark Wetzlinger, Niklas Kochdumper, Adrian Kulmburg,
+              Tobias Ladner, Victor Gassmann
+Authors:       Tobias Ladner
+Written:       03-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@zonotope/exactPlus.m
 # CORA: contSet/@zonotope/generatorLength.m
 # CORA: contSet/@zonotope/isBounded.m
@@ -34,6 +43,9 @@ import warnings
 import cora
 import numpy as np
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def zonotope(c, G):
     return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
@@ -46,6 +58,8 @@ def random_zonotope(rng, n=3, m=4):
 def support(Z, d):
     return Z.support_function(d)
 
+
+# ============================================  MAIN  ============================================ #
 
 class ExactPlus(unittest.TestCase):
     def test_by_hand(self):
@@ -399,3 +413,5 @@ class MinkDiff(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

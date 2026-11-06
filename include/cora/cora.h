@@ -5,6 +5,11 @@
 //
 // Syntax:   #include "cora/cora.h"
 // See also: docs/architecture.md, CMake: find_package(CORA) and target CORA::cora
+//
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
+// Written:       02-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

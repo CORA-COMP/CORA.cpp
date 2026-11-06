@@ -1,4 +1,12 @@
-"""test_zonotope - the Zonotope class in Python: one set or a batch, on torch or numpy."""
+"""test_zonotope - the Zonotope class in Python: one set or a batch, on torch or numpy.
+
+CORA authors: Tobias Ladner, Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg,
+              Severin Prenitzer, Niklas Kochdumper
+Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
+Written:       29-September-2026
+Last update:   04-November-2026
+Reviewed:      ---
+"""
 # CORA: contSet/@contSet/linComb.m
 # CORA: contSet/@zonotope/generateRandom.m
 # CORA: contSet/@zonotope/interval.m
@@ -23,6 +31,10 @@ import cora
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
 
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 F64 = dict(dtype=torch.float64)
 
 
@@ -36,6 +48,8 @@ def random_zonotope(n=3, m=4, seed=0):
     g = torch.Generator().manual_seed(seed)
     return torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
 
+
+# ============================================  MAIN  ============================================ #
 
 class Construction(unittest.TestCase):
     def test_torch_arrays_stay_torch(self):
@@ -230,3 +244,5 @@ class Stack(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #
