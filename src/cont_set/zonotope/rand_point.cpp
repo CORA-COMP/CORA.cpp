@@ -14,6 +14,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_set/cont_set/private/priv_rand_point.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/error.h"
 
@@ -49,12 +50,8 @@ Tensor aux_factors(const Tensor &like, const Tensor &G, int64_t N, Rng &rng, boo
 
 Tensor Zonotope::rand_point(int64_t N, Rng &rng, const std::string &type) const {
     detail::Entry entry;
-    CORA_CHECK(N >= 0, Error::wrong_value, [&] {
-        return "rand_point: the number of points must be nonnegative, got " + std::to_string(N);
-    });
-    CORA_CHECK(type == "standard" || type == "extreme", Error::wrong_value, [&] {
-        return "rand_point: unknown type '" + type + "'; use \"standard\" or \"extreme\"";
-    });
+    const detail::Refusal refusal = priv_rand_point_refusal(N, type);
+    CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return rand_point_impl(N, rng, type);
 }
 
