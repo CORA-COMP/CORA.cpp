@@ -76,18 +76,19 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &g, const Tensor &r) {
 Capsule::Capsule(Unchecked, Tensor c, Tensor g, Tensor r)
     : ContSet(kClassId), c_(std::move(c)), g_(std::move(g)), r_(std::move(r)) {}
 
-Capsule::Capsule(Tensor c, Tensor g, Tensor r)
-    : ContSet(kClassId), c_(std::move(c)), g_(std::move(g)), r_(std::move(r)) {
+Capsule::Capsule(const Tensor &c, Tensor g, Tensor r)
+    : ContSet(kClassId), c_(c), g_(std::move(g)), r_(std::move(r)) {
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(c_, g_, r_);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
 }
 
-Capsule::Capsule(Tensor c, Tensor g, double r) : Capsule(c, std::move(g), aux_radius_like(c, r)) {}
+Capsule::Capsule(const Tensor &c, Tensor g, double r)
+    : Capsule(c, std::move(g), aux_radius_like(c, r)) {}
 
-Capsule::Capsule(Tensor c, Tensor g) : Capsule(c, std::move(g), 0.0) {}
+Capsule::Capsule(const Tensor &c, Tensor g) : Capsule(c, std::move(g), 0.0) {}
 
-Capsule::Capsule(Tensor c) : Capsule(c, c.defined() ? c.zeros_like() : Tensor(), 0.0) {}
+Capsule::Capsule(const Tensor &c) : Capsule(c, c.defined() ? c.zeros_like() : Tensor(), 0.0) {}
 
 // Not ported yet ----------------------------------------------------------------------------------
 

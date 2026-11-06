@@ -324,9 +324,11 @@ inline bool same_bits(const std::string &what, const cora::Polytope &a, const le
 /// compared (at nearest it is empty).
 inline bool same_bits(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
     const cora::Capsule other = b.nominal();
-    return same_bits(what + ".c", a.c(), other.c()) &
-           same_bits(what + ".g", a.generator(), other.generator()) &
-           same_bits(what + ".r", a.r(), other.r());
+    // all three compared, so that every mismatch is reported
+    const bool center = same_bits(what + ".c", a.c(), other.c());
+    const bool generator = same_bits(what + ".g", a.generator(), other.generator());
+    const bool radius = same_bits(what + ".r", a.r(), other.r());
+    return center && generator && radius;
 }
 
 /// The two halves of a split.

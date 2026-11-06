@@ -39,10 +39,10 @@ class Capsule : public ContSet {
     /// The capsule of the center c (..., n, 1), the generator g (..., n, 1) and the radius r
     /// (..., 1, 1) >= 0; the generator defaults to 0 and the radius to 0, so a center alone is a
     /// point. A number r is the radius of every member of the batch.
-    explicit Capsule(Tensor c);
-    Capsule(Tensor c, Tensor g);
-    Capsule(Tensor c, Tensor g, Tensor r);
-    Capsule(Tensor c, Tensor g, double r);
+    explicit Capsule(const Tensor &c);
+    Capsule(const Tensor &c, Tensor g);
+    Capsule(const Tensor &c, Tensor g, Tensor r);
+    Capsule(const Tensor &c, Tensor g, double r);
 
     /// The stored center c, generator g and radius r (-1 for the empty set).
     const Tensor &c() const noexcept { return c_; }
