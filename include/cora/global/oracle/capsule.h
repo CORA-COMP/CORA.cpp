@@ -26,6 +26,8 @@
 
 namespace cora::lean {
 
+class Zonotope;
+
 class Capsule {
   public:
     /// An exact capsule (empty error box) in the current dtype.
@@ -61,6 +63,24 @@ class Capsule {
     bool isequal(const Capsule &C2, double tol = 0) const;
 
     Capsule convex_hull(const Capsule &C2, int k = 100) const;
+
+    /// The sum with C2 (`capsule.plus`), the projection onto dims (`capsule.project`) and the
+    /// order reduction (`capsule.reduce`, a capsule stays itself).
+    Capsule plus(const Capsule &C2, int k = 100) const;
+    Capsule project(const std::vector<int64_t> &dims) const;
+    Capsule reduce(int order) const;
+
+    /// |g| + r (`capsule.radius`), the volume (`capsule.volume`, p steps of pi) and the support
+    /// function along d (`capsule.supportFunc`, type upper): bounds, not exact values.
+    double radius(int k = 100) const;
+    double volume(int p = 100, int k = 100) const;
+    double support_function(const Tensor &d, int p = 100) const;
+
+    /// Whether the capsule is a point or the origin (`capsule.representsa`, tolerance 0).
+    bool representsa(const std::string &type, double tol = 0) const;
+
+    /// The zonotope of the segment and the box of the ball (`capsule.zonotope`).
+    Zonotope zonotope() const;
     Capsule linear_map(const Tensor &M, int k = 100) const;
     Capsule lift(int64_t N, const std::vector<int64_t> &dims) const;
 

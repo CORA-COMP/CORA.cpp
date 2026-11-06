@@ -21,7 +21,8 @@
 
 namespace cora {
 
-int64_t priv_random_dimension(Rng &rng);
+/// A dimension uniform in 1..maximum (CORA's randi(maximum)).
+int64_t priv_random_dimension(Rng &rng, int64_t maximum = 10);
 
 } // namespace cora
 

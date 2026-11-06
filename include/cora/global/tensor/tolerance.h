@@ -150,8 +150,10 @@ inline constexpr double kBoundTighter = 1e-8; ///< Fourier-Motzkin: bounds that 
 // Ellipsoids --------------------------------------------------------------------------------------
 
 inline constexpr double kEllipsoidNormZero = 1e-10; ///< ellipsoid_norm: smaller values count as 0
-inline constexpr double kStripWeight = 1e-4;  ///< intersect_strip: the largest weight of Gollamudi
-inline constexpr double kBoxRadiusMin = 5e-3; ///< a box is widened to this radius for an ellipsoid
+inline constexpr double kStripWeight = 1e-4; ///< intersect_strip: the largest weight of Gollamudi
+inline constexpr int kFixedPointSteps = 100000; ///< most steps of the fixed point of Halder's sum
+inline constexpr double kBoxRadiusMin = 5e-3;  ///< a box is widened to this radius for an ellipsoid
+inline constexpr double kVerticesPoint = 1e-8; ///< vertices of a capsule: a point if within this
 
 // Geometry of zonotopes and pictures --------------------------------------------------------------
 

@@ -411,6 +411,25 @@ constexpr Table aux_build() {
     // equality: the pair of the class of lower precedence, which the other converts to
     aux_add_predicate<BinaryOp::isequal, Capsule, Capsule>(
         t, [](const Capsule &A, const Capsule &B, Tol tol) { return A.isequal(B, tol); });
+    // the sum of a capsule with a capsule, a box or a zonotope
+    aux_add_set<BinaryOp::plus, Capsule, Capsule>(
+        t, [](const Capsule &A, const Capsule &B) { return A.plus(B); });
+    aux_add_set<BinaryOp::plus, Capsule, Zonotope>(
+        t, [](const Capsule &C, const Zonotope &Z) { return C.plus(Z); });
+    aux_add_set<BinaryOp::plus, Capsule, Interval>(
+        t, [](const Capsule &C, const Interval &I) { return C.plus(I); });
+    // the ellipsoid: sum, union and hull, intersection test and equality with an ellipsoid
+    aux_add_set<BinaryOp::plus, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.plus(B); });
+    aux_add_set<BinaryOp::unite, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.unite(B); });
+    aux_add_set<BinaryOp::convex_hull, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.convex_hull(B); });
+    aux_add_predicate<BinaryOp::is_intersecting, Ellipsoid, Ellipsoid>(
+        t,
+        [](const Ellipsoid &A, const Ellipsoid &B, Tol tol) { return A.is_intersecting(B, tol); });
+    aux_add_predicate<BinaryOp::isequal, Ellipsoid, Ellipsoid>(
+        t, [](const Ellipsoid &A, const Ellipsoid &B, Tol tol) { return A.isequal(B, tol); });
     aux_add_predicate<BinaryOp::isequal, Interval, Interval>(
         t, [](const Interval &I1, const Interval &I2, Tol tol) { return I1.isequal(I2, tol); });
     aux_add_predicate<BinaryOp::isequal, Zonotope, Zonotope>(

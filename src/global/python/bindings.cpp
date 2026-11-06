@@ -2547,6 +2547,11 @@ void bind_ellipsoid(py::module_ &m) {
     py::class_<Ellipsoid, ContSet>(m, "Ellipsoid",
                                    "The ellipsoid {x : (x - q)' Q^+ (x - q) <= 1} of the shape "
                                    "matrix Q and the center q.")
+        .def(py::init<const Interval &, const std::string &>(), py::arg("I"),
+             py::arg("mode") = "outer", "An ellipsoid that holds a box; mode 'outer'")
+        .def(py::init<const Zonotope &, const std::string &>(), py::arg("Z"),
+             py::arg("mode") = "outer:norm_bnd",
+             "An ellipsoid that holds a zonotope of n independent generators")
         .def(py::init([](const py::object &Q, const py::object &q, Tol tol) {
                  if (q.is_none()) return Ellipsoid(tensor_of(Q, "Q"), tol);
                  // a shape matrix without a center is centered at 0
@@ -2557,6 +2562,86 @@ void bind_ellipsoid(py::module_ &m) {
              "and the negative eigenvalues of Q")
         .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
                     "The empty ellipsoid of n dimensions")
+        .def_static("origin", &Ellipsoid::origin, py::arg("n"),
+                    "The ellipsoid that is the origin of R^n")
+        // a random ellipsoid
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, const std::optional<int64_t> &dimension, bool is_degenerate,
+               const py::object &center) {
+                return Ellipsoid::generate_random(rng, dimension, is_degenerate,
+                                                  optional_vector(center, "center"));
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("is_degenerate") = false,
+            py::arg("center") = py::none(),
+            "A random ellipsoid: the dimension (default that of center, else random in 1..30), "
+            "whether Q is singular, and the center")
+        .def(
+            "rand_point",
+            [](const Ellipsoid &E, int64_t N, cora::Rng &rng, const std::string &type) {
+                return matrix(E.rand_point(N, rng, type));
+            },
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as columns (n, N); type 'standard', 'uniform' or 'extreme'")
+        // small queries: NaN, semi-axes, volume and equality
+        .def("isnan", &Ellipsoid::isnan, "Whether the ellipsoid holds NaN: always False")
+        .def(
+            "radius", [](const Ellipsoid &E, int64_t i) { return vector(E.radius(i)); },
+            py::arg("i") = 1, "The semi-axes: the roots of the i largest eigenvalues of Q")
+        .def(
+            "volume", [](const Ellipsoid &E) { return scalar(E.volume()); }, "The volume")
+        .def(
+            "isequal",
+            [](const Ellipsoid &E, const Ellipsoid &S, Tol tol) { return E.isequal(S, tol); },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the ellipsoids are equal up to tol, or both empty")
+        // the distance of points, the intersection tests and the sums
+        .def(
+            "distance",
+            [](const Ellipsoid &E, const py::object &p) {
+                return matrix(E.distance(tensor_of(p, "the points")));
+            },
+            py::arg("p"), "(x - q)' Q^-1 (x - q) - 1 for the points p (n, N): negative inside")
+        // meeting points or an ellipsoid
+        .def(
+            "is_intersecting",
+            [](const Ellipsoid &E, const py::object &S, Tol tol) {
+                if (py::isinstance<Ellipsoid>(S)) return E.is_intersecting(ellipsoid_of(S), tol);
+                return E.is_intersecting(tensor_of(S, "the points"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the ellipsoid meets an ellipsoid (one a point) or contains the points (n, N)")
+        // the Minkowski sum
+        .def(
+            "plus",
+            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
+                if (py::isinstance<Ellipsoid>(S)) return E.plus(ellipsoid_of(S), mode);
+                return E.plus(vector_of(S, "the vector"));
+            },
+            py::arg("S"), py::arg("mode") = "outer:halder",
+            "The Minkowski sum with a vector or an ellipsoid (the enclosure of Halder)")
+        // differences and unions
+        .def(
+            "mink_diff",
+            [](const Ellipsoid &E, const py::object &S) {
+                if (py::isinstance<Ellipsoid>(S)) return E.mink_diff(ellipsoid_of(S));
+                return E.mink_diff(vector_of(S, "the vector"));
+            },
+            py::arg("S"), "The Minkowski difference with a vector or an ellipsoid")
+        .def(
+            "unite",
+            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
+                if (py::isinstance<Ellipsoid>(S)) return E.unite(ellipsoid_of(S), mode);
+                return E.unite(vector_of(S, "the point"), mode);
+            },
+            py::arg("S"), py::arg("mode") = "outer",
+            "An ellipsoid that holds the union with an ellipsoid or a point")
+        .def("convex_hull", &Ellipsoid::convex_hull, py::arg("S"),
+             "An ellipsoid that holds the convex hull with S")
+        // the parallelotope around or inside the ellipsoid
+        .def("zonotope", &Ellipsoid::zonotope, py::arg("mode") = "outer:box",
+             py::arg("number_of_generators") = py::none(),
+             "A zonotope that holds ('outer:box') or lies in ('inner:box') the ellipsoid")
         .def_property_readonly(
             "Q", [](const Ellipsoid &E) { return matrix(E.Q()); }, "The shape matrix Q (..., n, n)")
         .def_property_readonly(
@@ -2668,6 +2753,8 @@ Tensor capsule_radius_of(const py::object &r) { return vector_of(r, "the radius"
 void bind_capsule(py::module_ &m) {
     py::class_<Capsule, ContSet>(m, "Capsule",
                                  "The capsule: the points within r of the segment c - g .. c + g.")
+        .def(py::init<const Interval &>(), py::arg("I"), "A capsule that holds a box")
+        .def(py::init<const Zonotope &>(), py::arg("Z"), "A capsule that holds a zonotope")
         .def(py::init([](const py::object &c, const py::object &g, const py::object &r) {
                  const Tensor center = vector_of(c, "the center");
                  const Tensor generator =
@@ -2683,6 +2770,50 @@ void bind_capsule(py::module_ &m) {
                     "The empty capsule of n dimensions: the radius -1")
         .def_static("origin", &Capsule::origin, py::arg("n"),
                     "The capsule that is the origin of R^n")
+        // a random capsule
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, const std::optional<int64_t> &dimension, const py::object &center,
+               const std::optional<double> &radius) {
+                return Capsule::generate_random(rng, dimension, optional_vector(center, "center"),
+                                                radius);
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("radius") = py::none(),
+            "A random capsule: the dimension (default that of center, else random in 1..10), the "
+            "center and the radius (default random in [0, 5])")
+        .def(
+            "rand_point",
+            [](const Capsule &C, int64_t N, cora::Rng &rng, const std::string &type) {
+                return matrix(C.rand_point(N, rng, type));
+            },
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as columns (..., n, N); type 'standard' or 'extreme'")
+        // small queries: NaN, radius, volume and the type
+        .def("isnan", &Capsule::isnan, "Whether the capsule holds NaN: always False")
+        .def(
+            "radius", [](const Capsule &C) { return scalar(C.radius()); },
+            "The radius of a ball around the center that holds the capsule: |g| + r")
+        // the volume and the type
+        .def(
+            "volume", [](const Capsule &C) { return scalar(C.volume()); }, "The volume")
+        .def("representsa", &Capsule::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the capsule is also a set of the CORA type ('point', 'zonotope', ...)")
+        .def(
+            "plus",
+            [](const Capsule &C, const py::object &S) {
+                if (py::isinstance<Capsule>(S)) return C.plus(py::cast<Capsule>(S));
+                if (py::isinstance<Interval>(S)) return C.plus(py::cast<Interval>(S));
+                if (py::isinstance<Zonotope>(S)) return C.plus(py::cast<Zonotope>(S));
+                return C.plus(vector_of(S, "the vector"));
+            },
+            py::arg("S"), "The Minkowski sum with a capsule, a box, a zonotope or a vector")
+        // conversions
+        .def("zonotope", &Capsule::zonotope, "A zonotope that holds the capsule")
+        .def("ellipsoid", &Capsule::ellipsoid, py::arg("method") = "exact",
+             "The ellipsoid of a capsule without generator")
+        .def("polytope", &Capsule::polytope, py::arg("method") = "exact",
+             "The polytope of the capsule: exact for a segment, 'outer' for the rest")
         .def_static(
             "enclose_points",
             [](const py::object &points) {
@@ -2890,6 +3021,28 @@ void bind_operators(py::module_ &m) {
         if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
         return not_implemented();
     };
+    // Capsule and Ellipsoid: a vector or a set adds
+    const auto capsule_sum = [](const Capsule &A, const py::object &o) -> py::object {
+        if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.plus(*v));
+        return not_implemented();
+    };
+    method(m.attr("Capsule"), "__add__", capsule_sum);
+    method(m.attr("Capsule"), "__radd__", capsule_sum);
+    const auto ellipsoid_sum = [](const Ellipsoid &A, const py::object &o) -> py::object {
+        if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.plus(*v));
+        return not_implemented();
+    };
+    method(m.attr("Ellipsoid"), "__add__", ellipsoid_sum);
+    method(m.attr("Ellipsoid"), "__radd__", ellipsoid_sum);
+    // a matrix maps an ellipsoid
+    const auto ellipsoid_product = [](const Ellipsoid &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.linear_map(*M));
+        return not_implemented();
+    };
+    method(m.attr("Ellipsoid"), "__rmul__", ellipsoid_product);
+    method(m.attr("Ellipsoid"), "__rmatmul__", ellipsoid_product);
     method(m.attr("Capsule"), "__rmul__", capsule_product);
     method(m.attr("Capsule"), "__rmatmul__", capsule_product);
     // EmptySet
