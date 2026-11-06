@@ -10,7 +10,7 @@
 # (libtorch from the torch package of the Python found, or CORACPP_TORCH_DIR=/path),
 # CORACPP_NATIVE=ON (-march=native), CORACPP_BLAS=OFF (external BLAS), CORACPP_PYTHON=AUTO|ON|OFF
 # (the Python package), CORACPP_COMPETITION=OFF (needs GLPK, Linux). The library needs the compiler and
-# Eigen (found, else fetched); the Python package needs libtorch and the Python development files.
+# Eigen (found, else fetched); the Python package needs the Python development files and numpy.
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -38,7 +38,7 @@ set(CORACPP_TORCH_VARIANT "cpu" CACHE STRING "cpu, or a CUDA variant such as cu1
 option(CORACPP_VENV "Create .venv and pip install CORACPP_VENV_REQUIREMENTS into it, and use its Python" OFF)
 set(CORACPP_VENV_REQUIREMENTS "scripts/requirements-python-torch.txt" CACHE STRING "The requirements file the virtual environment gets")
 set(CORACPP_VENV_TORCH_INDEX "https://download.pytorch.org/whl/cpu" CACHE STRING "Where pip gets torch for the virtual environment (.../whl/cu126 for CUDA)")
-set(CORACPP_PYTHON AUTO CACHE STRING "The Python package: AUTO (if torch and Python.h are there), ON, OFF")
+set(CORACPP_PYTHON AUTO CACHE STRING "The Python package: AUTO (if Python.h and numpy are there), ON, OFF")
 set(CORACPP_TORCH_DIR "" CACHE PATH "The torch package directory (default: that of the Python found)")
 set(CORACPP_TORCH_ABI "" CACHE STRING "The C++11 ABI of that torch, 0 or 1 (default: asked of the Python)")
 
