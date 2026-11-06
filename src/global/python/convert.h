@@ -236,10 +236,11 @@ inline Set set_of(const py::handle &o) {
         };
         return Set(std::shared_ptr<const ContSet>(S, release));
     }
-    CORA_FAIL(Error::wrong_value,
-              "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Ellipsoid, Capsule, "
-              "Interval, EmptySet, Fullspace, a ContSet), got " +
-                  std::string(py::str(py::type::of(o).attr("__name__"))));
+    CORA_FAIL(
+        Error::wrong_value,
+        "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Ellipsoid, Capsule, "
+        "Interval, EmptySet, Fullspace, a ContSet), got " +
+            std::string(py::str(py::type::of(o).attr("__name__"))));
 }
 
 /// A Set as the Python object of its class.
