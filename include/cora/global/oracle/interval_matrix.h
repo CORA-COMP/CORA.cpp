@@ -31,6 +31,8 @@ struct MatrixVertices {
     Interval E;
 };
 
+class MatZonotope;
+
 class IntervalMatrix {
   public:
     explicit IntervalMatrix(Interval bounds) : bounds_(std::move(bounds)) {}
@@ -65,6 +67,9 @@ class IntervalMatrix {
 
     /// An upper bound of the volume of the box of the entries.
     double volume() const;
+
+    /// The same set as a matrix zonotope (CORALean's Zonotope.ofIntervalMat).
+    MatZonotope mat_zonotope() const;
 
     // Squares, powers and products -------------------------------------------------------------
 

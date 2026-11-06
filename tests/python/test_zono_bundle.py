@@ -113,8 +113,7 @@ class ZonoBundle(unittest.TestCase):
         # enlarging scales the members
         enlarged = squares().enlarge(2.0)
         np.testing.assert_array_equal(enlarged.zonotopes[0].generators, 2.0 * np.eye(2))
-        with self.assertRaises(cora.errors.NotSupported):
-            squares().vertices()
+        self.assertEqual(squares().vertices()[0].shape, (4, 2))
 
     def test_intersect_and_cart_prod(self):
         zB = squares()

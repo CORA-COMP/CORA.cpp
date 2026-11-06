@@ -1108,6 +1108,8 @@ void bind_interval_matrix(py::module_ &m) {
         .def(
             "volume", [](const IntervalMatrix &A) { return scalar(A.volume()); },
             "The product of the entry widths (0 if one is 0)")
+        .def("mat_zonotope", &IntervalMatrix::mat_zonotope,
+             "The same set as a matrix zonotope: one generator per entry")
         // the vertices as matrices
         .def(
             "vertices",
@@ -1374,6 +1376,29 @@ void bind_mat_zonotope(py::module_ &m) {
         // exponentials of a matrix zonotope
         .def("expm_mixed", &MatZonotope::expm_mixed, py::arg("r"), py::arg("intermediate_order"),
              py::arg("max_order"), "The series in two parts, up to and beyond intermediate_order")
+        // the exponential with independent powers, the corners, the volume and the reduction
+        .def("expm_ind_mixed", &MatZonotope::expm_ind_mixed, py::arg("intermediate_order"),
+             py::arg("max_order"),
+             "The series in two parts with independent powers, up to and beyond intermediate_order")
+        // the corner matrices of a matrix zonotope
+        .def(
+            "vertices",
+            [](const MatZonotope &A) {
+                py::list matrices;
+                for (const Tensor &V : A.vertices()) matrices.append(matrix(V));
+                return matrices;
+            },
+            "The corner matrices, one (K, rows, cols) array per batch member")
+        // the volume and the reduction go through the stacked zonotope
+        .def(
+            "volume",
+            [](const MatZonotope &A, const std::string &method, int order) {
+                return scalar(A.volume(method, order));
+            },
+            py::arg("method") = "exact", py::arg("order") = 5,
+            "The volume of the zonotope of the stacked matrices")
+        .def("reduce", &MatZonotope::reduce, py::arg("order") = 1, py::arg("method") = "girard",
+             "A matrix zonotope with fewer generators that contains this one (Girard)")
         .def(
             "expm_one_param",
             [](const MatZonotope &A, double r, int64_t max_order, const py::object &u_trans) {
@@ -1516,6 +1541,13 @@ void bind_zonotope(py::module_ &m) {
                  return Zonotope(vector_of(c, "the center"), tensor_of(G, "the generators"));
              }),
              py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
+        // the list filter and the conversions of a zonotope
+        .def_static("filter_out", &Zonotope::filter_out, py::arg("zonotopes"),
+                    "The indices (0-based) of the zonotopes that no other zonotope contains")
+        // the simplex around it, and the matrix zonotope of its columns
+        .def("simplex", &Zonotope::simplex, "A simplex (as a Polytope) that contains the zonotope")
+        .def("mat_zonotope", &Zonotope::mat_zonotope,
+             "The same set as a matrix zonotope of n x 1 matrices")
         .def_static("stack", &Zonotope::stack, py::arg("zonotopes"),
                     "A batch of zonotopes as one; fewer generators are padded with zeros")
         .def_static(
@@ -1982,6 +2014,33 @@ void bind_con_zonotope(py::module_ &m) {
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the set contains the points (n, N), a zonotope or a box; method 'exact'")
         .def_static("origin", &ConZonotope::origin, py::arg("n"), "The set {0} of n dimensions")
+        // a random set with its constraints
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, std::optional<int64_t> dimension, const py::object &center,
+               std::optional<int64_t> nr_generators, std::optional<int64_t> nr_constraints) {
+                return ConZonotope::generate_random(rng, dimension,
+                                                    optional_vector(center, "center"),
+                                                    nr_generators, nr_constraints);
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("nr_generators") = py::none(), py::arg("nr_constraints") = py::none(),
+            "A random set: dimension (default that of center, else 1..10), center, nr_generators "
+            "(default 2 * dimension) and nr_constraints (default random)")
+        // the conversions of a constrained zonotope
+        .def("zonotope", &ConZonotope::zonotope, py::arg("method") = "nullSpace",
+             "A zonotope that contains the set; method 'nullSpace' (default) or 'reduce'")
+        // the other forms of the same set
+        .def("zono_bundle", &ConZonotope::zono_bundle, "The same set as a zonotope bundle")
+        .def("polytope", &ConZonotope::polytope, "The same set in halfspace form")
+        // random points of either type
+        .def(
+            "rand_point",
+            [](const ConZonotope &Z, int64_t N, cora::Rng &rng, const std::string &type) {
+                return matrix(Z.rand_point(N, rng, type));
+            },
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as columns (n, N); type 'standard' or 'extreme'")
         .def(
             "plus",
             [](const ConZonotope &Z, const py::object &S) {
@@ -2192,9 +2251,17 @@ std::vector<Zonotope> zonotopes_of(const py::handle &list) {
 void bind_zono_bundle(py::module_ &m) {
     py::class_<ZonoBundle, ContSet>(m, "ZonoBundle",
                                     "The intersection of a list of zonotopes (a zonotope bundle).")
-        .def(
-            py::init([](const py::list &zonotopes) { return ZonoBundle(zonotopes_of(zonotopes)); }),
-            py::arg("zonotopes"), "The intersection of the zonotopes (one dimension, at least one)")
+        .def(py::init([](const py::object &zonotopes) {
+                 // a zonotope or a box is a bundle of one member
+                 if (py::isinstance<Zonotope>(zonotopes))
+                     return ZonoBundle::from(py::cast<Zonotope>(zonotopes));
+                 if (py::isinstance<Interval>(zonotopes))
+                     return ZonoBundle::from(py::cast<Interval>(zonotopes));
+                 return ZonoBundle(zonotopes_of(zonotopes));
+             }),
+             py::arg("zonotopes"),
+             "The intersection of a list of zonotopes (one dimension, at least one); a zonotope or "
+             "a box gives a bundle of one member")
         .def_property_readonly(
             "zonotopes",
             [](const ZonoBundle &bundle) {
@@ -2208,7 +2275,76 @@ void bind_zono_bundle(py::module_ &m) {
                                "The number of member zonotopes")
         .def_static("empty", &ZonoBundle::empty, py::arg("n"),
                     "The empty set of n >= 1 dimensions: two zonotopes {0} and {e_1}")
+        // the maps, sums and conversions of a bundle
+        .def_static("origin", &ZonoBundle::origin, py::arg("n"), "The set {0} of n dimensions")
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, std::optional<int64_t> dimension,
+               std::optional<int64_t> nr_zonotopes) {
+                return ZonoBundle::generate_random(rng, dimension, nr_zonotopes);
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("nr_zonotopes") = py::none(),
+            "A random bundle of nr_zonotopes (default 2..5) zonotopes with a common point")
         .def("con_zonotope", &ZonoBundle::con_zonotope, "The same set as a constrained zonotope")
+        // the other forms of the same set
+        .def("zonotope", &ZonoBundle::zonotope, "The member of least volume")
+        .def("polytope", &ZonoBundle::polytope, "The intersection of the polytopes of the members")
+        // maps and sums
+        .def(
+            "linear_map",
+            [](const ZonoBundle &Z, const py::object &M) {
+                return Z.linear_map(tensor_of(M, "the matrix"));
+            },
+            py::arg("M"), "M Z for a matrix (..., k, n): every member mapped")
+        // the sum with a point or a set
+        .def(
+            "plus",
+            [](const ZonoBundle &Z, const py::object &S) {
+                if (py::isinstance<Zonotope>(S)) return Z.plus(py::cast<Zonotope>(S));
+                if (py::isinstance<Interval>(S)) return Z.plus(py::cast<Interval>(S));
+                if (py::isinstance<ZonoBundle>(S)) return Z.plus(py::cast<ZonoBundle>(S));
+                return Z.plus(vector_of(S, "the point"));
+            },
+            py::arg("S"), "The Minkowski sum with a bundle, a zonotope, a box or a point")
+        .def(
+            "quad_map",
+            [](const ZonoBundle &Z, const py::list &Q) { return Z.quad_map(matrix_list_of(Q)); },
+            py::arg("Q"), "An enclosure of (x' Q[i] x) for x in Z; Q[i] are (n, n) matrices")
+        // fewer generators in every member
+        .def(
+            "reduce",
+            [](const ZonoBundle &Z, int order, const std::string &method) {
+                return Z.reduce(order, method);
+            },
+            py::arg("order") = 1, py::arg("method") = "girard",
+            "Every member reduced to about order * dim generators (Girard)")
+        // replacing a member, the type of the set, and the pieces of a split
+        .def("replace", &ZonoBundle::replace, py::arg("index"), py::arg("Z"),
+             "The bundle with member `index` (0-based) replaced by the zonotope Z")
+        .def("representsa", &ZonoBundle::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the bundle is also a set of the CORA type ('origin', 'interval', "
+             "'emptySet', 'polytope', ...)")
+        .def("split", py::overload_cast<>(&ZonoBundle::split, py::const_),
+             "One pair of pieces cut at the middle of the box per coordinate")
+        .def("split", py::overload_cast<int64_t>(&ZonoBundle::split, py::const_), py::arg("N"),
+             "The pieces cut at the middle of coordinate N of the box around the bundle")
+        // the union and random points
+        .def(
+            "unite",
+            [](const ZonoBundle &Z, const py::object &S) {
+                if (py::isinstance<Zonotope>(S)) return Z.unite(py::cast<Zonotope>(S));
+                if (py::isinstance<Interval>(S)) return Z.unite(py::cast<Interval>(S));
+                return Z.unite(py::cast<ZonoBundle>(S));
+            },
+            py::arg("S"), "A bundle that contains the union with a bundle, a zonotope or a box")
+        // random points of either type
+        .def(
+            "rand_point",
+            [](const ZonoBundle &Z, int64_t N, cora::Rng &rng, const std::string &type) {
+                return matrix(Z.rand_point(N, rng, type));
+            },
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as columns (n, N); type 'standard' or 'extreme'")
         .def(
             "contains",
             [](const ZonoBundle &Z, const py::object &S, const std::string &method, Tol tol) {
@@ -2925,6 +3061,26 @@ void bind_operators(py::module_ &m) {
     method(CZ, "__rmul__", con_zonotope_product);
     // the right operators of the constrained zonotope
     method(CZ, "__rmatmul__", con_zonotope_product);
+
+    // ZonoBundle: a point shifts it, a set adds to it, a matrix or number maps it
+    const py::object ZB = m.attr("ZonoBundle");
+    ZB.attr("__array_ufunc__") = py::none();
+    const auto bundle_sum = [](const ZonoBundle &A, const py::object &o) -> py::object {
+        if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.plus(*v));
+        return not_implemented();
+    };
+    method(ZB, "__add__", bundle_sum);
+    method(ZB, "__radd__", bundle_sum);
+    const auto bundle_product = [](const ZonoBundle &A, const py::object &o) -> py::object {
+        if (is_number(o))
+            return py::cast(A.linear_map(A.zonotopes().front().center().eye_like(A.dim()) *
+                                         py::cast<double>(o)));
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.linear_map(*M));
+        return not_implemented();
+    };
+    method(ZB, "__rmul__", bundle_product);
+    method(ZB, "__rmatmul__", bundle_product);
 
     // Zonotope
     const auto zonotope_sum = [](const Zonotope &A, const py::object &o) -> py::object {
