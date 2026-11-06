@@ -16,6 +16,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,6 +28,11 @@ namespace cora {
 // shifting by -v is adding the negated vector: the same numbers as subtracting
 Polytope Polytope::minus(const Tensor &v) const {
     detail::Entry entry;
+    // the checks of plus are off inside this entry
+    CORA_CHECK(is_column(v, dim()), Error::dimension_mismatch, [&] {
+        return "minus: the point must be a column of " + std::to_string(dim()) +
+               " entries, got the shape " + shape_text(v.shape());
+    });
     return plus(-v);
 }
 
