@@ -521,10 +521,8 @@ inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
     test::check(ok, op_name() + ": the box of the oracle's result");
 }
 
-/// An interval matrix that CORA rebuilds from its center c and radius r (lo = c - r, hi = c + r)
-/// inside the oracle's, each bound widened by the rebuild's own rounding, eps (|c| + r): the
-/// oracle encloses the real result, which the rebuild in floating point misses by that much when
-/// c and r nearly cancel.
+/// Whether CORA's interval matrix, rebuilt from center c and radius r, lies in the oracle's, each
+/// bound widened by the rebuild's rounding eps (|c| + r): the rebuild misses the result by that.
 inline bool enclosed_rebuilt(const std::string &what, const cora::IntervalMatrix &a,
                              const lean::Interval &b) {
     const cora::Interval &box = a.interval();
