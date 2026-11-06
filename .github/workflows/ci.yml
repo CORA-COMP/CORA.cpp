@@ -2,7 +2,7 @@
 #
 # `checks` needs no build (it includes clang-format and ruff on the changed files); `tidy` configures the
 # python preset and runs clang-tidy on the changed translation units. The Linux jobs build everything but run the tests the change can affect
-# (scripts/ci/affected_tests.py); a documentation-only change skips them. In the merge queue the
+# (scripts/ci/affected_tests.py), the core job also those against the CORALean oracle; a documentation-only change skips them. In the merge queue the
 # change is the group against the main it lands on, so semantic conflicts between pull requests
 # show there. `instructions` compares the micro-benchmarks with the base commit's (pull requests
 # only). The whole matrix (every preset, Windows, macOS, sanitizers) is tier 3 (nightly.yml), which
@@ -86,6 +86,7 @@ jobs:
     with:
       preset: core
       tests: ${{ needs.checks.outputs.tests }}
+      oracle: true
 
   linux-python:
     needs: checks

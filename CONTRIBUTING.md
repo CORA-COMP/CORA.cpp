@@ -259,7 +259,7 @@ cmake --build --preset core && ctest --preset core -R lean
 is read only by a test binary run by hand, outside CMake), and is OFF, `DOWNLOAD`, or the executable or a shell
 command that starts it (`cd /path/to/coralean && lake exe oracle`); without an oracle the tests and
 examples named `*lean*` skip. Outside CMake, set the environment variable of the same name. From WSL,
-the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the release pinned in
+the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the oracle pinned in
 `scripts/coralean.cmake` (Linux x86_64) and checks its hash. Protocol and operations:
 `experiments/oracle/README.md` in CORALean; the C++ side is `src/global/oracle/`. A dtype is set with
 `lean::DTypeScope s("ieee:binary32")` (Python: `with cora.lean.dtype("ieee:binary32"):`); values cross into CORA.cpp only when they are exact doubles.
@@ -301,19 +301,18 @@ and `tests/python/test_lean_oracle.py`. The coverage check requires the helper a
 every ORACLE test. An op without a method is one line of `ask(op, operands)` in
 `src/global/oracle/{interval,zonotope,con_zonotope,zono_bundle,polytope,ellipsoid}.cpp`.
 
-### Still to do for a fresh install
+### The oracle in CI
 
-The `oracle` CI job (`.github/workflows/nightly.yml`) is defined and disabled (`if: false`). To enable it:
+Pull requests run the affected lean tests on the core job; the nightly runs every test, the Python ones
+included, against the oracle. `-DCORACPP_ORACLE=DOWNLOAD` fetches the pinned archive (both executables,
+about 50 MB) once per version into `build/<preset>/coralean/`. CORALean's CI publishes it: its job
+`github-oracle` links and self-tests both executables on main and pushes them to the public mirror as
+the tag `oracle-<yyyymmdd>-<sha>` (https://github.com/TUMcps/CORALean/tags). To take a newer oracle, set
+`CORALEAN_VERSION` and `CORALEAN_ARCHIVE_SHA256` in `scripts/coralean.cmake` to that tag and the hash in
+its `oracle-linux-x86_64.tar.xz.sha256`, in a pull request of their own.
 
-1. Publish CORALean (public repository or public releases); CORA.cpp may move to GitLab later, only
-   the URL in `scripts/coralean.cmake` changes.
-2. CORALean CI builds `oracle` and `oracle-unsound` for Linux x86_64 and attaches them to a release
-   as `oracle-linux-x86_64` and `oracle-unsound-linux-x86_64`, with their SHA-256.
-3. Merge CORALean's `feat/oracle-unsound` (the `oracle-unsound` executable with `nearest`, under
-   `Examples/Bench/`, where the false axiom behind it is allowed; the sound `oracle` never reaches it).
-4. Fill `CORALEAN_VERSION` and both hashes in `scripts/coralean.cmake`, remove `if: false`.
-5. Compare `ping`'s `version` (CORALean's commit, with a `dirty` flag) with the pinned one in CORA.cpp
-   (not done yet), so a mismatch is refused.
+Not done yet: compare `ping`'s `version` (CORALean's commit, with a `dirty` flag) with the pinned tag,
+so that a mismatched local oracle is refused.
 
 Later, without Lean and without a binary: CORALean releases the generated C of the oracle with
 `lean.h` and the runtime sources, and CORA.cpp compiles it as a library. It needs a JSON codec of the
