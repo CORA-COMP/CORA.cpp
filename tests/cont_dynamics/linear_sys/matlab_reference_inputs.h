@@ -32,7 +32,7 @@ struct InputSystem {
 
 /// The sets of the algorithm "standard".
 inline const InputSystem &standard_inputs() {
-    static const InputSystem s = [] {
+    static const InputSystem inputs = [] {
         InputSystem s;
         s.G_inf = {-2.5459749078231472e-05, -0.0050016028597035271,  -0.00020530569255280311,
                    -0.00028841773260259622, -2.6485581539672779e-05, -0.0020005375348072889,
@@ -68,12 +68,12 @@ inline const InputSystem &standard_inputs() {
                        {0.6767148687346064, -0.11779158883553048, 0.99128301428451782}};
         return s;
     }();
-    return s;
+    return inputs;
 }
 
 /// The sets of the algorithm "wrapping-free".
 inline const InputSystem &wrapping_free_inputs() {
-    static const InputSystem s = [] {
+    static const InputSystem inputs = [] {
         InputSystem s;
         s.G_inf = {-2.5459749078231472e-05, -0.0050016028597035271,  -0.00020530569255280311,
                    -0.00028841773260259622, -2.6485581539672779e-05, -0.0020005375348072889,
@@ -109,7 +109,7 @@ inline const InputSystem &wrapping_free_inputs() {
                        {0.70807438016074231, -0.062111801014582524, 1.1781553170125107}};
         return s;
     }();
-    return s;
+    return inputs;
 }
 
 } // namespace matlab_reference

@@ -2,6 +2,7 @@
 import ast
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -95,7 +96,9 @@ class Stubs(unittest.TestCase):
             with open(wrong, "w", encoding="utf-8") as f:
                 f.write(WRONG)
             errors = mypy(folder, example, wrong)
-        self.assertEqual([line.split(":")[0] for line in errors], [wrong] * 3, "\n".join(errors))
+        # the path ends at the colon before the line number (a Windows path has one after its drive)
+        paths = [re.match(r"(.+?):\d+:", line).group(1) for line in errors]
+        self.assertEqual(paths, [wrong] * 3, "\n".join(errors))
         for code in ("arg-type", "attr-defined", "assignment"):
             self.assertEqual(sum(f"[{code}]" in line for line in errors), 1, "\n".join(errors))
 

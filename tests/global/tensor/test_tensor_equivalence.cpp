@@ -10,6 +10,7 @@
 #include "global/oracle/oracle_testing.h"
 #include "testing.h"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <limits>
@@ -100,8 +101,10 @@ void aux_agree(const OpInfo &info, int64_t n, const Tensor &ref, const Tensor &g
 
 /// The host indices as a tensor like x.
 Tensor aux_indices(const Tensor &x, const std::vector<int64_t> &idx) {
-    return Tensor::like(x, std::vector<double>(idx.begin(), idx.end()),
-                        {static_cast<int64_t>(idx.size())});
+    std::vector<double> values(idx.size());
+    std::transform(idx.begin(), idx.end(), values.begin(),
+                   [](int64_t i) { return static_cast<double>(i); });
+    return Tensor::like(x, values, {static_cast<int64_t>(idx.size())});
 }
 
 /// The cases, by operation.

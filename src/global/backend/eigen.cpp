@@ -115,7 +115,8 @@ struct EigenBackend : Tensor::Backend {
             CORA_FAIL(Error::wrong_value, "CoraTensor: the eigen backend runs on the CPU only");
         if (dtype == DType::float32) {
             auto t = H<float>::make(shape, backend_id::eigen);
-            std::copy(data.begin(), data.end(), t->p);
+            std::transform(data.begin(), data.end(), t->p,
+                           [](double v) { return static_cast<float>(v); });
             return t;
         }
         auto t = H<double>::make(shape, backend_id::eigen);

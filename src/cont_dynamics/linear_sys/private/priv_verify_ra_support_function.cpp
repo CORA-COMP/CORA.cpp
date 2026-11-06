@@ -431,7 +431,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
                                              const Zonotope &U, double t_final,
                                              const std::vector<Specification> &specs) {
     const auto start = std::chrono::steady_clock::now();
-    const FlushDenormals flush;
+    [[maybe_unused]] const FlushDenormals flush; // a no-op off x86
     VerifyResult res;
     auto finish = [&]() {
         res.computation_time = priv_seconds_since(start);

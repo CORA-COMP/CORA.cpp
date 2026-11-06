@@ -9,10 +9,17 @@
 
 set(python_ok OFF)
 if(NOT CORACPP_PYTHON STREQUAL "OFF" AND Python3_Development.Module_FOUND)
-  set(python_ok ON)
+  # the package imports numpy, and the build imports the package to write its type stubs
+  execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import numpy"
+                  RESULT_VARIABLE numpy_result OUTPUT_QUIET ERROR_QUIET)
+  if(numpy_result EQUAL 0)
+    set(python_ok ON)
+  elseif(CORACPP_PYTHON STREQUAL "AUTO")
+    message(STATUS "Python: ${Python3_EXECUTABLE} has no numpy, so the Python package is not built")
+  endif()
 endif()
 if(CORACPP_PYTHON STREQUAL "ON" AND NOT python_ok)
-  message(FATAL_ERROR "CORACPP_PYTHON=ON needs Python with development files")
+  message(FATAL_ERROR "CORACPP_PYTHON=ON needs Python with development files and numpy")
 endif()
 
 if(python_ok)
