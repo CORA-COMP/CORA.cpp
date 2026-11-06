@@ -12,11 +12,12 @@
 // Operations: one file each in src/matrix_set/mat_zonotope/, named as CORA's; the constructors
 //             check their input (mat_zonotope.cpp)
 // Gradients:  every operation is differentiable except interval_matrix, norm, expm_independent,
-//             expm_mixed and expm_one_param (piecewise: absolute values) and contains and
-//             representsa (not differentiable: they answer a bool)
+//             expm_mixed, expm_ind_mixed, expm_one_param, vertices, volume and reduce (piecewise)
+//             and contains and representsa (not differentiable: they answer a bool)
 // See also:   cora/matrix_set/interval_matrix/interval_matrix.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: matrixSet/@matZonotope/matZonotope.m
+// CORA: matrixSet/@matZonotope/numgens.m
 // CORA authors: Matthias Althoff, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
@@ -77,7 +78,18 @@ class MatZonotope {
     /// repository tolerance.
     bool representsa(const std::string &type, Tol tol = std::nullopt) const;
 
-    // Sums and products (CORA's plus and mtimes) --------------------------------------------------
+    /// The 2^h corner matrices C +- G_1 +- ... +- G_h, one tensor (K, rows, cols) per batch member,
+    /// each matrix once in ascending lexicographic order. At most 20 generators.
+    std::vector<Tensor> vertices() const;
+
+    /// The volume (..., 1, 1) of the zonotope of the stacked matrices (Zonotope::volume).
+    Tensor volume(const std::string &method = "exact", int order = 5) const;
+
+    /// A set with at most order * rows * cols generators that contains this one, by Girard's rule
+    /// on the stacked zonotope (the shape rows x cols is kept). Not a batch.
+    MatZonotope reduce(int order = 1, const std::string &method = "girard") const;
+
+    // Sums and products ---------------------------------------------------------------------------
 
     /// The Minkowski sum with a matrix zonotope (the centers add, the generators are joined), or
     /// with a matrix of numbers (the center shifts).
@@ -131,6 +143,11 @@ class MatZonotope {
 
     struct ExpmMixedResult;
     struct ExpmOneParamResult;
+
+    /// The series in two parts with independent powers: I + sum A^i / i! to intermediate_order >= 1
+    /// as a matrix zonotope, the rest up to max_order as interval matrices (CORA's expmIndMixed);
+    /// the result is that of expm_mixed.
+    ExpmMixedResult expm_ind_mixed(int64_t intermediate_order, int64_t max_order) const;
 
     /// The series in two parts: the terms to intermediate_order >= 2 as a matrix zonotope (with the
     /// dependent terms of the step r > 0) and the rest up to max_order as interval matrices.
