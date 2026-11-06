@@ -14,8 +14,13 @@ int main() {
         for (const int n : {2, 3, 5}) {
             const IntervalMatrix A(rnd.box_matrix(n, n));
             const lean::IntervalMatrix L{lean::Interval(A.interval())};
-            for (const double r : {1.0, 0.5, 0.125})
-                test::oracle::check(A.dependent_terms(r), L.dependent_terms(r));
+            // both results are rebuilt from center and radius, as CORA does (issue #53)
+            for (const double r : {1.0, 0.5, 0.125}) {
+                const auto [sq, H] = A.dependent_terms(r);
+                const auto [lean_sq, lean_H] = L.dependent_terms(r);
+                test::oracle::check_rebuilt(sq, lean_sq);
+                test::oracle::check_rebuilt(H, lean_H);
+            }
         }
     });
     return test::finish("lean interval_matrix dependent_terms");

@@ -39,6 +39,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <random>
 #include <set>
@@ -519,6 +520,28 @@ inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
     test::check(ok, op_name() + ": the box of the oracle's result");
 }
 
+/// An interval matrix that CORA rebuilds from its center c and radius r (lo = c - r, hi = c + r)
+/// inside the oracle's, each bound widened by the rebuild's own rounding, eps (|c| + r): the
+/// oracle encloses the real result, which the rebuild in floating point misses by that much when
+/// c and r nearly cancel.
+inline bool enclosed_rebuilt(const std::string &what, const cora::IntervalMatrix &a,
+                             const lean::Interval &b) {
+    const cora::Interval box = a.interval();
+    const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
+    const std::vector<double> blo = b.inf().gather().data(), bhi = b.sup().gather().data();
+    for (std::size_t i = 0; i < lo.size(); ++i) {
+        const double c = 0.5 * (lo[i] + hi[i]), r = 0.5 * (hi[i] - lo[i]);
+        const double slack = std::numeric_limits<double>::epsilon() * (std::abs(c) + r);
+        if (!(blo[i] - slack <= lo[i] && hi[i] <= bhi[i] + slack)) {
+            std::cerr << "  " << what << " [" << i << "]: [" << detail::bits(lo[i]) << ", "
+                      << detail::bits(hi[i]) << "] is not inside [" << detail::bits(blo[i]) << ", "
+                      << detail::bits(bhi[i]) << "] widened by " << slack << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
 // The checks a test calls --------------------------------------------------------------------
 
 /// CORA.cpp's result equals the oracle's bit for bit (run it on the lean backend, oracle at
@@ -541,6 +564,17 @@ void check(const A &cora_result, const B &lean_result) {
         check_exact(op_name(), cora_result, lean_result);
     else
         check_enclosed(op_name(), cora_result, lean_result);
+}
+
+/// The check of the running mode for an interval matrix rebuilt from center and radius: the same
+/// bits when exact, inside the enclosure widened by the rebuild's rounding when sound.
+inline void check_rebuilt(const cora::IntervalMatrix &cora_result,
+                          const lean::Interval &lean_result) {
+    if (mode() == Mode::exact)
+        check_exact(op_name(), cora_result, lean_result);
+    else
+        test::check(enclosed_rebuilt(op_name(), cora_result, lean_result),
+                    op_name() + ": inside the oracle's enclosure, up to the rebuild's rounding");
 }
 
 /// Calls body(Random&) in both modes with the same seed: exact (lean backend, dtype nearest) and
