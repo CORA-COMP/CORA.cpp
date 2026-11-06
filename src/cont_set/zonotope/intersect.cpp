@@ -95,6 +95,7 @@ Zonotope Zonotope::intersect(const Interval &I, const std::string &method) const
     CORA_CHECK(method == "conZonotope" || method == "averaging", Error::wrong_value, [&] {
         return "intersect: the method must be 'conZonotope' or 'averaging', got '" + method + "'";
     });
+    // the box joins as a zonotope
     return aux_intersect(*this, I.zonotope(), method);
 }
 

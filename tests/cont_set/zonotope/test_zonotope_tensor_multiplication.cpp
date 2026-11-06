@@ -89,6 +89,7 @@ void checks_and_their_switch() {
     bad = list;
     bad.perm[0].pop_back();
     check(raises(Z, M, bad, Error::wrong_value), "tensor_multiplication: a pair, not a triple");
+    // center and pair errors
     const Zonotope shifted(column({1.0}), Tensor({{1.0, 2.0}}));
     check(raises(shifted, M, list, Error::wrong_value), "tensor_multiplication: center not 0");
     const Tensor on = Z.tensor_multiplication(M, list).generators();

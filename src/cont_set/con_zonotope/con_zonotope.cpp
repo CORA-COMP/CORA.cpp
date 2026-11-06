@@ -61,6 +61,7 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, c
     if (b.ndim() < 2 || b.shape().back() != 1)
         return fail("the constraint offset must be a column (..., p, 1), got the shape " +
                     shape_text(b.shape()));
+    // the constraint matrix and offset agree in rows
     if (b.shape()[b.ndim() - 2] != A.shape()[A.ndim() - 2])
         return fail("the dimensions of the constraint matrix and the constraint offset do not "
                     "match: " +

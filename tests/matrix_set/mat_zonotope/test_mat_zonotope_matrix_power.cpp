@@ -54,6 +54,7 @@ void powers_enclose_the_members(const std::string &b) {
     const MatZonotope batch = test::batch_of(A, A).matrix_power(0);
     check(batch.center().shape() == std::vector<int64_t>({2, 3, 3}), b + ": a batch of identities");
     const MatZonotope squares = test::batch_of(A, A).matrix_power(2);
+    // a batch of squares
     check(test::same_set(test::batch_member(squares, 1), A.matrix_power(2), 1e-12),
           b + ": a batch of squares");
 }

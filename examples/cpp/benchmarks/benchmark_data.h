@@ -93,6 +93,7 @@ class JsonParser {
     }
     Json value_() {
         skip_();
+        // one value, by its first character
         Json v;
         if (i_ >= s_.size()) fail_("unexpected end");
         const char c = s_[i_];
@@ -117,6 +118,7 @@ class JsonParser {
             while (s_.at(i_) != ']') {
                 v.array.push_back(value_());
                 skip_();
+                // members are separated by commas
                 if (s_.at(i_) == ',') ++i_;
                 skip_();
             }

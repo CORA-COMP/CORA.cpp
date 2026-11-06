@@ -57,6 +57,7 @@ void generate_random_options(const std::string &b) {
           b + ": the center does not match the dimension");
     check(test::raises(
               [&] {
+                  // a negative radius
                   Interval::generate_random(rng, std::nullopt, std::nullopt, test::column({-1.0}));
               },
               Error::wrong_value),

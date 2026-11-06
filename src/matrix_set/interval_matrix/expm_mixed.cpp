@@ -7,7 +7,7 @@
 // Inputs:   r - the step, nonzero
 //           intermediate_order - where the first part ends, at least 2;
 //           max_order - the order of the series;  A is square
-// Outputs:  R - enclosure: I + [A] + [A]^2 / 2 with dependent terms at step r, plus terms to order k
+// Outputs:  R - enclosure: I + [A] + [A]^2 / 2 with dependent terms at step r, plus terms to k
 //           enclosure_rest - the series from the order k + 1 to max_order with the remainder
 // See also: expm, dependent_terms
 //

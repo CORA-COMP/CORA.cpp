@@ -45,7 +45,7 @@
 using namespace cora;
 using namespace cora::python;
 
-// NOLINTBEGIN(backend,clones): the bindings convert between numpy or torch arrays and Tensor, and repeat .def rows
+// NOLINTBEGIN(backend,clones): numpy and torch arrays are converted to Tensor; .def rows repeat
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -99,6 +99,7 @@ void bind_scope(py::module_ &m, const char *name, const char *doc) {
 }
 
 void bind_settings(py::module_ &m) {
+    // the scopes of the settings
     using Checks = PyScope<ChecksScope, bool>;
     using Backend = PyScope<BackendScope, std::string>;
     bind_scope<ChecksScope, bool>(m, "_ChecksScope", "The checks on or off in a with block");
@@ -118,6 +119,7 @@ void bind_settings(py::module_ &m) {
           "The tolerance of threads without a cora.tolerance block (None: default_tol(dtype))");
     m.def("current_tolerance", &current_tolerance,
           "The tolerance set by a block or set_default_tolerance on this thread, else None");
+    // the default tolerance of a dtype
     m.def(
         "_default_tol",
         [](const std::string &dtype) {
@@ -137,6 +139,7 @@ void bind_settings(py::module_ &m) {
                 CORA_FAIL(Error::install, "cora: this build of the Python package has no torch; "
                                           "use cora.backend('eigen')");
 #endif
+            // a new backend scope
             return new Backend{spec, std::nullopt};
         },
         py::arg("spec"),
@@ -157,6 +160,7 @@ void bind_settings(py::module_ &m) {
             static const char *kinds[] = {"core", "derived", "fused"};
             static const char *grads[] = {"differentiable", "piecewise", "not_differentiable"};
             static const char *agree[] = {"exact", "ulp", "sum", "norm"};
+            // the tensor operations with their kind and agreement
             py::list out;
             for (const OpInfo &op : tensor_ops())
                 out.append(py::dict(py::arg("name") = op.name,
@@ -169,8 +173,7 @@ void bind_settings(py::module_ &m) {
         "The Tensor operations (ops.def): name, kind, gradient tag, agreement with lean, summary");
 }
 
-// Sets
-// ---------------------------------------------------------------------------------------------
+// Sets --------------------------------------------------------------------------------------------
 
 /// A Python subclass of ContSet: the _impl layer calls the methods _dim, _center, ... of the
 /// Python object.
@@ -195,6 +198,7 @@ class PyContSet : public ContSet {
     Interval interval_impl() const override { return py::cast<Interval>(call("_interval")); }
     Tensor rand_point_impl(int64_t N, Rng &rng) const override {
         py::gil_scoped_acquire gil;
+        // a random point of a set implemented in Python
         return tensor_of(call("_rand_point", N, py::cast(&rng, py::return_value_policy::reference)),
                          "_rand_point");
     }
@@ -215,6 +219,7 @@ class PyContSet : public ContSet {
         }
         return out;
     }
+    // the 3-D vertices come from the Python subclass, one array per face
     std::vector<std::vector<Point3>> vertices_3d_impl() const override {
         py::gil_scoped_acquire gil;
         std::vector<std::vector<Point3>> out;
@@ -233,6 +238,7 @@ class PyContSet : public ContSet {
         py::gil_scoped_acquire gil;
         const py::function f = py::get_override(static_cast<const ContSet *>(this), "_display");
         if (f) return py::cast<std::string>(f());
+        // the default display
         return class_name() + " of dimension " + std::to_string(dim());
     }
 
@@ -313,6 +319,7 @@ void bind_registry(py::module_ &m) {
         py::arg("S1"), py::arg("S2"), py::arg("tol") = py::none(),
         "Whether S2 is a subset of S1 enlarged by tol (infinity norm); tol=None: the "
         "repository tolerance");
+    // the intersection predicate of two sets
     m.def(
         "is_intersecting",
         [](const py::object &S1, const py::object &S2, Tol tol) {
@@ -333,6 +340,7 @@ void bind_registry(py::module_ &m) {
             py::list out;
             for (const BinaryPair &p : binary_pairs())
                 out.append(py::make_tuple(binary_op_name(p.op), p.left, p.right));
+            // the pairs as (op, left, right) tuples
             return out;
         },
         "The pairs of classes each binary operation is implemented for: (op, left, right)");
@@ -393,6 +401,7 @@ void bind_cont_set(py::module_ &m) {
         py::arg("rng"), py::arg("dimension") = py::none(), py::arg("admissible") = py::none(),
         "A random set of one of the admissible classes ('interval', 'zonotope'); the class's own "
         "generate_random takes its options");
+    // the abstract set, to be subclassed in Python
     py::class_<ContSet, PyContSet>(m, "ContSet",
                                    "The abstract set; a Python subclass implements _dim, _center, "
                                    "_support_function, _interval, _rand_point, _project, "
@@ -413,6 +422,7 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "rand_point",
             [](const ContSet &S, int64_t N, cora::Rng &rng) {
+                // random points as columns
                 return matrix(S.rand_point(N, rng));
             },
             py::arg("N"), py::arg("rng"), "N random points as columns (..., n, N)")
@@ -433,6 +443,7 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "vertices_3d",
             [](const ContSet &S) {
+                // the corner lists of the faces
                 py::list corners;
                 for (const std::vector<Point3> &p : S.vertices_3d())
                     corners.append(points3_array(p));
@@ -453,6 +464,7 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "norm",
             [](const ContSet &S, const py::object &type, const std::string &mode) {
+                // the norm bound
                 return scalar(S.norm(norm_of(type), mode));
             },
             py::arg("type") = 2, py::arg("mode") = "ub",
@@ -473,6 +485,7 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "enlarge",
             [](const ContSet &S, const py::object &factor) {
+                // enlarge by a number or per dimension
                 if (is_number(factor)) return object_of(S.enlarge(py::cast<double>(factor)));
                 return object_of(S.enlarge(vector_of(factor, "the factor")));
             },
@@ -493,6 +506,7 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "compact",
             [](const ContSet &S, const std::optional<std::string> &method, Tol tol) {
+                // compact with an optional method
                 return object_of(S.compact(method, tol));
             },
             py::arg("method") = py::none(), py::arg("tol") = py::none(),
@@ -513,6 +527,7 @@ void bind_cont_set(py::module_ &m) {
             "decompose",
             [](const ContSet &S, const std::vector<std::array<int64_t, 2>> &blocks) {
                 py::list parts;
+                // the parts of a decomposition
                 for (const Set &part : S.decompose(blocks)) parts.append(object_of(part));
                 return parts;
             },
@@ -531,6 +546,7 @@ void bind_cont_set(py::module_ &m) {
                 const Tensor normal = vector_of(c, "the normal");
                 const Tensor offset = is_number(d) ? normal.full_like({1, 1}, py::cast<double>(d))
                                                    : tensor_of(d, "the offset");
+                // the projection onto a hyperplane
                 return object_of(S.project_on_hyperplane(normal, offset));
             },
             py::arg("c"), py::arg("d"),
@@ -551,6 +567,7 @@ void bind_cont_set(py::module_ &m) {
         .def("__str__", &ContSet::display)
         .def("__add__",
              [](const py::object &S1, const py::object &S2) -> py::object {
+                 // operators with other sets
                  if (!py::isinstance<ContSet>(S2)) return not_implemented();
                  return binary<&plus>(S1, S2);
              })
@@ -570,6 +587,7 @@ void bind_cont_set(py::module_ &m) {
                 return py::cast<const Interval &>(S1).contains(vector_of(S2, "the point"));
             if (py::isinstance<Zonotope>(S1))
                 return py::cast<const Zonotope &>(S1).contains(tensor_of(S2, "the points"));
+            // contains dispatches on the class of the first set
             if (py::isinstance<ConZonotope>(S1))
                 return py::cast<const ConZonotope &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<ZonoBundle>(S1))
@@ -634,6 +652,7 @@ void bind_fullspace(py::module_ &m) {
         .def(
             "plus",
             [](const Fullspace &F, const py::object &S) {
+                // the sum with the whole space
                 return object_of(F.plus(operand_set(S).get()));
             },
             py::arg("S"),
@@ -652,6 +671,7 @@ void bind_fullspace(py::module_ &m) {
         .def(
             "is_intersecting",
             [](const Fullspace &F, const py::object &S, Tol tol) {
+                // the whole space meets every set unless it is empty
                 return F.is_intersecting(operand_set(S).get(), tol);
             },
             py::arg("S"), py::arg("tol") = py::none(), "Whether the set meets S: unless S is empty")
@@ -671,6 +691,7 @@ void bind_fullspace(py::module_ &m) {
             py::arg("points"), "The whole space of the dimension of the points (n, N)")
         .def("project_high_dim", &Fullspace::project_high_dim, py::arg("N"), py::arg("proj"),
              "The whole space again, for N = dim; any other N is refused (CORA: not_defined)")
+        // a random set of the whole space
         .def_static("generate_random", &Fullspace::generate_random, py::arg("rng"),
                     py::arg("dimension") = py::none(),
                     "The whole space of the dimension, or of a random one in 1..10")
@@ -707,6 +728,7 @@ void bind_interval(py::module_ &m) {
     py::class_<Interval, ContSet>(m, "Interval",
                                   "A box, or a matrix of intervals: inf <= x <= sup.")
         .def(py::init([](const Array &inf, const Array &sup) {
+                 // a box from its bounds
                  return Interval(vector_of(inf, "inf"), vector_of(sup, "sup"));
              }),
              py::arg("inf"), py::arg("sup"), "The box of the vectors inf <= sup (..., n)")
@@ -722,6 +744,7 @@ void bind_interval(py::module_ &m) {
             "generate_random",
             [](cora::Rng &rng, const std::optional<int64_t> &dimension, const py::object &center,
                const py::object &max_radius) {
+                // a random box
                 return Interval::generate_random(rng, dimension, optional_vector(center, "center"),
                                                  optional_vector(max_radius, "max_radius"));
             },
@@ -742,6 +765,7 @@ void bind_interval(py::module_ &m) {
                 return I.linear_map(tensor_of(M, "the matrix"));
             },
             py::arg("M"), "M I enclosed by its interval hull")
+        // the box of all points
         .def("plus", &Interval::plus, py::arg("I2"), "The sum with an interval, as a box")
         .def_static("unbounded", &Interval::unbounded, py::arg("n"),
                     "The box (-Inf, Inf)^n (CORA: interval.Inf)")
@@ -762,6 +786,7 @@ void bind_interval(py::module_ &m) {
             "boundary_point",
             [](const Interval &I, const py::object &dir, const py::object &start) {
                 std::optional<Tensor> from;
+                // the start point defaults to the center
                 if (!start.is_none()) from = vector_of(start, "the start point");
                 return bounds(I.boundary_point(vector_of(dir, "dir"), from));
             },
@@ -780,6 +805,7 @@ void bind_interval(py::module_ &m) {
         .def("exp", &Interval::exp, "The image under the exponential")
         .def("convex_hull", &Interval::convex_hull, py::arg("I2"),
              "The hull of two boxes; an empty one returns the other")
+        // hull of the points
         .def_static(
             "enclose_points",
             [](const py::object &points) {
@@ -800,6 +826,7 @@ void bind_interval(py::module_ &m) {
                 return I.enlarge(vector_of(factor, "the factor"));
             },
             py::arg("factor"), "The box scaled about its center by a number or per dimension")
+        // transposes
         .def("ctranspose", &Interval::ctranspose, "The transpose of an interval matrix")
         .def("transpose", &Interval::transpose, "The transpose of an interval matrix")
         .def_property_readonly("T", &Interval::transpose, "The transposed box")
@@ -820,6 +847,7 @@ void bind_interval(py::module_ &m) {
         .def("zonotope", &Interval::zonotope,
              "The zonotope with the center and the radius as generators")
         .def("sqrt", &Interval::sqrt, "The image under the square root")
+        // tangent functions
         .def("tan", &Interval::tan,
              "The image under the tangent (the line where a pole may lie inside)")
         .def("tanh", &Interval::tanh, "The image under the hyperbolic tangent")
@@ -839,6 +867,7 @@ void bind_interval(py::module_ &m) {
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
         .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
+        // predicates of the box
         .def("is_full_dim", &Interval::is_full_dim, py::arg("tol") = py::none(),
              "Whether the box has a nonempty interior; tol=None: the repository tolerance")
         .def(
@@ -859,6 +888,7 @@ void bind_interval(py::module_ &m) {
             },
             py::arg("other"), py::arg("tol") = py::none(),
             "Whether the bounds agree up to tol; infinite bounds must be the same")
+        // comparisons of boxes
         .def("less_equal", &Interval::less_equal, py::arg("I2"), "Whether the box lies in I2")
         .def("less", &Interval::less, py::arg("I2"), "Whether the box lies strictly in I2")
         .def(
@@ -879,6 +909,7 @@ void bind_interval(py::module_ &m) {
             },
             py::arg("other"), py::arg("left") = false,
             "The Kronecker product with a box or a matrix; left=True puts the matrix first")
+        // matrix powers and maxima
         .def("matrix_power", &Interval::matrix_power, py::arg("exponent"),
              "The power of a square interval matrix")
         .def(
@@ -897,6 +928,7 @@ void bind_interval(py::module_ &m) {
                 if (other.is_none()) return bounds(I.min());
                 if (py::isinstance<ContSet>(other))
                     return py::cast(I.min(py::cast<const ContSet &>(other)));
+                // minima of two boxes
                 return py::cast(I.min(operand(I, other, "the operand")));
             },
             py::arg("other") = py::none(),
@@ -916,6 +948,7 @@ void bind_interval(py::module_ &m) {
             "unite",
             [](const Interval &I, const py::object &other) {
                 if (py::isinstance<Interval>(other)) return I.unite(py::cast<Interval>(other));
+                // union with a box or a point
                 return I.unite(vector_of(other, "the point"));
             },
             py::arg("other"), "The smallest box around the box and a box or a point")
@@ -934,6 +967,7 @@ void bind_interval(py::module_ &m) {
         .def("sin", &Interval::sin, "The image under the sine (CORA: cos(I - pi/2))")
         .def("sinh", &Interval::sinh, "The image under the hyperbolic sine")
         .def("sign", &Interval::sign, "The hull of the sign of the bounds")
+        // signs and rounding
         .def(
             "round",
             [](const Interval &I, int64_t digits, const std::string &type) {
@@ -954,6 +988,7 @@ void bind_interval(py::module_ &m) {
             py::arg("exponent"),
             "The elementwise power: exponent a number, an array of the shape of the bounds or a "
             "box")
+        // powers of a box
         .def_static(
             "power_of",
             [](const py::object &base, const Interval &exponent) {
@@ -974,6 +1009,7 @@ void bind_interval(py::module_ &m) {
                                          denominator);
             },
             py::arg("numerator"), py::arg("denominator"), "Numbers over a box, entrywise")
+        // products and partitions
         .def("prod", &Interval::prod, py::arg("dim") = py::none(),
              "The product of the rows (dim=1) or the columns (dim=2) of an interval matrix")
         .def("partition", &Interval::partition, py::arg("splits"),
@@ -1034,6 +1070,7 @@ void bind_expm_results(py::module_ &m) {
 
 void bind_interval_matrix(py::module_ &m) {
     bind_expm_results(m);
+    // the interval matrix from its center and delta, or from an Interval
     py::class_<IntervalMatrix>(
         m, "IntervalMatrix",
         "An interval matrix {M | inf <= M <= sup}: C +- |D|, a point C, or an Interval")
@@ -1052,6 +1089,7 @@ void bind_interval_matrix(py::module_ &m) {
         .def_property_readonly(
             "center", [](const IntervalMatrix &A) { return matrix(A.center()); },
             "The center matrix (inf + sup) / 2")
+        // the bounds of the interval matrix
         .def_property_readonly(
             "infimum", [](const IntervalMatrix &A) { return matrix(A.infimum()); },
             "The lower bound matrix")
@@ -1070,6 +1108,7 @@ void bind_interval_matrix(py::module_ &m) {
         .def(
             "volume", [](const IntervalMatrix &A) { return scalar(A.volume()); },
             "The product of the entry widths (0 if one is 0)")
+        // the vertices as matrices
         .def(
             "vertices",
             [](const IntervalMatrix &A) {
@@ -1090,6 +1129,7 @@ void bind_interval_matrix(py::module_ &m) {
             "generate_random",
             [](cora::Rng &rng, const std::optional<std::array<int64_t, 2>> &dimension,
                const py::object &center, const py::object &max_radius) {
+                // a random interval matrix
                 std::optional<Tensor> c, r;
                 if (!center.is_none()) c = tensor_of(center, "center");
                 if (!max_radius.is_none())
@@ -1109,6 +1149,7 @@ void bind_interval_matrix(py::module_ &m) {
         .def("expm_different_algorithms", &IntervalMatrix::expm_different_algorithms,
              py::arg("max_order"), py::arg("style"), py::arg("scaling_exponent") = 1,
              "As expm_taylor_horner_scaling, and style 4: expm at the step 1")
+        // independent and mixed exponentials
         .def("expm_independent_mixed", &IntervalMatrix::expm_independent_mixed,
              py::arg("intermediate_order"), py::arg("max_order"),
              "The independent-power series in two parts, up to and beyond intermediate_order")
@@ -1129,6 +1170,7 @@ void bind_interval_matrix(py::module_ &m) {
             [](const IntervalMatrix &A, int64_t max_order, std::optional<int64_t> initial_order,
                const std::optional<IntervalMatrix> &initial_power) {
                 if (initial_order || initial_power) {
+                    // powers with an initial order
                     if (!initial_order || !initial_power)
                         CORA_FAIL(Error::wrong_value,
                                   "powers: give initial_order and initial_power together");
@@ -1148,6 +1190,7 @@ void bind_interval_matrix(py::module_ &m) {
             py::arg("M"), py::arg("type") = "exact", py::arg("tol") = py::none(),
             "Whether the matrix M is in the set, entry by entry up to tol")
         .def("exact_square", &IntervalMatrix::exact_square, "The entrywise range of M @ M")
+        // squares and remainders
         .def("dependent_terms", &IntervalMatrix::dependent_terms, py::arg("r"),
              "(r^2 A^2, I + A r + A^2 r^2 / 2): the exact square and the second-order terms")
         .def("exponential_remainder", &IntervalMatrix::exponential_remainder, py::arg("max_order"),
@@ -1163,6 +1206,7 @@ void bind_interval_matrix(py::module_ &m) {
                                   "expm: give initial_order and initial_power together");
                     return A.expm(r.value_or(1.0), max_order, *initial_order, *initial_power);
                 }
+                // the exponential with optional start
                 return r ? A.expm(*r, max_order) : A.expm(max_order);
             },
             py::arg("max_order") = 10, py::arg("r") = py::none(),
@@ -1180,6 +1224,7 @@ void bind_interval_matrix(py::module_ &m) {
                             "expm_independent: give initial_order and initial_power together");
                     return A.expm_independent(max_order, *initial_order, *initial_power);
                 }
+                // independent exponential series
                 return A.expm_independent(max_order);
             },
             py::arg("max_order"), py::arg("initial_order") = py::none(),
@@ -1200,6 +1245,7 @@ void bind_interval_matrix(py::module_ &m) {
         .def("matrix_power", &IntervalMatrix::matrix_power, py::arg("exponent"),
              "The power of a square set: the repeated interval matrix product")
         .def("__pow__", &IntervalMatrix::matrix_power, py::is_operator())
+        // products of interval matrices
         .def("matmul", &interval_matrix_product, py::arg("other"),
              "The product with an interval matrix, a zonotope, the empty set, a matrix or a number")
         .def("__matmul__", &interval_matrix_product, py::is_operator())
@@ -1218,6 +1264,7 @@ void bind_interval_matrix(py::module_ &m) {
                 if (is_number(o)) return py::cast(A.matmul(py::cast<double>(o)));
                 if (const std::optional<Tensor> M = as_tensor(o))
                     return py::cast(IntervalMatrix::matmul(*M, A));
+                // left products
                 return not_implemented();
             },
             py::is_operator())
@@ -1247,6 +1294,7 @@ void bind_mat_zonotope(py::module_ &m) {
         .def_readonly("powers2", &MatZonotope::ExpmMixedResult::powers2,
                       "The powers of the second part")
         .def_readonly("remainder", &MatZonotope::ExpmMixedResult::remainder, "The remainder box");
+    // the result of the one-parameter exponential
     py::class_<MatZonotope::ExpmOneParamResult>(m, "MatZonotopeExpmOneParamResult",
                                                 "The result of MatZonotope.expm_one_param")
         .def_readonly("enclosure", &MatZonotope::ExpmOneParamResult::enclosure,
@@ -1262,6 +1310,7 @@ void bind_mat_zonotope(py::module_ &m) {
         .def(py::init([](const py::object &center, const py::object &generators) {
                  if (center.is_none()) return MatZonotope();
                  if (generators.is_none()) return MatZonotope(tensor_of(center, "center"));
+                 // the center alone, or the center with its generators
                  return MatZonotope(tensor_of(center, "center"),
                                     tensor_of(generators, "generators"));
              }),
@@ -1281,6 +1330,7 @@ void bind_mat_zonotope(py::module_ &m) {
              "The zonotope of the stacked matrices (column by column)")
         .def("interval_matrix", &MatZonotope::interval_matrix,
              "The box around the set, C +- sum |G_i|")
+        // containment of a matrix
         .def(
             "contains",
             [](const MatZonotope &A, const py::object &M, const std::string &type, Tol tol) {
@@ -1301,6 +1351,7 @@ void bind_mat_zonotope(py::module_ &m) {
                                   "powers: give initial_order and initial_power together");
                     return A.powers(max_order, *initial_order, *initial_power);
                 }
+                // powers with an initial order
                 return A.powers(max_order);
             },
             py::arg("max_order"), py::arg("initial_order") = py::none(),
@@ -1320,6 +1371,7 @@ void bind_mat_zonotope(py::module_ &m) {
              "The enclosure of exp(M) over the set (expm_independent)")
         .def("expm_independent", &MatZonotope::expm_independent, py::arg("max_order"),
              "The enclosure of exp(M) with every power evaluated independently")
+        // exponentials of a matrix zonotope
         .def("expm_mixed", &MatZonotope::expm_mixed, py::arg("r"), py::arg("intermediate_order"),
              py::arg("max_order"), "The series in two parts, up to and beyond intermediate_order")
         .def(
@@ -1348,6 +1400,7 @@ void bind_mat_zonotope(py::module_ &m) {
             "__rmul__",
             [](const MatZonotope &A, const py::object &o) -> py::object {
                 if (is_number(o)) return py::cast(A.matmul(py::cast<double>(o)));
+                // a number or a matrix on the left of a matrix zonotope
                 if (const std::optional<Tensor> M = as_tensor(o))
                     return py::cast(MatZonotope::matmul(*M, A));
                 return not_implemented();
@@ -1368,6 +1421,7 @@ void bind_mat_zonotope(py::module_ &m) {
         .def(
             "__radd__",
             [](const MatZonotope &A, const py::object &o) -> py::object {
+                // a matrix on the left is added
                 if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.plus(*M));
                 return not_implemented();
             },
@@ -1396,6 +1450,7 @@ void bind_empty_set(py::module_ &m) {
             "plus",
             [](const EmptySet &E, const py::object &S) {
                 if (py::isinstance<ContSet>(S)) return E.plus(py::cast<const ContSet &>(S));
+                // the sum with a set or with a vector is empty
                 return E.plus(vector_of(S, "the vector"));
             },
             py::arg("S"), "The sum with a set or a vector: empty")
@@ -1416,6 +1471,7 @@ void bind_empty_set(py::module_ &m) {
             "Whether S (a set, or points (n, N)) is contained: only if it is empty")
         .def("is_intersecting", &EmptySet::is_intersecting, py::arg("S"),
              py::arg("tol") = py::none(), "Whether S meets the set: never")
+        // the set is empty and the sum equals the other
         .def("isequal", &EmptySet::isequal, py::arg("S"), py::arg("tol") = py::none(),
              "Whether S is the empty set of the same dimension")
         .def(
@@ -1434,6 +1490,7 @@ void bind_empty_set(py::module_ &m) {
         .def("radius", &EmptySet::radius, "The radius of the smallest ball around it: 0")
         .def("volume", &EmptySet::volume, "The volume: 0")
         .def("complement", &EmptySet::complement, "The complement: the whole space")
+        // set predicates of the empty set
         .def(
             "representsa", &EmptySet::representsa, py::arg("type"), py::arg("tol") = py::none(),
             "Whether the set is also a set of CORA's type: true for all that have an empty member");
@@ -1455,6 +1512,7 @@ using Indices = std::vector<std::vector<int64_t>>;
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
         .def(py::init([](const Array &c, const Array &G) {
+                 // the zonotope from center and generators
                  return Zonotope(vector_of(c, "the center"), tensor_of(G, "the generators"));
              }),
              py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
@@ -1474,6 +1532,7 @@ void bind_zonotope(py::module_ &m) {
             "their lengths ('uniform', 'exp' or 'gamma')")
         .def_property_readonly(
             "center", [](const Zonotope &Z) { return vector(Z.center()); }, "The center c (..., n)")
+        // the center and the generators of the zonotope
         .def_property_readonly(
             "generators", [](const Zonotope &Z) { return matrix(Z.generators()); },
             "The generator matrix G (..., n, m)")
@@ -1493,6 +1552,7 @@ void bind_zonotope(py::module_ &m) {
             py::arg("M"), "M Z for a matrix (..., k, n), or an interval matrix")
         .def("plus", py::overload_cast<const Zonotope &>(&Zonotope::plus, py::const_),
              py::arg("Z2"), "The Minkowski sum with a zonotope or a box")
+        // sums with other sets
         .def("plus", py::overload_cast<const Interval &>(&Zonotope::plus, py::const_), py::arg("I"),
              "The Minkowski sum with a zonotope or a box")
         .def("linear_combination", &Zonotope::linear_combination, py::arg("Z2"),
@@ -1512,6 +1572,7 @@ void bind_zonotope(py::module_ &m) {
                 return Z.cart_prod(vector_of(S, "the point"));
             },
             py::arg("S"), "The Cartesian product with a zonotope, a box or a point")
+        // enclose with a set
         .def(
             "enclose",
             [](const Zonotope &Z, const ContSet &S2) {
@@ -1532,6 +1593,7 @@ void bind_zonotope(py::module_ &m) {
                 return Z.convex_hull(vector_of(S, "the point"));
             },
             py::arg("S"), "A zonotope that encloses the convex hull with a zonotope, box or point")
+        // intersect with a box or a zonotope
         .def(
             "intersect",
             [](const Zonotope &Z, const py::object &S, const std::string &method) {
@@ -1549,6 +1611,7 @@ void bind_zonotope(py::module_ &m) {
         .def(
             "cubic_map",
             [](const Zonotope &Z, const py::list &T, const std::optional<Indices> &ind) {
+                // the cubic map
                 return Z.cubic_map(matrices_of(T), ind.value_or(Indices{}));
             },
             py::arg("T"), py::arg("ind") = py::none(),
@@ -1569,6 +1632,7 @@ void bind_zonotope(py::module_ &m) {
             py::arg("method") = py::none(),
             "A bound on the Hausdorff distance to the box: 'exact' (n <= 3), 'naive', 'wgreedy', "
             "'wopt'")
+        // dominant directions
         .def(
             "dominant_directions",
             [](const Zonotope &Z, const std::optional<int> &filter_length1,
@@ -1586,6 +1650,7 @@ void bind_zonotope(py::module_ &m) {
             py::arg("M"), py::arg("perm"), py::arg("comb"), py::arg("map"),
             "(0, H) enclosing {sum_jkl M[i, j, k, l] x_j x_k x_l} for a zonotope centered at 0; "
             "perm (ordered generator triples), comb (its row count: the generators of H) and map")
+        // tensor multiplication
         .def(
             "tensor_multiplication_zono",
             [](const Zonotope &Z, const py::object &M_center, const py::list &M_generators,
@@ -1606,6 +1671,7 @@ void bind_zonotope(py::module_ &m) {
             },
             py::arg("S") = py::none(),
             "Vertices c +- sum_j sign(s_i' g_j) g_j, columns (n, 2k) for the directions S (n, k)")
+        // the volume
         .def(
             "volume",
             [](const Zonotope &Z, const std::string &method, int order) {
@@ -1626,6 +1692,7 @@ void bind_zonotope(py::module_ &m) {
                 return py::make_tuple(scalar(value), vector(beta));
             },
             py::arg("p"), "(norm, beta): the norm of p and the coefficients that reach it")
+        // containment and norm minimizers
         .def(
             "contains",
             [](const Zonotope &Z, const py::object &S, const std::string &method, Tol tol) {
@@ -1646,6 +1713,7 @@ void bind_zonotope(py::module_ &m) {
             },
             py::arg("dir"), py::arg("start") = py::none(),
             "Where the ray from start (default: the center) in direction dir leaves the zonotope")
+        // exact sums
         .def(
             "exact_plus",
             [](const Zonotope &Z, const Zonotope &Z2, const std::optional<int64_t> &k) {
@@ -1664,6 +1732,7 @@ void bind_zonotope(py::module_ &m) {
             "is_full_dim_subspace",
             [](const Zonotope &Z, Tol tol) {
                 const auto [res, subspace] = Z.is_full_dim_subspace(tol);
+                // the full-dimensional subspace
                 return py::make_tuple(res, matrix(subspace));
             },
             py::arg("tol") = py::none(),
@@ -1684,6 +1753,7 @@ void bind_zonotope(py::module_ &m) {
                     return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
                 if (py::isinstance<Interval>(S))
                     return Z.is_intersecting(py::cast<Interval>(S), type, tol);
+                // intersection with sets or points
                 return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
             },
             py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
@@ -1704,6 +1774,7 @@ void bind_zonotope(py::module_ &m) {
                 if (py::isinstance<py::str>(method))
                     return Z.intersect_strip(Ct, pt, yt, py::cast<std::string>(method));
                 if (py::isinstance<py::dict>(method)) {
+                    // the options of a dict
                     const py::dict d = py::cast<py::dict>(method);
                     const auto field = [&](const char *key) {
                         if (!d.contains(key))
@@ -1723,6 +1794,7 @@ void bind_zonotope(py::module_ &m) {
         .def_static(
             "enclose_points",
             [](const py::object &points, const py::object &method) {
+                // enclose points with a method
                 if (py::isinstance<py::str>(method))
                     return Zonotope::enclose_points(tensor_of(points, "the points"),
                                                     py::cast<std::string>(method));
@@ -1741,6 +1813,7 @@ void bind_zonotope(py::module_ &m) {
             py::arg("zonotopes"), py::arg("direction"),
             "(Z, rot_inv): a box oriented along the direction around the zonotopes, and the "
             "inverse of its frame")
+        // Minkowski difference
         .def(
             "mink_diff",
             [](const Zonotope &Z, const py::object &S, const std::string &method) {
@@ -1760,6 +1833,7 @@ void bind_zonotope(py::module_ &m) {
         .def("representsa", &Zonotope::representsa, py::arg("type"), py::arg("tol") = py::none(),
              "Whether the zonotope is also a set of the CORA type ('origin', 'point', 'interval', "
              "'parallelotope', 'capsule', 'zonotope', ...)")
+        // projection and rotation
         .def("project_high_dim", &Zonotope::project_high_dim, py::arg("N"), py::arg("dims"),
              "In N dimensions, with state i at position dims[i] and zeros elsewhere")
         .def("rotate", &Zonotope::rotate, py::arg("dims"), py::arg("angle"),
@@ -1780,6 +1854,7 @@ void bind_zonotope(py::module_ &m) {
              "The halves of the box around Z cut at the center of coordinate N")
         .def("split", py::overload_cast<int64_t, int>(&Zonotope::split, py::const_), py::arg("N"),
              py::arg("max_order"), "The halves along generator N of Z reduced to max_order")
+        // splitting
         .def(
             "split",
             [](const Zonotope &Z, const py::object &dir) { return Z.split(vector_of(dir, "dir")); },
@@ -1795,6 +1870,7 @@ void bind_zonotope(py::module_ &m) {
         .def(
             "split",
             [](const Zonotope &Z, const py::object &orig_dir, const py::object &aux_dir) {
+                // split along a direction
                 return Z.split(vector_of(orig_dir, "orig_dir"), vector_of(aux_dir, "aux_dir"));
             },
             py::arg("orig_dir"), py::arg("aux_dir"),
@@ -1815,6 +1891,7 @@ void bind_zonotope(py::module_ &m) {
                     return Z.unite(py::cast<Zonotope>(S), method, order);
                 if (py::isinstance<Interval>(S))
                     return Z.unite(py::cast<Interval>(S), method, order);
+                // a list of zonotopes is a union
                 if (py::isinstance<py::list>(S) || py::isinstance<py::tuple>(S))
                     return Z.unite(py::cast<std::vector<Zonotope>>(S), method, order);
                 return Z.unite(vector_of(S, "the point"), method, order);
@@ -1846,6 +1923,7 @@ void bind_con_zonotope(py::module_ &m) {
                      CORA_FAIL(Error::wrong_input_in_constructor,
                                "ConZonotope: give the constraint matrix and the offset together");
                  if (A.is_none()) return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"));
+                 // constraints are given together or not at all
                  return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"),
                                     tensor_of(A, "A"), vector_of(b, "b"));
              }),
@@ -1866,6 +1944,7 @@ void bind_con_zonotope(py::module_ &m) {
             },
             py::arg("Z"), py::arg("A") = py::none(), py::arg("b") = py::none(),
             "CORA's legacy form: Z = [c G] (..., n, 1 + m)")
+        // the empty set is a constrained zonotope without generators
         .def_static("empty", &ConZonotope::empty, py::arg("n") = 0,
                     "The empty set of n dimensions: no generators and the constraint 0 = 1")
         .def_property_readonly(
@@ -1886,6 +1965,7 @@ void bind_con_zonotope(py::module_ &m) {
             "is_full_dim_subspace",
             [](const ConZonotope &Z, Tol tol) {
                 const auto [res, subspace] = Z.is_full_dim_subspace(tol);
+                // the full-dimensional subspace
                 return py::make_tuple(res, matrix(subspace));
             },
             py::arg("tol") = py::none(),
@@ -1906,6 +1986,7 @@ void bind_con_zonotope(py::module_ &m) {
             "plus",
             [](const ConZonotope &Z, const py::object &S) {
                 if (py::isinstance<ContSet>(S)) return Z.plus(con_zonotope_of(S));
+                // sums
                 return Z.plus(vector_of(S, "the point"));
             },
             py::arg("S"),
@@ -1924,6 +2005,7 @@ void bind_con_zonotope(py::module_ &m) {
         .def(
             "quad_map",
             [](const ConZonotope &Z, const ConZonotope &Z2, const py::list &Q) {
+                // quadratic maps
                 return Z.quad_map(Z2, matrix_list_of(Q));
             },
             py::arg("Z2"), py::arg("Q"), "An enclosure of (x1' Q[i] x2) for x1 in Z, x2 in Z2")
@@ -1943,6 +2025,7 @@ void bind_con_zonotope(py::module_ &m) {
         .def(
             "is_intersecting",
             [](const ConZonotope &Z, const py::object &S, const std::string &type, Tol tol) {
+                // intersection with sets or points
                 if (py::isinstance<ContSet>(S))
                     return Z.is_intersecting(con_zonotope_of(S), type, tol);
                 return Z.is_intersecting(tensor_of(S, "the points"), type, tol);
@@ -1963,6 +2046,7 @@ void bind_con_zonotope(py::module_ &m) {
                     return Z.unite(others, method, order);
                 }
                 if (py::isinstance<ContSet>(S)) return Z.unite(con_zonotope_of(S), method, order);
+                // union
                 return Z.unite(vector_of(S, "the point"), method, order);
             },
             py::arg("S"), py::arg("method") = "linprog", py::arg("order") = py::none(),
@@ -1983,6 +2067,7 @@ void bind_con_zonotope(py::module_ &m) {
             "cart_prod",
             [](const ConZonotope &Z, const py::object &S) {
                 if (py::isinstance<ContSet>(S)) return Z.cart_prod(con_zonotope_of(S));
+                // Cartesian products
                 return Z.cart_prod(vector_of(S, "the point"));
             },
             py::arg("S"),
@@ -2003,6 +2088,7 @@ void bind_con_zonotope(py::module_ &m) {
             "enclose",
             [](const ConZonotope &Z, const py::object &first, const py::object &second) {
                 if (second.is_none()) return Z.enclose(py::cast<ConZonotope>(first));
+                // enclose with a set or a point
                 if (py::isinstance<ConZonotope>(second))
                     return Z.enclose(tensor_of(first, "M"), py::cast<ConZonotope>(second));
                 return Z.enclose(tensor_of(first, "M"), vector_of(second, "t"));
@@ -2023,6 +2109,7 @@ void bind_con_zonotope(py::module_ &m) {
             },
             py::arg("S"), py::arg("method") = "exact:Raghuraman",
             "The exact convex hull with a set, a point or a list of constrained zonotopes")
+        // the cubic map
         .def(
             "cubic_map",
             [](const ConZonotope &Z, const py::list &T, const std::optional<Indices> &ind) {
@@ -2042,6 +2129,7 @@ void bind_con_zonotope(py::module_ &m) {
             "intersect_strip",
             [](const ConZonotope &Z, const py::object &C, const py::object &phi,
                const py::object &y, const py::object &method) {
+                // the strip intersection
                 const Tensor Ct = tensor_of(C, "C"), pt = vector_of(phi, "phi"),
                              yt = vector_of(y, "y");
                 if (py::isinstance<py::str>(method))
@@ -2058,6 +2146,7 @@ void bind_con_zonotope(py::module_ &m) {
                     return Z.intersect_strip(Ct, pt, yt,
                                              {field("E"), field("F"), field("A"), field("C")});
                 }
+                // the strip intersection with a gain matrix
                 return Z.intersect_strip(Ct, pt, yt, tensor_of(method, "the gain"));
             },
             py::arg("C"), py::arg("phi"), py::arg("y"), py::arg("method") = "normGen",
@@ -2076,6 +2165,7 @@ void bind_con_zonotope(py::module_ &m) {
                     vector_of(c, "c"), tensor_of(G, "G"), tensor_of(A, "A"), vector_of(b, "b"),
                     dr.is_none() ? std::nullopt : std::optional<Tensor>(vector_of(dr, "dr")),
                     num_union_const, options);
+                // the bounds of a constrained zonotope
                 return py::make_tuple(vector(r.l), vector(r.u), vector(r.bl), vector(r.bu));
             },
             py::arg("c"), py::arg("G"), py::arg("A"), py::arg("b"), py::arg("dr") = py::none(),
@@ -2109,6 +2199,7 @@ void bind_zono_bundle(py::module_ &m) {
             "zonotopes",
             [](const ZonoBundle &bundle) {
                 py::list out;
+                // the member zonotopes as a list
                 for (const Zonotope &Z : bundle.zonotopes()) out.append(Z);
                 return out;
             },
@@ -2127,6 +2218,7 @@ void bind_zono_bundle(py::module_ &m) {
                     return Z.contains(py::cast<Interval>(S), method, tol);
                 if (py::isinstance<ZonoBundle>(S))
                     return Z.contains(py::cast<ZonoBundle>(S), method, tol);
+                // the points
                 return Z.contains(tensor_of(S, "the points"), method, tol);
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
@@ -2146,6 +2238,7 @@ void bind_zono_bundle(py::module_ &m) {
             "Whether the bundle and the points, zonotope, box or bundle S intersect")
         .def("isequal", &ZonoBundle::isequal, py::arg("S"), py::arg("tol") = py::none(),
              "Whether the bundles are the same set, up to tol")
+        // intersection with a zonotope or a box
         .def(
             "intersect",
             [](const ZonoBundle &Z, const py::object &S) {
@@ -2164,6 +2257,7 @@ void bind_zono_bundle(py::module_ &m) {
                 return Z.cart_prod(vector_of(S, "the point"));
             },
             py::arg("S"), "The Cartesian product with a bundle, a zonotope, a box or a point")
+        // enclose with a set
         .def(
             "enclose",
             [](const ZonoBundle &Z, const ContSet &S2) {
@@ -2218,6 +2312,7 @@ void bind_polytope(py::module_ &m) {
         .def_static(
             "enclose_points",
             [](const py::object &points) {
+                // the hull of the points
                 return Polytope::enclose_points(tensor_of(points, "points"));
             },
             py::arg("points"), "The hull of the points (n, N), by its extreme points")
@@ -2237,6 +2332,7 @@ void bind_polytope(py::module_ &m) {
             "constraints",
             [](const Polytope &P) {
                 const Polytope::Constraints C = P.constraints();
+                // the halfspaces as a tuple
                 return py::make_tuple(matrix(C.A), vector(C.b), matrix(C.Ae), vector(C.be));
             },
             "(A, b, Ae, be): the halfspaces, from the vertices if need be")
@@ -2256,6 +2352,7 @@ void bind_polytope(py::module_ &m) {
         .def(
             "con_zonotope",
             [](const Polytope &P, const std::string &method, const std::optional<Interval> &box) {
+                // the polytope as a constrained zonotope
                 return P.con_zonotope(method, box);
             },
             py::arg("method") = "exact:supportFunc", py::arg("box") = py::none(),
@@ -2273,6 +2370,7 @@ void bind_polytope(py::module_ &m) {
             "intersect",
             [](const Polytope &P, const py::object &S, Tol tol) {
                 if (py::isinstance<ContSet>(S)) return P.intersect(polytope_arg(S));
+                // intersection with a polytope, a box or a point
                 return P.intersect(tensor_of(S, "the point"), tol);
             },
             py::arg("S"), py::arg("tol") = py::none(),
@@ -2291,6 +2389,7 @@ void bind_polytope(py::module_ &m) {
                 return P.convex_hull(vector_of(S, "the point"));
             },
             py::arg("S"), "The convex hull with a polytope, a box or a point")
+        // enclose with a set
         .def(
             "enclose",
             [](const Polytope &P, const ContSet &S2) {
@@ -2331,6 +2430,7 @@ void bind_ellipsoid(py::module_ &m) {
                                    "matrix Q and the center q.")
         .def(py::init([](const py::object &Q, const py::object &q, Tol tol) {
                  if (q.is_none()) return Ellipsoid(tensor_of(Q, "Q"), tol);
+                 // a shape matrix without a center is centered at 0
                  return Ellipsoid(tensor_of(Q, "Q"), vector_of(q, "the center"), tol);
              }),
              py::arg("Q"), py::arg("q") = py::none(), py::arg("tol") = py::none(),
@@ -2349,6 +2449,7 @@ void bind_ellipsoid(py::module_ &m) {
         .def(
             "generators", [](const Ellipsoid &E) { return matrix(E.generators()); },
             "A matrix G with G G' = Q from the singular value decomposition")
+        // the generators and the norm of the ellipsoid
         .def(
             "ellipsoid_norm",
             [](const Ellipsoid &E, const py::object &p) {
@@ -2366,6 +2467,7 @@ void bind_ellipsoid(py::module_ &m) {
         .def_static(
             "enclose_points",
             [](const py::object &points, const std::string &method) {
+                // an ellipsoid around points
                 return Ellipsoid::enclose_points(tensor_of(points, "points"), method);
             },
             py::arg("points"), py::arg("method") = "cov",
@@ -2384,6 +2486,7 @@ void bind_ellipsoid(py::module_ &m) {
                 const auto result =
                     liu ? E.intersect_strip(Ct, strip_measurement_of(phi), yt, sigma_sq_prev)
                         : E.intersect_strip(Ct, py::cast<double>(phi), yt, sigma_sq_prev);
+                // the strip intersection returns the ellipsoid and its sigma
                 return py::make_tuple(result.first, result.second);
             },
             py::arg("C"), py::arg("phi"), py::arg("y"), py::arg("sigma_sq_prev") = 0.0,
@@ -2403,6 +2506,7 @@ void bind_ellipsoid(py::module_ &m) {
             "cart_prod",
             [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
                 if (py::isinstance<Ellipsoid>(S)) return E.cart_prod(ellipsoid_of(S), mode);
+                // Cartesian product with an ellipsoid or a point
                 return E.cart_prod(vector_of(S, "the point"), mode);
             },
             py::arg("S"), py::arg("mode") = "outer",
@@ -2422,6 +2526,7 @@ void bind_ellipsoid(py::module_ &m) {
         .def(
             "enclose",
             [](const Ellipsoid &E, const ContSet &S2) {
+                // enclose with an ellipsoid or a set
                 if (S2.class_id() == ClassId::ellipsoid)
                     return object_of(Set(E.enclose(static_cast<const Ellipsoid &>(S2))));
                 return object_of(static_cast<const ContSet &>(E).enclose(S2));
@@ -2450,6 +2555,7 @@ void bind_capsule(py::module_ &m) {
                      g.is_none() ? center.zeros_like() : vector_of(g, "the generator");
                  if (r.is_none()) return Capsule(center, generator);
                  if (is_number(r)) return Capsule(center, generator, py::cast<double>(r));
+                 // the radius is absent, a number or a vector
                  return Capsule(center, generator, capsule_radius_of(r));
              }),
              py::arg("c"), py::arg("g") = py::none(), py::arg("r") = py::none(),
@@ -2468,6 +2574,7 @@ void bind_capsule(py::module_ &m) {
             "distance from the axis")
         .def_property_readonly(
             "c", [](const Capsule &C) { return vector(C.c()); }, "The stored center c (..., n)")
+        // the stored center, generator and radius of the capsule
         .def_property_readonly(
             "generator", [](const Capsule &C) { return vector(C.generator()); },
             "The generator g (..., n)")
@@ -2487,6 +2594,7 @@ void bind_capsule(py::module_ &m) {
                 if (py::isinstance<Capsule>(S)) return C.contains(py::cast<Capsule>(S), tol);
                 if (py::isinstance<Zonotope>(S)) return C.contains(py::cast<Zonotope>(S), tol);
                 if (py::isinstance<Interval>(S)) return C.contains(py::cast<Interval>(S), tol);
+                // containment of points or sets
                 return C.contains(tensor_of(S, "the points"), tol);
             },
             py::arg("S"), py::arg("tol") = py::none(),
@@ -2540,6 +2648,7 @@ void bind_operators(py::module_ &m) {
         return not_implemented();
     };
     method(CZ, "__rmul__", con_zonotope_product);
+    // the right operators of the constrained zonotope
     method(CZ, "__rmatmul__", con_zonotope_product);
 
     // Zonotope
@@ -2562,6 +2671,7 @@ void bind_operators(py::module_ &m) {
     const auto zonotope_product = [](const Zonotope &A, const py::object &o) -> py::object {
         if (is_number(o)) return py::cast(py::cast<double>(o) * A);
         if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
+        // a number or a matrix scales the zonotope
         return not_implemented();
     };
     method(Z, "__rmul__", zonotope_product);
@@ -2588,6 +2698,7 @@ void bind_operators(py::module_ &m) {
         if (is_number(o)) return py::cast(A / py::cast<double>(o));
         return not_implemented();
     });
+    // a number or a matrix divided by an interval
     method(I, "__rtruediv__", [](const Interval &A, const py::object &o) -> py::object {
         if (is_number(o) || as_tensor(o))
             return py::cast(Interval::rdivide(operand(A, o, "the numerator"), A));
@@ -2608,6 +2719,7 @@ void bind_operators(py::module_ &m) {
         if (py::isinstance<Interval>(o)) return py::cast(A <= py::cast<Interval>(o));
         return not_implemented();
     });
+    // comparison with another interval
     method(I, "__lt__", [](const Interval &A, const py::object &o) -> py::object {
         if (py::isinstance<Interval>(o)) return py::cast(A < py::cast<Interval>(o));
         return not_implemented();
@@ -2764,6 +2876,7 @@ void bind_problems(py::module_ &m) {
     py::class_<ReachSet>(m, "ReachSet", "The reachable sets: lists of zonotopes.")
         .def(py::init([](std::vector<Zonotope> time_interval, std::vector<Zonotope> time_point,
                          double time_step) {
+                 // the reachable sets and their step
                  return ReachSet{std::move(time_interval), std::move(time_point), time_step};
              }),
              py::arg("time_interval") = std::vector<Zonotope>(),
@@ -2787,6 +2900,7 @@ void bind_problems(py::module_ &m) {
         .def_readonly("verified", &VerifyResult::verified,
                       "True if the specification holds on the whole horizon")
         .def_readonly("computation_time", &VerifyResult::computation_time, "seconds spent")
+        // the fields of the verification result
         .def_readonly("iterations", &VerifyResult::iterations, "passes of the adaptive loop")
         .def_readonly("time_step", &VerifyResult::time_step, "step size of the last pass")
         .def_readonly("num_steps", &VerifyResult::num_steps, "number of steps of the last pass")
@@ -2807,6 +2921,7 @@ void bind_linear_sys(py::module_ &m) {
                      return tensor_of(o, what);
                  };
                  if (B.is_none()) return LinearSys(t(A, "A"));
+                 // the output matrix is optional
                  return LinearSys(t(A, "A"), t(B, "B"),
                                   C.is_none() ? std::nullopt : std::optional<Tensor>(t(C, "C")));
              }),
@@ -2827,6 +2942,7 @@ void bind_linear_sys(py::module_ &m) {
         .def_property_readonly(
             "C",
             [](const LinearSys &sys) -> std::optional<Array> {
+                // the output matrix is optional
                 if (!sys.C()) return std::nullopt;
                 return matrix(*sys.C());
             },
@@ -2846,6 +2962,7 @@ void bind_linear_sys(py::module_ &m) {
             "reach(initial_set=X0, t_final=T, alg='standard', time_step=dt, taylor_terms=10, "
             "zonotope_order=50, input_set=U): the reachable sets; alg 'standard' or "
             "'wrapping_free', or one registered with cora.register_algorithm")
+        // output sets of the reachable sets
         .def("output_set", &LinearSys::output_set, py::arg("R"),
              "The output sets y = C x of the reachable sets R")
         .def(
@@ -2866,6 +2983,7 @@ void bind_linear_sys(py::module_ &m) {
                 const LinearSys &sys = py::cast<const LinearSys &>(self);
                 const int64_t points =
                     py::cast<int64_t>(required(kwargs, "points", "simulate_random"));
+                // random simulation needs the points and the generator
                 cora::Rng &rng = py::cast<cora::Rng &>(required(kwargs, "rng", "simulate_random"));
                 return run_with_kwargs<RandomSimulationProblem, alg::LinearSimulate>(
                     self, "simulate_random", args, kwargs, {"points", "rng"},
@@ -2886,6 +3004,7 @@ void bind_linear_sys(py::module_ &m) {
         .def(
             "verify",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
+                // verify needs the specifications
                 const LinearSys &sys = py::cast<const LinearSys &>(self);
                 const std::vector<Specification> specs =
                     py::cast<std::vector<Specification>>(required(kwargs, "specs", "verify"));
@@ -2921,6 +3040,7 @@ void bind_nonlinear_sys(py::module_ &m) {
         .def("eval", py::overload_cast<const std::vector<double> &>(&Expr::eval, py::const_),
              py::arg("x"), "The value at the point x (a list of numbers)");
     py::implicitly_convertible<double, Expr>();
+    // numbers convert to expressions
     py::implicitly_convertible<int, Expr>();
     m.def(
         "sin", [](const Expr &a) { return sin(a); }, py::arg("e"),
@@ -2948,6 +3068,7 @@ void bind_nonlinear_sys(py::module_ &m) {
                 return run_with_kwargs<ReachProblem, alg::NonlinearReach>(
                     self, "reach", args, kwargs, {},
                     [&](const ReachProblem &p, const alg::NonlinearReach &a) {
+                        // reach of a nonlinear system with keyword arguments
                         return py::cast(sys.reach(p, a));
                     });
             },
@@ -2968,6 +3089,7 @@ void bind_nonlinear_sys(py::module_ &m) {
         .def(
             "simulate_random",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
+                // random simulations of the nonlinear system
                 const NonlinearSys &sys = py::cast<const NonlinearSys &>(self);
                 const int64_t points =
                     py::cast<int64_t>(required(kwargs, "points", "simulate_random"));
@@ -2989,6 +3111,7 @@ void bind_neural_network(py::module_ &m) {
                  out.reserve(layers.size());
                  for (const auto &[W, b] : layers)
                      out.push_back({tensor_of(W, "the weights"), tensor_of(b, "the bias")});
+                 // the layers as (W, b) pairs
                  return NeuralNetwork(out);
              }),
              py::arg("layers"), "the layers as (W (out, in), b (out,)) pairs, first to last")
@@ -3009,8 +3132,7 @@ void bind_neural_network(py::module_ &m) {
 }
 
 // Plotting ------------------------------------------------------------------------------------
-// The plotting logic is the C++ one (plot/plot.h): a Figure collects layers with every choice
-// made, and the Python plot draws them with matplotlib.
+// The plotting logic is C++ (plot/plot.h): a Figure collects layers, Python draws them.
 
 /// A color from Python: a CORA identifier ("CORA:red") or an RGB triple.
 Color color_of(const py::handle &value) {
@@ -3030,6 +3152,7 @@ PlotOptions options_of(const py::kwargs &kwargs) {
         "filled", "set",   "time_points", "step",       "num_colors", "cidx"};
     for (const auto &item : kwargs) {
         const std::string key = py::cast<std::string>(item.first);
+        // the options of a layer, by keyword
         if (key == "label")
             o.label = py::cast<std::string>(item.second);
         else if (key == "color")
@@ -3050,6 +3173,7 @@ PlotOptions options_of(const py::kwargs &kwargs) {
             o.set = py::cast<std::string>(item.second);
         else if (key == "time_points")
             o.time_points = py::cast<bool>(item.second);
+        // how the sets are drawn over time and in color
         else if (key == "step")
             o.step = py::cast<int>(item.second);
         else if (key == "num_colors")
@@ -3070,6 +3194,7 @@ TikzOptions tikz_options_of(const py::kwargs &kwargs) {
                                             "external_data", "width",    "height"};
     for (const auto &item : kwargs) {
         const std::string key = py::cast<std::string>(item.first);
+        // the options of the TikZ output, by keyword
         if (key == "standalone")
             o.standalone = py::cast<bool>(item.second);
         else if (key == "coramacs")
@@ -3091,6 +3216,7 @@ TikzOptions tikz_options_of(const py::kwargs &kwargs) {
     return o;
 }
 
+// the colors as triples
 py::tuple rgb(const Color &c) { return py::make_tuple(c.r, c.g, c.b); }
 
 /// A layer of a figure as a dict, for the code that draws it.
@@ -3114,6 +3240,7 @@ py::dict layer_dict(const Figure::Layer &l) {
         break;
     }
     py::list polygons, faces;
+    // the polygons and faces of a layer as arrays
     for (const Polygon &p : l.polygons) polygons.append(polygon_array(p));
     for (const std::vector<Point3> &f : l.faces) faces.append(points3_array(f));
     d["polygons"] = polygons;
@@ -3149,6 +3276,7 @@ std::vector<Tensor> trajectories(const py::object &o) {
 }
 
 void bind_plot(py::module_ &m) {
+    // the figure holds the layers and the axes settings
     py::class_<Figure>(m, "Figure",
                        "The layers that plot puts into one axes, with every choice made.")
         .def(py::init<>())
@@ -3164,6 +3292,7 @@ void bind_plot(py::module_ &m) {
         .def_readwrite("ylim", &Figure::ylim, "The limits of the y axis, or None to fit the layers")
         .def_readwrite("zlim", &Figure::zlim, "The limits of the z axis, or None to fit the layers")
         .def_readonly("dimension", &Figure::dimension, "2, or 3 once a surface is drawn")
+        // plot a set in the dims
         .def(
             "plot",
             [](Figure &fig, const ContSet &S, const std::vector<int64_t> &dims,
@@ -3204,6 +3333,7 @@ void bind_plot(py::module_ &m) {
             "plot_over_time",
             [](Figure &fig, const py::object &x, int64_t dim, double time_step,
                const py::kwargs &kwargs) {
+                // a dimension of simulations over time
                 plot_over_time(fig, trajectories(x), dim, time_step, options_of(kwargs));
             },
             py::arg("obj"), py::arg("dim"), py::arg("time_step"),
@@ -3224,6 +3354,7 @@ void bind_plot(py::module_ &m) {
                 return layers;
             },
             "All layers drawn, as dicts")
+        // the layers are taken out of the figure
         .def(
             "take_layers",
             [](Figure &fig) {
@@ -3244,6 +3375,7 @@ void bind_plot(py::module_ &m) {
         .def(
             "tikz",
             [](const Figure &fig, const py::kwargs &kwargs) {
+                // the figure as pgfplots code
                 return fig.tikz(tikz_options_of(kwargs));
             },
             "The figure as pgfplots code")
@@ -3261,6 +3393,7 @@ void bind_plot(py::module_ &m) {
                 auto view = polygon.unchecked<2>();
                 for (py::ssize_t i = 0; i < view.shape(0); ++i)
                     corners.push_back({view(i, 0), view(i, 1)});
+                // clip a polygon by a half-plane
                 return polygon_array(Figure::clip_region(corners, a, b, sign));
             },
             py::arg("polygon"), py::arg("a"), py::arg("b"), py::arg("sign"),
@@ -3281,6 +3414,7 @@ void bind_plot(py::module_ &m) {
             "at", [](FigureGrid &g, int row, int col) -> Figure & { return g.at(row, col); },
             py::arg("row"), py::arg("col"), py::return_value_policy::reference_internal,
             "The figure in a cell")
+        // cells of a grid of figures
         .def(
             "set", [](FigureGrid &g, int row, int col, const Figure &f) { g.at(row, col) = f; },
             py::arg("row"), py::arg("col"), py::arg("figure"),
@@ -3302,6 +3436,7 @@ void bind_plot(py::module_ &m) {
 
     m.def("use_cora_colors", &use_cora_colors, py::arg("scheme"),
           "'CORA:default' (the next color of CORA's order for every set) or 'CORA:contDynamics'");
+    // the CORA colors
     m.def(
         "cora_color",
         [](const std::string &identifier, int num_colors, int cidx, double alpha) {
@@ -3322,6 +3457,7 @@ void bind_specification(py::module_ &m) {
         .def_static(
             "safe_set",
             [](const py::object &a, double b) {
+                // specifications from halfspaces
                 return Specification::safe_set(vector_of(a, "the normal"), b);
             },
             py::arg("a"), py::arg("b"), "A safe set: the halfspace a.x <= b")
@@ -3369,6 +3505,7 @@ void bind_specification(py::module_ &m) {
         .def(
             "check",
             [](const Specification &spec, const std::vector<Zonotope> &sets) {
+                // whether every set of a list satisfies the specification
                 return spec.check(sets);
             },
             py::arg("sets"), "Whether every set of a list (such as R.time_interval) does")
@@ -3402,6 +3539,7 @@ void bind_lean(py::module_ &top) {
     using LI = lean::Interval;
     using LZ = lean::Zonotope;
     using LT = lean::Tensor;
+    // an array converts to a lean tensor in the current dtype
     const auto tensor = [](const py::handle &x) { return LT::from(tensor_of(x, "x")); };
 
     // an array (or list) is a lean tensor wherever an operation takes one, in the current dtype
@@ -3425,6 +3563,7 @@ void bind_lean(py::module_ &top) {
     py::implicitly_convertible<py::array, LT>();
     py::implicitly_convertible<py::list, LT>();
 
+    // an answer of the oracle with its proof flag
     py::class_<lean::Certified>(m, "Certified", "An answer of the oracle, a proof if `proved`")
         .def_readonly("value", &lean::Certified::value,
                       "The answer, as CORA's operation would give it")
@@ -3446,6 +3585,7 @@ void bind_lean(py::module_ &top) {
         .def(
             "gather",
             [](const LI &I) {
+                // the bounds as an interval
                 auto [inf, sup] = I.gather();
                 return Interval(inf, sup);
             },
@@ -3466,6 +3606,7 @@ void bind_lean(py::module_ &top) {
         .def("sign", &LI::sign, "CORALean's interval.sign, run by the oracle")
         .def("round", &LI::round, "CORALean's interval.round, run by the oracle")
         .def("sqrt", &LI::sqrt, "p"_a = 20, "CORALean's interval.sqrt, run by the oracle")
+        // elementary functions of the oracle's interval
         .def("exp", &LI::exp, "p"_a = 20, "CORALean's interval.exp, run by the oracle")
         .def("sin", &LI::sin, "p"_a = 20, "CORALean's interval.sin, run by the oracle")
         .def("cos", &LI::cos, "p"_a = 20, "CORALean's interval.cos, run by the oracle")
@@ -3486,6 +3627,7 @@ void bind_lean(py::module_ &top) {
              "CORALean's interval.acosh, run by the oracle")
         .def("atanh", &LI::atanh, "p"_a = 20, "k"_a = 20,
              "CORALean's interval.atanh, run by the oracle")
+        // inverse hyperbolic functions and atan2 of the oracle's interval
         .def("atan2", &LI::atan2, "I2"_a, "p"_a = 20, "k"_a = 20,
              "CORALean's interval.atan2, run by the oracle")
         .def("enlarge", &LI::enlarge, "factor"_a, "CORALean's interval.enlarge, run by the oracle")
@@ -3505,6 +3647,7 @@ void bind_lean(py::module_ &top) {
         .def("intersect", &LI::intersect, "I2"_a,
              "CORALean's interval.intersect, run by the oracle")
         .def("enclose", &LI::enclose, "I2"_a, "CORALean's interval.enclose, run by the oracle")
+        // set operations of the oracle's interval
         .def("cart_prod", &LI::cart_prod, "I2"_a,
              "CORALean's interval.cart_prod, run by the oracle")
         .def("linear_map", py::overload_cast<const LT &>(&LI::linear_map, py::const_), "M"_a,
@@ -3524,6 +3667,7 @@ void bind_lean(py::module_ &top) {
              "CORALean's interval.representsa, run by the oracle")
         .def("contains", py::overload_cast<const LI &, double>(&LI::contains, py::const_), "I2"_a,
              "tol"_a = 0.0, "CORALean's interval.contains, run by the oracle")
+        // containment and intersection in the oracle
         .def("contains", py::overload_cast<const LZ &, double>(&LI::contains, py::const_), "Z"_a,
              "tol"_a = 0.0, "CORALean's interval.contains, run by the oracle")
         .def("is_intersecting",
@@ -3544,6 +3688,7 @@ void bind_lean(py::module_ &top) {
         .def("support_function", &LI::support_function, "dir"_a, "type"_a = "upper",
              "CORALean's interval.support_function, run by the oracle")
         .def("project", &LI::project, "dims"_a, "CORALean's interval.project, run by the oracle")
+        // projections in the oracle
         .def("lift", &LI::lift, "N"_a, "dims"_a, "CORALean's interval.lift, run by the oracle")
         .def("project_high_dim", &LI::project_high_dim, "N"_a, "dims"_a,
              "CORALean's interval.project_high_dim, run by the oracle")
@@ -3564,6 +3709,7 @@ void bind_lean(py::module_ &top) {
         .def("cat", &LI::cat, "I2"_a, "dim"_a, "CORALean's interval.cat, run by the oracle")
         .def("mpower", &LI::mpower, "exponent"_a, "CORALean's interval.mpower, run by the oracle")
         .def("tril", &LI::tril, "K"_a = 0, "CORALean's interval.tril, run by the oracle")
+        // triangular parts and reductions
         .def("triu", &LI::triu, "K"_a = 0, "CORALean's interval.triu, run by the oracle")
         .def("reduce", &LI::reduce, "order"_a, "method"_a = "girard",
              "CORALean's interval.reduce, run by the oracle")
@@ -3585,6 +3731,7 @@ void bind_lean(py::module_ &top) {
         .def("infimum", &LM::infimum, "CORALean's intervalMatrix.infimum, run by the oracle")
         .def("supremum", &LM::supremum, "CORALean's intervalMatrix.supremum, run by the oracle")
         .def("rad", &LM::rad, "CORALean's intervalMatrix.rad, run by the oracle")
+        // the oracle's interval matrix
         .def("plus", &LM::plus, "B"_a, "CORALean's intervalMatrix.plus, run by the oracle")
         .def("representsa", &LM::representsa, "type"_a, "tol"_a = 0.0,
              "CORALean's intervalMatrix.representsa, run by the oracle")
@@ -3604,6 +3751,7 @@ void bind_lean(py::module_ &top) {
         .def("matmul", &LM::matmul, "B"_a, "CORALean's intervalMatrix.matmul, run by the oracle")
         .def("infinity_norm", &LM::infinity_norm,
              "CORALean's intervalMatrix.infinity_norm, run by the oracle")
+        // norms of the oracle's interval matrix
         .def("norm", &LM::norm, "type"_a, "steps"_a = 20,
              "CORALean's intervalMatrix.norm, run by the oracle");
 
@@ -3624,6 +3772,7 @@ void bind_lean(py::module_ &top) {
              "CORALean's emptyset.is_intersecting, run by the oracle")
         .def("isequal", &LE::isequal, "S"_a, "tol"_a = 0.0,
              "CORALean's emptyset.isequal, run by the oracle")
+        // predicates of the oracle's empty set
         .def("is_bounded", &LE::is_bounded, "tol"_a = 0.0,
              "CORALean's emptyset.is_bounded, run by the oracle")
         .def("is_full_dim", &LE::is_full_dim, "tol"_a = 0.0,
@@ -3645,6 +3794,7 @@ void bind_lean(py::module_ &top) {
                  return LZ(host_tensor(c, true), host_tensor(G, true));
              }),
              "center"_a, "generators"_a, "An exact zonotope in the current dtype")
+        // the oracle's zonotope
         .def(py::init<const Zonotope &>(), "Z"_a, "The exact zonotope of a cora.Zonotope")
         .def("nominal", &LZ::nominal, "c and G with an empty error box")
         .def("error", &LZ::error, "The error box")
@@ -3664,6 +3814,7 @@ void bind_lean(py::module_ &top) {
              "CORALean's zonotope.plus, run by the oracle")
         .def("linear_combination", &LZ::linear_combination, "Z2"_a,
              "CORALean's zonotope.linear_combination, run by the oracle")
+        // sums and reductions in the oracle
         .def("exact_plus", &LZ::exact_plus, "Z2"_a, "k"_a,
              "CORALean's zonotope.exact_plus, run by the oracle")
         .def("reduce", &LZ::reduce, "order"_a, "method"_a = "girard",
@@ -3684,6 +3835,7 @@ void bind_lean(py::module_ &top) {
         .def("cub_map", &LZ::cub_map, "T"_a, "CORALean's zonotope.cub_map, run by the oracle")
         .def_static("enclose_many", &LZ::enclose_many, "Zs"_a, "direction"_a, "p"_a = 20,
                     "CORALean's zonotope.enclose_many, run by the oracle")
+        // enclosures of points and sets in the oracle
         .def_static("enclose_points", &LZ::enclose_points, "points"_a, "U"_a,
                     "method"_a = "stursberg",
                     "CORALean's zonotope.enclose_points, run by the oracle")
@@ -3703,6 +3855,7 @@ void bind_lean(py::module_ &top) {
              "CORALean's zonotope.split_longest_gen, run by the oracle")
         .def("constr_sat", &LZ::constr_sat, "C"_a, "d"_a,
              "CORALean's zonotope.constr_sat, run by the oracle")
+        // predicates of the oracle's zonotope
         .def("is_bounded", &LZ::is_bounded, "tol"_a = 0.0,
              "CORALean's zonotope.is_bounded, run by the oracle")
         .def("is_full_dim", &LZ::is_full_dim, "tol"_a = 0.0,
@@ -3723,6 +3876,7 @@ void bind_lean(py::module_ &top) {
         .def("minnorm", &LZ::minnorm, "p"_a = 20, "CORALean's zonotope.minnorm, run by the oracle")
         .def("generator_length", &LZ::generator_length, "k"_a = 20,
              "CORALean's zonotope.generator_length, run by the oracle")
+        // dominant directions in the oracle
         .def("dominant_directions", py::overload_cast<>(&LZ::dominant_directions, py::const_),
              "CORALean's zonotope.dominant_directions, run by the oracle")
         .def("dominant_directions",
@@ -3743,6 +3897,7 @@ void bind_lean(py::module_ &top) {
         .def("box", &lean::Fullspace::box, "CORALean's fullspace.box, run by the oracle")
         .def("interval", &lean::Fullspace::interval,
              "CORALean's fullspace.interval, run by the oracle")
+        // the oracle's full space
         .def("intersect",
              py::overload_cast<const lean::Fullspace &>(&lean::Fullspace::intersect, py::const_),
              "F2"_a, "CORALean's fullspace.intersect, run by the oracle",
@@ -3763,6 +3918,7 @@ void bind_lean(py::module_ &top) {
         .def("is_full_dim", &lean::Fullspace::is_full_dim,
              "CORALean's fullspace.is_full_dim, run by the oracle")
         .def("center", &lean::Fullspace::center, "CORALean's fullspace.center, run by the oracle")
+        // enclosures and lifts of the oracle's full space
         .def_static("enclose_points", &lean::Fullspace::enclose_points, "points"_a,
                     "CORALean's fullspace.enclose_points, run by the oracle")
         .def("lift", &lean::Fullspace::lift, "N"_a, "dims"_a,
@@ -3785,6 +3941,7 @@ void bind_lean(py::module_ &top) {
     py::class_<lean::LinearSys>(m, "LinearSys", "The linear system x' = A x, reached by CORALean")
         .def(py::init([](const Array &A) { return lean::LinearSys(host_tensor(A, true)); }),
              py::arg("A"))
+        // reach in the oracle
         .def(
             "reach",
             [](const lean::LinearSys &sys, const lean::Zonotope &initial_set, double t_final,
@@ -3844,6 +4001,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_neural_network(m);
     bind_plot(m);
     bind_specification(m);
+    // the oracle and the other modules
     bind_lean(m);
 }
 

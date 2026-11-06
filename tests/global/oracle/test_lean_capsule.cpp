@@ -78,8 +78,7 @@ int main() {
         const Capsule a = rnd.capsule(3), b = rnd.capsule(3);
         oracle::check(a.convex_hull(b), lean::Capsule(a).convex_hull(b));
     });
-    // CORA's enclose of two capsules is their hull; the form with a matrix computes the same hull
-    // of C and M * Cplus and is not supported
+    // CORA's enclose of two capsules is their hull; with a matrix, the same hull, unsupported
     oracle::run("capsule.enclose", [](oracle::Random &rnd) {
         const Capsule a = rnd.capsule(3), b = rnd.capsule(3);
         oracle::check(a.enclose(b), lean::Capsule(a).convex_hull(b));
@@ -100,6 +99,7 @@ int main() {
     });
     oracle::run("capsule.isBounded", [](oracle::Random &rnd) {
         const Capsule C = rnd.capsule(3);
+        // is_bounded and is_full_dim against the oracle
         oracle::check(C.is_bounded(), lean::Capsule(C).is_bounded());
     });
     oracle::run("capsule.isFullDim", [](oracle::Random &rnd) {
@@ -116,8 +116,7 @@ int main() {
         oracle::check(a.isequal(b, 0.0), lean::Capsule(a).isequal(b));
         oracle::check(a.isequal(a, 0.0), lean::Capsule(a).isequal(a));
     });
-    // the oracle proves disjointness or says nothing, so CORA.cpp's exact answer may not
-    // contradict a proof (in both modes)
+    // the oracle proves disjointness or says nothing, so CORA.cpp's exact answer may not contradict
     oracle::run("capsule.isIntersecting", [](oracle::Random &rnd) {
         for (const double spread : {1.0, 6.0}) {
             const Capsule a = rnd.capsule(3);

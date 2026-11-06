@@ -37,6 +37,7 @@ Params::Params(const std::string &params) {
 bool known(const char *const *list, std::size_t n, const std::string &name) {
     for (std::size_t i = 0; i < n; ++i)
         if (name == list[i]) return true;
+    // no entry of the list matches
     return false;
 }
 

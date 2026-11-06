@@ -45,6 +45,7 @@ int main() {
                             "interval.radius: not above the oracle's bound");
         }
     });
+    // the result
     return test::finish("lean interval rad");
 }
 

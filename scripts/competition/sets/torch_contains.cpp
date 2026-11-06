@@ -56,13 +56,8 @@ constexpr int64_t kMaxProjectorEntries = 1 << 24;
 /// the projection loop's products.
 constexpr int64_t kMinWorkPerHostThread = 1 << 19;
 
-/// Narrows torch's intra-op pool to what the work can use, restoring it on the way out.
-///
-/// The projection loop is a few hundred products of a few hundred thousand operations
-/// each. MKL spreads every one of them across every core, and on the competition's
-/// two-socket worker gathering eighty threads costs an order of magnitude more than the
-/// product: an unbatched 50d instance takes 1.82 s at the default width and 0.043 s at
-/// one thread. A device has no such pool and is left alone.
+/// Narrows torch's intra-op pool to what the work can use, restoring it on the way out; a device
+/// has no such pool and is left alone.
 class HostThreads {
   public:
     HostThreads(bool host, int64_t work) : previous_(host ? torch::get_num_threads() : 0) {
@@ -108,12 +103,9 @@ std::vector<int64_t> combinations(int64_t m, int64_t k) {
     }
 }
 
-/// The index tensors of the facet normals' minors: every `(n-1)`-subset of the `m`
-/// generators `(F, n-1)`, for each row the other `n-1` rows `(n, n-1)`, and the cofactor
-/// signs `(n,)` of the generalized cross product. They depend only on the shape and the
-/// device, and building them means a host-to-device copy, so they are kept. Handed back
-/// by value: copying a tensor is a refcount, and a reference into the cache would be one
-/// more thing to keep straight.
+/// The index tensors of the facet normals' minors: every (n-1)-subset of the m generators, the
+/// other rows and the cofactor signs. They depend only on the shape and the device, so they are
+/// kept.
 struct Facets {
     torch::Tensor subsets, rows, signs;
 };
@@ -141,6 +133,7 @@ Perms permutations(int64_t k, const torch::TensorOptions &opts) {
     do {
         for (int64_t i = 0; i < k; ++i) index.push_back(i * k + sigma[static_cast<std::size_t>(i)]);
         int inversions = 0;
+        // the sign of a permutation is that of its number of inversions
         for (std::size_t i = 0; i < sigma.size(); ++i)
             for (std::size_t j = i + 1; j < sigma.size(); ++j)
                 if (sigma[i] > sigma[j]) ++inversions;
@@ -160,13 +153,8 @@ Perms permutations(int64_t k, const torch::TensorOptions &opts) {
     return cache.emplace(key, std::move(made)).first->second;
 }
 
-/// Determinants of a batch of `(k, k)` matrices.
-///
-/// On a device `linalg_det` dispatches to cuSOLVER's batched LU, which costs milliseconds
-/// on matrices this small and dominates the facet path; the facet path never needs more
-/// than `k = n - 1 <= 4`, where the Leibniz sum is one gather and one product. On the host
-/// LAPACK wins instead — the sum materializes `k!` terms per minor, which at `k = 4` costs
-/// sixfold on a batch of a hundred 5d zonotopes.
+/// Determinants of a batch of (k, k) matrices: for k <= 4 the Leibniz sum, one gather and one
+/// product, which beats cuSOLVER's batched LU on a device.
 torch::Tensor small_det(const torch::Tensor &minors) {
     const int64_t k = minors.size(-1);
     if (k > 4 || minors.device().is_cpu()) return torch::linalg_det(minors);
@@ -190,6 +178,7 @@ Facets facet_indices(int64_t n, int64_t m, const torch::TensorOptions &opts) {
     if (const auto it = cache.find(key); it != cache.end()) return it->second;
 
     const std::vector<int64_t> subsets = combinations(m, n - 1);
+    // for each i, the other rows: the rows of the minors
     std::vector<int64_t> rows;
     std::vector<double> signs;
     for (int64_t i = 0; i < n; ++i) {
@@ -197,8 +186,7 @@ Facets facet_indices(int64_t n, int64_t m, const torch::TensorOptions &opts) {
             if (j != i) rows.push_back(j);
         signs.push_back(i % 2 == 0 ? 1.0 : -1.0);
     }
-    // from_blob only borrows, and `.to()` onto the device it already sits on would hand
-    // back that borrow, so each one is cloned before the vectors go out of scope.
+    // from_blob only borrows and `.to()` on the same device returns the borrow, so each is cloned.
     const auto index = torch::TensorOptions().dtype(torch::kLong);
     Facets made{
         torch::from_blob(const_cast<int64_t *>(subsets.data()),
@@ -249,6 +237,7 @@ torch::Tensor patch_by_lp(const torch::Tensor &g, const torch::Tensor &r,
 
     std::vector<std::uint8_t> bytes(answers.size());
     for (std::size_t i = 0; i < answers.size(); ++i) bytes[i] = answers[i] ? 1 : 0;
+    // the answers go back to a bool mask on the device of the input
     return torch::from_blob(bytes.data(), {static_cast<int64_t>(bytes.size())},
                             torch::TensorOptions().dtype(torch::kUInt8))
         .to(torch::kBool)
@@ -264,10 +253,8 @@ torch::Tensor all_by_lp(const torch::Tensor &g, const torch::Tensor &c, const to
                        1000.0 * std::numeric_limits<double>::epsilon());
 }
 
-/// A full-dimensional zonotope is the intersection of the slabs
-/// `|h'(x - c)| <= sum_j |h'g_j|`, one for each `n - 1` generators whose normal `h` —
-/// their generalized cross product — is nonzero. A set whose normals all vanish is flat
-/// and goes to the LP instead.
+/// A full-dimensional zonotope is the intersection of the slabs |h'(x - c)| <= sum_j |h'g_j|, one
+/// for each n - 1 generators with a nonzero normal h; a flat set goes to the LP.
 torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c, const torch::Tensor &p) {
     const int64_t b = g.size(0), n = g.size(1), m = g.size(2);
     const torch::Tensor r = p - c.unsqueeze(1); // (B, N, n)
@@ -303,25 +290,9 @@ torch::Tensor by_facets(const torch::Tensor &g, const torch::Tensor &c, const to
     return inside;
 }
 
-/// `p` is in the zonotope iff the affine set `A = {b | G b = p - c}` meets `[-1, 1]^m`.
-///
-/// Alternating projections between `A` and the shrunk box `[-s, s]^m` find a `b` in `A`
-/// with `||b||_inf <= 1` within a few iterations for every point that lies well inside,
-/// which proves containment; a gap `u` between the two sets gives a direction `d` that
-/// proves the opposite if `d'(p - c) > ||G'd||_1`. The shrunk box is what makes interior
-/// points converge fast: its intersection with `A` has slack, where `[-1, 1]^m` would be
-/// approached only asymptotically. A point neither proves in `kIterations` goes to the
-/// exact LP; in the dimensions this path serves, hardly any point lies that close to the
-/// boundary.
-///
-/// Projecting onto `A` is `b - G'(G G')^-1 G b + b0`, with the least-norm solution
-/// `b0 = G'(G G')^-1 (p - c)`, so one Cholesky of the Gram matrix serves every iteration;
-/// `d = (G G')^-1 G u` is the separating direction, and `G'd` is the same projection
-/// again. A thin QR of `G'` would do as well and be better conditioned, but it factors an
-/// `m x n` matrix where this factors `n x n`: at 1000d over a hundred sets that is the
-/// difference between finishing inside the catalog's minute and not. The Gram matrix
-/// squares the condition number, which costs accuracy, not soundness — every answer is
-/// still certified, and a point whose certificates both fail goes to the LP.
+/// `p` is in the zonotope iff the affine set A = {b | G b = p - c} meets [-1, 1]^m: alternating
+/// projections prove containment, a gap the opposite; a Cholesky of the Gram matrix serves every
+/// iteration.
 torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
                             const torch::Tensor &p) {
     const double tol = 1000.0 * std::numeric_limits<double>::epsilon();
@@ -329,20 +300,14 @@ torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
     const torch::Tensor gt = g.transpose(-2, -1); // (B, m, n)
     const HostThreads threads(!g.device().is_cuda(), b * m * m * points);
 
-    // Which factorization gives the projector, and it differs by device. cuSOLVER is far
-    // from peak on a batched QR of an `m x n` matrix, where the Gram matrix is a GEMM and
-    // the factorization only `n x n`: on an A100 that is the difference between finishing
-    // the largest batched instances and timing out. MKL's QR is not far from peak, so on
-    // the host the Gram matrix only adds arithmetic — `2 n^2 N` an iteration — besides
-    // squaring the condition number, and it costs three- to sixfold.
+    // The projector's factorization differs by device: a Gram matrix on cuSOLVER, QR on the host.
     const bool gram = g.device().is_cuda();
 
     torch::Tensor chol, q, r;
     if (gram) {
         auto [factor, info] = torch::linalg_cholesky_ex(g.matmul(gt), /*upper=*/false,
                                                         /*check_errors=*/false);
-        // A Gram matrix that will not factor means `G` is not of full row rank, which
-        // leaves no projector and no facets either.
+        // A Gram matrix that will not factor: `G` lacks full row rank, so no projector or facets.
         if (info.any().item<bool>()) return all_by_lp(g, c, p);
         chol = factor;
     } else {
@@ -351,23 +316,15 @@ torch::Tensor by_projection(const torch::Tensor &g, const torch::Tensor &c,
         r = upper;
     }
 
-    // The points are the columns of one matrix per set. Carrying them as `(B, N, m, 1)`
-    // instead would broadcast the set over N in every product, and torch materializes
-    // that: at 1000d the iteration reads a 1.6 GB expansion of a 160 MB tensor.
+    // Points are columns of one matrix per set: (B, N, m, 1) would materialize an expansion.
     const torch::Tensor rel = (p - c.unsqueeze(1)).transpose(-2, -1); // (B, n, N)
-    // The least-norm solution `G'(G G')^-1 (p - c)`; with the QR it is `Q R^-T (p - c)`,
-    // which skips the second solve.
+    // The least-norm solution `G'(G G')^-1 (p - c)`; with the QR `Q R^-T (p - c)`, a solve less.
     const torch::Tensor b0 =
         gram ? gt.matmul(torch::cholesky_solve(rel, chol))
              : q.matmul(torch::linalg_solve_triangular(r.transpose(-2, -1), rel,
                                                        /*upper=*/false, /*left=*/true));
 
-    // Where the whole projector fits, an iteration is one fused product instead of a
-    // product, a solve and a product. At small `m` this path runs tiny tensors over many
-    // repetitions, where an iteration costs almost only its dispatches: a batch of a
-    // hundred 10d zonotopes spends 1.3 s on 20x10 matrices. Above the bound the factored
-    // form is the only one that fits — at 1000d over a hundred sets the projector alone
-    // would be 3.2 GB.
+    // If the projector fits, an iteration is one fused product; above the bound, the factored form.
     const bool held = b * m * m <= kMaxProjectorEntries;
     const torch::Tensor pi = // I - G'(G G')^-1 G, the projector onto the null space of G
         !held  ? torch::Tensor()
@@ -422,8 +379,7 @@ torch::Tensor Zonotope::contains(const torch::Tensor &p) const {
     const torch::Tensor cb = c.reshape({b, n});
     const torch::Tensor pb = p.reshape({b, points, n});
 
-    // Fewer generators than dimensions is a flat zonotope: no facet normals to speak of
-    // and no full-row-rank QR, so the LP is the only exact answer left.
+    // Fewer generators than dimensions: no facet normals or full-row-rank QR, so the LP.
     const torch::Tensor inside = m < n ? all_by_lp(gb, cb, pb)
                                  : binomial(m, n - 1) <= kMaxFacetNormals
                                      ? by_facets(gb, cb, pb)

@@ -85,8 +85,7 @@ std::pair<std::size_t, double> aux_farthest(std::size_t count, F far) {
     return {best, value};
 }
 
-// The corners of the planar point set (points in the plane through o with the normal n),
-// counter-clockwise seen from n: the monotone chain on plane coordinates.
+// The corners of the planar point set (plane through o, normal n): the monotone chain.
 std::vector<Point3> aux_planar_hull(const std::vector<Point3> &pts, const Point3 &o,
                                     const Point3 &n, const Point3 &e1, double eps) {
     const Point3 e2 = cross(n, e1);
@@ -176,8 +175,7 @@ std::vector<std::vector<Point3>> hull_faces(const std::vector<Point3> &p) {
         }
     const double eps = numerics::kHullExtent *
                        std::max({hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2], numerics::kTiny});
-    // The first point, the farthest from it, the farthest from their line, the farthest from
-    // their plane: a tetrahedron, or the flat case.
+    // The first point, the farthest from it, from their line, from their plane: a tetrahedron.
     const std::size_t i0 = 0;
     const auto [i1, d1] =
         aux_farthest(p.size(), [&](std::size_t i) { return norm(sub(p[i], p[i0])); });
@@ -206,6 +204,7 @@ std::vector<std::vector<Point3>> hull_faces(const std::vector<Point3> &p) {
         std::vector<std::size_t> visible;
         for (std::size_t t = 0; t < tris.size(); ++t)
             if (tris[t].alive && dot(tris[t].n, p[k]) - tris[t].d > eps) visible.push_back(t);
+        // a point is visible if it lies above a face
         if (visible.empty()) continue;
         // The edges of the visible part whose neighbor across is not visible form the horizon.
         std::vector<std::pair<std::size_t, std::size_t>> edges;

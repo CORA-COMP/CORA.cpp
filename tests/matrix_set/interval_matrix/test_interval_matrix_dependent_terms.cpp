@@ -51,8 +51,7 @@ void terms_enclose_the_members(const std::string &b) {
         }
         check(inside, b + ": members inside, r = " + std::to_string(r));
     }
-    // -1/r inside the diagonal entry: the lower end of H is I - 1/2 there (a r + (a r)^2 / 2 >=
-    // -1/2)
+    // -1/r inside the diagonal entry: the lower end of H is I - 1/2 there
     const IntervalMatrix V(Interval(test::matrix({-3}, 1, 1), test::matrix({-1}, 1, 1)));
     check(close(V.dependent_terms(1.0).second.infimum(), std::vector<double>{0.5}, 1e-9),
           b + ": the vertex of the parabola");

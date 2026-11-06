@@ -43,6 +43,7 @@ void isequal_compares_the_bounds(const std::string &b) {
 void isequal_with_infinite_bounds_points_and_batches(const std::string &b) {
     const Interval H(column({0.0, -kInf}), column({kInf, 1.0}));
     check(H.isequal(H), b + ": the same infinities");
+    // infinities against finite bounds
     check(!H.isequal(Interval(column({0.0, -kInf}), column({1e300, 1.0}))),
           b + ": Inf against finite");
     check(!H.isequal(Interval(column({0.0, -1e300}), column({kInf, 1.0}))),

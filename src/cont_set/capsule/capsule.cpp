@@ -81,6 +81,8 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &g, const Tensor &r) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Constructor -------------------------------------------------------------------------------------
+
 Capsule::Capsule(Unchecked, Tensor c, Tensor g, Tensor r)
     : ContSet(kClassId), c_(std::move(c)), g_(std::move(g)), r_(std::move(r)) {}
 

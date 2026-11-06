@@ -55,8 +55,7 @@ struct SetState {
     // Propagated over the steps.
     std::optional<Zonotope> startset, Hstartp, enc;
     Tensor Pu, Putotal, G_PUtotal_infty; // (n, 1)
-    // The particular solution of U, reduced: columns of G, of G without its largest entry, and
-    // their girard metric; the box part G_PUtotal_infty is kept as a vector.
+    // The particular solution of U, reduced: columns of G, of G without its largest, girard metric.
     Cols G_PUtotal_zero, Ghat_PUtotal_zero;
     std::vector<double> girard_pu_total_zero;
     // One entry per trial step size of the running step.
@@ -131,6 +130,7 @@ double aux_norm2(const Tensor &M) {
                     }
                     for (int64_t k = 0; k < d; ++k) {
                         const double apk = a[p * d + k], aqk = a[q * d + k];
+                        // rotate rows p and q
                         a[p * d + k] = c * apk - sn * aqk;
                         a[q * d + k] = sn * apk + c * aqk;
                     }
@@ -157,6 +157,7 @@ double aux_norm2(const Tensor &M) {
         }
         lambda = ny;
     }
+    // the norm is the root of the largest eigenvalue
     return std::sqrt(lambda);
 }
 
@@ -254,6 +255,7 @@ double aux_reduce(TaylorLinSys &taylor, double t, SetState &set, const Chosen &c
         for (int64_t i = 0; i < n; ++i) hat[i] = std::abs(col[i]) - (i == max_idx ? max_abs : 0.0);
         new_g.push_back(col);
         new_ghat.push_back(hat);
+        // the new generators are appended
         new_girard.push_back(girard);
     }
     // The axis-aligned generators are boxed; the others join the reducible part.
@@ -436,8 +438,7 @@ bool aux_errors(const Problem &P, int k, int kIter, LinErrorBound &errs, bool fu
                 errs.idv_lin_comb[k][kIter] + errs.idv_pu_tauk[k][kIter] + errs.idv_f[k][kIter] +
                     errs.idv_g[k][kIter]);
     }
-    // The accumulating error of this step; e^{A tk} PU_tauk over-approximates it, but the
-    // accumulation to the next step uses the error at tk+1.
+    // The accumulating error of this step; the next step accumulates the error at tk+1.
     aux_set(errs.step_acc, k, kIter, errs.idv_pu_tkplus1[k][kIter]);
     return true;
 }
@@ -469,6 +470,7 @@ double aux_adjust_time_step(int k, double time_step, bool is_u, double max_time_
         if (!(all_ge || all_le)) time_step = lb + 0.5 * (ub - lb);
     } else {
         time_step = sd.time_step[best - 1];
+        // the step and its index are those of the best candidate
         idx = best;
     }
     // The maximum admissible step size may not be exceeded.
@@ -587,8 +589,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
     while (t_final - t > numerics::kStepCount) {
         ++k;
 
-        // Where a specification is unverified the step is computed in full, otherwise only the
-        // time-point set is propagated; the step may not cross the switch.
+        // Specification unverified: the step is computed in full, else only the time-point set.
         double max_time_step_spec = kInf;
         bool fc = true;
         if (time_spec_unsat.num_intervals() > 0 &&
@@ -646,8 +647,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
                     static_cast<char>(errs.seq_nonacc[k][kIter] < errs.bound_rem[k][kIter] || !fc));
             errs.update_bisection(k, kIter, P.is_u, time_step);
 
-            // Suitable if both errors are ok and, unless the step is at its maximum, close to
-            // the bound (else a larger step size is tried).
+            // Suitable if both errors are ok and, unless at the maximum step, close to the bound.
             if (errs.bound_acc_ok[k][kIter] && (!fc || errs.bound_nonacc_ok[k][kIter])) {
                 if (std::abs(time_step - max_time_step) < numerics::kAtMaxStep) {
                     kIterChosen = kIter;
@@ -760,6 +760,7 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             out.time_interval_error.push_back(err_r2_y * Rc);
             out.time_point.emplace_back(
                 Zonotope(map_c(set.Hstartp->center()), Tensor::concat(Gtp, -1)));
+            // the error of the time-point set
             out.time_point_error.push_back(err_r2_y * Rtp);
         }
 

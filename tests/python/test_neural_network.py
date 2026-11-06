@@ -11,12 +11,14 @@ Reviewed:      ---
 
 import unittest
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
@@ -66,6 +68,7 @@ class Evaluate(unittest.TestCase):
         parameters = layers([2, 6, 2])
         net = cora.NeuralNetwork(parameters)
         c = torch.randn(4, 2, dtype=torch.float64)
+        # a batch of sets
         G = 0.1 * torch.eye(2, dtype=torch.float64).expand(4, 2, 2)
         batch = net.evaluate(cora.Zonotope(c, G)).interval()
         for i in range(4):
@@ -88,6 +91,7 @@ class Evaluate(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "bias"):
             cora.NeuralNetwork([(W, torch.zeros(3, dtype=torch.float64))])
         with self.assertRaisesRegex(ValueError, "inputs"):
+            # layers must fit
             cora.NeuralNetwork([(W, torch.zeros(2, dtype=torch.float64)),
                                 (torch.ones(1, 3, dtype=torch.float64), torch.zeros(1, dtype=torch.float64))])
         net = cora.NeuralNetwork([(W, torch.zeros(2, dtype=torch.float64))])

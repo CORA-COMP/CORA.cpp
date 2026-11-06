@@ -34,6 +34,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # ----------------------------------------  BEGIN CODE  ---------------------------------------- #
@@ -88,6 +89,7 @@ class Constructor(unittest.TestCase):
     def test_refusals(self):
         with self.assertRaises(cora.errors.WrongValue):
             capsule([1, 2], [3, 4], -0.5)
+        # invalid arguments
         with self.assertRaises(cora.errors.WrongValue):
             capsule([1, np.nan], [3, 4], 0.5)
         with self.assertRaises(cora.errors.WrongInputInConstructor):
@@ -111,6 +113,7 @@ class EmptyAndOrigin(unittest.TestCase):
         O = cora.Capsule.origin(3)
         np.testing.assert_array_equal(O.c, [0, 0, 0])
         self.assertEqual(O.r, 0.0)
+        # the origin of dimension 0
         with self.assertRaises(cora.errors.WrongValue):
             cora.Capsule.origin(0)
 
@@ -135,6 +138,7 @@ class Queries(unittest.TestCase):
     def test_bounded_and_full_dim(self):
         self.assertTrue(capsule([0, 0], [1, 0], 0.1).is_bounded())
         self.assertTrue(capsule([0, 0], [1, 0], 0.1).is_full_dim())
+        # full dimension
         self.assertFalse(capsule([0, 0], [1, 0], 0.0).is_full_dim())
         self.assertTrue(capsule([0], [1], 0.0).is_full_dim())
         self.assertFalse(empty(2).is_full_dim())
@@ -159,6 +163,7 @@ class Queries(unittest.TestCase):
 class Containment(unittest.TestCase):
     def test_points(self):
         C = capsule([0, 0], [1, 0], 0.5)
+        # points in a capsule
         self.assertTrue(C.contains(np.array([0.5, 0.4])))
         self.assertTrue([0.0, 0.0] in C)
         self.assertFalse(C.contains(np.array([0.0, 0.6])))
@@ -181,6 +186,7 @@ class Containment(unittest.TestCase):
         self.assertTrue(outer.contains(empty(2)))
         self.assertFalse(empty(2).contains(outer))
 
+    # random capsules
     def test_property(self):
         rng = np.random.default_rng(5)
         for _ in range(5):
@@ -203,6 +209,7 @@ class Containment(unittest.TestCase):
             C2 = capsule(rng.standard_normal(3), rng.standard_normal(3), rng.uniform(0.2, 1))
             self.assertEqual(C1.is_intersecting(C2), C2.is_intersecting(C1))
             t = np.linspace(-1, 1, 2001)
+            # the distance of the axes
             axis2 = C2.c[:, None] + C2.generator[:, None] * t
             axis1 = C1.c[:, None] + C1.generator[:, None] * t
             distance = np.min(np.linalg.norm(axis2[:, :, None] - axis1[:, None, :], axis=0))
@@ -226,6 +233,7 @@ class Combination(unittest.TestCase):
             C1.convex_hull(cora.Capsule(np.array([1.0])))
 
     def test_convex_hull_property(self):
+        # the convex hull of random capsules
         rng = np.random.default_rng(9)
         for _ in range(5):
             C1 = capsule(rng.standard_normal(3), rng.standard_normal(3), rng.uniform(0.2, 1))
@@ -248,6 +256,7 @@ class Combination(unittest.TestCase):
 
     def test_linear_map(self):
         C = capsule([1, 2], [1, -1], 0.5)
+        # linear maps
         M = np.array([[2.0, 0.0], [0.0, 3.0]])
         for R in (M @ C, M * C, C.linear_map(M)):
             np.testing.assert_allclose(R.c, [2, 6])
@@ -270,6 +279,7 @@ class Combination(unittest.TestCase):
         np.testing.assert_array_equal(L.generator, [6, 4, 5])
         self.assertEqual(L.r, 0.5)
         with self.assertRaises(cora.errors.NotDefined):
+            # lift is not defined
             C.lift(4, [0, 1, 2])
 
 

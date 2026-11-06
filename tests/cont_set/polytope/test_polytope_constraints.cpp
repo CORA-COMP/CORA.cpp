@@ -68,6 +68,7 @@ void degenerate(const std::string &b) {
               !test::inside_halfspaces(Tensor({{0.5}, {0.5}, {0.0}}), flat),
           b + ": a square in space: an equality for its plane");
     const Polytope empty = Polytope::empty(2);
+    // the empty set: 0 <= -1
     check(close(empty.constraints().b, {-1}), b + ": the empty set: 0 <= -1");
 }
 

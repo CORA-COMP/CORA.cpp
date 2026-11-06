@@ -43,6 +43,7 @@ void sum_adds_the_bounds(const std::string &b) {
     check(close(v.sum().inf(), std::vector<double>{6}) &&
               close(v.sum().sup(), std::vector<double>{9}),
           b + ": a column sums to one entry by default");
+    // a row sums along its columns
     const Interval row = v.transpose();
     check(row.sum().inf().shape() == std::vector<int64_t>({1, 1}) &&
               close(row.sum().sup(), std::vector<double>{9}),

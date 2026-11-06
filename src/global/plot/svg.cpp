@@ -176,8 +176,7 @@ void aux_surfaces(std::ostringstream &out, const Figure &fig, const Frame &f) {
 
 // Axes --------------------------------------------------------------------------------------------
 
-// The frame, ticks and axis titles of a two-dimensional figure; the labels of an axis are left
-// out if `x_ticks` or `y_ticks` is false (a cell of a grid that shares that axis).
+// The frame, ticks and axis titles of a 2-D figure; a shared axis leaves its labels out.
 void aux_axes(std::ostringstream &out, const Figure &fig, const Frame &f, double height,
               bool x_ticks, bool y_ticks) {
     const double left = f.left, top = f.top, pw = f.pw, ph = f.ph;
@@ -243,8 +242,7 @@ void aux_box(std::ostringstream &out, const Figure &fig, const Frame &f, const F
             << aux_escape(names[axis]) << "</text>\n";
 }
 
-// The axes of a figure of three dimensions: the box and the surfaces, scaled to fit the area, with
-// the same scale on both axes of the picture plane.
+// The axes of a 3-D figure: box and surfaces scaled to the area, one scale on both plane axes.
 void aux_three_dimensional(std::ostringstream &out, const Figure &fig, Frame f) {
     const Figure::Limits l = f.lim;
     // The extent of the box in the picture plane gives the scale, equal on both axes.
@@ -265,8 +263,7 @@ void aux_three_dimensional(std::ostringstream &out, const Figure &fig, Frame f) 
 
 // Documents ---------------------------------------------------------------------------------------
 
-// The group of one figure in the cell at (x, y) of size width x height. `lim` are the
-// limits to draw with, the figure's own unless the grid shares them.
+// The group of one figure in the cell at (x, y) of size width x height, with `lim` as limits.
 std::string aux_figure(const Figure &fig, double x, double y, double width, double height,
                        const Figure::Limits &lim, bool x_ticks, bool y_ticks) {
     const double left = 70, right = 20, top = fig.title.empty() ? 20 : 40, bottom = 55;
@@ -315,8 +312,7 @@ std::string Figure::svg() const {
 
 void Figure::save(const std::string &path) const { write_text_file(path, svg(), "Figure::save"); }
 
-// The cells side by side in one picture; a shared axis has the union of the limits of its cells
-// and its numbers and title only at the last row or the first column.
+// The cells side by side; a shared axis has the union of its cells' limits, labels on the last row.
 std::string FigureGrid::svg() const {
     const double cw = width / cols_, ch = height / rows_;
     Figure::Limits shared = at(0, 0).limits();

@@ -16,6 +16,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -74,6 +75,7 @@ class ZeroCopy(unittest.TestCase):
         print(f"\n  1000 x 1000 in and out of a Zonotope: {per_call * 1e6:.1f} us per call; "
               f"one copy of the array: {per_copy * 1e6:.1f} us")
         self.assertTrue(np.shares_memory(G, self.G) and copy.shape == self.G.shape)
+        # the call is cheaper than a copy
         self.assertLess(per_call, per_copy / 5)
 
     @unittest.skipUnless(torch is not None and cora.has_torch, "needs torch")

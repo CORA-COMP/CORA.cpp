@@ -88,6 +88,7 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
                                                   Zonotope(cz3.c(), cz3.generators()), T, ind);
     const int64_t total = Z.generators().shape().back();
     const std::array<const ConZonotope *, 3> sets{this, &cz2, &cz3};
+    // the factors of the three sets are stacked
     const std::array<int64_t, 3> sizes{G_.shape().back(), cz2.generators().shape().back(),
                                        cz3.generators().shape().back()};
     // the rows of each set, on its own factors

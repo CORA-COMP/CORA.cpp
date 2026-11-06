@@ -119,6 +119,7 @@ Box aux_lagrange_remainder(const NonlinearSys &sys, const Box &box, const Tensor
         }
         sum = sum * 0.5;
         los.push_back(sum.lo);
+        // the interval hull of the mean of the sums
         his.push_back(sum.hi);
     }
     return {Tensor::concat(los, -2), Tensor::concat(his, -2)};
@@ -193,8 +194,7 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         const Interval F = LinearSys(A).correction_matrix_state(time_step, taylor_terms);
         const Tensor e_adt = (A * time_step).expm();
 
-        // (ii) the input solution: sum_i A^i dt^{i+1}/(i+1)! U over the step, and over [0, dt]
-        // where the factor t^{i+1}/(i+1)! in [0, dt^{i+1}/(i+1)!] turns U into the zonotope Ubar
+        // (ii) the input solution sum_i A^i dt^{i+1}/(i+1)! U with a factor in [0, dt^{i+1}/(i+1)!]
         const Zonotope Ubar(U.center() * 0.5,
                             Tensor::concat({U.center() * 0.5, U.generators()}, -1));
         Tensor Ai = A.eye_like();

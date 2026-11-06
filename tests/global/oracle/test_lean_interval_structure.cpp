@@ -98,6 +98,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n), M = aux_matrix(rnd, n, 3);
             test::oracle::check(I.transpose(), lean::Interval(I).transpose());
+            // transposes
             test::oracle::check(M.transpose(), lean::Interval(M).transpose());
         }
     });
@@ -130,6 +131,7 @@ int main() {
             for (const int K : {0, 1, 3}) test::oracle::check(M.triu(K), lean::Interval(M).triu(K));
         }
     });
+    // vertical concatenation
     test::oracle::run("interval.vertcat", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n), J = rnd.box(n + 1), M = aux_matrix(rnd, n, 3);
@@ -148,6 +150,7 @@ int main() {
     test::oracle::run("interval.split", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
+            // split at a coordinate
             for (const int j : {0, n / 2, n - 1})
                 test::oracle::check(I.split(j), lean::Interval(I).split(j));
         }

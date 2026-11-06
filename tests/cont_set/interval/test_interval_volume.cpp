@@ -43,6 +43,7 @@ void volume_is_the_product_of_the_widths(const std::string &b) {
     check(close(Interval(lo, lo + 2.0).volume(), std::vector<double>{16}),
           b + ": an interval matrix multiplies all entries");
     const Interval S = Interval::stack({I, Interval(column({0.0, 0.0}), column({1.0, 2.0}))});
+    // a batch has a volume per member
     check(S.volume().shape() == std::vector<int64_t>({2, 1, 1}) &&
               close(S.volume(), std::vector<double>{12, 2}),
           b + ": a batch has a volume per member");

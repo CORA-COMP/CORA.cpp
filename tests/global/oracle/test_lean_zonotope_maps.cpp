@@ -90,6 +90,7 @@ int main() {
     oracle::run("zonotope.split", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
+            // splits at the first and the last generator
             for (const int64_t gen : {int64_t(0), int64_t(m - 1)})
                 aux_check_halves(Z.split(gen, 1000), lean::Zonotope(Z).split(gen));
         }

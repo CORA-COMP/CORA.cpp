@@ -39,6 +39,7 @@ void unite_is_the_hull(const std::string &b) {
     const Set S = unite(I, J);
     check(close(S.as<Interval>().sup(), R.sup()), b + ": the registry pair");
     const Interval B = Interval::stack({I, J}).unite(J);
+    // a batch
     check(B.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(B.sup().slice(0, 0, 1).reshape({2, 1}), R.sup()),
           b + ": a batch");

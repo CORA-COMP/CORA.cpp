@@ -42,6 +42,7 @@ void interval_is_the_hull(const std::string &b) {
         f[i] = -1.0;
         check(close(I.support_function(column(e)).data()[0], support(Z, e), 1e-12),
               b + ": hull, upper");
+        // the hull bounds
         check(close(I.support_function(column(f)).data()[0], support(Z, f), 1e-12),
               b + ": hull, lower");
     }

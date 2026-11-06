@@ -18,10 +18,8 @@
 
 namespace cora {
 
-/// Whether the zonotope {c + G beta | |beta|_inf <= 1} meets the polytope {x | a[i]'x <= b[i]}:
-/// a linear program in beta, decided by a phase-1 simplex. c has n values, G is n x m row-major,
-/// a[i] has n values. Touching counts as meeting, and a tolerance of 1e-9 on the infeasibility
-/// errs towards "meets", so a caller that treats "meets" as a violation is never wrongly safe.
+/// Whether the zonotope {c + G beta | |beta|_inf <= 1} meets the polytope {x | a[i]'x <= b[i]}: a
+/// linear program in beta by a phase-1 simplex; touching counts as meeting.
 bool priv_zonotope_meets_polytope(const std::vector<double> &c, const std::vector<double> &G, int m,
                                   const std::vector<std::vector<double>> &a,
                                   const std::vector<double> &b);

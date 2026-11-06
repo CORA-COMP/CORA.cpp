@@ -108,6 +108,7 @@ void mink_diff_refuses() {
         "mink_diff: a flat minuend");
     check(test::raises([&] { flat.mink_diff(square(1.0)); }, Error::empty_set),
           "mink_diff: flat less full is empty");
+    // a subtrahend too large
     check(test::raises(
               [&] { square(1.0).mink_diff(Zonotope(column({0.0, 0.0}), Tensor({{3.0}, {0.0}}))); },
               Error::empty_set),

@@ -24,9 +24,7 @@
 namespace cora {
 
 /// The CPUs a cgroup quota grants, rounded up, from the contents of the cgroup v2 file `cpu.max`
-/// ("<quota> <period>" or "max <period>") or of the v1 files `cpu.cfs_quota_us` and
-/// `cpu.cfs_period_us`; 0 when there is no quota or it cannot be read. Pass empty strings for the
-/// version not in use.
+/// or the v1 files; 0 without quota. Pass empty strings for the version not in use.
 int quota_cpus(const std::string &cpu_max, const std::string &cfs_quota,
                const std::string &cfs_period);
 
@@ -46,24 +44,12 @@ void set_num_threads(int n);
 /// The threads the pools were set to.
 int max_threads();
 
-/// How many threads a loop of `iterations` should use when its whole body costs about
-/// `work` scalar operations: the whole pool once there is enough work to keep all of it
-/// busy, otherwise one.
-///
-/// Deliberately all-or-nothing. A team narrower than the pool is not cheaper — OpenMP
-/// parks and wakes the difference, and between two regions of one repetition that costs
-/// more than either region: a batch of ten sets whose draw fans out to the pool and whose
-/// product asks for ten threads spends 1.25 s where one width spends 0.011 s. The price
-/// is that the pool is the only alternative to serial, so the bar to clear rises with it.
+/// How many threads a loop of `iterations` should use when its body costs about `work`
+/// operations: the whole pool once there is enough work, otherwise one.
 int threads_for(long long iterations, long long work);
 
-/// Narrows Eigen's own threading to what a product of about `work` scalar operations can
-/// use, restoring the pool on the way out.
-///
-/// Eigen splits a product on its own threshold, which is far too eager for a wide
-/// machine: a 40 MFLOP product divided 80 ways across two sockets spends an order of
-/// magnitude longer gathering the threads than doing the arithmetic. Capping by the work
-/// is the difference between 33 s and 0.1 s on the catalog's mid-sized `matMul`.
+/// Narrows Eigen's own threading to what a product of about `work` operations can use, restoring
+/// the pool on the way out.
 class EigenThreads {
   public:
     explicit EigenThreads(long long work);

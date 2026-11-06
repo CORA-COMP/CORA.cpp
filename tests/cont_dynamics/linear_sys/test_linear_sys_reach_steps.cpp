@@ -94,6 +94,7 @@ void checks_and_their_switch() {
     const Tensor on =
         sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back().center();
     ChecksScope off(false);
+    // the checks off give the same result
     check(
         test::close(sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back().center(),
                     on, 0),

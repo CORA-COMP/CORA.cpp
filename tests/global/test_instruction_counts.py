@@ -14,6 +14,7 @@ import os
 import sys
 import unittest
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -49,6 +50,7 @@ class InstructionCountsTest(unittest.TestCase):
                          {"interval_matrix_product": "CORA's endpoint formula"})
 
     def test_a_benchmark_new_in_the_head_is_listed_not_failed(self):
+        # a new benchmark is listed
         lines, grown = ic.compare({}, {"a": 10}, 3.0)
         self.assertEqual(grown, [])
         self.assertTrue(lines[1].startswith("a") and lines[1].endswith("new"))

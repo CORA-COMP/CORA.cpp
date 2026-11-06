@@ -46,6 +46,7 @@ Refusal priv_strip_refusal(int64_t n, const Tensor &C, const Tensor &phi, const 
 Refusal priv_gain_refusal(int64_t n, const Tensor &C, const Tensor &lambda) {
     if (lambda.ndim() == 2 && lambda.shape()[0] == n && lambda.shape()[1] == C.shape()[0])
         return std::nullopt;
+    // the gain has the shape (n, number of rows of C)
     return std::pair{Error::dimension_mismatch, "the gain must be a matrix (" + std::to_string(n) +
                                                     ", " + std::to_string(C.shape()[0]) +
                                                     "), got the shape " +

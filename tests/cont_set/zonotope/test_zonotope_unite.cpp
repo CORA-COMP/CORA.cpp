@@ -53,6 +53,7 @@ void unions_by_hand(const std::string &b) {
           b + ": two points give the segment between them");
     const Zonotope same = A.unite(A);
     check(close(same.interval().sup(), std::vector<double>{1, 1}, 1e-9), b + ": a set with itself");
+    // no other set
     check(close(A.unite(std::vector<Zonotope>{}).center(), A.center(), 0), b + ": no other set");
 }
 

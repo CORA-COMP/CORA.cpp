@@ -13,12 +13,14 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
@@ -60,6 +62,7 @@ class Simulate(unittest.TestCase):
         As = torch.stack([A, 0.5 * A, A - 0.1 * torch.eye(3, **F64)])
         x0 = cora.Zonotope(c, G).rand_point(4, cora.Rng(2))
         x = cora.LinearSys(As).simulate(x0, time_step=0.1, t_final=0.5)
+        # a batch of systems
         self.assertEqual(tuple(x.shape), (6, 3, 3, 4))
         for b in range(3):
             torch.testing.assert_close(x[:, b], cora.LinearSys(As[b]).simulate(x0, time_step=0.1,
@@ -117,6 +120,7 @@ class SimulateRandom(unittest.TestCase):
     @unittest.skipUnless(torch.cuda.is_available(), "no CUDA device")
     def test_gpu(self):
         A, c, G = system()
+        # simulation on the GPU
         x0 = cora.Zonotope(c.cuda(), G.cuda()).rand_point(5, cora.Rng(1))
         x = cora.LinearSys(A.cuda()).simulate(x0, time_step=0.1, t_final=1.0)
         self.assertEqual(x.device.type, "cuda")

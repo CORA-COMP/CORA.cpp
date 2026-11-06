@@ -83,6 +83,7 @@ int main() {
             const std::vector<Tensor> Q{rnd.matrix(n, n), rnd.matrix(n, n)};
             std::vector<lean::Tensor> LQ;
             LQ.reserve(Q.size());
+            // the quadratic map of zonotopes
             for (const Tensor &M : Q) LQ.push_back(lean::Tensor::from(M));
             oracle::check_enclosed("zonotope.quadMap", Z.quad_map(Q),
                                    lean::Zonotope(Z).quad_map(LQ));

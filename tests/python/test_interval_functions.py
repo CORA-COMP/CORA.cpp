@@ -26,6 +26,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -62,6 +63,7 @@ class Functions(unittest.TestCase):
             self.assertTrue(np.all(R.inf[:, None] <= y + 1e-12) and np.all(y <= R.sup[:, None] + 1e-12), name)
 
     def test_sign_and_round(self):
+        # sign and round
         R = box([-3.0, 1.0, 0.0, -2.0], [2.0, 3.0, 2.0, 0.0]).sign()
         self.assertEqual(R.inf.tolist(), [-1.0, 1.0, 0.0, -1.0])
         self.assertEqual(R.sup.tolist(), [1.0, 1.0, 1.0, 0.0])
@@ -83,6 +85,7 @@ class Functions(unittest.TestCase):
         np.testing.assert_allclose(box([2.0, -3.0], [3.0, 2.0]).power(np.array([2.0, 3.0])).inf, [4.0, -27.0])
         E = box([1.0], [3.0])
         np.testing.assert_allclose(cora.Interval.power_of(np.array([2.0]), E).sup, [8.0])
+        # powers
         np.testing.assert_allclose((2.0 ** E).sup, [8.0])
         np.testing.assert_allclose(box([2.0], [3.0]).power(box([1.0], [2.0])).sup, [9.0])
         with self.assertRaises(cora.errors.OutOfDomain):
@@ -104,6 +107,7 @@ class Functions(unittest.TestCase):
         np.testing.assert_allclose(R.sup, [0.5, 0.5])
         with self.assertRaises(cora.errors.OutOfDomain):
             1.0 / box([0.0], [0.0])
+        # division by zero and shapes
         with self.assertRaises(cora.errors.SpecialError):
             box([1.0, 2.0], [2.0, 3.0]).rdivide(np.array([1.0, 2.0, 3.0]))
 

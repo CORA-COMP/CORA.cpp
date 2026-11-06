@@ -39,6 +39,7 @@ void batches_broadcast() {
           "eye_like takes the batch shape");
     check(Tensor::concat({B, B}, -1).shape() == std::vector<int64_t>({3, 2, 4}),
           "cat_last per batch");
+    // diagonals per batch
     check(from_torch(torch::randn({3, 2, 1}, torch::kDouble)).diag().shape() ==
               std::vector<int64_t>({3, 2, 2}),
           "diag per batch");

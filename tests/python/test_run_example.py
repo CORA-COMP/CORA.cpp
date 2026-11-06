@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -47,6 +48,7 @@ class RunExample(unittest.TestCase):
                 f.write("import cora\nraise RuntimeError('broken on purpose')\n")
             result = run(path)
         self.assertNotEqual(result.returncode, 0)
+        # a failing example is described
         self.assertIn("broken on purpose", result.stderr)
 
     def test_something_that_is_no_example_is_described(self):

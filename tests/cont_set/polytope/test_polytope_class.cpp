@@ -96,6 +96,7 @@ void refusals() {
               [&] { Polytope(A, column({1.0, 2.0}), Tensor({{1.0, 1.0, 1.0}}), column({0.0})); },
               Error::wrong_input_in_constructor),
           "Polytope: the columns of A and Ae");
+    // inconsistent constraint rows
     check(test::raises(
               [&] { Polytope(A, column({1.0, 2.0}), Tensor({{1.0, 1.0}}), column({0.0, 1.0})); },
               Error::wrong_input_in_constructor),

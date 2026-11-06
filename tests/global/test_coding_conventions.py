@@ -22,6 +22,7 @@ import os
 import re
 import sys
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -30,6 +31,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 sys.path.insert(0, os.path.join(ROOT, "scripts", "ci"))
 import layout  # noqa: E402  (the layout rules: docstring, author block, markers, comments)
 from layout import BEGIN_MARKER, END_MARKER, MAIN_MARKER, SECTION  # noqa: E402
+
 
 MAX_LINE_LENGTH = 100
 CLONE_TOKENS = 100  # this many tokens repeated (literals abstracted) is duplicated code
@@ -41,8 +43,7 @@ CLASS_HEADER_ROOTS = ("include/cora/cont_set/", "include/cora/matrix_set/",
                       "include/cora/cont_dynamics/", "include/cora/specification/",
                       "include/cora/nn/")
 CORA_TAG = re.compile(r"^// (CORA: \S+\.m\b|CORA\.cpp only: \S)")
-# Where code may ask which backend, device or dtype a tensor has: the folders named backend and
-# tensor. Any other place says why on the line: // NOLINT(backend): <reason>.
+# Where code may ask which backend, device or dtype a tensor has: folders named backend and tensor.
 BACKEND_FOLDER = re.compile(r"(^|/)(backend|tensor)/")
 
 # The namespaces of the libraries the code calls: a camelCase name behind one is theirs, not ours.
@@ -114,6 +115,7 @@ def code_only(text):
             out.append(c + " " * max(0, min(j, n) - i - 1) + (c if j < n else ""))
             i = j + 1
         else:
+            # other characters pass through
             out.append(c)
             i += 1
     return "".join(out)
@@ -267,8 +269,16 @@ def check_checks(path, code_lines, issues):
     main = next((i for i, l in enumerate(read_lines(path)) if l == MAIN_MARKER), None)
     if main is None:
         return
+    internal = set()  # `namespace detail { ... }` holds internals, not operations
+    start = None
+    for i, line in enumerate(code_lines):
+        if line.startswith("namespace detail {"):
+            start = i
+        elif start is not None and line.startswith("}"):
+            internal.update(range(start, i + 1))
+            start = None
     for name, first, last in functions(code_lines):
-        if first < main or name.endswith("_impl") or name.startswith("operator"):
+        if first < main or first in internal or name.endswith("_impl") or name.startswith("operator"):
             continue
         body = [l.strip() for l in code_lines[first:last + 1]]
         opened = next(k for k, l in enumerate(body) if "{" in l)
@@ -302,6 +312,7 @@ def check_one_code_path(path, code_lines, issues):
     for i, code in enumerate(code_lines):
         if re.search(r"#\s*if(def|ndef)?\s.*CORACPP_(TORCH|PYTHON_TORCH)\b", code) or \
                 re.search(r"\bis_(torch|eigen|lean|host)\s*\(|\.backend_name\s*\(|\bDType::", code):
+            # a branch on the backend
             issues.append(f"line {i + 1}: a branch on the backend or dtype; the data decides "
                           "(only global/backend and global/tensor ask)")
 
@@ -344,11 +355,8 @@ def is_zero_literal(text):
 
 
 def check_tolerance_literals(path, lines, issues):
-    """No tolerance is a number of its own: the repository tolerance and the thresholds of the
-    numerical methods live in tolerance.h (default_tol, machine_eps, numerics::k...), and a `tol`
-    argument defaults to unset. Flagged outside it: a literal with a negative exponent, the machine
-    epsilon, a tol or eps named thing set from a nonzero floating-point literal, and a tol argument
-    in the bindings or the Python package that defaults to something but None (0 is exact)."""
+    """No tolerance is a number of its own: the repository tolerance and the numerical thresholds
+    live in tolerance.h, and a `tol` argument defaults to unset (None)."""
     code = code_only("\n".join(lines)).split("\n") if path.endswith((".h", ".cpp")) else []
     for i, line in enumerate(code):
         if SMALL_LITERAL.search(line):
@@ -395,6 +403,7 @@ def check_source(path):
     waiving("naming", check_naming, path, lines, code_lines, issues)
     check_checks(path, code_lines, issues)
     check_options(path, lines, issues)
+    # the waivers of the rules
     waiving("backend", check_one_code_path, path, lines, code_lines, issues)
     waiving("backend", check_factories, path, lines, code_lines, issues)
     waiving("tolerance", check_tolerance_literals, path, lines, lines, issues)
@@ -411,21 +420,33 @@ def operation_tests(path):
     return pattern, files(pattern)
 
 
-def unnamed(parameter):
-    """Whether a parameter of a definition has no name (`const std::string &`, `Tol`): the
-    function ignores it."""
-    return bool(re.search(r"[&*>]\s*$", parameter)) or len(parameter.split()) <= 1
+def enum_classes():
+    """The names of the `enum class` types of the public headers: every value of one is valid."""
+    names = set()
+    for header in files("include/**/*.h"):
+        names.update(re.findall(r"\benum class (\w+)", "\n".join(read_lines(header))))
+    return names
+
+
+def has_no_wrong_value(parameter, enums):
+    """Whether a parameter of a definition cannot be wrong: it has no name (`const std::string &`,
+    `Tol`: the function ignores it), or its type is an `enum class` (every value is valid)."""
+    if re.search(r"[&*>]\s*$", parameter) or len(parameter.split()) <= 1:
+        return True
+    words = re.sub(r"[&*]", " ", parameter).replace("const ", " ").split()
+    return len(words) >= 2 and words[-2].split("::")[-1] in enums
 
 
 def takes_no_input(path):
-    """Whether every definition of the operation in its file has no parameter, or only unnamed
-    ones (`Zonotope Zonotope::abs() const`): it ignores its input, so none can be wrong."""
+    """Whether every definition of the operation in its file has no parameter that can be wrong:
+    none, or only unnamed or enum ones (`Zonotope Zonotope::abs() const`): no input to refuse."""
     op = os.path.splitext(os.path.basename(path))[0]
     code = code_only("\n".join(read_lines(path)))
     signatures = re.findall(rf"::{re.escape(op)}(?:_impl)?\s*\(([^)]*)\)\s*(?:const)?\s*(?:noexcept)?"
                             r"\s*(?:override)?\s*\{", code)
+    enums = enum_classes()
     return bool(signatures) and all(
-        all(unnamed(p.strip()) for p in sig.split(",") if p.strip()) for sig in signatures)
+        all(has_no_wrong_value(p.strip(), enums) for p in sig.split(",") if p.strip()) for sig in signatures)
 
 
 def check_tests_exist(issues_by_file):
@@ -441,6 +462,7 @@ def check_tests_exist(issues_by_file):
         if not takes_no_input(path) and not re.search(r"\braises\(", text):
             issues.append(f"its tests ({pattern}) call it with no invalid input: "
                           "test::raises(f, Error::<identifier>)")
+        # the checks-off test is required
         if "ChecksScope" not in text:
             issues.append(f"its tests ({pattern}) never call it with the checks off: ChecksScope")
         if not issues:
@@ -598,9 +620,7 @@ def declaration_lines(code, begin, end):
 
 def tokens(path):
     """The tokens of the code between BEGIN CODE and END OF CODE, literals abstracted, with the
-    line of each. Preprocessor lines and, in a header, declarations without a body (a member
-    function declared over one or more lines up to `;`) are left out: every class of an
-    interface repeats the same declarations, which is not repeated logic."""
+    line of each; preprocessor lines and a header's declarations without a body are left out."""
     lines = read_lines(path)
     begin = lines.index(BEGIN_MARKER) if BEGIN_MARKER in lines else 0
     end = lines.index(END_MARKER) if END_MARKER in lines else len(lines)
@@ -639,6 +659,7 @@ def check_clones(issues_by_file):
                         issues_by_file.setdefault(where[0], []).append(
                             f"line {where[1]}: {CLONE_TOKENS} tokens repeat {other[0]} line {other[1]}; "
                             "merge them into one function")
+                    # the window moves past a clone
                     i += CLONE_TOKENS
                     continue
             else:
@@ -717,6 +738,7 @@ def main():
             issues_by_file[rel(path)] = found
     check_tests_exist(issues_by_file)
     check_test_files(issues_by_file)
+    # the checks of the tree
     check_python_files(issues_by_file)
     check_python_tests_cover_the_api(issues_by_file)
     check_clones(issues_by_file)
@@ -738,6 +760,7 @@ def main():
     if issues_by_file:
         print(f"{sum(len(v) for v in issues_by_file.values())} issues in {len(issues_by_file)} files")
         return 1
+    # all conventions hold
     print("all conventions hold")
     return 0
 

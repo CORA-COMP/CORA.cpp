@@ -98,8 +98,7 @@ Tensor aux_single_row(const Tensor &Zfull, const std::vector<Tensor> &Ti,
     }
     if (N == 1) return W.reshape(aux_shape(Zfull, {1, 1})); // no generators: the center alone
 
-    // identical factors of different orders add: W[j,a,b] += W[a,j,b] (j<a<b) and += W[b,j,a]
-    // (j<=a<=b, b>j), as CORA's loops over k, j, h do
+    // identical factors of different orders add: W[j,a,b] += W[a,j,b] (j<a<b), W[b,j,a] (j<=a<=b)
     const Tensor first =
         aux_mask(Zfull, N, [](int64_t j, int64_t a, int64_t b) { return j < a && a < b; });
     const Tensor second = aux_mask(

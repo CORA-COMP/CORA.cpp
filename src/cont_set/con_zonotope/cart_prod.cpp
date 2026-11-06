@@ -86,6 +86,7 @@ ConZonotope ConZonotope::cart_prod(const Interval &I) const {
     return aux_product(*this, S);
 }
 
+// the point is refused before the product is formed
 ConZonotope ConZonotope::cart_prod(const Tensor &p) const {
     // the refusal of a point and of the dimensions comes before the product
     detail::Entry entry;

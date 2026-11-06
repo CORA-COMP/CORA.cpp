@@ -9,7 +9,7 @@
 // the current backend (BackendScope, set_default_backend, CORACPP_BACKEND) applies only where
 // numbers become a tensor with no tensor to follow (Tensor({{1, 2}}), Tensor::zeros(shape)).
 //
-// Syntax:   cora::BackendScope scope("torch");   the backend is "eigen", "torch", "torch:cuda", "lean"
+// Syntax:   cora::BackendScope scope("torch");   one of "eigen", "torch", "torch:cuda", "lean"
 //           cora::Tensor A({{0, 1}, {-1, 0}});   built on that backend
 //
 // Layout: row-major, the last two axes are the matrix (..., rows, cols); a vector is a column
@@ -72,6 +72,7 @@ class Shape {
     const int64_t *end() const { return d_ + rank_; }
     void push_back(int64_t v) {
         if (rank_ == kMaxRank) aux_too_many_axes();
+        // append the size of the next axis
         d_[rank_++] = v;
     }
     /// The product of the sizes: the number of entries.
@@ -444,6 +445,7 @@ class Tensor {
     Tensor atan2(const Tensor &o) const { return binary(Binary::atan2, o); }
     Tensor equal(const Tensor &o) const { return binary(Binary::equal, o); }
     Tensor not_equal(const Tensor &o) const { return binary(Binary::not_equal, o); }
+    // comparisons: 1 where they hold, else 0
     Tensor less(const Tensor &o) const { return binary(Binary::less, o); }
     Tensor less_equal(const Tensor &o) const { return binary(Binary::less_equal, o); }
     Tensor greater(const Tensor &o) const { return binary(Binary::greater, o); }
@@ -473,6 +475,7 @@ class Tensor {
     Tensor cosh() const { return unary(Unary::cosh); }
     Tensor tanh() const { return unary(Unary::tanh); }
     Tensor asinh() const { return unary(Unary::asinh); }
+    // the inverse hyperbolic functions
     Tensor acosh() const { return unary(Unary::acosh); }
     Tensor atanh() const { return unary(Unary::atanh); }
     // masks: 1 where it holds, else 0

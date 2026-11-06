@@ -162,6 +162,7 @@ void checks_and_their_switch() {
           "power: three exponent boxes for two coordinates");
     const Tensor on = I.power(3).sup();
     ChecksScope off(false);
+    // the same with the checks off
     check(close(I.power(3).sup(), on, 0), "power: the same with the checks off");
 }
 

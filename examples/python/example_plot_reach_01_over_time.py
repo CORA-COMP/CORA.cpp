@@ -16,6 +16,7 @@ import argparse
 
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 
@@ -45,8 +46,7 @@ x = sys.simulate_random(X0, points=10, time_step=time_step, t_final=t_final, rng
 
 # Visualization -----------------------------------------------------------------------------
 
-# The phase plane: the reachable set, the initial set, the simulations and, last, the unsafe set
-# (it is shaded up to the limits of the axes, which the others have set).
+# The phase plane: reachable set, initial set, simulations, then the unsafe set
 cora.use_cora_colors("CORA:contDynamics")
 plt.figure()
 R.plot((0, 1), label="reachable set")

@@ -64,6 +64,7 @@ inline cora::Tensor sample_points(const cora::ConZonotope &cz, cora::Rng &rng, i
         std::vector<double> x(c);
         for (int64_t i = 0; i < n; ++i)
             for (int64_t j = 0; j < m; ++j) x[i] += G[i * m + j] * xi[j];
+        // the points of the set
         columns.push_back(x);
     }
     points.resize(std::size_t(n) * N);

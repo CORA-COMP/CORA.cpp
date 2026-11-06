@@ -181,6 +181,7 @@ ConZonotope ConZonotope::convex_hull(const Interval &I, const std::string &metho
 
 ConZonotope ConZonotope::convex_hull(const Tensor &p, const std::string &method) const {
     detail::Entry entry;
+    // the hull of the set and a point
     CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
         // a point is a set without generators
         return "convex_hull: the point must be a column (" + std::to_string(dim()) +

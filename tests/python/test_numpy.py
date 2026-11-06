@@ -10,6 +10,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 
@@ -48,6 +49,7 @@ class NumpyOnly(unittest.TestCase):
         X0 = cora.Zonotope(np.array([1.0, 0.0]), 0.1 * np.eye(2))
         R = sys.reach(X0, time_step=0.1, t_final=1.0)
         x = sys.simulate(np.array([[1.0], [0.0]]), time_step=0.1, t_final=1.0)
+        # the reachable sets contain the simulations
         self.assertEqual(x.shape, (11, 2, 1))
         for k, Z in enumerate(R.time_point):
             box = Z.interval()
@@ -71,6 +73,7 @@ class NumpyOnly(unittest.TestCase):
         self.assertTrue(spec.check(Y))
 
     def test_plot_takes_numpy_points(self):
+        # plotting arrays
         import matplotlib
         matplotlib.use("Agg")
         cora.plot(np.array([[0.0, 1.0], [0.0, 1.0]]), dims=[0, 1])

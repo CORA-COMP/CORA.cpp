@@ -23,6 +23,7 @@ import re
 import sys
 import types
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -107,6 +108,7 @@ def annotation(text, module):
         if head == "Optional":
             return annotation(parts[0], module) + " | None"
         if head == "Union":
+            # a parameterized type: the arguments are annotated in turn
             return annotation(" | ".join(parts), module)
         shown = [("[" + ", ".join(annotation(a, module) for a in split_top(p[1:-1])) + "]") if p.startswith("[")
                  else annotation(p, module) for p in parts]
@@ -201,6 +203,7 @@ def class_stub(cls, module):
 
 
 def submodules(module):
+    # the submodules of a module
     return sorted(n for n, v in vars(module).items()
                   if isinstance(v, types.ModuleType) and v.__name__.startswith(module.__name__ + "."))
 
@@ -228,10 +231,9 @@ def is_private(name):
 
 
 def lacking(module=None, prefix=""):
-    """What a user of the stubs misses: the public functions and methods (not private names, not
-    the dunder methods, which the class docstring covers) of the compiled modules that have no
-    docstring, and the parameters that pybind11 called `arg0`, `arg1`, ... because the binding gave
-    no `py::arg`."""
+    """What a user of the stubs misses: the public functions and methods of the compiled modules
+    that have no docstring, and the parameters pybind11 called `arg0`, ... for want of a
+    `py::arg`."""
     module = module or importlib.import_module(ROOT_MODULE)
     found = []
 
@@ -254,6 +256,7 @@ def lacking(module=None, prefix=""):
                     continue
                 dunder = attribute.startswith("__")
                 function = item.fget if isinstance(item, property) else getattr(item, "__func__", item)
+                # a public method is documented like a function
                 if callable(function) and not dunder:
                     label = f"{prefix}{name}.{attribute}"
                     check(label, function.__doc__, item.__doc__ if isinstance(item, property) else None,
@@ -297,6 +300,7 @@ def main():
                  or open(os.path.join(args.check, path), encoding="utf-8").read() != text]
         if stale:
             print("stale stubs: " + ", ".join(stale), file=sys.stderr)
+            # stale stubs fail the check
             sys.exit(1)
 
 

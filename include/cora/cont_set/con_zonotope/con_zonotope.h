@@ -73,18 +73,13 @@ class ConZonotope : public ContSet {
     bool is_bounded() const;
 
     /// Whether the set has a nonempty interior: the generators, restricted to the directions the
-    /// constraints and the box leave free, span the space (singular values up to tol count as
-    /// zero). An empty set has none. With the second form also a basis (n, r) of the span (the
-    /// identity if full). Not a batch if there are constraints. tol default: the repository
-    /// tolerance (docs/architecture.md).
+    /// constraints and the box leave free, span the space (up to tol). The second form also gives
+    /// a basis of the span.
     bool is_full_dim(Tol tol = std::nullopt) const;
     std::pair<bool, Tensor> is_full_dim_subspace(Tol tol = std::nullopt) const;
 
-    /// Whether the set contains the points p (n, N) (all of them), a zonotope or a box, up to tol
-    /// in the norm of the set (a linear program per point). method: "exact" (and "exact:venum", the
-    /// vertices of a zonotope or box are the points); "approx", "approx:st", "exact:polymax",
-    /// "sampling" and "dual" ones are Error::not_supported. Not a batch. tol default: the
-    /// repository tolerance.
+    /// Whether the set contains the points p (n, N), a zonotope or a box, up to tol in the norm
+    /// of the set (a linear program per point). Not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
     bool contains(const Zonotope &S, const std::string &method = "exact",
@@ -95,9 +90,8 @@ class ConZonotope : public ContSet {
     // Combining with other sets -------------------------------------------------------------------
 
     /// Without the constraint rows 0 = 0 and the generators that are zero and appear in no
-    /// constraint (method "zeros", the default, or "all"); "aligned" leaves the set as it is.
-    /// Only exact zeros count, as CORA's compact_; tol is checked. A batch drops what every
-    /// member drops.
+    /// constraint (method "zeros", "all"); "aligned" leaves the set as it is. Only exact zeros
+    /// count; tol is checked.
     ConZonotope compact(const std::optional<std::string> &method = std::nullopt,
                         Tol tol = std::nullopt) const;
 
@@ -142,9 +136,7 @@ class ConZonotope : public ContSet {
     ConZonotope convex_hull(const std::vector<ConZonotope> &others) const;
 
     /// An enclosure of {(x' T_i x) x | x in cz}: T[i][k] are the (n, n) matrices of output i,
-    /// z_i = sum_k x_k (x' T[i][k] x); ind[i] lists the k that enter output i (empty: all). The
-    /// factors of the linear terms keep the constraints; every product term is a new free factor.
-    /// Not a batch if there are constraints.
+    /// ind[i] lists the k that enter it (empty: all). Not a batch if there are constraints.
     ConZonotope cubic_map(const std::vector<std::vector<Tensor>> &T,
                           const std::vector<std::vector<int64_t>> &ind = {}) const;
 
@@ -156,11 +148,8 @@ class ConZonotope : public ContSet {
     /// The matrices E, F, A, C of an observer, for the gain "wang-FRad" of intersect_strip.
     using StripObserver = Zonotope::StripObserver;
 
-    /// The intersection with the strips |C x - y| <= phi (C (k, n), phi and y (k, 1)), exact for a
-    /// gain L (n, k): center c + L (y - C c), generators [(I - L C) G, L diag(phi)], and one
-    /// equality per strip. The gain is given, or chosen by "normGen" (default), "alamo-FRad",
-    /// "bravo" (an unconstrained zonotope around the one strip), or built from an observer
-    /// ("wang-FRad"); "svd" and "radius" (an optimizer) are not supported.
+    /// The intersection with the strips |C x - y| <= phi, exact for a gain L (n, k) that is given
+    /// or chosen by the method ("normGen" by default, "alamo-FRad", "bravo", "wang-FRad").
     ConZonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
                                 const std::string &method = "normGen") const;
     ConZonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
@@ -192,9 +181,7 @@ class ConZonotope : public ContSet {
     // Reductions and queries ----------------------------------------------------------------------
 
     /// A set that encloses this one with at most about order * n generators (CORA's reduce with
-    /// "girard"): Girard's rule on the zonotope [G; A] that the constraints lift the set to; the
-    /// constraints stay. Without constraints a zonotope's reduce. Not a batch for the rule's
-    /// ranking is per member. Other methods of CORA are Error::not_supported.
+    /// "girard") by Girard's rule on the lifted zonotope [G; A]. Not a batch.
     ConZonotope reduce(int order = 1, const std::string &method = "girard") const;
 
     /// An enclosure of {(x' Q_i x)_i | x in cz}: Q[i] are the (n, n) matrices of the outputs. The
@@ -206,16 +193,11 @@ class ConZonotope : public ContSet {
     ConZonotope quad_map(const ConZonotope &cz2, const std::vector<Tensor> &Q) const;
 
     /// The same set with every factor scaled to the range it takes (CORA's rescale): method
-    /// "exact" (a linear program per bound) or "iter" (bounds from the constraints by interval
-    /// arithmetic, after a Gauss-Jordan elimination of A). An empty set is Error::empty_set, a set
-    /// without constraints Error::special_error, as in CORA. Not a batch.
+    /// "exact" (a linear program per bound) or "iter" (interval arithmetic). Not a batch.
     ConZonotope rescale(const std::string &method = "exact") const;
 
     /// Whether the set is also a set of the CORA type ("origin", "point", "interval", "zonotope",
-    /// "emptySet", "polytope", "hyperplane", ...); the converted set is not returned. "emptySet"
-    /// is a linear program. "conHyperplane", "capsule", "ellipsoid", "levelSet" and
-    /// "parallelotope" are Error::not_supported, as in CORA. Not a batch. tol default: the
-    /// repository tolerance.
+    /// "emptySet", ...); the converted set is not returned. Not a batch.
     bool representsa(const std::string &type, Tol tol = std::nullopt) const;
 
     /// Whether the set equals a constrained zonotope, a zonotope or a box (CORA's isequal): the
@@ -225,10 +207,8 @@ class ConZonotope : public ContSet {
     bool isequal(const Zonotope &Z, Tol tol = std::nullopt) const;
     bool isequal(const Interval &I, Tol tol = std::nullopt) const;
 
-    /// Whether the set and a constrained zonotope, a zonotope, a box or points (n, N) (all of
-    /// them) intersect. type "exact": the intersection is not empty (a linear program); "approx":
-    /// the boxes around both overlap. Not a batch. tol: for points, the tolerance of contains;
-    /// default: the repository tolerance.
+    /// Whether the set and a constrained zonotope, a zonotope, a box or points (n, N) intersect:
+    /// type "exact" (a linear program) or "approx" (the boxes overlap). Not a batch.
     bool is_intersecting(const ConZonotope &S, const std::string &type = "exact",
                          Tol tol = std::nullopt) const;
     bool is_intersecting(const Zonotope &Z, const std::string &type = "exact",
@@ -245,9 +225,7 @@ class ConZonotope : public ContSet {
     std::vector<std::pair<ConZonotope, ConZonotope>> split() const;
 
     /// A constrained zonotope without constraints that encloses the union with the sets (CORA's
-    /// or, "linprog"): the iterative union of the sets' zonotopes, its generators scaled and its
-    /// center moved to the least that cover every set along its facets. "tedrake" (which fails in
-    /// CORA) and an order reduction are Error::not_supported. Not a batch.
+    /// or, "linprog"): the iterative union, rescaled by a linear program. Not a batch.
     ConZonotope unite(const std::vector<ConZonotope> &others, const std::string &method = "linprog",
                       std::optional<int> order = std::nullopt) const;
     ConZonotope unite(const ConZonotope &S, const std::string &method = "linprog",
@@ -260,9 +238,7 @@ class ConZonotope : public ContSet {
                       std::optional<int> order = std::nullopt) const;
 
     /// The Minkowski difference {x | x + S in this set} (CORA's minkDiff) with a zonotope, a box
-    /// or a point (n, 1): type "exact" (default) intersects the translates by the vertices of S,
-    /// "inner:vertices" those by the center and generators of S, "inner:Vinod" scales the
-    /// factors (a zonotope or box S). The empty result is empty(n). Not a batch.
+    /// or a point (n, 1): type "exact" (default), "inner:vertices" or "inner:Vinod". Not a batch.
     using ContSet::minkowski_difference;
     ConZonotope minkowski_difference(const Tensor &p) const;
 
@@ -281,11 +257,9 @@ class ConZonotope : public ContSet {
         Tensor l, u, bl, bu;
     };
 
-    /// Bounds of the set c + G x + [-dr, dr], |x|_inf <= 1, A x <= b, for a batch with c (B, n, 1),
-    /// G (B, n, m), A (B, p, q), b (B, p, 1), q >= m and dr (B, n, 1) (default: 0). Unlike the
-    /// class, the constraints are inequalities, and the first num_union_const rows are a union
-    /// (the rest an intersection). "fourier-motzkin" tightens the factor bounds row by row
-    /// (Koller, ICLR 2026, Prop. 3); "dual-iter" is Error::not_supported.
+    /// Bounds of the set c + G x + [-dr, dr], |x|_inf <= 1, A x <= b, for a batch; the first
+    /// num_union_const rows of A x <= b are a union, the rest an intersection (method "fourier-
+    /// motzkin").
     static Bounds approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &A,
                                      const Tensor &b,
                                      const std::optional<Tensor> &dr = std::nullopt,
@@ -318,8 +292,7 @@ class ConZonotope : public ContSet {
     Tensor c_, G_, A_, b_;
 };
 
-// Operators, as CORA writes them: M * cz is the linear map, s * cz scales, cz + S is the Minkowski
-// sum, a column v translates.
+// Operators, as CORA writes them: M * cz maps, s * cz scales, cz + S sums, a column v translates.
 inline ConZonotope operator*(const Tensor &M, const ConZonotope &cz) { return cz.linear_map(M); }
 inline ConZonotope operator+(const ConZonotope &cz, const ConZonotope &S) { return cz.plus(S); }
 inline ConZonotope operator+(const ConZonotope &cz, const Tensor &v) { return cz.plus(v); }

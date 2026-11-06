@@ -56,6 +56,7 @@ int main() {
             for (int k = 0; k < directions; ++k) {
                 const std::array<std::optional<lean::Tensor>, 2> vertices{pairs[k].plus,
                                                                           pairs[k].minus};
+                // vertices of the under-approximation
                 for (int side = 0; side < 2; ++side)
                     if (vertices[side] && ++compared)
                         oracle::check_exact(oracle::op_name(),

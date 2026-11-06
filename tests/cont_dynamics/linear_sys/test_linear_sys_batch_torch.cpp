@@ -64,6 +64,7 @@ void batches(const torch::TensorOptions &opts, const std::string &where) {
     const torch::Tensor cs = torch::randn({S, n}, opts), Gs = torch::randn({S, n, m}, opts);
 
     for (const std::string &algorithm : kAlgorithms) {
+        // the algorithms run on one system, on a batch and on both
         const std::string what = where + ": " + name(algorithm);
         const ReachSet sets = run(A, cs, Gs, algorithm);
         const ReachSet systems = run(As, cs[0], Gs[0], algorithm);

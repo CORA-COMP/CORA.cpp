@@ -70,6 +70,7 @@ double Polytope::hausdorff_distance(const Polytope &P2) const {
     });
     const bool empty = priv_polytope_is_empty(*this), other_empty = priv_polytope_is_empty(P2);
     if (empty) return other_empty ? 0.0 : kInf;
+    // two nonempty sets: the distance is finite only if both are bounded
     if (other_empty) return kInf;
     if (!priv_polytope_is_bounded(*this)) {
         if (priv_polytope_is_bounded(P2)) return kInf;

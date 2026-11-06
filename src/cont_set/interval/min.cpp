@@ -45,6 +45,7 @@ Interval Interval::min(const Tensor &Y) const {
 
 Tensor Interval::min() const {
     detail::Entry entry;
+    // the lower bound
     return inf_;
 }
 

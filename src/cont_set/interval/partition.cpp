@@ -69,6 +69,7 @@ std::vector<Interval> Interval::partition(int64_t splits) const {
     const auto [smaller, larger] = aux_fractions(splits);
     const Tensor width = sup_ - inf_;
     std::vector<Interval> pieces;
+    // one cut counter per coordinate
     std::vector<int64_t> cut(n, 0);
     for (int64_t piece = 0; piece < count; ++piece) {
         // the cuts of the piece, the first coordinate counting slowest

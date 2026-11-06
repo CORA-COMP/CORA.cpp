@@ -42,6 +42,7 @@ void convex_hull_with_each_kind_of_set(const std::string &b) {
         check(test::support(with_box, d) >=
                   std::max(test::support(Z, d), test::support(I, d)) - 1e-9,
               b + ": box");
+        // the support along each direction
         check(test::support(with_point, d) >=
                   std::max(test::support(Z, d),
                            d[0] * p.data()[0] + d[1] * p.data()[1] + d[2] * p.data()[2]) -

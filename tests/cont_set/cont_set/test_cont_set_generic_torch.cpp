@@ -58,6 +58,7 @@ int main() {
             return aux_parts(S(zonotope(x)).enlarge(Tensor::from_data({2.0, 0.5, 3.0}, {3, 1})));
         },
         test::random_zonotope(3, 4));
+    // gradients of minus and decompose
     test::gradcheck(
         "minus", [&](const Inputs &x) { return aux_parts(S(zonotope(x)).minus(p)); },
         test::random_zonotope(3, 4));
@@ -77,6 +78,7 @@ int main() {
         "decompose",
         [&](const Inputs &x) {
             Inputs out;
+            // gradient of decompose
             for (const Set &part : S(zonotope(x)).decompose({{0, 1}, {2, 2}}))
                 for (const Tensor &t : aux_parts(part)) out.push_back(t);
             return out;

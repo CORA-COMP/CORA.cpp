@@ -82,12 +82,16 @@ ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Same constraints --------------------------------------------------------------------------------
+
 ConZonotope ConZonotope::enclose(const ConZonotope &cz2) const {
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(*this, cz2);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_enclosure(*this, cz2);
 }
+
+// Linear image ------------------------------------------------------------------------------------
 
 ConZonotope ConZonotope::enclose(const Tensor &M, const ConZonotope &S) const {
     detail::Entry entry;

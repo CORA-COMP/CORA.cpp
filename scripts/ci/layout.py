@@ -20,6 +20,7 @@ import os
 import re
 import tokenize
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -122,6 +123,7 @@ def read_doc(lines, lang):
                 body.append(before)
             break
         body.append(line)
+    # a C++ file's docstring is its leading // block, from line 0
     return body, 0
 
 
@@ -148,6 +150,7 @@ def scan(lines, lang):
             out.append(re.sub(r"[^\n]", " ", segment))
             line_no += segment.count("\n")
             i = end
+        # a string literal is blanked, apart from its quotes
         elif c == '"' or (c == "'" and not (i > 0 and text[i - 1].isalnum())):
             j = i + 1
             while j < n and text[j] != c and text[j] != "\n":
@@ -157,7 +160,7 @@ def scan(lines, lang):
         else:
             out.append(c)
             i += 1
-    return list(zip("".join(out).split("\n"), kinds))
+    return list(zip("".join(out).split("\n"), kinds, strict=True))
 
 
 def scan_python(lines):
@@ -181,7 +184,7 @@ def scan_python(lines):
                 kinds[k], code[k] = "doc", ""
         if tok.type not in (tokenize.NL, tokenize.COMMENT):
             previous = tok
-    return list(zip(code, kinds))
+    return list(zip(code, kinds, strict=True))
 
 
 def marker_lines(lines, lang):
@@ -260,6 +263,7 @@ def check_author_block(body, blocks, base, issues, lang, has_cora_tag):
         sign = len("// " if lang == "cpp" else "")
         line = body[first]
         if not line.startswith(expected[sign:]):
+            # the label line must start with the expected text
             issues.append(f"line {base + first + 1}: the author block reads '{expected.rstrip()}' and then "
                           f"the value, aligned to column {FIELD_COLUMN}")
             return
@@ -396,9 +400,8 @@ def has_executable(nodes):
 
 def first_main_statement(lines, begin, end):
     """The 0-based line of the first top-level statement between BEGIN and END that belongs to
-    MAIN in a Python file: the first test class, else `def main`, else (a script that runs
-    statements) the first statement that is no import or definition, else the first public
-    function or class."""
+    MAIN: the first test class, `def main`, the first statement of a script, or the first
+    public definition."""
     try:
         tree = ast.parse("\n".join(lines))
     except SyntaxError:
@@ -441,6 +444,7 @@ def check_markers(path, lines, lang, issues):
         issues.append("the markers should be in the order BEGIN CODE, AUXILIARY, MAIN, END OF CODE")
     if any(line.strip() for line in lines[end + 1:]):
         issues.append("nothing but empty lines should follow END OF CODE")
+    # only imports and declarations may precede BEGIN CODE
     bad = code_above_begin(lines, lang, begin)
     if bad is not None:
         issues.append(f"line {bad + 1}: code above BEGIN CODE; only the docstring, imports/includes "
@@ -546,6 +550,7 @@ def check_function_docs(lines, lang, issues):
                 and is_docstring(node.body[0]):
             doc = node.body[0]
             size = doc.end_lineno - doc.lineno + 1
+            # the docstring of a function, class or method is short
             if size > MAX_DOC_LINES:
                 issues.append(f"line {doc.lineno}: a docstring of {size} lines ahead of {node.name}, at most "
                               f"{MAX_DOC_LINES}: move the explanation into the docstring of the file or a comment")

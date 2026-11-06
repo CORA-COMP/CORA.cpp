@@ -97,10 +97,7 @@ class Fullspace : public detail::DimensionSet {
     EmptySet complement() const;
 
     /// Whether the set is also a set of CORA's type (CORA's representsa_): true for "interval",
-    /// "convexSet" and "fullspace", false for the others; "levelSet" and "polygon" are
-    /// Error::not_supported. In R^0 CORA's emptyObject rule holds: false for "origin", "point" and
-    /// "parallelotope", true for every other type. tol is checked and relaxes nothing; default: the
-    /// repository tolerance (docs/architecture.md).
+    /// "convexSet" and "fullspace", false for the others; tol is checked.
     bool representsa(const std::string &type, Tol tol = std::nullopt) const;
 
     // Maps and embeddings -----------------------------------------------------------------------
@@ -117,11 +114,8 @@ class Fullspace : public detail::DimensionSet {
     /// bound new dimensions at 0"). proj is checked as the dims of lift.
     Fullspace project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
 
-    /// The image under a matrix M (CORA's mtimes): the whole space of dimension m for M with m
-    /// rows and no zero row, an interval with the zero rows at 0 and the others unbounded if M
-    /// has zero rows, a point at 0 for a zero number. It is an enclosure when M has not full row
-    /// rank (CORA's own). A 1 x 1 matrix is a scalar. A matrix of intervals is
-    /// Error::noops, as in CORA.
+    /// The image under a matrix M (CORA's mtimes): the whole space of dimension m, or an interval
+    /// with the zero rows of M at 0. An enclosure when M has not full row rank.
     Set linear_map(const Tensor &M) const;
     Set linear_map(const Interval &) const;
 

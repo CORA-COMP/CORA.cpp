@@ -38,6 +38,8 @@ namespace cora {
 
 namespace {
 
+// Helpers -----------------------------------------------------------------------------------------
+
 /// Whether the series of order N converges for the norm bound a (CORA: a < N + 2) in every member.
 bool aux_converges(const Tensor &a, int64_t N) { return a.max().item() < double(N + 2); }
 
@@ -74,6 +76,8 @@ IntervalMatrix aux_horner(const IntervalMatrix &A, const Tensor &a, int64_t N) {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// Series ------------------------------------------------------------------------------------------
 
 std::optional<IntervalMatrix>
 IntervalMatrix::expm_taylor_horner_scaling(int64_t max_order, int64_t style,

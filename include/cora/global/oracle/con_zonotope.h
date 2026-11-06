@@ -34,6 +34,8 @@ class ConZonotope {
     /// The dtype of the values.
     const std::string &dtype() const noexcept { return dtype_; }
 
+    // Crossing ------------------------------------------------------------------------------------
+
     /// The nominal part c, G and the equalities (Ae, be) as the oracle returns them; throws if a
     /// value is not a double. The inequality rows and the error boxes are not looked at.
     cora::ConZonotope nominal() const;

@@ -55,6 +55,7 @@ const std::vector<double> Anil{0, 1, 0, 0};
 struct Expected {
     bool verified;
     int iterations;
+    // the expected result
     double time_step;
     int num_steps;
     double fals_t; // -1: no falsification
@@ -157,6 +158,7 @@ int main() {
              {1.1000000000000001, -0.10000000000000001}});
     matches("N", osc1.verify({R0, u05, 5}, {unsafe({1, 0}, -1.0)}, S),
             {true, 1, 0.050000000000000003, 100, -1, none0});
+    // expected results of the verification
     matches("Q", osc1.verify({R0, u05, 5}, {safe({1, 0}, 3), unsafe({0, -1}, -0.75)}, S),
             {false,
              1,
@@ -178,9 +180,7 @@ int main() {
     matches("L", sys3.verify({R03, zono({0.1}, {0.05}, 1), 4}, {safe({1}, 2.202)}, S),
             {true, 2, 0.0080000000000000002, 500, -1, none0});
 
-    // A sparse A (40-state chain, 7% nonzeros: sparse powers and expm). Reference: A = 5 (-2 I +
-    // superdiagonal + subdiagonal) with A(1,2) = 7, R0 = zonotope(e1, [0.2 e1, 0.1 e2]), C = e10'
-    // as output, B = 0 (U with a zero generator) or B = e1 with U = zonotope(0.5, 0.1), t_final 2.
+    // Sparse A (40-chain): A = 5 (-2 I + sub + super), A(1,2) = 7, R0 = zonotope(e1, [.2 e1 .1 e2])
     const int n = 40;
     std::vector<double> Ach(n * n, 0.0), c0(n, 0.0), G0(n * 2, 0.0), Cch(n, 0.0), B1(n, 0.0);
     for (int i = 0; i < n; ++i) {
@@ -201,11 +201,11 @@ int main() {
             {false, 1, 0.02, 100, 1.84, none0});
     matches("chain input", chain1.verify({R0ch, u1, 2}, {safe({1}, 0.005)}, S),
             {false, 1, 0.02, 100, 1.16, none0});
+    // the chain with the second halfspace
     matches("chain input 2", chain1.verify({R0ch, u1, 2}, {safe({1}, 0.001)}, S),
             {false, 1, 0.02, 100, 0.72, none0});
 
-    // Unsupported input is refused.
-    // The support function algorithm takes unsafe sets of one halfspace only.
+    // Unsupported input is refused; the support function algorithm takes one halfspace only.
     check(test::throws([&] {
               osc1.verify({R0, u05, 5},
                           {Specification::unsafe_set(

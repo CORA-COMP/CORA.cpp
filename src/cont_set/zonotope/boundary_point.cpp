@@ -51,6 +51,7 @@ double aux_exit_step(const HostZonotope &Z, const std::vector<double> &dir,
     const LinProgResult r = linprog(lp);
     if (r.status != LinProgResult::Status::optimal)
         CORA_FAIL(Error::solver_issue, "boundary_point: the linear program has no solution");
+    // the boundary is at the negated optimum
     return -r.fval;
 }
 

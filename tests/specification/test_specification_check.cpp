@@ -46,8 +46,7 @@ void on_a_reachable_set(const std::string &b) {
     check(Specification::safe_set(Tensor({1.0}), 1.9).first_violation(R.time_interval) == 0,
           b + ": exceeds 1.9 in the first step");
 
-    // The lowest point decays as e^{-t}, so it passes 0.5 at t = 0.69; the first enclosure to
-    // touch that level is reported, and the ones before it are clear.
+    // The lowest point decays as e^{-t}, passing 0.5 at t = 0.69; the first enclosure touching it.
     const Specification reaches_half = Specification::unsafe_set(Tensor({1.0}), 0.5);
     const int hit = reaches_half.first_violation(R.time_interval);
     check(hit >= 4 && hit <= 7, b + ": the flow reaches x <= 0.5 at step " + std::to_string(hit));

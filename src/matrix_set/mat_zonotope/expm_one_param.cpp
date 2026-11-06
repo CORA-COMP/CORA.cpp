@@ -153,6 +153,7 @@ MatZonotope::expm_one_param(double r, int64_t max_order,
         return std::string("expm_one_param: an input with more than one generator is not "
                            "supported, as in CORA the set it gives is meant for one");
     });
+    // the exponential with the optional input
     return aux_expm(*this, r, max_order, u_trans ? &*u_trans : nullptr);
 }
 

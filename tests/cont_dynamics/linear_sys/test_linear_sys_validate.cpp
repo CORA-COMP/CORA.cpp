@@ -42,6 +42,7 @@ void every_part_is_checked() {
     check(
         test::raises([&] { sys.validate({.initial_set = X0, .t_final = -1}); }, Error::wrong_value),
         "t_final -1");
+    // an input set without B is refused
     check(test::raises(
               [&] { autonomous.validate({.initial_set = X0, .input_set = U, .t_final = 1}); },
               Error::wrong_value),

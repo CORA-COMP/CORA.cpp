@@ -70,6 +70,7 @@ void refusals() {
     check(test::raises([&] { ConZonotope::from_matrix(Tensor({{1.0}}), Tensor({{1.0}})); },
                        Error::wrong_input_in_constructor),
           "from_matrix: A and b together");
+    // too few columns
     check(test::raises([&] { ConZonotope::from_matrix(Tensor::zeros({2, 0})); },
                        Error::wrong_input_in_constructor),
           "from_matrix: at least the center");

@@ -32,6 +32,7 @@ import cora
 import numpy as np
 import oracle_testing as oracle
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -78,6 +79,7 @@ class Oracle(unittest.TestCase):
         self.each("intervalMatrix.contains", body)
 
     def test_squares_and_powers(self):
+        # squares and powers
         squares = ((2, 2), (3, 3), (5, 5))
         self.each("intervalMatrix.exactSquare",
                   lambda rnd, A, L: oracle.check(A.exact_square().interval, L.exact_square()), squares)
@@ -102,6 +104,7 @@ class Oracle(unittest.TestCase):
         oracle.run("intervalMatrix.mtimes", run)
 
     def test_sums_and_queries(self):
+        # sums and queries
         self.each("intervalMatrix.rad", lambda rnd, A, L: oracle.check(A.rad, L.rad()))
         self.each("intervalMatrix.supremum", lambda rnd, A, L: oracle.check(A.supremum, L.supremum()))
         self.each("intervalMatrix.volume", lambda rnd, A, L: oracle.check(A.volume(), L.volume()))
@@ -139,6 +142,7 @@ class Oracle(unittest.TestCase):
         self.each("intervalMatrix.vertices", vertices, ((2, 2), (1, 3), (3, 2)))
 
     def test_the_infinity_norm(self):
+        # the infinity norm
         self.each("intervalMatrix.infNorm",
                   lambda rnd, A, L: oracle.check(A.infinity_norm(), L.infinity_norm()))
 

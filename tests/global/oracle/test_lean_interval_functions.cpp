@@ -112,6 +112,7 @@ int main() {
     aux_function(
         "atan", 0, -5, 5, [](const Interval &I) { return I.atan(); },
         [](const lean::Interval &I) { return I.atan(kTerms, kFewSteps); });
+    // inverse hyperbolic cosine
     aux_function(
         "acosh", 0, 1, 40, [](const Interval &I) { return I.acosh(); },
         [](const lean::Interval &I) { return I.acosh(kTerms, kFewSteps); });

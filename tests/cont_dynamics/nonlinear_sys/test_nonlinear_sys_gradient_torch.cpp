@@ -77,6 +77,7 @@ double gradient_error(F f, const torch::Tensor &x0) {
 }
 
 void reach_is_differentiable() {
+    // the direction, center and generators of the start set
     const torch::TensorOptions opts = torch::TensorOptions().dtype(torch::kDouble);
     const torch::Tensor d = torch::tensor({0.6, -0.8}, opts);
     const torch::Tensor c0 = torch::tensor({1.4, 2.3}, opts);

@@ -55,6 +55,7 @@ void the_operations_match_their_definitions() {
     rng.normal(matrix.data(), static_cast<std::size_t>(matrix.size()), 1.0);
 
     const auto box_support = support_func(box, d);
+    // the support functions of both sets
     const auto zono_support = support_func(zono, d);
     const Interval<double> image = mat_mul(box, matrix);
     const Zonotope<double> mapped = mat_mul(zono, matrix);

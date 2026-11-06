@@ -20,6 +20,7 @@ import warnings
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -92,6 +93,7 @@ class Subclass(unittest.TestCase):
             B & Z
 
     def test_plotting_takes_a_python_set(self):
+        # plotting a Python set
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
@@ -128,6 +130,7 @@ class RegisteredAlgorithm(unittest.TestCase):
         with self.assertRaises(cora.errors.DimensionMismatch):
             self.sys.reach(cora.Zonotope(np.zeros(3), np.eye(3)), t_final=1.0, alg="euler_box")
 
+    # an unknown algorithm
     def test_an_unknown_algorithm_names_the_registered_ones(self):
         with self.assertRaisesRegex(ValueError, "euler_box"):
             self.sys.reach(self.X0, t_final=1.0, alg="euler")
@@ -153,6 +156,7 @@ class ErrorsAndSettings(unittest.TestCase):
 
     def test_warnings_reach_python(self):
         with warnings.catch_warnings(record=True) as caught:
+            # warnings are recorded
             warnings.simplefilter("always")
             cora._cora._warn("CORA:deprecated", "a test warning")
         self.assertTrue(any(issubclass(w.category, cora.CORAWarning) for w in caught))

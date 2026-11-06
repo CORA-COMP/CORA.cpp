@@ -13,6 +13,7 @@ import unittest
 
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -57,6 +58,7 @@ class Banner(unittest.TestCase):
         self.assertIn("broken on purpose", result.stderr)
 
 
+# run the tests
 if __name__ == "__main__":
     unittest.main()
 

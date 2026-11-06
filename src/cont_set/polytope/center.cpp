@@ -97,6 +97,7 @@ std::optional<Row> aux_equalities_only(const HostH &H) {
             if (i == done) continue;
             const double f = M[i][c] / M[done][c];
             for (std::size_t j = 0; j < n; ++j) M[i][j] -= f * M[done][j];
+            // eliminate the pivot column from the other rows
             r[i] -= f * r[done];
         }
         pivot_column.push_back(c);

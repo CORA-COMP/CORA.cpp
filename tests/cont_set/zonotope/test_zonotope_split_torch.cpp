@@ -48,6 +48,7 @@ int main() {
                                   torch::tensor({{1.0}, {2.0}, {-1.0}}, torch::kDouble))));
         },
         input);
+    // gradients of the split
     test::gradcheck(
         "split_first_gen",
         [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split_first_gen()); }, input);

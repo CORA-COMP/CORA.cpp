@@ -16,6 +16,7 @@ import unittest
 
 import cora
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -95,6 +96,7 @@ class Stubs(unittest.TestCase):
             self.assertTrue(name in compiled or name in written or any(map(os.path.exists, module)),
                             f"cora.{name} has no class or function in the stubs or the package")
 
+    # the stubs are valid Python
     def test_the_stubs_are_valid_python(self):
         for path in stubs.generate():
             if path.endswith(".pyi"):
@@ -115,8 +117,7 @@ class Stubs(unittest.TestCase):
             self.assertEqual(sum(f"[{code}]" in line for line in errors), 1, "\n".join(errors))
 
     def test_every_set_class_accepts_what_contset_accepts(self):
-        # A method of a ContSet subclass takes every argument of ContSet's (mypy's override check),
-        # so code written against ContSet works on each class.
+        # A method of a ContSet subclass takes every argument of ContSet's (mypy's override check).
         with tempfile.TemporaryDirectory() as folder:
             errors = mypy(folder)
         self.assertEqual(errors, [], "\n".join(errors))

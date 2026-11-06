@@ -60,6 +60,7 @@ void wrong_arguments_are_described(const std::string &b) {
     const NonlinearSys sys(
         [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
     check(test::throws([&] {
+              // a start point of the wrong dimension
               sys.simulate({.initial_state = Tensor({1.0, 0.0, 1.0}), .t_final = 1.0},
                            alg::RungeKutta4{.time_step = 0.1});
           }),
@@ -97,6 +98,7 @@ void checks_and_their_switch() {
     const SimulationProblem problem{.initial_state = x0, .t_final = 1};
     const Tensor on = sys.simulate(problem, alg::RungeKutta4{.time_step = 0.1}).back();
     ChecksScope off(false);
+    // the same with the checks off
     check(test::close(sys.simulate(problem, alg::RungeKutta4{.time_step = 0.1}).back(), on, 0),
           "simulate: the same with the checks off");
 }

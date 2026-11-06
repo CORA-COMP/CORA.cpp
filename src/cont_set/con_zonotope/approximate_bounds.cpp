@@ -191,6 +191,7 @@ Bounds aux_union(const Tensor &c, const Tensor &G, const Tensor &dr, const Tenso
         }
         s = {Tensor::stack(l, 0), Tensor::stack(u_, 0), Tensor::stack(bl, 0), Tensor::stack(bu, 0)};
     }
+    // the four bounds are reduced
     return {aux_reduce(s.l, true), aux_reduce(s.u, false), aux_reduce(s.bl, true),
             aux_reduce(s.bu, false)};
 }
@@ -217,6 +218,7 @@ ConZonotope::approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &
                           shape_text(c.shape()) + ", " + shape_text(G.shape()) + ", " +
                           shape_text(A.shape()) + " and " + shape_text(b.shape());
                });
+    // the sets share one batch shape
     CORA_CHECK(batch(c) == batch(G) && batch(c) == batch(A) && batch(c) == batch(b) &&
                    (!dr_arg ||
                     (batch(*dr_arg) == batch(c) && is_column(*dr_arg, c.shape()[c.ndim() - 2]))),

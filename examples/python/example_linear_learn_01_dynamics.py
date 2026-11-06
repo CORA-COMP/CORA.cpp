@@ -17,10 +17,10 @@ Reviewed:      ---
 """
 import argparse
 
+import cora
 import torch
 from torch import nn
 
-import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 

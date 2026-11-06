@@ -49,6 +49,7 @@ void enclose_by_class(const std::string &b) {
 
     const Tensor M = Tensor::from_data({1.0, 2.0, 0.0, 0.5, -1.0, 1.0, 0.0, 0.0, 2.0}, {3, 3});
     const Zonotope Zplus = Zonotope::generate_random(rng, 3, std::nullopt, 2);
+    // enclose with a matrix equals the linear map and sum
     check(Z1.enclose(M, Zplus).isequal(Z1.enclose(Z1.linear_map(M) + Zplus)),
           b + ": enclose(M, Zplus)");
 }

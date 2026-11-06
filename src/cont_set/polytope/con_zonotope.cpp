@@ -77,6 +77,7 @@ ConZonotope Polytope::con_zonotope(const std::string &method,
     if (method == "exact:vertices") {
         if (!priv_polytope_is_bounded(*this)) aux_unbounded();
         const Rows vertices = priv_polytope_vertices(*this);
+        // the vertices and the constraints give the bounds of the rows
         if (vertices.empty()) return ConZonotope::empty(n);
         const Constraints C = constraints();
         const Tensor V = priv_points_tensor(like, n, vertices);
@@ -91,8 +92,7 @@ ConZonotope Polytope::con_zonotope(const std::string &method,
         aux_unbounded();
     const Constraints C = constraints();
     const Tensor A_all = Tensor::concat({C.A, C.Ae}, 0), b_all = Tensor::concat({C.b, C.be}, 0);
-    // the least value of an inequality's row over the box: the lower bound where the entry is
-    // positive, the upper where it is negative; an equality's offset is its own
+    // the least value of an inequality's row over the box (lower bound where positive, else upper)
     const Tensor lo = B.inf().matrix_transpose(), hi = B.sup().matrix_transpose();
     const Tensor corner = Tensor::where(C.A.less(C.A.zeros_like()), hi, lo);
     const Tensor sigma_inequalities =

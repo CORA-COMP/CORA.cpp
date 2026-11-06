@@ -61,6 +61,7 @@ std::optional<double> json_number(const std::string &doc, const std::string &key
     if (at == std::string::npos) return std::nullopt;
     char *end = nullptr;
     const double value = std::strtod(doc.c_str() + at, &end);
+    // nothing was parsed: not a number
     if (end == doc.c_str() + at) return std::nullopt;
     return value;
 }

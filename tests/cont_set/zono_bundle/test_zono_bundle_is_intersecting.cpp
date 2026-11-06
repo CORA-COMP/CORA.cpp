@@ -47,6 +47,7 @@ void exact_test(const std::string &b) {
               !bundle.is_intersecting(column({-0.5, -0.5})),
           b + ": a point");
     check(!ZonoBundle::empty(2).is_intersecting(bundle), b + ": the empty bundle meets nothing");
+    // the empty bundle and the registry
     check(is_intersecting(Set(bundle), Set(inside)) && is_intersecting(Set(inside), Set(bundle)),
           b + ": through the registry, in both orders");
 }

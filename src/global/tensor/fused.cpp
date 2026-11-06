@@ -125,8 +125,7 @@ std::pair<Tensor, Tensor> derived::zonotope_linear_map(const Tensor &M, const Te
     return {M.matmul(c), M.matmul(G)};
 }
 
-// The center T maps the zonotope; the radius S maps the row sums of |[c G]| into one box
-// generator per dimension.
+// The center T maps the zonotope; the radius S maps the row sums of |[c G]| to box generators.
 std::pair<Tensor, Tensor> derived::zonotope_interval_map(const Tensor &inf, const Tensor &sup,
                                                          const Tensor &c, const Tensor &G) {
     const Tensor T = (inf + sup) * 0.5, S = (sup - inf) * 0.5;
@@ -140,8 +139,7 @@ std::pair<Tensor, Tensor> derived::zonotope_linear_combination(const Tensor &c1,
     return {(c1 + c2) * 0.5, Tensor::concat({mean, spread, shift}, -1)};
 }
 
-// Entry (i, j) sums, over q, the smaller (inf) and the larger (sup) of inf_iq m_qj and sup_iq
-// m_qj: the products as (..., n, q, m), summed along q.
+// Entry (i, j) sums over q the smaller (larger) of inf_iq m_qj and sup_iq m_qj, as (.., n, q, m).
 std::pair<Tensor, Tensor> derived::interval_matmul(const Tensor &inf, const Tensor &sup,
                                                    const Tensor &M) {
     const Tensor a = inf.expand_dims(-1), b = sup.expand_dims(-1), m = M.expand_dims(-3);

@@ -70,6 +70,7 @@ Tensor Interval::boundary_point(const Tensor &dir, const std::optional<Tensor> &
     CORA_CHECK(contains(start), Error::wrong_value, [] {
         return std::string("boundary_point: the start point must be contained in the interval");
     });
+    // the step to the nearest bound along dir
     const Tensor step = aux_step_to_bound(*this, dir, start).min(-2, true);
     const double kInf = std::numeric_limits<double>::infinity();
     // the ray never leaves where no bound is finite: it ends at +-Inf in the coordinates of dir

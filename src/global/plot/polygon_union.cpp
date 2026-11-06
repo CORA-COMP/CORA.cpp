@@ -33,9 +33,7 @@ namespace {
 
 // Polygons ----------------------------------------------------------------------------------------
 
-// A convex polygon with what makes tests against it fast: its bounds, a disc inside it and a disc
-// around it, both centered at the mean of its corners, the polygon of about 16 of its corners,
-// which lies inside it, and the polygon of the lines of about 16 of its edges, which holds it.
+// A convex polygon with what makes tests fast: bounds, inner and outer disc and polygon.
 struct Convex {
     Polygon corners; // counter-clockwise
     Polygon core;
@@ -153,11 +151,7 @@ bool aux_deep_inside(const Point &p, const Polygon &poly, double eps) {
     return true;
 }
 
-// Where the edge from P along d (t in [0, 1]) lies in the convex polygon J, if anywhere: the
-// interval [t0, t1], found by clipping at every edge of J. Along an edge of J with the same
-// direction the edge counts as inside only for the polygon of the lower index, so that of two
-// equal edges one is kept; along an edge of the other direction it counts as inside, so that
-// edges between two polygons vanish.
+// Where the edge from P along d (t in [0, 1]) lies in the convex polygon J: [t0, t1], per edge.
 bool aux_inside(const Point &P, const Point &d, const Convex &J, bool lower, double eps, double &t0,
                 double &t1) {
     const Point Q = {P[0] + d[0], P[1] + d[1]};
@@ -220,8 +214,7 @@ std::vector<std::vector<std::size_t>> aux_neighbors(const std::vector<Convex> &p
     return near;
 }
 
-// The pieces of the edges of polygon i that no other polygon covers: the edge without the union of
-// the intervals that the neighbors cover.
+// The pieces of the edges of polygon i that no other polygon covers.
 void aux_boundary_pieces(const std::vector<Convex> &polys, const std::vector<std::size_t> &near,
                          std::size_t i, double eps, std::vector<Piece> &out) {
     const Polygon &poly = polys[i].corners;
@@ -329,8 +322,7 @@ std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double re
         return same;
     }
     const std::vector<std::vector<std::size_t>> near = aux_neighbors(polys, eps);
-    // The boundary is what is left of the edges; it is chained into loops, or the polygons are
-    // returned if that fails.
+    // The boundary is what is left of the edges, chained into loops; else the input polygons.
     std::vector<Piece> pieces;
     for (std::size_t i = 0; i < polys.size(); ++i)
         aux_boundary_pieces(polys, near[i], i, eps, pieces);

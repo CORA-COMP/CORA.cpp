@@ -86,6 +86,7 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
     for (const Specification &spec : specs)
         for (const Halfspace &h : spec.halfspaces())
             CORA_CHECK(aux_normal_ok(h, p), Error::wrong_value, [&] {
+                // the unsafe sets are checked against the algorithm
                 return "verify: a halfspace normal must be a nonzero column of the output "
                        "dimension " +
                        std::to_string(p) + ", got the shape " + shape_text(h.a.shape());

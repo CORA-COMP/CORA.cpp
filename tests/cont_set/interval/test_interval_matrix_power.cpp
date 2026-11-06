@@ -44,6 +44,7 @@ void matrix_power_multiplies_the_intervals(const std::string &b) {
               close(A3.sup(), std::vector<double>{8, 7, 0, 1}),
           b + ": the cube");
     const Interval B = Interval::stack({A, A}).matrix_power(2);
+    // a batch
     check(B.inf().shape() == std::vector<int64_t>({2, 2, 2}) &&
               close(B.sup().slice(0, 1, 2).reshape({2, 2}), A2.sup()),
           b + ": a batch");
@@ -70,6 +71,7 @@ void matrix_power_of_points_and_samples(const std::string &b) {
         inside = inside && (Q.inf().less_equal(pow).min().item() != 0) &&
                  (pow.less_equal(Q.sup()).min().item() != 0);
     }
+    // the cube of a member
     check(inside, b + ": the cube of a member is in the result");
 }
 

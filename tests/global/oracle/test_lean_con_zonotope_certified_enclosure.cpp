@@ -55,6 +55,7 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             const bool theirs = lean::ConZonotope::from_zonotope(lean::Zonotope(Z)).is_full_dim();
             proved += theirs;
+            // the oracle proves the interior
             oracle::check_enclosed(oracle::op_name(), ConZonotope(Z).is_full_dim(),
                                    lean::Certified{theirs, theirs});
         }

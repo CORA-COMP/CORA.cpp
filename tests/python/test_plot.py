@@ -9,6 +9,7 @@ import unittest
 
 import matplotlib
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -61,6 +62,7 @@ class Plot(unittest.TestCase):
         self.assertEqual(colors, [cora.cora_color(f"CORA:{n}") for n in ("blue", "red", "yellow")])
 
     def test_a_set_is_filled_and_an_axes_has_its_own_order(self):
+        # plotting into another axes
         cora.plot(self.X0, ax=self.ax)
         other = self.fig.add_subplot(2, 1, 2)
         cora.plot(self.X0, ax=other)
@@ -84,6 +86,7 @@ class Plot(unittest.TestCase):
         cora.plot(self.X0, ax=self.ax)
         cora.plot(self.sys.reach(self.X0, time_step=0.1, t_final=1.0), ax=self.ax)
         initial, reach = paths(self.ax)
+        # the colors of the sets
         self.assertEqual(face(initial), cora.cora_color("CORA:initialSet"))
         self.assertEqual(tuple(initial.get_edgecolor()[:3]), cora.cora_color("CORA:simulations"))
         self.assertEqual(face(reach), cora.cora_color("CORA:reachSet"))
@@ -107,6 +110,7 @@ class Plot(unittest.TestCase):
     def test_other_keywords_go_to_matplotlib(self):
         cora.plot(self.X0, ax=self.ax, alpha=0.5)
         self.assertEqual(paths(self.ax)[0].get_alpha(), 0.5)
+        # an unknown property is refused
         with self.assertRaises(AttributeError):
             cora.plot(self.X0, ax=self.ax, no_such_property=1)
 
@@ -174,6 +178,7 @@ class Dimensions(unittest.TestCase):
         cora.plot(self.Z3, dims=(0, 1, 2), ax=ax, label="Z")
         self.assertEqual(len(ax.collections), 1)
         (layer,) = ax._cora_figure.layers()
+        # a 3-D surface
         self.assertEqual((layer["kind"], len(layer["faces"])), ("surface", 6))
         self.assertEqual(ax.get_zlabel(), "x[2]")
 
@@ -214,6 +219,7 @@ class Dimensions(unittest.TestCase):
     def test_edge_and_face_colors_and_the_set_of_a_reach_plot(self):
         _, ax = plt.subplots()
         cora.plot(self.X0, ax=ax, face_color="CORA:red", edge_color="CORA:green")
+        # the face color
         patch = paths(ax)[0]
         self.assertEqual(face(patch), cora.cora_color("CORA:red"))
         self.assertEqual(tuple(float(v) for v in patch.get_edgecolor()[:3]),
@@ -236,6 +242,7 @@ class Dimensions(unittest.TestCase):
     def test_a_python_set_plots_in_three_dimensions_through_vertices_3d(self):
         class Cube(cora.ContSet):
             def _dim(self): return 3
+            # a Python set in 3-D
             def _center(self): return cora.Tensor([0.0, 0.0, 0.0])
             def _interval(self): return cora.Interval(cora.Tensor([-1.0] * 3), cora.Tensor([1.0] * 3))
             def _project(self, dims):
@@ -259,6 +266,7 @@ class Dimensions(unittest.TestCase):
 
 
 class Colors(unittest.TestCase):
+    # the colors of the core
     def test_cora_colors_come_from_the_core(self):
         self.assertAlmostEqual(cora.cora_color("CORA:blue")[1], 0.4470)
         self.assertEqual(cora.cora_color(2), cora.cora_color("CORA:red"))
@@ -283,6 +291,7 @@ class Display(unittest.TestCase):
     def test_vertices_are_arrays_per_set(self):
         box = cora.Interval(cora.Tensor([0.0, 0.0]), cora.Tensor([2.0, 1.0]))
         (corners,) = box.vertices()
+        # the corners
         self.assertEqual(np.asarray(corners).shape, (4, 2))
 
 

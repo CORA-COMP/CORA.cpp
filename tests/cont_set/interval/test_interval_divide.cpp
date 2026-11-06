@@ -41,6 +41,7 @@ void divide_scales_and_a_negative_number_swaps(const std::string &b) {
     check(U.sup().data()[0] == kInf && close(U.inf(), std::vector<double>{0.5}),
           b + ": an infinite bound stays");
     const Interval S = Interval::stack({I, I}).divide(2.0);
+    // a batch
     check(S.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(S.sup().slice(0, 1, 2).reshape({2, 1}), R.sup()),
           b + ": a batch");

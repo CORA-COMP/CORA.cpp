@@ -76,8 +76,7 @@ constexpr void aux_add_predicate(Table &table, F) {
     };
 }
 
-// The pairs
-// ----------------------------------------------------------------------------------------
+// The pairs ---------------------------------------------------------------------------------------
 
 /// Every pair that is implemented: one line each.
 constexpr Table aux_build() {
@@ -242,8 +241,7 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::contains, Polytope, Zonotope>(
         t,
         [](const Polytope &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
-    // the ellipsoid has the lowest precedence of its pairs, so it comes first; the cases that need
-    // a solver are Error::not_supported
+    // the ellipsoid has the lowest precedence of its pairs, so it is first; solvers: not_supported
     aux_add_set<BinaryOp::intersect, Ellipsoid, Ellipsoid>(
         t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.intersect(B); });
     aux_add_set<BinaryOp::cart_prod, Ellipsoid, Ellipsoid>(
@@ -258,8 +256,7 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::contains, Ellipsoid, Interval>(
         t,
         [](const Ellipsoid &A, const Interval &I, Tol tol) { return A.contains(I, "exact", tol); });
-    // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
-    // operations are exact
+    // the constrained zonotope has the lowest precedence of its pairs, so it is first; all exact
     aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(
         t, [](const ConZonotope &A, const ConZonotope &B) { return A.intersect(B); });
     aux_add_set<BinaryOp::intersect, ConZonotope, Zonotope>(
@@ -289,9 +286,7 @@ constexpr Table aux_build() {
         });
     // Bundles and Constrained Zonotopes -----------------------------------------------------------
 
-    // the bundle has a lower precedence than the zonotope and the box, so it comes first: the
-    // intersection and the product keep the members, containment and intersection tests are
-    // exact; the two bundles are compared member by member, else by containment
+    // the bundle has lower precedence than zonotope and box, so it is first; member by member
     aux_add_set<BinaryOp::intersect, ZonoBundle, ZonoBundle>(
         t, [](const ZonoBundle &A, const ZonoBundle &B) { return A.intersect(B); });
     aux_add_set<BinaryOp::intersect, ZonoBundle, Zonotope>(
@@ -325,6 +320,7 @@ constexpr Table aux_build() {
         t, [](const ZonoBundle &A, const Zonotope &Z, Tol tol) {
             return A.is_intersecting(Z, "exact", tol);
         });
+    // a bundle intersects a box as it intersects a zonotope
     aux_add_predicate<BinaryOp::is_intersecting, ZonoBundle, Interval>(
         t, [](const ZonoBundle &A, const Interval &I, Tol tol) {
             return A.is_intersecting(I, "exact", tol);
@@ -365,8 +361,7 @@ constexpr Table aux_build() {
         t, [](const ConZonotope &A, const Zonotope &Z, Tol tol) { return A.isequal(Z, tol); });
     aux_add_predicate<BinaryOp::isequal, ConZonotope, Interval>(
         t, [](const ConZonotope &A, const Interval &I, Tol tol) { return A.isequal(I, tol); });
-    // the capsule: hull, containment and intersection with its own class, the empty set and the
-    // whole space; it holds a zonotope or a box by their corners
+    // the capsule: hull, containment, intersection with itself, empty set, whole space
     aux_add_set<BinaryOp::convex_hull, Capsule, Capsule>(
         t, [](const Capsule &A, const Capsule &B) { return A.convex_hull(B); });
     aux_add_set<BinaryOp::convex_hull, EmptySet, Capsule>(

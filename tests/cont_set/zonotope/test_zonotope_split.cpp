@@ -39,8 +39,7 @@ void split_by_coordinates(const std::string &b) {
               close(upper.center(), std::vector<double>{-4, 5.5}, 1e-14) &&
               close(upper.generators(), std::vector<double>{6, 0, 0, 4.5}, 1e-14),
           b + ": coordinate 1");
-    // a flat coordinate: CORA indexes the nonzero generators of the box and breaks; this indexes
-    // coordinates, and both halves of a flat one are the box
+    // a flat coordinate: CORA indexes the nonzero generators and breaks; here both halves are a box
     const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0}, {0.0}}));
     const auto [a, c] = flat.split(1);
     check(close(a.center(), c.center(), 0) &&
@@ -114,6 +113,7 @@ void pieces_cover_the_set(const std::string &b) {
     check(planes.size() == 2, b + ": a plane near the center cuts the set");
     for (int k = 0; k < 40; ++k) {
         const Tensor p = points.slice(-1, k, k + 1);
+        // a point of Z is in one piece
         check(planes[0].contains(p, "exact", 1e-9) || planes[1].contains(p, "exact", 1e-9),
               b + ": a point of Z is in neither piece of the halfspace cut");
     }
@@ -150,6 +150,7 @@ void checks_and_their_switch() {
     const Zonotope batch = Zonotope::stack({Z, Z});
     check(test::raises([&] { batch.split(column({1.0, 1.0})); }, Error::not_supported),
           "split: batch dir");
+    // a batch splits by coordinate
     check(test::raises([&] { batch.split(column({1.0, 1.0}), 0.0); }, Error::not_supported),
           "split: batch halfspace");
     check(batch.split(0).first.center().shape() == std::vector<int64_t>({2, 2, 1}),

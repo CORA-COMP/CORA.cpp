@@ -57,10 +57,8 @@ bool aux_contains_points(const Ellipsoid &E, const Tensor &P, double tol) {
     return std::all_of(norms.begin(), norms.end(), [&](double x) { return x <= 1.0 + tol; });
 }
 
-/// Whether the zonotope with the generators G (n, m) (columns), of the center offset first, lies in
-/// the ball of the ellipsoid norm of E, up to tol: no point G nu, |nu|_inf <= 1, is farther out.
-/// A search over the signs of the generators, longest first; `rest` is the sum of the norms
-/// of the generators not yet assigned, the most the partial sum can still grow.
+/// Whether the zonotope with the generators G (n, m) lies in the ball of the ellipsoid norm of E,
+/// up to tol: a search over the signs of the generators, longest first.
 bool aux_inside(const Ellipsoid &E, const Tensor &G, const std::vector<double> &norms,
                 const std::vector<int64_t> &order, std::size_t next, const Tensor &sum, double rest,
                 double tol) {
@@ -176,6 +174,7 @@ bool Ellipsoid::contains(const Ellipsoid &S, const std::string &method, Tol tol_
         return *done;
     if (priv_is_empty(S)) return true;
     if (s_point) return aux_contains_points(*this, S.q(), tol);
+    // an ellipsoid in an ellipsoid needs an SDP
     CORA_FAIL(
         Error::not_supported,
         "contains: an ellipsoid in an ellipsoid is decided by an SDP, which is not available");

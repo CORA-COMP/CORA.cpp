@@ -38,6 +38,7 @@ void is_intersecting_compares_the_bounds(const std::string &b) {
           b + ": a gap of 1e-9 within tol 1e-8 (CORA's default)");
     check(!I.is_intersecting(Interval(column({2.0 + 1e-9, 0.0}), column({3.0, 1.0})), 0.0),
           b + ": tol 0 is strict");
+    // an empty interval meets nothing
     check(!I.is_intersecting(Interval::empty(2)) && !Interval::empty(2).is_intersecting(I),
           b + ": an empty interval meets nothing");
 }

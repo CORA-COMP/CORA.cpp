@@ -91,6 +91,7 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
             const std::vector<double> d = x[k].data();
             for (int j = 0; j < 30; ++j) {
                 outside += !in_box(R.time_interval[step], d, 30, j, 1e-9);
+                // every sampled trajectory stays in its enclosures
                 if (k % 5 == 0) outside += !in_box(R.time_point[k / 5], d, 30, j, 1e-9);
             }
         }
@@ -122,6 +123,7 @@ void the_zonotope_order_limits_the_generators(const std::string &b) {
     check(most <= 3 * 2, b + ": at most order * n = 6 generators, found " + std::to_string(most));
 }
 
+// wrong arguments are described
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinearSys sys = van_der_pol();
     const Zonotope X0 = van_der_pol_start();
@@ -140,6 +142,7 @@ void wrong_arguments_are_described(const std::string &b) {
           }),
           b + ": a set of another dimension");
     check(test::throws([&] {
+              // a refused option
               sys.reach(
                   {.initial_set = X0, .t_final = 1.0},
                   alg::Linearization{.time_step = 0.01, .taylor_terms = 4, .zonotope_order = 0});
@@ -168,6 +171,7 @@ void checks_and_their_switch() {
     const Tensor on =
         sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back().center();
     ChecksScope off(false);
+    // the same with the checks off
     check(test::close(
               sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back().center(),
               on, 0),

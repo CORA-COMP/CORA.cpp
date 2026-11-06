@@ -73,6 +73,7 @@ void shrinks_with_the_time_step(const std::string &b) {
     for (const double dt : {0.4, 0.2, 0.1, 0.05, 0.025}) {
         const double size = max_abs(sys.correction_matrix_input(dt, 8).rad());
         check(size < previous, b + ": G did not shrink at dt = " + std::to_string(dt));
+        // the generators shrink with the time step
         previous = size;
     }
 }

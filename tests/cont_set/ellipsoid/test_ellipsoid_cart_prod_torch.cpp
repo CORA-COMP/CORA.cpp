@@ -37,6 +37,7 @@ int main() {
     test::gradcheck(
         "cart_prod (ellipsoid)",
         [](const Inputs &x) {
+            // the gradient of the product
             return test::parts(test::ellipsoid_of(x, 0).cart_prod(test::ellipsoid_of(x, 2)));
         },
         y);

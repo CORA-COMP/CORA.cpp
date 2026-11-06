@@ -112,8 +112,7 @@ Tensor aux_scalings(const std::string &method, const Zonotope &minuend, const Zo
         if (const auto alpha = aux_solve(f, S, b)) return row(*alpha);
         aux_empty("the inner approximation does not exist");
     }
-    // "outer": each offset tightened to the maximum of its row over the polytope; "outer:coarse"
-    // keeps them
+    // "outer": each offset tightened to its row's maximum over the polytope; "outer:coarse" not
     Tensor offsets = K_new;
     if (method == "outer") {
         const HostMatrix H = aux_host(Tensor::concat({C, C.negative()}, 0));

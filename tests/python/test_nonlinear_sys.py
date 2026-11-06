@@ -17,12 +17,14 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
@@ -66,6 +68,7 @@ class Expressions(unittest.TestCase):
 
 
 class Simulate(unittest.TestCase):
+    # the harmonic oscillator
     def test_follows_the_harmonic_oscillator(self):
         sys = cora.NonlinearSys(lambda x: [x[1], -x[0]], 2)
         x = sys.simulate(cora.Tensor([[1.0], [0.0]]), time_step=0.1, t_final=2.0)
@@ -89,6 +92,7 @@ class Simulate(unittest.TestCase):
 class ReachSet(unittest.TestCase):
     def test_simulations_stay_in_the_enclosures(self):
         R = van_der_pol().reach(start(), time_step=0.005, t_final=1.0)
+        # random simulations stay in the reachable sets
         x = np.asarray(van_der_pol().simulate_random(start(), points=20, time_step=0.005, t_final=1.0,
                                                      rng=cora.Rng(3)))
         self.assertEqual(len(R.time_point), len(R.time_interval) + 1)
@@ -112,6 +116,7 @@ class ReachSet(unittest.TestCase):
         self.assertEqual(np.asarray(R.generators).shape, (3, 6))
         for k in range(20):
             d = torch.randn(3, dtype=torch.float64, generator=torch.Generator().manual_seed(k))
+            # the support functions of the reachable set
             self.assertGreaterEqual(float(R.support_function(d)), float(Z.support_function(d)) - 1e-9)
 
 

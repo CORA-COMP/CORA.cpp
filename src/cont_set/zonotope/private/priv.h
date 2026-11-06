@@ -54,10 +54,8 @@ using QuadRow = std::pair<Tensor, Tensor>;
 /// in the order of MATLAB's column-major vector.
 QuadRow priv_quad_map_single_row(const Tensor &M, int64_t N);
 
-/// The zonotope of CORA's 'linprog' union: the iterative enclosure `iterative` with unit generators
-/// scaled and the center moved, by a linear program, to the least that still cover every set along
-/// the facet normals of the enclosure; support(A) is the largest support value of the sets along
-/// each row of A (k, n), a column (k, 1).
+/// The zonotope of CORA's 'linprog' union: the iterative enclosure with unit generators scaled
+/// and the center moved, by a linear program, to cover every set along its facet normals.
 Zonotope priv_union_linprog(const Zonotope &iterative,
                             const std::function<Tensor(const Tensor &)> &support);
 /// The most generators whose 2^m corners a containment test visits.

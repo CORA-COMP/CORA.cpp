@@ -11,6 +11,7 @@ import unittest
 
 import matplotlib
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -45,6 +46,7 @@ class Subplots(unittest.TestCase):
         cora.plot(self.X0, ax=fig[0, 0])
         cora.plot(self.X0, ax=fig[0, 0])
         cora.plot(self.X0, ax=fig[0, 1])
+        # cells hold the patches
         self.assertEqual(len(fig[0, 0].patches), 2)
         grid = fig.core()
         self.assertEqual([len(grid.at(0, c).layers()) for c in range(2)], [2, 1])
@@ -68,6 +70,7 @@ class Subplots(unittest.TestCase):
         self.assertEqual(fig[0, 1].name, "3d")
         Z = cora.Zonotope(cora.zeros(3), cora.eye(3))
         cora.plot(Z, dims=(0, 1, 2), ax=fig[0, 1])
+        # a 3-D cell
         self.assertEqual(fig.core().at(0, 1).dimension, 3)
         self.assertEqual(cora.subplots(1, 1, projection="3d")[0, 0].name, "3d")
 
@@ -91,6 +94,7 @@ class Subplots(unittest.TestCase):
         self.assertEqual(tuple(cell.xlim), (-1.0, 3.0))
         self.assertIsNone(grid.at(0, 1).xlim)
 
+    # a matplotlib figure becomes a CORA figure
     def test_a_matplotlib_figure_becomes_a_cora_figure(self):
         mpl_figure, axes = plt.subplots(2, 2)
         cora.plot(self.X0, ax=axes[1, 0])

@@ -83,6 +83,7 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
             for (int k = 0; k < n; ++k)
                 z[i] += x.data()[k] * x.matrix_transpose().matmul(T[i][k]).matmul(x).item();
         for (int t = 0; t < 10; ++t) {
+            // mapped points stay in the enclosure
             const std::vector<double> d = test::random_direction(rng, 2);
             check(d[0] * z[0] + d[1] * z[1] <= test::support(R, d) + 1e-9,
                   b + ": a mapped point leaves the enclosure");

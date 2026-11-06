@@ -48,6 +48,7 @@ void tensors_stay_on_their_own_backend() {
                   alg::Standard{.time_step = 0.1, .taylor_terms = 6});
     }),
           "reach on eigen, torch current");
+    // a torch specification builds
     check(!throws([&] { Specification::safe_set(Tensor({1.0, 0.0}), 9.0); }),
           "a torch spec builds");
     set_default_backend("eigen");

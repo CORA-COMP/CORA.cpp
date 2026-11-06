@@ -11,6 +11,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -72,6 +73,7 @@ class ToleranceTest(unittest.TestCase):
             with cora.tolerance(1e-8):
                 self.assertTrue(cora.contains(Z, Z))
         self.assertTrue(Z.contains(Z))
+        # a negative tolerance
         with self.assertRaises(ValueError):
             I.contains(np.array([[0.5]]), tol=-1.0)
         with cora.checks(False):
@@ -114,6 +116,7 @@ class ToleranceTest(unittest.TestCase):
         self.assertEqual(seen, [None, 1e-4])
 
 
+# run the tests
 if __name__ == "__main__":
     unittest.main()
 

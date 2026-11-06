@@ -29,6 +29,8 @@ namespace cora {
 
 namespace {
 
+// Helpers -----------------------------------------------------------------------------------------
+
 template <class T>
 using RowMat = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 template <class T>
@@ -83,8 +85,7 @@ void aux_products(const T *a, const Shape &sa, const T *b, const Shape &sb, T *o
         const auto [left, right] = bp.at(z);
         aux_product(a + left * n * k, b + right * k * m, out + z * n * m, n, k, m);
     };
-    // work Eigen would not split anyway runs here, without asking for threads (the first ask reads
-    // the CPU topology)
+    // work Eigen would not split anyway runs here, without asking for threads
     if (work < kSerialWork) {
         for (int64_t z = 0; z < bp.batch.numel(); ++z) product(z);
         return;
@@ -193,8 +194,7 @@ zonotope_linear_map(const HostTensor<T> &M, const HostTensor<T> &c, const HostTe
     return {matmul(M, c), matmul(M, G)};
 }
 
-// With M+ = max(M, 0) and M- = min(M, 0): I M = [inf M+ + sup M-, sup M+ + inf M-], and
-// M I = [M+ inf + M- sup, M+ sup + M- inf]: each term of CORA's sum is the same rounded product.
+// With M+ = max(M, 0), M- = min(M, 0): I M = [inf M+ + sup M-, sup M+ + inf M-]; M I likewise.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
                                                     const HostTensor<T> &sup,
@@ -228,8 +228,7 @@ std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
     return {lo, hi};
 }
 
-// T = (inf + sup) / 2 and S = (sup - inf) / 2 in scratch memory, then T c, T G and the box of
-// S times the row sums of |[c G]|, written straight into the results.
+// T = (inf + sup) / 2, S = (sup - inf) / 2 in scratch memory, then T c, T G, the box of S |[c G]|.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const HostTensor<T> &c,
@@ -286,6 +285,7 @@ zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
         }
         row[2 * m] = (c1.p[i] - c2.p[i]) * T(0.5);
     }
+    // the center and the generators
     return {c, G};
 }
 

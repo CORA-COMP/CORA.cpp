@@ -113,6 +113,7 @@ void checks_and_their_switch() {
           "contains: a batch");
     const bool on = Z.contains(0.5 * Z);
     ChecksScope off(false);
+    // the same with the checks off
     check(Z.contains(0.5 * Z) == on, "contains: the same with the checks off");
 }
 

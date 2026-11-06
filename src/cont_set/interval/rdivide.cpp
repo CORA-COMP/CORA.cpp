@@ -56,6 +56,8 @@ bool aux_fits(const Tensor &n, const Tensor &bounds) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Interval by numbers -----------------------------------------------------------------------------
+
 Interval Interval::rdivide(const Tensor &denominator) const {
     detail::Entry entry;
     CORA_CHECK(priv_broadcastable(inf_.shape(), denominator.shape()), Error::special_error, [&] {
@@ -69,6 +71,8 @@ Interval Interval::rdivide(const Tensor &denominator) const {
     priv_check_nan("rdivide", lo, hi, "inf ~= 0 && sup ~= 0");
     return {lo, hi};
 }
+
+// Numbers by interval -----------------------------------------------------------------------------
 
 Interval Interval::rdivide(const Tensor &numerator, const Interval &denominator) {
     detail::Entry entry;

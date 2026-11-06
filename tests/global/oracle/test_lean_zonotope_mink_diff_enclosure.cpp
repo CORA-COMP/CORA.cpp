@@ -46,6 +46,7 @@ int main() {
         }
         test::check(certified > 0, "zonotope.minkDiff: the oracle certifies some differences");
     });
+    // the result
     return test::finish("lean zonotope mink_diff enclosure");
 }
 

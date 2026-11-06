@@ -35,6 +35,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -75,6 +76,7 @@ class Structure(unittest.TestCase):
             cora.Interval.vertcat([a, M])
 
     def test_sum_and_triangles(self):
+        # sums and triangles
         M = matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]])
         np.testing.assert_array_equal(M.sum(1).inf, [[5.0, 7.0, 9.0]])
         np.testing.assert_array_equal(M.sum(dim=2).sup, [9.0, 18.0])
@@ -97,6 +99,7 @@ class Structure(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             I.split(2)
 
+    # functions
     def test_functions(self):
         S = box([0.0, 1.0], [4.0, 9.0]).sqrt()
         np.testing.assert_allclose(S.sup, [2.0, 3.0])
@@ -119,6 +122,7 @@ class Structure(unittest.TestCase):
             self.assertTrue(np.all(R.inf[:, None] <= y + 1e-12) and np.all(y <= R.sup[:, None] + 1e-12), name)
 
     def test_times(self):
+        # products
         A, B = box([1.0, -2.0], [3.0, 4.0]), box([2.0, 0.0], [5.0, 1.0])
         R = A.times(B)
         np.testing.assert_array_equal(R.inf, [2.0, -2.0])
@@ -140,6 +144,7 @@ class Structure(unittest.TestCase):
         np.testing.assert_array_equal(Z.generators, [[1.0, 0.0], [0.0, 0.0], [0.0, 2.0]])
         H = Z.interval()
         np.testing.assert_allclose(H.inf, I.inf)
+        # the zonotope of a box
         np.testing.assert_allclose(H.sup, I.sup)
         with self.assertRaises(cora.errors.WrongValue):
             matrix([[0.0, 1.0]], [[1.0, 2.0]]).zonotope()

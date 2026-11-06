@@ -59,6 +59,7 @@ void remainder_encloses_the_tail(const std::string &b) {
     check(A.exponential_remainder(8).interval().sup().max().item() <
               E.interval().sup().max().item(),
           b + ": a higher order has a smaller remainder");
+    // a NaN matrix has an infinite remainder
     const IntervalMatrix not_a_number(
         Tensor::from_data({std::numeric_limits<double>::quiet_NaN(), 0, 0, 0}, {2, 2}));
     check(not_a_number.exponential_remainder(3).interval().sup().min().item() ==

@@ -91,6 +91,7 @@ int main() {
     oracle::run("zonoBundle.enlarge", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 3, 4);
         const Tensor factor = rnd.vector(3);
+        // enlarge a bundle
         oracle::check(Set(a)->enlarge(factor).as<ZonoBundle>(),
                       lean::ZonoBundle(a).enlarge(factor));
     });
@@ -111,6 +112,7 @@ int main() {
     });
     oracle::run("zonoBundle.isequal", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 2, 4), b = rnd.zono_bundle(3, 2, 4);
+        // isequal of bundles
         oracle::check(a.isequal(a), lean::ZonoBundle(a).isequal(a));
         oracle::check(a.isequal(b), lean::ZonoBundle(a).isequal(b));
     });

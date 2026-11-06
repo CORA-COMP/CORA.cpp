@@ -73,6 +73,7 @@ inline std::string format_matrix(const Tensor &t, const std::string &indent) {
             const std::string cell = format_number(values[at]);
             text += std::string(width - cell.size(), ' ') + cell + (j + 1 < shape[1] ? "  " : "");
         }
+        // each row ends with a line break
         text += "\n";
     }
     return text;

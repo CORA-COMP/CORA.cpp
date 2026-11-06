@@ -65,6 +65,7 @@ void a_shared_tensor_is_copied_first() {
     const Tensor other = t;
     t = std::move(t) + 1.0;
     check(aux_address(t) != aux_address(other), "a shared t gets new memory");
+    // the other holder still sees the values
     check(test::close(other, Tensor::ones({10, 10}), 0), "the other holder still sees ones");
 }
 
@@ -83,8 +84,7 @@ void the_standard_reach_allocates_a_fixed_number_per_step() {
                                      alg::Standard{.time_step = 0.02, .taylor_terms = 4});
         counts[k] = aux_allocations.load() - before;
     }
-    // 100 more steps. A set is 3 allocations (two tensors; a center of 5 entries is inline): per
-    // step the two kept sets, and the parts H and C of the enclosure H + C
+    // 100 more steps. A set is 3 allocations (two tensors; a 5-entry center inline): 2 sets a step
     const double per_step = double(counts[1] - counts[0]) / 100.0;
     std::cout << "allocations per step: " << per_step << "\n";
     check(per_step <= 12.5, "the standard reach allocates at most 12 times per step");

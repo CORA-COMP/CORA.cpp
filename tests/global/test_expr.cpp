@@ -80,6 +80,7 @@ void trigonometric_ranges_know_their_extremes() {
     check(close(upper(s), 1.0) && close(lower(s), 0.0), "sin over [0, 3] peaks at 1");
     check(close(upper(c), 1.0) && close(lower(c), std::cos(1.0)), "cos over [-1, 1] peaks at 0");
     check(close(lower(sin(x).enclose({span(0.0, 7.0)})), -1.0), "a range of more than a period");
+    // an even power
     check(close(lower(pow(x, 2).enclose({span(-2.0, 1.0)})), 0.0), "an even power reaches 0");
 }
 

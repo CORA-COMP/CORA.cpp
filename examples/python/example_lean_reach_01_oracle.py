@@ -18,9 +18,9 @@ Reviewed:      ---
 import os
 import sys
 
+import cora
 import numpy as np
 
-import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 

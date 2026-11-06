@@ -106,6 +106,7 @@ void known_programs() {
           "a lower bound above its upper bound is refused");
 }
 
+// random planar programs
 void random_planar_programs() {
     Rng rng(3);
     for (int trial = 0; trial < 200; ++trial) {

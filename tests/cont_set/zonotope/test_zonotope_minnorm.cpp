@@ -65,6 +65,7 @@ void minnorm_is_the_inradius(const std::string &b) {
         check(least <= val * 1.5 + 1e-9, b + ": sampled directions come close to the inradius");
         double distance = 0;
         for (int i = 0; i < n; ++i) distance += std::pow(x.data()[i] - Z.center().data()[i], 2);
+        // the point lies at the distance
         check(close(std::sqrt(distance), val, 1e-9), b + ": the point lies at distance minnorm");
         check(Z.contains(x, "exact", 1e-9), b + ": and in the zonotope");
     }

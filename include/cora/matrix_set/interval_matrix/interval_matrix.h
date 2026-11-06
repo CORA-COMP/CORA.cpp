@@ -158,12 +158,9 @@ class IntervalMatrix {
     /// the rest of it up to max_order with the remainder.
     ExpmMixedResult expm_mixed(double r, int64_t intermediate_order, int64_t max_order) const;
 
-    /// The exponential by CORA's other algorithms, for the order max_order (>= 1, or >= 0 for
-    /// style 0): style 0 the Taylor series, 1 Horner's scheme, 2 Horner on [A] / 2^p squared p
-    /// times (p = scaling_exponent in 0..20). Nothing (CORA's []) where the infinity norm of A is
-    /// not below max_order + 2 (below (max_order + 2) 2^p for style 2), for a batch where it is
-    /// not for one member. The remainder box is [-f, f] also for a point matrix, where CORA's is
-    /// the point f (docs/cora-differences.md). Another style is refused (CORA gives []).
+    /// The exponential by CORA's other algorithms, for the order max_order: style 0 the Taylor
+    /// series, 1 Horner's scheme, 2 Horner on [A] / 2^p squared p times. Nothing where the norm
+    /// is too large.
     std::optional<IntervalMatrix> expm_taylor_horner_scaling(int64_t max_order, int64_t style,
                                                              int64_t scaling_exponent = 1) const;
 
@@ -175,10 +172,8 @@ class IntervalMatrix {
     /// the rest of it up to max_order with the remainder (CORA's expmIndMixed).
     ExpmMixedResult expm_independent_mixed(int64_t intermediate_order, int64_t max_order) const;
 
-    /// CORA's closed-form bound (..., 1, 1) of the infinity norm of the exponential's remainder
-    /// at the time t (expmNormInf), and its matrix bound (..., n, n) of the absolute value
-    /// (expmAbsoluteBound); the latter for square A with the spectral radii of |C| t / 2 and
-    /// (|C| + S) t / 2 below 1, C the center and S the radius.
+    /// CORA's closed-form bound of the infinity norm of the exponential's remainder at time t
+    /// (expmNormInf), and its matrix bound (expmAbsoluteBound) for square A.
     Tensor expm_norm_infinity(double t) const;
     Tensor expm_absolute_bound(double t) const;
 

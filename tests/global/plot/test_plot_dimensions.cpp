@@ -111,6 +111,7 @@ void a_reach_set_over_time(const std::string &b) {
     check(tp.layers()[0].polygons.size() == R.time_point.size() && !tp.layers()[0].filled &&
               tp.layers()[0].polygons[0].size() == 2 && tp.layers()[0].polygons[0][0][0] == 0,
           b + ": time points are vertical lines at their times");
+    // every second set, not united
     Figure steps;
     plot_over_time(steps, R, 0, {.unify = false, .step = 2});
     check(steps.layers()[0].polygons.size() == (R.time_interval.size() + 1) / 2,
@@ -132,6 +133,7 @@ void simulations_over_time(const std::string &b) {
     check(fig.layers().size() == 3 && fig.layers()[0].kind == Figure::Kind::polyline,
           b + ": a line per trajectory");
     check(close(fig.layers()[0].polygons[0].back()[0], 1.0), b + ": the last point is at t_final");
+    // invalid input is refused
     check(test::throws([&] { plot_over_time(fig, x, 1, 0.0); }), b + ": a time step is positive");
     check(test::throws([&] { plot_over_time(fig, {}, 1, 0.25); }), b + ": no points");
 }

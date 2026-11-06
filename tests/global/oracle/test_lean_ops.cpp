@@ -103,6 +103,7 @@ int main() {
                     aux_shape(A.mpower(3), 2, 2) && aux_shape(A.tril(), 2, 2) &&
                     aux_shape(A.triu(1), 2, 2),
                 "the matrix operations");
+    // the shapes of the box operations
     test::check(aux_shape(lean::Interval::empty(2), 2, 1) &&
                     aux_shape(lean::Interval::origin(3), 3, 1) &&
                     aux_shape(lean::Interval::unbounded(2), 2, 1) &&
@@ -129,6 +130,7 @@ int main() {
                 "intersect_strip");
     test::check(aux_shape(Z.quad_map({M}), 1, 36) && aux_shape(Zin.cub_map({{M, M}}), 1, 125),
                 "quad_map, cub_map");
+    // the shapes of the zonotope operations
     test::check(lean::Zonotope::enclose_many({Z, Z2}, d).has_value() &&
                     aux_shape(lean::Zonotope::enclose_points(aux_matrix(2, 3, {1, 2, 3, 0, -1, 4}),
                                                              aux_matrix(2, 2, {1, 0, 0, 1})),

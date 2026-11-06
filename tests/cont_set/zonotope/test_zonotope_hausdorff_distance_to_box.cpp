@@ -72,6 +72,7 @@ void bounded_by_the_generator_lengths(const std::string &b) {
         check(Z.hausdorff_distance_to_box("exact").item() >= 0, b + ": nonnegative");
     }
     const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    // a box has distance 0
     check(close(box.hausdorff_distance_to_box("exact").item(), 0.0, 1e-12),
           b + ": a box has distance 0");
 }

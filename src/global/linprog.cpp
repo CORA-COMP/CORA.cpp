@@ -107,6 +107,7 @@ int aux_simplex(std::vector<double> &T, std::vector<int> &basis, int m, int W,
         aux_pivot(T, m, W, leave, enter);
         basis[leave] = enter;
     }
+    // the iteration limit is reached
     return 2;
 }
 
@@ -233,8 +234,7 @@ LinProgResult linprog(const LinProg &lp) {
             scale = std::max(scale, std::abs(s.r[i]));
         }
         if (infeasibility > numerics::kSimplexFeasible * scale) return result;
-        // Basic artificials at zero leave the basis if a real column can replace them; a row
-        // without one is redundant and keeps its zero artificial.
+        // Basic artificials at zero leave if a real column replaces them, else the row is dropped.
         for (int i = 0; i < s.m; ++i) {
             if (basis[i] < s.N) continue;
             for (int j = 0; j < s.N; ++j)

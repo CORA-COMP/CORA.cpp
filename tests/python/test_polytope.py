@@ -48,6 +48,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # ----------------------------------------  BEGIN CODE  ---------------------------------------- #
@@ -103,6 +104,7 @@ class Polytope(unittest.TestCase):
         self.assertIn("polytope", repr(H).lower())
         with self.assertRaises(cora.errors.SpecialError):
             _ = H.V
+        # vertex polytopes have no halfspaces
         with self.assertRaises(cora.errors.SpecialError):
             _ = V.A
         with self.assertRaises(cora.errors.WrongInputInConstructor):
@@ -125,6 +127,7 @@ class Polytope(unittest.TestCase):
 
     def test_constraints_interval_box_center(self):
         A, b, Ae, be = square_vertices().constraints()
+        # the halfspaces from the vertices
         self.assertEqual((A.shape, b.shape, Ae.shape, be.shape), ((4, 2), (4,), (0, 2), (0,)))
         self.assertTrue(np.all(A @ SQUARE <= b[:, None] + 1e-9))
         box = square_vertices().interval()
@@ -146,6 +149,7 @@ class Polytope(unittest.TestCase):
         self.assertEqual(P.compact("aligned").A.shape[0], 5)
         self.assertEqual(P.compact("zeros").A.shape[0], 6)
         self.assertEqual(P.compact("A").A.shape[0], 4)
+        # compact
         self.assertEqual(P.compact("AtoAe").A.shape[0], 6)
         self.assertEqual(square_vertices().compact("V").V.shape, (2, 4))
         self.assertEqual(P.compact("all", 1e-6).A.shape[0], 4)
@@ -168,6 +172,7 @@ class Polytope(unittest.TestCase):
             cora.Polytope.inf(2).con_zonotope()
 
     def test_contains(self):
+        # containment
         H, V = square_halfspaces(), square_vertices()
         for P in (H, V):
             self.assertTrue(P.contains(column(0.5, 0.5)))
@@ -189,6 +194,7 @@ class Polytope(unittest.TestCase):
 
     def test_set_operations(self):
         H = square_halfspaces()
+        # intersection
         Q = cora.Polytope(np.vstack([-EYE, EYE]), np.array([-0.5, -0.5, 2.0, 2.0]))
         R = H.intersect(Q)
         self.assertTrue(R.contains(column(0.75, 0.75)))
@@ -209,6 +215,7 @@ class Polytope(unittest.TestCase):
         self.assertEqual(hull.V.shape, (2, 4))
         self.assertTrue(hull.contains(column(1.5, 0.5)))
         self.assertEqual(V1.enclose(V2).V.shape, (2, 4))
+        # convex hull
         self.assertEqual(V1.convex_hull(np.array([2.0, 0.5])).V.shape, (2, 5))
         self.assertEqual(V1.convex_hull(cora.Polytope.empty(2)).V.shape, (2, 4))
         with self.assertRaises(cora.errors.DimensionMismatch):
@@ -231,6 +238,7 @@ class Polytope(unittest.TestCase):
             cora.Polytope.enclose_points(np.zeros((2, 2, 3)))
 
     def test_the_generic_interface(self):
+        # through the registry
         S = cora.intersect(square_halfspaces(), square_halfspaces())
         self.assertIsInstance(S, cora.Polytope)
         self.assertIsInstance(cora.convex_hull(square_vertices(), square_vertices()), cora.Polytope)
@@ -252,6 +260,7 @@ class Polytope(unittest.TestCase):
             np.testing.assert_allclose(H.interval().sup, V.interval().sup, atol=1e-7)
             for probe in rng.uniform(-1.2, 1.2, (30, n)):
                 self.assertEqual(V.contains(probe.reshape(-1, 1)), H.contains(probe.reshape(-1, 1)))
+            # centers
             mean = points.mean(axis=1)
             np.testing.assert_allclose(V.center_by("avg"), mean, atol=1e-12)
             shift = rng.uniform(-1.0, 1.0, (n, 1))
@@ -275,6 +284,7 @@ class Polytope(unittest.TestCase):
         self.assertEqual(V.interval().inf.shape, (3, 2))
 
 
+# run the tests
 if __name__ == "__main__":
     unittest.main()
 

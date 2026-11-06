@@ -21,13 +21,8 @@
 
 namespace cora {
 
-/// The union of the polygons as closed loops: outer boundaries counter-clockwise, holes clockwise,
-/// so that filling them with the nonzero rule gives the union. Polygons (simple, convex or not) may
-/// overlap, touch or share edges; those of fewer than three points are left out. Corners within
-/// `resolution` times the extent of the polygons of the line through their neighbors are dropped
-/// first (that much less exact, and much faster for polygons of many corners). If the boundary
-/// cannot be traced (nearly degenerate input), the polygons are returned as they are,
-/// counter-clockwise.
+/// The union of the polygons as closed loops: outer boundaries counter-clockwise, holes
+/// clockwise; corners within `resolution` of the extent are dropped first.
 std::vector<Polygon> union_polygons(const std::vector<Polygon> &polygons,
                                     double resolution = numerics::kPlotResolution);
 

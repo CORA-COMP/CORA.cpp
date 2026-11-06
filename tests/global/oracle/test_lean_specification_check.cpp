@@ -72,6 +72,7 @@ int main() {
                             const Specification spec = safe ? Specification::safe_set(halfspaces)
                                                             : Specification::unsafe_set(halfspaces);
                             const lean::Tensor LA(A), Lb(b);
+                            // the oracle proves the verdict
                             const bool theirs =
                                 box ? lean::check_specification(kind, LA, Lb, lean::Interval(I))
                                     : lean::check_specification(kind, LA, Lb, lean::Zonotope(Z));

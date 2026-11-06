@@ -112,6 +112,7 @@ void adaptive_reach_matches_matlab() {
         {-0.0229359564228, -0.0419955611265},  {-0.013836463833, -0.0216903397491},
         {0.000769450602434, -0.00121676992421}};
     const double sup[13][2] = {
+        // the supremum of the expected set
         {4.97253744676, 2.48190073449},        {4.05691829545, 1.9944844212},
         {3.2526034388, 1.57112067213},         {2.56287256743, 1.21417721633},
         {1.94906605725, 0.898694532973},       {1.4859286406, 0.674454157148},
@@ -129,6 +130,7 @@ void adaptive_reach_matches_matlab() {
         const Interval I = R.time_interval[k]->interval();
         check(test::close(I.inf(), std::vector<double>{inf[k][0], inf[k][1]}, 1e-8),
               w + "hull lower");
+        // the hull and the supremum of the reference
         check(test::close(I.sup(), std::vector<double>{sup[k][0], sup[k][1]}, 1e-8),
               w + "hull upper");
     }
@@ -155,6 +157,7 @@ void adaptive_reach_rand02_matches_matlab() {
                                0.267681938332,
                                0.393286540165,
                                0.403581999332};
+    // end times and errors of the reference
     const double t_end[8] = {0.00463295662498, 0.00926591324997, 0.0463295662498, 0.0957477702496,
                              0.166786438499,   0.275918305666,   0.403581999332,  0.413877458498};
     const double err[8] = {0.00199542719836, 0.00196540474507, 0.00174100142285, 0.00169191394379,
@@ -205,6 +208,7 @@ void refinement_cases_match_matlab() {
     };
     for (const Case &c : cases) {
         const VerifyResult res = r.sys.verify(r.params, c.specs, alg::ReachAvoidZonotope{});
+        // verdicts and iterations of the cases
         check(res.verified == c.verified, std::string(c.name) + ": verdict");
         check(res.iterations == c.iterations,
               std::string(c.name) + ": iterations " + std::to_string(res.iterations));
@@ -224,10 +228,8 @@ void refinement_cases_match_matlab() {
     check(n1.verified && n1.iterations == 1, "large input set, unsafe box");
 }
 
-/// A three-dimensional system with three uncertain inputs and two outputs (the reduction of
-/// the particular solution of U takes place). Reference from MATLAB: A = [-1 -4 0; 4 -1 0; 0 0 -3],
-/// B = I, C = [1 1 0; 0 0 1], R0 = zonotope([1;1;1], 0.1 I), U = zonotope([0.1;0;0.2],
-/// [0.05 0.02 0; 0 0.05 0.01; 0.01 0 0.05]), t_final 2.
+/// A three-dimensional system with three uncertain inputs and two outputs (the reduction of the
+/// particular solution of U takes place), with a reference from MATLAB.
 void reduction_case_matches_matlab() {
     const LinearSys sys(mat(3, 3, {-1, -4, 0, 4, -1, 0, 0, 0, -3}),
                         mat(3, 3, {1, 0, 0, 0, 1, 0, 0, 0, 1}), mat(2, 3, {1, 1, 0, 0, 0, 1}));
@@ -256,6 +258,7 @@ void reduction_case_matches_matlab() {
                                   {1.91667396042, 0.278266894323},
                                   {0.629190269945, 0.146965833889}};
         for (int i = 0; i < 4; ++i) {
+            // each step of the three-dimensional reference
             const int k = step[i];
             const std::string w = "3-dim step " + std::to_string(k + 1) + ": ";
             check(test::close(R.time[k + 1], t_end[i], 1e-9), w + "end time");
@@ -269,8 +272,7 @@ void reduction_case_matches_matlab() {
         }
     }
 
-    // Verdicts and refinements: a far box, a close one (y1 >= 2.35), boxes that take 2 and 14
-    // refinements (the output at time 0 reaches y1 = 2.2), and one that is hit.
+    // Verdicts and refinements: a far box, a close one (y1 >= 2.35), boxes needing 2 and 14, a hit.
     VerifyResult r = sys.verify(params, {unsafe_box(5, 6, 5, 6)}, alg::ReachAvoidZonotope{});
     check(r.verified && r.iterations == 1, "3-dim: far box");
     r = sys.verify(params, {unsafe_box(2.35, 4, -1, 3)}, alg::ReachAvoidZonotope{});

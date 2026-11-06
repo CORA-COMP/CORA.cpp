@@ -45,6 +45,7 @@ void points(const std::string &b) {
     for (const char *method : {"exact:venum", "exact:polymax", "approx"})
         check(H.contains(column({0.5, 0.5}), method) && !H.contains(column({2.0, 0.5}), method),
               b + ": " + method);
+    // the vertex routes
     check(V.contains(column({0.5, 0.5}), "exact:polymax"), b + ": vertices: polymax");
     check(Polytope(Tensor({{1.0, 4.0}})).contains(column({2.0})), b + ": 1D vertices");
     const Polytope eq(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}), Tensor({{1.0, 1.0}}),
@@ -78,6 +79,7 @@ void sets(const std::string &b) {
     check(H.contains(
               Polytope(Tensor({{-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0}}), column({0.0, 0.0, 1.0}))),
           b + ": a halfspace polytope inside");
+    // containment of polytopes and boxes
     check(H.contains(Polytope::empty(2)) && !Polytope::empty(2).contains(H),
           b + ": empty is inside everything");
     check(Polytope::inf(2).contains(H) && !H.contains(Polytope::inf(2)), b + ": R^n");
@@ -110,6 +112,7 @@ void refusals() {
               Error::not_supported),
           "contains: a batch of polytopes");
     ChecksScope off(false);
+    // the same with the checks off
     check(H.contains(column({0.5, 0.5})), "contains: the same with the checks off");
 }
 
@@ -134,6 +137,7 @@ void properties(const std::string &b) {
         }
         check(same, b + ": vertices and halfspaces agree, " + std::to_string(n) + "D");
         const Interval inner(Q.center() - 0.05, Q.center() + 0.05);
+        // a small box about the center
         check(Q.contains(inner), b + ": a small box about the center, " + std::to_string(n) + "D");
     }
 }

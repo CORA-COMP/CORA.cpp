@@ -61,6 +61,7 @@ void checks_and_their_switch() {
     const Tensor on =
         sys.simulate_random(problem, alg::RungeKutta4{.time_step = 0.1}, 2, rng).back();
     ChecksScope off(false);
+    // the same with the checks off
     check(test::close(
               sys.simulate_random(problem, alg::RungeKutta4{.time_step = 0.1}, 2, again).back(), on,
               0),

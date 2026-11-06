@@ -46,6 +46,7 @@ void cells_are_figures_of_their_own(const std::string &b) {
     plot(grid.at(1, 2), shifted(5));
     check(grid.at(0, 0).layers().size() == 1 && grid.at(0, 1).layers().empty(),
           b + ": a plot goes into its cell");
+    // every cell has its own order of colors
     check(grid.at(1, 2).layers()[0].face.hex() == cora_color("CORA:blue").hex(),
           b + ": every cell has its own order of colors");
     check(test::throws([&] { grid.at(2, 0); }) && test::throws([&] { grid.at(0, -1); }),
@@ -67,6 +68,7 @@ void the_grid_is_one_svg(const std::string &b) {
     std::stringstream text;
     text << in.rdbuf();
     check(text.str() == svg, b + ": save writes the same");
+    // an unwritable path
     std::remove(path.c_str());
     check(test::throws([&] { grid.save("/nonexistent-folder/grid.svg"); }),
           b + ": an unwritable path");
@@ -93,6 +95,7 @@ void limits_and_view(const std::string &b) {
           b + ": the extent and a margin of 5%");
     fig.xlim = {{-3.0, 4.0}};
     l = fig.limits();
+    // a fixed limit replaces one axis
     check(close(l.x0, -3) && close(l.x1, 4) && close(l.y1, 1.1),
           b + ": a fixed limit replaces one axis");
     fig.equal_axes = true;

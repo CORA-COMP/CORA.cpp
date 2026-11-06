@@ -17,7 +17,7 @@ Syntax:   X0 = cora.Zonotope(c, G)             c (..., n), G (..., n, m): one se
           sys = cora.LinearSys(A, B, C)        x' = A x + B u, y = C x
           R = sys.reach(initial_set=X0, t_final=2.0, alg="standard", time_step=0.1)
           vdp = cora.NonlinearSys(lambda x: [x[1], (1 - x[0]**2) * x[1] - x[0]], 2)
-          net = cora.NeuralNetwork([(W1, b1), (W2, b2)])      Y = net.evaluate(X) encloses X's outputs
+          net = cora.NeuralNetwork([(W1, b1), (W2, b2)])      Y = net.evaluate(X): X's outputs
           cora.plot(R)                         or R.plot(); cora.subplots(2, 2).to_tikz(...)
 
 Authors:       Claude Sonnet 5.5
@@ -92,6 +92,7 @@ from .extend import register_algorithm
 from .figure import Figure, subplots, to_tikz
 from .plot import plot, plot_over_time, plot_rand_point
 from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
+
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 

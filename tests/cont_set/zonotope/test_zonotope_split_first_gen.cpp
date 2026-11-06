@@ -66,6 +66,7 @@ void halves_cover_the_set(const std::string &b) {
     check(close(lower.center(), l2.center(), 1e-13) &&
               close(upper.generators(), u2.generators(), 1e-13),
           b + ": the generator of the largest score");
+    // the pieces cover the points
     const Tensor points = Z.rand_point(40, rng);
     for (int k = 0; k < 40; ++k) {
         const Tensor p = points.slice(-1, k, k + 1);

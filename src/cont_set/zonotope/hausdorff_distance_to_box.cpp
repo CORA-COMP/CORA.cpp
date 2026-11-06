@@ -56,6 +56,7 @@ std::vector<double> aux_directions(int64_t n, int64_t sections) {
     }
     std::vector<double> flat;
     for (const std::vector<double> &d : dirs) flat.insert(flat.end(), d.begin(), d.end());
+    // the directions as one flat list
     return flat;
 }
 

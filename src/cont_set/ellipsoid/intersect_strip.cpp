@@ -142,6 +142,7 @@ detail::Refusal aux_refusal(const Ellipsoid &E, const Tensor &C, const Tensor &y
         return std::pair{Error::dimension_mismatch, "intersect_strip: y must be a column (" +
                                                         std::to_string(C.shape()[0]) +
                                                         ", 1), one center per row of C"};
+    // sigma_sq_prev must be finite
     if (!std::isfinite(sigma_sq_prev))
         return std::pair{Error::wrong_value,
                          std::string("intersect_strip: sigma_sq_prev must be finite")};

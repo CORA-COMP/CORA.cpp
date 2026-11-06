@@ -13,12 +13,14 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
@@ -76,6 +78,7 @@ class Specification(unittest.TestCase):
         spec = cora.Specification.safe_set(x1(1.0), 1.5)
         self.assertEqual(spec.type, "safe_set")
         ((a, b),) = spec.halfspaces
+        # the halfspace and its type
         np.testing.assert_allclose(a, [1.0, 0.0])
         self.assertEqual(b, 1.5)
         self.assertEqual(cora.Specification.unsafe_set(x1(1.0), 0.0).type, "unsafe_set")
@@ -101,6 +104,7 @@ class Specification(unittest.TestCase):
             cora.Specification.safe_set(np.array([1.0, 0.0]), 1.5).check(self.R.time_interval)
 
 
+# run the tests
 if __name__ == "__main__":
     unittest.main()
 

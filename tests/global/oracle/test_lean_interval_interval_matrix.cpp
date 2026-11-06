@@ -21,8 +21,7 @@ int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("interval.intervalMatrix", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
-            // the oracle's constructor at the center and radius of CORA.cpp (exact doubles); the
-            // center and the radius have their own oracle tests
+            // the oracle's constructor at CORA.cpp's center and radius (exact doubles)
             const Interval I = rnd.box(n);
             const Interval M = Interval::horzcat({I, rnd.box(n), rnd.box(n)});
             for (const Interval &B : {I, M})

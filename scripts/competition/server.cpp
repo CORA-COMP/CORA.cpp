@@ -78,6 +78,7 @@ std::string run_logged(const std::string &params, const std::string &results_fil
 
 int serve(const std::string &srv_dir) {
     {
+        // the pid file lets the harness stop the server
         std::ofstream pid(srv_dir + "/server.pid", std::ios::trunc);
         pid << ::getpid() << "\n";
     }
@@ -101,6 +102,7 @@ int serve(const std::string &srv_dir) {
     while (true) {
         const int conn = ::accept(listener, nullptr, nullptr);
         if (conn < 0) continue;
+        // each request is one line: ping, run or stop
         const std::string request = read_line(conn);
         std::string reply;
         if (request == "ping") {
@@ -110,8 +112,7 @@ int serve(const std::string &srv_dir) {
             if (split == std::string::npos) {
                 reply = "unknown request \"run\"";
             } else {
-                // The instance's own output belongs in the job log, not the daemon's; the
-                // tool scripts print it when the verdict is not `finished`.
+                // The instance's own output belongs in the job log, not the daemon's.
                 std::ostringstream log;
                 reply = run_logged(request.substr(split + 1), request.substr(4, split - 4), log);
                 std::ofstream(log_path, std::ios::trunc) << log.str();

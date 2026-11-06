@@ -57,6 +57,7 @@ Row aux_least_squares(const Columns &E, const std::vector<std::size_t> &passive,
             continue;
         }
         R[j][j] = norm;
+        // normalize the column, then keep it as a column of Q
         for (double &t : v) t /= norm;
         q.push_back(v);
     }

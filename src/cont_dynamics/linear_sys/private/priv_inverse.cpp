@@ -55,6 +55,7 @@ std::optional<Tensor> priv_inverse(const Tensor &A) {
             for (int64_t c = 0; c < n; ++c) inv[i * n + c] -= f * inv[j * n + c];
         }
     }
+    // the inverse as a tensor of the shape of A
     return Tensor::like(A, inv, {n, n});
 }
 

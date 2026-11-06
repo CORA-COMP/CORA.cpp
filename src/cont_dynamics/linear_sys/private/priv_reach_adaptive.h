@@ -63,10 +63,8 @@ struct AdaptiveResult {
     bool internal_checks_ok = true; ///< the error bookkeeping was consistent
 };
 
-/// The reachable output sets with errors below `error` (Hausdorff distance to the exact
-/// output sets). With verify, the time horizon ends at the last time where some specification
-/// is unverified (spec_times, one VerifyTime per specification) and steps where all are verified
-/// are skipped (no sets). savedata is read at the start and extended.
+/// The reachable output sets with errors below `error` (Hausdorff distance to the exact output
+/// sets). With verify, steps where all specifications are verified are skipped.
 AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &params,
                                    const std::vector<VerifyTime> &spec_times, double error,
                                    bool verify, AdaptiveSaveData &savedata);

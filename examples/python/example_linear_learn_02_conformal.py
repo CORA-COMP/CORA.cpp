@@ -20,9 +20,9 @@ Reviewed:      ---
 import argparse
 import math
 
+import cora
 import torch
 
-import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
@@ -129,6 +129,7 @@ histogram.set_xlabel("largest distance to the reachable boxes")
 histogram.legend(fontsize=8)
 
 if args.save:
+    # save to the file given with --save, else show the window
     plt.savefig(args.save, dpi=130, bbox_inches="tight")
 else:
     plt.show()

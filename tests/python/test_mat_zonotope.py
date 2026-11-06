@@ -49,6 +49,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -101,6 +102,7 @@ class Construction(unittest.TestCase):
 
 
 class Conversions(unittest.TestCase):
+    # the zonotope of the matrices
     def test_zonotope(self):
         Z = EXAMPLE.zonotope()
         np.testing.assert_array_equal(Z.center, [1, 3, 2, 4])
@@ -125,6 +127,7 @@ class Conversions(unittest.TestCase):
 
 
 class Predicates(unittest.TestCase):
+    # members are contained
     def test_contains(self):
         self.assertTrue(EXAMPLE.contains(member(EXAMPLE, np.array([0.5, -0.3])), tol=1e-9))
         self.assertTrue(EXAMPLE.contains(member(EXAMPLE, np.array([1.0, 1.0])), tol=1e-9))
@@ -148,6 +151,7 @@ class Products(unittest.TestCase):
         S = EXAMPLE + EXAMPLE
         np.testing.assert_array_equal(S.center, [[2, 4], [6, 8]])
         self.assertEqual(S.num_generators, 4)
+        # sums with matrices
         np.testing.assert_array_equal((EXAMPLE + np.ones((2, 2))).center, [[2, 3], [4, 5]])
         np.testing.assert_array_equal((np.ones((2, 2)) + EXAMPLE).center, [[2, 3], [4, 5]])
         M = np.array([[1.0, 1.0], [0.0, 1.0]])
@@ -169,6 +173,7 @@ class Products(unittest.TestCase):
         rng = np.random.default_rng(3)
         Q, R = random_set(rng, 3, 2, 0.5), random_set(rng, 3, 3, 0.5)
         P = Q @ R
+        # the weights of the product generators
         ca, cb = rng.uniform(-1, 1, 2), rng.uniform(-1, 1, 3)
         # the center, G_A(i) C_B, C_A G_B(j), G_A(i) G_B(j) with j fastest
         weights = np.r_[1.0, ca, cb, np.outer(ca, cb).reshape(-1)]
@@ -194,6 +199,7 @@ class Products(unittest.TestCase):
         P0 = EXAMPLE ** 0
         np.testing.assert_array_equal(P0.center, np.eye(2))
         self.assertEqual(P0.num_generators, 0)
+        # powers
         self.assertEqual((EXAMPLE ** 2).num_generators, 8)
         np.testing.assert_array_equal((EXAMPLE ** 2).center, (EXAMPLE @ EXAMPLE).center)
         powers = EXAMPLE.powers(3)
@@ -216,6 +222,7 @@ class Exponential(unittest.TestCase):
         A = cora.MatZonotope(np.array([[2.0]]), np.array([[[1.0]]]))
         sq, H = A.dependent_terms(1.0)
         np.testing.assert_allclose(sq.center, [[4.5]])
+        # squares and dependent terms
         np.testing.assert_allclose(sq.generators.reshape(-1), [4, 0.5])
         np.testing.assert_allclose(H.center, [[5.25]])
         np.testing.assert_allclose(H.generators.reshape(-1), [3, 0.25])
@@ -237,6 +244,7 @@ class Exponential(unittest.TestCase):
             for _ in range(20):
                 self.assertTrue(box.contains(exponential(member(A, rng.uniform(-1, 1, 2))), tol=1e-12))
         np.testing.assert_array_equal(A.expm().center, A.expm_independent(10).center)
+        # invalid orders
         with self.assertRaises(cora.errors.WrongValue):
             A.expm(-1)
         with self.assertRaises(cora.errors.DimensionMismatch):
@@ -259,6 +267,7 @@ class Exponential(unittest.TestCase):
     def test_expm_one_param(self):
         A = cora.MatZonotope(np.array([[1.0]]), np.array([[[1.0]]]))
         R = A.expm_one_param(1.0, 2)
+        # the exponential of one parameter
         np.testing.assert_allclose(R.enclosure.center, [[2.75]])
         np.testing.assert_allclose(R.enclosure.generators.reshape(-1), [2, 0.25])
         self.assertIsNone(R.constant_input)
@@ -281,6 +290,7 @@ class Exponential(unittest.TestCase):
             EXAMPLE.expm_one_param(1.0, 3)
 
 
+# gradients
 class Gradients(unittest.TestCase):
     """Autograd through the operations equals central differences."""
 
@@ -311,6 +321,7 @@ class Gradients(unittest.TestCase):
         center = [[1.0, 0.4], [0.3, 1.2]]
         generators = [[[0.2, 0.1], [0.05, 0.3]], [[0.1, -0.2], [0.15, 0.1]]]
         self.check(lambda A: A.center, center, generators)
+        # gradients of the operations
         self.check(lambda A: A.transpose(), center, generators)
         self.check(lambda A: A + A, center, generators)
         self.check(lambda A: A @ A, center, generators)

@@ -15,6 +15,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 
@@ -44,6 +45,7 @@ class Verify(unittest.TestCase):
             self.assertTrue(res.falsification is None or isinstance(res.falsification, cora.Falsification))
 
     def test_a_missing_specification_list_is_described(self):
+        # verify needs the specifications
         with self.assertRaisesRegex(ValueError, "specs"):
             self.sys.verify(**self.problem)
 

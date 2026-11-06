@@ -39,6 +39,7 @@ int main() {
         const GradientsScope strict;
         check(test::raises([&] { (void)x.argsort(-1); }, Error::not_supported),
               "strict gradients: an error");
+        // a differentiable operation is fine in the strict scope
         check(x.abs().requires_grad(), "a differentiable operation is fine when strict");
     }
     check(!x.argsort(-1).requires_grad(), "outside the scope, a warning again (already given)");

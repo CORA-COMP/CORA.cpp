@@ -41,8 +41,7 @@ Zonotope Zonotope::linear_map(const Interval &I) const {
                           " columns (the dimension of Z), got the shape " +
                           shape_text(I.inf().shape());
                });
-    // The center matrix maps Z; the radius adds one axis-aligned generator per dimension, of how
-    // far it can move a point of Z: rad(I) (|c| + sum_j |G_j|).
+    // The center matrix maps Z; the radius adds one axis-aligned generator per dimension.
     auto [c, G] = Tensor::zonotope_interval_map(I.inf(), I.sup(), c_, G_);
     return {std::move(c), std::move(G)};
 }

@@ -87,6 +87,7 @@ void bounds_property(const std::string &b) {
         check(fm.l.less_equal(ex.l + 1e-9).min().item() == 1.0 &&
                   fm.u.greater_equal(ex.u - 1e-9).min().item() == 1.0,
               b + ": the approximation holds the exact box");
+        // the factor bounds agree
         check(fm.bl.less_equal(ex.bl + 1e-9).min().item() == 1.0,
               b + ": and the exact factor bounds");
     }
@@ -113,6 +114,7 @@ void checks_and_their_switch() {
                        Error::wrong_field_value),
           "approximate_bounds: an unknown method");
     bad.method = "dual-iter";
+    // an unported method
     check(test::raises([&] { ConZonotope::approximate_bounds(c, G, A, rhs, std::nullopt, 1, bad); },
                        Error::not_supported),
           "approximate_bounds: dual-iter is not ported");

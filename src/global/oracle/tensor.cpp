@@ -70,8 +70,7 @@ std::string aux_encode_decimal(double x) {
     return (negative ? "-" : "") + digits + "*10^" + std::to_string(exponent);
 }
 
-// The double of "m*2^e" or (fixedpoint) "m*10^e"; throws if it is not exactly one. The oracle
-// prints an unbounded side of a box as "-inf" or "inf".
+// The double of "m*2^e" or (fixedpoint) "m*10^e"; throws unless exact; an unbounded side is "inf".
 double aux_decode(const std::string &s) {
     if (s == "inf" || s == "-inf")
         return s[0] == '-' ? -std::numeric_limits<double>::infinity()

@@ -82,6 +82,7 @@ void matrices_and_numbers(const std::string &b) {
     const MatZonotope Q = test::random_set(rng, 3, 2, 0.5);
     const Tensor N = test::member(test::random_set(rng, 3, 1, 0.5), {0.3});
     const std::vector<double> coeff = test::coefficients(rng, 2);
+    // members times a matrix
     check(close(test::member(Q.matmul(N), coeff), test::member(Q, coeff).matmul(N), 1e-12) &&
               close(test::member(MatZonotope::matmul(N, Q), coeff),
                     N.matmul(test::member(Q, coeff)), 1e-12),
@@ -102,8 +103,7 @@ void product_with_a_zonotope(const std::string &b) {
     const MatZonotope Q = test::random_set(rng, 3, 2, 0.5);
     const Zonotope W(test::column({1, -1, 2}), test::matrix({1, 0.5, 0, 1, 2, -1}, 3, 2));
     const std::vector<double> cq = test::coefficients(rng, 2), cw = test::coefficients(rng, 2);
-    // the point of the product for the coefficients cq of Q, cw of W: the products Gi g_j weigh
-    // cq_i cw_j
+    // the point of the product for the coefficients cq of Q, cw of W: Gi g_j weigh cq_i cw_j
     const Zonotope R = Q.matmul(W);
     std::vector<double> weights;
     weights.insert(weights.end(), cw.begin(), cw.end());
@@ -141,6 +141,7 @@ void checks_and_their_switch() {
           "matmul: a 1 x 1 set as a factor");
     check(test::raises([&] { A.matmul(scalar); }, Error::not_supported),
           "matmul: a 1 x 1 set on the right");
+    // a 1 x 1 set times a zonotope
     check(test::raises(
               [&] { scalar.matmul(Zonotope(test::column({1, 2}), test::matrix({1, 1}, 2, 1))); },
               Error::not_supported),

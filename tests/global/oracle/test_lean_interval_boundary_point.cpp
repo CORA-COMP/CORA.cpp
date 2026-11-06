@@ -23,8 +23,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
             const Tensor dir = rnd.vector(n), start = I.center();
-            // the oracle's answer is a box around the point; the point lies in it, and at nearest
-            // its bounds equal the point
+            // the oracle's answer is a box around the point; the point is in it
             const Tensor x = I.boundary_point(dir, start);
             const std::optional<lean::Interval> box = lean::Interval(I).boundary_point(
                 lean::Tensor::from(dir), lean::Tensor::from(start));

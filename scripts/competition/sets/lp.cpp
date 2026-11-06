@@ -65,6 +65,7 @@ bool contains_lp(const Eigen::Ref<const Eigen::MatrixXd> &g,
         }
     }
 
+    // solve with the simplex method, quietly
     glp_smcp options;
     glp_init_smcp(&options);
     options.msg_lev = GLP_MSG_OFF;

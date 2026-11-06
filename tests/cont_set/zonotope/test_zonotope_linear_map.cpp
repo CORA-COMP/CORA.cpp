@@ -66,6 +66,7 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
     }
 
     const Zonotope wide = Z.linear_map(Interval(C - R, C + R));
+    // one generator per dimension
     check(wide.generators().shape() == std::vector<int64_t>({n, m + n}),
           b + ": one generator per dimension");
     for (int trial = 0; trial < 20; ++trial) {

@@ -26,6 +26,7 @@ import warnings
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -64,6 +65,7 @@ class TensorMultiplication(unittest.TestCase):
         for _ in range(20):
             b = rng.uniform(-1, 1, m)
             x = G @ b
+            # the tensor product of three points
             image = np.einsum("ijkl,j,k,l->i", M, x, x, x)
             beta = np.array([b[i] * b[j] * b[k] for i, j, k in comb])
             np.testing.assert_allclose(H @ beta, image, atol=1e-9)
@@ -86,6 +88,7 @@ class Underapproximate(unittest.TestCase):
     def test_cora_unit_test(self):
         Z = zonotope([-4, 1], [[-3, -2, -1], [2, 3, 4]])
         np.testing.assert_allclose(Z.underapproximate(), [[-10, 2, -10, 2], [10, -8, 10, -8]], atol=1e-12)
+        # the under-approximation
         np.testing.assert_allclose(Z.underapproximate(np.array([[1.0, 1], [0, 1]])),
                                    [[2, -10, -4, -4], [-8, 10, 6, -4]], atol=1e-12)
 
@@ -110,6 +113,7 @@ class Volume(unittest.TestCase):
     def test_cora_unit_test(self):
         Z = zonotope([-4, 1], [[-3, -2, -1], [2, 3, 4]])
         self.assertAlmostEqual(Z.volume(), 80)
+        # volumes
         self.assertAlmostEqual(Z.volume("alamo"), 48.9897948556635612)
 
     def test_degenerate(self):
@@ -144,6 +148,7 @@ class Volume(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             Z.volume("exact", 0)
         with self.assertRaises(cora.errors.NotSupported):
+            # reduce volumes
             Z.volume("reduce", 1)
 
 
@@ -169,6 +174,7 @@ class ZonotopeNorm(unittest.TestCase):
             np.testing.assert_allclose(G @ beta, p, atol=1e-8)
             self.assertAlmostEqual(np.abs(beta).max(), value, places=8)
 
+    # a shifted zonotope warns
     def test_a_shifted_zonotope_warns(self):
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")

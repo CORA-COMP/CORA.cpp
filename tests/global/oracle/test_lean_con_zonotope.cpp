@@ -78,8 +78,7 @@ int main() {
         const lean::ConZonotope theirs = lean::ConZonotope(a).intersect(b);
         if (oracle::mode() == oracle::Mode::sound)
             return oracle::check_enclosed("and", mine, theirs);
-        // CORALean keeps the constraints of both sets as equalities, the agreement of the points
-        // as the two inequalities c1 + G1 x1 - c2 - G2 x2 <= 0 and >= 0, CORA as equalities
+        // CORALean keeps the constraints as equalities, the points' agreement as two inequalities
         const ConZonotope their = theirs.nominal();
         const auto [A, b_ineq] = theirs.inequalities();
         const int64_t pe = their.A().shape()[0], n = mine.dim();
@@ -100,6 +99,7 @@ int main() {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2), b = rnd.con_zonotope(3, 4, 1);
         aux_check_hull(a.convex_hull(b), lean::ConZonotope(a).convex_hull(b));
     });
+    // constrained intersection
     oracle::run("conZonotope.conIntersect", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2), b = rnd.con_zonotope(2, 4, 1);
         const Tensor R = rnd.matrix(2, 3);
@@ -120,6 +120,7 @@ int main() {
         const Tensor M = rnd.matrix(3, 3);
         aux_check_hull(a.enclose(M, b), lean::ConZonotope(a).enclose(M, b));
     });
+    // strip intersection
     oracle::run("conZonotope.intersectStrip", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
         const Tensor C = rnd.matrix(2, 3), y = rnd.vector(2), L = rnd.matrix(3, 2);
@@ -140,6 +141,7 @@ int main() {
     });
     oracle::run("conZonotope.interval", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
+        // interval hull and bounds
         oracle::check_enclosed("interval", a.interval(), lean::ConZonotope(a).interval());
     });
     oracle::run("conZonotope.isBounded", [](oracle::Random &rnd) {

@@ -62,6 +62,7 @@ void cos_is_the_range(const std::string &b) {
         const double inf = R.inf().data()[0], sup = R.sup().data()[0];
         check(inf <= low + 1e-12 && sup >= high - 1e-12, b + ": the samples are in the result");
         check(low - inf < 1e-3 && sup - high < 1e-3, b + ": the result is the range");
+        // the result is within [-1, 1]
         check(inf >= -1 - 1e-15 && sup <= 1 + 1e-15, b + ": within [-1, 1]");
     }
 }

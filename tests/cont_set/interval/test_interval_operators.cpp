@@ -43,6 +43,7 @@ void numbers_scale_and_a_negative_one_swaps_the_bounds(const std::string &b) {
 
 void a_matrix_maps_the_box(const std::string &b) {
     const Tensor M({{0.0, 1.0}, {1.0, 0.0}});
+    // M * I is the hull of the image
     const Interval J = M * box();
     check(close(J.inf(), Tensor({0.0, -1.0})) && close(J.sup(), Tensor({2.0, 1.0})),
           b + ": M * I is the hull of the image");

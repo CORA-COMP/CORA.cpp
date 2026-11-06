@@ -44,6 +44,7 @@ void times_takes_the_hull_of_the_corners(const std::string &b) {
     check(close(S.inf(), std::vector<double>{-3, -4}) && close(S.sup(), std::vector<double>{-1, 2}),
           b + ": a negative scalar swaps the bounds");
     const Interval U(column({0.0}), column({kInf}));
+    // 0 * Inf is 0
     check(close(U.times(Interval(column({0.0}), column({0.0}))).sup(), std::vector<double>{0}),
           b + ": 0 * Inf is 0");
     const Interval W = A.times(Interval(column({2.0}), column({3.0})));

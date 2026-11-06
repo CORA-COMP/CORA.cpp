@@ -47,6 +47,7 @@ IntervalMatrix IntervalMatrix::plus(const Tensor &M) const {
 
 IntervalMatrix IntervalMatrix::plus(double s) const {
     detail::Entry entry;
+    // a scalar shifts both bounds
     return IntervalMatrix(Interval(int_.inf() + s, int_.sup() + s));
 }
 

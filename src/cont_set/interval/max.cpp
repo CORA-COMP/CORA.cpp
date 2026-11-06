@@ -45,6 +45,7 @@ Interval Interval::max(const Tensor &Y) const {
 
 Tensor Interval::max() const {
     detail::Entry entry;
+    // the upper bound
     return sup_;
 }
 

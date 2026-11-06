@@ -113,6 +113,7 @@ void wrong_arguments_are_described(const std::string &b) {
     const NeuralNetwork nn({{W, bias}});
     check(test::throws([&] { nn.evaluate(Tensor({1.0, 2.0, 3.0})); }),
           b + ": a point of another dimension");
+    // a set of another dimension
     check(test::throws([&] { nn.evaluate(Zonotope(Tensor({1.0}), Tensor({{1.0}}))); }),
           b + ": a set of another dimension");
 }

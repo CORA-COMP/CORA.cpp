@@ -79,6 +79,7 @@ void checks_and_their_switch() {
     check(
         test::raises([&] { MatZonotope(test::matrix({1, nan, 3, 4}, 2, 2)); }, Error::wrong_value),
         "MatZonotope: a NaN center");
+    // a NaN generator
     check(test::raises([&] { MatZonotope(C, Tensor::from_data({1, nan, 0, 1}, {1, 2, 2})); },
                        Error::wrong_value),
           "MatZonotope: a NaN generator");

@@ -64,6 +64,7 @@ IntervalMatrix IntervalMatrix::matmul(const Tensor &M, const IntervalMatrix &A) 
         return "matmul: the matrix needs " + std::to_string(A.rows()) + " columns, got the shape " +
                shape_text(M.shape());
     });
+    // the product with a matrix
     return IntervalMatrix(A.int_.linear_map(M));
 }
 

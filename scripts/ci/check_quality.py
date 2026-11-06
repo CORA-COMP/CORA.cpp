@@ -24,12 +24,14 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import affected_tests  # noqa: E402  (the include graph, shared with the test selection)
+
 
 ROOT = affected_tests.ROOT
 CPP = (".cpp", ".h")
@@ -69,6 +71,7 @@ def check_format(files, fix):
     exe = tool("clang-format")
     for chunk in (files[i:i + 100] for i in range(0, len(files), 100)):
         result = run([exe, "-i" if fix else "--dry-run", "--Werror", *chunk])
+        # a difference fails the check; --fix rewrites the files instead
         if result.returncode and not fix:
             print(result.stderr.strip())
             print("check_quality: format: run `python scripts/ci/check_quality.py format --fix`")
@@ -125,6 +128,7 @@ def read(name):
 
 def closure(graph, root):
     seen, stack = set(), [root]
+    # depth-first walk over the include graph
     while stack:
         node = stack.pop()
         if node not in seen:

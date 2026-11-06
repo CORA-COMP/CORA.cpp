@@ -49,6 +49,7 @@ void follows_the_closed_form(const std::string &b) {
             E * x0 + A.inverse() * (E - Eigen::MatrixXd::Identity(3, 3)) * B * u;
         worst = std::max(worst, (host_of(x[k]) - exact).cwiseAbs().maxCoeff());
     }
+    // the trajectory agrees with the closed form
     check(worst < 1e-12,
           b + ": a trajectory differs from the closed form by " + std::to_string(worst));
 }
@@ -87,6 +88,7 @@ void random_inputs_come_from_the_set(const std::string &b) {
 void reports_errors(const std::string &b) {
     const Tensor A = tensor_of(oscillator3());
     const Tensor B = Tensor::from_data({1, 0, 0.5, -1, 0, 0.3}, {3, 2});
+    // an input of the wrong dimension is refused
     const Tensor x0 = Tensor::zeros({3, 4});
     check(throws([&] {
               LinearSys(A).simulate(

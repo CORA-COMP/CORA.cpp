@@ -13,6 +13,7 @@ import unittest
 
 import matplotlib
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -78,6 +79,7 @@ class Tikz(unittest.TestCase):
         fig = cora.subplots(2, 2, sharex=True, projection={(1, 1): "3d"})
         cora.plot(self.R, ax=fig[0, 0], label="reachable set")
         cora.plot(self.X0, ax=fig[0, 0])
+        # a grid of figures
         cora.plot_over_time(self.R, 0, ax=fig[0, 1])
         cora.plot_over_time(self.R, 1, ax=fig[1, 0])
         fig[1, 0].set_xlabel("$t$")
@@ -100,6 +102,7 @@ class Tikz(unittest.TestCase):
         self.assertIn("x descriptions at=edge bottom", text)
         self.assertNotIn("y descriptions", text)
         self.assertIn("\\addplot3", text)
+        # labels of the cells
         self.assertIn("view={-35}{30}", text)
         xlabels = [line for line in text.splitlines() if line.strip().startswith("xlabel")]
         self.assertEqual(xlabels, ["  xlabel={$t$},", "  xlabel={x[0]},"])  # the bottom row only
@@ -126,6 +129,7 @@ class Tikz(unittest.TestCase):
         self.assertTrue(fig.tikz(standalone=True).startswith("\\documentclass"))
         self.assertTrue(fig.tikz(standalone=True).rstrip().endswith("\\end{document}"))
         self.assertTrue(fig.tikz().startswith("%"))
+        # groupplots
         self.assertIn("groupplots", self.group().tikz(standalone=True))
 
     def test_collinear_points_are_thinned_within_a_tolerance(self):
@@ -149,6 +153,7 @@ class Tikz(unittest.TestCase):
             with self.assertRaises(ValueError):
                 fig.tikz(external_data=True)
 
+    # a wrong option is described
     def test_a_wrong_option_is_described(self):
         with self.assertRaises(TypeError) as caught:
             self.one().tikz(standalon=True)
@@ -170,6 +175,7 @@ class Tikz(unittest.TestCase):
                 for coramacs in (True, False):
                     base = os.path.join(folder, f"{name}_{coramacs}")
                     fig.to_tikz(base + ".tex", standalone=True, coramacs=coramacs)
+                    # compile the output if pdflatex is there
                     done = subprocess.run(
                         [pdflatex, "-interaction=nonstopmode", "-halt-on-error",
                          "-output-directory", folder, base + ".tex"],

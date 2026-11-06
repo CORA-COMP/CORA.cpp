@@ -34,8 +34,7 @@ void intersect_strip_known(const std::string &b) {
     check(close(R.A(), {1, 0, -0.1}, 1e-15) && close(R.b(), {0.5}, 1e-15), b + ": the strip row");
     check(close(R.interval().inf(), {0.4, -1}, 1e-9) && close(R.interval().sup(), {0.6, 1}, 1e-9),
           b + ": the strip [0.4, 0.6] in the box");
-    // a constrained set keeps its rows, the strip rows come last and the new factors are zero in
-    // them
+    // a constrained set keeps its rows, the strip rows come last, the new factors are zero in them
     const ConZonotope constrained(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                                   Tensor({{0.0, 1.0}}), column({0.5}));
     const ConZonotope S = constrained.intersect_strip(C, phi, y, lambda);
@@ -79,6 +78,7 @@ void intersect_strip_property(const std::string &b) {
             }
             check(inside > 0, b + ": the strips meet the set");
         }
+        // a given gain
         const ConZonotope G =
             A.intersect_strip(C, phi, y, test::random_con_zonotope(rng, 3, 2, 0).generators());
         check(G.dim() == 3, b + ": a given gain");
@@ -106,6 +106,7 @@ void checks_and_their_switch() {
           "intersect_strip: wang-FRad needs an observer");
     check(test::raises(
               [&] {
+                  // an unknown method
                   cz.intersect_strip(Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.1, 0.1}),
                                      column({0.0, 0.0}), "alamo-FRad");
               },

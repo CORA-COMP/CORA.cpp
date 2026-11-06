@@ -89,6 +89,7 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             const std::optional<double> theirs = lean::Zonotope(Z).minnorm();
             test::check(theirs.has_value(), "minnorm: the oracle found a facet");
+            // the oracle found a facet
             if (theirs) aux_below("minnorm", Z.minnorm().first.item(), *theirs);
         }
     });

@@ -101,6 +101,7 @@ void checks_and_their_switch() {
                        Error::wrong_value),
           "contains: tol < 0");
     ChecksScope off(false);
+    // the same with the checks off
     check(bundle.contains(column({0.5, 0.5})), "contains: the same with the checks off");
 }
 

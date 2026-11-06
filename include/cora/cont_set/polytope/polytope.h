@@ -11,7 +11,7 @@
 // Syntax:     Polytope P(A, b);   Polytope P(A, b, Ae, be);   Polytope P(V);   Polytope P(box);
 // Operations: one file each in src/cont_set/polytope/, named as CORA's; the constructors check
 //             their input (polytope.cpp). CORA's conPolyZono and ellipsoid wait for ConPolyZono and
-//             Ellipsoid; support_function, rand_point, project and vertices are Error::not_supported
+//             Ellipsoid; support_function, rand_point, project and vertices are not_supported
 //             until they are ported.
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/con_zonotope/con_zonotope.h
 //
@@ -90,50 +90,34 @@ class Polytope : public ContSet {
         Tensor A, b, Ae, be;
     };
 
-    /// CORA's constraints: the held halfspaces, or those computed from the vertices: one vertex
-    /// {Ae = I, be = V}; in 1D the two bounds (or the vertex as an equality); else the affine hull
-    /// as equalities and the facets of the hull inside it as unit-normal inequalities, found by
-    /// combinations of vertices (CORA: qhull, whose triangulated facets repeat a normal; here each
-    /// facet is listed once). Not a batch.
+    /// CORA's constraints: the held halfspaces, or those computed from the vertices (the affine
+    /// hull as equalities, the facets of the hull as unit-normal inequalities). Not a batch.
     Constraints constraints() const;
 
     // Conversions and queries ---------------------------------------------------------------------
 
     /// The smallest box around the polytope as a polytope of its 2n axis-aligned rows (CORA's
-    /// box; +-Inf bounds give no row); R^n for R^n, the empty set for the empty set. The vertex
-    /// form takes the minimum and maximum of each coordinate, the halfspace form solves 2n linear
-    /// programs (not a batch).
+    /// box); R^n for R^n, the empty set for the empty set.
     Polytope box() const;
 
-    /// The center: "chebyshev" (default), the center of the largest ball, from the halfspaces by a
-    /// linear program; or "avg", the mean of the vertices (of the extreme ones). R^n gives the
-    /// origin; the empty set a column without entries (n, 0); an unbounded set whose center is
-    /// not defined gives NaN. Not a batch.
+    /// The center: "chebyshev" (default), the center of the largest ball, or "avg", the mean of
+    /// the extreme vertices. R^n gives the origin, the empty set (n, 0). Not a batch.
     using ContSet::center;
     Tensor center(const std::string &method) const;
 
-    /// The set without redundancy (CORA's compact_), with the tolerance tol (default: the
-    /// repository tolerance) for "is zero" and "is aligned". method: "all" (default) a minimal
-    /// halfspace form; "A" the inequalities; "Ae" the equalities; "aligned" aligned rows only;
-    /// "zeros" rows 0 <= b and 0 = b only; "AtoAe" pairs a x <= c, -a x <= -c as equalities;
-    /// "V" the vertices that are not extreme (needs the vertex form). All but "V" normalize the
-    /// rows to unit length; an empty result is empty(n), no rows left is inf(n). Not a batch.
+    /// The set without redundancy (CORA's compact_), with the tolerance tol for "is zero" and "is
+    /// aligned"; method "all" (default), "A", "Ae", "aligned", "zeros", "AtoAe" or "V". Not a
+    /// batch.
     Polytope compact(const std::string &method = "all", Tol tol = std::nullopt) const;
 
     /// The constrained zonotope of the set (CORA's conZonotope, after Scott et al.):
-    /// "exact:supportFunc" (default) around the box (given, else interval()), "exact:vertices"
-    /// around the vertices' box. An unbounded set is Error::special_error; the empty set gives
-    /// ConZonotope::empty. Not a batch.
+    /// "exact:supportFunc" (default) or "exact:vertices". An unbounded set is
+    /// Error::special_error.
     ConZonotope con_zonotope(const std::string &method = "exact:supportFunc",
                              const std::optional<Interval> &box = std::nullopt) const;
 
     /// Whether the set contains the points (n, N), all of them, or a set (CORA's contains_):
-    /// "exact" (default), "exact:venum" (through the vertex form) or "exact:polymax" (through the
-    /// halfspace form); "approx" is "exact" for a box or a zonotope. A point must satisfy every row
-    /// up to tol (absolute); a set is contained if its support function along each row, equalities
-    /// both ways, is at most the offset up to tol (within_tol). A polytope in vertex form is its
-    /// points. Not a batch. tol default: the repository tolerance (docs/architecture.md). CORA's
-    /// certificate and scaling outputs are not returned.
+    /// "exact" (default), "exact:venum" or "exact:polymax", up to tol. Not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
     bool contains(const ContSet &S, const std::string &method = "exact",
@@ -159,9 +143,7 @@ class Polytope : public ContSet {
     static Polytope cart_prod(const Tensor &p, const Polytope &P);
 
     /// The convex hull with a polytope, a box or a point (n, 1) (CORA's convHull_), as a vertex
-    /// polytope without the vertices that are not extreme. The empty set gives the empty set
-    /// (CORA's; see docs/cora-differences.md), R^n gives R^n. A polytope in halfspace form is
-    /// converted by enumerating its vertices. Not a batch.
+    /// polytope of the extreme vertices. The hull with R^n is R^n. Not a batch.
     Polytope convex_hull(const Polytope &P2) const;
     Polytope convex_hull(const Interval &I) const;
     Polytope convex_hull(const Tensor &p) const;
@@ -174,9 +156,8 @@ class Polytope : public ContSet {
     Polytope enclose(const Tensor &M, const Polytope &Pplus) const;
 
     /// The Hausdorff distance to a polytope, a box or the points (n, N) (CORA's hausdorffDist):
-    /// the largest Euclidean distance of a vertex of one set to the other, found by a quadratic
-    /// program per vertex. +Inf if exactly one is empty or unbounded; 0 for two equal unbounded
-    /// sets, and CORA's empty-to-empty 0. Not a batch.
+    /// the largest distance of a vertex of one set to the other, by quadratic programs. Not a
+    /// batch.
     double hausdorff_distance(const Polytope &P2) const;
     double hausdorff_distance(const Interval &I) const;
     double hausdorff_distance(const Tensor &points) const;

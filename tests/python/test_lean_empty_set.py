@@ -30,6 +30,7 @@ import unittest
 import cora
 import oracle_testing as oracle
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -101,6 +102,7 @@ class Oracle(unittest.TestCase):
         self.each("emptySet.isequal", equal)
         self.each("emptySet.isBounded", lambda rnd, n: oracle.check(
             cora.EmptySet(n).is_bounded(), cora.lean.EmptySet(n).is_bounded()))
+        # boundedness and dimension
         self.each("emptySet.isFullDim", lambda rnd, n: oracle.check(
             cora.EmptySet(n).is_full_dim(), cora.lean.EmptySet(n).is_full_dim()))
 
@@ -130,6 +132,7 @@ class Oracle(unittest.TestCase):
             same_dimension(cora.EmptySet(n).project(dims), cora.lean.EmptySet(n).project(dims))
         self.each("emptySet.project", project)
 
+    # projection, radius and volume
     def test_project_high_dim_radius_volume_and_complement(self):
         def high_dim(rnd, n):
             proj = [n + 1 - i for i in range(n)]

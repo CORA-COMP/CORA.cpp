@@ -78,6 +78,7 @@ Zonotope Zonotope::cart_prod(const Interval &I) const {
 }
 
 Zonotope Zonotope::cart_prod(const Tensor &p) const {
+    // the product with a point
     detail::Entry entry;
     // a point is a column; the product adds its rows
     CORA_CHECK(p.ndim() >= 2 && p.shape().back() == 1, Error::dimension_mismatch, [&] {

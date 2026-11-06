@@ -44,6 +44,7 @@ void rand_point_samples_the_box(const std::string &b) {
         const double width = hi[i] - lo[i];
         check(smallest - lo[i] < 0.02 * width + 1e-12 && hi[i] - largest < 0.02 * width + 1e-12,
               b + ": the points miss a side of the box");
+        // the points are centred
         check(std::abs(mean - (lo[i] + hi[i]) / 2) < 0.05 * width + 1e-12,
               b + ": the points are not centred");
     }

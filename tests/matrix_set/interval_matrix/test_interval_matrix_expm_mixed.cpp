@@ -41,6 +41,7 @@ void the_parts_enclose_the_exponentials(const std::string &b) {
     const ExpmMixedResult zero =
         IntervalMatrix(test::matrix({0, 0, 0, 0}, 2, 2)).expm_mixed(1.0, 3, 6);
     const IntervalMatrix sum(zero.enclosure.interval() + zero.enclosure_rest.interval());
+    // exp(0) is the identity
     check(close(sum.center(), std::vector<double>{1, 0, 0, 1}, 1e-14), b + ": exp(0) = I");
 }
 

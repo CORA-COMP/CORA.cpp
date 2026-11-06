@@ -38,6 +38,7 @@ void minus_subtracts_the_opposite_bounds(const std::string &b) {
     check(close(W.inf(), std::vector<double>{-1, -3}) && close(W.sup(), std::vector<double>{1, 0}),
           b + ": a point minus a box is [v - sup, v - inf]");
     const Interval S = Interval::stack({I, J}) - column({1.0, 1.0});
+    // a batch
     check(S.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(S.sup().slice(0, 1, 2).reshape({2, 1}), std::vector<double>{0, 2}),
           b + ": a batch");

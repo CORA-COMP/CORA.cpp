@@ -36,6 +36,7 @@ void max_last_takes_the_row_maximum(const std::string &b) {
     const Tensor a = Tensor::from_data({1.0, 7.0, 3.0, -4.0, -5.0, -6.0}, {2, 3});
     const Tensor m = a.max(-1, true);
     check(m.shape() == std::vector<int64_t>({2, 1}), b + ": shape");
+    // the largest of every column
     check(test::close(m, std::vector<double>{7.0, -4.0}), b + ": the largest of every row");
 }
 

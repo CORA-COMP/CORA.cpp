@@ -55,6 +55,7 @@ void gradients(const torch::TensorOptions &opts, const std::string &where) {
         const torch::Tensor c0 = torch::randn({n}, opts), G0 = torch::randn({n, m}, opts);
 
         std::vector<torch::Tensor> grads[2];
+        // the gradients of both implementations are compared
         for (const bool custom : {false, true}) {
             torch::Tensor A = A0.clone().requires_grad_(true), c = c0.clone().requires_grad_(true),
                           G = G0.clone().requires_grad_(true);

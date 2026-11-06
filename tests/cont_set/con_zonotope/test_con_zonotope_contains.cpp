@@ -99,6 +99,7 @@ void checks_and_their_switch() {
           "contains: tol < 0");
     check(test::raises(
               [&] {
+                  // a batch of sets is not supported
                   ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 1}))
                       .contains(column({0.0}));
               },

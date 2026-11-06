@@ -44,6 +44,7 @@ void points_and_the_origin(const std::string &b) {
 }
 
 void intervals_parallelotopes_and_capsules(const std::string &b) {
+    // parallelotopes and capsules
     const Zonotope box = zonotope({0, 0}, Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     const Zonotope tilted = zonotope({0, 0}, Tensor({{1.0, 0.0}, {1.0, 2.0}}));
     const Zonotope hexagon = zonotope({0, 0}, Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
@@ -64,6 +65,7 @@ void intervals_parallelotopes_and_capsules(const std::string &b) {
 
 void sets_that_every_zonotope_is(const std::string &b) {
     const Zonotope Z = zonotope({0, 0}, Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
+    // classes a zonotope represents
     for (const char *type : {"zonotope", "conZonotope", "polytope", "polyZonotope", "zonoBundle",
                              "conPolyZono", "levelSet", "convexSet"})
         check(Z.representsa(type), b + ": " + type);

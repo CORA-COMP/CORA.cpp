@@ -39,6 +39,7 @@ void stack_keeps_each_member() {
               "stack: member generators");
         check(G[b].slice(-1, m).abs().sum().item<double>() == 0.0, "stack: padding is zero");
         const torch::Tensor d = torch::randn({n, 1}, torch::kDouble);
+        // the member support functions
         check(torch::allclose(to_torch(S.support_function(from_torch(d)))[b],
                               to_torch(Zs[b].support_function(from_torch(d)))),
               "stack: member support function");

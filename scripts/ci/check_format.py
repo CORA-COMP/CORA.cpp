@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -48,6 +49,7 @@ def workflow_problems():
         import yaml
     except ImportError:
         return []
+    # each workflow file is read in turn
     found = []
     folder = os.path.join(ROOT, ".github", "workflows")
     for name in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:

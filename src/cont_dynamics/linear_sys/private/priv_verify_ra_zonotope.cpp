@@ -170,6 +170,7 @@ double aux_containment_check_inner(const InnerSet &R, const Poly &P) {
         if (r.status != LinProgResult::Status::optimal) return kNaN;
         dist = std::max(dist, aux_row_dot(P, i, c0) - P.b[i] - r.fval);
     }
+    // the largest violation over the rows
     return dist;
 }
 
@@ -238,6 +239,7 @@ bool aux_intersection_hull(const ZHost &Z, const Poly &P, std::vector<double> &l
     for (int d = 0; d < n; ++d)
         for (double s : {1.0, -1.0}) {
             LinProg lp = base;
+            // a linear program per direction and sign
             lp.f.assign(m, 0.0);
             for (int j = 0; j < m; ++j) lp.f[j] = s * Z.G[d * m + j];
             const LinProgResult r = linprog(lp);
@@ -316,6 +318,7 @@ bool aux_polytope_hull(Poly &P) {
                 CORA_FAIL(Error::wrong_value, "LinearSys::verify: an unsafe set is empty");
             (s > 0 ? P.lo[d] : P.hi[d]) = s * r.fval;
         }
+    // the bounds are those of the linear programs
     return true;
 }
 
@@ -341,8 +344,7 @@ void aux_get_sets_from_spec(const std::vector<Specification> &specs, int64_t p, 
             CORA_FAIL(Error::wrong_value, "LinearSys::verify: unknown specification type");
         }
     }
-    // Every set is to be verified over the whole horizon; one that is a single halfspace
-    // perpendicular to an axis needs no inner approximation (fast_inner).
+    // Every set is verified over the whole horizon; an axis-aligned halfspace needs no inner set.
     for (std::vector<Poly> *sets : {&safe_sets, &unsafe_sets})
         for (Poly &P : *sets) {
             int nnz = 0;
@@ -412,6 +414,7 @@ double aux_distance_poly_point(const Poly &P, const std::vector<double> &p) {
         for (int r = n - 1; r >= 0; --r) {
             double s = M[r][n];
             for (int c = r + 1; c < n; ++c) s -= M[r][c] * v[c];
+            // back substitution, then the distance to the point p
             v[r] = s / M[r][r];
         }
         double s = 0;
@@ -439,6 +442,7 @@ double aux_distance_poly_point(const Poly &P, const std::vector<double> &p) {
         lp.beq.push_back(p[i]);
     }
     const LinProgResult r = linprog(lp);
+    // the optimal value of the linear program, else NaN
     return r.status == LinProgResult::Status::optimal ? r.fval : kNaN;
 }
 
@@ -446,10 +450,8 @@ double aux_distance_poly_point(const Poly &P, const std::vector<double> &p) {
 
 // ode45 -------------------------------------------------------------------------------------------
 
-/// The time points and states MATLAB's ode45 returns for x' = A x + b from x0 on [0, t_final] with
-/// its default options (tolerances 1e-3 and 1e-6, refinement 4): the error control of the
-/// Dormand-Prince pair decides the steps; every accepted step adds three interpolated points
-/// (its dense output) and its end.
+/// The time points and states MATLAB's ode45 returns for x' = A x + b from x0 on [0, t_final]
+/// with its default options; every accepted step adds three interpolated points and its end.
 void aux_ode45(const std::vector<double> &A, int n, const std::vector<double> &b,
                std::vector<double> y, double t_final, std::vector<double> &times,
                std::vector<std::vector<double>> &states) {
@@ -470,6 +472,7 @@ void aux_ode45(const std::vector<double> &A, int n, const std::vector<double> &b
         std::vector<double> dx(b);
         for (int i = 0; i < n; ++i)
             for (int j = 0; j < n; ++j) dx[i] += A[i * n + j] * x[j];
+        // the right-hand side of x' = A x
         return dx;
     };
     // The largest step is a tenth of the horizon.
@@ -558,6 +561,7 @@ void aux_ode45(const std::vector<double> &A, int n, const std::vector<double> &b
         }
         t = tnew;
         y = ynew;
+        // the step is accepted: advance and reuse the last stage
         k[0] = k[6];
     }
 }
@@ -569,10 +573,8 @@ double aux_scale_min(const std::vector<double> &t) {
     return lo;
 }
 
-/// An estimate of the maximum allowed error from trajectories: from points on the facets of the
-/// interval hull of R0, the distance of the output trajectory to the specifications, weighted
-/// to be strictest at the end of the horizon. The trajectories are exact solutions sampled at
-/// the time points of ode45 (first point) and on an equidistant grid of twice that step size.
+/// An estimate of the maximum allowed error from trajectories sampled from points on the facets
+/// of the interval hull of R0, weighted to be strictest at the end of the horizon.
 double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Tensor &u_offset,
                       const Zonotope &R0, const std::vector<Poly> &safe_sets,
                       const std::vector<Poly> &unsafe_sets, double t_final) {
@@ -709,8 +711,7 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
     aux_get_sets_from_spec(specs, p, t_final, safe_sets, unsafe_sets);
 
     // Adaptive loop ------------------------------------------------------------------------------
-    // The maximum allowed error: a first estimate from simulations, refined by the distances.
-    // The simulations use no input: CORA centers U before and drops its center from them.
+    // The maximum allowed error: an estimate from simulations (CORA centers U), then refined.
     const Tensor no_input = A.zeros_like({n, 1});
     double emax = aux_init_error(A, sys.C(), no_input, R0, safe_sets, unsafe_sets, t_final);
     TaylorLinSys taylor(A);
@@ -741,8 +742,7 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
             return finish();
         }
 
-        // Distances of the outer approximation (Go, Fo) and the inner approximation (Gi, Fi) to
-        // the safe sets G and the unsafe sets F, and the steps where they are largest.
+        // Distances of the outer (Go, Fo) and inner (Gi, Fi) approximations to the sets G and F.
         double d_go = -kInf, d_gi = -kInf, d_fo = -kInf, d_fi = kInf;
         int ind_go = -1, ind_gi = -1, ind_fo = -1, ind_fi = -1;
         std::vector<std::optional<InnerSet>> inner(R.time_interval.size());
@@ -797,8 +797,7 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
                 if (d > d_fo) d_fo = d, ind_fo = static_cast<int>(j);
                 if (P.fast_inner && d > R.time_interval_error[j]) return falsified();
                 d = aux_intersection_check_inner(inner_of(j), P);
-                // The program returns 0 for an intersection up to its accuracy; round-off in
-                // the solver must not decide between "intersecting" and "almost".
+                // The program returns 0 for an intersection up to its accuracy.
                 if (d <= numerics::kLpDistanceZero) d = 0;
                 if (d < 0) return falsified();
                 if (d < d_fi) d_fi = d, ind_fi = static_cast<int>(j);

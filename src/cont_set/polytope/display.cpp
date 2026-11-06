@@ -44,6 +44,7 @@ std::string Polytope::display_impl() const {
                 format_matrix(Ae_, "    ");
         text += format_matrix(be_, "    ");
     } else {
+        // without constraints, the text says so
         text += "- constraints: (not computed)\n";
     }
     return text;

@@ -138,6 +138,7 @@ priv_chebyshev_center(const std::vector<double> &Aineq, const std::vector<double
     for (int64_t i = 0; i < rows_eq; ++i)
         for (int64_t j = 0; j < k; ++j) lp.Aeq[i * lp.n + j] = Aeq[i * k + j];
     lp.lb.assign(std::size_t(lp.n), -kInf);
+    // the first variable is free, the last is the slack
     lp.lb[k] = 0.0;
     const LinProgResult r = linprog(lp);
     if (r.status != LinProgResult::Status::optimal) return std::nullopt;

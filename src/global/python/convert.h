@@ -48,7 +48,7 @@
 
 namespace cora::python {
 
-// NOLINTBEGIN(backend,clones): the bindings convert between numpy or torch arrays and Tensor, and repeat .def rows
+// NOLINTBEGIN(backend,clones): numpy and torch arrays are converted to Tensor; .def rows repeat
 
 namespace py = pybind11;
 
@@ -90,10 +90,9 @@ inline std::shared_ptr<const void> keep_alive(const py::handle &o) {
     });
 }
 
-/// A numpy array (or a list) as a host tensor over the array's memory, without a copy: on eigen,
-/// or on lean under `with cora.backend("lean")` (so that CORA.cpp rounds as the CORALean oracle).
-/// A copy is made only for an array that is not C-contiguous or not float64/float32 (lean:
-/// float64). `column` makes a 1-D array a column (n, 1).
+/// A numpy array (or a list) as a host tensor over the array's memory, without a copy; a copy
+/// only for an array that is not C-contiguous or not float64/float32. `column` makes a 1-D array
+/// a column.
 inline Tensor host_tensor(const py::handle &o, bool column) {
     const uint8_t id = backend().name() == "lean" ? backend_id::lean : backend_id::eigen;
     py::array a = py::array::ensure(o);
@@ -271,6 +270,7 @@ inline py::object object_of(const Set &S) {
         return py::cast(S.as<EmptySet>());
     case ClassId::fullspace:
         return py::cast(S.as<Fullspace>());
+    // other sets stay Python references
     default:
         return py::cast(&S.get(), py::return_value_policy::reference);
     }

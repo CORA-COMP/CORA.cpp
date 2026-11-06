@@ -44,6 +44,7 @@ void batches_are_their_members(const std::string &name) {
         check(close(aux_member(A.solve(B), b), Ab.solve(Bb), 1e-12), at + ": solve");
         check(close(aux_member(A.sum(-1, true), b), Ab.sum(-1, true), 0), at + ": sum");
         check(close(aux_member(A.diagonal(), b), Ab.diagonal(), 0), at + ": diagonal");
+        // per-member decompositions
         if (name != "lean")
             check(close(aux_member((A * 0.1).expm(), b), (Ab * 0.1).expm(), 1e-12), at + ": expm");
         const auto [Q, R] = A.qr();

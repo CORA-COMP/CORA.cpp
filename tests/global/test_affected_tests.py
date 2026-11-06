@@ -16,12 +16,14 @@ import os
 import sys
 import unittest
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ci"))
 import affected_tests as at  # noqa: E402
+
 
 TREE = {
     "include/cora/cont_set/zonotope/zonotope.h": '#include "cora/global/rng.h"\n',
@@ -45,6 +47,7 @@ TREE = {
 
 def pick(*changed):
     result = at.select(list(changed), sorted(TREE), TREE.__getitem__)
+    # the tests are a set of names
     if result in ("ALL", "NONE"):
         return result
     return set(result[2:-2].split("|"))
@@ -85,6 +88,7 @@ class SelectionTest(unittest.TestCase):
         for path in ("src/global/tensor/tensor.cpp", "src/global/backend/eigen.cpp", "CMakeLists.txt",
                      "scripts/cmake/python.cmake", "CMakePresets.json", ".github/workflows/ci.yml",
                      "scripts/ci/affected_tests.py"):
+            # changes to the scripts select everything
             self.assertEqual(pick(path), "ALL", path)
 
     def test_documentation_selects_nothing(self):

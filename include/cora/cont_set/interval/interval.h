@@ -45,9 +45,7 @@ class Interval : public ContSet {
     Interval(Tensor inf, Tensor sup);
 
     /// A random box, as CORA's generateRandom: dimension (default that of center or max_radius,
-    /// else random in 1..10), center (default U[-2, 2] per entry), max_radius (radii >= 0: a
-    /// vector, or a 1 x 1 tensor for all; default U[0, 10] per entry); the radius is
-    /// max_radius/2*u, u ~ U[0, 1].
+    /// else 1..10), center (default U[-2, 2]), max_radius (default U[0, 10]).
     static Interval generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
                                     const std::optional<Tensor> &center = std::nullopt,
                                     const std::optional<Tensor> &max_radius = std::nullopt);
@@ -225,9 +223,8 @@ class Interval : public ContSet {
     Tensor min() const;
 
     /// The Minkowski difference {x | x + S in I}: [inf - inf2, sup - sup2] for a box S, a shift
-    /// for a point S, and for another set the support function in the coordinate directions.
-    /// An empty difference (a bound would cross) is the empty interval. type "exact" is refused
-    /// for another set (Error::no_exact_alg); "inner" and the default compute the same.
+    /// for a point, the support function for another set. An empty difference is the empty
+    /// interval.
     Interval minkowski_difference(const Interval &S) const;
     Interval minkowski_difference(const Tensor &p) const;
     Interval minkowski_difference(const ContSet &S,
@@ -262,20 +259,15 @@ class Interval : public ContSet {
 
     // Powers, quotients and products --------------------------------------------------------------
 
-    /// The elementwise power (CORA's power): the exponent is a number, numbers of the shape of the
-    /// bounds (or any shape when the box is one number), or a box; the base may be numbers and the
-    /// exponent a box. Integer exponents take the hull of the end powers (0 below an even power
-    /// over a sign change), negative ones the power of the reciprocal; the others are
-    /// [inf^e, sup^e]. Error::out_of_domain if a bound is NaN.
+    /// The elementwise power (CORA's power): the exponent is a number, numbers of the shape of
+    /// the bounds or a box; integer exponents take the hull of the end powers.
     Interval power(double exponent) const;
     Interval power(const Tensor &exponent) const;
     Interval power(const Interval &exponent) const;
     static Interval power(const Tensor &base, const Interval &exponent);
 
-    /// The entrywise quotient (CORA's rdivide): a box over numbers (the hull of the quotients,
-    /// the whole line where the number is 0), numbers over a box (the hull, the whole line over a
-    /// box with 0 inside, the ray past n/inf at sup = 0), and a box over a box (I .* (1 ./ D)).
-    /// Error::out_of_domain over [0, 0] or if a quotient is NaN.
+    /// The entrywise quotient (CORA's rdivide): a box over numbers, numbers over a box, or a box
+    /// over a box (I .* (1 ./ D)). Error::out_of_domain over [0, 0] or a NaN quotient.
     Interval rdivide(const Tensor &denominator) const;
     Interval rdivide(const Interval &denominator) const;
     static Interval rdivide(const Tensor &numerator, const Interval &denominator);
@@ -355,9 +347,7 @@ class Interval : public ContSet {
     Interval sinh() const;
 
     /// The box around the image of the quadratic map x -> (x' Q_i x)_i over this box (CORA's
-    /// quadMap): the box of Zonotope::quad_map of its zonotope. With I2, x1' Q_i x2 for x1 in
-    /// this box and x2 in I2. Q[i] are the (n, n) matrices of the outputs; the boxes must be
-    /// bounded.
+    /// quadMap); with I2, x1' Q_i x2 for x1 in this box and x2 in I2.
     Interval quad_map(const std::vector<Tensor> &Q) const;
     Interval quad_map(const Interval &I2, const std::vector<Tensor> &Q) const;
 
@@ -407,8 +397,7 @@ class Interval : public ContSet {
     Tensor inf_, sup_;
 };
 
-// Operators, as CORA writes them: intervals add, a column v translates, a number scales (a
-// negative one swaps the bounds), and a matrix M * I is the interval hull of the image.
+// Operators as in CORA: intervals add, a column v translates, a number scales, M * I maps.
 inline Interval operator+(const Interval &I, const Interval &I2) { return I.plus(I2); }
 inline Interval operator+(const Interval &I, const Tensor &v) { return {I.inf() + v, I.sup() + v}; }
 inline Interval operator+(const Tensor &v, const Interval &I) { return I + v; }

@@ -51,14 +51,8 @@ void sink(double v) {
     kept += v;
 }
 
-/// Which backend runs `in`, or null when nothing here can.
-///
-/// `CORACPP_BACKEND` picks one for the whole run, so the same commit enters the catalog
-/// as two tools whose results sit side by side:
-///
-///   unset   libtorch on both devices; Eigen on the CPU when this build has no libtorch
-///   eigen   Eigen only; gpu instances report unsupported
-///   torch   libtorch only, on both devices
+/// Which backend runs `in`, or null when nothing here can: `CORACPP_BACKEND` picks one for the
+/// whole run (unset: libtorch on both devices, else Eigen on the CPU; `eigen`; `torch`).
 const char *backend_for(const Params &in) {
     const char *want = std::getenv("CORACPP_BACKEND");
     const std::string forced = want != nullptr ? want : "";
@@ -128,6 +122,7 @@ struct Prepared : Runner {
             for (Index b = 0; b < in.batch; ++b) direction.col(b).normalize();
         } else if (in.operation == "matMul") {
             matrix = Mat<double>(in.n, in.n);
+            // a random square matrix for the product
             rng.normal(matrix.data(), static_cast<std::size_t>(matrix.size()), 1.0);
         } else if (in.operation == "contains") {
             points_in = s.rand_point(in.points, rng);
@@ -148,6 +143,7 @@ struct Prepared : Runner {
         } else if (op == "matMul") {
             sink(s.is_box ? mat_mul(s.box, matrix).lo(0, 0) : mat_mul(s.zono, matrix).c(0, 0));
         } else if (op == "minkSum") {
+            // the sum of two sets, read at one entry so that it is not optimized away
             sink(s.is_box ? mink_sum(s.box, other.box).lo(0, 0)
                           : mink_sum(s.zono, other.zono).c(0, 0));
         } else if (op == "contains") {
@@ -203,6 +199,7 @@ std::string run_instance(const std::string &params, const std::string &results_f
 
     const auto start_operation = Clock::now();
     Mask answers;
+    // the measured repetitions
     for (long long i = 0; i < in.repetition; ++i) answers = runner->run();
     runner->sync();
     const double time_operation = seconds_since(start_operation);
@@ -227,6 +224,7 @@ void warm_up() {
         for (const char *op : kOperations) {
             for (int batch : {1, 2}) {
                 for (int n : {1, 3, 10}) {
+                    // the parameters of one smoke-test instance
                     const std::string params =
                         std::string("{\"set\": \"") + set + "\", \"operation\": \"" + op +
                         "\", \"dim\": " + std::to_string(n) +
@@ -251,8 +249,7 @@ void warm_up() {
 
 void warm_up_backends() {
     warm_up();
-    // An entry pinned to Eigen never reaches libtorch, and warming it would start a CUDA
-    // context it will not use.
+    // An entry pinned to Eigen never reaches libtorch; warming it would start a CUDA context.
     const char *want = std::getenv("CORACPP_BACKEND");
     if (want != nullptr && std::string(want) == "eigen") return;
     if (torch_backend::built()) torch_backend::warm_up();

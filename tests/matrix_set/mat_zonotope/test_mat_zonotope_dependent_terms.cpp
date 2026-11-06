@@ -70,6 +70,7 @@ void members_are_enclosed(const std::string &b) {
         }
         check(exact, b + ": the matrices of the members, h = " + std::to_string(h));
     }
+    // a batch gives the same terms
     Rng again(52);
     const MatZonotope A = test::random_set(again, 2, 2, 0.5);
     const auto [sq, H] = test::batch_of(A, A).dependent_terms(0.5);

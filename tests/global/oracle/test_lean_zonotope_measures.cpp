@@ -95,8 +95,7 @@ int main() {
     oracle::run("zonotope.norm", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            // the oracle returns the square of the bound; its sum of squares is CORA.cpp's, so
-            // the root of it is the same double
+            // the oracle returns the square of the bound, CORA.cpp's sum of squares: roots agree
             const double bound = std::sqrt(lean::Zonotope(Z).norm());
             if (oracle::mode() == oracle::Mode::exact)
                 oracle::check(Z.norm().item(), bound);

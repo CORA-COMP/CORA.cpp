@@ -10,12 +10,14 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
@@ -48,6 +50,7 @@ class Constructors(unittest.TestCase):
 
     def test_a_wrong_dtype_is_described(self):
         with self.assertRaises(ValueError) as caught:
+            # an unknown dtype
             cora.Tensor.ones(2, dtype="int8")
         self.assertIn("unknown dtype", str(caught.exception))
 
@@ -72,6 +75,7 @@ class Functions(unittest.TestCase):
         self.assertAlmostEqual(cora.sin(x).eval([0.3]), math.sin(0.3))
         self.assertAlmostEqual(float(cora.sin(0.3)), math.sin(0.3))
         with self.assertRaises(TypeError):
+            # functions follow the backend
             cora.tan(x)
 
     def test_functions_follow_the_backend(self):

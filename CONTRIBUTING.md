@@ -11,7 +11,7 @@ include/cora/              the public headers (cora/cora.h includes them all; co
     linear_sys/  nonlinear_sys/
   nn/neural_network/  specification/  global/ (tensor, backends, errors, settings, plot, oracle)
 src/                       the implementation, one operation per file, mirroring include/cora/
-  cont_set/cont_set/       the checked entries of ContSet and the binary registry
+  cont_set/cont_set/       the checked entries of ContSet; cont_set/registry.cpp the binary registry
   cont_set/zonotope/ ...   the _impl of each operation; private/ holds priv_* algorithms
   global/python/           bindings.cpp, convert.h and the cora/ package (no math)
 tests/  examples/          mirror src/; tests/install/consumer builds against the install tree
@@ -24,17 +24,35 @@ docs/                      architecture.md (the decisions), naming.md (CORA -> C
 
 The library is namespace `cora`; the competition entry keeps its own sets in `cora::comp`.
 
+## File layout
+
+Every C++ and Python file has the same shape; `tests/global/test_coding_conventions.py`
+checks it for all of them (rules in `scripts/ci/layout.py`, tests in `tests/global/test_layout.py`).
+
+1. A header that starts `<file> - <summary>`; Python puts it in the docstring (`__init__.py` is
+   named by its folder). Then the description (at most 12 lines of prose), the blocks `Syntax`,
+   `Inputs`, `Outputs`, `See also` (one line per form and per parameter), the tag `// CORA: <path>.m` or `// CORA.cpp only: <reason>`, `CORA authors:` where CORA
+   has them, and the author block (`Authors`, `Written`, `Last update`, `Reviewed`).
+2. `BEGIN CODE`, then `AUXILIARY` (only if code sits above the operation; it holds the `aux_*`
+   helpers), then `MAIN` with two empty lines above it, the operation or the test cases, and
+   `END OF CODE`. A C++ header has only `BEGIN CODE` and `END OF CODE`. Above `BEGIN CODE` stand the
+   header, the includes and `using` declarations, nothing else (Python: imports).
+3. Comments: one line each, saying why (a longer explanation goes into the header); at least one
+   comment per 20 lines of code; a `///` doc comment of a function is at most 3 lines.
+4. Names: classes PascalCase; functions, arguments, variables and files snake_case (docs/naming.md).
+
+There is no list of exempt files or names. A rule that needs an exception takes a structural
+property of the code, or a waiver in the file with its reason: `// NOLINT(rule): reason`, or
+`NOLINTBEGIN(rule): reason` to `NOLINTEND(rule)` (`#` in Python), for the rules `naming`,
+`backend`, `tolerance` and `clones`. A waiver without a reason waives nothing.
+
 ## Conventions
 
 `tests/global/test_coding_conventions.py` checks all of these; it runs first in `ctest`, after the coverage check.
 
 - One operation per file, named after the operation in snake_case (`rand_point.cpp` for CORA's
-  `randPoint`), with a header (Syntax, Inputs, Outputs, See also; 1-3 lines per entry, no filler)
-  that ends with `// CORA: <path>.m` or `// CORA.cpp only: <reason>`. Auxiliary functions
-  (`aux_*`) under an `AUXILIARY` marker, the operation under `MAIN` (two empty lines above it),
-  all between `BEGIN CODE` and `END OF CODE`; internals in `private/priv_*`.
+  `randPoint`); internals in `private/priv_*`. The layout of every file is below.
 - Classes PascalCase; functions, arguments, variables, files snake_case; see docs/naming.md.
-- Inline comments are one line and say why; function docs are short and explain parameters.
 - Every public operation starts with `detail::Entry entry;`, checks its input with `CORA_CHECK`
   and calls an unchecked implementation (`<operation>_impl`, or private code). Never `throw`:
   `CORA_CHECK(cond, Error::<id>, [&] { return message; })` for a wrong input, `CORA_FAIL(id, message)`

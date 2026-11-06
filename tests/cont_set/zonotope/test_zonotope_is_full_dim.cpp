@@ -42,6 +42,7 @@ void full_dim_known(const std::string &b) {
           b + ": the direction (1, 1) / sqrt(2)");
     const auto [res2, identity] = full.is_full_dim_subspace();
     check(res2 && close(identity, std::vector<double>{1, 0, 0, 1}, 0), b + ": full: the identity");
+    // a point has an empty basis
     check(Zonotope(column({1.0}), Tensor::zeros({1, 0})).is_full_dim_subspace().second.shape() ==
               std::vector<int64_t>({1, 0}),
           b + ": a point has an empty basis");

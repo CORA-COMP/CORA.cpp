@@ -91,6 +91,7 @@ void checks_and_their_switch() {
     check(
         test::raises(
             [&] {
+                // a batch shape mismatch is refused
                 Ellipsoid(Tensor::zeros({2, 1, 1})).cart_prod(Ellipsoid(Tensor::zeros({3, 1, 1})));
             },
             Error::dimension_mismatch),

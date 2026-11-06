@@ -46,6 +46,7 @@ int main() {
     });
     test::oracle::run("fullspace.isIntersecting", [](test::oracle::Random &rnd) {
         const Interval I = rnd.box(3);
+        // the full space meets a box
         test::oracle::check(Fullspace(3).is_intersecting(I), lean::Fullspace(3).is_intersecting(I));
     });
     test::oracle::run("fullspace.isequal", [](test::oracle::Random &) {
@@ -59,8 +60,7 @@ int main() {
                 test::oracle::check(Fullspace(n).representsa(type, 0.0),
                                     lean::Fullspace(n).representsa(type));
     });
-    // the plane has four corners (+-Inf, +-Inf); the oracle lists them as the columns of V,
-    // CORA.cpp as a polygon, so they are compared as a set
+    // the plane has four corners (+-Inf, +-Inf); the oracle lists columns, CORA.cpp a polygon
     test::oracle::run("fullspace.vertices", [](test::oracle::Random &) {
         const std::vector<double> V = lean::Fullspace(2).vertices().gather().data();
         std::set<std::pair<double, double>> theirs, mine;

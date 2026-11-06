@@ -31,6 +31,7 @@ import unittest
 import cora
 import oracle_testing as oracle
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 
@@ -61,6 +62,7 @@ class Oracle(unittest.TestCase):
             for n in (1, 5):
                 F, L = cora.Fullspace(n), cora.lean.Fullspace(n)
                 I = rnd.box(n)
+                # predicates of the full space
                 oracle.check(F.contains(I), L.contains(cora.lean.Interval(I)))
                 oracle.check(F.is_intersecting(I), L.is_intersecting(cora.lean.Interval(I)))
                 oracle.check(F.isequal(cora.Fullspace(n)), L.isequal(cora.lean.Fullspace(n)))

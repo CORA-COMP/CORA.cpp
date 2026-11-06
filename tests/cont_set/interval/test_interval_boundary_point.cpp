@@ -111,6 +111,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { I.boundary_point(column({1.0, 1.0}), column({2.0})); },
                        Error::dimension_mismatch),
           "boundary_point: start of dimension 1");
+    // the same with the checks off
     const Tensor on = I.boundary_point(column({1.0, 1.0}));
     ChecksScope off(false);
     check(close(I.boundary_point(column({1.0, 1.0})), on, 0),

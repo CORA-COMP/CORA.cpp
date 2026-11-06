@@ -15,6 +15,7 @@ import sys
 import unittest
 from pathlib import Path
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -70,6 +71,7 @@ class Docstring(unittest.TestCase):
                    "two entries on one line")
 
     def test_a_syntax_form_is_one_line(self):
+        # a syntax form is one line
         self.fails(CPP_TEST.replace("plus(Z, W)", "plus(Z,\n//           W)"), "one line per entry")
 
     def test_the_author_block_is_required_and_formatted(self):
@@ -96,13 +98,14 @@ class Markers(unittest.TestCase):
     def test_every_marker_is_required(self):
         self.fails(CPP_TEST.replace(BEGIN, ""), "exactly one BEGIN")
         self.fails(CPP_TEST.replace(END, ""), "exactly one END")
+        # exactly one MAIN
         self.fails(CPP_TEST.replace(MAIN, ""), "exactly one MAIN")
 
     def test_auxiliary_code_needs_its_marker(self):
         self.fails(CPP_TEST.replace(AUX + "\n\n", ""), "needs the AUXILIARY marker")
 
     def test_an_empty_auxiliary_section_is_refused(self):
-        self.fails(CPP_TEST.replace(f"namespace {{\n// a helper\nvoid helper() {{}}\n}} // namespace\n\n", "")
+        self.fails(CPP_TEST.replace("namespace {\n// a helper\nvoid helper() {}\n} // namespace\n\n", "")
                    .replace("    helper();\n", ""), "without auxiliary code")
 
     def test_main_stands_above_main(self):
@@ -122,11 +125,13 @@ class Markers(unittest.TestCase):
     def test_python_main_stands_above_the_first_function(self):
         self.fails(PY_MODULE.replace("def plus", "def other():\n    return 1\n\n\ndef plus", 1)
                    .replace(layout.marker("MAIN", "py") + "\n\n", ""), "exactly one MAIN", "plus.py")
+        # MAIN may move
         moved = PY_MODULE.replace(layout.marker("MAIN", "py") + "\n\n", "").replace(
             "def plus", f"{layout.marker('MAIN', 'py')}\n\ndef plus", 1)
         self.assertEqual(check(moved, "plus.py"), [])
 
 
+# the comment rules
 class Comments(unittest.TestCase):
     def fails(self, text, message, name="test_plus.cpp"):
         found = check(text, name)
@@ -146,11 +151,13 @@ class Comments(unittest.TestCase):
         self.fails(CPP_TEST.replace("void helper", "/// a\n/// b\n/// c\n/// d\nvoid helper"), "doc comment of 4")
 
     def test_python_docstrings_have_three_lines(self):
-        self.fails(PY_MODULE.replace("    # the sum\n", '    """a\n    b\n    c\n    d"""\n'), "docstring of 4", "plus.py")
+        docstring = '    """a\n    b\n    c\n    d"""\n'
+        self.fails(PY_MODULE.replace("    # the sum\n", docstring), "docstring of 4", "plus.py")
 
 
 class Waivers(unittest.TestCase):
     def test_a_waiver_needs_a_reason(self):
+        # waivers need reasons
         lines = ["a  // NOLINT(backend): why", "b  // NOLINT(backend)", "// NOLINTNEXTLINE(naming): why", "c",
                  "// NOLINTBEGIN(clones,backend): why", "d", "// NOLINTEND(clones,backend)", "e"]
         self.assertEqual(layout.waived(lines, "backend"), {0, 4, 5, 6})

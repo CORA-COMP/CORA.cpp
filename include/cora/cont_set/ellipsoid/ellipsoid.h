@@ -70,34 +70,23 @@ class Ellipsoid : public ContSet {
     /// decomposition Q = U D U'; the empty ellipsoid has a matrix without columns (n, 0).
     Tensor generators() const;
 
-    /// The norm of p (..., n, 1) whose unit ball is the ellipsoid shifted to the origin
-    /// (CORA's ellipsoidNorm), sqrt(|p' Q^+ p|), as (..., 1, 1): Q \ p for a full-rank Q,
-    /// else through the pseudo-inverse of the singular value decomposition, with singular values
-    /// and entries below the fixed threshold of the method set to zero; Inf for a direction
-    /// outside the range of Q.
+    /// The norm of p (..., n, 1) whose unit ball is the ellipsoid shifted to the origin (CORA's
+    /// ellipsoidNorm), sqrt(|p' Q^+ p|), as (..., 1, 1); Inf outside the range of Q.
     Tensor ellipsoid_norm(const Tensor &p) const;
 
     /// Whether the centered ellipsoid E2 - q2 lies in E - q (CORA's isBigger): the largest
-    /// generalized eigenvalue of Q2 against Q is at most 1 + tol, tol the least tolerance of the
-    /// two; ellipsoids that are not full-dimensional are compared in the subspace that Q + Q2
-    /// spans. CORA answers true for every pair of dimension 1 before comparing anything, which is
-    /// wrong (docs/cora-differences.md); here the comparison is made. Not a batch; Error::empty_set
-    /// for an empty one.
+    /// generalized eigenvalue of Q2 against Q is at most 1 + tol. Not a batch.
     bool is_bigger(const Ellipsoid &E2) const;
 
-    /// For every column l of L (n, k): whether the direction l is a bad direction of the Minkowski
-    /// difference of this ellipsoid and E2 (CORA's isBadDir), sqrt(l' Q l) / sqrt(l' Q2 l) above
-    /// 1 / lambda + tol for the largest generalized eigenvalue lambda of Q2 against Q, tol the
-    /// least tolerance of the two. Needs Q positive definite. Not a batch.
+    /// For every column l of L (n, k): whether l is a bad direction of the Minkowski difference
+    /// of this ellipsoid and E2 (CORA's isBadDir). Needs Q positive definite. Not a batch.
     std::vector<bool> is_bad_dir(const Ellipsoid &E2, const Tensor &L) const;
 
     // Constructing from data ----------------------------------------------------------------------
 
     /// An ellipsoid that contains the points (n, p) (CORA's enclosePoints): method "cov"
-    /// (default) takes the mean as the center and the singular value decomposition of the
-    /// covariance as the axes, scaled to the farthest point. The points are first rotated onto the
-    /// subspace they span, so a degenerate cloud gives a degenerate ellipsoid; points that all
-    /// coincide give that point (CORA raises an error). "min-vol" (an SDP) is Error::not_supported.
+    /// (default) takes the mean as the center and the covariance's axes, scaled to the farthest
+    /// point.
     static Ellipsoid enclose_points(const Tensor &points, const std::string &method = "cov");
 
     // Combining with other sets -------------------------------------------------------------------
@@ -111,14 +100,8 @@ class Ellipsoid : public ContSet {
     /// The ellipsoid and the level sigma_sq that intersect_strip returns.
     using StripResult = std::pair<Ellipsoid, double>;
 
-    /// An ellipsoid that contains the intersection with the strip ||C x - y||_2 <= phi (C (m, n),
-    /// y (m, 1), phi a number) by the method of Gollamudi (1996) (CORA's intersectStrip). The
-    /// second result is the level sigma_sq of the update, to be passed as sigma_sq_prev to the
-    /// next one. CORA's shape and center are too small (docs/cora-differences.md); here the
-    /// shape is sigma_sq times the inverse of the information matrix, and the center is moved
-    /// with that inverse. The update is skipped (the ellipsoid and sigma_sq_prev are returned)
-    /// when the strip does not cut it or the weight leaves [0, 1). Needs Q positive definite. Not a
-    /// batch.
+    /// An ellipsoid that contains the intersection with the strip ||C x - y||_2 <= phi (Gollamudi
+    /// 1996; CORA's intersectStrip), and the level sigma_sq of the update. Not a batch.
     StripResult intersect_strip(const Tensor &C, double phi, const Tensor &y,
                                 double sigma_sq_prev = 0.0) const;
 
@@ -137,12 +120,8 @@ class Ellipsoid : public ContSet {
     /// the polytope and ellipsoid classes and are Error::not_supported. Not a batch.
     Ellipsoid intersect(const Ellipsoid &S, const std::string &mode = "outer") const;
 
-    /// The Cartesian product with an ellipsoid or a point (n2, 1) (CORA's cartProd_), mode "outer"
-    /// ("inner" and "exact" are Error::not_supported, as in CORA). With a point it is exact: the
-    /// center is stacked with the point and Q padded with zeros. With an ellipsoid it is the
-    /// ellipsoid of the product of the two bounding boxes, each box first widened to a radius of
-    /// at least 5e-3 (as CORA's interval-to-ellipsoid conversion does); a box with a zero radius
-    /// is Error::not_supported (CORA calls a solver).
+    /// The Cartesian product with an ellipsoid or a point (n2, 1) (CORA's cartProd_), mode
+    /// "outer": exact for a point, else the ellipsoid of the product of the two bounding boxes.
     Ellipsoid cart_prod(const Ellipsoid &S, const std::string &mode = "outer") const;
     Ellipsoid cart_prod(const Tensor &p, const std::string &mode = "outer") const;
 
@@ -150,11 +129,8 @@ class Ellipsoid : public ContSet {
     static Ellipsoid cart_prod(const Tensor &p, const Ellipsoid &E,
                                const std::string &mode = "outer");
 
-    /// Whether the ellipsoid contains the points p (n, N) (all of them), a zonotope or a box, up to
-    /// tol (default: the repository tolerance) in the norm of the ellipsoid (CORA's contains_).
-    /// method "exact": the vertices of the set are the points; "approx" (an SDP) is
-    /// Error::not_supported. An ellipsoid as the contained set also needs an SDP and is
-    /// Error::not_supported. Not a batch.
+    /// Whether the ellipsoid contains the points p (n, N), a zonotope or a box, up to tol in the
+    /// norm of the ellipsoid (CORA's contains_). Not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
     bool contains(const Zonotope &S, const std::string &method = "exact",
@@ -164,11 +140,8 @@ class Ellipsoid : public ContSet {
     bool contains(const Ellipsoid &S, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
 
-    /// A set that encloses this ellipsoid and E2 (CORA's enclose): the convex hull of this
-    /// ellipsoid and the ellipsoid E2 = M Eplus, which needs the SDP of the outer union and is
-    /// Error::not_supported after the dimensions are checked. With (M, Eplus), M (n, m) and
-    /// Eplus of dimension m. CORA's documentation says M E + Eplus, its code takes M Eplus
-    /// (docs/cora-differences.md); the code's form is kept.
+    /// A set that encloses this ellipsoid and E2 (CORA's enclose): needs an SDP, so
+    /// Error::not_supported after the dimensions are checked. With (M, Eplus) it is E2 = M Eplus.
     Ellipsoid enclose(const Ellipsoid &E2) const;
     Ellipsoid enclose(const Tensor &M, const Ellipsoid &Eplus) const;
 

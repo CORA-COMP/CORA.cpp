@@ -41,6 +41,7 @@ void minkowski_difference_can_be_empty(const std::string &b) {
     const Interval E = I.minkowski_difference(Interval(column({-1.0, 0.0}), column({1.0, 1.0})));
     check(E.is_empty() && E.dim() == 2, b + ": a bound would cross: the empty interval");
     const Interval B = Interval::stack({I, I});
+    // a batch
     check(
         B.minkowski_difference(Interval::stack({Interval(column({-1.0, 0.0}), column({1.0, 1.0})),
                                                 Interval(column({-1.0, 0.0}), column({1.0, 1.0}))}))

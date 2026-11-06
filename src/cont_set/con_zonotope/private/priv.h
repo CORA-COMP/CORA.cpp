@@ -76,11 +76,8 @@ ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const
 
 // Corners and vertices ----------------------------------------------------------------------------
 
-/// Points of a single constrained zonotope that contain its vertices, as columns (n, K): the
-/// images c + G x of the x with |x|_inf <= 1 and A x = b that fix all but rank(A) factors at +-1
-/// (without the same point twice). None (K = 0) if the set is empty; at most numerics::
-/// kVertexCandidates before Error::not_supported. A convex set contains the set exactly if it
-/// contains these points.
+/// Points of a single constrained zonotope that contain its vertices, as columns (n, K): none if
+/// the set is empty. A convex set contains the set exactly if it contains these points.
 Tensor priv_vertex_candidates(const ConZonotope &cz);
 
 // Linear programs ---------------------------------------------------------------------------------

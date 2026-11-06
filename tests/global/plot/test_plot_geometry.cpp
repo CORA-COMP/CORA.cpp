@@ -46,6 +46,7 @@ Polygon box(double x0, double y0, double x1, double y1) {
 void overlapping_polygons_have_one_outline() {
     const std::vector<Polygon> u = union_polygons({box(0, 0, 2, 2), box(1, 1, 3, 3)});
     check(u.size() == 1 && u[0].size() == 8, "two overlapping squares: one loop of eight corners");
+    // the area and the orientation of the union
     check(close(total_area(u), 7), "its area is 4 + 4 - 1");
     check(area(u[0]) > 0, "an outer loop runs counter-clockwise");
     // The same polygons clockwise, and in the other order, give the same union.
@@ -84,8 +85,7 @@ void separate_and_nested_polygons() {
     check(union_polygons({box(0, 0, 1, 1)}).size() == 1, "one polygon is its own union");
 }
 
-// Octagons along a line, each overlapping the next with a flat top and bottom, are the case of a
-// reach set: their union is a long loop whose top and bottom edges are straight.
+// Octagons along a line, each overlapping the next with a flat top and bottom: a long loop.
 void many_overlapping_polygons() {
     std::vector<Polygon> sets;
     for (int k = 0; k < 200; ++k) {
@@ -165,13 +165,13 @@ double face_area(const std::vector<Point3> &f) {
         const Point3 &a = f[i], &b = f[(i + 1) % f.size()];
         sx += a[1] * b[2] - a[2] * b[1];
         sy += a[2] * b[0] - a[0] * b[2];
+        // the area of a face
         sz += a[0] * b[1] - a[1] * b[0];
     }
     return 0.5 * std::sqrt(sx * sx + sy * sy + sz * sz);
 }
 
-// The first three points of a face turn counter-clockwise seen from outside: the normal they
-// give points away from the center of the polytope.
+// The first three points of a face turn counter-clockwise from outside: the normal points away.
 bool faces_outward(const std::vector<std::vector<Point3>> &faces, const Point3 &center) {
     for (const std::vector<Point3> &f : faces) {
         const Point3 u = {f[1][0] - f[0][0], f[1][1] - f[0][1], f[1][2] - f[0][2]};
@@ -210,6 +210,7 @@ void the_hull_of_a_tetrahedron_and_flat_sets() {
     check(line.size() == 1 && line[0].size() == 2, "a segment is a face of two points");
     check(hull_faces({{1, 2, 3}, {1, 2, 3}}).size() == 1 && hull_faces({{1, 2, 3}})[0].size() == 1,
           "a point is a face of one");
+    // nothing has no faces
     check(hull_faces({}).empty(), "nothing has no faces");
 }
 

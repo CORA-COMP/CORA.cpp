@@ -42,6 +42,7 @@ void convex_hull_known(const std::string &b) {
     check(
         close(A.convex_hull(Interval(column({-2.0}), column({-1.0}))).interval().inf(), {-2}, 1e-9),
         b + ": a box");
+    // hull with a zonotope
     check(
         close(A.convex_hull(Zonotope(column({3.0}), Tensor({{1.0}}))).interval().sup(), {4}, 1e-9),
         b + ": a zonotope");
@@ -108,6 +109,7 @@ void checks_and_their_switch() {
           "convex_hull: a list of other dimensions");
     const Tensor on = A.convex_hull(A).A();
     ChecksScope off(false);
+    // the same with the checks off
     check(close(A.convex_hull(A).A(), on, 0), "convex_hull: the same with the checks off");
 }
 

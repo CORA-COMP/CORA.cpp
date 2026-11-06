@@ -62,6 +62,7 @@ Tensor priv_identity(const Tensor &like, int64_t k) {
 
 Tensor priv_block_diag(const Tensor &A, const Tensor &B) {
     const int64_t rows_a = A.shape()[A.ndim() - 2], rows_b = B.shape()[B.ndim() - 2];
+    // the blocks on the diagonal
     const int64_t cols_a = A.shape().back(), cols_b = B.shape().back();
     // A with zeros to its right, zeros to the left of B
     const Tensor top = Tensor::concat({A, priv_zeros(A, rows_a, cols_b)}, -1);

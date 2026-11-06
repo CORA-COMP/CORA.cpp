@@ -15,12 +15,14 @@ import unittest
 
 import numpy as np
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
@@ -57,6 +59,7 @@ class ZonotopeOperators(unittest.TestCase):
         torch.testing.assert_close((box() - v).center, torch.tensor([0.0, 3.0], dtype=torch.float64))
 
     def test_an_interval_matrix_widens(self):
+        # an interval matrix times a zonotope
         M = cora.Interval.matrix(-torch.ones(2, 2, dtype=torch.float64),
                                  torch.ones(2, 2, dtype=torch.float64))
         self.assertEqual(tuple((M * box()).generators.shape), (2, 4))
@@ -99,6 +102,7 @@ class IntervalOperators(unittest.TestCase):
         J = cora.Tensor([[0.0, 1.0], [1.0, 0.0]]) * self.I
         torch.testing.assert_close(J.inf, torch.tensor([0.0, -1.0], dtype=torch.float64))
 
+    # an interval matrix times a zonotope
     def test_an_interval_matrix_times_a_zonotope(self):
         M = cora.Interval.matrix(-torch.ones(2, 2, dtype=torch.float64),
                                  torch.ones(2, 2, dtype=torch.float64))

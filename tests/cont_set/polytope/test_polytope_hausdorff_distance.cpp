@@ -46,6 +46,7 @@ void distances(const std::string &b) {
     check(close(Polytope(Tensor({{0.0, 1.0}})).hausdorff_distance(Polytope(Tensor({{3.0, 5.0}}))),
                 4.0, 1e-8),
           b + ": 1D");
+    // R^n and itself, the empty set
     const Polytope inf = Polytope::inf(2);
     check(close(inf.hausdorff_distance(inf), 0.0, 0.0), b + ": R^n and itself");
     const double d = Polytope::empty(2).hausdorff_distance(S1);

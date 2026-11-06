@@ -61,6 +61,7 @@ void quad_map_is_the_hull_of_the_zonotope_map(const std::string &b) {
     const Tensor x = ZI.rand_point(50, rng), y = ZJ.rand_point(50, rng);
     for (int k = 0; k < 50; ++k) {
         const Tensor p = x.slice(-1, k, k + 1), q = y.slice(-1, k, k + 1);
+        // the image of points of both boxes
         const Tensor image = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(q),
                                              p.matrix_transpose().matmul(Q[1]).matmul(q)},
                                             0);

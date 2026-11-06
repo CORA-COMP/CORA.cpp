@@ -78,8 +78,7 @@ int main() {
         oracle::check(a.representsa("emptySet"), lean::ConZonotope(a).representsa_empty());
         oracle::check(none.representsa("emptySet"), lean::ConZonotope(none).representsa_empty());
     });
-    // reduce, quadMap and split are enclosures of CORA.cpp's set: the layout of the new factors
-    // differs
+    // reduce, quadMap and split are enclosures of CORA.cpp's set: the new factors' layout differs
     oracle::run("conZonotope.reduce", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(2, 8, 2);
         oracle::check_enclosed("reduce", a.reduce(2), lean::ConZonotope(a).reduce(2));

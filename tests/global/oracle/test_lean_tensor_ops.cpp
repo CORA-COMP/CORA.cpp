@@ -113,6 +113,7 @@ void aux_interval_products(test::oracle::Random &rnd) {
             check_exact("matmul_interval", Interval(lo2, hi2), lean::Interval(box).linear_map(M));
         });
         aux_case("Interval::linear_map", [&] {
+            // exact linear maps
             check_exact("Interval::linear_map", box.linear_map(M),
                         lean::Interval(box).linear_map(M));
         });

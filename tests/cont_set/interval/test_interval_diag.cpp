@@ -40,6 +40,7 @@ void diag_of_a_vector(const std::string &b) {
     const Tensor row = Tensor::from_data({1, 2}, {1, 2});
     check(close(Interval(row, row + 1.0).diag().sup(), std::vector<double>{2, 0, 0, 3}),
           b + ": a row is a vector too");
+    // a scalar and a batch
     const Interval one(column({7.0}), column({8.0}));
     check(close(one.diag().inf(), std::vector<double>{7}), b + ": a scalar");
     const Interval S = Interval::stack({v, v}).diag();

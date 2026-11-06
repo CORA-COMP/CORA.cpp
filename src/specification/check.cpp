@@ -90,6 +90,7 @@ std::vector<bool> aux_clear_of_polytope(const ContSet &S,
         const std::vector<double> G(GData.begin() + gi, GData.begin() + gi + n * m);
         clear[i] = !priv_zonotope_meets_polytope(c, G, static_cast<int>(m), a, b);
     }
+    // the sets that stay clear of the polytope
     return clear;
 }
 

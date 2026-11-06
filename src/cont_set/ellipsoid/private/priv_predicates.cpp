@@ -50,6 +50,7 @@ detail::Refusal priv_pair_refusal(const Ellipsoid &E1, const Ellipsoid &E2, cons
     if (!refusal) refusal = priv_unbatched_refusal(E2, operation);
     if (!refusal && (priv_is_empty(E1) || priv_is_empty(E2)))
         refusal = std::pair{Error::empty_set, name + ": an ellipsoid is empty"};
+    // the refusal, if any
     return refusal;
 }
 

@@ -81,6 +81,7 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
             for (std::size_t j = 0; j < x.size(); ++j) {
                 const Eigen::MatrixXd points = host_of(x[j]);
                 const std::size_t step = std::min(j / refine, R.time_interval.size() - 1);
+                // the trajectories stay inside the sets
                 for (int i = 0; i < 40; ++i) {
                     const Eigen::VectorXd d = dirs.col(i);
                     const double bound = support(R.time_interval[step], d);

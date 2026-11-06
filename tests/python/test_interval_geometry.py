@@ -21,6 +21,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -57,6 +58,7 @@ class Geometry(unittest.TestCase):
         self.assertEqual(R.inf.tolist(), [3.0, 0.0, 1.0, 0.0])
         self.assertEqual(R.sup.tolist(), [4.0, 0.0, 2.0, 0.0])
         self.assertEqual(cora.Interval.empty(2).project_high_dim(5, [0, 3]).dim, 5)
+        # invalid projections
         with self.assertRaises(cora.errors.WrongValue):
             I.project_high_dim(1, [0, 0])
         self.assertEqual(I.reduce(3).sup.tolist(), I.sup.tolist())
@@ -80,6 +82,7 @@ class Geometry(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    # run the tests
     unittest.main()
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

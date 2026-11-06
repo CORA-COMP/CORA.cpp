@@ -51,6 +51,7 @@ void lift_by_class(const std::string &b) {
     check(static_cast<const ContSet &>(Z).lift(3).as<Zonotope>().isequal(Z),
           b + ": the default positions of a zonotope");
     const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0, 1.0})});
+    // lift of a batch
     check(static_cast<const ContSet &>(batch)
                   .lift(3, std::vector<int64_t>{1, 2, 0})
                   .as<Zonotope>()

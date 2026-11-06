@@ -62,8 +62,7 @@ Tensor Ellipsoid::ellipsoid_norm(const Tensor &p) const {
         return "ellipsoid_norm: p must be a column (..., " + std::to_string(dim()) +
                ", 1), got the shape " + (p.defined() ? shape_text(p.shape()) : "()");
     });
-    // a full-rank member is solved, the others use the decomposition; the solve sees the
-    // identity for a degenerate member
+    // a full-rank member is solved, others use the decomposition; a degenerate one the identity
     const Tensor full = priv_rank(Q_, tol_).equal(Q_.ones_like({1, 1}) * double(dim()));
     const Tensor solved = aux_select(full, Q_, Q_.eye_like(dim())).solve(p);
     const Tensor quadratic =

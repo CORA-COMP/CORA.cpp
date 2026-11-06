@@ -37,6 +37,7 @@ void setting() {
     check(max_threads() == 3, "set_num_threads sets the pools");
     check(threads_for(1000, 1LL << 40) == 3, "... and the width of a region");
     set_num_threads(0);
+    // 0 goes back to the default
     check(max_threads() >= 1, "0 goes back to the default");
 }
 

@@ -40,6 +40,7 @@ void functions_apply_to_every_element(const std::string &b) {
     check(test::close(t.exp(), apply(std::exp)), b + ": exp");
     check(test::close(t.log(), apply(std::log)), b + ": log");
     check(test::close(t.sqrt(), apply(std::sqrt)), b + ": sqrt");
+    // the shape is kept
     check(t.sin().shape() == t.shape(), b + ": the shape is kept");
 }
 

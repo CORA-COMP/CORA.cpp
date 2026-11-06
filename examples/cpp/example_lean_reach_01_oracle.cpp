@@ -85,8 +85,7 @@ int main() {
 
     // Rounding --------------------------------------------------------------------------------
 
-    // 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the
-    // error
+    // 0.1 is no binary32 number: round_to returns the rounded value and an enclosure of the error
     const auto [value, error] = lean::Tensor::from(Tensor({{0.1}})).round_to("ieee:binary32");
     const auto [inf, sup] = error.gather();
     std::cout << "0.1 in binary32 is " << value.gather().data()[0] << ", the error lies in ["

@@ -95,6 +95,7 @@ void checks_and_their_switch() {
               },
               Error::dimension_mismatch),
           "enclose_many: dimensions");
+    // a batch is refused
     check(
         test::raises([&] { Zonotope::enclose_many({Zonotope::stack({Z, Z})}, column({1.0, 0.0})); },
                      Error::dimension_mismatch),

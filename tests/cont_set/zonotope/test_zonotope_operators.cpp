@@ -40,6 +40,7 @@ void numbers_scale(const std::string &b) {
               close(Z.generators(), Tensor({{-1.0, 0.0}, {0.0, -0.5}})),
           b + ": s * Z");
     check(close((box() * 2.0).center(), Tensor({2.0, 4.0})), b + ": Z * s");
+    // unary minus negates center and generators
     check(close((-box()).center(), Tensor({-1.0, -2.0})) &&
               close((-box()).generators(), Tensor({{-0.5, 0.0}, {0.0, -0.25}})),
           b + ": -Z negates centre and generators (CORA's uminus)");

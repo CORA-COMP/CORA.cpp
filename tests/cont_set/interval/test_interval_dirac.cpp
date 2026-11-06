@@ -50,6 +50,7 @@ void dirac_of_order_1(const std::string &b) {
 void dirac_of_higher_order(const std::string &b) {
     for (const int64_t n : {2, 5}) {
         const Interval R = aux_boxes().dirac(n);
+        // orders of the Dirac box
         check(aux_same(R.inf(), std::vector<double>{0, 0, -kInf, -kInf, -kInf, -kInf}) &&
                   aux_same(R.sup(), std::vector<double>{0, 0, kInf, kInf, kInf, kInf}),
               b + ": order " + std::to_string(n) + " is the line on 0");

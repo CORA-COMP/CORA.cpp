@@ -94,6 +94,7 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
     const Tensor zero = c_.zeros_like(shape);
     if (m < n) return zero;
     const Tensor deficient = aux_rank_deficient(G_);
+    // the exact or the Gram volume, zero if the generators are deficient
     const Tensor value =
         method == "exact" ? aux_sum_of_determinants(G_) : aux_gram_volume(G_, deficient);
     // 2^n is a power of two: the scaling is exact

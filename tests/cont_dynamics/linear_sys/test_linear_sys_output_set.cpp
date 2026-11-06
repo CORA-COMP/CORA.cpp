@@ -57,6 +57,7 @@ void maps_every_set_by_c(const std::string &b) {
                     R.time_interval[k].support_function(Ctd)),
               b + ": the support of a step along C'd");
     }
+    // the output set maps every time point
     for (std::size_t k = 0; k < R.time_point.size(); ++k)
         check(close(Y.time_point[k].generators(), in.C.matmul(R.time_point[k].generators())),
               b + ": a time point");

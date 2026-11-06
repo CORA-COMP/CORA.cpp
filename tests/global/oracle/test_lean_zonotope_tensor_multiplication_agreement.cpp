@@ -85,6 +85,7 @@ int main() {
             const Tensor4 center = aux_tensor(rnd, n), first = aux_tensor(rnd, n),
                           second = aux_tensor(rnd, n);
             const Zonotope::TensorLists list = test::triples(m);
+            // the tensor multiplication
             oracle::check_hull(
                 Z.tensor_multiplication_zono(center.tensor, {first.tensor, second.tensor}, list),
                 lean::Zonotope(Z).tensor_multiplication_zono(

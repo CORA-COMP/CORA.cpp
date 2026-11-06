@@ -19,12 +19,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cora_rows  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = ROOT / "coverage" / "cora-inventory.json"
@@ -86,6 +88,7 @@ def main():
               f"inventory: differs from {args.against} in {', '.join(wrong)}")
         status |= bool(wrong)
     if args.check:
+        # with --check the committed file must be current
         wrong = differences(groups, load())
         print("inventory: the committed file is current" if not wrong else
               f"inventory: the committed file differs from {cora} in {', '.join(wrong)}; "

@@ -48,6 +48,7 @@ void cart_prod_of_known_sets(const std::string &b) {
     check(with_box.generators().shape() == std::vector<int64_t>({4, 4}), b + ": a box: two axes");
 
     const Set via_sets = cart_prod(Z, I);
+    // through the registry
     check(via_sets.is<Zonotope>() && via_sets.as<Zonotope>().dim() == 4,
           b + ": through the registry");
 }

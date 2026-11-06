@@ -81,6 +81,7 @@ struct Parser {
     }
 
     void skip() {
+        // whitespace is skipped
         while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
     }
 

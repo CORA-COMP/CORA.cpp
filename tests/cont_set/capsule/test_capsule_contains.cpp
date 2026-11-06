@@ -128,6 +128,7 @@ void checks_and_their_switch() {
                        Error::dimension_mismatch),
           "contains: a box of another dimension");
     ChecksScope off(false);
+    // the same with the checks off
     check(C.contains(column({0.0, 0.2})) && !C.contains(column({0.0, 2.0})),
           "contains: the same with the checks off");
 }

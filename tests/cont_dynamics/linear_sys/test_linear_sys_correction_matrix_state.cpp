@@ -47,6 +47,7 @@ void matches_matlab_cora(const std::string &b) {
 
 void is_zero_for_a_zero_system(const std::string &b) {
     const Interval F = LinearSys(Tensor::zeros({3, 3})).correction_matrix_state(0.1, 6);
+    // F of A = 0 is zero
     check(max_abs(F.center()) == 0.0 && max_abs(F.rad()) == 0.0, b + ": F of A = 0 is zero");
 }
 

@@ -20,6 +20,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -27,6 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "coverage"))
 import coverage as cov  # noqa: E402
+
 
 INVENTORY = {"cora_commit": "abc", "groups": {
     "contSet": {"zonotope": ["center", "plus"]}, "contDynamics": {}, "hybridDynamics": {},
@@ -89,6 +91,7 @@ class Checker(unittest.TestCase):
         write(self.root, "src/cont_set/zonotope/plus.cpp", text)
         self.assert_fails("src/cont_set/zonotope/plus.cpp:6: `contSet/@zonotope/nope.m` names no inventory row")
 
+    # a tag that is no CORA file
     def test_a_tag_that_is_no_cora_file_fails(self):
         write(self.root, "tests/python/test_zonotope.py", PY_TEST + "# CORA: contSet/@zonotope/plus\n")
         self.assert_fails("is no CORA file")
@@ -114,6 +117,7 @@ class Checker(unittest.TestCase):
         self.assertEqual(self.check(), ([], []))
 
     def test_a_status_drop_fails_unless_accepted(self):
+        # a status drop
         (self.root / "tests/python/test_zonotope.py").write_text('"""test_zonotope - the class"""\n')
         (self.root / "tests/global/oracle/test_lean_plus.cpp").unlink()
         self.assert_fails("contSet/zonotope/plus: oracle -> untested: coverage may only go up")
@@ -148,6 +152,7 @@ class Checker(unittest.TestCase):
         status = json.loads((self.root / "coverage/status.json").read_text())["rows"]
         text = cov.summary(INVENTORY["groups"], status, LEAN["rows"])
         self.assertIn("| **all** | 2 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |", text)
+        # the totals row
         self.assertIn("contSet/zonotope", text)
 
     def test_a_test_of_a_row_no_source_implements_fails(self):
@@ -173,6 +178,7 @@ class Checker(unittest.TestCase):
 
     def test_an_oracle_test_is_bit_exact(self):
         write(self.root, "tests/global/oracle/test_lean_plus.cpp", ORACLE_TEST)
+        # an ORACLE test is bit-exact
         write(self.root, "tests/global/oracle/test_lean_plus_bound.cpp", ORACLE_TEST)
         self.assert_fails("an ORACLE test is bit-exact at nearest")
 
@@ -197,6 +203,7 @@ class Checker(unittest.TestCase):
 
     def test_a_missing_inventory_fails(self):
         (self.root / "coverage/cora-inventory.json").unlink()
+        # a missing inventory
         self.assert_fails("coverage/cora-inventory.json: missing")
 
 

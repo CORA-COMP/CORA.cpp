@@ -80,6 +80,7 @@ void a_set_is_filled_unless_told_otherwise(const std::string &b) {
           b + ": a color is the outline and the fill");
     figure().clear();
     plot(initial_set(), {0, 1}, {.face_color = "CORA:red"});
+    // a face color is the fill
     const Figure::Layer &fill = figure().layers()[0];
     check(fill.face.hex() == cora_color("CORA:red").hex() &&
               fill.edge.hex() == cora_color("CORA:simulations").hex(),
@@ -113,6 +114,7 @@ void a_reach_set_is_drawn_as_one_union(const std::string &b) {
     use_cora_colors("CORA:default");
     figure().clear();
     const ReachSet R = oscillator();
+    // one region for all intervals
     plot(R, {0, 1}, {.label = "reachable set"});
     // The core has united the sets: one loop and one path, however many intervals there are.
     check(figure().layers()[0].polygons.size() == 1 && count(figure().svg(), "<path") == 1,
@@ -136,6 +138,7 @@ void reach_options_choose_what_is_drawn(const std::string &b) {
     check(has(figure().svg(), "stroke-dasharray"), b + ": drawn dashed");
     figure().clear();
     plot(R);
+    // every second set
     const std::size_t all = figure().layers()[0].polygons.size();
     figure().clear();
     plot(R, {0, 1}, {.step = 2});
@@ -178,6 +181,7 @@ void filled_sets_are_translucent(const std::string &b) {
     figure().clear();
     plot(initial_set());
     check(figure().layers()[0].face_alpha == 1, b + ": an initial set is opaque white");
+    // restore the default colors
     use_cora_colors("CORA:default");
 }
 
@@ -202,6 +206,7 @@ void a_specification_is_shaded_up_to_the_limits(const std::string &b) {
     figure().clear();
     plot(initial_set(), {0, 1});
     plot(Specification::safe_set(test::column({1, 0}), 1.05), {0, 1});
+    // a safe set shades the outside
     check(has(figure().svg(), cora_color("CORA:unsafe").hex()),
           b + ": a safe set shades the outside");
 }
@@ -224,6 +229,7 @@ void a_wrapper_takes_the_layers_out(const std::string &b) {
     use_cora_colors("CORA:default");
     figure().clear();
     Figure mine;
+    // layers go into the given figure
     plot(mine, initial_set());
     plot(mine, initial_set());
     check(mine.layers().size() == 2, b + ": the layers are in the figure that was given");
@@ -246,6 +252,7 @@ void plot_rejects_bad_dimensions(const std::string &b) {
     check(test::throws([] { plot(Tensor({{1, 2}, {3, 4}}), {0, 5}); }), b + ": points too");
 }
 
+// save writes the file
 void save_writes_the_file(const std::string &b) {
     figure().clear();
     plot(initial_set());
@@ -265,6 +272,7 @@ void an_unknown_color_scheme_is_described() {
     try {
         use_cora_colors("CORA:rainbow");
     } catch (const Error &e) {
+        // the message names the schemes
         check(has(e.what(), "CORA:default") && has(e.what(), "CORA:contDynamics"),
               "the message names the schemes there are");
     }

@@ -66,8 +66,7 @@ int main() {
               << R.time_interval.back().center().device() << "\nlast center " << c[0] << ", "
               << c[1] << "\n";
 
-    // The GPU can also be the default for every tensor: set_default_backend("torch:cuda") or a
-    // BackendScope, or, without recompiling, CORACPP_BACKEND=torch:cuda.
+    // The GPU can be the default too: set_default_backend("torch:cuda") or CORACPP_BACKEND.
 
     // example completed
     return 0;

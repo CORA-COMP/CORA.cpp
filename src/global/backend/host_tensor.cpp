@@ -163,6 +163,7 @@ auto aux_with_unary(Unary op, G &&g) {
     case Unary::tanh:
         return g([](T x) { return std::tanh(x); });
     case Unary::asinh:
+        // the elementwise functions, one case each
         return g([](T x) { return std::asinh(x); });
     case Unary::acosh:
         return g([](T x) { return std::acosh(x); });
@@ -703,6 +704,7 @@ Tensor::Ptr HostTensor<T>::take_along_axis(const Tensor::Impl &idx, int axis) co
                                               std::to_string(len - 1));
         r->p[io] = p[ixx + l * axis_stride];
     });
+    // the concatenated result
     return r;
 }
 
@@ -859,6 +861,7 @@ std::array<Tensor::Ptr, 3> HostTensor<T>::svd() const {
         Map<T>(S->p + z * k, k, 1) = svd.singularValues();
         Map<T>(V->p + z * m * k, m, k) = svd.matrixV();
     }
+    // the factors of the decomposition
     return {U, S, V};
 }
 
@@ -905,8 +908,7 @@ HostTensor<T>::zonotope_linear_map(const Tensor::Impl &c, const Tensor::Impl &G)
     return Impl::zonotope_linear_map(c, G);
 }
 
-// The fused primitives: Eigen's kernels on eigen (for a center and generators of one batch), the
-// specification on lean.
+// The fused primitives: Eigen's kernels on eigen (one batch), the specification on lean.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 HostTensor<T>::zonotope_interval_map(const Tensor::Impl &sup, const Tensor::Impl &c,

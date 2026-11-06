@@ -55,6 +55,7 @@ int main() {
                                              {{7, 7.5}, {8, 9}}};
     for (int i = 0; i < 13; ++i) {
         T.setdiff(ops[i][0], ops[i][1]);
+        // the set differences
         check(same(T, expected[i]), "setdiff " + std::to_string(i + 1));
     }
 

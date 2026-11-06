@@ -61,6 +61,7 @@ Zonotope priv_union_linprog(const Zonotope &iterative,
     if (r.status != LinProgResult::Status::optimal)
         CORA_FAIL(Error::solver_issue, "unite: the linear program of 'linprog' has no solution");
     const Tensor c = Tensor::like(G, std::vector<double>(r.x.begin(), r.x.begin() + n), {n, 1});
+    // the scaling of the generators is the second part of the solution
     const Tensor scal = Tensor::like(G, std::vector<double>(r.x.begin() + n, r.x.end()), {1, ng});
     return {c, G.multiply(scal)};
 }

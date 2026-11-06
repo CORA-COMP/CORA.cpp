@@ -81,6 +81,7 @@ void checks_and_their_switch() {
     Rng a(3), c(3);
     const IntervalMatrix on = IntervalMatrix::generate_random(a);
     ChecksScope off(false);
+    // the same with the checks off
     check(close(IntervalMatrix::generate_random(c).interval().inf(), on.interval().inf(), 0),
           "generate_random: the same with the checks off");
 }

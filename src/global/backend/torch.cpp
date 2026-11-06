@@ -113,6 +113,7 @@ struct TorchTensor : Tensor::Impl {
     Ptr arange(int64_t n) const override {
         return wrap(torch::arange(n, t.options().requires_grad(false)));
     }
+    // the gradient flag is the one of the tensor
     bool requires_grad() const override { return t.requires_grad(); }
     Ptr detach() const override { return t.requires_grad() ? wrap(t.detach()) : self(); }
 
@@ -180,6 +181,7 @@ struct TorchTensor : Tensor::Impl {
         case Unary::round:
             return wrap(round(t));
         case Unary::sqrt:
+            // the remaining elementwise functions, one case each
             return wrap(t.sqrt());
         case Unary::exp:
             return wrap(t.exp());
@@ -218,6 +220,7 @@ struct TorchTensor : Tensor::Impl {
         case Unary::isfinite:
             return values(t.isfinite());
         }
+        // an unknown function is refused
         CORA_FAIL(Error::wrong_value, "CoraTensor: unknown elementwise function");
     }
     Ptr where(const Impl &a, const Impl &b) const override {
@@ -264,6 +267,7 @@ struct TorchTensor : Tensor::Impl {
     Ptr concat(std::span<const Impl *const> parts, int axis) const override {
         std::vector<torch::Tensor> all;
         for (const Impl *r : parts) all.push_back(of(*r));
+        // all parts are concatenated along the axis
         return wrap(torch::cat(all, axis));
     }
     Ptr argsort(int axis, bool descending) const override {
@@ -273,8 +277,7 @@ struct TorchTensor : Tensor::Impl {
     // Linear algebra
     Ptr matmul(const Impl &o) const override { return wrap(t.matmul(of(o))); }
     Ptr solve(const Impl &b) const override {
-        // torch reads a right-hand side one dimension short of t as a batch of vectors, which is
-        // wrong when its shape happens to be that of t's batch and rows; it is a matrix here
+        // torch reads a right-hand side one short of t as a batch of vectors: wrong if shapes agree
         const torch::Tensor &rhs = of(b);
         return wrap(torch::linalg_solve(t, rhs.dim() + 1 == t.dim() ? rhs.unsqueeze(0) : rhs));
     }

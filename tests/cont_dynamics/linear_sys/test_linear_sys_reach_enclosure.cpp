@@ -33,10 +33,8 @@ struct Case {
     std::string what;
 };
 
-/// Points of the initial set pushed along the flow, at times inside every step, must lie
-/// under the support function of the step's enclosure in every sampled direction. The fast
-/// rotation turns a long way per step, so the flow bulges far out of the chord between the
-/// time points and only the curvature enlargement keeps it inside.
+/// Points of the initial set pushed along the flow, at times inside every step, lie under the
+/// support function of the step's enclosure in every sampled direction.
 void encloses_the_trajectories(const std::string &b) {
     cora::Rng rng(3);
     const int n = 3, m = 4;
@@ -59,6 +57,7 @@ void encloses_the_trajectories(const std::string &b) {
             const int samples = 300;
             Eigen::MatrixXd beta(m, samples), dirs(n, samples), times(1, samples);
             rng.uniform(beta.data(), beta.size(), -1.0, 1.0);
+            // samples of the generators, directions and times
             rng.normal(dirs.data(), dirs.size(), 1.0);
             rng.uniform(times.data(), times.size(), 0.0, 1.0);
             double worst = 1e9;
@@ -94,13 +93,13 @@ void encloses_both_time_points(const std::string &b) {
                 worst = std::min({worst, hull - support(r.time_point[k], d),
                                   hull - support(r.time_point[k + 1], d)});
             }
+        // the time points stay inside their enclosures
         check(worst >= -1e-9, b + ": " + name(algorithm) + ": a time point left its enclosure");
     }
 }
 
-/// `x' = -x` on `[1, 3]`: the flow moves the set down, so the upper bound of a step is the
-/// start's `3 e^{-t}`, tight to `dt²`. The lower bound is `e^{-t-dt}` at best; `linear_combination`
-/// builds a symmetric zonotope and gives away up to `dt` on that far side.
+/// `x' = -x` on `[1, 3]`: the upper bound of a step is the start's `3 e^{-t}`, tight to `dt²`;
+/// `linear_combination` builds a symmetric zonotope and gives away up to `dt` below.
 void is_tight_in_one_dimension(const std::string &b) {
     const System &s = matlab_reference::scalar();
     const double dt = s.time_step;

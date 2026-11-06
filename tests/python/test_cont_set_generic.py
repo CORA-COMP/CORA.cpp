@@ -51,6 +51,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -97,6 +98,7 @@ class Generic(unittest.TestCase):
     def test_maps_and_shifts(self):
         M = np.array([[1.0, 1.0], [0.0, 1.0]])
         R = cora.ContSet.linear_map(self.I, M)
+        # generic linear maps and enlarge
         self.assertEqual((R.inf.tolist(), R.sup.tolist()), ([-1.0, 0.0], [3.0, 2.0]))
         self.assertEqual(cora.ContSet.linear_map(self.Z, M).generators.tolist(), [[0.5, 0.5], [0.0, 0.5]])
         E = cora.ContSet.enlarge(self.Z, np.array([2.0, 3.0]))
@@ -118,6 +120,7 @@ class Generic(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             cora.ContSet.reduce(self.I, 0)
         I3 = box([-1.0, 0.0, 2.0], [1.0, 2.0, 5.0])
+        # decompose into blocks
         parts = cora.ContSet.decompose(I3, [[0, 1], [2, 2]])
         self.assertEqual([p.dim for p in parts], [2, 1])
         self.assertEqual(parts[1].inf.tolist(), [2.0])
@@ -140,6 +143,7 @@ class Generic(unittest.TestCase):
             Z.project_on_hyperplane(np.zeros(2), 1.0)
 
     def test_equality(self):
+        # equal sets of different classes
         Zi = zonotope([0.0, 1.0], [[1.0, 0.0], [0.0, 1.0]])
         self.assertTrue(cora.isequal(Zi, self.I) and cora.isequal(self.I, Zi))
         self.assertTrue(self.I == Zi and Zi == self.I and self.I != self.Z)
@@ -162,6 +166,7 @@ class Generic(unittest.TestCase):
         with self.assertRaises(cora.errors.NotSupported):
             cora.generate_random(rng, 2, ["polytope"])
 
+    # intersections and pairs
     def test_unchecked_forms_and_pairs(self):
         J = box([0.5, 1.0], [3.0, 3.0])
         X = cora.intersect(self.I, J)
@@ -184,6 +189,7 @@ class Generic(unittest.TestCase):
         self.assertEqual(N.center.tolist(), [-1.0, 0.0])
         self.assertEqual(N.generators.tolist(), [[-0.5, 0.0], [0.0, -0.5]])
         self.assertEqual((-self.I).sup.tolist(), [1.0, 0.0])
+        # unary plus and times
         P = +self.Z
         self.assertEqual(P.center.tolist(), self.Z.center.tolist())
         self.assertEqual(P.generators.tolist(), self.Z.generators.tolist())
@@ -205,6 +211,7 @@ class Generic(unittest.TestCase):
     def test_compact(self):
         Z = zonotope([0.0, 0.0], [[1.0, 0.0, 2.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
         self.assertEqual(np.asarray(cora.ContSet.compact(Z).generators).shape, (2, 3))
+        # compact by method
         self.assertEqual(np.asarray(cora.ContSet.compact(Z, "all").generators).shape, (2, 2))
         self.assertEqual(np.asarray(cora.ContSet.compact(Z, "aligned").generators).shape, (2, 4))
         self.assertEqual(np.asarray(cora.ContSet.compact(Z, "zeros", 1.5).generators).shape, (2, 1))
@@ -226,6 +233,7 @@ class Generic(unittest.TestCase):
         self.assertEqual(self.I.lift(3).inf.tolist(), [-1.0, 0.0, -inf])
         P = self.Z.lift(2, proj=[1, 0])
         self.assertEqual(P.center.tolist(), [0.0, 1.0])
+        # lift keeps the center
         self.assertEqual(self.Z.lift(2).center.tolist(), self.Z.center.tolist())
         self.assertEqual(cora.EmptySet(2).lift(4, [1, 3]).dim, 4)
         self.assertIsInstance(cora.Fullspace(2).lift(4), cora.Fullspace)
@@ -247,6 +255,7 @@ class Generic(unittest.TestCase):
         self.assertAlmostEqual(self.Z.norm(), 2.5 ** 0.5)
         self.assertEqual((self.Z.norm(1), self.Z.norm(float("inf"))), (2.0, 1.5))
         self.assertAlmostEqual(self.Z.norm("fro"), 2.5 ** 0.5)
+        # norms and invalid types
         self.assertEqual(cora.EmptySet(2).norm(), -float("inf"))
         for call in (lambda: self.Z.norm(3), lambda: self.Z.norm("l2"),
                      lambda: self.Z.norm(2, "bogus")):
@@ -268,6 +277,7 @@ class Generic(unittest.TestCase):
         self.assertEqual((H.inf.tolist(), H.sup.tolist()), ([-1.0, -1.0], [3.0, 2.0]))
         Z2 = zonotope([0.0, 1.0], [[0.25, 0.0], [0.0, 0.25]])
         E = self.Z.enclose(Z2)
+        # enclose bounds the support functions
         self.assertIsInstance(E, cora.Zonotope)
         for d in ([1.0, 0.0], [0.0, -1.0], [1.0, 1.0]):
             d = np.array(d)
@@ -289,6 +299,7 @@ class Generic(unittest.TestCase):
 
     def test_a_pair_without_an_entry_is_noops(self):
         for operation in (cora.cart_prod, cora.convex_hull):
+            # a set without operation is refused
             with self.assertRaises(cora.errors.Noops):
                 operation(self.Z, Custom())
 

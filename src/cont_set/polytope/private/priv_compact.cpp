@@ -263,6 +263,7 @@ std::pair<Rows, Row> priv_equality_to_inequality(const HostH &H) {
         A.push_back(negated);
         b.push_back(-H.be[i]);
     }
+    // the rows as A x <= b
     return {A, b};
 }
 
@@ -440,8 +441,7 @@ bool priv_compact_1d(HostH &H, double tol) {
                 aux_clear(H);
                 return true;
             }
-            // all equalities are the first one: keep it as x = be / a (CORA divides by the 1 it has
-            // just assigned, and keeps x = be, docs/cora-differences.md)
+            // all equalities are the first: keep it as x = be / a (CORA keeps x = be)
             const double a = H.Ae[0][0], offset = H.be[0] / a;
             H.Ae = {{1.0}};
             H.be = {offset};

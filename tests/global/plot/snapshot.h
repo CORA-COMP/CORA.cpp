@@ -51,6 +51,7 @@ inline std::string dump_layers(const cora::Figure &fig) {
             out << "\n";
         }
     }
+    // the text
     return out.str();
 }
 

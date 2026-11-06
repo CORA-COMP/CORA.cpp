@@ -86,6 +86,8 @@ void aux_chunked(double *out, std::size_t n, std::uint64_t base, F fill) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Uniform numbers ---------------------------------------------------------------------------------
+
 void Rng::uniform(double *out, std::size_t n, double lo, double hi) {
     const double span = hi - lo;
     const std::uint64_t base = aux_mix(seed_ ^ aux_mix(++draws_));
@@ -94,11 +96,12 @@ void Rng::uniform(double *out, std::size_t n, double lo, double hi) {
     });
 }
 
+// Normal numbers ----------------------------------------------------------------------------------
+
 void Rng::normal(double *out, std::size_t n, double scale) {
     const std::uint64_t base = aux_mix(seed_ ^ aux_mix(++draws_));
     aux_chunked(out, n, base, [=](Xoshiro &s, double *o, std::size_t k) {
-        // Box–Muller over the whole chunk: the uniforms first, so the transcendentals
-        // that follow sit in flat loops the vectorizer can take.
+        // Box–Muller over the whole chunk: uniforms first, so the transcendentals vectorize.
         const std::size_t pairs = k / 2;
         for (std::size_t i = 0; i < pairs; ++i) {
             o[2 * i] = s.unit();

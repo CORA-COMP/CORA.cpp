@@ -53,6 +53,7 @@ int main() {
         for (const Tensor &M : members) {
             const Tensor E = M.expm();
             test::oracle::check_enclosed("intervalMatrix.expmInd: a member", E, theirs);
+            // members of the exponential
             test::check(mine.contains(E, "exact", 1e-12),
                         "expm_independent: a member in CORA.cpp's box");
         }

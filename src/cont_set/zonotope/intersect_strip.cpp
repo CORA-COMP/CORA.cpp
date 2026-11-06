@@ -146,6 +146,7 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
     CORA_CHECK(method == "normGen" || method == "bravo" || C.shape()[0] == 1, Error::special_error,
                [&] { return "intersect_strip: '" + method + "' is for a single strip"; });
     CORA_CHECK(method != "bravo" || c_.ndim() == 2, Error::not_supported, [] {
+        // a single strip: the other methods differ in the gain only
         return std::string("intersect_strip: 'bravo' chooses among candidates per zonotope; it "
                            "supports a single zonotope, not a batch");
     });

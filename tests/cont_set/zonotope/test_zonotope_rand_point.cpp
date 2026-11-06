@@ -58,6 +58,7 @@ void rand_point_samples_the_set(const std::string &b) {
     check(reached > 0.6, b + ": the points do not fill the set");
 
     std::vector<double> mean(n, 0.0);
+    // the points are centred
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < N; ++j) mean[i] += points[i * N + j] / N;
         check(std::abs(mean[i] - c[i]) < 0.12, b + ": the points are not centred on the set");
@@ -89,6 +90,7 @@ void extreme_points_are_corners(const std::string &b) {
         }
         worst = std::max(worst, nearest);
     }
+    // an extreme point is a corner
     check(worst < 1e-10, b + ": an extreme point is not a corner");
 }
 

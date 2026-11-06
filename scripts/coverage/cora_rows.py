@@ -11,6 +11,7 @@ Reviewed:      ---
 """
 import re
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -54,6 +55,7 @@ def row_of_path(path):
         dirs = dirs[1:] if dirs[:1] == ["signals"] else dirs
         cls = at_class(dirs[0]) if dirs else None
         found = ("specification", cls, name) if len(dirs) == 1 and cls else None
+        # a specification without a class folder is named after its file
         found = found or (("specification", name, None) if not dirs else None)
     elif parts[0] in OTHERS_DIRS:
         found = other_row(parts[0], dirs, cls, name)

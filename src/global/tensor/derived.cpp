@@ -329,6 +329,7 @@ Tensor Tensor::block_diag(const std::vector<Tensor> &blocks) {
         rows.push_back(concat(parts, -1));
         before += m;
     }
+    // the rows stacked in order
     return concat(rows, -2);
 }
 

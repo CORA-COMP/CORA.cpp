@@ -34,8 +34,7 @@ void enclose_points_known(const std::string &b) {
     check(close(point.q(), {2, 3}, 0) && close(point.Q(), Tensor::zeros({2, 2}), 0),
           b + ": coinciding points give the point");
     check(close(Ellipsoid::enclose_points(column({4.0, 5.0})).q(), {4, 5}, 0), b + ": one column");
-    // the corners of a square: center 0, every corner in the ellipsoid, and the farthest on its
-    // boundary
+    // the corners of a square: center 0, every corner inside, the farthest on the boundary
     const Tensor corners({{1.0, 1.0, -1.0, -1.0}, {1.0, -1.0, 1.0, -1.0}});
     const Ellipsoid square = Ellipsoid::enclose_points(corners);
     check(close(square.q(), {0, 0}, 1e-12) && test::all_inside(square, corners),

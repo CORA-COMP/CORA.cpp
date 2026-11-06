@@ -11,9 +11,9 @@
 //             indices of filter_out, a pair of halves, or Vertices; an oracle Certified answer
 //             is a proof only when `proved`
 // Skip:       available() is false, with a note, unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND
-//             are set; a test then returns at once. run skips an op the oracle does not serve (an older
-//             oracle; `lean::serves`), naming it once on stderr; serves(op) asks for another op,
-//             and nearest_is_strict() for a check that needs the machine's strict order at nearest
+//             are set; a test then returns at once. run skips an op the oracle does not serve
+//             (`lean::serves`), naming it once on stderr; serves(op) asks for another op, and
+//             nearest_is_strict() for a check that needs the machine's strict order at nearest
 // See also:   testing.h, cora/global/oracle/request.h
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
@@ -86,9 +86,7 @@ inline bool serves(const std::string &op) {
 }
 
 /// Whether the oracle at nearest compares strictly by the machine's order, so that a box is not
-/// below itself and a flat box is not full dimensional. The oracles before batch 5 added a margin
-/// there that rounds away at nearest, and read both as true; the checks of such degenerate cases
-/// are skipped with them.
+/// below itself; the checks of degenerate cases are skipped without it.
 inline bool nearest_is_strict() {
     static const bool strict = [] {
         const lean::DTypeScope dtype("nearest");
@@ -584,8 +582,7 @@ inline void check_rebuilt(const cora::IntervalMatrix &cora_result,
 /// sound (default backend, dtype binary64); what the body builds follows the mode.
 template <class F>
 void run(const std::string &op, F body, uint64_t seed = 7) {
-    // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without labels a generic
-    // test
+    // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without is a generic test
     if (op.find('.') != std::string::npos && !serves(op)) return;
     op_name() = op;
     for (const Mode m : {Mode::exact, Mode::sound}) {

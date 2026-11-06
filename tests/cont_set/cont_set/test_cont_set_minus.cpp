@@ -40,6 +40,7 @@ void minus_shifts_the_set(const std::string &b) {
     check(test::close(C.as<Interval>().inf(), {0.0, -1.0}) &&
               test::close(C.as<Interval>().sup(), {2.0, 1.0}),
           b + ": a vector minus a box");
+    // a vector minus a zonotope
     check(test::close(D.as<Zonotope>().center(), {0.0, 1.0}) &&
               test::close(test::support(D, {1.0, 0.0}), 0.5) &&
               test::close(test::support(D, {-1.0, 0.0}), 0.5),

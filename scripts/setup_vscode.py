@@ -17,6 +17,7 @@ import os
 import shutil
 import sys
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 
@@ -72,6 +73,7 @@ settings.update({
     "python.testing.unittestEnabled": True,
     "python.testing.unittestArgs": ["-v", "-s", "tests/python", "-p", "test_*.py"],
 })
+# on Windows the libraries and the build folder go on the path
 if WINDOWS:
     settings.update({
         "coracpp.libraryPath": libraries,
@@ -93,6 +95,7 @@ if WINDOWS:
     include_root = []
 else:
     include_root = [os.path.join(prefix, "include", "eigen3"), os.path.join(prefix, "include")]
+# include paths of the C++ extension
 include = ["${workspaceFolder}/src", "${workspaceFolder}/tests"] + include_root
 defines = []
 try:
@@ -119,6 +122,7 @@ else:
     compiler = os.path.join(prefix, "bin", "x86_64-conda-linux-gnu-c++")
     compiler = compiler if os.path.exists(compiler) else shutil.which("g++") or "g++"
     mode = "linux-gcc-x64"
+# the IntelliSense settings of the C++ extension
 write("c_cpp_properties.json", {
     "version": 4,
     "configurations": [{

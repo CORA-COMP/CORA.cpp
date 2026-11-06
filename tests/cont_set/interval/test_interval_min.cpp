@@ -39,6 +39,7 @@ void min_takes_the_smaller_bounds(const std::string &b) {
           b + ": another set by its interval hull");
     check(close(I.min(), I.inf()), b + ": without an argument the lower bound");
     const Interval S = Interval::stack({I, J}).min(J);
+    // a batch
     check(S.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(S.sup().slice(0, 0, 1).reshape({2, 1}), R.sup()),
           b + ": a batch");

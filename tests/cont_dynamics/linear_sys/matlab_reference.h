@@ -34,6 +34,7 @@ struct System {
 /// A damped oscillator, step 0.1, order 8, five steps.
 inline const System &oscillator() {
     static const System s{
+        // the oscillator of the MATLAB reference
         2,
         2,
         {-0.2, 1.0, -1.0, -0.2},
@@ -45,6 +46,7 @@ inline const System &oscillator() {
          -3.9476137617237179e-05},
         {0.0012000413732381331, 0.0005564528717124116, 1.5390117296157174e-06,
          0.0012000413732381331},
+        // the directions, then the supports of the time intervals and of the time points
         {1, 0, 0, 1, 1, 1, 1, -2},
         {{1.14551093304521, 0.710682871515058, 1.81718295345275, 0.765085217909499},
          {1.17453307773407, 0.60483335615097, 1.73067562161623, 0.983574784598129},
@@ -62,6 +64,7 @@ inline const System &oscillator() {
 
 /// Three dimensions with mixed signs, step 0.2, order 6, five steps.
 inline const System &three_dimensional() {
+    // three states with mixed signs
     static const System s{3,
                           3,
                           {-0.3, 1.0, 0.0, -1.0, -0.2, 0.4, 0.0, -0.5, -0.1},
@@ -75,6 +78,7 @@ inline const System &three_dimensional() {
                           {0.0045519218543668832, 0.003018430609359028, 0.00013514010751758312,
                            3.5568565301200255e-05, 0.0058021703810981666, 0.00083200268583706952,
                            0.00016892513439697112, 1.4961041000085691e-05, 0.00095029964997380941},
+                          // the directions, then the supports of the time intervals and points
                           {1, 0, 0, 0, 1, -1, 1, 1, 1},
                           {{1.37574147500652, -0.243327651818315, 1.62670556210996},
                            {1.24729211171551, -0.421329212907627, 1.2982077551965},
@@ -93,6 +97,7 @@ inline const System &three_dimensional() {
 /// `x' = -x` on `[1, 3]`, step 0.05, order 8, ten steps; the directions are `+1` and `-1`,
 /// so the support along `-1` is minus the lower bound. No time points recorded.
 inline const System &scalar() {
+    // one state with a negative drift
     static const System s{1,
                           1,
                           {-1.0},
@@ -102,6 +107,7 @@ inline const System &scalar() {
                           8,
                           {-0.00031262305180381335},
                           {8.0201470440000716e-06},
+                          // the directions, then the supports of the time intervals
                           {1, -1},
                           {{3.00032866334589, -0.901520979846017},
                            {2.85400090774751, -0.857553282834246},

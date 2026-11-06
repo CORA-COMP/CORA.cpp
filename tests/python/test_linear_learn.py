@@ -7,12 +7,14 @@ Reviewed:      ---
 """
 import unittest
 
+
 try:
     import torch
 except ImportError:  # numpy-only build: test_numpy.py covers it
     raise unittest.SkipTest("needs torch") from None
 
 import cora
+
 
 if not cora.has_torch:  # torch is installed, but this build has no torch backend
     raise unittest.SkipTest("needs a build with torch")
@@ -58,6 +60,7 @@ class LearnDynamics(unittest.TestCase):
             optimizer.zero_grad()
             loss(A, self.measurements).backward()
             optimizer.step()
+        # the loss decreases
         self.assertLess(loss(A, self.measurements).item(), first)
 
 

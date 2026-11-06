@@ -204,6 +204,7 @@ HostH aux_constraints_2d_degenerate(const Rows &points) {
     H.A = {direction, {-direction[0], -direction[1]}, side, {-side[0], -side[1]}};
     H.b = {priv_dot(direction, points[hi]), -priv_dot(direction, points[lo]),
            priv_dot(side, points[hi]), -priv_dot(side, points[hi])};
+    // the four sides of the rectangle around the points
     return H;
 }
 

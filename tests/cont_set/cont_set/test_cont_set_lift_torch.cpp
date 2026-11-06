@@ -49,6 +49,7 @@ int main() {
         "enclose",
         [&](const Inputs &x) {
             const Zonotope Z2(x[0] + x[0].ones_like(), x[1]);
+            // gradient of enclose
             return test::parts(S(zonotope(x)).enclose(Z2).as<Zonotope>());
         },
         test::random_zonotope(3, 4));

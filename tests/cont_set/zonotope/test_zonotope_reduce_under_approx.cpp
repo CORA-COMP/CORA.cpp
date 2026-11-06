@@ -104,6 +104,7 @@ void checks_and_their_switch() {
           "a batch");
     const Tensor on = Z.reduce_under_approx("yang", 1).generators();
     ChecksScope off(false);
+    // the checks off
     check(close(Z.reduce_under_approx("yang", 1).generators(), on, 0), "checks off");
 }
 

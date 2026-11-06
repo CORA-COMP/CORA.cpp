@@ -32,10 +32,7 @@ namespace {
 
 // Faces -------------------------------------------------------------------------------------------
 
-// The corners of the face of the zonotope whose outer normal is d: the generators not parallel to
-// that face add with the sign of g'd; those in its plane form a planar zonotope, whose corners
-// are found by turning a direction u around d and taking the sign of g'u between the angles at
-// which one of them flips.
+// Corners of the face with outer normal d: generators not parallel to it add with sign g'd.
 void aux_face_corners(const Point3 &c, const std::vector<Point3> &g, const Point3 &d, double tol,
                       std::vector<Point3> &out) {
     Point3 base = c;

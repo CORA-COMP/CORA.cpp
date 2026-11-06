@@ -39,6 +39,7 @@ void max_takes_the_larger_bounds(const std::string &b) {
           b + ": another set by its interval hull");
     check(close(I.max(), I.sup()), b + ": without an argument the upper bound");
     const Interval S = Interval::stack({I, J}).max(J);
+    // a batch
     check(S.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
               close(S.sup().slice(0, 0, 1).reshape({2, 1}), R.sup()),
           b + ": a batch");

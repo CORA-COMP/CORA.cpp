@@ -109,6 +109,7 @@ void checks_and_their_switch() {
           "rdivide: Inf / Inf");
     const Tensor on = I.rdivide(column({2.0, 4.0})).sup();
     ChecksScope off(false);
+    // the same with the checks off
     check(close(I.rdivide(column({2.0, 4.0})).sup(), on, 0),
           "rdivide: the same with the checks off");
 }

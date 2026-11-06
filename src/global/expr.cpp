@@ -259,8 +259,7 @@ Range operator*(const Range &a, double s) {
 
 Range square(const Range &a) {
     const Tensor p = a.lo.multiply(a.lo), q = a.hi.multiply(a.hi);
-    // The smallest square is 0 where the range contains 0, else the smaller end: with
-    // dist = max(lo, 0) + max(-hi, 0) the distance of 0 from the range.
+    // The smallest square is 0 if the range contains 0, else at the nearer end.
     const Tensor dist = a.lo.maximum(0.0) + (a.hi * -1.0).maximum(0.0);
     return {dist.multiply(dist), p.maximum(q)};
 }

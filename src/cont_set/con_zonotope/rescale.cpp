@@ -83,6 +83,7 @@ Eliminated aux_eliminate(const HostConZonotope &H, double eps) {
         if (best <= tol) continue;
         for (int64_t k = 0; k < w; ++k) std::swap(e.M[i * w + k], e.M[row_best * w + k]);
         for (int64_t r = 0; r < p; ++r) std::swap(e.M[r * w + i], e.M[r * w + col_best]);
+        // pivot rows and columns are swapped into place
         std::swap(e.order[i], e.order[col_best]);
         // the pivot row, scaled to 1, leaves every other row without this column
         const double pivot = e.M[i * w + i];
@@ -124,6 +125,7 @@ bool aux_iterate(const std::vector<double> &M, int64_t p, int64_t m, std::vector
             range_hi[j] = std::min(range_hi[j], std::max(u, v));
             lo[j] = std::max(lo[j], range_lo[j]);
             hi[j] = std::min(hi[j], range_hi[j]);
+            // the ranges are intersected; empty means infeasible
             if (lo[j] > hi[j]) return false;
         }
     }
@@ -179,6 +181,7 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
     }
     std::vector<double> middle(lo.size()), radius(lo.size());
     for (std::size_t j = 0; j < lo.size(); ++j) {
+        // middle and radius of the ranges
         middle[j] = (hi[j] + lo[j]) / 2;
         radius[j] = (hi[j] - lo[j]) / 2;
     }

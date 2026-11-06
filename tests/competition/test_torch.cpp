@@ -87,17 +87,14 @@ void the_two_backends_agree(const torch::TensorOptions &opts, const std::string 
     struct Shape {
         Eigen::Index n, m;
     };
-    // 5x2500 is past the projector the tensor path is willing to hold as a matrix, so it
-    // takes the factored form that the catalog's largest instances run on; every smaller
-    // shape here takes the held one. Both paths are checked against the same LP.
+    // 5x2500 is past the projector the tensor path holds as a matrix, so it factors.
     const Shape shapes[] = {{1, 2}, {2, 4}, {3, 6}, {5, 10}, {10, 20}, {30, 60}, {5, 2500}};
     for (const auto &[n, m] : shapes) {
         const Eigen::Index batch = 3, points = 12;
         const EigenZonotope set = cora::comp::random_zonotope(rng, n, m, batch);
         const cora::comp::Mat<double> probes = cora::comp::across_the_boundary(set, points, rng);
 
-        // Eigen keeps one set per column with the generator blocks side by side; a tensor
-        // wants c as (B, n), G as (B, n, m) and the points as (B, N, n).
+        // Eigen keeps one set per column; a tensor wants c (B, n), G (B, n, m), points (B, N, n).
         const torch::Tensor c = to_tensor(set.c, opts).transpose(0, 1).contiguous();
         const torch::Tensor g =
             to_tensor(set.g, opts).reshape({n, batch, m}).permute({1, 0, 2}).contiguous();

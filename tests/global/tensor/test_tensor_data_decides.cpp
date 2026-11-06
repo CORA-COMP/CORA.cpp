@@ -44,6 +44,7 @@ void stays_where_it_lives() {
     check(std::string((a + a).backend_name()) == "lean",
           "an operation runs on its operands' backend");
     check(std::string(a.zeros_like({3, 1}).backend_name()) == "lean", "zeros like it are lean");
+    // the backend is decided by the data
     check(std::string(a.eye_like().backend_name()) == "lean", "the identity like it is lean");
     check(std::string(Tensor::like(a, {1, 2}, {2, 1}).backend_name()) == "lean",
           "host values like it are lean");
@@ -65,6 +66,7 @@ void mixing_is_an_error() {
     check(!aux_message([&] { (void)a.matmul(b); }).empty(), "matmul of two backends");
     check(!aux_message([&] { (void)Tensor::concat({a, b}, -1); }).empty(),
           "concat of two backends");
+    // mixed dtypes are refused
     const Tensor f = b.to(DType::float32);
     const std::string dtypes = aux_message([&] { (void)(f + b); });
     check(dtypes.find("float32") != std::string::npos &&

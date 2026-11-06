@@ -57,6 +57,7 @@ int main() {
             }
             const IntervalMatrix a = mine.interval_matrix();
             const auto [lo, hi] = theirs.interval_matrix().gather();
+            // the enclosures meet
             const bool meet =
                 (lo.less_equal(a.interval().sup()).multiply(a.interval().inf().less_equal(hi)))
                     .min()

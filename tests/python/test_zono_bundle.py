@@ -33,6 +33,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # ----------------------------------------  BEGIN CODE  ---------------------------------------- #
@@ -87,6 +88,7 @@ class ZonoBundle(unittest.TestCase):
             cora.ZonoBundle([1.0])
 
     def test_empty_conversion_and_center(self):
+        # the empty bundle
         E = cora.ZonoBundle.empty(3)
         self.assertEqual(E.dim, 3)
         self.assertEqual(E.parallel_sets, 2)
@@ -108,6 +110,7 @@ class ZonoBundle(unittest.TestCase):
         np.testing.assert_array_equal(box.sup, [1.0, 1.0])
         lifted = squares().lift(2, [1, 0])
         self.assertIsInstance(lifted, cora.ZonoBundle)
+        # enlarging scales the members
         enlarged = squares().enlarge(2.0)
         np.testing.assert_array_equal(enlarged.zonotopes[0].generators, 2.0 * np.eye(2))
         with self.assertRaises(cora.errors.NotSupported):
@@ -130,6 +133,7 @@ class ZonoBundle(unittest.TestCase):
             zB.intersect(zonotope([0.0], [[1.0]]))
 
     def test_enclose(self):
+        # enclose with a zonotope
         zB = squares()
         R = zB.enclose(zonotope([4.0, 0.0], [[1.0], [0.5]]))
         self.assertEqual(R.parallel_sets, 2)
@@ -151,6 +155,7 @@ class ZonoBundle(unittest.TestCase):
         self.assertTrue(zB.contains(np.array([[0.5, 0.25], [0.5, 0.75]])))
         self.assertTrue(zB.contains(zonotope([0.5, 0.5], 0.25 * np.eye(2))))
         self.assertTrue(zB.contains(cora.Interval(np.array([0.25, 0.25]), np.array([0.75, 0.75]))))
+        # containment and intersection of a bundle
         self.assertTrue(zB.contains(zB.intersect(zonotope([0.5, 0.5], 0.25 * np.eye(2)))))
         self.assertTrue(cora.contains(zB, zonotope([0.5, 0.5], 0.25 * np.eye(2))))
         self.assertTrue(zB.is_intersecting(zonotope([0.5, 0.5], 0.25 * np.eye(2))))
@@ -172,6 +177,7 @@ class ZonoBundle(unittest.TestCase):
             zB.isequal(zB, tol=-1.0)
 
     def test_properties_on_random_bundles(self):
+        # random bundles contain their points
         rng = np.random.default_rng(41)
         for _ in range(3):
             zB, x0 = random_bundle(rng, 3, 3, 4)

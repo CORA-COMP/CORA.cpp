@@ -9,6 +9,7 @@ the block, nor any `Reviewed:`.
 Syntax:   python scripts/ci/convert_layout.py [--cora ~/CORA] [--check] [files ...]
 Outputs:  the number of files changed; with --check, the files that would change
 See also: scripts/ci/layout.py, CONTRIBUTING.md
+
 Authors:       Claude Sonnet 5.5
 Written:       06-November-2026
 Last update:   ---
@@ -22,14 +23,16 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import layout  # noqa: E402
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
 
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 WIDTH = 98  # the longest line of the CORA authors
 SWEEP = 150  # a commit that changes this many files is a tree-wide sweep, not the file's own change
 TAG = re.compile(r"^(?:// |# )(CORA|CORA\.cpp only|PROPERTY|ORACLE): ")
@@ -250,7 +253,8 @@ def valid_markers(lines, path, lang):
 
 
 def respace(lines, lang):
-    """The empty lines around the markers: one, and two above MAIN."""
+    """The empty lines around the markers: one, and two above MAIN (and above a Python BEGIN that
+    follows imports, which ruff separates from what comes next by two)."""
     for name in ("END", "AUXILIARY", "BEGIN", "MAIN"):
         for at in reversed(layout.marker_lines(lines, lang)[name]):
             first = at
@@ -259,7 +263,9 @@ def respace(lines, lang):
             last = at + 1
             while last < len(lines) and not lines[last].strip():
                 last += 1
-            lines[first:last] = [""] * (2 if name == "MAIN" else 1) + [lines[at]] + [""]
+            after_code = lang == "py" and first > 0 and lines[first - 1].startswith(("import ", "from "))
+            above = 2 if name == "MAIN" or (name == "BEGIN" and after_code) else 1
+            lines[first:last] = [""] * above + [lines[at]] + [""]
 
 
 def put(lines, at, name, lang, above=1, below=1):
@@ -364,6 +370,7 @@ def python_markers(lines, path):
     if at["MAIN"] and at["BEGIN"] and not at["AUXILIARY"]:
         stop = at["MAIN"][0]
         code = layout.scan(lines, "py")
+        # code between BEGIN and MAIN needs an AUXILIARY marker
         inner = [i for i in range(at["BEGIN"][0] + 1, stop) if code[i][0].strip()]
         if inner:
             put(lines, comment_before(lines, inner[0], "#"), "AUXILIARY", "py")
@@ -423,7 +430,7 @@ def tracked(paths):
     return [f for f in files if f and layout.language(f) and os.path.isfile(os.path.join(ROOT, f))]
 
 
-# ===========================================  MAIN  =========================================== #
+# ============================================  MAIN  ============================================ #
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -448,4 +455,4 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-# ---------------------------------------  END OF CODE  ---------------------------------------- #
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

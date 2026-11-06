@@ -65,6 +65,7 @@ void special_cases(const std::string &b) {
           b + ": no generators: the image of the point");
     const Zonotope T(column({0.5, 1.0}), Tensor({{0.5, 0.0}, {0.0, 1.0}}));
     const std::vector<Tensor> Q{Tensor({{1.0, 2.0}, {0.0, 1.0}}), Tensor({{0.0, 1.0}, {1.0, 0.0}})};
+    // a batch
     const Zonotope batch = Zonotope::stack({Z, T}).quad_map(Q);
     check(close(batch.center().slice(0, 1, 2).squeeze(0), T.quad_map(Q).center(), 1e-14) &&
               close(batch.center().slice(0, 0, 1).squeeze(0), Z.quad_map(Q).center(), 1e-14),
@@ -91,6 +92,7 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
         Tensor image = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(p),
                                        p.matrix_transpose().matmul(Q[1]).matmul(p)},
                                       0);
+        // the image of a point of Z
         Tensor mixed = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(q),
                                        p.matrix_transpose().matmul(Q[1]).matmul(q)},
                                       0);

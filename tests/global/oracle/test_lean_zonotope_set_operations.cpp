@@ -91,6 +91,7 @@ int main() {
     oracle::run("zonotope.cartProd", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n + 1, m + 2);
+            // Cartesian products
             aux_check_set(Z.cart_prod(Z2), lean::Zonotope(Z).cart_prod(lean::Zonotope(Z2)));
         }
     });
@@ -119,6 +120,7 @@ int main() {
     oracle::run("zonotope.enclose", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
+            // enclose
             aux_check_same_generators(Z.enclose(Z2), lean::Zonotope(Z).enclose(lean::Zonotope(Z2)));
         }
     });
@@ -151,6 +153,7 @@ int main() {
                     T[i].push_back(rnd.matrix(n, n));
                     theirs_T[i].emplace_back(T[i].back());
                 }
+            // the cubic map
             oracle::check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
         }
     });

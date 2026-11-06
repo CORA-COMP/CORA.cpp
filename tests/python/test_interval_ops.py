@@ -32,6 +32,7 @@ import unittest
 import cora
 import numpy as np
 
+
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -75,6 +76,7 @@ class Predicates(unittest.TestCase):
     def test_isequal(self):
         I = box([0.0, -1.0], [1.0, 2.0])
         self.assertTrue(I.isequal(I))
+        # equality up to tol
         self.assertFalse(I.isequal(box([0.0, -1.0], [1.0, 2.5])))
         self.assertFalse(I.isequal(box([0.0, -1.0], [1.0 + 1e-9, 2.0])))
         self.assertTrue(I.isequal(box([0.0, -1.0], [1.0 + 1e-9, 2.0]), tol=1e-8))
@@ -96,6 +98,7 @@ class Predicates(unittest.TestCase):
         with self.assertRaises(cora.errors.DimensionMismatch):
             _ = small <= box([0.0], [1.0])
         with self.assertRaises(TypeError):
+            # ordering is refused
             _ = small <= 1.0
 
 
@@ -120,6 +123,7 @@ class Arithmetic(unittest.TestCase):
         I = box([2.0, -4.0], [4.0, 6.0])
         np.testing.assert_allclose((I / 2.0).sup, [2.0, 3.0])
         R = I.divide(-2.0)
+        # division
         np.testing.assert_allclose(R.inf, [-2.0, -3.0])
         np.testing.assert_allclose(R.sup, [-1.0, 2.0])
         self.assertEqual((I / 0.0).inf.tolist(), [-INF, -INF])
@@ -141,6 +145,7 @@ class Arithmetic(unittest.TestCase):
         np.testing.assert_allclose(I.unite(J).inf, [0.0, -2.0])
         np.testing.assert_allclose(I.unite(J).sup, [3.0, 1.0])
         np.testing.assert_allclose(I.unite(np.array([-1.0, 3.0])).sup, [2.0, 3.0])
+        # union, maximum and minimum
         np.testing.assert_allclose(cora.unite(I, J).sup, [3.0, 1.0])
         for f in (I.max, I.min, I.unite):
             with self.assertRaises(cora.errors.DimensionMismatch):
@@ -163,6 +168,7 @@ class Arithmetic(unittest.TestCase):
             I.minkowski_difference(Z, "outer")
 
     def test_kron_and_matrix_power(self):
+        # Kronecker products
         I = cora.Interval.matrix(np.array([[1.0, -1.0]]), np.array([[2.0, 1.0]]))
         J = cora.Interval.matrix(np.array([[0.0], [2.0]]), np.array([[1.0], [3.0]]))
         P = I.kron(J)
@@ -184,6 +190,7 @@ class Arithmetic(unittest.TestCase):
         with self.assertRaises(cora.errors.NotSupported):
             cora.Interval.matrix(np.array([[1.0]]), np.array([[2.0]])).matrix_power(2)
 
+    # logarithm
     def test_log(self):
         R = box([1.0, 0.5], [np.e, 8.0]).log()
         np.testing.assert_allclose(R.inf, [0.0, np.log(0.5)])
@@ -207,6 +214,7 @@ class Embedding(unittest.TestCase):
     def test_norm(self):
         I = box([-3.0, -4.0], [1.0, 2.0])
         self.assertAlmostEqual(I.norm(), 5.0)
+        # norms
         self.assertAlmostEqual(I.norm(1), 7.0)
         self.assertAlmostEqual(I.norm(INF), 4.0)
         self.assertAlmostEqual(I.norm("fro"), 5.0)
@@ -230,6 +238,7 @@ class Embedding(unittest.TestCase):
             cora.Interval.origin(0)
 
 
+# gradients
 class Gradients(unittest.TestCase):
     """Autograd through the operations equals central differences (piecewise ones off their kinks)."""
 
@@ -260,6 +269,7 @@ class Gradients(unittest.TestCase):
         self.check(lambda I: I - shift, lo, hi)
         self.check(lambda I: shift - I, lo, hi)
         self.check(lambda I: I.minus(I + shift * 3.0), lo, hi)
+        # gradients of binary operations
         self.check(lambda I: I.divide(-2.5), lo, hi)
         self.check(lambda I: I.max(I + shift), lo, hi)
         self.check(lambda I: I.min(I + shift), lo, hi)

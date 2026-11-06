@@ -182,8 +182,7 @@ bool Polytope::contains(const ContSet &S, const std::string &method, Tol tol_arg
         const Interval hull = S.interval();
         return contains(Tensor::concat({hull.inf(), hull.sup()}, -1), "exact", tol);
     }
-    // 'exact' goes by the form that P has, 'exact:venum' by its vertices, 'exact:polymax' by its
-    // rows
+    // 'exact' goes by the form P has, 'exact:venum' by its vertices, 'exact:polymax' by its rows
     const Polytope *vertex_set = aux_vertex_polytope(S);
     const bool by_vertices = method == "exact:venum" || (method != "exact:polymax" && !is_h_rep());
     if (by_vertices && vertex_set) {

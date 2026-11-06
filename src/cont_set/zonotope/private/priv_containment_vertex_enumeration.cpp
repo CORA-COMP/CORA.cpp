@@ -74,6 +74,7 @@ bool priv_containment_vertex_enumeration(const HostZonotope &inner, const HostZo
     std::vector<double> sorted(std::size_t(n * k)), weight(k);
     for (int64_t j = 0; j < k; ++j) {
         weight[j] = length[order[j]];
+        // the generators in the order of their length
         for (int64_t i = 0; i < n; ++i) sorted[i * k + j] = G[i * k + order[j]];
     }
     // what a node can still add: the lengths of the generators that are not at +-1 yet
