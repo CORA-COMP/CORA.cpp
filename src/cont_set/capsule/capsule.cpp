@@ -2,14 +2,21 @@
 //
 // All entries are finite, r is nonnegative, and they share one batch shape.
 //
-// Syntax:   Capsule C(c, g, r);   Capsule C(c, g);   Capsule C(c);
+// Also the capsules of a box (the segment along a widest edge, the ball over the other half-widths)
+// and of a zonotope (its box in the basis of the left singular vectors of [-G, G], rotated back).
+//
+// Syntax:   Capsule C(c, g, r);   Capsule C(c, g);   Capsule C(c);   Capsule C(I);   Capsule C(Z);
 // Inputs:   c - center (..., n, 1)
 //           g - generator (..., n, 1), default 0
 //           r - radius (..., 1, 1) or a number, default 0
+//           I - box (..., n, 1)
+//           Z - zonotope (n, m), not a batch
 // Outputs:  C - the capsule {x | min_t |x - (c + t g)| <= r, t in [-1, 1]}
 // See also: empty, origin, Zonotope::Zonotope
 //
 // CORA: contSet/@capsule/capsule.m
+// CORA: contSet/@interval/capsule.m
+// CORA: contSet/@zonotope/capsule.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
@@ -18,6 +25,7 @@
 
 #include "cora/cont_set/capsule/capsule.h"
 #include "cont_set/capsule/private/priv.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -100,27 +108,42 @@ Capsule::Capsule(const Tensor &c, Tensor g) : Capsule(c, std::move(g), 0.0) {}
 
 Capsule::Capsule(const Tensor &c) : Capsule(c, c.defined() ? c.zeros_like() : Tensor(), 0.0) {}
 
-// Not ported yet ----------------------------------------------------------------------------------
+// Conversions -------------------------------------------------------------------------------------
 
-// Not yet ported: the support function, random points, projections and vertices.
-Tensor Capsule::support_function_impl(const Tensor &) const {
-    CORA_FAIL(Error::not_supported, "Capsule: support_function is not ported yet");
+Capsule::Capsule(const Interval &I) : ContSet(kClassId) {
+    detail::Entry entry;
+    CORA_CHECK(!I.is_empty(), Error::empty_set,
+               [] { return std::string("Capsule: the box is empty"); });
+    CORA_CHECK(I.inf().shape().back() == 1, Error::not_supported, [] {
+        return std::string("Capsule: the box must be a vector, not an interval matrix");
+    });
+    const Tensor rad = I.rad();
+    const int64_t n = rad.shape()[rad.ndim() - 2];
+    // the first widest edge: one-hot over the rows
+    const Tensor widest = rad.argmax(static_cast<int>(rad.ndim()) - 2, true);
+    const Tensor on_axis = rad.arange_like(n).reshape({n, 1}).equal(widest);
+    const Tensor others =
+        rad.multiply(on_axis.multiply(rad.ones_like()).negative().add(rad.ones_like()));
+    c_ = I.center();
+    g_ = rad.multiply(on_axis);
+    r_ = priv_norm(others);
 }
 
-Tensor Capsule::rand_point_impl(int64_t, Rng &) const {
-    CORA_FAIL(Error::not_supported, "Capsule: rand_point is not ported yet");
-}
-
-Set Capsule::project_impl(const std::vector<int64_t> &) const {
-    CORA_FAIL(Error::not_supported, "Capsule: project is not ported yet");
-}
-
-std::vector<Polygon> Capsule::vertices_impl() const {
-    CORA_FAIL(Error::not_supported, "Capsule: vertices is not ported yet");
-}
-
-std::vector<std::vector<Point3>> Capsule::vertices_3d_impl() const {
-    CORA_FAIL(Error::not_supported, "Capsule: vertices_3d is not ported yet");
+Capsule::Capsule(const Zonotope &Z) : ContSet(kClassId) {
+    detail::Entry entry;
+    CORA_CHECK(Z.center().ndim() == 2, Error::not_supported, [] {
+        return std::string("Capsule: a zonotope converts one at a time, not as a batch");
+    });
+    const int64_t n = Z.dim();
+    // B: the left singular vectors of [-G, G], completed to n columns
+    const Tensor G = Z.generators();
+    Tensor B = Tensor::concat({G.negative(), G}, 1).svd()[0];
+    if (B.shape().back() < n) B = Tensor::concat({B, G.eye_like(n)}, 1).qr().first;
+    const Tensor Bt = B.matrix_transpose();
+    const Capsule rotated(Zonotope(Bt.matmul(Z.center()), Bt.matmul(G)).interval());
+    c_ = B.matmul(rotated.c_);
+    g_ = B.matmul(rotated.g_);
+    r_ = rotated.r_;
 }
 
 } // namespace cora
