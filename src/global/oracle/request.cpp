@@ -208,10 +208,12 @@ template Fullspace Reply::get<Fullspace>(const char *) const;
 template Zonotope Reply::get<Zonotope>(const char *) const;
 template ConZonotope Reply::get<ConZonotope>(const char *) const;
 template MatZonotope Reply::get<MatZonotope>(const char *) const;
+// the sets of the protocol, and the lists and optionals of them
 template ZonoBundle Reply::get<ZonoBundle>(const char *) const;
 template Polytope Reply::get<Polytope>(const char *) const;
 template Ellipsoid Reply::get<Ellipsoid>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
+// the lists
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
 template std::vector<Zonotope> Reply::get<std::vector<Zonotope>>(const char *) const;
