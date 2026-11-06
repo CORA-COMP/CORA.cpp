@@ -2493,9 +2493,11 @@ void bind_polytope(py::module_ &m) {
              py::arg("type") = "outer", "Drops the constraints that are inactive on the box dom")
         .def(
             "reduce",
-            [](const Polytope &P, int order, cora::Rng *rng, const std::string &method) {
+            [](const Polytope &P, int order, std::optional<std::reference_wrapper<cora::Rng>> rng,
+               const std::string &method) {
+                // without a generator, a fixed seed gives the same directions every time
                 cora::Rng fallback(0);
-                return P.reduce(order, rng ? *rng : fallback, method);
+                return P.reduce(order, rng ? rng->get() : fallback, method);
             },
             py::arg("order") = 1, py::arg("rng") = py::none(), py::arg("method") = "rand",
             "An enclosing polytope with at most order * dim constraints")
