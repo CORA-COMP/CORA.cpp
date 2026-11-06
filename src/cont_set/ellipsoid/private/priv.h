@@ -49,6 +49,10 @@ Tensor priv_rank(const Tensor &Q, double tol);
 /// matrices are symmetric up to tol, M1 has eigenvalues at least tol and M2 at least -tol.
 std::pair<Tensor, Tensor> priv_simdiag(const Tensor &M1, const Tensor &M2, double tol);
 
+/// The factor U_r sqrt(D_r) (n, r) of the unbatched, nonempty E, r its rank: a matrix G with
+/// G G' = Q (no columns for a point).
+Tensor priv_range_factor(const Ellipsoid &E);
+
 /// The shape matrix M Q M' of the image of an ellipsoid under M, symmetrized (CORA's mtimes).
 Tensor priv_congruence(const Tensor &M, const Tensor &Q);
 

@@ -13,6 +13,7 @@
 #pragma once
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
+#include "cora/cont_set/registry.h"
 #include "testing.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //

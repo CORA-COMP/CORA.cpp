@@ -1,12 +1,15 @@
 // test_ellipsoid_class - the constructors of Ellipsoid: forms, defaults, checks and refusals
 //
 // CORA: contSet/@ellipsoid/ellipsoid.m
+// CORA: contSet/@interval/ellipsoid.m
+// CORA: contSet/@zonotope/ellipsoid.m
 // CORA authors: Victor Gassmann, Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "ellipsoid_testing.h"
 
 using namespace cora;
@@ -75,14 +78,64 @@ void refusals() {
     check(close(kept.Q(), {1, 0.5, 0, 1}, 0), "Ellipsoid: no check, no refusal");
 }
 
+/// The ellipsoid of a box: n times its diagonal shape; radii below 5e-3 are widened to it.
+void from_interval(const std::string &b) {
+    const Interval box(column({0.0, 0.0}), column({2.0, 1.0}));
+    const Ellipsoid E(box);
+    check(close(E.Q(), {2, 0, 0, 0.5}, 1e-14) && close(E.q(), {1, 0.5}, 0), b + ": n diag(rad^2)");
+    const Ellipsoid thin(Interval(column({0.0, 0.0}), column({2.0, 0.002})));
+    check(close(thin.Q(), {2, 0, 0, 2 * 5e-3 * 5e-3}, 1e-14),
+          b + ": a thin edge is widened to 5e-3");
+    // the ellipsoid holds the box, by its corners
+    check(E.contains(box), b + ": holds the box");
+    check(Ellipsoid(Interval(column({1.0}), column({3.0}))).Q().item() == 1.0,
+          b + ": one dimension");
+}
+
+/// The ellipsoid of n independent generators is n G G' (outer) or G G' (inner); a point has Q = 0.
+void from_zonotope(const std::string &b) {
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    check(close(Ellipsoid(Z).Q(), {2, 0, 0, 8}, 1e-14) && close(Ellipsoid(Z).q(), {1, 2}, 0),
+          b + ": outer");
+    check(close(Ellipsoid(Z, "inner:norm").Q(), {1, 0, 0, 4}, 1e-14), b + ": inner");
+    check(Ellipsoid(Z, "outer:exact").contains(Z), b + ": the outer ellipsoid holds the zonotope");
+    check(
+        close(Ellipsoid(Zonotope(column({1.0, 2.0}), Tensor::zeros({2, 0}))).Q(), {0, 0, 0, 0}, 0),
+        b + ": a point");
+}
+
+/// Boxes with a flat edge, the inner mode, zonotopes with more generators and a batch are refused.
+void conversion_refusals() {
+    const Interval flat(column({0.0, 0.0}), column({1.0, 0.0}));
+    check(test::raises([&] { Ellipsoid E(flat); }, Error::not_supported),
+          "Ellipsoid(I): a flat edge");
+    check(test::raises([&] { Ellipsoid E(flat, "inner"); }, Error::not_supported),
+          "Ellipsoid(I): inner");
+    check(test::raises([&] { Ellipsoid E(flat, "middle"); }, Error::wrong_value),
+          "Ellipsoid(I): mode");
+    const Zonotope many(column({0.0, 0.0}), Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
+    check(test::raises([&] { Ellipsoid E(many); }, Error::not_supported),
+          "Ellipsoid(Z): more generators");
+    check(test::raises([&] { Ellipsoid E(many, "outer"); }, Error::wrong_value),
+          "Ellipsoid(Z): mode");
+    ChecksScope off(false);
+    check(Ellipsoid(Interval(column({0.0, 0.0}), column({1.0, 2.0}))).dim() == 2,
+          "Ellipsoid(I): works with the checks off");
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
 int main() {
-    test::for_each_backend([](const std::string &b) { constructor_forms(b); });
+    test::for_each_backend([](const std::string &b) {
+        constructor_forms(b);
+        from_interval(b);
+        from_zonotope(b);
+    });
     refusals();
+    conversion_refusals();
     return test::finish("ellipsoid class");
 }
 
