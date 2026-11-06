@@ -67,6 +67,25 @@ Polytope aux_halfspaces(oracle::Random &rnd, int64_t n, int64_t m) {
 /// The vertices of a result, reduced to the extreme ones as CORA.cpp keeps them.
 Polytope aux_extreme(const Polytope &P) { return P.compact("V"); }
 
+/// The columns of a vertex polytope in lexicographic order: a vertex set has no order.
+Polytope aux_sorted(const Polytope &P) {
+    const Tensor V = P.V();
+    const int64_t n = V.shape()[0], p = V.shape()[1];
+    const std::vector<double> x = V.data();
+    std::vector<int64_t> order(static_cast<std::size_t>(p));
+    std::iota(order.begin(), order.end(), int64_t{0});
+    std::sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
+        // the first coordinate that differs decides
+        for (int64_t i = 0; i < n; ++i)
+            if (x[i * p + a] != x[i * p + b]) return x[i * p + a] < x[i * p + b];
+        return false;
+    });
+    std::vector<double> sorted;
+    for (int64_t i = 0; i < n; ++i)
+        for (const int64_t c : order) sorted.push_back(x[i * p + c]);
+    return Polytope(Tensor::from_data(sorted, {n, p}));
+}
+
 /// The extreme vertices of CORA.cpp's result against those of the oracle's list (a vertex polytope
 /// keeps every vertex it is given); an oracle result with error boxes has none to compare.
 void aux_check_vertices(const std::string &what, const Polytope &mine,
