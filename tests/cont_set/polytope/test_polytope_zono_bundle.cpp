@@ -28,7 +28,8 @@ namespace {
 void bundles(const std::string &b) {
     const ZonoBundle bundle = test::square_h().zono_bundle();
     check(bundle.parallel_sets() == 4, b + ": one zonotope per row");
-    check(bundle.contains(column({0.5, 0.5})) && !bundle.contains(column({1.1, 0.5})), b + ": the points");
+    check(bundle.contains(column({0.5, 0.5})) && !bundle.contains(column({1.1, 0.5})),
+          b + ": the points");
     // the vertex form and a triangle
     check(test::square_v().zono_bundle().parallel_sets() == 4, b + ": vertices");
     check(test::triangle_h().zono_bundle().parallel_sets() == 3, b + ": the triangle");
