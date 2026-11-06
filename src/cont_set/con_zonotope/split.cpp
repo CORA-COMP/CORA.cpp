@@ -17,6 +17,7 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "cont_set/cont_set/private/priv_coordinate.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -57,11 +58,8 @@ std::pair<ConZonotope, ConZonotope> aux_split_dim(const ConZonotope &cz, const I
 
 std::pair<ConZonotope, ConZonotope> ConZonotope::split(int64_t N) const {
     detail::Entry entry;
-    CORA_CHECK(N >= 0 && N < dim(), Error::wrong_value, [&] {
-        return "split: the coordinate " + std::to_string(N) + " is not in [0, " +
-               std::to_string(dim()) + ")";
-    });
-    const detail::Refusal refusal = aux_refusal(*this);
+    detail::Refusal refusal = priv_coordinate_refusal(N, dim(), "split");
+    if (!refusal) refusal = aux_refusal(*this);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_split_dim(*this, interval(), N);
 }
