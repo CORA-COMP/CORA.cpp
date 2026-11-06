@@ -7,6 +7,11 @@
 // See also: interval, ContSet::center
 //
 // CORA: contSet/@ellipsoid/center.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 

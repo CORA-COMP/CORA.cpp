@@ -88,6 +88,7 @@ template <>
 struct Decode<Polytope> {
     static Polytope of(const std::string &dt, const Json &j) { return Polytope::from_json(dt, j); }
 };
+// An ellipsoid is {Q, q} and its error box.
 template <>
 struct Decode<Ellipsoid> {
     static Ellipsoid of(const std::string &dt, const Json &j) {

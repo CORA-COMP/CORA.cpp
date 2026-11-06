@@ -8,6 +8,11 @@
 // See also: priv.h, Ellipsoid::is_full_dim
 //
 // CORA: contSet/@ellipsoid/rank.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 

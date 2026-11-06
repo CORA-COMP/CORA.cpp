@@ -1,6 +1,11 @@
 // test_ellipsoid_class - the constructors of Ellipsoid: forms, defaults, checks and refusals
 //
 // CORA: contSet/@ellipsoid/ellipsoid.m
+// CORA authors: Victor Gassmann, Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
@@ -8,6 +13,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -68,8 +77,13 @@ void refusals() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { constructor_forms(b); });
     refusals();
     return test::finish("ellipsoid class");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

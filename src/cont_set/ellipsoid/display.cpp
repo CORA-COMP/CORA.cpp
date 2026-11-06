@@ -6,6 +6,11 @@
 // See also: Zonotope display, src/global/format.h
 //
 // CORA: contSet/@ellipsoid/display.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "global/format.h"

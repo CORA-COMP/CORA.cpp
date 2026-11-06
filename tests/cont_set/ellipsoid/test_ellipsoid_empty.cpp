@@ -1,11 +1,20 @@
 // test_ellipsoid_empty - Ellipsoid::empty: the empty ellipsoid of n dimensions
 //
 // CORA: contSet/@ellipsoid/empty.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -34,8 +43,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { empty_known(b); });
     checks_and_their_switch();
     return test::finish("ellipsoid empty");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

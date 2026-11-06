@@ -2,11 +2,19 @@
 //
 // With a point the product is built of concatenations: differentiable in both operands. With an
 // ellipsoid it is piecewise: the radii of the boxes are widened below 5e-3, which the inputs avoid.
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -32,3 +40,5 @@ int main() {
         y);
     return test::finish("ellipsoid cart_prod (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

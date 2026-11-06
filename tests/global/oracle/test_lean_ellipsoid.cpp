@@ -12,6 +12,11 @@
 // ORACLE: contSet/@ellipsoid/cartProd_.m
 // ORACLE: contSet/@ellipsoid/isFullDim.m
 // ORACLE: contSet/@ellipsoid/isBigger.m
+// CORA authors: Victor Gassmann, Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "cora/global/oracle/ellipsoid.h"
@@ -19,6 +24,10 @@
 
 using namespace cora;
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -38,6 +47,9 @@ Ellipsoid aux_flat_ellipsoid(oracle::Random &rnd, int64_t n) {
 }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -72,3 +84,5 @@ int main() {
     });
     return test::finish("lean ellipsoid");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

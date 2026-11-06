@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@ellipsoid/contains_.m
 // PROPERTY: contSet/@ellipsoid/contains_.m
+// CORA authors: Victor Gassmann, Niklas Kochdumper, Adrian Kulmburg, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
@@ -10,6 +15,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -78,6 +87,7 @@ void contains_property(const std::string &b) {
         bool corners = true;
         for (int mask = 0; mask < 8; ++mask) {
             std::vector<double> sel;
+            sel.reserve(3);
             for (int j = 0; j < 3; ++j) sel.push_back(((mask >> j) & 1) ? 1.0 : 0.0);
             const Tensor w = Tensor::like(I.inf(), sel, {3, 1});
             corners = corners && E.contains(I.inf() + (I.sup() - I.inf()).multiply(w));
@@ -119,6 +129,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         contains_known(b);
@@ -127,3 +140,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("ellipsoid contains");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -2,12 +2,20 @@
 //
 // CORA: contSet/@ellipsoid/isFullDim.m
 // PROPERTY: contSet/@ellipsoid/isFullDim.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
 using namespace cora;
 using test::check;
-using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -53,6 +61,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         is_full_dim_known(b);
@@ -61,3 +72,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("ellipsoid is_full_dim");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

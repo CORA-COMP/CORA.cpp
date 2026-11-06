@@ -2330,24 +2330,24 @@ void bind_ellipsoid(py::module_ &m) {
              "and the negative eigenvalues of Q")
         .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
                     "The empty ellipsoid of n dimensions")
-        .def_property_readonly("Q", [](const Ellipsoid &E) { return matrix(E.Q()); },
-                               "The shape matrix Q (..., n, n)")
-        .def_property_readonly("q", [](const Ellipsoid &E) { return vector(E.q()); },
-                               "The center q (..., n)")
+        .def_property_readonly(
+            "Q", [](const Ellipsoid &E) { return matrix(E.Q()); }, "The shape matrix Q (..., n, n)")
+        .def_property_readonly(
+            "q", [](const Ellipsoid &E) { return vector(E.q()); }, "The center q (..., n)")
         .def_property_readonly("tol", &Ellipsoid::tol, "The tolerance of the object")
         .def("is_bounded", &Ellipsoid::is_bounded, "Always true")
         .def("is_full_dim", &Ellipsoid::is_full_dim, py::arg("tol") = py::none(),
              "Whether the shape matrix has full rank; tol replaces the tolerance of the object")
-        .def("generators", [](const Ellipsoid &E) { return matrix(E.generators()); },
-             "A matrix G with G G' = Q from the singular value decomposition")
+        .def(
+            "generators", [](const Ellipsoid &E) { return matrix(E.generators()); },
+            "A matrix G with G G' = Q from the singular value decomposition")
         .def(
             "ellipsoid_norm",
             [](const Ellipsoid &E, const py::object &p) {
                 return scalar(E.ellipsoid_norm(vector_of(p, "p")));
             },
             py::arg("p"), "The norm of p whose unit ball is the ellipsoid shifted to the origin")
-        .def("is_bigger", &Ellipsoid::is_bigger, py::arg("E2"),
-             "Whether E2 - q2 lies in E - q")
+        .def("is_bigger", &Ellipsoid::is_bigger, py::arg("E2"), "Whether E2 - q2 lies in E - q")
         .def(
             "is_bad_dir",
             [](const Ellipsoid &E, const Ellipsoid &E2, const py::object &L) {
@@ -2402,8 +2402,10 @@ void bind_ellipsoid(py::module_ &m) {
         .def(
             "contains",
             [](const Ellipsoid &E, const py::object &S, const std::string &method, Tol tol) {
-                if (py::isinstance<Zonotope>(S)) return E.contains(py::cast<Zonotope>(S), method, tol);
-                if (py::isinstance<Interval>(S)) return E.contains(py::cast<Interval>(S), method, tol);
+                if (py::isinstance<Zonotope>(S))
+                    return E.contains(py::cast<Zonotope>(S), method, tol);
+                if (py::isinstance<Interval>(S))
+                    return E.contains(py::cast<Interval>(S), method, tol);
                 if (py::isinstance<Ellipsoid>(S)) return E.contains(ellipsoid_of(S), method, tol);
                 return E.contains(tensor_of(S, "the points"), method, tol);
             },

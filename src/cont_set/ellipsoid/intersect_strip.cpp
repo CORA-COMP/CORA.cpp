@@ -17,6 +17,11 @@
 // See also: Zonotope::intersect_strip, ConZonotope::intersect_strip
 //
 // CORA: contSet/@ellipsoid/intersectStrip.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "cora/global/within_tol.h"

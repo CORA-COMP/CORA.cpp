@@ -4,11 +4,17 @@
 // rng, N); Sets:     full rank (Q = A A' + I/2) or of rank r (Q = A A', A of n x r), a normal
 // center Points:   q + G u r, u of unit length and r uniform in [0, 1] (inside), r = 1 (on the
 // boundary) See also: testing.h
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "testing.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace test {
 
@@ -76,3 +82,5 @@ inline bool all_inside(const cora::Ellipsoid &E, const cora::Tensor &P, double s
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

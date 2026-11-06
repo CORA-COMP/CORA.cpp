@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@ellipsoid/ellipsoidNorm.m
 // PROPERTY: contSet/@ellipsoid/ellipsoidNorm.m
+// CORA authors: Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
@@ -11,6 +16,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -80,6 +89,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         ellipsoid_norm_known(b);
@@ -88,3 +100,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("ellipsoid ellipsoid_norm");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

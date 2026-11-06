@@ -10,6 +10,11 @@
 // See also: is_bad_dir, ellipsoid_norm
 //
 // CORA: contSet/@ellipsoid/isBigger.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "cora/global/within_tol.h"

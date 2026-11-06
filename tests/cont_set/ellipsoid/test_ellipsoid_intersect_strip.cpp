@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@ellipsoid/intersectStrip.m
 // PROPERTY: contSet/@ellipsoid/intersectStrip.m
+// CORA authors: Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -58,6 +67,7 @@ void intersect_strip_property(const std::string &b) {
         const Tensor P = test::ellipsoid_points(E, rng, 3000);
         const std::vector<double> misfit = (C.matmul(P) - y).square().sum(0, false).sqrt().data();
         std::vector<bool> in_strip;
+        in_strip.reserve(misfit.size());
         for (const double r : misfit) in_strip.push_back(r <= phi);
         const Tensor S = test::select_columns(P, in_strip);
         const auto [R, sigma_sq] = E.intersect_strip(C, phi, y);
@@ -82,6 +92,7 @@ void intersect_strip_property(const std::string &b) {
             const Tensor d = C.matmul(P) - y;
             const std::vector<double> form = d.multiply(V.inv().matmul(d)).sum(0, false).data();
             std::vector<bool> in_set;
+            in_set.reserve(form.size());
             for (const double f : form) in_set.push_back(f <= 1.0);
             const Tensor S = test::select_columns(P, in_set);
             const auto [R, sigma_sq] = E.intersect_strip(C, {V, bar_V}, y, prior);
@@ -134,6 +145,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         intersect_strip_known(b);
@@ -142,3 +156,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("ellipsoid intersect_strip");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -2,11 +2,19 @@
 //
 // The norm of a full-rank ellipsoid sqrt(p' Q^-1 p) is differentiable in Q, q and p away from
 // the origin.
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -18,3 +26,5 @@ int main() {
         [](const Inputs &x) { return Inputs{test::ellipsoid_of(x).ellipsoid_norm(x[2])}; }, x);
     return test::finish("ellipsoid ellipsoid_norm (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

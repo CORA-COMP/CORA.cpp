@@ -1,12 +1,21 @@
 // test_ellipsoid_enclose - Ellipsoid::enclose: the checks of the outer union, which needs a solver
 //
 // CORA: contSet/@ellipsoid/enclose.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -52,8 +61,13 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { enclose_known(b); });
     checks_and_their_switch();
     return test::finish("ellipsoid enclose");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

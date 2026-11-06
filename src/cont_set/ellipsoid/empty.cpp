@@ -7,6 +7,11 @@
 // See also: Ellipsoid::Ellipsoid, EmptySet::empty
 //
 // CORA: contSet/@ellipsoid/empty.m
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 

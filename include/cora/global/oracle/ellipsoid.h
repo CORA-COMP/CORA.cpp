@@ -7,6 +7,10 @@
 //             dtype nearest the box is empty
 // Crossing:   nominal() returns Q and q as a cora::Ellipsoid, exactly or throws
 // See also:   lean/con_zonotope.h, lean/request.h, cora/cont_set/ellipsoid/ellipsoid.h
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

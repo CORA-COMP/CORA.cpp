@@ -7,6 +7,11 @@
 // See also: priv.h, Ellipsoid::contains
 //
 // CORA: contSet/@ellipsoid/representsa_.m
+// CORA authors: Mark Wetzlinger, Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "cora/global/within_tol.h"

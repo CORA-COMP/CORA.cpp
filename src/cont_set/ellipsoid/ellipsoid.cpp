@@ -10,6 +10,11 @@
 // See also: empty, Zonotope::Zonotope
 //
 // CORA: contSet/@ellipsoid/ellipsoid.m
+// CORA authors: Victor Gassmann, Matthias Althoff
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "cora/global/within_tol.h"
@@ -73,6 +78,8 @@ detail::Refusal aux_refusal(const Tensor &Q, const Tensor &q, double tol) {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// Constructor -------------------------------------------------------------------------------------
 
 Ellipsoid::Ellipsoid(Tensor Q, Tensor q, Tol tol)
     : ContSet(kClassId), Q_(std::move(Q)), q_(std::move(q)), tol_(0.0) {

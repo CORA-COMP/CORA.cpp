@@ -13,6 +13,11 @@
 // See also: Interval::enclose_points, Zonotope::enclose_points
 //
 // CORA: contSet/@ellipsoid/enclosePoints.m
+// CORA authors: Niklas Kochdumper, Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "global/format.h"

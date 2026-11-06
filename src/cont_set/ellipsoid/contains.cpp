@@ -17,6 +17,11 @@
 // See also: ellipsoid_norm, Zonotope::contains
 //
 // CORA: contSet/@ellipsoid/contains_.m
+// CORA authors: Victor Gassmann, Niklas Kochdumper, Adrian Kulmburg, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "cora/global/within_tol.h"

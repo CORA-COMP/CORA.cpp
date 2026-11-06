@@ -8,6 +8,11 @@
 // See also: generators, contains
 //
 // CORA: contSet/@ellipsoid/ellipsoidNorm.m
+// CORA authors: Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "global/format.h"

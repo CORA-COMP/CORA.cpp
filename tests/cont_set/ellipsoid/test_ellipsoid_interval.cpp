@@ -2,6 +2,11 @@
 //
 // CORA: contSet/@ellipsoid/interval.m
 // PROPERTY: contSet/@ellipsoid/interval.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
@@ -9,6 +14,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -61,6 +70,9 @@ void switch_off() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         interval_known(b);
@@ -69,3 +81,5 @@ int main() {
     switch_off();
     return test::finish("ellipsoid interval");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

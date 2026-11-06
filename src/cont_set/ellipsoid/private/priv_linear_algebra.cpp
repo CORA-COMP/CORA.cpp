@@ -6,6 +6,11 @@
 // See also: priv.h, Ellipsoid::is_bigger, Ellipsoid::is_bad_dir
 //
 // CORA: global/functions/helper/sets/contSet/ellipsoid/simdiag.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "cora/global/within_tol.h"

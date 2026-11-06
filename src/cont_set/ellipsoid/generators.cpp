@@ -7,6 +7,11 @@
 // See also: ellipsoid_norm, Zonotope::generators
 //
 // CORA: contSet/@ellipsoid/generators.m
+// CORA authors: Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 

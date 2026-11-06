@@ -246,13 +246,11 @@ constexpr Table aux_build() {
             return A.contains(B, "exact", tol);
         });
     aux_add_predicate<BinaryOp::contains, Ellipsoid, Zonotope>(
-        t, [](const Ellipsoid &A, const Zonotope &Z, Tol tol) {
-            return A.contains(Z, "exact", tol);
-        });
+        t,
+        [](const Ellipsoid &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
     aux_add_predicate<BinaryOp::contains, Ellipsoid, Interval>(
-        t, [](const Ellipsoid &A, const Interval &I, Tol tol) {
-            return A.contains(I, "exact", tol);
-        });
+        t,
+        [](const Ellipsoid &A, const Interval &I, Tol tol) { return A.contains(I, "exact", tol); });
     // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
     // operations are exact
     aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(

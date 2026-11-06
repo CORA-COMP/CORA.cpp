@@ -2,11 +2,20 @@
 //
 // CORA: contSet/@ellipsoid/isBadDir.m
 // PROPERTY: contSet/@ellipsoid/isBadDir.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
 using namespace cora;
 using test::check;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -57,6 +66,9 @@ void checks_and_their_switch() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         is_bad_dir_known(b);
@@ -65,3 +77,5 @@ int main() {
     checks_and_their_switch();
     return test::finish("ellipsoid is_bad_dir");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

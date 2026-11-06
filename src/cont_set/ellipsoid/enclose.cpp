@@ -10,6 +10,11 @@
 // See also: Zonotope::enclose, intersect
 //
 // CORA: contSet/@ellipsoid/enclose.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cont_set/ellipsoid/private/priv.h"

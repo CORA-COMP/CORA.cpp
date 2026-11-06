@@ -1,6 +1,11 @@
 // test_ellipsoid_display - Ellipsoid::display: the text of an ellipsoid
 //
 // CORA: contSet/@ellipsoid/display.m
+// CORA authors: Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
@@ -9,6 +14,10 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     test::for_each_backend([](const std::string &b) {
@@ -31,3 +40,5 @@ int main() {
     check(E.display() == on, "display: the same with the checks off");
     return test::finish("ellipsoid display");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
