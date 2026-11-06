@@ -37,19 +37,6 @@ void members_and_class(const std::string &b) {
     check(S->is_bounded(), b + ": through the set interface");
 }
 
-/// The operations that are not ported yet say so.
-void unported_operations(const std::string &b) {
-    const ZonoBundle bundle(two_members());
-    Rng rng(3);
-    check(test::raises([&] { bundle.support_function(column({1.0, 0.0})); }, Error::not_supported),
-          b + ": support_function");
-    check(test::raises([&] { bundle.rand_point(2, rng); }, Error::not_supported),
-          b + ": rand_point");
-    check(test::raises([&] { bundle.project({0}); }, Error::not_supported), b + ": project");
-    check(test::raises([&] { bundle.vertices(); }, Error::not_supported), b + ": vertices");
-    check(test::raises([&] { bundle.vertices_3d(); }, Error::not_supported), b + ": vertices_3d");
-}
-
 /// A list that is empty, mixes dimensions or batch shapes is refused; a valid one passes with the
 /// checks off.
 void checks_and_their_switch() {
@@ -73,10 +60,7 @@ void checks_and_their_switch() {
 // ===========================================  MAIN  =========================================== //
 
 int main() {
-    test::for_each_backend([](const std::string &b) {
-        members_and_class(b);
-        unported_operations(b);
-    });
+    test::for_each_backend([](const std::string &b) { members_and_class(b); });
     checks_and_their_switch();
     return test::finish("zono_bundle class");
 }

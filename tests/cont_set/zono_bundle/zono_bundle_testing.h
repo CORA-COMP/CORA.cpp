@@ -37,6 +37,14 @@ inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
     return cora::ZonoBundle(std::move(members));
 }
 
+/// The zonotopes [-2, 2] x [-1, 1] and c = (1, 0), G = [1 1; 0 1] (a hexagon in [-1, 3] x [-1, 1]):
+/// both contain the origin, and their boxes meet in [-1, 2] x [-1, 1].
+inline cora::ZonoBundle two_zonotopes() {
+    return cora::ZonoBundle(
+        {cora::Zonotope(column({0.0, 0.0}), cora::Tensor({{2.0, 0.0}, {0.0, 1.0}})),
+         cora::Zonotope(column({1.0, 0.0}), cora::Tensor({{1.0, 1.0}, {0.0, 1.0}}))});
+}
+
 /// Whether the point p (n, 1) lies in every member of the bundle.
 inline bool in_every_member(const cora::ZonoBundle &bundle, const cora::Tensor &p) {
     for (const cora::Zonotope &Z : bundle.zonotopes())
