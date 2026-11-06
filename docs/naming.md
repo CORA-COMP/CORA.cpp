@@ -81,6 +81,7 @@ changed, and the reasons are listed below.
 | `enlarge(S, factor)` | `S.enlarge(factor)` | `S.enlarge(factor)` |
 | `minus(S, p)`, `minus(p, S)` | `S.minus(p)`, `ContSet::minus(p, S)` | `S.minus(p)` |
 | `minkDiff(S, S2, type)` | `S.minkowski_difference(S2, type)` | `S.minkowski_difference(S2, type)` |
+| `mldivide(P, S)` | `P.set_difference(S)` (all pieces) | `P.set_difference(S)` |
 | `isequal(S1, S2, tol)`, `eq`, `ne` | `isequal(S1, S2, tol)`, `eq`, `ne`, `S1 == S2` | `cora.isequal`, `cora.eq`, `cora.ne`, `S1 == S2` |
 | `decompose(S, blocks)` | `S.decompose(blocks)` (0-based, inclusive) | `S.decompose(blocks)` |
 | `projectHighDim(S, N, proj)` | `S.project_high_dim(N, proj)` | `S.project_high_dim(N, proj)` |

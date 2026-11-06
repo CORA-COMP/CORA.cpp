@@ -2,7 +2,7 @@
 //
 // Syntax:   Polytope P = test::random_polytope(rng, n, m);   Tensor X = test::sphere_points(rng, n,
 // k);
-//           Tensor pts = test::sample_points(P, rng, N);
+//           Tensor pts = test::sample_points(P, rng, N);   Tensor V = test::vertices_of(P);
 // Sets:     random_polytope: m random rows with positive offsets (the origin inside) and the box
 //           |x| <= 3, so bounded and nonempty; sphere_points: k points on a sphere, all extreme;
 //           sample_points: points of a halfspace polytope by rejection in its box
@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "cont_set/polytope/private/priv.h"
 #include "cora/cont_set/polytope/polytope.h"
 #include "testing.h"
 
@@ -35,6 +36,33 @@ inline cora::Polytope random_polytope(cora::Rng &rng, int n, int m) {
     }
     const int64_t rows = int64_t(b.size());
     return {cora::Tensor::from_data(A, {rows, n}), cora::Tensor::from_data(b, {rows, 1})};
+}
+
+/// The vertices of a bounded polytope (n, p), from either form.
+inline cora::Tensor vertices_of(const cora::Polytope &P) {
+    const cora::Tensor &like = P.is_h_rep() ? P.A() : P.V();
+    return cora::priv_points_tensor(like, P.dim(), cora::priv_polytope_vertices(P));
+}
+
+/// A bounded polytope as the hull of its vertices.
+inline cora::Polytope as_vertices(const cora::Polytope &P) {
+    return cora::Polytope(vertices_of(P));
+}
+
+/// The unit square [0, 1]^2 by its halfspaces, and by its vertices.
+inline cora::Polytope square_h() {
+    return {cora::Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
+            cora::Tensor::from_data({1.0, 1.0, 0.0, 0.0}, {4, 1})};
+}
+
+inline cora::Polytope square_v() {
+    return cora::Polytope(cora::Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}}));
+}
+
+/// The triangle x >= 0, y >= 0, x + y <= 2 by its halfspaces.
+inline cora::Polytope triangle_h() {
+    return {cora::Tensor({{-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0}}),
+            cora::Tensor::from_data({0.0, 0.0, 2.0}, {3, 1})};
 }
 
 /// k points (n, k) on the sphere of the radius about the point (shift, ..., shift): all vertices.

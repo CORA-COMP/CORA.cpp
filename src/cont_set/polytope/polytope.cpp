@@ -208,33 +208,6 @@ const Tensor &Polytope::V() const {
     return V_;
 }
 
-int64_t Polytope::dim_impl() const {
-    return is_h_rep() ? A_.shape().back() : V_.shape()[V_.ndim() - 2];
-}
-
-// Not ported yet ----------------------------------------------------------------------------------
-
-// Not yet ported: the support function, random points, projections and vertices.
-Tensor Polytope::support_function_impl(const Tensor &) const {
-    CORA_FAIL(Error::not_supported, "Polytope: support_function is not ported yet");
-}
-
-Tensor Polytope::rand_point_impl(int64_t, Rng &) const {
-    CORA_FAIL(Error::not_supported, "Polytope: rand_point is not ported yet");
-}
-
-Set Polytope::project_impl(const std::vector<int64_t> &) const {
-    CORA_FAIL(Error::not_supported, "Polytope: project is not ported yet");
-}
-
-std::vector<Polygon> Polytope::vertices_impl() const {
-    CORA_FAIL(Error::not_supported, "Polytope: vertices is not ported yet");
-}
-
-std::vector<std::vector<Point3>> Polytope::vertices_3d_impl() const {
-    CORA_FAIL(Error::not_supported, "Polytope: vertices_3d is not ported yet");
-}
-
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

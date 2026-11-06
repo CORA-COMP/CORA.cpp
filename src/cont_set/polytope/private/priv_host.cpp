@@ -45,11 +45,6 @@ Tensor aux_matrix(const Tensor &like, const Rows &rows, int64_t cols) {
     return Tensor::like(like, flat, {int64_t(rows.size()), cols});
 }
 
-/// Whether every entry of t is zero (true for no entries); of a batch, in every member.
-bool aux_all_zero(const Tensor &t) {
-    return t.numel() == 0 || t.detach().abs().max().item() == 0.0;
-}
-
 } // namespace
 
 
@@ -144,10 +139,14 @@ std::optional<Row> priv_solve(Rows M, Row r, double pivot_tol) {
 
 // Predicates --------------------------------------------------------------------------------------
 
-bool priv_is_fullspace(const Polytope &P) {
+bool priv_is_fullspace(const Polytope &P, double tol) {
     if (P.is_h_rep()) {
-        const bool trivial = aux_all_zero(P.A()) && aux_all_zero(P.Ae()) && aux_all_zero(P.be()) &&
-                             (P.b().numel() == 0 || P.b().detach().min().item() >= 0.0);
+        // every row 0 <= b with b >= 0 (up to tol), every equality 0 = 0 (up to tol)
+        const auto zero = [tol](const Tensor &t) {
+            return t.numel() == 0 || t.detach().abs().max().item() <= tol;
+        };
+        const bool trivial = zero(P.A()) && zero(P.Ae()) && zero(P.be()) &&
+                             (P.b().numel() == 0 || P.b().detach().min().item() >= -tol);
         if (trivial) return true;
     }
     // in 1D the vertices at both infinities are R
@@ -185,6 +184,7 @@ Rows priv_polytope_vertices(const Polytope &P) {
         for (const int64_t k : priv_extreme_points(points)) kept.push_back(points[std::size_t(k)]);
         return kept;
     }
+    // a halfspace set: the endpoints in 1D, else the enumeration of the vertices
     const HostH H = priv_host_h(P.constraints());
     if (H.n == 1) {
         bool empty = false;
@@ -194,6 +194,55 @@ Rows priv_polytope_vertices(const Polytope &P) {
         return points;
     }
     return priv_vertices(H);
+}
+
+void priv_require_enclosable(const Polytope &P, const std::string &op, const std::string &target) {
+    // a batch and an unbounded set have no enclosure
+    const Tensor &like = P.is_h_rep() ? P.A() : P.V();
+    if (like.ndim() != 2)
+        CORA_FAIL(Error::not_supported, op + ": it supports a single polytope, not a batch");
+    if (priv_is_fullspace(P) || !priv_polytope_is_bounded(P))
+        CORA_FAIL(Error::special_error,
+                  "Polytope is unbounded and can therefore not be enclosed by " + target + ".");
+}
+
+Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, int axis) {
+    const int64_t n = int64_t(dims.size());
+    std::vector<int64_t> source(std::size_t(N), n);
+    for (int64_t i = 0; i < n; ++i) source[std::size_t(dims[std::size_t(i)])] = i;
+    const std::vector<int64_t> shape = M.shape();
+    const int64_t rows = shape[shape.size() - 2], cols = shape.back();
+    // the zero line that the other positions take
+    const Tensor zero = axis == -1 ? priv_zeros(M, rows, 1) : priv_zeros(M, 1, cols);
+    return Tensor::concat({M, zero}, axis).take(source, axis);
+}
+
+Rows priv_gram_schmidt(const Row &a) {
+    const std::size_t n = a.size();
+    // the columns a, then the axes but the one a points to the most
+    std::size_t skip = 0;
+    for (std::size_t i = 1; i < n; ++i)
+        if (std::abs(a[i]) > std::abs(a[skip])) skip = i;
+    Rows B = {a};
+    for (std::size_t i = 0; i < n; ++i) {
+        if (i == skip) continue;
+        Row e(n, 0.0);
+        e[i] = 1.0;
+        B.push_back(e);
+    }
+    // classical Gram-Schmidt on the columns, as CORA's gramSchmidt
+    Rows Q;
+    for (std::size_t j = 0; j < n; ++j) {
+        Row v = B[j];
+        for (const Row &q : Q) {
+            const double r = priv_dot(q, B[j]);
+            for (std::size_t i = 0; i < n; ++i) v[i] -= r * q[i];
+        }
+        const double norm = priv_norm(v);
+        for (double &x : v) x /= norm;
+        Q.push_back(v);
+    }
+    return Q;
 }
 
 // A box -------------------------------------------------------------------------------------------

@@ -4,8 +4,10 @@
 // Operations: one method per `polytope.*` op of the oracle, named as CORA.cpp names CORA's (`and`
 //             is intersect, `cartProd` cart_prod, `convHull` convex_hull, `conZonotope`
 //             con_zonotope);
-//             halfspace form: Inf, empty, and, cartProd, contains; vertex form: and, interval,
-//             center, convHull, enclosePoints, conZonotope
+//             halfspace form: Inf, empty, origin, and, cartProd, contains, isequal, representsa,
+//             minus, lift; vertex form: and, interval, center, convHull, enclosePoints,
+//             conZonotope, isBounded, isFullDim, mtimes, plus, or, project, supportFunc; both
+//             forms: projectHighDim, isIntersecting
 // Parts:      the halfspace form is {A x <= b, Ae x = be} widened by error boxes of the sound float
 //             operations, the vertex form {V}; at dtype nearest the errors are empty (exact())
 // Crossing:   gather() returns the nominal part as a cora::Polytope, exactly or throws
@@ -76,6 +78,34 @@ class Polytope {
 
     /// A box as a polytope (`interval.polytope`).
     static Polytope from_interval(const Interval &I);
+
+    // The operations of the second batch ---------------------------------------------------------
+
+    /// The origin of R^n (`origin`).
+    static Polytope origin(int64_t n);
+
+    /// `isBounded` and `isFullDim` of a vertex polytope, `isequal` and `representsa` (fullspace) of
+    /// a halfspace polytope.
+    bool is_bounded() const;
+    bool is_full_dim() const;
+    bool isequal(const Polytope &P2) const;
+    bool represents_fullspace() const;
+
+    /// Whether the set misses the box or the zonotope: a proof when true (`isIntersecting`).
+    Certified is_disjoint(const Interval &I) const;
+    Certified is_disjoint(const Zonotope &Z) const;
+
+    /// Halfspace form: `minus` by a point, `lift`; both forms: `projectHighDim`.
+    Polytope minus(const Tensor &v) const;
+    Polytope lift(int64_t N, const std::vector<int64_t> &dims) const;
+    Polytope project_high_dim(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// Vertex form: `mtimes`, `plus`, `or`, `project` and the bound of `supportFunc`.
+    Polytope linear_map(const Tensor &M) const;
+    Polytope plus(const Polytope &P2) const;
+    Polytope unite(const Polytope &P2) const;
+    Polytope project(const std::vector<int64_t> &dims) const;
+    double support_function(const Tensor &dir) const;
 
     Json to_json() const { return json_; }
     static Polytope from_json(const std::string &dtype, const Json &j) { return {dtype, j}; }

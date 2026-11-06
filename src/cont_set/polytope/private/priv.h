@@ -147,11 +147,21 @@ HostH priv_constraints_of_points(const Tensor &like, const Rows &points, int64_t
 /// program min y'y - 2 x'y, solved as a least-distance problem by nonnegative least squares).
 double priv_distance_to_polytope(const HostH &H, const Row &x);
 
+// Projection and sums -----------------------------------------------------------------------------
+
+/// The projection of a single polytope onto the coordinates `dims` (0-based, in that order) by
+/// Fourier-Motzkin elimination (CORA's project, 'fourier'); none if the set is empty.
+std::optional<HostH> priv_project_h(HostH H, const std::vector<int64_t> &dims);
+
+/// The Minkowski sum of two single polytopes of one dimension in halfspace form (CORA's
+/// aux_plus_Hpoly_Hpoly: the projection of the block product); none if empty.
+std::optional<HostH> priv_plus_h(const HostH &H1, const HostH &H2);
+
 // Shared pieces of the operations -----------------------------------------------------------------
 
-/// Whether the polytope is R^n (CORA's representsa fullspace with tol 0): all rows trivially
-/// satisfied; of a batch, every member.
-bool priv_is_fullspace(const Polytope &P);
+/// Whether the polytope is R^n (CORA's representsa fullspace): all rows trivially satisfied up to
+/// tol; of a batch, every member.
+bool priv_is_fullspace(const Polytope &P, double tol = 0.0);
 
 /// Whether the vertex form has no vertex.
 bool priv_has_no_vertices(const Polytope &P);
@@ -168,9 +178,21 @@ bool priv_polytope_is_bounded(const Polytope &P);
 /// priv_box_H); none if it is empty. The bounds may be infinite.
 std::optional<std::pair<Row, Row>> priv_box_bounds(const HostH &H);
 
+/// Refuses a batch and an unbounded set (R^n too) as the source of an enclosure by `target`
+/// ("an ellipsoid", "a zonotope"), as CORA's errors do; `op` names the caller.
+void priv_require_enclosable(const Polytope &P, const std::string &op, const std::string &target);
+
 /// The vertices of a single polytope as rows (CORA's vertices_): a vertex polytope's without the
 /// vertices that are not extreme, a halfspace polytope's by enumeration; none for the empty set.
 Rows priv_polytope_vertices(const Polytope &P);
+
+/// The matrix M with its columns (axis -1) or rows (axis -2) moved to the positions dims of N and
+/// zeros elsewhere (a copy, no arithmetic).
+Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, int axis);
+
+/// The orthonormal basis (n vectors of n numbers) that Gram-Schmidt makes of a and the axes without
+/// the one a is most aligned with (CORA's gramSchmidt of a column): the first is a / |a|.
+Rows priv_gram_schmidt(const Row &a);
 
 /// The polytope of a box (n, 1) (CORA's interval/polytope.m for the interval's rows).
 Polytope priv_polytope_of_interval(const Interval &I);

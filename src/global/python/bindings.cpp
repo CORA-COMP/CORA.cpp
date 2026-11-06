@@ -2285,6 +2285,8 @@ Polytope polytope_of(const py::object &first, const py::object &b, const py::obj
         CORA_FAIL(Error::wrong_input_in_constructor,
                   "Polytope: give the equality matrix and the offset together");
     if (py::isinstance<Interval>(first)) return Polytope(py::cast<Interval>(first));
+    if (py::isinstance<EmptySet>(first)) return Polytope(py::cast<EmptySet>(first));
+    if (py::isinstance<Fullspace>(first)) return Polytope(py::cast<Fullspace>(first));
     if (b.is_none()) return Polytope(tensor_of(first, "the vertices V"));
     if (Ae.is_none()) return Polytope(tensor_of(first, "A"), vector_of(b, "b"));
     return Polytope(tensor_of(first, "A"), vector_of(b, "b"), tensor_of(Ae, "Ae"),
@@ -2403,7 +2405,122 @@ void bind_polytope(py::module_ &m) {
                 if (py::isinstance<Polytope>(S)) return P.hausdorff_distance(py::cast<Polytope>(S));
                 return P.hausdorff_distance(tensor_of(S, "the points"));
             },
-            py::arg("S"), "The Hausdorff distance to a polytope, a box or the points (n, N)");
+            py::arg("S"), "The Hausdorff distance to a polytope, a box or the points (n, N)")
+        // the second batch: the statics, the queries, the maps and the conversions
+        .def_static("origin", &Polytope::origin, py::arg("n"), "The origin of R^n as a polytope")
+        .def_static(
+            "generate_random",
+            [](cora::Rng &rng, std::optional<int64_t> dimension,
+               std::optional<int64_t> nr_constraints, std::optional<bool> is_degenerate,
+               std::optional<bool> is_bounded) {
+                return Polytope::generate_random(rng, dimension, nr_constraints, is_degenerate,
+                                                 is_bounded);
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(),
+            py::arg("nr_constraints") = py::none(), py::arg("is_degenerate") = py::none(),
+            py::arg("is_bounded") = py::none(),
+            "A random polytope; unset properties are drawn from the generator")
+        // the queries
+        .def("representsa", &Polytope::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the polytope is also a set of the CORA type ('origin', 'point', "
+             "'emptySet', 'fullspace', 'interval', 'zonotope', ...)")
+        .def("volume", &Polytope::volume, "The volume (0 if it is not full-dimensional)")
+        .def(
+            "is_full_dim_subspace",
+            [](const Polytope &P, Tol tol) {
+                const auto [full, subspace] = P.is_full_dim_subspace(tol);
+                return py::make_tuple(full, matrix(subspace));
+            },
+            py::arg("tol") = py::none(),
+            "(full, subspace): whether the polytope is full-dimensional, else an orthonormal "
+            "basis of the subspace it spans")
+        // the comparisons with sets and points
+        .def(
+            "isequal",
+            [](const Polytope &P, const py::object &S, Tol tol) {
+                if (py::isinstance<Polytope>(S)) return P.isequal(py::cast<Polytope>(S), tol);
+                if (py::isinstance<ContSet>(S)) return P.isequal(py::cast<const ContSet &>(S), tol);
+                return P.isequal(tensor_of(S, "the point"), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the polytope equals a set or a point")
+        // the intersection test by the class of the operand
+        .def(
+            "is_intersecting",
+            [](const Polytope &P, const py::object &S, const std::string &type, Tol tol) {
+                if (py::isinstance<Polytope>(S))
+                    return P.is_intersecting(py::cast<Polytope>(S), type, tol);
+                if (py::isinstance<Interval>(S))
+                    return P.is_intersecting(py::cast<Interval>(S), type, tol);
+                if (py::isinstance<Zonotope>(S))
+                    return P.is_intersecting(py::cast<Zonotope>(S), type, tol);
+                if (py::isinstance<ConZonotope>(S))
+                    return P.is_intersecting(py::cast<ConZonotope>(S), type, tol);
+                if (py::isinstance<ZonoBundle>(S))
+                    return P.is_intersecting(py::cast<ZonoBundle>(S), type, tol);
+                return P.is_intersecting(tensor_of(S, "the point"), type, tol);
+            },
+            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            "Whether the polytope and a set or a point intersect; type 'exact' or 'approx'")
+        // containment in a set, as a method and as the operator
+        .def("less_equal", &Polytope::less_equal, py::arg("S"), py::arg("tol") = py::none(),
+             "Whether the polytope is a subset of S")
+        .def(
+            "__le__", [](const Polytope &P, const ContSet &S) { return P.less_equal(S); },
+            py::arg("S"), "Whether the polytope is a subset of S")
+        // the distance and the sets built from the set
+        .def(
+            "distance",
+            [](const Polytope &P, const py::object &S) -> py::object {
+                if (py::isinstance<Polytope>(S)) return py::cast(P.distance(py::cast<Polytope>(S)));
+                return vector(P.distance(tensor_of(S, "the points")));
+            },
+            py::arg("S"), "The distance to a polytope or the signed distance to points (n, N)")
+        // the sets built from the set
+        .def(
+            "unite",
+            [](const Polytope &P, const py::object &S) {
+                if (py::isinstance<Polytope>(S)) return P.unite(py::cast<Polytope>(S));
+                if (py::isinstance<Interval>(S)) return P.unite(py::cast<Interval>(S));
+                return P.unite(tensor_of(S, "the point"));
+            },
+            py::arg("S"), "The convex hull of the union with a polytope, a box or points")
+        // the normal forms and the reductions
+        .def("complement", &Polytope::complement, "The union of the complementary halfspaces")
+        .def("normalize_constraints", &Polytope::normalize_constraints, py::arg("type") = "b",
+             "Rows of unit norm ('A') or of unit offset ('b')")
+        .def("reduce_over_domain", &Polytope::reduce_over_domain, py::arg("dom"),
+             py::arg("type") = "outer", "Drops the constraints that are inactive on the box dom")
+        .def(
+            "reduce",
+            [](const Polytope &P, int order, cora::Rng *rng, const std::string &method) {
+                cora::Rng fallback(0);
+                return P.reduce(order, rng ? *rng : fallback, method);
+            },
+            py::arg("order") = 1, py::arg("rng") = py::none(), py::arg("method") = "rand",
+            "An enclosing polytope with at most order * dim constraints")
+        .def(
+            "set_difference",
+            [](const Polytope &P, const Polytope &S) {
+                py::list parts;
+                // the pieces of the difference
+                for (const Polytope &part : P.set_difference(S)) parts.append(part);
+                return parts;
+            },
+            py::arg("S"), "Polytopes whose union is the set difference (CORA's mldivide)")
+        // the conversions and the samples
+        .def("zonotope", &Polytope::zonotope, py::arg("method") = "outer",
+             "A zonotope that encloses the polytope")
+        .def("zono_bundle", &Polytope::zono_bundle, "The polytope as a zonotope bundle")
+        .def("ellipsoid", &Polytope::ellipsoid, py::arg("method") = "outer",
+             "An ellipsoid that encloses the polytope")
+        .def(
+            "rand_point",
+            [](const Polytope &P, int64_t N, cora::Rng &rng, const std::string &type) {
+                return matrix(P.rand_point(N, rng, type));
+            },
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as columns (n, N); type 'standard' or 'extreme'");
 }
 
 // Ellipsoid ---------------------------------------------------------------------------------------
@@ -2626,6 +2743,31 @@ void bind_operators(py::module_ &m) {
     const auto method = [](const py::object &cls, const char *name, auto f) {
         cls.attr(name) = py::cpp_function(f, py::is_method(cls));
     };
+
+    // Polytope: a point shifts it, a set adds, a matrix maps it
+    const py::object P = m.attr("Polytope");
+    const auto polytope_sum = [](const Polytope &A, const py::object &o) -> py::object {
+        if (py::isinstance<Polytope>(o)) return py::cast(A.plus(py::cast<Polytope>(o)));
+        if (py::isinstance<Interval>(o)) return py::cast(A.plus(py::cast<Interval>(o)));
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.plus(*v));
+        return not_implemented();
+    };
+    // the sum is commutative; the difference only shifts
+    method(P, "__add__", polytope_sum);
+    method(P, "__radd__", polytope_sum);
+    method(P, "__sub__", [](const Polytope &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.minus(*v));
+        return not_implemented();
+    });
+    // a matrix maps the set from the left
+    method(P, "__rmul__", [](const Polytope &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
+        return not_implemented();
+    });
+    method(P, "__rmatmul__", [](const Polytope &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
+        return not_implemented();
+    });
 
     // ConZonotope: a point shifts it, a matrix or number maps it
     const auto con_zonotope_sum = [](const ConZonotope &A, const py::object &o) -> py::object {
