@@ -18,6 +18,12 @@
 // CORA: contSet/@polytope/compact_.m
 // CORA: contSet/@polytope/private/priv_compact_V.m
 // CORA: contSet/@polytope/private/priv_copyProperties.m
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 
@@ -69,6 +75,8 @@ bool aux_apply(const std::string &method, HostH &H, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
+// The compaction ----------------------------------------------------------------------------------
+
 Polytope Polytope::compact(const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "compact");
@@ -102,6 +110,8 @@ Polytope Polytope::compact(const std::string &method, Tol tol_arg) const {
     if (is_v_rep()) out.V_ = V_;
     return out;
 }
+
+// The interface of the set ------------------------------------------------------------------------
 
 std::optional<std::vector<std::string>> Polytope::compact_methods_impl() const {
     return std::vector<std::string>(std::begin(kMethods), std::end(kMethods));

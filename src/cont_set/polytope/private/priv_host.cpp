@@ -9,6 +9,11 @@
 //
 // CORA.cpp only: MATLAB reads its matrices as they are; CORA's @interval/polytope.m is the
 //                polytope of a box
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 

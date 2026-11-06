@@ -8,6 +8,11 @@
 // Syntax:   HostH H = priv_host_h(P.constraints());   bool empty = priv_is_empty(H);
 //           auto s = priv_support(H, direction, true);   Rows V = priv_vertices(H);
 // See also: polytope.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

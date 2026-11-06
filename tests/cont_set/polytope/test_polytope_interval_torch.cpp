@@ -1,11 +1,19 @@
 // test_polytope_interval_torch - Polytope interval and box: gradients through torch
 //
 // The bounds of vertices are their coordinate-wise extremes: piecewise, away from ties.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -21,3 +29,5 @@ int main() {
     test::gradcheck("box", [](const Inputs &x) { return test::parts(Polytope(x[0]).box()); }, V);
     return test::finish("polytope interval (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

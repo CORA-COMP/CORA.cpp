@@ -12,6 +12,12 @@
 //
 // CORA: contSet/@polytope/cartProd_.m
 // CORA: contSet/@polytope/private/priv_cartProd.m
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "global/format.h"

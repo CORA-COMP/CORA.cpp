@@ -12,6 +12,12 @@
 //
 // CORA: contSet/@polytope/polytope.m
 // CORA: contSet/@interval/polytope.m
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "cont_set/polytope/private/priv.h"
@@ -151,8 +157,9 @@ Polytope::Polytope(Tensor A, Tensor b, Tensor Ae, Tensor be)
     if (aux_infeasible_offset(b_, be_)) V_ = priv_zeros(A_, A_.shape().back(), 0);
 }
 
-Polytope::Polytope(Tensor A, Tensor b)
-    : Polytope(A, b, A.defined() && A.ndim() >= 2 ? priv_zeros(A, 0, A.shape().back()) : Tensor(),
+Polytope::Polytope(const Tensor &A, Tensor b)
+    : Polytope(A, std::move(b),
+               A.defined() && A.ndim() >= 2 ? priv_zeros(A, 0, A.shape().back()) : Tensor(),
                A.defined() && A.ndim() >= 2 ? priv_zeros(A, 0, 1) : Tensor()) {}
 
 Polytope::Polytope(Parts parts)

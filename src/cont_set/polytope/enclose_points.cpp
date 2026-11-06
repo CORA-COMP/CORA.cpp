@@ -11,6 +11,12 @@
 // See also: convex_hull, Interval::enclose_points
 //
 // CORA: contSet/@polytope/enclosePoints.m
+//
+// CORA authors: Niklas Kochdumper, Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "global/format.h"

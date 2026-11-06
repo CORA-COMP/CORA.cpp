@@ -294,7 +294,7 @@ inline bool same_bits(const std::string &what, const cora::ZonoBundle &a,
     return ok;
 }
 
-/// The two halves of a split.
+
 /// The nominal part of the oracle's polytope (its error boxes are not compared): the vertices, or
 /// the rows and the equalities.
 inline bool same_bits(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
@@ -304,10 +304,15 @@ inline bool same_bits(const std::string &what, const cora::Polytope &a, const le
         return false;
     }
     if (!a.is_h_rep()) return same_bits(what + ".V", a.V(), other.V());
-    return same_bits(what + ".A", a.A(), other.A()) & same_bits(what + ".b", a.b(), other.b()) &
-           same_bits(what + ".Ae", a.Ae(), other.Ae()) & same_bits(what + ".be", a.be(), other.be());
+    // all four compared, so that every mismatch is reported
+    const bool rows = same_bits(what + ".A", a.A(), other.A());
+    const bool offsets = same_bits(what + ".b", a.b(), other.b());
+    const bool equalities = same_bits(what + ".Ae", a.Ae(), other.Ae());
+    const bool equality_offsets = same_bits(what + ".be", a.be(), other.be());
+    return rows && offsets && equalities && equality_offsets;
 }
 
+/// The two halves of a split.
 template <class A, class B>
 bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
     const bool first = same_bits(what + ".1", a.first, b.first); // both are reported

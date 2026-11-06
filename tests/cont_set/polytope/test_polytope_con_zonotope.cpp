@@ -5,6 +5,12 @@
 //
 // Property: the constrained zonotope holds the points of the polytope and no others; it is the
 //           same set whichever method and box are used
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -12,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -96,6 +106,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         properties(b);
@@ -105,3 +118,5 @@ int main() {
     refusals();
     return test::finish("polytope con_zonotope");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

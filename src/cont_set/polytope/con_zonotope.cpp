@@ -14,6 +14,12 @@
 // CORA: contSet/@polytope/conZonotope.m
 // CORA: contSet/@polytope/private/priv_conZonotope_supportFunc.m
 // CORA: contSet/@polytope/private/priv_conZonotope_vertices.m
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 

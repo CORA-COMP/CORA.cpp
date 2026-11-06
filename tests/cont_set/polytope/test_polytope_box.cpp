@@ -4,6 +4,12 @@
 // PROPERTY: contSet/@polytope/box.m
 //
 // Property: the result is the polytope of the box of the set, and contains the set
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -11,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -52,6 +62,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         box_of(b);
@@ -60,3 +73,5 @@ int main() {
     refusals();
     return test::finish("polytope box");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

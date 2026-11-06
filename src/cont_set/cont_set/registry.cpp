@@ -226,17 +226,14 @@ constexpr Table aux_build() {
         t, [](const Polytope &A, const Interval &I) { return A.cart_prod(I); });
     // a polytope contains a polytope, a box or a zonotope by the support functions along its rows
     aux_add_predicate<BinaryOp::contains, Polytope, Polytope>(
-        t, [](const Polytope &A, const Polytope &B, Tol tol) {
-            return A.contains(B, "exact", tol);
-        });
+        t,
+        [](const Polytope &A, const Polytope &B, Tol tol) { return A.contains(B, "exact", tol); });
     aux_add_predicate<BinaryOp::contains, Polytope, Interval>(
-        t, [](const Polytope &A, const Interval &I, Tol tol) {
-            return A.contains(I, "exact", tol);
-        });
+        t,
+        [](const Polytope &A, const Interval &I, Tol tol) { return A.contains(I, "exact", tol); });
     aux_add_predicate<BinaryOp::contains, Polytope, Zonotope>(
-        t, [](const Polytope &A, const Zonotope &Z, Tol tol) {
-            return A.contains(Z, "exact", tol);
-        });
+        t,
+        [](const Polytope &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
     // the constrained zonotope has the lowest precedence of its pairs, so it comes first; the
     // operations are exact
     aux_add_set<BinaryOp::intersect, ConZonotope, ConZonotope>(

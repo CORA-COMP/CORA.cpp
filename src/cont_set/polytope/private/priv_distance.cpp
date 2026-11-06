@@ -8,6 +8,12 @@
 // See also: Polytope::hausdorff_distance, priv_linear_programs
 //
 // CORA: contSet/@polytope/hausdorffDist.m
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"
@@ -46,7 +52,7 @@ Row aux_least_squares(const Columns &E, const std::vector<std::size_t> &passive,
         const double norm = std::sqrt(priv_dot(v, v));
         if (norm <= numerics::kPolytopeRank * original || original == 0.0) {
             dependent[j] = true;
-            q.push_back(Row(v.size(), 0.0));
+            q.emplace_back(v.size(), 0.0);
             continue;
         }
         R[j][j] = norm;

@@ -4,6 +4,12 @@
 // PROPERTY: contSet/@polytope/enclose.m
 //
 // Property: the result is the convex hull of the two sets
+//
+// CORA authors: Matthias Althoff, Viktor Kotsev
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -11,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -51,6 +61,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         enclosing(b);
@@ -59,3 +72,5 @@ int main() {
     refusals();
     return test::finish("polytope enclose");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

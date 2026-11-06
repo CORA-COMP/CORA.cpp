@@ -185,6 +185,8 @@ Json Json::parse(const std::string &s) {
     return j;
 }
 
+// Zeros --------------------------------------------------------------------------------------
+
 // Whether every number of a wire-form value is zero.
 bool zero_valued(const Json &j) {
     if (j.kind == Json::Kind::object) {

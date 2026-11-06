@@ -15,6 +15,12 @@
 // CORA: contSet/@polytope/private/priv_supportFunc.m
 // CORA: contSet/@polytope/private/priv_representsa_emptySet.m
 // CORA: contSet/@polytope/private/priv_feasiblePoint.m
+//
+// CORA authors: Mark Wetzlinger, Adrian Kulmburg
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/linprog.h"
@@ -148,9 +154,8 @@ std::optional<Row> priv_chebyshev_center(const HostH &H) {
     lp.n = int(H.n + 1);
     lp.f.assign(std::size_t(lp.n), 0.0);
     lp.f[std::size_t(H.n)] = -1.0;
-    for (std::size_t i = 0; i < H.A.size(); ++i) {
+    for (Row row : H.A) {
         // the row's length multiplies the radius
-        Row row = H.A[i];
         double norm = 0.0;
         for (const double a : row) norm += a * a;
         row.push_back(std::sqrt(norm));

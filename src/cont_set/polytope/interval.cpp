@@ -9,6 +9,12 @@
 // See also: box, Polytope::center
 //
 // CORA: contSet/@polytope/interval.m
+//
+// CORA authors: Matthias Althoff, Viktor Kotsev, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 

@@ -4,6 +4,12 @@
 // PROPERTY: contSet/@polytope/and_.m
 //
 // Property: a point is in the intersection iff it is in both sets
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -11,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -36,7 +46,7 @@ void intersections(const std::string &b) {
     check(pt.is_v_rep() && close(pt.V(), {1, 1}, 0), b + ": a point inside: the point");
     check(P.intersect(column({3.0, 1.0})).V().shape() == Shape{2, 0},
           b + ": a point outside: empty");
-    check(!P.intersect(column({2.0 + 1e-6, 1.0}), 1e-5).V().shape()[1] == 0, b + ": a tolerance");
+    check(P.intersect(column({2.0 + 1e-6, 1.0}), 1e-5).V().shape()[1] != 0, b + ": a tolerance");
     // vertex polytopes are intersected as their halfspaces
     const Polytope V(Tensor({{0.0, 3.0, 3.0, 0.0}, {0.0, 0.0, 3.0, 3.0}}));
     check(V.intersect(P).contains(column({1.0, 1.0})) &&
@@ -84,6 +94,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         properties(b);
@@ -93,3 +106,5 @@ int main() {
     refusals();
     return test::finish("polytope intersect");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

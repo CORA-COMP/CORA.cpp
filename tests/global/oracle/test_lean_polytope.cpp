@@ -19,6 +19,11 @@
 // ORACLE: contSet/@polytope/convHull_.m
 // ORACLE: contSet/@polytope/enclosePoints.m
 // ORACLE: contSet/@interval/polytope.m
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/oracle/polytope.h"
@@ -29,6 +34,10 @@
 
 using namespace cora;
 namespace oracle = test::oracle;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -57,6 +66,9 @@ Polytope aux_halfspaces(oracle::Random &rnd, int64_t n, int64_t m) {
 Polytope aux_extreme(const Polytope &P) { return P.compact("V"); }
 
 } // namespace
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     if (!oracle::available()) return 0;
@@ -143,3 +155,5 @@ int main() {
     });
     return test::finish("lean polytope");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

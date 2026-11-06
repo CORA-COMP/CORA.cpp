@@ -1,12 +1,22 @@
 // test_polytope_inf - Polytope::inf: R^n as a polytope
 //
 // CORA: contSet/@polytope/Inf.m
+//
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -35,8 +45,13 @@ void refusals() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) { whole_space(b); });
     refusals();
     return test::finish("polytope inf");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

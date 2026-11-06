@@ -6,6 +6,12 @@
 // See also: inf, Polytope::Polytope
 //
 // CORA: contSet/@polytope/empty.m
+//
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
 

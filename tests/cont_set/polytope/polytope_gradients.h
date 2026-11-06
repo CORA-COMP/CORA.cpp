@@ -5,12 +5,21 @@
 // Sets:     two inputs (A, b) per halfspace polytope, one (V) per vertex polytope; parts are the
 //           outputs of a result
 // See also: cont_set/zonotope/zonotope_gradients.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cont_set/zonotope/zonotope_gradients.h"
-#include "polytope_testing.h"
 #include "cora/cont_set/polytope/polytope.h"
+#include "polytope_testing.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace test {
 
@@ -32,3 +41,5 @@ inline std::vector<torch::Tensor> random_halfspaces(int64_t m, int64_t n) {
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

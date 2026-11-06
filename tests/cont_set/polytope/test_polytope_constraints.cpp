@@ -2,6 +2,12 @@
 //
 // CORA: contSet/@polytope/constraints.m
 // PROPERTY: contSet/@polytope/constraints.m
+//
+// CORA authors: Viktor Kotsev
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 // Property: the halfspaces hold exactly the vertices and nothing beyond them (hand-computed
 //           rows, and random clouds: the points are inside, the facets are tight at their
@@ -13,6 +19,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -90,6 +100,9 @@ void refusals() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         from_halfspaces(b);
@@ -100,3 +113,5 @@ int main() {
     refusals();
     return test::finish("polytope constraints");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

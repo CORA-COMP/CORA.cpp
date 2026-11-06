@@ -11,6 +11,12 @@
 // CORA: contSet/@polytope/private/priv_vertices_1D.m
 // CORA: contSet/@polytope/vertices_.m
 // CORA: contSet/@polytope/constraints.m
+//
+// CORA authors: Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper, Viktor Kotsev
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"
@@ -256,7 +262,7 @@ std::vector<std::pair<Row, double>> aux_facets(const Rows &y, std::size_t r) {
                     distance = std::max(distance, std::abs(b[j] - a[j]));
                 known = known || distance <= numerics::kPolytopeFacet * scale;
             }
-            if (!known) facets.push_back({a, offset});
+            if (!known) facets.emplace_back(a, offset);
         }
     }
     return facets;

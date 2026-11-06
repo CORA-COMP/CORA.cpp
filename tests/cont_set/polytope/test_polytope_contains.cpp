@@ -5,13 +5,22 @@
 //
 // Property: the points of the set are contained and points outside are not; sets are contained
 //           iff their support function stays below every row
+//
+// CORA authors: Niklas Kochdumper, Viktor Kotsev, Adrian Kulmburg, Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
 using namespace cora;
 using test::check;
-using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -131,6 +140,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         properties(b);
@@ -140,3 +152,5 @@ int main() {
     refusals();
     return test::finish("polytope contains");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

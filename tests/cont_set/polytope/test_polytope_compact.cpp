@@ -12,6 +12,12 @@
 // PROPERTY: contSet/@polytope/compact_.m
 //
 // Property: the compacted set is the same set (same points inside) with fewer rows
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -19,6 +25,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -149,6 +159,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         properties(b);
@@ -159,3 +172,5 @@ int main() {
     refusals();
     return test::finish("polytope compact");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

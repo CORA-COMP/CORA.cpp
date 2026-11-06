@@ -16,10 +16,10 @@
 #pragma once
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
-#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"

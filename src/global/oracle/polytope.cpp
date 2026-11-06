@@ -1,6 +1,11 @@
 // polytope - lean::Polytope, a polytope of exact values in either form, computed by CORALean
 //
 // See also: lean/con_zonotope.h, lean/request.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/global/oracle/polytope.h"
 #include "cora/global/error.h"

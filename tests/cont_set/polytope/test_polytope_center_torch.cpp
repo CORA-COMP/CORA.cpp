@@ -2,11 +2,19 @@
 //
 // The mean of the extreme vertices: the choice of the vertices carries no gradient, the mean is
 // differentiable in them.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -17,3 +25,5 @@ int main() {
                     {to_torch(sphere)});
     return test::finish("polytope center (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

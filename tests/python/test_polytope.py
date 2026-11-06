@@ -1,4 +1,12 @@
-"""test_polytope - the Polytope class in Python: constructors, queries and set operations."""
+"""test_polytope - the Polytope class in Python: constructors, queries and set operations
+
+CORA authors: Mark Wetzlinger, Viktor Kotsev, Niklas Kochdumper, Tobias Ladner, Adrian Kulmburg,
+              Matthias Althoff, Victor Gassmann
+Authors:       Claude Sonnet 5.5
+Written:       04-November-2026
+Last update:   ---
+Reviewed:      ---
+"""
 # CORA: contSet/@polytope/Inf.m
 # CORA: contSet/@polytope/and_.m
 # CORA: contSet/@polytope/box.m
@@ -37,9 +45,12 @@
 
 import unittest
 
+import cora
 import numpy as np
 
-import cora
+# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
+
+# ----------------------------------------  AUXILIARY  ----------------------------------------- #
 
 SQUARE = np.array([[0.0, 1.0, 1.0, 0.0], [0.0, 0.0, 1.0, 1.0]])
 EYE = np.eye(2)
@@ -62,6 +73,8 @@ def column(*x):
     return np.array(x, dtype=float).reshape(-1, 1)
 
 
+# ===========================================  MAIN  =========================================== #
+
 class Polytope(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -82,9 +95,9 @@ class Polytope(unittest.TestCase):
         np.testing.assert_array_equal(cora.Polytope(np.array([[3.0, 1.0, 2.0]])).V, [[1.0, 3.0]])
         self.assertIn("polytope", repr(H).lower())
         with self.assertRaises(cora.errors.SpecialError):
-            H.V
+            _ = H.V
         with self.assertRaises(cora.errors.SpecialError):
-            V.A
+            _ = V.A
         with self.assertRaises(cora.errors.WrongInputInConstructor):
             cora.Polytope(EYE, np.array([1.0]))
         with self.assertRaises(cora.errors.WrongInputInConstructor):
@@ -257,3 +270,5 @@ class Polytope(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ---------------------------------------  END OF CODE  ---------------------------------------- #

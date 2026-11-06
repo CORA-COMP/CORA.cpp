@@ -2,11 +2,19 @@
 //
 // With a given box the result is built of products and corner choices: differentiable in the
 // rows, offsets and box, piecewise in the signs of the rows.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -24,3 +32,5 @@ int main() {
         x);
     return test::finish("polytope con_zonotope (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

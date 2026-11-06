@@ -1,12 +1,22 @@
 // test_polytope_empty - Polytope::empty: the empty set of n dimensions
 //
 // CORA: contSet/@polytope/empty.m
+//
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -40,6 +50,9 @@ void refusals() {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         empty_set(b);
@@ -48,3 +61,5 @@ int main() {
     refusals();
     return test::finish("polytope empty");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -8,6 +8,12 @@
 // See also: Zonotope display, src/global/format.h
 //
 // CORA: contSet/@polytope/display.m
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "global/format.h"

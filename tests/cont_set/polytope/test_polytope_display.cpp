@@ -1,6 +1,12 @@
 // test_polytope_display - Polytope::display: the text that describes the set
 //
 // CORA: contSet/@polytope/display.m
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -9,6 +15,9 @@
 using namespace cora;
 using test::check;
 using test::column;
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const Polytope P(Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
@@ -34,3 +43,5 @@ int main() {
     check(P.display() == text, "display: the same with the checks off");
     return test::finish("polytope display");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

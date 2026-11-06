@@ -17,6 +17,12 @@
 // CORA: contSet/@polytope/private/priv_compact_2D.m
 // CORA: contSet/@polytope/private/priv_compact_nD.m
 // CORA: contSet/@polytope/private/priv_compact_all.m
+//
+// CORA authors: Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/within_tol.h"
@@ -110,6 +116,8 @@ bool aux_two_halfspaces(HostH &H) {
     }
     return aux_same(dot, -1.0) && -H.b[1] > H.b[0];
 }
+
+// Rows by angle -----------------------------------------------------------------------------------
 
 /// The normalized rows ordered by angle, and the angles in degrees.
 std::vector<double> aux_sort_by_angle(HostH &H) {
@@ -354,7 +362,7 @@ void priv_compact_aligned_inequalities(HostH &H, double tol) {
     std::size_t counter = 0;
     while (counter + 1 < count) {
         if (aux_equal_rows(A[counter], A[counter + 1], tol)) {
-            const Row a = A[counter];
+            const Row &a = A[counter];
             double smallest = std::min(b[counter], b[counter + 1]);
             counter += 2;
             while (counter < count && aux_equal_rows(A[counter], a, tol)) {
@@ -516,7 +524,7 @@ bool priv_compact_2d(HostH &H) {
         // the point where the lines of the outer rows meet, and the middle row at that point
         const Row p1 = {H.A[start][0] * H.b[start], H.A[start][1] * H.b[start]};
         const Row p2 = {H.A[end][0] * H.b[end], H.A[end][1] * H.b[end]};
-        const Row p1vec = turned[start], p2vec = {-turned[end][0], -turned[end][1]};
+        const Row &p1vec = turned[start], p2vec = {-turned[end][0], -turned[end][1]};
         if (aux_rank_2x2(p1vec, p2vec) < 2) {
             aux_increment(start, middle, end, count);
             continue;

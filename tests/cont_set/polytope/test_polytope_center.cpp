@@ -5,6 +5,12 @@
 //
 // Property: the Chebyshev center is the center of the largest ball (its distance to every facet
 //           is the radius); 'avg' is the mean of the extreme vertices
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -12,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -87,6 +97,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         properties(b);
@@ -96,3 +109,5 @@ int main() {
     refusals();
     return test::finish("polytope center");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

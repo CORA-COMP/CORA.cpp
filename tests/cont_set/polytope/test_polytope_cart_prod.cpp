@@ -4,6 +4,12 @@
 // PROPERTY: contSet/@polytope/cartProd_.m
 //
 // Property: (x, y) is in the product iff x is in the first and y in the second set
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -11,6 +17,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -90,6 +100,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         properties(b);
@@ -99,3 +112,5 @@ int main() {
     refusals();
     return test::finish("polytope cart_prod");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

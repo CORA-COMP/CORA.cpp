@@ -2195,29 +2195,34 @@ Polytope polytope_arg(const py::handle &o) {
 }
 
 void bind_polytope(py::module_ &m) {
-    py::class_<Polytope, ContSet>(m, "Polytope",
-                                  "The polytope {x : A x <= b, Ae x = be} or the hull of vertices V.")
+    py::class_<Polytope, ContSet>(
+        m, "Polytope", "The polytope {x : A x <= b, Ae x = be} or the hull of vertices V.")
         .def(py::init([](const py::object &first, const py::object &b, const py::object &Ae,
                          const py::object &be) { return polytope_of(first, b, Ae, be); }),
              py::arg("A"), py::arg("b") = py::none(), py::arg("Ae") = py::none(),
              py::arg("be") = py::none(),
-             "Polytope(V): vertices (n, p); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a box")
+             "Polytope(V): vertices (n, p); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a "
+             "box")
         .def_static("empty", &Polytope::empty, py::arg("n") = 0, "The empty set of n dimensions")
         .def_static("inf", &Polytope::inf, py::arg("n") = 0, "R^n")
         .def_static(
             "enclose_points",
-            [](const py::object &points) { return Polytope::enclose_points(tensor_of(points, "points")); },
+            [](const py::object &points) {
+                return Polytope::enclose_points(tensor_of(points, "points"));
+            },
             py::arg("points"), "The hull of the points (n, N), by its extreme points")
-        .def_property_readonly("A", [](const Polytope &P) { return matrix(P.A()); },
-                               "The inequality matrix (..., m, n)")
-        .def_property_readonly("b", [](const Polytope &P) { return vector(P.b()); },
-                               "The inequality offset (..., m)")
-        .def_property_readonly("Ae", [](const Polytope &P) { return matrix(P.Ae()); },
-                               "The equality matrix (..., me, n)")
-        .def_property_readonly("be", [](const Polytope &P) { return vector(P.be()); },
-                               "The equality offset (..., me)")
-        .def_property_readonly("V", [](const Polytope &P) { return matrix(P.V()); },
-                               "The vertices (..., n, p)")
+        .def_property_readonly(
+            "A", [](const Polytope &P) { return matrix(P.A()); },
+            "The inequality matrix (..., m, n)")
+        .def_property_readonly(
+            "b", [](const Polytope &P) { return vector(P.b()); }, "The inequality offset (..., m)")
+        .def_property_readonly(
+            "Ae", [](const Polytope &P) { return matrix(P.Ae()); },
+            "The equality matrix (..., me, n)")
+        .def_property_readonly(
+            "be", [](const Polytope &P) { return vector(P.be()); }, "The equality offset (..., me)")
+        .def_property_readonly(
+            "V", [](const Polytope &P) { return matrix(P.V()); }, "The vertices (..., n, p)")
         .def(
             "constraints",
             [](const Polytope &P) {
@@ -2229,7 +2234,8 @@ void bind_polytope(py::module_ &m) {
         .def(
             "center_by",
             [](const Polytope &P, const std::string &method) { return bounds(P.center(method)); },
-            py::arg("method"), "The Chebyshev center ('chebyshev') or the mean of the vertices ('avg')")
+            py::arg("method"),
+            "The Chebyshev center ('chebyshev') or the mean of the vertices ('avg')")
         .def("compact", &Polytope::compact, py::arg("method") = "all", py::arg("tol") = py::none(),
              "Without redundancy: all, A, Ae, aligned, zeros, AtoAe or V")
         .def(
@@ -2242,7 +2248,8 @@ void bind_polytope(py::module_ &m) {
         .def(
             "contains",
             [](const Polytope &P, const py::object &S, const std::string &method, Tol tol) {
-                if (py::isinstance<ContSet>(S)) return P.contains(py::cast<const ContSet &>(S), method, tol);
+                if (py::isinstance<ContSet>(S))
+                    return P.contains(py::cast<const ContSet &>(S), method, tol);
                 return P.contains(tensor_of(S, "the points"), method, tol);
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),

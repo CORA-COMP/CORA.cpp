@@ -5,6 +5,12 @@
 //
 // Property: the distance is symmetric, zero for equal sets, and the largest distance of a vertex
 //           of one set to the other set
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
@@ -12,6 +18,10 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -84,6 +94,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         distances(b);
@@ -92,3 +105,5 @@ int main() {
     refusals();
     return test::finish("polytope hausdorff_distance");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

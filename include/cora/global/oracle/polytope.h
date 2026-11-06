@@ -10,6 +10,11 @@
 //             operations, the vertex form {V}; at dtype nearest the errors are empty (exact())
 // Crossing:   gather() returns the nominal part as a cora::Polytope, exactly or throws
 // See also:   lean/con_zonotope.h, lean/request.h, cora/cont_set/polytope/polytope.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 

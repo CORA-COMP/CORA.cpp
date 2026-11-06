@@ -1,11 +1,19 @@
 // test_polytope_intersect_torch - Polytope intersect: gradients through torch
 //
 // The rows of both sets stack: differentiable in both operands.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -21,3 +29,5 @@ int main() {
         x);
     return test::finish("polytope intersect (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

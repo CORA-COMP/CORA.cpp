@@ -11,6 +11,12 @@
 // See also: enclose, Polytope::compact
 //
 // CORA: contSet/@polytope/convHull_.m
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 
@@ -59,8 +65,8 @@ struct Operand {
     bool empty = false;
     bool fullspace = false;
     Polytope set;
-    std::function<Rows()> list;      // the vertices, asked for when the hull is formed
-    std::optional<Tensor> vertices;  // the vertices as given, if the operand has them
+    std::function<Rows()> list;     // the vertices, asked for when the hull is formed
+    std::optional<Tensor> vertices; // the vertices as given, if the operand has them
 };
 
 /// The hull of the vertices of two sets in n dimensions: a vertex polytope of the extreme ones.

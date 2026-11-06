@@ -7,11 +7,20 @@
 //           |x| <= 3, so bounded and nonempty; sphere_points: k points on a sphere, all extreme;
 //           sample_points: points of a halfspace polytope by rejection in its box
 // See also: testing.h
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "testing.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace test {
 
@@ -107,3 +116,5 @@ inline bool same_columns(const cora::Tensor &A, const cora::Tensor &B, double to
 }
 
 } // namespace test
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

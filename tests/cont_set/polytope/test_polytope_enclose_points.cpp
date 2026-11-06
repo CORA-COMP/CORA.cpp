@@ -4,13 +4,22 @@
 // PROPERTY: contSet/@polytope/enclosePoints.m
 //
 // Property: the vertices are the extreme points of the cloud, and every point is inside
+//
+// CORA authors: Niklas Kochdumper, Victor Gassmann
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_testing.h"
 
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
 
@@ -72,6 +81,9 @@ void properties(const std::string &b) {
 
 } // namespace
 
+
+// ===========================================  MAIN  =========================================== //
+
 int main() {
     test::for_each_backend([](const std::string &b) {
         clouds(b);
@@ -80,3 +92,5 @@ int main() {
     refusals();
     return test::finish("polytope enclose_points");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

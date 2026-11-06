@@ -17,6 +17,12 @@
 // See also: Polytope::intersect, ConZonotope::contains
 //
 // CORA: contSet/@polytope/contains_.m
+//
+// CORA authors: Niklas Kochdumper, Viktor Kotsev, Adrian Kulmburg, Mark Wetzlinger, Tobias Ladner
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/within_tol.h"

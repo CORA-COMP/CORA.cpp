@@ -12,6 +12,12 @@
 // See also: Polytope::contains, Zonotope::hausdorff_distance_to_box
 //
 // CORA: contSet/@polytope/hausdorffDist.m
+//
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"

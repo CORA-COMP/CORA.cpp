@@ -19,6 +19,12 @@
 //
 // CORA: contSet/@polytope/polytope.m
 // CORA: contSet/@interval/polytope.m
+//
+// CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #pragma once
 
@@ -47,7 +53,7 @@ class Polytope : public ContSet {
     /// {x | A x <= b}, and with the second form also {x | Ae x = be}: A (..., m, n), b (..., m, 1),
     /// Ae (..., k, n), be (..., k, 1). A row with the offset +Inf holds everywhere and is dropped
     /// (not in a batch); an offset -Inf (or an equality offset +-Inf) makes the set empty.
-    Polytope(Tensor A, Tensor b);
+    Polytope(const Tensor &A, Tensor b);
     Polytope(Tensor A, Tensor b, Tensor Ae, Tensor be);
 
     /// A box as a polytope: the rows x <= sup and -x <= -inf of the bounded sides (CORA's

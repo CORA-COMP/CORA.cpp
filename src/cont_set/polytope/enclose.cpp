@@ -9,6 +9,12 @@
 // See also: convex_hull, Zonotope::enclose
 //
 // CORA: contSet/@polytope/enclose.m
+//
+// CORA authors: Matthias Althoff, Viktor Kotsev
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
 #include "cont_set/polytope/private/priv.h"

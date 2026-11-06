@@ -10,6 +10,12 @@
 // See also: Polytope::box, Polytope::compact
 //
 // CORA: contSet/@polytope/constraints.m
+//
+// CORA authors: Viktor Kotsev
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
 

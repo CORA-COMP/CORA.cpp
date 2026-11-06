@@ -1,11 +1,19 @@
 // test_polytope_cart_prod_torch - Polytope cart_prod: gradients through torch
 //
 // The product stacks and pads: differentiable in both operands, in both forms.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       04-November-2026
+// Last update:   ---
+// Reviewed:      ---
 
 #include "polytope_gradients.h"
 
 using namespace cora;
 using test::Inputs;
+
+
+// ===========================================  MAIN  =========================================== //
 
 int main() {
     const BackendScope backend_scope("torch");
@@ -25,3 +33,5 @@ int main() {
         {torch::randn({2, 3}, torch::kDouble), torch::randn({3, 2}, torch::kDouble)});
     return test::finish("polytope cart_prod (torch)");
 }
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

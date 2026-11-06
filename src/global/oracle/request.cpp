@@ -77,6 +77,7 @@ struct Decode<MatZonotope> {
         return MatZonotope::from_json(dt, j);
     }
 };
+// A polytope is its wire form, in either representation.
 template <>
 struct Decode<ZonoBundle> {
     static ZonoBundle of(const std::string &dt, const Json &j) {
