@@ -627,7 +627,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             }
 
             // New step sizes are saved for later steps and runs.
-            if (time_step_idx[kIter] == 0 || fc != savedata.fullcomp[time_step_idx[kIter] - 1])
+            if (time_step_idx[kIter] == 0 ||
+                fc != (savedata.fullcomp[time_step_idx[kIter] - 1] != 0))
                 time_step_idx[kIter] =
                     aux_savedata(savedata, kIter, fc, P, set, errs, k, time_step);
             errs.update_coefficients_approx_fun(k, kIter, fc);

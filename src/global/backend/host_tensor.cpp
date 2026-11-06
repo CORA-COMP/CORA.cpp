@@ -423,20 +423,20 @@ std::vector<double> HostTensor<T>::data() const {
 }
 
 template <class T>
-Tensor::Ptr HostTensor<T>::to(Device device) const {
-    if (device.type != Device::Type::cpu)
+Tensor::Ptr HostTensor<T>::to(Device target) const {
+    if (target.type != Device::Type::cpu)
         CORA_FAIL(Error::wrong_value, "CoraTensor: the host backends run on the CPU only");
     return self();
 }
 
 // A copy in the other dtype; lean has float64 only.
 template <class T>
-Tensor::Ptr HostTensor<T>::to(DType dtype) const {
-    if (dtype == this->dtype) return self();
+Tensor::Ptr HostTensor<T>::to(DType target) const {
+    if (target == dtype) return self();
     if (backend == backend_id::lean)
         CORA_FAIL(Error::not_supported, "CoraTensor: the lean backend computes in float64 only");
     const int64_t n = shape.numel();
-    if (dtype == DType::float32) {
+    if (target == DType::float32) {
         auto r = HostTensor<float>::make(shape, backend);
         for (int64_t i = 0; i < n; ++i) r->p[i] = static_cast<float>(p[i]);
         return r;

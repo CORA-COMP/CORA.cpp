@@ -17,6 +17,7 @@
 #include "cora/global/backend/torch.h"
 #endif
 
+#include <algorithm>
 #include <atomic>
 #include <cstdlib>
 #include <map>
@@ -454,7 +455,9 @@ Tensor Tensor::take(const Tensor &idx, int axis) const {
 
 // Host indices become a tensor like this one.
 Tensor Tensor::take(const std::vector<int64_t> &idx, int axis) const {
-    const std::vector<double> values(idx.begin(), idx.end());
+    std::vector<double> values(idx.size());
+    std::transform(idx.begin(), idx.end(), values.begin(),
+                   [](int64_t i) { return static_cast<double>(i); });
     return take(like(*this, values, {static_cast<int64_t>(idx.size())}), axis);
 }
 

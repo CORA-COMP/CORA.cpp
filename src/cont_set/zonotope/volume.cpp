@@ -46,7 +46,9 @@ Tensor aux_sum_of_determinants(const Tensor &G) {
     for (std::vector<int64_t> flat = subsets.next(block); !flat.empty();
          flat = subsets.next(block)) {
         const int64_t count = int64_t(flat.size()) / n;
-        const std::vector<double> indices(flat.begin(), flat.end());
+        std::vector<double> indices(flat.size());
+        std::transform(flat.begin(), flat.end(), indices.begin(),
+                       [](int64_t i) { return static_cast<double>(i); });
         const Tensor chosen = Tensor::like(G, indices, {count, n});
         sum = sum + priv_abs_det(priv_column_subsets(G, chosen)).sum(int(batch));
     }

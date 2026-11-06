@@ -55,10 +55,7 @@ class Entry {
     Entry(const Entry &) = delete;
     Entry &operator=(const Entry &) = delete;
 
-    bool check() const noexcept {
-        if constexpr (checks_compiled) return active_;
-        return false;
-    }
+    bool check() const noexcept { return checks_compiled && active_; }
 
   private:
     bool active_ = false;
@@ -68,10 +65,7 @@ class Entry {
 /// depth, since the entry point that calls it does so only when it checks itself.
 class Validation {
   public:
-    bool check() const noexcept {
-        if constexpr (checks_compiled) return checks_enabled();
-        return false;
-    }
+    bool check() const noexcept { return checks_compiled && checks_enabled(); }
 };
 
 } // namespace detail

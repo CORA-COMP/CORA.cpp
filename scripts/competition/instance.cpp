@@ -35,7 +35,7 @@ double seconds_since(Clock::time_point start) {
 /// Keeps a result from being optimized away: the operation is what is measured, and
 /// nothing downstream looks at what it produced.
 void sink(double v) {
-    static volatile double kept = 0.0;
+    [[maybe_unused]] static volatile double kept = 0.0;
     kept += v;
 }
 

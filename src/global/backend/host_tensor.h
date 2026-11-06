@@ -61,7 +61,7 @@ struct HostTensor : Tensor::Impl {
         return static_cast<const HostTensor &>(o);
     }
     /// A new tensor of this backend.
-    std::shared_ptr<HostTensor> fresh(const Shape &shape) const { return make(shape, backend); }
+    std::shared_ptr<HostTensor> fresh(const Shape &dims) const { return make(dims, backend); }
 
     // Construction and access
     std::vector<double> data() const override;

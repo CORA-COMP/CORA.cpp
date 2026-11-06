@@ -103,21 +103,20 @@ bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::stri
 /// set) or not supported.
 std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const std::string &method,
                                                              bool points) {
-    using Refusal = std::pair<Error::Id, std::string>;
+    using Reason = std::pair<Error::Id, std::string>;
     if (batch)
-        return Refusal{Error::not_supported, "a linear program per set: it supports a single "
-                                             "zonotope, not a batch"};
+        return Reason{Error::not_supported, "a linear program per set: it supports a single "
+                                            "zonotope, not a batch"};
     const bool for_sets = method == "approx:st" || method == "approx:stDual" ||
                           method == "sampling" || method == "sampling:primal" ||
                           method == "sampling:dual" || method == "opt";
     const bool known = method == "exact" || method == "exact:venum" || method == "exact:polymax" ||
                        method == "approx" || (!points && for_sets);
-    if (!known)
-        return Refusal{Error::no_specific_alg, "no algorithm '" + method + "' for this set"};
+    if (!known) return Reason{Error::no_specific_alg, "no algorithm '" + method + "' for this set"};
     if (method == "exact:polymax")
-        return Refusal{Error::not_supported, "the method 'exact:polymax' needs the class Polytope"};
+        return Reason{Error::not_supported, "the method 'exact:polymax' needs the class Polytope"};
     if (method == "approx:stDual" || method == "opt" || method.rfind("sampling", 0) == 0)
-        return Refusal{Error::not_supported, "the method '" + method + "' is not supported"};
+        return Reason{Error::not_supported, "the method '" + method + "' is not supported"};
     return std::nullopt;
 }
 

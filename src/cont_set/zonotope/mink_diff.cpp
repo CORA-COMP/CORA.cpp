@@ -115,10 +115,10 @@ Tensor aux_scalings(const std::string &method, const Zonotope &minuend, const Zo
         const std::vector<double> K = K_new.data();
         std::vector<double> tight(2 * k);
         for (int64_t i = 0; i < 2 * k; ++i) {
-            std::vector<double> row(n);
-            for (int64_t j = 0; j < n; ++j) row[j] = -H.data[i * n + j];
+            std::vector<double> objective(n);
+            for (int64_t j = 0; j < n; ++j) objective[j] = -H.data[i * n + j];
             double fval = 0;
-            if (!aux_solve(row, H, K, &fval)) aux_empty("the difference is empty");
+            if (!aux_solve(objective, H, K, &fval)) aux_empty("the difference is empty");
             tight[i] = -fval;
         }
         offsets = Tensor::like(K_new, tight, {2 * k, 1});
