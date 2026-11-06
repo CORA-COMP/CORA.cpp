@@ -48,6 +48,25 @@ void solids(const std::string &b) {
     check(corners.size() == 1 && corners[0].size() == 8, b + ": the cube: eight corners");
 }
 
+/// The corners of random polygons lie in the set, and their shoelace area is its volume.
+void properties(const std::string &b) {
+    Rng rng(4);
+    bool inside = true, same_area = true;
+    for (int k = 0; k < 8; ++k) {
+        const Polytope P = test::random_polytope(rng, 2, 5);
+        const Polygon corners = P.vertices()[0];
+        // the shoelace sum over the counter-clockwise corners
+        double area = 0.0;
+        for (std::size_t i = 0; i < corners.size(); ++i) {
+            const Point &p = corners[i], &q = corners[(i + 1) % corners.size()];
+            inside = inside && P.contains(column({p[0], p[1]}), "exact", 1e-8);
+            area += p[0] * q[1] - q[0] * p[1];
+        }
+        same_area = same_area && close(area / 2.0, P.volume(), 1e-8);
+    }
+    check(inside && same_area, b + ": corners in the set, area = volume");
+}
+
 } // namespace
 
 
@@ -57,6 +76,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         planes(b);
         solids(b);
+        properties(b);
     });
     // an unbounded set has no vertex list; a batch of halfspaces needs a program per member
     check(test::raises([] { Polytope(Tensor({{1.0, 0.0}}), column({1.0})).vertices(); },
