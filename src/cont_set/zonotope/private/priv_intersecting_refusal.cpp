@@ -1,11 +1,11 @@
 // priv_intersecting_refusal - why is_intersecting of a zonotope or a constrained zonotope refuses
 //
+// A batch is refused because it needs a linear program per pair.
+//
 // Syntax:   Refusal r = priv_intersecting_refusal(type, c, other);
 // Inputs:   type - "exact" or "approx"
-//           c, other - the centers of the two sets (a batch has more
-//           than two dimensions)
-// Outputs:  r - the identifier and text of the refusal: another type, or a batch (a linear program
-//           per pair); none if the call is valid
+//           c, other - the centers of the two sets (a batch has more than two dimensions)
+// Outputs:  r - the identifier and text of the refusal (another type, a batch); none if valid
 // See also: Zonotope::is_intersecting, ConZonotope::is_intersecting
 //
 // CORA: contSet/@zonotope/isIntersecting_.m

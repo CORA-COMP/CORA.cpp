@@ -1,9 +1,10 @@
 // zonotope - a matrix zonotope as a zonotope of stacked matrices, as CORA's matZonotope.zonotope
 //
+// Its points are the stacked matrices of A.
+//
 // Syntax:   Zonotope Z = A.zonotope();
 // Inputs:   -
-// Outputs:  Z - the zonotope of rows * cols dimensions whose center and generators are those of A,
-//           each stacked column by column; its points are the stacked matrices of A
+// Outputs:  Z - the zonotope of rows * cols dimensions: the center and generators of A, stacked
 // See also: contains, representsa
 //
 // CORA: matrixSet/@matZonotope/zonotope.m

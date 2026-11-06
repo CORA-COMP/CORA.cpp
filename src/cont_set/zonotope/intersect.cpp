@@ -1,13 +1,14 @@
 // intersect - a zonotope that encloses the intersection of two zonotopes, as CORA's zonotope.and
 //
+// Two boxes (zonotopes with at most one nonzero entry per generator, up to eps) are intersected
+// exactly whatever the method. "averaging" weights centers and generators w_i G_i / sum(w) with
+// w_i ~ 1 / trace(G_i G_i'); "conZonotope" needs ConZonotope and raises not_supported for other
+// pairs.
+//
 // Syntax:   Zres = Z.intersect(Z2);   Zres = Z.intersect(Z2, "averaging");
 // Inputs:   Z2 - zonotope of the same dimension
-//           method - "conZonotope" (CORA's default) or "averaging"; two boxes (zonotopes with at
-//                    most one nonzero entry per generator, up to eps) are intersected exactly
-//                    whatever the method
-// Outputs:  Zres - for two boxes, their intersection; for "averaging", the zonotope with the
-//           weighted centers and generators w_i G_i / sum(w) (w_i ~ 1 / trace(G_i G_i'));
-//           "conZonotope" needs ConZonotope and raises not_supported for other pairs
+//           method - "conZonotope" (CORA's default) or "averaging"
+// Outputs:  Zres - the intersection (two boxes), the averaging zonotope, or the ConZonotope result
 // See also: enclose, interval
 //
 // CORA: contSet/@zonotope/and_.m

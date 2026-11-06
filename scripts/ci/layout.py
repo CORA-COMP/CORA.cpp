@@ -226,9 +226,10 @@ def check_entries(body, blocks, issues, base):
             if label == "See also":
                 bad = k > first
             elif label == "Syntax":
-                bad = k > first and not re.search(r"[(=\[]", text)
+                bad = k > first and not re.search(r"[(=\[]", text) \
+                    and text.split()[:1] != body[first][len(label) + 1:].split()[:1]
             else:
-                bad = not entry.match(text)
+                bad = k > first and not entry.match(text)
             if bad:
                 issues.append(f"line {base + k + 1}: '{label}' takes one line per entry; a continued "
                               "line belongs in the description or in a comment of the code")

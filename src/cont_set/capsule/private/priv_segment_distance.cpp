@@ -1,12 +1,13 @@
 // priv_segment_distance - the least distance between the axes of two capsules
 //
+// CORA asks a quadratic program for the minimizer; the problem has two variables, so the
+// minimizer is the stationary point of the squared distance if it lies in the box, else on one of
+// the four edges, where one parameter is fixed and the other is the clipped minimizer. Every
+// candidate is clipped into the box, so each is a pair of points on the segments.
+//
 // Syntax:   Tensor dist = priv_segment_distance(c1, g1, c2, g2);
 // Inputs:   c1, g1, c2, g2 - the centers and generators (..., n, 1)
-// Outputs:  dist - (..., 1, 1): min |c1 + g1 x1 - c2 - g2 x2| over x1, x2 in [-1, 1]. CORA asks a
-//           quadratic program for the minimizer; the problem has two variables, so the minimizer
-//           is the stationary point of the squared distance if it lies in the box, else on one of
-//           the four edges, where one parameter is fixed and the other is the clipped minimizer.
-//           Every candidate is clipped into the box, so each is a pair of points on the segments
+// Outputs:  dist - (..., 1, 1): min |c1 + g1 x1 - c2 - g2 x2| over x1, x2 in [-1, 1]
 // See also: priv_axis_distance, Capsule::is_intersecting
 //
 // CORA: contSet/@capsule/isIntersecting_.m

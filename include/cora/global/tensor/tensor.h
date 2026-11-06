@@ -7,10 +7,10 @@
 // where its operands live; operands of different backends, devices or dtypes are an error that
 // names both. Library code makes new tensors only like an operand (zeros_like, eye_like, like);
 // the current backend (BackendScope, set_default_backend, CORACPP_BACKEND) applies only where
-// numbers become a tensor with no tensor to follow (Tensor({{1, 2}}), Tensor::zeros(shape)):
+// numbers become a tensor with no tensor to follow (Tensor({{1, 2}}), Tensor::zeros(shape)).
 //
-//     cora::BackendScope scope("torch");          // "eigen", "torch", "torch:cuda", "lean"
-//     cora::Tensor A({{0, 1}, {-1, 0}});         // built on that backend
+// Syntax:   cora::BackendScope scope("torch");   the backend is "eigen", "torch", "torch:cuda", "lean"
+//           cora::Tensor A({{0, 1}, {-1, 0}});   built on that backend
 //
 // Layout: row-major, the last two axes are the matrix (..., rows, cols); a vector is a column
 // (n, 1). Leading axes are batches on every backend and broadcast as in numpy.

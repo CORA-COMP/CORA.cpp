@@ -1,11 +1,12 @@
 // expm_norm_infinity - CORA's bound of the norm of the mapping mimicking exp, expmNormInf
 //
+// s1 = (rA rS t^2 / 2) / (rA rAS t^2 / 4 - (rA + rAS) t / 2 + 1), with the infinity norms rA of
+// the center, rS of the radius and rAS of |center| + radius. It is CORA's formula, which is not
+// checked for a vanishing denominator.
+//
 // Syntax:   Tensor v = A.expm_norm_infinity(t);
 // Inputs:   t >= 0 - the time
-// Outputs:  v - (..., 1, 1): s2 + s1 with s2 = rS t / (1 - rAS t / 2) and
-//           s1 = (rA rS t^2 / 2) / (rA rAS t^2 / 4 - (rA + rAS) t / 2 + 1), the infinity norms
-//           rA of the center, rS of the radius and rAS of |center| + radius; CORA's formula,
-//           which is not checked for a vanishing denominator
+// Outputs:  v - (..., 1, 1): s2 + s1 with s2 = rS t / (1 - rAS t / 2)
 // See also: expm_absolute_bound, infinity_norm
 //
 // CORA: matrixSet/@intervalMatrix/expmNormInf.m

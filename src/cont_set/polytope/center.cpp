@@ -1,13 +1,14 @@
 // center - a point near the middle of a polytope, as CORA's polytope.center
 //
+// "chebyshev": the center of the largest ball in the set, from the halfspaces (a linear program;
+// for equalities alone their solution); "avg": the mean of the extreme vertices. R^n gives the
+// origin; the empty set a column without entries (n, 0); a set whose Chebyshev radius is
+// unbounded, or whose equalities leave a freedom, gives NaN. In 1D the middle of the two
+// vertices. Not a batch, except for "avg" of the vertices of a single set.
+//
 // Syntax:   Tensor c = P.center();   Tensor c = P.center("avg");
 // Inputs:   P - polytope;  method - "chebyshev" (default) or "avg"
-// Outputs:  c - a column (n, 1). "chebyshev": the center of the largest ball in the set, from the
-//           halfspaces (a linear program; for equalities alone their solution); "avg": the mean
-//           of the extreme vertices. R^n gives the origin; the empty set a column without entries
-//           (n, 0); a set whose Chebyshev radius is unbounded, or whose equalities leave a
-//           freedom, gives NaN. In 1D the middle of the two vertices. Not a batch, except for
-//           "avg" of the vertices of a single set
+// Outputs:  c - a column (n, 1)
 // See also: interval, Polytope::contains
 //
 // CORA: contSet/@polytope/center.m

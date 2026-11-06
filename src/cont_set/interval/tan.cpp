@@ -1,9 +1,10 @@
 // tan - the tangent of a box, as CORA's interval.tan
 //
+// Else (-Inf, Inf); nothing rounds outward.
+//
 // Syntax:   Interval R = I.tan();
 // Inputs:   -
-// Outputs:  R - [tan(inf), tan(sup)] where the entry is narrower than pi and tan(inf) <= tan(sup)
-//           (no pole inside), else (-Inf, Inf); nothing rounds outward
+// Outputs:  R - [tan(inf), tan(sup)] where the entry is narrower than pi and has no pole
 // See also: tanh, sin
 //
 // CORA: contSet/@interval/tan.m

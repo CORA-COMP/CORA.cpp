@@ -1,8 +1,8 @@
 // figure - the layers of one pair of axes and the limits they give
 //
 // Syntax:   figure().add_polygons(...);   Figure::Limits l = figure().limits();
-// Inputs:   the layers, in the order they are drawn: regions first, then sets, lines, points
-// Outputs:  the layers, the limits and the view of the axes
+// Inputs:   layers - in the order they are drawn: regions first, then sets, lines, points
+// Outputs:  fig - the layers, the limits and the view of the axes
 // See also: cora/global/plot/plot.h, src/global/plot/svg.cpp, src/global/plot/tikz.cpp
 //
 // Authors:       Claude Sonnet 5.5

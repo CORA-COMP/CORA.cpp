@@ -1,10 +1,11 @@
 // norm - the norm of the largest member of a box, as CORA's interval.norm_
 //
+// For type two (default) the 2-norm of max(|inf|, |sup|), the spectral norm for a matrix; else
+// that norm of |center| + rad. CORA's mode argument is ignored by intervals and not offered.
+//
 // Syntax:   Tensor v = I.norm();   Tensor v = I.norm(type)   with type one, two, inf or fro
 // Inputs:   -
-// Outputs:  v - (..., 1, 1); for type two (default) the 2-norm of max(|inf|, |sup|), the spectral
-//           norm for a matrix; else that norm of |center| + rad. -Inf for an empty interval.
-//           CORA's mode argument is ignored by intervals and not offered
+// Outputs:  v - (..., 1, 1); -Inf for an empty interval
 // See also: rad, center
 //
 // CORA: contSet/@interval/norm_.m

@@ -1,9 +1,10 @@
 // linear_map - the linear map M * I of a box, as CORA's interval.mtimes
 //
+// Each bound sums the smaller (larger) of m_ik inf_k and m_ik sup_k.
+//
 // Syntax:   Ires = I.linear_map(M);
 // Inputs:   M - matrix (..., n, n)
-// Outputs:  Ires - the interval hull of M * I: each bound sums the smaller (larger) of
-//           m_ik inf_k and m_ik sup_k, as CORA
+// Outputs:  Ires - the interval hull of M * I, as CORA
 // See also: Zonotope::linear_map
 //
 // CORA: contSet/@interval/mtimes.m

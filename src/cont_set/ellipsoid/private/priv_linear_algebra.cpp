@@ -2,7 +2,7 @@
 //
 // Syntax:   auto [T, D] = priv_simdiag(M1, M2, tol);   Tensor Q = priv_congruence(M, Q);
 // Inputs:   M1, M2, Q - symmetric matrices (n, n) (the congruence: (..., n, n));  M - (..., m, n)
-// Outputs:  T with T M1 T' = I and D = T M2 T' diagonal;  the shape matrix M Q M' symmetrized
+// Outputs:  T - with T M1 T' = I and D = T M2 T' diagonal; the shape matrix M Q M' symmetrized
 // See also: priv.h, Ellipsoid::is_bigger, Ellipsoid::is_bad_dir
 //
 // CORA: global/functions/helper/sets/contSet/ellipsoid/simdiag.m

@@ -1,10 +1,10 @@
 // quad_map - the box around a quadratic map of boxes, as CORA's interval.quadMap
 //
+// x1 is in I and x2 in I2; the boxes are bounded vectors. One coordinate per matrix.
+//
 // Syntax:   Ires = I.quad_map(Q);   Ires = I.quad_map(I2, Q);
-// Inputs:   Q - the matrices of the outputs, Q[i] (n, n): output i is x' Q[i] x (or x1' Q[i] x2
-//           for x1 in I and x2 in I2); the boxes are bounded vectors
-// Outputs:  Ires - the interval hull of the quad_map of the zonotopes of the boxes, one
-//           coordinate per matrix
+// Inputs:   Q - the matrices of the outputs, Q[i] (n, n): output i is x' Q[i] x (or x1' Q[i] x2)
+// Outputs:  Ires - the interval hull of the quad_map of the zonotopes of the boxes
 // See also: Zonotope::quad_map
 //
 // CORA: contSet/@interval/quadMap.m

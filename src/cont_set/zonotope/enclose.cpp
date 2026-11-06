@@ -1,10 +1,11 @@
 // enclose - a zonotope that encloses two zonotopes, as CORA's zonotope.enclose
 //
+// The generators in common (the first ones of the zonotope with fewer) give (G+G2)/2 and
+// (G-G2)/2, then come (c-c2)/2 and the extra generators of the other one.
+//
 // Syntax:   Zres = Z.enclose(Z2);   Zres = Z.enclose(M, Zplus);
 // Inputs:   Z2 - zonotope of the same dimension; the second form takes M * Z + Zplus for Z2
-// Outputs:  Zres - encloses conv(Z, Z2): center (c+c2)/2; the generators in common (the first ones
-//           of the zonotope with fewer) give (G+G2)/2 and (G-G2)/2, then come (c-c2)/2 and the
-//           extra generators of the other one
+// Outputs:  Zres - encloses conv(Z, Z2), with center (c+c2)/2
 // See also: linear_combination, convex_hull
 //
 // CORA: contSet/@zonotope/enclose.m

@@ -2,8 +2,8 @@
 //
 // Syntax:   std::string problem = priv_cubic_map_problem(T, ind, n);
 // Inputs:   T - the (n, n) matrices of the outputs, T[i][k]
-//           ind - the columns k of each output
-//           (empty: all);  n - dimension of the sets
+//           ind - the columns k of each output (empty: all)
+//           n - dimension of the sets
 // Outputs:  problem - empty if T and ind are consistent, else what is wrong
 // See also: Zonotope::cubic_map, ConZonotope::cubic_map
 //

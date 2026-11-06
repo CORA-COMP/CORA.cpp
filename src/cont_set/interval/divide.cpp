@@ -1,9 +1,10 @@
 // divide - a box divided by a number, as CORA's interval.mrdivide with a scalar denominator
 //
+// Error::out_of_domain if a quotient is NaN (0/0 or Inf/Inf).
+//
 // Syntax:   Interval R = I.divide(d);   Interval R = I / d;
 // Inputs:   d - the denominator, a number
-// Outputs:  R - [min(inf/d, sup/d), max(inf/d, sup/d)]; (-Inf, Inf) for d = 0;
-//           Error::out_of_domain if a quotient is NaN (0/0 or Inf/Inf)
+// Outputs:  R - [min(inf/d, sup/d), max(inf/d, sup/d)]; (-Inf, Inf) for d = 0
 // See also: times, Tensor::divide
 //
 // CORA: contSet/@interval/mrdivide.m

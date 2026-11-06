@@ -1,12 +1,12 @@
 // ellipsoid - the constructors of an ellipsoid, checked, as CORA's ellipsoid
 //
+// tol is kept as the tolerance of the object (CORA's is 1e-6). Q without entries needs q without
+// entries: the empty ellipsoid.
+//
 // Syntax:   Ellipsoid E(Q);   Ellipsoid E(Q, q);   Ellipsoid E(Q, q, tol);
-// Inputs:   Q - shape matrix (..., n, n), finite, symmetric and positive semidefinite up to tol;
+// Inputs:   Q - shape matrix (..., n, n), finite, symmetric and positive semidefinite up to tol
 //           q - center (..., n, 1), finite, default 0
-//           tol - bound of the asymmetry and of the
-//           negative eigenvalues, kept as the tolerance of the object; default: the repository
-//           tolerance (docs/architecture.md; CORA's is 1e-6). Q without entries needs q without
-//           entries: the empty ellipsoid
+//           tol - bound of the asymmetry and the negative eigenvalues; default: the repository one
 // Outputs:  E - the ellipsoid {x | (x - q)' Q^+ (x - q) <= 1}
 // See also: empty, Zonotope::Zonotope
 //

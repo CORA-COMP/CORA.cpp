@@ -1,11 +1,11 @@
 // lift - a box placed into a higher-dimensional space, as CORA's interval.lift_
 //
+// For a repeated entry of dims the last one counts, as CORA's assignment.
+//
 // Syntax:   Interval R = I.lift(N, dims);
 // Inputs:   N - dimension of the space, N >= dim
-//           dims - the N-dimensional coordinates (0-based)
-//           of the dim coordinates of I, in the order of I
-// Outputs:  R - the box with coordinate dims[j] equal to that of I and (-Inf, Inf) elsewhere; for
-//           a repeated entry of dims the last one counts, as CORA's assignment
+//           dims - the N-dimensional coordinates (0-based) of the dim coordinates of I
+// Outputs:  R - the box with coordinate dims[j] equal to that of I and (-Inf, Inf) elsewhere
 // See also: project
 //
 // CORA: contSet/@interval/lift_.m

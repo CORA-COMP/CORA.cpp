@@ -1,12 +1,14 @@
 // unite - a zonotope that encloses the union of zonotopes, as CORA's zonotope.or
 //
+// "linprog": the enclosure of pairwise enclose, its generators rescaled and its center moved, by
+// a linear program, to the least that still covers every set along its facet normals;
+// "iterative": the pairwise enclose alone; "parallelotope": the box around all of them in the
+// frame of the principal axes of their generators. "tedrake" and "althoff", and an order
+// reduction (order), are Error::not_supported.
+//
 // Syntax:   Zu = Z.unite(Z2);   Zu = Z.unite({Z2, Z3}, "iterative");   Zu = Z.unite(I);
-// Inputs:   Zs - the other sets: zonotopes, a box (as its zonotope) or a point;  method -
-//           "linprog" (default): the enclosure of pairwise enclose, its generators rescaled and
-//           its center moved, by a linear program, to the least that still covers every set
-//           along its facet normals; "iterative": the pairwise enclose alone; "parallelotope":
-//           the box around all of them in the frame of the principal axes of their generators.
-//           "tedrake" and "althoff", and an order reduction (order), are Error::not_supported
+// Inputs:   Zs - the other sets: zonotopes, a box (as its zonotope) or a point
+//           method - "linprog" (default), "iterative" or "parallelotope"
 // Outputs:  Zu - a zonotope that contains the union. Not a batch
 // See also: enclose, convex_hull, reduce
 //

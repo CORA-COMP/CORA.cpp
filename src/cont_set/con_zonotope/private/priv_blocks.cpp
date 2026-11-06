@@ -2,8 +2,8 @@
 //
 // Syntax:   Tensor Z = priv_zeros(like, rows, cols);   Tensor B = priv_block_diag(A, B);
 //           ConZonotope c = priv_compact(cz);   ConZonotope s = priv_minkowski_sum(cz1, cz2);
-// Inputs:   tensors of one batch shape, constrained zonotopes
-// Outputs:  the block matrix, the compacted set, the sum, the intersection with agreement rows
+// Inputs:   czs - constrained zonotopes, or their tensors, of one batch shape
+// Outputs:  R - the block matrix, the compacted set, the sum or the intersection
 // See also: con_zonotope.h
 //
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline

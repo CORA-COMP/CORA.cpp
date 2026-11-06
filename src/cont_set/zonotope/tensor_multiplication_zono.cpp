@@ -1,10 +1,9 @@
 // tensor_multiplication_zono - the image of a zonotope under a tensor zonotope, as a zonotope
 //
 // Syntax:   R = Z.tensor_multiplication_zono(M_center, M_generators, list);
-// Inputs:   M_center, M_generators - the center and the generators of the tensor zonotope, each
-//           a tensor (n, n, n, n);  list - as in tensor_multiplication
-// Outputs:  R - the Minkowski sum of tensor_multiplication for the center and for every
-//           generator of the tensor zonotope
+// Inputs:   M_center, M_generators - the tensor zonotope, each (n, n, n, n)
+//           list - as in tensor_multiplication
+// Outputs:  R - the Minkowski sum of tensor_multiplication for the center and for every generator
 // See also: tensor_multiplication
 //
 // CORA: contSet/@zonotope/tensorMultiplication_zono.m

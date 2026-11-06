@@ -2,8 +2,7 @@
 //
 // Syntax:   Ellipsoid E = Ellipsoid::empty(n);
 // Inputs:   n - dimension, n >= 0 (default 0)
-// Outputs:  E - the ellipsoid whose shape matrix has no entries (0, 0) and whose center has the
-//           shape (n, 0)
+// Outputs:  E - the ellipsoid with a shape matrix (0, 0) and a center of the shape (n, 0)
 // See also: Ellipsoid::Ellipsoid, EmptySet::empty
 //
 // CORA: contSet/@ellipsoid/empty.m

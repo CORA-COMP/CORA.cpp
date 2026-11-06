@@ -1,8 +1,8 @@
 // polygon_union - the union of polygons as closed loops
 //
 // Syntax:   loops = union_polygons(polygons);
-// Inputs:   polygons that may overlap, touch or share edges
-// Outputs:  outer boundaries counter-clockwise, holes clockwise
+// Inputs:   polys - polygons that may overlap, touch or share edges
+// Outputs:  union - outer boundaries counter-clockwise, holes clockwise
 // See also: cora/global/plot/geometry.h, src/global/plot/geometry.cpp
 //
 // The union is its boundary: the parts of the edges that no other polygon covers. Each polygon is

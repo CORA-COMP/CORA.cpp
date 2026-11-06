@@ -1,16 +1,14 @@
 // is_intersecting - whether a capsule meets points or a capsule
 //
+// The distance is exact (a closed form for two segments); CORA's quadratic program has a Hessian
+// a quarter of the right one, which pushes the minimizer to the box and misses intersections
+// (docs/cora-differences.md). An empty capsule meets nothing. Of a batch: every member.
+//
 // Syntax:   res = C.is_intersecting(S);   res = C.is_intersecting(S, tol);   C.is_intersecting(p)
 // Inputs:   S - capsule of the dimension of C
 //           p - points (..., n, N)
-//           tol - the distance of the
-//           axes may exceed the sum of the radii by tol (as within_tol); default: the repository
-//           tolerance (docs/architecture.md)
-// Outputs:  res - true if the least distance of the two axes is at most r + S.r; for points, if
-//           all are in C. The distance is exact (a closed form for two segments); CORA's
-//           quadratic program has a Hessian a quarter of the right one, which pushes the minimizer
-//           to the box and misses intersections (docs/cora-differences.md). An empty capsule
-//           meets nothing. Of a batch: every member
+//           tol - slack on the sum of the radii; default: the repository tolerance
+// Outputs:  res - true if the axes' distance is at most r + S.r; for points, if all are in C
 // See also: contains
 //
 // CORA: contSet/@capsule/isIntersecting_.m

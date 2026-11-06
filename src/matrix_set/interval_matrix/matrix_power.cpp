@@ -1,10 +1,11 @@
 // matrix_power - the power of a square interval matrix, as CORA's intervalMatrix.mpower
 //
+// Every product is the interval matrix product (CORALean's matPow; CORA multiplies from the left,
+// the other association of the same factors).
+//
 // Syntax:   IntervalMatrix P = A.matrix_power(k);
 // Inputs:   k - the exponent, a nonnegative integer;  A is square
-// Outputs:  P - the point matrix I for k = 0, A for k = 1, else A (A (... A)) with k factors,
-//           every product the interval matrix product (CORALean's matPow; CORA multiplies from
-//           the left, the other association of the same factors)
+// Outputs:  P - the point matrix I for k = 0, A for k = 1, else A (A (... A)) with k factors
 // See also: matmul, Interval::matrix_power
 //
 // CORA: matrixSet/@intervalMatrix/mpower.m

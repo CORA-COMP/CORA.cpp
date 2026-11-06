@@ -1,11 +1,11 @@
 // plus - the sum of a matrix zonotope with a matrix zonotope or a matrix, as CORA's plus
 //
+// The centers add and the generators are joined (A's first).
+//
 // Syntax:   MatZonotope S = A.plus(B);   MatZonotope S = A.plus(M);   S = A + B;
 // Inputs:   B - matrix zonotope of the same rows and columns
-//           M - matrix of numbers (rows, cols),
-//           or 1 x 1, which is added to every entry
-// Outputs:  S - for a matrix zonotope the Minkowski sum: the centers add and the generators are
-//           joined (A's first); for a matrix the set shifted by it
+//           M - matrix of numbers (rows, cols), or 1 x 1, which is added to every entry
+// Outputs:  S - for a matrix zonotope the Minkowski sum, for a matrix the set shifted by it
 // See also: matmul
 //
 // CORA: matrixSet/@matZonotope/plus.m

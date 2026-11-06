@@ -1,11 +1,8 @@
 // oracle_testing - what a test against the CORALean oracle shares
 //
 // Syntax:     if (!test::oracle::available()) return 0;
-//             test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) {
-//                 const Zonotope Z = rnd.zonotope(3, 5);   const Tensor d = rnd.direction(3);
-//                 test::oracle::check(Z.support_function(d),
-//                 lean::Zonotope(Z).support_function(d));
-//             });
+//             test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) { ... });
+//             test::oracle::check(Z.support_function(d), lean::Zonotope(Z).support_function(d));
 // Modes:      run calls the body twice with the same random operands, "exact" (CORA.cpp on the lean
 //             backend against the oracle at dtype nearest: bit for bit) and "sound" (CORA.cpp on
 //             its default backend against the sound oracle at binary64: inside its enclosure);
@@ -14,8 +11,7 @@
 //             indices of filter_out, a pair of halves, or Vertices; an oracle Certified answer
 //             is a proof only when `proved`
 // Skip:       available() is false, with a note, unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND
-// are
-//             set; a test then returns at once. run skips an op the oracle does not serve (an older
+//             are set; a test then returns at once. run skips an op the oracle does not serve (an older
 //             oracle; `lean::serves`), naming it once on stderr; serves(op) asks for another op,
 //             and nearest_is_strict() for a check that needs the machine's strict order at nearest
 // See also:   testing.h, cora/global/oracle/request.h

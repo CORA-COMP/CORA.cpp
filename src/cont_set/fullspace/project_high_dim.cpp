@@ -1,12 +1,12 @@
 // project_high_dim - the whole space in a larger space, as CORA's fullspace.projectHighDim_
 //
+// Any larger N would put the new coordinates at 0, which the whole space cannot do: CORA refuses
+// it with Error::not_defined (CORALean's definition is R^N there, its row claims N = dim only).
+//
 // Syntax:   Fullspace R = F.project_high_dim(N, proj);
 // Inputs:   N - dimension of the space, N >= dim
-//           proj - the N-dimensional coordinates (0-based)
-//           of the dim coordinates of F
-// Outputs:  R - the set itself, for N = dim. Any larger N would put the new coordinates at 0, which
-//           the whole space cannot do: CORA refuses it with Error::not_defined (CORALean's
-//           definition is R^N there, its row claims N = dim only)
+//           proj - the N-dimensional coordinates (0-based) of the dim coordinates of F
+// Outputs:  R - the set itself, for N = dim
 // See also: lift, EmptySet::project_high_dim
 //
 // CORA: contSet/@fullspace/projectHighDim_.m

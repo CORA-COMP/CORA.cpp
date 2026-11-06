@@ -1,8 +1,8 @@
 // geometry - the thinning of polygons and the faces of a convex hull
 //
 // Syntax:   p = thin_polygon(p, {0.01, 0.01});   faces = hull_faces(points);
-// Inputs:   a polygon, or points in space as the sets' vertices give them
-// Outputs:  a polygon with fewer vertices, the faces of the hull
+// Inputs:   poly - a polygon, or points in space as the sets' vertices give them
+// Outputs:  hull - a polygon with fewer vertices, the faces of the hull
 // See also: cora/global/plot/geometry.h, cora/global/plot/figure.h
 //
 // Authors:       Tobias Ladner

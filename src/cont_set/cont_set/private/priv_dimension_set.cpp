@@ -2,8 +2,7 @@
 //
 // Syntax:   std::string why = E.lift_refusal(N, dims, "lift");
 // Inputs:   N - the dimension of the larger space
-//           dims - the position (0-based) of each of the
-//           n dimensions of the set in it
+//           dims - the position (0-based) of each of the n dimensions of the set in it
 // Outputs:  why - "" if lift(N, dims) is valid, else the message of its Error::wrong_value
 // See also: cont_set/dimension_set.h, EmptySet::lift, Fullspace::lift
 //

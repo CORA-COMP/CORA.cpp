@@ -1,9 +1,10 @@
 // norm - the norm of the empty set, as CORA's contSet.norm returns it
 //
+// CORA has no emptySet.norm_; its norm catches the failure and returns -Inf for the empty set.
+//
 // Syntax:   Tensor v = static_cast<const ContSet &>(E).norm();
 // Inputs:   type, mode - as ContSet::norm; neither changes the value
-// Outputs:  v - -Inf (1, 1): the supremum of the norms over no point. CORA has no emptySet.norm_;
-//           its norm catches the failure and returns -Inf for the empty set
+// Outputs:  v - -Inf (1, 1): the supremum of the norms over no point
 // See also: radius, Interval::norm
 //
 // CORA: contSet/@contSet/norm.m

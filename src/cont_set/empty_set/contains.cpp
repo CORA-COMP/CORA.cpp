@@ -3,8 +3,7 @@
 // Syntax:   bool b = E.contains(S);   bool b = E.contains(S, tol);   bool b = E.contains(p);
 // Inputs:   S - a set of the dimension of E
 //           p - points (n, N)
-//           tol - nonnegative; CORA passes it on to the emptiness test; default: the repository
-//                 tolerance (docs/architecture.md)
+//           tol - nonnegative; CORA passes it on to the emptiness test; default: the repository one
 // Outputs:  b - true if S is empty, and for points if there are none (no columns)
 // See also: isequal, Interval::contains
 //

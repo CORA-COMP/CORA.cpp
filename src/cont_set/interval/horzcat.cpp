@@ -1,9 +1,10 @@
 // horzcat - intervals joined side by side, as CORA's interval.horzcat
 //
+// Nothing rounds (a number is a point interval, made by the caller).
+//
 // Syntax:   Interval I = Interval::horzcat({I1, I2, ...});
 // Inputs:   Is - the intervals, which agree in the number of rows
-// Outputs:  I - the bounds joined as columns; nothing rounds (a number is a point interval, made
-//           by the caller)
+// Outputs:  I - the bounds joined as columns
 // See also: cat, cart_prod
 //
 // CORA: contSet/@interval/horzcat.m

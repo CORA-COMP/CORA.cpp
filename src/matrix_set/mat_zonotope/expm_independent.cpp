@@ -1,10 +1,11 @@
 // expm_independent - the matrix exponential of a matrix zonotope with independent powers
 //
+// The sum of A^i / i! for i = 0 to max_order (each power the product of the previous with A) plus
+// the remainder box of the interval matrix around A.
+//
 // Syntax:   MatZonotope E = A.expm_independent(max_order);
 // Inputs:   max_order - the order of the series, nonnegative;  A is square
-// Outputs:  E - an enclosure of exp(M) for every matrix M of A: the sum of A^i / i! for i = 0 to
-//           max_order (each power the product of the previous with A) plus the remainder box of
-//           the interval matrix around A, as a matrix zonotope
+// Outputs:  E - an enclosure of exp(M) for every matrix M of A, as a matrix zonotope
 // See also: expm, expm_mixed, IntervalMatrix::exponential_remainder
 //
 // CORA: matrixSet/@matZonotope/expmInd.m

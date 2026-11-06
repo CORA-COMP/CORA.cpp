@@ -1,23 +1,19 @@
 // bindings - the compiled half of the `cora` Python package (`_cora`)
 //
-// The classes are the C++ classes, with the same names, so code reads the same in both
-// languages and a batch lives in the object, not in the call. Python gets properties for what a
-// set is (Z.center, Z.generators, Z.dim), operators (+, @, *, &, |, in, unary -), and keyword
-// arguments for a problem and its algorithm:
+// The classes are the C++ classes, with the same names, so code reads the same in both languages
+// and a batch lives in the object, not in the call. Python gets properties for what a set is
+// (Z.center, Z.generators, Z.dim), operators (+, @, *, &, |, in, unary -), and keyword arguments
+// for a problem and its algorithm. A Python subclass of cora.ContSet implements _dim, _center,
+// _support_function, ... and then works with the checked entry points, the binary registry
+// (register_binary) and plotting; an algorithm registered from Python (cora.register_algorithm)
+// gets the problem checks of the built-in ones. Errors arrive as cora.errors classes, warnings
+// through warnings.warn. The module holds Zonotope, Interval, EmptySet, ContSet, LinearSys,
+// NonlinearSys, NeuralNetwork, Expr, ReachSet, Specification, VerifyResult, Rng, backend, checks,
+// plus and register_binary.
 //
-//     X0  = cora.Zonotope(c, G)                 # c (..., n), G (..., n, m): one set or a batch
-//     sys = cora.LinearSys(A)                   # A (..., n, n): one system or a batch
-//     R   = sys.reach(initial_set=X0, t_final=2.0, alg="standard", time_step=0.1)
-//     R.time_interval[k].center
-//
-// A Python subclass of cora.ContSet implements _dim, _center, _support_function, ... and then
-// works with the checked entry points, the binary registry (register_binary) and plotting; an
-// algorithm registered from Python (cora.register_algorithm) gets the problem checks of the
-// built-in ones. Errors arrive as cora.errors classes, warnings through warnings.warn.
-//
-// Syntax:   cora.Zonotope, Interval, EmptySet, ContSet, LinearSys, NonlinearSys, NeuralNetwork,
-// Expr,
-//           ReachSet, Specification, VerifyResult, Rng, backend, checks, plus, register_binary
+// Syntax:   X0 = cora.Zonotope(c, G);   c (..., n), G (..., n, m): one set or a batch
+//           sys = cora.LinearSys(A);   A (..., n, n): one system or a batch
+//           R = sys.reach(initial_set=X0, t_final=2.0, alg="standard", time_step=0.1);
 // See also: convert.h, the C++ headers, which document every method
 //
 // Authors:       Claude Sonnet 5.5

@@ -1,13 +1,13 @@
 // dominant_directions - n generators whose parallelotope tightly encloses the zonotope
 //
+// Both filter lengths are cut to the number of nonzero generators. A singular P scores infinity
+// and the first subset wins a tie; the columns come in the order of the length filter. Not for a
+// batch; fewer than n nonzero generators raise degenerate_set.
+//
 // Syntax:   S = Z.dominant_directions();   S = Z.dominant_directions(length1, length2);
 // Inputs:   filter_length1 - how many of the longest generators are considered (CORA: n + 5)
 //           filter_length2 - how many n-subsets of largest |det| are scored (CORA: n + 3)
-//           both are cut to the number of nonzero generators
 // Outputs:  S - (n, n): the columns of the subset P for which P box(P^-1 Z) has the least volume
-//           (a singular P scores infinity; the first subset wins a tie), in the order of the
-//           length filter (longest first). Not for a batch; fewer than n nonzero generators
-//           raise degenerate_set
 // See also: reduce, box
 //
 // CORA: contSet/@zonotope/dominantDirections.m

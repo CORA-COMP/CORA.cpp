@@ -2,9 +2,7 @@
 //
 // Syntax:   res = I.contains(p);   res = I.contains(p, tol);
 // Inputs:   p - point (..., n, 1)
-//           tol - how far p may lie outside, per coordinate, absolutely or relative to the bound
-//                 (as within_tol); default: the
-//                 repository tolerance (docs/architecture.md)
+//           tol - how far p may lie outside, per coordinate; default: the repository tolerance
 // Outputs:  res - true if inf - tol <= p <= sup + tol; for a batch, if all points are
 // See also: Specification::check
 //

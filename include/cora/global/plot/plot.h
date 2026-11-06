@@ -10,8 +10,7 @@
 // Syntax:   plot(X0, {0, 1});   plot(R, {0, 1}, {.label = "reachable set"});   plot(X0, {0, 1, 2});
 //           plot(spec, {0, 1});   plot(x, {0, 1});   plot_over_time(R, 0);
 //           figure().save("figure.svg");   figure().save_tikz("figure.tikz");
-//           use_cora_colors("CORA:contDynamics");   plot(fig, R, {0, 1})  (into a figure of your
-//           own)
+//           use_cora_colors("CORA:contDynamics");   plot(fig, R, {0, 1});  into a figure of your own
 // See also: cora/global/plot/figure.h, cora/global/plot/color.h, cora/cont_set/cont_set.h
 //
 // Authors:       Tobias Ladner

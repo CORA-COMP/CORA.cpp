@@ -1,15 +1,17 @@
 // reduce - fewer generators for a constrained zonotope, as CORA's conZonotope.reduce
 //
+// The other methods are Error::not_supported. The result is the set without zero rows and
+// generators, and if it has more than order n + p generators (n the dimension, p the
+// constraints), Girard's rule applied to the zonotope [G; A] the constraints lift it to: (order -
+// 1) n generators stay and the others become one box generator per row of [G; A], so the
+// constraint rows get new free factors. CORA states the budget as the order (order n + p) / (n +
+// p) of the lifted zonotope in floating point; here it is the integers, as CORALean's reduce. A
+// batch reduces member by member.
+//
 // Syntax:   cZred = cz.reduce(order);   cZred = cz.reduce(order, "girard");
-// Inputs:   order - the generator budget per dimension, at least 1;  method - "girard", the one
-//           of CORA's zonotope reductions that is ported; the others are Error::not_supported
-// Outputs:  cZred - a constrained zonotope that encloses cz: the set without zero rows and
-//           generators, and if it has more than order n + p generators (n the dimension, p the
-//           constraints), Girard's rule applied to the zonotope [G; A] the constraints lift it to:
-//           (order - 1) n generators stay and the others become one box generator per row of [G;
-//           A], so the constraint rows get new free factors. CORA states the budget as the order
-//           (order n + p) / (n + p) of the lifted zonotope in floating point; here it is the
-//           integers, as CORALean's reduce. A batch reduces member by member
+// Inputs:   order - the generator budget per dimension, at least 1
+//           method - "girard", the one reduction of CORA that is ported
+// Outputs:  cZred - a constrained zonotope that encloses cz
 // See also: compact, Zonotope::reduce
 //
 // CORA: contSet/@conZonotope/reduce.m

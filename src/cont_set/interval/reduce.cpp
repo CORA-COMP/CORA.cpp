@@ -1,9 +1,10 @@
 // reduce - the order reduction of a box, as CORA's interval.reduce
 //
+// CORA's reduce of an interval returns it unchanged for every method and order.
+//
 // Syntax:   Interval R = I.reduce();   Interval R = I.reduce(order);
 // Inputs:   order - the zonotope order to reduce to (at least 1); a box has nothing to reduce
-// Outputs:  R - the box itself: CORA's reduce of an interval returns it unchanged for every method
-//           and order
+// Outputs:  R - the box itself
 // See also: Zonotope::reduce
 //
 // CORA: contSet/@interval/reduce.m

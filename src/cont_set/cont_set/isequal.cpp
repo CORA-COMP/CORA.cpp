@@ -1,10 +1,10 @@
 // isequal - whether two sets are the same, as CORA's contSet.isequal
 //
+// A class relaxes its own parts: the bounds of a box, the center and generators of a zonotope.
+//
 // Syntax:   res = isequal(S1, S2);   res = isequal(S1, S2, tol);
 // Inputs:   S1, S2 - sets of one dimension
-//           tol - what the class relaxes (the bounds of a box, the
-//           center and generators of a zonotope); default: the repository tolerance
-//           (docs/architecture.md)
+//           tol - what the class relaxes; default: the repository tolerance
 // Outputs:  res - true if the two sets are equal; the class of lower CORA precedence decides
 // See also: registry, eq, ne
 //

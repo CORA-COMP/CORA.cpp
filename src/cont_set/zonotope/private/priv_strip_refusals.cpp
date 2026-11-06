@@ -2,9 +2,11 @@
 //
 // Syntax:   Refusal r = priv_strip_refusal(n, C, phi, y);   priv_gain_refusal(n, C, lambda);
 //           priv_observer_refusal(n, aux);
-// Inputs:   n - dimension of the set;  C (k, n), phi and y (k, 1) - the strips;  lambda (n, k) -
-//           the gain;  aux - the matrices E, F, A, C of an observer
-// Outputs:  the identifier and the text of what is wrong, or nothing
+// Inputs:   n - dimension of the set
+//           C (k, n), phi and y (k, 1) - the strips
+//           lambda (n, k) - the gain
+//           aux - the matrices E, F, A, C of an observer
+// Outputs:  r - the identifier and the text of what is wrong, or nothing
 // See also: Zonotope::intersect_strip, ConZonotope::intersect_strip
 //
 // CORA: contSet/@zonotope/intersectStrip.m

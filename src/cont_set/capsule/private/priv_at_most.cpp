@@ -1,10 +1,11 @@
 // priv_at_most - where one number is at most another, up to a tolerance
 //
+// It is CORA's `dist < r | withinTol(dist, r)`.
+//
 // Syntax:   Tensor ok = priv_at_most(a, b, tol);
 // Inputs:   a, b - tensors of one dtype, broadcast
 //           tol - nonnegative
-// Outputs:  ok - 1 where a <= b or the two agree up to tol (as within_tol), else 0: CORA's
-//           `dist < r | withinTol(dist, r)`
+// Outputs:  ok - 1 where a <= b or the two agree up to tol (as within_tol), else 0
 // See also: priv_all, within_tol
 //
 // CORA: contSet/@capsule/contains_.m

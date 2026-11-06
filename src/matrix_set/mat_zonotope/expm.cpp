@@ -1,9 +1,10 @@
 // expm - the matrix exponential of a matrix zonotope, as CORA's matZonotope.expm
 //
+// CORA's expm calls expmInd.
+//
 // Syntax:   MatZonotope E = A.expm();   MatZonotope E = A.expm(max_order);
 // Inputs:   max_order - the order of the series (default 10);  A is square
-// Outputs:  E - an enclosure of exp(M) for every matrix M of A: expm_independent, as CORA's expm
-//           calls expmInd
+// Outputs:  E - an enclosure of exp(M) for every matrix M of A: expm_independent
 // See also: expm_independent, expm_mixed
 //
 // CORA: matrixSet/@matZonotope/expm.m

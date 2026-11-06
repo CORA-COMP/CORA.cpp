@@ -4,11 +4,12 @@
 // "exact:zonotope" tests the members one by one. A zonotope or a box is inside if every member
 // holds it; a bundle if each member holds it by its facets. CORA asks the polytope of the bundle.
 //
+// "approx" is "exact" for points; it takes no set.
+//
 // Syntax:   res = bundle.contains(p);   res = bundle.contains(S, "exact", tol);
 // Inputs:   S - points (n, N), a zonotope, a box or a bundle of the dimension of bundle
-//           method - "exact" (default), "exact:zonotope" or "approx" (as "exact" for points; no
-//           set) tol - relaxes the norm of the points and the facet tests; default: the repository
-//           tolerance
+//           method - "exact" (default), "exact:zonotope" or "approx"
+//           tol - relaxes the norm of the points and the facet tests; default: the repository one
 // Outputs:  res - true if all points (S) are in the bundle; not for a batch
 // See also: is_intersecting, Zonotope::contains, ConZonotope::contains
 //

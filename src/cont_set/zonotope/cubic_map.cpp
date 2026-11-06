@@ -1,12 +1,13 @@
 // cubic_map - an enclosure of a cubic map of zonotopes, as CORA's zonotope.cubMap
 //
+// Its generators are the monomials beta_k beta_j beta_c of the generator factors, which a
+// zonotope frees to [-1, 1]; (N+1)(N+2)(N+3)/6 - 1 of them for N generators.
+//
 // Syntax:   Zres = Z.cubic_map(T);   Zres = Z.cubic_map(T, ind);   Zres = Z.cubic_map(Z2, Z3, T);
 // Inputs:   T - cubic map: T[i][k] is an (n, n) matrix, output i is z_i = sum_k x_k (x' T[i][k] x)
 //           ind - for every output i the k that enter it (CORA's default: all columns of T)
 //           Z2, Z3 - the zonotopes of the second and third factor of (x1' T x2) x3
-// Outputs:  Zres - zonotope with one dimension per row of T that encloses the image: its
-//           generators are the monomials beta_k beta_j beta_c of the generator factors, which a
-//           zonotope frees to [-1, 1]; (N+1)(N+2)(N+3)/6 - 1 of them for N generators
+// Outputs:  Zres - zonotope with one dimension per row of T that encloses the image
 // See also: linear_map, plus
 //
 // CORA: contSet/@zonotope/cubMap.m

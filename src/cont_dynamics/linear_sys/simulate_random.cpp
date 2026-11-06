@@ -1,8 +1,9 @@
 // simulate_random - trajectories from random points of a set, as CORA's linearSys.simulateRandom
 //
+// No input_set means no input.
+//
 // Syntax:   x = sys.simulate_random(problem, alg, points, rng);
-// Inputs:   problem - initial_set (any set), input_set (any set of constant inputs, needs B; none:
-//                     no input), t_final
+// Inputs:   problem - initial_set (any set), input_set (constant inputs, needs B), t_final
 //           alg - alg::Exact (time_step)
 //           points - the number N of trajectories
 //           rng - random numbers (a seed makes them repeatable)

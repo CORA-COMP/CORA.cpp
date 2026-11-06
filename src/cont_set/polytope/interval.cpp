@@ -1,11 +1,12 @@
 // interval - the smallest box around a polytope, as CORA's polytope.interval
 //
+// The empty set gives the empty box. A vertex polytope takes the minimum and maximum of its
+// vertices (also for a batch), a halfspace polytope solves two linear programs per dimension (not
+// a batch).
+//
 // Syntax:   Interval I = P.interval();
 // Inputs:   P - polytope
-// Outputs:  I - the least and the largest value of every coordinate, which may be infinite; the
-//           empty box for the empty set. A vertex polytope takes the minimum and maximum of its
-//           vertices (also for a batch), a halfspace polytope solves two linear programs per
-//           dimension (not a batch)
+// Outputs:  I - the least and the largest value of every coordinate, which may be infinite
 // See also: box, Polytope::center
 //
 // CORA: contSet/@polytope/interval.m

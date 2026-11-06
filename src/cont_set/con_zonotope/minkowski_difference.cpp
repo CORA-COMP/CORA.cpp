@@ -1,15 +1,17 @@
 // minkowski_difference - the Minkowski difference of a constrained zonotope and a set
 //
+// "exact" intersects the translates cz - v by the corners v of S (CORA's vertices; at most 12
+// generators); "inner:vertices" translates by the center of S and intersects cz + g and cz - g
+// for each generator g, a subset of the difference; "inner:Vinod" scales the factors by one minus
+// the support of S along the directions the constraints give them (Vinod et al.), a subset, and
+// the empty set if that exceeds 1; the inner ones take a zonotope or a box. A point translates
+// the set. Not a batch.
+//
 // Syntax:   cZres = cz.minkowski_difference(S);   cZres = cz.minkowski_difference(S, type);
 //           cZres = cz.minkowski_difference(p);
-// Inputs:   S - a zonotope or a box, or a point p (n, 1);  type - "exact" (default),
-//           "inner:vertices" or "inner:Vinod" (a zonotope or a box)
-// Outputs:  cZres - {x | x + S in cz}: "exact" intersects the translates cz - v by the corners v of
-//           S (CORA's vertices; at most 12 generators); "inner:vertices" translates by the center
-//           of S and intersects cz + g and cz - g for each generator g, a subset of the
-//           difference; "inner:Vinod" scales the factors by one minus the support of S along the
-//           directions the constraints give them (Vinod et al.), a subset, and the empty set if
-//           that exceeds 1. A point translates the set. Not a batch
+// Inputs:   S - a zonotope or a box, or a point p (n, 1)
+//           type - "exact" (default), "inner:vertices" or "inner:Vinod"
+// Outputs:  cZres - {x | x + S in cz}
 // See also: plus, intersect, Zonotope::mink_diff
 //
 // CORA: contSet/@conZonotope/minkDiff.m

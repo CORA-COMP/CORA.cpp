@@ -1,18 +1,18 @@
 // expm_one_param - the Taylor series of the matrix exponential for one parameter, as CORA's
 //
+// The l-th generator of K is the coefficient of b^l (halved for even l, which moves the other
+// half to the center, as b^l lies in [0, 1] there). constant_input has the same form (CORA
+// returns a zero zonotope without u).
+//
 // Syntax:   auto R = A.expm_one_param(r, max_order);   R = A.expm_one_param(r, max_order, u);
 // Inputs:   r - the step
 //           max_order - the order of the series, at least 1
-//           A - a square set
-//           with exactly one generator: the matrices M(b) = C + b G, |b| <= 1;  u - an input
-//           zonotope c + b g with at most one generator, in the same b (a column u is (u, 0))
-// Outputs:  R - enclosure: the matrix zonotope K of the sum of r^k M(b)^k / k! for k = 0 to
-//           max_order, whose l-th generator is the coefficient of b^l (halved for even l, which
-//           moves the other half to the center, as b^l lies in [0, 1] there); remainder: the
-//           remainder box of the interval matrix around A r, to be added; powers: the powers
-//           (r M)^k as matrix zonotopes with a generator per power of b; constant_input: with u,
-//           the zonotope of the sum of r^k M^(k-1) u / k! for k = 1 to max_order, in the same
-//           form (CORA returns a zero zonotope without u)
+//           A - a square set with exactly one generator: M(b) = C + b G, |b| <= 1
+//           u - an input zonotope c + b g, in the same b (a column u is (u, 0))
+// Outputs:  R - enclosure: the matrix zonotope K of the sum of r^k M(b)^k / k!, k = 0..max_order
+//           remainder - the remainder box of the interval matrix around A r
+//           powers - the powers (r M)^k as matrix zonotopes, a generator per power of b
+//           constant_input - with u, the zonotope of sum r^k M^(k-1) u / k!, k = 1..max_order
 // See also: expm_independent, IntervalMatrix::exponential_remainder
 //
 // CORA: matrixSet/@matZonotope/expmOneParam.m

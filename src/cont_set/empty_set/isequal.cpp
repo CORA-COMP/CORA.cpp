@@ -1,10 +1,11 @@
 // isequal - whether a set is the empty set of the same dimension, as CORA's emptySet.isequal
 //
+// Another dimension gives false, as CORA (no error).
+//
 // Syntax:   bool b = E.isequal(S);   bool b = E.isequal(S, tol);
 // Inputs:   S - a set
 //           tol - nonnegative, default: the repository tolerance; relaxes nothing here
-// Outputs:  b - true if S is empty and has the dimension of E; false for another dimension, as
-//           CORA (no error)
+// Outputs:  b - true if S is empty and has the dimension of E
 // See also: contains, Interval::isequal
 //
 // CORA: contSet/@emptySet/isequal.m

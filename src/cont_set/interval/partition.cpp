@@ -1,12 +1,13 @@
 // partition - a box cut into equal boxes, as CORA's interval.partition
 //
+// The first coordinate is the slowest. Piece k of a coordinate runs from inf + r(k) w to inf +
+// r(k+1) w for the width w = sup - inf, where the fraction r(k) is the smaller (larger) of
+// k/splits and 1 - (splits-k)/splits for a lower (upper) bound, as CORALean's partition. The
+// neighbours then overlap or touch, so the pieces cover the box in any rounding.
+//
 // Syntax:   std::vector<Interval> P = I.partition(splits);
 // Inputs:   splits - the number of pieces per coordinate, at least 1
-// Outputs:  P - the splits^n boxes, in the order of nested loops over the coordinates (the first
-//           is the slowest). Piece k of a coordinate runs from inf + r(k) w to inf + r(k+1) w
-//           for the width w = sup - inf, where the fraction r(k) is the smaller (larger) of
-//           k/splits and 1 - (splits-k)/splits for a lower (upper) bound, as CORALean's partition.
-//           The neighbours then overlap or touch, so the pieces cover the box in any rounding
+// Outputs:  P - the splits^n boxes, in the order of nested loops over the coordinates
 // See also: split, enclose_points
 //
 // CORA: contSet/@interval/partition.m

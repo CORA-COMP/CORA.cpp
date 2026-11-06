@@ -1,8 +1,9 @@
 // priv_linear_programs - the linear programs of a zonotope bundle on the host
 //
 // Syntax:   bool empty = priv_bundle_is_empty(bundle);   bool in = priv_con_zonotope_in_zonotope(A,
-// B, tol); Inputs:   bundle - a bundle;  A, B - a constrained zonotope and a zonotope (single sets)
-// Outputs:  whether the bundle has no point, whether A lies in B
+// B, tol); Inputs:   bundle - a bundle;  A, B - a constrained zonotope and a zonotope (single
+// sets)
+// Outputs:  R - whether the bundle has no point, whether A lies in B
 // See also: ZonoBundle::con_zonotope, ConZonotope
 //
 // CORA.cpp only: CORA asks the polytope of the bundle (isempty, contains); there is no Polytope

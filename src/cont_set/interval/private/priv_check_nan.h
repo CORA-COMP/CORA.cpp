@@ -4,8 +4,7 @@
 // Inputs:   name - the operation, for the message
 //           lo, hi - the bounds of the result;
 //           domain - the valid domain, for the message
-// Outputs:  none; Error::out_of_domain if some bound is NaN, as CORA's check at the end of power
-//           and rdivide
+// Outputs:  -   (Error::out_of_domain if some bound is NaN, as CORA's check at the end of power)
 // See also: priv_check_domain
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner

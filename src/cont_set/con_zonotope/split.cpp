@@ -1,11 +1,12 @@
 // split - a constrained zonotope cut into two that cover it, as CORA's conZonotope.split
 //
+// The pieces are the intersections of the set with the two halves of its box cut at the center of
+// coordinate N; without N one pair per coordinate. They cover the set and are exact up to the
+// linear programs of the box. An empty set is Error::empty_set. Not a batch.
+//
 // Syntax:   [cZ1, cZ2] = cz.split(N);   pieces = cz.split();
 // Inputs:   N - a coordinate (0-based) of the box around the set
-// Outputs:  the intersections of the set with the two halves of its box cut at the center of
-//           coordinate N (lower half first); without N one pair per coordinate. The pieces cover
-//           the set, and are exact up to the linear programs of the box. An empty set is
-//           Error::empty_set. Not a batch
+// Outputs:  pieces - the two pieces at the center of coordinate N (lower half first)
 // See also: interval, intersect, Zonotope::split
 //
 // CORA: contSet/@conZonotope/split.m

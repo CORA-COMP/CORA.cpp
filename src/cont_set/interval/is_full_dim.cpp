@@ -1,10 +1,10 @@
 // is_full_dim - whether a box has a nonempty interior, as CORA's interval.isFullDim
 //
+// The comparison is within_tol. For a batch, true if every member is.
+//
 // Syntax:   bool b = I.is_full_dim();   bool b = I.is_full_dim(tol);
 // Inputs:   tol - how close to zero a radius may be; default: the repository tolerance
-//           (docs/architecture.md)
-// Outputs:  b - false for an empty interval, else true if no radius is within tol of zero (as
-//           within_tol); for a batch, true if every member is
+// Outputs:  b - false for an empty interval, else true if no radius is within tol of zero
 // See also: is_bounded, isequal
 //
 // CORA: contSet/@interval/isFullDim.m

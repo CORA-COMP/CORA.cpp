@@ -1,12 +1,12 @@
 // enclose - an ellipsoid that contains an ellipsoid and the image of another, as CORA's enclose
 //
+// E2 = M Eplus; the ellipsoids are single and nonempty. CORA finds the union by an SDP solver;
+// none is available, so the call is Error::not_supported after the checks. CORA's help says E2 =
+// M E + Eplus, its code takes M Eplus (docs/cora-differences.md); the code's form is kept.
+//
 // Syntax:   Ellipsoid R = E.enclose(E2);   Ellipsoid R = E.enclose(M, Eplus);
-// Inputs:   E2 - an ellipsoid of the dimension of E, or M (n, m) and Eplus of dimension m with
-//           E2 = M Eplus; single, nonempty ellipsoids
-// Outputs:  R - would be the outer union of E and E2, the minimum-volume ellipsoid that contains
-//           both, which CORA finds by an SDP solver; none is available, so the call is
-//           Error::not_supported after the checks. CORA's help says E2 = M E + Eplus, its code
-//           takes M Eplus (docs/cora-differences.md); the code's form is kept
+// Inputs:   E2 - an ellipsoid of the dimension of E, or M (n, m) and Eplus of dimension m
+// Outputs:  R - would be the outer union: the minimum-volume ellipsoid that contains E and E2
 // See also: Zonotope::enclose, intersect
 //
 // CORA: contSet/@ellipsoid/enclose.m

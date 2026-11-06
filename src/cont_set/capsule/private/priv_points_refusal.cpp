@@ -3,8 +3,7 @@
 // Syntax:   const detail::Refusal refusal = priv_points_refusal(C, p);
 // Inputs:   C - capsule
 //           p - the points as columns, or anything else
-// Outputs:  refusal - the identifier and text for CORA_CHECK if p is no matrix (..., n, N) with the
-//           dimension n of C; nothing otherwise
+// Outputs:  refusal - the identifier and text if p is no (..., n, N) matrix; else nothing
 // See also: Capsule::contains, Capsule::is_intersecting
 //
 // CORA.cpp only: MATLAB checks the dimensions with equalDimCheck

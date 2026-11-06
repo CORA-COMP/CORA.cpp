@@ -1,10 +1,11 @@
 // norm - an upper bound on the norm of the points of a zonotope
 //
+// "ub" is the norm of the box around the zonotope, so no point has a larger norm; "exact" needs a
+// mixed-integer solver and "ub_convex" a semidefinite one, neither is supported.
+//
 // Syntax:   val = Z.norm();   val = Z.norm(type, "ub");
-// Inputs:   type - 1, 2 (default) or infinity (ContSet::norm also takes fro);  mode - "ub"
-//           (default): the norm of the box around the zonotope, so no point has a larger norm;
-//           "exact" needs a mixed-integer solver and "ub_convex" a semidefinite one, neither is
-//           supported
+// Inputs:   type - 1, 2 (default) or infinity (ContSet::norm also takes fro)
+//           mode - "ub" (default)
 // Outputs:  val - the bound, (..., 1, 1)
 // See also: interval, minnorm
 //

@@ -1,9 +1,11 @@
 // priv_quad_map_rows - one output of CORA's quadratic map of a zonotope, from its matrix
 //
+// The generators are the N halved squares, then the strictly lower triangle of M + M' in MATLAB's
+// order.
+//
 // Syntax:   QuadRow row = priv_quad_map_single_row(M, N);   Shape s = priv_batch_shape(like, 1, 3);
 // Inputs:   M - [c G]' Q [c G] (..., N+1, N+1) for N generators
-// Outputs:  row - the center (..., 1, 1) and the generators (..., 1, N + N(N+1)/2) of the output:
-//           the N halved squares, then the strictly lower triangle of M + M' in MATLAB's order
+// Outputs:  row - the center (..., 1, 1) and the generators (..., 1, N + N(N+1)/2) of the output
 // See also: Zonotope::quad_map, ConZonotope::quad_map
 //
 // CORA: contSet/@zonotope/quadMap.m

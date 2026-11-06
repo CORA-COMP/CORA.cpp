@@ -1,9 +1,11 @@
 // volume - the volume of a zonotope, exactly or by an upper bound
 //
+// "exact": 2^n times the sum of |det G_S| over the n-subsets S of the generators, taken in
+// blocks; "alamo": 2^n sqrt(det(G G')), a lower bound; "reduce" is an order reduction by 'pca'.
+//
 // Syntax:   v = Z.volume();   v = Z.volume(method);   v = Z.volume("reduce", order);
-// Inputs:   method - "exact" (default): 2^n times the sum of |det G_S| over the n-subsets S of
-//           the generators, taken in blocks; "alamo": 2^n sqrt(det(G G')), a lower bound;
-//           "reduce" (order reduction by 'pca') is not supported;  order - the order of "reduce"
+// Inputs:   method - "exact" (default) or "alamo"; "reduce" is not supported
+//           order - the order of "reduce"
 // Outputs:  v - (..., 1, 1); 0 if the generators do not span the space (rank below n)
 // See also: is_full_dim, interval
 //

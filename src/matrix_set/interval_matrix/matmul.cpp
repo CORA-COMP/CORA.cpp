@@ -1,5 +1,8 @@
 // matmul - the product of an interval matrix with sets, matrices or numbers, as CORA's mtimes
 //
+// C is the bounds of the interval matrix product; for a number the bounds scaled (swapped if s <
+// 0). In Z2, T is the center and S the radius of A.
+//
 // Syntax:   IntervalMatrix C = A.matmul(B);   C = A.matmul(M);   C = IntervalMatrix::matmul(M, A);
 //           C = A.matmul(s);   Zonotope Z2 = A.matmul(Z);   EmptySet E2 = A.matmul(E);
 // Inputs:   B - interval matrix
@@ -7,10 +10,9 @@
 //           s - number
 //           Z - zonotope;
 //           E - empty set; the inner dimensions agree
-// Outputs:  C - each entry the sum over k of the hull of the corner products (the bounds of the
-//           interval matrix product); for a number the bounds scaled (swapped if s < 0);
-//           Z2 - the zonotope T c, [T G, diag(S sum|[c G]|)] with T the center and S the radius of
-//           A, an enclosure of [A] Z; E2 - the empty set of rows(A) dimensions
+// Outputs:  C - each entry the sum over k of the hull of the corner products
+//           Z2 - the zonotope T c, [T G, diag(S sum|[c G]|)], an enclosure of [A] Z
+//           E2 - the empty set of rows(A) dimensions
 // See also: matrix_power, Zonotope::linear_map
 //
 // CORA: matrixSet/@intervalMatrix/mtimes.m

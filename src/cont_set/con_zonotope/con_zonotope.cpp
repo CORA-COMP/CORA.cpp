@@ -1,11 +1,13 @@
 // con_zonotope - the constructors of a constrained zonotope, checked, as CORA's conZonotope
 //
+// All entries are finite and share one batch shape.
+//
 // Syntax:   ConZonotope cz(c, G);   ConZonotope cz(c, G, A, b);   ConZonotope cz(Z);
 //           ConZonotope cz = ConZonotope::from_matrix(Zfull, A, b);
 // Inputs:   c - center (..., n, 1)
 //           G - generators (..., n, m)
-//           A - constraint matrix
-//           (..., p, m);  b - constraint offset (..., p, 1); all finite, one batch shape
+//           A - constraint matrix (..., p, m)
+//           b - constraint offset (..., p, 1)
 // Outputs:  cz - the set {c + G x | |x|_inf <= 1, A x = b}; no constraints give p = 0
 // See also: empty, Zonotope::Zonotope
 //

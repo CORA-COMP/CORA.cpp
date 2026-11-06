@@ -1,10 +1,11 @@
 // priv_is_box - whether a zonotope is a box
 //
+// Of a batch, true if it holds for every member.
+//
 // Syntax:   bool box = priv_is_box(Z, tol);
 // Inputs:   Z - zonotope
 //           tol - generator entries up to tol count as zero (as within_tol)
-// Outputs:  box - true if every generator has at most one entry beyond tol, or Z is
-//           one-dimensional; of a batch, every member
+// Outputs:  box - true if every generator has at most one entry beyond tol, or Z is one-dimensional
 // See also: Zonotope::intersect, Zonotope::contains
 //
 // CORA: contSet/@zonotope/representsa_.m

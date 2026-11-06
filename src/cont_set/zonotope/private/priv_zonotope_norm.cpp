@@ -8,8 +8,7 @@
 // Inputs:   Z - zonotope (its center is ignored)
 //           p - a point (n values)
 // Outputs:  s - the norm; infinity if p is not in the span of the generators
-//           r - s and the
-//           coefficients beta (none if s is infinite)
+//           r - s and the coefficients beta (none if s is infinite)
 // See also: priv_containment_vertex_enumeration, zonotope_norm
 //
 // CORA.cpp only: the linear program of zonotopeNorm, on the host and unchecked, for contains and

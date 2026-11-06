@@ -1,16 +1,14 @@
 // contains - whether a zonotope contains a point, a zonotope or a box, as CORA's contains_
 //
+// Exact: a linear program per point; the vertex search and the sufficient test of Sadraddini and
+// Tedrake for a set. CORA's "exact:polymax" needs Polytope; "approx:stDual", "sampling" and "opt"
+// are not supported. A zonotope that is not full-dimensional is enlarged by tol. Not for a batch.
+//
 // Syntax:   res = Z.contains(p);   res = Z.contains(S, "approx", tol);
 // Inputs:   p, S, I - points (n, N), a zonotope or a box of the dimension of Z
-//           method - "exact" (default), "exact:venum", "approx", "approx:st"; CORA's
-//                    "exact:polymax" needs Polytope; "approx:stDual", "sampling" and "opt" are not
-//                    supported
-//           tol - relaxes the norm of the points (as within_tol) and the flatness of Z (a
-//                 zonotope that is not full-dimensional is enlarged by tol); default: the
-//                 repository tolerance (docs/architecture.md)
-// Outputs:  res - true if all points (S) are in Z; "exact" decides, "approx" says true only when it
-//           is certain. A linear program per point; the vertex search and the sufficient test of
-//           Sadraddini and Tedrake for a set. Not for a batch
+//           method - "exact" (default), "exact:venum", "approx" or "approx:st"
+//           tol - relaxes the points' norm and the flatness of Z; default: the repository tolerance
+// Outputs:  res - true if all points (S) are in Z; "approx" says true only when certain
 // See also: boundary_point, Interval::contains
 //
 // CORA: contSet/@zonotope/contains_.m

@@ -1,9 +1,10 @@
 // vertices_3d - the corners of a three-dimensional zonotope, as CORA's zonotope.vertices_
 //
+// A flat zonotope gives its polygon, a segment its two ends, a point itself.
+//
 // Syntax:   V = Z.vertices_3d();
 // Inputs:   -
-// Outputs:  V - one list of corners per batch member (a flat zonotope gives its polygon, a
-//               segment its two ends, a point itself)
+// Outputs:  V - one list of corners per batch member
 // See also: vertices, Interval::vertices_3d
 //
 // CORA: contSet/@zonotope/vertices_.m

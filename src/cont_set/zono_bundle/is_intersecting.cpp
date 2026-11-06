@@ -1,13 +1,12 @@
 // is_intersecting - whether a zonotope bundle and a set or points intersect
 //
-// "exact" asks whether the bundle of both is empty (a linear program on its constrained zonotope);
-// "approx" tests the boxes around the sets, so it can say true for disjoint sets.
+// "exact" asks whether the bundle of both is empty (a linear program on its constrained
+// zonotope); "approx" tests the boxes around the sets, so it can say true for disjoint sets.
 //
 // Syntax:   res = bundle.is_intersecting(S);   res = bundle.is_intersecting(S, "approx", tol);
 // Inputs:   S - a bundle, a zonotope, a box, or points (n, N) of the dimension of bundle
 //           type - "exact" (default) or "approx"
-//           tol - points: the tolerance of contains; "approx": enlarges the box of S; default: the
-//           repository one
+//           tol - points: the tolerance of contains; "approx": enlarges the box of S
 // Outputs:  res - true if the sets intersect (all points must lie in the bundle); not for a batch
 // See also: contains, intersect, Interval::is_intersecting
 //

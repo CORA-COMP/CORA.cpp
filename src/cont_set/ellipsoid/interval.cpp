@@ -1,11 +1,11 @@
 // interval - the smallest box that contains an ellipsoid, as CORA's ellipsoid.interval
 //
+// The empty ellipsoid gives the empty box. CORA takes an ellipsoid with Q within eps of zero for
+// a point and gives r = 0 (docs/cora-differences.md).
+//
 // Syntax:   Interval I = E.interval();
 // Inputs:   -
-// Outputs:  I - [q - r, q + r] with r_i = sqrt(Q_ii), the support function of the centered
-//           ellipsoid along the unit vectors; the empty box for an empty ellipsoid. CORA takes an
-//           ellipsoid with Q within eps of zero for a point and gives r = 0
-//           (docs/cora-differences.md)
+// Outputs:  I - [q - r, q + r] with r_i = sqrt(Q_ii), the support function along the unit vectors
 // See also: center, Zonotope::interval
 //
 // CORA: contSet/@ellipsoid/interval.m

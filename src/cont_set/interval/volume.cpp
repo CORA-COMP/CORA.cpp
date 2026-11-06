@@ -1,10 +1,11 @@
 // volume - the volume of a box, as CORA's interval.volume_
 //
+// 0 if the box is empty or some width is 0, also next to an infinite one. The widths multiply
+// nested to the right, as CORALean's volume, so the roundings agree with it.
+//
 // Syntax:   Tensor v = I.volume();
 // Inputs:   -
-// Outputs:  v - the product of the widths of all entries, (..., 1, 1); 0 if the box is empty or
-//           some width is 0, also next to an infinite one. The widths multiply nested to the
-//           right, as CORALean's volume, so the roundings agree with it
+// Outputs:  v - the product of the widths of all entries, (..., 1, 1)
 // See also: rad, radius
 //
 // CORA: contSet/@interval/volume_.m

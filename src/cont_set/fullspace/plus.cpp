@@ -1,10 +1,12 @@
 // plus - the Minkowski sum of the whole space and a set, as CORA's fullspace.plus
 //
+// S is empty if it is an EmptySet or an empty interval, where CORA returns an emptySet.
+// Error::not_supported in R^0, as CORA, unless S is an EmptySet (CORA hands that sum to the empty
+// set first).
+//
 // Syntax:   Set R = F.plus(S);
 // Inputs:   S - a set of the dimension of F (a point p: the interval [p, p])
-// Outputs:  R - the whole space, or the empty set of the dimension if S is empty (an EmptySet, or
-//           an empty interval, where CORA returns an emptySet). Error::not_supported in R^0, as
-//           CORA, unless S is an EmptySet (CORA hands that sum to the empty set first)
+// Outputs:  R - the whole space, or the empty set of the dimension if S is empty
 // See also: EmptySet::plus, Interval::plus
 //
 // CORA: contSet/@fullspace/plus.m

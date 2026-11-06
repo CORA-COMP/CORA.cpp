@@ -1,9 +1,10 @@
 // infinity_norm - the infinity norm of the largest matrix of an interval matrix, as CORA's infNorm
 //
+// The greatest infinity norm over the matrices of the set.
+//
 // Syntax:   Tensor n = A.infinity_norm();
 // Inputs:   -
-// Outputs:  n - the largest absolute row sum of abs(A), (..., 1, 1): the greatest infinity norm
-//           over the matrices of the set
+// Outputs:  n - the largest absolute row sum of abs(A), (..., 1, 1)
 // See also: abs, norm
 //
 // CORA: matrixSet/@intervalMatrix/infNorm.m

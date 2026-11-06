@@ -1,16 +1,16 @@
 // cart_prod - the Cartesian product of an ellipsoid with an ellipsoid or a point
 //
+// One batch shape. With a point, exact: the centers stack and Q is padded with zeros. With an
+// ellipsoid, the ellipsoid of the product of the two bounding boxes: each box is widened to
+// radius at least 5e-3 in its small coordinates, then Q = k diag(r^2) around the center of the
+// box, r the radii and k the number of nonzero radii (CORA gets the same from a solver when a
+// radius is zero).
+//
 // Syntax:   Ellipsoid R = E.cart_prod(S);   Ellipsoid R = E.cart_prod(p);
 //           Ellipsoid R = Ellipsoid::cart_prod(p, E);
-// Inputs:   S - an ellipsoid, or a point p (n2, 1); as the first operand, the point p (n1, 1);
-//           mode - "outer" (default); "inner" and "exact" are Error::not_supported, as in CORA.
-//           One batch shape
-// Outputs:  R - of dimension n1 + n2, in the order of the operands. With a point, exact: the
-//           centers stack and Q is padded with zeros. With an ellipsoid, the ellipsoid of the
-//           product of the two bounding boxes: each box is widened to radius at least 5e-3 in
-//           its small coordinates, then Q = k diag(r^2) around the center of the box, r the
-//           radii and k the number of nonzero radii (CORA gets the same from a solver when a
-//           radius is zero)
+// Inputs:   S - an ellipsoid, or a point p (n2, 1); as the first operand, the point p (n1, 1)
+//           mode - "outer" (default); "inner" and "exact" are Error::not_supported, as in CORA
+// Outputs:  R - of dimension n1 + n2, in the order of the operands
 // See also: Interval::cart_prod, Zonotope::cart_prod
 //
 // CORA: contSet/@ellipsoid/cartProd_.m

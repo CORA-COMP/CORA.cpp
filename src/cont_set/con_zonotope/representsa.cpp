@@ -1,18 +1,18 @@
 // representsa - whether a constrained zonotope is also a set of another type
 //
+// "emptySet": no factor vector satisfies the constraints (a linear program); "origin", "point":
+// the box around the set is that; "interval": no constraints and a box; "zonotope": no
+// constraints; "hyperplane": a point in one dimension (CORA says true for every set of one
+// dimension, docs/cora-differences.md); "conZonotope", "polytope", "polyZonotope", "zonoBundle",
+// "convexSet", "conPolyZono": true; "halfspace", "probZonotope", "fullspace": false.
+// "conHyperplane", "capsule", "ellipsoid", "levelSet" and "parallelotope" are
+// Error::not_supported, as in CORA, and so is "polygon", for which CORA has no case. The
+// converted set (CORA's second output) is not returned. Not a batch.
+//
 // Syntax:   bool res = cz.representsa(type);   bool res = cz.representsa(type, tol);
-// Inputs:   type - CORA's name of a set type ("origin", "point", "interval", "zonotope",
-//           "emptySet", "polytope", "hyperplane", ...);  tol - what counts as zero (as for a box
-//           or a zonotope); default: the repository tolerance
-// Outputs:  res - "emptySet": no factor vector satisfies the constraints (a linear program);
-//           "origin", "point": the box around the set is that; "interval": no constraints and a
-//           box; "zonotope": no constraints; "hyperplane": a point in one dimension (CORA says
-//           true for every set of one dimension, docs/cora-differences.md); "conZonotope",
-//           "polytope", "polyZonotope", "zonoBundle", "convexSet", "conPolyZono": true;
-//           "halfspace", "probZonotope", "fullspace": false. "conHyperplane", "capsule",
-//           "ellipsoid", "levelSet" and "parallelotope" are Error::not_supported, as in CORA,
-//           and so is "polygon", for which CORA has no case. The converted set (CORA's second
-//           output) is not returned. Not a batch
+// Inputs:   type - CORA's name of a set type ("origin", "point", "interval", "zonotope", ...)
+//           tol - what counts as zero (as for a zonotope); default: the repository tolerance
+// Outputs:  res - whether the set is exactly such a set
 // See also: is_full_dim, Zonotope::representsa
 //
 // CORA: contSet/@conZonotope/representsa_.m

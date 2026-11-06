@@ -1,13 +1,14 @@
 // reach - the reachable sets of x' = A x (+ B u), as CORA's linearSys.reach
 //
+// input_set is a zonotope of u(t) in R^m; none means no input. alg::Standard has the options
+// time_step, taylor_terms and zonotope_order; alg::WrappingFree time_step and taylor_terms.
+// time_point[k] is the set at k*time_step.
+//
 // Syntax:   R = sys.reach(problem, alg);
 //           R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{.time_step = 0.1});
-// Inputs:   problem - initial_set (zonotope), input_set (zonotope of u(t) in R^m, needs B; none:
-//                     no input), t_final
-//           alg - alg::Standard (time_step, taylor_terms, zonotope_order) or alg::WrappingFree
-//                 (time_step, taylor_terms)
-// Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step];
-//           time_point[k] is the set at k*time_step
+// Inputs:   problem - initial_set (zonotope), input_set (zonotope of u(t), needs B), t_final
+//           alg - alg::Standard or alg::WrappingFree
+// Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step]
 // See also: output_set, simulate, correction_matrix_state, private/priv_reach_standard
 //
 // CORA: contDynamics/@linearSys/reach.m

@@ -7,14 +7,14 @@
 //     X_{k+1} = xs + e^{A dt} (X_k - xs) + sum_i A^i dt^{i+1}/(i+1)! U + (Taylor remainder),
 // and the sets in between with the enclosure of linear_sys.reach plus the analogous input terms.
 //
+// taylor_terms is the order of the Taylor series of the linearized system, zonotope_order the
+// bound on the generators of a set (that times n). time_point[k] is the set at k*time_step.
+//
 // Syntax:   R = sys.reach(problem, alg);
-//           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step =
-//           0.01});
+//           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step = .01});
 // Inputs:   problem - initial_set (one zonotope), t_final; no input_set
-//           alg - alg::Linearization: time_step, taylor_terms (order of the Taylor series of the
-//                 linearized system), zonotope_order (a set keeps at most that times n generators)
-// Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step];
-//           time_point[k] is the set at k*time_step
+//           alg - alg::Linearization: time_step, taylor_terms, zonotope_order
+// Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step]
 // See also: simulate, LinearSys::reach
 //
 // CORA: contDynamics/@contDynamics/reach.m

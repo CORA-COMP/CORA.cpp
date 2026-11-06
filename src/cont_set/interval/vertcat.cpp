@@ -1,9 +1,10 @@
 // vertcat - intervals stacked, as CORA's interval.vertcat
 //
+// A number is a point interval, made by the caller.
+//
 // Syntax:   Interval I = Interval::vertcat({I1, I2, ...});
 // Inputs:   Is - the intervals, which agree in the number of columns
-// Outputs:  I - the bounds stacked as rows; nothing rounds (a number is a point interval, made
-//           by the caller)
+// Outputs:  I - the bounds stacked as rows; nothing rounds
 // See also: horzcat, cat
 //
 // CORA: contSet/@interval/vertcat.m

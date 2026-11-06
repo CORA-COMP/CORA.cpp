@@ -1,15 +1,16 @@
 """instruction_counts - compares the instruction counts of the micro-benchmarks of two builds.
 
 Syntax:   python scripts/ci/instruction_counts.py --base <micro> --head <micro> [--threshold 3]
+Every benchmark runs under `valgrind --tool=callgrind`, counting the instructions of its measured
+region only (deterministic); without valgrind, under `perf stat -e instructions:u` (the whole
+process, noisy). A benchmark the base does not have is listed as new. A growth is accepted by a
+commit of the change (git log <base>..HEAD, with --accept-from <base>) that names it in a line
+`Accept-instructions: <benchmark>: <reason>`; the reason is required and printed. The acceptance
+lives in the history of that one change, never in a list in the tree.
+
 Inputs:   two builds of benchmarks/micro (the program `micro`), one per commit, built in the same job
-Method:   every benchmark runs under `valgrind --tool=callgrind`, counting the instructions of its
-          measured region only (deterministic); without valgrind, under `perf stat -e instructions:u`
-          (the whole process, noisy).
 Output:   a table of base, head and the change in percent; exit code 1 if one grew by more than the
-          threshold (percent, default 3), else 0. A benchmark the base does not have is listed as new.
-Accepting a growth: a commit of the change (git log <base>..HEAD, with --accept-from <base>) names it
-          in a line `Accept-instructions: <benchmark>: <reason>`; the reason is required and printed.
-          The acceptance lives in the history of that one change, never in a list in the tree.
+          threshold (percent, default 3), else 0
 
 Authors:       Tobias Ladner
 Written:       02-November-2026

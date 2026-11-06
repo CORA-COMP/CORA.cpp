@@ -1,27 +1,16 @@
 // zonotope - the class of zonotopes Z = {c + G b | |b|_inf <= 1}, as CORA's zonotope
 //
 // The center c is a column (..., n, 1); the generators G are (..., n, m), one per column.
-// Immutable: every operation returns a new zonotope.
+// Immutable: every operation returns a new zonotope. Not the competition's zonotope
+// (competition/sets): that one is tuned for speed on one library.
 //
 // Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generate_random(rng);
 // Operators:  M * Z (linear_map), s * Z, Z + Z2 and Z + I (plus), Z + v, Z - v, -Z, as in CORA
-// Operations: linear_map, plus, linear_combination, support_function, interval, rand_point,
-//             generate_random, stack, project, vertices, reduce, display, abs, box, center,
-//             compact, cart_prod, enclose, convex_hull, intersect, constraints_satisfied,
-//             cubic_map, hausdorff_distance_to_box, dominant_directions, contains,
-//             boundary_point, exact_plus, generator_length, is_bounded, is_full_dim, isequal,
-//             is_intersecting, lift, norm, minnorm, intersect_strip, enclose_points,
-//             enclose_many, mink_diff, origin, radius, rank, representsa, project_high_dim,
-//             rotate, quad_map, split, split_first_gen, split_longest_gen, reduce_under_approx,
-//             unite, tensor_multiplication, tensor_multiplication_zono, underapproximate, volume,
-//             zonotope_norm (one file each, as in CORA's @zonotope); the constructor checks its
-//             input (zonotope.cpp)
+// Operations: one file each in src/cont_set/zonotope/, named as CORA's @zonotope; the constructor
+//             checks its input (zonotope.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@zonotope/zonotope.m
-//
-// Not the competition's zonotope (competition/sets): that one is tuned for speed on one library.
-//
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026

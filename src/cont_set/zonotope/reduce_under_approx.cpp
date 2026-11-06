@@ -1,18 +1,18 @@
 // reduce_under_approx - a zonotope inside a zonotope with fewer generators
 //
+// "yang": the closest pair of generators becomes their sum or difference, whichever is longer in
+// the coordinates of the others, until at most order * n are left; "raghuraman": each of the
+// shortest generators is added with a sign to the big one it is most aligned with; "kochdumper":
+// the shortest generators with their signs aligned to the first coordinate become one generator.
+// "sadraddini", "scale", "boxLP", "boxCone", "boxWetzlinger", "nlp", "cluster" (and the old names
+// "linProg", "wetzlinger") are Error::not_supported. Z without its zero generators if it has few
+// enough. CORA divides by zero in "raghuraman" for a small generator orthogonal to all big ones
+// (NaN); CORA.cpp drops that generator.
+//
 // Syntax:   Zred = Z.reduce_under_approx("yang", order);
-// Inputs:   method - "yang": the closest pair of generators becomes their sum or difference,
-//           whichever is longer in the coordinates of the others, until at most order * n are
-//           left; "raghuraman": each of the shortest generators is added with a sign to the big
-//           one it is most aligned with; "kochdumper" (old name "sum"): the shortest generators
-//           with their signs aligned to the first coordinate become one generator.
-//           "sadraddini", "scale", "boxLP", "boxCone", "boxWetzlinger", "nlp", "cluster" (and the
-//           old names "linProg", "wetzlinger") are Error::not_supported;
+// Inputs:   method - "yang", "raghuraman" or "kochdumper" (old name "sum")
 //           order - generators per dimension, at least 1/n
-// Outputs:  Zred - the same center, at most order * n generators, and contained in Z; Z without
-//           its zero generators if it has few enough. CORA divides by zero in "raghuraman" for a
-//           small generator orthogonal to all big ones (NaN); CORA.cpp drops that generator.
-//           Not a batch
+// Outputs:  Zred - the same center, at most order * n generators, contained in Z; not a batch
 // See also: reduce, compact
 //
 // CORA: contSet/@zonotope/reduceUnderApprox.m

@@ -1,12 +1,13 @@
 // lift - a set placed into a space of higher dimension, as CORA's contSet.lift
 //
+// The classes are Interval, EmptySet, Fullspace and Zonotope::lift; proj has n entries in [0, N).
+// Error::noops for a class without it.
+//
 // Syntax:   R = S.lift(N);   R = S.lift(N, proj);
 // Inputs:   S - set of dimension n
 //           N - dimension of the space, N >= n
-//           proj - the position
-//           (0-based) of each coordinate of S in it, n entries in [0, N) (default: 0..n-1)
-// Outputs:  R - the set in N dimensions, as the class defines it (Interval, EmptySet, Fullspace,
-//           Zonotope::lift); Error::noops for a class without it
+//           proj - the position (0-based) of each coordinate of S in it (default: 0..n-1)
+// Outputs:  R - the set in N dimensions, as the class defines it
 // See also: project_high_dim, project
 //
 // CORA: contSet/@contSet/lift.m

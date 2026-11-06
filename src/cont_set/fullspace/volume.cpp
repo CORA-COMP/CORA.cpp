@@ -1,9 +1,10 @@
 // volume - the volume of the whole space, as CORA's fullspace.volume_
 //
+// NaN in R^0, as CORA (CORALean has Inf there and claims nothing).
+//
 // Syntax:   double v = F.volume();
 // Inputs:   -
-// Outputs:  v - Inf, the Lebesgue measure of R^n; NaN in R^0, as CORA (CORALean has Inf there and
-//           claims nothing)
+// Outputs:  v - Inf, the Lebesgue measure of R^n
 // See also: radius, EmptySet::volume
 //
 // CORA: contSet/@fullspace/volume_.m

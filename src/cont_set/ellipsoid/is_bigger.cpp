@@ -1,12 +1,13 @@
 // is_bigger - whether one centered ellipsoid contains another, as CORA's ellipsoid.isBigger
 //
+// The largest generalized eigenvalue of Q2 against Q1 is below 1 + tol or equal to it up to tol,
+// tol the least tolerance of the two. If E1 is not full-dimensional the comparison is made in the
+// subspace that Q1 + Q2 spans, and false if E2 is full-dimensional. CORA returns true for every
+// pair of dimension 1 without comparing (docs/cora-differences.md); here it compares.
+//
 // Syntax:   bool res = E1.is_bigger(E2);
 // Inputs:   E2 - an ellipsoid of the dimension of E1; a single one, not empty
-// Outputs:  res - true if E2 - q2 lies in E1 - q1: the largest generalized eigenvalue of Q2
-//           against Q1 is below 1 + tol or equal to it up to tol, tol the least tolerance of the
-//           two. If E1 is not full-dimensional the comparison is made in the subspace that Q1 + Q2
-//           spans, and false if E2 is full-dimensional. CORA returns true for every pair of
-//           dimension 1 without comparing (docs/cora-differences.md); here it compares
+// Outputs:  res - true if E2 - q2 lies in E1 - q1
 // See also: is_bad_dir, ellipsoid_norm
 //
 // CORA: contSet/@ellipsoid/isBigger.m

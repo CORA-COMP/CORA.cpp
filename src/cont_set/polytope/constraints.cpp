@@ -1,12 +1,14 @@
 // constraints - the halfspace form of a polytope, as CORA's polytope.constraints
 //
+// From the vertices: none (p = 0) is the row 0 <= -1; one vertex v the equalities I x = v; in 1D
+// the bounds (or an equality for a point); else the affine hull of the vertices as equalities and
+// the facets of their hull inside it as inequalities with unit normals. CORA's qhull lists a
+// facet once per triangle, here each is listed once, in the order of its first vertices. Not a
+// batch.
+//
 // Syntax:   Polytope::Constraints C = P.constraints();   C.A, C.b, C.Ae, C.be
 // Inputs:   P - polytope
-// Outputs:  C - the held halfspaces if there are any. From the vertices: none (p = 0) is the row
-//           0 <= -1; one vertex v the equalities I x = v; in 1D the bounds (or an equality for a
-//           point); else the affine hull of the vertices as equalities and the facets of their
-//           hull inside it as inequalities with unit normals. CORA's qhull lists a facet once per
-//           triangle, here each is listed once, in the order of its first vertices. Not a batch
+// Outputs:  C - the held halfspaces if there are any
 // See also: Polytope::box, Polytope::compact
 //
 // CORA: contSet/@polytope/constraints.m

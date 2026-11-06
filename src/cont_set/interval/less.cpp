@@ -1,9 +1,10 @@
 // less - whether a box lies strictly in another, as CORA's interval.lt
 //
+// For a batch, true if all members do.
+//
 // Syntax:   bool b = I.less(I2);   bool b = I < I2;
 // Inputs:   I2 - interval of the dimension of I
-// Outputs:  b - true if inf2 < inf and sup < sup2 in every coordinate (I lies strictly inside I2);
-//           for a batch, true if all members do
+// Outputs:  b - true if inf2 < inf and sup < sup2 in every coordinate (I lies strictly inside I2)
 // See also: less_equal, isequal, contains
 //
 // CORA: contSet/@interval/lt.m

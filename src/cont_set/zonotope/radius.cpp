@@ -1,9 +1,11 @@
 // radius - a bound on the distance of the zonotope from its center
 //
+// r is the smaller of the sum of the lengths of the generators and the 2-norm of the radius of
+// the box around Z.
+//
 // Syntax:   r = Z.radius();
 // Inputs:   -
-// Outputs:  r - (..., 1, 1): the smaller of the sum of the lengths of the generators and the
-//           2-norm of the radius of the box around Z; every point lies within r of the center
+// Outputs:  r - (..., 1, 1): every point lies within r of the center
 // See also: generator_length, interval, norm
 //
 // CORA: contSet/@zonotope/radius.m

@@ -1,12 +1,13 @@
 // dependent_terms - the square and the second-order Taylor terms of a matrix zonotope, as CORA's
 //
+// sq has the center r^2 (C^2 + sum G_i^2 / 2) and the generators r^2 (C G_i + G_i C), r^2 G_i^2 /
+// 2 and r^2 (G_i G_j + G_j G_i) for i < j (lexicographic), with the coefficients b_i, 2 b_i^2 -
+// 1, b_i b_j. The generators of H are sq.G / 2 with G_i r added to the first h.
+//
 // Syntax:   auto [sq, H] = A.dependent_terms(r);
 // Inputs:   r - the step;  A is square
-// Outputs:  sq - r^2 M^2 for every matrix M of A, as a matrix zonotope: the center r^2 (C^2 +
-//           sum G_i^2 / 2) and the generators r^2 (C G_i + G_i C), r^2 G_i^2 / 2 and r^2 (G_i G_j +
-//           G_j G_i) for i < j (lexicographic), with the coefficients b_i, 2 b_i^2 - 1, b_i b_j;
-//           H - I + M r + M^2 r^2 / 2: the center I + C r + sq.C / 2, the generators sq.G / 2 with
-//           G_i r added to the first h
+// Outputs:  sq - r^2 M^2 for every matrix M of A, as a matrix zonotope
+//           H - I + M r + M^2 r^2 / 2: the center I + C r + sq.C / 2
 // See also: expm_mixed, IntervalMatrix::dependent_terms
 //
 // CORA: matrixSet/@matZonotope/dependentTerms.m

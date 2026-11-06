@@ -1,12 +1,13 @@
 // compact - a set without redundancy, as CORA's contSet.compact and compact_
 //
+// A box, the empty set and the whole space are returned as they are, Error::noops for a class
+// without compact_.
+//
 // Syntax:   R = S.compact();   R = S.compact("all", tol);
 // Inputs:   S - a set
-//           method - a variant of the class (default: the class's own; see its
-//           compact);  tol - nonnegative, default: the repository tolerance
-// Outputs:  R - the set with the redundant parts removed, in the class of S; a box, the empty
-//           set and the whole space are returned as they are, Error::noops for a class without
-//           compact_
+//           method - a variant of the class (default: the class's own; see its compact)
+//           tol - nonnegative, default: the repository tolerance
+// Outputs:  R - the set with the redundant parts removed, in the class of S
 // See also: Zonotope::compact, reduce
 //
 // CORA: contSet/@contSet/compact.m

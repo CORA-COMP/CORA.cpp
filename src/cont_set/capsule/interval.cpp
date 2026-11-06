@@ -1,9 +1,10 @@
 // interval - the interval hull of a capsule, as CORA's capsule.interval
 //
+// The empty box for the empty capsule. A batch with an empty member has no box and is refused.
+//
 // Syntax:   Interval I = C.interval();
 // Inputs:   -
-// Outputs:  I - the box c +- (|g| + r): the smallest one containing the capsule; the empty box
-//           for the empty capsule. A batch with an empty member has no box and is refused
+// Outputs:  I - the box c +- (|g| + r): the smallest one containing the capsule
 // See also: center, Zonotope::interval
 //
 // CORA: contSet/@capsule/interval.m

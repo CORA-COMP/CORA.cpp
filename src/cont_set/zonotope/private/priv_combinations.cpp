@@ -5,9 +5,9 @@
 // Inputs:   total, n - the subsets of size n of total indices
 //           count - how many to produce;
 //           G - (..., r, m) columns;  members - (B, n) column indices, one subset per row
-// Outputs:  next - up to `count` subsets in lexicographic order as one flat list (empty when
-//           done);  P - (..., B, r, n), the columns G(:, members(b, :));  d - |det| of the
-//           matrices (..., n, n), as (..., 1, 1)
+// Outputs:  next - up to `count` subsets in lexicographic order as one flat list (empty when done)
+//           P - (..., B, r, n), the columns G(:, members(b, :))
+//           d - |det| of the matrices (..., n, n), as (..., 1, 1)
 // See also: dominant_directions, volume
 //
 // CORA.cpp only: CORA's batchCombinator and its determinants, shared by volume and

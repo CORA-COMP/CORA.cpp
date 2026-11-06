@@ -7,11 +7,13 @@
 // whole horizon or a trajectory of R0 and the centre of U hits one. Supported as in the ARCH
 // benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant zonotope U, no offsets.
 //
+// The statistics are the iterations, the last step size and count, computation_time, and the
+// falsifying initial state and time.
+//
 // Syntax:   res = priv_verify_ra_support_function(sys, params, specs);
 // Inputs:   sys - linear system;  params - R0, U, t_final
 //           specs - safe and unsafe halfspaces
-// Outputs:  res - verified (false if undecided at a step below 1e-12), iterations, last step
-//           size and count, computation_time, and the falsifying initial state and time
+// Outputs:  res - verified (false if undecided at a step below 1e-12), and the run's statistics
 // See also: LinearSys::verify
 //
 // Authors:       Tobias Ladner

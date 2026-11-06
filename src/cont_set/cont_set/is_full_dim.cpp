@@ -2,8 +2,7 @@
 //
 // Syntax:   res = S.is_full_dim();   res = S.is_full_dim(tol);
 // Inputs:   S - set
-//           tol - relaxes the width or rank test of the class; default: the repository
-//           tolerance (docs/architecture.md)
+//           tol - relaxes the width or rank test of the class; default: the repository tolerance
 // Outputs:  res - true if the set is not contained in a lower-dimensional subspace
 // See also: is_bounded, Interval::is_full_dim, Zonotope::is_full_dim
 //

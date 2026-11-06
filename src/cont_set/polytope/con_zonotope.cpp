@@ -1,14 +1,16 @@
 // con_zonotope - the constrained zonotope of a polytope, as CORA's polytope.conZonotope
 //
+// "exact:supportFunc" takes the box around the set (the argument, else interval()) as the
+// zonotope and the rows as constraints with slack factors; "exact:vertices" does so around the
+// box of the vertices, the slack from their extremes (Theorem 1 of Scott et al., Automatica
+// 2016). The empty set gives ConZonotope::empty(n); R^n and any unbounded set are
+// Error::special_error. Not a batch.
+//
 // Syntax:   ConZonotope cz = P.con_zonotope();   cz = P.con_zonotope("exact:vertices");
 //           cz = P.con_zonotope("exact:supportFunc", box);
-// Inputs:   P - bounded polytope;  method - "exact:supportFunc" (default) takes the box around
-//           the set (the argument, else interval()) as the zonotope and the rows as constraints
-//           with slack factors; "exact:vertices" does so around the box of the vertices, the
-//           slack from their extremes (Theorem 1 of Scott et al., Automatica 2016)
-// Outputs:  cz - the same set as a constrained zonotope; the empty set gives
-//           ConZonotope::empty(n); R^n and any unbounded set are Error::special_error. Not a
-//           batch
+// Inputs:   P - bounded polytope
+//           method - "exact:supportFunc" (default) or "exact:vertices"
+// Outputs:  cz - the same set as a constrained zonotope
 // See also: Polytope::interval, ConZonotope::ConZonotope
 //
 // CORA: contSet/@polytope/conZonotope.m

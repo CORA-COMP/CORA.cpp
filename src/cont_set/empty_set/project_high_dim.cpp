@@ -2,8 +2,7 @@
 //
 // Syntax:   EmptySet R = E.project_high_dim(N, proj);
 // Inputs:   N - dimension of the space, N >= dim
-//           proj - the N-dimensional coordinates (0-based)
-//           of the dim coordinates of E
+//           proj - the N-dimensional coordinates (0-based) of the dim coordinates of E
 // Outputs:  R - the empty set of N dimensions
 // See also: lift, Interval::project_high_dim
 //

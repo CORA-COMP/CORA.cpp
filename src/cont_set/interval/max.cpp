@@ -1,9 +1,10 @@
 // max - the elementwise larger of two boxes, as CORA's interval.max
 //
+// Without Y, the upper bound sup. MATLAB's dim and nanflag options are not offered.
+//
 // Syntax:   Interval R = I.max(Y);   Tensor ub = I.max();
 // Inputs:   Y - a set (its interval hull is used) or a number or array of the shape of the bounds
-// Outputs:  R - [max(inf, inf_Y), max(sup, sup_Y)]: exactly the entrywise maxima of members;
-//           without Y, the upper bound sup. MATLAB's dim and nanflag options are not offered
+// Outputs:  R - [max(inf, inf_Y), max(sup, sup_Y)]: exactly the entrywise maxima of members
 // See also: min, unite
 //
 // CORA: contSet/@interval/max.m

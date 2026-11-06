@@ -1,10 +1,12 @@
 // boundary_point - where a ray from a point of a zonotope leaves it, as CORA's boundaryPoint
 //
+// t comes from the zonotope norm of dir for the center, from a linear program for another start,
+// and directly for n = 1.
+//
 // Syntax:   x = Z.boundary_point(dir);   x = Z.boundary_point(dir, start);
 // Inputs:   dir - direction, a nonzero column (n, 1)
 //           start - a point of Z the ray starts at (default: the center)
-// Outputs:  x - start + t dir for the largest t that stays in Z: from the zonotope norm of dir for
-//           the center, from a linear program for another start, directly for n = 1. Not a batch
+// Outputs:  x - start + t dir for the largest t that stays in Z; not for a batch
 // See also: contains, support_function
 //
 // CORA: contSet/@zonotope/boundaryPoint.m

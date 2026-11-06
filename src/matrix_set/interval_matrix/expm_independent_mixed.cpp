@@ -1,11 +1,12 @@
 // expm_independent_mixed - the matrix exponential with independent powers in two parts, as CORA's
 //
+// A is square. The rest has its remainder box as in expm_independent. The result also holds the
+// powers of both parts and the remainder (see ExpmMixedResult).
+//
 // Syntax:   ExpmMixedResult R = A.expm_independent_mixed(intermediate_order, max_order);
-// Inputs:   intermediate_order >= 1, max_order >= 0;  A is square
-// Outputs:  R - enclosure: the sum of [A]^i / i! from the identity to intermediate_order;
-//           enclosure_rest: the series continued from [A] [A]^intermediate_order (orders
-//           intermediate_order + 1 to max_order) with the remainder box (as expm_independent);
-//           the powers of both parts and the remainder (see ExpmMixedResult)
+// Inputs:   intermediate_order >= 1, max_order >= 0 - the orders of the two parts
+// Outputs:  R - enclosure: the sum of [A]^i / i! from the identity to intermediate_order
+//           enclosure_rest - the series continued from [A] [A]^intermediate_order, with a remainder
 // See also: expm_independent, expm_mixed, powers
 //
 // CORA: matrixSet/@intervalMatrix/expmIndMixed.m

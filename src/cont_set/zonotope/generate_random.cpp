@@ -1,12 +1,14 @@
 // generate_random - a random zonotope, as CORA's zonotope.generateRandom
 //
+// "uniform" is U[0, 1], "exp" the exponential with rate 1, "gamma" shape 2 and scale 1.
+//
 // Syntax:   Zonotope Z = Zonotope::generate_random(rng);
 //           Z = Zonotope::generate_random(rng, dimension, center, nr_generators, distribution);
 // Inputs:   rng - random numbers (seedable)
-//           dimension - default the dimension of center, else
-//           random in 1..10;  center - a vector, default 10 N(0, 1) per entry;  nr_generators -
-//           default 2 dimension;  distribution - of the generator lengths: "uniform" (default,
-//           U[0, 1]), "exp" (exponential, rate 1) or "gamma" (shape 2, scale 1)
+//           dimension - default the dimension of center, else random in 1..10
+//           center - a vector, default 10 N(0, 1) per entry
+//           nr_generators - default 2 dimension
+//           distribution - of the generator lengths: "uniform" (default), "exp" or "gamma"
 // Outputs:  Z - the center and generators of uniformly random direction
 // See also: Interval::generate_random
 //

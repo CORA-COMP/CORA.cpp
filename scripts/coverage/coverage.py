@@ -1,19 +1,16 @@
 """coverage - how much of CORA CORA.cpp has, and how much of it is checked: computed from the tree
 
+Tags: `// CORA: <path>.m[:method]` in a source or a C++ test (`# CORA:` in Python), `// CORA.cpp only:
+<reason>` in a source with no CORA file, `// PROPERTY: <path>.m` a test of a stated property on random
+inputs with fixed seeds, `// ORACLE: <path>.m` a test against CORALean; `<path>` is the CORA file.
+
 Syntax:   python scripts/coverage/coverage.py [--check] [--accept-drop <row>]... [--accept-debt] [--summary]
-Reads:    coverage/cora-inventory.json (the rows), coverage/coralean-status.json (what CORALean has),
-          coverage/out-of-scope.md (the ledger), and the tags of the sources and the tests:
-            `// CORA: <path>.m[:method]`       in a source (src/, include/) or a C++ test (`# CORA:` in Python)
-            `// CORA.cpp only: <reason>`       in a source that has no CORA file
-            `// PROPERTY: <path>.m[:method]`   a test of a stated property on randomized inputs, fixed seeds
-            `// ORACLE: <path>.m[:method]`     a test against CORALean (bit-exact at nearest, inside the enclosure)
-          `<path>` is the CORA file relative to the CORA root; `:method` names a method of a single-file class.
-Writes:   coverage/status.json (each row's status), coverage/README.md and coverage/<group>/<class>.md.
-          Never by hand. No committed file holds totals, so PRs on different classes never conflict;
-          --summary prints the totals per group and class (CI shows them in the job summary).
-Checks:   --check: the files above are current; every tag names an inventory row; every public operation
-          has a tag or a `CORA.cpp only:` reason; no row falls below its committed status (`--accept-drop
-          <row>` records a drop); no row becomes oracle debt (`--accept-debt` accepts it).
+Reads:    coverage/cora-inventory.json (the rows), coralean-status.json (what CORALean has),
+          out-of-scope.md (the ledger), and the tags of the sources and the tests
+Writes:   coverage/status.json, coverage/README.md and coverage/<group>/<class>.md; never by hand;
+          --summary prints the totals per group and class (no committed file holds totals)
+Checks:   --check: the files are current; every tag names an inventory row; every public operation
+          has a tag or a reason; no row falls below its committed status; no row becomes oracle debt
 Exit code: 0 if all holds (or the files are written), else 1 with what is wrong.
 
 Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5

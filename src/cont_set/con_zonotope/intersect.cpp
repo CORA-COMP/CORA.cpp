@@ -1,10 +1,11 @@
 // intersect - the intersection of a constrained zonotope with a set, as CORA's and_
 //
+// One equality per dimension makes the points agree, c + G x = c2 + G2 x2. The result is compact,
+// without zero rows and generators.
+//
 // Syntax:   cZres = cz.intersect(S);
 // Inputs:   S - a constrained zonotope, a zonotope or a box of the same dimension
-// Outputs:  cZres - exact: the factors of both sets stay, each with its constraints, and one
-//           equality per dimension makes the points agree, c + G x = c2 + G2 x2; without the
-//           zero rows and generators (compact)
+// Outputs:  cZres - exact: the factors of both sets stay, each with its constraints
 // See also: con_intersect, compact, Zonotope::intersect
 //
 // CORA: contSet/@conZonotope/and_.m

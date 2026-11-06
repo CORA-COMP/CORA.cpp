@@ -1,8 +1,7 @@
 // simulate - trajectories of x' = f(x), as CORA's nonlinearSys.simulate
 //
 // Syntax:   x = sys.simulate(problem, alg);
-//           x = sys.simulate({.initial_state = x0, .t_final = 1}, alg::RungeKutta4{.time_step =
-//           0.1});
+//           x = sys.simulate({.initial_state = x0, .t_final = 1}, alg::RungeKutta4{.time_step = 1});
 // Inputs:   problem - initial_state (start points, columns (n, N)), t_final; no input
 //           alg - alg::RungeKutta4: time_step (the sampling), max_step (the largest step, 1e-3)
 // Outputs:  x - x[k] holds the N points at time k*time_step, from the classical Runge-Kutta method

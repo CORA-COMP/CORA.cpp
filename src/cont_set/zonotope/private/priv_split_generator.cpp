@@ -1,10 +1,11 @@
 // priv_split_generator - the two halves of a zonotope along one generator
 //
+// Their union is Z (CORA's aux_splitOneDim).
+//
 // Syntax:   auto [lower, upper] = priv_split_generator(Z, j);
 // Inputs:   Z - zonotope (a batch splits member by member)
 //           j - the generator, 0 <= j < m
-// Outputs:  lower, upper - the centers c - g_j/2 and c + g_j/2, with g_j halved in both; their
-//           union is Z (CORA's aux_splitOneDim)
+// Outputs:  lower, upper - the centers c - g_j/2 and c + g_j/2, with g_j halved in both
 // See also: Zonotope::split, Zonotope::split_first_gen
 //
 // CORA: contSet/@zonotope/split.m

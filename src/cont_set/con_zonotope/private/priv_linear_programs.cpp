@@ -1,12 +1,13 @@
 // priv_linear_programs - the linear programs of a constrained zonotope: ranges, emptiness, center
 //
+// The ranges are those of every factor, the center the Chebyshev center of a polytope.
+//
 // Syntax:   HostConZonotope H = priv_host_con_zonotope(cz);   auto r = priv_range(H, d);
 //           bool empty = priv_is_empty(H);   auto lo_hi = priv_factor_ranges(H);
 //           auto x = priv_chebyshev_center(Aineq, bineq, Aeq, beq, k);
 // Inputs:   H - a single constrained zonotope on the host
 //           d - a direction (n values)
-// Outputs:  the range of a linear function, whether no factor vector exists, the range of every
-//           factor, the Chebyshev center of a polytope
+// Outputs:  R - the range of a linear function, whether no factor vector exists, or a center
 // See also: priv_blocks, linprog
 //
 // CORA.cpp only: MATLAB hands its matrices to CORAlinprog as they are

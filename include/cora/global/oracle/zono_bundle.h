@@ -8,8 +8,7 @@
 //             dtype nearest they are empty); interval() is the box the oracle proves to enclose it
 // Crossing:   nominal() returns the nominal parts of the members as a cora::ZonoBundle, exactly or
 //             throws
-// See also:   lean/zonotope.h, lean/con_zonotope.h, lean/request.h,
-//             cora/cont_set/zono_bundle/zono_bundle.h
+// See also:   lean/zonotope.h, lean/con_zonotope.h, lean/request.h, zono_bundle/zono_bundle.h
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026

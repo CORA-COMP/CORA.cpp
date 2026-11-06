@@ -1,9 +1,10 @@
 // exponential_remainder - the remainder of the Taylor series of the matrix exponential, as CORA's
 //
+// It contains the remainder of every matrix of A; Inf everywhere where exp(|A|) is not a number.
+//
 // Syntax:   IntervalMatrix E = A.exponential_remainder(max_order);
 // Inputs:   max_order - the order of the series that is summed;  A is square
-// Outputs:  E - [-W, W] with W = exp(|A|) - sum_{i <= max_order} |A|^i / i!, which contains the
-//           remainder of every matrix of A; Inf everywhere where exp(|A|) is not a number
+// Outputs:  E - [-W, W] with W = exp(|A|) - sum_{i <= max_order} |A|^i / i!
 // See also: expm, abs
 //
 // CORA: matrixSet/@intervalMatrix/exponentialRemainder.m

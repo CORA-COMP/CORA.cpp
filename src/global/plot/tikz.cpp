@@ -1,9 +1,11 @@
 // tikz - a figure, or a grid of figures, written as pgfplots code
 //
+// A grid gives a groupplot; with external_data the tables of the coordinates are written.
+//
 // Syntax:   std::string text = figure().tikz({.standalone = true});   figure().save_tikz("a.tikz");
-// Inputs:   the layers of the figure, stacked by their zorder; the TikzOptions
-// Outputs:  a tikzpicture with one \addplot per layer (a groupplot for a grid), or a LaTeX document
-//           around it, and with external_data the tables of the coordinates
+// Inputs:   layers - the layers of the figure, stacked by their zorder
+//           options - the TikzOptions
+// Outputs:  text - a tikzpicture with one \addplot per layer, or a LaTeX document around it
 // See also: cora/global/plot/tikz.h, cora/global/plot/figure.h, src/global/plot/svg.cpp
 //
 // Authors:       Tobias Ladner

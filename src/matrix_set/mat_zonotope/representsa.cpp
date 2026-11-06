@@ -1,11 +1,12 @@
 // representsa - whether a matrix zonotope is also a set of another type, as CORA's representsa
 //
+// For "origin", A has a single point and that point is the zero matrix. CORA's second output is
+// not returned.
+//
 // Syntax:   bool b = A.representsa("point");   bool b = A.representsa("origin", tol);
 // Inputs:   type - a CORA set type, as the zonotope's representsa
-//           tol - as there, default the
-//           repository tolerance
-// Outputs:  b - whether the stacked zonotope of A represents that type (A with a single point and
-//           that point the zero matrix for "origin"); CORA's second output is not returned
+//           tol - as there, default the repository tolerance
+// Outputs:  b - whether the stacked zonotope of A represents that type
 // See also: zonotope, Zonotope::representsa
 //
 // CORA: matrixSet/@matZonotope/representsa.m

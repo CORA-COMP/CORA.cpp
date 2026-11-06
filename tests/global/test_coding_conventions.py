@@ -1,29 +1,14 @@
 """test_coding_conventions - checks the coding conventions of CORA.cpp, as CORA's test of that name.
 
 Syntax:   python tests/global/test_coding_conventions.py
-Checks:   layout - every file starts its docstring with its own name; an operation (a file in a
-          set's, a system's or the specification's folder) has Syntax, Inputs, Outputs and See also
-          blocks; the code sits between BEGIN CODE and END OF CODE, auxiliary functions (aux_...)
-          between AUXILIARY and MAIN; at most 25 lines without a comment, 100 characters a line;
-          long files have section lines;
-          naming - files, functions, variables and members snake_case, types PascalCase; every
-          operation and set class names its CORA file (// CORA: <path>.m) or why it has none
-          (// CORA.cpp only: <reason>);
-          checks - a public operation starts with the guard (detail::Entry entry;); CORA_CHECK
-          only in a guarded function, never in an _impl or under private/; no raw throw outside
-          global/error.cpp (CORA_CHECK for input, CORA_FAIL for failures); an option switch ends
-          in an error;
-          tests - every operation has a test, and its tests call it with an invalid input
-          (test::raises with the identifier) and with the checks off (ChecksScope); every
-          example has its code between BEGIN CODE and END OF CODE, split into sections;
-          one code path - no branch on the backend outside global/backend and global/tensor, and
-          no duplicated code (token clones of CLONE_TOKENS tokens or more);
-          the data decides - library code makes tensors from raw numbers on the current backend
-          (Tensor::zeros, from_data, Tensor({...})) only in a raw-number entry point, a function
-          marked CORA_FROM_NUMBERS, or in the tensor, backend and binding folders;
-          lint - a NOLINT (clang-tidy suppression) names its checks and its reason;
-          tensor operations - every operation of ops.def that passes gradients has a gradcheck
-          test, and docs/tensor.md lists every operation with the tags of ops.def.
+Checks:   the layout of every file (scripts/ci/layout.py): docstring, author block, markers,
+          comment limits; the naming of files, functions, variables and types; the CORA tag and
+          the Syntax, Inputs, Outputs and See also blocks of every operation; the guard and the
+          checks of a public operation (no raw throw, an option switch ends in an error); a test
+          of every operation with an invalid input and with the checks off; one code path (no
+          branch on the backend, no duplicated code); no tensor from raw numbers outside the
+          marked entry points; no tolerance literal outside tolerance.h; every NOLINT with its
+          checks and reason; a gradcheck and a docs/tensor.md row for every ops.def operation.
 Exit code: 0 if all conventions hold, else 1, with the files and what is wrong.
 
 Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5

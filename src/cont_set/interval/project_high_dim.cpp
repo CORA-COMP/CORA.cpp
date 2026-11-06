@@ -1,11 +1,11 @@
 // project_high_dim - a box placed into a larger space, as CORA's interval.projectHighDim_
 //
+// For a repeated entry of proj the last one counts; the empty interval stays empty.
+//
 // Syntax:   Interval R = I.project_high_dim(N, proj);
 // Inputs:   N - dimension of the space, N >= dim
-//           proj - the N-dimensional coordinates (0-based)
-//           of the dim coordinates of I, in the order of I
-// Outputs:  R - the box with coordinate proj[j] equal to that of I and [0, 0] elsewhere; for a
-//           repeated entry of proj the last one counts; the empty interval stays empty
+//           proj - the N-dimensional coordinates (0-based) of the dim coordinates of I
+// Outputs:  R - the box with coordinate proj[j] equal to that of I and [0, 0] elsewhere
 // See also: lift, project
 //
 // CORA: contSet/@interval/projectHighDim_.m

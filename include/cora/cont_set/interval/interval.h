@@ -7,17 +7,8 @@
 // Syntax:     Interval I(inf, sup);   Interval I = Interval::generate_random(rng);
 // Operators:  I + I2, I + v, I - I2, I - v, v - I, -I, +I, s * I, M * I, I / s, I <= I2, I < I2, as
 //             in CORA
-// Operations: support_function, linear_map, plus, rand_point, contains, stack, project, vertices,
-//             generate_random, display, center, abs, intersect, cart_prod, cat, unbounded,
-//             boundary_point, acos, asin, atan, atan2, acosh, asinh, atanh, cos, cosh, exp,
-//             convex_hull, enclose, enclose_points, enlarge, empty, horzcat, ctranspose, diag,
-//             dirac, infimum, interval_matrix, is_bounded, is_full_dim, is_intersecting, isequal,
-//             kron, less_equal, less, lift, log, max, min, minkowski_difference, minus,
-//             matrix_power, divide, norm, unite, origin, rad, radius, sign, round, sin, sinh,
-//             power, rdivide, prod, partition, project_high_dim, quad_map, reduce, representsa,
-//             split, sqrt, sum, supremum, tan, tanh, times, transpose, tril, triu, uminus, uplus,
-//             vertcat, volume, zonotope (one file each); the constructor checks its input
-//             (interval.cpp)
+// Operations: one file each in src/cont_set/interval/, named as CORA's; the constructor checks its
+//             input (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@interval/interval.m

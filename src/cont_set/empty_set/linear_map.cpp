@@ -2,8 +2,7 @@
 //
 // Syntax:   EmptySet R = E.linear_map(M);   EmptySet R = M * E;   EmptySet R = s * E;
 // Inputs:   M - a matrix (..., k, n), or an interval matrix of such bounds
-//           s - a number (or a
-//           1 x 1 matrix)
+//           s - a number (or a 1 x 1 matrix)
 // Outputs:  R - the empty set of k dimensions; for a number, E itself
 // See also: lift, Zonotope::linear_map
 //

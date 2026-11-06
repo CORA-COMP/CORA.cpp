@@ -1,9 +1,10 @@
 // min - the elementwise smaller of two boxes, as CORA's interval.min
 //
+// Without Y, the lower bound inf. MATLAB's dim and nanflag options are not offered.
+//
 // Syntax:   Interval R = I.min(Y);   Tensor lb = I.min();
 // Inputs:   Y - a set (its interval hull is used) or a number or array of the shape of the bounds
-// Outputs:  R - [min(inf, inf_Y), min(sup, sup_Y)]: exactly the entrywise minima of members;
-//           without Y, the lower bound inf. MATLAB's dim and nanflag options are not offered
+// Outputs:  R - [min(inf, inf_Y), min(sup, sup_Y)]: exactly the entrywise minima of members
 // See also: max, unite
 //
 // CORA: contSet/@interval/min.m

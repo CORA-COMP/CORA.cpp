@@ -1,13 +1,14 @@
 // quad_map - an enclosure of a quadratic map of constrained zonotopes, as CORA's quadMap
 //
+// x1 and x2 are the sets cz and cz2. A set with constraints is rescaled first ("iter"). For N
+// factors the single map has the N squares, the N linear terms and the N(N-1)/2 mixed terms as
+// generators; the constraints stay on the linear block and the other factors are free. The mixed
+// map has the factors of cz2, of cz and their (N+1)(N2+1) - N2 - N - 1 products, the constraints
+// of both on their own factors.
+//
 // Syntax:   cZres = cz.quad_map(Q);   cZres = cz.quad_map(cz2, Q);
-// Inputs:   Q - the matrices of the outputs, Q[i] (n, n): output i is x' Q[i] x (or x1' Q[i] x2
-//           for the sets cz and cz2); a set with constraints is rescaled first ("iter")
-// Outputs:  cZres - a constrained zonotope with one dimension per matrix that encloses the image.
-//           For N factors the single map has the N squares, the N linear terms and the N(N-1)/2
-//           mixed terms as generators; the constraints stay on the linear block and the other
-//           factors are free. The mixed map has the factors of cz2, of cz and their (N+1)(N2+1) -
-//           N2 - N - 1 products, the constraints of both on their own factors
+// Inputs:   Q - the matrices of the outputs, Q[i] (n, n): output i is x' Q[i] x (or x1' Q[i] x2)
+// Outputs:  cZres - a constrained zonotope with one dimension per matrix that encloses the image
 // See also: cubic_map, rescale, Zonotope::quad_map
 //
 // CORA: contSet/@conZonotope/quadMap.m

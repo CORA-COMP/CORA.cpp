@@ -1,9 +1,10 @@
 // linear_combination - a zonotope enclosing the segments between two zonotopes, as CORA's linComb
 //
+// The center is (c+c2)/2; the generators are (G+G2)/2, (G-G2)/2 and (c-c2)/2.
+//
 // Syntax:   Zres = Z.linear_combination(Z2);
 // Inputs:   Z2 - zonotope Z2 = M*Z + t: it shares its generator factors with Z (m generators)
-// Outputs:  Zres - encloses conv(Z, Z2) with 2m + 1 generators:
-//           center (c+c2)/2; generators (G+G2)/2, (G-G2)/2 and (c-c2)/2
+// Outputs:  Zres - encloses conv(Z, Z2) with 2m + 1 generators
 // See also: linear_map, plus
 //
 // CORA: contSet/@contSet/linComb.m

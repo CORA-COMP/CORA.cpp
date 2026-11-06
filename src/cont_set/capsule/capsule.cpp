@@ -1,10 +1,11 @@
 // capsule - the constructors of a capsule, checked, as CORA's capsule
 //
+// All entries are finite, r is nonnegative, and they share one batch shape.
+//
 // Syntax:   Capsule C(c, g, r);   Capsule C(c, g);   Capsule C(c);
 // Inputs:   c - center (..., n, 1)
 //           g - generator (..., n, 1), default 0
-//           r - radius
-//           (..., 1, 1) or a number, default 0; all finite, r nonnegative, one batch shape
+//           r - radius (..., 1, 1) or a number, default 0
 // Outputs:  C - the capsule {x | min_t |x - (c + t g)| <= r, t in [-1, 1]}
 // See also: empty, origin, Zonotope::Zonotope
 //

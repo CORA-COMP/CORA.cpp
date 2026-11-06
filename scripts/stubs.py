@@ -1,12 +1,13 @@
 """stubs - the type stubs (.pyi) of the compiled module `cora._cora`, written from the bindings
 
-Syntax:   python scripts/stubs.py --out <package dir>      writes _cora/__init__.pyi, _cora/lean.pyi, py.typed
+pybind11 prints every signature in the docstring of the function; those are parsed here, with the
+standard library only. `Array` is a numpy float64 array or a torch tensor, `object` is `Any`, an
+int is any `SupportsInt` (written `int`), a default that is no literal is `...`.
+
+Syntax:   python scripts/stubs.py --out <package dir>      writes the stubs and py.typed there
           python scripts/stubs.py --check <package dir>    exit 1 if the stubs there differ from fresh ones
-Inputs:   the built package (its build directory on PYTHONPATH). pybind11 prints every signature in
-          the docstring of the function; those are parsed here, with the standard library only.
-Outputs:  one stub per compiled module (the submodule cora._cora.lean has its own) and py.typed.
-          `Array` is a numpy float64 array or a torch tensor, `object` is `Any`, an int is any
-          `SupportsInt` (written `int`), a default that is no literal is `...`.
+Inputs:   the built package (its build directory on PYTHONPATH)
+Outputs:  one stub per compiled module (the submodule cora._cora.lean has its own) and py.typed
 See also: CONTRIBUTING.md (Python stubs), tests/python/test_stubs.py
 
 Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner

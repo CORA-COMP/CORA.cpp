@@ -1,12 +1,12 @@
 // project_high_dim - a set placed into a higher-dimensional space, as CORA's contSet.projectHighDim
 //
+// The generic form is the matrix I(:, proj) applied to S.
+//
 // Syntax:   R = S.project_high_dim(N, proj);
 // Inputs:   S - set of dimension n
 //           N - dimension of the space, N >= n
-//           proj - the N-dimensional
-//           coordinate (0-based) of each of the n coordinates of S, n entries in [0, N)
-// Outputs:  R - the set with coordinate proj[j] equal to the j-th coordinate of S and 0 elsewhere;
-//           the generic form is the matrix I(:, proj) applied to S
+//           proj - the N-dimensional coordinate (0-based) of each of the n coordinates, in [0, N)
+// Outputs:  R - the set with coordinate proj[j] equal to the j-th coordinate of S and 0 elsewhere
 // See also: project, linear_map, Interval::project_high_dim
 //
 // CORA: contSet/@contSet/projectHighDim.m

@@ -1,11 +1,12 @@
 // norm - an upper bound on the norm of the points of a set, as CORA's contSet.norm
 //
+// Which types and modes a class offers is its own (a box ignores the mode). Error::noops for a
+// class without it.
+//
 // Syntax:   val = S.norm();   val = S.norm(type, mode);
 // Inputs:   S - set
-//           type - one, two (default), inf or fro;  mode - "ub" (default), "exact" or
-//           "ub_convex"; which of them a class offers is its own (a box ignores the mode)
-// Outputs:  val - the bound, (..., 1, 1); -Inf for the empty set; Error::noops for a class
-//           without it
+//           type - one, two (default), inf or fro; mode - "ub" (default), "exact" or "ub_convex"
+// Outputs:  val - the bound, (..., 1, 1); -Inf for the empty set
 // See also: Interval::norm, Zonotope::norm
 //
 // CORA: contSet/@contSet/norm.m

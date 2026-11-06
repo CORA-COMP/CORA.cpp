@@ -9,12 +9,10 @@
 // here a polytope holds its data and every property is computed when it is asked for.
 //
 // Syntax:     Polytope P(A, b);   Polytope P(A, b, Ae, be);   Polytope P(V);   Polytope P(box);
-// Operations: constructors (polytope.cpp), empty, inf, enclose_points (static), constraints, box,
-//             interval, center, compact, con_zonotope, contains, cart_prod, intersect,
-//             convex_hull, enclose, hausdorff_distance, display (one file each). CORA's
-//             conPolyZono and ellipsoid wait for ConPolyZono and Ellipsoid; the other operations
-//             of the ContSet interface (support_function, rand_point, project, vertices) are
-//             Error::not_supported until they are ported.
+// Operations: one file each in src/cont_set/polytope/, named as CORA's; the constructors check
+//             their input (polytope.cpp). CORA's conPolyZono and ellipsoid wait for ConPolyZono and
+//             Ellipsoid; support_function, rand_point, project and vertices are Error::not_supported
+//             until they are ported.
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/con_zonotope/con_zonotope.h
 //
 // CORA: contSet/@polytope/polytope.m

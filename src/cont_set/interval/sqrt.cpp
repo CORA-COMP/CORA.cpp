@@ -1,9 +1,10 @@
 // sqrt - the square root of a box, as CORA's interval.sqrt
 //
+// Error::out_of_domain if some bound is negative or NaN.
+//
 // Syntax:   Interval R = I.sqrt();
 // Inputs:   -
-// Outputs:  R - [sqrt(inf), sqrt(sup)] elementwise (sqrt increases); nothing rounds outward;
-//           Error::out_of_domain if some bound is negative or NaN
+// Outputs:  R - [sqrt(inf), sqrt(sup)] elementwise (sqrt increases); nothing rounds outward
 // See also: power, log
 //
 // CORA: contSet/@interval/sqrt.m

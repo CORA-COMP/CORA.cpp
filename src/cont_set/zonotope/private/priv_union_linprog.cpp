@@ -1,11 +1,12 @@
 // priv_union_linprog - the zonotope of CORA's 'linprog' union, from an enclosing zonotope
 //
+// A linear program scales and moves them to the least that still covers every set along the facet
+// normals of the enclosure.
+//
 // Syntax:   Zonotope Zu = priv_union_linprog(enclosure, support);
 // Inputs:   enclosure - a zonotope that contains every set of the union (the iterative union);
 //           support - the largest support value over the sets along each row of A (k, n): (k, 1)
-// Outputs:  Zu - the generators of the enclosure, unit length, scaled and the center moved, by a
-//           linear program, to the least that still cover every set along the facet normals of
-//           the enclosure
+// Outputs:  Zu - the generators of the enclosure, unit length, scaled, with the center moved
 // See also: Zonotope::unite, ConZonotope::unite
 //
 // CORA: contSet/@zonotope/or.m

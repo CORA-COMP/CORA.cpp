@@ -4,7 +4,7 @@
 //           plot_over_time(fig, R, dim, options);   plot_rand_point(fig, S, dims, N, rng)
 // Inputs:   dims - the one, two or three dimensions to show (0-based)
 //           options - see PlotOptions
-// Outputs:  -, the figure has new layers
+// Outputs:  -   (the figure has new layers)
 // See also: cora/global/plot/figure.h, contSet/zonotope/vertices, contSet/zonotope/project
 //
 // Authors:       Claude Sonnet 5.5

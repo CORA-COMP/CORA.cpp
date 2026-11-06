@@ -1,11 +1,11 @@
 // prod - the product of the rows or the columns of an interval matrix, as CORA's interval.prod
 //
+// A NaN corner (0 * Inf) is taken as 0. The factors are folded from the last to the first, as
+// CORALean's prod, so the roundings agree with it.
+//
 // Syntax:   Interval R = I.prod();   Interval R = I.prod(dim);
-// Inputs:   dim - 1: multiply the rows (a row of column products), 2: the columns (a column of
-//           row products); default: 1, or 2 for a single row
-// Outputs:  R - the product of the entries of each column (row) with the interval product, a
-//           NaN corner (0 * Inf) taken as 0. The factors are folded from the last to the first,
-//           as CORALean's prod, so the roundings agree with it
+// Inputs:   dim - 1: multiply the rows, 2: the columns; default: 1, or 2 for a single row
+// Outputs:  R - the product of the entries of each column (row) with the interval product
 // See also: times, sum
 //
 // CORA: contSet/@interval/prod.m

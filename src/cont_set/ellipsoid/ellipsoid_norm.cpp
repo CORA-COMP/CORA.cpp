@@ -1,10 +1,12 @@
 // ellipsoid_norm - the norm whose unit ball is an ellipsoid, as CORA's ellipsoidNorm
 //
+// It is computed from Q \ p for a full-rank Q; else from the singular value decomposition Q = U S
+// V', with singular values and entries of U' p below 1e-10 set to zero, so that a direction
+// outside the range of Q has norm Inf.
+//
 // Syntax:   Tensor res = E.ellipsoid_norm(p);
 // Inputs:   p - vectors (..., n, 1)
-// Outputs:  res - sqrt(|p' Q^+ p|) (..., 1, 1): from Q \ p for a full-rank Q; else from the
-//           singular value decomposition Q = U S V', with singular values and entries of U' p
-//           below 1e-10 set to zero, so that a direction outside the range of Q has norm Inf
+// Outputs:  res - sqrt(|p' Q^+ p|) (..., 1, 1)
 // See also: generators, contains
 //
 // CORA: contSet/@ellipsoid/ellipsoidNorm.m

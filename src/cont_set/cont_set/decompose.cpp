@@ -1,11 +1,12 @@
 // decompose - a set cut into blocks of coordinates, as CORA's contSet.decompose
 //
+// CORA returns the unprojected set for a single block (docs/cora-differences.md); CORA.cpp
+// projects.
+//
 // Syntax:   Sub = S.decompose({{0, 1}, {2, 4}});
 // Inputs:   S - set of dimension n
-//           blocks - the first and the last coordinate of each block
-//           (0-based, inclusive), each within 0..n-1
-// Outputs:  Sub - the projection of S onto each block, in the order of blocks. CORA returns the
-//           unprojected set for a single block (docs/cora-differences.md); CORA.cpp projects
+//           blocks - first and last coordinate of each block (0-based, inclusive) in 0..n-1
+// Outputs:  Sub - the projection of S onto each block, in the order of blocks
 // See also: project
 //
 // CORA: contSet/@contSet/decompose.m

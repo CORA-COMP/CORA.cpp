@@ -1,12 +1,12 @@
 // priv_taylor_lin_sys - cache of the Taylor quantities of a linear system, as CORA's taylorLinSys
 //
 // Holds what the adaptive algorithms recompute otherwise: the powers of A and their positive and
-// negative parts, dt^i / i!, e^{A dt} and the correction matrices F, G per time step size (a
-// step size counts as used before if it matches up to 1e-10).
+// negative parts, dt^i / i!, e^{A dt} and the correction matrices F, G per time step size (a step
+// size counts as used before if it matches up to 1e-10).
 //
 // Syntax:   TaylorLinSys taylor(A);   Tensor e_adt = taylor.e_adt(0.1);   auto F = taylor.F(0.1);
 // Inputs:   A - system matrix (n, n)
-// Outputs:  the cached quantities; F and G are empty if their Taylor sums do not converge
+// Outputs:  R - the cached quantities; F and G are empty if their Taylor sums do not converge
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
 //
 // Authors:       Tobias Ladner

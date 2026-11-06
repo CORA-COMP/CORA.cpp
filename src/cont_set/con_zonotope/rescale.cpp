@@ -1,14 +1,15 @@
 // rescale - the same constrained zonotope with every factor scaled to the range it takes
 //
+// "exact" finds the range of each factor by two linear programs; "iter" does a Gauss-Jordan
+// elimination of [A b] with full pivoting (the generators follow the columns), then one pass of
+// interval arithmetic over the constraints. The result has center c + G m, generators G diag(r)
+// and constraints A diag(r) x = b - A m for the middle m and radius r of the ranges. A set
+// without constraints is Error::special_error and an empty one Error::empty_set, as in CORA.
+// CORA's cache of the ranges is not kept. Not a batch.
+//
 // Syntax:   cZres = cz.rescale();   cZres = cz.rescale("iter");
-// Inputs:   method - "exact" (default): the range of each factor is found by two linear programs;
-//           "iter": a Gauss-Jordan elimination of [A b] with full pivoting (the generators follow
-//           the columns), then one pass of interval arithmetic over the constraints
-// Outputs:  cZres - the same set with factors in [-1, 1] that take every value of it: center
-//           c + G m, generators G diag(r), constraints A diag(r) x = b - A m for the middle m and
-//           radius r of the ranges. A set without constraints is Error::special_error and an
-//           empty one Error::empty_set, as in CORA. CORA's cache of the ranges is not kept.
-//           Not a batch
+// Inputs:   method - "exact" (default) or "iter"
+// Outputs:  cZres - the same set with factors in [-1, 1] that take every value of it
 // See also: quad_map, compact
 //
 // CORA: contSet/@conZonotope/rescale.m

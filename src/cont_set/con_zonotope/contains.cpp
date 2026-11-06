@@ -1,17 +1,17 @@
 // contains - whether a constrained zonotope contains a point, a zonotope or a box
 //
+// CORA's "exact:polymax" needs Polytope; "approx", "approx:st", "sampling" and "sampling:dual"
+// are not ported. tol also decides whether a set that is a point holds them. A point p is in the
+// set if (p; b) is in the zonotope (c; 0) + (G; A) [-1, 1]^m, a linear program per point. A
+// zonotope or a box is in it if its corners (the sign combinations of its generators) are; of at
+// most 12 generators. An empty set contains no point. Not a batch. CORA's second and third
+// outputs (the certificate and the scaling) are not returned.
+//
 // Syntax:   res = cz.contains(p);   res = cz.contains(S, "exact", tol);
 // Inputs:   p, S, I - points (n, N), a zonotope or a box of the dimension of cz
-//           method - "exact" (default) or "exact:venum"; CORA's "exact:polymax" needs Polytope,
-//                    "approx", "approx:st", "sampling" and "sampling:dual" are not ported
-//           tol - relaxes the norm of the points as in Zonotope::contains, and decides whether a
-//                 set that is a point holds them; default: the repository tolerance
-//                 (docs/architecture.md)
-// Outputs:  res - true if all points are in the set. A point p is in it if (p; b) is in the
-//           zonotope (c; 0) + (G; A) [-1, 1]^m, a linear program per point. A zonotope or a box
-//           is in it if its corners (the sign combinations of its generators) are; of at most
-//           12 generators. An empty set contains no point. Not a batch. CORA's second and third
-//           outputs (the certificate and the scaling) are not returned
+//           method - "exact" (default) or "exact:venum"
+//           tol - relaxes the norm of the points; default: the repository tolerance
+// Outputs:  res - true if all points are in the set
 // See also: is_full_dim, Zonotope::contains
 //
 // CORA: contSet/@conZonotope/contains_.m

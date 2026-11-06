@@ -2,8 +2,7 @@
 //
 // Syntax:   Interval I = Interval::cat(dim, {I1, I2, ...});
 // Inputs:   dim - 1 (stack the rows) or 2 (join the columns)
-//           Is - the intervals, which agree
-//           in the other dimensions
+//           Is - the intervals, which agree in the other dimensions
 // Outputs:  I - the interval of the concatenated bounds; nothing rounds
 // See also: cart_prod
 //

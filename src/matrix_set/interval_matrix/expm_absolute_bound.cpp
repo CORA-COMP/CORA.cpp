@@ -1,13 +1,14 @@
 // expm_absolute_bound - CORA's absolute bound of the mapping mimicking exp (expmAbsoluteBound)
 //
+// A is square, with the spectral radii of |C| t / 2 and (|C| + S) t / 2 below 1 (C the center, S
+// the radius): then the eigenvalue 1 of CORA's block matrix is the n-fold one of its last block.
+// G is the block matrix [|C| t / 2, 0, 0; S t / 2, (|C| + S) t / 2, 0; 0, I, I]. CORA forms the
+// spectral projector for the eigenvalue 1 from the eigenvectors of G and G'; here the same limit
+// comes from the block structure by two solves (no eigendecomposition).
+//
 // Syntax:   Tensor B = A.expm_absolute_bound(t);
-// Inputs:   t >= 0 - the time;  A is square, with the spectral radii of |C| t / 2 and
-//           (|C| + S) t / 2 below 1 (C the center, S the radius): then the eigenvalue 1 of
-//           CORA's block matrix is the n-fold one of its last block
-// Outputs:  B - (..., n, n): the last block row of lim G^k times [|C| t; S t; 0], G the block
-//           matrix [|C| t / 2, 0, 0; S t / 2, (|C| + S) t / 2, 0; 0, I, I]. CORA forms the
-//           spectral projector for the eigenvalue 1 from the eigenvectors of G and G'; here the
-//           same limit comes from the block structure by two solves (no eigendecomposition)
+// Inputs:   t >= 0 - the time
+// Outputs:  B - (..., n, n): the last block row of lim G^k times [|C| t; S t; 0]
 // See also: expm_norm_infinity, abs
 //
 // CORA: matrixSet/@intervalMatrix/expmAbsoluteBound.m

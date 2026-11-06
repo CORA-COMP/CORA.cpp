@@ -2,8 +2,7 @@
 //
 // Syntax:   EmptySet R = E.lift(N, dims);
 // Inputs:   N - dimension of the space, N >= dim
-//           dims - the N-dimensional coordinates (0-based)
-//           of the dim coordinates of E
+//           dims - the N-dimensional coordinates (0-based) of the dim coordinates of E
 // Outputs:  R - the empty set of N dimensions
 // See also: project, Interval::lift
 //

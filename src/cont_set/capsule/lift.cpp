@@ -1,13 +1,15 @@
 // lift - a capsule with its coordinates permuted, as CORA's capsule.lift_
 //
+// New dimensions would be unbounded, which no capsule represents.
+//
+// Center and generator permuted, the radius kept. CORA's lift_ projects onto dims, which is the
+// inverse permutation and the same only where dims is its own inverse; CORA.cpp follows the
+// meaning of lift.
+//
 // Syntax:   Cl = C.lift(N, dims);
-// Inputs:   N - the dimension of the new space, N = dim(): new dimensions would be unbounded,
-//           which no capsule represents;  dims - the position (0-based) of each coordinate of C,
-//           a permutation of 0..N-1
-// Outputs:  Cl - the capsule whose coordinate dims[i] is coordinate i of C: center and
-//           generator permuted, the radius kept. CORA's lift_ projects onto dims, which is the
-//           inverse permutation and the same only where dims is its own inverse; CORA.cpp
-//           follows the meaning of lift
+// Inputs:   N - the dimension of the new space, N = dim()
+//           dims - the position (0-based) of each coordinate of C, a permutation of 0..N-1
+// Outputs:  Cl - the capsule whose coordinate dims[i] is coordinate i of C
 // See also: Zonotope::lift
 //
 // CORA: contSet/@capsule/lift_.m

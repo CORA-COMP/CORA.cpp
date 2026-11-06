@@ -1,10 +1,11 @@
 // cart_prod - the Cartesian product of a zonotope with a zonotope, a box or a point
 //
+// The centers stack and the generators sit on the block diagonal; a point adds zero rows. As the
+// first operand the point p is (n1, 1).
+//
 // Syntax:   Zres = Z.cart_prod(Z2);   Zres = Z.cart_prod(I);   Zres = Zonotope::cart_prod(p, Z);
-// Inputs:   Z2, I, p - a zonotope, a box or a point (n2, 1), of any dimension; as the first
-//           operand, the point p (n1, 1)
-// Outputs:  Zres - exact: the centers stack, the generators sit on the block diagonal (a point
-//           adds zero rows); of dimension n + n2, in the order of the operands
+// Inputs:   Z2, I, p - a zonotope, a box or a point (n2, 1), of any dimension
+// Outputs:  Zres - exact, of dimension n + n2 in the order of the operands
 // See also: plus, ContSet cart_prod
 //
 // CORA: contSet/@zonotope/cartProd_.m

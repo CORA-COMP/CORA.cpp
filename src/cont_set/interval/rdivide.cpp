@@ -1,15 +1,16 @@
 // rdivide - the entrywise quotient of boxes and numbers, as CORA's interval.rdivide
 //
+// I ./ d is [min(inf/d, sup/d), max(...)] and (-Inf, Inf) where d = 0; n ./ D is the hull of
+// n/inf and n/sup, (-Inf, Inf) where D contains 0 in its interior, and the ray beyond n/inf where
+// sup = 0 (CORA mistakes it for the opposite ray when n < 0); I ./ D is I .* (1 ./ D).
+// Error::out_of_domain where D = [0, 0] or a quotient is NaN.
+//
 // Syntax:   Interval R = I.rdivide(d);   Interval R = Interval::rdivide(n, D);
 //           Interval R = I.rdivide(D);
 // Inputs:   d - numbers that broadcast to the bounds
-//           n - numbers, one or of the shape of the
-//           bounds of D;  D - the denominator, a box
-// Outputs:  R - the hull of the quotients, in the shape of the broadcast operands. I ./ d is
-//           [min(inf/d, sup/d), max(...)] and (-Inf, Inf) where d = 0; n ./ D is the hull of
-//           n/inf and n/sup, (-Inf, Inf) where D contains 0 in its interior, and the ray
-//           beyond n/inf where sup = 0 (CORA mistakes it for the opposite ray when n < 0);
-//           I ./ D is I .* (1 ./ D). Error::out_of_domain where D = [0, 0] or a quotient is NaN
+//           n - numbers, one or of the shape of the bounds of D
+//           D - the denominator, a box
+// Outputs:  R - the hull of the quotients, in the shape of the broadcast operands
 // See also: divide, times
 //
 // CORA: contSet/@interval/rdivide.m

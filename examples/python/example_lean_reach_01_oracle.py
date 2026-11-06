@@ -3,11 +3,11 @@
 CORALean computes zonotopes whose float operations are sound: a nominal zonotope plus an error
 box that encloses every rounding error. A damped oscillator is propagated in binary64 and in
 binary32, the nominal part and the error box are taken apart, and both are compared with CORA.cpp's
-own reachable set. A value crosses back into CORA.cpp only when it is exact.
+own reachable set. A value crosses back into CORA.cpp only when it is exact. Without an oracle
+the example prints a note and exits with code 0.
 
 Syntax:   CORACPP_ORACLE="cd CORALean && lake exe oracle" PYTHONPATH=build python examples/python/example_lean_reach_01_oracle.py
-Outputs:  per dtype the final interval of the nominal part, the radius of the error box and whether
-          the lean sets enclose CORA.cpp's; without an oracle a note and exit code 0
+Outputs:  per dtype the final interval of the nominal part, the error box and whether lean encloses
 See also: example_linear_reach_01_5dim, example_lean_reach_01_oracle of the C++ examples
 
 Authors:       Claude Sonnet 5.5

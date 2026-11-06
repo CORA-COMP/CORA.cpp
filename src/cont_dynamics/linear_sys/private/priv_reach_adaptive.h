@@ -7,8 +7,8 @@
 // verification loop hands from one run to the next.
 //
 // Syntax:   AdaptiveResult R = priv_reach_adaptive(taylor, params, spec_times, error, verify, sd);
-// Inputs:   see the declaration below
-// Outputs:  the output sets per step with their errors, the step sizes
+// Inputs:   see - the declaration below
+// Outputs:  R - the output sets per step with their errors, and the step sizes
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
 //        outer-approximations of reachable sets", TAC, 2023.

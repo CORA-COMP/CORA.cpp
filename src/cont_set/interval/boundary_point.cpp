@@ -1,13 +1,13 @@
 // boundary_point - the point where a ray leaves a box, as CORA's interval.boundaryPoint
 //
+// The bound of each coordinate that dir points to gives s. If the ray never leaves, +-Inf along
+// dir (start where dir is 0). The bound is (sup - start) / dir for dir > 0 and (start - inf) /
+// -dir for dir < 0, as CORALean evaluates it.
+//
 // Syntax:   Tensor x = I.boundary_point(dir);   Tensor x = I.boundary_point(dir, start);
 // Inputs:   dir - direction, a column (..., n, 1), not zero
-//           start - a point of I, by default its
-//           center (required if that is NaN, for an unbounded box)
-// Outputs:  x - start + s dir for the largest s with x in I, from the bound each coordinate of dir
-//           points to; (n, 0) for an empty box. If the ray never leaves, +-Inf along dir (start
-//           where dir is 0). The bound is (sup - start) / dir for dir > 0 and
-//           (start - inf) / -dir for dir < 0, as CORALean evaluates it
+//           start - a point of I, by default its center (required if that is NaN)
+// Outputs:  x - start + s dir for the largest s with x in I; (n, 0) for an empty box
 // See also: contains, center
 //
 // CORA: contSet/@interval/boundaryPoint.m

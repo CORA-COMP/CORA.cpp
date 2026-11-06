@@ -1,8 +1,8 @@
 // svg - a figure, or a grid of figures, written as SVG
 //
 // Syntax:   std::string text = figure().svg();   figure().save("figure.svg");
-// Inputs:   the layers of the figure, stacked by their zorder
-// Outputs:  the SVG text, or the file
+// Inputs:   layers - the layers of the figure, stacked by their zorder
+// Outputs:  text - the SVG text, or the file
 // See also: cora/global/plot/figure.h, src/global/plot/figure.cpp
 //
 // Authors:       Tobias Ladner

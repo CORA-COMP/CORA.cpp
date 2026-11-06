@@ -1,12 +1,12 @@
 // is_full_dim - whether a zonotope has a nonempty interior, and the subspace it spans
 //
+// The basis are the leading left singular vectors of the generators.
+//
 // Syntax:   res = Z.is_full_dim();   res = Z.is_full_dim(tol);
 //           [res, subspace] = Z.is_full_dim_subspace(tol);
-// Inputs:   tol - singular values of the generators up to tol count as zero; default: the
-//                 repository tolerance (docs/architecture.md)
-// Outputs:  res - true if the generators span the space, i.e. their rank is the dimension;
-//           subspace - the identity if so, else an orthonormal basis (n, r) of the span of the
-//           generators (the leading left singular vectors)
+// Inputs:   tol - singular values up to tol count as zero; default: the repository tolerance
+// Outputs:  res - true if the generators span the space
+//           subspace - the identity if so, else an orthonormal basis (n, r) of their span
 // See also: is_bounded, compact
 //
 // CORA: contSet/@zonotope/isFullDim.m

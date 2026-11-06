@@ -1,10 +1,11 @@
 // is_intersecting_impl - whether two sets intersect, unchecked, as CORA's isIntersecting_
 //
+// Error::noops without a pair.
+//
 // Syntax:   res = detail::is_intersecting_impl(S1, S2, tol);
 // Inputs:   S1, S2 - sets of one dimension
 //           tol - as is_intersecting (not checked)
-// Outputs:  res - what the table has for the classes, as is_intersecting; Error::noops without
-//           a pair
+// Outputs:  res - what the table has for the classes, as is_intersecting
 // See also: is_intersecting, registry
 //
 // CORA: contSet/@contSet/isIntersecting_.m

@@ -1,11 +1,12 @@
 // dirac - the Dirac delta (or a derivative) of a box, as CORA's interval.dirac
 //
+// Where 0 is in the box (s = sign(inf) + sign(sup), so |s| <= 1): n = 0 gives [0, Inf]; n = 1
+// gives [-Inf, Inf] for s = 0, [-Inf, 0] if 0 is the lower end (s = 1) and [0, Inf] if it is the
+// upper end (s = -1); n >= 2 gives [-Inf, Inf].
+//
 // Syntax:   Interval R = I.dirac();   Interval R = I.dirac(n);
 // Inputs:   n - order of the derivative, n >= 0 (default 0)
-// Outputs:  R - elementwise [0, 0] where 0 is not in the box; where it is (s = sign(inf) +
-//           sign(sup), so |s| <= 1): n = 0 gives [0, Inf]; n = 1 gives [-Inf, Inf] for s = 0,
-//           [-Inf, 0] if 0 is the lower end (s = 1) and [0, Inf] if it is the upper end (s = -1);
-//           n >= 2 gives [-Inf, Inf]
+// Outputs:  R - elementwise [0, 0] where 0 is not in the box
 // See also: abs
 //
 // CORA: contSet/@interval/dirac.m

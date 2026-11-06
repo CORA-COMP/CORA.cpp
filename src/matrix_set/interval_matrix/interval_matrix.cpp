@@ -2,8 +2,7 @@
 //
 // Syntax:   IntervalMatrix A(C, D);   IntervalMatrix A(C);   IntervalMatrix A(I);
 // Inputs:   C, D - center and delta, matrices (..., rows, cols) of one shape
-//           I - an Interval
-//           of matrix bounds
+//           I - an Interval of matrix bounds
 // Outputs:  A - [C - |D|, C + |D|]; for C alone the point matrix C; for I the set of its bounds
 // See also: Interval::interval_matrix
 //

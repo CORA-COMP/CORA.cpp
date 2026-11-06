@@ -2,13 +2,13 @@
 //
 // As CORA's linErrorBound.
 // The methods of LinErrorBound: bounds per step, accumulation of the committed errors, the
-// consistency check at the end, the allocation of emax to the reduction error, and the
-// prediction of the next time step size by approximation functions or bisection.
+// consistency check at the end, the allocation of emax to the reduction error, and the prediction
+// of the next time step size by approximation functions or bisection.
 //
 // Syntax:   LinErrorBound errs(emax, t_final);   errs.next_bounds(time_step, t, k, kIter);
 // Inputs:   emax - error margin
 //           t_final - time horizon
-// Outputs:  the bounds and checks of priv_linErrorBound.h
+// Outputs:  R - the bounds and checks of priv_linErrorBound.h
 // See also: priv_reach_adaptive
 //
 // Authors:       Tobias Ladner

@@ -4,7 +4,7 @@
 // Inputs:   name - the function, for the message
 //           inf, sup - the bounds of the box;
 //           low, high - the domain [low, high] (high may be +Inf)
-// Outputs:  none; Error::out_of_domain if some bound lies outside, as CORA's NaN check does
+// Outputs:  -   (Error::out_of_domain if some bound lies outside, as CORA's NaN check does)
 // See also: acos, acosh
 //
 // Authors:       Tobias Ladner

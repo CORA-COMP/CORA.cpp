@@ -1,15 +1,17 @@
 // expm_taylor_horner_scaling - the matrix exponential by Taylor, Horner or scaling and squaring
 //
+// A is square. Each product is the interval matrix product; for style 2 the result is raised to
+// the power 2^p. f = (a^(N+1) / (N+1)!) / (1 - a / (N + 2)) with a = norm(A, Inf); nothing
+// (CORA's []) where a >= N + 2 (for scaling: where a >= (N + 2) 2^p), for a batch where it holds
+// for any member. CORA's box for a point matrix is the point f, which excludes exp(A); here it is
+// [-f, f] always (docs/cora-differences.md). Another style: refused.
+//
 // Syntax:   std::optional<IntervalMatrix> E = A.expm_taylor_horner_scaling(N, style);
 //           E = A.expm_taylor_horner_scaling(N, 2, scaling_exponent);
-// Inputs:   N - the order of the series (>= 1 for the Horner styles);  style - 0 the Taylor
-//           series, 1 Horner's scheme, 2 Horner on [A] / 2^p, the result to the power 2^p
-//           (scaling_exponent p >= 0, default 1); A is square
-// Outputs:  E - the series to order N, each product the interval matrix product, plus the box
-//           [-f, f] with f = (a^(N+1) / (N+1)!) / (1 - a / (N + 2)), a = norm(A, Inf); nothing
-//           (CORA's []) where a >= N + 2 (for scaling: where a >= (N + 2) 2^p), for a batch where
-//           it holds for any member. CORA's box for a point matrix is the point f, which excludes
-//           exp(A); here it is [-f, f] always (docs/cora-differences.md). Another style: refused
+// Inputs:   N - the order of the series (>= 1 for the Horner styles)
+//           style - 0 the Taylor series, 1 Horner's scheme, 2 Horner on [A] / 2^p
+//           scaling_exponent - p >= 0, default 1, for style 2
+// Outputs:  E - the series to order N plus the box [-f, f]; nothing where a >= N + 2
 // See also: expm_different_algorithms, expm, expm_independent
 //
 // CORA: matrixSet/@intervalMatrix/expmTaylorHornerScaling.m

@@ -1,10 +1,11 @@
 // diag - the diagonal matrix of a vector, or the diagonal of a matrix, as CORA's interval.diag
 //
+// The matrix has [0, 0] elsewhere; the k-th diagonal of a matrix is a column (an error if that
+// diagonal is empty). Nothing rounds.
+//
 // Syntax:   Interval R = I.diag();   Interval R = I.diag(k);
 // Inputs:   k - the diagonal, 0 the main one (default), k > 0 above it, k < 0 below it
-// Outputs:  R - for a column or a row of bounds, the square matrix with it on the k-th diagonal
-//           and [0, 0] elsewhere; for a matrix, the column of its k-th diagonal (an error if
-//           that diagonal is empty); nothing rounds
+// Outputs:  R - the matrix with a vector on the k-th diagonal; for a matrix, its k-th diagonal
 // See also: ctranspose
 //
 // CORA: contSet/@interval/diag.m

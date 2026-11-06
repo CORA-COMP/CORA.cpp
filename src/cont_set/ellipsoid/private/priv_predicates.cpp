@@ -4,7 +4,7 @@
 //           detail::Refusal r = priv_unbatched_refusal(E, "is_bigger");
 // Inputs:   E - an ellipsoid
 //           operation - the name for the message
-// Outputs:  the answer, or the identifier and text of the refusal
+// Outputs:  r - the answer, or the identifier and text of the refusal
 // See also: priv.h, Ellipsoid::contains
 //
 // CORA: contSet/@ellipsoid/representsa_.m

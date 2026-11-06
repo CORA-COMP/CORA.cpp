@@ -3,11 +3,12 @@
 // The series sum_{i=0}^{taylor_terms} |A|^i dt^i / i! is compared with e^{|A| dt}; the absolute
 // value keeps the difference free of cancellation.
 //
+// A building block of reach.
+//
 // Syntax:   Interval E = sys.expm_remainder(time_step, taylor_terms);
 // Inputs:   time_step - step size, positive
 //           taylor_terms - order of the series, at least 1
-// Outputs:  E - the box [-W, W] around zero with W = |e^{|A| dt} - series|, a building block of
-//           reach
+// Outputs:  E - the box [-W, W] around zero with W = |e^{|A| dt} - series|
 // See also: correction_matrix_input, input_solution
 //
 // CORA: contDynamics/@linearSys/private/priv_expmRemainder.m

@@ -9,10 +9,8 @@
 // Syntax:     MatZonotope A(C, G);   MatZonotope A(C);   MatZonotope A;
 // Operators:  A * B, A * Z, A * M, M * A, s * A, A * s (matmul, as CORA's mtimes), A + B, A + M
 //             (plus)
-// Operations: center, contains, dependent_terms, expm, expm_independent, expm_mixed,
-//             expm_one_param, interval_matrix, matmul, matrix_power, norm, plus, powers,
-//             representsa, transpose, zonotope (one file each); the constructors check their
-//             input (mat_zonotope.cpp)
+// Operations: one file each in src/matrix_set/mat_zonotope/, named as CORA's; the constructors
+//             check their input (mat_zonotope.cpp)
 // Gradients:  every operation is differentiable except interval_matrix, norm, expm_independent,
 //             expm_mixed and expm_one_param (piecewise: absolute values) and contains and
 //             representsa (not differentiable: they answer a bool)

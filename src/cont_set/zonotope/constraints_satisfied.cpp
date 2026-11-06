@@ -1,11 +1,12 @@
 // constraints_satisfied - a sufficient test that all of a zonotope satisfies C x < d, as constrSat
 //
+// The bound: the upper bound of every row of the box around C*Z is below d. For a batch, true if
+// it holds for every member.
+//
 // Syntax:   res = Z.constraints_satisfied(C, d);
 // Inputs:   C - matrix (k, n)
 //           d - column (k, 1)
-// Outputs:  res - true if the upper bound of every row of the box around C*Z is below d, which
-//           implies C x < d for every x in Z; false says nothing. For a batch, true if it holds
-//           for every member
+// Outputs:  res - true if C x < d holds for every x in Z, by a bound; false says nothing
 // See also: interval, linear_map
 //
 // CORA: contSet/@zonotope/constrSat.m

@@ -1,10 +1,11 @@
 // display - the text that describes a polytope, as CORA's polytope.display
 //
+// As far as they are held (a batch: only the shapes). CORA also lists the properties it has found
+// out; here they are computed when asked for.
+//
 // Syntax:   std::string text = P.display();   std::cout << P;
 // Inputs:   P - polytope
-// Outputs:  text - its dimension, its vertices and its inequality and equality constraints, as far
-//           as they are held (a batch: only the shapes). CORA also lists the properties it has
-//           found out; here they are computed when asked for
+// Outputs:  text - its dimension, its vertices and its inequality and equality constraints
 // See also: Zonotope display, src/global/format.h
 //
 // CORA: contSet/@polytope/display.m

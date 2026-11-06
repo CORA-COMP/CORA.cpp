@@ -1,17 +1,16 @@
 // contains - whether a capsule contains points, a capsule, a zonotope or a box
 //
+// tol is a distance to the axis, absolute or relative to r (as within_tol). A capsule is inside
+// if the two balls at the ends of its axis are: their centers are within r - S.r of the axis. A
+// zonotope or a box is inside exactly if its corners are (at most 12 generators). The empty
+// capsule contains only the empty set, and every capsule the empty one. Of a batch: every member.
+// CORA's second and third outputs (the certificate and the scaling) are not returned.
+//
 // Syntax:   res = C.contains(p);   res = C.contains(S, tol);
 // Inputs:   p - points (..., n, N)
 //           S, Z, I - a capsule, a zonotope or a box of the dimension of C
-//           tol - how far a point may lie outside, in the distance to the axis (absolutely or
-//                 relative to r, as within_tol); default: the repository tolerance
-//                 (docs/architecture.md)
-// Outputs:  res - true if all points are within r of the axis. A capsule is inside if the two balls
-//           at the ends of its axis are: their centers are within r - S.r of the axis. A zonotope
-//           or a box is inside exactly if its corners are (at most 12 generators). The empty
-//           capsule contains only the empty set, and every capsule the empty one. Of a batch:
-//           every member. CORA's second and third outputs (the certificate and the scaling) are
-//           not returned
+//           tol - how far a point may lie outside; default: the repository tolerance
+// Outputs:  res - true if all points are within r of the axis
 // See also: is_intersecting, Zonotope::contains
 //
 // CORA: contSet/@capsule/contains_.m

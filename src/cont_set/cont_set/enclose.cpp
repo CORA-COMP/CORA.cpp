@@ -1,9 +1,10 @@
 // enclose - a set that encloses two sets, as CORA's contSet.enclose
 //
+// Error::noops for a class without the operation or that cannot take the class of S2.
+//
 // Syntax:   R = S1.enclose(S2);
 // Inputs:   S1, S2 - sets of one dimension
-// Outputs:  R - a set of the class of S1 that encloses both; Error::noops for a class without
-//           the operation or that cannot take the class of S2
+// Outputs:  R - a set of the class of S1 that encloses both
 // See also: convex_hull, Interval::enclose, Zonotope::enclose
 //
 // CORA: contSet/@contSet/enclose.m

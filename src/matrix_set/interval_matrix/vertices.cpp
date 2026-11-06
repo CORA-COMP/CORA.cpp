@@ -1,10 +1,11 @@
 // vertices - the vertices of an interval matrix, as CORA's intervalMatrix.vertices
 //
+// The batch is flattened row-major. V[b] holds the K distinct matrices with every entry at an end
+// of its interval, sorted by the entries stacked column by column (CORA's unique(V', 'rows')).
+//
 // Syntax:   std::vector<Tensor> V = A.vertices();
-// Inputs:   -;  at most 20 entries (2^20 vertices), else Error::not_supported
-// Outputs:  V - one tensor per batch member (the batch flattened, row-major), V[b] of shape
-//           (K, rows, cols): the K distinct matrices with every entry at an end of its interval,
-//           sorted by the entries stacked column by column (CORA's unique(V', 'rows'))
+// Inputs:   -   (at most 20 entries, 2^20 vertices, else Error::not_supported)
+// Outputs:  V - one tensor per batch member, V[b] of shape (K, rows, cols)
 // See also: representsa, Interval::vertices
 //
 // CORA: matrixSet/@intervalMatrix/vertices.m

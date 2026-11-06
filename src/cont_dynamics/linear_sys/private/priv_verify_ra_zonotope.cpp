@@ -3,16 +3,18 @@
 // An outer approximation of the reachable output sets with a bound on its error to the exact sets
 // (priv_reach_adaptive) is checked against the specifications: if it lies inside every safe set
 // and misses every unsafe set, the specifications hold; the inner approximation (the outer one
-// minus the ball of the error bound) proves a violation if it leaves a safe set or hits an
-// unsafe one. Otherwise the error bound shrinks by the distances and the set is computed again.
+// minus the ball of the error bound) proves a violation if it leaves a safe set or hits an unsafe
+// one. Otherwise the error bound shrinks by the distances and the set is computed again.
 // Supported as in the ARCH benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant
 // zonotope U, no offsets; every specification applies over the whole horizon [0, t_final].
+//
+// The statistics are the refinements (iterations), the smallest step size and the number of steps
+// of the last run, computation_time.
 //
 // Syntax:   res = priv_verify_ra_zonotope(sys, params, specs);
 // Inputs:   sys - linear system;  params - R0, U, t_final
 //           specs - safe and unsafe sets
-// Outputs:  res - verified, the refinements (iterations), the smallest step size and the
-//           number of steps of the last run, computation_time
+// Outputs:  res - verified, and the run's statistics
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
 //        outer-approximations of reachable sets", TAC, 2023.

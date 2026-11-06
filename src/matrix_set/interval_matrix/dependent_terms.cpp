@@ -1,12 +1,14 @@
 // dependent_terms - the square and the second-order Taylor terms of an interval matrix, as CORA's
 //
+// Entry (i, j) of H is A(i, j) (r + r^2 / 2 (A(i, i) + A(j, j))) + r^2 / 2 times the terms that
+// occur once, and on the diagonal the exact range of a r + a^2 r^2 / 2 (its minimum -1/2 where
+// -1/r is in A(i, i)). Both are rebuilt from center and radius, as CORA does (CORA adds the
+// identity to the center before: the same up to rounding).
+//
 // Syntax:   auto [sq, H] = A.dependent_terms(r);
 // Inputs:   r - the step;  A is square
-// Outputs:  sq - r^2 [A]^2, the exact square scaled by r^2;  H - I + [A] r + [A]^2 r^2 / 2, the
-//           loop's H: entry (i, j) is A(i, j) (r + r^2 / 2 (A(i, i) + A(j, j))) + r^2 / 2 times
-//           the terms that occur once, and on the diagonal the exact range of a r + a^2 r^2 / 2
-//           (its minimum -1/2 where -1/r is in A(i, i)). Both are rebuilt from center and radius,
-//           as CORA does (CORA adds the identity to the center before: the same up to rounding)
+// Outputs:  sq - r^2 [A]^2, the exact square scaled by r^2
+//           H - I + [A] r + [A]^2 r^2 / 2, the loop's H
 // See also: exact_square, expm
 //
 // CORA: matrixSet/@intervalMatrix/dependentTerms.m

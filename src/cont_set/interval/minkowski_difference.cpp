@@ -1,14 +1,16 @@
 // minkowski_difference - the Minkowski difference of a box and a set, as CORA's interval.minkDiff
 //
+// For a box [inf - inf_S, sup - sup_S], for a point [inf - p, sup - p], and for another set [inf
+// + h(-e_i), sup - h(e_i)] with h its support function in the coordinate directions e_i; the
+// default type uses the support-function bounds. The empty interval (bounds without columns) if a
+// bound would cross (CORA gives []); for a batch all members must agree on that.
+// Error::no_exact_alg for type "exact" and another set.
+//
 // Syntax:   Interval R = I.minkowski_difference(S);   Interval R = I.minkowski_difference(p);
 //           Interval R = I.minkowski_difference(S, "inner");
-// Inputs:   S - an interval, a point (a column), or another set;  type - "exact" or "inner", for a
-//           set other than a box (default: the support-function bounds, as "inner")
-// Outputs:  R - {x | x + S in I}: [inf - inf_S, sup - sup_S] for a box, [inf - p, sup - p] for a
-//           point, and for another set [inf + h(-e_i), sup - h(e_i)] with h its support function
-//           in the coordinate directions e_i. The empty interval (bounds without columns) if a
-//           bound would cross (CORA gives []); for a batch all members must agree on that.
-//           Error::no_exact_alg for type "exact" and another set
+// Inputs:   S - an interval, a point (a column), or another set
+//           type - "exact" or "inner", for a set other than a box (default: "inner")
+// Outputs:  R - {x | x + S in I}
 // See also: minus, plus
 //
 // CORA: contSet/@interval/minkDiff.m

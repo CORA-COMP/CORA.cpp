@@ -1,20 +1,21 @@
 // contains - whether a polytope contains points or a set, as CORA's polytope.contains
 //
+// "exact:venum" uses the vertices of P, "exact:polymax" the halfspaces; "approx" is "exact" for a
+// box or a zonotope and not supported for others; S is any set with a support function. A
+// halfspace polytope holds a point if every row is violated by at most tol (absolute), and a set
+// if the support function of the set along every row (an equality both ways) is at most the
+// offset up to tol (within_tol); a polytope with vertices counts as its points. A vertex polytope
+// holds a point if it is a vertex up to tol or a convex combination of the vertices (a linear
+// program); a set is tested on the halfspaces of P. R^n holds everything and holds only itself;
+// the empty set holds nothing but the empty set. In 1D a set is its two bounds. CORA's
+// certificate and scaling outputs are not returned. Not a batch.
+//
 // Syntax:   res = P.contains(p);   res = P.contains(S, "exact", tol);
 // Inputs:   p - points (n, N)
-//           S - a set of the dimension of P: a box, a zonotope, a polytope
-//           (any set with a support function);  method - "exact" (default), "exact:venum" (the
-//           vertices of P), "exact:polymax" (the halfspaces of P); "approx" is "exact" for a box
-//           or a zonotope and not supported for others;  tol - see below
-// Outputs:  res - true if all points (the whole set) are in P. A halfspace polytope holds a point
-//           if every row is violated by at most tol (absolute), and a set if the support function
-//           of the set along every row (an equality both ways) is at most the offset up to
-//           tol (within_tol); a polytope with vertices counts as its points. A vertex polytope
-//           holds a point if it is a vertex up to tol or a convex combination of the vertices (a
-//           linear program); a set is tested on the halfspaces of P. R^n holds everything and
-//           holds only itself; the empty set holds nothing but the empty set. In 1D a set is its
-//           two bounds. tol default: the repository tolerance (docs/architecture.md). CORA's
-//           certificate and scaling outputs are not returned. Not a batch
+//           S - a set of the dimension of P: a box, a zonotope, a polytope, ...
+//           method - "exact" (default), "exact:venum" or "exact:polymax"
+//           tol - see the description; default: the repository tolerance
+// Outputs:  res - true if all points (the whole set) are in P
 // See also: Polytope::intersect, ConZonotope::contains
 //
 // CORA: contSet/@polytope/contains_.m

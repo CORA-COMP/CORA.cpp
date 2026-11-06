@@ -1,13 +1,14 @@
 // verify - verifies a linear system against reach-avoid specifications, as CORA's linearSys.verify
 //
+// initial_set is one zonotope of the state space; without B the input_set must be zero.
+// ReachAvoidSupportFunction takes unsafe sets of one halfspace, ReachAvoidZonotope unsafe
+// polytopes too. A falsifying initial state is returned when a specification is hit.
+//
 // Syntax:   res = sys.verify(problem, specs, alg);
-// Inputs:   problem - initial_set (one zonotope of the state space), input_set (one zonotope of
-//                     the input space of B; without B it must be zero), t_final
+// Inputs:   problem - initial_set, input_set (a zonotope of the input space of B), t_final
 //           specs - safe sets and unsafe sets over the outputs y = C x
-//           alg - alg::ReachAvoidSupportFunction (unsafe sets of one halfspace) or
-//                 alg::ReachAvoidZonotope (unsafe polytopes too)
-// Outputs:  res - verified, the iterations of the adaptive loop, the last step size and step
-//           count, and a falsifying initial state when a specification is hit
+//           alg - alg::ReachAvoidSupportFunction or alg::ReachAvoidZonotope
+// Outputs:  res - verified, the iterations of the adaptive loop, the last step size and count
 // See also: reach, private/priv_verify_ra_support_function
 //
 // CORA: contDynamics/@linearSys/verify.m

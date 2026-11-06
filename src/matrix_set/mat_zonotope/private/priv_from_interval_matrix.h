@@ -1,9 +1,10 @@
 // priv_from_interval_matrix - an interval matrix as a matrix zonotope
 //
+// CORA's intervalMatrix/matZonotope.
+//
 // Syntax:   MatZonotope Z = priv_from_interval_matrix(A);
 // Inputs:   A - interval matrix (..., n, m)
-// Outputs:  Z - center of A and one generator per entry, the radius of that entry, in column
-//           order (CORA's intervalMatrix/matZonotope)
+// Outputs:  Z - center of A and one generator per entry, the radius of that entry, in column order
 // See also: expm_independent, interval_matrix
 //
 // Authors:       Claude Sonnet 5.5, Tobias Ladner

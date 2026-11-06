@@ -1,20 +1,21 @@
 // contains - whether an ellipsoid contains points, a zonotope or a box, as CORA's contains_
 //
+// The default tol is CORA's contains default. For a set: an unbounded set is not contained, an
+// empty one is; a set that is a point as a point; else the zonotope (a box as its zonotope) is
+// contained iff all its vertices are, found by a search over the signs of the generators, longest
+// first, that cuts a branch when no completion can exceed 1 + tol. An ellipsoid that is a point
+// contains only points within tol of it, an empty one only the empty set. A set that is a point
+// is compared with the tolerance (CORA compares exactly, and passes it to a function that takes
+// fewer arguments, docs/cora-differences.md). Error::not_supported: "approx" (an SDP) and an
+// ellipsoid as the contained set unless it is a point or empty. Not a batch.
+//
 // Syntax:   bool res = E.contains(p);   bool res = E.contains(Z, method, tol);   E.contains(I);
 // Inputs:   p - points as columns (n, N), all must be inside
-//           Z, I - a zonotope, a box;
-//           S - an ellipsoid;  method - "exact" (default; for points the method is not used);
+//           Z, I - a zonotope, a box
+//           S - an ellipsoid
+//           method - "exact" (default; the points ignore it)
 //           tol - allowed excess of the ellipsoid norm over 1; default: the repository tolerance
-//           (docs/architecture.md; CORA's contains default). Not a batch
-// Outputs:  res - for points, the ellipsoid norm of p - q is at most 1 + tol. For a set: an
-//           unbounded set is not contained, an empty one is; a set that is a point as a point;
-//           else the zonotope (a box as its zonotope) is contained iff all its vertices are,
-//           found by a search over the signs of the generators, longest first, that cuts a branch
-//           when no completion can exceed 1 + tol. An ellipsoid that is a point contains only
-//           points within tol of it, an empty one only the empty set. A set that is a point is
-//           compared with the tolerance (CORA compares exactly, and passes it to a function that
-//           takes fewer arguments, docs/cora-differences.md). Error::not_supported: "approx" (an
-//           SDP) and an ellipsoid as the contained set unless it is a point or empty
+// Outputs:  res - for points, the ellipsoid norm of p - q is at most 1 + tol
 // See also: ellipsoid_norm, Zonotope::contains
 //
 // CORA: contSet/@ellipsoid/contains_.m

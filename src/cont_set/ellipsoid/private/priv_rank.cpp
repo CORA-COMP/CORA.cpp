@@ -2,10 +2,8 @@
 //
 // Syntax:   Tensor r = priv_rank(Q, tol);
 // Inputs:   Q - symmetric matrices (..., n, n)
-//           tol - singular values below tol times the
-//           largest count as zero
-// Outputs:  r - the number of singular values above zero and at least tol times the largest,
-//           as (..., 1, 1)
+//           tol - singular values below tol times the largest count as zero
+// Outputs:  r - the number of singular values above zero and tol times the largest, (..., 1, 1)
 // See also: priv.h, Ellipsoid::is_full_dim
 //
 // CORA: contSet/@ellipsoid/rank.m

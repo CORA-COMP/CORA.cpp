@@ -1,11 +1,12 @@
 // zonotope - the zonotope of a box, as CORA's interval.zonotope
 //
+// The radius reaches both ends from the rounded center, as CORALean's zonotope. The columns of
+// zero radius are dropped (those of zero radius in every member of a batch). Error::not_supported
+// for an empty interval.
+//
 // Syntax:   Zonotope Z = I.zonotope();
 // Inputs:   -
 // Outputs:  Z - the center c of the box with the generators diag(r), r = max(sup - c, c - inf)
-//           (the radius, reaching both ends from the rounded center, as CORALean's zonotope); the
-//           columns of zero radius are dropped (those of zero radius in every member of a batch).
-//           Error::not_supported for an empty interval
 // See also: center, Zonotope::interval
 //
 // CORA: contSet/@interval/zonotope.m

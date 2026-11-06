@@ -1,9 +1,11 @@
 // contains - whether matrices are in a matrix zonotope, as CORA's matZonotope.contains
 //
+// CORA's default tol is 1e-12, here the repository tolerance.
+//
 // Syntax:   bool b = A.contains(M);   bool b = A.contains(M, "exact", tol);
-// Inputs:   M - a matrix (rows, cols) or p matrices (p, rows, cols);  type - "exact" or "approx"
-//           tol - how far a point may lie outside, as the zonotope's contains of the stacked
-//                 matrices; CORA's default is 1e-12, here the repository tolerance
+// Inputs:   M - a matrix (rows, cols) or p matrices (p, rows, cols)
+//           type - "exact" or "approx"
+//           tol - how far a point may lie outside (the zonotope's contains of the stacked matrices)
 // Outputs:  b - true if every matrix is in the set
 // See also: zonotope, Zonotope::contains
 //

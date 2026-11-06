@@ -1,14 +1,13 @@
 // convex_hull - the convex hull of a polytope and a polytope, a box or a point, as CORA's convHull_
 //
+// In 1D the least and the greatest. The vertices of a halfspace polytope are found by enumeration
+// (a bounded set). The hull with the empty set is the other set (CORA returns the empty set,
+// docs/cora-differences.md), the hull with R^n is R^n. Not a batch.
+//
 // Syntax:   Pres = P.convex_hull(P2);   Pres = P.convex_hull(I);   Pres = P.convex_hull(p);
 // Inputs:   P2, I - a polytope or a box of the dimension of P (bounded unless in 1D)
-//           p - a point
-//           (n, 1)
+//           p - a point (n, 1)
 // Outputs:  Pres - exact, a vertex polytope of the extreme vertices of both sets in their order
-//           (in 1D the least and the greatest). The vertices of a halfspace polytope are found by
-//           enumeration (a bounded set). The hull with the empty set is the other set (CORA
-//           returns the empty set, docs/cora-differences.md), the hull with R^n is R^n. Not a
-//           batch
 // See also: enclose, Polytope::compact
 //
 // CORA: contSet/@polytope/convHull_.m
