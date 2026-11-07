@@ -34,6 +34,7 @@ int main() {
             const Tensor d = rnd.direction(n);
             const double mine = a.support_function(d).item();
             const double theirs = lean::ZonoBundle(a).support_function(d);
+            // 1e-9: the tolerance of the simplex pivots, which the optimum carries
             test::check(mine <= theirs + 1e-9 * (1 + std::abs(theirs)),
                         "zonoBundle.supportFunc: below the bound");
         }
@@ -45,6 +46,7 @@ int main() {
             const Tensor d = rnd.direction(n);
             const double mine = cz.support_function(d).item();
             const double theirs = lean::ConZonotope(cz).support_function(d);
+            // 1e-9: the tolerance of the simplex pivots, which the optimum carries
             test::check(mine <= theirs + 1e-9 * (1 + std::abs(theirs)),
                         "conZonotope.supportFunc: below the bound");
         }
