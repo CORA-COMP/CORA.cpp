@@ -23,10 +23,8 @@
 // ORACLE: contSet/@capsule/lift_.m
 // ORACLE: contSet/@capsule/mtimes.m
 // ORACLE: contSet/@capsule/origin.m
-// ORACLE: contSet/@capsule/plus.m
 // ORACLE: contSet/@capsule/project.m
 // ORACLE: contSet/@capsule/reduce.m
-// ORACLE: contSet/@capsule/radius.m
 // ORACLE: contSet/@capsule/representsa_.m
 // ORACLE: contSet/@capsule/zonotope.m
 // Authors:       Claude Sonnet 5.5
@@ -142,12 +140,7 @@ int main() {
         const Tensor M = rnd.matrix(2, 3);
         oracle::check(C.linear_map(M), lean::Capsule(C).linear_map(M));
     });
-    // the sum, the projection, the reduction, the radius, the predicates and the zonotope
-    oracle::run("capsule.plus", [](oracle::Random &rnd) {
-        const Capsule a = rnd.capsule(3), b = rnd.capsule(3);
-        oracle::check(a.plus(b), lean::Capsule(a).plus(b));
-        oracle::check(b.plus(a), lean::Capsule(b).plus(a));
-    });
+    // the projection, the reduction, the predicates and the zonotope (plus and radius: _bound)
     oracle::run("capsule.project", [](oracle::Random &rnd) {
         const Capsule C = rnd.capsule(3);
         oracle::check(C.project({2, 0}).as<Capsule>(), lean::Capsule(C).project({2, 0}));
@@ -156,11 +149,7 @@ int main() {
         const Capsule C = rnd.capsule(3);
         oracle::check(C.reduce(2).as<Capsule>(), lean::Capsule(C).reduce(2));
     });
-    // the radius and the predicates on points
-    oracle::run("capsule.radius", [](oracle::Random &rnd) {
-        const Capsule C = rnd.capsule(3);
-        oracle::check(C.radius(), lean::Capsule(C).radius());
-    });
+    // the predicates on points
     oracle::run("capsule.representsa", [](oracle::Random &rnd) {
         const Capsule C = rnd.capsule(3), point(C.c()), origin = Capsule::origin(3);
         for (const char *type : {"point", "origin"})
