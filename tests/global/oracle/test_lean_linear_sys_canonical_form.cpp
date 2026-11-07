@@ -1,6 +1,6 @@
 // test_lean_linear_sys_canonical_form - canonical_form and is_canonical_form against the oracle
 //
-// Bit for bit at nearest, inside the enclosure of the sound oracle. The identity input matrix is
+// Bit for bit at nearest. The identity input matrix is
 // not compared for is_canonical_form: the oracle has no noise matrix on the wire.
 //
 // ORACLE: contDynamics/@linearSys/canonicalForm.m

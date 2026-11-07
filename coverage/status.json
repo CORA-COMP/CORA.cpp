@@ -803,7 +803,7 @@
   "contSet/zonoBundle/polyZonotope": "todo",
   "contSet/zonoBundle/polytope": "property",
   "contSet/zonoBundle/project": "oracle",
-  "contSet/zonoBundle/quadMap": "oracle",
+  "contSet/zonoBundle/quadMap": "property",
   "contSet/zonoBundle/randPoint_": "property",
   "contSet/zonoBundle/reduce": "oracle",
   "contSet/zonoBundle/reduceCombined": "todo",

@@ -36,7 +36,7 @@ void aux_agree(const std::string &what, const Tensor &a, const Tensor &b, double
         return;
     }
     if (rel == 0) {
-        check(test::oracle::same_bits(what, a.to("cpu"), b.to("cpu")), what + ": the same bits");
+        check(test::oracle::agree(what, a.to("cpu"), b.to("cpu")), what + ": the same bits");
         return;
     }
     const std::vector<double> x = a.data(), y = b.data();

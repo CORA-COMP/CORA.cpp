@@ -23,8 +23,10 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
-X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
-A_TRUE = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
+# the problem on torch, which is never the default
+with cora.backend("torch"):
+    X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
+    A_TRUE = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
 
 
 def loss(A, measurements):
@@ -40,6 +42,7 @@ def loss(A, measurements):
 
 class LearnDynamics(unittest.TestCase):
     def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
         self.measurements = cora.LinearSys(A_TRUE).simulate(X0.rand_point(10, cora.Rng(0)), time_step=0.1,
                                                             t_final=1.0)
 

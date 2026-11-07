@@ -24,9 +24,11 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
-X0 = cora.Zonotope(cora.Tensor([1.2, 0.0]), 0.2 * cora.eye(2))
-PENDULUM = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
-MODEL = cora.LinearSys(cora.Tensor([[0.0, 1.0], [-1.0, -0.2]]))  # the linearization at the origin
+# the problem on torch, which is never the default
+with cora.backend("torch"):
+    X0 = cora.Zonotope(cora.Tensor([1.2, 0.0]), 0.2 * cora.eye(2))
+    PENDULUM = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
+    MODEL = cora.LinearSys(cora.Tensor([[0.0, 1.0], [-1.0, -0.2]]))  # the linearization at the origin
 
 
 def trajectories(count, seed):
@@ -42,6 +44,9 @@ def scores(trajectories, inf, sup):
 # ============================================  MAIN  ============================================ #
 
 class Conformal(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
+
     def test_the_quantile_of_the_scores_gives_the_promised_coverage(self):
         R = MODEL.reach(X0, time_step=0.1, t_final=2.0, taylor_terms=6)
         inf = torch.stack([Z.interval().inf for Z in R.time_point])[:, :, None]

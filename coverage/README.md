@@ -10,8 +10,8 @@ Rows are the method files of CORA's classes ({CORA commit 904a444}, `cora-invent
 | `todo` | no source file tags it (`// CORA: <path>.m` in `src/` or `include/`) |
 | `untested` | a source tags it, but a C++ test and a Python test do not both declare it |
 | `ported` | a C++ test (`// CORA: <path>.m`) and a Python test (`# CORA: <path>.m`) declare it |
-| `property` | ported, and a test declares a property on randomized inputs with fixed seeds (`// PROPERTY: <path>.m`) |
-| `oracle` | ported, and a test compares it with CORALean (`// ORACLE: <path>.m`, in `tests/**/oracle/` or `test_lean*`): bit-exact at `nearest`, inside the sound enclosure |
+| `property` | ported, and a test declares a property on randomized inputs with fixed seeds (`// PROPERTY: <path>.m`), or compares it with CORALean by tolerance or containment (`// CORA: <path>.m` in a test `tests/**/oracle/*_{agreement,enclosure,bound}`) |
+| `oracle` | ported, and a test compares it with CORALean (`// ORACLE: <path>.m`, in `tests/**/oracle/` or `test_lean*`): the lean backend bit-exact at `nearest` |
 | `out-of-scope` | listed in [out-of-scope.md](out-of-scope.md) with a reason |
 
 To raise a row, add the tag with the test that earns it; `python scripts/coverage/coverage.py`

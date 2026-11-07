@@ -1,9 +1,6 @@
 // test_lean_interval_minkowski_difference - Interval::minkowski_difference against the CORALean
 //
-// oracle (its `minkDiff`)
-//
-// The oracle's difference is an inner approximation (the lower bound rounded up, the upper one
-// down), so in the sound mode the oracle's box lies in CORA.cpp's, not the other way round.
+// oracle (its `minkDiff`), bit for bit at nearest
 //
 // ORACLE: contSet/@interval/minkDiff.m
 // Authors:       Tobias Ladner
@@ -30,13 +27,7 @@ int main() {
             const Interval I = rnd.box(n), S = I.enlarge(0.3);
             const Interval R = I.minkowski_difference(S);
             const lean::Interval O = lean::Interval(I).mink_diff(lean::Interval(S));
-            if (test::oracle::mode() == test::oracle::Mode::exact) {
-                test::oracle::check_exact("interval.minkDiff", R, O);
-            } else {
-                const auto [inf, sup] = O.gather();
-                test::oracle::check_enclosed("interval.minkDiff", Interval(inf, sup),
-                                             lean::Interval(R));
-            }
+            test::oracle::check(R, O);
         }
     });
     return test::finish("lean interval minkowski_difference");

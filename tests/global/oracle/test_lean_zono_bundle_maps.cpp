@@ -2,14 +2,12 @@
 //
 // Bit for bit: mtimes, project, reduce and replace map every member on its own; plus is
 // the sum of every pair (the paper's, not CORA's box of the second bundle); origin; zonotope is the
-// member of least volume. quadMap is inside the oracle's enclosure (the generators are laid out
-// differently).
+// member of least volume (quadMap: test_lean_zono_bundle_quad_map_enclosure).
 //
 // ORACLE: contSet/@zonoBundle/mtimes.m
 // ORACLE: contSet/@zonoBundle/origin.m
 // ORACLE: contSet/@zonoBundle/plus.m
 // ORACLE: contSet/@zonoBundle/project.m
-// ORACLE: contSet/@zonoBundle/quadMap.m
 // ORACLE: contSet/@zonoBundle/reduce.m
 // ORACLE: contSet/@zonoBundle/replace.m
 // ORACLE: contSet/@zonoBundle/zonotope.m
@@ -46,14 +44,6 @@ int main() {
         const ZonoBundle a = rnd.zono_bundle(4, 2, 4);
         const std::vector<int64_t> dims{3, 1};
         oracle::check(Set(a)->project(dims).as<ZonoBundle>(), lean::ZonoBundle(a).project(dims));
-    });
-    oracle::run("zonoBundle.quadMap", [](oracle::Random &rnd) {
-        const ZonoBundle a = rnd.zono_bundle(3, 2, 3);
-        const std::vector<Tensor> Q{rnd.matrix(3, 3), rnd.matrix(3, 3)};
-        const std::vector<lean::Tensor> theirs_Q{lean::Tensor(Q[0]), lean::Tensor(Q[1])};
-        // the oracle lays the new generators out differently: an enclosure of CORA.cpp's set
-        oracle::check_enclosed("zonoBundle.quadMap", a.quad_map(Q),
-                               lean::ZonoBundle(a).quad_map(theirs_Q));
     });
     oracle::run("zonoBundle.reduce", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(2, 3, 7);

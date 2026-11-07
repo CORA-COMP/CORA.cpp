@@ -4,7 +4,7 @@
 //
 // The oracle gives the box swept from `start` to an upper bound of the exit step (`boundaryPoint`),
 // nothing if no facet row bounds the ray, and states that CORA's single point lies in it. So the
-// check is that CORA.cpp's point lies in the box, in both modes; the box is not a point at nearest,
+// check is that CORA.cpp's point lies in the box; the box is not a point at nearest,
 // so no bit-exact test exists and there is no ORACLE tag.
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
@@ -36,8 +36,7 @@ int main() {
                 const std::optional<lean::Interval> box = lean::Zonotope(Z).boundary_point(
                     lean::Tensor::from(dir), lean::Tensor::from(start));
                 test::check(box.has_value(), "zonotope.boundaryPoint: the oracle bounds the ray");
-                if (box)
-                    test::oracle::check_enclosed(test::oracle::op_name(), Interval(x, x), *box);
+                if (box) test::oracle::check_inside(Interval(x, x), *box);
             }
         }
     });

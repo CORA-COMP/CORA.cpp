@@ -84,11 +84,10 @@ int main() {
                           const Zonotope Z = rnd.zonotope(n, 3);
                           check(EmptySet(n).convex_hull(Set(I)).as<Interval>(),
                                 lean::EmptySet(n).convex_hull(lean::Interval(I)));
-                          // the zonotope comes back as is: compared exactly in the sound mode too
-                          test::oracle::check_exact(
-                              test::oracle::op_name(),
-                              EmptySet(n).convex_hull(Set(Z)).as<Zonotope>(),
-                              lean::EmptySet(n).convex_hull(lean::Zonotope(Z)));
+                          // the zonotope comes back as is
+                          test::oracle::check(test::oracle::op_name(),
+                                              EmptySet(n).convex_hull(Set(Z)).as<Zonotope>(),
+                                              lean::EmptySet(n).convex_hull(lean::Zonotope(Z)));
                       }));
     test::oracle::run("emptySet.contains", each_dimension([](Random &rnd, int64_t n) {
                           for (const Set &S : aux_operands(rnd, n))

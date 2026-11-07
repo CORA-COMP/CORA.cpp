@@ -1,4 +1,4 @@
-// test_lean_zonotope_measures_sound - generator_length, minnorm, intersect_strip and
+// test_lean_zonotope_measures_bound - generator_length, minnorm, intersect_strip and
 //
 // is_intersecting of Zonotope against the CORALean oracle, within a stated bound
 //
@@ -105,7 +105,6 @@ int main() {
     });
 
     oracle::run("zonotope.isIntersecting", [&](oracle::Random &rnd) {
-        if (oracle::mode() == oracle::Mode::exact) return; // the oracle proves disjointness only
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             const Zonotope far(Z2.center() * 40.0, Z2.generators());

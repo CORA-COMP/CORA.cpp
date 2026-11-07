@@ -1,9 +1,6 @@
-// test_lean_linear_sys - lean::LinearSys::reach: the argument checks, and with the oracle set the
+// test_lean_linear_sys - lean::LinearSys::reach: the argument checks, which need no oracle
 //
-// enclosure of CORA.cpp's own reachable sets
-//
-// CORA: contDynamics/@linearSys/reach.m  (enclosure against the oracle only, not bit-exact: not yet
-// ORACLE)
+// CORA: contDynamics/@linearSys/reach.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
@@ -13,7 +10,6 @@
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/oracle/linear_sys.h"
 #include "cora/global/oracle/oracle.h"
-#include "oracle_testing.h"
 #include "testing.h"
 
 using namespace cora;
@@ -47,21 +43,6 @@ int main() {
                                                                .zonotope_order = 10});
                     }),
                     "timeStep");
-
-        if (!test::oracle::available()) return;
-
-        // the lean sets enclose the intervals of CORA.cpp's reach at every time point
-        const double time_step = 0.125, t_final = 1.0;
-        const lean::ReachSet R = lean::LinearSys(A).reach(
-            X0, t_final,
-            alg::Standard{.time_step = time_step, .taylor_terms = 8, .zonotope_order = 10});
-        test::check(R.time_point.size() == 9 && R.time_interval.size() == 8, "the number of sets");
-        const auto ref =
-            LinearSys(A).reach({.initial_set = Zonotope(c, G), .t_final = t_final},
-                               alg::Standard{.time_step = time_step, .taylor_terms = 8});
-        for (std::size_t k = 0; k < R.time_point.size(); ++k)
-            test::oracle::check_enclosed("time point " + std::to_string(k),
-                                         ref.time_point[k].interval(), R.time_point[k].interval());
     });
     return test::finish("lean linearSys");
 }

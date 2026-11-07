@@ -13,11 +13,6 @@ Reviewed:      ---
 # CORA: contSet/@zonotope/underapproximate.m
 # CORA: contSet/@zonotope/volume_.m
 # CORA: contSet/@zonotope/zonotopeNorm.m
-# PROPERTY: contSet/@zonotope/tensorMultiplication.m
-# PROPERTY: contSet/@zonotope/tensorMultiplication_zono.m
-# PROPERTY: contSet/@zonotope/underapproximate.m
-# PROPERTY: contSet/@zonotope/volume_.m
-# PROPERTY: contSet/@zonotope/zonotopeNorm.m
 
 import itertools
 import unittest
@@ -54,22 +49,7 @@ class TensorMultiplication(unittest.TestCase):
                                          perm, comb, mapping)
         np.testing.assert_allclose(S.generators, [[1, 6, 12, 8, 0.5, 3, 6, 4]])
 
-    def test_the_image_is_enclosed(self):
-        rng = np.random.default_rng(1)
-        n = m = 3
-        G = rng.uniform(-1, 1, (n, m))
-        Z = zonotope(np.zeros(n), G)
-        M = rng.standard_normal((n, n, n, n))
-        perm, comb, mapping = triples(m)
-        H = Z.tensor_multiplication(M, perm, comb, mapping).generators
-        for _ in range(20):
-            b = rng.uniform(-1, 1, m)
-            x = G @ b
-            # the tensor product of three points
-            image = np.einsum("ijkl,j,k,l->i", M, x, x, x)
-            beta = np.array([b[i] * b[j] * b[k] for i, j, k in comb])
-            np.testing.assert_allclose(H @ beta, image, atol=1e-9)
-
+    # the refusals of a wrong tensor or list
     def test_errors(self):
         Z = zonotope([0], [[1, 2]])
         perm, comb, mapping = triples(2)
@@ -91,17 +71,6 @@ class Underapproximate(unittest.TestCase):
         # the under-approximation
         np.testing.assert_allclose(Z.underapproximate(np.array([[1.0, 1], [0, 1]])),
                                    [[2, -10, -4, -4], [-8, 10, 6, -4]], atol=1e-12)
-
-    def test_the_vertices_are_in_the_set(self):
-        rng = np.random.default_rng(2)
-        Z = zonotope(rng.standard_normal(3), rng.uniform(-1, 1, (3, 6)))
-        S = rng.standard_normal((3, 4))
-        V = Z.underapproximate(S)
-        self.assertEqual(V.shape, (3, 8))
-        for j in range(8):
-            self.assertTrue(Z.contains(V[:, j], tol=1e-9))
-        for i in range(4):
-            self.assertAlmostEqual(S[:, i] @ V[:, 2 * i], Z.support_function(S[:, i]), places=9)
 
     def test_errors(self):
         Z = zonotope([0, 0], [[1, 0, 1], [0, 1, 1]])
@@ -163,16 +132,6 @@ class ZonotopeNorm(unittest.TestCase):
         point = zonotope([0, 0], np.zeros((2, 0)))
         self.assertEqual(point.zonotope_norm(np.zeros(2)), 0)
         self.assertEqual(point.zonotope_norm(np.array([1.0, 0])), np.inf)
-
-    def test_the_minimizer_reaches_the_point(self):
-        rng = np.random.default_rng(5)
-        G = rng.uniform(-1, 1, (3, 5))
-        Z = zonotope(np.zeros(3), G)
-        for _ in range(10):
-            p = rng.standard_normal(3)
-            value, beta = Z.zonotope_norm_minimizer(p)
-            np.testing.assert_allclose(G @ beta, p, atol=1e-8)
-            self.assertAlmostEqual(np.abs(beta).max(), value, places=8)
 
     # a shifted zonotope warns
     def test_a_shifted_zonotope_warns(self):

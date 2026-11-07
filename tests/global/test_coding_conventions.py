@@ -716,6 +716,36 @@ def check_layout_of_the_rest(issues_by_file):
                     issues_by_file.setdefault(rel(path), []).extend(found)
 
 
+def check_test_labels(issues_by_file):
+    """Every ctest test has a label of its kind: CMake adds each through `cora_add_test(name label
+    ...)`, which refuses an empty label; a bare add_test outside that function has none."""
+    for path in files("CMakeLists.txt") + files("scripts/cmake/*.cmake"):
+        inside = False
+        for i, line in enumerate(read_lines(path)):
+            code = line.split("#")[0]
+            if re.match(r"\s*function\(cora_add_test\b", code):
+                inside = True
+            elif re.match(r"\s*endfunction\(", code):
+                inside = False
+            elif re.search(r"\badd_test\(", code) and not inside:
+                issues_by_file.setdefault(rel(path), []).append(
+                    f"line {i + 1}: a test without a label; add it with cora_add_test(name label ...)")
+
+
+def check_oracle_tests_are_exact(issues_by_file):
+    """A test of the label oracle (tests/**/oracle/, not *_agreement, *_enclosure or *_bound) is bit
+    for bit on lean: it compares through the helper's check, never by a tolerance or a box."""
+    loose = re.compile(r"\b(check_hull|check_inside|within_tol)\s*\(")
+    for path in files("tests/**/oracle/test_*.cpp"):
+        if re.search(r"_(agreement|enclosure|bound)\.cpp$", path):
+            continue
+        for i, line in enumerate(code_only("\n".join(read_lines(path))).split("\n")):
+            if loose.search(line):
+                issues_by_file.setdefault(rel(path), []).append(
+                    f"line {i + 1}: a loose comparison in an oracle test; move it to a test "
+                    "*_agreement, *_enclosure or *_bound")
+
+
 # ============================================  MAIN  ============================================ #
 
 def main():
@@ -746,6 +776,9 @@ def main():
     check_portable_types(issues_by_file)
     check_nolint(issues_by_file)
     check_tensor_ops(issues_by_file)
+    # the build: every test labelled, the oracle tests bit-exact
+    check_test_labels(issues_by_file)
+    check_oracle_tests_are_exact(issues_by_file)
     for path in files("examples/**/example_*.cpp") + files("examples/**/example_*.py"):
         found = check_example(path)
         if found:

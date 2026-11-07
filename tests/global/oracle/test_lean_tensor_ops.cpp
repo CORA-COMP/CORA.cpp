@@ -17,7 +17,7 @@
 #include "oracle_testing.h"
 
 using namespace cora;
-using test::oracle::check_exact;
+using test::oracle::check;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,14 +43,14 @@ lean::Interval aux_point(const Tensor &x) { return lean::Interval::from(x, x); }
 void aux_elementwise(test::oracle::Random &rnd) {
     const Tensor a = rnd.vector(6), b = rnd.vector(6);
     const lean::Interval A = aux_point(a), B = aux_point(b);
-    aux_case("add", [&] { check_exact("add", a + b, A.plus(B)); });
-    aux_case("subtract", [&] { check_exact("subtract", a - b, A.minus(B)); });
-    aux_case("multiply", [&] { check_exact("multiply", a.multiply(b), A.times(B)); });
-    aux_case("maximum", [&] { check_exact("maximum", a.maximum(b), A.max(B)); });
-    aux_case("minimum", [&] { check_exact("minimum", a.minimum(b), A.min(B)); });
-    aux_case("abs", [&] { check_exact("abs", a.abs(), A.abs()); });
-    aux_case("negative", [&] { check_exact("negative", a.negative(), A.uminus()); });
-    aux_case("round", [&] { check_exact("round", (a * 3.0).round(), aux_point(a * 3.0).round()); });
+    aux_case("add", [&] { check("add", a + b, A.plus(B)); });
+    aux_case("subtract", [&] { check("subtract", a - b, A.minus(B)); });
+    aux_case("multiply", [&] { check("multiply", a.multiply(b), A.times(B)); });
+    aux_case("maximum", [&] { check("maximum", a.maximum(b), A.max(B)); });
+    aux_case("minimum", [&] { check("minimum", a.minimum(b), A.min(B)); });
+    aux_case("abs", [&] { check("abs", a.abs(), A.abs()); });
+    aux_case("negative", [&] { check("negative", a.negative(), A.uminus()); });
+    aux_case("round", [&] { check("round", (a * 3.0).round(), aux_point(a * 3.0).round()); });
 }
 
 /// Sums along both axes (the oracle answers columns), the product along rows, and the matrix
@@ -59,19 +59,18 @@ void aux_sums(test::oracle::Random &rnd) {
     for (const auto &[n, m] : {std::pair<int64_t, int64_t>{2, 3}, {7, 30}}) {
         const Tensor x = rnd.matrix(n, m), y = rnd.matrix(m, n), v = rnd.vector(n);
         const lean::Interval X = aux_point(x);
-        aux_case("sum(-2)",
-                 [&] { check_exact("sum(-2)", x.sum(-2, true).reshape({m, 1}), X.sum(1)); });
-        aux_case("sum(-1)", [&] { check_exact("sum(-1)", x.sum(-1, true), X.sum(2)); });
+        aux_case("sum(-2)", [&] { check("sum(-2)", x.sum(-2, true).reshape({m, 1}), X.sum(1)); });
+        aux_case("sum(-1)", [&] { check("sum(-1)", x.sum(-1, true), X.sum(2)); });
         // the product of the rows is a row in the oracle from batch 5, a column before
         aux_case("prod(-2)", [&] {
             const lean::Interval P = X.prod();
             if (P.inf().rows() == 1)
-                check_exact("prod(-2)", x.prod(-2, true), P);
+                check("prod(-2)", x.prod(-2, true), P);
             else
                 test::oracle::skipped(
                     "the oracle's interval.prod of a matrix is a column (older oracle)");
         });
-        aux_case("matmul", [&] { check_exact("matmul", y.matmul(v), aux_point(v).linear_map(y)); });
+        aux_case("matmul", [&] { check("matmul", y.matmul(v), aux_point(v).linear_map(y)); });
     }
 }
 
@@ -80,19 +79,17 @@ void aux_rearrangements(test::oracle::Random &rnd) {
     const Tensor a = rnd.matrix(3, 4), b = rnd.matrix(2, 3), v = rnd.vector(4);
     const lean::Interval A = aux_point(a), B = aux_point(b);
     aux_case("matrix_transpose",
-             [&] { check_exact("matrix_transpose", a.matrix_transpose(), A.transpose()); });
-    aux_case("kron", [&] { check_exact("kron", a.kron(b), A.kron(B)); });
-    aux_case("diag", [&] { check_exact("diag", v.diag(), aux_point(v).diag()); });
-    aux_case("tril", [&] { check_exact("tril", a.tril(1), A.tril(1)); });
-    aux_case("triu", [&] { check_exact("triu", a.triu(2), A.triu(2)); });
+             [&] { check("matrix_transpose", a.matrix_transpose(), A.transpose()); });
+    aux_case("kron", [&] { check("kron", a.kron(b), A.kron(B)); });
+    aux_case("diag", [&] { check("diag", v.diag(), aux_point(v).diag()); });
+    aux_case("tril", [&] { check("tril", a.tril(1), A.tril(1)); });
+    aux_case("triu", [&] { check("triu", a.triu(2), A.triu(2)); });
     const Tensor c = rnd.matrix(3, 2);
-    aux_case("concat(-1)", [&] {
-        check_exact("concat(-1)", Tensor::concat({a, c}, -1), A.horzcat(aux_point(c)));
-    });
+    aux_case("concat(-1)",
+             [&] { check("concat(-1)", Tensor::concat({a, c}, -1), A.horzcat(aux_point(c))); });
     const Tensor d = rnd.matrix(2, 4);
-    aux_case("concat(-2)", [&] {
-        check_exact("concat(-2)", Tensor::concat({a, d}, -2), A.vertcat(aux_point(d)));
-    });
+    aux_case("concat(-2)",
+             [&] { check("concat(-2)", Tensor::concat({a, d}, -2), A.vertcat(aux_point(d))); });
 }
 
 /// The fused products of an interval matrix and a matrix, on either side (the oracle multiplies a
@@ -104,18 +101,16 @@ void aux_interval_products(test::oracle::Random &rnd) {
         const Tensor M = rnd.matrix(n, n);
         const lean::Interval J = lean::Interval::from(inf, sup);
         const auto [lo, hi] = Tensor::interval_matmul(inf, sup, M);
-        aux_case("interval_matmul", [&] {
-            check_exact("interval_matmul", Interval(lo, hi), aux_point(M).linear_map(J));
-        });
+        aux_case("interval_matmul",
+                 [&] { check("interval_matmul", Interval(lo, hi), aux_point(M).linear_map(J)); });
         const Interval box = rnd.box(n);
         const auto [lo2, hi2] = Tensor::matmul_interval(M, box.inf(), box.sup());
         aux_case("matmul_interval", [&] {
-            check_exact("matmul_interval", Interval(lo2, hi2), lean::Interval(box).linear_map(M));
+            check("matmul_interval", Interval(lo2, hi2), lean::Interval(box).linear_map(M));
         });
         aux_case("Interval::linear_map", [&] {
             // exact linear maps
-            check_exact("Interval::linear_map", box.linear_map(M),
-                        lean::Interval(box).linear_map(M));
+            check("Interval::linear_map", box.linear_map(M), lean::Interval(box).linear_map(M));
         });
     }
 }

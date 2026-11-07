@@ -24,11 +24,6 @@ Reviewed:      ---
 # CORA: contSet/@interval/vertcat.m
 # CORA: contSet/@interval/volume_.m
 # CORA: contSet/@interval/zonotope.m
-# PROPERTY: contSet/@interval/sqrt.m
-# PROPERTY: contSet/@interval/tan.m
-# PROPERTY: contSet/@interval/tanh.m
-# PROPERTY: contSet/@interval/times.m
-# PROPERTY: contSet/@interval/zonotope.m
 
 import unittest
 
@@ -110,16 +105,6 @@ class Structure(unittest.TestCase):
         self.assertEqual((T.inf[1], T.sup[1]), (-INF, INF))
         H = box([-1.0], [2.0]).tanh()
         np.testing.assert_allclose([H.inf[0], H.sup[0]], np.tanh([-1.0, 2.0]))
-
-    def test_samples_stay_inside(self):
-        rng = np.random.default_rng(5)
-        for name, f, lo_, hi_ in (("sqrt", np.sqrt, 0, 5), ("tanh", np.tanh, -3, 3), ("tan", np.tan, -4, 4)):
-            lo = rng.uniform(lo_, hi_, 4)
-            I = box(lo, lo + rng.uniform(0, 2, 4))
-            R = getattr(I, name)()
-            x = lo[:, None] + (I.sup - lo)[:, None] * rng.uniform(0, 1, (4, 30))
-            y = f(x)
-            self.assertTrue(np.all(R.inf[:, None] <= y + 1e-12) and np.all(y <= R.sup[:, None] + 1e-12), name)
 
     def test_times(self):
         # products

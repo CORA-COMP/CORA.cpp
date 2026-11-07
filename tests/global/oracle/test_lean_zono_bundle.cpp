@@ -52,18 +52,15 @@ ZonoBundle aux_shifted(const ZonoBundle &bundle, const Tensor &offset) {
 /// generators, and the agreement of the points as the rows c1 + G1 x1 - c2 - G2 x2 <= 0 and >= 0
 /// where CORA has equalities (as for conZonotope.and).
 void aux_check_con_zonotope(const ConZonotope &mine, const lean::ConZonotope &theirs) {
-    if (oracle::mode() == oracle::Mode::sound)
-        return oracle::check_enclosed("conZonotope", mine, theirs);
     const ConZonotope their = theirs.nominal();
     const auto [A, b_ineq] = theirs.inequalities();
     const int64_t pe = their.A().shape()[0], n = mine.dim();
-    oracle::check_exact("conZonotope.c", mine.c(), their.c());
-    oracle::check_exact("conZonotope.G", mine.generators(), their.generators());
-    oracle::check_exact("conZonotope.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));
-    oracle::check_exact("conZonotope.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n));
-    oracle::check_exact("conZonotope.-A", -aux_rows(mine.A(), pe, pe + n), aux_rows(A, n, 2 * n));
-    oracle::check_exact("conZonotope.-b", -aux_rows(mine.b(), pe, pe + n),
-                        aux_rows(b_ineq, n, 2 * n));
+    oracle::check("conZonotope.c", mine.c(), their.c());
+    oracle::check("conZonotope.G", mine.generators(), their.generators());
+    oracle::check("conZonotope.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));
+    oracle::check("conZonotope.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n));
+    oracle::check("conZonotope.-A", -aux_rows(mine.A(), pe, pe + n), aux_rows(A, n, 2 * n));
+    oracle::check("conZonotope.-b", -aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, n, 2 * n));
 }
 
 } // namespace

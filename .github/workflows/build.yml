@@ -1,7 +1,8 @@
 # build - configures, builds and tests one preset on one OS (called by ci.yml, merge.yml, nightly.yml)
 #
 # The install commands of the README (the presets) with one addition: no -march=native, because the
-# runners differ in CPU and a build must run on the one that tests it.
+# runners differ in CPU and a build must run on the one that tests it. One build, then one step per
+# ctest label (`labels`), each with its own status; a label the preset has no tests of passes empty.
 
 name: build
 
@@ -36,6 +37,14 @@ on:
         description: also run the lean tests, against the CORALean oracle pinned in scripts/coralean.cmake (Linux)
         type: boolean
         default: false
+      labels:
+        description: the ctest labels to run, one step each (CMakeLists.txt, "tests")
+        type: string
+        default: unit oracle backend-eigen backend-torch gradcheck python example
+      free_disk:
+        description: remove the runner's preinstalled toolchains first (a sanitizer build fills the disk)
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -45,6 +54,9 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: free disk space
+        if: inputs.free_disk
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
       - uses: actions/checkout@v7
       - uses: hendrikmuhs/ccache-action@v1.2.24
         if: runner.os != 'Windows'
@@ -61,15 +73,57 @@ jobs:
           CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
           BUILD_TYPE: ${{ inputs.build_type }}
           CXX_FLAGS: ${{ inputs.cxx_flags }}
-          ORACLE: ${{ inputs.oracle && '-DCORACPP_ORACLE=DOWNLOAD -DCORACPP_ORACLE_UNSOUND=DOWNLOAD' || '' }}
+          ORACLE: ${{ inputs.oracle && '-DCORACPP_ORACLE=DOWNLOAD' || '' }}
         run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS" $ORACLE
-      - run: cmake --build --preset ${{ inputs.preset }}
-      - name: test
+      - name: build
+        id: build
+        run: cmake --build --preset ${{ inputs.preset }}
+      - name: test unit
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' unit ') }}
         env:
           TESTS: ${{ inputs.tests }}
         run: |
-          if [ "$TESTS" = ALL ]; then
-            ctest --preset ${{ inputs.preset }} -j4 --output-on-failure
-          else
-            ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -R "$TESTS"
-          fi
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^unit$' "${filter[@]}"
+      - name: test oracle
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' oracle ') }}
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^oracle$' "${filter[@]}"
+      - name: test backend-eigen
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' backend-eigen ') }}
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^backend-eigen$' "${filter[@]}"
+      - name: test backend-torch
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' backend-torch ') }}
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^backend-torch$' "${filter[@]}"
+      - name: test gradcheck
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' gradcheck ') }}
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^gradcheck$' "${filter[@]}"
+      - name: test python
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' python ') }}
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^python$' "${filter[@]}"
+      - name: test example
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' example ') }}
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^example$' "${filter[@]}"

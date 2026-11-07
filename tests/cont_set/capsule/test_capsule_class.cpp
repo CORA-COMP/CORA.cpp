@@ -4,10 +4,11 @@
 // CORA: contSet/@interval/capsule.m
 // CORA: contSet/@zonotope/capsule.m
 // PROPERTY: contSet/@zonotope/capsule.m
+// PROPERTY: contSet/@interval/capsule.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   07-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -107,6 +108,18 @@ void from_interval(const std::string &b) {
     check(close(batch.generator(), {0, 1.5, 1, 0}, 0), b + ": a batch");
 }
 
+/// Stated property: the capsule of a random box holds the box.
+void holds_the_box(const std::string &b) {
+    Rng rng(29);
+    for (int k = 0; k < 5; ++k) {
+        std::vector<double> c(3), r(3);
+        rng.normal(c.data(), c.size(), 1.0);
+        rng.uniform(r.data(), r.size(), 0.1, 2.0);
+        const Interval box(column(c) - column(r), column(c) + column(r));
+        check(Capsule(box).contains(box), b + ": the box is inside its capsule");
+    }
+}
+
 /// Stated property: the capsule of a zonotope holds its points, for generators fewer and more than
 /// n.
 void from_zonotope(const std::string &b) {
@@ -146,6 +159,7 @@ int main() {
         constructor_forms(b);
         batches(b);
         from_interval(b);
+        holds_the_box(b);
         from_zonotope(b);
     });
     refusals();

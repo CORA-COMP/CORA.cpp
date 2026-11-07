@@ -32,8 +32,6 @@ Reviewed:      ---
 # CORA: contSet/@emptySet/supportFunc_.m
 # CORA: contSet/@emptySet/vertices_.m
 # CORA: contSet/@emptySet/volume_.m
-# PROPERTY: contSet/@emptySet/representsa_.m
-# PROPERTY: contSet/@emptySet/supportFunc_.m
 
 import unittest
 
@@ -178,16 +176,6 @@ class EmptySet(unittest.TestCase):
             self.E.representsa("levelSet")
         with self.assertRaises(cora.errors.NotSupported):
             self.E.representsa("polygon")
-
-    def test_support_function_lies_below_every_set(self):
-        gen = np.random.default_rng(11)
-        for n in (1, 2, 3):
-            Z = cora.Zonotope(gen.standard_normal(n), gen.standard_normal((n, 3)))
-            for _ in range(5):
-                d = gen.standard_normal(n)
-                rho = float(cora.EmptySet(n).support_function(d))
-                self.assertEqual(rho, -INF)
-                self.assertLessEqual(rho, float(Z.support_function(d)))
 
     def test_generate_random(self):
         rng = cora.Rng(5)

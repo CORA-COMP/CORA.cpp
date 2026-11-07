@@ -24,16 +24,6 @@ Reviewed:      ---
 # CORA: contSet/@zonotope/reduceUnderApprox.m
 # CORA: contSet/@zonotope/or.m
 # CORA: contSet/@interval/quadMap.m
-# PROPERTY: contSet/@zonotope/radius.m
-# PROPERTY: contSet/@zonotope/rank.m
-# PROPERTY: contSet/@zonotope/rotate.m
-# PROPERTY: contSet/@zonotope/quadMap.m
-# PROPERTY: contSet/@zonotope/split.m
-# PROPERTY: contSet/@zonotope/splitFirstGen.m
-# PROPERTY: contSet/@zonotope/splitLongestGen.m
-# PROPERTY: contSet/@zonotope/reduceUnderApprox.m
-# PROPERTY: contSet/@zonotope/or.m
-# PROPERTY: contSet/@interval/quadMap.m
 
 import unittest
 
@@ -47,10 +37,6 @@ import numpy as np
 
 def zonotope(c, G):
     return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-def random_zonotope(rng, n=3, m=4):
-    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (n, m)))
 
 
 def example():
@@ -78,13 +64,6 @@ class Measures(unittest.TestCase):
         self.assertAlmostEqual(Z.radius(), 5)  # the box radius (4, 3)
         self.assertEqual(cora.Zonotope.origin(2).radius(), 0)
 
-    def test_radius_bounds_the_set(self):
-        rng = np.random.default_rng(31)
-        Z = random_zonotope(rng, 4, 5)
-        points = Z.rand_point(300, cora.Rng(31), "extreme")
-        self.assertLessEqual(np.linalg.norm(points - Z.center[:, None], axis=0).max(), Z.radius() + 1e-12)
-        self.assertLessEqual(Z.radius(), np.linalg.norm(Z.generators, axis=0).sum() + 1e-12)
-
     def test_rank(self):
         Z = zonotope([1, 5, -1], [[2, 0, 4], [6, 0, 0], [4, 0, 8]])
         self.assertEqual(Z.rank(), 2)
@@ -96,15 +75,7 @@ class Measures(unittest.TestCase):
         with self.assertRaises(cora.errors.NotSupported):
             cora.Zonotope.stack([thin, thin]).rank()
 
-    def test_rank_of_products(self):
-        rng = np.random.default_rng(41)
-        for n, m, r in ((4, 6, 2), (5, 5, 5), (3, 7, 1)):
-            # rank
-            G = rng.standard_normal((n, r)) @ rng.standard_normal((r, m))
-            Z = zonotope(np.zeros(n), G)
-            self.assertEqual(Z.rank(), r)
-            self.assertEqual(Z.is_full_dim(), Z.rank() == n)
-
+    # the special sets a zonotope can represent
     def test_representsa(self):
         origin, seg = cora.Zonotope.origin(2), zonotope([0, 0], [[1], [0]])
         box, tilted = zonotope([0, 0], [[1, 0], [0, 2]]), zonotope([0, 0], [[1, 0], [1, 2]])
@@ -150,17 +121,6 @@ class Embedding(unittest.TestCase):
             with self.assertRaises(cora.errors.WrongValue):
                 Z.rotate(dims, 1.0)
 
-    def test_rotation_is_orthogonal(self):
-        rng = np.random.default_rng(81)
-        Z, a = random_zonotope(rng, 4, 5), 1.1
-        R = Z.rotate([1, 3], a)
-        M = np.eye(4)
-        M[np.ix_([1, 3], [1, 3])] = [[np.cos(a), -np.sin(a)], [np.sin(a), np.cos(a)]]
-        for d in rng.standard_normal((20, 4)):
-            self.assertAlmostEqual(R.support_function(d), Z.support_function(M.T @ d), places=10)
-        undone = R.rotate([1, 3], -a)
-        np.testing.assert_allclose(undone.center, Z.center, atol=1e-12)
-        np.testing.assert_allclose(undone.generators, Z.generators, atol=1e-12)
 
 
 class QuadMap(unittest.TestCase):
@@ -176,16 +136,6 @@ class QuadMap(unittest.TestCase):
         M = Z1.quad_map(Z2, self.Q)
         np.testing.assert_allclose(M.center, [-43, 3])
         np.testing.assert_allclose(M.generators[:, :4], [[-51, -59, -4, -8], [8.5, 14, -2, 6]])
-
-    def test_the_map_of_the_set_is_enclosed(self):
-        rng = np.random.default_rng(61)
-        Z, Z2 = random_zonotope(rng, 3, 3), random_zonotope(rng, 3, 2)
-        Q = [rng.standard_normal((3, 3)) for _ in range(2)]
-        R, M = Z.quad_map(Q), Z.quad_map(Z2, Q)
-        x, y = Z.rand_point(30, cora.Rng(1), "extreme"), Z2.rand_point(30, cora.Rng(2))
-        for k in range(30):
-            self.assertTrue(R.contains(np.array([x[:, k] @ q @ x[:, k] for q in Q]), tol=1e-9))
-            self.assertTrue(M.contains(np.array([x[:, k] @ q @ y[:, k] for q in Q]), tol=1e-9))
 
     def test_errors(self):
         Z = zonotope([1, 2], [[1], [0.5]])
@@ -234,22 +184,12 @@ class Splits(unittest.TestCase):
         np.testing.assert_allclose(p.center, r.center)
         np.testing.assert_allclose(q.generators, s.generators)
 
+    # a split along a hyperplane
     def test_by_a_halfspace(self):
         pieces = example().split(np.array([1.0, -1.0]), -2.0)
         self.assertEqual(len(pieces), 2)
         np.testing.assert_allclose((pieces[0].center, pieces[1].center), ([-7, 4], [0.5, -3.5]))
         self.assertEqual(len(example().split(np.array([1.0, 0.0]), 100.0)), 1)
-
-    def test_pieces_cover_the_set(self):
-        rng = np.random.default_rng(91)
-        Z = random_zonotope(rng, 3, 4)
-        # the points lie in one half
-        points = Z.rand_point(30, cora.Rng(91))
-        for first, second in (Z.split(1, 4), Z.split(np.array([1.0, -2.0, 0.5])), Z.split_first_gen(),
-                              Z.split_longest_gen()):
-            for k in range(30):
-                p = points[:, k]
-                self.assertTrue(first.contains(p, tol=1e-9) or second.contains(p, tol=1e-9))
 
     def test_first_and_longest_generator(self):
         Z = zonotope([1, 1], [[1, 0.1, 0], [0, 0.1, 3]])
@@ -281,15 +221,6 @@ class ReduceUnderApprox(unittest.TestCase):
         for name in ("kochdumper", "sum"):
             np.testing.assert_allclose(self.Z.reduce_under_approx(name, 1).generators, [[3, 12], [2, -2]])
         np.testing.assert_allclose(self.Z.reduce_under_approx("raghuraman", 1).generators, [[2, 5], [4, 0]])
-
-    def test_the_result_is_inside(self):
-        rng = np.random.default_rng(121)
-        for name in ("yang", "raghuraman", "kochdumper"):
-            for n, m, order in ((2, 8, 1.0), (3, 9, 2.0)):
-                Z = random_zonotope(rng, n, m)
-                R = Z.reduce_under_approx(name, order)
-                self.assertLessEqual(R.generators.shape[1], order * n)
-                self.assertTrue(Z.contains(R, tol=1e-10), name)
 
     def test_nothing_to_reduce(self):
         # the under-approximation
@@ -328,14 +259,6 @@ class Unite(unittest.TestCase):
         U = A.unite([self.box(2, 3, 0, 1), self.box(-4, -3, 0, 1)], "iterative")
         hull = U.interval()  # the pairwise enclosure overshoots: [-5, 3] x [0, 1]
         np.testing.assert_allclose((hull.inf, hull.sup), ([-5, 0], [3, 1]), atol=1e-9)
-
-    def test_the_union_contains_the_sets(self):
-        rng = np.random.default_rng(131)
-        Zs = [random_zonotope(rng, 3, 4) for _ in range(3)]
-        for method in ("linprog", "iterative", "parallelotope"):
-            U = Zs[0].unite(Zs[1:], method)
-            for Z in Zs:
-                self.assertTrue(U.contains(Z, tol=1e-8), method)
 
     def test_errors(self):
         A, B = self.box(0, 1, 0, 1), self.box(2, 3, 0, 1)

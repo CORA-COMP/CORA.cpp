@@ -655,7 +655,7 @@ const Tensor::Backend &backend(const std::string &spec);
 const Tensor::Backend &backend();
 
 /// The process default for threads without a BackendScope: initially $CORACPP_BACKEND, else
-/// libtorch if built in, else Eigen.
+/// Eigen in every build (libtorch only when chosen).
 void set_default_backend(const std::string &spec);
 
 /// Makes new tensors on the backend of `spec` on this thread until the scope ends; existing

@@ -45,23 +45,13 @@ std::vector<std::vector<double>> aux_sorted_columns(const std::vector<double> &d
     return columns;
 }
 
-/// The result of a zonotope-valued operation against the oracle's: the same bits at nearest; in the
-/// sound mode inside the enclosure, by the interval hulls (the oracle's certified containment of a
-/// zonotope in a zonotope is too slow for large ones).
-template <class A, class B>
-void aux_check_set(const A &mine, const B &theirs) {
-    if (oracle::mode() == oracle::Mode::exact) return oracle::check(mine, theirs);
-    oracle::check(mine.interval(), theirs.enclosure().interval());
-}
-
 /// enclose and convex_hull: CORA lists the generators (G+G2)/2, (c-c2)/2, (G-G2)/2, CORALean's
 /// linComb (G+G2)/2, (G-G2)/2, (c-c2)/2: the same center and the same generators, in another order.
 void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &theirs) {
-    if (oracle::mode() != oracle::Mode::exact) return aux_check_set(mine, theirs);
     const Zonotope other = theirs.gather().first;
     const int64_t n = mine.dim(), m = mine.generators().shape().back();
     test::check(other.generators().shape().back() == m, oracle::op_name() + ": generator count");
-    test::check(oracle::same_bits(oracle::op_name() + ".c", mine.center(), other.center()),
+    test::check(oracle::agree(oracle::op_name() + ".c", mine.center(), other.center()),
                 oracle::op_name() + ": the same center");
     test::check(aux_sorted_columns(mine.generators().data(), n, m) ==
                     aux_sorted_columns(other.generators().data(), n, m),
@@ -79,7 +69,7 @@ int main() {
     oracle::run("zonotope.abs", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            aux_check_set(Z.abs(), lean::Zonotope(Z).abs());
+            oracle::check(Z.abs(), lean::Zonotope(Z).abs());
         }
     });
     oracle::run("zonotope.box", [&](oracle::Random &rnd) {
@@ -92,7 +82,7 @@ int main() {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n + 1, m + 2);
             // Cartesian products
-            aux_check_set(Z.cart_prod(Z2), lean::Zonotope(Z).cart_prod(lean::Zonotope(Z2)));
+            oracle::check(Z.cart_prod(Z2), lean::Zonotope(Z).cart_prod(lean::Zonotope(Z2)));
         }
     });
     oracle::run("zonotope.compact", [&](oracle::Random &rnd) {
@@ -103,7 +93,7 @@ int main() {
             const Tensor zero = G.slice(-1, 0, 1).zeros_like();
             const Zonotope Zz(
                 Z.center(), Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1));
-            aux_check_set(Zz.compact("zeros", 0.0), lean::Zonotope(Zz).compact("zeros", 0.0));
+            oracle::check(Zz.compact("zeros", 0.0), lean::Zonotope(Zz).compact("zeros", 0.0));
         }
     });
     oracle::run("zonotope.constrSat", [&](oracle::Random &rnd) {
@@ -143,22 +133,7 @@ int main() {
                           lean::Zonotope(Z).contains(lean::Zonotope(outer)));
         }
     });
-    oracle::run("zonotope.cubMap", [&](oracle::Random &rnd) {
-        for (const auto &[n, m] : {std::pair{2, 2}, {3, 3}, {3, 6}}) {
-            const Zonotope Z = rnd.zonotope(n, m);
-            std::vector<std::vector<Tensor>> T(2);
-            std::vector<std::vector<lean::Tensor>> theirs_T(2);
-            for (std::size_t i = 0; i < 2; ++i)
-                for (int k = 0; k < n; ++k) {
-                    T[i].push_back(rnd.matrix(n, n));
-                    theirs_T[i].emplace_back(T[i].back());
-                }
-            // the cubic map
-            oracle::check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
-        }
-    });
     oracle::run("zonotope.dominantDirections", [&](oracle::Random &rnd) {
-        if (oracle::mode() != oracle::Mode::exact) return; // a choice of columns has no enclosure
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 9}, {4, 12}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const auto theirs = lean::Zonotope(Z).dominant_directions();

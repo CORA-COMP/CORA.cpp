@@ -28,28 +28,6 @@ namespace oracle = test::oracle;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-/// The result of a zonotope-valued operation against the oracle's: the same bits at nearest; in
-/// the sound mode inside the enclosure, by the interval hulls.
-template <class A, class B>
-void aux_check_set(const A &mine, const B &theirs) {
-    if (oracle::mode() == oracle::Mode::exact) return oracle::check(mine, theirs);
-    oracle::check(mine.interval(), theirs.enclosure().interval());
-}
-
-/// A number the oracle bounds from above (it rounds up): CORA.cpp's, computed in nearest
-/// arithmetic, may exceed it by a few ulp only.
-void aux_check_bound(double mine, double bound) {
-    test::check(mine <= bound * (1 + 1e-12) + 1e-300,
-                oracle::op_name() + ": " + std::to_string(mine) + " exceeds the bound " +
-                    std::to_string(bound));
-}
-
-} // namespace
-
 
 // ===========================================  MAIN  =========================================== //
 
@@ -61,7 +39,7 @@ int main() {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m + 2);
             for (const int k : {0, 2, m + 5})
-                aux_check_set(Z.exact_plus(Z2, k),
+                oracle::check(Z.exact_plus(Z2, k),
                               lean::Zonotope(Z).exact_plus(lean::Zonotope(Z2), k));
         }
     });
@@ -97,10 +75,7 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             // the oracle returns the square of the bound, CORA.cpp's sum of squares: roots agree
             const double bound = std::sqrt(lean::Zonotope(Z).norm());
-            if (oracle::mode() == oracle::Mode::exact)
-                oracle::check(Z.norm().item(), bound);
-            else
-                aux_check_bound(Z.norm().item(), bound);
+            oracle::check(Z.norm().item(), bound);
         }
     });
 
@@ -109,7 +84,7 @@ int main() {
             const Tensor points = rnd.matrix(n, 20);
             // the oracle takes the orthogonal frame; both use the one of the identity here
             const Tensor U = points.eye_like(n);
-            aux_check_set(Zonotope::enclose_points(points, U),
+            oracle::check(Zonotope::enclose_points(points, U),
                           lean::Zonotope::enclose_points(points, U, "stursberg"));
         }
     });
@@ -126,14 +101,14 @@ int main() {
             const auto reference = lean::Zonotope::enclose_many(theirs, direction);
             test::check(reference.has_value(), "encloseMany: the oracle found a box");
             // the oracle reduces to order 1 with its own Girard and takes a boxed inverse
-            if (reference) aux_check_set(Zonotope::enclose_many(Zs, direction).first, *reference);
+            if (reference) oracle::check(Zonotope::enclose_many(Zs, direction).first, *reference);
         }
     });
 
     oracle::run("zonotope.lift", [&](oracle::Random &rnd) {
         const Zonotope Z = rnd.zonotope(4, 6);
         const std::vector<int64_t> dims{1, 2, 3, 0};
-        aux_check_set(Z.lift(4, dims), lean::Zonotope(Z).lift(4, dims));
+        oracle::check(Z.lift(4, dims), lean::Zonotope(Z).lift(4, dims));
     });
     return test::finish("lean zonotope measures");
 }

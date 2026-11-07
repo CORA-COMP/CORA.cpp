@@ -2,7 +2,7 @@
 //
 // The oracle lists the 2^h corner matrices with repeats; CORA.cpp's list has each once, in the
 // ascending order of the stacked matrices (MATLAB's unique). The oracle's list, sorted and without
-// repeats, is the same bits (the sound mode: inside the corner plus its error box). The oracle adds
+// repeats, is the same bits. The oracle adds
 // the signed generators from the last to the first, then the center.
 //
 // ORACLE: matrixSet/@matZonotope/vertices.m
@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstring>
 #include <tuple>
 
 using namespace cora;
@@ -28,14 +27,6 @@ namespace oracle = test::oracle;
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-/// Whether two doubles have the same bits (NaN and the sign of zero included).
-bool aux_same_bits(double a, double b) {
-    std::uint64_t x = 0, y = 0;
-    std::memcpy(&x, &a, sizeof x);
-    std::memcpy(&y, &b, sizeof y);
-    return x == y;
-}
 
 /// The matrices of the oracle (row-major values), sorted by the entries stacked column by column
 /// and without repeats.
@@ -69,19 +60,14 @@ int main() {
             const MatZonotope A = rnd.mat_zonotope(m, n, h);
             const lean::MatrixVertices reply = lean::MatZonotope(A).vertices();
             const std::vector<std::vector<double>> theirs = aux_sorted(reply, m, n);
+            // both lists as one row of entries per corner matrix
             const std::vector<double> mine = A.vertices()[0].data();
-            const std::size_t entries = std::size_t(m) * std::size_t(n);
-            bool same = mine.size() == theirs.size() * entries;
-            // bit for bit on the lean backend; sound: inside the oracle's corner plus its error box
-            const bool exact = oracle::mode() == oracle::Mode::exact;
-            const auto [low, high] = reply.E.gather();
-            const std::vector<double> lo = low.data(), hi = high.data();
-            for (std::size_t k = 0; same && k < theirs.size(); ++k)
-                for (std::size_t e = 0; same && e < entries; ++e) {
-                    const double a = mine[k * entries + e], b = theirs[k][e];
-                    same = exact ? aux_same_bits(a, b) : (b + lo[e] <= a && a <= b + hi[e]);
-                }
-            test::check(same, "matZonotope.vertices: the corner matrices, as the oracle's");
+            std::vector<double> stacked;
+            for (const std::vector<double> &corner : theirs)
+                stacked.insert(stacked.end(), corner.begin(), corner.end());
+            const int64_t entries = int64_t(m) * n;
+            oracle::check(Tensor::from_data(mine, {int64_t(mine.size()) / entries, entries}),
+                          Tensor::from_data(stacked, {int64_t(theirs.size()), entries}));
         }
     });
     return test::finish("lean mat zonotope vertices");

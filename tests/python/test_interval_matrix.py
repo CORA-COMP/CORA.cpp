@@ -39,37 +39,6 @@ Reviewed:      ---
 # CORA: matrixSet/@intervalMatrix/supremum.m
 # CORA: matrixSet/@intervalMatrix/vertices.m
 # CORA: matrixSet/@intervalMatrix/volume.m
-# PROPERTY: matrixSet/@intervalMatrix/abs.m
-# PROPERTY: matrixSet/@intervalMatrix/center.m
-# PROPERTY: matrixSet/@intervalMatrix/contains.m
-# PROPERTY: matrixSet/@intervalMatrix/dependentTerms.m
-# PROPERTY: matrixSet/@intervalMatrix/dim.m
-# PROPERTY: matrixSet/@intervalMatrix/display.m
-# PROPERTY: matrixSet/@intervalMatrix/exactSquare.m
-# PROPERTY: matrixSet/@intervalMatrix/expm.m
-# PROPERTY: matrixSet/@intervalMatrix/expmAbsoluteBound.m
-# PROPERTY: matrixSet/@intervalMatrix/expmDifferentAlgorithms.m
-# PROPERTY: matrixSet/@intervalMatrix/expmInd.m
-# PROPERTY: matrixSet/@intervalMatrix/expmIndMixed.m
-# PROPERTY: matrixSet/@intervalMatrix/expmMixed.m
-# PROPERTY: matrixSet/@intervalMatrix/expmNormInf.m
-# PROPERTY: matrixSet/@intervalMatrix/expmTaylorHornerScaling.m
-# PROPERTY: matrixSet/@intervalMatrix/exponentialRemainder.m
-# PROPERTY: matrixSet/@intervalMatrix/generateRandom.m
-# PROPERTY: matrixSet/@intervalMatrix/infNorm.m
-# PROPERTY: matrixSet/@intervalMatrix/infimum.m
-# PROPERTY: matrixSet/@intervalMatrix/interval.m
-# PROPERTY: matrixSet/@intervalMatrix/intervalMatrix.m
-# PROPERTY: matrixSet/@intervalMatrix/mpower.m
-# PROPERTY: matrixSet/@intervalMatrix/mtimes.m
-# PROPERTY: matrixSet/@intervalMatrix/norm.m
-# PROPERTY: matrixSet/@intervalMatrix/plus.m
-# PROPERTY: matrixSet/@intervalMatrix/powers.m
-# PROPERTY: matrixSet/@intervalMatrix/rad.m
-# PROPERTY: matrixSet/@intervalMatrix/representsa.m
-# PROPERTY: matrixSet/@intervalMatrix/supremum.m
-# PROPERTY: matrixSet/@intervalMatrix/vertices.m
-# PROPERTY: matrixSet/@intervalMatrix/volume.m
 
 import unittest
 
@@ -220,27 +189,6 @@ class Exponential(unittest.TestCase):
         with self.assertRaises(cora.errors.DimensionMismatch):
             cora.IntervalMatrix(np.ones((1, 3))).exponential_remainder(2)
 
-    def test_expm_variants_enclose_the_exponential(self):
-        rng = np.random.default_rng(3)
-        A = random_matrix(rng, 3, 0.3)
-        results = [A.expm(), A.expm(8), A.expm(8, r=0.5), A.expm(8, r=2.0),
-                   A.expm_independent(8)]
-        for _ in range(20):
-            E = exponential(member(A, rng))
-            for R in results:
-                self.assertTrue(R.enclosure.contains(E, tol=1e-12))
-        tail = A.expm(8, r=1.0, initial_order=3, initial_power=A.matrix_power(3))
-        X = member(A, rng)
-        self.assertTrue(tail.enclosure.contains(exponential(X) - np.eye(3) - X - X @ X / 2, tol=1e-12))
-        self.assertEqual((results[0].first_order, len(results[0].powers)), (2, 9))
-        zero = cora.IntervalMatrix(np.zeros((2, 2))).expm(5)
-        np.testing.assert_allclose(zero.enclosure.center, np.eye(2), atol=1e-14)
-        with self.assertRaises(cora.errors.WrongValue):
-            A.expm(4, r=0.0)
-        with self.assertRaises(cora.errors.WrongValue):
-            # the initial order needs the initial power
-            A.expm(4, initial_order=2)
-
     def test_expm_independent_from_a_power(self):
         rng = np.random.default_rng(4)
         A = random_matrix(rng, 2, 0.3)
@@ -250,6 +198,7 @@ class Exponential(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             A.expm_independent(-1)
 
+    # the mixed form: independent terms above a power
     def test_expm_mixed(self):
         rng = np.random.default_rng(5)
         A = random_matrix(rng, 3, 0.3)

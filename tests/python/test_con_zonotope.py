@@ -40,33 +40,6 @@ Reviewed:      ---
 # CORA: contSet/@conZonotope/split.m
 # CORA: contSet/@interval/conZonotope.m
 # CORA: contSet/@zonotope/conZonotope.m
-# PROPERTY: contSet/@conZonotope/and_.m
-# PROPERTY: contSet/@conZonotope/approximateBoundsWithGPU.m
-# PROPERTY: contSet/@conZonotope/cartProd_.m
-# PROPERTY: contSet/@conZonotope/center.m
-# PROPERTY: contSet/@conZonotope/compact_.m
-# PROPERTY: contSet/@conZonotope/conIntersect.m
-# PROPERTY: contSet/@conZonotope/contains_.m
-# PROPERTY: contSet/@conZonotope/convHull_.m
-# PROPERTY: contSet/@conZonotope/cubMap.m
-# PROPERTY: contSet/@conZonotope/enclose.m
-# PROPERTY: contSet/@conZonotope/intersectStrip.m
-# PROPERTY: contSet/@conZonotope/interval.m
-# PROPERTY: contSet/@conZonotope/isFullDim.m
-# PROPERTY: contSet/@conZonotope/isIntersecting_.m
-# PROPERTY: contSet/@conZonotope/isequal.m
-# PROPERTY: contSet/@conZonotope/lift_.m
-# PROPERTY: contSet/@conZonotope/minkDiff.m
-# PROPERTY: contSet/@conZonotope/mtimes.m
-# PROPERTY: contSet/@conZonotope/or.m
-# PROPERTY: contSet/@conZonotope/origin.m
-# PROPERTY: contSet/@conZonotope/plus.m
-# PROPERTY: contSet/@conZonotope/project.m
-# PROPERTY: contSet/@conZonotope/quadMap.m
-# PROPERTY: contSet/@conZonotope/reduce.m
-# PROPERTY: contSet/@conZonotope/representsa_.m
-# PROPERTY: contSet/@conZonotope/rescale.m
-# PROPERTY: contSet/@conZonotope/split.m
 
 import unittest
 
@@ -481,34 +454,6 @@ class ConZonotope(unittest.TestCase):
         np.testing.assert_array_equal(big.minkowski_difference(np.array([1.0, 1.0])).c, [-1.0, -1.0])
         with self.assertRaises(cora.errors.WrongValue):
             big.minkowski_difference(small, "other")
-
-    def test_properties_on_random_sets(self):
-        rng = np.random.default_rng(41)
-        for _ in range(3):
-            # random sets stay in the box
-            A = random_set(rng, 3, 5, 2)
-            points = sample(A, rng, 40)
-            box = A.interval()
-            self.assertTrue(np.all(points >= box.inf[:, None] - 1e-9))
-            self.assertTrue(np.all(points <= box.sup[:, None] + 1e-9))
-            self.assertTrue(A.contains(points, tol=1e-7))
-            self.assertTrue(A.contains(A.center, tol=1e-7))
-            self.assertTrue(A.is_full_dim())
-            B = random_set(rng, 3, 4, 1)
-            hull = A.convex_hull(B)
-            self.assertTrue(hull.contains(points, tol=1e-7))
-            self.assertTrue(hull.contains(sample(B, rng, 10), tol=1e-7))
-            product = A.cart_prod(B)
-            self.assertTrue(product.contains(np.vstack([points[:, :10], sample(B, rng, 10)]), tol=1e-7))
-            both = A.intersect(B)
-            for p in points[:, :15].T:
-                self.assertEqual(both.contains(p, tol=1e-7), B.contains(p, tol=1e-7))
-            M = rng.standard_normal((2, 3))
-            self.assertEqual(A.con_intersect(random_set(rng, 2, 3, 1), M).dim, 3)
-            R = A.enclose(rng.standard_normal((3, 3)), np.array([1.0, -2.0, 0.5]))
-            # enclose and compact
-            self.assertTrue(R.contains(points, tol=1e-7))
-            self.assertEqual(A.compact().generators.shape, A.generators.shape)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@
 // CORA authors: Victor Gassmann
 // Authors:       Claude Sonnet 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   07-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -28,12 +28,11 @@ namespace cora {
 
 Ellipsoid Ellipsoid::linear_map(const Tensor &M) const {
     detail::Entry entry;
-    CORA_CHECK(M.defined() && M.ndim() >= 2 && M.size(M.ndim() - 1) == dim(),
-               Error::dimension_mismatch, [&] {
-                   return "linear_map: the matrix needs " + std::to_string(dim()) +
-                          " columns (the dimension of E), got the shape " + shape_text(M.shape());
-               });
-    if (priv_is_empty(*this)) return Ellipsoid::empty(M.shape()[M.ndim() - 2]);
+    CORA_CHECK(M.defined() && M.ndim() >= 2 && M.size(-1) == dim(), Error::dimension_mismatch, [&] {
+        return "linear_map: the matrix needs " + std::to_string(dim()) +
+               " columns (the dimension of E), got the shape " + shape_text(M.shape());
+    });
+    if (priv_is_empty(*this)) return Ellipsoid::empty(M.size(-2));
     return {priv_congruence(M, Q_), M.matmul(q_), tol_};
 }
 

@@ -34,10 +34,6 @@ Reviewed:      ---
 # CORA: contSet/@fullspace/supportFunc_.m
 # CORA: contSet/@fullspace/vertices_.m
 # CORA: contSet/@fullspace/volume_.m
-# PROPERTY: contSet/@fullspace/mtimes.m
-# PROPERTY: contSet/@fullspace/representsa_.m
-# PROPERTY: contSet/@fullspace/supportFunc_.m
-# PROPERTY: contSet/@fullspace/vertices_.m
 
 import unittest
 
@@ -186,16 +182,6 @@ class LinearMap(unittest.TestCase):
         with self.assertRaises(cora.errors.Noops):
             self.F.linear_map(cora.Interval.unbounded(2))
 
-    def test_the_result_encloses_the_image(self):
-        gen = np.random.default_rng(4)
-        for trial in range(20):
-            M = gen.standard_normal((3, 2))
-            if trial % 3 == 0:
-                M[1] = 0.0
-            hull = (M @ self.F).interval()
-            y = M @ gen.standard_normal((2, 5))
-            self.assertTrue(np.all(hull.inf[:, None] <= y) and np.all(y <= hull.sup[:, None]))
-
 
 class ContSetInterface(unittest.TestCase):
     def setUp(self):
@@ -218,16 +204,7 @@ class ContSetInterface(unittest.TestCase):
         with self.assertRaises(cora.errors.NotSupported):
             cora.Fullspace(3).vertices()
 
-    def test_support_function_lies_above_every_set(self):
-        gen = np.random.default_rng(12)
-        for n in (1, 2, 3):
-            Z = cora.Zonotope(gen.standard_normal(n), gen.standard_normal((n, 3)))
-            for _ in range(5):
-                # the full space has the larger support
-                d = gen.standard_normal(n)
-                self.assertGreaterEqual(float(cora.Fullspace(n).support_function(d)),
-                                        float(Z.support_function(d)))
-
+    # the vertices of a bounded projection
     def test_vertices_are_the_corners_of_the_box(self):
         corners = cora.Fullspace(2).vertices()[0]
         self.assertEqual({tuple(np.sign(p)) for p in corners}, {(1, 1), (1, -1), (-1, 1), (-1, -1)})

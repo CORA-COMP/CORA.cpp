@@ -182,11 +182,22 @@ class Checker(unittest.TestCase):
         write(self.root, "tests/global/oracle/test_lean_plus_bound.cpp", ORACLE_TEST)
         self.assert_fails("an ORACLE test is bit-exact at nearest")
 
+    def test_a_tolerance_test_against_the_oracle_is_a_property(self):
+        (self.root / "tests/global/oracle/test_lean_plus.cpp").unlink()
+        # a CORA tag in a test *_agreement of an oracle folder: not bit-exact, so property
+        write(self.root, "tests/global/oracle/test_lean_plus_agreement.cpp",
+              ORACLE_TEST.replace("// ORACLE:", "// CORA:"))
+        # the drop from oracle and the debt it leaves are accepted, as a pull request would
+        cov.run(self.root, check=False, accept_drop=["contSet/zonotope/plus"], accept_debt=True)
+        rows = json.loads((self.root / "coverage/status.json").read_text())["rows"]
+        self.assertEqual(rows["contSet/zonotope/plus"], "property")
+
     def test_an_implemented_row_is_not_out_of_scope(self):
         write(self.root, "coverage/out-of-scope.md",
               "| Row | Reason |\n|---|---|\n| `contSet/zonotope/plus` | not needed |\n")
         self.assert_fails("`contSet/zonotope/plus` is implemented")
 
+    # the ledger of out-of-scope rows
     def test_a_ledger_row_needs_a_reason_and_a_cora_row(self):
         write(self.root, "coverage/out-of-scope.md",
               "| Row | Reason |\n|---|---|\n| `contSet/zonotope/center` | |\n| `contSet/zonotope/x` | r |\n")

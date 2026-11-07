@@ -28,8 +28,8 @@ int main() {
             for (const double r : {1.0, 0.5, 0.125}) {
                 const auto [sq, H] = A.dependent_terms(r);
                 const auto [lean_sq, lean_H] = L.dependent_terms(r);
-                test::oracle::check_rebuilt(sq, lean_sq);
-                test::oracle::check_rebuilt(H, lean_H);
+                test::oracle::check(sq, lean_sq);
+                test::oracle::check(H, lean_H);
             }
         }
     });

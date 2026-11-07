@@ -221,9 +221,14 @@ an oracle request and reads its response.
 - `Reply::get<T>(key)` decodes a result; a certified answer is `Certified{value, proved}`.
 - A method of `lean::Interval` or `lean::Zonotope` is one line of `ask`, so all ops share the
   encoders, and Python binds them with no logic of its own.
-- The tests share one helper (`tests/global/oracle/oracle_testing.h`, `tests/python/oracle_testing.py`):
-  seeded operands, an exact and an enclosed check.
+- The tests share one helper (`tests/global/oracle/oracle_testing.h`): seeded operands, the lean
+  backend bit for bit against the oracle at `nearest`, and the same body on every other backend
+  within the repository tolerance. CORA.cpp certifies no floating-point enclosures; CORALean does.
 - Files: `include/cora/global/oracle/`, `src/global/oracle/`.
+
+**Test suites.** Every ctest test has one label of its kind, from its folder or name (`CMakeLists.txt`,
+`cora_test_label`): `unit`, `oracle`, `backend-eigen` and `backend-torch` (an oracle test's body on that
+backend), `gradcheck` (`*_torch`), `python`, `example`, `competition`. CI runs each label as a step of its own.
 
 **Pull requests.** CI has three tiers (`.github/workflows/`, CONTRIBUTING.md, "CI"): the affected tests on every push to a pull request, every test before a merge, the full matrix nightly.
 Work happens on a branch, which reaches `main` through a reviewed pull request.

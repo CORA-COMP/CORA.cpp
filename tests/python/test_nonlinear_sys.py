@@ -90,6 +90,9 @@ class Simulate(unittest.TestCase):
 
 
 class ReachSet(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
+
     def test_simulations_stay_in_the_enclosures(self):
         R = van_der_pol().reach(start(), time_step=0.005, t_final=1.0)
         # random simulations stay in the reachable sets

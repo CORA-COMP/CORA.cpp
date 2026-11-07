@@ -91,8 +91,8 @@ Polytope aux_sorted(const Polytope &P) {
 void aux_check_vertices(const std::string &what, const Polytope &mine,
                         const lean::Polytope &theirs) {
     if (!theirs.exact()) return;
-    test::check(oracle::same_bits(what, aux_sorted(aux_extreme(mine)),
-                                  lean::Polytope(aux_sorted(aux_extreme(theirs.gather())))),
+    test::check(oracle::agree(what, aux_sorted(aux_extreme(mine)),
+                              lean::Polytope(aux_sorted(aux_extreme(theirs.gather())))),
                 what + ": the extreme vertices of the oracle's list");
 }
 

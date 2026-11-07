@@ -53,18 +53,9 @@ namespace oracle = test::oracle;
 
 namespace {
 
-/// A zonotope-valued result against the oracle's: the same bits at nearest; in the sound mode
-/// inside the enclosure, by the interval hulls.
-template <class A, class B>
-void aux_check_set(const A &mine, const B &theirs) {
-    if (oracle::mode() == oracle::Mode::exact) return oracle::check(mine, theirs);
-    oracle::check(mine.interval(), theirs.enclosure().interval());
-}
-
 /// A projection onto a hyperplane: at nearest the center and the first m generators are
-/// CORA.cpp's, bit for bit, and the others are zero; in the sound mode the hulls agree to 1e-13.
+/// CORA.cpp's, bit for bit, and the others are zero.
 void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
-    if (oracle::mode() == oracle::Mode::sound) return oracle::check_hull(mine, theirs, 1e-13);
     const Zonotope other = theirs.gather().first;
     const int64_t m = mine.generators().shape().back(), total = other.generators().shape().back();
     test::check(total >= m, "projectOnHyperplane: the generators of the set stay");
@@ -75,19 +66,9 @@ void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
                 "projectOnHyperplane: the other generators are zero at nearest");
 }
 
-/// A projection of a box: the same bits at nearest. In the sound mode the oracle encloses the real
-/// image, and CORA.cpp's sums, rounded to nearest in the order of the backend, may leave it by an
-/// ulp or two, so the bounds agree to a relative 1e-14.
+/// A projection of a box: the same bits at nearest.
 void aux_check_projected(const Interval &mine, const lean::Interval &theirs) {
-    if (oracle::mode() == oracle::Mode::exact) return oracle::check(mine, theirs);
-    const auto [inf, sup] = theirs.gather();
-    bool ok = true;
-    for (const auto &[a, b] : {std::pair{mine.inf(), inf}, {mine.sup(), sup}}) {
-        const std::vector<double> x = a.data(), y = b.data();
-        for (std::size_t i = 0; i < x.size(); ++i)
-            ok = ok && std::abs(x[i] - y[i]) <= 1e-14 * (1 + std::abs(y[i]));
-    }
-    test::check(ok, oracle::op_name() + ": the bounds of the oracle's projection");
+    oracle::check(mine, theirs);
 }
 
 const ContSet &aux_set(const Interval &I) { return I; }
@@ -139,7 +120,7 @@ int main() {
     oracle::run("isFullDim", [&](oracle::Random &rnd) {
         const Interval I = rnd.box(4);
         oracle::check(aux_set(I).is_full_dim(0.0), lean::Interval(I).is_full_dim(0.0));
-        if (oracle::mode() == oracle::Mode::sound) {
+        if (oracle::nearest_is_strict()) {
             // a flat box: the first coordinate has no width
             const Tensor &lo = I.inf();
             const Tensor hi = Tensor::concat({lo.slice(-2, 0, 1), I.sup().slice(-2, 1, 4)}, -2);
@@ -165,7 +146,7 @@ int main() {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             for (const int order : {1, 2})
-                aux_check_set(aux_set(Z).reduce(order).as<Zonotope>(),
+                oracle::check(aux_set(Z).reduce(order).as<Zonotope>(),
                               lean::Zonotope(Z).reduce(order));
         }
     });
@@ -177,7 +158,7 @@ int main() {
             const Interval I = rnd.box(n);
             oracle::check(aux_set(I).linear_map(M).as<Interval>(), lean::Interval(I).linear_map(M));
             const Zonotope Z = rnd.zonotope(n, m);
-            aux_check_set(aux_set(Z).linear_map(M).as<Zonotope>(), lean::Zonotope(Z).linear_map(M));
+            oracle::check(aux_set(Z).linear_map(M).as<Zonotope>(), lean::Zonotope(Z).linear_map(M));
         }
     });
 
@@ -204,11 +185,11 @@ int main() {
         for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             for (const double factor : {0.0, 0.5, 1.0, 2.5})
-                aux_check_set(aux_set(Z).enlarge(factor).as<Zonotope>(),
+                oracle::check(aux_set(Z).enlarge(factor).as<Zonotope>(),
                               lean::Zonotope(Z).enlarge(factor));
             // a factor per coordinate
             const Tensor column = rnd.vector(n).abs();
-            aux_check_set(aux_set(Z).enlarge(column).as<Zonotope>(),
+            oracle::check(aux_set(Z).enlarge(column).as<Zonotope>(),
                           lean::Zonotope(Z).enlarge(column));
         }
     });
@@ -217,7 +198,7 @@ int main() {
         for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor p = rnd.vector(n);
-            aux_check_set(aux_set(Z).minus(p).as<Zonotope>(), lean::Zonotope(Z).minus(p));
+            oracle::check(aux_set(Z).minus(p).as<Zonotope>(), lean::Zonotope(Z).minus(p));
         }
     });
 
@@ -244,12 +225,7 @@ int main() {
             const Interval I = rnd.box(n), S = I.enlarge(0.3);
             const Interval R = aux_set(I).minkowski_difference(S).as<Interval>();
             const lean::Interval O = lean::Interval(I).mink_diff(lean::Interval(S));
-            if (oracle::mode() == oracle::Mode::exact) {
-                oracle::check_exact("interval.minkDiff", R, O);
-            } else {
-                const auto [inf, sup] = O.gather();
-                oracle::check_enclosed("interval.minkDiff", Interval(inf, sup), lean::Interval(R));
-            }
+            oracle::check("interval.minkDiff", R, O);
         }
     });
 
@@ -280,7 +256,7 @@ int main() {
             oracle::check(aux_set(I).project_high_dim(2 * n + 1, proj).as<Interval>(),
                           lean::Interval(I).project_high_dim(2 * n + 1, proj));
             const Zonotope Z = rnd.zonotope(n, 2 * n);
-            aux_check_set(aux_set(Z).project_high_dim(2 * n + 1, proj).as<Zonotope>(),
+            oracle::check(aux_set(Z).project_high_dim(2 * n + 1, proj).as<Zonotope>(),
                           lean::Zonotope(Z).project_high_dim(2 * n + 1, proj));
         }
     });
@@ -297,7 +273,7 @@ int main() {
                 std::vector<int64_t> dims;
                 for (int64_t d = blocks[k][0]; d <= blocks[k][1]; ++d) dims.push_back(d);
                 oracle::check(parts[k].as<Interval>(), lean::Interval(I).project(dims));
-                aux_check_set(zparts[k].as<Zonotope>(), lean::Zonotope(Z).project(dims));
+                oracle::check(zparts[k].as<Zonotope>(), lean::Zonotope(Z).project(dims));
             }
         }
     });
@@ -364,7 +340,7 @@ int main() {
             oracle::check(aux_set(I).uminus().as<Interval>(), lean::Interval(I).uminus());
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor M = rnd.vector(n).eye_like(n) * -1.0;
-            aux_check_set(aux_set(Z).uminus().as<Zonotope>(), lean::Zonotope(Z).linear_map(M));
+            oracle::check(aux_set(Z).uminus().as<Zonotope>(), lean::Zonotope(Z).linear_map(M));
         }
     });
 
@@ -383,7 +359,7 @@ int main() {
             oracle::check(aux_set(I).times(f).as<Interval>(),
                           lean::Interval(I).times(lean::Interval(Interval(f, f))));
             const Zonotope Z = rnd.zonotope(n, m);
-            aux_check_set(aux_set(Z).times(f).as<Zonotope>(),
+            oracle::check(aux_set(Z).times(f).as<Zonotope>(),
                           lean::Zonotope(Z).linear_map(f.diag()));
         }
     });

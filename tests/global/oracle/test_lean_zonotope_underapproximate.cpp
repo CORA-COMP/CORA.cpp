@@ -59,9 +59,8 @@ int main() {
                 // vertices of the under-approximation
                 for (int side = 0; side < 2; ++side)
                     if (vertices[side] && ++compared)
-                        oracle::check_exact(oracle::op_name(),
-                                            V.slice(-1, 2 * k + side, 2 * k + side + 1),
-                                            *vertices[side]);
+                        oracle::check(oracle::op_name(),
+                                      V.slice(-1, 2 * k + side, 2 * k + side + 1), *vertices[side]);
             }
         }
         test::check(compared > 0, "underapproximate: the oracle certifies some vertices");
