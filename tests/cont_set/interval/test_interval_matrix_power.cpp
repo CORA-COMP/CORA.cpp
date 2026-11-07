@@ -75,6 +75,18 @@ void matrix_power_of_points_and_samples(const std::string &b) {
     check(inside, b + ": the cube of a member is in the result");
 }
 
+/// The sums of a product are nested to the right on every backend, as CORALean's sumDown: the
+/// entry (1, 1) of A^2 is 1 + (... + (1 + 1e16)): the 1e16 absorbs each 1 (the ones added first
+/// would give 1e16 + 8).
+void matrix_power_sums_nested(const std::string &b) {
+    std::vector<double> m(81, 1.0);
+    m[17] = 1e16;
+    const Tensor M = Tensor::from_data(m, {9, 9});
+    const Interval P = Interval(M, M).matrix_power(2);
+    check(P.inf().data()[10] == 1e16 && P.sup().data()[10] == 1e16,
+          b + ": the products are summed nested to the right");
+}
+
 /// A matrix that is not square, a negative exponent and a scalar base are refused; the checks off
 /// give the same.
 void checks_and_their_switch() {
@@ -101,6 +113,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         matrix_power_multiplies_the_intervals(b);
         matrix_power_of_points_and_samples(b);
+        matrix_power_sums_nested(b);
     });
     checks_and_their_switch();
     return test::finish("interval matrix_power");
