@@ -27,13 +27,17 @@ constexpr int kOrder = 12;
 
 Zonotope start_set() { return {test::column({1.0, 0.5}), Tensor({{0.1, 0.0}, {0.0, 0.1}})}; }
 
-/// For t_min = t_max = t_c = t every term of the series cancels but the remainder: the error set is
-/// a few 1e-11, c_tilde is (e^{At} - I - At)' n and d_tilde is n' (e^{At} - I - At) x0.
+/// For t_min = t_max = t_c = t and a point start set every term of the series cancels but the
+/// remainder: the error set is a few 1e-11, c_tilde is (e^{At} - I - At)' n and d_tilde is n'
+/// (e^{At} - I - At) x0.
 void at_the_expansion_point_only_the_series_remains(const std::string &b) {
     const Tensor n = test::column({1.0, -0.5}), zero = test::column({0.0, 0.0});
     const TrajectoryError e = LinearSys(matrix()).trajectory_error({zero, zero}, zero, start_set(),
                                                                    kTime, kTime, kTime, kOrder, n);
-    check(support(e.error, {1, 1}) < 1e-8 && support(e.error, {-1, 1}) < 1e-8,
+    const Zonotope point(start_set().center(), Tensor::zeros({2, 0}));
+    const TrajectoryError p = LinearSys(matrix()).trajectory_error({zero, zero}, zero, point, kTime,
+                                                                   kTime, kTime, kOrder, n);
+    check(support(p.error, {1, 1}) < 1e-8 && support(p.error, {-1, 1}) < 1e-8,
           b + ": the error set");
     const Tensor beyond = (matrix() * kTime).expm() - Tensor::eye(2) - matrix() * kTime;
     const Tensor c_center = (e.c_tilde.inf() + e.c_tilde.sup()) * 0.5;

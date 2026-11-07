@@ -34,10 +34,12 @@ template <class Matrix>
 std::vector<Zonotope> aux_mtimes(const Matrix &M, const Blocks &blocks,
                                  const std::vector<Zonotope> &Xb) {
     std::vector<Zonotope> out;
-    for (const std::array<int64_t, 2> &row : blocks) {
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        // the own block comes first, so its generators stay aligned with those of Xb_i (enclose)
         std::optional<Zonotope> sum;
-        for (std::size_t j = 0; j < blocks.size(); ++j) {
-            Zonotope term = Xb[j].linear_map(aux_sub(M, row, blocks[j]));
+        for (std::size_t k = 0; k < blocks.size(); ++k) {
+            const std::size_t j = k == 0 ? i : (k <= i ? k - 1 : k);
+            Zonotope term = Xb[j].linear_map(aux_sub(M, blocks[i], blocks[j]));
             sum = sum ? sum->plus(term) : std::move(term);
         }
         out.push_back(std::move(*sum));
