@@ -3360,7 +3360,85 @@ void bind_problems(py::module_ &m) {
         .def_readonly("falsification", &VerifyResult::falsification, "a Falsification, or None");
 }
 
+/// The linear reach algorithm named `name`, filled from kwargs; refuses what is left over.
+alg::LinearReach linear_reach_algorithm(const std::string &name, py::dict kwargs,
+                                        const std::string &where) {
+    const std::optional<alg::LinearReach> a = algorithm<alg::LinearReach>(name, kwargs);
+    if (!a)
+        CORA_FAIL(Error::wrong_value,
+                  unknown_algorithm(name, algorithm_names<alg::LinearReach>(), where));
+    std::vector<std::string> known;
+    std::visit([&](const auto &alg) { known = field_names<std::decay_t<decltype(alg)>>(); }, *a);
+    const std::vector<std::string> others = algorithm_fields<alg::LinearReach>(
+        std::make_index_sequence<std::variant_size_v<alg::LinearReach>>());
+    refuse_leftovers(kwargs, known, where, others, name);
+    return *a;
+}
+
+/// The result structs of the steps of a linear system, with their sets as properties.
+py::class_<CanonicalForm> bind_linear_steps(py::module_ &m) {
+    // its system is added once LinearSys is bound
+    py::class_<CanonicalForm> canonical(m, "CanonicalForm",
+                                        "A system in canonical form with its input.");
+    canonical.def_readonly("U", &CanonicalForm::U, "The centered input set in the state space")
+        .def_property_readonly(
+            "u", [](const CanonicalForm &c) { return matrix(c.u); },
+            "The constant input per step (n, steps)");
+    py::class_<HomogeneousSolution>(m, "HomogeneousSolution", "The homogeneous solution of a step.")
+        .def_readonly("time_point", &HomogeneousSolution::time_point, "The set at the end")
+        .def_readonly("time_interval", &HomogeneousSolution::time_interval, "The set over the step")
+        .def_readonly("state_curvature", &HomogeneousSolution::state_curvature, "F X");
+    // the solutions of a step
+    py::class_<ConstantSolution>(m, "ConstantSolution", "The solution of a constant input.")
+        .def_readonly("time_point", &ConstantSolution::time_point, "The set at the end")
+        .def_readonly("input_curvature", &ConstantSolution::input_curvature, "G u")
+        .def_readonly("time_interval", &ConstantSolution::time_interval, "The set over the step");
+    // a step with a constant input
+    py::class_<AffineSolution>(m, "AffineSolution", "The solution of a step with a constant input.")
+        .def_readonly("time_point", &AffineSolution::time_point, "The set at the end")
+        .def_readonly("constant", &AffineSolution::constant, "The part of the constant input")
+        .def_readonly("time_interval", &AffineSolution::time_interval, "The set over the step")
+        .def_readonly("state_curvature", &AffineSolution::state_curvature, "F X")
+        .def_readonly("input_curvature", &AffineSolution::input_curvature, "G u");
+    // one step of reach, and what it hands on
+    py::class_<OneStep>(m, "OneStep", "One step of reach with the sets it is made of.")
+        .def_readonly("time_point", &OneStep::time_point, "The reachable set at the end")
+        .def_readonly("time_interval", &OneStep::time_interval, "The reachable set over the step")
+        // the parts the sets of the step are made of
+        .def_readonly("homogeneous_time_point", &OneStep::homogeneous_time_point,
+                      "The homogeneous solution at the end plus the constant input")
+        .def_readonly("homogeneous_time_interval", &OneStep::homogeneous_time_interval,
+                      "The enclosure of the step without the time-varying input")
+        // the input solutions and the curvatures
+        .def_readonly("time_varying", &OneStep::time_varying, "The time-varying input solution")
+        .def_readonly("constant", &OneStep::constant, "The constant input solution")
+        .def_readonly("state_curvature", &OneStep::state_curvature, "F X")
+        .def_readonly("input_curvature", &OneStep::input_curvature, "G u");
+    // the error of a linearized trajectory
+    py::class_<TrajectoryError>(m, "TrajectoryError", "The error of a linearized trajectory.")
+        .def_readonly("error", &TrajectoryError::error, "The set that encloses the error")
+        .def_readonly("c_tilde", &TrajectoryError::c_tilde,
+                      "The box of the coefficients A_tilde' n")
+        .def_readonly("d_tilde", &TrajectoryError::d_tilde, "The box of the offset -n' u_tilde");
+    // what a step hands on to the next
+    py::class_<ReachState>(m, "ReachState", "What a step of init_reach and post hands on.")
+        .def_readonly("homogeneous", &ReachState::homogeneous, "The homogeneous set over the step")
+        .def_readonly("homogeneous_time_point", &ReachState::homogeneous_time_point,
+                      "The homogeneous set at the end")
+        .def_readonly("aux", &ReachState::aux, "The input solution of the first step, mapped on")
+        .def_readonly("par", &ReachState::par, "The sum of the input solutions so far")
+        .def_readonly("trans", &ReachState::trans, "The constant part of the input");
+    // one step of init_reach or post
+    py::class_<ReachStep>(m, "ReachStep", "One step of init_reach or post.")
+        .def_readonly("time_interval", &ReachStep::time_interval, "The reachable set over the step")
+        .def_readonly("time_point", &ReachStep::time_point, "The reachable set at the end")
+        .def_readonly("state", &ReachStep::state, "The state for the next step");
+    return canonical;
+}
+
 void bind_linear_sys(py::module_ &m) {
+    // the results of the steps first, then the system
+    py::class_<CanonicalForm> canonical = bind_linear_steps(m);
     py::class_<LinearSys>(m, "LinearSys", "The linear system x' = A x + B u, y = C x.")
         .def(py::init([](const Array &A, const py::object &B, const py::object &C,
                          bool custom_backward) {
@@ -3430,6 +3508,7 @@ void bind_linear_sys(py::module_ &m) {
             },
             "simulate(initial_state=x0 (..., n, N), t_final=T, time_step=dt, input=u (m, N) or "
             "(m,)): the states (steps + 1, ..., n, N), time first; exact")
+        // random trajectories from points of the sets
         .def(
             "simulate_random",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
@@ -3446,12 +3525,136 @@ void bind_linear_sys(py::module_ &m) {
             },
             "simulate_random(initial_set=X0, t_final=T, time_step=dt, points=N, rng=rng, "
             "input_set=U): simulate from N random points of X0 (and constant inputs of U)")
+        // the matrices of one step
         .def("correction_matrix_state", &LinearSys::correction_matrix_state, py::arg("time_step"),
              py::arg("taylor_terms"), "The interval matrix F of the curvature enlargement")
         .def("correction_matrix_input", &LinearSys::correction_matrix_input, py::arg("time_step"),
              py::arg("taylor_terms"), "The interval matrix G of the curvature of the input")
         .def("expm_remainder", &LinearSys::expm_remainder, py::arg("time_step"),
              py::arg("taylor_terms"), "The error box of the truncated series of e^{|A| dt}")
+        // canonical form, with the constant input per step
+        .def(
+            "canonical_form",
+            [](const LinearSys &sys, const Zonotope &U, const py::object &u_vec) {
+                return sys.canonical_form(
+                    U, u_vec.is_none() ? std::nullopt
+                                       : std::optional<Tensor>(tensor_of(u_vec, "u_vec")));
+            },
+            py::arg("U"), py::arg("u_vec") = py::none(),
+            "The system with B = I, the centered input set and the constant input per step")
+        // canonical form
+        .def("is_canonical_form", &LinearSys::is_canonical_form,
+             "Whether B and C are identity matrices")
+        // the solutions of one step
+        .def("homogeneous_solution", &LinearSys::homogeneous_solution, py::arg("X"),
+             py::arg("time_step"), py::arg("taylor_terms"),
+             "The solution of x' = A x over one step: the set at its end, over it and F X")
+        // the input solutions: the terms apart, and for a constant input
+        .def("particular_solution_time_varying", &LinearSys::particular_solution_time_varying,
+             py::arg("U"), py::arg("time_step"), py::arg("taylor_terms"),
+             "What the input u(t) in U adds over one step, the terms of A kept apart")
+        .def("particular_solution_constant", &LinearSys::particular_solution_constant, py::arg("U"),
+             py::arg("time_step"), py::arg("taylor_terms"),
+             "What a constant input in U adds over one step, with its curvature")
+        // the solution with a constant input u
+        .def(
+            "affine_solution",
+            [](const LinearSys &sys, const Zonotope &X, const py::object &u, double time_step,
+               int taylor_terms) {
+                return sys.affine_solution(X, tensor_of(u, "u"), time_step, taylor_terms);
+            },
+            py::arg("X"), py::arg("u"), py::arg("time_step"), py::arg("taylor_terms"),
+            "The solution of one step of x' = A x + u for the constant input u (n,)")
+        // a whole step of reach
+        .def(
+            "one_step",
+            [](const LinearSys &sys, const Zonotope &X, const Zonotope &U, const py::object &u,
+               double time_step, int taylor_terms) {
+                return sys.one_step(X, U, tensor_of(u, "u"), time_step, taylor_terms);
+            },
+            py::arg("X"), py::arg("U"), py::arg("u"), py::arg("time_step"), py::arg("taylor_terms"),
+            "One step of reach from X with the input set U and the constant input u (n,)")
+        // the first step and the steps after it
+        .def(
+            "init_reach",
+            [](const LinearSys &sys, const Zonotope &R_init, const std::optional<Zonotope> &U,
+               const py::object &u_trans, const std::string &alg, const py::kwargs &kwargs) {
+                py::dict options;
+                for (const auto &item : kwargs) options[item.first] = item.second;
+                return sys.init_reach(R_init, U,
+                                      u_trans.is_none()
+                                          ? std::nullopt
+                                          : std::optional<Tensor>(tensor_of(u_trans, "u_trans")),
+                                      linear_reach_algorithm(alg, options, "init_reach"));
+            },
+            py::arg("R_init"), py::arg("U") = py::none(), py::arg("u_trans") = py::none(),
+            py::arg("alg") = "standard",
+            "The first step of the algorithm 'standard' or 'wrapping_free' (options as keywords)")
+        // the steps after the first
+        .def(
+            "post",
+            [](const LinearSys &sys, const ReachState &state, const std::string &alg,
+               const py::kwargs &kwargs) {
+                py::dict options;
+                for (const auto &item : kwargs) options[item.first] = item.second;
+                return sys.post(state, linear_reach_algorithm(alg, options, "post"));
+            },
+            py::arg("state"), py::arg("alg") = "standard",
+            "The step after state, with the algorithm and options of init_reach")
+        // the adaptive error of the input solution
+        .def(
+            "error_solution_adaptive",
+            [](const LinearSys &sys, const Zonotope &Vdyn, double time_step, double zeta_tabs,
+               const std::optional<Zonotope> &Vstat, const std::optional<int> &taylor_terms) {
+                return sys.error_solution_adaptive(Vdyn, Vstat, time_step, zeta_tabs, taylor_terms);
+            },
+            py::arg("Vdyn"), py::arg("time_step"), py::arg("zeta_tabs"),
+            py::arg("Vstat") = py::none(), py::arg("taylor_terms") = py::none(),
+            "The error of the input solution over a step, cut where the series gains little")
+        // the error of the linearization
+        .def(
+            "trajectory_error",
+            [](const LinearSys &sys, const py::object &f, const py::object &u, const Zonotope &R0,
+               double t_min, double t_max, double t_c, int order, const py::object &n) {
+                // one flow value, or the values at the start and the end
+                std::vector<Tensor> flows;
+                if (py::isinstance<py::list>(f) || py::isinstance<py::tuple>(f))
+                    for (const py::handle &x : f) flows.push_back(tensor_of(x, "f"));
+                else
+                    flows.push_back(tensor_of(f, "f"));
+                return sys.trajectory_error(flows, tensor_of(u, "u"), R0, t_min, t_max, t_c, order,
+                                            tensor_of(n, "n"));
+            },
+            py::arg("f"), py::arg("u"), py::arg("R0"), py::arg("t_min"), py::arg("t_max"),
+            py::arg("t_c"), py::arg("order"), py::arg("n"),
+            "The error of the trajectories against the linearization around t_c, as a set and two "
+            "boxes")
+        // equality, text and random systems
+        .def("isequal", &LinearSys::isequal, py::arg("other"), py::arg("tol") = py::none(),
+             "Whether the matrices agree up to tol (default: the repository tolerance)")
+        // equal systems have equal matrices
+        .def("__eq__",
+             [](const LinearSys &a, const py::object &b) -> py::object {
+                 if (!py::isinstance<LinearSys>(b)) return not_implemented();
+                 return py::cast(a == b.cast<const LinearSys &>());
+             })
+        .def("__ne__",
+             [](const LinearSys &a, const py::object &b) -> py::object {
+                 if (!py::isinstance<LinearSys>(b)) return not_implemented();
+                 return py::cast(a != b.cast<const LinearSys &>());
+             })
+        .def("__repr__", &LinearSys::display)
+        .def("__str__", &LinearSys::display)
+        // a random stable system
+        .def_static("generate_random", &LinearSys::generate_random, py::arg("rng"),
+                    py::arg("state_dimension") = py::none(),
+                    py::arg("input_dimension") = py::none(),
+                    py::arg("output_dimension") = py::none(), py::arg("real_interval") = py::none(),
+                    py::arg("imaginary_interval") = py::none(),
+                    "A random system with stable eigenvalues in a box of the complex plane")
+        // the system as a nonlinear one
+        .def("nonlinear_sys", &LinearSys::nonlinear_sys,
+             "The system x' = A x as a NonlinearSys (without inputs)")
         .def("validate", &LinearSys::validate, py::arg("problem"),
              "The checks of a reach problem against the system")
         .def(
@@ -3470,6 +3673,8 @@ void bind_linear_sys(py::module_ &m) {
             "verify(initial_set=R0, input_set=U, t_final=T, specs=[...], "
             "alg='reach_avoid_support_function' or 'reach_avoid_zonotope'): whether every "
             "specification holds for the outputs up to t_final");
+    // a canonical form holds a system, bound just now
+    canonical.def_readonly("sys", &CanonicalForm::sys, "The system with B = I");
 }
 
 /// The dynamics as symbolic expressions: `x` is a list of Expr, `f(x)` a list of Expr or numbers.

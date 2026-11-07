@@ -2,9 +2,7 @@
 //
 // reach
 //
-// CORA: contDynamics/@linearSys/particularSolution_constant.m
-// CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
-// CORA authors: Mark Wetzlinger
+// CORA.cpp only: tests input_solution, reach's input solution for the system's B
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   ---

@@ -13,9 +13,8 @@
 // Outputs:  in - PU, Pu and Cinput (see linear_sys.h), a building block of reach
 // See also: reach, correction_matrix_input, expm_remainder
 //
-// CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
-// CORA: contDynamics/@linearSys/particularSolution_constant.m
-// CORA authors: Mark Wetzlinger
+// CORA.cpp only: reach's input solution for the system's B; the particular solutions are
+//   particular_solution_time_varying and particular_solution_constant
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   03-November-2026
