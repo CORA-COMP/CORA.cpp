@@ -46,7 +46,7 @@ CanonicalForm LinearSys::canonical_form(const Zonotope &U,
     // the center of U moves to the constant input, the rest stays as the input set
     const Tensor u_input = u_vec ? *u_vec : center.zeros_like();
     const Tensor u = B.matmul(u_input) + B.matmul(center);
-    const Zonotope U_centered{center - center, U.generators()};
+    const Zonotope U_centered{center.zeros_like(), U.generators()};
     return {LinearSys(A_, A_.eye_like(), C_), U_centered.linear_map(B), u};
 }
 

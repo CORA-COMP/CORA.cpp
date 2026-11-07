@@ -83,6 +83,7 @@ std::vector<Zonotope> priv_block_mtimes(const Interval &M, const Blocks &blocks,
 std::vector<Zonotope> priv_block_plus(const std::vector<Zonotope> &Xb,
                                       const std::vector<Zonotope> &Yb) {
     std::vector<Zonotope> out;
+    out.reserve(Xb.size());
     for (std::size_t i = 0; i < Xb.size(); ++i) out.push_back(Xb[i].plus(Yb[i]));
     return out;
 }
@@ -90,6 +91,7 @@ std::vector<Zonotope> priv_block_plus(const std::vector<Zonotope> &Xb,
 std::vector<Zonotope> priv_block_enclose(const std::vector<Zonotope> &Xb,
                                          const std::vector<Zonotope> &Yb) {
     std::vector<Zonotope> out;
+    out.reserve(Xb.size());
     for (std::size_t i = 0; i < Xb.size(); ++i) out.push_back(Xb[i].enclose(Yb[i]));
     return out;
 }
