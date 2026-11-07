@@ -32,7 +32,9 @@ void simplex_property(const std::string &b) {
         const Zonotope Z = Zonotope::generate_random(rng, n);
         const Polytope P = Z.simplex();
         check(P.A().shape() == Shape{n + 1, n}, b + ": n + 1 facets in " + std::to_string(n) + "D");
-        check(P.contains(Z.rand_point(30, rng, "extreme")) && P.contains(Z.center()),
+        // the extreme points lie on facets: up to the rounding of the facet offsets
+        const Tensor corners = Z.rand_point(30, rng, "extreme");
+        check(P.contains(corners, "exact", 1e-10) && P.contains(Z.center()),
               b + ": the zonotope is inside");
         const Tensor sums = P.A().matmul(P.A().matrix_transpose());
         check(close(sums.slice(0, 0, 1).slice(1, 0, 1), {1.0}, 1e-12), b + ": unit normals");

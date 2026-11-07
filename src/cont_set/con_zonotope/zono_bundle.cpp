@@ -20,7 +20,7 @@
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cont_set/con_zonotope/private/priv.h"
-#include "cont_set/cont_set/private/priv_gram_schmidt.h"
+#include "cont_set/polytope/private/priv.h"
 #include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -39,7 +39,12 @@ Zonotope aux_slab(const Tensor &like, const std::vector<double> &a, double lower
     std::vector<double> lo(std::size_t(p), -wide), hi(std::size_t(p), wide);
     lo[0] = -lower;
     hi[0] = upper;
-    const Tensor B = Tensor::like(like, priv_gram_schmidt(a), {p, p});
+    // the basis vectors are the columns of B
+    const Rows basis = priv_gram_schmidt(a);
+    std::vector<double> columns(static_cast<std::size_t>(p * p));
+    for (std::size_t i = 0; i < a.size(); ++i)
+        for (std::size_t j = 0; j < a.size(); ++j) columns[i * a.size() + j] = basis[j][i];
+    const Tensor B = Tensor::like(like, columns, {p, p});
     return Interval(Tensor::like(like, lo, {p, 1}), Tensor::like(like, hi, {p, 1}))
         .zonotope()
         .linear_map(B);
