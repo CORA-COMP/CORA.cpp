@@ -98,19 +98,6 @@ inline bool nearest_is_strict() {
     return strict;
 }
 
-/// Whether the oracle at nearest takes square roots as the machine does, so that a result through
-/// a square root agrees to the bit (CORALean#274: a Newton root, 1 to 2 ulp off, in older ones).
-inline bool sqrt_is_exact() {
-    static const bool exact = [] {
-        const lean::DTypeScope dtype("nearest");
-        const cora::Tensor origin = cora::Tensor::from_data({0.0, 0.0}, {2, 1});
-        const cora::Capsule diagonal(origin, cora::Tensor::from_data({1.0, 1.0}, {2, 1}), 0.0);
-        return lean::Capsule(diagonal).radius() == std::sqrt(2.0);
-    }();
-    if (!exact) skipped("the oracle's square root at nearest is a Newton root (CORALean#274)");
-    return exact;
-}
-
 /// Random operands from a fixed seed: normal numbers, which are exact doubles, on the current
 /// backend (so a lean-backend run computes with lean tensors).
 class Random {
