@@ -10,6 +10,7 @@
 #include "cora/global/oracle/capsule.h"
 #include "cora/global/error.h"
 
+#include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/request.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -118,6 +119,11 @@ bool Capsule::representsa(const std::string &type, double tol) const {
 
 Zonotope Capsule::zonotope() const {
     return ask("capsule.zonotope", {{"C", *this}}).get<Zonotope>("Z");
+}
+
+// the halfspaces of the capsule's box in the Gram-Schmidt basis of g
+Polytope Capsule::polytope(int p) const {
+    return ask("capsule.polytope", {{"C", *this}, {"p", p}}).get<Polytope>("P");
 }
 
 // Sets: each op sends the capsules (and k, the Newton steps of the roots) and reads `C` back.

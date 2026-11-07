@@ -26,6 +26,7 @@
 
 namespace cora::lean {
 
+class Polytope;
 class Zonotope;
 
 class Capsule {
@@ -81,6 +82,11 @@ class Capsule {
 
     /// The zonotope of the segment and the box of the ball (`capsule.zonotope`).
     Zonotope zonotope() const;
+
+    /// The halfspace polytope [B'; -B'] x <= support values (`capsule.polytope`), B the
+    /// Gram-Schmidt basis of g; p is the number of Newton steps of the row lengths.
+    Polytope polytope(int p = 100) const;
+
     Capsule linear_map(const Tensor &M, int k = 100) const;
     Capsule lift(int64_t N, const std::vector<int64_t> &dims) const;
 
