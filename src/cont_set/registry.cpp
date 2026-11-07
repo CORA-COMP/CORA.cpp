@@ -241,6 +241,25 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::contains, Polytope, Zonotope>(
         t,
         [](const Polytope &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
+    // the sum, the hull of the union, the intersection test and the equality of polytopes and boxes
+    aux_add_set<BinaryOp::plus, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.plus(B); });
+    aux_add_set<BinaryOp::plus, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.plus(I); });
+    aux_add_set<BinaryOp::unite, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B) { return A.unite(B); });
+    aux_add_set<BinaryOp::unite, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I) { return A.unite(I); });
+    aux_add_predicate<BinaryOp::is_intersecting, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B, Tol tol) {
+            return A.is_intersecting(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, Polytope, Interval>(
+        t, [](const Polytope &A, const Interval &I, Tol tol) {
+            return A.is_intersecting(I, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::isequal, Polytope, Polytope>(
+        t, [](const Polytope &A, const Polytope &B, Tol tol) { return A.isequal(B, tol); });
     // the ellipsoid has the lowest precedence of its pairs, so it is first; solvers: not_supported
     aux_add_set<BinaryOp::intersect, Ellipsoid, Ellipsoid>(
         t, [](const Ellipsoid &A, const Ellipsoid &B) { return A.intersect(B); });

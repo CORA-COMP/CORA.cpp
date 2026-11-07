@@ -119,6 +119,72 @@ Polytope Polytope::enclose_points(const Tensor &points) {
     return aux_set(ask("polytope.enclosePoints", {{"points", points}, {"method", "outer"}}));
 }
 
+// The second batch: queries, maps of both forms and the conversions --------------------------
+
+// the Booleans first, then the maps, each one request
+
+Polytope Polytope::origin(int64_t n) { return aux_set(ask("polytope.origin", {{"n", n}})); }
+
+bool Polytope::is_bounded() const {
+    return ask("polytope.isBounded", {{"P", *this}}).get<bool>("value");
+}
+
+bool Polytope::is_full_dim() const {
+    return ask("polytope.isFullDim", {{"P", *this}}).get<bool>("value");
+}
+
+bool Polytope::isequal(const Polytope &P2) const {
+    return ask("polytope.isequal", {{"P", *this}, {"P2", P2}}).get<bool>("value");
+}
+
+bool Polytope::represents_fullspace() const {
+    return ask("polytope.representsa", {{"P", *this}, {"type", "fullspace"}}).get<bool>("value");
+}
+
+Certified Polytope::is_disjoint(const Interval &I) const {
+    return ask("polytope.isIntersecting", {{"P", *this}, {"I", I}}).proved_disjoint();
+}
+
+Certified Polytope::is_disjoint(const Zonotope &Z) const {
+    return ask("polytope.isIntersecting", {{"P", *this}, {"Z", Z}}).proved_disjoint();
+}
+
+// the maps of the halfspace form
+
+Polytope Polytope::minus(const Tensor &v) const {
+    return aux_set(ask("polytope.minus", {{"P", *this}, {"v", v}}));
+}
+
+Polytope Polytope::lift(int64_t N, const std::vector<int64_t> &dims) const {
+    return aux_set(ask("polytope.lift", {{"P", *this}, {"N", N}, {"dims", dims}}));
+}
+
+Polytope Polytope::project_high_dim(int64_t N, const std::vector<int64_t> &dims) const {
+    return aux_set(ask("polytope.projectHighDim", {{"P", *this}, {"N", N}, {"dims", dims}}));
+}
+
+// the maps of the vertex form
+
+Polytope Polytope::linear_map(const Tensor &M) const {
+    return aux_set(ask("polytope.mtimes", {{"P", *this}, {"M", M}}));
+}
+
+Polytope Polytope::plus(const Polytope &P2) const {
+    return aux_set(ask("polytope.plus", {{"P", *this}, {"P2", P2}}));
+}
+
+Polytope Polytope::unite(const Polytope &P2) const {
+    return aux_set(ask("polytope.or", {{"P", *this}, {"P2", P2}}));
+}
+
+Polytope Polytope::project(const std::vector<int64_t> &dims) const {
+    return aux_set(ask("polytope.project", {{"P", *this}, {"dims", dims}}));
+}
+
+double Polytope::support_function(const Tensor &dir) const {
+    return ask("polytope.supportFunc", {{"P", *this}, {"dir", dir}}).get<double>("value");
+}
+
 // the conversion of a box
 
 Polytope Polytope::from_interval(const Interval &I) {

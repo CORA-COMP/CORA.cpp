@@ -134,6 +134,16 @@ inline constexpr double kPolytopeVertexMerge = 1e-9;  ///< polytope: vertices th
 inline constexpr double kPolytopeFacet = 1e-9; ///< polytope: a point this close is on a facet
 inline constexpr double kPolytopeNnls = 1e-10; ///< polytope: nonnegative least squares stops here
 inline constexpr double kPolytopeHausdorff = 1e-10; ///< polytope: CORA's tol for equal sets
+inline constexpr double kPolytopeSum = 1e-10; ///< polytope plus: CORA's tol for R^n, empty, origin
+inline constexpr double kPolytopeProject =
+    1e-12; ///< polytope project: tol of the compaction per step
+inline constexpr double kPolytopeCompact = 1e-9; ///< polytope minkDiff in 1D: tol of its compaction
+inline constexpr double kPolytopeMeet =
+    1e-6; ///< polytope isIntersecting: a program value below meets
+inline constexpr double kPolytopeFullDim = 1e-9;  ///< polytope isFullDim: an inradius below is zero
+inline constexpr double kPolytopeSubspace = 1e-8; ///< polytope isFullDim: a step below is zero
+inline constexpr double kPolytopeDistance = 1e-12;   ///< polytope distance: CORA's tol for meeting
+inline constexpr double kPolytopeZeroMatrix = 1e-12; ///< polytope mtimes: a matrix below is zero
 inline constexpr double kFixedFactor = 1e-9;  ///< a factor whose range is this narrow is fixed
 inline constexpr double kBoundTighter = 1e-8; ///< Fourier-Motzkin: bounds that move less end it
 
