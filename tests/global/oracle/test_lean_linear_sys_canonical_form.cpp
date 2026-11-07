@@ -1,6 +1,7 @@
 // test_lean_linear_sys_canonical_form - canonical_form and is_canonical_form against the oracle
 //
-// Bit for bit at nearest, inside the enclosure of the sound oracle.
+// Bit for bit at nearest, inside the enclosure of the sound oracle. The identity input matrix is
+// not compared for is_canonical_form: the oracle has no noise matrix on the wire.
 //
 // ORACLE: contDynamics/@linearSys/canonicalForm.m
 // ORACLE: contDynamics/@linearSys/isCanonicalForm.m
@@ -34,9 +35,6 @@ int main() {
         test::oracle::check(cf.u, reference.u);
     });
 
-    // a missing B and a random B are not canonical, in CORA.cpp and in the oracle; the identity is
-    // not compared: the oracle's systems carry no noise matrix on the wire, so their noise count
-    // never equals the output count and it answers false (to be asked of CORALean, see the report)
     test::oracle::run("linearSys.isCanonicalForm", [](test::oracle::Random &rnd) {
         const Tensor A = rnd.matrix(3, 3), B = rnd.matrix(3, 3);
         test::oracle::check(LinearSys(A).is_canonical_form(),
