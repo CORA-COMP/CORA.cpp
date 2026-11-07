@@ -1,7 +1,7 @@
 // priv_matmul - the product of two interval matrices
 //
 // The products are of A(i, k) and B(k, j), a NaN corner (0 * Inf) taken as 0, as CORA's times and
-// mtimes.
+// mtimes. The sum over k is nested to the right, a(0) + (a(1) + ...), as CORALean's sumDown.
 //
 // Syntax:   Interval P = priv_matmul(A, B);
 // Inputs:   A - interval matrix (..., m, n)
