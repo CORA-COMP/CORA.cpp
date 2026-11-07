@@ -27,6 +27,12 @@ import numpy as np
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
+def expm(M):
+    """The matrix exponential of a diagonalizable M."""
+    w, V = np.linalg.eig(M)
+    return (V @ np.diag(np.exp(w)) @ np.linalg.inv(V)).real
+
+
 A = np.array([[-0.1, 1.0, 0.0], [-1.0, -0.1, 0.0], [0.0, 0.0, -0.5]])
 X0 = cora.Zonotope(np.array([1.0, 0.5, -1.0]), np.array([[0.2, 0.0, 0.1], [0.0, 0.1, 0.0], [0.0, 0.0, 0.3]]))
 U = cora.Zonotope(np.array([1.0, 2.0, 0.5]), np.array([[0.1, 0.0], [0.0, 0.2], [0.1, 0.1]]))
@@ -64,8 +70,10 @@ class Plumbing(unittest.TestCase):
 
     def test_nonlinear_sys_has_the_same_flow(self):
         nl = cora.LinearSys(A).nonlinear_sys()
+        self.assertEqual(nl.dim, 3)
         x = np.array([[1.0], [2.0], [3.0]])
-        np.testing.assert_allclose(nl.dynamics(x), A @ x)
+        states = nl.simulate(initial_state=x, t_final=0.5, time_step=0.01)
+        np.testing.assert_allclose(states[-1], expm(A * 0.5) @ x, rtol=1e-6)
         with self.assertRaises(cora.errors.CORAError):
             cora.LinearSys(A, np.eye(3)).nonlinear_sys()
 

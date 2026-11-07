@@ -3380,8 +3380,7 @@ py::class_<CanonicalForm> bind_linear_steps(py::module_ &m) {
     // its system is added once LinearSys is bound
     py::class_<CanonicalForm> canonical(m, "CanonicalForm",
                                         "A system in canonical form with its input.");
-    canonical
-        .def_readonly("U", &CanonicalForm::U, "The centered input set in the state space")
+    canonical.def_readonly("U", &CanonicalForm::U, "The centered input set in the state space")
         .def_property_readonly(
             "u", [](const CanonicalForm &c) { return matrix(c.u); },
             "The constant input per step (n, steps)");
@@ -3605,12 +3604,12 @@ void bind_linear_sys(py::module_ &m) {
         // the adaptive error of the input solution
         .def(
             "error_solution_adaptive",
-            [](const LinearSys &sys, const Zonotope &Vdyn, const std::optional<Zonotope> &Vstat,
-               double time_step, double zeta_tabs, const std::optional<int> &taylor_terms) {
+            [](const LinearSys &sys, const Zonotope &Vdyn, double time_step, double zeta_tabs,
+               const std::optional<Zonotope> &Vstat, const std::optional<int> &taylor_terms) {
                 return sys.error_solution_adaptive(Vdyn, Vstat, time_step, zeta_tabs, taylor_terms);
             },
-            py::arg("Vdyn"), py::arg("Vstat") = py::none(), py::arg("time_step"),
-            py::arg("zeta_tabs"), py::arg("taylor_terms") = py::none(),
+            py::arg("Vdyn"), py::arg("time_step"), py::arg("zeta_tabs"),
+            py::arg("Vstat") = py::none(), py::arg("taylor_terms") = py::none(),
             "The error of the input solution over a step, cut where the series gains little")
         // the error of the linearization
         .def(

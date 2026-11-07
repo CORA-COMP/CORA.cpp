@@ -125,8 +125,11 @@ class Steps(unittest.TestCase):
         B = np.array([[-1.0, 2.0], [-2.0, -1.0]])
         sys, t, n = cora.LinearSys(B), 0.3, np.array([1.0, -0.5])
         R0 = cora.Zonotope(np.array([1.0, 0.5]), 0.1 * np.eye(2))
+        # a point start set: with generators the series of the set does not cancel
+        point = cora.Zonotope(np.array([1.0, 0.5]), np.zeros((2, 0)))
+        p = sys.trajectory_error([np.zeros(2), np.zeros(2)], np.zeros(2), point, t, t, t, 12, n)
+        self.assertLess(p.error.support_function(np.array([1.0, 1.0])), 1e-8)
         e = sys.trajectory_error([np.zeros(2), np.zeros(2)], np.zeros(2), R0, t, t, t, 12, n)
-        self.assertLess(e.error.support_function(np.array([1.0, 1.0])), 1e-8)
         remainder = expm(B * t) - np.eye(2) - B * t
         np.testing.assert_allclose((e.c_tilde.inf + e.c_tilde.sup) / 2, remainder.T @ n, atol=1e-9)
         np.testing.assert_allclose((e.d_tilde.inf + e.d_tilde.sup) / 2, n @ remainder @ R0.center, atol=1e-9)
