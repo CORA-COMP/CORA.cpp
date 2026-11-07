@@ -31,8 +31,7 @@ int main() {
             for (const int64_t order : {0, 1, 2, 3})
                 test::oracle::check(I.dirac(order), lean::Interval(I).dirac(order));
         }
-        if (test::oracle::mode() == test::oracle::Mode::sound ||
-            test::oracle::nearest_is_strict()) {
+        if (test::oracle::nearest_is_strict()) {
             const Interval tiny(test::column({std::ldexp(1.0, -100)}), test::column({1.0}));
             test::oracle::check(tiny.dirac(0), lean::Interval(tiny).dirac(0));
         }

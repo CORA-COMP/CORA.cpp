@@ -157,6 +157,9 @@ class Operations(unittest.TestCase):
 
 
 class RandomSets(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
+
     def test_rand_point_lies_in_the_set(self):
         c, G = random_zonotope()
         Z = cora.Zonotope(c, G)
@@ -225,6 +228,9 @@ class RandomSets(unittest.TestCase):
 
 
 class Stack(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
+
     def test_stack_batches_zonotopes_of_different_size(self):
         a = cora.Zonotope(cora.Tensor([1.0, 0.0]), cora.eye(2))
         b = cora.Zonotope(cora.Tensor([0.0, 2.0]), cora.Tensor([[1.0, 0.5, 0.0], [0.0, 0.5, 1.0]]))

@@ -13,7 +13,7 @@
 // CORA authors: Victor Gassmann
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   07-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
@@ -23,6 +23,20 @@
 
 namespace cora {
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// The failure of every form: no SDP solver for the minimum-volume union (no return, so that no
+/// caller has code after it).
+[[noreturn]] void aux_no_sdp_solver() {
+    CORA_FAIL(Error::not_supported,
+              "enclose: the outer union of two ellipsoids is a minimum-volume problem for an SDP "
+              "solver, which is not available");
+}
+
+} // namespace
+
 
 // ===========================================  MAIN  =========================================== //
 
@@ -30,9 +44,7 @@ Ellipsoid Ellipsoid::enclose(const Ellipsoid &E2) const {
     detail::Entry entry;
     const detail::Refusal refusal = priv_pair_refusal(*this, E2, "enclose");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    CORA_FAIL(Error::not_supported,
-              "enclose: the outer union of two ellipsoids is a minimum-volume problem for an SDP "
-              "solver, which is not available");
+    aux_no_sdp_solver();
 }
 
 Ellipsoid Ellipsoid::enclose(const Tensor &M, const Ellipsoid &Eplus) const {
@@ -50,12 +62,12 @@ Ellipsoid Ellipsoid::enclose(const Tensor &M, const Ellipsoid &Eplus) const {
     const Ellipsoid E2(priv_congruence(M, Eplus.Q()), M.matmul(Eplus.q()), Eplus.tol());
     refusal = priv_pair_refusal(*this, E2, "enclose");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    return enclose(E2);
+    aux_no_sdp_solver();
 }
 
 Set Ellipsoid::enclose_impl(const ContSet &S2) const {
     if (S2.class_id() != ClassId::ellipsoid) priv_noops("enclose", *this, &S2);
-    return enclose(static_cast<const Ellipsoid &>(S2));
+    aux_no_sdp_solver();
 }
 
 } // namespace cora

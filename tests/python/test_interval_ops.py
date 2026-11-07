@@ -24,8 +24,6 @@ Reviewed:      ---
 # CORA: contSet/@interval/norm_.m
 # CORA: contSet/@interval/or.m
 # CORA: contSet/@interval/origin.m
-# PROPERTY: contSet/@interval/log.m
-# PROPERTY: contSet/@interval/mpower.m
 
 import unittest
 

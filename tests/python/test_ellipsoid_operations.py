@@ -31,19 +31,6 @@ Reviewed:      ---
 # CORA: contSet/@ellipsoid/plot3D.m
 # CORA: contSet/@interval/ellipsoid.m
 # CORA: contSet/@zonotope/ellipsoid.m
-# PROPERTY: contSet/@ellipsoid/supportFunc_.m
-# PROPERTY: contSet/@ellipsoid/mtimes.m
-# PROPERTY: contSet/@ellipsoid/plus.m
-# PROPERTY: contSet/@ellipsoid/project.m
-# PROPERTY: contSet/@ellipsoid/norm_.m
-# PROPERTY: contSet/@ellipsoid/radius.m
-# PROPERTY: contSet/@ellipsoid/vertices_.m
-# PROPERTY: contSet/@ellipsoid/volume_.m
-# PROPERTY: contSet/@ellipsoid/zonotope.m
-# PROPERTY: contSet/@ellipsoid/distance.m
-# PROPERTY: contSet/@ellipsoid/generateRandom.m
-# PROPERTY: contSet/@ellipsoid/randPoint_.m
-# PROPERTY: contSet/@ellipsoid/plot3D.m
 
 import unittest
 

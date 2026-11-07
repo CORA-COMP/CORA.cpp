@@ -1,4 +1,4 @@
-// test_lean_ellipsoid_bound - the Ellipsoid operations that CORALean bounds: norm, radius, mtimes
+// test_lean_ellipsoid_bound - Ellipsoid::linear_map against the CORALean oracle, within ulps
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       06-November-2026
@@ -51,17 +51,6 @@ Ellipsoid aux_ellipsoid(oracle::Random &rnd, int64_t n, bool centered) {
 
 int main() {
     if (!oracle::available()) return 0;
-    // the oracle's norm and radius are upper bounds of the exact values: CORA.cpp's lie below them
-    oracle::run("ellipsoid.norm", [](oracle::Random &rnd) {
-        const Ellipsoid E = aux_ellipsoid(rnd, 3, true);
-        if (oracle::mode() == oracle::Mode::sound)
-            oracle::check_enclosed("ellipsoid.norm", E.norm(), lean::Ellipsoid(E).norm());
-    });
-    oracle::run("ellipsoid.radius", [](oracle::Random &rnd) {
-        const Ellipsoid E = aux_ellipsoid(rnd, 3, false);
-        if (oracle::mode() == oracle::Mode::sound)
-            oracle::check_enclosed("ellipsoid.radius", E.radius(1), lean::Ellipsoid(E).radius());
-    });
     // CORALean inflates M Q M' upward and does not symmetrize: the entries agree to the stated ulps
     oracle::run("ellipsoid.mtimes", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3, false);

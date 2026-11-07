@@ -29,8 +29,7 @@ int main() {
             test::oracle::check(I.less(big), lean::Interval(I).lt(lean::Interval(big)));
             test::oracle::check(big.less(I), lean::Interval(big).lt(lean::Interval(I)));
             test::oracle::check(I.less(J), lean::Interval(I).lt(lean::Interval(J)));
-            if (test::oracle::mode() == test::oracle::Mode::sound ||
-                test::oracle::nearest_is_strict())
+            if (test::oracle::nearest_is_strict())
                 test::oracle::check(I.less(I), lean::Interval(I).lt(lean::Interval(I)));
         }
     });

@@ -1,8 +1,7 @@
 // test_lean_interval_rad - Interval::rad and Interval::radius against the CORALean oracle
 //
-// The oracle answers radius with the squared norm of the half-widths (an upper bound of it): in
-// the exact mode CORA.cpp's radius equals its square root bit for bit, in the sound mode it does
-// not exceed that root by more than the rounding of the root.
+// The oracle answers radius with the squared norm of the half-widths: CORA.cpp's radius equals its
+// square root bit for bit.
 //
 // ORACLE: contSet/@interval/rad.m
 // ORACLE: contSet/@interval/radius.m
@@ -37,12 +36,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
             const double root = std::sqrt(lean::Interval(I).radius());
-            if (test::oracle::mode() == test::oracle::Mode::exact)
-                test::oracle::check_exact("interval.radius", I.radius(), root);
-            else
-                test::check(I.radius().data()[0] <=
-                                root * (1 + 4 * std::numeric_limits<double>::epsilon()),
-                            "interval.radius: not above the oracle's bound");
+            test::oracle::check("interval.radius", I.radius(), root);
         }
     });
     // the result

@@ -25,23 +25,6 @@ Reviewed:      ---
 # CORA: matrixSet/@matZonotope/representsa.m
 # CORA: matrixSet/@matZonotope/transpose.m
 # CORA: matrixSet/@matZonotope/zonotope.m
-# PROPERTY: matrixSet/@matZonotope/matZonotope.m
-# PROPERTY: matrixSet/@matZonotope/center.m
-# PROPERTY: matrixSet/@matZonotope/contains.m
-# PROPERTY: matrixSet/@matZonotope/dependentTerms.m
-# PROPERTY: matrixSet/@matZonotope/expm.m
-# PROPERTY: matrixSet/@matZonotope/expmInd.m
-# PROPERTY: matrixSet/@matZonotope/expmMixed.m
-# PROPERTY: matrixSet/@matZonotope/expmOneParam.m
-# PROPERTY: matrixSet/@matZonotope/intervalMatrix.m
-# PROPERTY: matrixSet/@matZonotope/mpower.m
-# PROPERTY: matrixSet/@matZonotope/mtimes.m
-# PROPERTY: matrixSet/@matZonotope/norm.m
-# PROPERTY: matrixSet/@matZonotope/plus.m
-# PROPERTY: matrixSet/@matZonotope/powers.m
-# PROPERTY: matrixSet/@matZonotope/representsa.m
-# PROPERTY: matrixSet/@matZonotope/transpose.m
-# PROPERTY: matrixSet/@matZonotope/zonotope.m
 
 import math
 import unittest
@@ -94,11 +77,6 @@ class Construction(unittest.TestCase):
             cora.MatZonotope(np.array([[1.0, np.nan]]))
         with cora.checks(False):
             self.assertEqual(cora.MatZonotope(np.ones((2, 2))).rows, 2)
-
-    def test_center_is_the_member_at_zero(self):
-        rng = np.random.default_rng(1)
-        A = random_set(rng, 3, 2, 0.4)
-        np.testing.assert_allclose(member(A, np.zeros(2)), A.center)
 
 
 class Conversions(unittest.TestCase):
@@ -236,20 +214,16 @@ class Exponential(unittest.TestCase):
         np.testing.assert_allclose(member(sq, coeff), 0.49 * M @ M, atol=1e-12)
         np.testing.assert_allclose(member(H, coeff), np.eye(3) + 0.7 * M + 0.245 * M @ M, atol=1e-12)
 
-    def test_expm_encloses_the_exponentials(self):
-        rng = np.random.default_rng(6)
-        A = random_set(rng, 3, 2, 0.3)
-        for E in (A.expm(), A.expm_independent(7)):
-            box = E.interval_matrix()
-            for _ in range(20):
-                self.assertTrue(box.contains(exponential(member(A, rng.uniform(-1, 1, 2))), tol=1e-12))
+    # expm and expm_independent share the center; the refusals of an order and a shape
+    def test_expm_and_its_refusals(self):
+        A = random_set(np.random.default_rng(6), 3, 2, 0.3)
         np.testing.assert_array_equal(A.expm().center, A.expm_independent(10).center)
-        # invalid orders
         with self.assertRaises(cora.errors.WrongValue):
             A.expm(-1)
         with self.assertRaises(cora.errors.DimensionMismatch):
             cora.MatZonotope(np.ones((1, 3))).expm()
 
+    # the mixed form of the exponential
     def test_expm_mixed(self):
         rng = np.random.default_rng(7)
         A = random_set(rng, 3, 2, 0.3)

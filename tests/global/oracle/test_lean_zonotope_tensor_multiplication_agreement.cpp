@@ -1,6 +1,6 @@
-// test_lean_zonotope_tensor_multiplication_agreement - tensor_multiplication and its
+// test_lean_zonotope_tensor_multiplication_agreement - tensor_multiplication, its tensor-zonotope
 //
-// tensor-zonotope form of Zonotope against the CORALean oracle, by the interval hull
+// form and cubic_map of Zonotope against the CORALean oracle, by the interval hull
 //
 // The zonotope is centered at the origin, as CORA requires; the lists are CORA's options.list for
 // m generators (the ordered triples, the sorted ones and the column of each). The oracle's M is the
@@ -90,6 +90,21 @@ int main() {
                 Z.tensor_multiplication_zono(center.tensor, {first.tensor, second.tensor}, list),
                 lean::Zonotope(Z).tensor_multiplication_zono(
                     center.blocks, {first.blocks, second.blocks}, aux_lists(list)));
+        }
+    });
+    // the cubic map sums its products in another order too
+    oracle::run("zonotope.cubMap", [](oracle::Random &rnd) {
+        for (const auto &[n, m] : {std::pair{2, 2}, {3, 3}, {3, 6}}) {
+            const Zonotope Z = rnd.zonotope(n, m);
+            std::vector<std::vector<Tensor>> T(2);
+            std::vector<std::vector<lean::Tensor>> theirs_T(2);
+            for (std::size_t i = 0; i < 2; ++i)
+                for (int k = 0; k < n; ++k) {
+                    T[i].push_back(rnd.matrix(n, n));
+                    theirs_T[i].emplace_back(T[i].back());
+                }
+            // the cubic map
+            oracle::check_hull(Z.cubic_map(T), lean::Zonotope(Z).cub_map(theirs_T));
         }
     });
     return test::finish("lean zonotope tensor_multiplication");

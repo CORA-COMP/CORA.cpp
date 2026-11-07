@@ -4,13 +4,13 @@
 // dtypes:     "binary64", "ieee:<format>" (e.g. ieee:binary32), "dyadic:<p>", "fixedpoint:<f>",
 //             "float" (native binary64, sound under hardware axioms), "nearest" (unsound)
 // Process:    the command in CORACPP_ORACLE (run by sh -c) speaks one JSON line per request and
-//             response, e.g. "cd CORALean && lake exe oracle"; it starts on the first call. The
-//             the dtype nearest (no guarantees) goes to CORACPP_ORACLE_UNSOUND instead
+//             response, e.g. "cd CORALean && lake exe oracle"; it starts on the first call and
+//             serves every dtype
 // See also:   lean/tensor.h, lean/zonotope.h
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   07-November-2026
 // Reviewed:      ---
 
 #pragma once

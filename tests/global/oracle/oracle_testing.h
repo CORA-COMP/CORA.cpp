@@ -3,22 +3,22 @@
 // Syntax:     if (!test::oracle::available()) return 0;
 //             test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) { ... });
 //             test::oracle::check(Z.support_function(d), lean::Zonotope(Z).support_function(d));
-// Modes:      run calls the body twice with the same random operands, "exact" (CORA.cpp on the lean
-//             backend against the oracle at dtype nearest: bit for bit) and "sound" (CORA.cpp on
-//             its default backend against the sound oracle at binary64: inside its enclosure);
-//             check does the check of the mode, check_exact and check_enclosed one of them
-// Results:    CORA.cpp's result and the oracle's, as double, Tensor, Interval, Zonotope, bool, the
-//             indices of filter_out, a pair of halves, or Vertices; an oracle Certified answer
-//             is a proof only when `proved`
-// Skip:       available() is false, with a note, unless CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND
-//             are set; a test then returns at once. run skips an op the oracle does not serve
-//             (`lean::serves`), naming it once on stderr; serves(op) asks for another op, and
-//             nearest_is_strict() for a check that needs the machine's strict order at nearest
+// Passes:     run calls the body once per pass with the same random operands: "lean" (CORA.cpp on
+//             the lean backend against the oracle at dtype nearest: bit for bit) and one per other
+//             backend (the same body there against the same oracle answer, within tol: the backend
+//             sanity check); $CORACPP_ORACLE_PASS (lean, eigen, torch) runs one pass only
+// Results:    double, Tensor, the sets, bool, indices, pairs; bools and counts exact in every pass
+// Tolerance:  the backend pass compares by within_tol with the repository tolerance; a body that
+//             needs another passes run(op, body, Tolerance{tol, "reason"})
+// Skip:       available() is false, with a note, unless CORACPP_ORACLE is set; a test then returns
+//             at once. run skips an op the oracle does not serve (`lean::serves`), naming it once
+//             on stderr; serves(op) asks for another op, and nearest_is_strict() for a check that
+//             needs the machine's strict order at nearest
 // See also:   testing.h, cora/global/oracle/request.h
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   07-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -33,6 +33,7 @@
 #include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
+#include "cora/global/within_tol.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "testing.h"
 
@@ -40,7 +41,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <limits>
 #include <optional>
 #include <random>
 #include <set>
@@ -52,22 +52,31 @@ namespace test::oracle {
 
 namespace lean = cora::lean;
 
-enum class Mode { exact, sound };
+/// A tolerance of the backend pass other than the repository's, with the reason it is needed.
+struct Tolerance {
+    Tolerance(double value, const char *why) : tol(value), reason(why) {}
+    double tol;
+    const char *reason;
+};
 
-/// The mode of the running `run` (exact outside one), and the name of its op, for the messages.
-inline Mode &mode() {
-    static Mode m = Mode::exact;
-    return m;
+/// The pass of the running `run`: the backend's name, "lean" outside one; its op and tolerance.
+inline std::string &pass() {
+    static std::string name = "lean";
+    return name;
 }
 inline std::string &op_name() {
     static std::string name;
     return name;
 }
+inline cora::Tol &tolerance() {
+    static cora::Tol tol;
+    return tol;
+}
 
-/// Whether both oracles are configured; says so on stderr when not.
+/// Whether the oracle is configured; says so on stderr when not.
 inline bool available() {
-    const bool ok = std::getenv("CORACPP_ORACLE") && std::getenv("CORACPP_ORACLE_UNSOUND");
-    if (!ok) std::cerr << "skipped: set CORACPP_ORACLE and CORACPP_ORACLE_UNSOUND\n";
+    const bool ok = std::getenv("CORACPP_ORACLE") != nullptr;
+    if (!ok) std::cerr << "skipped: set CORACPP_ORACLE\n";
     return ok;
 }
 
@@ -216,11 +225,19 @@ inline std::string describe(const std::vector<int64_t> &s) {
 
 } // namespace detail
 
-// Exact checks ------------------------------------------------------------------------------
+// Comparisons ------------------------------------------------------------------------------
 
-/// The same bits: shape and every double, so -0 differs from 0; the first difference is printed.
+/// Whether two doubles agree in the running pass: the same bits on lean (so -0 differs from 0),
+/// within_tol of the pass's tolerance on another backend (two NaN agree).
+inline bool agree_value(double x, double y) {
+    // NOLINTNEXTLINE(bugprone-suspicious-memory-comparison): the bits are the point (NaN, -0)
+    if (pass() == "lean") return std::memcmp(&x, &y, sizeof(double)) == 0;
+    return (std::isnan(x) && std::isnan(y)) || cora::within_tol(x, y, tolerance());
+}
+
+/// The shape and every double agree; the first difference is printed.
 template <class A, class B>
-bool same_bits(const std::string &what, const A &cora_result, const B &lean_result) {
+bool agree(const std::string &what, const A &cora_result, const B &lean_result) {
     const std::vector<double> x = detail::values(cora_result), y = detail::values(lean_result);
     if (detail::shape(cora_result) != detail::shape(lean_result)) {
         std::cerr << "  " << what << ": shape " << detail::describe(detail::shape(cora_result))
@@ -229,27 +246,27 @@ bool same_bits(const std::string &what, const A &cora_result, const B &lean_resu
         return false;
     }
     for (std::size_t i = 0; i < x.size(); ++i)
-        // NOLINTNEXTLINE(bugprone-suspicious-memory-comparison): the bits are the point (NaN, -0)
-        if (std::memcmp(&x[i], &y[i], sizeof(double)) != 0) {
+        if (!agree_value(x[i], y[i])) {
             std::cerr << "  " << what << " [" << i << "]: " << detail::bits(x[i])
-                      << " in CORA.cpp, " << detail::bits(y[i]) << " in the oracle\n";
+                      << " in CORA.cpp on " << pass() << ", " << detail::bits(y[i])
+                      << " in the oracle\n";
             return false;
         }
     return true;
 }
 
-inline bool same_bits(const std::string &what, double a, double b) {
-    return same_bits(what, cora::Tensor::from_data({a}, {1, 1}),
-                     cora::Tensor::from_data({b}, {1, 1}));
+/// Two numbers, as 1 x 1 tensors.
+inline bool agree(const std::string &what, double a, double b) {
+    return agree(what, cora::Tensor::from_data({a}, {1, 1}), cora::Tensor::from_data({b}, {1, 1}));
 }
 
-inline bool same_bits(const std::string &what, const cora::Interval &a, const lean::Interval &b) {
-    const bool inf = same_bits(what + ".inf", a.inf(), b.inf()); // both are reported
-    return same_bits(what + ".sup", a.sup(), b.sup()) && inf;
+inline bool agree(const std::string &what, const cora::Interval &a, const lean::Interval &b) {
+    const bool inf = agree(what + ".inf", a.inf(), b.inf()); // both are reported
+    return agree(what + ".sup", a.sup(), b.sup()) && inf;
 }
 
 /// A whole space is its dimension: the same one.
-inline bool same_bits(const std::string &what, const cora::Fullspace &a, const lean::Fullspace &b) {
+inline bool agree(const std::string &what, const cora::Fullspace &a, const lean::Fullspace &b) {
     if (a.dim() != b.dim())
         std::cerr << "  " << what << ": R^" << a.dim() << " in CORA.cpp, R^" << b.dim()
                   << " in the oracle\n";
@@ -257,41 +274,37 @@ inline bool same_bits(const std::string &what, const cora::Fullspace &a, const l
 }
 
 /// An interval matrix against the oracle's interval matrix: its bounds.
-inline bool same_bits(const std::string &what, const cora::IntervalMatrix &a,
-                      const lean::Interval &b) {
-    return same_bits(what, a.interval(), b);
+inline bool agree(const std::string &what, const cora::IntervalMatrix &a, const lean::Interval &b) {
+    return agree(what, a.interval(), b);
 }
 
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).
-inline bool same_bits(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
-    const bool center = same_bits(what + ".c", a.center(), b.center()); // both are reported
-    return same_bits(what + ".G", a.generators(), b.generators()) && center;
+inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
+    const bool center = agree(what + ".c", a.center(), b.center()); // both are reported
+    return agree(what + ".G", a.generators(), b.generators()) && center;
 }
 
 /// The nominal part of the oracle's set (c, G and the equalities); its error boxes are not
 /// compared.
-inline bool same_bits(const std::string &what, const cora::ConZonotope &a,
-                      const lean::ConZonotope &b) {
+inline bool agree(const std::string &what, const cora::ConZonotope &a, const lean::ConZonotope &b) {
     const cora::ConZonotope other = b.nominal();
-    bool same = same_bits(what + ".c", a.c(), other.c()); // all are reported
-    same = same_bits(what + ".G", a.generators(), other.generators()) && same;
-    same = same_bits(what + ".A", a.A(), other.A()) && same;
-    return same_bits(what + ".b", a.b(), other.b()) && same;
+    bool same = agree(what + ".c", a.c(), other.c()); // all are reported
+    same = agree(what + ".G", a.generators(), other.generators()) && same;
+    same = agree(what + ".A", a.A(), other.A()) && same;
+    return agree(what + ".b", a.b(), other.b()) && same;
 }
 
 /// The nominal part of the oracle's matrix zonotope: the center and the generators in their order.
-inline bool same_bits(const std::string &what, const cora::MatZonotope &a,
-                      const lean::MatZonotope &b) {
+inline bool agree(const std::string &what, const cora::MatZonotope &a, const lean::MatZonotope &b) {
     const cora::MatZonotope other = b.gather().first;
     // both compared, so that both mismatches are reported
-    const bool center = same_bits(what + ".C", a.center(), other.center());
-    const bool generators = same_bits(what + ".G", a.generators(), other.generators());
+    const bool center = agree(what + ".C", a.center(), other.center());
+    const bool generators = agree(what + ".G", a.generators(), other.generators());
     return center && generators;
 }
 
 /// The members of a bundle, one by one, and their number.
-inline bool same_bits(const std::string &what, const cora::ZonoBundle &a,
-                      const lean::ZonoBundle &b) {
+inline bool agree(const std::string &what, const cora::ZonoBundle &a, const lean::ZonoBundle &b) {
     if (a.parallel_sets() != int64_t(b.zonotopes().size())) {
         std::cerr << "  " << what << ": " << a.parallel_sets() << " members in CORA.cpp, "
                   << b.zonotopes().size() << " in the oracle\n";
@@ -299,215 +312,94 @@ inline bool same_bits(const std::string &what, const cora::ZonoBundle &a,
     }
     bool ok = true;
     for (std::size_t i = 0; i < b.zonotopes().size(); ++i)
-        ok &= same_bits(what + "[" + std::to_string(i) + "]", a.zonotopes()[i], b.zonotopes()[i]);
+        ok &= agree(what + "[" + std::to_string(i) + "]", a.zonotopes()[i], b.zonotopes()[i]);
     return ok;
 }
 
 
 /// The nominal part of the oracle's polytope (its error boxes are not compared): the vertices, or
 /// the rows and the equalities.
-inline bool same_bits(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
+inline bool agree(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
     const cora::Polytope other = b.nominal();
     if (a.is_h_rep() != other.is_h_rep()) {
         std::cerr << "  " << what << ": the form differs\n";
         return false;
     }
-    if (!a.is_h_rep()) return same_bits(what + ".V", a.V(), other.V());
+    if (!a.is_h_rep()) return agree(what + ".V", a.V(), other.V());
     // all four compared, so that every mismatch is reported
-    const bool rows = same_bits(what + ".A", a.A(), other.A());
-    const bool offsets = same_bits(what + ".b", a.b(), other.b());
-    const bool equalities = same_bits(what + ".Ae", a.Ae(), other.Ae());
-    const bool equality_offsets = same_bits(what + ".be", a.be(), other.be());
+    const bool rows = agree(what + ".A", a.A(), other.A());
+    const bool offsets = agree(what + ".b", a.b(), other.b());
+    const bool equalities = agree(what + ".Ae", a.Ae(), other.Ae());
+    const bool equality_offsets = agree(what + ".be", a.be(), other.be());
     return rows && offsets && equalities && equality_offsets;
 }
 
 
 /// The nominal part of the oracle's capsule: center, generator and radius; the error box is not
 /// compared (at nearest it is empty).
-inline bool same_bits(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
+inline bool agree(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
     const cora::Capsule other = b.nominal();
     // all three compared, so that every mismatch is reported
-    const bool center = same_bits(what + ".c", a.c(), other.c());
-    const bool generator = same_bits(what + ".g", a.generator(), other.generator());
-    const bool radius = same_bits(what + ".r", a.r(), other.r());
+    const bool center = agree(what + ".c", a.c(), other.c());
+    const bool generator = agree(what + ".g", a.generator(), other.generator());
+    const bool radius = agree(what + ".r", a.r(), other.r());
     return center && generator && radius;
 }
 
 /// The two halves of a split.
 template <class A, class B>
-bool same_bits(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
-    const bool first = same_bits(what + ".1", a.first, b.first); // both are reported
-    return same_bits(what + ".2", a.second, b.second) && first;
+bool agree(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
+    const bool first = agree(what + ".1", a.first, b.first); // both are reported
+    return agree(what + ".2", a.second, b.second) && first;
 }
 
 template <class A, class B>
-bool same_bits(const std::string &what, const std::optional<A> &a, const std::optional<B> &b) {
+bool agree(const std::string &what, const std::optional<A> &a, const std::optional<B> &b) {
     if (a.has_value() != b.has_value()) {
         std::cerr << "  " << what << ": " << (a ? "a result" : "none") << " in CORA.cpp, "
                   << (b ? "a result" : "none") << " in the oracle\n";
         return false;
     }
-    return !a || same_bits(what, *a, *b);
+    return !a || agree(what, *a, *b);
 }
 
-inline bool same_bits(const std::string &what, bool a, bool b) {
+inline bool agree(const std::string &what, bool a, bool b) {
     if (a != b)
         std::cerr << "  " << what << ": " << a << " in CORA.cpp, " << b << " in the oracle\n";
     return a == b;
 }
 
 /// A dimension or a count, exact.
-inline bool same_bits(const std::string &what, int64_t a, int64_t b) {
+inline bool agree(const std::string &what, int64_t a, int64_t b) {
     if (a != b)
         std::cerr << "  " << what << ": " << a << " in CORA.cpp, " << b << " in the oracle\n";
     return a == b;
 }
 
-inline bool same_bits(const std::string &what, bool a, const lean::Certified &b) {
-    return same_bits(what, a, b.value);
+inline bool agree(const std::string &what, bool a, const lean::Certified &b) {
+    return agree(what, a, b.value);
 }
 
-inline bool same_bits(const std::string &what, const std::vector<int64_t> &a,
-                      const std::vector<int64_t> &b) {
+inline bool agree(const std::string &what, const std::vector<int64_t> &a,
+                  const std::vector<int64_t> &b) {
     if (a != b) std::cerr << "  " << what << ": the indices differ\n";
     return a == b;
 }
 
 /// A point result against a point interval of the oracle: both of its bounds.
-inline bool same_bits(const std::string &what, const cora::Tensor &a, const lean::Interval &b) {
-    const bool inf = same_bits(what + ".inf", a, b.inf()); // both are reported
-    return same_bits(what + ".sup", a, b.sup()) && inf;
+inline bool agree(const std::string &what, const cora::Tensor &a, const lean::Interval &b) {
+    const bool inf = agree(what + ".inf", a, b.inf()); // both are reported
+    return agree(what + ".sup", a, b.sup()) && inf;
 }
 
 /// A 1 x 1 tensor (CORA.cpp's scalar results) against the oracle's number.
-inline bool same_bits(const std::string &what, const cora::Tensor &a, double b) {
-    return same_bits(what, a.data()[0], b);
-}
-
-// Enclosure checks --------------------------------------------------------------------------
-
-/// A scalar of the oracle is an upper bound, which CORA.cpp's number may not exceed.
-inline bool enclosed(const std::string &what, double a, double bound) {
-    if (a > bound)
-        std::cerr << "  " << what << ": " << detail::bits(a) << " exceeds the bound "
-                  << detail::bits(bound) << "\n";
-    return a <= bound;
-}
-
-inline bool enclosed(const std::string &what, const cora::Interval &a, const lean::Interval &b) {
-    const std::vector<double> lo = a.inf().data(), hi = a.sup().data();
-    const std::vector<double> blo = b.inf().gather().data(), bhi = b.sup().gather().data();
-    for (std::size_t i = 0; i < lo.size(); ++i)
-        if (!(blo[i] <= lo[i] && hi[i] <= bhi[i])) {
-            std::cerr << "  " << what << " [" << i << "]: [" << detail::bits(lo[i]) << ", "
-                      << detail::bits(hi[i]) << "] is not inside [" << detail::bits(blo[i]) << ", "
-                      << detail::bits(bhi[i]) << "]\n";
-            return false;
-        }
-    return true;
-}
-
-/// The whole space has no enclosure but itself.
-inline bool enclosed(const std::string &what, const cora::Fullspace &a, const lean::Fullspace &b) {
-    return same_bits(what, a, b);
-}
-
-/// An interval matrix inside the oracle's, and a matrix of numbers between its bounds.
-inline bool enclosed(const std::string &what, const cora::IntervalMatrix &a,
-                     const lean::Interval &b) {
-    return enclosed(what, a.interval(), b);
-}
-
-inline bool enclosed(const std::string &what, const cora::Tensor &a, const lean::Interval &b) {
-    return enclosed(what, cora::Interval(a, a), b);
-}
-
-/// Inside the box of the oracle's matrix zonotope (its error box included).
-inline bool enclosed(const std::string &what, const cora::MatZonotope &a,
-                     const lean::MatZonotope &b) {
-    return enclosed(what + " (box)", a.interval_matrix(), b.interval_matrix());
-}
-
-/// Inside nominal + error box: the oracle proves the containment, or else (when it cannot) the
-/// interval hull of CORA.cpp's set at least lies in the hull of the enclosure.
-inline bool enclosed(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
-    const lean::Zonotope mine(a), hull = b.enclosure();
-    if (hull.contains(mine).proved) return true;
-    return enclosed(what + " (hull)", a.interval(), hull.interval());
-}
-
-/// The interval hull of CORA.cpp's capsule inside the box the oracle proves around its capsule.
-inline bool enclosed(const std::string &what, const cora::Capsule &a, const lean::Capsule &b) {
-    return enclosed(what + " (hull)", a.interval(), b.interval());
-}
-
-/// The interval hull of CORA.cpp's set inside the hull of the oracle's enclosure.
-inline bool enclosed(const std::string &what, const cora::ConZonotope &a,
-                     const lean::ConZonotope &b) {
-    return enclosed(what + " (hull)", a.interval(), b.interval());
-}
-
-/// Every member inside the oracle's member of the same position.
-inline bool enclosed(const std::string &what, const cora::ZonoBundle &a,
-                     const lean::ZonoBundle &b) {
-    if (a.parallel_sets() != int64_t(b.zonotopes().size())) return same_bits(what, a, b);
-    bool ok = true;
-    for (std::size_t i = 0; i < b.zonotopes().size(); ++i)
-        ok &= enclosed(what + "[" + std::to_string(i) + "]", a.zonotopes()[i], b.zonotopes()[i]);
-    return ok;
-}
-
-/// A polytope with error boxes has no nominal rows to compare; one without is the same one.
-inline bool enclosed(const std::string &what, const cora::Polytope &a, const lean::Polytope &b) {
-    return !b.exact() || same_bits(what, a, b);
-}
-
-/// A certified answer must not be contradicted: if the oracle proves it, CORA.cpp says the same.
-inline bool enclosed(const std::string &what, bool a, const lean::Certified &b) {
-    if (b.proved && a != b.value)
-        std::cerr << "  " << what << ": CORA.cpp says " << a << ", the oracle proves " << b.value
-                  << "\n";
-    return !b.proved || a == b.value;
-}
-
-/// An exact answer: a true of the oracle must not be contradicted.
-inline bool enclosed(const std::string &what, bool a, bool b) {
-    return enclosed(what, a, lean::Certified{b, b});
-}
-
-/// A dimension or a count is exact.
-inline bool enclosed(const std::string &what, int64_t a, int64_t b) {
-    return same_bits(what, a, b);
-}
-
-template <class A, class B>
-bool enclosed(const std::string &what, const std::pair<A, A> &a, const std::pair<B, B> &b) {
-    const bool first = enclosed(what + ".1", a.first, b.first); // both are reported
-    return enclosed(what + ".2", a.second, b.second) && first;
-}
-
-template <class A, class B>
-bool enclosed(const std::string &what, const std::optional<A> &a, const std::optional<B> &b) {
-    return !a || !b || enclosed(what, *a, *b);
-}
-
-/// A point-valued result has no enclosure: nothing to check against the sound oracle.
-inline bool enclosed(const std::string &, const cora::Tensor &, const lean::Tensor &) {
-    return true;
-}
-inline bool enclosed(const std::string &, const std::vector<int64_t> &,
-                     const std::vector<int64_t> &) {
-    return true;
-}
-
-/// A 1 x 1 tensor against the oracle's bound.
-inline bool enclosed(const std::string &what, const cora::Tensor &a, double bound) {
-    return enclosed(what, a.data()[0], bound);
+inline bool agree(const std::string &what, const cora::Tensor &a, double b) {
+    return agree(what, a.data()[0], b);
 }
 
 /// The interval hull of CORA.cpp's result against the oracle's, to a relative `rel`, for an
-/// operation that sums in another order than CORALean's (a few ulp of the sums, not bits), in both
-/// modes: the box of CORA.cpp's zonotope and of the oracle's enclosure, bound by bound.
+/// operation that sums in another order than CORALean's (a few ulp of the sums, not bits), in
+/// every pass: the box of CORA.cpp's zonotope and of the oracle's, bound by bound.
 inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
                        double rel = 1e-10) {
     const cora::Interval box = mine.interval();
@@ -521,75 +413,75 @@ inline void check_hull(const cora::Zonotope &mine, const lean::Zonotope &theirs,
     test::check(ok, op_name() + ": the box of the oracle's result");
 }
 
-/// Whether CORA's interval matrix, rebuilt from center c and radius r, lies in the oracle's, each
-/// bound widened by the rebuild's rounding eps (|c| + r): the rebuild misses the result by that.
-inline bool enclosed_rebuilt(const std::string &what, const cora::IntervalMatrix &a,
-                             const lean::Interval &b) {
-    const cora::Interval &box = a.interval();
-    const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
-    const std::vector<double> blo = b.inf().gather().data(), bhi = b.sup().gather().data();
-    for (std::size_t i = 0; i < lo.size(); ++i) {
-        const double c = 0.5 * (lo[i] + hi[i]), r = 0.5 * (hi[i] - lo[i]);
-        const double slack = std::numeric_limits<double>::epsilon() * (std::abs(c) + r);
-        if (!(blo[i] - slack <= lo[i] && hi[i] <= bhi[i] + slack)) {
-            std::cerr << "  " << what << " [" << i << "]: [" << detail::bits(lo[i]) << ", "
+/// CORA.cpp's box inside the oracle's, for an op whose oracle answer is a wider enclosure (the
+/// tests `*_enclosure` and `*_bound`, which are not bit-exact).
+inline void check_inside(const cora::Interval &mine, const lean::Interval &theirs) {
+    const std::vector<double> lo = mine.inf().data(), hi = mine.sup().data();
+    const std::vector<double> blo = theirs.inf().gather().data(),
+                              bhi = theirs.sup().gather().data();
+    bool ok = lo.size() == blo.size();
+    for (std::size_t i = 0; ok && i < lo.size(); ++i) {
+        // another backend may round a bound across the oracle's, within the pass's tolerance
+        const auto below = [](double x, double y) {
+            return x <= y || (pass() != "lean" && cora::within_tol(x, y, tolerance()));
+        };
+        ok = below(blo[i], lo[i]) && below(hi[i], bhi[i]);
+        if (!ok)
+            std::cerr << "  " << op_name() << " [" << i << "]: [" << detail::bits(lo[i]) << ", "
                       << detail::bits(hi[i]) << "] is not inside [" << detail::bits(blo[i]) << ", "
-                      << detail::bits(bhi[i]) << "] widened by " << slack << "\n";
-            return false;
-        }
+                      << detail::bits(bhi[i]) << "]\n";
     }
-    return true;
+    test::check(ok, op_name() + ": inside the oracle's box");
 }
 
 // The checks a test calls --------------------------------------------------------------------
 
-/// CORA.cpp's result equals the oracle's bit for bit (run it on the lean backend, oracle at
-/// dtype nearest).
+/// CORA.cpp's result agrees with the oracle's in the running pass, under the name `op`: bit for
+/// bit on lean, within the tolerance on another backend.
 template <class A, class B>
-void check_exact(const std::string &op, const A &cora_result, const B &lean_result) {
-    test::check(same_bits(op, cora_result, lean_result), op + ": exactly the oracle's result");
+void check(const std::string &op, const A &cora_result, const B &lean_result) {
+    test::check(agree(op, cora_result, lean_result),
+                op + (pass() == "lean" ? ": exactly the oracle's result"
+                                       : ": the oracle's result within tol on " + pass()));
 }
 
-/// CORA.cpp's result lies in the sound oracle's.
-template <class A, class B>
-void check_enclosed(const std::string &op, const A &cora_result, const B &sound_result) {
-    test::check(enclosed(op, cora_result, sound_result), op + ": inside the oracle's enclosure");
-}
-
-/// The check of the running mode, for the op of `run`.
+/// The check of the running pass, for the op of `run`.
 template <class A, class B>
 void check(const A &cora_result, const B &lean_result) {
-    if (mode() == Mode::exact)
-        check_exact(op_name(), cora_result, lean_result);
-    else
-        check_enclosed(op_name(), cora_result, lean_result);
+    check(op_name(), cora_result, lean_result);
 }
 
-/// The check of the running mode for an interval matrix rebuilt from center and radius: the same
-/// bits when exact, inside the enclosure widened by the rebuild's rounding when sound.
-inline void check_rebuilt(const cora::IntervalMatrix &cora_result,
-                          const lean::Interval &lean_result) {
-    if (mode() == Mode::exact)
-        check_exact(op_name(), cora_result, lean_result);
-    else
-        test::check(enclosed_rebuilt(op_name(), cora_result, lean_result),
-                    op_name() + ": inside the oracle's enclosure, up to the rebuild's rounding");
+/// The passes to run: $CORACPP_ORACLE_PASS, else lean and the default backend (if not lean).
+inline std::vector<std::string> passes() {
+    const char *only = std::getenv("CORACPP_ORACLE_PASS");
+    if (only && *only) return {only};
+    const std::string other = cora::backend().name();
+    if (other == "lean") return {"lean"};
+    return {"lean", other};
 }
 
-/// Calls body(Random&) in both modes with the same seed: exact (lean backend, dtype nearest) and
-/// sound (default backend, dtype binary64); what the body builds follows the mode.
+/// Calls body(Random&) once per pass with the same seed, the oracle at dtype nearest: on the
+/// lean backend, and on each other backend of `passes()` within `tol` of the oracle's answer.
 template <class F>
-void run(const std::string &op, F body, uint64_t seed = 7) {
+void run(const std::string &op, F body, cora::Tol tol = std::nullopt) {
     // a name with a dot is an op of the oracle (`zonotope.enlarge`); one without is a generic test
     if (op.find('.') != std::string::npos && !serves(op)) return;
     op_name() = op;
-    for (const Mode m : {Mode::exact, Mode::sound}) {
-        mode() = m;
-        const cora::BackendScope backend(m == Mode::exact ? "lean" : cora::backend().name());
-        const lean::DTypeScope dtype(m == Mode::exact ? "nearest" : "binary64");
-        Random rnd(seed);
+    tolerance() = tol;
+    for (const std::string &name : passes()) {
+        pass() = name;
+        const cora::BackendScope backend(name);
+        const lean::DTypeScope dtype("nearest");
+        Random rnd(7);
         body(rnd);
     }
+    pass() = "lean";
+}
+
+/// run with a tolerance of its own for the backend pass; `tol.reason` says why.
+template <class F>
+void run(const std::string &op, F body, const Tolerance &tol) {
+    run(op, body, cora::Tol(tol.tol));
 }
 
 } // namespace test::oracle

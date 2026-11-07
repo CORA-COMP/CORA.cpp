@@ -2,7 +2,7 @@
 
 Syntax:   python scripts/ci/affected_tests.py <base> <head>      the files changed between two commits
           python scripts/ci/affected_tests.py --files a.cpp b.h  the given files
-Output:   a regex such as ^(cont_set/zonotope/test_zonotope_plus|conventions)$, or ALL (run every
+Output:   a regex such as ^(cont_set/zonotope/test_zonotope_plus|conventions)(:[a-z]+)?$, or ALL (run every
           test), or NONE (nothing to run: the change is documentation only).
 Method:   the #include graph of src/, include/, tests/ and examples/ gives, for every test and
           example, the files it depends on. A source file of the library is a dependency of every
@@ -12,7 +12,7 @@ Method:   the #include graph of src/, include/, tests/ and examples/ gives, for 
 
 Authors:       Tobias Ladner
 Written:       02-November-2026
-Last update:   ---
+Last update:   07-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -39,6 +39,7 @@ ALL_PATTERNS = (r"^src/global/(tensor|backend)/", r"^include/cora/global/", r"(^
 NO_TEST_PATTERNS = (r"\.md$", r"^docs/", r"^LICENSE", r"^\.gitignore$", r"^scripts/competition/",
                     r"^tests/competition/", r"^examples/(matlab|benchmarks)/")
 CPP_SUFFIXES = (".cpp", ".h")
+BACKEND_COPY = "(:[a-z]+)?"  # the suffix of a test's run on another backend (CMakeLists.txt)
 
 
 def list_files():
@@ -166,7 +167,8 @@ def select(changed, files, read):
     if not chosen:
         return "NONE"
     chosen.add("conventions")
-    return "^(" + "|".join(sorted(re.escape(t) for t in chosen)) + ")$"
+    # an oracle test's copies on the other backends (`<name>:eigen`) follow the test
+    return "^(" + "|".join(sorted(re.escape(t) for t in chosen)) + ")" + BACKEND_COPY + "$"
 
 
 def changed_files(base, head):

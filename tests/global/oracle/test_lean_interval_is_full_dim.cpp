@@ -2,10 +2,9 @@
 //
 // `isFullDim`)
 //
-// The flat box is checked in both modes where the oracle compares strictly by the machine's order
-// at nearest. The oracles before batch 5 add a margin there that rounds away and read a zero width
-// as positive, so with them the exact mode compares boxes of positive width only; in the sound mode
-// a `true` of the oracle is a proof of full dimension and may not be contradicted.
+// The flat box is checked where the oracle compares strictly by the machine's order at nearest.
+// The oracles before batch 5 add a margin there that rounds away and read a zero width as positive,
+// so with them only boxes of positive width are compared.
 //
 // ORACLE: contSet/@interval/isFullDim.m
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
@@ -30,9 +29,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
             test::oracle::check(I.is_full_dim(), lean::Interval(I).is_full_dim());
-            if (test::oracle::mode() == test::oracle::Mode::exact &&
-                !test::oracle::nearest_is_strict())
-                continue;
+            if (!test::oracle::nearest_is_strict()) continue;
             // a flat box: the first coordinate has no width
             const Tensor flat = I.inf().slice(-2, 0, 1), rest = I.inf().slice(-2, 1, n);
             const Interval F(Tensor::concat({flat, rest}, -2),

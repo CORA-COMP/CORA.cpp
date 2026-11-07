@@ -36,19 +36,6 @@ Reviewed:      ---
 # CORA: contSet/@polytope/generateRandom.m
 # CORA: contSet/@polytope/randPoint_.m
 # CORA: contSet/@polytope/reduce.m
-# PROPERTY: contSet/@polytope/plus.m
-# PROPERTY: contSet/@polytope/minus.m
-# PROPERTY: contSet/@polytope/mtimes.m
-# PROPERTY: contSet/@polytope/volume_.m
-# PROPERTY: contSet/@polytope/isIntersecting_.m
-# PROPERTY: contSet/@polytope/isequal.m
-# PROPERTY: contSet/@polytope/reduceOverDomain.m
-# PROPERTY: contSet/@polytope/randPoint_.m
-# PROPERTY: contSet/@polytope/project.m
-# PROPERTY: contSet/@polytope/lift_.m
-# PROPERTY: contSet/@polytope/projectHighDim.m
-# PROPERTY: contSet/@polytope/distance.m
-# PROPERTY: contSet/@polytope/generateRandom.m
 
 import unittest
 

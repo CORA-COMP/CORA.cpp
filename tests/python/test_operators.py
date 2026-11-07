@@ -38,6 +38,9 @@ def box():
 # ============================================  MAIN  ============================================ #
 
 class ZonotopeOperators(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
+
     def test_a_matrix_times_a_zonotope_is_the_linear_map(self):
         M = cora.Tensor([[0.0, 1.0], [-1.0, 0.0]])
         for Z in (M * box(), M @ box(), box().linear_map(M)):
@@ -82,6 +85,7 @@ class ZonotopeOperators(unittest.TestCase):
 
 class IntervalOperators(unittest.TestCase):
     def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
         self.I = cora.Interval(cora.Tensor([-1.0, 0.0]), cora.Tensor([1.0, 2.0]))
 
     def test_intervals_add_and_a_vector_translates(self):

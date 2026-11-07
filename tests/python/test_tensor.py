@@ -28,6 +28,9 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 # ============================================  MAIN  ============================================ #
 
 class Constructors(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
+
     def test_a_tensor_is_made_from_data_and_stays_callable(self):
         t = cora.Tensor([[1, 2], [3, 4]])
         self.assertIsInstance(t, torch.Tensor)
@@ -56,6 +59,9 @@ class Constructors(unittest.TestCase):
 
 
 class Functions(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("torch"))  # torch is never the default
+
     def test_functions_of_numbers_and_arrays_need_no_math_or_numpy(self):
         self.assertAlmostEqual(float(cora.Tensor.cos(0.2)), math.cos(0.2))
         self.assertAlmostEqual(float(cora.Tensor.sin(0.2)), math.sin(0.2))

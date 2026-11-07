@@ -84,8 +84,41 @@ endif()
 # ------------------------------------------- tests ------------------------------------------------
 # tests/ mirrors src/; a test ending in _torch needs libtorch. test_codingConventions.py checks the
 # conventions of the sources, and coverage.py --check (the tags, the coverage tables, the ratchet) run first.
+# Every test has one label of its kind (ctest -L): unit, oracle (lean bit for bit against CORALean),
+# backend-<name> (an oracle test's body on another backend, against lean within tol), gradcheck (the
+# _torch tests), python, example, competition.
 
 enable_testing()
+
+# The backends other than lean that this build has, from the library's sources (lean is the reference).
+set(coracpp_backends "")
+foreach(source IN LISTS lib_sources)
+  if(source MATCHES "/src/global/backend/([a-z]+)\\.cpp$" AND NOT CMAKE_MATCH_1 STREQUAL "lean")
+    list(APPEND coracpp_backends "${CMAKE_MATCH_1}")
+  endif()
+endforeach()
+
+# A test with its label; every test is added here (the conventions test refuses a bare add_test).
+function(cora_add_test name label)
+  if(label STREQUAL "")
+    message(FATAL_ERROR "the test ${name} has no label")
+  endif()
+  add_test(NAME ${name} ${ARGN})
+  set_tests_properties(${name} PROPERTIES LABELS ${label})
+endfunction()
+
+# The label of the C++ test tests/<relative> by its folder and name: gradcheck for _torch, oracle in a
+# folder oracle/ (unit for the *_agreement, *_enclosure and *_bound tests there, which are not bit-exact).
+function(cora_test_label relative out)
+  get_filename_component(name "${relative}" NAME_WE)
+  if(name MATCHES "_torch$")
+    set(${out} gradcheck PARENT_SCOPE)
+  elseif(relative MATCHES "(^|/)oracle/" AND NOT name MATCHES "_(agreement|enclosure|bound)$")
+    set(${out} oracle PARENT_SCOPE)
+  else()
+    set(${out} unit PARENT_SCOPE)
+  endif()
+endfunction()
 
 # An executable `name` from `source`, in a folder of the build that mirrors the source tree (for every
 # configuration of a multi-config generator too).
@@ -112,15 +145,15 @@ function(cora_run_environment test)
 endfunction()
 
 if(Python3_EXECUTABLE)
-  add_test(NAME coverage
-           COMMAND "${Python3_EXECUTABLE}" scripts/coverage/coverage.py --check
-           WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-  add_test(NAME coverage/checker
-           COMMAND "${Python3_EXECUTABLE}" tests/global/test_coverage.py
-           WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-  add_test(NAME conventions
-           COMMAND "${Python3_EXECUTABLE}" tests/global/test_coding_conventions.py
-           WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+  cora_add_test(coverage unit
+                COMMAND "${Python3_EXECUTABLE}" scripts/coverage/coverage.py --check
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+  cora_add_test(coverage/checker unit
+                COMMAND "${Python3_EXECUTABLE}" tests/global/test_coverage.py
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+  cora_add_test(conventions unit
+                COMMAND "${Python3_EXECUTABLE}" tests/global/test_coding_conventions.py
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 endif()
 
 # the tests of the scripts (scripts/ci): tests/global/test_*.py, but the conventions test above
@@ -128,8 +161,7 @@ file(GLOB_RECURSE script_tests CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/tests/glob
 foreach(source IN LISTS script_tests)
   get_filename_component(name "${source}" NAME_WE)
   if(Python3_EXECUTABLE AND NOT name STREQUAL "test_coding_conventions")
-    add_test(NAME global/${name} COMMAND "${Python3_EXECUTABLE}" "${source}")
-    set_tests_properties(global/${name} PROPERTIES LABELS test)
+    cora_add_test(global/${name} unit COMMAND "${Python3_EXECUTABLE}" "${source}")
   endif()
 endforeach()
 
@@ -146,9 +178,19 @@ foreach(source IN LISTS test_sources)
   endif()
   cora_executable(${name} "${source}" "tests/${folder}")
   target_include_directories(${name} PRIVATE "${CMAKE_SOURCE_DIR}/tests" "${CMAKE_SOURCE_DIR}/src")
-  add_test(NAME ${folder}/${name} COMMAND ${name})
-  set_tests_properties(${folder}/${name} PROPERTIES LABELS test)
+  cora_test_label("${relative}" label)
+  cora_add_test(${folder}/${name} ${label} COMMAND ${name})
   cora_run_environment(${folder}/${name})
+  # a test of the oracle helper's run: its lean pass here, and its body once per other backend
+  file(READ "${source}" test_text)
+  if(test_text MATCHES "oracle::run\\(")
+    set_property(TEST ${folder}/${name} APPEND PROPERTY ENVIRONMENT "CORACPP_ORACLE_PASS=lean")
+    foreach(backend IN LISTS coracpp_backends)
+      cora_add_test(${folder}/${name}:${backend} backend-${backend} COMMAND ${name})
+      cora_run_environment(${folder}/${name}:${backend})
+      set_property(TEST ${folder}/${name}:${backend} APPEND PROPERTY ENVIRONMENT "CORACPP_ORACLE_PASS=${backend}")
+    endforeach()
+  endif()
 endforeach()
 
 # ------------------------------------------ examples ----------------------------------------------
@@ -171,8 +213,7 @@ foreach(source IN LISTS example_sources)
   endif()
   target_compile_definitions(${name} PRIVATE "CORACPP_PROGRAM=\"${name}.cpp\"")
   # the figures an example writes go to its own folder, not into the source tree
-  add_test(NAME examples/${name} COMMAND ${name} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/examples")
-  set_tests_properties(examples/${name} PROPERTIES LABELS example)
+  cora_add_test(examples/${name} example COMMAND ${name} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/examples")
   cora_run_environment(examples/${name})
 endforeach()
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/examples")

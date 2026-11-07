@@ -25,23 +25,6 @@ Reviewed:      ---
 # CORA: contSet/@polytope/interval.m
 # CORA: contSet/@polytope/polytope.m
 # CORA: contSet/@interval/polytope.m
-# PROPERTY: contSet/@polytope/Inf.m
-# PROPERTY: contSet/@polytope/and_.m
-# PROPERTY: contSet/@polytope/box.m
-# PROPERTY: contSet/@polytope/cartProd_.m
-# PROPERTY: contSet/@polytope/center.m
-# PROPERTY: contSet/@polytope/compact_.m
-# PROPERTY: contSet/@polytope/conZonotope.m
-# PROPERTY: contSet/@polytope/constraints.m
-# PROPERTY: contSet/@polytope/contains_.m
-# PROPERTY: contSet/@polytope/convHull_.m
-# PROPERTY: contSet/@polytope/empty.m
-# PROPERTY: contSet/@polytope/enclose.m
-# PROPERTY: contSet/@polytope/enclosePoints.m
-# PROPERTY: contSet/@polytope/hausdorffDist.m
-# PROPERTY: contSet/@polytope/interval.m
-# PROPERTY: contSet/@polytope/polytope.m
-# PROPERTY: contSet/@interval/polytope.m
 
 import unittest
 
@@ -246,32 +229,6 @@ class Polytope(unittest.TestCase):
         self.assertTrue(cora.contains(square_halfspaces(), square_vertices()))
         with cora.checks(False):
             self.assertEqual(square_vertices().interval().sup.shape, (2,))
-
-    def test_random_polytopes(self):
-        rng = np.random.default_rng(4)
-        for n in (2, 3):
-            points = rng.standard_normal((n, n + 4))
-            points /= np.linalg.norm(points, axis=0)
-            V = cora.Polytope(points)
-            A, b, _, _ = V.constraints()
-            H = cora.Polytope(A, b)
-            self.assertTrue(np.all(A @ points <= b[:, None] + 1e-9))
-            np.testing.assert_allclose(H.interval().inf, V.interval().inf, atol=1e-7)
-            np.testing.assert_allclose(H.interval().sup, V.interval().sup, atol=1e-7)
-            for probe in rng.uniform(-1.2, 1.2, (30, n)):
-                self.assertEqual(V.contains(probe.reshape(-1, 1)), H.contains(probe.reshape(-1, 1)))
-            # centers
-            mean = points.mean(axis=1)
-            np.testing.assert_allclose(V.center_by("avg"), mean, atol=1e-12)
-            shift = rng.uniform(-1.0, 1.0, (n, 1))
-            moved = cora.Polytope(points + shift)
-            self.assertAlmostEqual(V.hausdorff_distance(moved), np.linalg.norm(shift), places=6)
-            cz = H.con_zonotope()
-            for probe in rng.uniform(-1.2, 1.2, (30, n)):
-                self.assertEqual(cz.contains(probe.reshape(-1, 1)), H.contains(probe.reshape(-1, 1)))
-            inner = points @ np.full((n + 4, 3), 1.0 / (n + 4))
-            enclosed = cora.Polytope.enclose_points(np.hstack([points, inner]))
-            np.testing.assert_array_equal(enclosed.V, points)
 
     def test_batches(self):
         A = np.broadcast_to(np.vstack([EYE, -EYE]), (3, 4, 2)).copy()

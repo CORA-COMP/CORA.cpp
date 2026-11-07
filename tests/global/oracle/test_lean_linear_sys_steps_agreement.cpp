@@ -47,7 +47,7 @@ Operands draw(test::oracle::Random &rnd) {
 
 /// The step's enclosure lies in the oracle's, which bounds the remainders by norms; it is
 /// wider by at most `gap` (relative).
-void check_inside(const Zonotope &mine, const lean::Zonotope &theirs, double gap) {
+void aux_inside(const Zonotope &mine, const lean::Zonotope &theirs, double gap) {
     const Interval box = mine.interval();
     const auto [inf, sup] = theirs.interval().gather();
     const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
@@ -61,14 +61,13 @@ void check_inside(const Zonotope &mine, const lean::Zonotope &theirs, double gap
     test::check(ok, test::oracle::op_name() + ": inside the oracle's box and close to it");
 }
 
-/// The body on the default backend against the oracle at binary64 (the lean backend has no expm,
+/// The body on the default backend against the oracle at nearest (the lean backend has no expm,
 /// and these rows agree up to rounding, not bit for bit).
 template <class F>
-void run_agreement(const std::string &op, F body) {
+void aux_run(const std::string &op, F body) {
     if (!test::oracle::serves(op)) return;
     test::oracle::op_name() = op;
-    test::oracle::mode() = test::oracle::Mode::sound;
-    const lean::DTypeScope dtype("binary64");
+    const lean::DTypeScope dtype("nearest");
     test::oracle::Random rnd(7);
     body(rnd);
 }
@@ -83,17 +82,17 @@ int main() {
     using test::oracle::check_hull;
 
     // [e^{A dt}] X and the enclosure of the step, which the oracle calls post
-    run_agreement("linearSys.homogeneousSolution", [](test::oracle::Random &rnd) {
+    aux_run("linearSys.homogeneousSolution", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
         const HomogeneousSolution mine = LinearSys(o.A).homogeneous_solution(o.X, kStep, kTerms);
         const lean::LinearSys theirs(o.A);
         check_hull(mine.time_point, theirs.homogeneous_solution(o.X, kStep, kTerms), kAgreement);
         if (!test::oracle::serves("linearSys.post")) return;
-        check_inside(mine.time_interval, theirs.post(o.X, kStep, kTerms).time_interval, kGap);
+        aux_inside(mine.time_interval, theirs.post(o.X, kStep, kTerms).time_interval, kGap);
     });
 
     // the terms of the series stay apart
-    run_agreement("linearSys.particularSolution_timeVarying", [](test::oracle::Random &rnd) {
+    aux_run("linearSys.particularSolution_timeVarying", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
         check_hull(LinearSys(o.A).particular_solution_time_varying(o.U, kStep, kTerms),
                    lean::LinearSys(o.A).particular_solution_time_varying(o.U, kStep, kTerms),
@@ -101,7 +100,7 @@ int main() {
     });
 
     // for a point the closed form and the series agree; a set differs, CORALean keeps terms apart
-    run_agreement("linearSys.particularSolution_constant", [](test::oracle::Random &rnd) {
+    aux_run("linearSys.particularSolution_constant", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
         const Zonotope point(o.u, o.u.zeros_like({3, 0}));
         const ConstantSolution mine =
@@ -116,16 +115,16 @@ int main() {
     });
 
     // one step of reach: the end of the step and its enclosure
-    run_agreement("linearSys.oneStep", [](test::oracle::Random &rnd) {
+    aux_run("linearSys.oneStep", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
         const OneStep mine = LinearSys(o.A).one_step(o.X, o.U, o.u, kStep, kTerms);
         const lean::Step theirs = lean::LinearSys(o.A).one_step(o.X, o.U, o.u, kStep, kTerms);
         check_hull(mine.time_point, theirs.time_point, kAgreement);
-        check_inside(mine.time_interval, theirs.time_interval, kGap);
+        aux_inside(mine.time_interval, theirs.time_interval, kGap);
     });
 
     // the series of the input solution cut at a given order (CORA's tt_err)
-    run_agreement("linearSys.errorSolution_adaptive", [](test::oracle::Random &rnd) {
+    aux_run("linearSys.errorSolution_adaptive", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
         const Zonotope point(o.u, o.u.zeros_like({3, 0}));
         const LinearSys sys(o.A);

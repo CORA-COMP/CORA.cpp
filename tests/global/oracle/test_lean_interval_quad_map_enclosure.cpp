@@ -1,10 +1,9 @@
-// test_lean_interval_quad_map - Interval::quad_map against the CORALean oracle (its `quadMap`)
+// test_lean_interval_quad_map_enclosure - Interval::quad_map inside the CORALean oracle's box
 //
 // CORA: contSet/@interval/quadMap.m
 //
-// No ORACLE tag: CORALean builds the box through a polynomial zonotope, a different (wider)
-// enclosure than CORA's zonotope map, so a bit-exact test cannot exist. CORA.cpp's box must lie
-// inside the oracle's sound one.
+// CORALean builds the box through a polynomial zonotope, a different (wider) enclosure than CORA's
+// zonotope map, so a bit-exact test cannot exist. CORA.cpp's box lies inside the oracle's.
 //
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
@@ -32,8 +31,7 @@ int main() {
             std::vector<lean::Tensor> LQ;
             LQ.reserve(Q.size());
             for (const Tensor &M : Q) LQ.push_back(lean::Tensor::from(M));
-            test::oracle::check_enclosed("interval.quadMap", I.quad_map(Q),
-                                         lean::Interval(I).quad_map(LQ));
+            test::oracle::check_inside(I.quad_map(Q), lean::Interval(I).quad_map(LQ));
         }
     });
     return test::finish("lean interval quad_map");

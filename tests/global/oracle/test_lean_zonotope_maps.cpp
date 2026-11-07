@@ -31,29 +31,6 @@ namespace oracle = test::oracle;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-/// The result of a zonotope-valued operation against the oracle's: the same bits at nearest; in
-/// the sound mode inside the enclosure, by the interval hulls.
-template <class A, class B>
-void aux_check_set(const A &mine, const B &theirs) {
-    if (oracle::mode() == oracle::Mode::exact) return oracle::check(mine, theirs);
-    oracle::check(mine.interval(), theirs.enclosure().interval());
-}
-
-/// The two halves of a split: the same bits at nearest; in the sound mode each inside the
-/// oracle's by the interval hulls (the oracle's containment proof is too slow for the splits).
-template <class A, class B>
-void aux_check_halves(const A &mine, const B &theirs) {
-    if (oracle::mode() == oracle::Mode::exact) return oracle::check(mine, theirs);
-    aux_check_set(mine.first, theirs.first);
-    aux_check_set(mine.second, theirs.second);
-}
-
-} // namespace
-
 
 // ===========================================  MAIN  =========================================== //
 
@@ -71,7 +48,7 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             std::vector<int64_t> dims(n); // the states reversed into the last n of n + 3
             for (int i = 0; i < n; ++i) dims[i] = n + 2 - i;
-            aux_check_set(Z.project_high_dim(n + 3, dims),
+            oracle::check(Z.project_high_dim(n + 3, dims),
                           lean::Zonotope(Z).project_high_dim(n + 3, dims));
         }
     });
@@ -92,14 +69,14 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             // splits at the first and the last generator
             for (const int64_t gen : {int64_t(0), int64_t(m - 1)})
-                aux_check_halves(Z.split(gen, 1000), lean::Zonotope(Z).split(gen));
+                oracle::check(Z.split(gen, 1000), lean::Zonotope(Z).split(gen));
         }
     });
 
     oracle::run("zonotope.splitFirstGen", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            aux_check_halves(Z.split_first_gen(), lean::Zonotope(Z).split_first_gen());
+            oracle::check(Z.split_first_gen(), lean::Zonotope(Z).split_first_gen());
         }
     });
 
@@ -107,8 +84,8 @@ int main() {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             const auto mine = Z.split_longest_gen();
-            aux_check_halves(std::pair{mine.second, mine.first},
-                             lean::Zonotope(Z).split_longest_gen());
+            oracle::check(std::pair{mine.second, mine.first},
+                          lean::Zonotope(Z).split_longest_gen());
         }
     });
     return test::finish("lean zonotope maps");

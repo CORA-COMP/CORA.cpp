@@ -48,13 +48,7 @@ int main() {
             const IntervalMatrix A(rnd.box_matrix(m, n));
             const lean::MatZonotope theirs =
                 lean::IntervalMatrix{lean::Interval(A.interval())}.mat_zonotope();
-            if (oracle::mode() == oracle::Mode::exact)
-                oracle::check_exact("intervalMatrix.matZonotope", row_major(A.mat_zonotope()),
-                                    theirs);
-            // the input box is inside the box of the set, as the oracle proves
-            test::check(
-                oracle::enclosed("intervalMatrix.matZonotope input", A, theirs.interval_matrix()),
-                "intervalMatrix.matZonotope: the input box is inside the set");
+            oracle::check(row_major(A.mat_zonotope()), theirs);
         }
     });
     return test::finish("lean interval matrix mat_zonotope");

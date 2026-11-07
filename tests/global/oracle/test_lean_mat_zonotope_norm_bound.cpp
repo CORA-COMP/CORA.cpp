@@ -41,9 +41,8 @@ int main() {
             test::oracle::check(A.norm(Tensor::Norm::one), L.norm("1"));
             test::oracle::check(A.norm(Tensor::Norm::inf), L.norm("inf"));
             const double root = A.norm(Tensor::Norm::fro).data()[0], bound = L.norm("fro");
-            test::oracle::check_enclosed("matZonotope.norm fro", root, bound);
-            test::check(root >= bound * (1 - kRelative),
-                        "matZonotope.norm fro: close to the bound");
+            test::check(root <= bound && root >= bound * (1 - kRelative),
+                        "matZonotope.norm fro: below the bound and close to it");
         }
     });
     return test::finish("lean mat_zonotope norm bound");

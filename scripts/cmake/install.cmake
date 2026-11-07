@@ -43,8 +43,7 @@ install(FILES "${CMAKE_BINARY_DIR}/CORAConfig.cmake" "${CMAKE_BINARY_DIR}/CORACo
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/CORA")
 
 # The test: install into the build, then build and run a tiny program against the install tree.
-add_test(NAME install/consumer
-         COMMAND "${CMAKE_COMMAND}" "-DBUILD=${CMAKE_BINARY_DIR}" "-DSOURCE=${CMAKE_SOURCE_DIR}"
-                 "-DGENERATOR=${CMAKE_GENERATOR}" "-DCXX=${CMAKE_CXX_COMPILER}" "-DCXX_FLAGS=${CMAKE_CXX_FLAGS}"
-                 "-DCONFIG=$<CONFIG>" -P "${CMAKE_SOURCE_DIR}/scripts/cmake/install_test.cmake")
-set_tests_properties(install/consumer PROPERTIES LABELS test)
+cora_add_test(install/consumer unit
+              COMMAND "${CMAKE_COMMAND}" "-DBUILD=${CMAKE_BINARY_DIR}" "-DSOURCE=${CMAKE_SOURCE_DIR}"
+                      "-DGENERATOR=${CMAKE_GENERATOR}" "-DCXX=${CMAKE_CXX_COMPILER}" "-DCXX_FLAGS=${CMAKE_CXX_FLAGS}"
+                      "-DCONFIG=$<CONFIG>" -P "${CMAKE_SOURCE_DIR}/scripts/cmake/install_test.cmake")

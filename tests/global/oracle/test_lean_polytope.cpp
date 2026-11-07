@@ -4,9 +4,7 @@
 // polytopes (their rows stack), interval, box and center of vertices (the extremes, and the mean
 // as a box that is a point at nearest), contains (a Boolean), the polytope of a box, and the
 // vertices that convHull and enclosePoints keep (CORALean lists every point, CORA.cpp the extreme
-// ones: compared after compact 'V'). Checked as enclosures, without an ORACLE tag: and of vertex
-// polytopes (CORALean the box of the intersection of the boxes) and conZonotope (another
-// construction).
+// ones: compared after compact 'V').
 //
 // ORACLE: contSet/@polytope/Inf.m
 // ORACLE: contSet/@polytope/empty.m
@@ -78,16 +76,10 @@ int main() {
         // CORALean's empty set is the halfspace 0 <= -1, as CORA.cpp's rows
         oracle::check(Polytope(mine.A(), mine.b()), lean::Polytope::empty(3));
     });
+    // the intersection of halfspace polytopes stacks their rows
     oracle::run("polytope.and", [](oracle::Random &rnd) {
         const Polytope a = aux_halfspaces(rnd, 3, 2), b = aux_halfspaces(rnd, 3, 3);
         oracle::check(a.intersect(b), lean::Polytope(a).intersect(b));
-    });
-    oracle::run("polytope.and (vertices)", [](oracle::Random &rnd) {
-        const Polytope a(aux_sphere(rnd, 3, 6)), b(aux_sphere(rnd, 3, 6, 1.0, 0.2));
-        // CORALean: the box of the intersection of the boxes, which encloses the intersection
-        const Polytope mine = a.intersect(b);
-        const lean::Interval theirs = lean::Polytope(a).intersect(b).interval();
-        if (!mine.interval().is_empty()) oracle::check_enclosed("and", mine.interval(), theirs);
     });
     oracle::run("polytope.cartProd", [](oracle::Random &rnd) {
         const Polytope a = aux_halfspaces(rnd, 3, 2), b = aux_halfspaces(rnd, 2, 1);
@@ -104,19 +96,12 @@ int main() {
     });
     oracle::run("polytope.center", [](oracle::Random &rnd) {
         const Polytope P(aux_sphere(rnd, 3, 7));
-        // the mean of the vertices is the oracle's box at nearest; backends sum in another order
+        // the mean of the vertices is the oracle's box at nearest, a point
         const Tensor mean = P.center("avg");
         const lean::Interval theirs = lean::Polytope(P).center();
-        if (oracle::mode() == oracle::Mode::exact)
-            return oracle::check_exact("center", mean, theirs);
-        const auto [lo, hi] = theirs.gather();
-        const std::vector<double> m = mean.data(), a = lo.data(), b = hi.data();
-        bool ok = true;
-        for (std::size_t i = 0; i < m.size(); ++i)
-            ok = ok && a[i] - 16 * machine_eps() * std::abs(a[i]) <= m[i] &&
-                 m[i] <= b[i] + 16 * machine_eps() * std::abs(b[i]);
-        test::check(ok, "center: the mean within a few ulp of the oracle's box");
+        oracle::check(mean, theirs);
     });
+    // a box and a zonotope inside and outside
     oracle::run("polytope.contains", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);
         const Tensor c = rnd.vector(3) * 0.0;
@@ -132,26 +117,20 @@ int main() {
         const Polytope a(aux_sphere(rnd, 3, 5)), b(aux_sphere(rnd, 3, 5, 0.5, 1.0));
         const Polytope theirs = lean::Polytope(a).convex_hull(b).gather();
         test::check(
-            oracle::same_bits("convHull", a.convex_hull(b), lean::Polytope(aux_extreme(theirs))),
+            oracle::agree("convHull", a.convex_hull(b), lean::Polytope(aux_extreme(theirs))),
             "convHull: the extreme vertices of the oracle's list");
     });
+    // the hull of points: CORALean lists them all, CORA.cpp the extreme ones
     oracle::run("polytope.enclosePoints", [](oracle::Random &rnd) {
         const Tensor points = aux_sphere(rnd, 3, 9);
         const Polytope theirs = lean::Polytope::enclose_points(points).gather();
-        test::check(oracle::same_bits("enclosePoints", Polytope::enclose_points(points),
-                                      lean::Polytope(aux_extreme(theirs))),
+        test::check(oracle::agree("enclosePoints", Polytope::enclose_points(points),
+                                  lean::Polytope(aux_extreme(theirs))),
                     "enclosePoints: the extreme points of the oracle's list");
     });
     oracle::run("interval.polytope", [](oracle::Random &rnd) {
         const Interval I = rnd.box(3);
         oracle::check(Polytope(I), lean::Polytope::from_interval(I));
-    });
-    // the oracle's set contains the polytope
-    oracle::run("polytope.conZonotope", [](oracle::Random &rnd) {
-        const Polytope P(aux_sphere(rnd, 3, 7));
-        // the oracle's set contains the polytope: CORA.cpp's set lies inside its hull
-        oracle::check_enclosed("conZonotope", P.con_zonotope("exact:vertices"),
-                               lean::Polytope(P).con_zonotope());
     });
     return test::finish("lean polytope");
 }

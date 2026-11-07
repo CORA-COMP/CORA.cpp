@@ -220,17 +220,13 @@ void set_backend_threads([[maybe_unused]] int n) {
 }
 } // namespace detail
 
-// This thread's backend: a scope's, else the process default ($CORACPP_BACKEND, else the best).
+// This thread's backend: a scope's, else the process default ($CORACPP_BACKEND, else eigen).
 const Tensor::Backend &backend() {
     if (aux_scoped) return *aux_scoped;
     const Tensor::Backend *current = aux_default().load(std::memory_order_acquire);
     if (current) return *current;
     const char *env = std::getenv("CORACPP_BACKEND");
-#ifdef CORACPP_TORCH
-    const std::string name = env && *env ? env : "torch";
-#else
     const std::string name = env && *env ? env : "eigen";
-#endif
     const Tensor::Backend &chosen = backend(name);
     // the first thread to get here sets the default; another may have chosen the same meanwhile
     const Tensor::Backend *expected = nullptr;

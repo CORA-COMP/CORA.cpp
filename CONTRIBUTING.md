@@ -182,6 +182,11 @@ scripts/with_env.sh python -m unittest discover -s tests/python
 scripts/with_env.sh cmake --install build --prefix /tmp/cora   # the package of find_package(CORA)
 ```
 
+The suites are ctest labels (`ctest --preset core -L oracle`; docs/architecture.md, "Test suites"):
+`unit` (the C++ and script tests), `oracle` (lean bit for bit against CORALean), `backend-eigen`,
+`backend-torch` (an oracle test's body on that backend against lean, within tol), `gradcheck`, `python`
+(the bindings only) and `example`. The default backend is Eigen in every build; torch is chosen explicitly.
+
 `with_env.sh` enters the conda environment and puts the built `cora` package on `PYTHONPATH`.
 Options (`scripts/build.sh -D...`, see `CMakeLists.txt`): `CORACPP_CHECKS` (OFF compiles the input checks out), `CORACPP_TORCH`, `CORACPP_TORCH_DIR`, `CORACPP_NATIVE`,
 `CORACPP_BLAS`; `.coracpp-build` names another build directory. Tests run on every backend and the GPU;
@@ -211,11 +216,12 @@ scripts/with_env.sh python scripts/ci/check_quality.py tidy          # clang-tid
 
 Two tiers (`.github/workflows/`); the one check to require in the ruleset is `ci-gate`.
 - **Every push to a pull request, and the merge queue** (`ci.yml`, under 10 minutes): `checks` (whitespace, clang-format,
-  ruff, conventions, coverage when `scripts/coverage/coverage.py` exists), `tidy` (clang-tidy on the changed sources), then `linux-core` and `linux-python`, which
-  build everything and run only the tests the change can affect, and `instructions`, which fails
-  when a micro-benchmark of `benchmarks/micro` runs more than 3% more instructions than at the base
-  commit. A documentation-only change skips the builds. A new push cancels the older run. In the
-  merge queue the same jobs test the group on the `main` it lands on (no `instructions`).
+  ruff, conventions, coverage when `scripts/coverage/coverage.py` exists), `tidy` (clang-tidy on the changed sources), then `linux-core`
+  (labels `unit`, `oracle`, `backend-eigen`, `example`) and `linux-python` (`python`), one step per label on one build,
+  with the CORALean oracle: on a pull request only the tests the change can affect, in the merge queue every test of
+  the group on the `main` it lands on. `instructions` (pull requests only) fails when a micro-benchmark of
+  `benchmarks/micro` runs more than 3% more instructions than at the base commit. A documentation-only change skips
+  the builds. A new push cancels the older run. `backend-torch` and `gradcheck` need a libtorch build and run nightly.
 - **Every night** (`nightly.yml`): the full matrix of three operating systems, ASan and UBSan, the
   competition binary, clang-format, ruff and clang-tidy over the whole tree; skipped when `main` has not moved since the last successful night. A failed
   night opens an issue labelled `nightly`. A breakage that only another platform or preset shows
@@ -259,33 +265,32 @@ encloses every rounding error, in `binary64`, `ieee:<format>`, `dyadic:<p>` or `
 computation runs in a separate process, the CORALean `oracle`, that CORA.cpp starts and talks to with
 one JSON line per request.
 
-Two executables serve it: the `oracle` (sound, every dtype above) and the `oracle-unsound`, which
-offers `nearest` (round-to-nearest, no guarantees). `nearest` is what the `lean` Tensor backend
-(`BackendScope s("lean")`) must match bit for bit; `tests/global/oracle/test_lean_backend.cpp` checks that. The
-dtype `nearest` goes to the unsound oracle automatically.
+CORA.cpp runs one executable, CORALean's `oracle-unsound`: it serves every dtype above and `nearest`
+(round-to-nearest, no guarantees). `nearest` is what the `lean` Tensor backend (`BackendScope s("lean")`)
+must match bit for bit; `tests/global/oracle/test_lean_backend.cpp` checks that. CORA.cpp certifies no
+floating-point enclosures: that is CORALean's job.
 
 Use a local build (CORALean needs Lean via elan, leanprover.github.io):
 
 ```bash
 git clone https://gitlab.lrz.de/cps/coralean.git && cd coralean
-lake exe cache get && lake build oracle              # .lake/build/bin/oracle (oracle.exe on Windows)
-cmake --preset core -DCORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle
+lake exe cache get && lake build oracle-unsound      # .lake/build/bin/oracle-unsound (.exe on Windows)
+cmake --preset core -DCORACPP_ORACLE=/path/to/coralean/.lake/build/bin/oracle-unsound
 cmake --build --preset core && ctest --preset core -R lean
 ```
 
-`CORACPP_ORACLE` (and `CORACPP_ORACLE_UNSOUND`) is a CMake cache value (an environment variable of that name
+`CORACPP_ORACLE` is a CMake cache value (an environment variable of that name
 is read only by a test binary run by hand, outside CMake), and is OFF, `DOWNLOAD`, or the executable or a shell
-command that starts it (`cd /path/to/coralean && lake exe oracle`); without an oracle the tests and
+command that starts it (`cd /path/to/coralean && lake exe oracle-unsound`); without an oracle the tests and
 examples named `*lean*` skip. Outside CMake, set the environment variable of the same name. From WSL,
 the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the oracle pinned in
 `scripts/coralean.cmake` (Linux x86_64) and checks its hash. Protocol and operations:
 `experiments/oracle/README.md` in CORALean; the C++ side is `src/global/oracle/`. A dtype is set with
 `lean::DTypeScope s("ieee:binary32")` (Python: `with cora.lean.dtype("ieee:binary32"):`); values cross into CORA.cpp only when they are exact doubles.
 
-**A newer oracle.** CORALean grows by batches of ops; point the build at a newer pair and rerun the
-tests (`cmake --preset core -DCORACPP_ORACLE=<dir>/oracle -DCORACPP_ORACLE_UNSOUND=<dir>/oracle-unsound`,
-then build and `ctest --preset core -R lean`; the path is a local cache value, never committed).
-`echo '{"op":"ping"}' | <dir>/oracle` lists what it serves (`ops`) and its `version`.
+**A newer oracle.** CORALean grows by batches of ops; point the build at a newer one and rerun the
+tests (`cmake --preset core -DCORACPP_ORACLE=<dir>/oracle-unsound`, then build and `ctest --preset core -L oracle`;
+the path is a local cache value, never committed). `echo '{"op":"ping"}' | <dir>/oracle-unsound` lists what it serves (`ops`) and its `version`.
 A test of an op the running oracle does not serve skips it and names the op on stderr
 (`lean::serves(op)`, `cora.lean.serves(op)`), so an older oracle still passes; a check that depends on
 newer behaviour (`test::oracle::nearest_is_strict()`) skips the same way.
@@ -294,10 +299,12 @@ newer behaviour (`test::oracle::nearest_is_strict()`) skips the same way.
 
 An operation CORALean has gets an oracle test (`// ORACLE: <path>.m`, in `tests/global/oracle/` or
 `test_lean*`). `lean::Zonotope` and `lean::Interval` have one method per oracle op, named as
-CORA.cpp names CORA's (`support_function`, `is_intersecting`). The helper `oracle_testing.h`
-(Python: `oracle_testing.py`) draws seeded operands and runs the body twice: exact (CORA.cpp on the
-lean backend against the oracle at `nearest`: the same bits) and sound (CORA.cpp on its default
-backend against the oracle at `binary64`: inside its enclosure).
+CORA.cpp names CORA's (`support_function`, `is_intersecting`). The helper `oracle_testing.h` draws
+seeded operands and runs the body once per pass, the oracle at `nearest`:
+- `lean`: CORA.cpp on the lean backend, the same bits as the oracle (ctest label `oracle`);
+- `eigen`, `torch` (where built): the same body on that backend, within the repository tolerance of the
+  same answer (`within_tol`, labels `backend-eigen` and `backend-torch`): a sanity check of the backend.
+  A body that needs another tolerance passes it with its reason: `run(op, body, Tolerance{1e-10, "why"})`.
 
 ```cpp
 if (!test::oracle::available()) return 0;                  // skips without CORACPP_ORACLE
@@ -309,21 +316,22 @@ test::oracle::run("zonotope.supportFunc", [](test::oracle::Random &rnd) {
 
 `run` skips an op the oracle does not serve; a name without a dot (`"isBounded"`) labels a test of several ops
 and is never skipped. A result that CORA.cpp computes in another order than CORALean (a few ulp) is
-compared by `check_hull`, and one CORALean gives as a bound (`tan`, `zonotopeNorm`, `boundaryPoint`) by
-enclosure or bound, in files named `*_agreement`, `*_enclosure`, `*_bound`: neither is bit-exact, so neither
-carries an ORACLE tag.
+compared by `check_hull`, and one CORALean gives as a wider set or a bound (`quadMap`, `zonotopeNorm`,
+`boundaryPoint`) by `check_inside` or a bound, in files named `*_agreement`, `*_enclosure`, `*_bound`
+(label `unit`): neither is bit-exact, so their `// CORA:` tags count as `property`, never ORACLE, and the
+conventions test refuses `check_hull`, `check_inside` and `within_tol` in the other oracle tests.
 
-In Python: `@oracle_testing.needs_oracle`, `oracle_testing.run(op, body)` and
-`oracle_testing.check(a, b)`. Examples: `tests/global/oracle/test_lean_zonotope_support_function.cpp`
-and `tests/python/test_lean_oracle.py`. The coverage check requires the helper and the skip guard in
-every ORACLE test. An op without a method is one line of `ask(op, operands)` in
+The Python suite tests the bindings only; `tests/python/test_lean_oracle.py` crosses each wrapper to
+the oracle and back once. Example: `tests/global/oracle/test_lean_zonotope_support_function.cpp`. The
+coverage check requires the helper and the skip guard in every ORACLE test. An op without a method is one line of `ask(op, operands)` in
 `src/global/oracle/{interval,zonotope,con_zonotope,zono_bundle,polytope,ellipsoid}.cpp`.
 
 ### The oracle in CI
 
-Pull requests run the affected lean tests on the core job; the nightly runs every test, the Python ones
-included, against the oracle. `-DCORACPP_ORACLE=DOWNLOAD` fetches the pinned archive (both executables,
-about 50 MB) once per version into `build/<preset>/coralean/`. CORALean's CI publishes it: its job
+Pull requests run the affected `oracle` and `backend-eigen` tests on the core job, the merge queue all of
+them; the nightly runs every test against the oracle on python-torch, `backend-torch` included.
+`-DCORACPP_ORACLE=DOWNLOAD` fetches the pinned archive (about 50 MB) once per version into
+`build/<preset>/coralean/` and runs its `oracle-unsound`. CORALean's CI publishes it: its job
 `github-oracle` links and self-tests both executables on main and pushes them to the public mirror as
 the tag `oracle-<yyyymmdd>-<sha>` (https://github.com/TUMcps/CORALean/tags). To take a newer oracle, set
 `CORALEAN_VERSION` and `CORALEAN_ARCHIVE_SHA256` in `scripts/coralean.cmake` to that tag and the hash in

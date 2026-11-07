@@ -15,7 +15,7 @@ Exit code: 0 if all holds (or the files are written), else 1 with what is wrong.
 
 Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 Written:       02-November-2026
-Last update:   04-November-2026
+Last update:   07-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -64,8 +64,8 @@ Rows are the method files of CORA's classes ({{commit}}, `cora-inventory.json`).
 | `todo` | no source file tags it (`// CORA: <path>.m` in `src/` or `include/`) |
 | `untested` | a source tags it, but a C++ test and a Python test do not both declare it |
 | `ported` | a C++ test (`// CORA: <path>.m`) and a Python test (`# CORA: <path>.m`) declare it |
-| `property` | ported, and a test declares a property on randomized inputs with fixed seeds (`// PROPERTY: <path>.m`) |
-| `oracle` | ported, and a test compares it with CORALean (`// ORACLE: <path>.m`, in `tests/**/oracle/` or `test_lean*`): bit-exact at `nearest`, inside the sound enclosure |
+| `property` | ported, and a test declares a property on randomized inputs with fixed seeds (`// PROPERTY: <path>.m`), or compares it with CORALean by tolerance or containment (`// CORA: <path>.m` in a test `tests/**/oracle/*_{agreement,enclosure,bound}`) |
+| `oracle` | ported, and a test compares it with CORALean (`// ORACLE: <path>.m`, in `tests/**/oracle/` or `test_lean*`): the lean backend bit-exact at `nearest` |
 | `out-of-scope` | listed in [out-of-scope.md](out-of-scope.md) with a reason |
 
 To raise a row, add the tag with the test that earns it; `python scripts/coverage/coverage.py`
@@ -184,9 +184,17 @@ def scan(root, groups):
                 add(key, "cpp" if file.suffix == ".cpp" else "py", file)
                 if kind != "CORA":
                     add(key, kind.lower(), file)
+                elif is_inexact_oracle_test(root, file):
+                    add(key, "property", file)  # against CORALean, but not bit-exact
             elif key:
                 add(key, "source", file)
     return evidence, problems
+
+
+def is_inexact_oracle_test(root, file):
+    """Whether a test compares with CORALean by tolerance or containment: `*_agreement`,
+    `*_enclosure` or `*_bound` in a folder `oracle/` (CMake labels it unit, not oracle)."""
+    return "/oracle/" in "/" + file.relative_to(root).as_posix() and bool(INEXACT_TEST.search(file.stem))
 
 
 def check_test_tag(root, file, kind, number):

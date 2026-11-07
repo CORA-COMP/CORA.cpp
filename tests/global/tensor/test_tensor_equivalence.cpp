@@ -86,7 +86,7 @@ void aux_agree(const OpInfo &info, int64_t n, const Tensor &ref, const Tensor &g
                const Tensor &scale, const std::string &what) {
     if (!aux_shapes(what, ref, got)) return;
     if (info.agreement == Agreement::exact) {
-        check(test::oracle::same_bits(what, got, ref), what + ": the same bits as lean");
+        check(test::oracle::agree(what, got, ref), what + ": the same bits as lean");
         return;
     }
     const std::vector<double> r = ref.data(), g = got.data(), s = scale.data();

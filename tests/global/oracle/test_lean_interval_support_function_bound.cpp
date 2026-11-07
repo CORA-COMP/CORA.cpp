@@ -4,8 +4,8 @@
 //
 // The oracle's value is `Interval.boundDot`, an upper bound on the support function that sums in
 // its own order, so CORA.cpp's value (the same sum in another order) differs by a few ulp.
-// CORA.cpp's value does not exceed the oracle's upper bound (sound mode) and agrees with it to a
-// relative 1e-12 (both modes). No bit-exact test exists, so there is no ORACLE tag.
+// CORA.cpp's value agrees with it to a relative 1e-12. No bit-exact test exists, so there is no
+// ORACLE tag.
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
@@ -36,8 +36,6 @@ int main() {
             const double theirs = lean::Interval(I).support_function(d);
             test::check(std::abs(mine - theirs) <= 1e-12 * std::max(1.0, std::abs(theirs)),
                         "interval.supportFunc: agrees with the oracle's bound");
-            if (test::oracle::mode() == test::oracle::Mode::sound)
-                test::oracle::check_enclosed("interval.supportFunc", mine, theirs);
         }
     });
     return test::finish("lean interval support_function");

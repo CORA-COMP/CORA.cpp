@@ -7,7 +7,7 @@
 // around the center that is not the whole set, and a set with an equality row is never proved. So a
 // proof of the oracle must agree with CORA.cpp, and some are proved; the answers are not equal
 // otherwise (a point inside but far from the center is not proved), so there is no ORACLE tag. The
-// sets are zonotopes as constrained zonotopes, in both modes.
+// sets are zonotopes as constrained zonotopes.
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
@@ -43,8 +43,8 @@ int main() {
             for (const Tensor &p : {Z.center(), near, inside, outside}) {
                 const bool theirs_proved = theirs.contains(p);
                 proved += theirs_proved;
-                oracle::check_enclosed(oracle::op_name(), cz.contains(p),
-                                       lean::Certified{theirs_proved, theirs_proved});
+                test::check(!theirs_proved || cz.contains(p),
+                            "conZonotope.contains: a proved point is inside");
             }
         }
         test::check(proved > 0, "conZonotope.contains: the oracle proves some points");
@@ -56,8 +56,8 @@ int main() {
             const bool theirs = lean::ConZonotope::from_zonotope(lean::Zonotope(Z)).is_full_dim();
             proved += theirs;
             // the oracle proves the interior
-            oracle::check_enclosed(oracle::op_name(), ConZonotope(Z).is_full_dim(),
-                                   lean::Certified{theirs, theirs});
+            test::check(!theirs || ConZonotope(Z).is_full_dim(),
+                        "conZonotope.isFullDim: a proved interior is full-dimensional");
         }
         test::check(proved > 0, "conZonotope.isFullDim: the oracle proves some interiors");
     });

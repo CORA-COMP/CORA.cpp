@@ -24,19 +24,6 @@ Reviewed:      ---
 # CORA: contSet/@capsule/plot3D.m
 # CORA: contSet/@interval/capsule.m
 # CORA: contSet/@zonotope/capsule.m
-# PROPERTY: contSet/@capsule/radius.m
-# PROPERTY: contSet/@capsule/volume_.m
-# PROPERTY: contSet/@capsule/plus.m
-# PROPERTY: contSet/@capsule/project.m
-# PROPERTY: contSet/@capsule/supportFunc_.m
-# PROPERTY: contSet/@capsule/randPoint_.m
-# PROPERTY: contSet/@capsule/zonotope.m
-# PROPERTY: contSet/@capsule/polytope.m
-# PROPERTY: contSet/@capsule/vertices_.m
-# PROPERTY: contSet/@capsule/generateRandom.m
-# PROPERTY: contSet/@capsule/plot3D.m
-# PROPERTY: contSet/@interval/capsule.m
-# PROPERTY: contSet/@zonotope/capsule.m
 
 import unittest
 

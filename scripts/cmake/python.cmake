@@ -90,10 +90,9 @@ if(python_ok)
   # the package, stubs included, for the install tree (put <prefix>/python on PYTHONPATH)
   install(DIRECTORY "${module_directory}/" DESTINATION python/cora PATTERN "__pycache__" EXCLUDE)
 
-  add_test(NAME python
-           COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s tests/python
-           WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-  set_tests_properties(python PROPERTIES LABELS python)
+  cora_add_test(python python
+                COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s tests/python
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
   if(WIN32)
     set(python_path "${CMAKE_BINARY_DIR}")
   else()

@@ -1,12 +1,13 @@
 # CI, tier 1: every push to a pull request and every merge-queue group (target: under 10 minutes)
 #
 # `checks` needs no build (it includes clang-format and ruff on the changed files); `tidy` configures the
-# python preset and runs clang-tidy on the changed translation units. The Linux jobs build everything but run the tests the change can affect
-# (scripts/ci/affected_tests.py), the core job also those against the CORALean oracle; a documentation-only change skips them. In the merge queue the
-# change is the group against the main it lands on, so semantic conflicts between pull requests
-# show there. `instructions` compares the micro-benchmarks with the base commit's (pull requests
-# only). The whole matrix (every preset, Windows, macOS, sanitizers) is tier 3 (nightly.yml), which
-# opens an issue when it fails; merge.yml runs it on demand. Require `ci-gate`.
+# python preset and runs clang-tidy on the changed translation units. linux-core runs the labels unit, oracle,
+# backend-eigen and example, linux-python the label python, both against the CORALean oracle, one step per label:
+# on a pull request the tests the change can affect (scripts/ci/affected_tests.py), in the merge queue every test
+# of the group on the main it lands on. A documentation-only change skips them. backend-torch and gradcheck need a
+# libtorch build (about 30 minutes), so they run nightly. `instructions` compares the micro-benchmarks with the
+# base commit's (pull requests only). The whole matrix (every preset, Windows, macOS, sanitizers) is tier 3
+# (nightly.yml), which opens an issue when it fails; merge.yml runs it on demand. Require `ci-gate`.
 
 name: CI
 
@@ -54,8 +55,11 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
           HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+          EVENT: ${{ github.event_name }}
         run: |
           tests=$(python3 scripts/ci/affected_tests.py "$BASE" "$HEAD")
+          # the merge queue runs every test unless the change is documentation only
+          if [ "$EVENT" = merge_group ] && [ "$tests" != NONE ]; then tests=ALL; fi
           echo "selected: $tests"
           echo "tests=$tests" >> "$GITHUB_OUTPUT"
           # the micro-benchmarks run when the library, the build or the benchmarks changed
@@ -87,6 +91,7 @@ jobs:
       preset: core
       tests: ${{ needs.checks.outputs.tests }}
       oracle: true
+      labels: unit oracle backend-eigen example
 
   linux-python:
     needs: checks
@@ -95,6 +100,8 @@ jobs:
     with:
       preset: python
       tests: ${{ needs.checks.outputs.tests }}
+      oracle: true
+      labels: python
 
   instructions:
     needs: checks

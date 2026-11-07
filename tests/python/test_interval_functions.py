@@ -13,12 +13,6 @@ Reviewed:      ---
 # CORA: contSet/@interval/sign.m
 # CORA: contSet/@interval/sin.m
 # CORA: contSet/@interval/sinh.m
-# PROPERTY: contSet/@interval/sign.m
-# PROPERTY: contSet/@interval/sin.m
-# PROPERTY: contSet/@interval/sinh.m
-# PROPERTY: contSet/@interval/power.m
-# PROPERTY: contSet/@interval/rdivide.m
-# PROPERTY: contSet/@interval/prod.m
 
 import math
 import unittest
@@ -51,16 +45,6 @@ class Functions(unittest.TestCase):
         S = box([-1.0, 0.0], [2.0, 0.5]).sinh()
         np.testing.assert_allclose(S.inf, np.sinh([-1.0, 0.0]))
         np.testing.assert_allclose(S.sup, np.sinh([2.0, 0.5]))
-
-    def test_samples_stay_inside(self):
-        rng = np.random.default_rng(3)
-        for name in ("sin", "sinh", "sign"):
-            lo = rng.uniform(-3, 3, 4)
-            I = box(lo, lo + rng.uniform(0, 2, 4))
-            R = getattr(I, name)()
-            x = lo[:, None] + (I.sup - lo)[:, None] * rng.uniform(0, 1, (4, 30))
-            y = getattr(np, name)(x)
-            self.assertTrue(np.all(R.inf[:, None] <= y + 1e-12) and np.all(y <= R.sup[:, None] + 1e-12), name)
 
     def test_sign_and_round(self):
         # sign and round

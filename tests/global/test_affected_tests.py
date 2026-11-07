@@ -50,7 +50,9 @@ def pick(*changed):
     # the tests are a set of names
     if result in ("ALL", "NONE"):
         return result
-    return set(result[2:-2].split("|"))
+    prefix, suffix = "^(", ")" + at.BACKEND_COPY + "$"
+    assert result.startswith(prefix) and result.endswith(suffix), result
+    return set(result[len(prefix):-len(suffix)].split("|"))
 
 
 # ============================================  MAIN  ============================================ #
@@ -77,6 +79,13 @@ class SelectionTest(unittest.TestCase):
         self.assertEqual(pick("tests/cont_set/interval/test_interval_plus.cpp"),
                          {"cont_set/interval/test_interval_plus", "conventions"})
         self.assertEqual(pick("tests/global/test_other.py"), {"global/test_other", "conventions"})
+
+    def test_the_backend_copies_follow_their_test(self):
+        # the test and its run on eigen, not a test whose name only starts the same
+        regex = at.select(["tests/cont_set/interval/test_interval_plus.cpp"], sorted(TREE), TREE.__getitem__)
+        for name in ("cont_set/interval/test_interval_plus", "cont_set/interval/test_interval_plus:eigen"):
+            self.assertRegex(name, regex)
+        self.assertNotRegex("cont_set/interval/test_interval_plus_more", regex)
 
     def test_testing_header_selects_every_cpp_test(self):
         self.assertEqual(pick("tests/testing.h"), "ALL")

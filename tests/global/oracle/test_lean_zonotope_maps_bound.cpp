@@ -1,4 +1,4 @@
-// test_lean_zonotope_maps_sound - radius, rotate and quad_map of Zonotope against the oracle,
+// test_lean_zonotope_maps_bound - radius, rotate and quad_map of Zonotope against the oracle,
 //
 // within a stated bound
 //
@@ -10,8 +10,8 @@
 // takes square roots, which the oracle computes by Newton steps rounded up (a few ulp above the
 // correctly rounded ones); rotate takes cos and sin of the platform's math library, where the
 // oracle encloses them (an interval rotation matrix); quad_map is CORA's zonotope map, where
-// CORALean maps through a polynomial zonotope (a different, wider set), so it only has to lie
-// inside the oracle's enclosure. Radius and rotate are compared within a relative 1e-12.
+// CORALean maps through a polynomial zonotope (a different, wider set), so its box only has to
+// lie inside the oracle's. Radius and rotate are compared within a relative 1e-12.
 //
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
@@ -85,8 +85,8 @@ int main() {
             LQ.reserve(Q.size());
             // the quadratic map of zonotopes
             for (const Tensor &M : Q) LQ.push_back(lean::Tensor::from(M));
-            oracle::check_enclosed("zonotope.quadMap", Z.quad_map(Q),
-                                   lean::Zonotope(Z).quad_map(LQ));
+            oracle::check_inside(Z.quad_map(Q).interval(),
+                                 lean::Zonotope(Z).quad_map(LQ).interval());
         }
     });
 

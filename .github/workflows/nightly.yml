@@ -72,6 +72,7 @@ jobs:
     with:
       preset: core
       ccache_key: -sanitizers
+      free_disk: true
       build_type: RelWithDebInfo
       cxx_flags: -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
 
@@ -104,14 +105,14 @@ jobs:
           cmake --build build --parallel "$(nproc)"
           ctest --test-dir build -j4 --output-on-failure -L competition
 
-  # Every test, the Python ones included, against the CORALean oracle pinned in scripts/coralean.cmake
-  # (pull requests run only the affected ones, on core).
+  # Every test, the Python ones included, against the CORALean oracle pinned in scripts/coralean.cmake, on
+  # libtorch: the only run of backend-torch (an oracle test's body on torch against lean) with the oracle.
   oracle:
     needs: changed
     if: needs.changed.outputs.run == 'true'
     uses: ./.github/workflows/build.yml
     with:
-      preset: python
+      preset: python-torch
       ccache_key: -oracle
       oracle: true
 

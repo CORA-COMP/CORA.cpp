@@ -1,6 +1,7 @@
 // test_zonotope_rotate - zonotope rotate: the zonotope turned in the plane of two states
 //
 // CORA: contSet/@zonotope/rotate.m
+// PROPERTY: contSet/@zonotope/rotate.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026

@@ -4,7 +4,7 @@
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   07-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/oracle.h"
@@ -67,30 +67,22 @@ struct Process {
 #endif
 };
 
-// [0] the sound oracle (CORACPP_ORACLE), [1] the unsound oracle (CORACPP_ORACLE_UNSOUND)
-Process oracles[2];
+// The one oracle process (CORACPP_ORACLE), which serves every dtype.
+Process oracle_process;
 
-const char *aux_command(int which) {
-    const char *name = which ? "CORACPP_ORACLE_UNSOUND" : "CORACPP_ORACLE";
-    const char *command = std::getenv(name);
+const char *aux_command() {
+    const char *command = std::getenv("CORACPP_ORACLE");
     if (!command || !*command)
-        CORA_FAIL(Error::special_error, std::string("lean: set ") + name +
-                                            " to the command that starts "
-                                            "the CORALean " +
-                                            (which ? "unsound " : "") +
-                                            "oracle, e.g. "
-                                            "'cd CORALean && lake exe oracle'");
+        CORA_FAIL(Error::special_error, "lean: set CORACPP_ORACLE to the command that starts the "
+                                        "CORALean oracle, e.g. 'cd CORALean && lake exe oracle'");
     return command;
 }
-
-// The unsound oracle serves the dtype without a soundness guarantee.
-int aux_which(const std::string &dtype) { return dtype == "nearest"; }
 
 #ifdef _WIN32
 
 // Starts `cmd /c <command>` with its stdin and stdout on two pipes.
-void aux_start(Process &oracle, int which) {
-    const std::string command = std::string("cmd /s /c \"") + aux_command(which) + "\"";
+void aux_start(Process &oracle) {
+    const std::string command = std::string("cmd /s /c \"") + aux_command() + "\"";
     SECURITY_ATTRIBUTES inheritable{sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE};
     HANDLE child_in, parent_out, parent_in, child_out;
     if (!CreatePipe(&child_in, &parent_out, &inheritable, 0) ||
@@ -131,8 +123,8 @@ void aux_wait(Process &oracle) {
 #else
 
 // Starts `sh -c <command>` with its stdin and stdout on two pipes.
-void aux_start(Process &oracle, int which) {
-    const char *command = aux_command(which);
+void aux_start(Process &oracle) {
+    const char *command = aux_command();
     int to_child[2], from_child[2];
     if (pipe(to_child) || pipe(from_child))
         CORA_FAIL(Error::special_error, "lean: cannot create pipes");
@@ -203,10 +195,8 @@ DTypeScope::~DTypeScope() { scoped_dtype = previous_; }
 
 // Failures of the oracle surface as exceptions with its message.
 Json call(const Json &request) {
-    const Json *dtype = request.find("dtype");
-    const int which = dtype ? aux_which(dtype->text) : 0;
-    Process &oracle = oracles[which];
-    if (!oracle.running) aux_start(oracle, which);
+    Process &oracle = oracle_process;
+    if (!oracle.running) aux_start(oracle);
     fputs((request.dump() + "\n").c_str(), oracle.out);
     fflush(oracle.out);
     // one line per request, one per response
@@ -233,13 +223,11 @@ bool serves(const std::string &op) {
 }
 
 void shutdown() {
-    for (Process &oracle : oracles) {
-        if (!oracle.running) continue;
-        fclose(oracle.out);
-        fclose(oracle.in);
-        aux_wait(oracle);
-        oracle = Process{};
-    }
+    if (!oracle_process.running) return;
+    fclose(oracle_process.out);
+    fclose(oracle_process.in);
+    aux_wait(oracle_process);
+    oracle_process = Process{};
 }
 
 } // namespace cora::lean

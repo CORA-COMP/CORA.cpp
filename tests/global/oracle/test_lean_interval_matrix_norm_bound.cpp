@@ -1,4 +1,4 @@
-// test_lean_interval_matrix_norm - IntervalMatrix::norm against the CORALean oracle
+// test_lean_interval_matrix_norm_bound - IntervalMatrix::norm against the CORALean oracle
 //
 // The norms one and inf are sums and maxima of the same entries: bit for bit on the lean backend.
 // The Frobenius norm is a square root, which the oracle bounds from above by Newton steps:
@@ -42,9 +42,8 @@ int main() {
             test::oracle::check(A.norm(Tensor::Norm::one), L.norm("1"));
             test::oracle::check(A.norm(Tensor::Norm::inf), L.norm("inf"));
             const double root = A.norm(Tensor::Norm::fro).data()[0], bound = L.norm("fro");
-            test::oracle::check_enclosed("intervalMatrix.norm fro", root, bound);
-            test::check(root >= bound * (1 - kRelative),
-                        "intervalMatrix.norm fro: close to the bound");
+            test::check(root <= bound && root >= bound * (1 - kRelative),
+                        "intervalMatrix.norm fro: below the bound and close to it");
             // the oracle's bound is above the norm of every matrix of the set
             for (int trial = 0; trial < 10; ++trial) {
                 std::vector<double> u(m * n);
@@ -52,12 +51,12 @@ int main() {
                 const Tensor w = Tensor::from_data(u, {m, n});
                 const Tensor M = A.infimum() + (A.interval().sup() - A.infimum()).multiply(w);
                 const Tensor member_norm = M.matrix_norm(Tensor::Norm::fro);
-                test::oracle::check_enclosed("intervalMatrix.norm fro: a member", member_norm,
-                                             bound);
+                test::check(member_norm.item() <= bound,
+                            "intervalMatrix.norm fro: a member below the bound");
             }
         }
     });
-    return test::finish("lean interval_matrix norm");
+    return test::finish("lean interval_matrix norm bound");
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -3,7 +3,7 @@
 // `matZonotope.*` ops)
 //
 // At nearest the nominal part (the center and the generators, in their order) is the oracle's bit
-// for bit; in the sound mode the box of CORA.cpp's set lies in the box of the oracle's enclosure.
+// for bit.
 //
 // ORACLE: matrixSet/@matZonotope/center.m
 // ORACLE: matrixSet/@matZonotope/intervalMatrix.m
@@ -67,6 +67,7 @@ int main() {
             check(A.matmul(B), lean::MatZonotope(A).matmul(lean::MatZonotope(B)));
         }
     });
+    // integer powers, the zeroth included
     test::oracle::run("matZonotope.mpower", [&](Random &rnd) {
         for (const auto &[n, unused, h] : shapes) {
             const MatZonotope A = rnd.mat_zonotope(n, n, std::min<int64_t>(h, 2));
@@ -83,15 +84,11 @@ int main() {
                 check(powers[k], lean::MatZonotope(A).powers(lean::MatZonotope(P), k));
         }
     });
+    // the matrix zonotope as a vector zonotope
     test::oracle::run("matZonotope.zonotope", [&](Random &rnd) {
         for (const auto &[r, c, h] : shapes) {
             const MatZonotope A = rnd.mat_zonotope(r, c, h);
-            // sound mode: by interval hulls, the oracle's 16-dim zonotope containment is too slow
-            const lean::Zonotope theirs = lean::MatZonotope(A).zonotope();
-            if (test::oracle::mode() == test::oracle::Mode::exact)
-                check(A.zonotope(), theirs);
-            else
-                check(A.zonotope().interval(), theirs.enclosure().interval());
+            check(A.zonotope(), lean::MatZonotope(A).zonotope());
         }
     });
     test::oracle::run("matZonotope.representsa", [&](Random &rnd) {

@@ -44,7 +44,6 @@ Reviewed:      ---
 # CORA: contSet/@contSet/norm.m
 # CORA: contSet/@contSet/norm_.m
 # CORA: contSet/@contSet/enclose.m
-# PROPERTY: contSet/@contSet/projectOnHyperplane.m
 
 import unittest
 

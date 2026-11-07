@@ -46,11 +46,11 @@ int main() {
             const lean::Zonotope L(Z), L2(Z2);
 
             // the same operation in CORA.cpp and in the oracle
-            test::oracle::check_exact("mtimes" + size, Z.linear_map(M), L.linear_map(M));
-            test::oracle::check_exact("plus" + size, Z.plus(Z2), L.plus(L2));
-            test::oracle::check_exact("reduce" + size, Z.reduce(2), L.reduce(2));
-            test::oracle::check_exact("linComb" + size, Z.linear_combination(Z2),
-                                      L.linear_combination(L2));
+            test::oracle::check("mtimes" + size, Z.linear_map(M), L.linear_map(M));
+            test::oracle::check("plus" + size, Z.plus(Z2), L.plus(L2));
+            test::oracle::check("reduce" + size, Z.reduce(2), L.reduce(2));
+            test::oracle::check("linComb" + size, Z.linear_combination(Z2),
+                                L.linear_combination(L2));
         }
     }
     return test::finish("lean backend");

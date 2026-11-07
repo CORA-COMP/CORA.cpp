@@ -2,8 +2,7 @@
 //
 // The oracle answers the squared length rounded up (its `normSq`, the float definition has no
 // square root). On the lean backend CORA.cpp's norm is the correctly rounded root of the same sum
-// of squares, so it equals the root of the oracle's number bit for bit; in the sound mode it may
-// exceed the root of the upper bound by the rounding of the root and the sum, kRelative (4 eps).
+// of squares, so it equals the root of the oracle's number bit for bit.
 //
 // ORACLE: contSet/@interval/norm_.m
 // Authors:       Tobias Ladner
@@ -16,19 +15,10 @@
 #include "oracle_testing.h"
 
 #include <cmath>
-#include <limits>
 
 using namespace cora;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
-
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-constexpr double kRelative = 4 * std::numeric_limits<double>::epsilon();
-
-}
 
 
 // ===========================================  MAIN  =========================================== //
@@ -39,11 +29,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
             const double root = std::sqrt(lean::Interval(I).norm());
-            const double mine = I.norm().data()[0];
-            if (test::oracle::mode() == test::oracle::Mode::exact)
-                test::oracle::check_exact("interval.norm", mine, root);
-            else
-                test::oracle::check_enclosed("interval.norm", mine, root * (1 + kRelative));
+            test::oracle::check("interval.norm", I.norm().data()[0], root);
         }
     });
     return test::finish("lean interval norm");

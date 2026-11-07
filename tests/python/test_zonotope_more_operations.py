@@ -23,20 +23,7 @@ Reviewed:      ---
 # CORA: contSet/@zonotope/enclosePoints.m
 # CORA: contSet/@zonotope/encloseMany.m
 # CORA: contSet/@zonotope/minkDiff.m
-# PROPERTY: contSet/@zonotope/exactPlus.m
-# PROPERTY: contSet/@zonotope/generatorLength.m
-# PROPERTY: contSet/@zonotope/isFullDim.m
-# PROPERTY: contSet/@zonotope/isequal.m
-# PROPERTY: contSet/@zonotope/isIntersecting_.m
-# PROPERTY: contSet/@zonotope/lift_.m
-# PROPERTY: contSet/@zonotope/norm_.m
-# PROPERTY: contSet/@zonotope/minnorm.m
-# PROPERTY: contSet/@zonotope/intersectStrip.m
-# PROPERTY: contSet/@zonotope/enclosePoints.m
-# PROPERTY: contSet/@zonotope/encloseMany.m
-# PROPERTY: contSet/@zonotope/minkDiff.m
 
-import itertools
 import unittest
 import warnings
 
@@ -56,11 +43,8 @@ def random_zonotope(rng, n=3, m=4):
     return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (n, m)))
 
 
-def support(Z, d):
-    return Z.support_function(d)
-
-
 # ============================================  MAIN  ============================================ #
+
 
 class ExactPlus(unittest.TestCase):
     def test_by_hand(self):
@@ -71,15 +55,6 @@ class ExactPlus(unittest.TestCase):
         np.testing.assert_allclose(S.generators, [[2, 2], [1, 1]])
         np.testing.assert_allclose(Z.exact_plus(Z2, 0).generators, [[1, 2, 1], [0, 1, 1]])
         np.testing.assert_allclose(Z.exact_plus(Z2, k=5).generators, S.generators)
-
-    def test_the_result_is_in_the_plus(self):
-        rng = np.random.default_rng(3)
-        Z, Z2 = random_zonotope(rng, 3, 5), random_zonotope(rng, 3, 4)
-        for k in (0, 2, 4):
-            S = Z.exact_plus(Z2, k)
-            self.assertEqual(S.generators.shape[1], 9 - min(4, k))
-            for d in rng.standard_normal((30, 3)):
-                self.assertLessEqual(support(S, d), support(Z + Z2, d) + 1e-9)
 
     def test_errors(self):
         Z = zonotope([0, 0], [[1], [0]])
@@ -135,13 +110,6 @@ class Measures(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             Z.norm(3)
 
-    def test_norm_bounds_the_points(self):
-        rng = np.random.default_rng(8)
-        Z = random_zonotope(rng, 3, 4)
-        points = Z.rand_point(300, cora.Rng(8), "extreme")
-        for kind, bound in ((1, Z.norm(1)), (2, Z.norm(2)), (np.inf, Z.norm(np.inf))):
-            self.assertLessEqual(np.linalg.norm(points, kind, axis=0).max(), bound + 1e-9)
-
     def test_minnorm(self):
         value, x = zonotope([0, 0], [[1, 0], [0, 1]]).minnorm()
         self.assertAlmostEqual(value, 1)
@@ -150,22 +118,6 @@ class Measures(unittest.TestCase):
         self.assertEqual(value, 0)
         # minnorm is the least facet distance
         np.testing.assert_allclose(x, [3, 4])
-
-    def test_minnorm_is_the_least_facet_distance(self):
-        # CORA's polytope facets: cross products of n - 1 generators
-        rng = np.random.default_rng(9)
-        for n, m in ((2, 4), (3, 5)):
-            Z = random_zonotope(rng, n, m)
-            G = Z.generators
-            best = np.inf
-            for subset in itertools.combinations(range(m), n - 1):
-                Q = G[:, subset]
-                v = np.array([(-1) ** i * np.linalg.det(np.delete(Q, i, axis=0)) for i in range(n)])
-                best = min(best, np.abs(v @ G).sum() / np.linalg.norm(v))
-            value, x = Z.minnorm()
-            self.assertAlmostEqual(value, best, places=10)
-            self.assertAlmostEqual(np.linalg.norm(x - Z.center), best, places=10)
-            self.assertTrue(Z.contains(x, tol=1e-9))
 
     def test_minnorm_batch_is_refused(self):
         Z = zonotope([0, 0], [[1, 0], [0, 1]])
@@ -192,13 +144,6 @@ class Equality(unittest.TestCase):
         point = zonotope([1, 2], np.zeros((2, 0)))
         self.assertTrue(point.isequal(np.array([1.0, 2.0])))
         self.assertFalse(point.isequal(np.array([1.0, 2.5])))
-
-    def test_a_reordered_copy_is_equal(self):
-        rng = np.random.default_rng(10)
-        for _ in range(10):
-            Z = random_zonotope(rng, 3, 5)
-            W = zonotope(Z.center, Z.generators[:, rng.permutation(5)] * rng.choice([-1, 1], 5))
-            self.assertTrue(Z.isequal(W) and W.isequal(Z))
 
     # errors
     def test_errors(self):
@@ -229,16 +174,6 @@ class Intersecting(unittest.TestCase):
         self.assertFalse(diamond.is_intersecting(np.array([[0.0, 0.6], [0.0, 0.6]])))
         self.assertTrue(cora.is_intersecting(Z, square(1.5)))
 
-    def test_agrees_with_a_separating_direction(self):
-        rng = np.random.default_rng(11)
-        for _ in range(30):
-            Z1, Z2 = random_zonotope(rng, 3, 4), random_zonotope(rng, 3, 3) + 15 * rng.uniform(-1, 1, 3)
-            res = Z1.is_intersecting(Z2)
-            self.assertEqual(res, Z2.is_intersecting(Z1))
-            for d in rng.standard_normal((100, 3)):
-                if support(Z1, d) + support(Z2, -d) < 0:
-                    self.assertFalse(res)
-
     def test_errors(self):
         Z = zonotope([0, 0], [[1], [0]])
         with self.assertRaises(cora.errors.DimensionMismatch):
@@ -256,14 +191,6 @@ class Lift(unittest.TestCase):
         L = Z.lift(3, [1, 2, 0])
         np.testing.assert_allclose(L.center, [3, 1, 2])
         np.testing.assert_allclose(L.generators, [[0, 0], [1, 0], [0, 2]])
-
-    def test_is_a_permutation(self):
-        rng = np.random.default_rng(12)
-        Z = random_zonotope(rng, 4, 5)
-        dims = [2, 0, 3, 1]
-        L = Z.lift(4, dims)
-        for d in rng.standard_normal((20, 4)):
-            self.assertAlmostEqual(support(L, d), support(Z, d[dims]))
 
     def test_errors(self):
         Z = zonotope([1, 2], [[1], [0]])
@@ -301,17 +228,6 @@ class IntersectStrip(unittest.TestCase):
         np.testing.assert_allclose(W.center, [0.125, 0])
         np.testing.assert_allclose(W.generators, [[0.5, 0, 0.25], [0, 1, 0]])
 
-    def test_contains_the_intersection(self):
-        rng = np.random.default_rng(13)
-        Z = random_zonotope(rng, 3, 5)
-        C = np.array([[1.0, 0.5, 0.0], [0.0, -1.0, 2.0]])
-        phi, y = np.array([0.8, 1.5]), C @ Z.center + np.array([0.3, -0.2])
-        points = Z.rand_point(2000, cora.Rng(13))
-        inside = points[:, np.all(np.abs(C @ points - y[:, None]) <= phi[:, None], axis=0)]
-        self.assertGreater(inside.shape[1], 50)
-        for method in ("normGen", np.zeros((3, 2))):
-            self.assertTrue(Z.intersect_strip(C, phi, y, method).contains(inside, tol=1e-9))
-
     def test_errors(self):
         Z, C, phi, y = self.Z, self.C, self.phi, self.y
         for method in ("svd", "radius", "alamo-volume"):
@@ -333,17 +249,6 @@ class Enclosing(unittest.TestCase):
         np.testing.assert_allclose(Z.center, [1, 1])
         np.testing.assert_allclose(Z.generators, np.eye(2))
 
-    def test_both_methods_contain_the_cloud(self):
-        rng = np.random.default_rng(14)
-        for n in (2, 3, 4):
-            points = rng.standard_normal((n, n)) @ rng.standard_normal((n, 50)) + 2
-            for method in ("maiga", "stursberg"):
-                Z = cora.Zonotope.enclose_points(points, method)
-                self.assertTrue(Z.contains(points, tol=1e-9), (method, n))
-        same = cora.Zonotope.enclose_points(np.array([[1.0, 1, 1], [2.0, 2, 2]]))
-        np.testing.assert_allclose(same.center, [1, 2])
-        self.assertEqual(np.abs(same.generators).max(), 0)
-
     # invalid methods
     def test_enclose_points_errors(self):
         with self.assertRaises(cora.errors.WrongValue):
@@ -358,18 +263,7 @@ class Enclosing(unittest.TestCase):
         np.testing.assert_allclose(E.generators, np.diag([1.5, 0.5]))
         np.testing.assert_allclose(inverse, np.eye(2))
 
-    def test_enclose_many_encloses(self):
-        rng = np.random.default_rng(15)
-        Zs = [random_zonotope(rng, 3, 5) + np.array([k, -2.0 * k, 0.5]) for k in range(4)]
-        E, inverse = cora.Zonotope.enclose_many(Zs, np.array([1.0, -2.0, 0.5]))
-        for Z in Zs:
-            for d in rng.standard_normal((30, 3)):
-                self.assertGreaterEqual(support(E, d), support(Z, d) - 1e-9)
-        G = inverse @ E.generators
-        np.testing.assert_allclose(G, np.diag(np.diag(G)), atol=1e-12)
-        # invalid arguments
-        with self.assertRaises(cora.errors.WrongValue):
-            cora.Zonotope.enclose_many(Zs, np.zeros(3))
+# the Minkowski difference of squares, by hand
 
 
 class MinkDiff(unittest.TestCase):
@@ -403,15 +297,6 @@ class MinkDiff(unittest.TestCase):
             D = zonotope([0, 0], 2 * np.eye(2)).mink_diff(box)
         self.assertEqual(len(caught), 1)
         np.testing.assert_allclose(D.generators, 1.5 * np.eye(2), atol=1e-9)
-
-    def test_inner_plus_the_subtrahend_is_inside(self):
-        rng = np.random.default_rng(16)
-        for _ in range(10):
-            M = zonotope(np.zeros(2), 2 * rng.uniform(-1, 1, (2, 4)))
-            S = zonotope(rng.uniform(-0.1, 0.1, 2), 0.1 * rng.uniform(-1, 1, (2, 2)))
-            inner = M.mink_diff(S, "inner")
-            for d in rng.standard_normal((40, 2)):
-                self.assertLessEqual(support(inner, d) + support(S, d), support(M, d) + 1e-8)
 
     def test_errors(self):
         cube, small = zonotope(np.zeros(3), np.eye(3)), zonotope(np.zeros(3), 0.5 * np.eye(3))

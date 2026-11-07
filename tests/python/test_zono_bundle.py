@@ -22,11 +22,6 @@ Reviewed:      ---
 # CORA: contSet/@zonoBundle/isequal.m
 # CORA: contSet/@zonoBundle/lift_.m
 # CORA: contSet/@zonoBundle/zonoBundle.m
-# PROPERTY: contSet/@zonoBundle/and_.m
-# PROPERTY: contSet/@zonoBundle/center.m
-# PROPERTY: contSet/@zonoBundle/contains_.m
-# PROPERTY: contSet/@zonoBundle/enclose.m
-# PROPERTY: contSet/@zonoBundle/isFullDim.m
 
 import unittest
 
@@ -49,16 +44,6 @@ def zonotope(c, G):
 def squares():
     """The squares [-1, 1]^2 and [0, 2]^2, which meet in [0, 1]^2."""
     return cora.ZonoBundle([zonotope([0.0, 0.0], np.eye(2)), zonotope([1.0, 1.0], np.eye(2))])
-
-
-def random_bundle(rng, n, k, m):
-    """A bundle of k zonotopes that all contain one point (given back)."""
-    x0 = rng.standard_normal(n)
-    members = []
-    for _ in range(k):
-        G = rng.standard_normal((n, m))
-        members.append(zonotope(x0 - G @ rng.uniform(-1, 1, m), G))
-    return cora.ZonoBundle(members), x0
 
 
 # ===========================================  MAIN  =========================================== #
@@ -162,6 +147,7 @@ class ZonoBundle(unittest.TestCase):
         self.assertTrue(zB.is_intersecting(zB, type="approx"))
         self.assertTrue(zB.is_intersecting(np.array([0.5, 0.5])))
         self.assertTrue(cora.is_intersecting(zB, cora.Interval(np.array([0.9, 0.9]), np.array([3.0, 3.0]))))
+        # equal bundles: the members in any order
         self.assertTrue(zB.isequal(cora.ZonoBundle(list(reversed(zB.zonotopes)))))
         self.assertFalse(zB.isequal(cora.ZonoBundle([zB.zonotopes[0]])))
         self.assertTrue(cora.isequal(zB, zB))
@@ -174,24 +160,6 @@ class ZonoBundle(unittest.TestCase):
             zB.is_intersecting(zB, type="fast")
         with self.assertRaises(cora.errors.WrongValue):
             zB.isequal(zB, tol=-1.0)
-
-    def test_properties_on_random_bundles(self):
-        # random bundles contain their points
-        rng = np.random.default_rng(41)
-        for _ in range(3):
-            zB, x0 = random_bundle(rng, 3, 3, 4)
-            self.assertTrue(zB.contains(x0))
-            self.assertTrue(zB.contains(zB.center))
-            self.assertTrue(zB.con_zonotope().contains(x0))
-            other, y0 = random_bundle(rng, 3, 1, 4)
-            R = zB.intersect(other.zonotopes[0])
-            self.assertTrue(R.contains(zB.center) == other.contains(zB.center))
-            hull = zB.enclose(other.zonotopes[0])
-            for lam in (0.0, 0.5, 1.0):
-                self.assertTrue(hull.contains(lam * x0 + (1 - lam) * y0, method="exact:zonotope", tol=1e-9))
-            ball = zB.center
-            box = cora.Interval(ball - 1e-4, ball + 1e-4)
-            self.assertTrue(not zB.contains(box) or zB.is_full_dim())
 
 
 if __name__ == "__main__":

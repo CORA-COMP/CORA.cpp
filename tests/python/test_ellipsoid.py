@@ -24,18 +24,6 @@ Reviewed:      ---
 # CORA: contSet/@ellipsoid/isBigger.m
 # CORA: contSet/@ellipsoid/isBounded.m
 # CORA: contSet/@ellipsoid/isFullDim.m
-# PROPERTY: contSet/@ellipsoid/and_.m
-# PROPERTY: contSet/@ellipsoid/cartProd_.m
-# PROPERTY: contSet/@ellipsoid/center.m
-# PROPERTY: contSet/@ellipsoid/contains_.m
-# PROPERTY: contSet/@ellipsoid/ellipsoidNorm.m
-# PROPERTY: contSet/@ellipsoid/enclosePoints.m
-# PROPERTY: contSet/@ellipsoid/generators.m
-# PROPERTY: contSet/@ellipsoid/intersectStrip.m
-# PROPERTY: contSet/@ellipsoid/interval.m
-# PROPERTY: contSet/@ellipsoid/isBadDir.m
-# PROPERTY: contSet/@ellipsoid/isBigger.m
-# PROPERTY: contSet/@ellipsoid/isFullDim.m
 
 import unittest
 

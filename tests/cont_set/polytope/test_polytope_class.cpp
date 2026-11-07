@@ -2,10 +2,11 @@
 //
 // CORA: contSet/@polytope/polytope.m
 // CORA: contSet/@interval/polytope.m
+// PROPERTY: contSet/@polytope/polytope.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   07-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -135,6 +136,29 @@ void batches(const std::string &b) {
     check(V.V().shape() == Shape{4, 2, 3}, b + ": a batch of vertex polytopes");
 }
 
+/// Stated property: the halfspaces of random vertices hold the vertices, the halfspace polytope
+/// spans the same box, and a point is in one form exactly when it is in the other.
+void the_forms_agree(const std::string &b) {
+    cora::Rng rng(4);
+    for (const int n : {2, 3}) {
+        const Tensor points = test::sphere_points(rng, n, n + 4);
+        const Polytope V(points);
+        const Polytope::Constraints C = V.constraints();
+        check(test::inside_halfspaces(points, C, 1e-9), b + ": the vertices satisfy the rows");
+        const Polytope H(C.A, C.b);
+        check(close(H.interval().inf(), V.interval().inf(), 1e-7) &&
+                  close(H.interval().sup(), V.interval().sup(), 1e-7),
+              b + ": the same box");
+        // probes in and around the set
+        for (int k = 0; k < 30; ++k) {
+            std::vector<double> p(static_cast<std::size_t>(n));
+            rng.uniform(p.data(), p.size(), -1.2, 1.2);
+            const Tensor probe = column(p);
+            check(V.contains(probe) == H.contains(probe), b + ": a probe in both forms or none");
+        }
+    }
+}
+
 } // namespace
 
 
@@ -145,6 +169,7 @@ int main() {
         constructor_forms(b);
         from_interval(b);
         batches(b);
+        the_forms_agree(b);
     });
     refusals();
     return test::finish("polytope class");

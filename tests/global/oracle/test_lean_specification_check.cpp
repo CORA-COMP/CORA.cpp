@@ -4,8 +4,8 @@
 //
 // The specification is the polytope A x <= b (one halfspace per row), checked against a box and a
 // zonotope. The oracle's true proves the set contained in it (safe set, invariant) or disjoint from
-// it (unsafe set); false says that no proof was found, where CORA.cpp decides. So in the sound mode
-// a proof of the oracle is never contradicted; at nearest the answers are the same on these cases.
+// it (unsafe set); false says that no proof was found, where CORA.cpp decides; at nearest the
+// answers are the same on these cases.
 //
 // ORACLE: specification/@specification/check.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner

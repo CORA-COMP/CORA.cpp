@@ -66,8 +66,8 @@ int main() {
         // the oracle's product with a point is exact: the nominal parts agree to the bit
         const Ellipsoid theirs = lean::Ellipsoid(E).cart_prod(p).nominal();
         const Ellipsoid mine = E.cart_prod(p);
-        oracle::check_exact("cartProd.Q", mine.Q(), theirs.Q());
-        oracle::check_exact("cartProd.q", mine.q(), theirs.q());
+        oracle::check("cartProd.Q", mine.Q(), theirs.Q());
+        oracle::check("cartProd.q", mine.q(), theirs.q());
     });
     oracle::run("ellipsoid.isFullDim", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3), flat = aux_flat_ellipsoid(rnd, 3);
@@ -88,23 +88,23 @@ int main() {
     // the origin, the projection, the permutation and the equality: exact in the oracle too
     oracle::run("ellipsoid.origin", [](oracle::Random &) {
         const Ellipsoid theirs = lean::Ellipsoid::origin(3).nominal();
-        oracle::check_exact("origin.Q", Ellipsoid::origin(3).Q(), theirs.Q());
-        oracle::check_exact("origin.q", Ellipsoid::origin(3).q(), theirs.q());
+        oracle::check("origin.Q", Ellipsoid::origin(3).Q(), theirs.Q());
+        oracle::check("origin.q", Ellipsoid::origin(3).q(), theirs.q());
     });
     oracle::run("ellipsoid.project", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3);
         const Ellipsoid theirs = lean::Ellipsoid(E).project({2, 0}).nominal();
         const Ellipsoid mine = E.project({2, 0}).as<Ellipsoid>();
-        oracle::check_exact("project.Q", mine.Q(), theirs.Q());
-        oracle::check_exact("project.q", mine.q(), theirs.q());
+        oracle::check("project.Q", mine.Q(), theirs.Q());
+        oracle::check("project.q", mine.q(), theirs.q());
     });
     // the permutation and the equality
     oracle::run("ellipsoid.lift", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3);
         const Ellipsoid theirs = lean::Ellipsoid(E).lift(3, {1, 2, 0}).nominal();
         const Ellipsoid mine = E.lift(3, {1, 2, 0});
-        oracle::check_exact("lift.Q", mine.Q(), theirs.Q());
-        oracle::check_exact("lift.q", mine.q(), theirs.q());
+        oracle::check("lift.Q", mine.Q(), theirs.Q());
+        oracle::check("lift.q", mine.q(), theirs.q());
     });
     oracle::run("ellipsoid.isequal", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3), other = aux_ellipsoid(rnd, 3);
