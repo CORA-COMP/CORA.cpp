@@ -354,6 +354,19 @@ constexpr Table aux_build() {
         t, [](const ConZonotope &A, const Zonotope &Z) { return A.plus(Z); });
     aux_add_set<BinaryOp::plus, ConZonotope, Interval>(
         t, [](const ConZonotope &A, const Interval &I) { return A.plus(I); });
+    // a bundle adds a zonotope or a box to every member, a bundle pair by pair
+    aux_add_set<BinaryOp::plus, ZonoBundle, ZonoBundle>(
+        t, [](const ZonoBundle &A, const ZonoBundle &B) { return A.plus(B); });
+    aux_add_set<BinaryOp::plus, ZonoBundle, Zonotope>(
+        t, [](const ZonoBundle &A, const Zonotope &Z) { return A.plus(Z); });
+    aux_add_set<BinaryOp::plus, ZonoBundle, Interval>(
+        t, [](const ZonoBundle &A, const Interval &I) { return A.plus(I); });
+    aux_add_set<BinaryOp::unite, ZonoBundle, ZonoBundle>(
+        t, [](const ZonoBundle &A, const ZonoBundle &B) { return A.unite(B); });
+    aux_add_set<BinaryOp::unite, ZonoBundle, Zonotope>(
+        t, [](const ZonoBundle &A, const Zonotope &Z) { return A.unite(Z); });
+    aux_add_set<BinaryOp::unite, ZonoBundle, Interval>(
+        t, [](const ZonoBundle &A, const Interval &I) { return A.unite(I); });
     aux_add_set<BinaryOp::unite, ConZonotope, ConZonotope>(
         t, [](const ConZonotope &A, const ConZonotope &B) { return A.unite(B); });
     aux_add_set<BinaryOp::unite, ConZonotope, Zonotope>(

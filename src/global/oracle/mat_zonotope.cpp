@@ -134,6 +134,11 @@ std::pair<cora::MatZonotope, cora::Interval> MatZonotope::gather() const {
     return {cora::MatZonotope(c, G), cora::Interval(inf, sup)};
 }
 
+MatrixVertices MatZonotope::vertices() const {
+    const Reply reply = ask("matZonotope.vertices", {{"mZ", *this}});
+    return {reply.get<std::vector<Tensor>>("V"), reply.get<Interval>("E")};
+}
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

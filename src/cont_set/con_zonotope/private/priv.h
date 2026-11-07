@@ -80,6 +80,10 @@ ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const
 /// the set is empty. A convex set contains the set exactly if it contains these points.
 Tensor priv_vertex_candidates(const ConZonotope &cz);
 
+/// The convex hull of the points (2, K) as a polygon, counter-clockwise (a point or a segment for
+/// a flat set, none for K = 0).
+Polygon priv_hull_polygon(const Tensor &V);
+
 // Linear programs ---------------------------------------------------------------------------------
 
 /// A single constrained zonotope on the host: c (n), G (n x m), A (p x m) and b (p), row-major.
@@ -95,6 +99,14 @@ HostConZonotope priv_host_con_zonotope(const ConZonotope &cz);
 /// A x = b, a program each; none if there is no such x (CORA's supportFunc_ with 'range').
 std::optional<std::pair<double, double>> priv_range(const HostConZonotope &H,
                                                     const std::vector<double> &d);
+
+/// The largest value of d'(c + G x) over the factors x with |x|_inf <= 1 and A x = b and a point
+/// c + G x that takes it; none if there is no such x (CORA's supportFunc_ with 'upper').
+struct PrivSupport {
+    double value;
+    std::vector<double> point;
+};
+std::optional<PrivSupport> priv_support(const HostConZonotope &H, const std::vector<double> &d);
 
 /// Whether no x has |x|_inf <= 1 and A x = b (CORA's representsa_(cz, 'emptySet')).
 bool priv_is_empty(const HostConZonotope &H);

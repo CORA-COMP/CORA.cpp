@@ -81,6 +81,44 @@ ZonoBundle ZonoBundle::enlarge(const Tensor &factor) const {
     return aux_set("zonoBundle.enlarge", {{"zB", *this}, {"factor", factor}});
 }
 
+// the maps of CORA.cpp that the oracle computes member by member
+ZonoBundle ZonoBundle::linear_map(const Tensor &M) const {
+    return aux_set("zonoBundle.mtimes", {{"zB", *this}, {"M", M}});
+}
+
+ZonoBundle ZonoBundle::plus(const ZonoBundle &other) const {
+    return aux_set("zonoBundle.plus", {{"zB", *this}, {"zB2", other}});
+}
+
+ZonoBundle ZonoBundle::project(const std::vector<int64_t> &dims) const {
+    return aux_set("zonoBundle.project", {{"zB", *this}, {"dims", dims}});
+}
+
+// the quadratic map takes the list of matrices, the reduction the order
+ZonoBundle ZonoBundle::quad_map(const std::vector<Tensor> &Q) const {
+    return aux_set("zonoBundle.quadMap", {{"zB", *this}, {"Q", Q}});
+}
+
+ZonoBundle ZonoBundle::reduce(int order) const {
+    return aux_set("zonoBundle.reduce", {{"zB", *this}, {"order", order}, {"method", "girard"}});
+}
+
+ZonoBundle ZonoBundle::replace(int64_t index, const Zonotope &Z) const {
+    return aux_set("zonoBundle.replace", {{"zB", *this}, {"index", index}, {"Z", Z}});
+}
+
+ZonoBundle ZonoBundle::origin(int64_t n) { return aux_set("zonoBundle.origin", {{"n", n}}); }
+
+// the member of least volume, and a bound of the support function
+Zonotope ZonoBundle::zonotope() const {
+    return ask("zonoBundle.zonotope", {{"zB", *this}}).get<Zonotope>("Z");
+}
+
+double ZonoBundle::support_function(const Tensor &dir) const {
+    return ask("zonoBundle.supportFunc", {{"zB", *this}, {"dir", dir}, {"type", "upper"}})
+        .get<double>("value");
+}
+
 ZonoBundle ZonoBundle::lift(int64_t N, const std::vector<int64_t> &dims) const {
     return aux_set("zonoBundle.lift", {{"zB", *this}, {"N", N}, {"dims", dims}});
 }

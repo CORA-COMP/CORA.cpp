@@ -71,6 +71,7 @@ std::vector<double> aux_cost(const HostConZonotope &H, const std::vector<double>
 // Host copy ---------------------------------------------------------------------------------------
 
 HostConZonotope priv_host_con_zonotope(const ConZonotope &cz) {
+    // the programs run on one set; a batch has no single constraint matrix
     if (cz.c().ndim() != 2)
         CORA_FAIL(Error::not_supported, "ConZonotope: a linear program per set supports a single "
                                         "set, not a batch");
@@ -78,6 +79,8 @@ HostConZonotope priv_host_con_zonotope(const ConZonotope &cz) {
             cz.c().data(), cz.generators().data(),         cz.A().data(),
             cz.b().data()};
 }
+
+// Ranges and supports -----------------------------------------------------------------------------
 
 std::optional<std::pair<double, double>> priv_range(const HostConZonotope &H,
                                                     const std::vector<double> &d) {
@@ -90,6 +93,20 @@ std::optional<std::pair<double, double>> priv_range(const HostConZonotope &H,
     const LinProgResult upper = aux_solve(H, f);
     if (upper.status != LinProgResult::Status::optimal) return std::nullopt;
     return std::pair{offset + lower.fval, offset - upper.fval};
+}
+
+std::optional<PrivSupport> priv_support(const HostConZonotope &H, const std::vector<double> &d) {
+    double offset = 0.0;
+    for (int64_t i = 0; i < H.n; ++i) offset += d[i] * H.c[i];
+    std::vector<double> f = aux_cost(H, d);
+    for (double &x : f) x = -x;
+    const LinProgResult best = aux_solve(H, f);
+    if (best.status != LinProgResult::Status::optimal) return std::nullopt;
+    // the point of the factors the program found: c + G x
+    std::vector<double> point = H.c;
+    for (int64_t i = 0; i < H.n; ++i)
+        for (int64_t j = 0; j < H.m; ++j) point[i] += H.G[i * H.m + j] * best.x[j];
+    return PrivSupport{offset - best.fval, point};
 }
 
 // Emptiness and ranges ----------------------------------------------------------------------------

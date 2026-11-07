@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 
@@ -64,6 +65,9 @@ class MatZonotope {
 
     /// Whether the stacked set is the point or the origin ("point", "origin"), exactly.
     bool representsa(const std::string &type, double tol = 0) const;
+
+    /// The corner matrices (2^h of them, with repeats) and the box that encloses their rounding.
+    MatrixVertices vertices() const;
 
     /// The set of the stacked matrices (column by column) as a zonotope.
     Zonotope zonotope() const;

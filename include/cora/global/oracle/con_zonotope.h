@@ -100,6 +100,9 @@ class ConZonotope {
 
     bool is_bounded() const;
 
+    /// An upper bound of the support function along dir (a linear program's bound).
+    double support_function(const Tensor &dir) const;
+
     /// Whether the oracle proves that the point (n, 1) is in the set, and that the set has an
     /// interior point: the certificate is a right inverse of G; a set with an equality row is
     /// never proved (false says only that no proof was found).

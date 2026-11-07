@@ -10,12 +10,13 @@
 //             compact, cart_prod, intersect, con_intersect, enclose, convex_hull, cubic_map,
 //             intersect_strip, contains, approximate_bounds, display, origin, plus, linear_map,
 //             lift, reduce, quad_map, rescale, representsa, isequal, is_intersecting, split, unite,
-//             minkowski_difference, project (one file each). The other operations of the ContSet
-//             interface (support_function, rand_point, vertices) are Error::not_supported until
-//             they are ported.
+//             minkowski_difference, project, support_function, vertices, rand_point, zonotope,
+//             zono_bundle, polytope, generate_random (one file each).
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@conZonotope/conZonotope.m
+// CORA: contSet/@conZonotope/dim.m
+// CORA: contSet/@conZonotope/generators.m
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
@@ -37,6 +38,10 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+class Polytope;
+class Rng;
+class ZonoBundle;
 
 class ConZonotope : public ContSet {
   public:
@@ -62,10 +67,34 @@ class ConZonotope : public ContSet {
     const Tensor &A() const noexcept { return A_; }
     const Tensor &b() const noexcept { return b_; }
 
+    /// A random set (CORA's generateRandom): dimension (default that of center, else 1..10),
+    /// center, nr_generators (default 2 n) and nr_constraints (default random); a random point of
+    /// the box satisfies the constraints.
+    static ConZonotope generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
+                                       const std::optional<Tensor> &center = std::nullopt,
+                                       std::optional<int64_t> nr_generators = std::nullopt,
+                                       std::optional<int64_t> nr_constraints = std::nullopt);
+
     /// The empty set of n dimensions (CORA's conZonotope.empty): no generators and the constraint
     /// 0 = 1, so that every operation on it stays an enclosure (CORA's has a center without
     /// columns, which and_ and cartProd_ mishandle; docs/cora-differences.md).
     static ConZonotope empty(int64_t n = 0);
+
+    // Conversions ---------------------------------------------------------------------------------
+
+    /// A zonotope that contains the set (CORA's zonotope): method "nullSpace" (default) takes the
+    /// range of the free factors (linear programs), "reduce" reduces the lifted set (Girard). An
+    /// empty set is Error::empty_set. Not a batch.
+    Zonotope zonotope(const std::string &method = "nullSpace") const;
+
+    /// The same set as a bundle of zonotopes (CORA's zonoBundle): the factors solved from the
+    /// constraints are bounded by the slabs of the box, one zonotope per factor.
+    /// Not a batch.
+    ZonoBundle zono_bundle() const;
+
+    /// The same set in halfspace form (CORA's polytope): the facets of the zonotope [c; -b],
+    /// [G; A], cut at 0 in the last coordinates. Not a batch.
+    Polytope polytope() const;
 
     // Queries -------------------------------------------------------------------------------------
 
@@ -196,6 +225,13 @@ class ConZonotope : public ContSet {
     /// "exact" (a linear program per bound) or "iter" (interval arithmetic). Not a batch.
     ConZonotope rescale(const std::string &method = "exact") const;
 
+    using ContSet::rand_point;
+
+    /// N random points as columns (n, N): type "standard" is a random convex combination of the
+    /// candidate vertices (the set's zonotope formula without constraints), "extreme" the support
+    /// point in a random direction. Not a batch with constraints.
+    Tensor rand_point(int64_t N, Rng &rng, const std::string &type) const;
+
     /// Whether the set is also a set of the CORA type ("origin", "point", "interval", "zonotope",
     /// "emptySet", ...); the converted set is not returned. Not a batch.
     bool representsa(const std::string &type, Tol tol = std::nullopt) const;
@@ -272,6 +308,7 @@ class ConZonotope : public ContSet {
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override;
     Tensor rand_point_impl(int64_t N, Rng &rng) const override;
+    Tensor rand_point_impl(int64_t N, Rng &rng, const std::string &type) const;
     Set project_impl(const std::vector<int64_t> &dims) const override;
     std::vector<Polygon> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;

@@ -85,6 +85,11 @@ Interval ConZonotope::interval() const {
     return ask("conZonotope.interval", {{"cZ", *this}}).get<Interval>("I");
 }
 
+double ConZonotope::support_function(const Tensor &dir) const {
+    return ask("conZonotope.supportFunc", {{"cZ", *this}, {"dir", dir}, {"type", "upper"}})
+        .get<double>("value");
+}
+
 bool ConZonotope::is_bounded() const {
     return ask("conZonotope.isBounded", {{"cZ", *this}}).get<bool>("value");
 }

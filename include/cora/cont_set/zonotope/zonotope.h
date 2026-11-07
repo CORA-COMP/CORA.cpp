@@ -11,6 +11,8 @@
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@zonotope/zonotope.m
+// CORA: contSet/@zonotope/dim.m
+// CORA: contSet/@zonotope/generators.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
@@ -32,6 +34,9 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+class MatZonotope;
+class Polytope;
 
 class Zonotope : public ContSet {
   public:
@@ -172,6 +177,16 @@ class Zonotope : public ContSet {
     /// The Minkowski sum in which the first min(m, m2, k) generators are added pairwise (the
     /// sums of points with the same coefficients on them), a subset of the plus; k defaults to all.
     Zonotope exact_plus(const Zonotope &Z2, std::optional<int64_t> k = std::nullopt) const;
+
+    /// The indices (0-based) of the zonotopes of a list that no other one contains (CORA's
+    /// filterOut keeps the cells that no union of the others covers; this is the easy cover).
+    static std::vector<int64_t> filter_out(const std::vector<Zonotope> &Zs);
+
+    /// A simplex (n + 1 halfspaces) that contains the zonotope (CORA's simplex). Not a batch.
+    Polytope simplex() const;
+
+    /// The same set as a matrix zonotope of n x 1 matrices (CORA's matZonotope).
+    MatZonotope mat_zonotope() const;
 
     /// The Euclidean length of every generator, a row (..., 1, m).
     Tensor generator_length() const;

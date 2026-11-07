@@ -31,29 +31,6 @@ ZonoBundle::ZonoBundle(std::vector<Zonotope> zonotopes)
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
 }
 
-// Not ported yet ----------------------------------------------------------------------------------
-
-// Not yet ported: the support function, random points, projections and vertices.
-Tensor ZonoBundle::support_function_impl(const Tensor &) const {
-    CORA_FAIL(Error::not_supported, "ZonoBundle: support_function is not ported yet");
-}
-
-Tensor ZonoBundle::rand_point_impl(int64_t, Rng &) const {
-    CORA_FAIL(Error::not_supported, "ZonoBundle: rand_point is not ported yet");
-}
-
-Set ZonoBundle::project_impl(const std::vector<int64_t> &) const {
-    CORA_FAIL(Error::not_supported, "ZonoBundle: project is not ported yet");
-}
-
-std::vector<Polygon> ZonoBundle::vertices_impl() const {
-    CORA_FAIL(Error::not_supported, "ZonoBundle: vertices is not ported yet");
-}
-
-std::vector<std::vector<Point3>> ZonoBundle::vertices_3d_impl() const {
-    CORA_FAIL(Error::not_supported, "ZonoBundle: vertices_3d is not ported yet");
-}
-
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

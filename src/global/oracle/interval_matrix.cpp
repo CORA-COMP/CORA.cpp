@@ -8,6 +8,7 @@
 // Reviewed:      ---
 
 #include "cora/global/oracle/interval_matrix.h"
+#include "cora/global/oracle/mat_zonotope.h"
 
 #include "cora/global/oracle/request.h"
 
@@ -63,6 +64,9 @@ bool IntervalMatrix::representsa(const std::string &type, double tol) const {
 MatrixVertices IntervalMatrix::vertices() const {
     const Reply reply = ask("intervalMatrix.vertices", {{"IM", bounds_}});
     return {reply.get<std::vector<Tensor>>("V"), reply.get<Interval>("E")};
+}
+MatZonotope IntervalMatrix::mat_zonotope() const {
+    return ask("intervalMatrix.matZonotope", {{"IM", bounds_}}).get<MatZonotope>("mZ");
 }
 double IntervalMatrix::volume() const {
     return ask("intervalMatrix.volume", {{"IM", bounds_}}).get<double>("value");

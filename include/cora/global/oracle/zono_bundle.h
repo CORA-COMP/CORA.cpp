@@ -41,6 +41,22 @@ class ZonoBundle {
 
     // Operations ---------------------------------------------------------------------------------
 
+    /// The image under M, the pairwise sum with a bundle, the projection onto dims, the quadratic
+    /// map with the matrices Q, the reduction of every member to the order (Girard) and the bundle
+    /// with member `index` (0-based) replaced; the bundle {0} of n dimensions.
+    ZonoBundle linear_map(const Tensor &M) const;
+    ZonoBundle plus(const ZonoBundle &other) const;
+    ZonoBundle project(const std::vector<int64_t> &dims) const;
+    ZonoBundle quad_map(const std::vector<Tensor> &Q) const;
+    ZonoBundle reduce(int order) const;
+    ZonoBundle replace(int64_t index, const Zonotope &Z) const;
+    static ZonoBundle origin(int64_t n);
+
+    /// The member of least volume, and an upper bound of the support function along dir (a linear
+    /// program's bound, summed in the oracle's own order).
+    Zonotope zonotope() const;
+    double support_function(const Tensor &dir) const;
+
     ZonoBundle intersect(const ZonoBundle &other) const;
     ZonoBundle cart_prod(const ZonoBundle &other) const;
 

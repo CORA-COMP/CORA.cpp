@@ -43,6 +43,7 @@ namespace cora {
 
 struct ExpmResult;
 struct ExpmMixedResult;
+class MatZonotope;
 
 class Rng;
 
@@ -106,6 +107,10 @@ class IntervalMatrix {
     /// Whether the set is also a set of another type (an Interval::representsa type), decided on
     /// the entries stacked into one vector, as CORA does; tol as there.
     bool representsa(const std::string &type, Tol tol = std::nullopt) const;
+
+    /// The same set as a matrix zonotope: the center matrix and one generator per entry, its radius
+    /// (CORA's matZonotope).
+    MatZonotope mat_zonotope() const;
 
     /// The product of the entry widths, (..., 1, 1): the volume of the box of the entries.
     Tensor volume() const;
