@@ -33,6 +33,7 @@ def expm(M):
     return (V @ np.diag(np.exp(w)) @ np.linalg.inv(V)).real
 
 
+# a damped oscillator coupled to a decaying state, a set and an input set
 A = np.array([[-0.1, 1.0, 0.0], [-1.0, -0.1, 0.0], [0.0, 0.0, -0.5]])
 X0 = cora.Zonotope(np.array([1.0, 0.5, -1.0]), np.array([[0.2, 0.0, 0.1], [0.0, 0.1, 0.0], [0.0, 0.0, 0.3]]))
 U = cora.Zonotope(np.array([1.0, 2.0, 0.5]), np.array([[0.1, 0.0], [0.0, 0.2], [0.1, 0.1]]))
@@ -47,8 +48,10 @@ class Plumbing(unittest.TestCase):
     # the tests share the oscillator A and the sets X0, U
     def test_equality_compares_the_matrices_entrywise(self):
         B = np.array([[1.0], [0.5], [0.0]])
+        # == compares the matrices entry by entry
         sys = cora.LinearSys(A, B)
         self.assertTrue(sys == cora.LinearSys(A.copy(), B.copy()))
+        # a different input matrix is a different system
         self.assertTrue(sys != cora.LinearSys(A, 2 * B))
         self.assertTrue(sys.isequal(cora.LinearSys(A + 1e-3, B), tol=1e-1))
         self.assertFalse(sys.isequal(cora.LinearSys(A + 1e-3, B)))

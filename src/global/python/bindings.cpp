@@ -3633,12 +3633,16 @@ void bind_linear_sys(py::module_ &m) {
         .def("isequal", &LinearSys::isequal, py::arg("other"), py::arg("tol") = py::none(),
              "Whether the matrices agree up to tol (default: the repository tolerance)")
         // equal systems have equal matrices
-        .def(
-            "__eq__", [](const LinearSys &a, const LinearSys &b) { return a == b; },
-            py::is_operator())
-        .def(
-            "__ne__", [](const LinearSys &a, const LinearSys &b) { return a != b; },
-            py::is_operator())
+        .def("__eq__",
+             [](const LinearSys &a, const py::object &b) -> py::object {
+                 if (!py::isinstance<LinearSys>(b)) return not_implemented();
+                 return py::cast(a == b.cast<const LinearSys &>());
+             })
+        .def("__ne__",
+             [](const LinearSys &a, const py::object &b) -> py::object {
+                 if (!py::isinstance<LinearSys>(b)) return not_implemented();
+                 return py::cast(a != b.cast<const LinearSys &>());
+             })
         .def("__repr__", &LinearSys::display)
         .def("__str__", &LinearSys::display)
         // a random stable system
