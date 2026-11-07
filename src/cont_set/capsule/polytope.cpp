@@ -1,9 +1,9 @@
 // polytope - a polytope of a capsule, as CORA's capsule.polytope
 //
 // Exact for the empty capsule, one dimension, a point and a segment; else "outer" is the box around
-// the capsule in an orthonormal basis whose first vector is the generator's direction. CORA builds
-// that basis by Gram-Schmidt, which divides by 0 for g = 0 (docs/cora-differences.md); here it
-// comes from a QR factorization of [g, I].
+// the capsule in an orthonormal basis whose first vector is the generator's direction. The basis
+// is CORA's Gram-Schmidt, the identity for g = 0 where CORA divides by 0 (cora-differences.md). The
+// offsets are the support values a'c + |a'g| + r |a|, as CORALean's boundDotUp.
 //
 // Syntax:   P = C.polytope();   P = C.polytope(method);
 // Inputs:   method - "exact" (default), "outer" or "inner"
@@ -23,9 +23,39 @@
 #include "cora/global/within_tol.h"
 #include "global/format.h"
 
+#include <algorithm>
+
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// CORA's gramSchmidt of [g, the unit vectors but the one of the largest |g_i|]: orthonormal
+/// columns, the first along g; the identity for g = 0.
+Tensor aux_basis(const Tensor &g, const Tensor &eye) {
+    const std::vector<double> gs = g.abs().data();
+    const auto pivot = std::max_element(gs.begin(), gs.end()) - gs.begin();
+    if (gs[static_cast<std::size_t>(pivot)] == 0.0) return eye;
+    std::vector<Tensor> columns{g};
+    for (int64_t j = 0; j < eye.shape().back(); ++j)
+        if (j != pivot) columns.push_back(eye.slice(-1, j, j + 1));
+    std::vector<Tensor> basis;
+    for (const Tensor &b : columns) {
+        // v = b - sum_l (q_l'b) q_l, the sum nested to the right as CORALean's sumUp
+        Tensor v = b;
+        if (!basis.empty()) {
+            const Tensor Q = Tensor::concat(basis, -1);
+            v = b - Q.matmul(Q.matrix_transpose().matmul(b));
+        }
+        basis.push_back(v.divide(priv_norm(v)));
+    }
+    return Tensor::concat(basis, -1);
+}
+
+} // namespace
 
 
 // ===========================================  MAIN  =========================================== //
@@ -49,8 +79,9 @@ Polytope Capsule::polytope(const std::string &method) const {
     }
     if (zero(g_) && zero(r_)) return Polytope(c_);
     // the orthonormal basis B, its first column along g
-    const Tensor B = Tensor::concat({g_, c_.eye_like(n)}, 1).qr().first;
-    const Tensor Bt = B.matrix_transpose(), A = Tensor::concat({Bt, Bt.negative()}, 0);
+    const Tensor B = aux_basis(g_, c_.eye_like(n));
+    // the negated rows as 0 - B', so that a zero stays +0 as CORALean prints it
+    const Tensor Bt = B.matrix_transpose(), A = Tensor::concat({Bt, Bt.zeros_like() - Bt}, 0);
     if (zero(r_)) {
         // the segment: |b1'x| <= |g|, and b'x = 0 for the other columns, shifted by c
         const Tensor A1 = Bt.slice(0, 0, 1), Ae = Bt.slice(0, 1, n);
@@ -64,9 +95,9 @@ Polytope Capsule::polytope(const std::string &method) const {
                [] { return std::string("polytope: a capsule is no polytope, use 'outer'"); });
     CORA_CHECK(method != "inner", Error::not_supported,
                [] { return std::string("polytope: the method 'inner' is not supported"); });
-    // the box of the capsule in the basis: |b_i'g| + r in both directions
-    const Tensor reach = Bt.matmul(g_).abs().add(r_);
-    return {A, Tensor::concat({reach, reach}, 0) + A.matmul(c_)};
+    // the support values a'c + |a'g| + r |a| of the rows, in this order as CORALean's boundDotUp
+    const Tensor length = priv_norm(A.matrix_transpose()).reshape({2 * n, 1});
+    return {A, A.matmul(c_) + A.matmul(g_).abs() + r_.multiply(length)};
 }
 
 } // namespace cora

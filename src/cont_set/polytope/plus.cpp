@@ -9,6 +9,7 @@
 // Inputs:   S, I - a polytope or a box of the dimension of P
 //           v - a column (..., n, 1)
 // Outputs:  Pres - P + S, in the form of the operands (halfspaces unless both have vertices)
+// Gradients: differentiable, except the sum of two halfspace sets (a host program, no gradient)
 // See also: Polytope::minus, Polytope::linear_map
 //
 // CORA: contSet/@polytope/plus.m

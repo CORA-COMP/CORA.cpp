@@ -4,6 +4,8 @@
 // two capsules, which is the hull), empty, origin, enclosePoints, interval, isBounded, isFullDim,
 // isequal, lift, mtimes and contains for a point, plus (the longer generator stays), project,
 // reduce, radius, representsa (point, origin) and zonotope (the segment and the box of the ball).
+// polytope is bit for bit in the exact mode only (the sound oracle rounds the rows themselves, so
+// no enclosure holds CORA.cpp's rows).
 // isIntersecting is a certificate of disjointness (the bounding radii separate the centers in one
 // coordinate) where CORA.cpp computes the least distance of the axes, so the oracle's answer may
 // not contradict CORA.cpp's (no bit-exact test exists). k is the number of Newton steps of
@@ -23,6 +25,9 @@
 // ORACLE: contSet/@capsule/lift_.m
 // ORACLE: contSet/@capsule/mtimes.m
 // ORACLE: contSet/@capsule/origin.m
+// ORACLE: contSet/@capsule/plus.m
+// ORACLE: contSet/@capsule/polytope.m
+// ORACLE: contSet/@capsule/radius.m
 // ORACLE: contSet/@capsule/project.m
 // ORACLE: contSet/@capsule/reduce.m
 // ORACLE: contSet/@capsule/representsa_.m
@@ -34,6 +39,7 @@
 
 #include "cora/cont_set/capsule/capsule.h"
 #include "cora/global/oracle/capsule.h"
+#include "cora/global/oracle/polytope.h"
 #include "oracle_testing.h"
 
 #include <cmath>
@@ -99,6 +105,7 @@ int main() {
         const Tensor points = rnd.matrix(3, 12);
         oracle::check(Capsule::enclose_points(points), lean::Capsule::enclose_points(points));
     });
+    // the box, and the predicates on it
     oracle::run("capsule.interval", [](oracle::Random &rnd) {
         const Capsule C = rnd.capsule(3);
         oracle::check(C.interval(), lean::Capsule(C).interval());
@@ -140,7 +147,28 @@ int main() {
         const Tensor M = rnd.matrix(2, 3);
         oracle::check(C.linear_map(M), lean::Capsule(C).linear_map(M));
     });
-    // the projection, the reduction, the predicates and the zonotope (plus and radius: _bound)
+    // the sum (the longer generator stays) and the radius |g| + r, through a square root
+    oracle::run("capsule.plus", [](oracle::Random &rnd) {
+        const Capsule a = rnd.capsule(3), b = rnd.capsule(3);
+        oracle::check(a.plus(b), lean::Capsule(a).plus(b));
+        oracle::check(b.plus(a), lean::Capsule(b).plus(a));
+    });
+    oracle::run("capsule.radius", [](oracle::Random &rnd) {
+        const Capsule C = rnd.capsule(3);
+        oracle::check(C.radius().item(), lean::Capsule(C).radius());
+    });
+    // the halfspaces in the Gram-Schmidt basis of g, then the projection and the reduction
+    oracle::run("capsule.polytope", [](oracle::Random &rnd) {
+        // the sound oracle rounds the rows themselves, with no error box to hold CORA.cpp's rows
+        if (oracle::mode() != oracle::Mode::exact) return;
+        const Capsule C = rnd.capsule(3), line = rnd.capsule(1);
+        // a ball, a generator along an axis, a general one and a line
+        const Tensor zero = C.c().zeros_like();
+        const Capsule ball(C.c(), zero, C.r().item()),
+            axis(C.c(), Tensor::from_data({0.0, 2.5, 0.0}, {3, 1}), C.r().item());
+        for (const Capsule *S : {&ball, &axis, &C, &line})
+            oracle::check(S->polytope("outer"), lean::Capsule(*S).polytope());
+    });
     oracle::run("capsule.project", [](oracle::Random &rnd) {
         const Capsule C = rnd.capsule(3);
         oracle::check(C.project({2, 0}).as<Capsule>(), lean::Capsule(C).project({2, 0}));
