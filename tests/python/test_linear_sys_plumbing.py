@@ -41,6 +41,7 @@ U = cora.Zonotope(np.array([1.0, 2.0, 0.5]), np.array([[0.1, 0.0], [0.0, 0.2], [
 
 # ============================================  MAIN  ============================================ #
 
+# the plumbing of the class: equality, text, random systems and the conversion
 class Plumbing(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -58,6 +59,7 @@ class Plumbing(unittest.TestCase):
         # CORA calls a system with permuted columns of A equal
         self.assertTrue(cora.LinearSys(A) != cora.LinearSys(A[:, [1, 0, 2]]))
 
+    # the printout names the matrices that are present
     def test_repr_lists_the_matrices(self):
         text = repr(cora.LinearSys(A, np.array([[1.0], [0.5], [0.0]]), np.eye(3)))
         self.assertIn("System matrix", text)
