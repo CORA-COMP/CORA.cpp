@@ -88,6 +88,7 @@ std::vector<Zonotope> priv_block_plus(const std::vector<Zonotope> &Xb,
     return out;
 }
 
+// the enclosure of the blocks Xb and Yb, block by block
 std::vector<Zonotope> priv_block_enclose(const std::vector<Zonotope> &Xb,
                                          const std::vector<Zonotope> &Yb) {
     std::vector<Zonotope> out;
