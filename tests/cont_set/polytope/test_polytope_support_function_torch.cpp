@@ -24,10 +24,9 @@ int main() {
     Rng rng(61);
     const Tensor V = test::sphere_points(rng, 3, 6);
     const torch::Tensor d = torch::randn({3, 1}, torch::kDouble);
-    test::gradcheck(
-        "support_function (vertices)",
-        [](const Inputs &x) { return Inputs{Polytope(x[0]).support_function(x[1])}; },
-        {to_torch(V), d});
+    test::gradcheck("support_function (vertices)",
+                    [](const Inputs &x) { return Inputs{Polytope(x[0]).support_function(x[1])}; },
+                    {to_torch(V), d});
     return test::finish("polytope support_function (torch)");
 }
 

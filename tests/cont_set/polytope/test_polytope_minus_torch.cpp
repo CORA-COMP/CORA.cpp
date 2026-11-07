@@ -24,13 +24,12 @@ int main() {
     const Tensor V = test::sphere_points(rng, 3, 5);
     const std::vector<torch::Tensor> H = test::random_halfspaces(4, 3);
     const torch::Tensor v = torch::randn({3, 1}, torch::kDouble);
-    test::gradcheck(
-        "minus (vertices)", [](const Inputs &x) { return test::parts(Polytope(x[0]).minus(x[1])); },
-        {to_torch(V), v});
-    test::gradcheck(
-        "minus (halfspaces)",
-        [](const Inputs &x) { return test::parts(test::halfspaces(x).minus(x[2])); },
-        {H[0], H[1], v});
+    test::gradcheck("minus (vertices)",
+                    [](const Inputs &x) { return test::parts(Polytope(x[0]).minus(x[1])); },
+                    {to_torch(V), v});
+    test::gradcheck("minus (halfspaces)",
+                    [](const Inputs &x) { return test::parts(test::halfspaces(x).minus(x[2])); },
+                    {H[0], H[1], v});
     return test::finish("polytope minus (torch)");
 }
 

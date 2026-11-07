@@ -24,12 +24,12 @@ int main() {
     Rng rng(61);
     const Tensor V = test::sphere_points(rng, 3, 5);
     const torch::Tensor M = torch::randn({2, 3}, torch::kDouble);
-    test::gradcheck(
-        "linear_map (vertices)",
-        [](const Inputs &x) { return test::parts(Polytope(x[0]).linear_map(x[1])); },
-        {to_torch(V), M});
+    test::gradcheck("linear_map (vertices)",
+                    [](const Inputs &x) { return test::parts(Polytope(x[0]).linear_map(x[1])); },
+                    {to_torch(V), M});
     const std::vector<torch::Tensor> H = test::random_halfspaces(4, 3);
-    const torch::Tensor S = torch::randn({3, 3}, torch::kDouble) + 2 * torch::eye(3, torch::kDouble);
+    const torch::Tensor S =
+        torch::randn({3, 3}, torch::kDouble) + 2 * torch::eye(3, torch::kDouble);
     test::gradcheck(
         "linear_map (halfspaces)",
         [](const Inputs &x) { return test::parts(test::halfspaces(x).linear_map(x[2])); },

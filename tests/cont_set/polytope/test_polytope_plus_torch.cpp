@@ -31,14 +31,12 @@ int main() {
         "plus (vertices)",
         [](const Inputs &x) { return test::parts(Polytope(x[0]).plus(Polytope(x[1]))); },
         {to_torch(V1), to_torch(V2)});
-    test::gradcheck(
-        "plus (vertices, point)",
-        [](const Inputs &x) { return test::parts(Polytope(x[0]).plus(x[1])); },
-        {to_torch(V1), v});
-    test::gradcheck(
-        "plus (halfspaces, point)",
-        [](const Inputs &x) { return test::parts(test::halfspaces(x).plus(x[2])); },
-        {H[0], H[1], v});
+    test::gradcheck("plus (vertices, point)",
+                    [](const Inputs &x) { return test::parts(Polytope(x[0]).plus(x[1])); },
+                    {to_torch(V1), v});
+    test::gradcheck("plus (halfspaces, point)",
+                    [](const Inputs &x) { return test::parts(test::halfspaces(x).plus(x[2])); },
+                    {H[0], H[1], v});
     return test::finish("polytope plus (torch)");
 }
 

@@ -22,10 +22,9 @@ int main() {
     torch::manual_seed(61);
     Rng rng(61);
     const Tensor V = test::sphere_points(rng, 4, 6);
-    test::gradcheck(
-        "project (vertices)",
-        [](const Inputs &x) { return test::parts(Polytope(x[0]).project({2, 0})); },
-        {to_torch(V)});
+    test::gradcheck("project (vertices)",
+                    [](const Inputs &x) { return test::parts(Polytope(x[0]).project({2, 0})); },
+                    {to_torch(V)});
     return test::finish("polytope project (torch)");
 }
 

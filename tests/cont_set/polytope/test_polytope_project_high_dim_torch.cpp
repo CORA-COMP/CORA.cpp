@@ -30,7 +30,8 @@ int main() {
     test::gradcheck(
         "project_high_dim (halfspaces)",
         [](const Inputs &x) {
-            const Polytope::Constraints C = test::halfspaces(x).project_high_dim(5, {4, 0, 2}).constraints();
+            const Polytope::Constraints C =
+                test::halfspaces(x).project_high_dim(5, {4, 0, 2}).constraints();
             return Inputs{C.A, C.b, C.Ae, C.be};
         },
         H);
