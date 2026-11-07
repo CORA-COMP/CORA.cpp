@@ -77,10 +77,12 @@ BlockSets priv_homogeneous_interval(const BlockSets &Xb, const BlockSets &Htp,
 BlockSets priv_particular_time_varying(const LinearSys &sys, TaylorLinSys &taylor,
                                        const Blocks &blocks, const Zonotope &U, double time_step,
                                        int taylor_terms) {
-    if (U.representsa("origin")) return priv_block_origin(U.center(), blocks);
+    // a batch has no single answer to representsa; its zero members give zero sets anyway
+    if (U.center().ndim() == 2 && U.representsa("origin"))
+        return priv_block_origin(U.center(), blocks);
     const BlockSets Ub = priv_decompose(U, blocks);
-    BlockSets P;
-    for (const Zonotope &Uj : Ub) P.push_back(Uj * time_step);
+    // dt I U: a batch of systems batches the first term as well, like all the others
+    BlockSets P = priv_block_mtimes(sys.A().eye_like() * time_step, blocks, Ub);
     // every term A^eta dt^(eta+1)/(eta+1)! is kept as generators of its own
     for (int eta = 1; eta <= taylor_terms; ++eta) {
         const Tensor term = taylor.Apower(eta) * taylor.dtoverfac(time_step, eta + 1);
@@ -93,7 +95,7 @@ BlockSets priv_particular_time_varying(const LinearSys &sys, TaylorLinSys &taylo
 BlockConstant priv_particular_constant(const LinearSys &sys, TaylorLinSys &taylor,
                                        const Blocks &blocks, const Zonotope &U, double time_step,
                                        int taylor_terms) {
-    if (U.representsa("origin")) {
+    if (U.center().ndim() == 2 && U.representsa("origin")) {
         const BlockSets zero = priv_block_origin(U.center(), blocks);
         return {zero, zero, zero};
     }
