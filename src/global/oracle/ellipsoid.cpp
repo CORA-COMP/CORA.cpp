@@ -56,6 +56,48 @@ bool Ellipsoid::exact() const {
     return !error || aux_zero(*error);
 }
 
+// Sets ---------------------------------------------------------------------------------------
+
+// each op sends the ellipsoid (and its arguments) and reads `E` back
+
+Ellipsoid Ellipsoid::origin(int64_t n) {
+    return ask("ellipsoid.origin", {{"n", n}}).get<Ellipsoid>("E");
+}
+
+Ellipsoid Ellipsoid::project(const std::vector<int64_t> &dims) const {
+    return ask("ellipsoid.project", {{"E", *this}, {"dims", dims}}).get<Ellipsoid>("E");
+}
+
+Ellipsoid Ellipsoid::lift(int64_t N, const std::vector<int64_t> &dims) const {
+    return ask("ellipsoid.lift", {{"E", *this}, {"N", N}, {"dims", dims}}).get<Ellipsoid>("E");
+}
+
+Ellipsoid Ellipsoid::linear_map(const Tensor &M) const {
+    return ask("ellipsoid.mtimes", {{"E", *this}, {"M", M}}).get<Ellipsoid>("E");
+}
+
+// the answer is a Boolean (certified when true)
+bool Ellipsoid::isequal(const Ellipsoid &E2, double tol) const {
+    return ask("ellipsoid.isequal", {{"E", *this}, {"E2", E2}, {"tol", number(tol)}})
+        .get<bool>("value");
+}
+
+// Bounds -------------------------------------------------------------------------------------
+
+// numbers the oracle proves, rounded upward in a sound dtype
+
+double Ellipsoid::norm(int k) const {
+    return ask("ellipsoid.norm", {{"E", *this}, {"k", k}, {"type", 2}}).get<double>("value");
+}
+
+double Ellipsoid::radius(int p) const {
+    return ask("ellipsoid.radius", {{"E", *this}, {"p", p}}).get<double>("value");
+}
+
+Zonotope Ellipsoid::zonotope() const {
+    return ask("ellipsoid.zonotope", {{"E", *this}}).get<Zonotope>("Z");
+}
+
 Json Ellipsoid::to_json() const { return json_; }
 
 Ellipsoid Ellipsoid::from_json(const std::string &dtype, const Json &j) { return {dtype, j}; }

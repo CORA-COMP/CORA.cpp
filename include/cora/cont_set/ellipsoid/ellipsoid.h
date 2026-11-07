@@ -7,14 +7,17 @@
 // (CORA's TOL) relaxes the symmetry and rank decisions of its operations.
 //
 // Syntax:     Ellipsoid E(Q, q);   Ellipsoid E(Q);   Ellipsoid::empty(n);
-// Operations: constructors (ellipsoid.cpp), empty, center, interval, is_bounded, is_full_dim,
-//             generators, ellipsoid_norm, is_bigger, is_bad_dir, enclose_points, intersect_strip,
-//             intersect, cart_prod, contains, enclose, display (one file each). The other
-//             operations of the ContSet interface (support_function, rand_point, project, vertices)
-//             are Error::not_supported until they are ported.
+// Operations: constructors (ellipsoid.cpp), empty, origin, center, interval, is_bounded,
+//             is_full_dim, generators, ellipsoid_norm, is_bigger, is_bad_dir, enclose_points,
+//             intersect_strip, intersect, cart_prod, contains, enclose, support_function,
+//             linear_map, plus, mink_diff, project, lift, reduce, norm, isequal, is_intersecting,
+//             radius, volume, distance, rand_point, vertices, vertices_3d, zonotope, unite,
+//             convex_hull, from_interval, from_zonotope, generate_random, isnan, display (one file
+//             each). dim is ContSet's.
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@ellipsoid/ellipsoid.m
+// CORA: contSet/@ellipsoid/dim.m
 // CORA authors: Victor Gassmann, Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -37,6 +40,8 @@
 
 namespace cora {
 
+class Rng;
+
 class Ellipsoid : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::ellipsoid;
@@ -47,6 +52,14 @@ class Ellipsoid : public ContSet {
     explicit Ellipsoid(const Tensor &Q, Tol tol = std::nullopt);
     Ellipsoid(Tensor Q, Tensor q, Tol tol = std::nullopt);
 
+    /// The ellipsoid that holds a box (CORA's interval.ellipsoid, mode "outer"), radii widened to
+    /// 5e-3; "inner" and a box with a flat edge need an SDP: Error::not_supported.
+    explicit Ellipsoid(const Interval &I, const std::string &mode = "outer");
+
+    /// The ellipsoid that holds a zonotope (CORA's zonotope.ellipsoid) of n independent generators,
+    /// n G G' for the outer modes, G G' for the inner ones; other zonotopes need an SDP.
+    explicit Ellipsoid(const Zonotope &Z, const std::string &mode = "outer:norm_bnd");
+
     /// The stored shape matrix Q, center q and tolerance (CORA's properties Q, q and TOL).
     const Tensor &Q() const noexcept { return Q_; }
     const Tensor &q() const noexcept { return q_; }
@@ -56,7 +69,48 @@ class Ellipsoid : public ContSet {
     /// of shape (n, 0).
     static Ellipsoid empty(int64_t n = 0);
 
+    /// The ellipsoid that is the origin of R^n, n >= 1 (CORA's ellipsoid.origin): Q = 0, q = 0.
+    static Ellipsoid origin(int64_t n);
+
+    /// A random ellipsoid, as CORA's generateRandom: dimension (default that of center, else
+    /// 1..30), center (default N(0, 1)^n), is_degenerate (Q singular); Q is scaled to entries
+    /// below 10.
+    static Ellipsoid generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
+                                     bool is_degenerate = false,
+                                     const std::optional<Tensor> &center = std::nullopt);
+
+    using ContSet::rand_point;
+
+    /// N random points (n, N) of one ellipsoid: "standard" (or "uniform", CORA's other name) is
+    /// uniform in the volume, "extreme" uniform on the boundary. A point repeats its center.
+    Tensor rand_point(int64_t N, Rng &rng, const std::string &type) const;
+
     // Queries -------------------------------------------------------------------------------------
+
+    /// Always false: an ellipsoid holds numbers (CORA's isnan).
+    bool isnan() const;
+
+    /// The semi-axes: the square roots of the i largest eigenvalues of Q (CORA's radius), as
+    /// (..., i, 1); the empty ellipsoid gives (n, 0).
+    Tensor radius(int64_t i = 1) const;
+
+    /// The volume (..., 1, 1): that of the unit ball times sqrt(det Q); 0 for the empty ellipsoid.
+    Tensor volume() const;
+
+    /// Whether the ellipsoids are equal up to tol: the same shape matrices and centers, or both
+    /// empty. tol default: the smaller tolerance of the two ellipsoids.
+    bool isequal(const Ellipsoid &S, Tol tol = std::nullopt) const;
+
+    /// The distance measure of CORA's distance to the points p (n, N): (x - q)' Q^-1 (x - q) - 1
+    /// as (1, N), negative inside; along a null direction of Q a deviation counts 1 / tol of the
+    /// ellipsoid. Not a batch.
+    Tensor distance(const Tensor &p) const;
+
+    /// Whether the ellipsoid meets the points p (all of them in it, as contains) or an ellipsoid
+    /// (CORA's isIntersecting_): exact when one is a point; else the distance of two ellipsoids
+    /// needs a solver, Error::not_supported. Not a batch.
+    bool is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    bool is_intersecting(const Ellipsoid &S, Tol tol = std::nullopt) const;
 
     /// Always true: the shape matrix is finite.
     bool is_bounded() const;
@@ -140,18 +194,62 @@ class Ellipsoid : public ContSet {
     bool contains(const Ellipsoid &S, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
 
+    /// The Minkowski sum with a vector, or with an ellipsoid (CORA's plus): the enclosure of Halder
+    /// (2018) when both are full-dimensional, exact for points and 1D. Other modes: not_supported.
+    Ellipsoid plus(const Tensor &v) const;
+    Ellipsoid plus(const Ellipsoid &S, const std::string &mode = "outer:halder") const;
+
+    /// The Minkowski difference with a vector (CORA's minkDiff): the shift by -v; with an ellipsoid
+    /// only the cases without directions of the equal-area partition, else Error::not_supported.
+    Ellipsoid mink_diff(const Tensor &v) const;
+    Ellipsoid mink_diff(const Ellipsoid &S2) const;
+
+    /// M E for a matrix M (..., m, n) (CORA's mtimes): M Q M' (symmetrized) and M q.
+    Ellipsoid linear_map(const Tensor &M) const;
+
+    /// The ellipsoid with its coordinates permuted (CORA's lift_, N = dim() and dims a
+    /// permutation: an ellipsoid is bounded, so new dimensions cannot be added).
+    Ellipsoid lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    // Unions and conversions ---------------------------------------------------------------------
+
+    /// A set that holds both ellipsoids (CORA's or, mode "outer"), or this one for "inner": an
+    /// empty operand gives the other; a point inside the other ellipsoid is absorbed; else the
+    /// smallest enclosing ellipsoid needs an SDP, Error::not_supported.
+    Ellipsoid unite(const Ellipsoid &S, const std::string &mode = "outer") const;
+    Ellipsoid unite(const Tensor &p, const std::string &mode = "outer") const;
+
+    /// CORA's convHull_ of two ellipsoids: unite with mode "outer".
+    Ellipsoid convex_hull(const Ellipsoid &S) const;
+
+    /// A parallelotope that holds the ellipsoid ("outer:box") or lies in it ("inner:box"); the norm
+    /// modes need the equal-area partition of the sphere: Error::not_supported.
+    Zonotope zonotope(const std::string &mode = "outer:box",
+                      std::optional<int64_t> number_of_generators = std::nullopt) const;
+
+    // Enclosing ellipsoids ------------------------------------------------------------------------
+
     /// A set that encloses this ellipsoid and E2 (CORA's enclose): needs an SDP, so
     /// Error::not_supported after the dimensions are checked. With (M, Eplus) it is E2 = M Eplus.
     Ellipsoid enclose(const Ellipsoid &E2) const;
     Ellipsoid enclose(const Tensor &M, const Ellipsoid &Eplus) const;
 
   protected:
+    // the unchecked forms of the ContSet interface
     int64_t dim_impl() const override { return q_.shape()[q_.ndim() - 2]; }
     Tensor center_impl() const override;
+    Set reduce_impl(int order) const override;
+    Set minkowski_difference_impl(const ContSet &S2,
+                                  const std::optional<std::string> &type) const override;
+    Set translate_impl(const Tensor &v) const override;
+    Set linear_map_impl(const Tensor &M) const override;
+    Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override;
     Tensor rand_point_impl(int64_t N, Rng &rng) const override;
     Set project_impl(const std::vector<int64_t> &dims) const override;
+    // the plots take the outline and the surface points
     std::vector<Polygon> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
@@ -161,6 +259,8 @@ class Ellipsoid : public ContSet {
     Set enclose_impl(const ContSet &S2) const override;
 
   private:
+    Tensor rand_point_impl(int64_t N, Rng &rng, const std::string &type) const;
+
     Tensor Q_, q_;
     double tol_;
 };

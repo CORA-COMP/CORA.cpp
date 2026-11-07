@@ -12,6 +12,10 @@
 // ORACLE: contSet/@ellipsoid/cartProd_.m
 // ORACLE: contSet/@ellipsoid/isFullDim.m
 // ORACLE: contSet/@ellipsoid/isBigger.m
+// ORACLE: contSet/@ellipsoid/origin.m
+// ORACLE: contSet/@ellipsoid/project.m
+// ORACLE: contSet/@ellipsoid/lift_.m
+// ORACLE: contSet/@ellipsoid/isequal.m
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -80,6 +84,32 @@ int main() {
         const Ellipsoid one(Tensor({{1.0}})), four(Tensor({{4.0}}));
         oracle::check(one.is_bigger(four), lean::Ellipsoid(one).is_bigger(lean::Ellipsoid(four)));
         oracle::check(four.is_bigger(one), lean::Ellipsoid(four).is_bigger(lean::Ellipsoid(one)));
+    });
+    // the origin, the projection, the permutation and the equality: exact in the oracle too
+    oracle::run("ellipsoid.origin", [](oracle::Random &) {
+        const Ellipsoid theirs = lean::Ellipsoid::origin(3).nominal();
+        oracle::check_exact("origin.Q", Ellipsoid::origin(3).Q(), theirs.Q());
+        oracle::check_exact("origin.q", Ellipsoid::origin(3).q(), theirs.q());
+    });
+    oracle::run("ellipsoid.project", [](oracle::Random &rnd) {
+        const Ellipsoid E = aux_ellipsoid(rnd, 3);
+        const Ellipsoid theirs = lean::Ellipsoid(E).project({2, 0}).nominal();
+        const Ellipsoid mine = E.project({2, 0}).as<Ellipsoid>();
+        oracle::check_exact("project.Q", mine.Q(), theirs.Q());
+        oracle::check_exact("project.q", mine.q(), theirs.q());
+    });
+    // the permutation and the equality
+    oracle::run("ellipsoid.lift", [](oracle::Random &rnd) {
+        const Ellipsoid E = aux_ellipsoid(rnd, 3);
+        const Ellipsoid theirs = lean::Ellipsoid(E).lift(3, {1, 2, 0}).nominal();
+        const Ellipsoid mine = E.lift(3, {1, 2, 0});
+        oracle::check_exact("lift.Q", mine.Q(), theirs.Q());
+        oracle::check_exact("lift.q", mine.q(), theirs.q());
+    });
+    oracle::run("ellipsoid.isequal", [](oracle::Random &rnd) {
+        const Ellipsoid E = aux_ellipsoid(rnd, 3), other = aux_ellipsoid(rnd, 3);
+        oracle::check(E.isequal(E, 0.0), lean::Ellipsoid(E).isequal(E));
+        oracle::check(E.isequal(other, 0.0), lean::Ellipsoid(E).isequal(other));
     });
     return test::finish("lean ellipsoid");
 }

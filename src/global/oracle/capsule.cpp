@@ -96,14 +96,52 @@ bool Capsule::isequal(const Capsule &C2, double tol) const {
         .get<bool>("value");
 }
 
+// Bounds: numbers the oracle proves, rounded upward in a sound dtype.
+
+double Capsule::radius(int k) const {
+    return ask("capsule.radius", {{"C", *this}, {"k", k}}).get<double>("value");
+}
+
+double Capsule::volume(int p, int k) const {
+    return ask("capsule.volume", {{"C", *this}, {"p", p}, {"k", k}}).get<double>("value");
+}
+
+double Capsule::support_function(const Tensor &d, int p) const {
+    return ask("capsule.supportFunc", {{"C", *this}, {"dir", d}, {"type", "upper"}, {"p", p}})
+        .get<double>("value");
+}
+
+bool Capsule::representsa(const std::string &type, double tol) const {
+    return ask("capsule.representsa", {{"C", *this}, {"type", type}, {"tol", number(tol)}})
+        .get<bool>("value");
+}
+
+Zonotope Capsule::zonotope() const {
+    return ask("capsule.zonotope", {{"C", *this}}).get<Zonotope>("Z");
+}
+
 // Sets: each op sends the capsules (and k, the Newton steps of the roots) and reads `C` back.
 
 Capsule Capsule::convex_hull(const Capsule &C2, int k) const {
     return aux_set("capsule.convHull", {{"C", *this}, {"C2", C2}, {"k", k}});
 }
 
+// the image under a matrix, and the permutation of the coordinates
 Capsule Capsule::linear_map(const Tensor &M, int k) const {
     return aux_set("capsule.mtimes", {{"C", *this}, {"M", M}, {"k", k}});
+}
+
+// the sum, the projection and the order reduction, again capsules
+Capsule Capsule::plus(const Capsule &C2, int k) const {
+    return aux_set("capsule.plus", {{"C", *this}, {"C2", C2}, {"k", k}});
+}
+
+Capsule Capsule::project(const std::vector<int64_t> &dims) const {
+    return aux_set("capsule.project", {{"C", *this}, {"dims", dims}});
+}
+
+Capsule Capsule::reduce(int order) const {
+    return aux_set("capsule.reduce", {{"C", *this}, {"order", order}, {"method", "girard"}});
 }
 
 Capsule Capsule::lift(int64_t N, const std::vector<int64_t> &dims) const {

@@ -3,14 +3,23 @@
 // tol is kept as the tolerance of the object (CORA's is 1e-6). Q without entries needs q without
 // entries: the empty ellipsoid.
 //
-// Syntax:   Ellipsoid E(Q);   Ellipsoid E(Q, q);   Ellipsoid E(Q, q, tol);
+// Also the ellipsoids of a box (radii widened to 5e-3, n times its generators' ellipsoid) and of a
+// zonotope of n independent generators (the SDP-based modes are not supported).
+//
+// Syntax:   Ellipsoid E(Q);   Ellipsoid E(Q, q);   Ellipsoid E(Q, q, tol);   Ellipsoid E(I, mode);
+//           Ellipsoid E(Z, mode);
 // Inputs:   Q - shape matrix (..., n, n), finite, symmetric and positive semidefinite up to tol
 //           q - center (..., n, 1), finite, default 0
 //           tol - bound of the asymmetry and the negative eigenvalues; default: the repository one
+//           I - box
+//           Z - zonotope (n, m), not a batch
+//           mode - "outer" or "inner" for a box, one of the zonotope modes for a zonotope
 // Outputs:  E - the ellipsoid {x | (x - q)' Q^+ (x - q) <= 1}
 // See also: empty, Zonotope::Zonotope
 //
 // CORA: contSet/@ellipsoid/ellipsoid.m
+// CORA: contSet/@interval/ellipsoid.m
+// CORA: contSet/@zonotope/ellipsoid.m
 // CORA authors: Victor Gassmann, Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -18,6 +27,7 @@
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
 
@@ -95,27 +105,55 @@ Ellipsoid::Ellipsoid(Tensor Q, Tensor q, Tol tol)
 
 Ellipsoid::Ellipsoid(const Tensor &Q, Tol tol) : Ellipsoid(Q, aux_default_center(Q), tol) {}
 
-// Not ported yet ----------------------------------------------------------------------------------
+// Conversions -------------------------------------------------------------------------------------
 
-// Not yet ported: the support function, random points, projections and vertices.
-Tensor Ellipsoid::support_function_impl(const Tensor &) const {
-    CORA_FAIL(Error::not_supported, "Ellipsoid: support_function is not ported yet");
+Ellipsoid::Ellipsoid(const Interval &I, const std::string &mode) : Ellipsoid(Ellipsoid::empty(0)) {
+    detail::Entry entry;
+    // only the mode "outer" is available, and only for a nonempty box
+    CORA_CHECK(mode == "outer" || mode == "inner", Error::wrong_value, [&] {
+        return "Ellipsoid: the mode must be 'outer' or 'inner', got '" + mode + "'";
+    });
+    CORA_CHECK(mode == "outer", Error::not_supported,
+               [] { return std::string("Ellipsoid: the mode 'inner' needs an SDP solver"); });
+    CORA_CHECK(!I.is_empty(), Error::empty_set,
+               [] { return std::string("Ellipsoid: the box is empty"); });
+    // radii below the minimum are widened to it, unless they are 0
+    const Tensor rad = I.rad();
+    const Tensor positive = rad.greater(rad.zeros_like());
+    const Tensor widened = Tensor::where(
+        rad.less(rad.full_like(rad.shape(), numerics::kBoxRadiusMin)),
+        Tensor::where(positive, rad.full_like(rad.shape(), numerics::kBoxRadiusMin), rad), rad);
+    // a flat edge leaves fewer than n generators: the box needs the minimum volume ellipsoid
+    CORA_CHECK(widened.min().item() > 0.0 || widened.max().item() == 0.0, Error::not_supported, [] {
+        return std::string(
+            "Ellipsoid: a box with a flat edge needs the minimum volume enclosing ellipsoid");
+    });
+    const double n = static_cast<double>(I.dim());
+    *this = Ellipsoid(widened.square().diag() * n, I.center());
 }
 
-Tensor Ellipsoid::rand_point_impl(int64_t, Rng &) const {
-    CORA_FAIL(Error::not_supported, "Ellipsoid: rand_point is not ported yet");
-}
-
-Set Ellipsoid::project_impl(const std::vector<int64_t> &) const {
-    CORA_FAIL(Error::not_supported, "Ellipsoid: project is not ported yet");
-}
-
-std::vector<Polygon> Ellipsoid::vertices_impl() const {
-    CORA_FAIL(Error::not_supported, "Ellipsoid: vertices is not ported yet");
-}
-
-std::vector<std::vector<Point3>> Ellipsoid::vertices_3d_impl() const {
-    CORA_FAIL(Error::not_supported, "Ellipsoid: vertices_3d is not ported yet");
+Ellipsoid::Ellipsoid(const Zonotope &Z, const std::string &mode) : Ellipsoid(Ellipsoid::empty(0)) {
+    detail::Entry entry;
+    CORA_CHECK(mode == "outer:exact" || mode == "outer:norm" || mode == "outer:norm_bnd" ||
+                   mode == "inner:exact" || mode == "inner:norm",
+               Error::wrong_value, [&] { return "Ellipsoid: unknown mode '" + mode + "'"; });
+    CORA_CHECK(Z.center().ndim() == 2, Error::not_supported, [] {
+        return std::string("Ellipsoid: a zonotope converts one at a time, not as a batch");
+    });
+    const Tensor &c = Z.center(), &G = Z.generators();
+    const int64_t n = Z.dim();
+    // a point: no generator, or generators of length 0
+    if (G.shape().back() == 0 || G.abs().max().item() == 0.0) {
+        *this = Ellipsoid(c.zeros_like({n, n}), c);
+        return;
+    }
+    CORA_CHECK(G.shape().back() == n && G.matrix_rank() == n, Error::not_supported, [] {
+        return std::string(
+            "Ellipsoid: only a zonotope of n independent generators converts without an SDP");
+    });
+    // the ellipsoid through the corners is n times larger than the inscribed one
+    const double factor = mode.rfind("outer", 0) == 0 ? static_cast<double>(n) : 1.0;
+    *this = Ellipsoid(G.matmul(G.matrix_transpose()) * factor, c);
 }
 
 } // namespace cora

@@ -22,6 +22,8 @@
 
 namespace cora::lean {
 
+class Zonotope;
+
 class Ellipsoid {
   public:
     /// An exact ellipsoid (empty error box) in the current dtype.
@@ -50,6 +52,26 @@ class Ellipsoid {
 
     /// The Cartesian product with the point v (`ellipsoid.cartProd`): exact.
     Ellipsoid cart_prod(const Tensor &v) const;
+
+    /// The ellipsoid that is the origin of R^n (`ellipsoid.origin`): exact.
+    static Ellipsoid origin(int64_t n);
+
+    /// The projection onto dims (`ellipsoid.project`), the permutation (`ellipsoid.lift`) and
+    /// M E (`ellipsoid.mtimes`).
+    Ellipsoid project(const std::vector<int64_t> &dims) const;
+    Ellipsoid lift(int64_t N, const std::vector<int64_t> &dims) const;
+    Ellipsoid linear_map(const Tensor &M) const;
+
+    /// Whether the ellipsoids are equal (`ellipsoid.isequal`).
+    bool isequal(const Ellipsoid &E2, double tol = 0) const;
+
+    /// Upper bounds of the norm of the points (`ellipsoid.norm`, k Newton steps) and of the
+    /// largest semi-axis (`ellipsoid.radius`, p steps).
+    double norm(int k = 100) const;
+    double radius(int p = 100) const;
+
+    /// The parallelotope that holds the ellipsoid (`ellipsoid.zonotope`).
+    Zonotope zonotope() const;
 
     Json to_json() const;
     static Ellipsoid from_json(const std::string &dtype, const Json &j);

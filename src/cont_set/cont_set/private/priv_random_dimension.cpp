@@ -19,10 +19,11 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-int64_t priv_random_dimension(Rng &rng) {
+int64_t priv_random_dimension(Rng &rng, int64_t maximum) {
     double u = 0.0;
     rng.uniform(&u, 1, 0.0, 1.0);
-    return std::min<int64_t>(10, 1 + static_cast<int64_t>(std::floor(10.0 * u)));
+    return std::min<int64_t>(
+        maximum, 1 + static_cast<int64_t>(std::floor(static_cast<double>(maximum) * u)));
 }
 
 } // namespace cora

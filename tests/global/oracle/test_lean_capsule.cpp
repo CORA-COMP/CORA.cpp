@@ -2,10 +2,12 @@
 //
 // Bit for bit where CORALean builds the same capsule at nearest: center, convHull (and enclose of
 // two capsules, which is the hull), empty, origin, enclosePoints, interval, isBounded, isFullDim,
-// isequal, lift, mtimes and contains for a point. isIntersecting is a certificate of disjointness
-// (the bounding radii separate the centers in one coordinate) where CORA.cpp computes the least
-// distance of the axes, so the oracle's answer may not contradict CORA.cpp's (no bit-exact test
-// exists). k is the number of Newton steps of CORALean's roots.
+// isequal, lift, mtimes and contains for a point, plus (the longer generator stays), project,
+// reduce, radius, representsa (point, origin) and zonotope (the segment and the box of the ball).
+// isIntersecting is a certificate of disjointness (the bounding radii separate the centers in one
+// coordinate) where CORA.cpp computes the least distance of the axes, so the oracle's answer may
+// not contradict CORA.cpp's (no bit-exact test exists). k is the number of Newton steps of
+// CORALean's roots.
 //
 // ORACLE: contSet/@capsule/center.m
 // ORACLE: contSet/@capsule/contains_.m
@@ -21,6 +23,10 @@
 // ORACLE: contSet/@capsule/lift_.m
 // ORACLE: contSet/@capsule/mtimes.m
 // ORACLE: contSet/@capsule/origin.m
+// ORACLE: contSet/@capsule/project.m
+// ORACLE: contSet/@capsule/reduce.m
+// ORACLE: contSet/@capsule/representsa_.m
+// ORACLE: contSet/@capsule/zonotope.m
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
 // Last update:   ---
@@ -133,6 +139,27 @@ int main() {
         const Capsule C = rnd.capsule(3);
         const Tensor M = rnd.matrix(2, 3);
         oracle::check(C.linear_map(M), lean::Capsule(C).linear_map(M));
+    });
+    // the projection, the reduction, the predicates and the zonotope (plus and radius: _bound)
+    oracle::run("capsule.project", [](oracle::Random &rnd) {
+        const Capsule C = rnd.capsule(3);
+        oracle::check(C.project({2, 0}).as<Capsule>(), lean::Capsule(C).project({2, 0}));
+    });
+    oracle::run("capsule.reduce", [](oracle::Random &rnd) {
+        const Capsule C = rnd.capsule(3);
+        oracle::check(C.reduce(2).as<Capsule>(), lean::Capsule(C).reduce(2));
+    });
+    // the predicates on points
+    oracle::run("capsule.representsa", [](oracle::Random &rnd) {
+        const Capsule C = rnd.capsule(3), point(C.c()), origin = Capsule::origin(3);
+        for (const char *type : {"point", "origin"})
+            for (const Capsule *S : {&C, &point, &origin})
+                oracle::check(S->representsa(type, 0.0), lean::Capsule(*S).representsa(type));
+    });
+    oracle::run("capsule.zonotope", [](oracle::Random &rnd) {
+        const Capsule C = rnd.capsule(3), segment(C.c(), C.generator(), 0.0);
+        oracle::check(C.zonotope(), lean::Capsule(C).zonotope());
+        oracle::check(segment.zonotope(), lean::Capsule(segment).zonotope());
     });
     return test::finish("lean capsule");
 }

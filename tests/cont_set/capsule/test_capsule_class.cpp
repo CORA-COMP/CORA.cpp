@@ -1,6 +1,9 @@
 // test_capsule_class - the constructors of Capsule: forms, batches and refusals
 //
 // CORA: contSet/@capsule/capsule.m
+// CORA: contSet/@interval/capsule.m
+// CORA: contSet/@zonotope/capsule.m
+// PROPERTY: contSet/@zonotope/capsule.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
@@ -8,6 +11,7 @@
 // Reviewed:      ---
 
 #include "capsule_testing.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 
 using namespace cora;
 using test::check;
@@ -84,6 +88,54 @@ void refusals() {
           "Capsule: the same with the checks off");
 }
 
+/// The capsule of a box: the segment along the first widest edge, the ball over the other
+/// half-widths.
+void from_interval(const std::string &b) {
+    const Interval box(column({0.0, 0.0, 0.0}), column({4.0, 2.0, 1.0}));
+    const Capsule C(box);
+    check(close(C.c(), {2, 1, 0.5}, 0) && close(C.generator(), {2, 0, 0}, 0),
+          b + ": c and g of the widest edge");
+    check(close(C.r(), {std::sqrt(1.25)}, 1e-14), b + ": r over the other half-widths");
+    // the first of several widest edges is taken
+    const Capsule tie(Interval(column({0.0, 0.0}), column({2.0, 2.0})));
+    check(close(tie.generator(), {1, 0}, 0) && close(tie.r(), {1}, 0),
+          b + ": the first widest edge");
+    check(close(Capsule(Interval(column({1.0}), column({3.0}))).generator(), {1}, 0),
+          b + ": one dimension");
+    const Capsule batch(
+        Interval(Tensor::zeros({2, 2, 1}), Tensor::from_data({1, 3, 2, 1}, {2, 2, 1})));
+    check(close(batch.generator(), {0, 1.5, 1, 0}, 0), b + ": a batch");
+}
+
+/// Stated property: the capsule of a zonotope holds its points, for generators fewer and more than
+/// n.
+void from_zonotope(const std::string &b) {
+    Rng rng(131);
+    for (const int generators : {1, 2, 3, 7}) {
+        std::vector<double> G(static_cast<std::size_t>(3 * generators));
+        rng.normal(G.data(), G.size(), 1.0);
+        const Zonotope Z(column({1.0, -1.0, 0.5}), Tensor::from_data(G, {3, generators}));
+        const Capsule C(Z);
+        check(C.contains(Z), b + ": the zonotope is inside the capsule of " +
+                                 std::to_string(generators) + " generators");
+        check(C.dim() == 3 && C.r().item() >= 0, b + ": a capsule of the dimension");
+    }
+    // a segment is a capsule of radius 0
+    const Capsule segment(Zonotope(column({0.0, 0.0}), Tensor({{1.0}, {1.0}})));
+    check(close(segment.r(), {0}, 1e-12), b + ": a zonotope with one generator has radius 0");
+}
+
+/// A batch of zonotopes and an interval matrix are refused.
+void conversion_refusals() {
+    const Zonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 2, 1}));
+    check(test::raises([&] { Capsule C(batch); }, Error::not_supported), "Capsule(Z): a batch");
+    check(test::raises([] { Capsule C(Interval::empty(2)); }, Error::empty_set),
+          "Capsule(I): empty");
+    ChecksScope off(false);
+    check(Capsule(Interval(column({0.0, 0.0}), column({1.0, 2.0}))).dim() == 2,
+          "Capsule(I): works with the checks off");
+}
+
 } // namespace
 
 
@@ -93,8 +145,11 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         constructor_forms(b);
         batches(b);
+        from_interval(b);
+        from_zonotope(b);
     });
     refusals();
+    conversion_refusals();
     return test::finish("capsule class");
 }
 
