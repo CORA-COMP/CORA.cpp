@@ -15,7 +15,8 @@ Tensor A({{-0.1, 1}, {-1, -0.1}});                                     // x' = A
 Zonotope X0(Tensor({1, 0}), 0.1 * Tensor::eye(2));                     // center, generators
 ReachSet R = LinearSys(A).reach({.initial_set = X0, .t_final = 5.0},   // the problem
                                 alg::Standard{.time_step = 0.1});      // the algorithm
-Specification spec = Specification::unsafe_set(Tensor({1, 0}), -0.75); // stay out of x1 <= -0.75
+Specification spec = Specification::unsafe_set(                        // stay out of x1 <= -0.75
+    Polytope(Tensor({{1, 0}}), Tensor({{-0.75}})));
 bool safe = spec.check(R.time_interval);
 plot(R, {0, 1});                                                       // dimensions to show
 figure().save("reach.svg");                                            // C++ writes SVG
@@ -24,12 +25,12 @@ figure().save("reach.svg");                                            // C++ wr
 Python:
 
 ```python
-from cora import Tensor, Zonotope, LinearSys, Specification, eye, plot
+from cora import Tensor, Zonotope, Polytope, LinearSys, Specification, eye, plot
 
 A = Tensor([[-0.1, 1], [-1, -0.1]])                                    # x' = A x
 X0 = Zonotope(Tensor([1, 0]), 0.1 * eye(2))                            # center, generators
 R = LinearSys(A).reach(X0, t_final=5.0, alg="standard", time_step=0.1)
-spec = Specification.unsafe_set(Tensor([1, 0]), -0.75)                 # stay out of x1 <= -0.75
+spec = Specification.unsafe_set(Polytope(Tensor([[1, 0]]), Tensor([-0.75])))  # stay out of x1 <= -0.75
 safe = spec.check(R.time_interval)
 plot(R)                                                                # dims default to (0, 1)
 ```

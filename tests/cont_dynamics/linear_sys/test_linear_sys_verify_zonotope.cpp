@@ -17,6 +17,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "spec_testing.h"
 #include "testing.h"
 
 using namespace cora;
@@ -73,10 +74,10 @@ Rand rand02() {
 std::vector<Specification> rand_specs(const std::vector<double> &b1,
                                       const std::vector<double> &b2) {
     auto box = [](const std::vector<double> &b) {
-        return Specification::unsafe_set({{test::column({1, 0}), b[0]},
-                                          {test::column({0, 1}), b[1]},
-                                          {test::column({-1, 0}), b[2]},
-                                          {test::column({0, -1}), b[3]}});
+        return Specification::unsafe_set(test::polytope({{test::column({1, 0}), b[0]},
+                                                         {test::column({0, 1}), b[1]},
+                                                         {test::column({-1, 0}), b[2]},
+                                                         {test::column({0, -1}), b[3]}}));
     };
     return {box(b1), box(b2)};
 }
@@ -175,14 +176,14 @@ void adaptive_reach_rand02_matches_matlab() {
 
 /// A safe set: one halfspace, or the unsafe box [lo1, hi1] x [lo2, hi2].
 Specification safe_halfspace(double a1, double a2, double b) {
-    return Specification::safe_set(test::column({a1, a2}), b);
+    return Specification::safe_set(test::halfspace(test::column({a1, a2}), b));
 }
 
 Specification unsafe_box(double lo1, double hi1, double lo2, double hi2) {
-    return Specification::unsafe_set({{test::column({1, 0}), hi1},
-                                      {test::column({0, 1}), hi2},
-                                      {test::column({-1, 0}), -lo1},
-                                      {test::column({0, -1}), -lo2}});
+    return Specification::unsafe_set(test::polytope({{test::column({1, 0}), hi1},
+                                                     {test::column({0, 1}), hi2},
+                                                     {test::column({-1, 0}), -lo1},
+                                                     {test::column({0, -1}), -lo2}}));
 }
 
 /// Cases of the RAND01 system with MATLAB's verdict and number of refinements (the lines

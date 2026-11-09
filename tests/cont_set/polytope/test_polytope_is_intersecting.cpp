@@ -11,6 +11,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_set/registry.h"
 #include "polytope_testing.h"
 
 using namespace cora;
@@ -82,6 +83,21 @@ void special(const std::string &b) {
           b + ": 1D");
 }
 
+/// The table holds the pairs of a polytope with a zonotope, a constrained zonotope and a bundle,
+/// in both orders of the operands, and agrees with the members (exact by a linear program).
+void table(const std::string &b) {
+    const Polytope sq = test::square_h();
+    const Zonotope Z(column({1.0, 1.0}), Tensor::eye(2) * 0.6),
+        Zfar(column({3.0, 3.0}), Tensor::eye(2) * 0.6);
+    check(is_intersecting(sq, Z) && is_intersecting(Z, sq) && !is_intersecting(sq, Zfar) &&
+              !is_intersecting(Zfar, sq),
+          b + ": a zonotope");
+    check(is_intersecting(sq, ConZonotope(Z)) && !is_intersecting(ConZonotope(Zfar), sq),
+          b + ": a constrained zonotope");
+    check(is_intersecting(sq, ZonoBundle({Z, Z})) && !is_intersecting(sq, ZonoBundle({Zfar, Zfar})),
+          b + ": a bundle");
+}
+
 /// Sets that share a sample meet; the translate by a large vector does not.
 void properties(const std::string &b) {
     Rng rng(4);
@@ -105,6 +121,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         sets(b);
         special(b);
+        table(b);
         properties(b);
     });
     // a set of another dimension and an unknown type are refused

@@ -1,4 +1,4 @@
-// test_specification_holds_torch - specifications over a batch of sets: one answer per member.
+// test_specification_holds_torch - specifications on libtorch sets: single sets, no batch
 //
 // CORA: specification/@specification/check.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
@@ -7,6 +7,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/backend/torch.h"
 #include "cora/specification/specification.h"
@@ -22,33 +23,31 @@ using test::check;
 
 int main() {
     const BackendScope backend_scope("torch");
-    // Three unit boxes at x1 = 0, 2 and 4: their right edges are at 1, 3 and 5.
+    // A unit box at x1 = 2: its right edge is at 3.
+    const Zonotope box(Tensor({2.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Polytope right(Tensor({{1.0, 0.0}}), Tensor({{3.0}}));
+    const Polytope left(Tensor({{1.0, 0.0}}), Tensor({{2.5}}));
+
+    check(Specification::safe_set(right).check(box), "safe set: the box touches x1 <= 3");
+    check(!Specification::safe_set(left).check(box), "safe set: the box leaves x1 <= 2.5");
+
+    // The unsafe halfspace x1 <= 1.5 touches the box (left edge at 1).
+    check(!Specification::unsafe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({{1.5}}))).check(box),
+          "unsafe set: touched");
+    check(Specification::unsafe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({{0.5}}))).check(box),
+          "unsafe set: clear");
+
+    // A polytope: x1 <= 3 and x1 >= 1 (that is, -x1 <= -1) keeps the box.
+    const Polytope band(Tensor({{1.0, 0.0}, {-1.0, 0.0}}), Tensor({{3.0}, {-1.0}}));
+    check(Specification::safe_set(band).check(box), "a polytope of two rows");
+
+    // The polytope operations take one set: a batch of three boxes is refused.
     const torch::Tensor c =
         torch::tensor({{{0.0}, {0.0}}, {{2.0}, {0.0}}, {{4.0}, {0.0}}}, torch::kDouble);
     const torch::Tensor G = torch::eye(2, torch::kDouble).expand({3, 2, 2}).contiguous();
     const Zonotope batch(from_torch(c), from_torch(G));
-
-    const Specification safe = Specification::safe_set(Tensor({1.0, 0.0}), 3.0);
-    check(safe.holds(batch) == std::vector<bool>({true, true, false}),
-          "safe set: one answer per member");
-    check(!safe.check(batch), "safe set: check needs every member");
-
-    const Specification clear = Specification::safe_set(Tensor({1.0, 0.0}), 5.0);
-    check(clear.check(batch), "safe set: every member inside");
-
-    // The unsafe halfspace x1 <= 1.5 touches the first two boxes (left edges at -1 and 1).
-    const Specification unsafe = Specification::unsafe_set(Tensor({1.0, 0.0}), 1.5);
-    check(unsafe.holds(batch) == std::vector<bool>({false, false, true}),
-          "unsafe set: one answer per member");
-
-    // A polytope: x1 <= 3 and x1 >= 1 (that is, -x1 <= -1) keeps only the middle box.
-    const Specification band =
-        Specification::safe_set({{Tensor({1.0, 0.0}), 3.0}, {Tensor({-1.0, 0.0}), -1.0}});
-    check(band.holds(batch) == std::vector<bool>({false, true, false}), "a polytope over a batch");
-
-    // A single set gives a single answer.
-    const Zonotope one(Tensor({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    check(safe.holds(one).size() == 1, "a single set gives one answer");
+    check(test::raises([&] { Specification::safe_set(right).check(batch); }, Error::not_supported),
+          "a batch of sets is refused");
     return test::finish("specification (libtorch)");
 }
 

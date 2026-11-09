@@ -225,8 +225,8 @@ changed, and the reasons are listed below.
 | `[res, fals, savedata]` of verify | `VerifyResult{verified, falsification, ...}` | `cora.VerifyResult` |
 | `savedata.tComp` | `computation_time` | `computation_time` |
 | `nrSteps` | `num_steps` | `num_steps` |
-| `specification(halfspace, 'safeSet')` | `Specification::safe_set(a, b)` | `cora.Specification.safe_set(a, b)` |
-| `specification(..., 'unsafeSet')` | `Specification::unsafe_set(a, b)` | `cora.Specification.unsafe_set(a, b)` |
+| `specification(S, 'safeSet')` | `Specification::safe_set(S)` | `cora.Specification.safe_set(S)` |
+| `specification(S, 'unsafeSet')` | `Specification::unsafe_set(S)` | `cora.Specification.unsafe_set(S)` |
 | `check(spec, S)` | `spec.check(S)` | `spec.check(S)` |
 | `specification(@(S) ..., 'custom')` | `Specification::custom(predicate)` | `cora.Specification.custom(predicate)` |
 | `linearReset(A, B, c)`, `evaluate(reset, X, U)` | `LinearReset(A, B, c)`, `reset.evaluate(X, U)` | `cora.LinearReset(A, B, c)`, `reset.evaluate(X, U)` |

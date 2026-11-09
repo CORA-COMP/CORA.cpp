@@ -12,11 +12,10 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/specification/specification.h"
 #include "testing.h"
-
-#include <stdexcept>
 
 using namespace cora;
 using test::check;
@@ -27,15 +26,31 @@ using test::check;
 
 namespace {
 
-Halfspace hs(double a1, double a2, double b) { return {Tensor({a1, a2}), b}; }
+/// One row of a polytope: a1 x1 + a2 x2 <= b.
+struct Row {
+    double a1, a2, b;
+};
 
-/// The box [l1, u1] x [l2, u2] as four halfspaces.
-std::vector<Halfspace> box(double l1, double l2, double u1, double u2) {
+Row hs(double a1, double a2, double b) { return {a1, a2, b}; }
+
+/// The polytope {x | a_i'x <= b_i}.
+Polytope polytope(const std::vector<Row> &rows) {
+    std::vector<double> A, b;
+    for (const Row &r : rows) {
+        A.insert(A.end(), {r.a1, r.a2});
+        b.push_back(r.b);
+    }
+    const int64_t m = static_cast<int64_t>(rows.size());
+    return Polytope(Tensor::from_data(A, {m, 2}), Tensor::from_data(b, {m, 1}));
+}
+
+/// The box [l1, u1] x [l2, u2] as four rows.
+std::vector<Row> box(double l1, double l2, double u1, double u2) {
     return {hs(1, 0, u1), hs(0, 1, u2), hs(-1, 0, -l1), hs(0, -1, -l2)};
 }
 
-bool safe(const Zonotope &Z, const std::vector<Halfspace> &P) {
-    return Specification::unsafe_set(P).check(Z);
+bool safe(const Zonotope &Z, const std::vector<Row> &P) {
+    return Specification::unsafe_set(polytope(P)).check(Z);
 }
 
 void unsafe_polytope(const std::string &b) {
@@ -58,11 +73,12 @@ void unsafe_polytope(const std::string &b) {
     check(safe(Z3, {hs(-1, -1, -2), hs(1, -1, 0), hs(0, 1, 0.5)}), b + ": three halfspaces");
 
     // the type, the halfspaces, and the errors
-    const Specification spec = Specification::unsafe_set(box(0, 0, 1, 1));
-    check(spec.type() == SpecType::unsafe_set && spec.halfspaces().size() == 4, b + ": stored");
-    check(test::raises([] { Specification::unsafe_set(std::vector<Halfspace>{}); },
-                       Error::wrong_input_in_constructor),
-          b + ": no halfspace is an error");
+    const Specification spec = Specification::unsafe_set(polytope(box(0, 0, 1, 1)));
+    check(spec.type() == SpecType::unsafe_set && spec.set().as<Polytope>().A().shape()[0] == 4,
+          b + ": stored");
+    check(test::raises([&] { spec.check(Zonotope(Tensor({1.0}), Tensor({{1.0}}))); },
+                       Error::dimension_mismatch),
+          b + ": a set of another dimension");
 }
 
 } // namespace

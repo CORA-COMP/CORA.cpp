@@ -23,6 +23,7 @@
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "global/format.h"
 
+#include <algorithm>
 #include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -36,10 +37,10 @@ namespace {
 /// Whether every number of t is zero (a NaN is not): the sum of |t| is exactly zero then only.
 bool aux_all_zero(const Tensor &t) { return t.abs().sum().item() == 0; }
 
-/// Whether a halfspace normal is a nonzero column of p rows.
-bool aux_normal_ok(const Halfspace &h, int64_t p) {
-    if (h.a.shape() != std::vector<int64_t>{p, 1}) return false;
-    return !aux_all_zero(h.a);
+/// Whether a halfspace normal has p entries and is not zero.
+bool aux_normal_ok(const SpecRow &h, int64_t p) {
+    if (static_cast<int64_t>(h.a.size()) != p) return false;
+    return std::any_of(h.a.begin(), h.a.end(), [](double v) { return v != 0.0; });
 }
 
 } // namespace
@@ -89,17 +90,17 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
         });
     const int64_t p = C_ ? C_->shape()[0] : n;
     for (const Specification &spec : specs)
-        for (const Halfspace &h : spec.halfspaces())
+        for (const SpecRow &h : priv_spec_rows(spec))
             CORA_CHECK(aux_normal_ok(h, p), Error::wrong_value, [&] {
                 // the unsafe sets are checked against the algorithm
-                return "verify: a halfspace normal must be a nonzero column of the output "
+                return "verify: a halfspace normal must be a nonzero vector of the output "
                        "dimension " +
-                       std::to_string(p) + ", got the shape " + shape_text(h.a.shape());
+                       std::to_string(p) + ", got " + std::to_string(h.a.size()) + " entries";
             });
     // the support function algorithm decides unsafe sets of one halfspace only
     if (std::holds_alternative<alg::ReachAvoidSupportFunction>(alg))
         for (const Specification &spec : specs)
-            CORA_CHECK(spec.type() != SpecType::unsafe_set || spec.halfspaces().size() == 1,
+            CORA_CHECK(spec.type() != SpecType::unsafe_set || priv_spec_rows(spec).size() == 1,
                        Error::not_supported, [] {
                            return std::string("verify: reach_avoid_support_function takes unsafe "
                                               "sets of one halfspace; use reach_avoid_zonotope");

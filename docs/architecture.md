@@ -102,7 +102,7 @@ of an oracle result.
   - the interval set difference of the two verify algorithms;
   - the distance blocks of the zonotope verifier;
   - `Tensor::cat_last`/`cat_rows`;
-  - `Specification::check`/`holds`.
+  - `Specification::check`.
 - The competition entry (`cora::comp`) is kept apart on purpose.
 
 **Algorithms are types.** Each algorithm is a struct of exactly its options, with CORA's

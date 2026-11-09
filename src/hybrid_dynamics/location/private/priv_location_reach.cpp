@@ -30,6 +30,7 @@
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
 #include "cont_dynamics/linear_sys/private/priv.h"
+#include "cora/cont_set/registry.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/global/within_tol.h"
 #include "hybrid_dynamics/location/private/priv.h"
@@ -187,15 +188,8 @@ std::vector<Specification> aux_active(const Location &loc,
                                       const std::vector<Specification> &specs) {
     std::vector<Specification> out;
     for (const Specification &spec : specs) {
-        if (spec.type() == SpecType::unsafe_set) {
-            std::vector<Tensor> rows, offsets;
-            for (const Halfspace &h : spec.halfspaces()) {
-                rows.push_back(h.a.matrix_transpose());
-                offsets.push_back(h.a.full_like({1, 1}, h.b));
-            }
-            const Polytope P(Tensor::concat(rows, -2), Tensor::concat(offsets, -2));
-            if (!loc.invariant().is_intersecting(P)) continue;
-        }
+        if (spec.type() == SpecType::unsafe_set && !is_intersecting(loc.invariant(), spec.set()))
+            continue;
         out.push_back(spec);
     }
     return out;

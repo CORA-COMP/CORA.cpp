@@ -1,15 +1,16 @@
-// specification - a specification on reachable sets, as CORA's specification (halfspaces)
+// specification - a specification on reachable sets, as CORA's specification(set, type)
 //
-// A halfspace is {x | a'x <= b}. A safe set must contain the reachable sets (several
-// halfspaces form a polytope); an unsafe set must not touch them. An unsafe set of several
-// halfspaces is their intersection, a polytope. One halfspace is checked with the support
-// function alone, so it applies to every ContSet on every backend; for a polytope a zonotope is
-// decided exactly by a linear program, any other set conservatively (see check.cpp). A custom
-// specification is a predicate on the set (CORA's 'custom'), such as an interval test.
+// A safe set S must contain the reachable sets (S.contains(R)); an unsafe set S must not touch
+// them (!S.is_intersecting(R)). S is a set of any class, typically a Polytope {x | A x <= b}
+// with one row per halfspace; the check asks the set's own operations (cora::contains and
+// cora::is_intersecting), so a pair of classes without one is Error::noops. Whether they decide
+// exactly or conservatively is documented on the set classes. A custom specification is a
+// predicate on the set (CORA's 'custom'), such as an interval test. A batch of sets is not
+// supported: the polytope operations take one set.
 //
-// Syntax:     Specification spec = Specification::safe_set(a, b);   spec.check(R.time_interval);
-// Operations: check, holds (check.cpp); safe_set, unsafe_set, custom (specification.cpp)
-// See also:   cora/cont_set/cont_set.h, cora/cont_dynamics/linear_sys/linear_sys.h
+// Syntax:     Specification spec = Specification::safe_set(Polytope(A, b));   spec.check(R);
+// Operations: check (check.cpp); safe_set, unsafe_set, custom (specification.cpp)
+// See also:   cora/cont_set/registry.h, cora/cont_set/polytope/polytope.h
 //
 // CORA: specification/@specification/specification.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
@@ -21,49 +22,37 @@
 #pragma once
 
 #include "cora/cont_set/cont_set.h"
+#include "cora/cont_set/set.h"
 
 #include <functional>
+#include <optional>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
 
-/// The halfspace {x | a'x <= b}; a is a column (n, 1).
-struct Halfspace {
-    Tensor a;
-    double b;
-};
-
 enum class SpecType { safe_set, unsafe_set, custom };
 
 class Specification {
   public:
-    /// The sets must lie in all of the halfspaces.
-    static Specification safe_set(std::vector<Halfspace> halfspaces);
-    static Specification safe_set(const Tensor &a, double b) { return safe_set({{a, b}}); }
+    /// The reachable sets must lie in the set S (CORA's specification(S, 'safeSet')).
+    static Specification safe_set(const Set &S);
 
-    /// The sets must not touch the halfspace, or the polytope that is the intersection of several.
-    static Specification unsafe_set(const Halfspace &halfspace) {
-        return unsafe_set(std::vector<Halfspace>{halfspace});
-    }
-    static Specification unsafe_set(std::vector<Halfspace> halfspaces);
-    static Specification unsafe_set(const Tensor &a, double b) {
-        return unsafe_set(Halfspace{a, b});
-    }
+    /// The reachable sets must not touch the set S (CORA's specification(S, 'unsafeSet')).
+    static Specification unsafe_set(const Set &S);
 
     /// A predicate on the set (CORA's specification(func, 'custom')): it holds where `holds`
-    /// returns true; a batch is one set for it. It has no halfspaces.
+    /// returns true. It has no set.
     static Specification custom(std::function<bool(const ContSet &)> holds);
 
     SpecType type() const { return type_; }
-    const std::vector<Halfspace> &halfspaces() const { return halfspaces_; }
 
-    /// Per batch element of S, whether it satisfies the specification.
-    std::vector<bool> holds(const ContSet &S) const;
+    /// The set of a safe or unsafe specification; Error::wrong_value for a custom one.
+    const Set &set() const;
 
-    /// Whether every batch element of S satisfies the specification.
-    bool check(const ContSet &S) const;
+    /// Whether the set R satisfies the specification.
+    bool check(const ContSet &R) const;
 
     /// Whether every set of a sequence (such as ReachSet::time_interval) does.
     template <class S>
@@ -80,12 +69,12 @@ class Specification {
     }
 
   private:
-    Specification(SpecType type, std::vector<Halfspace> halfspaces,
+    Specification(SpecType type, std::optional<Set> set,
                   std::function<bool(const ContSet &)> custom = nullptr)
-        : type_(type), halfspaces_(std::move(halfspaces)), custom_(std::move(custom)) {}
+        : type_(type), set_(std::move(set)), custom_(std::move(custom)) {}
 
     SpecType type_;
-    std::vector<Halfspace> halfspaces_;
+    std::optional<Set> set_;
     std::function<bool(const ContSet &)> custom_;
 };
 

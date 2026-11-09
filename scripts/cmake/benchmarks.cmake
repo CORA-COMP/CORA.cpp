@@ -28,7 +28,7 @@ set(benchmark_instances_benchmark_hybrid_reach_arch23_gearbox GRBX01 GRBX02)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_powertrain DTN01 DTN02 DTN03 DTN04 DTN05 DTN06)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_brake BRKDC01 BRKNC01)
 set(benchmark_instances_benchmark_linear_param_reach_arch23_platoon
-    PLAD01_BND42 PLAA01_BND42 PLAA01_BND50 PLAD01_BND30)
+    PLAD01_BND42 PLAA01_BND42 PLAA01_BND50 PLAD01_BND30 PLAN01)
 set(benchmark_instances_benchmark_linear_reach_arch23_heat3d HEAT03)
 set(benchmark_instances_benchmark_nonlinear_reach_arch23_trafficscenario TRAF22)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_spacecraft SPRE22)

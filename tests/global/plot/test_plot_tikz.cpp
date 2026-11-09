@@ -8,6 +8,7 @@
 // Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
+#include "spec_testing.h"
 #include "testing.h"
 
 #include <cstdio>
@@ -45,10 +46,12 @@ Zonotope shifted(double x) { return Zonotope(test::column({x, 0}), Tensor({{1, 0
 
 // A figure with every kind of layer: a set, a specification, lines and points.
 Figure every_layer() {
+    // the colors are those of CORA's defaults
     use_cora_colors("CORA:default");
     Figure fig;
     plot(fig, shifted(0), {0, 1}, {.label = "set"});
-    plot(fig, Specification::unsafe_set(test::column({-1, 0}), -0.5), {0, 1}, {.label = "unsafe"});
+    plot(fig, Specification::unsafe_set(test::halfspace(test::column({-1, 0}), -0.5)), {0, 1},
+         {.label = "unsafe"});
     plot(fig, Tensor({{-1, 0, 1}, {0, 1, 0}}), {0, 1}, {.label = "points"});
     plot(fig, std::vector<Tensor>{Tensor({{-1}, {-1}}), Tensor({{1}, {0.5}})}, {0, 1},
          {.label = "line"});

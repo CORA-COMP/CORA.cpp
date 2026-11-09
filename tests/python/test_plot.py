@@ -136,7 +136,8 @@ class Plot(unittest.TestCase):
     def test_a_specification_is_a_region_up_to_the_limits(self):
         cora.plot(self.X0, ax=self.ax)
         limits = (self.ax.get_xlim(), self.ax.get_ylim())
-        cora.plot(cora.Specification.unsafe_set(cora.Tensor([1.0, 0.0]), 1.0), ax=self.ax)
+        wall = cora.Polytope(cora.Tensor([[1.0, 0.0]]), cora.Tensor([1.0]))
+        cora.plot(cora.Specification.unsafe_set(wall), ax=self.ax)
         self.assertEqual(len(regions(self.ax)), 1)
         self.assertEqual((self.ax.get_xlim(), self.ax.get_ylim()), limits)
 
@@ -210,7 +211,9 @@ class Dimensions(unittest.TestCase):
         self.X0.plot(ax=ax)
         R = self.sys.reach(self.X0, time_step=0.1, t_final=1.0)
         R.plot(ax=ax)
-        cora.Specification.unsafe_set(cora.Tensor([1.0, 0.0]), 1.0).plot(ax=ax)
+        # a specification draws its forbidden region
+        wall = cora.Polytope(cora.Tensor([[1.0, 0.0]]), cora.Tensor([1.0]))
+        cora.Specification.unsafe_set(wall).plot(ax=ax)
         self.X0.plot_rand_point(ax=ax, num_points=7)
         self.assertEqual(len(paths(ax)), 2)
         self.assertEqual(len(regions(ax)), 1)

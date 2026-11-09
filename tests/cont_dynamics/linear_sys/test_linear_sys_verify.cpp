@@ -18,6 +18,7 @@
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "spec_testing.h"
 #include "testing.h"
 
 #include <cstdio>
@@ -41,11 +42,11 @@ Zonotope zono(const std::vector<double> &c, const std::vector<double> &G, int m)
 }
 
 Specification safe(const std::vector<double> &a, double b) {
-    return Specification::safe_set(test::column(a), b);
+    return Specification::safe_set(test::halfspace(test::column(a), b));
 }
 
 Specification unsafe(const std::vector<double> &a, double b) {
-    return Specification::unsafe_set(test::column(a), b);
+    return Specification::unsafe_set(test::halfspace(test::column(a), b));
 }
 
 const std::vector<double> Aosc{-0.1, 1, -1, -0.1};
@@ -79,12 +80,14 @@ void matches(const char *name, const VerifyResult &r, const Expected &e) {
 
 /// t_final 0 and no specification are refused; with the checks off the verdict is the same.
 void checks_and_their_switch() {
+    // a system with an input, and an initial set around (1, 1)
     const LinearSys sys = LinearSys(Tensor({{-1.0, 0.5}, {-0.5, -1.0}}), Tensor({{1.0}, {0.0}}));
     const ReachProblem problem{.initial_set =
                                    Zonotope(Tensor({1.0, 1.0}), Tensor({{0.1, 0.0}, {0.0, 0.1}})),
                                .input_set = Zonotope(Tensor({0.0}), Tensor({{0.1}})),
                                .t_final = 1};
-    const std::vector<Specification> specs{Specification::safe_set(Tensor({1.0, 0.0}), 3.0)};
+    const std::vector<Specification> specs{
+        Specification::safe_set(test::halfspace(test::column({1.0, 0.0}), 3.0))};
     ReachProblem zero = problem;
     zero.t_final = 0;
     check(test::raises([&] { sys.verify(zero, specs, alg::ReachAvoidSupportFunction{}); },
@@ -208,8 +211,8 @@ int main() {
     // Unsupported input is refused; the support function algorithm takes one halfspace only.
     check(test::throws([&] {
               osc1.verify({R0, u05, 5},
-                          {Specification::unsafe_set(
-                              {{test::column({1, 0}), 1.0}, {test::column({0, 1}), 1.0}})},
+                          {Specification::unsafe_set(test::polytope(
+                              {{test::column({1, 0}), 1.0}, {test::column({0, 1}), 1.0}}))},
                           S);
           }),
           "an unsafe set of several halfspaces is refused by the support function algorithm");

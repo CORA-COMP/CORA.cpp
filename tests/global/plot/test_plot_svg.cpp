@@ -10,6 +10,7 @@
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/plot/plot.h"
 #include "cora/global/rng.h"
+#include "spec_testing.h"
 #include "testing.h"
 
 #include <cstdio>
@@ -199,13 +200,14 @@ void outlines_have_sharp_corners(const std::string &b) {
 void a_specification_is_shaded_up_to_the_limits(const std::string &b) {
     figure().clear();
     plot(initial_set(), {0, 1});
-    plot(Specification::unsafe_set(test::column({1, 0}), 0.5), {0, 1}, {.label = "unsafe"});
+    plot(Specification::unsafe_set(test::halfspace(test::column({1, 0}), 0.5)), {0, 1},
+         {.label = "unsafe"});
     const std::string svg = figure().svg();
     check(has(svg, cora_color("CORA:unsafeLight").hex()), b + ": drawn in the unsafe color");
     check(has(svg, "unsafe"), b + ": legend entry");
     figure().clear();
     plot(initial_set(), {0, 1});
-    plot(Specification::safe_set(test::column({1, 0}), 1.05), {0, 1});
+    plot(Specification::safe_set(test::halfspace(test::column({1, 0}), 1.05)), {0, 1});
     // a safe set shades the outside
     check(has(figure().svg(), cora_color("CORA:unsafe").hex()),
           b + ": a safe set shades the outside");

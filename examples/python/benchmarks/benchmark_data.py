@@ -71,16 +71,14 @@ def zonotope(cora, c, G):
 
 
 def specifications(cora, inst):
-    """The specifications as cora.Specification, one per halfspace where that is equivalent."""
+    """The specifications as cora.Specification: one per entry, over the polytope {A y <= b}."""
     specs = []
     for spec in inst["specs"]:
-        A, b = np.array(spec["A"], dtype=float), spec["b"]
+        P = cora.Polytope(np.array(spec["A"], dtype=float), np.array(spec["b"], dtype=float))
         if spec["type"] == "safeSet":
-            specs += [cora.Specification.safe_set(a, bk) for a, bk in zip(A, b)]
-        elif spec["type"] == "unsafeSet" and len(b) == 1:
-            specs.append(cora.Specification.unsafe_set(A[0], b[0]))
+            specs.append(cora.Specification.safe_set(P))
         elif spec["type"] == "unsafeSet":
-            specs.append(cora.Specification.unsafe_set(A, np.array(b)))  # the polytope {A y <= b}
+            specs.append(cora.Specification.unsafe_set(P))
         else:
             raise ValueError(f"benchmark data: unknown specification type {spec['type']}")
     return specs

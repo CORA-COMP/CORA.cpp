@@ -13,6 +13,7 @@
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/plot/plot.h"
 #include "cora/global/rng.h"
 
@@ -46,7 +47,7 @@ int main() {
     // The phase plane: the unsafe set, the reachable set, the initial set and the simulations.
     use_cora_colors("CORA:contDynamics");
     Figure plane;
-    plot(plane, Specification::unsafe_set(Tensor({{-1}, {0}}), 0.5), {0, 1},
+    plot(plane, Specification::unsafe_set(Polytope(Tensor({{-1.0, 0.0}}), Tensor({{0.5}}))), {0, 1},
          {.label = "unsafe set"});
     plot(plane, R, {0, 1}, {.label = "reachable set"});
     plot(plane, X0, {0, 1}, {.label = "initial set"});

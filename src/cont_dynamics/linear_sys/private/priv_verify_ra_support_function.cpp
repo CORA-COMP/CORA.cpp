@@ -324,8 +324,8 @@ std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, 
 SpecRows aux_spec_rows(const std::vector<Specification> &specs) {
     SpecRows rows;
     // A halfspace with a unit normal: scaling does not change which points satisfy it.
-    auto add = [&](const Halfspace &h, double sign) {
-        const std::vector<double> a = h.a.data(); // a nonzero column of p rows (checked by verify)
+    auto add = [&](const SpecRow &h, double sign) {
+        const std::vector<double> &a = h.a; // a nonzero row of p entries (checked by verify)
         double norm = 0;
         for (double v : a) norm += v * v;
         norm = std::sqrt(norm);
@@ -334,13 +334,14 @@ SpecRows aux_spec_rows(const std::vector<Specification> &specs) {
         ++rows.nr;
     };
     for (const Specification &spec : specs) {
+        const std::vector<SpecRow> halfspaces = priv_spec_rows(spec);
         // Each halfspace of a safe set is a row of its own: the set holds if all of them do.
         switch (spec.type()) {
         case SpecType::safe_set:
-            for (const Halfspace &h : spec.halfspaces()) add(h, 1.0);
+            for (const SpecRow &h : halfspaces) add(h, 1.0);
             break;
         case SpecType::unsafe_set:
-            add(spec.halfspaces()[0], -1.0); // one halfspace (checked by verify)
+            add(halfspaces[0], -1.0); // one halfspace (checked by verify)
             break;
         default:
             CORA_FAIL(Error::wrong_value, "LinearSys::verify: unknown specification type");
