@@ -1,0 +1,104 @@
+// location - lean::Location and lean::Transition, the hybrid-automaton steps computed by CORALean
+//
+// Each method sends the op of the same name with the flow's fields at the top level of the request
+// (A, B, c, U) and reads the answer of the oracle (README, "location. and transition.").
+//
+// Syntax:   auto hits = lean::Location::pot_int(guards, targets, final_loc, R);
+// Inputs:   see location.h
+// Outputs:  see location.h
+// See also: request.h
+//
+// CORA.cpp only: the wrapper of the oracle, CORA has no such class
+// Authors:       Claude Sonnet 5.5
+// Written:       09-November-2026
+// Last update:   ---
+// Reviewed:      ---
+
+#include "cora/global/oracle/location.h"
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora::lean {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// The operands of a flow: its fields that are given.
+std::vector<Operand> aux_flow(const Flow &flow) {
+    std::vector<Operand> operands{{"A", Tensor::from(flow.A)}};
+    if (flow.B) operands.push_back({"B", Tensor::from(*flow.B)});
+    if (flow.c) operands.push_back({"c", Tensor::from(*flow.c)});
+    if (flow.U) operands.push_back({"U", Zonotope(*flow.U)});
+    return operands;
+}
+
+/// The lean zonotopes of cora zonotopes.
+std::vector<Zonotope> aux_lean(const std::vector<cora::Zonotope> &R) {
+    return std::vector<Zonotope>(R.begin(), R.end());
+}
+
+} // namespace
+
+
+// ===========================================  MAIN  =========================================== //
+
+std::vector<std::vector<int64_t>> Location::pot_int(const std::vector<cora::Polytope> &guards,
+                                                    const std::vector<int64_t> &targets,
+                                                    int64_t final_loc,
+                                                    const std::vector<cora::Zonotope> &R) {
+    // the guards and the sets travel as lists; the answer is a list of index pairs
+    std::vector<Polytope> lean_guards(guards.begin(), guards.end());
+    const Reply r = ask("location.potInt", {{"guards", lean_guards},
+                                            {"targets", targets},
+                                            {"finalLoc", final_loc},
+                                            {"R", aux_lean(R)}});
+    return r.get<std::vector<std::vector<int64_t>>>("hits");
+}
+
+std::vector<cora::Tensor> Location::calc_basis(int64_t n, const std::vector<std::string> &enclose) {
+    Json names = Json::array();
+    for (const std::string &s : enclose) names.push(Json(s));
+    const Reply r = ask("location.calcBasis", {{"n", n}, {"enclose", Wire(std::move(names), "")}});
+    std::vector<cora::Tensor> bases;
+    for (const Tensor &B : r.get<std::vector<Tensor>>("B")) bases.push_back(B.gather());
+    return bases;
+}
+
+std::vector<int64_t> Location::check_flow(const Flow &flow, const cora::Tensor &normal, double d,
+                                          const std::vector<cora::Zonotope> &R) {
+    // the hyperplane is {normal, d}
+    Json hyperplane = Json::object();
+    hyperplane.set("normal", Tensor::from(normal).to_json()).set("d", Wire(d).json);
+    std::vector<Operand> operands = aux_flow(flow);
+    operands.push_back({"hyperplane", Wire(std::move(hyperplane), Tensor::from(normal).dtype())});
+    operands.push_back({"R", aux_lean(R)});
+    return ask("location.checkFlow", operands).get<std::vector<int64_t>>("keep");
+}
+
+// The bases, the sets, the normal and the offset of the hyperplane.
+ZonoBundle Location::guard_intersect_zono_girard(const std::vector<cora::Tensor> &Bs,
+                                                 const cora::Zonotope &R0,
+                                                 const std::vector<cora::Zonotope> &R,
+                                                 const cora::Tensor &normal, double gamma) {
+    std::vector<Tensor> bases;
+    bases.reserve(Bs.size());
+    for (const cora::Tensor &B : Bs) bases.push_back(Tensor::from(B));
+    return ask("location.guardIntersect_zonoGirard", {{"Bs", bases},
+                                                      {"R0", Zonotope(R0)},
+                                                      {"R", aux_lean(R)},
+                                                      {"normal", Tensor::from(normal)},
+                                                      {"gamma", gamma}})
+        .get<ZonoBundle>("zB");
+}
+
+// The reset image of the guard-cut set.
+Zonotope Transition::jump(const cora::Tensor &W, const cora::Tensor &w, const cora::Zonotope &Rg) {
+    return ask("transition.jump",
+               {{"W", Tensor::from(W)}, {"w", Tensor::from(w)}, {"Rg", Zonotope(Rg)}})
+        .get<Zonotope>("Z");
+}
+
+} // namespace cora::lean
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -9,6 +9,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/global/oracle/location.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/hybrid_dynamics/linear_reset/linear_reset.h"
 #include "oracle_testing.h"
@@ -31,6 +32,15 @@ int main() {
             const LinearReset plain(A, std::nullopt, c), with_input(A, B, c);
             test::oracle::check(plain.evaluate(X).as<Zonotope>(),
                                 lean::Zonotope(X).linear_map(A).plus(point));
+            // transition.jump: the point is a zonotope with n zero generators, which CORA.cpp omits
+            const Zonotope Y = plain.evaluate(X).as<Zonotope>();
+            const lean::Zonotope jump = lean::Transition::jump(A, c, X);
+            const Tensor jg = jump.generators().gather();
+            const int64_t kept = Y.generators().shape()[1];
+            test::oracle::check("transition.jump.c", Y.center(), jump.center().gather());
+            test::oracle::check("transition.jump.G", Y.generators(), jg.slice(-1, 0, kept));
+            test::check(jg.slice(-1, kept, jg.shape()[1]).abs().sum().item() == 0,
+                        "transition.jump: the other generators are zero");
             test::oracle::check(
                 with_input.evaluate(X, U).as<Zonotope>(),
                 lean::Zonotope(X).linear_map(A).plus(lean::Zonotope(U).linear_map(B)).plus(point));

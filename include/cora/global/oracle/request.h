@@ -65,6 +65,7 @@ struct Wire {
     Wire(const std::vector<Tensor> &Ts);
     Wire(const std::vector<std::vector<Tensor>> &Tss);
     Wire(const std::vector<Zonotope> &Zs);
+    Wire(const std::vector<Polytope> &Ps);
 };
 
 /// A plain JSON number, as the oracle reads its `tol` (the other scalars are exact texts).
