@@ -72,7 +72,7 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
                                             const Zonotope &R0, double t_min, double t_max,
                                             double t_c, int order, const Tensor &n) const {
     detail::Entry entry;
-    CORA_CHECK(A_.ndim() == 2 && order >= 1 && t_min <= t_max, Error::wrong_value, [] {
+    CORA_CHECK(A().ndim() == 2 && order >= 1 && t_min <= t_max, Error::wrong_value, [] {
         return std::string("trajectory_error: needs a single system, order >= 1 and "
                            "t_min <= t_max");
     });
@@ -87,7 +87,7 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
                           std::to_string(dim()) + ", 1)";
                });
     // the sets of the expansion: the centered set, the start point and the input as a point
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     const TimePowers t = aux_time_powers(t_min, t_max, order);
     const Zonotope x0(R0.center(), R0.center().zeros_like({dim(), 0}));
     const Zonotope Y(R0.center().zeros_like(), R0.generators());
@@ -100,7 +100,7 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
     // the series past the linear term: for the set, the input and the offset
     Zonotope E_err = origin, E_err_u = origin, u_tilde = origin;
     double factorial = 1.0;
-    Tensor c_center = A_.zeros_like({dim(), dim()});
+    Tensor c_center = A().zeros_like({dim(), dim()});
     std::vector<Tensor> c_generators;
     for (int i = 1; i <= order; ++i) {
         factorial *= i;

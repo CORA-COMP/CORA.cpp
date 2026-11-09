@@ -44,7 +44,7 @@ void LinearSys::validate(const ReachProblem &problem) const {
         return "reach: the input set needs the dimension " + std::to_string(B_->shape().back()) +
                " of the columns of B, got " + std::to_string(U.dim());
     });
-    CORA_CHECK(A_.shape().size() == 2 && problem.initial_set->center().shape().size() == 2,
+    CORA_CHECK((A_sparse_ || A_.ndim() == 2) && problem.initial_set->center().shape().size() == 2,
                Error::not_supported, [] {
                    return std::string("reach: with an input set, one system and one initial set");
                });

@@ -12,10 +12,11 @@
 // CORA: contDynamics/@linearSys/verify.m
 // CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
 // CORA: contDynamics/@linearSys/private/priv_reach_decomp.m
+// CORA: contDynamics/@linearSys/private/priv_reach_krylov.m
 // CORA: contDynamics/@contDynamics/reach.m
 // CORA: hybridDynamics/@hybridAutomaton/reach.m
 // CORA authors: Mark Wetzlinger, Tobias Ladner, Matthias Althoff, Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
 // Last update:   09-November-2026
 // Reviewed:      ---
@@ -24,6 +25,7 @@
 
 #include "cora/global/options.h"
 #include "cora/global/settings.h"
+#include "cora/global/tensor/tolerance.h"
 
 #include <array>
 #include <cstdint>
@@ -149,6 +151,37 @@ struct Decomposition {
         validate_order(taylor_terms, 1, "taylor_terms", "Decomposition");
         validate_order(zonotope_order, 1, "zonotope_order", "Decomposition");
         validate_partition(partition, "Decomposition");
+    }
+};
+
+/// CORA's linAlg "krylov": the center and each generator of the initial set (and of the input
+/// solution) are propagated in their own Krylov subspace, whose order grows by krylov_step until
+/// the error bound of Jawecki et al. is below krylov_error; the sets are those of the output.
+struct Krylov {
+    double time_step = 0;    ///< the step size, required
+    int taylor_terms = 10;   ///< the order of the Taylor series of the curvature enlargement
+    int zonotope_order = 50; ///< the order the sets are reduced to per step
+    double krylov_error = machine_eps(); ///< the error per vector (CORA has no default)
+    int krylov_step = 20;                ///< how much the order of a subspace grows per try
+
+    static constexpr const char *name = "krylov";
+    static constexpr auto fields() {
+        return std::make_tuple(field("time_step", &Krylov::time_step),
+                               field("taylor_terms", &Krylov::taylor_terms),
+                               field("zonotope_order", &Krylov::zonotope_order),
+                               field("krylov_error", &Krylov::krylov_error),
+                               field("krylov_step", &Krylov::krylov_step));
+    }
+    void validate() const {
+        validate_time_step(time_step, "Krylov");
+        validate_order(taylor_terms, 1, "taylor_terms", "Krylov");
+        validate_order(zonotope_order, 1, "zonotope_order", "Krylov");
+        validate_order(krylov_step, 1, "krylov_step", "Krylov");
+        detail::Validation entry;
+        CORA_CHECK(krylov_error >= 0 && krylov_error < 1e300, Error::wrong_value, [&] {
+            return "Krylov: krylov_error must be nonnegative and finite, got " +
+                   std::to_string(krylov_error);
+        });
     }
 };
 

@@ -10,7 +10,8 @@ as `savedata.tComp` in MATLAB. The MATLAB side is the original scripts, run from
 | --- | --- | --- |
 | `iss` | ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01 | reachavoid:supportFunc |
 | `beam` | CBC01-03, CBF01-03 | reachavoid:supportFunc |
-| `heat3D` | HEAT01, HEAT02 (HEAT03 needs Krylov) | reachavoid:supportFunc |
+| `heat3D` | HEAT01, HEAT02 | reachavoid:supportFunc |
+| `heat3D` (reach) | HEAT03 (heat20, 8000 states, sparse `A`) | linearSys reach, linAlg krylov |
 | `rand` | RAND01, RAND02 (`rand0?_test.json` models) | reachavoid:zonotope |
 | `rendezvous` | SRA01-08, SRNA01, SRU01, SRU02 | hybrid reach: zonoGirard or nondetGuard, enclose box / pca |
 | `gearbox` | GRBX01, GRBX02 | hybrid reach: zonoGirard, enclose box + pca |
@@ -32,14 +33,15 @@ SRU02 are not verified), except PLAN01 (below). CORA.cpp times are wall clock on
 (continuous time) in the ARCH-COMP26 AFF report (Althoff, Carraro, Forets, Perschl, Schilling,
 "ARCH-COMP26 Category Report: Continuous and Hybrid Systems with Linear Continuous Dynamics", EPiC
 Series in Computing 110, pp. 28-51), measured on other machines: compare orders of magnitude only.
-ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 and adds HEAT04 (Krylov); the
-instances here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet.
+ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 and adds HEAT04 (heat50, 125 000
+states, Krylov), a target for later: not run here (its data would be about 14 MB). The instances
+here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet.
 
 | instance | expected | CORA.cpp | CORA.cpp [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] |
 | --- | --- | --- | --- | --- | --- |
 | HEAT01 | 1 | 1 | 0.06 | 0.13 | 0.04 |
 | HEAT02 | 1 | 1 | 3.86 | 3.04 | 2.60 |
-| HEAT03 | 1 | - (Krylov) | - | 21.8 | - |
+| HEAT03 | 1 | 1 | 15.5 | 21.8 | - |
 | CBC01 | 1 | 1 | 0.21 | 0.28 | 0.05 |
 | CBC02 | 1 | 1 | 7.73 | 3.68 | 0.80 |
 | CBC03 | 1 | 1 | 67.9 | 37.27 | 3.74 |
@@ -90,6 +92,18 @@ script's invariant check stops after one step: its `aux_inViaProj(Z1, Z2)` tests
 (`Zonotope::contains`, by polymax in each two-dimensional projection, as CORA picks below dimension
 4; see docs/cora-differences.md).
 
+**HEAT03** runs the script's dual problem: `x' = A' x` from the point `e_mid` with the outputs
+`[c G]' x`, by the Krylov subspace algorithm (`alg::Krylov`, CORA's linAlg `krylov`) on the sparse
+`A`; the maximum temperature over the steps is 0.0172513, in the goal 0.01716509 +- 1e-4 (its
+upper end is 0.0172651). The subspace has order 181, as in CORA: there the error bound
+`tau gamma 40^k / k!` is 0 because `k!` overflows from `k = 171` on, while at order 161 it is
+4.9e149, far above `krylovError = eps` (docs/cora-differences.md); with `krylovError <= 2 eps`
+no error box is added. CORALean shows that CORA's Krylov reach misses trajectories in general (its
+time-interval enclosure and the Jawecki bound outside the nonexpansive case,
+`Krylov.reach_krylov_counterexample`, `Krylov.printed_time_interval_counterexample`,
+`Krylov.jawecki_bound_cora_counterexample`); CORA.cpp follows
+CORA, so the same holds here. HEAT03 takes about 15 s, so it is a `benchmark` test only.
+
 **BRKNP01** is not run. Its location has a LinParamSys flow (supported), but CORA's run of it computes
 NaN sets: the input set `U = zonotope(1)` becomes the constant input `uTrans = 1` with `U = {0}`, which
 does not hold the origin, so `priv_inputTie` adds the curvature of the constant input; its series does
@@ -118,7 +132,8 @@ script in CORA (`benchmark_linear_verifyFast_ARCH23_iss_ISSF01_ISS01`) and diffi
 
 ## Data
 
-`examples/benchmarks/data/` holds the instances, about 0.7 MB in all, written by MATLAB:
+`examples/benchmarks/data/` holds the instances, about 1.6 MB in all, written by MATLAB (HEAT03:
+by `examples/python/benchmarks/heat3d_data.py`, below):
 
 ```matlab
 addpath('examples/matlab/benchmarks'); exportBenchmarkData({}, 'coraRoot', '/path/to/cora')   % all; 'expected', false skips verify
@@ -137,6 +152,12 @@ Per instance:
   row, `coo` is `nnz` int32 rows, `nnz` int32 columns, `nnz` float64 values (0-based), little endian.
 - `specs`: `{"type": "safeSet"|"unsafeSet", "A": rows, "b": values}` over the output `y = C x`;
   a safe set must stay inside `A y <= b`, an unsafe set must avoid its intersection.
+
+HEAT03 is not exported by MATLAB: CORA's `models/Cora/heat3D/heat20.mat` is a Git LFS file and
+MATLAB is not available here. `heat3d_data.py` builds `A` from the finite differences of the
+benchmark (Bak, Tran, Johnson, HSCC 2019; see its header), which reproduce the exported `A` of
+HEAT01 (heat5) and HEAT02 (heat10) bit for bit (`--check`), and `R0` and `C` from the script;
+`linAlg` replaces `verifyAlg`, and `specs` is empty (the goal of the maximum is in the program).
 
 A scalar `B` of the beam scripts is stored as `B*I`; an absent `params.U` (ISSC01_ISU02) as `{0}`.
 Unsafe sets with several halfspaces (RAND) need a `Specification` that takes them; the programs

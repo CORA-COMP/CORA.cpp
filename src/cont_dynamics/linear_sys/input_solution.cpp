@@ -45,7 +45,7 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
         return "input_solution: needs time_step > 0 and taylor_terms >= 1, got " +
                std::to_string(time_step) + " and " + std::to_string(taylor_terms);
     });
-    const Tensor &A = A_;
+    const Tensor &A = this->A();
     const Tensor BG = B_->matmul(U.generators()); // generators of B U0
     const Tensor u = B_->matmul(U.center());      // the constant input B c
 

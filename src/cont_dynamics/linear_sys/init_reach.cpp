@@ -69,11 +69,11 @@ ReachStep LinearSys::init_reach(const Zonotope &R_init, const std::optional<Zono
                    return std::string("init_reach: U and u_trans must have the dimension of the "
                                       "columns of B");
                });
-    CORA_CHECK(A_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
         return std::string("init_reach: it supports a single system, not a batch of matrices A");
     });
     // the matrices of the step: the remainder and curvature of the series, and e^{A dt}
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     const double dt = o.time_step;
     const Interval E = expm_remainder(dt, o.taylor_terms);
     const Interval F = correction_matrix_state(dt, o.taylor_terms);
@@ -84,12 +84,12 @@ ReachStep LinearSys::init_reach(const Zonotope &R_init, const std::optional<Zono
     if (U) V = U->linear_map(*B_);
     const bool has_V = V && !V->representsa("origin");
     const Solution s = aux_input_sum(*this, taylor, has_V ? V : std::nullopt, dt, o.taylor_terms);
-    const Zonotope origin{A_.zeros_like({dim(), 1}), A_.zeros_like({dim(), 0})};
+    const Zonotope origin{A().zeros_like({dim(), 1}), A().zeros_like({dim(), 0})};
     const Zonotope RV =
         has_V ? s.sum->plus(V->linear_map(dt * E)) : origin; // the series and its remainder
     const Interval e_at_int{s.integral + E.inf() * dt, s.integral + E.sup() * dt};
     std::optional<Zonotope> trans_point;
-    if (u_trans) trans_point = Zonotope(B_->matmul(*u_trans), A_.zeros_like({dim(), 0}));
+    if (u_trans) trans_point = Zonotope(B_->matmul(*u_trans), A().zeros_like({dim(), 0}));
     const Zonotope R_trans = trans_point ? trans_point->linear_map(e_at_int) : origin;
 
     // the first step: the end of the step, then the enclosure with the curvatures

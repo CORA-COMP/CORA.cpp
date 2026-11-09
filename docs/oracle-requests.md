@@ -59,3 +59,28 @@ A bit-exact test needs ops that follow `initReach`/`post` of CORA (the request i
 | `linParamSys.post` | the mappings of `initReach`, `ti`, `tp`, `zonotopeOrder` | `ti`, `tp` |
 
 The coverage rows `linParamSys`, `initReach` and `post` are oracle debt until then.
+
+## Krylov subspace reach (PR "HEAT03")
+
+CORALean's `ContDynamics/LinearSys/Krylov/` has no float definitions: its operations are over ℝ,
+so the oracle serves none of them (no `krylov` op in `ping`). They follow the paper (Althoff, TAC
+2020), not CORA's code, except for the Arnoldi iteration:
+
+| CORALean definition (file under `Krylov/Operations/`) | what it is | follows CORA? |
+|---|---|---|
+| `Krylov.arnoldi` (`Arnoldi.lean`), `gramSchmidtStep` (`GramSchmidtStep.lean`), `arnoldiBasis`, `arnoldiHessenberg` | Alg. 1: `v₁ = v/‖v‖`, `w = C v_k` swept against the earlier vectors one by one, `h_{k+1,k} = ‖w‖`; the happy breakdown is the caller stopping | yes, step for step as `arnoldi.m` (modified Gram-Schmidt), over ℝ |
+| `Krylov.augment` (`Augment.lean`) | the integrator matrix `[A u; 0 0]` | yes (`A_int` of `priv_krylov_R_uTrans`, `priv_inputSolution_Krylov`) |
+| `Krylov.alg2` (`Alg2.lean`) | Alg. 2 as printed, its subroutines as parameters | the paper's listing, which CORA's `priv_reach_krylov` implements (with its own handling of the inputs) |
+| `Krylov.alg2Corrected` (`Alg2Corrected.lean`) | Alg. 2 with lines 8 and 10 repaired | own (sound); CORA keeps the printed lines |
+| `Krylov.correctionSet` (`Definitions/CorrectionSet.lean`) | the set of correction matrices of `H` | a set, not CORA's interval matrix `F` |
+
+A bit-exact test of CORA.cpp's `alg::Krylov` needs float ops that follow CORA's code:
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `krylov.arnoldi` (CORA's `arnoldi.m` in float) | `A` (matrix, or coordinates), `v`, `redDim` | `V`, `H`, `Hlast`, `happyBreakdown` |
+| `krylov.subspace` (`priv_subspace_Krylov_individual_Jawecki`) | `A`, `v`, `initKrylovOrder`, `krylovError`, `krylovStep`, `tFinal` | `V`, `H`, `krylovOrder` (with CORA's `t^k/k!` in double) |
+| `linearSys.reachKrylov` (`priv_initReach_Krylov`, `priv_reach_krylov`) | `A`, `B`, `C`, `R0`, `U`, `tFinal`, `timeStep`, `taylorTerms`, `zonotopeOrder`, `krylovError`, `krylovStep` | `timeInterval`, `timePoint` (output zonotopes) |
+
+The Krylov path is a private algorithm of `reach`, so no coverage row changes; its tests are unit and
+property tests (`test_linear_sys_reach_krylov`) until these ops exist.

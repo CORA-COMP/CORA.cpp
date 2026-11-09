@@ -8,7 +8,7 @@
 // Syntax:     cora::bench::run_instance("ISSF01_ISS01");
 // See also:   contDynamics/linear_sys/linear_sys.h, cora/specification/specification.h
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
 // Last update:   09-November-2026
 // Reviewed:      ---
@@ -17,6 +17,7 @@
 
 #include "benchmark_run.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/global/sparse_matrix.h"
 
 #include <algorithm>
 #include <cctype>
@@ -30,6 +31,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -180,6 +182,18 @@ inline std::vector<double> read_matrix(const Json &entry, const std::string &bin
     return dense;
 }
 
+/// The matrix of a "coo" entry as a sparse matrix (the large state matrices).
+inline SparseMatrix read_sparse(const Json &entry, const std::string &bin) {
+    const int64_t nnz = entry["nnz"].integer(), offset = entry["offset"].integer();
+    if (entry["storage"].string != "coo")
+        throw std::runtime_error("benchmark data: a sparse matrix must be stored as coo");
+    const auto *ri = reinterpret_cast<const int32_t *>(bin.data() + offset);
+    const auto *vals = reinterpret_cast<const double *>(bin.data() + offset + 8 * nnz);
+    return {entry["shape"][0].integer(), entry["shape"][1].integer(),
+            std::vector<int64_t>(ri, ri + nnz), std::vector<int64_t>(ri + nnz, ri + 2 * nnz),
+            std::vector<double>(vals, vals + nnz)};
+}
+
 /// A zonotope from its center (n, 1) and generators (n, m); no generators become one zero one.
 inline Zonotope read_zonotope(const Json &matrices, const std::string &bin, const std::string &c,
                               const std::string &G) {
@@ -214,14 +228,20 @@ inline Specification read_spec(const Json &spec) {
     return Specification::unsafe_set(halfspaces);
 }
 
-/// Reads <name>.json and its binary file from examples/benchmarks/data (or
+/// The metadata <name>.json and its binary file from examples/benchmarks/data (or
 /// $CORACPP_BENCHMARK_DATA).
-inline Instance load_instance(const std::string &name) {
+inline std::pair<Json, std::string> read_instance_files(const std::string &name) {
     const std::string folder = std::getenv("CORACPP_BENCHMARK_DATA")
                                    ? std::getenv("CORACPP_BENCHMARK_DATA")
                                    : CORACPP_BENCHMARK_DATA;
-    const Json meta = JsonParser(read_file(folder + "/" + name + ".json")).parse();
-    const std::string bin = read_file(folder + "/" + meta["data"].string);
+    Json meta = JsonParser(read_file(folder + "/" + name + ".json")).parse();
+    std::string bin = read_file(folder + "/" + meta["data"].string);
+    return {std::move(meta), std::move(bin)};
+}
+
+/// The instance <name> for verify.
+inline Instance load_instance(const std::string &name) {
+    const auto [meta, bin] = read_instance_files(name);
     const Json &mat = meta["matrices"];
 
     // the algorithm name is the one of CORA's options.verifyAlg

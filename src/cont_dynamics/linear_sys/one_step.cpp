@@ -42,11 +42,11 @@ OneStep LinearSys::one_step(const Zonotope &X, const Zonotope &U, const Tensor &
                           " and u the shape (" + std::to_string(dim()) + ", 1), got " +
                           std::to_string(U.dim()) + " and " + shape_text(u.shape());
                });
-    CORA_CHECK(A_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
         return std::string("one_step: it supports a single system, not a batch of matrices A");
     });
     // the powers of A are shared by the solutions; the constant input is a point set
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     const Zonotope point(u, u.zeros_like({dim(), 0}));
     BlockStep s =
         priv_one_step(*this, taylor, priv_one_block(dim()), X, U, point, time_step, taylor_terms);

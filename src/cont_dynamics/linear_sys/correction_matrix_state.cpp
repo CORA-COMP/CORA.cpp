@@ -46,14 +46,14 @@ Interval LinearSys::correction_matrix_state(double time_step, int taylor_terms) 
         return "correction matrix: taylor_terms must be at least 1, got " +
                std::to_string(taylor_terms);
     });
-    const Tensor Aabs = A_.abs();
-    Tensor Ai = A_, Aiabs = Aabs; // A^i and |A|^i
-    Tensor Fneg = A_.zeros_like(), Fpos = A_.zeros_like();
-    Tensor series = A_.eye_like() + Aabs * time_step; // sum_i |A|^i dt^i / i!, up to i = 1
-    double dt_over_fac = time_step;                   // dt^i / i!
+    const Tensor Aabs = A().abs();
+    Tensor Ai = A(), Aiabs = Aabs; // A^i and |A|^i
+    Tensor Fneg = A().zeros_like(), Fpos = A().zeros_like();
+    Tensor series = A().eye_like() + Aabs * time_step; // sum_i |A|^i dt^i / i!, up to i = 1
+    double dt_over_fac = time_step;                    // dt^i / i!
 
     for (int i = 2; i <= taylor_terms; ++i) {
-        Ai = Ai.matmul(A_);
+        Ai = Ai.matmul(A());
         Aiabs = Aiabs.matmul(Aabs);
         dt_over_fac *= time_step / i;
         series = series + Aiabs * dt_over_fac;

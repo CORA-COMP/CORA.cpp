@@ -56,15 +56,15 @@ Zonotope LinearSys::error_solution_adaptive(const Zonotope &Vdyn,
                    return std::string("error_solution_adaptive: needs zeta_tabs in [0, 1) and "
                                       "taylor_terms of at least 2");
                });
-    CORA_CHECK(A_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
         return std::string("error_solution_adaptive: it supports a single system, not a batch of "
                            "matrices A");
     });
-    TaylorLinSys taylor(A_);
-    const Tensor Aabs = A_.abs();
+    TaylorLinSys taylor(A());
+    const Tensor Aabs = A().abs();
     // the series so far: the sum of the terms, the powers of |A| of the remainder, the radii
     Zonotope AVsum = Vdyn * time_step;
-    Tensor Asum = A_.eye_like() * time_step, M = A_.eye_like(), Aabs_power = A_.eye_like();
+    Tensor Asum = A().eye_like() * time_step, M = A().eye_like(), Aabs_power = A().eye_like();
     Tensor radius = aux_radius(AVsum), critical;
     double former = 0;
     for (int eta = 1;; ++eta) {

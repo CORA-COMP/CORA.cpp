@@ -2,8 +2,9 @@
 //
 // A is a matrix (..., n, n); leading dimensions batch systems, and broadcast against those of
 // the initial set, so one call covers a batch of systems, of sets, or of both. B (n, m) and C
-// (p, n) are optional single matrices; without C the output is the state. An operation takes
-// the problem (CORA's params) and the algorithm (CORA's options) apart.
+// (p, n) are optional single matrices; without C the output is the state. A may be sparse
+// (SparseMatrix): alg::Krylov uses its products, every other operation its dense form. An
+// operation takes the problem (CORA's params) and the algorithm (CORA's options) apart.
 //
 // Syntax:     LinearSys sys(A);   LinearSys sys(A, B, C);
 //             ReachSet R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{});
@@ -19,9 +20,9 @@
 //
 // CORA: contDynamics/@linearSys/linearSys.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -29,9 +30,12 @@
 #include "cora/cont_dynamics/algorithms.h"
 #include "cora/cont_dynamics/cont_dynamics.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/sparse_matrix.h"
 #include "cora/specification/specification.h"
 
 #include <array>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -131,16 +135,27 @@ class LinearSys {
     /// x' = A x + B u with the output y = C x (C empty: y = x); A is a single matrix here.
     LinearSys(Tensor A, Tensor B, std::optional<Tensor> C = std::nullopt);
 
-    const Tensor &A() const noexcept { return A_; }
+    /// The same with a sparse A (n, n): reach with alg::Krylov uses only its products with
+    /// vectors; any other operation forms the dense A (like B) once, when it first needs it.
+    LinearSys(SparseMatrix A, Tensor B, std::optional<Tensor> C = std::nullopt);
+
+    /// The dense A (formed on first use for a sparse system).
+    const Tensor &A() const;
+    /// The sparse A of a system built from one, else null.
+    const SparseMatrix *A_sparse() const noexcept { return A_sparse_.get(); }
     const std::optional<Tensor> &B() const noexcept { return B_; }
     const std::optional<Tensor> &C() const noexcept { return C_; }
 
     /// The number of states n.
-    int64_t dim() const { return A_.shape().back(); }
+    int64_t dim() const { return A_sparse_ ? A_sparse_->rows() : A_.shape().back(); }
 
     /// The reachable sets from problem.initial_set over ceil(t_final / time_step) steps, for every
     /// u(t) in problem.input_set (needs B) if there is one.
     ReachSet reach(const ReachProblem &problem, const alg::LinearReach &alg) const;
+
+    /// The output sets y = C x (the states without C) by CORA's Krylov subspace algorithm, which
+    /// never forms a set of the state space; output_set must not be applied to them again.
+    ReachSet reach(const ReachProblem &problem, const alg::Krylov &alg) const;
 
     /// The output sets y = C x of every set of R (R itself without C), as CORA's outputSet.
     ReachSet output_set(const ReachSet &R) const;
@@ -271,7 +286,14 @@ class LinearSys {
                         const alg::LinearVerify &alg) const;
 
   private:
-    Tensor A_;
+    /// The dense A of a sparse system, formed once and shared by the copies of the system.
+    struct DenseA {
+        std::once_flag once;
+        Tensor A;
+    };
+    Tensor A_; ///< undefined for a sparse system
+    std::shared_ptr<const SparseMatrix> A_sparse_;
+    std::shared_ptr<DenseA> dense_A_;
     std::optional<Tensor> B_, C_;
 };
 

@@ -52,7 +52,7 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
     detail::Entry entry;
     // one system, one initial set and one input set of the right dimensions
     const int64_t n = dim();
-    CORA_CHECK(A_.shape().size() == 2, Error::not_supported,
+    CORA_CHECK(A().shape().size() == 2, Error::not_supported,
                [] { return std::string("verify: takes a single system, not a batch"); });
     CORA_CHECK(
         problem.initial_set.has_value() && problem.input_set.has_value(), Error::wrong_value,
