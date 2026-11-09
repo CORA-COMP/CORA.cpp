@@ -123,31 +123,13 @@ bool aux_plad(bool bnd42) {
     return aux_above(checked, bnd42 ? 42 : 30);
 }
 
-/// Whether the zonogon Z1 contains the zonogon Z2: no facet of Z1 is exceeded by Z2, every
-/// normal n of a facet giving |n'(c2 - c1)| + sum |n'G2| <= sum |n'G1| (CORA's 'exact:polymax'
-/// below 4 dimensions; Zonotope::contains enumerates vertices, too many for 7200 generators).
-bool aux_contains_2d(const Zonotope &Z1, const Zonotope &Z2) {
-    const Tensor &G1 = Z1.generators();
-    // the facet normals (each generator turned by 90 degrees) and, for a flat Z1, its ends
-    const Tensor turned = Tensor::concat({G1.slice(-2, 1, 2) * (-1.0), G1.slice(-2, 0, 1)}, -2);
-    const Tensor N = Tensor::concat({turned, G1}, -1).matrix_transpose(); // (2 m1, 2)
-    const Tensor h1 = N.matmul(G1).abs().sum(-1, true);
-    const Tensor h2 =
-        N.matmul(Z2.generators()).abs().sum(-1, true) + N.matmul(Z2.center() - Z1.center()).abs();
-    const double tol = default_tol(DType::float64);
-    for (double v : (h2 - h1 - (h1.abs() + 1) * tol).data())
-        if (v > 0) return false;
-    return true;
-}
-
 /// Whether every projection of Z1 onto two axes contains that of Z2 (the script's
 /// aux_inViaProj: its comment says Z1 in Z2, its call contains(Z1proj, Z2proj) the converse).
 bool aux_in_via_proj(const Zonotope &Z1, const Zonotope &Z2) {
     const int64_t n = Z1.dim();
     for (int64_t i = 0; i < n; ++i)
         for (int64_t j = i + 1; j < n; ++j)
-            if (!aux_contains_2d(Z1.project({i, j}).as<Zonotope>(),
-                                 Z2.project({i, j}).as<Zonotope>()))
+            if (!Z1.project({i, j}).as<Zonotope>().contains(Z2.project({i, j}).as<Zonotope>()))
                 return false;
     return true;
 }

@@ -69,11 +69,11 @@ instances here stay those of the ARCH23 scripts. `-`: not in the report, or not 
 | DTN04 | 1 | 1 | 10.3 | 48.29 | 0.127 |
 | DTN05 | 1 | 1 | 18.3 | 90.76 | 0.007 |
 | DTN06 | 1 | 1 | 46.5 | 227 | 0.009 |
-| PLAA01_BND42 | 1 | 1 | 11.4 | 25.02 | 180 |
-| PLAA01_BND50 | 1 | 1 | 2.61 | 7.77 | 22.01 |
-| PLAD01_BND30 | 1 | 1 | 0.15 | 4.03 | 62.82 |
-| PLAD01_BND42 | 1 | 1 | 0.03 | 3.07 | 0.05 |
-| PLAN01 | 1 | 0 (see below) | 60.3 | 162 | - |
+| PLAA01_BND42 | 1 | 1 | 10.6 | 25.02 | 180 |
+| PLAA01_BND50 | 1 | 1 | 3.03 | 7.77 | 22.01 |
+| PLAD01_BND30 | 1 | 1 | 0.24 | 4.03 | 62.82 |
+| PLAD01_BND42 | 1 | 1 | 0.05 | 3.07 | 0.05 |
+| PLAN01 | 1 | 0 (see below) | 49.2 | 162 | - |
 | GRBX01 | 1 | 1 | 0.28 | 2.28 | 2.89 |
 | GRBX02 | 1 | 1 | 0.29 | 2.44 | 3.15 |
 | BRKDC01 | 1 | 1 | 0.04 | 22.66 | 0.10 |
@@ -86,7 +86,9 @@ algorithm is ported step by step (expmIndMixed, priv_tie, priv_inputSolution, in
 constant-parameter instances PLAA01 agree, and the difference is not found yet (it needs a run of
 MATLAB to compare the sets step by step); PLAN01 is in the program but not a ctest test. The
 script's invariant check stops after one step: its `aux_inViaProj(Z1, Z2)` tests that Z1 holds Z2
-(`contains(Z1proj, Z2proj)`), the reverse of its comment, and the first set holds the start set.
+(`contains(Z1proj, Z2proj)`), the reverse of its comment, and the first set holds the start set
+(`Zonotope::contains`, by polymax in each two-dimensional projection, as CORA picks below dimension
+4; see docs/cora-differences.md).
 
 **BRKNP01** is not run. Its location has a LinParamSys flow (supported), but CORA's run of it computes
 NaN sets: the input set `U = zonotope(1)` becomes the constant input `uTrans = 1` with `U = {0}`, which

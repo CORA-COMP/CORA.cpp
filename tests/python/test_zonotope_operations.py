@@ -209,14 +209,14 @@ class Containment(unittest.TestCase):
     def test_sets_in_a_diamond(self):
         Z = diamond()
         small, large = 0.5 * Z, 1.2 * Z
-        for method in ("exact", "exact:venum", "approx", "approx:st"):
+        for method in ("exact", "exact:venum", "exact:polymax", "approx", "approx:st"):
             self.assertTrue(Z.contains(small, method))
             self.assertFalse(Z.contains(large, method))
         self.assertTrue(Z.contains(cora.Interval(np.array([-0.5, -0.5]), np.array([0.5, 0.5]))))
         self.assertFalse(Z.contains(cora.Interval(np.array([-1.5, -1.5]), np.array([1.5, 1.5]))))
         self.assertTrue(cora.contains(Z, small))
         with self.assertRaises(cora.errors.NotSupported):
-            Z.contains(Z, "exact:polymax")
+            Z.contains(Z, "approx:stDual")
         # an unknown algorithm
         with self.assertRaises(cora.errors.NoSpecificAlg):
             Z.contains(np.array([0.0, 0.0]), "simplex")
