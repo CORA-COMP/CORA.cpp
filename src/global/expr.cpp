@@ -5,9 +5,9 @@
 // Syntax:   see expr.h
 // See also: cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h
 //
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   03-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/global/expr.h"
@@ -17,6 +17,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,12 +26,12 @@ namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
-enum class Op { constant, var, add, sub, mul, div, neg, pow, sin, cos, exp };
+enum class Op { constant, var, add, sub, mul, div, neg, pow, rpow, sin, cos, tan, exp };
 
 struct Expr::Node {
     Op op;
-    double value = 0; // Const
-    int index = 0;    // Var: the variable; Pow: the exponent
+    double value = 0; // Const: the value; Rpow: the real exponent
+    int index = 0;    // Var: the variable; Pow: the integer exponent
     Expr a, b;        // the operands
 };
 
@@ -130,6 +131,34 @@ Range aux_pow(const Range &a, int n) {
     return {p.minimum(q).multiply(aux_mask(a.lo, keep)), p.maximum(q)};
 }
 
+/// The host bounds of a range, for a decision on the values.
+std::pair<std::vector<double>, std::vector<double>> aux_bounds(const Range &a) {
+    return {a.lo.data(), a.hi.data()};
+}
+
+/// a^p for a real exponent: increasing for p > 0 on a >= 0, decreasing for p < 0 on a > 0.
+Range aux_rpow(const Range &a, double p) {
+    for (const double l : a.lo.data())
+        if (!(l > 0 || (p > 0 && l >= 0)))
+            CORA_FAIL(Error::out_of_domain,
+                      "cora: an expression takes a real power of a range that is not positive; "
+                      "the box is too large for this dynamics");
+    if (p == 0.5) return {a.lo.sqrt(), a.hi.sqrt()};
+    if (p > 0) return {a.lo.pow(p), a.hi.pow(p)};
+    return {a.hi.pow(p), a.lo.pow(p)};
+}
+
+/// tan is increasing between its poles pi/2 + k pi; a range that holds a pole has no enclosure.
+Range aux_tan(const Range &a) {
+    const auto [lo, hi] = aux_bounds(a);
+    for (std::size_t i = 0; i < lo.size(); ++i)
+        if (aux_has_peak(2 * lo[i], 2 * hi[i], kPi) || !(hi[i] - lo[i] < kPi))
+            CORA_FAIL(Error::out_of_domain,
+                      "cora: an expression takes tan of a range that holds a pole; the box is "
+                      "too large for this dynamics");
+    return {a.lo.tan(), a.hi.tan()};
+}
+
 // Evaluation --------------------------------------------------------------------------------------
 
 /// The value of a node from the values of its operands.
@@ -148,10 +177,14 @@ Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
         return a * -1.0;
     case Op::pow:
         return aux_power(a, n.index);
+    case Op::rpow:
+        return n.value == 0.5 ? a.sqrt() : a.pow(n.value);
     case Op::sin:
         return a.sin();
     case Op::cos:
         return a.cos();
+    case Op::tan:
+        return a.tan();
     case Op::exp:
         return a.exp();
     default:
@@ -176,10 +209,14 @@ Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
         return {a.hi * -1.0, a.lo * -1.0};
     case Op::pow:
         return aux_pow(a, n.index);
+    case Op::rpow:
+        return aux_rpow(a, n.value);
     case Op::sin:
         return aux_trig(a, false);
     case Op::cos:
         return aux_trig(a, true);
+    case Op::tan:
+        return aux_tan(a);
     case Op::exp:
         return {a.lo.exp(), a.hi.exp()};
     default:
@@ -189,11 +226,13 @@ Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
 }
 
 /// The value of an expression at the tensors or over the ranges x; `like` gives the constants
-/// their shape. A product or quotient with a constant is a scaling, which saves the constant.
+/// their shape. A product or quotient with a constant is a scaling, which saves the constant. A
+/// node met again (derivatives share their operands) is looked up, not evaluated again.
 template <class T>
 struct Evaluator {
     const std::vector<T> &x;
     const Tensor &like;
+    std::unordered_map<const Expr::Node *, T> memo = {};
 
     static T scaled(const T &a, double s) { return a * s; }
 
@@ -204,9 +243,21 @@ struct Evaluator {
             return Range(aux_constant(like, v));
     }
 
-    T operator()(const Expr &e) const {
+    // a constant is made, a node met before is looked up, any other one evaluated
+    T operator()(const Expr &e) {
         const Expr::Node &n = M::node(e);
         if (n.op == Op::constant) return constant(n.value);
+        if (n.op != Op::var) {
+            const auto found = memo.find(&n);
+            if (found != memo.end()) return found->second;
+        }
+        T value = node_value(n);
+        if (n.op != Op::var) memo.emplace(&n, value);
+        return value;
+    }
+
+    // a variable is its value; any other node is computed from its operands
+    T node_value(const Expr::Node &n) {
         if (n.op == Op::var) {
             if (n.index >= static_cast<int>(x.size()))
                 CORA_FAIL(Error::wrong_value,
@@ -316,9 +367,19 @@ Expr pow(const Expr &a, int n) {
     return M::make(Op::pow, a, M::make(Op::constant), 0, n);
 }
 
+// An integer exponent is the integer power, whose range knows the sign of the base.
+Expr pow(const Expr &a, double p) {
+    if (p == std::round(p) && std::abs(p) < 1e9) return pow(a, static_cast<int>(p));
+    if (M::is_const(a)) return Expr(std::pow(M::node(a).value, p));
+    return M::make(Op::rpow, a, M::make(Op::constant), p);
+}
+
+Expr sqrt(const Expr &a) { return pow(a, 0.5); }
+
 // The functions are plain nodes; diff knows their derivatives.
 Expr sin(const Expr &a) { return M::make(Op::sin, a); }
 Expr cos(const Expr &a) { return M::make(Op::cos, a); }
+Expr tan(const Expr &a) { return M::make(Op::tan, a); }
 Expr exp(const Expr &a) { return M::make(Op::exp, a); }
 
 // Derivative and evaluation -------------------------------------------------------------------
@@ -342,10 +403,14 @@ Expr Expr::diff(int i) const {
         return -da;
     case Op::pow:
         return Expr(double(n.index)) * pow(n.a, n.index - 1) * da;
+    case Op::rpow:
+        return Expr(n.value) * pow(n.a, n.value - 1) * da;
     case Op::sin:
         return cos(n.a) * da;
     case Op::cos:
         return -(sin(n.a) * da);
+    case Op::tan:
+        return (1 + pow(tan(n.a), 2)) * da; // CORA's symbolic derivative, tan^2 + 1
     case Op::exp:
         return exp(n.a) * da;
     default:
@@ -372,6 +437,26 @@ CORA_FROM_NUMBERS double Expr::eval(const std::vector<double> &x) const {
 Range Expr::enclose(const std::vector<Range> &x) const {
     const Tensor like = aux_prototype(x);
     return Evaluator<Range>{x, like}(*this);
+}
+
+// One evaluator for all, so that its table holds the subexpressions they share.
+std::vector<Tensor> Expr::eval_tensor(const std::vector<Expr> &exprs,
+                                      const std::vector<Tensor> &x) {
+    const Tensor like = aux_prototype(x);
+    Evaluator<Tensor> evaluate{x, like};
+    std::vector<Tensor> out;
+    out.reserve(exprs.size());
+    for (const Expr &e : exprs) out.push_back(evaluate(e));
+    return out;
+}
+
+std::vector<Range> Expr::enclose(const std::vector<Expr> &exprs, const std::vector<Range> &x) {
+    const Tensor like = aux_prototype(x);
+    Evaluator<Range> evaluate{x, like};
+    std::vector<Range> out;
+    out.reserve(exprs.size());
+    for (const Expr &e : exprs) out.push_back(evaluate(e));
+    return out;
 }
 
 } // namespace cora

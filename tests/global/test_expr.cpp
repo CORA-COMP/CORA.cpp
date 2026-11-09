@@ -1,8 +1,8 @@
 // test_expr - symbolic expressions: values, derivatives, and enclosures over boxes
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/global/expr.h"
@@ -109,6 +109,33 @@ void range_arithmetic_takes_the_extremes() {
     check(close(lower(d), -6.0) && close(upper(d), 4.0), "difference");
 }
 
+/// tan, sqrt and real powers: their values, derivatives and monotone ranges; a list of
+/// expressions shares the value of a common subexpression.
+void tan_sqrt_and_real_powers() {
+    const Expr x = Expr::var(0);
+    const Expr t = tan(x), r = sqrt(x), p = pow(x, 1.5);
+    check(close(t.eval({0.3}), std::tan(0.3)) &&
+              close(t.diff(0).eval({0.3}), 1 + std::pow(std::tan(0.3), 2)),
+          "tan and its derivative");
+    check(close(r.eval({4.0}), 2.0) && close(r.diff(0).eval({4.0}), 0.25),
+          "sqrt and its derivative");
+    check(close(p.diff(0).eval({4.0}), 3.0) && close(pow(x, -0.5).eval({4.0}), 0.5),
+          "x^1.5, x^-0.5");
+    const Range I = span(1.0, 4.0);
+    check(close(lower(p.enclose({I})), 1.0) && close(upper(p.enclose({I})), 8.0),
+          "the range of x^1.5");
+    check(close(lower(pow(x, -0.5).enclose({I})), 0.5) &&
+              close(upper(pow(x, -0.5).enclose({I})), 1.0),
+          "a negative power decreases");
+    check(close(upper(t.enclose({span(-0.5, 0.5)})), std::tan(0.5)), "the range of tan");
+    // one pass over a list
+    const Expr shared = sin(x) * x;
+    const std::vector<Range> both = Expr::enclose({shared + 1, shared * 2}, {span(0.0, 1.0)});
+    check(both.size() == 2 && close(upper(both[0]), std::sin(1.0) + 1) &&
+              close(upper(both[1]), 2 * std::sin(1.0)),
+          "a list of enclosures");
+}
+
 void errors_are_described() {
     const Expr x = Expr::var(0);
     check(test::throws([&] { (1 / x).enclose({span(-1.0, 1.0)}); }),
@@ -116,6 +143,10 @@ void errors_are_described() {
     check(test::throws([&] { x.eval(std::vector<double>{}); }), "a missing variable");
     check(test::throws([&] { Expr::var(-1); }), "a negative variable index");
     check(test::throws([&] { x / Expr(0.0); }), "dividing by the constant 0");
+    check(test::raises([&] { tan(x).enclose({span(1.0, 2.0)}); }, Error::out_of_domain),
+          "tan over a pole");
+    check(test::raises([&] { sqrt(x).enclose({span(-1.0, 1.0)}); }, Error::out_of_domain),
+          "a real power of a negative range");
 }
 
 } // namespace
@@ -130,6 +161,7 @@ int main() {
     trigonometric_ranges_know_their_extremes();
     tensors_evaluate_elementwise();
     range_arithmetic_takes_the_extremes();
+    tan_sqrt_and_real_powers();
     errors_are_described();
     return test::finish("expr");
 }

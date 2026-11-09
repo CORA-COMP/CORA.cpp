@@ -7,13 +7,15 @@
 // points), or over a box (an interval enclosure of its range); both stay differentiable.
 //
 // Syntax:     Expr x = Expr::var(0);   Expr f = sin(x) * x + 1;   f.diff(0).eval({0.5});
-// Operations: + - * / (also with numbers), pow(e, n) for integer n, sin, cos, exp; diff, eval,
-//             eval_tensor, enclose. Range is the interval of tensors (rounding is not directed).
+// Operations: + - * / (also with numbers), pow(e, n) for an integer or real n, sqrt, sin, cos,
+//             tan, exp; diff, eval, eval_tensor, enclose (of one expression or of a list, which
+//             shares the values of common subexpressions). Range is the interval of tensors
+//             (rounding is not directed).
 // See also:   cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -72,6 +74,13 @@ class Expr {
     /// variable, all of one shape); it is exact for a variable that occurs once.
     Range enclose(const std::vector<Range> &x) const;
 
+    /// The values of all expressions at x; a subexpression they share is evaluated once.
+    static std::vector<Tensor> eval_tensor(const std::vector<Expr> &exprs,
+                                           const std::vector<Tensor> &x);
+
+    /// The ranges of all expressions over the box x; a shared subexpression is enclosed once.
+    static std::vector<Range> enclose(const std::vector<Expr> &exprs, const std::vector<Range> &x);
+
     struct Node; // the tree behind an expression
 
   private:
@@ -91,8 +100,13 @@ Expr operator-(const Expr &a);
 
 /// a^n for an integer n.
 Expr pow(const Expr &a, int n);
+/// a^p for a real p (an integer p is the power above); a must be positive where it is evaluated.
+Expr pow(const Expr &a, double p);
+/// The square root, a^(1/2).
+Expr sqrt(const Expr &a);
 Expr sin(const Expr &a);
 Expr cos(const Expr &a);
+Expr tan(const Expr &a);
 Expr exp(const Expr &a);
 
 } // namespace cora

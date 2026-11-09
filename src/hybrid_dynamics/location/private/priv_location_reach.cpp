@@ -3,7 +3,8 @@
 // The flow x' = A x + B u + c runs as the canonical system x' = A x + u with the input set
 // B U + c, step by step with the algorithm "standard", until a time-interval set leaves the
 // invariant or t_final is reached; a LinParamSys flow runs CORA's initReach and post with the
-// center of its input set as the constant input. Every time-interval set is checked against the
+// center of its input set as the constant input, a NonlinearSys flow its init_reach and post
+// (alg "lin") with the input set U. Every time-interval set is checked against the
 // specifications (CORA checks inside linearSys.reach and the last set after it); a violation ends
 // the analysis. The guards that the sets meet are intersected and each intersection is mapped by
 // its reset. A start time [t0, t1] computes from t0 and widens the times of the sets by t1 - t0.
@@ -24,7 +25,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
@@ -46,13 +47,24 @@ namespace {
 // The flow ----------------------------------------------------------------------------------------
 
 /// The steps of the location, one stepper per zonotope of the initial set (a bundle propagates
-/// zonotope by zonotope, as CORA's operations on bundles do): the algorithm "standard" of the
-/// canonical LinearSys, or CORA's initReach and post of a LinParamSys.
+/// zonotope by zonotope, as CORA's operations on bundles do), by the flow's own algorithm; a
+/// nonlinear flow starts from a single zonotope.
 class BundleSteps {
   public:
     BundleSteps(const Location &loc, const Set &R0, const std::optional<Zonotope> &U,
                 const Zonotope &U_state, double dt, const alg::HybridStandard &alg)
         : start_(priv_zonotopes(R0)) {
+        if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow())) {
+            if (start_.size() != 1)
+                CORA_FAIL(Error::not_supported,
+                          "reach: a nonlinear flow starts from one zonotope, not a bundle; enclose "
+                          "the guard intersections with a single method");
+            nonlinear_ = {sys,
+                          U,
+                          {dt, alg.taylor_terms, alg.zonotope_order, alg.tensor_order,
+                           alg.error_order, alg.intermediate_order}};
+            return;
+        }
         if (const auto *sys = std::get_if<LinearSys>(&loc.flow())) {
             // x' = A x + u with u in B U + c
             const LinearSys canonical(sys->A(), sys->A().eye_like());
@@ -76,6 +88,12 @@ class BundleSteps {
 
     /// The time-interval set of the next step; time_point() is then its end.
     Set next() {
+        if (nonlinear_) {
+            const Nonlinear &f = *nonlinear_;
+            step_ =
+                step_ ? f.sys->post(*step_, f.U, f.alg) : f.sys->init_reach(start_[0], f.U, f.alg);
+            return step_->time_interval;
+        }
         std::vector<Zonotope> parts;
         parts.reserve(start_.size());
         if (!mappings_) {
@@ -96,6 +114,7 @@ class BundleSteps {
 
     /// The set at the start of the next step (the initial set before the first).
     Set time_point() const {
+        if (nonlinear_) return step_ ? step_->time_point : start_[0];
         std::vector<Zonotope> parts;
         parts.reserve(start_.size());
         if (!mappings_)
@@ -108,7 +127,16 @@ class BundleSteps {
     }
 
   private:
+    /// A nonlinear flow, its input set and its algorithm.
+    struct Nonlinear {
+        const NonlinearSys *sys;
+        std::optional<Zonotope> U;
+        alg::Linearization alg;
+    };
+
     std::vector<Zonotope> start_;
+    std::optional<Nonlinear> nonlinear_;
+    std::optional<NonlinearStep> step_;
     std::vector<StandardSteps> steps_;
     std::optional<alg::LinParamStandard> param_alg_;
     std::optional<LinParamMappings> mappings_;
@@ -180,6 +208,12 @@ std::vector<Specification> aux_active(const Location &loc,
 
 Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U) {
     const int64_t n = loc.dim();
+    // a nonlinear flow takes its input set itself, f(x, u) with u in U (none: the input 0)
+    if (std::holds_alternative<NonlinearSys>(loc.flow())) {
+        const int64_t m = loc.input_dim();
+        if (U) return *U;
+        return {loc.c().zeros_like({m, 1}), loc.c().zeros_like({m, 0})};
+    }
     if (!U || !loc.B()) return {loc.c(), loc.c().zeros_like({n, 0})};
     const Tensor &B = *loc.B();
     return {B.matmul(U->center()) + loc.c(), B.matmul(U->generators())};

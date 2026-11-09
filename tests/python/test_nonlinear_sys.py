@@ -1,14 +1,19 @@
 """test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python.
 
 CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-Authors:       Tobias Ladner
+Authors:       Tobias Ladner, Claude Opus 5.5
 Written:       02-November-2026
-Last update:   ---
+Last update:   09-November-2026
 Reviewed:      ---
 """
+# CORA: contDynamics/@contDynamics/derivatives.m
+# CORA: contDynamics/@contDynamics/linReach.m
 # CORA: contDynamics/@contDynamics/reach.m
 # CORA: contDynamics/@contDynamics/simulateRandom.m
+# CORA: contDynamics/@nonlinearSys/initReach.m
+# CORA: contDynamics/@nonlinearSys/linearize.m
 # CORA: contDynamics/@nonlinearSys/nonlinearSys.m
+# CORA: contDynamics/@nonlinearSys/post.m
 # CORA: contDynamics/@nonlinearSys/simulate.m
 # CORA: contSet/@zonotope/generateRandom.m
 # CORA: contSet/@zonotope/reduce.m
@@ -106,7 +111,19 @@ class ReachSet(unittest.TestCase):
 
     def test_the_zonotope_order_limits_the_generators(self):
         R = van_der_pol().reach(start(), time_step=0.01, t_final=0.5, zonotope_order=3)
-        self.assertLessEqual(max(np.asarray(Z.generators).shape[1] for Z in R.time_point), 6)
+        # CORA reduces in post: the sets of the first step keep their generators
+        self.assertLessEqual(max(np.asarray(Z.generators).shape[1] for Z in R.time_point[2:]), 6)
+
+    def test_inputs_and_the_steps(self):
+        sys = cora.NonlinearSys(lambda x, u: [x[1], (1 - x[0] ** 2) * x[1] - x[0] + u[0]], 2, inputs=1)
+        U = cora.Zonotope(cora.Tensor([0.0]), 0.1 * cora.eye(1))
+        lin = sys.linearize(start(), time_step=0.01, U=U)
+        self.assertEqual(np.asarray(lin.x_star).shape, (2,))
+        # init_reach and post are the first two steps of reach, at tensor order 3 here
+        options = dict(time_step=0.01, tensor_order=3, error_order=5, intermediate_order=10)
+        R = sys.reach(start(), input_set=U, t_final=0.02, **options)
+        step = sys.post(sys.init_reach(start(), U, **options), U, **options)
+        self.assertTrue(np.allclose(np.asarray(step.time_point.center), np.asarray(R.time_point[2].center)))
 
     def test_a_step_that_is_too_large_is_described(self):
         with self.assertRaises(RuntimeError) as caught:

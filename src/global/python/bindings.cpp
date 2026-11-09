@@ -3362,19 +3362,24 @@ void bind_problems(py::module_ &m) {
         .def_readonly("falsification", &VerifyResult::falsification, "a Falsification, or None");
 }
 
-/// The linear reach algorithm named `name`, filled from kwargs; refuses what is left over.
-alg::LinearReach linear_reach_algorithm(const std::string &name, py::dict kwargs,
-                                        const std::string &where) {
-    const std::optional<alg::LinearReach> a = algorithm<alg::LinearReach>(name, kwargs);
+/// The algorithm of the variant named `name`, filled from kwargs; refuses what is left over.
+template <class Variant>
+Variant step_algorithm(const std::string &name, py::dict kwargs, const std::string &where) {
+    const std::optional<Variant> a = algorithm<Variant>(name, kwargs);
     if (!a)
-        CORA_FAIL(Error::wrong_value,
-                  unknown_algorithm(name, algorithm_names<alg::LinearReach>(), where));
+        CORA_FAIL(Error::wrong_value, unknown_algorithm(name, algorithm_names<Variant>(), where));
     std::vector<std::string> known;
     std::visit([&](const auto &alg) { known = field_names<std::decay_t<decltype(alg)>>(); }, *a);
-    const std::vector<std::string> others = algorithm_fields<alg::LinearReach>(
-        std::make_index_sequence<std::variant_size_v<alg::LinearReach>>());
+    const std::vector<std::string> others =
+        algorithm_fields<Variant>(std::make_index_sequence<std::variant_size_v<Variant>>());
     refuse_leftovers(kwargs, known, where, others, name);
     return *a;
+}
+
+/// The linear reach algorithm named `name`, filled from kwargs.
+alg::LinearReach linear_reach_algorithm(const std::string &name, py::dict kwargs,
+                                        const std::string &where) {
+    return step_algorithm<alg::LinearReach>(name, std::move(kwargs), where);
 }
 
 /// The result structs of the steps of a linear system, with their sets as properties.
@@ -3681,9 +3686,32 @@ void bind_linear_sys(py::module_ &m) {
 
 /// The dynamics as symbolic expressions: `x` is a list of Expr, `f(x)` a list of Expr or numbers.
 void bind_nonlinear_sys(py::module_ &m) {
+    // the results of the steps
+    py::class_<Linearized>(m, "Linearized", "The affine system of a step (CORA's linearize).")
+        .def_property_readonly(
+            "x_star", [](const Linearized &l) { return vector(l.x_star); },
+            "The expansion point of the state")
+        .def_property_readonly(
+            "u_star", [](const Linearized &l) { return vector(l.u_star); },
+            "The expansion point of the input")
+        .def_property_readonly(
+            "f0", [](const Linearized &l) { return vector(l.f0); }, "f at the expansion point")
+        // the affine system and its input
+        .def_readonly("sys", &Linearized::sys, "x' = A x + u")
+        .def_readonly("U", &Linearized::U, "The centered input set in the state space")
+        .def_property_readonly(
+            "u_const", [](const Linearized &l) { return vector(l.u_const); }, "The constant input");
+    // one step of reach
+    py::class_<NonlinearStep>(m, "NonlinearStep", "One step of init_reach or post.")
+        .def_readonly("time_interval", &NonlinearStep::time_interval, "The set over the step")
+        .def_readonly("time_point", &NonlinearStep::time_point, "The set at the end")
+        .def_property_readonly(
+            "error", [](const NonlinearStep &s) { return vector(s.error); },
+            "The linearization error of the step");
     py::class_<Expr>(m, "Expr",
                      "A symbolic expression of the states, differentiated by the system.")
         .def(py::init<double>(), py::arg("value"))
+        // the variables, the arithmetic and the derivative
         .def_static("var", &Expr::var, py::arg("i"), "The i-th state")
         .def("__add__", [](const Expr &a, const Expr &b) { return a + b; })
         .def("__radd__", [](const Expr &a, const Expr &b) { return b + a; })
@@ -3696,12 +3724,15 @@ void bind_nonlinear_sys(py::module_ &m) {
         .def("__neg__", [](const Expr &a) { return -a; })
         .def(
             "__pow__", [](const Expr &a, int n) { return pow(a, n); }, py::arg("n"))
+        .def(
+            "__pow__", [](const Expr &a, double p) { return pow(a, p); }, py::arg("p"))
         .def("diff", &Expr::diff, py::arg("i"), "The derivative with respect to the i-th state")
         .def("eval", py::overload_cast<const std::vector<double> &>(&Expr::eval, py::const_),
              py::arg("x"), "The value at the point x (a list of numbers)");
     py::implicitly_convertible<double, Expr>();
     // numbers convert to expressions
     py::implicitly_convertible<int, Expr>();
+    // the functions of expressions
     m.def(
         "sin", [](const Expr &a) { return sin(a); }, py::arg("e"),
         "The sine of a symbolic expression");
@@ -3711,16 +3742,61 @@ void bind_nonlinear_sys(py::module_ &m) {
     m.def(
         "exp", [](const Expr &a) { return exp(a); }, py::arg("e"),
         "The exponential of a symbolic expression");
+    m.def(
+        "tan", [](const Expr &a) { return tan(a); }, py::arg("e"),
+        "The tangent of a symbolic expression");
+    m.def(
+        "sqrt", [](const Expr &a) { return sqrt(a); }, py::arg("e"),
+        "The square root of a symbolic expression");
 
-    py::class_<NonlinearSys>(m, "NonlinearSys", "The nonlinear system x' = f(x).")
-        .def(py::init([](const py::function &f, int64_t dim) {
-                 // f runs once, here, on symbolic states.
-                 return NonlinearSys(
-                     [&f](const std::vector<Expr> &x) { return f(x).cast<std::vector<Expr>>(); },
-                     dim);
-             }),
-             py::arg("f"), py::arg("dim"), "f(x) returns the dim components of the right-hand side")
+    py::class_<NonlinearSys>(m, "NonlinearSys", "The nonlinear system x' = f(x, u).")
+        .def(
+            py::init([](const py::function &f, int64_t dim, int64_t inputs) {
+                // f runs once, here, on symbolic states (and inputs).
+                if (inputs == 0)
+                    return NonlinearSys(
+                        [&f](const std::vector<Expr> &x) { return f(x).cast<std::vector<Expr>>(); },
+                        dim);
+                return NonlinearSys(
+                    [&f](const std::vector<Expr> &x, const std::vector<Expr> &u) {
+                        return f(x, u).cast<std::vector<Expr>>();
+                    },
+                    dim, inputs);
+            }),
+            py::arg("f"), py::arg("dim"), py::arg("inputs") = 0,
+            "f(x) (f(x, u) with inputs > 0) returns the dim components of the right-hand side")
         .def_property_readonly("dim", &NonlinearSys::dim, "The number of states n")
+        .def_property_readonly("input_dim", &NonlinearSys::input_dim, "The number of inputs m")
+        // the linearization and the steps of reach
+        .def(
+            "linearize",
+            [](const NonlinearSys &sys, const Zonotope &R, double time_step,
+               const std::optional<Zonotope> &U) { return sys.linearize(R, U, time_step); },
+            py::arg("R"), py::arg("time_step"), py::arg("U") = py::none(),
+            "The affine system of a step from R with the input set U (CORA's linearize)")
+        .def(
+            "init_reach",
+            [](const NonlinearSys &sys, const Zonotope &R0, const std::optional<Zonotope> &U,
+               const std::string &alg, const py::kwargs &kwargs) {
+                py::dict options;
+                for (const auto &item : kwargs) options[item.first] = item.second;
+                // the options as keywords, as LinearSys.init_reach takes them
+                return sys.init_reach(
+                    R0, U, step_algorithm<alg::NonlinearReach>(alg, options, "init_reach"));
+            },
+            py::arg("R0"), py::arg("U") = py::none(), py::arg("alg") = "linearization",
+            "The first step of reach (options as keywords)")
+        .def(
+            "post",
+            [](const NonlinearSys &sys, const NonlinearStep &step, const std::optional<Zonotope> &U,
+               const std::string &alg, const py::kwargs &kwargs) {
+                py::dict options;
+                for (const auto &item : kwargs) options[item.first] = item.second;
+                return sys.post(step, U, step_algorithm<alg::NonlinearReach>(alg, options, "post"));
+            },
+            py::arg("step"), py::arg("U") = py::none(), py::arg("alg") = "linearization",
+            "The step after `step`, with the options of init_reach")
+        // reach and the simulations, with keyword arguments
         .def(
             "reach",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
@@ -3732,8 +3808,10 @@ void bind_nonlinear_sys(py::module_ &m) {
                         return py::cast(sys.reach(p, a));
                     });
             },
-            "reach(initial_set=X0, t_final=T, alg='linearization', time_step=dt, taylor_terms=4, "
-            "zonotope_order=50): the reachable sets")
+            "reach(initial_set=X0, input_set=U, t_final=T, alg='linearization', time_step=dt, "
+            "taylor_terms=4, zonotope_order=50, tensor_order=2, error_order, intermediate_order): "
+            "the reachable sets")
+        // the simulations
         .def(
             "simulate",
             [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
@@ -4224,7 +4302,7 @@ void bind_hybrid(py::module_ &m) {
         .def_property_readonly("reset", &Transition::reset, "The reset")
         .def_property_readonly("target", &Transition::target, "The target location, 0-based");
     // the location, with its flow and invariant
-    py::class_<Location>(m, "Location", "A location: invariant, transitions and linear flow.")
+    py::class_<Location>(m, "Location", "A location: invariant, transitions and flow.")
         .def(py::init([](const std::string &name, const Polytope &inv,
                          const std::vector<Transition> &trans, const LinearSys &flow,
                          const py::object &c) {
@@ -4237,6 +4315,9 @@ void bind_hybrid(py::module_ &m) {
         .def(py::init<std::string, Polytope, std::vector<Transition>, LinParamSys>(),
              py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
              "x' = A x + B u + c of a LinParamSys flow (its own c) inside the invariant")
+        .def(py::init<std::string, Polytope, std::vector<Transition>, NonlinearSys>(),
+             py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
+             "x' = f(x, u) of a NonlinearSys flow inside the invariant")
         .def_property_readonly("name", &Location::name, "The name")
         .def_property_readonly("invariant", &Location::invariant, "The invariant")
         .def_property_readonly("transitions", &Location::transitions, "The transitions")

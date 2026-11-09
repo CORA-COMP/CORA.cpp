@@ -10,7 +10,7 @@
 // CORA.cpp only: CORA's sets carry these operations themselves (zonoBundle.Z, isIntersecting_).
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -64,7 +64,16 @@ std::pair<Tensor, double> priv_hyperplane(const Polytope &guard) {
 const Tensor &priv_flow_matrix(const Location &loc, const char *what) {
     if (const auto *sys = std::get_if<LinearSys>(&loc.flow())) return sys->A();
     CORA_FAIL(Error::not_supported,
-              std::string(what) + ": the flow of a LinParamSys cannot be evaluated during reach");
+              std::string(what) + ": the flow of a LinParamSys cannot be evaluated during reach, "
+                                  "nor a nonlinear flow as a matrix");
+}
+
+// A nonlinear flow evaluates f; a linear one is A x plus the center of its input.
+Tensor priv_flow_at(const Location &loc, const Tensor &x, const Zonotope &U_state,
+                    const char *what) {
+    if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow()))
+        return sys->input_dim() == 0 ? sys->dynamics(x) : sys->dynamics(x, U_state.center());
+    return priv_flow_matrix(loc, what).matmul(x) + U_state.center();
 }
 
 } // namespace cora

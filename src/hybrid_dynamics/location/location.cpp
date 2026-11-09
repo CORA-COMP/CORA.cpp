@@ -7,7 +7,7 @@
 //           transitions - the jumps out of the location
 //           flow - the linear system x' = A x + B u, without an output map C
 //           c - the constant input (n, 1) of the flow, optional
-//           param_flow - a LinParamSys x' = A x + B u + c, its c the location's
+//           param_flow - a LinParamSys (its c the location's) or a NonlinearSys (c zero)
 // Outputs:  loc - the location
 // See also: Transition, HybridAutomaton
 //
@@ -15,11 +15,13 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/hybrid_dynamics/location/location.h"
 #include "global/format.h"
+
+#include <type_traits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -77,6 +79,34 @@ Location::Location(std::string name, Polytope invariant, std::vector<Transition>
     detail::Entry entry;
     // the system checked its c; the invariant and the guards remain
     aux_validate(*this);
+}
+
+Location::Location(std::string name, Polytope invariant, std::vector<Transition> transitions,
+                   NonlinearSys flow)
+    : name_(std::move(name)), invariant_(std::move(invariant)),
+      transitions_(std::move(transitions)), flow_(std::move(flow)),
+      c_(invariant_.b().zeros_like({std::get<NonlinearSys>(flow_).dim(), 1})) {
+    detail::Entry entry;
+    aux_validate(*this);
+}
+
+// The input of the flow ---------------------------------------------------------------------------
+
+const std::optional<Tensor> &Location::B() const {
+    static const std::optional<Tensor> none;
+    return std::visit(
+        [](const auto &f) -> const std::optional<Tensor> & {
+            if constexpr (std::is_same_v<std::decay_t<decltype(f)>, NonlinearSys>)
+                return none;
+            else
+                return f.B();
+        },
+        flow_);
+}
+
+int64_t Location::input_dim() const {
+    if (const auto *sys = std::get_if<NonlinearSys>(&flow_)) return sys->input_dim();
+    return B() ? B()->shape().back() : 0;
 }
 
 } // namespace cora

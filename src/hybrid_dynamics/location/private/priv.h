@@ -9,7 +9,7 @@
 // CORA.cpp only: the declarations of the private functions of location.
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -47,8 +47,14 @@ struct GuardHits {
 };
 
 /// The input set in the state space, B U + c (U none: c alone), which the flow then adds as the
-/// input of the canonical system x' = A x + u.
+/// input of the canonical system x' = A x + u; for a nonlinear flow the input set of f itself.
 Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U);
+
+/// The flow at the point x (n, 1) with the input at the center of U_state (priv_state_input):
+/// A x + center of B U + c, or f(x, u).
+/// A LinParamSys flow fails with Error::not_supported, naming `what`.
+Tensor priv_flow_at(const Location &loc, const Tensor &x, const Zonotope &U_state,
+                    const char *what);
 
 /// The reach of one location from R0 at the times t_start up to t_final with the input set U (of
 /// the flow's B), the specifications `specs` that hold there, and no jumps into final_locations.
@@ -115,7 +121,7 @@ Tensor priv_basis_of(const Tensor &a);
 std::pair<Tensor, double> priv_hyperplane(const Polytope &guard);
 
 /// The matrix A of a LinearSys flow; a LinParamSys has none to evaluate (CORA's getfcn needs the
-/// sampleMatrix of a simulation), so `what` fails with Error::not_supported.
+/// sampleMatrix of a simulation), nor a NonlinearSys, so `what` fails with Error::not_supported.
 const Tensor &priv_flow_matrix(const Location &loc, const char *what);
 
 } // namespace cora

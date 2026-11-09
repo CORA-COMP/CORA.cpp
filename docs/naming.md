@@ -217,6 +217,8 @@ changed, and the reasons are listed below.
 | `options.verifyAlg = 'reachavoid:supportFunc'` | `alg::ReachAvoidSupportFunction{}` | `alg="reach_avoid_support_function"` |
 | `options.verifyAlg = 'reachavoid:zonotope'` | `alg::ReachAvoidZonotope{}` | `alg="reach_avoid_zonotope"` |
 | `options.alg = 'lin'` (nonlinearSys) | `alg::Linearization{...}` | `alg="linearization"` |
+| `options.tensorOrder`, `options.errorOrder`, `options.intermediateOrder` | `alg::Linearization::tensor_order`, `error_order`, `intermediate_order` (also `alg::HybridStandard`) | `tensor_order`, `error_order`, `intermediate_order` |
+| `nonlinearSys(fun)` with `fun(x, u)`; `[A, B] = jacobian(x, u)` | `NonlinearSys(f, n, m)`, `Jacobians{A, B}` | `NonlinearSys(f, dim, inputs=m)` |
 | `reachSet` | `ReachSet` | `cora.ReachSet` |
 | `R.timeInterval.set` | `R.time_interval` | `R.time_interval` |
 | `R.timePoint.set` | `R.time_point` | `R.time_point` |
