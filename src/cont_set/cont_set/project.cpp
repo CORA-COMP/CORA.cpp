@@ -9,7 +9,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
@@ -26,7 +26,9 @@ namespace cora {
 
 Set ContSet::project(const std::vector<int64_t> &dims) const {
     detail::Entry entry;
-    CORA_CHECK(center().shape().back() <= 1, Error::not_supported, [] {
+    // only a box is a matrix; a bundle's center would cost linear programs
+    const bool matrix_set = id_ == ClassId::interval || id_ == ClassId::custom;
+    CORA_CHECK(!matrix_set || center().shape().back() <= 1, Error::not_supported, [] {
         return std::string("project: needs a set of vectors, not an interval matrix");
     });
     CORA_CHECK(!dims.empty(), Error::wrong_value,
