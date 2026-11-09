@@ -10,7 +10,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -248,7 +248,8 @@ inline Instance load_instance(const std::string &name) {
 
 /// Verifies the instance, prints 'benchmark,instance,result,time' and, on stderr, the iterations,
 /// steps and step size next to those of MATLAB. The time is computation_time, else the wall clock.
-inline void run_instance(const std::string &name) {
+/// Returns whether the verdict is MATLAB's (true without a recorded one).
+inline bool run_instance(const std::string &name) {
     const Instance inst = load_instance(name);
     // what will run, before it does
     std::cerr << name << ": " << inst.params->initial_set->dim() << " states, " << inst.specs.size()
@@ -267,6 +268,8 @@ inline void run_instance(const std::string &name) {
                   << ", nrSteps " << inst.expected["nrSteps"].integer() << ", timeStep "
                   << inst.expected["timeStep"].number << ")";
     std::cerr << std::endl;
+    if (inst.expected.is_null() || !inst.expected.object.count("verified")) return true;
+    return res.verified == (inst.expected["verified"].number != 0);
 }
 
 /// The instances named on the command line, else all of the family.

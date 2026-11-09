@@ -21,7 +21,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -53,30 +53,41 @@ ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Inte
     return R;
 }
 
+StandardSteps::StandardSteps(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
+                             const InputSolution &in, int zonotope_order)
+    : e_adt_(e_adt), F_(F), in_(in), zonotope_order_(zonotope_order),
+      Htp_(X0.linear_map(e_adt.eye_like())), Hti_(Htp_), PUnext_(in.PU), PU_(in.PU),
+      time_point_(Htp_) {} // the identity map broadcasts a batch of sets
+
+Zonotope StandardSteps::next() {
+    if (k_++ == 0) {
+        // First step: the affine solution of the time point and of the interval, without C_input.
+        const Zonotope &X = time_point_;
+        Htp_ = X.linear_map(e_adt_) + in_.Pu;
+        Hti_ = X.linear_combination(Htp_).plus(X.linear_map(F_));
+    } else {
+        // later steps map both affine solutions and add the time-varying input of one more step
+        Htp_ = (Htp_.linear_map(e_adt_) + in_.Pu).reduce(zonotope_order_);
+        Hti_ = (Hti_.linear_map(e_adt_) + in_.Pu).reduce(zonotope_order_);
+        PUnext_ = PUnext_.linear_map(e_adt_);
+        PU_ = PU_.plus(PUnext_).reduce(zonotope_order_);
+    }
+    time_point_ = Htp_.plus(PU_);
+    return Hti_.plus(PU_).plus(in_.Cinput);
+}
+
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
                              const InputSolution &in, int steps, int zonotope_order) {
+    StandardSteps step(X0, e_adt, F, in, zonotope_order);
+    if (steps < 1) return {{}, {step.time_point()}};
     ReachSet R;
     R.time_interval.reserve(steps);
     R.time_point.reserve(steps + 1);
-    const Zonotope X =
-        X0.linear_map(e_adt.eye_like()); // the identity map broadcasts a batch of sets
-    if (steps < 1) return {{}, {X}};
-
-    // First step: the affine solution of the time point and of the interval, without C_input.
-    Zonotope Htp = X.linear_map(e_adt) + in.Pu;
-    Zonotope Hti = X.linear_combination(Htp).plus(X.linear_map(F));
-    Zonotope PUnext = in.PU, PU = in.PU;
-    R.time_point.push_back(X);
-    R.time_interval.push_back(Hti.plus(PU).plus(in.Cinput));
-    R.time_point.push_back(Htp.plus(PU));
-
-    for (int k = 1; k < steps; ++k) {
-        Htp = (Htp.linear_map(e_adt) + in.Pu).reduce(zonotope_order);
-        Hti = (Hti.linear_map(e_adt) + in.Pu).reduce(zonotope_order);
-        PUnext = PUnext.linear_map(e_adt);
-        PU = PU.plus(PUnext).reduce(zonotope_order);
-        R.time_interval.push_back(Hti.plus(PU).plus(in.Cinput));
-        R.time_point.push_back(Htp.plus(PU));
+    R.time_point.push_back(step.time_point());
+    // one step at a time: the enclosure of the step, then the set at its end
+    for (int k = 0; k < steps; ++k) {
+        R.time_interval.push_back(step.next());
+        R.time_point.push_back(step.time_point());
     }
     return R;
 }

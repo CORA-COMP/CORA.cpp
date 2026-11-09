@@ -56,6 +56,11 @@
 #include "cora/global/tensor/tolerance.h"
 #include "cora/global/threads.h"
 #include "cora/global/within_tol.h"
+// hybrid automata
+#include "cora/hybrid_dynamics/hybrid_automaton/hybrid_automaton.h"
+#include "cora/hybrid_dynamics/linear_reset/linear_reset.h"
+#include "cora/hybrid_dynamics/location/location.h"
+#include "cora/hybrid_dynamics/transition/transition.h"
 // neural networks and specifications
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"

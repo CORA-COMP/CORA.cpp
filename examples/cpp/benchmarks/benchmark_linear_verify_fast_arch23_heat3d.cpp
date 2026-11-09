@@ -9,7 +9,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "benchmark_data.h"
@@ -26,11 +26,11 @@ int main(int argc, char **argv) {
 
     // Verification ----------------------------------------------------------------------------
 
-    // system, R0, U, specifications and verifyAlg come from the data of each instance
+    // the data of each instance; the exit code counts the verdicts that differ from MATLAB's
+    int differ = 0;
     for (const std::string &instance : cora::bench::instance_names(argc, argv, family))
-        cora::bench::run_instance(instance);
-
-    return 0;
+        if (!cora::bench::run_instance(instance)) ++differ;
+    return differ;
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

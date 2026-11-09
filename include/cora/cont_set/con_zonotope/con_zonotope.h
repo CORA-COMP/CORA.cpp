@@ -140,6 +140,9 @@ class ConZonotope : public ContSet {
     ConZonotope intersect(const ConZonotope &S) const;
     ConZonotope intersect(const Zonotope &Z) const;
     ConZonotope intersect(const Interval &I) const;
+    /// With a polytope (CORA's polytope/and_): exact; its equalities become constraints, and every
+    /// inequality the set breaks a constraint with a new factor. Not a batch.
+    ConZonotope intersect(const Polytope &P) const;
 
     /// The points of this set whose image under M (n2, n) is in cz2 (CORA's conIntersect): exact.
     ConZonotope con_intersect(const ConZonotope &cz2, const Tensor &M) const;

@@ -34,6 +34,7 @@
 #include "cora/global/plot/plot.h"
 #include "cora/global/rng.h"
 #include "cora/global/threads.h"
+#include "cora/hybrid_dynamics/hybrid_automaton/hybrid_automaton.h"
 #include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "cora/nn/neural_network/neural_network.h"
@@ -4108,6 +4109,162 @@ void bind_plot(py::module_ &m) {
         py::arg("number"), "The RGB triple of the number-th color of CORA's palette");
 }
 
+/// The guard intersection method of its Python name, with the enclosure methods.
+alg::GuardIntersect hybrid_guard_method(const std::string &name,
+                                        const std::vector<std::string> &enclose, int guard_order) {
+    // the enclosure methods by their names
+    std::vector<alg::Enclose> methods;
+    for (const std::string &e : enclose) {
+        if (e == "box")
+            methods.push_back(alg::Enclose::box);
+        else if (e == "pca")
+            methods.push_back(alg::Enclose::pca);
+        else if (e == "flow")
+            methods.push_back(alg::Enclose::flow);
+        else
+            CORA_FAIL(Error::wrong_value,
+                      "reach: enclose is 'box', 'pca' or 'flow', got '" + e + "'");
+    }
+    // the guard intersection by its name
+    if (name == "zono_girard") return alg::ZonoGirard{methods};
+    if (name == "nondet_guard") return alg::NondetGuard{methods};
+    if (name == "con_zonotope") return alg::ConZonotopeGuard{methods, guard_order};
+    CORA_FAIL(Error::wrong_value, "reach: guard_intersect is 'zono_girard', 'nondet_guard' or "
+                                  "'con_zonotope', got '" +
+                                      name + "'");
+}
+
+/// Sets as a list of their Python classes.
+py::list hybrid_sets(const std::vector<Set> &sets) {
+    // each set as an object of its own class
+    py::list out;
+    for (const Set &S : sets) out.append(object_of(S));
+    return out;
+}
+
+void bind_hybrid(py::module_ &m) {
+    // the reset of a transition
+    py::class_<LinearReset>(m, "LinearReset", "The reset x+ = A x + B u + c of a transition.")
+        .def(py::init([](const Array &A, const py::object &B, const py::object &c) {
+                 const auto opt = [](const py::object &o,
+                                     const char *what) -> std::optional<Tensor> {
+                     if (o.is_none()) return std::nullopt;
+                     return tensor_of(o, what);
+                 };
+                 return LinearReset(tensor_of(A, "A"), opt(B, "B"), opt(c, "c"));
+             }),
+             py::arg("A"), py::arg("B") = py::none(), py::arg("c") = py::none(),
+             "x+ = A x + B u + c: A (n+, n), B (n+, m) and c (n+, 1) optional")
+        .def_property_readonly(
+            "A", [](const LinearReset &r) { return matrix(r.A()); }, "The state map A")
+        .def(
+            "evaluate",
+            [](const LinearReset &r, const py::object &X, const std::optional<Zonotope> &U) {
+                // a set maps to a set, points (n, N) to points
+                if (py::isinstance<ContSet>(X)) return object_of(r.evaluate(*set_of(X), U));
+                return py::object(matrix(r.evaluate(tensor_of(X, "x"))));
+            },
+            py::arg("X"), py::arg("U") = py::none(),
+            "The image A X + B U + c of a zonotope or a bundle, or of points (n, N)");
+    py::class_<Transition>(m, "Transition", "A jump: guard, reset and target location.")
+        .def(
+            py::init([](const py::object &guard, const LinearReset &reset, int64_t target) {
+                // a box guard is held as its polytope
+                if (py::isinstance<Interval>(guard))
+                    return Transition(py::cast<Interval>(guard), reset, target);
+                return Transition(py::cast<Polytope>(guard), reset, target);
+            }),
+            py::arg("guard"), py::arg("reset"), py::arg("target"),
+            "The jump to location `target` (0-based) through the guard (a Polytope or an Interval)")
+        .def_property_readonly("guard", &Transition::guard, "The guard as a polytope")
+        .def_property_readonly("reset", &Transition::reset, "The reset")
+        .def_property_readonly("target", &Transition::target, "The target location, 0-based");
+    // the location, with its flow and invariant
+    py::class_<Location>(m, "Location", "A location: invariant, transitions and linear flow.")
+        .def(py::init([](const std::string &name, const Polytope &inv,
+                         const std::vector<Transition> &trans, const LinearSys &flow,
+                         const py::object &c) {
+                 return Location(name, inv, trans, flow,
+                                 c.is_none() ? std::nullopt
+                                             : std::optional<Tensor>(tensor_of(c, "c")));
+             }),
+             py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
+             py::arg("c") = py::none(), "x' = A x + B u + c of the flow inside the invariant")
+        .def_property_readonly("name", &Location::name, "The name")
+        .def_property_readonly("invariant", &Location::invariant, "The invariant")
+        .def_property_readonly("transitions", &Location::transitions, "The transitions")
+        .def_property_readonly("dim", &Location::dim, "The number of states");
+    // the results: one branch per visit of a location
+    py::class_<LocationReachSet>(m, "LocationReachSet", "The sets of one visit of a location.")
+        .def_readonly("location", &LocationReachSet::location, "The location, 0-based")
+        .def_readonly("parent", &LocationReachSet::parent, "The branch that jumped here, -1 none")
+        .def_property_readonly(
+            "time_point", [](const LocationReachSet &R) { return hybrid_sets(R.time_point); },
+            "The sets at the step times")
+        .def_property_readonly(
+            "time_interval", [](const LocationReachSet &R) { return hybrid_sets(R.time_interval); },
+            "The sets over the steps")
+        .def_readonly("time_point_times", &LocationReachSet::time_point_times,
+                      "The times [lower, upper] of the time-point sets")
+        .def_readonly("time_interval_times", &LocationReachSet::time_interval_times,
+                      "The times [lower, upper] of the time-interval sets");
+    py::class_<HybridReachSet>(m, "HybridReachSet", "The branches of reach and its verdict.")
+        .def_readonly("branches", &HybridReachSet::branches, "One per visit of a location")
+        .def_readonly("verified", &HybridReachSet::verified, "Whether every specification held");
+    // the automaton, and reach with the problem and the algorithm as keywords
+    py::class_<HybridAutomaton>(m, "HybridAutomaton", "A hybrid automaton of linear locations.")
+        .def(py::init<std::string, std::vector<Location>>(), py::arg("name"), py::arg("locations"),
+             "The automaton; the locations are numbered from 0")
+        .def_property_readonly("name", &HybridAutomaton::name, "The name")
+        .def_property_readonly("locations", &HybridAutomaton::locations, "The locations")
+        .def(
+            "reach",
+            [](const HybridAutomaton &HA, const Zonotope &initial_set, double t_final,
+               const py::object &time_step, int64_t start_location, double t_start,
+               const py::object &input_set, const std::vector<int64_t> &final_locations,
+               int taylor_terms, int zonotope_order, const std::string &guard_intersect,
+               const std::vector<std::string> &enclose, int guard_order, const py::list &specs) {
+                HybridReachProblem p;
+                p.initial_set = initial_set;
+                p.t_final = t_final;
+                p.start_location = start_location;
+                p.t_start = t_start;
+                p.final_locations = final_locations;
+                // one input set, or a list of one per location
+                if (py::isinstance<Zonotope>(input_set))
+                    p.input_set = {py::cast<Zonotope>(input_set)};
+                else if (!input_set.is_none())
+                    p.input_set = py::cast<std::vector<Zonotope>>(input_set);
+                alg::HybridStandard a;
+                a.time_step = is_number(time_step)
+                                  ? std::vector<double>{py::cast<double>(time_step)}
+                                  : py::cast<std::vector<double>>(time_step);
+                a.taylor_terms = taylor_terms;
+                a.zonotope_order = zonotope_order;
+                a.guard_intersect = hybrid_guard_method(guard_intersect, enclose, guard_order);
+                // a specification, or (specification, locations)
+                std::vector<HybridSpecification> hs;
+                for (const py::handle &s : specs) {
+                    if (py::isinstance<Specification>(s))
+                        hs.push_back({py::cast<Specification>(s), {}});
+                    else
+                        hs.push_back({py::cast<Specification>(s[py::int_(0)]),
+                                      py::cast<std::vector<int64_t>>(s[py::int_(1)])});
+                }
+                return HA.reach(p, a, hs);
+            },
+            // the keywords, with the defaults of HybridReachProblem and alg::HybridStandard
+            py::arg("initial_set"), py::arg("t_final"), py::arg("time_step"),
+            py::arg("start_location") = 0, py::arg("t_start") = 0.0,
+            py::arg("input_set") = py::none(), py::arg("final_locations") = std::vector<int64_t>(),
+            py::arg("taylor_terms") = 10, py::arg("zonotope_order") = 50,
+            py::arg("guard_intersect") = "zono_girard",
+            py::arg("enclose") = std::vector<std::string>{"box"}, py::arg("guard_order") = 0,
+            py::arg("specs") = py::list(),
+            "The reachable sets up to t_final (alg::HybridStandard); specs are Specifications or "
+            "(Specification, [locations]) pairs");
+}
+
 void bind_specification(py::module_ &m) {
     py::class_<Specification>(m, "Specification",
                               "Halfspaces {x | a.x <= b} a set must stay in (safe_set) or must not "
@@ -4136,12 +4293,24 @@ void bind_specification(py::module_ &m) {
             },
             py::arg("a"), py::arg("b"),
             "One halfspace a.x <= b, or a polytope A x <= b (A a matrix, b a vector)")
+        .def_static(
+            "custom",
+            [](const py::function &holds) {
+                // the predicate gets the set as its Python class, under the GIL
+                return Specification::custom([holds](const ContSet &S) {
+                    py::gil_scoped_acquire gil;
+                    return py::cast<bool>(holds(py::cast(&S, py::return_value_policy::reference)));
+                });
+            },
+            py::arg("holds"),
+            "A predicate on the set: holds(S) is True where the specification holds")
         .def_property_readonly(
             "type",
             [](const Specification &spec) {
+                if (spec.type() == SpecType::custom) return "custom";
                 return spec.type() == SpecType::safe_set ? "safe_set" : "unsafe_set";
             },
-            "'safe_set' or 'unsafe_set'")
+            "'safe_set', 'unsafe_set' or 'custom'")
         .def_property_readonly(
             "halfspaces",
             [](const Specification &spec) {
@@ -4659,6 +4828,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_neural_network(m);
     bind_plot(m);
     bind_specification(m);
+    bind_hybrid(m);
     // the oracle and the other modules
     bind_lean(m);
 }

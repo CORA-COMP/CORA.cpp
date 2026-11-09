@@ -6,7 +6,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -48,6 +48,12 @@ void linear_combination_encloses_both(const std::string &b) {
     }
     check(close(Z.linear_combination(Z).interval().inf(), Z.interval().inf(), 1e-12),
           b + ": linear_combination(Z, Z) is Z");
+    // two points: the segment between them, the shift its one generator
+    const Zonotope p(column({0.0, 2.0}), Tensor::zeros({2, 0})),
+        q(column({4.0, 2.0}), Tensor::zeros({2, 0}));
+    const Zonotope seg = p.linear_combination(q);
+    check(close(seg.center(), {2, 2}) && close(seg.generators(), {-2, 0}),
+          b + ": the segment between two points");
 }
 
 /// Zonotopes of different shapes are refused; with the checks off the result is the same.

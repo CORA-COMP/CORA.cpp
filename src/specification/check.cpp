@@ -4,7 +4,8 @@
 // polytope (several halfspaces) is avoided iff the set and the polytope have no common point:
 // a halfspace that separates them proves it (any set); otherwise a zonotope is decided exactly by
 // a linear program, as CORA's isIntersecting, and any other set is reported as touching. So a
-// set is never wrongly called safe; a non-zonotope may wrongly be called unsafe.
+// set is never wrongly called safe; a non-zonotope may wrongly be called unsafe. A custom
+// specification asks its predicate, once for the whole set.
 //
 // Syntax:   ok = spec.check(S);   each = spec.holds(S);
 // Inputs:   S - any set; a batch of sets gives one answer per member in holds
@@ -16,7 +17,7 @@
 // CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       29-September-2026
-// Last update:   30-September-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -134,6 +135,7 @@ std::vector<bool> Specification::holds(const ContSet &S) const {
         CORA_CHECK(wrong < 0, Error::dimension_mismatch,
                    [&] { return aux_wrong_normal_message(S, halfspaces_[wrong]); });
     }
+    if (type_ == SpecType::custom) return {custom_(S)};
     return aux_holds(S, type_, halfspaces_);
 }
 
@@ -144,6 +146,7 @@ bool Specification::check(const ContSet &S) const {
         CORA_CHECK(wrong < 0, Error::dimension_mismatch,
                    [&] { return aux_wrong_normal_message(S, halfspaces_[wrong]); });
     }
+    if (type_ == SpecType::custom) return custom_(S);
     // holds for every member of a batch
     const std::vector<bool> ok = aux_holds(S, type_, halfspaces_);
     return std::all_of(ok.begin(), ok.end(), [](bool v) { return v; });

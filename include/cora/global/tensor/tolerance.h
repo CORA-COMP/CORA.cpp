@@ -157,6 +157,16 @@ inline constexpr int kFixedPointSteps = 100000; ///< most steps of the fixed poi
 inline constexpr double kBoxRadiusMin = 5e-3;  ///< a box is widened to this radius for an ellipsoid
 inline constexpr double kVerticesPoint = 1e-8; ///< vertices of a capsule: a point if within this
 
+// Hybrid automata ---------------------------------------------------------------------------------
+
+inline constexpr double kGuardHyperplane = 1e-12; ///< CORA's tol: a guard that is a hyperplane
+inline constexpr double kGuardMeet = 1e-8; ///< CORA's tol: a set that meets a guard or invariant
+inline constexpr double kGuardContains = 1e-6; ///< CORA's tol: a set inside a halfspace of a guard
+inline constexpr double kGuardTimePoint = 1e-10; ///< CORA's tol: a time-point set on the hyperplane
+inline constexpr double kGuardFlat = 1e-12;      ///< zonoGirard: CORA's bounds this close are one
+inline constexpr double kGuardSide =
+    100 * std::numeric_limits<double>::epsilon(); ///< CORA's 100 eps: a center this close is inside
+
 // Geometry of zonotopes and pictures --------------------------------------------------------------
 
 inline constexpr double kGeneratorZero = 1e-14;      ///< a generator shorter than this is dropped

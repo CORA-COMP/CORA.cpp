@@ -7,7 +7,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -42,6 +42,27 @@ bool priv_is_identity(const Tensor &M);
 /// The algorithm "standard" with inputs; reduces to zonotope_order after each step.
 ReachSet priv_reach_standard(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
                              const InputSolution &in, int steps, int zonotope_order);
+
+/// The steps of "standard" with inputs one at a time, for callers that stop early (a location
+/// of a hybrid automaton stops once its sets leave the invariant); priv_reach_standard loops it.
+class StandardSteps {
+  public:
+    StandardSteps(const Zonotope &X0, const Tensor &e_adt, const Interval &F,
+                  const InputSolution &in, int zonotope_order);
+
+    /// The set at the start of the next step (X0 before the first).
+    const Zonotope &time_point() const noexcept { return time_point_; }
+
+    /// Advances one step; returns the enclosure of the step, time_point() is then its end.
+    Zonotope next();
+
+  private:
+    Tensor e_adt_;
+    Interval F_;
+    InputSolution in_;
+    int zonotope_order_, k_ = 0;
+    Zonotope Htp_, Hti_, PUnext_, PU_, time_point_;
+};
 
 /// The algorithm "wrapping-free" with inputs; the time-varying part is kept as a box.
 ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const Interval &F,

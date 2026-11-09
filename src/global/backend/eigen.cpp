@@ -270,7 +270,8 @@ template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
                             const HostTensor<T> &c2, const HostTensor<T> &G2) {
-    const int64_t m = G1.shape.back(), rows = G1.shape.numel() / std::max<int64_t>(m, 1);
+    // one row per row of the centers: without generators (m = 0) the shift column is still written
+    const int64_t m = G1.shape.back(), rows = c1.shape.numel();
     Shape shape = G1.shape;
     shape.back() = 2 * m + 1;
     auto c = c1.fresh(c1.shape), G = G1.fresh(shape);

@@ -223,6 +223,13 @@ changed, and the reasons are listed below.
 | `specification(halfspace, 'safeSet')` | `Specification::safe_set(a, b)` | `cora.Specification.safe_set(a, b)` |
 | `specification(..., 'unsafeSet')` | `Specification::unsafe_set(a, b)` | `cora.Specification.unsafe_set(a, b)` |
 | `check(spec, S)` | `spec.check(S)` | `spec.check(S)` |
+| `specification(@(S) ..., 'custom')` | `Specification::custom(predicate)` | `cora.Specification.custom(predicate)` |
+| `linearReset(A, B, c)`, `evaluate(reset, X, U)` | `LinearReset(A, B, c)`, `reset.evaluate(X, U)` | `cora.LinearReset(A, B, c)`, `reset.evaluate(X, U)` |
+| `transition(guard, reset, target)` | `Transition(guard, reset, target)` (0-based target) | `cora.Transition(guard, reset, target)` |
+| `location(name, inv, trans, sys)` (sys with c) | `Location(name, inv, trans, flow, c)` | `cora.Location(name, inv, trans, flow, c)` |
+| `hybridAutomaton(name, loc)`, `reach(HA, params, options, spec)` | `HybridAutomaton(name, locs)`, `HA.reach(problem, alg, specs)` | `cora.HybridAutomaton`, `HA.reach(X0, t_final=..., ...)` |
+| `params.startLoc`, `params.finalLoc`, `params.tStart` | `HybridReachProblem::start_location`, `final_locations`, `t_start` | the same keywords |
+| `options.guardIntersect`, `options.enclose`, `options.guardOrder` | `alg::ZonoGirard`, `alg::NondetGuard`, `alg::ConZonotopeGuard{enclose, guard_order}` | `guard_intersect="zono_girard"`, `enclose=["box"]`, `guard_order` |
 | `CORAerror('CORA:wrongValue', ...)` | `cora::Error`, id `Error::wrong_value` | `cora.errors.WrongValue` (a `ValueError`) |
 | `CORAwarning('CORA:...', ...)` | `cora::warn(identifier, message)` | `cora.CORAWarning` |
 | `CHECKS_ENABLED` | `ChecksScope`, `set_checks_enabled`, CMake `CORACPP_CHECKS` | `with cora.checks(False):` |

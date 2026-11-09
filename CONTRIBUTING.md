@@ -186,6 +186,9 @@ The suites are ctest labels (`ctest --preset core -L oracle`; docs/architecture.
 `unit` (the C++ and script tests), `oracle` (lean bit for bit against CORALean), `backend-eigen`,
 `backend-torch` (an oracle test's body on that backend against lean, within tol), `gradcheck`, `python`
 (the bindings only) and `example`. The default backend is Eigen in every build; torch is chosen explicitly.
+`benchmark` holds one test per ARCH-COMP instance (examples/benchmarks/README.md), each checking MATLAB CORA's
+verdict; it runs nightly only, so skip it locally with `ctest -LE benchmark`. Pull requests run one fast
+instance per family as an `example` test.
 
 `with_env.sh` enters the conda environment and puts the built `cora` package on `PYTHONPATH`.
 Options (`scripts/build.sh -D...`, see `CMakeLists.txt`): `CORACPP_CHECKS` (OFF compiles the input checks out), `CORACPP_TORCH`, `CORACPP_TORCH_DIR`, `CORACPP_NATIVE`,

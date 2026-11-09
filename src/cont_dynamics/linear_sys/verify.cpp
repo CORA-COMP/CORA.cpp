@@ -17,7 +17,7 @@
 // CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
@@ -80,8 +80,13 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
     CORA_CHECK(
         B_ || (aux_all_zero(U.center()) && aux_all_zero(U.generators())), Error::wrong_value,
         [] { return std::string("verify: a nonzero input set needs B; use LinearSys(A, B)"); });
+    // the specifications: halfspace sets of the output dimension, none of them custom
     CORA_CHECK(!specs.empty(), Error::wrong_value,
                [] { return std::string("verify: give at least one specification"); });
+    for (const Specification &spec : specs)
+        CORA_CHECK(spec.type() != SpecType::custom, Error::not_supported, [] {
+            return std::string("verify: decides safe and unsafe sets, not custom specifications");
+        });
     const int64_t p = C_ ? C_->shape()[0] : n;
     for (const Specification &spec : specs)
         for (const Halfspace &h : spec.halfspaces())
