@@ -5,9 +5,9 @@
 // The specification is the polytope A x <= b (one halfspace per row), checked against a box and a
 // zonotope. The oracle's true proves the set contained in it (safe set, invariant) or disjoint from
 // it (unsafe set); false says that no proof was found, where CORA.cpp decides. A safe set and an
-// unsafe halfspace are decided by their rows, so at nearest the answers are the same; an unsafe
-// polytope the oracle proves clear only by a separating row, and CORA.cpp (exactly, by a linear
-// program) must agree whenever it does.
+// unsafe halfspace are decided by their rows, so at nearest the answers are the same. An unsafe
+// polytope of several rows is proved clear only by a separating row, while CORA.cpp is exact: that
+// case is the property test test_specification_check_agreement.
 //
 // ORACLE: specification/@specification/check.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
@@ -58,6 +58,8 @@ int main() {
                     const Interval I = rnd.box(n);
                     const Zonotope Z = rnd.zonotope(n, n + 1);
                     for (const char *kind : {"safeSet", "unsafeSet"}) {
+                        // several unsafe rows: test_specification_check_agreement
+                        if (p > 1 && std::string(kind) == "unsafeSet") continue;
                         for (const bool box : {true, false}) {
                             const ContSet &S = box ? static_cast<const ContSet &>(I) : Z;
                             const auto [A, b] = aux_polytope(rnd, S, n, p);
@@ -72,12 +74,7 @@ int main() {
                                     : lean::check_specification(kind, LA, Lb, lean::Zonotope(Z));
                             proved += theirs;
                             ++total;
-                            // only an unsafe polytope is proved by one row, CORA.cpp is exact
-                            if (safe || p == 1)
-                                oracle::check(spec.check(S), lean::Certified{theirs, theirs});
-                            else
-                                test::check(!theirs || spec.check(S),
-                                            "specification.check: a proved unsafe set is clear");
+                            oracle::check(spec.check(S), lean::Certified{theirs, theirs});
                         }
                     }
                 }
