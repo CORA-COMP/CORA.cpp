@@ -241,6 +241,34 @@ constexpr Table aux_build() {
     aux_add_predicate<BinaryOp::contains, Polytope, Zonotope>(
         t,
         [](const Polytope &A, const Zonotope &Z, Tol tol) { return A.contains(Z, "exact", tol); });
+    // a polytope contains every set with a support function: its rows decide, exactly
+    aux_add_predicate<BinaryOp::contains, Polytope, ConZonotope>(
+        t, [](const Polytope &A, const ConZonotope &Z, Tol tol) {
+            return A.contains(Z, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, Polytope, ZonoBundle>(
+        t, [](const Polytope &A, const ZonoBundle &B, Tol tol) {
+            return A.contains(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::contains, Polytope, Ellipsoid>(
+        t,
+        [](const Polytope &A, const Ellipsoid &E, Tol tol) { return A.contains(E, "exact", tol); });
+    aux_add_predicate<BinaryOp::contains, Polytope, Capsule>(
+        t,
+        [](const Polytope &A, const Capsule &C, Tol tol) { return A.contains(C, "exact", tol); });
+    // a polytope meets a zonotope, a constrained zonotope or a bundle exactly, by a linear program
+    aux_add_predicate<BinaryOp::is_intersecting, Polytope, ConZonotope>(
+        t, [](const Polytope &A, const ConZonotope &Z, Tol tol) {
+            return A.is_intersecting(Z, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, Polytope, ZonoBundle>(
+        t, [](const Polytope &A, const ZonoBundle &B, Tol tol) {
+            return A.is_intersecting(B, "exact", tol);
+        });
+    aux_add_predicate<BinaryOp::is_intersecting, Polytope, Zonotope>(
+        t, [](const Polytope &A, const Zonotope &Z, Tol tol) {
+            return A.is_intersecting(Z, "exact", tol);
+        });
     // the sum, the hull of the union, the intersection test and the equality of polytopes and boxes
     aux_add_set<BinaryOp::plus, Polytope, Polytope>(
         t, [](const Polytope &A, const Polytope &B) { return A.plus(B); });

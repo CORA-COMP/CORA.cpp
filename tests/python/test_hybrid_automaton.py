@@ -77,7 +77,7 @@ class HybridAutomaton(unittest.TestCase):
             self.assertGreaterEqual(hi, math.sqrt(2 * 1.2 / G))
 
     def test_specifications_stop_reach(self):
-        low = cora.Specification.safe_set(np.array([1.0, 0.0]), 1.1)
+        low = cora.Specification.safe_set(cora.Polytope(np.array([[1.0, 0.0]]), np.array([1.1])))
         R = ball().reach(DROP, t_final=1.5, time_step=0.01, specs=[(low, [0])])
         self.assertFalse(R.verified)
         # a custom predicate is asked with the sets themselves

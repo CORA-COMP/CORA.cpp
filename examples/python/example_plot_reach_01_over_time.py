@@ -52,7 +52,8 @@ plt.figure()
 R.plot((0, 1), label="reachable set")
 X0.plot((0, 1), label="initial set")
 cora.plot(x, (0, 1), label="simulations")
-cora.Specification.unsafe_set(cora.Tensor([-1, 0]), 0.5).plot((0, 1), label="unsafe set")
+wall = cora.Polytope(cora.Tensor([[-1.0, 0.0]]), cora.Tensor([0.5]))
+cora.Specification.unsafe_set(wall).plot((0, 1), label="unsafe set")
 plt.legend()
 
 # The first state over time: boxes over the time intervals, and the simulations.

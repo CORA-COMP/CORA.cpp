@@ -119,13 +119,9 @@ inline constexpr double kSimplexOptimal = 1e-9;  ///< reduced costs above -this 
 inline constexpr double kSimplexFeasible = 1e-8; ///< relative phase-1 residual that is feasible
 inline constexpr double kNullSpaceSpread =
     1e-12; ///< relative spread of a factor range that is one point
-inline constexpr double kSimplexTie = 1e-12;   ///< relative gap under which two ratios tie
-inline constexpr double kSimplexDrive = 1e-7;  ///< entry that lets an artificial leave the basis
-inline constexpr double kTableauCost = 1e-12;  ///< Bland's rule: a reduced cost below -this enters
-inline constexpr double kTableauPivot = 1e-12; ///< Bland's rule: a column entry above this leaves
-inline constexpr double kTableauTie = 1e-15;   ///< Bland's rule: ratios this close tie
-inline constexpr double kTableauFeasible = 1e-9;   ///< a common point exists if the cost is below
-inline constexpr double kLpDistanceZero = 1e-9;    ///< a program distance below this counts as 0
+inline constexpr double kSimplexTie = 1e-12;    ///< relative gap under which two ratios tie
+inline constexpr double kSimplexDrive = 1e-7;   ///< entry that lets an artificial leave the basis
+inline constexpr double kLpDistanceZero = 1e-9; ///< a program distance below this counts as 0
 inline constexpr double kPolytopeContains = 1e-12; ///< a point beyond a facet by less is inside
 inline constexpr double kPolytopeAligned = 1e-12;  ///< polytope: rows closer than this are aligned
 inline constexpr double kPolytopeMiddle = 1e-9;    ///< polytope 2D: a row this close is redundant

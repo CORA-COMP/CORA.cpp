@@ -13,6 +13,7 @@
 // Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/error.h"
 #include "cora/global/plot/geometry.h"
 
@@ -137,15 +138,34 @@ std::vector<Point> aux_points(const Tensor &points, const std::vector<int64_t> &
     return out;
 }
 
-// The halfspace's normal vector on the dimensions dims.
-Point aux_normal(const Halfspace &h, const std::vector<int64_t> &dims) {
-    const std::vector<double> a = h.a.data();
-    if (dims[0] >= static_cast<int64_t>(a.size()) || dims[1] >= static_cast<int64_t>(a.size()) ||
-        dims[0] < 0 || dims[1] < 0)
+// A halfspace {x | a'x <= b} of a polytope, the normal a on the dimensions dims.
+struct PlotRow {
+    Point normal;
+    double b;
+};
+
+// The rows of the polytope A x <= b, Ae x = be (an equality as two rows), on the dimensions dims.
+std::vector<PlotRow> aux_rows(const Polytope &P, const std::vector<int64_t> &dims) {
+    const Polytope::Constraints C = P.constraints();
+    const int64_t n = P.dim();
+    if (dims[0] >= n || dims[1] >= n || dims[0] < 0 || dims[1] < 0)
         CORA_FAIL(Error::wrong_value, "plot: the dimensions " + std::to_string(dims[0]) + " and " +
                                           std::to_string(dims[1]) +
                                           " do not exist in the halfspace");
-    return {a[static_cast<std::size_t>(dims[0])], a[static_cast<std::size_t>(dims[1])]};
+    std::vector<PlotRow> rows;
+    // a matrix with its offsets, times sign, as rows on the two dimensions
+    const auto add = [&](const Tensor &A, const Tensor &b, double sign) {
+        if (A.numel() == 0) return;
+        const std::vector<double> a = A.data(), offsets = b.data();
+        for (std::size_t i = 0; i < offsets.size(); ++i)
+            rows.push_back({{sign * a[i * static_cast<std::size_t>(n) + std::size_t(dims[0])],
+                             sign * a[i * static_cast<std::size_t>(n) + std::size_t(dims[1])]},
+                            sign * offsets[i]});
+    };
+    add(C.A, C.b, 1.0);
+    add(C.Ae, C.be, 1.0);
+    add(C.Ae, C.be, -1.0);
+    return rows;
 }
 
 // Reachable sets ----------------------------------------------------------------------------------
@@ -345,11 +365,15 @@ void plot(Figure &fig, const Specification &spec, const std::vector<int64_t> &di
         CORA_FAIL(Error::wrong_value, "plot: unknown specification type; expected SafeSet or "
                                       "UnsafeSet");
     }
+    // The regions are the rows of the polytope of the specification.
+    if (!spec.set().is<Polytope>())
+        CORA_FAIL(Error::not_supported, "plot: a specification is drawn as the rows of a "
+                                        "Polytope, not a " +
+                                            spec.set().class_name());
     // Only the first region carries the label, so the legend names the specification once.
     bool first = true;
-    for (const Halfspace &h : spec.halfspaces()) {
-        fig.add_region(aux_normal(h, dims), h.b, sign,
-                       options.color.value_or(cora_color("CORA:unsafe")),
+    for (const PlotRow &h : aux_rows(spec.set().as<Polytope>(), dims)) {
+        fig.add_region(h.normal, h.b, sign, options.color.value_or(cora_color("CORA:unsafe")),
                        options.face_color.value_or(cora_color("CORA:unsafeLight")),
                        first ? options.label : "");
         first = false;

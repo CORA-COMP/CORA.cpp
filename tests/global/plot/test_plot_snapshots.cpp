@@ -10,6 +10,7 @@
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/plot/plot.h"
 #include "snapshot.h"
+#include "spec_testing.h"
 
 using namespace cora;
 using test::check_snapshot;
@@ -56,7 +57,7 @@ FigureGrid group_figure() {
     grid.share_x = true;
     const ReachSet R = oscillator();
     Figure &phase = grid.at(0, 0);
-    plot(phase, Specification::unsafe_set(test::column({-1, 0}), -1.1), {0, 1},
+    plot(phase, Specification::unsafe_set(test::halfspace(test::column({-1, 0}), -1.1)), {0, 1},
          {.label = "unsafe"});
     plot(phase, R, {0, 1}, {.label = "reachable set"});
     plot(phase, initial_set(), {0, 1}, {.label = "initial set"});

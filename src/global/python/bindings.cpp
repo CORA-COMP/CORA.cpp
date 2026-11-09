@@ -4385,6 +4385,7 @@ void bind_hybrid(py::module_ &m) {
             },
             // the keywords, with the defaults of HybridReachProblem and alg::HybridStandard
             py::arg("initial_set"), py::arg("t_final"), py::arg("time_step"),
+            // where and when the analysis starts, and what it takes as input
             py::arg("start_location") = 0, py::arg("t_start") = 0.0,
             py::arg("input_set") = py::none(), py::arg("final_locations") = std::vector<int64_t>(),
             py::arg("taylor_terms") = 10, py::arg("zonotope_order") = 50,
@@ -4397,32 +4398,15 @@ void bind_hybrid(py::module_ &m) {
 
 void bind_specification(py::module_ &m) {
     py::class_<Specification>(m, "Specification",
-                              "Halfspaces {x | a.x <= b} a set must stay in (safe_set) or must not "
-                              "touch (unsafe_set).")
+                              "A set the reachable sets must lie in (safe_set) or must not touch "
+                              "(unsafe_set), typically a Polytope.")
+        // the set is of any class; the set classes decide
         .def_static(
-            "safe_set",
-            [](const py::object &a, double b) {
-                // specifications from halfspaces
-                return Specification::safe_set(vector_of(a, "the normal"), b);
-            },
-            py::arg("a"), py::arg("b"), "A safe set: the halfspace a.x <= b")
+            "safe_set", [](const py::object &S) { return Specification::safe_set(set_of(S)); },
+            py::arg("S"), "A safe set: the reachable sets must lie in the set S")
         .def_static(
-            "unsafe_set",
-            [](const py::object &a, const py::object &b) {
-                if (is_number(b))
-                    return Specification::unsafe_set(vector_of(a, "the normal"),
-                                                     py::cast<double>(b));
-                // the rows of A with b: a polytope the sets must not touch
-                const Tensor A = host_tensor(a, false);
-                const std::vector<double> bs = py::cast<std::vector<double>>(b);
-                std::vector<Halfspace> halfspaces;
-                halfspaces.reserve(static_cast<std::size_t>(A.size(-2)));
-                for (int64_t i = 0; i < A.size(-2); ++i)
-                    halfspaces.push_back({A.slice(-2, i, i + 1).matrix_transpose(), bs[i]});
-                return Specification::unsafe_set(std::move(halfspaces));
-            },
-            py::arg("a"), py::arg("b"),
-            "One halfspace a.x <= b, or a polytope A x <= b (A a matrix, b a vector)")
+            "unsafe_set", [](const py::object &S) { return Specification::unsafe_set(set_of(S)); },
+            py::arg("S"), "An unsafe set: the reachable sets must not touch the set S")
         .def_static(
             "custom",
             [](const py::function &holds) {
@@ -4433,6 +4417,7 @@ void bind_specification(py::module_ &m) {
                 });
             },
             py::arg("holds"),
+            // the predicate is the whole specification
             "A predicate on the set: holds(S) is True where the specification holds")
         .def_property_readonly(
             "type",
@@ -4442,23 +4427,11 @@ void bind_specification(py::module_ &m) {
             },
             "'safe_set', 'unsafe_set' or 'custom'")
         .def_property_readonly(
-            "halfspaces",
-            [](const Specification &spec) {
-                // The halfspaces as host numpy arrays, whatever the backend.
-                py::list out;
-                for (const Halfspace &h : spec.halfspaces()) {
-                    const std::vector<double> a = h.a.data();
-                    out.append(py::make_tuple(py::array_t<double>(a.size(), a.data()), h.b));
-                }
-                return out;
-            },
-            "The halfspaces as (a, b) with a.x <= b")
-        .def(
-            "holds", [](const Specification &spec, const ContSet &S) { return spec.holds(S); },
-            py::arg("S"), "One flag per batch element of the set")
+            "set", [](const Specification &spec) { return object_of(spec.set()); },
+            "The set of a safe or unsafe specification")
         .def(
             "check", [](const Specification &spec, const ContSet &S) { return spec.check(S); },
-            py::arg("S"), "Whether every batch element of the set satisfies the specification")
+            py::arg("S"), "Whether the set satisfies the specification")
         .def(
             "check",
             [](const Specification &spec, const std::vector<Zonotope> &sets) {

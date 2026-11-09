@@ -17,6 +17,7 @@
 
 #include "benchmark_run.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/sparse_matrix.h"
 
 #include <algorithm>
@@ -211,21 +212,24 @@ inline Tensor read_tensor(const Json &matrices, const std::string &bin, const st
 
 // Specifications --------------------------------------------------------------------------------
 
-/// One specification; several halfspaces are a polytope (a safe set lies in it, an unsafe set
-/// must not touch it).
+/// One specification: a polytope {y | A y <= b} that a safe set holds the reachable sets in, and
+/// an unsafe set keeps them out of.
 inline Specification read_spec(const Json &spec) {
-    std::vector<Halfspace> halfspaces;
+    std::vector<double> rows;
+    const int64_t m = static_cast<int64_t>(spec["A"].array.size());
+    int64_t n = 0;
+    std::vector<double> offsets;
     for (std::size_t k = 0; k < spec["A"].array.size(); ++k) {
-        std::vector<double> row;
-        for (const Json &x : spec["A"][k].array) row.push_back(x.number);
-        const int64_t n = static_cast<int64_t>(row.size());
-        halfspaces.push_back({Tensor::from_data(row, {n, 1}), spec["b"][k].number});
+        n = static_cast<int64_t>(spec["A"][k].array.size());
+        for (const Json &x : spec["A"][k].array) rows.push_back(x.number);
+        offsets.push_back(spec["b"][k].number);
     }
-    if (spec["type"].string == "safeSet") return Specification::safe_set(halfspaces);
+    const Polytope P(Tensor::from_data(rows, {m, n}), Tensor::from_data(offsets, {m, 1}));
+    if (spec["type"].string == "safeSet") return Specification::safe_set(P);
     if (spec["type"].string != "unsafeSet")
         throw std::runtime_error("benchmark data: unknown specification type " +
                                  spec["type"].string);
-    return Specification::unsafe_set(halfspaces);
+    return Specification::unsafe_set(P);
 }
 
 /// The metadata <name>.json and its binary file from examples/benchmarks/data (or

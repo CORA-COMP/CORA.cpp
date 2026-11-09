@@ -7,6 +7,7 @@
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/backend/eigen.h"
 #include "cora/global/backend/torch.h"
@@ -49,8 +50,9 @@ void tensors_stay_on_their_own_backend() {
     }),
           "reach on eigen, torch current");
     // a torch specification builds
-    check(!throws([&] { Specification::safe_set(Tensor({1.0, 0.0}), 9.0); }),
-          "a torch spec builds");
+    check(
+        !throws([&] { Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({{9.0}}))); }),
+        "a torch spec builds");
     set_default_backend("eigen");
 }
 

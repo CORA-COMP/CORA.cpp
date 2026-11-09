@@ -8,6 +8,7 @@
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/specification/specification.h"
 #include "testing.h"
 
@@ -20,15 +21,22 @@ using test::check;
 
 namespace {
 
-/// Any set answers, since a halfspace needs only the support function.
+/// The halfspace {x | a'x <= b} as a polytope.
+Polytope halfspace(const std::vector<double> &a, double offset) {
+    const int64_t n = static_cast<int64_t>(a.size());
+    return Polytope(Tensor::from_data(a, {1, n}), Tensor::from_data({offset}, {1, 1}));
+}
+
+/// Any set the polytope can decide answers, here through a reference to the base class.
 void any_contset(const std::string &b) {
     const Interval I(Tensor({1.0, 0.0}), Tensor({3.0, 2.0}));
-    check(Specification::safe_set(Tensor({1.0, 0.0}), 3.0).check(I), b + ": an interval, safe");
-    check(!Specification::safe_set(Tensor({1.0, 0.0}), 2.0).check(I), b + ": an interval, left");
-    check(Specification::unsafe_set(Tensor({1.0, 0.0}), 0.5).check(I), b + ": an interval, clear");
+    check(Specification::safe_set(halfspace({1.0, 0.0}, 3.0)).check(I), b + ": an interval, safe");
+    check(!Specification::safe_set(halfspace({1.0, 0.0}, 2.0)).check(I), b + ": an interval, left");
+    check(Specification::unsafe_set(halfspace({1.0, 0.0}, 0.5)).check(I),
+          b + ": an interval, clear");
     const ContSet &generic = I;
-    check(Specification::safe_set(Tensor({0.0, 1.0}), 2.0).holds(generic).size() == 1,
-          b + ": one answer for a single set");
+    check(Specification::safe_set(halfspace({0.0, 1.0}, 2.0)).check(generic),
+          b + ": through a ContSet reference");
 }
 
 /// x' = -x from [1, 2]: the set shrinks towards 0, but the first enclosure still reaches 2.
@@ -38,34 +46,35 @@ void on_a_reachable_set(const std::string &b) {
     const ReachSet R = sys.reach({.initial_set = X0, .t_final = 1.0},
                                  alg::Standard{.time_step = 0.1, .taylor_terms = 8});
 
-    check(Specification::safe_set(Tensor({1.0}), 2.1).check(R.time_interval),
+    check(Specification::safe_set(halfspace({1.0}, 2.1)).check(R.time_interval),
           b + ": stays below 2.1");
-    check(Specification::safe_set(Tensor({1.0}), 2.1).first_violation(R.time_interval) == -1,
+    check(Specification::safe_set(halfspace({1.0}, 2.1)).first_violation(R.time_interval) == -1,
           b + ": no violation");
-    check(!Specification::safe_set(Tensor({1.0}), 1.9).check(R.time_interval), b + ": exceeds 1.9");
-    check(Specification::safe_set(Tensor({1.0}), 1.9).first_violation(R.time_interval) == 0,
+    check(!Specification::safe_set(halfspace({1.0}, 1.9)).check(R.time_interval),
+          b + ": exceeds 1.9");
+    check(Specification::safe_set(halfspace({1.0}, 1.9)).first_violation(R.time_interval) == 0,
           b + ": exceeds 1.9 in the first step");
 
     // The lowest point decays as e^{-t}, passing 0.5 at t = 0.69; the first enclosure touching it.
-    const Specification reaches_half = Specification::unsafe_set(Tensor({1.0}), 0.5);
+    const Specification reaches_half = Specification::unsafe_set(halfspace({1.0}, 0.5));
     const int hit = reaches_half.first_violation(R.time_interval);
     check(hit >= 4 && hit <= 7, b + ": the flow reaches x <= 0.5 at step " + std::to_string(hit));
     check(reaches_half.check(
               std::vector<Zonotope>(R.time_interval.begin(), R.time_interval.begin() + hit)),
           b + ": clear before that step");
-    check(Specification::unsafe_set(Tensor({1.0}), -1.0).check(R.time_interval),
+    check(Specification::unsafe_set(halfspace({1.0}, -1.0)).check(R.time_interval),
           b + ": never below -1");
 }
 
 /// A halfspace of the wrong dimension is refused; with the checks off the answer is the same.
 void checks_and_their_switch() {
     const Interval I(Tensor({1.0, 0.0}), Tensor({3.0, 2.0}));
-    check(test::raises([&] { Specification::safe_set(Tensor({1.0, 0.0, 0.0}), 3.0).check(I); },
+    check(test::raises([&] { Specification::safe_set(halfspace({1.0, 0.0, 0.0}, 3.0)).check(I); },
                        Error::dimension_mismatch),
           "check: a halfspace of three dimensions");
-    const bool on = Specification::safe_set(Tensor({1.0, 0.0}), 3.0).check(I);
+    const bool on = Specification::safe_set(halfspace({1.0, 0.0}, 3.0)).check(I);
     ChecksScope off(false);
-    check(Specification::safe_set(Tensor({1.0, 0.0}), 3.0).check(I) == on,
+    check(Specification::safe_set(halfspace({1.0, 0.0}, 3.0)).check(I) == on,
           "check: the same with the checks off");
 }
 

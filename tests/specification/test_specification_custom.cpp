@@ -25,11 +25,11 @@ namespace {
 void custom(const std::string &b) {
     const Specification below =
         Specification::custom([](const ContSet &S) { return S.interval().sup().data()[0] <= 2.0; });
-    check(below.type() == SpecType::custom && below.halfspaces().empty(), b + ": no halfspaces");
+    check(below.type() == SpecType::custom, b + ": the type");
+    check(test::raises([&] { below.set(); }, Error::wrong_value), b + ": a custom one has no set");
     const Zonotope wide(Tensor({2.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Zonotope narrow(Tensor({1.0, 1.0}), Tensor({{0.5, 0.0}, {0.0, 1.0}}));
     check(!below.check(wide) && below.check(narrow), b + ": the predicate decides");
-    check(below.holds(narrow) == std::vector<bool>{true}, b + ": one answer for the set");
     check(!below.check(std::vector<Zonotope>{narrow, wide}), b + ": a sequence fails at one");
 }
 

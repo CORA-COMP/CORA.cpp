@@ -35,6 +35,7 @@
 
 #include "cora/cont_set/registry.h"
 #include "cora/hybrid_dynamics/hybrid_automaton/hybrid_automaton.h"
+#include "spec_testing.h"
 #include "testing.h"
 
 #include <cmath>
@@ -181,8 +182,8 @@ void time_triggered() {
 void specifications() {
     const HybridAutomaton HA = aux_ball();
     const alg::HybridStandard a = aux_alg(alg::ZonoGirard{});
-    const HybridReachSet low =
-        HA.reach(aux_drop(), a, {{Specification::safe_set(column({1.0, 0.0}), 1.1), {}}});
+    const HybridReachSet low = HA.reach(
+        aux_drop(), a, {{Specification::safe_set(test::halfspace(column({1.0, 0.0}), 1.1)), {}}});
     check(!low.verified && low.branches.size() == 1 && low.branches[0].time_interval.size() == 1,
           "specs: a violated safe set stops at the first set");
     // the predicate counts its calls
@@ -231,7 +232,9 @@ void checks_and_their_switch() {
           "reach: ConZonotopeGuard needs guard_order");
     check(test::raises(
               [&] {
-                  HA.reach(aux_drop(), a, {{Specification::safe_set(column({1.0, 0.0}), 5), {2}}});
+                  HA.reach(
+                      aux_drop(), a,
+                      {{Specification::safe_set(test::halfspace(column({1.0, 0.0}), 5)), {2}}});
               },
               Error::wrong_value),
           "reach: a specification of a location that is not there");

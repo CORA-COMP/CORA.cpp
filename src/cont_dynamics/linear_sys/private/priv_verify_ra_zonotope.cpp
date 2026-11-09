@@ -283,11 +283,11 @@ bool aux_intersection_check_fast(const ZHost &Z, const Poly &F) {
 
 /// The polytope of the halfspaces of a specification with unit normals (scaling does not change
 /// the set), for outputs of dimension p.
-Poly aux_polytope(const std::vector<Halfspace> &halfspaces, int64_t p, double sign) {
+Poly aux_polytope(const std::vector<SpecRow> &halfspaces, int64_t p, double sign) {
     Poly P;
     P.dim = static_cast<int>(p);
-    for (const Halfspace &h : halfspaces) {
-        const std::vector<double> a = h.a.data(); // a nonzero column of p rows (checked by verify)
+    for (const SpecRow &h : halfspaces) {
+        const std::vector<double> &a = h.a; // a nonzero row of p entries (checked by verify)
         double norm = 0;
         for (double v : a) norm += v * v;
         norm = std::sqrt(norm);
@@ -328,15 +328,16 @@ bool aux_polytope_hull(Poly &P) {
 void aux_get_sets_from_spec(const std::vector<Specification> &specs, int64_t p, double t_final,
                             std::vector<Poly> &safe_sets, std::vector<Poly> &unsafe_sets) {
     for (const Specification &spec : specs) {
+        const std::vector<SpecRow> rows = priv_spec_rows(spec);
         switch (spec.type()) {
         case SpecType::safe_set:
-            safe_sets.push_back(aux_polytope(spec.halfspaces(), p, 1.0));
+            safe_sets.push_back(aux_polytope(rows, p, 1.0));
             break;
         case SpecType::unsafe_set:
-            if (spec.halfspaces().size() == 1) {
-                safe_sets.push_back(aux_polytope(spec.halfspaces(), p, -1.0));
+            if (rows.size() == 1) {
+                safe_sets.push_back(aux_polytope(rows, p, -1.0));
             } else {
-                unsafe_sets.push_back(aux_polytope(spec.halfspaces(), p, 1.0));
+                unsafe_sets.push_back(aux_polytope(rows, p, 1.0));
                 unsafe_sets.back().is_bounded = aux_polytope_hull(unsafe_sets.back());
             }
             break;

@@ -86,11 +86,7 @@ HybridAutomaton aux_automaton() {
 
 /// A safe set {x | C x <= d}; the one place that builds the specifications of this program.
 Specification aux_safe(const Tensor &C, const std::vector<double> &d) {
-    std::vector<Halfspace> h;
-    h.reserve(d.size());
-    for (std::size_t i = 0; i < d.size(); ++i)
-        h.push_back({C.slice(-2, int64_t(i), int64_t(i) + 1).matrix_transpose(), d[i]});
-    return Specification::safe_set(h);
+    return Specification::safe_set(Polytope(C, column(d)));
 }
 
 /// CORA's aux_checkSpaceStationHit: the projection onto (x, y) must miss the box [-1, 1]^2, first

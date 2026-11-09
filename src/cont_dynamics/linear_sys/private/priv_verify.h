@@ -16,6 +16,7 @@
 
 #include <chrono>
 #include <optional>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,6 +30,17 @@ struct CanonicalInput {
     int64_t n = 0, p = 0;
 };
 CanonicalInput priv_canonical_input(const LinearSys &sys, const Zonotope &U);
+
+/// A halfspace {y | a'y <= b} of a specification.
+struct SpecRow {
+    std::vector<double> a;
+    double b = 0;
+};
+
+/// The halfspaces of the polytope of a safe or unsafe specification, read from its own constraints
+/// (an equality as two rows). The only place where verify uses the representation of the set; a
+/// set that is not a Polytope, or a custom specification, is refused.
+std::vector<SpecRow> priv_spec_rows(const Specification &spec);
 
 /// The algorithm "reachavoid:supportFunc": the support function of the affine solution along
 /// the specification directions, with an adaptive step size. The inputs are checked by verify.

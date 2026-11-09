@@ -69,7 +69,7 @@ class NumpyOnly(unittest.TestCase):
         x = np.array([0.3, 0.4])
         np.testing.assert_allclose(net.evaluate(x), W @ x + b)
         Y = net.evaluate(cora.Zonotope(x, 0.1 * np.eye(2)))
-        spec = cora.Specification.safe_set(np.array([1.0, 0.0]), 10.0)
+        spec = cora.Specification.safe_set(cora.Polytope(np.array([[1.0, 0.0]]), np.array([10.0])))
         self.assertTrue(spec.check(Y))
 
     def test_plot_takes_numpy_points(self):

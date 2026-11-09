@@ -4,7 +4,8 @@
 // copied from the scripts: BRKDC01 samples the controller every T_sample by 1000 reach calls of
 // the linear system and the reset between them; BRKNC01 is the hybrid automaton whose clock
 // x5 jumps within [T_sample + t_min, T_sample + t_max]. Both check x2 <= x0 on every set.
-// BRKNP01 (a LinParamSys flow) is left out: in CORA its sets are NaN (README, "BRKNP01").
+// BRKNP01 is BRKNC01 with a LinParamSys flow and MATLAB CORA's verdict is 0, but it takes
+// over 30 minutes here, so it runs only when named (README, "BRKNP01").
 //
 // Syntax:   build/core/benchmarks/benchmark_hybrid_reach_arch23_brake [instance ...]
 // Outputs:  one line 'benchmark,instance,result,time' per instance, as the MATLAB scripts
@@ -68,31 +69,80 @@ bool aux_brkdc01() {
     return aux_below(sets);
 }
 
+/// The sampled controller of BRKNC01 and BRKNP01: the clock x5 jumps nondeterministically within
+/// [T + t_min, T + t_max], and the transition resets x3, x4 and x5.
+struct Cycle {
+    Polytope invariant, guard;
+    LinearReset reset;
+};
+
+Cycle aux_cycle() {
+    const double t_min = -1e-8, t_max = 1e-7;
+    return {Polytope(matrix(1, 5, {0, 0, 0, 0, 1}), column({T_sample + t_max})),
+            Polytope(matrix(2, 5, {0, 0, 0, 0, 1, 0, 0, 0, 0, -1}),
+                     column({T_sample + t_max, -(T_sample + t_min)})),
+            LinearReset(matrix(5, 5, {1, 0, 0, 0,         0, 0, 1, 0, 0, 0, 0, -1, 0,
+                                      0, 0, 0, -T_sample, 0, 1, 0, 0, 0, 0, 0, 1}),
+                        column({0, 0, 0, 0, 0}), column({0, 0, x0, T_sample * x0, -T_sample}))};
+}
+
+/// The options of both: conZonotope guards of order 5, enclosed by box and pca.
+alg::HybridStandard aux_options(int taylor_terms) {
+    alg::HybridStandard a;
+    a.time_step = {T_sample / 5};
+    a.taylor_terms = taylor_terms;
+    a.zonotope_order = 20;
+    a.guard_intersect = alg::ConZonotopeGuard{{alg::Enclose::box, alg::Enclose::pca}, 5};
+    return a;
+}
+
 /// BRKNC01: the clock x5 jumps nondeterministically within [T + t_min, T + t_max].
 bool aux_brknc01() {
-    const double t_min = -1e-8, t_max = 1e-7;
-    // the sampled controller resets x3, x4 and the clock x5
-    const LinearReset reset(matrix(5, 5, {1, 0, 0, 0,         0, 0, 1, 0, 0, 0, 0, -1, 0,
-                                          0, 0, 0, -T_sample, 0, 1, 0, 0, 0, 0, 0, 1}),
-                            column({0, 0, 0, 0, 0}), column({0, 0, x0, T_sample * x0, -T_sample}));
-    const Polytope inv(matrix(1, 5, {0, 0, 0, 0, 1}), column({T_sample + t_max}));
-    const Polytope guard(matrix(2, 5, {0, 0, 0, 0, 1, 0, 0, 0, 0, -1}),
-                         column({T_sample + t_max, -(T_sample + t_min)}));
-    const Location loc("loc1", inv, {Transition(guard, reset, 0)},
+    const Cycle c = aux_cycle();
+    const Location loc("loc1", c.invariant, {Transition(c.guard, c.reset, 0)},
                        LinearSys(aux_A(1), column({0, 0, 0, 0, 0})), column({0, 0, 0, 0, 1}));
     const HybridAutomaton HA("brake_BRKNC01", {loc});
-    // reach as the script: conZonotope guards of order 5, enclosed by box and pca
     HybridReachProblem problem;
     problem.initial_set = Zonotope(column({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);
     problem.t_final = 0.1;
-    alg::HybridStandard a;
-    a.time_step = {T_sample / 5};
-    a.taylor_terms = 5;
-    a.zonotope_order = 20;
-    a.guard_intersect = alg::ConZonotopeGuard{{alg::Enclose::box, alg::Enclose::pca}, 5};
-    const HybridReachSet Rs = HA.reach(problem, a);
+    const HybridReachSet Rs = HA.reach(problem, aux_options(5));
     std::cerr << "  " << Rs.branches.size() << " branches\n";
     return Rs.verified && aux_below(cora::bench::all_sets(Rs));
+}
+
+/// BRKNP01: BRKNC01 with the entry A_11 uncertain by +-3 (a LinParamSys, constParam) and the input
+/// U = {1} into x5. The script finds the last period whose sets stay below x0 (the break leaves
+/// the inner loop only) and holds iff its end is before 0.1.
+bool aux_brknp01() {
+    // the matrix zonotope of the script: A with the generator 3 at (1, 1)
+    const Cycle c = aux_cycle();
+    std::vector<double> spread(25, 0.0);
+    spread[0] = 3;
+    const LinParamSys flow(MatZonotope(aux_A(1), matrix(5, 5, spread).expand_dims(0)),
+                           column({0, 0, 0, 0, 1}));
+    const Location loc("loc1", c.invariant, {Transition(c.guard, c.reset, 0)}, flow);
+    const HybridAutomaton HA("brake_BRKNP01", {loc});
+    HybridReachProblem problem;
+    problem.initial_set = Zonotope(column({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);
+    problem.input_set = {Zonotope(column({1}), Tensor::zeros({1, 0}))};
+    problem.t_final = 0.1;
+    alg::HybridStandard a = aux_options(10);
+    a.intermediate_terms = 3;
+    const HybridReachSet Rs = HA.reach(problem, a);
+    // the period t of each branch; the last set below x0 sets t_max
+    double t_max = 0, t = 0;
+    for (const LocationReachSet &branch : Rs.branches) {
+        for (const Set &S : branch.time_interval) {
+            const double sup_x = S->project({1})->interval().sup().item();
+            if (sup_x < x0) {
+                t_max = S->project({4})->interval().sup().item() + t;
+                break;
+            }
+        }
+        t += T_sample;
+    }
+    std::cerr << "  " << Rs.branches.size() << " branches, max. time horizon " << t_max << '\n';
+    return t_max < 0.1;
 }
 
 } // namespace
@@ -101,19 +151,22 @@ bool aux_brknc01() {
 // ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
-    // each instance by its function; MATLAB CORA verifies every one
-    return cora::bench::run_family(argc, argv, {"BRKDC01", "BRKNC01"}, [](const std::string &name) {
+    // MATLAB CORA verifies all but BRKNP01, which runs only when named (README "BRKNP01")
+    const std::vector<std::string> family = {"BRKDC01", "BRKNC01"};
+    return cora::bench::run_family(argc, argv, family, [](const std::string &name) {
         const auto start = std::chrono::steady_clock::now();
         bool verified = false;
         if (name == "BRKDC01")
             verified = aux_brkdc01();
         else if (name == "BRKNC01")
             verified = aux_brknc01();
+        else if (name == "BRKNP01")
+            verified = aux_brknp01();
         else
             CORA_FAIL(Error::wrong_value, "brake: unknown instance " + name);
         const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
         cora::bench::print_line("Brake", name, verified, wall.count());
-        return verified;
+        return verified == (name != "BRKNP01");
     });
 }
 

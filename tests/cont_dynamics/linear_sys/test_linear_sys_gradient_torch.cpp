@@ -92,7 +92,8 @@ void gradients(const torch::TensorOptions &opts, const std::string &where) {
 void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts,
                                          const std::string &where) {
     const torch::Tensor A0 = torch::tensor({{-0.2, 1.0}, {-1.0, -0.2}}, opts);
-    const Halfspace wall{from_torch(torch::tensor({{1.0}, {0.0}}, opts)), 2.0};
+    const Tensor wall_a = from_torch(torch::tensor({{1.0}, {0.0}}, opts));
+    const double wall_b = 2.0;
     auto margin = [&](const torch::Tensor &A) {
         const Zonotope X0(from_torch(torch::tensor({{1.0}, {0.5}}, opts)),
                           from_torch(torch::tensor({{0.1, 0.0}, {0.0, 0.2}}, opts)));
@@ -100,7 +101,7 @@ void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts,
                                .reach({.initial_set = X0, .t_final = 0.5},
                                       alg::Standard{.time_step = 0.1, .taylor_terms = 8});
         // Distance of the last enclosure to the wall x1 <= 2.
-        return wall.b - to_torch(r.time_interval.back().support_function(wall.a)).sum();
+        return wall_b - to_torch(r.time_interval.back().support_function(wall_a)).sum();
     };
     torch::Tensor A = A0.clone().requires_grad_(true);
     const torch::Tensor g = torch::autograd::grad({margin(A)}, {A})[0];

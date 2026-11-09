@@ -27,7 +27,7 @@ class Verify(unittest.TestCase):
         self.sys = cora.LinearSys(np.array([[-1.0]]), np.array([[1.0]]))
         self.problem = dict(initial_set=cora.Zonotope(np.array([1.0]), np.array([[0.1]])),
                             input_set=cora.Zonotope(np.array([0.0]), np.array([[0.1]])), t_final=1.0)
-        self.specs = [cora.Specification.safe_set(np.array([1.0]), 5.0)]
+        self.specs = [cora.Specification.safe_set(cora.Polytope(np.array([[1.0]]), np.array([5.0])))]
 
     def test_an_unknown_algorithm_is_refused_with_the_known_names(self):
         with self.assertRaisesRegex(ValueError, "reach_avoid_zonotope"):

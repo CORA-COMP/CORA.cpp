@@ -12,6 +12,8 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_set/capsule/capsule.h"
+#include "cora/cont_set/registry.h"
 #include "polytope_testing.h"
 
 using namespace cora;
@@ -91,6 +93,26 @@ void sets(const std::string &b) {
           b + ": a set contains itself");
 }
 
+/// The table holds the pairs of a polytope with a constrained zonotope, a bundle, an ellipsoid and
+/// a capsule: exact by the support functions along the rows, as for a zonotope.
+void table(const std::string &b) {
+    const Polytope H = Polytope(Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
+                                column({1.0, 1.0, 0.0, 0.0}));
+    const Zonotope in(column({0.5, 0.5}), Tensor::eye(2) * 0.3),
+        out(column({1.0, 1.0}), Tensor::eye(2) * 0.3);
+    check(contains(H, in) && !contains(H, out), b + ": a zonotope");
+    check(contains(H, ConZonotope(in)) && !contains(H, ConZonotope(out)),
+          b + ": a constrained zonotope");
+    check(contains(H, ZonoBundle({in, in})) && !contains(H, ZonoBundle({out, out})),
+          b + ": a bundle");
+    check(contains(H, Ellipsoid(Tensor::eye(2) * 0.01, column({0.5, 0.5}))) &&
+              !contains(H, Ellipsoid(Tensor::eye(2) * 0.01, column({1.0, 1.0}))),
+          b + ": an ellipsoid");
+    check(contains(H, Capsule(column({0.5, 0.5}), column({0.1, 0.0}), 0.1)) &&
+              !contains(H, Capsule(column({1.0, 1.0}), column({0.1, 0.0}), 0.1)),
+          b + ": a capsule");
+}
+
 /// What is refused: the method, shapes, 'approx' for other sets; checks off.
 void refusals() {
     const Polytope H = Polytope(Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
@@ -152,6 +174,7 @@ int main() {
         properties(b);
         points(b);
         sets(b);
+        table(b);
     });
     refusals();
     return test::finish("polytope contains");
