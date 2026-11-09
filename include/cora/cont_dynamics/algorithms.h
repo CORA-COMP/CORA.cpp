@@ -152,6 +152,34 @@ struct Decomposition {
     }
 };
 
+// Reachability of linear parametric systems ----------------------------------------------------
+
+/// CORA's reach of linParamSys: the exponential of the matrix set to intermediate_terms as a
+/// matrix zonotope and to taylor_terms as interval matrices, then step by step.
+struct LinParamStandard {
+    double time_step = 0;        ///< the step size, required
+    int taylor_terms = 4;        ///< the order of the Taylor series of the exponential
+    int zonotope_order = 50;     ///< the order the sets are reduced to per step
+    int intermediate_terms = 2;  ///< the terms of the series kept as a matrix zonotope
+    bool comp_time_point = true; ///< whether the sets at the step times are computed
+
+    static constexpr const char *name = "standard";
+    static constexpr auto fields() {
+        return std::make_tuple(field("time_step", &LinParamStandard::time_step),
+                               field("taylor_terms", &LinParamStandard::taylor_terms),
+                               field("zonotope_order", &LinParamStandard::zonotope_order),
+                               field("intermediate_terms", &LinParamStandard::intermediate_terms),
+                               field("comp_time_point", &LinParamStandard::comp_time_point));
+    }
+    void validate() const {
+        validate_time_step(time_step, "LinParamStandard");
+        validate_order(zonotope_order, 1, "zonotope_order", "LinParamStandard");
+        validate_order(intermediate_terms, 2, "intermediate_terms", "LinParamStandard");
+        validate_order(taylor_terms, intermediate_terms, "taylor_terms (>= intermediate_terms)",
+                       "LinParamStandard");
+    }
+};
+
 // Verification of linear systems ----------------------------------------------------------------
 
 /// CORA's verifyAlg "reachavoid:supportFunc": the support function of the affine solution along
@@ -286,13 +314,16 @@ struct HybridStandard {
     std::vector<double> time_step; ///< one step size, or one per location, required
     int taylor_terms = 10;         ///< the order of the Taylor series of the curvature enlargement
     int zonotope_order = 50;       ///< the order the sets are reduced to per step
+    int intermediate_terms = 2;    ///< a LinParamSys flow: its LinParamStandard::intermediate_terms
     GuardIntersect guard_intersect = ZonoGirard{}; ///< how the guards are intersected
 
+    // the fields as Python sees them, and their checks
     static constexpr const char *name = "standard";
     static constexpr auto fields() {
         return std::make_tuple(field("time_step", &HybridStandard::time_step),
                                field("taylor_terms", &HybridStandard::taylor_terms),
                                field("zonotope_order", &HybridStandard::zonotope_order),
+                               field("intermediate_terms", &HybridStandard::intermediate_terms),
                                field("guard_intersect", &HybridStandard::guard_intersect));
     }
     void validate() const {
@@ -301,9 +332,11 @@ struct HybridStandard {
             return std::string("HybridStandard: time_step must give one step size, or one per "
                                "location, e.g. {.time_step = {0.01}}");
         });
+        // every step size and order, then the guard method
         for (double dt : time_step) validate_time_step(dt, "HybridStandard");
         validate_order(taylor_terms, 1, "taylor_terms", "HybridStandard");
         validate_order(zonotope_order, 1, "zonotope_order", "HybridStandard");
+        validate_order(intermediate_terms, 2, "intermediate_terms", "HybridStandard");
         std::visit([](const auto &g) { g.validate(); }, guard_intersect);
     }
 };
@@ -313,6 +346,7 @@ using LinearReach = std::variant<Standard, WrappingFree, FromStart, Decompositio
 using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope>;
 using LinearSimulate = std::variant<Exact>;
 using NonlinearReach = std::variant<Linearization>;
+using LinParamReach = std::variant<LinParamStandard>;
 using NonlinearSimulate = std::variant<RungeKutta4>;
 using HybridReach = std::variant<HybridStandard>;
 

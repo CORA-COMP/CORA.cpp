@@ -1,7 +1,7 @@
 // test_transition - Transition and Location: their constructors and checks
 //
 // A box guard becomes the polytope of its sides; a location holds its flow, invariant and jumps,
-// and c defaults to zero.
+// and c defaults to zero (a LinParamSys flow gives its own).
 //
 // CORA: hybridDynamics/@transition/transition.m
 // CORA: hybridDynamics/@location/location.m
@@ -41,6 +41,13 @@ void construction() {
     const Location with_c("fall", inv, {}, LinearSys(Tensor::zeros({2, 2}), Tensor::zeros({2, 1})),
                           column({0.0, -9.81}));
     check(with_c.input_dim() == 1 && close(with_c.c(), {0, -9.81}), "location: B and c");
+    // a LinParamSys flow brings its own c
+    const MatZonotope set(Tensor({{0.0, 1.0}, {0.0, 0.0}}), Tensor::zeros({1, 2, 2}));
+    const Location param("param", inv, {},
+                         LinParamSys(set, Tensor::zeros({2, 1}), column({0.0, -1.0})));
+    check(param.dim() == 2 && param.input_dim() == 1 && close(param.c(), {0, -1}) &&
+              std::holds_alternative<LinParamSys>(param.flow()),
+          "location: a LinParamSys flow and its c");
 }
 
 /// Wrong dimensions and targets are refused; with the checks off construction is the same.

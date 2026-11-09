@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "benchmark_run.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 
 #include <algorithm>
@@ -259,8 +260,8 @@ inline bool run_instance(const std::string &name) {
     const VerifyResult res = inst.sys->verify(*inst.params, inst.specs, inst.alg);
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
 
-    std::cout << inst.benchmark << "," << inst.label << "," << res.verified << ","
-              << (res.computation_time > 0 ? res.computation_time : wall.count()) << std::endl;
+    print_line(inst.benchmark, inst.label, res.verified,
+               res.computation_time > 0 ? res.computation_time : wall.count());
     std::cerr << "  iterations " << res.iterations << ", nrSteps " << res.num_steps << ", timeStep "
               << res.time_step;
     if (!inst.expected.is_null() && inst.expected.object.count("nrSteps"))
@@ -270,13 +271,6 @@ inline bool run_instance(const std::string &name) {
     std::cerr << std::endl;
     if (inst.expected.is_null() || !inst.expected.object.count("verified")) return true;
     return res.verified == (inst.expected["verified"].number != 0);
-}
-
-/// The instances named on the command line, else all of the family.
-inline std::vector<std::string> instance_names(int argc, char **argv,
-                                               const std::vector<std::string> &family) {
-    if (argc < 2) return family;
-    return std::vector<std::string>(argv + 1, argv + argc);
 }
 
 } // namespace cora::bench

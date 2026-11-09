@@ -177,10 +177,9 @@ bool aux_run(const Model &m, const std::vector<Zonotope> &R0, const alg::HybridS
 
 int main(int argc, char **argv) {
     const std::vector<std::string> family = {"DTN01", "DTN02", "DTN03", "DTN04", "DTN05", "DTN06"};
-    const std::vector<std::string> names =
-        argc < 2 ? family : std::vector<std::string>(argv + 1, argv + argc);
-    int differ = 0;
-    for (const std::string &name : names) {
+    return cora::bench::run_family(argc, argv, family, [](const std::string &name) {
+        if (name.size() != 5 || name < "DTN01" || name > "DTN06")
+            CORA_FAIL(Error::wrong_value, "powertrain: unknown instance " + name);
         // dimension, the scale of the initial generator and the step sizes of each script
         const int64_t dim = name <= "DTN03" ? 11 : 51;
         const double scale = name == "DTN01" || name == "DTN04"   ? 0.05
@@ -206,10 +205,9 @@ int main(int argc, char **argv) {
         const auto start = std::chrono::steady_clock::now();
         const bool verified = aux_run(m, R0, a);
         const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
-        std::cout << "Powertrain," << name << "," << verified << "," << wall.count() << '\n';
-        if (!verified) ++differ; // MATLAB CORA: 1 for every instance
-    }
-    return differ;
+        cora::bench::print_line("Powertrain", name, verified, wall.count());
+        return verified; // MATLAB CORA: 1 for every instance
+    });
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

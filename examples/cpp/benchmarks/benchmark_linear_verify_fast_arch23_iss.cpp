@@ -28,10 +28,7 @@ int main(int argc, char **argv) {
     // Verification ----------------------------------------------------------------------------
 
     // the data of each instance; the exit code counts the verdicts that differ from MATLAB's
-    int differ = 0;
-    for (const std::string &instance : cora::bench::instance_names(argc, argv, family))
-        if (!cora::bench::run_instance(instance)) ++differ;
-    return differ;
+    return cora::bench::run_family(argc, argv, family, cora::bench::run_instance);
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

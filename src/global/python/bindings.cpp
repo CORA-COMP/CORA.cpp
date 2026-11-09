@@ -23,6 +23,7 @@
 
 #include "global/python/convert.h"
 
+#include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/cont_set/registry.h"
@@ -4142,6 +4143,49 @@ py::list hybrid_sets(const std::vector<Set> &sets) {
     return out;
 }
 
+void bind_lin_param_sys(py::module_ &m) {
+    // the system, with B and c optional
+    py::class_<LinParamSys>(m, "LinParamSys",
+                            "The linear system x' = A x + B u + c, A in a matrix zonotope.")
+        .def(py::init([](const MatZonotope &A, const py::object &B, const py::object &c,
+                         const std::string &type) {
+                 const auto opt = [](const py::object &o, const char *what) {
+                     return o.is_none() ? std::nullopt : std::optional<Tensor>(tensor_of(o, what));
+                 };
+                 // constant or varying parameters, as CORA's 'constParam' and 'varParam'
+                 if (type != "constant" && type != "varying")
+                     CORA_FAIL(Error::wrong_value,
+                               "LinParamSys: type is 'constant' or 'varying', got '" + type + "'");
+                 return LinParamSys(A, opt(B, "B"), opt(c, "c"),
+                                    type == "constant" ? ParamType::constant : ParamType::varying);
+             }),
+             py::arg("A"), py::arg("B") = py::none(), py::arg("c") = py::none(),
+             py::arg("type") = "constant",
+             "A a MatZonotope (n, n), B (n, m) and c (n, 1) optional; type 'constant' or 'varying'")
+        // its parts, and reach
+        .def_property_readonly("A", &LinParamSys::A, "The matrix zonotope of the system matrices")
+        .def_property_readonly("dim", &LinParamSys::dim, "The number of states n")
+        .def_property_readonly(
+            "type",
+            [](const LinParamSys &sys) {
+                return std::string(sys.type() == ParamType::constant ? "constant" : "varying");
+            },
+            "'constant' or 'varying' parameters")
+        .def(
+            "reach",
+            [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
+                const LinParamSys &sys = py::cast<const LinParamSys &>(self);
+                return run_with_kwargs<ReachProblem, alg::LinParamReach>(
+                    self, "reach", args, kwargs, {},
+                    [&](const ReachProblem &p, const alg::LinParamReach &a) {
+                        // reach with the problem and the algorithm as keywords
+                        return py::cast(sys.reach(p, a));
+                    });
+            },
+            "reach(initial_set=X0, t_final=T, time_step=dt, taylor_terms=4, zonotope_order=50, "
+            "intermediate_terms=2, comp_time_point=True, input_set=U): the reachable sets");
+}
+
 void bind_hybrid(py::module_ &m) {
     // the reset of a transition
     py::class_<LinearReset>(m, "LinearReset", "The reset x+ = A x + B u + c of a transition.")
@@ -4190,6 +4234,9 @@ void bind_hybrid(py::module_ &m) {
              }),
              py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
              py::arg("c") = py::none(), "x' = A x + B u + c of the flow inside the invariant")
+        .def(py::init<std::string, Polytope, std::vector<Transition>, LinParamSys>(),
+             py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
+             "x' = A x + B u + c of a LinParamSys flow (its own c) inside the invariant")
         .def_property_readonly("name", &Location::name, "The name")
         .def_property_readonly("invariant", &Location::invariant, "The invariant")
         .def_property_readonly("transitions", &Location::transitions, "The transitions")
@@ -4222,8 +4269,9 @@ void bind_hybrid(py::module_ &m) {
             [](const HybridAutomaton &HA, const Zonotope &initial_set, double t_final,
                const py::object &time_step, int64_t start_location, double t_start,
                const py::object &input_set, const std::vector<int64_t> &final_locations,
-               int taylor_terms, int zonotope_order, const std::string &guard_intersect,
-               const std::vector<std::string> &enclose, int guard_order, const py::list &specs) {
+               int taylor_terms, int zonotope_order, int intermediate_terms,
+               const std::string &guard_intersect, const std::vector<std::string> &enclose,
+               int guard_order, const py::list &specs) {
                 HybridReachProblem p;
                 p.initial_set = initial_set;
                 p.t_final = t_final;
@@ -4241,6 +4289,7 @@ void bind_hybrid(py::module_ &m) {
                                   : py::cast<std::vector<double>>(time_step);
                 a.taylor_terms = taylor_terms;
                 a.zonotope_order = zonotope_order;
+                a.intermediate_terms = intermediate_terms;
                 a.guard_intersect = hybrid_guard_method(guard_intersect, enclose, guard_order);
                 // a specification, or (specification, locations)
                 std::vector<HybridSpecification> hs;
@@ -4258,7 +4307,7 @@ void bind_hybrid(py::module_ &m) {
             py::arg("start_location") = 0, py::arg("t_start") = 0.0,
             py::arg("input_set") = py::none(), py::arg("final_locations") = std::vector<int64_t>(),
             py::arg("taylor_terms") = 10, py::arg("zonotope_order") = 50,
-            py::arg("guard_intersect") = "zono_girard",
+            py::arg("intermediate_terms") = 2, py::arg("guard_intersect") = "zono_girard",
             py::arg("enclose") = std::vector<std::string>{"box"}, py::arg("guard_order") = 0,
             py::arg("specs") = py::list(),
             "The reachable sets up to t_final (alg::HybridStandard); specs are Specifications or "
@@ -4821,10 +4870,12 @@ PYBIND11_MODULE(_cora, m) {
     bind_capsule(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
+    // the operators, the problems and the systems
     bind_operators(m);
     bind_problems(m);
     bind_linear_sys(m);
     bind_nonlinear_sys(m);
+    bind_lin_param_sys(m);
     bind_neural_network(m);
     bind_plot(m);
     bind_specification(m);

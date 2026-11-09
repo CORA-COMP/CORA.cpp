@@ -15,18 +15,20 @@ as `savedata.tComp` in MATLAB. The MATLAB side is the original scripts, run from
 | `rendezvous` | SRA01-08, SRNA01, SRU01, SRU02 | hybrid reach: zonoGirard or nondetGuard, enclose box / pca |
 | `gearbox` | GRBX01, GRBX02 | hybrid reach: zonoGirard, enclose box + pca |
 | `powertrain` | DTN01-06 | hybrid reach: zonoGirard, enclose pca |
-| `brake` | BRKDC01 (linear reach and resets), BRKNC01 (BRKNP01 needs LinParamSys) | hybrid reach: conZonotope, enclose box + pca |
+| `brake` | BRKDC01 (linear reach and resets), BRKNC01 (BRKNP01: see below) | hybrid reach: conZonotope, enclose box + pca |
+| `platoon` | PLAA01_BND42, PLAA01_BND50 (LinParamSys, constParam), PLAD01_BND30, PLAD01_BND42 (LinearSys switching every 5 s), PLAN01 (varParam, then an invariant) | linParamSys reach / linearSys reach |
 
-The hybrid families have no data files: their models are small and are C++ builder functions in
-`examples/cpp/benchmarks/benchmark_hybrid_reach_arch23_*.cpp`, the numbers copied from the scripts
+The hybrid and platoon families have no data files: their models are small and are C++ builder
+functions in `examples/cpp/benchmarks/benchmark_hybrid_reach_arch23_*.cpp` and
+`benchmark_linear_param_reach_arch23_platoon.cpp`, the numbers copied from the scripts
 and the model files of `models/Cora/` (the powertrain's Jacobians written out from its equations).
 
 ## Results
 
 The verdict is CORA's `res` (1 verified, 0 not); every one equals MATLAB CORA's, the expected
 verdict of the script (the ARCH-COMP 2023 AFF report: the ISU instances, RAND02, SRU01 and
-SRU02 are not verified). CORA.cpp times are wall clock on this machine (16 shared cores, core
-preset, 09-November-2026). The ARCH26 columns are the times of CORA (MATLAB) and JuliaReach
+SRU02 are not verified), except PLAN01 (below). CORA.cpp times are wall clock on this machine
+(16 shared cores, core preset, 09-November-2026). The ARCH26 columns are the times of CORA (MATLAB) and JuliaReach
 (continuous time) in the ARCH-COMP26 AFF report (Althoff, Carraro, Forets, Perschl, Schilling,
 "ARCH-COMP26 Category Report: Continuous and Hybrid Systems with Linear Continuous Dynamics", EPiC
 Series in Computing 110, pp. 28-51), measured on other machines: compare orders of magnitude only.
@@ -67,16 +69,33 @@ instances here stay those of the ARCH23 scripts. `-`: not in the report, or not 
 | DTN04 | 1 | 1 | 10.3 | 48.29 | 0.127 |
 | DTN05 | 1 | 1 | 18.3 | 90.76 | 0.007 |
 | DTN06 | 1 | 1 | 46.5 | 227 | 0.009 |
-| PLAA01_BND42 | 1 | - (LinParamSys) | - | 25.02 | 180 |
-| PLAA01_BND50 | 1 | - (LinParamSys) | - | 7.77 | 22.01 |
-| PLAD01_BND30 | 1 | - (LinParamSys) | - | 4.03 | 62.82 |
-| PLAD01_BND42 | 1 | - (LinParamSys) | - | 3.07 | 0.05 |
-| PLAN01 | 1 | - (LinParamSys) | - | 162 | - |
+| PLAA01_BND42 | 1 | 1 | 11.4 | 25.02 | 180 |
+| PLAA01_BND50 | 1 | 1 | 2.61 | 7.77 | 22.01 |
+| PLAD01_BND30 | 1 | 1 | 0.15 | 4.03 | 62.82 |
+| PLAD01_BND42 | 1 | 1 | 0.03 | 3.07 | 0.05 |
+| PLAN01 | 1 | 0 (see below) | 60.3 | 162 | - |
 | GRBX01 | 1 | 1 | 0.28 | 2.28 | 2.89 |
 | GRBX02 | 1 | 1 | 0.29 | 2.44 | 3.15 |
 | BRKDC01 | 1 | 1 | 0.04 | 22.66 | 0.10 |
 | BRKNC01 | 1 | 1 | 39.6 | 32.07 | 0.17 |
-| BRKNP01 | 1 | - (LinParamSys) | - | 52.20 | 16.99 |
+| BRKNP01 | 1 | - (NaN in CORA) | - | 52.20 | 16.99 |
+
+**PLAN01** differs: CORA.cpp's 50 s reach with varying parameters reaches x1, x4, x7 >= -50.65,
+past the bound -50, where MATLAB CORA verifies (ARCH-COMP 2023, and CORA's own test summary). The
+algorithm is ported step by step (expmIndMixed, priv_tie, priv_inputSolution, initReach, post), the
+constant-parameter instances PLAA01 agree, and the difference is not found yet (it needs a run of
+MATLAB to compare the sets step by step); PLAN01 is in the program but not a ctest test. The
+script's invariant check stops after one step: its `aux_inViaProj(Z1, Z2)` tests that Z1 holds Z2
+(`contains(Z1proj, Z2proj)`), the reverse of its comment, and the first set holds the start set.
+
+**BRKNP01** is not run. Its location has a LinParamSys flow (supported), but CORA's run of it computes
+NaN sets: the input set `U = zonotope(1)` becomes the constant input `uTrans = 1` with `U = {0}`, which
+does not hold the origin, so `priv_inputTie` adds the curvature of the constant input; its series does
+not converge (`norm(A, inf) r / (taylorTerms + 2)` is about 18 for `r = 2e-5`), so CORA prints 'Taylor
+order not high enough' and uses `interval(-Inf, Inf)`, whose center times `B uTrans` is NaN. The script's
+check (`supremum(intX) < x0` sets `tMax`) is then never true and gives `tMax = 0 < 0.1`: the verdict 1 is
+vacuous (read from the source; MATLAB is not available here). CORA.cpp's port computes the same NaN
+sets and warns (`CORA:linParamSys`); it is left out until the model or CORA is fixed.
 
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
 of each family also an `example` test (CONTRIBUTING.md, "Test suites").

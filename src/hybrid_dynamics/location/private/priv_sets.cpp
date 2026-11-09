@@ -61,6 +61,12 @@ std::pair<Tensor, double> priv_hyperplane(const Polytope &guard) {
     return {a / norm, guard.be().data()[0] / norm};
 }
 
+const Tensor &priv_flow_matrix(const Location &loc, const char *what) {
+    if (const auto *sys = std::get_if<LinearSys>(&loc.flow())) return sys->A();
+    CORA_FAIL(Error::not_supported,
+              std::string(what) + ": the flow of a LinParamSys cannot be evaluated during reach");
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

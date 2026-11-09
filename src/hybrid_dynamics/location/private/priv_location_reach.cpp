@@ -2,10 +2,11 @@
 //
 // The flow x' = A x + B u + c runs as the canonical system x' = A x + u with the input set
 // B U + c, step by step with the algorithm "standard", until a time-interval set leaves the
-// invariant or t_final is reached. Every time-interval set is checked against the specifications
-// (CORA checks inside linearSys.reach and the last set after it); a violation ends the analysis.
-// The guards that the sets meet are intersected and each intersection is mapped by its reset.
-// A start time [t0, t1] computes from t0 and widens the times of the sets by t1 - t0.
+// invariant or t_final is reached; a LinParamSys flow runs CORA's initReach and post with the
+// center of its input set as the constant input. Every time-interval set is checked against the
+// specifications (CORA checks inside linearSys.reach and the last set after it); a violation ends
+// the analysis. The guards that the sets meet are intersected and each intersection is mapped by
+// its reset. A start time [t0, t1] computes from t0 and widens the times of the sets by t1 - t0.
 //
 // Syntax:   res = priv_location_reach(loc, index, R0, t_start, t_final, U, dt, alg, specs, final);
 // Inputs:   loc, index - the location and its number
@@ -26,6 +27,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/lin_param_sys/private/priv.h"
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/global/within_tol.h"
@@ -44,36 +46,76 @@ namespace {
 // The flow ----------------------------------------------------------------------------------------
 
 /// The steps of the location, one stepper per zonotope of the initial set (a bundle propagates
-/// zonotope by zonotope, as CORA's operations on bundles do).
+/// zonotope by zonotope, as CORA's operations on bundles do): the algorithm "standard" of the
+/// canonical LinearSys, or CORA's initReach and post of a LinParamSys.
 class BundleSteps {
   public:
-    BundleSteps(const LinearSys &canonical, const Set &R0, const Zonotope &U_state, double dt,
-                const alg::HybridStandard &alg) {
-        const Tensor e_adt = (canonical.A() * dt).expm();
-        const Interval F = canonical.correction_matrix_state(dt, alg.taylor_terms);
-        const InputSolution in = canonical.input_solution(U_state, dt, alg.taylor_terms);
-        for (const Zonotope &Z : priv_zonotopes(R0))
-            steps_.emplace_back(Z, e_adt, F, in, alg.zonotope_order);
+    BundleSteps(const Location &loc, const Set &R0, const std::optional<Zonotope> &U,
+                const Zonotope &U_state, double dt, const alg::HybridStandard &alg)
+        : start_(priv_zonotopes(R0)) {
+        if (const auto *sys = std::get_if<LinearSys>(&loc.flow())) {
+            // x' = A x + u with u in B U + c
+            const LinearSys canonical(sys->A(), sys->A().eye_like());
+            const Tensor e_adt = (canonical.A() * dt).expm();
+            const Interval F = canonical.correction_matrix_state(dt, alg.taylor_terms);
+            const InputSolution in = canonical.input_solution(U_state, dt, alg.taylor_terms);
+            for (const Zonotope &Z : start_)
+                steps_.emplace_back(Z, e_adt, F, in, alg.zonotope_order);
+            return;
+        }
+        // a LinParamSys: the input without its center, which is the constant input
+        const auto &sys = std::get<LinParamSys>(loc.flow());
+        param_alg_ = {dt, alg.taylor_terms, alg.zonotope_order, alg.intermediate_terms, true};
+        const int64_t m = sys.B() ? sys.input_dim() : 1;
+        const Tensor &c = sys.c();
+        Zonotope Uc = U ? *U : Zonotope(c.zeros_like({m, 1}), c.zeros_like({m, 0}));
+        const Tensor u_trans = Uc.center();
+        Uc = Uc - u_trans;
+        mappings_.emplace(priv_mappings(sys, Uc, u_trans, *param_alg_));
     }
 
     /// The time-interval set of the next step; time_point() is then its end.
     Set next() {
         std::vector<Zonotope> parts;
-        parts.reserve(steps_.size());
-        for (StandardSteps &s : steps_) parts.push_back(s.next());
+        parts.reserve(start_.size());
+        if (!mappings_) {
+            for (StandardSteps &s : steps_) parts.push_back(s.next());
+            return priv_bundle(std::move(parts));
+        }
+        if (param_.empty()) {
+            // CORA adds F times the first zonotope of a bundle to every one
+            const Zonotope curvature = mappings_->correction * start_.front();
+            for (const Zonotope &Z : start_)
+                param_.push_back(priv_first_step(Z, curvature, *mappings_, *param_alg_));
+        } else {
+            for (LinParamStep &step : param_) step = priv_next_step(step, *param_alg_);
+        }
+        for (const LinParamStep &step : param_) parts.push_back(step.time_interval);
         return priv_bundle(std::move(parts));
     }
 
+    /// The set at the start of the next step (the initial set before the first).
     Set time_point() const {
         std::vector<Zonotope> parts;
-        parts.reserve(steps_.size());
-        for (const StandardSteps &s : steps_) parts.push_back(s.time_point());
+        parts.reserve(start_.size());
+        if (!mappings_)
+            for (const StandardSteps &s : steps_) parts.push_back(s.time_point());
+        else if (param_.empty())
+            parts = start_;
+        else
+            for (const LinParamStep &step : param_) parts.push_back(*step.time_point);
         return priv_bundle(std::move(parts));
     }
 
   private:
+    std::vector<Zonotope> start_;
     std::vector<StandardSteps> steps_;
+    std::optional<alg::LinParamStandard> param_alg_;
+    std::optional<LinParamMappings> mappings_;
+    std::vector<LinParamStep> param_;
 };
+
+// The sets of the location ------------------------------------------------------------------------
 
 /// Whether every specification holds for the set.
 bool aux_specs_hold(const std::vector<Specification> &specs, const Set &S) {
@@ -84,10 +126,10 @@ bool aux_specs_hold(const std::vector<Specification> &specs, const Set &S) {
 
 /// The continuous part: the sets from t0 until they leave the invariant or reach t_final; false
 /// in the second member if a specification is violated (the sets end with the violating one).
-std::pair<LocationReachSet, bool> aux_flow(const Location &loc, int64_t index, const Set &R0,
-                                           double t0, double t_final, const Zonotope &U_state,
-                                           double dt, const alg::HybridStandard &alg,
-                                           const std::vector<Specification> &specs) {
+std::pair<LocationReachSet, bool>
+aux_flow(const Location &loc, int64_t index, const Set &R0, double t0, double t_final,
+         const std::optional<Zonotope> &U, const Zonotope &U_state, double dt,
+         const alg::HybridStandard &alg, const std::vector<Specification> &specs) {
     LocationReachSet R;
     R.location = index;
     R.time_point.push_back(R0);
@@ -96,8 +138,7 @@ std::pair<LocationReachSet, bool> aux_flow(const Location &loc, int64_t index, c
     if (within_tol(t0, t_final, numerics::kTimeRound) || loc.invariant().representsa("emptySet"))
         return {R, true};
     const int steps = static_cast<int>(std::floor((t_final - t0) / dt + numerics::kStepCount));
-    const LinearSys canonical(loc.flow().A(), loc.flow().A().eye_like());
-    BundleSteps step(canonical, R0, U_state, dt, alg);
+    BundleSteps step(loc, R0, U, U_state, dt, alg);
     for (int k = 0; k < steps; ++k) {
         // one step: the enclosure of [t_k, t_k+1], then the set at t_k+1
         const Set ti = step.next();
@@ -139,8 +180,8 @@ std::vector<Specification> aux_active(const Location &loc,
 
 Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U) {
     const int64_t n = loc.dim();
-    if (!U || !loc.flow().B()) return {loc.c(), loc.c().zeros_like({n, 0})};
-    const Tensor &B = *loc.flow().B();
+    if (!U || !loc.B()) return {loc.c(), loc.c().zeros_like({n, 0})};
+    const Tensor &B = *loc.B();
     return {B.matmul(U->center()) + loc.c(), B.matmul(U->generators())};
 }
 
@@ -151,7 +192,7 @@ LocationResult priv_location_reach(const Location &loc, int64_t index, const Set
                                    const std::vector<Specification> &specs,
                                    const std::vector<int64_t> &final_locations) {
     const Zonotope U_state = priv_state_input(loc, U);
-    auto [R, verified] = aux_flow(loc, index, R0, t_start[0], t_final, U_state, time_step, alg,
+    auto [R, verified] = aux_flow(loc, index, R0, t_start[0], t_final, U, U_state, time_step, alg,
                                   aux_active(loc, specs));
     LocationResult out{std::move(R), {}, verified};
     if (!verified) return out; // the analysis ends at a violation
