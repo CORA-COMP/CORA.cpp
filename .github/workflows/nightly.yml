@@ -149,3 +149,26 @@ jobs:
           else
             gh issue create --repo "$GITHUB_REPOSITORY" --label nightly --title "Nightly run failed ($(date -u +%F))" --body "$body"
           fi
+
+  # What the benchmarks run, and how much of it is bit-exact against CORALean (coverage/benchmarks.md):
+  # a coverage build runs every instance; a stale report fails the night. Refresh it with
+  # python scripts/coverage/benchmarks.py after a change of a status.
+  backing-report:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: backing-report
+      - run: python3 scripts/coverage/benchmarks.py --check
+        env:
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backing-report
+          path: |
+            coverage/benchmarks.json
+            coverage/benchmarks.md

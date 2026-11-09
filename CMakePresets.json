@@ -15,6 +15,19 @@
       "cacheVariables": { "CORACPP_TORCH": "OFF", "CORACPP_PYTHON": "OFF" }
     },
     {
+      "name": "coverage",
+      "displayName": "C++ only, gcov counters (scripts/coverage/benchmarks.py)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "--coverage -O0",
+        "CMAKE_EXE_LINKER_FLAGS": "--coverage",
+        "CORACPP_TORCH": "OFF",
+        "CORACPP_PYTHON": "OFF",
+        "CORACPP_NATIVE": "OFF"
+      }
+    },
+    {
       "name": "torch",
       "displayName": "C++ with libtorch (downloaded, no Python)",
       "inherits": "base",
@@ -78,6 +91,7 @@
       "environment": { "NINJA_STATUS": "[%p %e s] " }
     },
     { "name": "core", "configurePreset": "core", "inherits": "base" },
+    { "name": "coverage", "configurePreset": "coverage", "inherits": "base", "configuration": "Debug" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
@@ -94,6 +108,7 @@
       "execution": { "jobs": 4 }
     },
     { "name": "core", "configurePreset": "core", "inherits": "base" },
+    { "name": "coverage", "configurePreset": "coverage", "inherits": "base", "configuration": "Debug" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },

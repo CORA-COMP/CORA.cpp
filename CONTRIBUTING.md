@@ -92,6 +92,10 @@ it, and `ctest` (`coverage`, the first test) fails when it is stale.
 - `scripts/coverage/inventory.py` regenerates the rows from a CORA checkout (`~/CORA` or `CORA_DIR`);
   `scripts/coverage/import_coralean.py <CORALean>` refreshes what CORALean has. Both run on demand.
 - `tests/global/test_coverage.py` tests the checker.
+- `scripts/coverage/benchmarks.py` records which rows each ARCH-COMP instance executes (gcov, preset
+  `coverage`) and how many are `oracle`: `coverage/benchmarks.md` and a table in `examples/benchmarks/README.md`.
+  After a change of a status run `python scripts/coverage/benchmarks.py --render-only`; the nightly
+  measures again with `--check` and fails on a stale report.
 
 ## Examples
 
