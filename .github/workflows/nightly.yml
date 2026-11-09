@@ -116,10 +116,20 @@ jobs:
       ccache_key: -oracle
       oracle: true
 
+  # The ARCH-COMP benchmarks (label `benchmark`): every instance against MATLAB CORA's verdict.
+  benchmarks:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: core
+      ccache_key: -benchmarks
+      labels: benchmark
+
   # One issue per failed night: the open `nightly` issue gets a comment instead of a second issue.
   report:
     if: failure() && github.event_name == 'schedule'
-    needs: [changed, install, sanitizers, quality, competition, oracle]
+    needs: [changed, install, sanitizers, quality, competition, oracle, benchmarks]
     runs-on: ubuntu-24.04
     permissions:
       issues: write

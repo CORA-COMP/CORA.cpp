@@ -127,3 +127,10 @@ jobs:
         run: |
           filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
           ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^example$' "${filter[@]}"
+      - name: test benchmark
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' benchmark ') }}
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: |
+          filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          ctest --preset ${{ inputs.preset }} -j2 --output-on-failure -L '^benchmark$' "${filter[@]}"

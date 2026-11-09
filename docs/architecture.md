@@ -227,8 +227,8 @@ an oracle request and reads its response.
 - Files: `include/cora/global/oracle/`, `src/global/oracle/`.
 
 **Test suites.** Every ctest test has one label of its kind, from its folder or name (`CMakeLists.txt`,
-`cora_test_label`): `unit`, `oracle`, `backend-eigen` and `backend-torch` (an oracle test's body on that
-backend), `gradcheck` (`*_torch`), `python`, `example`, `competition`. CI runs each label as a step of its own.
+`cora_test_label`; the ARCH-COMP instances in scripts/cmake/benchmarks.cmake): `unit`, `oracle`, `backend-eigen` and `backend-torch` (an oracle test's body on that
+backend), `gradcheck` (`*_torch`), `python`, `example`, `benchmark` (nightly), `competition`. CI runs each label as a step of its own.
 
 **Pull requests.** CI has three tiers (`.github/workflows/`, CONTRIBUTING.md, "CI"): the affected tests on every push to a pull request, every test before a merge, the full matrix nightly.
 Work happens on a branch, which reaches `main` through a reviewed pull request.

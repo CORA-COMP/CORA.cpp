@@ -13,10 +13,11 @@
 // CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
 // CORA: contDynamics/@linearSys/private/priv_reach_decomp.m
 // CORA: contDynamics/@contDynamics/reach.m
+// CORA: hybridDynamics/@hybridAutomaton/reach.m
 // CORA authors: Mark Wetzlinger, Tobias Ladner, Matthias Althoff, Niklas Kochdumper
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -220,12 +221,100 @@ struct Linearization {
     }
 };
 
+// Reachability of hybrid automata --------------------------------------------------------------
+
+/// How a guard intersection is enclosed (CORA's options.enclose): in the axes ("box"), in the
+/// principal axes of the generators ("pca"), or orthogonal to the flow ("flow"). Several give a
+/// zonotope bundle, the intersection of the enclosures.
+enum class Enclose { box, pca, flow };
+
+/// The enclosure methods of a guard intersection, one at least.
+inline void validate_enclose(const std::vector<Enclose> &enclose, const char *name) {
+    detail::Validation entry;
+    CORA_CHECK(!enclose.empty(), Error::wrong_value, [&] {
+        return std::string(name) + ": enclose must name a method, e.g. {Enclose::box}";
+    });
+}
+
+/// CORA's guardIntersect "zonoGirard": the intersection of each set with the hyperplane of the
+/// guard, bounded per axis of the basis by Girard's 2-D zonogon search.
+struct ZonoGirard {
+    std::vector<Enclose> enclose{Enclose::box}; ///< the bases of the enclosure
+
+    static constexpr const char *name = "zono_girard";
+    static constexpr auto fields() {
+        return std::make_tuple(field("enclose", &ZonoGirard::enclose));
+    }
+    void validate() const { validate_enclose(enclose, "ZonoGirard"); }
+};
+
+/// CORA's guardIntersect "nondetGuard": the sets are enclosed by one box per basis first, then
+/// intersected with the guard as constrained zonotopes; for large uncertain guards.
+struct NondetGuard {
+    std::vector<Enclose> enclose{Enclose::box}; ///< the bases of the enclosure
+
+    static constexpr const char *name = "nondet_guard";
+    static constexpr auto fields() {
+        return std::make_tuple(field("enclose", &NondetGuard::enclose));
+    }
+    void validate() const { validate_enclose(enclose, "NondetGuard"); }
+};
+
+/// CORA's guardIntersect "conZonotope": each set, reduced to guard_order, is intersected with the
+/// guard as a constrained zonotope, and the union is enclosed per basis.
+struct ConZonotopeGuard {
+    std::vector<Enclose> enclose{Enclose::box}; ///< the bases of the enclosure
+    int guard_order = 0; ///< the order the sets are reduced to first, required (CORA's guardOrder)
+
+    static constexpr const char *name = "con_zonotope";
+    static constexpr auto fields() {
+        return std::make_tuple(field("enclose", &ConZonotopeGuard::enclose),
+                               field("guard_order", &ConZonotopeGuard::guard_order));
+    }
+    void validate() const {
+        validate_enclose(enclose, "ConZonotopeGuard");
+        validate_order(guard_order, 1, "guard_order", "ConZonotopeGuard");
+    }
+};
+
+/// The guard intersection methods (CORA's options.guardIntersect).
+using GuardIntersect = std::variant<ZonoGirard, NondetGuard, ConZonotopeGuard>;
+
+/// CORA's reach of a hybridAutomaton with linAlg "standard": in each location the algorithm
+/// Standard until the sets leave the invariant, then one jump per hit guard.
+struct HybridStandard {
+    std::vector<double> time_step; ///< one step size, or one per location, required
+    int taylor_terms = 10;         ///< the order of the Taylor series of the curvature enlargement
+    int zonotope_order = 50;       ///< the order the sets are reduced to per step
+    GuardIntersect guard_intersect = ZonoGirard{}; ///< how the guards are intersected
+
+    static constexpr const char *name = "standard";
+    static constexpr auto fields() {
+        return std::make_tuple(field("time_step", &HybridStandard::time_step),
+                               field("taylor_terms", &HybridStandard::taylor_terms),
+                               field("zonotope_order", &HybridStandard::zonotope_order),
+                               field("guard_intersect", &HybridStandard::guard_intersect));
+    }
+    void validate() const {
+        detail::Validation entry;
+        CORA_CHECK(!time_step.empty(), Error::wrong_value, [] {
+            return std::string("HybridStandard: time_step must give one step size, or one per "
+                               "location, e.g. {.time_step = {0.01}}");
+        });
+        for (double dt : time_step) validate_time_step(dt, "HybridStandard");
+        validate_order(taylor_terms, 1, "taylor_terms", "HybridStandard");
+        validate_order(zonotope_order, 1, "zonotope_order", "HybridStandard");
+        std::visit([](const auto &g) { g.validate(); }, guard_intersect);
+    }
+};
+
 /// The algorithms of each system and operation; the first is the default of Python.
 using LinearReach = std::variant<Standard, WrappingFree, FromStart, Decomposition>;
 using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope>;
 using LinearSimulate = std::variant<Exact>;
 using NonlinearReach = std::variant<Linearization>;
 using NonlinearSimulate = std::variant<RungeKutta4>;
+using HybridReach = std::variant<HybridStandard>;
 
 /// The name of the algorithm a variant holds.
 template <class Variant>

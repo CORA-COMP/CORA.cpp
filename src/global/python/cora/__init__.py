@@ -20,9 +20,9 @@ Syntax:   X0 = cora.Zonotope(c, G)             c (..., n), G (..., n, m): one se
           net = cora.NeuralNetwork([(W1, b1), (W2, b2)])      Y = net.evaluate(X): X's outputs
           cora.plot(R)                         or R.plot(); cora.subplots(2, 2).to_tikz(...)
 
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       01-October-2026
-Last update:   ---
+Last update:   09-November-2026
 Reviewed:      ---
 """
 try:
@@ -42,9 +42,14 @@ from ._cora import (
     Expr,
     Falsification,
     Fullspace,
+    HybridAutomaton,
+    HybridReachSet,
     Interval,
     IntervalMatrix,
+    LinearReset,
     LinearSys,
+    Location,
+    LocationReachSet,
     MatZonotope,
     MatZonotopeExpmMixedResult,
     MatZonotopeExpmOneParamResult,
@@ -55,6 +60,7 @@ from ._cora import (
     ReachSet,
     Rng,
     Specification,
+    Transition,
     VerifyResult,
     ZonoBundle,
     Zonotope,
@@ -105,11 +111,12 @@ banner.install(current_backend)
 __all__ = [
     "CORAError", "CORAWarning", "Capsule", "ConZonotope", "ContSet", "Ellipsoid", "EmptySet",
     "Expr", "ExpmMixedResult", "ExpmResult",
-    "Falsification", "Figure", "Fullspace", "Interval", "IntervalMatrix", "LinearSys",
+    "Falsification", "Figure", "Fullspace", "HybridAutomaton", "HybridReachSet", "Interval",
+    "IntervalMatrix", "LinearReset", "LinearSys", "Location", "LocationReachSet",
     "MatZonotope", "MatZonotopeExpmMixedResult", "MatZonotopeExpmOneParamResult",
     "NeuralNetwork", "NonlinearSys", "Polytope", "ReachProblem", "ReachSet", "Rng",
-    "Specification", "VerifyResult", "ZonoBundle", "Zonotope", "backend", "binary_pairs",
-    "cart_prod", "checks",
+    "Specification", "Transition", "VerifyResult", "ZonoBundle", "Zonotope", "backend",
+    "binary_pairs", "cart_prod", "checks",
     "checks_enabled", "contains", "convex_hull", "cora_color", "current_backend",
     "current_tolerance", "default_tol", "errors", "generate_random",
     "has_torch", "intersect", "is_intersecting", "isequal", "lean", "num_threads", "plot",
