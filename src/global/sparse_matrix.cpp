@@ -54,9 +54,8 @@ SparseMatrix::SparseMatrix(int64_t rows, int64_t cols, const std::vector<int64_t
     // the entries by row, then column; equal coordinates keep their order and are summed
     std::vector<size_t> order(i.size());
     std::iota(order.begin(), order.end(), size_t{0});
-    std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) {
-        return i[a] != i[b] ? i[a] < i[b] : j[a] < j[b];
-    });
+    std::stable_sort(order.begin(), order.end(),
+                     [&](size_t a, size_t b) { return i[a] != i[b] ? i[a] < i[b] : j[a] < j[b]; });
     row_start_.assign(size_t(rows) + 1, 0);
     for (size_t k = 0; k < order.size(); ++k) {
         const size_t e = order[k];

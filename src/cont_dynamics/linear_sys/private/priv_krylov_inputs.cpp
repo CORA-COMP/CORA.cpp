@@ -100,9 +100,8 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         }
         if (zero) continue;
         const HostMatVec integrator = priv_integrator_matvec(A, u);
-        const KrylovSubspace S = priv_krylov_subspace(integrator, aux_last_unit(n), order,
-                                                      alg.krylov_error, alg.krylov_step, t_final,
-                                                      like);
+        const KrylovSubspace S = priv_krylov_subspace(
+            integrator, aux_last_unit(n), order, alg.krylov_error, alg.krylov_step, t_final, like);
         // the Taylor terms V H^i e_1 dt^i / i!, i = 1..eta+1, of the state rows
         Tensor power = S.H;
         for (int i = 1; i <= alg.taylor_terms + 1; ++i) {

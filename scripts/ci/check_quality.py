@@ -5,14 +5,14 @@ Checks:   format  clang-format (.clang-format) on the C++ files: the file is wha
           tidy    clang-tidy (.clang-tidy) on the translation units of build/python/compile_commands.json
                   (--build-dir); a changed header is analysed through the one source that includes it.
           lint    ruff (ruff.toml) on scripts/, tests/ and src/global/python/cora/.
-Scope:    --base REV: the files changed since the merge base with REV and in the working tree
+Scope:    --base REV: the files changed since the merge base with REV, in the working tree, and untracked
           (default origin/main); --all: every tracked file (the nightly).
 Options:  --fix rewrites the files (format, lint) or applies the fixes of clang-tidy (tidy).
 Exit code: 0 if clean, 1 with the findings, 2 if a tool or the compile database is missing.
 
 Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 Written:       04-November-2026
-Last update:   ---
+Last update:   09-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -49,6 +49,8 @@ def candidates(base):
         return git("ls-files")
     merge_base = git("merge-base", base, "HEAD")[0]
     changed = git("diff", "--name-only", "--diff-filter=d", merge_base)
+    # new files not yet added: git diff does not list them
+    changed += git("ls-files", "--others", "--exclude-standard")
     return [f for f in changed if os.path.exists(os.path.join(ROOT, f))]
 
 
