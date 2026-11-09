@@ -213,36 +213,36 @@ stop with an error until then. Test: `python -m unittest tests/python/test_bench
 <!-- BEGIN bit-exact -->
 | instance | bit-exact vs CORALean | not bit-exact |
 |---|---|---|
-| BRKDC01 | 4/24 | 20 |
-| BRKNC01 | - | not measured |
-| CBC01 | 1/21 | 20 |
-| CBC02 | - | not measured |
-| CBC03 | - | not measured |
-| CBF01 | 1/21 | 20 |
-| CBF02 | - | not measured |
-| CBF03 | - | not measured |
+| BRKDC01 | 4/25 | 21 |
+| BRKNC01 | 30/73 | 43 |
+| CBC01 | 1/22 | 21 |
+| CBC02 | 1/22 | 21 |
+| CBC03 | 1/22 | 21 |
+| CBF01 | 1/22 | 21 |
+| CBF02 | 1/22 | 21 |
+| CBF03 | 1/22 | 21 |
 | DTN01 | 21/52 | 31 |
 | DTN02 | 21/52 | 31 |
 | DTN03 | 21/52 | 31 |
-| DTN04 | - | not measured |
-| DTN05 | - | not measured |
-| DTN06 | - | not measured |
+| DTN04 | 21/52 | 31 |
+| DTN05 | 21/52 | 31 |
+| DTN06 | 21/52 | 31 |
 | GRBX01 | 30/75 | 45 |
 | GRBX02 | 30/75 | 45 |
-| HEAT01 | 1/21 | 20 |
-| HEAT02 | - | not measured |
-| HEAT03 | - | not measured |
-| ISSC01_ISS02 | 1/21 | 20 |
-| ISSC01_ISU02 | - | not measured |
-| ISSF01_ISS01 | - | not measured |
-| ISSF01_ISU01 | 1/21 | 20 |
-| PLAA01_BND42 | - | not measured |
-| PLAA01_BND50 | - | not measured |
-| PLAD01_BND30 | 9/29 | 20 |
-| PLAD01_BND42 | 9/29 | 20 |
+| HEAT01 | 1/22 | 21 |
+| HEAT02 | 1/22 | 21 |
+| HEAT03 | 10/29 | 19 |
+| ISSC01_ISS02 | 1/22 | 21 |
+| ISSC01_ISU02 | 1/22 | 21 |
+| ISSF01_ISS01 | 1/22 | 21 |
+| ISSF01_ISU01 | 1/22 | 21 |
+| PLAA01_BND42 | 23/52 | 29 |
+| PLAA01_BND50 | 23/52 | 29 |
+| PLAD01_BND30 | 9/30 | 21 |
+| PLAD01_BND42 | 9/30 | 21 |
 | PLAN01 | - | not measured |
-| RAND01 | 5/26 | 21 |
-| RAND02 | 5/26 | 21 |
+| RAND01 | 5/27 | 22 |
+| RAND02 | 5/27 | 22 |
 | SPRE22 | 36/86 | 50 |
 | SRA01 | 26/63 | 37 |
 | SRA02 | 33/75 | 42 |
@@ -251,9 +251,9 @@ stop with an error until then. Test: `python -m unittest tests/python/test_bench
 | SRA05 | 33/75 | 42 |
 | SRA06 | 33/75 | 42 |
 | SRA07 | 41/87 | 46 |
-| SRA08 | - | not measured |
+| SRA08 | 41/87 | 46 |
 | SRNA01 | 23/56 | 33 |
 | SRU01 | 27/64 | 37 |
-| SRU02 | - | not measured |
-| TRAF22 | 15/46 | 31 |
+| SRU02 | 41/87 | 46 |
+| TRAF22 | 15/47 | 32 |
 <!-- END bit-exact -->
