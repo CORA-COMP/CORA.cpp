@@ -85,7 +85,7 @@ std::vector<Tensor> LinearSys::simulate(const SimulationProblem &problem,
     if (entry.check()) std::visit([](const auto &a) { a.validate(); }, alg);
     const double time_step = std::get<alg::Exact>(alg).time_step;
     const int steps = priv_num_steps(problem.t_final, time_step);
-    if (!problem.input) return aux_autonomous(A_, x0, time_step, steps);
+    if (!problem.input) return aux_autonomous(A(), x0, time_step, steps);
 
     // a constant input: B, and one column per trajectory or one for all
     const Tensor &u = *problem.input;
@@ -99,7 +99,7 @@ std::vector<Tensor> LinearSys::simulate(const SimulationProblem &problem,
                           " and N = " + std::to_string(x0.shape().back()) + ", got " +
                           shape_text(u.shape());
                });
-    return aux_with_input(A_, *B_, x0, u, time_step, steps);
+    return aux_with_input(A(), *B_, x0, u, time_step, steps);
 }
 
 } // namespace cora

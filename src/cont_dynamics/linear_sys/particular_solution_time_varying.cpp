@@ -33,7 +33,7 @@ Zonotope LinearSys::particular_solution_time_varying(const Zonotope &U, double t
     detail::Entry entry;
     if (entry.check())
         validate_step("particular_solution_time_varying", U, time_step, taylor_terms);
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     return priv_particular_time_varying(*this, taylor, priv_one_block(dim()), U, time_step,
                                         taylor_terms)[0];
 }

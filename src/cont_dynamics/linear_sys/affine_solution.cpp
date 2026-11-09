@@ -36,11 +36,11 @@ AffineSolution LinearSys::affine_solution(const Zonotope &X, const Tensor &u, do
         return "affine_solution: u must be a column (" + std::to_string(dim()) + ", 1), got " +
                shape_text(u.shape());
     });
-    CORA_CHECK(A_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
         return std::string("affine_solution: it supports a single system, not a batch of "
                            "matrices A");
     });
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     const Blocks blocks = priv_one_block(dim());
     const BlockSets Xb{X};
     // the constant input is a point of the state space

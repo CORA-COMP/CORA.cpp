@@ -48,12 +48,12 @@ bool aux_same(const std::optional<Tensor> &a, const std::optional<Tensor> &b, do
 
 bool LinearSys::isequal(const LinearSys &other, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, A_.dtype(), "isequal");
+    const double tol = resolve_tol(entry, tol_arg, A().dtype(), "isequal");
     // an absent output matrix is the identity
     const auto output = [](const LinearSys &s) {
-        return s.C_ ? s.C_ : std::optional(s.A_.eye_like());
+        return s.C_ ? s.C_ : std::optional(s.A().eye_like());
     };
-    return aux_same(A_, other.A_, tol) && aux_same(B_, other.B_, tol) &&
+    return aux_same(A(), other.A(), tol) && aux_same(B_, other.B_, tol) &&
            aux_same(output(*this), output(other), tol);
 }
 

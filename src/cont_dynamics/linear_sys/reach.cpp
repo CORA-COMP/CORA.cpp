@@ -3,12 +3,14 @@
 // input_set is a zonotope of u(t) in R^m; none means no input. alg::Standard has the options
 // time_step, taylor_terms and zonotope_order; alg::WrappingFree time_step and taylor_terms;
 // alg::FromStart those of Standard; alg::Decomposition those and the partition of the state.
+// alg::Krylov (CORA's linAlg 'krylov') returns the output sets C x, as CORA's reach does, since
+// it never forms a set of the state; a sparse A is used through its products only.
 // time_point[k] is the set at k*time_step.
 //
 // Syntax:   R = sys.reach(problem, alg);
 //           R = sys.reach({.initial_set = X0, .t_final = 2}, alg::Standard{.time_step = 0.1});
 // Inputs:   problem - initial_set (zonotope), input_set (zonotope of u(t), needs B), t_final
-//           alg - alg::Standard, alg::WrappingFree, alg::FromStart or alg::Decomposition
+//           alg - alg::Standard, alg::WrappingFree, alg::FromStart, alg::Decomposition, alg::Krylov
 // Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step]
 // See also: output_set, simulate, correction_matrix_state, private/priv_reach_standard
 //
@@ -17,13 +19,15 @@
 // CORA: contDynamics/@linearSys/private/priv_reach_wrappingfree.m
 // CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
 // CORA: contDynamics/@linearSys/private/priv_reach_decomp.m
+// CORA: contDynamics/@linearSys/private/priv_reach_krylov.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
+#include "cont_dynamics/linear_sys/private/priv_krylov.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,6 +36,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// The steps ---------------------------------------------------------------------------------------
 
 /// The step's propagation e^{A dt}, its correction matrix F and the number of steps.
 struct Step {
@@ -99,6 +105,25 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::LinearReach &a
     }
     ReachSet R = aux_reach(*this, problem, alg);
     R.time_step = std::visit([](const auto &a) { return a.time_step; }, alg);
+    return R;
+}
+
+// Krylov ------------------------------------------------------------------------------------------
+
+ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg) const {
+    detail::Entry entry;
+    // the problem and the options, then a single system and initial set
+    if (entry.check()) {
+        validate(problem);
+        alg.validate();
+    }
+    CORA_CHECK(problem.initial_set->center().ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
+               Error::not_supported, [] {
+                   return std::string("reach: alg::Krylov takes a single system and initial set");
+               });
+    ReachSet R =
+        priv_reach_krylov(*this, *problem.initial_set, problem.input_set, alg, problem.t_final);
+    R.time_step = alg.time_step;
     return R;
 }
 

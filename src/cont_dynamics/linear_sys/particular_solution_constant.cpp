@@ -32,11 +32,11 @@ ConstantSolution LinearSys::particular_solution_constant(const Zonotope &U, doub
                                                          int taylor_terms) const {
     detail::Entry entry;
     if (entry.check()) validate_step("particular_solution_constant", U, time_step, taylor_terms);
-    CORA_CHECK(A_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
         return std::string("particular_solution_constant: it supports a single system, not a "
                            "batch of matrices A");
     });
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     BlockConstant P =
         priv_particular_constant(*this, taylor, priv_one_block(dim()), U, time_step, taylor_terms);
     return {P.time_point[0], P.input_curvature[0], P.time_interval[0]};

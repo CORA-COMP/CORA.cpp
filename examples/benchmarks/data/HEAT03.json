@@ -1,0 +1,78 @@
+{
+  "format": "cora-benchmark-1",
+  "benchmark": "Heat3D",
+  "instance": "HEAT03",
+  "label": "HEAT03",
+  "linAlg": "krylov",
+  "tFinal": 40,
+  "data": "HEAT03.bin",
+  "matrices": {
+    "A": {
+      "shape": [
+        8000,
+        8000
+      ],
+      "storage": "coo",
+      "nnz": 53600,
+      "offset": 0
+    },
+    "B": {
+      "shape": [
+        8000,
+        1
+      ],
+      "storage": "coo",
+      "nnz": 0,
+      "offset": 857600
+    },
+    "C": {
+      "shape": [
+        1,
+        8000
+      ],
+      "storage": "coo",
+      "nnz": 1,
+      "offset": 857600
+    },
+    "R0c": {
+      "shape": [
+        8000,
+        1
+      ],
+      "storage": "coo",
+      "nnz": 135,
+      "offset": 857616
+    },
+    "R0G": {
+      "shape": [
+        8000,
+        135
+      ],
+      "storage": "coo",
+      "nnz": 135,
+      "offset": 859776
+    },
+    "Uc": {
+      "shape": [
+        1,
+        1
+      ],
+      "storage": "coo",
+      "nnz": 0,
+      "offset": 861936
+    },
+    "UG": {
+      "shape": [
+        1,
+        0
+      ],
+      "storage": "dense",
+      "offset": 861936,
+      "nnz": 0
+    }
+  },
+  "specs": [],
+  "expected": {
+    "verified": 1
+  }
+}

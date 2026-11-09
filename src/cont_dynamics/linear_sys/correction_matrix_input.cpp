@@ -35,8 +35,8 @@ Interval LinearSys::correction_matrix_input(double time_step, int taylor_terms) 
         return "correction matrix: taylor_terms must be at least 1, got " +
                std::to_string(taylor_terms);
     });
-    Tensor Ai = A_; // A^(i-1)
-    Tensor Gneg = A_.zeros_like(), Gpos = A_.zeros_like();
+    Tensor Ai = A(); // A^(i-1)
+    Tensor Gneg = A().zeros_like(), Gpos = A().zeros_like();
     double dt_over_fac = time_step; // dt^i / i!, after the update in the loop
 
     for (int i = 2; i <= taylor_terms + 1; ++i) {
@@ -45,7 +45,7 @@ Interval LinearSys::correction_matrix_input(double time_step, int taylor_terms) 
         const double weight = priv_extremal_weight(i, dt_over_fac);
         Gpos = Gpos + Ai.minimum(0.0) * weight;
         Gneg = Gneg + Ai.maximum(0.0) * weight;
-        Ai = Ai.matmul(A_);
+        Ai = Ai.matmul(A());
     }
     const Interval E = expm_remainder(time_step, taylor_terms);
     return {Gneg + E.inf() * time_step, Gpos + E.sup() * time_step};

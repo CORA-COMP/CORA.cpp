@@ -1,8 +1,8 @@
 """test_benchmark_data - the ARCH-COMP AFF files of examples/benchmarks/data: format, consistency.
 
-Authors:       Tobias Ladner
+Authors:       Tobias Ladner, Claude Opus 5.5
 Written:       02-November-2026
-Last update:   ---
+Last update:   09-November-2026
 Reviewed:      ---
 """
 import glob
@@ -23,11 +23,13 @@ import numpy as np
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 sys.path.insert(0, os.path.join(ROOT, "examples", "python", "benchmarks"))
 import benchmark_data  # noqa: E402
+import heat3d_data  # noqa: E402
 
 
 DATA = os.path.join(ROOT, "examples", "benchmarks", "data")
 INSTANCES = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01", "CBC01", "CBC02",
-             "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02"]
+             "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02", "HEAT03"]
+REACH = ["HEAT03"]  # instances of reach (linAlg), not of verify
 NAMES = ["A", "B", "C", "R0c", "R0G", "Uc", "UG"]
 
 
@@ -57,6 +59,7 @@ def write(folder, name, matrices, specs):
 
 class Format(unittest.TestCase):
     def test_dense_and_coordinate_matrices_round_trip(self):
+        # a dense, a sparse and an empty matrix survive the files
         rng = np.random.default_rng(0)
         sparse = np.zeros((6, 7))
         sparse[[0, 3, 5], [1, 6, 0]] = [0.1, -2.5, 1e-300]
@@ -68,6 +71,7 @@ class Format(unittest.TestCase):
             np.testing.assert_array_equal(loaded[key], M)
 
     def test_unknown_format_is_rejected(self):
+        # an instance whose format is not cora-benchmark-1
         with tempfile.TemporaryDirectory() as folder:
             write(folder, "t", {"A": np.eye(2)}, [])
             path = os.path.join(folder, "t.json")
@@ -81,6 +85,7 @@ class Format(unittest.TestCase):
                 benchmark_data.load_instance("t", folder)
 
     def test_doubles_are_stored_exactly(self):
+        # 0.1 keeps its last bit
         value = struct.unpack("<d", struct.pack("<Q", 0x3FB999999999999A))[0]
         with tempfile.TemporaryDirectory() as folder:
             write(folder, "t", {"A": np.array([[value]])}, [])
@@ -98,6 +103,8 @@ class Instances(unittest.TestCase):
     def test_the_schema_and_the_dimensions_agree(self):
         for path in glob.glob(os.path.join(DATA, "*.json")):
             name = os.path.basename(path)[:-5]
+            if name in REACH:  # its A is too large to load dense; Heat3dModel checks it
+                continue
             with self.subTest(name):
                 inst = benchmark_data.load_instance(name)
                 mat = inst["matrices"]
@@ -120,6 +127,32 @@ class Instances(unittest.TestCase):
                     self.assertEqual(np.array(spec["A"]).shape, (len(spec["b"]), mat["C"].shape[0]))
                 if inst["expected"]:
                     self.assertIn(inst["expected"]["verified"], [0, 1])
+
+
+class Heat3dModel(unittest.TestCase):
+    def test_the_model_reproduces_the_exported_matrices(self):
+        # heat5 and heat10, exported by MATLAB, from the finite differences of heat3d_data
+        for instance, samples in (("HEAT01", 5), ("HEAT02", 10)):
+            with self.subTest(instance):
+                self.assertEqual(heat3d_data.heat_matrix(samples),
+                                 heat3d_data.read_coo(DATA, instance, "A"))
+
+    def test_heat03_is_what_the_script_writes(self):
+        # the files are what heat3d_data writes now
+        with tempfile.TemporaryDirectory() as folder:
+            heat3d_data.write_heat03(folder)
+            for suffix in (".json", ".bin"):
+                with open(os.path.join(folder, "HEAT03" + suffix), "rb") as f:
+                    written = f.read()
+                with open(os.path.join(DATA, "HEAT03" + suffix), "rb") as f:
+                    self.assertEqual(written, f.read(), suffix)
+        with open(os.path.join(DATA, "HEAT03.json")) as f:
+            meta = json.load(f)
+        # 8000 states, the 135 generators of R0 and one output
+        self.assertEqual(meta["matrices"]["A"]["shape"], [8000, 8000])
+        self.assertEqual(meta["matrices"]["R0G"]["shape"], [8000, 135])
+        self.assertEqual(meta["matrices"]["C"]["nnz"], 1)
+        self.assertEqual(meta["linAlg"], "krylov")
 
 
 if __name__ == "__main__":

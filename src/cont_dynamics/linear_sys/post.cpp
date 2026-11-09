@@ -41,10 +41,10 @@ ReachStep LinearSys::post(const ReachState &state, const alg::LinearReach &alg) 
     const StepAlgorithm o = priv_step_algorithm("post", alg);
     if (entry.check()) std::visit([](const auto &a) { a.validate(); }, alg);
     if (entry.check()) validate_step("post", state.homogeneous, o.time_step, o.taylor_terms);
-    CORA_CHECK(A_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
         return std::string("post: it supports a single system, not a batch of matrices A");
     });
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     const Tensor e_at = taylor.e_adt(o.time_step);
     const Zonotope &trans = state.trans;
     Zonotope hom = state.homogeneous.linear_map(e_at),

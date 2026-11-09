@@ -30,7 +30,7 @@ HomogeneousSolution LinearSys::homogeneous_solution(const Zonotope &X, double ti
                                                     int taylor_terms) const {
     detail::Entry entry;
     if (entry.check()) validate_step("homogeneous_solution", X, time_step, taylor_terms);
-    TaylorLinSys taylor(A_);
+    TaylorLinSys taylor(A());
     // the whole state is one block
     const BlockSets Xb{X};
     BlockHomogeneous H =
