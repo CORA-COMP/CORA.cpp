@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "benchmark_run.h"
 #include "cora/cora.h"
 
 #include <chrono>
@@ -73,8 +74,7 @@ inline bool run_hybrid(const HybridInstance &inst) {
     // the script's own check of the sets, after reach
     const bool verified = R.verified && (!inst.check || inst.check(R));
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
-    std::cout << inst.benchmark << "," << inst.label << "," << verified << "," << wall.count()
-              << std::endl;
+    print_line(inst.benchmark, inst.label, verified, wall.count());
     std::size_t sets = 0;
     for (const LocationReachSet &b : R.branches) sets += b.time_interval.size();
     std::cerr << "  " << R.branches.size() << " branches, " << sets
@@ -89,16 +89,11 @@ inline bool run_hybrid(const HybridInstance &inst) {
     return verified == inst.expected;
 }
 
-/// The instances named on the command line, else all of the family; the exit code is the number
-/// of verdicts that differ from MATLAB CORA's.
-inline int run_family(int argc, char **argv, const std::vector<std::string> &family,
-                      const std::function<HybridInstance(const std::string &)> &make) {
-    int differ = 0;
-    const std::vector<std::string> names =
-        argc < 2 ? family : std::vector<std::string>(argv + 1, argv + argc);
-    for (const std::string &name : names)
-        if (!run_hybrid(make(name))) ++differ;
-    return differ;
+/// The instances named on the command line, else all of the family (run_family).
+inline int run_hybrid_family(int argc, char **argv, const std::vector<std::string> &family,
+                             const std::function<HybridInstance(const std::string &)> &make) {
+    return run_family(argc, argv, family,
+                      [&](const std::string &name) { return run_hybrid(make(name)); });
 }
 
 } // namespace cora::bench

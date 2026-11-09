@@ -5,13 +5,15 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/rng.h"
 #include "testing.h"
+
+#include <chrono>
 
 using namespace cora;
 using test::check;
@@ -58,11 +60,12 @@ void special_zonotopes(const std::string &b) {
     check(!segment.contains(column({0.5, 0.6})), b + ": and no other");
 }
 
-/// Sets: a zonotope in a zonotope by the vertex search and by Sadraddini and Tedrake.
+/// Sets: a zonotope in a zonotope by both exact methods and by Sadraddini and Tedrake.
 void sets_in_the_diamond(const std::string &b) {
     const Zonotope Z = diamond();
     const Zonotope small = 0.5 * Z, large = 1.2 * Z;
-    for (const std::string method : {"exact", "exact:venum", "approx", "approx:st"}) {
+    for (const std::string method :
+         {"exact", "exact:venum", "exact:polymax", "approx", "approx:st"}) {
         check(Z.contains(small, method), b + ": a half in the diamond, " + method);
         check(!Z.contains(large, method), b + ": 1.2 times is not in, " + method);
     }
@@ -93,6 +96,40 @@ void scaled_copies(const std::string &b) {
     }
 }
 
+/// Polymax ("exact" below dimension 4) agrees with the vertex search on random zonotopes in two
+/// and three dimensions, scaled and shifted, and holds a flat zonotope's own segment.
+void polymax_agrees_with_venum(const std::string &b) {
+    cora::Rng rng(9);
+    for (int trial = 0; trial < 8; ++trial) {
+        const int64_t n = 2 + trial % 2;
+        const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 4 + trial);
+        const Zonotope S = Zonotope::generate_random(rng, n, std::nullopt, 3);
+        // S scaled into the radius of Z, then moved, so both answers occur
+        const Zonotope T(Z.center() + S.center() * 0.3, S.generators() * (0.15 * (trial + 1)));
+        check(Z.contains(T, "exact:polymax") == Z.contains(T, "exact:venum"),
+              b + ": polymax and venum agree, trial " + std::to_string(trial));
+        check(Z.contains(T) == Z.contains(T, "exact:polymax"), b + ": exact is polymax");
+    }
+    const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope half(column({0.0, 0.0}), Tensor({{0.5}, {0.5}}));
+    check(segment.contains(half, "exact:polymax"), b + ": a flat zonotope holds half of itself");
+    check(!segment.contains(half + column({0.0, 0.1}), "exact:polymax"), b + ": not off its line");
+}
+
+/// A zonogon of 4000 generators (the platoon benchmark's projections have thousands): polymax
+/// takes one matrix product where the vertex search would not finish.
+void large_zonogon(const std::string &b) {
+    cora::Rng rng(4);
+    const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4000);
+    const Tensor &c = Z.center();
+    const auto start = std::chrono::steady_clock::now();
+    check(Z.contains(Zonotope(c, Z.generators() * 0.99)), b + ": 0.99 Z in Z, 4000 generators");
+    check(!Z.contains(Zonotope(c, Z.generators() * 1.01)), b + ": 1.01 Z not in Z");
+    const double seconds =
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    check(seconds < 10.0, b + ": 4000 generators in " + std::to_string(seconds) + " s");
+}
+
 /// Wrong operands and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const Zonotope Z = diamond();
@@ -105,8 +142,8 @@ void checks_and_their_switch() {
           "contains: tol < 0");
     check(test::raises([&] { Z.contains(column({0.0, 0.0}), "simplex"); }, Error::no_specific_alg),
           "contains: unknown method");
-    check(test::raises([&] { Z.contains(Z, "exact:polymax"); }, Error::not_supported),
-          "contains: polymax needs Polytope");
+    check(test::raises([&] { Z.contains(Z, "approx:stDual"); }, Error::not_supported),
+          "contains: approx:stDual");
     check(test::raises([&] { Z.contains(Z, "sampling"); }, Error::not_supported),
           "contains: sampling");
     check(test::raises([&] { Zonotope::stack({Z, Z}).contains(Z); }, Error::not_supported),
@@ -128,6 +165,8 @@ int main() {
         special_zonotopes(b);
         sets_in_the_diamond(b);
         scaled_copies(b);
+        polymax_agrees_with_venum(b);
+        large_zonogon(b);
     });
     checks_and_their_switch();
     return test::finish("zonotope contains");

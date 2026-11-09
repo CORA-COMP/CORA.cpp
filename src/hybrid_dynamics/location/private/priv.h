@@ -23,6 +23,8 @@
 
 namespace cora {
 
+// The reach of a location -------------------------------------------------------------------------
+
 /// A jump out of a location: the set after the reset, the target, and the time of the jump.
 struct GuardJump {
     Set set;
@@ -56,6 +58,8 @@ LocationResult priv_location_reach(const Location &loc, int64_t index, const Set
                                    const alg::HybridStandard &alg,
                                    const std::vector<Specification> &specs,
                                    const std::vector<int64_t> &final_locations);
+
+// The guards --------------------------------------------------------------------------------------
 
 /// Whether a set (zonotope or bundle) meets a polytope by CORA's 'approx' test.
 bool priv_meets(const Polytope &P, const Set &S);
@@ -109,6 +113,10 @@ Tensor priv_basis_of(const Tensor &a);
 
 /// The unit normal and offset of a hyperplane guard (its first equality).
 std::pair<Tensor, double> priv_hyperplane(const Polytope &guard);
+
+/// The matrix A of a LinearSys flow; a LinParamSys has none to evaluate (CORA's getfcn needs the
+/// sampleMatrix of a simulation), so `what` fails with Error::not_supported.
+const Tensor &priv_flow_matrix(const Location &loc, const char *what);
 
 } // namespace cora
 

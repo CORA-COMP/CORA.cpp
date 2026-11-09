@@ -98,7 +98,7 @@ std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> 
     for (alg::Enclose method : enclose) {
         switch (method) {
         case alg::Enclose::box:
-            B.push_back(loc.flow().A().eye_like());
+            B.push_back(loc.c().eye_like(loc.dim()));
             break;
         case alg::Enclose::pca:
             B.push_back(aux_pca(aux_generators(R, guard, hyperplane)));
@@ -110,7 +110,8 @@ std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> 
                 const auto [a, d] = priv_hyperplane(guard);
                 c = aux_onto_hyperplane(guard, c) + a * d;
             }
-            const Tensor dir = loc.flow().A().matmul(c) + U_state.center();
+            const Tensor dir =
+                priv_flow_matrix(loc, "calcBasis 'flow'").matmul(c) + U_state.center();
             B.push_back(priv_basis_of(dir / std::sqrt(dir.square().sum().item())));
             break;
         }

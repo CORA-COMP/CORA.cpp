@@ -69,7 +69,7 @@ Zonotope aux_reduce_pca(const Zonotope &Z) {
 /// Whether the flow may point along a at some point of the set projected onto the hyperplane.
 bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S,
                     const Zonotope &U_state) {
-    const Tensor &A = loc.flow().A();
+    const Tensor &A = priv_flow_matrix(loc, "checkFlow");
     const Tensor P = A.eye_like() - a.matmul(a.matrix_transpose());
     const Tensor a_t = a.matrix_transpose(), a_A = a_t.matmul(A);
     // the fast test at the projected center

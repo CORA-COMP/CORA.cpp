@@ -1,12 +1,14 @@
 // contains - whether a zonotope contains a point, a zonotope or a box, as CORA's contains_
 //
-// Exact: a linear program per point; the vertex search and the sufficient test of Sadraddini and
-// Tedrake for a set. CORA's "exact:polymax" needs Polytope; "approx:stDual", "sampling" and "opt"
-// are not supported. A zonotope that is not full-dimensional is enlarged by tol. Not for a batch.
+// Exact: a linear program per point; for a set, the vertex search ("exact:venum") or the support
+// of S along each facet normal of Z ("exact:polymax"); "exact" picks polymax below dimension 4, as
+// CORA does. "approx" is the sufficient test of Sadraddini and Tedrake; "approx:stDual", "sampling"
+// and "opt" are not supported. A zonotope that is not full-dimensional is enlarged by tol. Not for
+// a batch.
 //
 // Syntax:   res = Z.contains(p);   res = Z.contains(S, "approx", tol);
 // Inputs:   p, S, I - points (n, N), a zonotope or a box of the dimension of Z
-//           method - "exact" (default), "exact:venum", "approx" or "approx:st"
+//           method - "exact" (default), "exact:venum", "exact:polymax", "approx" or "approx:st"
 //           tol - relaxes the points' norm and the flatness of Z; default: the repository tolerance
 // Outputs:  res - true if all points (S) are in Z; "approx" says true only when certain
 // See also: boundary_point, Interval::contains
@@ -16,7 +18,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -82,6 +84,17 @@ bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
 
 // Sets --------------------------------------------------------------------------------------------
 
+/// Whether the support of S along each halfspace C x <= d of Z is at most d (CORA's contains_ of
+/// polytope(Z) by 'exact:polymax'): one matrix product, fast for many generators in low dimension.
+bool aux_contains_polymax(const Zonotope &Z, const Zonotope &S, double tol) {
+    const auto [C, d] = priv_zonotope_halfspaces(Z);
+    const Tensor support = C.matmul(S.center()) + C.matmul(S.generators()).abs().sum(-1, true);
+    const std::vector<double> b = d.data(), b_ = support.data();
+    for (size_t i = 0; i < b.size(); ++i)
+        if (b_[i] > b[i] && !within_tol(b[i], b_[i], tol)) return false;
+    return true;
+}
+
 /// Whether the zonotope contains the zonotope S by the method.
 bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::string &method,
                            double tol) {
@@ -94,6 +107,9 @@ bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::stri
         return box.contains(around.inf(), tol) && box.contains(around.sup(), tol);
     }
     const Zonotope outer = aux_prepared(Z, tol);
+    // "exact" is the vertex search from dimension 4 on, as CORA's aux_exactParser decides
+    const bool polymax = method == "exact:polymax" || (method == "exact" && Z.dim() < 4);
+    if (polymax) return aux_contains_polymax(outer, inner, tol);
     if (method == "exact" || method == "exact:venum")
         return priv_containment_vertex_enumeration(priv_host_zonotope(inner),
                                                    priv_host_zonotope(outer), tol);
@@ -116,8 +132,6 @@ std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const s
     const bool known = method == "exact" || method == "exact:venum" || method == "exact:polymax" ||
                        method == "approx" || (!points && for_sets);
     if (!known) return Reason{Error::no_specific_alg, "no algorithm '" + method + "' for this set"};
-    if (method == "exact:polymax")
-        return Reason{Error::not_supported, "the method 'exact:polymax' needs the class Polytope"};
     if (method == "approx:stDual" || method == "opt" || method.rfind("sampling", 0) == 0)
         return Reason{Error::not_supported, "the method '" + method + "' is not supported"};
     return std::nullopt;

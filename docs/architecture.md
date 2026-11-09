@@ -110,7 +110,8 @@ defaults, a `name` and a `validate()`:
 - `alg::Standard`, `alg::WrappingFree`, `alg::ReachAvoidSupportFunction`,
   `alg::ReachAvoidZonotope` (linear systems);
 - `alg::Exact` (linear simulation);
-- `alg::Linearization` and `alg::RungeKutta4` (nonlinear systems).
+- `alg::Linearization` and `alg::RungeKutta4` (nonlinear systems);
+- `alg::LinParamStandard` (linear parametric systems) and `alg::HybridStandard` (hybrid automata).
 
 The operations of a system take a `std::variant` of the structs it supports (`alg::LinearReach`,
 ...). The problem (`ReachProblem`, `SimulationProblem`, `RandomSimulationProblem`) is a separate

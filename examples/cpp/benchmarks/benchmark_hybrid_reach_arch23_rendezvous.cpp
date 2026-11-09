@@ -231,7 +231,7 @@ cora::bench::HybridInstance aux_instance(const std::string &name) {
 int main(int argc, char **argv) {
     const std::vector<std::string> family = {"SRA01", "SRA02", "SRA03",  "SRA04", "SRA05", "SRA06",
                                              "SRA07", "SRA08", "SRNA01", "SRU01", "SRU02"};
-    return cora::bench::run_family(argc, argv, family, aux_instance);
+    return cora::bench::run_hybrid_family(argc, argv, family, aux_instance);
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

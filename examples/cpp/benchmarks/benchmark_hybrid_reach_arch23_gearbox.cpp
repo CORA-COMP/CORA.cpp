@@ -113,7 +113,7 @@ cora::bench::HybridInstance aux_instance(const std::string &name) {
 // ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
-    return cora::bench::run_family(argc, argv, {"GRBX01", "GRBX02"}, aux_instance);
+    return cora::bench::run_hybrid_family(argc, argv, {"GRBX01", "GRBX02"}, aux_instance);
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

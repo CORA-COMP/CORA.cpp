@@ -178,6 +178,9 @@ changed, and the reasons are listed below.
 | `boundaryPoint(I, dir, start)` | `I.boundary_point(dir, start)` | `I.boundary_point(dir, start)` |
 | `linearSys(A, B, c, C)` | `LinearSys(A, B, C)` | `cora.LinearSys(A, B, C)` |
 | `nonlinearSys(f)` | `NonlinearSys(f, n)` | `cora.NonlinearSys(f, n)` |
+| `linParamSys(A, B, c, 'constParam')`, `'varParam'` | `LinParamSys(A, B, c, ParamType::constant)`, `ParamType::varying` | `cora.LinParamSys(A, B, c, type="constant")`, `"varying"` |
+| `initReach(sys, Rinit, params, options)`, `post(sys, R, params, options)` (linParamSys) | `sys.init_reach(R_init, U, u_trans, alg)`, `sys.post(R, alg)` (`LinParamStep`) | — |
+| `options.intermediateTerms`, `options.compTimePoint` | `alg::LinParamStandard::intermediate_terms`, `comp_time_point` | `intermediate_terms`, `comp_time_point` |
 | `neuralNetwork` | `NeuralNetwork` | `cora.NeuralNetwork` |
 | `evaluate(nn, X)` | `nn.evaluate(X)` | `nn.evaluate(X)` |
 | `reach(sys, params, options)` | `sys.reach(problem, alg)` | `sys.reach(X0, t_final=..., alg=..., ...)` |

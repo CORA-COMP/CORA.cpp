@@ -27,6 +27,8 @@ set(benchmark_instances_benchmark_hybrid_reach_arch23_rendezvous
 set(benchmark_instances_benchmark_hybrid_reach_arch23_gearbox GRBX01 GRBX02)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_powertrain DTN01 DTN02 DTN03 DTN04 DTN05 DTN06)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_brake BRKDC01 BRKNC01)
+set(benchmark_instances_benchmark_linear_param_reach_arch23_platoon
+    PLAD01_BND42 PLAA01_BND42 PLAA01_BND50 PLAD01_BND30)
 foreach(source IN LISTS benchmark_sources)
   get_filename_component(name "${source}" NAME_WE)
   set(first TRUE)

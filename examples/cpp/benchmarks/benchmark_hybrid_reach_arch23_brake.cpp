@@ -4,7 +4,7 @@
 // copied from the scripts: BRKDC01 samples the controller every T_sample by 1000 reach calls of
 // the linear system and the reset between them; BRKNC01 is the hybrid automaton whose clock
 // x5 jumps within [T_sample + t_min, T_sample + t_max]. Both check x2 <= x0 on every set.
-// BRKNP01 needs LinParamSys (the uncertain parameters) and comes with it.
+// BRKNP01 (a LinParamSys flow) is left out: in CORA its sets are NaN (README, "BRKNP01").
 //
 // Syntax:   build/core/benchmarks/benchmark_hybrid_reach_arch23_brake [instance ...]
 // Outputs:  one line 'benchmark,instance,result,time' per instance, as the MATLAB scripts
@@ -101,11 +101,8 @@ bool aux_brknc01() {
 // ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
-    const std::vector<std::string> family = {"BRKDC01", "BRKNC01"};
-    const std::vector<std::string> names =
-        argc < 2 ? family : std::vector<std::string>(argv + 1, argv + argc);
-    int differ = 0;
-    for (const std::string &name : names) {
+    // each instance by its function; MATLAB CORA verifies every one
+    return cora::bench::run_family(argc, argv, {"BRKDC01", "BRKNC01"}, [](const std::string &name) {
         const auto start = std::chrono::steady_clock::now();
         bool verified = false;
         if (name == "BRKDC01")
@@ -115,10 +112,9 @@ int main(int argc, char **argv) {
         else
             CORA_FAIL(Error::wrong_value, "brake: unknown instance " + name);
         const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
-        std::cout << "Brake," << name << "," << verified << "," << wall.count() << '\n';
-        if (!verified) ++differ; // MATLAB CORA: 1 for both
-    }
-    return differ;
+        cora::bench::print_line("Brake", name, verified, wall.count());
+        return verified;
+    });
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
