@@ -1,6 +1,7 @@
 // test_linear_sys_reach_krylov - linear_sys reach with alg::Krylov: a 1-D flow by hand, agreement
 //
-// with alg::Standard on a heat grid, enclosure of trajectories (constant inputs), a sparse A, checks
+// with alg::Standard on a heat grid, enclosure of trajectories (constant inputs), a sparse A,
+// checks
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_krylov.m
 // PROPERTY: contDynamics/@linearSys/private/priv_reach_krylov.m
@@ -65,7 +66,8 @@ void flow_in_one_dimension() {
     for (size_t k = 0; k < R.time_point.size(); ++k) {
         const double e = std::exp(-double(k) * dt);
         const Interval I = R.time_point[k].interval();
-        check(std::abs(I.inf().item() - 0.5 * e) < 1e-12 && std::abs(I.sup().item() - 1.5 * e) < 1e-12,
+        check(std::abs(I.inf().item() - 0.5 * e) < 1e-12 &&
+                  std::abs(I.sup().item() - 1.5 * e) < 1e-12,
               "krylov: time point " + std::to_string(k) + " is e^{-t} R0");
     }
     // the step's enclosure spans both of its time points
@@ -90,17 +92,16 @@ void agrees_with_standard() {
     const alg::Krylov krylov{.time_step = 0.05, .zonotope_order = 200};
     const ReachSet Rk = sparse.reach({.initial_set = R0, .t_final = 1.0}, krylov);
     const ReachSet Rd = dense.reach({.initial_set = R0, .t_final = 1.0}, krylov);
-    const ReachSet Rs = dense.output_set(dense.reach({.initial_set = R0, .t_final = 1.0},
-                                                     alg::Standard{.time_step = 0.05}));
+    const ReachSet Rs = dense.output_set(
+        dense.reach({.initial_set = R0, .t_final = 1.0}, alg::Standard{.time_step = 0.05}));
     double worst = 0, same = 0;
     for (size_t k = 0; k < Rk.time_point.size(); ++k) {
         const Interval Ik = Rk.time_point[k].interval(), Is = Rs.time_point[k].interval();
         worst = std::max({worst, (Ik.inf() - Is.inf()).abs().max().item(),
                           (Ik.sup() - Is.sup()).abs().max().item()});
-        same = std::max(same, (Rk.time_point[k].generators() - Rd.time_point[k].generators())
-                                  .abs()
-                                  .max()
-                                  .item());
+        same = std::max(
+            same,
+            (Rk.time_point[k].generators() - Rd.time_point[k].generators()).abs().max().item());
     }
     check(worst < 1e-9, "krylov: the time points of standard, off by " + std::to_string(worst));
     check(same == 0, "krylov: a sparse and a dense A give the same sets");
@@ -155,26 +156,26 @@ void checks_and_their_switch() {
     check(test::raises([&] { sys.reach(problem, alg::Krylov{.time_step = 0.1, .krylov_step = 0}); },
                        Error::wrong_value),
           "krylov: krylov_step 0");
-    check(test::raises(
-              [&] { sys.reach(problem, alg::Krylov{.time_step = 0.1, .krylov_error = -1}); },
-              Error::wrong_value),
-          "krylov: a negative krylov_error");
+    check(
+        test::raises([&] { sys.reach(problem, alg::Krylov{.time_step = 0.1, .krylov_error = -1}); },
+                     Error::wrong_value),
+        "krylov: a negative krylov_error");
     const Zonotope batch = Zonotope::stack({R0, R0});
-    check(test::raises([&] { sys.reach({.initial_set = batch, .t_final = 0.2},
-                                       alg::Krylov{.time_step = 0.1}); },
-                       Error::not_supported),
+    check(test::raises(
+              [&] {
+                  sys.reach({.initial_set = batch, .t_final = 0.2}, alg::Krylov{.time_step = 0.1});
+              },
+              Error::not_supported),
           "krylov: a batch of initial sets");
     // the result with the checks on, then off
-    const double on = sys.reach(problem, alg::Krylov{.time_step = 0.1})
-                          .time_point.back()
-                          .center()
-                          .sum()
-                          .item();
+    const double on =
+        sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back().center().sum().item();
     ChecksScope off(false);
     // the same with the checks off
-    check(sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back().center().sum().item() ==
-              on,
-          "krylov: the same with the checks off");
+    check(
+        sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back().center().sum().item() ==
+            on,
+        "krylov: the same with the checks off");
 }
 
 } // namespace

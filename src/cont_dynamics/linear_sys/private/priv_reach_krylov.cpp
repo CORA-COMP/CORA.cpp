@@ -69,9 +69,9 @@ std::vector<std::optional<Projected>> aux_subspaces(const HostMatVec &A, const Z
             out.emplace_back();
             continue;
         }
-        const KrylovSubspace S = priv_krylov_subspace(A, v, order, alg.krylov_error,
-                                                      alg.krylov_step, t_final, C);
-        out.push_back(Projected{C.matmul(S.V) * S.norm, S.H});
+        const KrylovSubspace S =
+            priv_krylov_subspace(A, v, order, alg.krylov_error, alg.krylov_step, t_final, C);
+        out.emplace_back(Projected{C.matmul(S.V) * S.norm, S.H});
     }
     return out;
 }
@@ -98,10 +98,10 @@ class Homogeneous {
                 steps_.emplace_back();
                 continue;
             }
-            const Interval F = LinearSys(s->H).correction_matrix_state(alg.time_step,
-                                                                       alg.taylor_terms);
-            steps_.push_back(Step{(s->H * alg.time_step).expm(), s->H.eye_like(),
-                                  Interval(F.inf().slice(-1, 0, 1), F.sup().slice(-1, 0, 1))});
+            const Interval F =
+                LinearSys(s->H).correction_matrix_state(alg.time_step, alg.taylor_terms);
+            steps_.emplace_back(Step{(s->H * alg.time_step).expm(), s->H.eye_like(),
+                                     Interval(F.inf().slice(-1, 0, 1), F.sup().slice(-1, 0, 1))});
         }
     }
 
@@ -140,6 +140,7 @@ class Homogeneous {
 Tensor aux_at_time(const std::vector<std::optional<Projected>> &spaces, double t, int64_t p,
                    const Tensor &like) {
     std::vector<Tensor> columns;
+    columns.reserve(spaces.size());
     for (const auto &s : spaces)
         columns.push_back(s ? s->proj.matmul((s->H * t).expm().slice(-1, 0, 1))
                             : like.zeros_like({p, 1}));
@@ -196,8 +197,8 @@ ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
         // the sets of the step
         const Zonotope Rhom_tp = Htp + R_trans;
         const Zonotope R_tp = Rhom_tp + U0_set;
-        const Zonotope R_ti = previous.enclose(Rhom_tp) + U0_set + curvature.zonotope() +
-                              constant.correction;
+        const Zonotope R_ti =
+            previous.enclose(Rhom_tp) + U0_set + curvature.zonotope() + constant.correction;
         R.time_interval.push_back(R_ti.reduce(alg.zonotope_order));
         R.time_point.push_back(R_tp.reduce(alg.zonotope_order));
         previous = Rhom_tp;
