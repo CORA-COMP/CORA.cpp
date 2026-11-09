@@ -95,6 +95,10 @@ std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> 
 std::vector<Set> priv_check_flow(const Location &loc, const Polytope &guard,
                                  const std::vector<Set> &R, const Zonotope &U_state);
 
+/// The same for the hyperplane a'x = d with the outward unit normal a (the caller's choice).
+std::vector<Set> priv_check_flow_outward(const Location &loc, const Tensor &a, double d,
+                                         const std::vector<Set> &R, const Zonotope &U_state);
+
 /// The enclosures of the guard intersection of the sets R per basis (CORA's
 /// guardIntersect_zonoGirard, _nondetGuard and _conZonotope); none if it is empty.
 std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,

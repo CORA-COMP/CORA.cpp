@@ -122,6 +122,16 @@ struct Decode<std::vector<int64_t>> {
         return indices;
     }
 };
+// Pairs of indices, such as the (transition, set) hits.
+template <>
+struct Decode<std::vector<std::vector<int64_t>>> {
+    static std::vector<std::vector<int64_t>> of(const std::string &dt, const Json &j) {
+        std::vector<std::vector<int64_t>> lists;
+        lists.reserve(j.items.size());
+        for (const Json &l : j.items) lists.push_back(Decode<std::vector<int64_t>>::of(dt, l));
+        return lists;
+    }
+};
 template <>
 struct Decode<std::vector<Tensor>> {
     static std::vector<Tensor> of(const std::string &dt, const Json &j) {
@@ -174,6 +184,7 @@ Wire::Wire(const Ellipsoid &E) : json(E.to_json()), dtype(E.dtype()) {}
 Wire::Wire(const Capsule &C) : json(C.to_json()), dtype(C.dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
+Wire::Wire(const std::vector<Polytope> &Ps) : Wire(aux_list(Ps)) {}
 
 // Lists ---------------------------------------------------------------------------------------
 
@@ -227,6 +238,8 @@ template Capsule Reply::get<Capsule>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 // the lists
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
+template std::vector<std::vector<int64_t>>
+Reply::get<std::vector<std::vector<int64_t>>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
 template std::vector<Zonotope> Reply::get<std::vector<Zonotope>>(const char *) const;
 template std::optional<double> Reply::get<std::optional<double>>(const char *) const;

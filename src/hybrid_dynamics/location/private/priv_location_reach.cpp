@@ -210,7 +210,8 @@ Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U)
     }
     if (!U || !loc.B()) return {loc.c(), loc.c().zeros_like({n, 0})};
     const Tensor &B = *loc.B();
-    return {B.matmul(U->center()) + loc.c(), B.matmul(U->generators())};
+    // B U, then the constant input c, as CORALean's inputSetFloat
+    return U->linear_map(B) + loc.c();
 }
 
 LocationResult priv_location_reach(const Location &loc, int64_t index, const Set &R0,

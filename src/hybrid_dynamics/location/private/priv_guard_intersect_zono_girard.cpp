@@ -1,10 +1,13 @@
-// priv_guard_intersect_zono_girard - the guard intersection of Girard, as CORA's zonoGirard
+// priv_guard_intersect_zono_girard - the guard intersection of zonoGirard, as CORALean defines it
 //
-// For each basis vector l, each set is mapped to the zonogon (n'x, l'x), and the range of l'x on
-// the line n'x = gamma is found by a dichotomic search over the sorted generators (Algorithms 2
-// and 3 of Girard and Le Guernic, HSCC 2008). The ranges of the sets are united per basis, the box
-// is mapped back, and the inequalities of the guard cut it (a constrained zonotope, rescaled). A
-// bundle bounds each range by all of its zonotopes. Several bases give a zonotope bundle.
+// For each basis vector l, each set is mapped to the zonogon S = [n'; l'] Z (the plane image of
+// Girard and Le Guernic, HSCC 2008), and the upper end of the cut of S by the line x = gamma is
+// the least dual bound over the slopes of its generators: for a multiplier mu, h_S(-mu, 1) + mu
+// gamma, the support function rounded up (Location.zonoGirardUpperFloat). The cuts of all sets are
+// united per basis as the box [-U(-l), U(l)], and mapped back by the basis. The guard's
+// inequalities then cut the box (a constrained zonotope, rescaled), which CORALean does not define
+// yet. A box with an end below its other end is an empty cut: CORALean assumes none, and the part
+// is dropped.
 //
 // Syntax:   std::optional<Set> S = priv_guard_intersect_zono_girard(R, guard, B);
 // Inputs:   R - the sets that cross the guard
@@ -15,9 +18,9 @@
 //
 // CORA: hybridDynamics/@location/guardIntersect_zonoGirard.m
 // CORA authors: Stefan Liu, Niklas Kochdumper
-// Authors:       Claude Opus 5.5
+// Authors:       Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -25,10 +28,6 @@
 #include "hybrid_dynamics/location/private/priv.h"
 
 #include <algorithm>
-#include <cmath>
-#include <deque>
-#include <limits>
-#include <numeric>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -38,181 +37,41 @@ namespace cora {
 
 namespace {
 
-// The zonogon -------------------------------------------------------------------------------------
+// The dual bound ----------------------------------------------------------------------------------
 
-/// A point or a vector of the plane.
-struct Vec2 {
-    double x = 0, y = 0;
-};
-
-/// The generators of a zonogon, as vectors.
-using Gens = std::vector<Vec2>;
-
-Vec2 aux_twice_sum(const Gens &G) {
-    Vec2 s;
-    for (const Vec2 &g : G) {
-        s.x += 2 * g.x;
-        s.y += 2 * g.y;
+/// The upper end of l'x over the states x of Z with n'x = gamma (zonoGirardUpperFloat).
+double aux_upper(const Zonotope &Z, const Tensor &normal, double gamma, const Tensor &l) {
+    // the plane image [n'; l'] Z, a zonogon
+    const Zonotope S =
+        Z.linear_map(Tensor::concat({normal.matrix_transpose(), l.matrix_transpose()}, -2));
+    // the dual bound at the multiplier mu
+    const auto dual = [&](double mu) {
+        const Tensor direction = Tensor::like(S.center(), {-mu, 1.0}, {2, 1});
+        return S.support_function(direction).item() + mu * gamma;
+    };
+    // the slopes of the generators are the breakpoints of the dual
+    const std::vector<double> G = S.generators().data();
+    const std::size_t h = G.size() / 2;
+    double least = dual(0.0);
+    for (std::size_t j = 0; j < h; ++j) {
+        const double a = G[h + j], b = G[j];
+        const double slope = 0.0 <= b ? (b <= 0.0 ? 0.0 : a / b) : (-a) / (-b);
+        least = std::min(least, dual(slope));
     }
-    return s;
+    return least;
 }
 
-/// CORA's aux_lineIntersect2D: the height where the segment p1 p2 meets the line x = gamma.
-std::optional<double> aux_line_intersect(const Vec2 &p1, const Vec2 &p2, double gamma) {
-    const double eps = machine_eps();
-    if (std::abs(p1.x - gamma) < eps) return p1.y;
-    if (std::abs(p2.x - gamma) < eps) return p2.y;
-    if (p1.x == p2.x) return std::nullopt; // a vertical segment off the line
-    if (p1.y == p2.y) {
-        // a horizontal segment meets the line between its ends
-        if (gamma > std::min(p1.x, p2.x) && gamma < std::max(p1.x, p2.x)) return p2.y;
-        return std::nullopt;
+/// The box [-U(-l), U(l)] of the cut of Z for each column l of the basis.
+std::pair<std::vector<double>, std::vector<double>> aux_cut(const Zonotope &Z, const Tensor &normal,
+                                                            double gamma, const Tensor &basis) {
+    const int64_t n = basis.shape()[0];
+    std::vector<double> lo(static_cast<std::size_t>(n)), hi(static_cast<std::size_t>(n));
+    for (int64_t k = 0; k < n; ++k) {
+        const Tensor l = basis.slice(-1, k, k + 1);
+        lo[std::size_t(k)] = -aux_upper(Z, normal, gamma, -l);
+        hi[std::size_t(k)] = aux_upper(Z, normal, gamma, l);
     }
-    const double a = (p1.y - p2.y) / (p1.x - p2.x), b = p1.y - a * p1.x, y = a * gamma + b;
-    if (y > std::max(p1.y, p2.y) || y < std::min(p1.y, p2.y)) return std::nullopt;
-    return y;
-}
-
-/// CORA's aux_sort_trig: the generators by their angle, ascending (dir 1) or descending.
-Gens aux_sort_by_angle(const Gens &g, int dir) {
-    std::vector<std::size_t> order(g.size());
-    std::iota(order.begin(), order.end(), std::size_t{0});
-    std::vector<double> theta(g.size());
-    for (std::size_t i = 0; i < g.size(); ++i) theta[i] = std::atan2(g[i].y, g[i].x);
-    std::stable_sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j) {
-        return dir == 1 ? theta[i] < theta[j] : theta[i] > theta[j];
-    });
-    Gens out;
-    out.reserve(g.size());
-    for (std::size_t i : order) out.push_back(g[i]);
-    return out;
-}
-
-// The dichotomic search ---------------------------------------------------------------------------
-
-/// One open branch of the search: the start point, the generators and their doubled sum.
-struct Branch {
-    Vec2 P;
-    Gens G;
-    Vec2 s;
-};
-
-/// CORA's aux_dichotomicSearch: the height where the boundary path from P along G meets x = gamma,
-/// trying the branches put aside in their order when a path misses.
-std::optional<double> aux_dichotomic_search(Branch start, double gamma, int dir) {
-    std::deque<Branch> queue;
-    Branch cur = std::move(start);
-    for (;;) {
-        Vec2 P = cur.P, s = cur.s;
-        Gens G = std::move(cur.G);
-        const std::size_t max_counter = G.size();
-        for (std::size_t counter = 0; G.size() > 1 && counter < max_counter; ++counter) {
-            // split at the pivot angle of the sum (CORA's aux_split_pivot)
-            const double pivot = dir * s.x / std::sqrt(s.x * s.x + s.y * s.y);
-            Gens G1, G2;
-            for (const Vec2 &g : G)
-                (dir * g.x / std::sqrt(g.x * g.x + g.y * g.y) <= pivot ? G1 : G2).push_back(g);
-            const Vec2 s1 = aux_twice_sum(G1);
-            if (aux_line_intersect(P, {P.x + s1.x, P.y + s1.y}, gamma)) {
-                G = std::move(G1);
-                s = s1;
-            } else {
-                // the first half is put aside, the path goes on through the second
-                queue.push_back({P, std::move(G1), s1});
-                G = std::move(G2);
-                s = {s.x - s1.x, s.y - s1.y};
-                P = {P.x + s1.x, P.y + s1.y};
-            }
-        }
-        const std::optional<double> m = aux_line_intersect(P, {P.x + s.x, P.y + s.y}, gamma);
-        if (m || queue.empty()) return m;
-        cur = std::move(queue.front());
-        queue.pop_front();
-    }
-}
-
-/// CORA's aux_bound_intersect_2D: the range [m, M] of y on the line x = gamma in the zonogon.
-std::optional<std::pair<double, double>> aux_bound_2d(const Vec2 &c, Gens g, double gamma) {
-    // CORA's compact_(Z, 'zeros', eps), then every generator upward
-    g.erase(std::remove_if(g.begin(), g.end(),
-                           [](const Vec2 &v) {
-                               return std::sqrt(v.x * v.x + v.y * v.y) <= machine_eps() ||
-                                      (v.x == 0 && v.y == 0);
-                           }),
-            g.end());
-    // a segment along the line (a clock's time-point set on its hyperplane): its own range
-    if (std::all_of(g.begin(), g.end(), [](const Vec2 &v) { return v.x == 0; })) {
-        if (std::abs(c.x - gamma) > numerics::kGuardTimePoint) return std::nullopt;
-        double r = 0;
-        for (const Vec2 &v : g) r += std::abs(v.y);
-        return std::pair{c.y - r, c.y + r};
-    }
-    Vec2 low = c, high = c;
-    for (Vec2 &v : g) {
-        if (v.y < 0 || (v.y == 0 && v.x < 0)) v = {-v.x, -v.y};
-        low = {low.x - v.x, low.y - v.y};
-        high = {high.x + v.x, high.y + v.y};
-    }
-    // the lower bound from the lowest vertex, the upper from the highest
-    const int dir_low = low.x < gamma ? 1 : -1;
-    const Gens G_low = aux_sort_by_angle(g, dir_low);
-    const std::optional<double> m =
-        aux_dichotomic_search({low, G_low, aux_twice_sum(G_low)}, gamma, -dir_low);
-    const int dir_high = high.x > gamma ? 1 : -1;
-    Gens G_high = aux_sort_by_angle(g, dir_high);
-    for (Vec2 &v : G_high) v = {-v.x, -v.y};
-    const std::optional<double> M =
-        aux_dichotomic_search({high, G_high, aux_twice_sum(G_high)}, gamma, dir_high);
-    if (!m || !M) return std::nullopt;
-    if (std::abs(*m) < numerics::kGuardFlat && std::abs(*M) < numerics::kGuardFlat)
-        return std::pair{0.0, 0.0};
-    if (std::abs(*m - *M) < numerics::kGuardFlat) return std::pair{*m, *m};
-    return std::pair{*m, *M};
-}
-
-// The box per basis and the cut by the guard ------------------------------------------------------
-
-/// CORA's aux_enclosingInterval: the box of the intersection in the coordinates of the basis B;
-/// none if it is empty.
-std::optional<Interval> aux_box(const Tensor &normal, double gamma, const Tensor &B, const Set &S) {
-    const int64_t n = B.shape()[0];
-    const double inf = std::numeric_limits<double>::infinity();
-    std::vector<double> lb(static_cast<std::size_t>(n), -inf), ub(static_cast<std::size_t>(n), inf);
-    const Tensor rows = Tensor::concat({normal.matrix_transpose(), B.matrix_transpose()}, -2);
-    for (const Zonotope &Z : priv_zonotopes(S)) {
-        // the zonogons (n'x, l'x) of all basis vectors l at once
-        const std::vector<double> c = rows.matmul(Z.center()).data();
-        const Tensor GG = rows.matmul(Z.generators());
-        const int64_t m = GG.shape().back();
-        const std::vector<double> G = GG.data();
-        auto entry = [&](std::size_t r, std::size_t j) {
-            const double v = G[r * std::size_t(m) + j];
-            return std::abs(v) < machine_eps() ? 0.0 : v;
-        };
-        const double cx = std::abs(c[0]) < machine_eps() ? 0.0 : c[0];
-        for (std::size_t i = 0; i < std::size_t(n); ++i) {
-            Gens g(static_cast<std::size_t>(m));
-            for (std::size_t j = 0; j < std::size_t(m); ++j) g[j] = {entry(0, j), entry(i + 1, j)};
-            const double cy = std::abs(c[i + 1]) < machine_eps() ? 0.0 : c[i + 1];
-            const auto range = aux_bound_2d({cx, cy}, std::move(g), gamma);
-            if (!range) return std::nullopt;
-            lb[i] = std::max(lb[i], range->first);
-            ub[i] = std::min(ub[i], range->second);
-        }
-    }
-    // a basis vector along the normal takes the value of the hyperplane (CORA's robustProjection)
-    const std::vector<double> n_b = B.matrix_transpose().matmul(normal).data();
-    const double nn = normal.square().sum().item();
-    std::vector<std::size_t> along;
-    for (std::size_t i = 0; i < n_b.size(); ++i)
-        if (std::abs(n_b[i]) >= machine_eps()) along.push_back(i);
-    if (along.size() == 1) lb[along[0]] = ub[along[0]] = gamma * n_b[along[0]] / nn;
-    // small inversions are rounding; a real one is an empty intersection
-    for (std::size_t i = 0; i < lb.size(); ++i)
-        if (ub[i] < lb[i]) ub[i] += machine_eps();
-    for (std::size_t i = 0; i < lb.size(); ++i)
-        if (lb[i] > ub[i]) return std::nullopt;
-    return Interval(Tensor::like(B, lb, {n, 1}), Tensor::like(B, ub, {n, 1}));
+    return {lo, hi};
 }
 
 /// CORA's aux_tightenSet: the zonotope cut by the inequalities P of the guard; none if it misses.
@@ -240,14 +99,41 @@ std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,
     const double gamma = guard.be().data()[0];
     const bool inequalities = guard.A().shape()[0] > 0;
     std::vector<Zonotope> parts;
+    // The boxes per basis -------------------------------------------------------------------------
     for (const Tensor &basis : B) {
-        // the union of the boxes of the sets in this basis
-        std::optional<Interval> I;
-        for (const Set &S : R)
-            if (const std::optional<Interval> box = aux_box(normal, gamma, basis, S))
-                I = I ? I->unite(*box) : *box;
-        if (!I) return std::nullopt; // empty in one basis: empty
-        Zonotope Z = I->zonotope().linear_map(basis);
+        // the cuts of all sets, joined: the least lower and the greatest upper end
+        std::vector<double> lo, hi;
+        for (const Set &S : R) {
+            // a bundle is the intersection of its members: its cut lies in each member's
+            std::vector<double> l, u;
+            // the members' cuts, intersected
+            for (const Zonotope &Z : priv_zonotopes(S)) {
+                auto [lz, uz] = aux_cut(Z, normal, gamma, basis);
+                if (l.empty()) {
+                    l = lz;
+                    u = uz;
+                }
+                for (std::size_t k = 0; k < l.size(); ++k) {
+                    l[k] = std::max(l[k], lz[k]);
+                    u[k] = std::min(u[k], uz[k]);
+                }
+            }
+            if (lo.empty()) {
+                lo = l;
+                hi = u;
+            }
+            for (std::size_t k = 0; k < l.size(); ++k) {
+                lo[k] = std::min(lo[k], l[k]);
+                hi[k] = std::max(hi[k], u[k]);
+            }
+        }
+        // a box with inverted ends is an empty cut
+        for (std::size_t k = 0; k < lo.size(); ++k)
+            if (lo[k] > hi[k]) return std::nullopt;
+        const int64_t n = int64_t(lo.size());
+        Zonotope Z = Interval(Tensor::like(basis, lo, {n, 1}), Tensor::like(basis, hi, {n, 1}))
+                         .zonotope()
+                         .linear_map(basis);
         if (inequalities) {
             const std::optional<Zonotope> cut = aux_tighten(Z, Polytope(guard.A(), guard.b()));
             if (!cut) continue; // CORA drops the basis

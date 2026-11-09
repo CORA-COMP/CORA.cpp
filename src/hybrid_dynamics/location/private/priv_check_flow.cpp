@@ -108,7 +108,8 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
 
 // The test of a set -------------------------------------------------------------------------------
 
-/// Whether the flow may point along a at some point of the set projected onto the hyperplane.
+/// Whether the flow may point along a at some point of the set projected onto the hyperplane;
+/// false if a member of a bundle is certified to have no outward flow.
 bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S,
                     const Zonotope &U_state) {
     if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow())) {
@@ -122,20 +123,29 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
         const Zonotope R = aux_reduce_pca(Z.linear_map(B.matrix_transpose())).linear_map(B);
         return aux_nonlinear_flow_bound(*sys, a, R, U_state) > 0;
     }
+    // a linear flow follows CORALean's checkFlowFloat on each zonotope of the set
     const Tensor &A = priv_flow_matrix(loc, "checkFlow");
     const Tensor P = A.eye_like() - a.matmul(a.matrix_transpose());
-    const Tensor a_t = a.matrix_transpose(), a_A = a_t.matmul(A);
-    // the fast test at the projected center
-    const Tensor c = P.matmul(S->center()) + a * d;
-    if (a_A.matmul(c).item() + a_t.matmul(U_state.center()).item() > 0) return true;
-    const Zonotope Z = priv_zonotopes(S).front().linear_map(P) + a * d;
-    // a box of the projection in the basis of the normal, and the flow over it and over U
-    const Tensor B = priv_basis_of(a);
-    const Zonotope R = aux_reduce_pca(Z.linear_map(B.matrix_transpose())).linear_map(B);
-    const double flow =
-        a_A.matmul(R.center()).item() + a_A.matmul(R.generators()).abs().sum().item() +
-        a_t.matmul(U_state.center()).item() + a_t.matmul(U_state.generators()).abs().sum().item();
-    return flow > 0;
+    const int64_t n = A.shape()[0];
+    const std::vector<double> flow = A.data(), uc = U_state.center().data(), nv = a.data();
+    for (const Zonotope &Z : priv_zonotopes(S)) {
+        // the set projected onto the hyperplane
+        const Zonotope proj = Z.linear_map(P) + a * d;
+        // the fast test: the flow at the center, summed from the last term as sumUp
+        const std::vector<double> m = proj.center().data();
+        double outward = 0;
+        for (int64_t i = n - 1; i >= 0; --i) {
+            double row = 0;
+            for (int64_t j = n - 1; j >= 0; --j)
+                row = flow[std::size_t(i * n + j)] * m[std::size_t(j)] + row;
+            outward = nv[std::size_t(i)] * (row + uc[std::size_t(i)]) + outward;
+        }
+        if (!(outward <= 0)) continue;
+        // the flow set A proj + V, bounded from above along the normal
+        const double up = proj.linear_map(A).plus(U_state).support_function(a).item();
+        if (up <= 0) return false;
+    }
+    return true;
 }
 
 } // namespace
@@ -143,13 +153,18 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Set> priv_check_flow(const Location &loc, const Polytope &guard,
-                                 const std::vector<Set> &R, const Zonotope &U_state) {
-    const auto [a, d] = aux_outward(loc, guard, R.front());
+std::vector<Set> priv_check_flow_outward(const Location &loc, const Tensor &a, double d,
+                                         const std::vector<Set> &R, const Zonotope &U_state) {
     std::vector<Set> out;
     for (const Set &S : R)
         if (aux_flow_along(loc, a, d, S, U_state)) out.push_back(S);
     return out;
+}
+
+std::vector<Set> priv_check_flow(const Location &loc, const Polytope &guard,
+                                 const std::vector<Set> &R, const Zonotope &U_state) {
+    const auto [a, d] = aux_outward(loc, guard, R.front());
+    return priv_check_flow_outward(loc, a, d, R, U_state);
 }
 
 } // namespace cora
