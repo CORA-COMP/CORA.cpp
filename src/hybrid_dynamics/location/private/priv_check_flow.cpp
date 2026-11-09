@@ -3,13 +3,16 @@
 // The normal of the guard is turned to point out of the invariant (judged at the center of the
 // first set). A set is kept if the flow at the center of its projection onto the hyperplane points
 // along the normal, or else if the flow over a box of the projection (in the Gram-Schmidt basis of
-// the normal, reduced by PCA to order 1) can: sup(a'(A x + u)) > 0 for x in it and u in U.
+// the normal, reduced by PCA to order 1) can: sup(a'(A x + u)) > 0 for x in it and u in U. For a
+// nonlinear flow CORA bounds a' f over that box by a Taylor model; CORA.cpp bounds it by the
+// second-order Taylor form with the Hessian over the box, which is as exact for an affine f
+// (docs/cora-differences.md).
 //
 // Syntax:   std::vector<Set> P = priv_check_flow(loc, guard, R, U);
 // Inputs:   loc - the location
 //           guard - a hyperplane guard (one equality, maybe inequalities)
 //           R - the sets that meet it
-//           U - the input set in the state space (B U + c)
+//           U - the input set in the state space (B U + c), or that of f
 // Outputs:  P - the sets of R that the flow may carry through the guard, in their order
 // See also: priv_guard_intersect
 //
@@ -17,12 +20,13 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
 #include "hybrid_dynamics/location/private/priv.h"
 
+#include <algorithm>
 #include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -66,9 +70,58 @@ Zonotope aux_reduce_pca(const Zonotope &Z) {
     return {Z.center(), U.matmul(box.diag())};
 }
 
+// The flow over a set -----------------------------------------------------------------------------
+
+/// An upper bound of a' f(z) over z in R x box(U): the second-order Taylor form at the center,
+/// a' f(z_c) + |a' J(z_c) G| 1 + 1/2 sum_i |a_i| g' max|H_i(Z)| g with g the box radius of Z;
+/// exact for an affine f, as CORA's Taylor model of the flow.
+double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const Zonotope &R,
+                                const Zonotope &U) {
+    const bool inputs = sys.input_dim() > 0;
+    const Zonotope Ubox = U.interval().zonotope();
+    const Zonotope Z = inputs ? R.cart_prod(Ubox) : R;
+    const std::optional<Tensor> uc = inputs ? std::optional<Tensor>(Ubox.center()) : std::nullopt;
+    // the value and the linear part at the center
+    const Tensor a_t = a.matrix_transpose();
+    const Jacobians J = sys.jacobian(R.center(), uc);
+    const Tensor AB = inputs ? Tensor::concat({J.A, J.B}, -1) : J.A;
+    double bound = a_t.matmul(sys.dynamics(R.center(), uc)).item() +
+                   a_t.matmul(AB).matmul(Z.generators()).abs().sum().item();
+    // the remainder by the Hessian over the box of Z
+    const Interval box = Z.interval();
+    const int64_t n = sys.dim(), m = sys.input_dim(), dz = n + m;
+    const Range x_box(box.inf().slice(-2, 0, n), box.sup().slice(-2, 0, n));
+    const std::optional<Range> u_box =
+        inputs ? std::optional<Range>(Range(box.inf().slice(-2, n, dz), box.sup().slice(-2, n, dz)))
+               : std::nullopt;
+    const std::vector<std::optional<Range>> H = sys.hessian_enclosure(x_box, u_box);
+    const std::vector<double> g = Z.generators().abs().sum(-1, true).data(), w = a.data();
+    for (int64_t i = 0; i < n; ++i)
+        for (int64_t j = 0; j < dz; ++j)
+            for (int64_t k = 0; k < dz; ++k)
+                if (const auto &h = H[std::size_t((i * dz + j) * dz + k)])
+                    bound += 0.5 * std::abs(w[std::size_t(i)]) * g[std::size_t(j)] *
+                             g[std::size_t(k)] *
+                             std::max(std::abs(h->lo.item()), std::abs(h->hi.item()));
+    return bound;
+}
+
+// The test of a set -------------------------------------------------------------------------------
+
 /// Whether the flow may point along a at some point of the set projected onto the hyperplane.
 bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S,
                     const Zonotope &U_state) {
+    if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow())) {
+        // the fast test at the projected center, then the bound over the reduced projection
+        const Tensor P = a.eye_like(a.shape()[0]) - a.matmul(a.matrix_transpose());
+        const Tensor c = P.matmul(S->center()) + a * d;
+        if (a.matrix_transpose().matmul(priv_flow_at(loc, c, U_state, "checkFlow")).item() > 0)
+            return true;
+        const Zonotope Z = priv_zonotopes(S).front().linear_map(P) + a * d;
+        const Tensor B = priv_basis_of(a);
+        const Zonotope R = aux_reduce_pca(Z.linear_map(B.matrix_transpose())).linear_map(B);
+        return aux_nonlinear_flow_bound(*sys, a, R, U_state) > 0;
+    }
     const Tensor &A = priv_flow_matrix(loc, "checkFlow");
     const Tensor P = A.eye_like() - a.matmul(a.matrix_transpose());
     const Tensor a_t = a.matrix_transpose(), a_A = a_t.matmul(A);

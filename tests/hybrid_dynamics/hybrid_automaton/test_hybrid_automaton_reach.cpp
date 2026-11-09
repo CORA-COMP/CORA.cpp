@@ -5,7 +5,8 @@
 // every exact trajectory from random initial points lies, at every sampled time, in a set whose
 // time range holds that time (the stated property). A clock that reaches a hyperplane exactly at
 // a step jumps with the time-point set; specifications stop the analysis where they fail. The
-// ball with a LinParamSys flow (x' = (1 +- 0.001) v) bounces the same way.
+// ball with a LinParamSys flow (x' = (1 +- 0.001) v) bounces the same way, and so does the ball
+// written as a NonlinearSys.
 //
 // CORA: hybridDynamics/@hybridAutomaton/hybridAutomaton.m
 // CORA: hybridDynamics/@hybridAutomaton/reach.m
@@ -29,7 +30,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger, Niklas Kochdumper, Stefan Liu
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -51,15 +52,23 @@ namespace {
 
 constexpr double kG = 9.81, kBounce = 0.75;
 
+/// The flow of the ball: a LinearSys, a LinParamSys, or the same equations as a NonlinearSys.
+enum class BallFlow { linear, parametric, nonlinear };
+
 /// The ball on the floor x >= 0: one location, which the bounce enters again; its flow a
-/// LinearSys, or a LinParamSys whose x' = (1 +- 0.001) v holds the nominal ball.
-HybridAutomaton aux_ball(bool parametric = false) {
+/// LinearSys, a LinParamSys whose x' = (1 +- 0.001) v holds the nominal ball, or a NonlinearSys.
+HybridAutomaton aux_ball(BallFlow kind = BallFlow::linear) {
     const Polytope floor(Tensor({{-1.0, 0.0}}), column({0.0}));
     const Polytope guard(Tensor({{0.0, 1.0}}), column({0.0}), Tensor({{1.0, 0.0}}), column({0.0}));
     const LinearReset bounce(Tensor({{1.0, 0.0}, {0.0, -kBounce}}));
     const std::vector<Transition> trans{Transition(guard, bounce, 0)};
     const Tensor A({{0.0, 1.0}, {0.0, 0.0}});
-    if (parametric) {
+    if (kind == BallFlow::nonlinear) {
+        const NonlinearSys sys(
+            [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], Expr(-kG)}; }, 2);
+        return HybridAutomaton("ball", {Location("fall", floor, trans, sys)});
+    }
+    if (kind == BallFlow::parametric) {
         const MatZonotope set(A, Tensor({{0.0, 0.001}, {0.0, 0.0}}).expand_dims(0));
         const LinParamSys sys(set, Tensor::zeros({2, 1}), column({0.0, -kG}));
         return HybridAutomaton("ball", {Location("fall", floor, trans, sys)});
@@ -119,8 +128,8 @@ bool aux_covered(const HybridReachSet &R, double t, const Tensor &p) {
 
 /// The first jump at the hit times sqrt(2 x0 / g) of [1, 1.2], with the speed 0.75 sqrt(2 g x0)
 /// up; the exact trajectories of random heights lie in the sets of their times.
-void ball(const std::string &name, alg::GuardIntersect method, bool parametric = false) {
-    const HybridReachSet R = aux_ball(parametric).reach(aux_drop(), aux_alg(std::move(method)));
+void ball(const std::string &name, alg::GuardIntersect method, BallFlow kind = BallFlow::linear) {
+    const HybridReachSet R = aux_ball(kind).reach(aux_drop(), aux_alg(std::move(method)));
     check(R.verified && R.branches.size() >= 3, name + ": the ball bounces twice by 1.5 s");
     const LocationReachSet &second = R.branches[1];
     const double t_lo = std::sqrt(2 * 1.0 / kG), t_hi = std::sqrt(2 * 1.2 / kG);
@@ -244,9 +253,12 @@ int main() {
     ball("nondetGuard pca", alg::NondetGuard{{Enclose::pca}});
     ball("conZonotope box pca", alg::ConZonotopeGuard{{Enclose::box, Enclose::pca}, 5});
     // a LinParamSys flow: CORA's initReach and post in the location
-    ball("LinParamSys zonoGirard box", alg::ZonoGirard{{Enclose::box}}, true);
+    ball("LinParamSys zonoGirard box", alg::ZonoGirard{{Enclose::box}}, BallFlow::parametric);
     ball("LinParamSys conZonotope box pca", alg::ConZonotopeGuard{{Enclose::box, Enclose::pca}, 5},
-         true);
+         BallFlow::parametric);
+    // a NonlinearSys flow: alg "lin" in the location, the flow evaluated by checkFlow
+    ball("NonlinearSys nondetGuard pca", alg::NondetGuard{{Enclose::pca}}, BallFlow::nonlinear);
+    ball("NonlinearSys zonoGirard flow", alg::ZonoGirard{{Enclose::flow}}, BallFlow::nonlinear);
     time_triggered();
     specifications();
     checks_and_their_switch();

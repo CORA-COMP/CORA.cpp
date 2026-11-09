@@ -262,23 +262,48 @@ struct RungeKutta4 {
 
 // Reachability of nonlinear systems -------------------------------------------------------------
 
-/// CORA's alg "lin": each step linearizes at the center of the set and bounds the linearization
-/// error by the Lagrange remainder over an enclosure of the step.
+/// The orders of CORA's alg "lin" that NonlinearSys reach and a nonlinear location share: the
+/// Taylor order of the linearization error, and the orders the sets of that error are reduced to.
+inline void validate_tensor_orders(int tensor_order, int error_order, int intermediate_order,
+                                   const char *name) {
+    detail::Validation entry;
+    CORA_CHECK(tensor_order == 2 || tensor_order == 3, Error::wrong_value, [&] {
+        return std::string(name) + ": tensor_order must be 2 or 3, got " +
+               std::to_string(tensor_order);
+    });
+    // CORA asks for errorOrder and intermediateOrder only at tensorOrder 3
+    if (tensor_order == 3) {
+        validate_order(error_order, 1, "error_order (needed at tensor_order 3)", name);
+        validate_order(intermediate_order, 1, "intermediate_order (needed at tensor_order 3)",
+                       name);
+    }
+}
+
+/// CORA's alg "lin": each step linearizes at the center of the set (moved half a step along the
+/// flow) and bounds the linearization error by the Lagrange remainder of the Taylor expansion of
+/// order tensor_order over the reachable set of the step, enlarged until it holds.
 struct Linearization {
-    double time_step = 0;    ///< the step size, required
-    int taylor_terms = 4;    ///< the order of the Taylor series of the linearized system
-    int zonotope_order = 50; ///< the sets are reduced to zonotope_order * n generators
+    double time_step = 0;       ///< the step size, required
+    int taylor_terms = 4;       ///< the order of the Taylor series of the linearized system
+    int zonotope_order = 50;    ///< the sets are reduced to zonotope_order * n generators
+    int tensor_order = 2;       ///< 2: the remainder by the Hessian; 3: by the third derivatives
+    int error_order = 0;        ///< tensor_order 3: the order of the set the Hessian maps
+    int intermediate_order = 0; ///< tensor_order 3: the order of the error set
 
     static constexpr const char *name = "linearization";
     static constexpr auto fields() {
         return std::make_tuple(field("time_step", &Linearization::time_step),
                                field("taylor_terms", &Linearization::taylor_terms),
-                               field("zonotope_order", &Linearization::zonotope_order));
+                               field("zonotope_order", &Linearization::zonotope_order),
+                               field("tensor_order", &Linearization::tensor_order),
+                               field("error_order", &Linearization::error_order),
+                               field("intermediate_order", &Linearization::intermediate_order));
     }
     void validate() const {
         validate_time_step(time_step, "Linearization");
         validate_order(taylor_terms, 1, "taylor_terms", "Linearization");
         validate_order(zonotope_order, 1, "zonotope_order", "Linearization");
+        validate_tensor_orders(tensor_order, error_order, intermediate_order, "Linearization");
     }
 };
 
@@ -342,12 +367,16 @@ struct ConZonotopeGuard {
 using GuardIntersect = std::variant<ZonoGirard, NondetGuard, ConZonotopeGuard>;
 
 /// CORA's reach of a hybridAutomaton with linAlg "standard": in each location the algorithm
-/// Standard until the sets leave the invariant, then one jump per hit guard.
+/// Standard (a NonlinearSys flow: Linearization) until the sets leave the invariant, then one
+/// jump per hit guard.
 struct HybridStandard {
     std::vector<double> time_step; ///< one step size, or one per location, required
     int taylor_terms = 10;         ///< the order of the Taylor series of the curvature enlargement
     int zonotope_order = 50;       ///< the order the sets are reduced to per step
     int intermediate_terms = 2;    ///< a LinParamSys flow: its LinParamStandard::intermediate_terms
+    int tensor_order = 2;          ///< a NonlinearSys flow: its Linearization::tensor_order
+    int error_order = 0;           ///< a NonlinearSys flow: its Linearization::error_order
+    int intermediate_order = 0;    ///< a NonlinearSys flow: its Linearization::intermediate_order
     GuardIntersect guard_intersect = ZonoGirard{}; ///< how the guards are intersected
 
     // the fields as Python sees them, and their checks
@@ -357,6 +386,9 @@ struct HybridStandard {
                                field("taylor_terms", &HybridStandard::taylor_terms),
                                field("zonotope_order", &HybridStandard::zonotope_order),
                                field("intermediate_terms", &HybridStandard::intermediate_terms),
+                               field("tensor_order", &HybridStandard::tensor_order),
+                               field("error_order", &HybridStandard::error_order),
+                               field("intermediate_order", &HybridStandard::intermediate_order),
                                field("guard_intersect", &HybridStandard::guard_intersect));
     }
     void validate() const {
@@ -370,6 +402,7 @@ struct HybridStandard {
         validate_order(taylor_terms, 1, "taylor_terms", "HybridStandard");
         validate_order(zonotope_order, 1, "zonotope_order", "HybridStandard");
         validate_order(intermediate_terms, 2, "intermediate_terms", "HybridStandard");
+        validate_tensor_orders(tensor_order, error_order, intermediate_order, "HybridStandard");
         std::visit([](const auto &g) { g.validate(); }, guard_intersect);
     }
 };

@@ -18,7 +18,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -104,14 +104,13 @@ std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> 
             B.push_back(aux_pca(aux_generators(R, guard, hyperplane)));
             break;
         case alg::Enclose::flow: {
-            // the flow A c + u at the mean center, on the hyperplane if the guard is one
+            // the flow at the mean center, on the hyperplane if the guard is one
             Tensor c = aux_mean_center(R);
             if (hyperplane) {
                 const auto [a, d] = priv_hyperplane(guard);
                 c = aux_onto_hyperplane(guard, c) + a * d;
             }
-            const Tensor dir =
-                priv_flow_matrix(loc, "calcBasis 'flow'").matmul(c) + U_state.center();
+            const Tensor dir = priv_flow_at(loc, c, U_state, "calcBasis 'flow'");
             B.push_back(priv_basis_of(dir / std::sqrt(dir.square().sum().item())));
             break;
         }

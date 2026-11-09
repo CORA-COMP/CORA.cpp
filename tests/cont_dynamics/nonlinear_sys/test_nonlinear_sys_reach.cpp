@@ -1,14 +1,19 @@
 // test_nonlinear_sys_reach - nonlinearSys reach: exact on a linear system, and simulations of the
 //
-// van der Pol oscillator stay inside the enclosures
+// van der Pol oscillator, also forced by an input, stay inside the enclosures
 //
 // CORA: contDynamics/@contDynamics/linReach.m
 // CORA: contDynamics/@contDynamics/reach.m
 // CORA: contDynamics/@nonlinearSys/nonlinearSys.m
+// CORA: contDynamics/@nonlinearSys/initReach.m
+// CORA: contDynamics/@nonlinearSys/post.m
+// PROPERTY: contDynamics/@contDynamics/linReach.m
+// PROPERTY: contDynamics/@nonlinearSys/initReach.m
+// PROPERTY: contDynamics/@nonlinearSys/post.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -118,9 +123,43 @@ void the_zonotope_order_limits_the_generators(const std::string &b) {
     const ReachSet R = van_der_pol().reach(
         {.initial_set = van_der_pol_start(), .t_final = 1.0},
         alg::Linearization{.time_step = 0.02, .taylor_terms = 4, .zonotope_order = 3});
+    // CORA reduces in post, so the sets of the first step keep all their generators
     int64_t most = 0;
-    for (const Zonotope &Z : R.time_point) most = std::max(most, Z.generators().shape()[1]);
+    for (std::size_t k = 2; k < R.time_point.size(); ++k)
+        most = std::max(most, R.time_point[k].generators().shape()[1]);
     check(most <= 3 * 2, b + ": at most order * n = 6 generators, found " + std::to_string(most));
+}
+
+/// The forced van der Pol oscillator x0' = x1, x1' = (1 - x0^2) x1 - x0 + u, u in [-0.1, 0.1]:
+/// trajectories with random constant inputs stay in the enclosures, at tensor orders 2 and 3.
+void forced_simulations_stay_in_the_enclosures(const std::string &b) {
+    const NonlinearSys sys(
+        [](const std::vector<Expr> &x, const std::vector<Expr> &u) {
+            return std::vector<Expr>{x[1], (1 - x[0] * x[0]) * x[1] - x[0] + u[0]};
+        },
+        2, 1);
+    const Zonotope X0 = van_der_pol_start(), U(Tensor({0.0}), Tensor({{0.1}}));
+    for (int order : {2, 3}) {
+        const ReachSet R = sys.reach({.initial_set = X0, .input_set = U, .t_final = 1.0},
+                                     alg::Linearization{.time_step = 0.01,
+                                                        .taylor_terms = 4,
+                                                        .zonotope_order = 20,
+                                                        .tensor_order = order,
+                                                        .error_order = 5,
+                                                        .intermediate_order = 10});
+        cora::Rng rng(7);
+        const std::vector<Tensor> x =
+            sys.simulate_random({.initial_set = Set(X0), .input_set = Set(U), .t_final = 1.0},
+                                alg::RungeKutta4{.time_step = 0.01}, 20, rng);
+        int outside = 0;
+        // every sampled state lies in the box of its time-point set
+        for (std::size_t k = 0; k < x.size(); ++k) {
+            const std::vector<double> d = x[k].data();
+            for (int j = 0; j < 20; ++j) outside += !in_box(R.time_point[k], d, 20, j, 1e-9);
+        }
+        check(outside == 0, b + ": tensor order " + std::to_string(order) + ": " +
+                                std::to_string(outside) + " points outside");
+    }
 }
 
 // wrong arguments are described
@@ -148,6 +187,11 @@ void wrong_arguments_are_described(const std::string &b) {
                   alg::Linearization{.time_step = 0.01, .taylor_terms = 4, .zonotope_order = 0});
           }),
           b + ": zonotope order 0");
+    check(test::throws([&] {
+              sys.reach({.initial_set = X0, .t_final = 1.0},
+                        alg::Linearization{.time_step = 0.01, .tensor_order = 3});
+          }),
+          b + ": tensor order 3 without its orders");
 }
 
 /// An input set is refused (no inputs); with the checks off the sets are the same.
@@ -189,6 +233,7 @@ int main() {
         simulations_stay_in_the_enclosures(b);
         if (b == "eigen") the_enclosure_stays_tight(b); // the slowest test, on one backend
         the_zonotope_order_limits_the_generators(b);
+        forced_simulations_stay_in_the_enclosures(b);
         wrong_arguments_are_described(b);
     });
     checks_and_their_switch();

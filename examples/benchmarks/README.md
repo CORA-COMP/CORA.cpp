@@ -117,12 +117,52 @@ sets and warns (`CORA:linParamSys`); it is left out until the model or CORA is f
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
 of each family also an `example` test (CONTRIBUTING.md, "Test suites").
 
+## NLN results
+
+The ARCH-COMP NLN instances of MATLAB CORA (`examples/ARCHcompetition/nonlinear/*.m`), ported as
+they are in CORA (ARCH23 scripts): `benchmark_nonlinear_reach_arch23_trafficscenario` (TRAF22) and
+`benchmark_hybrid_reach_arch23_spacecraft` (SPRE22), both by `NonlinearSys` reach with alg "lin"
+(`alg::Linearization`, tensor order 2). The expected verdict is that of the script and of the
+ARCH-COMP26 NLN report (Geretti et al., "ARCH-COMP26 Category Report: Continuous and Hybrid
+Systems with Nonlinear Dynamics", EPiC Series in Computing 110, pp. 52-84), whose CORA and
+JuliaReach times are from the same machine as CORA.cpp's (core preset, 09-November-2026, one run
+each; other jobs share its 16 CPUs). The quality metrics of the report (LALO width of x4, ROBE
+width of s, LOVO area) belong to instances that are not ported yet; TRAF22 and SPRE22 have none.
+
+| instance | expected | CORA.cpp | CORA.cpp [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] | metric |
+| --- | --- | --- | --- | --- | --- | --- |
+| TRAF22 | 1 | 1 | 0.91 | 152 | 32 | - |
+| SPRE22 | 1 | 1 | 1.04 | 37 | 61 | - |
+
+**TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
+segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
+`nonlinParamSys` whose parameters (K and u_ref of the segment) are numbers, which CORA linearizes as
+a `linearSys`; CORA.cpp builds one `NonlinearSys` per segment with the parameters as constants, the
+same system (`intermediateTerms` has no effect there; docs/cora-differences.md). Its time includes
+the occupancy sets of the script (the car's body over each set, 660 zonotopes and their vertices;
+no file is written), as the script's `tComp` does; the ARCH26 report times the reachable sets only.
+MATLAB CORA v2026.1.0 (R2024b, this machine) gives the same verdict in 262 s, and the hull of the
+applied inputs, `[-0.4988, 0.5001] x [-8.4882, 0.4826]`, agrees with CORA.cpp's to all printed
+digits, as do the boxes of the first and the last set. ARCH26 defines the same scenario
+(BEL_Putte-4_2_T-1, the same sets Z, U, W) and adds a collision check of the occupancy sets by the
+benchmark's Python script, which neither CORA's script nor CORA.cpp runs.
+
+**SPRE22** is the nonlinear spacecraft rendezvous with the passive mode entered for t in [120, 150]
+(`rendezvous_nonlinear_passive_nondet.m`), nondetGuard with PCA, time steps 0.2 / 0.05 / 0.2. CORA
+checks the flow across the guard x = -100 by a Taylor model, CORA.cpp by a second-order Taylor form,
+which agrees for this guard (its flow x' = vx is linear; docs/cora-differences.md). MATLAB CORA v2026.1.0 (R2024b,
+this machine) verifies it in 68.8 s with the same three branches (559, 830 and 415 sets, the same
+times), and the box of its last set agrees with CORA.cpp's to all printed digits. ARCH26 states the
+same specifications as the script (line of sight 20 degrees, velocity bounds, no hit of the station
+[-1, 1]^2 after the abort).
+
 ## Run
 
 ```bash
 cmake --build --preset core                                   # build/core/benchmarks/benchmark_linear_*
 build/core/benchmarks/benchmark_linear_verify_fast_arch23_iss [ISSF01_ISS01 ...]
 build/core/benchmarks/benchmark_hybrid_reach_arch23_rendezvous [SRA01 ...]   # CORACPP_BENCHMARK_VERBOSE=1: the branches
+build/core/benchmarks/benchmark_nonlinear_reach_arch23_trafficscenario         # TRAF22
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 

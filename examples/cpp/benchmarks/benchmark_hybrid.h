@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -86,6 +86,15 @@ inline bool run_hybrid(const HybridInstance &inst) {
                       << "): " << b.time_interval.size() << " sets from "
                       << b.time_point_times.front()[0] << " to " << b.time_point_times.back()[1]
                       << std::endl;
+    // and the box of the last set, to compare with MATLAB
+    if (std::getenv("CORACPP_BENCHMARK_VERBOSE") && !R.branches.empty()) {
+        const Interval I = R.branches.back().time_point.back()->interval();
+        std::cerr << "    last set: center";
+        for (double x : I.center().data()) std::cerr << " " << x;
+        std::cerr << ", radius";
+        for (double x : I.rad().data()) std::cerr << " " << x;
+        std::cerr << '\n';
+    }
     return verified == inst.expected;
 }
 
