@@ -16,9 +16,9 @@
 // Outputs:  res - verified (false if undecided at a step below 1e-12), and the run's statistics
 // See also: LinearSys::verify
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   09-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
@@ -491,9 +491,15 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
         const int N = static_cast<int>(std::round(t_final / time_step));
         res.time_step = time_step;
         res.num_steps = N;
+        // The interval matrices first, so a step they reject never pays for e^{A dt}.
+        IntMat F, G;
+        if (!aux_intmat(A, isu, E, time_step, F, G)) {
+            time_step *= kShrinkNonconverged;
+            continue;
+        }
         const Tensor Delta = aux_expm(A, E, time_step);
 
-        // The constant input solution and the interval matrices; a slow sum shrinks the step.
+        // The constant input solution; a slow sum shrinks the step.
         Tensor Pu = u.zeros_like();
         if (isu) {
             const std::optional<Tensor> P = aux_particular(A, u, E, Delta, time_step);
@@ -502,11 +508,6 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
                 continue;
             }
             Pu = *P;
-        }
-        IntMat F, G;
-        if (!aux_intmat(A, isu, E, time_step, F, G)) {
-            time_step *= kShrinkNonconverged;
-            continue;
         }
 
         // The affine solution at the time points: a positive distance is a hit.

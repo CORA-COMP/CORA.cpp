@@ -28,11 +28,12 @@ and the model files of `models/Cora/` (the powertrain's Jacobians written out fr
 
 The verdict is CORA's `res` (1 verified, 0 not); every one equals MATLAB CORA's, the expected
 verdict of the script (the ARCH-COMP 2023 AFF report: the ISU instances, RAND02, SRU01 and
-SRU02 are not verified), except PLAN01 (below). CORA.cpp times are wall clock on this machine
-(16 shared cores, core preset, 09-November-2026). The ARCH26 columns are the times of CORA (MATLAB) and JuliaReach
+SRU02 are not verified), except PLAN01 (below). CORA.cpp times are wall clock (core preset,
+09-November-2026, one run each). The ARCH26 columns are the times of CORA (MATLAB) and JuliaReach
 (continuous time) in the ARCH-COMP26 AFF report (Althoff, Carraro, Forets, Perschl, Schilling,
 "ARCH-COMP26 Category Report: Continuous and Hybrid Systems with Linear Continuous Dynamics", EPiC
-Series in Computing 110, pp. 28-51), measured on other machines: compare orders of magnitude only.
+Series in Computing 110, pp. 28-51), run on the same machine as CORA.cpp here, so the times compare
+directly; other jobs share its 16 CPUs, which can slow a single run.
 ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 and adds HEAT04 (heat50, 125 000
 states, Krylov), a target for later: not run here (its data would be about 14 MB). The instances
 here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet.
@@ -40,46 +41,46 @@ here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet
 | instance | expected | CORA.cpp | CORA.cpp [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] |
 | --- | --- | --- | --- | --- | --- |
 | HEAT01 | 1 | 1 | 0.06 | 0.13 | 0.04 |
-| HEAT02 | 1 | 1 | 3.86 | 3.04 | 2.60 |
-| HEAT03 | 1 | 1 | 15.5 | 21.8 | - |
-| CBC01 | 1 | 1 | 0.21 | 0.28 | 0.05 |
-| CBC02 | 1 | 1 | 7.73 | 3.68 | 0.80 |
-| CBC03 | 1 | 1 | 67.9 | 37.27 | 3.74 |
-| CBF01 | 1 | 1 | 0.15 | 0.40 | 1.99 |
-| CBF02 | 1 | 1 | 7.42 | 5.38 | 70.0 |
-| CBF03 | 1 | 1 | 89.2 | 67.79 | 869 |
+| HEAT02 | 1 | 1 | 3.45 | 3.04 | 2.60 |
+| HEAT03 | 1 | 1 | 14.6 | 21.8 | - |
+| CBC01 | 1 | 1 | 0.16 | 0.28 | 0.05 |
+| CBC02 | 1 | 1 | 3.92 | 3.68 | 0.80 |
+| CBC03 | 1 | 1 | 44.0 | 37.27 | 3.74 |
+| CBF01 | 1 | 1 | 0.13 | 0.40 | 1.99 |
+| CBF02 | 1 | 1 | 3.68 | 5.38 | 70.0 |
+| CBF03 | 1 | 1 | 66.2 | 67.79 | 869 |
 | ISSC01_ISS02 | 1 | 1 | 0.15 | - | - |
-| ISSC01_ISU02 | 0 | 0 | 0.52 | - | - |
+| ISSC01_ISU02 | 0 | 0 | 0.50 | - | - |
 | ISSF01_ISS01 | 1 | 1 | 0.58 | - | - |
 | ISSF01_ISU01 | 0 | 0 | 0.17 | - | - |
 | RAND01 | 1 | 1 | 0.002 | - | - |
-| RAND02 | 0 | 0 | 0.015 | - | - |
-| SRNA01 | 1 | 1 | 0.18 | 51.87 | 1.09 |
+| RAND02 | 0 | 0 | 0.017 | - | - |
+| SRNA01 | 1 | 1 | 0.19 | 51.87 | 1.09 |
 | SRA01 | 1 | 1 | 0.07 | 10.94 | 1.17 |
 | SRA02 | 1 | 1 | 0.08 | 17.49 | 1.24 |
 | SRA03 | 1 | 1 | 0.15 | 27.40 | 1.79 |
-| SRA04 | 1 | 1 | 0.30 | 39.05 | 108 |
-| SRA05 | 1 | 1 | 0.37 | 67.33 | - |
-| SRA06 | 1 | 1 | 0.37 | 71.46 | - |
-| SRA07 | 1 | 1 | 5.32 | 120 | - |
+| SRA04 | 1 | 1 | 0.29 | 39.05 | 108 |
+| SRA05 | 1 | 1 | 0.36 | 67.33 | - |
+| SRA06 | 1 | 1 | 0.36 | 71.46 | - |
+| SRA07 | 1 | 1 | 5.34 | 120 | - |
 | SRA08 | 1 | 1 | 14.0 | 239 | - |
 | SRU01 | 0 | 0 | 0.15 | 25.86 | 11.79 |
-| SRU02 | 0 | 0 | 15.7 | 244 | 20.00 |
+| SRU02 | 0 | 0 | 15.9 | 244 | 20.00 |
 | DTN01 | 1 | 1 | 0.29 | 9.69 | 0.005 |
 | DTN02 | 1 | 1 | 0.22 | 10.43 | 0.005 |
 | DTN03 | 1 | 1 | 0.23 | 10.27 | 0.006 |
-| DTN04 | 1 | 1 | 10.3 | 48.29 | 0.127 |
+| DTN04 | 1 | 1 | 11.7 | 48.29 | 0.127 |
 | DTN05 | 1 | 1 | 18.3 | 90.76 | 0.007 |
-| DTN06 | 1 | 1 | 46.5 | 227 | 0.009 |
-| PLAA01_BND42 | 1 | 1 | 10.6 | 25.02 | 180 |
-| PLAA01_BND50 | 1 | 1 | 3.03 | 7.77 | 22.01 |
-| PLAD01_BND30 | 1 | 1 | 0.24 | 4.03 | 62.82 |
-| PLAD01_BND42 | 1 | 1 | 0.05 | 3.07 | 0.05 |
-| PLAN01 | 1 | 0 (see below) | 49.2 | 162 | - |
-| GRBX01 | 1 | 1 | 0.28 | 2.28 | 2.89 |
-| GRBX02 | 1 | 1 | 0.29 | 2.44 | 3.15 |
+| DTN06 | 1 | 1 | 46.3 | 227 | 0.009 |
+| PLAA01_BND42 | 1 | 1 | 11.8 | 25.02 | 180 |
+| PLAA01_BND50 | 1 | 1 | 2.62 | 7.77 | 22.01 |
+| PLAD01_BND30 | 1 | 1 | 0.15 | 4.03 | 62.82 |
+| PLAD01_BND42 | 1 | 1 | 0.03 | 3.07 | 0.05 |
+| PLAN01 | 1 | 0 (see below) | 53.6 | 162 | - |
+| GRBX01 | 1 | 1 | 0.12 | 2.28 | 2.89 |
+| GRBX02 | 1 | 1 | 0.12 | 2.44 | 3.15 |
 | BRKDC01 | 1 | 1 | 0.04 | 22.66 | 0.10 |
-| BRKNC01 | 1 | 1 | 39.6 | 32.07 | 0.17 |
+| BRKNC01 | 1 | 1 | 6.96 | 32.07 | 0.17 |
 | BRKNP01 | 1 | - (NaN in CORA) | - | 52.20 | 16.99 |
 
 **PLAN01** differs: CORA.cpp's 50 s reach with varying parameters reaches x1, x4, x7 >= -50.65,
