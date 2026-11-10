@@ -4,8 +4,8 @@
 // copied from the scripts: BRKDC01 samples the controller every T_sample by 1000 reach calls of
 // the linear system and the reset between them; BRKNC01 is the hybrid automaton whose clock
 // x5 jumps within [T_sample + t_min, T_sample + t_max]. Both check x2 <= x0 on every set.
-// BRKNP01 is BRKNC01 with a LinParamSys flow and MATLAB CORA's verdict is 0, but it takes
-// over 30 minutes here, so it runs only when named (README, "BRKNP01").
+// BRKNP01 is BRKNC01 with a LinParamSys flow; MATLAB CORA's verdict is 0, as here: the curvature
+// of its constant input is unbounded at this step size and reach raises reach_set_explosion.
 //
 // Syntax:   build/core/benchmarks/benchmark_hybrid_reach_arch23_brake [instance ...]
 // Outputs:  one line 'benchmark,instance,result,time' per instance, as the MATLAB scripts
@@ -128,7 +128,16 @@ bool aux_brknp01() {
     problem.t_final = 0.1;
     alg::HybridStandard a = aux_options(10);
     a.intermediate_terms = 3;
-    const HybridReachSet Rs = HA.reach(problem, a);
+    // the curvature of U = {1} is unbounded here (cora-differences.md): no verdict "verified"
+    std::optional<HybridReachSet> reached;
+    try {
+        reached = HA.reach(problem, a);
+    } catch (const Error &e) {
+        if (e.id() != Error::reach_set_explosion) throw;
+        std::cerr << "  " << e.what() << '\n';
+        return false;
+    }
+    const HybridReachSet &Rs = *reached;
     // the period t of each branch; the last set below x0 sets t_max
     double t_max = 0, t = 0;
     for (const LocationReachSet &branch : Rs.branches) {
@@ -151,8 +160,8 @@ bool aux_brknp01() {
 // ===========================================  MAIN  =========================================== //
 
 int main(int argc, char **argv) {
-    // MATLAB CORA verifies all but BRKNP01, which runs only when named (README "BRKNP01")
-    const std::vector<std::string> family = {"BRKDC01", "BRKNC01"};
+    // MATLAB CORA verifies all but BRKNP01 (verdict 0 expected)
+    const std::vector<std::string> family = {"BRKDC01", "BRKNC01", "BRKNP01"};
     return cora::bench::run_family(argc, argv, family, [](const std::string &name) {
         const auto start = std::chrono::steady_clock::now();
         bool verified = false;

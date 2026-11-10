@@ -16,7 +16,7 @@ as `savedata.tComp` in MATLAB. The MATLAB side is the original scripts, run from
 | `rendezvous` | SRA01-08, SRNA01, SRU01, SRU02 | hybrid reach: zonoGirard or nondetGuard, enclose box / pca |
 | `gearbox` | GRBX01, GRBX02 | hybrid reach: zonoGirard, enclose box + pca |
 | `powertrain` | DTN01-06 | hybrid reach: zonoGirard, enclose pca |
-| `brake` | BRKDC01 (linear reach and resets), BRKNC01, BRKNP01 (a LinParamSys flow; by name only, see below) | hybrid reach: conZonotope, enclose box + pca |
+| `brake` | BRKDC01 (linear reach and resets), BRKNC01, BRKNP01 (a LinParamSys flow, see below) | hybrid reach: conZonotope, enclose box + pca |
 | `platoon` | PLAA01_BND42, PLAA01_BND50 (LinParamSys, constParam), PLAD01_BND30, PLAD01_BND42 (LinearSys switching every 5 s), PLAN01 (varParam, then an invariant) | linParamSys reach / linearSys reach |
 
 The hybrid and platoon families have no data files: their models are small and are C++ builder
@@ -81,7 +81,7 @@ here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet
 | GRBX02 | 1 | 1 | 0.037 | 2.44 | 3.15 |
 | BRKDC01 | 1 | 1 | 0.037 | 22.66 | 0.10 |
 | BRKNC01 | 1 | 1 | 6.58 | 32.07 | 0.17 |
-| BRKNP01 | 0 | - (not finished in 30 min) | - | 52.20 | 16.99 |
+| BRKNP01 | 0 | 0 (reach_set_explosion) | 0.001 | 52.20 | 16.99 |
 
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
 (verdict 0 in 169 s), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
@@ -109,11 +109,14 @@ CORA, so the same holds here. HEAT03 takes about 15 s, so it is a `benchmark` te
 (verdict 0 in 883 s, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
 becomes the constant input `uTrans = 1` with `U = {0}`, which does not hold the origin, so
 `priv_inputTie` adds the curvature of the constant input; its series does not converge
-(`norm(A, inf) r / (taylorTerms + 2)` is about 18 for `r = 2e-5`). The driver ports the script
-(`benchmark_hybrid_reach_arch23_brake BRKNP01`: the LinParamSys flow, conZonotope guards of order 5,
-the script's `tMax` loop), but CORA.cpp did not finish within 30 minutes (core preset, 09-November-2026),
-so it is not a ctest test and not in the default run of the family. The ARCH26 report lists it as
-verified (52.20 s), with a different setup.
+(`norm(A, inf) r / (taylorTerms + 2)` is 18.3 for `r = 2e-5`) and its remainder is unbounded.
+CORA prints the warning and then drops the remainder (`intervalMatrix + interval` adds nothing),
+so its sets are finite but miss trajectories. CORA.cpp, as CORALean, keeps the remainder: the
+sets are unbounded, `reach` raises `reach_set_explosion` at once (0.001 s) and the driver reports
+verdict 0, CORA's. Before that error CORA.cpp ran for over 30 minutes: Inf times a zero entry of
+`uTrans` gave NaN sets, which the hybrid loop jumped from again and again at the same time
+(docs/cora-differences.md). The ARCH26 report lists BRKNP01 as verified (52.20 s), with a
+different setup.
 
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
 of each family also an `example` test (CONTRIBUTING.md, "Test suites").
