@@ -142,15 +142,9 @@ HostMatVec priv_state_matvec(const LinearSys &sys) {
     const int64_t n = sys.dim();
     if (const SparseMatrix *S = sys.A_sparse())
         return {n, [S](const double *x, double *y) { S->matvec(x, y); }};
-    // a dense A, row by row on the host
-    auto A = std::make_shared<const std::vector<double>>(sys.A().data());
-    return {n, [A, n](const double *x, double *y) {
-                for (int64_t r = 0; r < n; ++r) {
-                    double s = 0.0;
-                    for (int64_t c = 0; c < n; ++c) s += (*A)[size_t(r * n + c)] * x[c];
-                    y[r] = s;
-                }
-            }};
+    // a dense A through the kernel of a sparse one: the same sets on every compiler (a*b + c fuses)
+    auto D = std::make_shared<const SparseMatrix>(SparseMatrix::from_dense(sys.A()));
+    return {n, [D](const double *x, double *y) { D->matvec(x, y); }};
 }
 
 HostMatVec priv_integrator_matvec(const HostMatVec &A, const std::vector<double> &u) {

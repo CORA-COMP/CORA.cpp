@@ -123,7 +123,7 @@ def write_heat03(folder):
             "matrices": entries, "specs": [], "expected": {"verified": 1}}
     with open(os.path.join(folder, "HEAT03.bin"), "wb") as f:
         f.write(blob)
-    with open(os.path.join(folder, "HEAT03.json"), "w") as f:
+    with open(os.path.join(folder, "HEAT03.json"), "w", newline="\n") as f:
         f.write(json.dumps(meta, indent=2) + "\n")
 
 

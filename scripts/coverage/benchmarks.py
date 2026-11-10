@@ -257,26 +257,36 @@ def gcov_files(build, root):
     return sorted(executed)
 
 
-def measure(root, build, names, timeout):
-    """`{instance: {"files": [...]}}` or `{"skipped": reason}` from running each on its own."""
+def measure(root, build, names, timeout, committed):
+    """`{instance: {"files": [...]}}` or `{"skipped": reason}` from running each on its own. An
+    instance that the machine is too small for (ctest: Skipped) keeps its committed measurement."""
     measured = {}
     for name in names:
         for counter in Path(build).rglob("*.gcda"):
             counter.unlink()
         # its own process group, so that a timeout stops the program and not only ctest
         process = subprocess.Popen(["ctest", "--test-dir", str(build), "-R", f"^benchmark/{name}$",
-                                    "--timeout", str(timeout)], text=True, stdout=subprocess.DEVNULL,
+                                    "--timeout", str(timeout)], text=True, stdout=subprocess.PIPE,
                                    start_new_session=True)
         try:
-            code = process.wait(timeout=timeout + 30)
+            output, _ = process.communicate(timeout=timeout + 30)
+            code = process.returncode
         except subprocess.TimeoutExpired:
             os.killpg(process.pid, signal.SIGKILL)
-            code = -1
+            code, output = -1, ""
+        if code == 0 and "Skipped" in output and name in committed:
+            measured[name] = committed[name]
+            print(f"{name}: skipped here (not enough memory), the committed measurement stands", flush=True)
+            continue
         if code != 0:
             measured[name] = {"skipped": f"failed or over {timeout} s"}
             continue
         measured[name] = {"files": gcov_files(build, root)}
         print(f"{name}: {len(measured[name]['files'])} files", flush=True)
+        # what differs from the committed measurement, to find a machine-dependent instance
+        old, new = set(committed.get(name, {}).get("files", [])), set(measured[name]["files"])
+        if old and old != new:
+            print(f"  {name}: only committed {sorted(old - new)}, only measured {sorted(new - old)}")
     return measured
 
 
@@ -294,7 +304,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="measure again and compare, write nothing")
     parser.add_argument("--render-only", action="store_true", help="render the committed measurement")
     parser.add_argument("--only", action="append", default=[], help="measure just this instance")
-    parser.add_argument("--timeout", type=int, default=600, help="seconds per instance (default 600)")
+    parser.add_argument("--timeout", type=int, default=1800, help="seconds per instance (default 1800)")
     parser.add_argument("--build-dir", default="build/coverage")
     args = parser.parse_args()
     # the instances come from a measurement, or from the committed file (--render-only)
@@ -306,9 +316,12 @@ def main():
     else:
         build_programs(root, "coverage")
         build = root / args.build_dir
-        measured = measure(root, build, args.only or instances(build), args.timeout)
+        measured = measure(root, build, args.only or instances(build), args.timeout,
+                           committed.get("instances", {}))
         if args.only:
             measured = {**committed.get("instances", {}), **measured}
+    # in the order of the committed file, not of ctest, so that the files do not depend on it
+    measured = dict(sorted(measured.items()))
     inventory = cov.load_json(root / "coverage" / "cora-inventory.json")
     status = cov.load_json(root / "coverage" / "status.json").get("rows", {})
     lean = cov.load_json(root / "coverage" / "coralean-status.json").get("rows", {})

@@ -57,7 +57,11 @@ std::optional<Tensor> priv_inverse(const Tensor &A) {
         }
     }
     // the inverse as a tensor of the shape of A
-    return Tensor::like(A, inv, {n, n});
+    const Tensor X = Tensor::like(A, inv, {n, n});
+    if (!A.requires_grad()) return X;
+    // the host hides A from autograd: X - X (A - A0) X has the value X and the derivative -X dA X
+    const Tensor A0 = Tensor::like(A, A.data(), {n, n});
+    return X - X.matmul((A - A0).matmul(X));
 }
 
 } // namespace cora
