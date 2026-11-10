@@ -13,7 +13,9 @@ name: nightly
 
 on:
   schedule:
-    - cron: "17 2 * * *"
+    # GitHub delays scheduled runs under load: this one has started about 7 h late every day (about
+    # 10:00 to 11:00 Berlin time when set to 02:17 UTC). 19:17 UTC lands during the night in Berlin.
+    - cron: "17 19 * * *"
   workflow_dispatch:
 
 concurrency:
