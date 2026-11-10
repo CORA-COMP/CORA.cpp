@@ -142,8 +142,7 @@ HostMatVec priv_state_matvec(const LinearSys &sys) {
     const int64_t n = sys.dim();
     if (const SparseMatrix *S = sys.A_sparse())
         return {n, [S](const double *x, double *y) { S->matvec(x, y); }};
-    // a dense A through the same kernel as a sparse one (its non-zeros, in row order): the two give
-    // the same sets on every platform, whatever the compiler does with a*b + c
+    // a dense A through the kernel of a sparse one: the same sets on every compiler (a*b + c fuses)
     auto D = std::make_shared<const SparseMatrix>(SparseMatrix::from_dense(sys.A()));
     return {n, [D](const double *x, double *y) { D->matvec(x, y); }};
 }

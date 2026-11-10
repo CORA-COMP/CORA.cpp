@@ -180,6 +180,9 @@ int main(int argc, char **argv) {
     return cora::bench::run_family(argc, argv, family, [](const std::string &name) {
         if (name.size() != 5 || name < "DTN01" || name > "DTN06")
             CORA_FAIL(Error::wrong_value, "powertrain: unknown instance " + name);
+        // every set of the run is kept: DTN04 peaks at 10 GB, DTN06 at 13 GB and DTN05 at 20 GB
+        const double gb = name == "DTN04" ? 12 : name == "DTN05" ? 24 : name == "DTN06" ? 16 : 0;
+        cora::bench::require_memory_gb(gb);
         // dimension, the scale of the initial generator and the step sizes of each script
         const int64_t dim = name <= "DTN03" ? 11 : 51;
         const double scale = name == "DTN01" || name == "DTN04"   ? 0.05
