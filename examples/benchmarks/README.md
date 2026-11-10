@@ -252,7 +252,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |
 | PLAD01_BND42 | 9/17 | 8 | 5 |
-| PLAN01 | - | not measured | - |
+| PLAN01 | 31/45 | 14 | 9 |
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
 | SPRE22 | 36/64 | 28 | 13 |

@@ -300,7 +300,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="measure again and compare, write nothing")
     parser.add_argument("--render-only", action="store_true", help="render the committed measurement")
     parser.add_argument("--only", action="append", default=[], help="measure just this instance")
-    parser.add_argument("--timeout", type=int, default=600, help="seconds per instance (default 600)")
+    parser.add_argument("--timeout", type=int, default=1800, help="seconds per instance (default 1800)")
     parser.add_argument("--build-dir", default="build/coverage")
     args = parser.parse_args()
     # the instances come from a measurement, or from the committed file (--render-only)
