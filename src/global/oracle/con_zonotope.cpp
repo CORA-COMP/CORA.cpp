@@ -86,6 +86,10 @@ Interval ConZonotope::interval() const {
     return ask("conZonotope.interval", {{"cZ", *this}}).get<Interval>("I");
 }
 
+Interval ConZonotope::interval_tight(int64_t k) const {
+    return ask("conZonotope.intervalTight", {{"cZ", *this}, {"k", k}}).get<Interval>("I");
+}
+
 double ConZonotope::support_function(const Tensor &dir) const {
     return ask("conZonotope.supportFunc", {{"cZ", *this}, {"dir", dir}, {"type", "upper"}})
         .get<double>("value");

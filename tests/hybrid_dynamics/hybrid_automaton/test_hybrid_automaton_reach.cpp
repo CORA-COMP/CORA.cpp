@@ -227,9 +227,13 @@ void checks_and_their_switch() {
     two.time_step = {0.1, 0.1};
     check(test::raises([&] { HA.reach(aux_drop(), two); }, Error::wrong_value),
           "reach: a step size per location");
+    // the options of the guard intersections are checked
     check(test::raises([&] { HA.reach(aux_drop(), aux_alg(alg::ConZonotopeGuard{})); },
                        Error::wrong_value),
           "reach: ConZonotopeGuard needs guard_order");
+    check(test::raises([&] { HA.reach(aux_drop(), aux_alg(alg::NondetGuard{{}, -1})); },
+                       Error::wrong_value),
+          "reach: NondetGuard fm_passes is not negative");
     check(test::raises(
               [&] {
                   HA.reach(
@@ -255,6 +259,9 @@ int main() {
     ball("zonoGirard flow", alg::ZonoGirard{{Enclose::flow}});
     ball("nondetGuard pca", alg::NondetGuard{{Enclose::pca}});
     ball("conZonotope box pca", alg::ConZonotopeGuard{{Enclose::box, Enclose::pca}, 5});
+    // the cuts boxed by linear programs (CORA's way) and by a single pass
+    ball("conZonotope exact cut", alg::ConZonotopeGuard{{Enclose::box}, 5, 10, true});
+    ball("nondetGuard one pass", alg::NondetGuard{{Enclose::box}, 1});
     // a LinParamSys flow: CORA's initReach and post in the location
     ball("LinParamSys zonoGirard box", alg::ZonoGirard{{Enclose::box}}, BallFlow::parametric);
     ball("LinParamSys conZonotope box pca", alg::ConZonotopeGuard{{Enclose::box, Enclose::pca}, 5},

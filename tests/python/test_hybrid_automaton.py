@@ -76,6 +76,15 @@ class HybridAutomaton(unittest.TestCase):
             self.assertLessEqual(lo, math.sqrt(2 / G))
             self.assertGreaterEqual(hi, math.sqrt(2 * 1.2 / G))
 
+    def test_the_cuts_are_boxed_by_passes_or_by_programs(self):
+        HA = ball()
+        # a cut is boxed by Fourier-Motzkin passes (fm_passes) or, as CORA, by linear programs
+        for options in [{"fm_passes": 1}, {"fm_passes": 3}, {"exact_cut": True}]:
+            R = HA.reach(DROP, t_final=1.5, time_step=0.01, taylor_terms=6, zonotope_order=20,
+                         guard_intersect="nondet_guard", enclose=["pca"], **options)
+            self.assertTrue(R.verified)
+            self.assertGreaterEqual(len(R.branches), 3, options)
+
     def test_specifications_stop_reach(self):
         low = cora.Specification.safe_set(cora.Polytope(np.array([[1.0, 0.0]]), np.array([1.1])))
         R = ball().reach(DROP, t_final=1.5, time_step=0.01, specs=[(low, [0])])
