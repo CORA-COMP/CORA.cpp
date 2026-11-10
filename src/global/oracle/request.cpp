@@ -47,6 +47,11 @@ template <>
 struct Decode<double> {
     static double of(const std::string &, const Json &j) { return Tensor::decode(j.text); }
 };
+// An index is a JSON number, not a value of the dtype.
+template <>
+struct Decode<int64_t> {
+    static int64_t of(const std::string &, const Json &j) { return std::stoll(j.text); }
+};
 template <>
 struct Decode<bool> {
     static bool of(const std::string &, const Json &j) { return j.boolean; }
@@ -225,6 +230,7 @@ T Reply::get(const char *key) const {
 
 template double Reply::get<double>(const char *) const;
 template bool Reply::get<bool>(const char *) const;
+template int64_t Reply::get<int64_t>(const char *) const;
 template Tensor Reply::get<Tensor>(const char *) const;
 template Interval Reply::get<Interval>(const char *) const;
 template Fullspace Reply::get<Fullspace>(const char *) const;

@@ -1,14 +1,15 @@
 // location - lean::Location and lean::Transition, the hybrid-automaton steps computed by CORALean
 //
 // The steps of a location that CORA.cpp's hybrid reach uses, each the oracle's op of that name:
-// the guards a set may meet (pot_int), the bases of the enclosure (calc_basis), the sets whose flow
-// may leave through a hyperplane (check_flow), the box of the cut by a hyperplane (the dual bound
-// of zonoGirard) and the reset image (jump). The flow is x' = A x + B u + c with the input set U.
+// the guards a set may meet (pot_int), their crossings (guard_groups), the bases of the enclosure
+// (calc_basis), the sets whose flow may leave through a hyperplane (check_flow), the box of the cut
+// by a hyperplane (the dual bound of zonoGirard) and the reset image (jump). The flow is
+// x' = A x + B u + c with the input set U.
 //
 // Syntax:     auto hits = lean::Location::pot_int(guards, targets, final_loc, R);
 //             lean::ZonoBundle zB = lean::Location::guard_intersect_zono_girard(Bs, R0, R, n, g);
 //             lean::Zonotope Z = lean::Transition::jump(W, w, Rg);
-// Operations: pot_int, calc_basis, check_flow, guard_intersect_zono_girard, jump
+// Operations: pot_int, guard_groups, calc_basis, check_flow, guard_intersect_zono_girard, jump
 // Outputs:    the oracle's answers, the sets as lean sets with their error boxes
 // See also:   lean/zonotope.h, lean/polytope.h, hybrid_dynamics/location/location.h
 //
@@ -45,6 +46,11 @@ struct Location {
                                                      const std::vector<int64_t> &targets,
                                                      int64_t final_loc,
                                                      const std::vector<cora::Zonotope> &R);
+
+    /// The crossings of the hits, `[transition, sets...]` each, in CORA's order: the hits of each
+    /// guard, split at the gaps of the set indices (`location.guardGroups`).
+    static std::vector<std::vector<int64_t>>
+    guard_groups(const std::vector<std::vector<int64_t>> &hits);
 
     /// One basis per entry of `enclose`; only "box" has a float definition (`location.calcBasis`).
     static std::vector<cora::Tensor> calc_basis(int64_t n, const std::vector<std::string> &enclose);
