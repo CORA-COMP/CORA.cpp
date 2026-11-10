@@ -32,10 +32,12 @@ set(benchmark_instances_benchmark_linear_param_reach_arch23_platoon
 set(benchmark_instances_benchmark_linear_reach_arch23_heat3d HEAT03)
 set(benchmark_instances_benchmark_nonlinear_reach_arch23_trafficscenario TRAF22)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_spacecraft SPRE22)
+set(benchmark_instances_benchmark_nonlinear_reach_arch23_robertson ROBE25_1 ROBE25_2 ROBE25_3)
 # the families whose fastest instance takes longer than a smoke test may (about 5 s)
-# (the spacecraft: one smoke instance per change, TRAF22 is the nonlinear one)
+# (the spacecraft: one smoke instance per change, TRAF22 is the nonlinear one; Robertson takes
+# thousands of steps)
 set(benchmark_without_smoke_test benchmark_linear_reach_arch23_heat3d
-    benchmark_hybrid_reach_arch23_spacecraft)
+    benchmark_hybrid_reach_arch23_spacecraft benchmark_nonlinear_reach_arch23_robertson)
 foreach(source IN LISTS benchmark_sources)
   get_filename_component(name "${source}" NAME_WE)
   set(first TRUE)

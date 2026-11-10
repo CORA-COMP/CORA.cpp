@@ -33,96 +33,12 @@ namespace cora {
 
 namespace {
 
-// The boxes ---------------------------------------------------------------------------------------
-
-/// The entries of a column (n, 1) as n tensors of shape (1, 1).
-std::vector<Tensor> aux_entries(const Tensor &column) {
-    const Tensor row = column.matrix_transpose();
-    std::vector<Tensor> out;
-    out.reserve(std::size_t(column.shape()[0]));
-    for (int64_t i = 0; i < column.shape()[0]; ++i) out.push_back(row.slice(-1, i, i + 1));
-    return out;
-}
-
-/// The column of the entries.
-Tensor aux_column(const std::vector<Tensor> &entries) { return Tensor::concat(entries, -2); }
-
-/// max(|inf|, |sup|) of a box: CORA's max(abs(infimum(I)), abs(supremum(I))).
-Tensor aux_abs_max(const Tensor &lo, const Tensor &hi) { return lo.abs().maximum(hi.abs()); }
-
-/// The bounds of z - z* as ranges (1, 1): the box of R, then that of U0.
-std::vector<Range> aux_dz(const Interval &IHx, const std::optional<Interval> &IHu) {
-    std::vector<Range> dz;
-    for (const Interval *I : {&IHx, IHu ? &*IHu : nullptr}) {
-        if (!I) continue;
-        const std::vector<Tensor> lo = aux_entries(I->inf()), hi = aux_entries(I->sup());
-        for (std::size_t j = 0; j < lo.size(); ++j) dz.emplace_back(lo[j], hi[j]);
-    }
-    return dz;
-}
-
 /// A NaN or infinite remainder fails as CORA's reachSetExplosion.
 void aux_check_finite(const Tensor &l) {
     for (const double v : l.data())
         if (!std::isfinite(v))
             CORA_FAIL(Error::reach_set_explosion,
                       "cora: the Lagrange remainder exploded (the time_step may be too large)");
-}
-
-// The orders --------------------------------------------------------------------------------------
-/// tensorOrder 2: 1/2 dz' max|H_i| dz per component over the nonzero entries of the Hessian.
-Tensor aux_second_order(const std::vector<std::optional<Range>> &H, const std::vector<Tensor> &dz,
-                        int64_t n) {
-    const auto d = int64_t(dz.size());
-    std::vector<Tensor> l;
-    l.reserve(std::size_t(n));
-    for (int64_t i = 0; i < n; ++i) {
-        // (dz' H) dz: the row dz' H first, as MATLAB multiplies from the left
-        Tensor sum = dz[0].zeros_like();
-        for (int64_t k = 0; k < d; ++k) {
-            Tensor row = dz[0].zeros_like();
-            for (int64_t j = 0; j < d; ++j)
-                if (const auto &h = H[std::size_t((i * d + j) * d + k)])
-                    row = row + dz[std::size_t(j)].multiply(aux_abs_max(h->lo, h->hi));
-            sum = sum + row.multiply(dz[std::size_t(k)]);
-        }
-        l.push_back(sum * 0.5);
-    }
-    return aux_column(l);
-}
-
-/// tensorOrder 3: the box 1/6 sum_j dz_j (dz' T_ij dz) per component, over the j with an entry
-/// of T_ij that is not identically 0 (CORA's ind{i}); none if there is no such entry at all.
-std::optional<Interval> aux_third_order(const std::vector<std::optional<Range>> &T,
-                                        const std::vector<Range> &dz, int64_t n) {
-    const auto d = int64_t(dz.size());
-    const Range zero(dz[0].lo.zeros_like());
-    std::vector<Tensor> lo, hi;
-    bool any = false;
-    for (int64_t i = 0; i < n; ++i) {
-        Range sum = zero;
-        for (int64_t j = 0; j < d; ++j) {
-            const std::size_t base = std::size_t((i * d + j) * d * d);
-            bool nonzero = false;
-            for (int64_t kl = 0; kl < d * d && !nonzero; ++kl) nonzero = T[base + kl].has_value();
-            if (!nonzero) continue;
-            any = true;
-            // (dz' T_ij) dz, the row first
-            Range quad = zero;
-            for (int64_t l = 0; l < d; ++l) {
-                Range r = zero;
-                for (int64_t k = 0; k < d; ++k)
-                    if (const auto &t = T[base + std::size_t(k * d + l)]) r = r + dz[k] * *t;
-                quad = quad + r * dz[std::size_t(l)];
-            }
-            sum = sum + quad * dz[std::size_t(j)];
-        }
-        sum = sum * (1.0 / 6);
-        lo.push_back(sum.lo);
-        hi.push_back(sum.hi);
-    }
-    if (!any) return std::nullopt;
-    return Interval(aux_column(lo), aux_column(hi));
 }
 
 } // namespace
@@ -145,11 +61,11 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
     }
     if (alg.tensor_order == 2) {
         // the Hessian over the box, and the largest |z - z*| per coordinate
-        std::vector<Tensor> dz = aux_entries(aux_abs_max(IHx.inf(), IHx.sup()));
+        std::vector<Tensor> dz = priv_entries(priv_abs_max(IHx.inf(), IHx.sup()));
         if (IHu)
-            for (Tensor &e : aux_entries(aux_abs_max(IHu->inf(), IHu->sup())))
+            for (Tensor &e : priv_entries(priv_abs_max(IHu->inf(), IHu->sup())))
                 dz.push_back(std::move(e));
-        const Tensor l = aux_second_order(sys.hessian_enclosure(x_box, u_box), dz, n);
+        const Tensor l = priv_second_order(sys.hessian_enclosure(x_box, u_box), dz, n);
         aux_check_finite(l);
         return {l, Zonotope(l.zeros_like(), l.diag())};
     }
@@ -159,10 +75,10 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
     const std::optional<Tensor> u_star = U0 ? std::optional<Tensor>(lin.u_star) : std::nullopt;
     const Zonotope second = Z.quad_map(sys.hessian(lin.x_star, u_star)) * 0.5;
     const std::optional<Interval> third =
-        aux_third_order(sys.third_order_enclosure(x_box, u_box), aux_dz(IHx, IHu), n);
+        priv_third_order(sys.third_order_enclosure(x_box, u_box), priv_dz(IHx, IHu), n, false);
     const Zonotope V = (third ? second + third->zonotope() : second).reduce(alg.intermediate_order);
     const Interval box = V.interval();
-    return {aux_abs_max(box.inf(), box.sup()), V};
+    return {priv_abs_max(box.inf(), box.sup()), V};
 }
 
 } // namespace cora

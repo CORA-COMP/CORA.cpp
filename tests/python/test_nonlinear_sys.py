@@ -10,13 +10,19 @@ Reviewed:      ---
 # CORA: contDynamics/@contDynamics/linReach.m
 # CORA: contDynamics/@contDynamics/reach.m
 # CORA: contDynamics/@contDynamics/simulateRandom.m
+# CORA: contDynamics/@linearSys/initReach_adaptive.m
 # CORA: contDynamics/@nonlinearSys/initReach.m
 # CORA: contDynamics/@nonlinearSys/linearize.m
 # CORA: contDynamics/@nonlinearSys/nonlinearSys.m
+# CORA: contDynamics/@nonlinearSys/initReach_adaptive.m
+# CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
+# CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 # CORA: contDynamics/@nonlinearSys/post.m
 # CORA: contDynamics/@nonlinearSys/simulate.m
 # CORA: contSet/@zonotope/generateRandom.m
 # CORA: contSet/@zonotope/reduce.m
+# CORA: contSet/@zonotope/private/priv_reduceAdaptive.m
+# CORA: contSet/@zonotope/private/priv_reduceIdx.m
 
 import unittest
 
@@ -125,6 +131,16 @@ class ReachSet(unittest.TestCase):
         step = sys.post(sys.init_reach(start(), U, **options), U, **options)
         self.assertTrue(np.allclose(np.asarray(step.time_point.center), np.asarray(R.time_point[2].center)))
 
+    def test_the_adaptive_algorithm_chooses_the_steps(self):
+        R = van_der_pol().reach(start(), alg="linearization_adaptive", t_final=0.5)
+        # one time per set boundary, from 0 to t_final, increasing
+        t = np.asarray(R.time)
+        self.assertEqual(len(t), len(R.time_point))
+        self.assertEqual(len(R.time_point), len(R.time_interval) + 1)
+        self.assertEqual(t[0], 0.0)
+        self.assertAlmostEqual(t[-1], 0.5, places=9)
+        self.assertTrue(np.all(np.diff(t) > 0))
+
     def test_a_step_that_is_too_large_is_described(self):
         with self.assertRaises(RuntimeError) as caught:
             van_der_pol().reach(start(), time_step=5.0, t_final=10.0)
@@ -138,6 +154,13 @@ class ReachSet(unittest.TestCase):
             d = torch.randn(3, dtype=torch.float64, generator=torch.Generator().manual_seed(k))
             # the support functions of the reachable set
             self.assertGreaterEqual(float(R.support_function(d)), float(Z.support_function(d)) - 1e-9)
+
+    def test_reduce_adaptive_and_idx_repeat_each_other(self):
+        Z = cora.Zonotope.generate_random(cora.Rng(2), 3, nr_generators=12)
+        R, error, idx = Z.reduce_adaptive(0.05)
+        self.assertGreaterEqual(error, 0.0)
+        # the indices of the adaptive reduction give the same set as 'idx'
+        self.assertTrue(np.allclose(np.asarray(Z.reduce_idx(idx).generators), np.asarray(R.generators)))
 
 
 if __name__ == "__main__":

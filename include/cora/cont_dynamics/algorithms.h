@@ -307,6 +307,48 @@ struct Linearization {
     }
 };
 
+/// CORA's alg "lin-adaptive" [Wetzlinger et al., NAHS 2022]: as Linearization, but the step size,
+/// the orders of the Taylor series and of the tensor are chosen by the algorithm at every step,
+/// from the abstraction error; the tuning constants are those of CORA.
+struct LinearizationAdaptive {
+    double zeta_z = 0.0005;   ///< the reduction of the zonotopes: the Hausdorff share (zeta_Z)
+    double zeta_k = 0.9;      ///< below this gain of the tensor order, the lower order is kept
+    double decr_factor = 0.9; ///< the factor by which a step size is scaled down while tuning
+    double zeta_t_lin =
+        0.0005;                ///< the relative gain below which the Taylor series of e^{A dt} ends
+    double zeta_t_abs = 0.005; ///< the same for the series of the abstraction error
+    std::vector<double> zeta_phi{0.85, 0.76, 0.68}; ///< the step size gain per order (0, 1, 2)
+
+    // the name and the fields, for the algorithm tables of Python and the checks
+    static constexpr const char *name = "linearization_adaptive";
+    static constexpr auto fields() {
+        return std::make_tuple(field("zeta_z", &LinearizationAdaptive::zeta_z),
+                               field("zeta_k", &LinearizationAdaptive::zeta_k),
+                               field("decr_factor", &LinearizationAdaptive::decr_factor),
+                               field("zeta_t_lin", &LinearizationAdaptive::zeta_t_lin),
+                               field("zeta_t_abs", &LinearizationAdaptive::zeta_t_abs),
+                               field("zeta_phi", &LinearizationAdaptive::zeta_phi));
+    }
+    // every constant lies in the range CORA uses it in
+    void validate() const {
+        detail::Validation entry;
+        CORA_CHECK(zeta_z > 0 && zeta_z < 1 && zeta_k > 0 && zeta_k < 1 && decr_factor > 0 &&
+                       decr_factor < 1,
+                   Error::wrong_value, [] {
+                       return std::string("LinearizationAdaptive: zeta_z, zeta_k and decr_factor "
+                                          "must lie in (0, 1)");
+                   });
+        CORA_CHECK(zeta_t_lin >= 0 && zeta_t_lin < 1 && zeta_t_abs >= 0 && zeta_t_abs < 1,
+                   Error::wrong_value, [] {
+                       return std::string("LinearizationAdaptive: zeta_t_lin and zeta_t_abs must "
+                                          "lie in [0, 1)");
+                   });
+        CORA_CHECK(zeta_phi.size() == 3, Error::wrong_value, [] {
+            return std::string("LinearizationAdaptive: zeta_phi needs three entries");
+        });
+    }
+};
+
 // Reachability of hybrid automata --------------------------------------------------------------
 
 /// How a guard intersection is enclosed (CORA's options.enclose): in the axes ("box"), in the
@@ -428,7 +470,7 @@ struct HybridStandard {
 using LinearReach = std::variant<Standard, WrappingFree, FromStart, Decomposition>;
 using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope>;
 using LinearSimulate = std::variant<Exact>;
-using NonlinearReach = std::variant<Linearization>;
+using NonlinearReach = std::variant<Linearization, LinearizationAdaptive>;
 using LinParamReach = std::variant<LinParamStandard>;
 using NonlinearSimulate = std::variant<RungeKutta4>;
 using HybridReach = std::variant<HybridStandard>;

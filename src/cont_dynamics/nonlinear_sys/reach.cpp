@@ -6,10 +6,14 @@
 // (CORA's linReach, private/priv_lin_reach.cpp). post reduces both sets to zonotope_order; the
 // first step is not reduced, as in CORA. The error of a step is the first guess of the next.
 //
+// With alg::LinearizationAdaptive the step sizes and orders are tuned by the algorithm
+// (priv_reach_adaptive) and R.time holds the step times; init_reach and post are of
+// alg::Linearization only.
+//
 // Syntax:   R = sys.reach(problem, alg);
 //           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step = .01});
 // Inputs:   problem - initial_set (one zonotope), input_set (of the m inputs, optional), t_final
-//           alg - alg::Linearization (time_step, taylor_terms, zonotope_order and the orders)
+//           alg - alg::Linearization (time_step, taylor_terms, zonotope_order, the orders)
 // Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step]
 // See also: linearize, simulate, LinearSys::reach
 //
@@ -23,11 +27,27 @@
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
-#include "cont_dynamics/nonlinear_sys/private/priv.h"
+#include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// The fixed-step algorithm of init_reach and post: the adaptive one has no such steps.
+const alg::Linearization &aux_fixed(const alg::NonlinearReach &alg, const char *op) {
+    const auto *fixed = std::get_if<alg::Linearization>(&alg);
+    if (fixed == nullptr)
+        CORA_FAIL(Error::not_supported, std::string(op) + ": the algorithm " + name_of(alg) +
+                                            " chooses its step sizes itself; use reach");
+    return *fixed;
+}
+
+} // namespace
 
 
 // ===========================================  MAIN  =========================================== //
@@ -64,7 +84,7 @@ NonlinearStep NonlinearSys::init_reach(const Zonotope &R0, const std::optional<Z
         std::visit([](const auto &a) { a.validate(); }, alg);
     }
     // CORA starts from the error 0
-    const alg::Linearization &options = std::get<alg::Linearization>(alg);
+    const alg::Linearization &options = aux_fixed(alg, "init_reach");
     return priv_lin_reach(*this, R0, R0.center().zeros_like(), U, options);
 }
 
@@ -81,7 +101,7 @@ NonlinearStep NonlinearSys::post(const NonlinearStep &step, const std::optional<
                               std::to_string(n_) + ", 1)";
                    });
     }
-    const alg::Linearization &options = std::get<alg::Linearization>(alg);
+    const alg::Linearization &options = aux_fixed(alg, "post");
     NonlinearStep next = priv_lin_reach(*this, step.time_point, step.error, U, options);
     next.time_point = next.time_point.reduce(options.zonotope_order);
     next.time_interval = next.time_interval.reduce(options.zonotope_order);
@@ -102,6 +122,9 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         validate_sets("reach", *problem.initial_set, problem.input_set);
         std::visit([](const auto &a) { a.validate(); }, alg);
     }
+    // the adaptive algorithm tunes its steps
+    if (const auto *adaptive = std::get_if<alg::LinearizationAdaptive>(&alg))
+        return priv_reach_adaptive(*this, problem, *adaptive);
     // the start set, the first step, then the step after each one
     const double time_step = std::get<alg::Linearization>(alg).time_step;
     const int steps = priv_num_steps(problem.t_final, time_step);

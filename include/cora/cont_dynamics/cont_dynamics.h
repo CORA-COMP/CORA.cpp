@@ -38,6 +38,8 @@ namespace cora {
 struct ReachSet {
     std::vector<Zonotope> time_interval, time_point;
     double time_step = 0;
+    std::vector<double> time =
+        {}; ///< the step times t_0 = 0, ..., t_K of an adaptive step size; else empty
 };
 
 /// What reach and verify are asked (CORA's params).

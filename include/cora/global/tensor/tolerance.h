@@ -95,6 +95,13 @@ inline constexpr double kMinTimeStep = 1e-12;  ///< below this step size an adap
 inline constexpr double kTaylorStepMatch = 1e-10; ///< step sizes this close share a cache entry
 inline constexpr double kBoxMargin = 1e-10;       ///< the absolute margin of an inflated enclosure
 inline constexpr double kInternalConsistency = 1e-9; ///< recomputed bounds agree up to this
+inline constexpr double kHorizonMatch =
+    1e-3; ///< nonlinear adaptive: a horizon this close to the last step
+inline constexpr double kZeroWidth = 1e-8; ///< nonlinear adaptive: a width below this is zero
+inline constexpr double kGainResidual =
+    1e-9; ///< nonlinear adaptive: the bisection of the gain ends here
+inline constexpr double kGainStep = 1e-6;    ///< nonlinear adaptive: or when the gain moves less
+inline constexpr double kHorizonEnd = 1e-12; ///< nonlinear adaptive: the time left that ends reach
 
 // Series and iterations ---------------------------------------------------------------------------
 

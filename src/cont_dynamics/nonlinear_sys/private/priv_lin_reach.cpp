@@ -35,17 +35,6 @@ namespace cora {
 
 namespace {
 
-/// MATLAB's max(true_error ./ applied): NaN entries (0/0) are skipped, NaN if all are.
-double aux_ratio_max(const Tensor &true_error, const Tensor &applied) {
-    const std::vector<double> e = true_error.data(), a = applied.data();
-    double out = std::numeric_limits<double>::quiet_NaN();
-    for (std::size_t i = 0; i < e.size(); ++i) {
-        const double r = e[i] / a[i];
-        if (!std::isnan(r) && (std::isnan(out) || r > out)) out = r;
-    }
-    return out;
-}
-
 /// Whether some entry is above CORA's bound of an exploding error, 1e100.
 bool aux_exploded(const Tensor &error) {
     for (const double v : error.data())
@@ -87,7 +76,7 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
         const Zonotope R_all =
             priv_particular_time_varying(lin.sys, taylor, blocks, V_guess, dt, eta)[0];
         err = priv_abstrerr_lin(sys, R_ti + R_all, lin, U0, alg);
-        perf = aux_ratio_max(err->bound, applied);
+        perf = priv_ratio_max(err->bound, applied);
         bound = err->bound;
         if (aux_exploded(bound))
             CORA_FAIL(Error::reach_set_explosion,
