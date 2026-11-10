@@ -104,6 +104,13 @@ void checks_and_their_switch() {
     bad.intermediate_terms = 5;
     check(test::raises([&] { sys.reach({R0, std::nullopt, 1.0}, bad); }, Error::wrong_value),
           "reach: intermediate_terms above taylor_terms");
+    // an input set without the origin at a step where the series of its curvature diverges
+    alg::LinParamStandard stiff = a;
+    stiff.time_step = 5.0;
+    stiff.taylor_terms = 6;
+    const Zonotope away(column({0.75}), Tensor({{0.25}}));
+    check(test::raises([&] { sys.reach({R0, away, 5.0}, stiff); }, Error::reach_set_explosion),
+          "reach: the curvature of a constant input needs norm(A) r < taylor_terms + 2");
     const Tensor on = sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back().center();
     ChecksScope off(false);
     check(close(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back().center(), on, 0),

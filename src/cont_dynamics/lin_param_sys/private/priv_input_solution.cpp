@@ -29,7 +29,6 @@
 #include "matrix_set/interval_matrix/private/priv_factorial.h"
 
 #include <cmath>
-#include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -59,7 +58,7 @@ IntervalMatrix aux_all(const Tensor &like, int64_t n, double v) {
 // The curvature of the constant input -------------------------------------------------------------
 
 /// CORA's priv_inputTie: the boxes [(i^(-i/(i-1)) - i^(-1/(i-1))) r, 0] (A r)^(i-1) / i! summed
-/// for i = 2..eta, plus Liou's remainder of the series (all of R if it does not converge).
+/// for i = 2..eta, plus Liou's remainder (reach_set_explosion if the series diverges).
 IntervalMatrix aux_input_tie(const LinParamSys &sys, const LinParamSeries &series, double r,
                              int taylor_terms) {
     const auto times_box = [](double lower, const IntervalMatrix &M) {
@@ -76,11 +75,12 @@ IntervalMatrix aux_input_tie(const LinParamSys &sys, const LinParamSeries &serie
     const double epsilon = norm_A * r / (taylor_terms + 2);
     const int64_t n = sys.dim();
     if (epsilon >= 1) {
-        // CORA prints 'Taylor order not high enough' and goes on with interval(-Inf, Inf)
-        warn("CORA:linParamSys", "priv_inputTie: Taylor order not high enough (norm(A) r / "
-                                 "(taylor_terms + 2) >= 1); the curvature is unbounded");
-        const double inf = std::numeric_limits<double>::infinity();
-        return sum + aux_all(sum.center(), n, inf);
+        // CORA warns and drops the remainder (cora-differences.md); here it has no bound
+        CORA_FAIL(Error::reach_set_explosion,
+                  "priv_inputTie: Taylor order not high enough (norm(A) r / (taylor_terms + 2) = " +
+                      std::to_string(epsilon) +
+                      " >= 1); the curvature of the constant input is "
+                      "unbounded");
     }
     const double phi = std::pow(norm_A, taylor_terms + 1) * std::pow(r, taylor_terms + 1) /
                        (priv_factorial(taylor_terms + 1) * (1 - epsilon));
