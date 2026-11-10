@@ -283,6 +283,10 @@ def measure(root, build, names, timeout, committed):
             continue
         measured[name] = {"files": gcov_files(build, root)}
         print(f"{name}: {len(measured[name]['files'])} files", flush=True)
+        # what differs from the committed measurement, to find a machine-dependent instance
+        old, new = set(committed.get(name, {}).get("files", [])), set(measured[name]["files"])
+        if old and old != new:
+            print(f"  {name}: only committed {sorted(old - new)}, only measured {sorted(new - old)}")
     return measured
 
 
