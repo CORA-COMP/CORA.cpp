@@ -268,4 +268,5 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRU01 | 27/46 | 19 | 8 |
 | SRU02 | 41/66 | 25 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
+| BRKNP01 | 24/44 | 20 | 10 |
 <!-- END bit-exact -->
