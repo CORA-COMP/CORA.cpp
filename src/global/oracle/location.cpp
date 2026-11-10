@@ -56,6 +56,20 @@ std::vector<std::vector<int64_t>> Location::pot_int(const std::vector<cora::Poly
     return r.get<std::vector<std::vector<int64_t>>>("hits");
 }
 
+// The groups come as objects; each is flattened to its transition followed by its sets.
+std::vector<std::vector<int64_t>>
+Location::guard_groups(const std::vector<std::vector<int64_t>> &hits) {
+    const Reply r = ask("location.guardGroups", {{"hits", hits}});
+    // one group per object: the transition, then its sets
+    std::vector<std::vector<int64_t>> out;
+    for (const Reply &g : r.list("groups")) {
+        std::vector<int64_t> group{g.get<int64_t>("transition")};
+        for (int64_t j : g.get<std::vector<int64_t>>("sets")) group.push_back(j);
+        out.push_back(std::move(group));
+    }
+    return out;
+}
+
 std::vector<cora::Tensor> Location::calc_basis(int64_t n, const std::vector<std::string> &enclose) {
     Json names = Json::array();
     for (const std::string &s : enclose) names.push(Json(s));

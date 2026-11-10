@@ -75,6 +75,16 @@ bool priv_meets(const Polytope &P, const Set &S);
 GuardHits priv_pot_int(const Location &loc, const LocationReachSet &R,
                        const std::vector<int64_t> &final_locations);
 
+/// One crossing of a guard: the transition and the indices of its sets, without gaps.
+struct GuardGroup {
+    int64_t transition;
+    std::vector<int64_t> sets;
+};
+
+/// CORA's aux_groupSets and aux_removeGaps: the hits of each guard (in the order of the guard
+/// numbers), split at every gap; the first part of a split goes to the front of the list.
+std::vector<GuardGroup> priv_guard_groups(const GuardHits &hits);
+
 /// The enclosures of the hit guards (CORA's guardIntersect), one per group of neighbouring sets
 /// that meet the same guard: the transition, the first and the last set index, the set.
 struct GuardIntersection {

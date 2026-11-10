@@ -7,6 +7,7 @@
 // of calcBasis; empty intersections are dropped.
 //
 // Syntax:   std::vector<GuardIntersection> G = priv_guard_intersect(loc, hits, R, U, method);
+//           std::vector<GuardGroup> groups = priv_guard_groups(hits);
 // Inputs:   loc - the location
 //           hits - which sets meet which guards (priv_pot_int)
 //           R - the reachable sets of the location
@@ -34,42 +35,6 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-// The crossings -----------------------------------------------------------------------------------
-
-/// One crossing: the transition and the indices of its sets, without gaps.
-struct Group {
-    int64_t transition;
-    std::vector<int64_t> sets;
-};
-
-/// CORA's aux_groupSets and aux_removeGaps: the hits of each guard (in the order of the guard
-/// numbers), split at every gap; the first part of a split goes to the front of the list.
-std::vector<Group> aux_groups(const GuardHits &hits) {
-    std::vector<int64_t> guards = hits.transitions;
-    std::sort(guards.begin(), guards.end());
-    guards.erase(std::unique(guards.begin(), guards.end()), guards.end());
-    std::vector<Group> groups;
-    for (int64_t g : guards) {
-        Group group{g, {}};
-        for (std::size_t k = 0; k < hits.sets.size(); ++k)
-            if (hits.transitions[k] == g) group.sets.push_back(hits.sets[k]);
-        groups.push_back(std::move(group));
-    }
-    // split at the gaps
-    for (std::size_t counter = 0; counter < groups.size(); ++counter) {
-        const std::vector<int64_t> sets = groups[counter].sets;
-        for (std::size_t i = 0; i + 1 < sets.size(); ++i) {
-            if (sets[i + 1] == sets[i] + 1) continue;
-            const int64_t g = groups[counter].transition;
-            groups[counter].sets.assign(sets.begin() + std::ptrdiff_t(i) + 1, sets.end());
-            groups.insert(groups.begin(),
-                          Group{g, {sets.begin(), sets.begin() + std::ptrdiff_t(i) + 1}});
-            break;
-        }
-    }
-    return groups;
-}
 
 // The enclosure -----------------------------------------------------------------------------------
 
@@ -107,13 +72,48 @@ std::optional<Set> aux_enclose(const Location &loc, const std::vector<Set> &P,
 
 // ===========================================  MAIN  =========================================== //
 
+// The crossings -----------------------------------------------------------------------------------
+
+/// CORA's aux_groupSets and aux_removeGaps: the hits of each guard (in the order of the guard
+/// numbers), split at every gap; the first part of a split goes to the front of the list.
+std::vector<GuardGroup> priv_guard_groups(const GuardHits &hits) {
+    // the guard numbers that were hit, ascending
+    std::vector<int64_t> guards = hits.transitions;
+    std::sort(guards.begin(), guards.end());
+    guards.erase(std::unique(guards.begin(), guards.end()), guards.end());
+    std::vector<GuardGroup> groups;
+    // the sets of each guard, in the order of the hits
+    for (int64_t g : guards) {
+        GuardGroup group{g, {}};
+        for (std::size_t k = 0; k < hits.sets.size(); ++k)
+            if (hits.transitions[k] == g) group.sets.push_back(hits.sets[k]);
+        groups.push_back(std::move(group));
+    }
+    // split at the gaps
+    for (std::size_t counter = 0; counter < groups.size(); ++counter) {
+        const std::vector<int64_t> sets = groups[counter].sets;
+        // the first gap splits the group: the sets after it stay, the ones before go to the front
+        for (std::size_t i = 0; i + 1 < sets.size(); ++i) {
+            if (sets[i + 1] == sets[i] + 1) continue;
+            const int64_t g = groups[counter].transition;
+            groups[counter].sets.assign(sets.begin() + std::ptrdiff_t(i) + 1, sets.end());
+            groups.insert(groups.begin(),
+                          GuardGroup{g, {sets.begin(), sets.begin() + std::ptrdiff_t(i) + 1}});
+            break;
+        }
+    }
+    return groups;
+}
+
+// The enclosures ----------------------------------------------------------------------------------
+
 std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const GuardHits &hits,
                                                     const LocationReachSet &R,
                                                     const Zonotope &U_state,
                                                     const alg::GuardIntersect &method) {
     std::vector<GuardIntersection> out;
     const std::vector<Set> &sets = hits.time_point ? R.time_point : R.time_interval;
-    for (const Group &group : aux_groups(hits)) {
+    for (const GuardGroup &group : priv_guard_groups(hits)) {
         const Polytope &guard = loc.transitions()[std::size_t(group.transition)].guard();
         std::vector<Set> P;
         P.reserve(group.sets.size());
