@@ -86,13 +86,15 @@ Cycle aux_cycle() {
                         column({0, 0, 0, 0, 0}), column({0, 0, x0, T_sample * x0, -T_sample}))};
 }
 
-/// The options of both: conZonotope guards of order 5, enclosed by box and pca.
+/// The options of both: conZonotope guards of order 5, enclosed by box and pca; the cuts are boxed
+/// by linear programs (`exact_cut`, as CORA): the Fourier-Motzkin boxes lose the verdict of
+/// BRKNC01.
 alg::HybridStandard aux_options(int taylor_terms) {
     alg::HybridStandard a;
     a.time_step = {T_sample / 5};
     a.taylor_terms = taylor_terms;
     a.zonotope_order = 20;
-    a.guard_intersect = alg::ConZonotopeGuard{{alg::Enclose::box, alg::Enclose::pca}, 5};
+    a.guard_intersect = alg::ConZonotopeGuard{{alg::Enclose::box, alg::Enclose::pca}, 5, 10, true};
     return a;
 }
 

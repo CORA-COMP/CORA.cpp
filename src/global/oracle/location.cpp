@@ -106,6 +106,45 @@ ZonoBundle Location::guard_intersect_zono_girard(const std::vector<cora::Tensor>
         .get<ZonoBundle>("zB");
 }
 
+// The polytope guards ------------------------------------------------------------------------
+
+// The bases, the sets, the polytope guard and the passes that box a cut.
+ZonoBundle Location::guard_intersect_nondet_guard(const std::vector<cora::Tensor> &Bs,
+                                                  const cora::Zonotope &R0,
+                                                  const std::vector<cora::Zonotope> &R,
+                                                  const cora::Polytope &guard, int64_t fm_passes) {
+    // the bases cross as lean tensors, then the sets and the guard
+    std::vector<Tensor> bases;
+    bases.reserve(Bs.size());
+    for (const cora::Tensor &B : Bs) bases.push_back(Tensor::from(B));
+    return ask("location.guardIntersect_nondetGuard", {{"Bs", bases},
+                                                       {"R0", Zonotope(R0)},
+                                                       {"R", aux_lean(R)},
+                                                       {"guard", Polytope(guard)},
+                                                       {"fmPasses", fm_passes}})
+        .get<ZonoBundle>("zB");
+}
+
+ZonoBundle Location::guard_intersect_con_zonotope(const std::vector<cora::Tensor> &Bs,
+                                                  const cora::Zonotope &R0,
+                                                  const std::vector<cora::Zonotope> &R,
+                                                  const cora::Polytope &guard, int64_t guard_order,
+                                                  int64_t fm_passes) {
+    std::vector<Tensor> bases;
+    bases.reserve(Bs.size());
+    for (const cora::Tensor &B : Bs) bases.push_back(Tensor::from(B));
+    // the guard order is the reduction of the sets before they are cut
+    return ask("location.guardIntersect_conZonotope", {{"Bs", bases},
+                                                       {"R0", Zonotope(R0)},
+                                                       {"R", aux_lean(R)},
+                                                       {"guard", Polytope(guard)},
+                                                       {"guardOrder", guard_order},
+                                                       {"fmPasses", fm_passes}})
+        .get<ZonoBundle>("zB");
+}
+
+// The reset ---------------------------------------------------------------------------------
+
 // The reset image of the guard-cut set.
 Zonotope Transition::jump(const cora::Tensor &W, const cora::Tensor &w, const cora::Zonotope &Rg) {
     return ask("transition.jump",

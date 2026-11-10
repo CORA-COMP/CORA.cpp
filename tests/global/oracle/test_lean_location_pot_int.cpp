@@ -2,7 +2,8 @@
 //
 // The (transition, set) pairs of CORA.cpp's potInt are the oracle's `location.potInt`: a set meets
 // a guard unless a row of the guard lies strictly beyond its support function. The transitions into
-// the final location are skipped, and the pairs come guard by guard.
+// the final location are skipped, and the pairs come guard by guard. A guard with an equality row
+// separates a set on either side of the hyperplane (CORALean tests both halves of the row).
 //
 // ORACLE: hybridDynamics/@location/potInt.m
 // Authors:       Claude Sonnet 5.5
@@ -23,9 +24,10 @@ using namespace cora;
 namespace {
 
 /// A guard of p random rows, each offset near the lowest value of a set of the batch along it: some
-/// rows cut the sets and some lie beyond them.
+/// rows cut the sets and some lie beyond them; with `equality` a hyperplane through the region of
+/// the sets, so that some sets lie on either side of it.
 Polytope aux_guard(test::oracle::Random &rnd, const std::vector<Zonotope> &sets, int64_t n,
-                   int64_t p) {
+                   int64_t p, bool equality) {
     const Tensor A = rnd.matrix(p, n);
     std::vector<double> b(static_cast<std::size_t>(p));
     for (int64_t i = 0; i < p; ++i) {
@@ -33,7 +35,10 @@ Polytope aux_guard(test::oracle::Random &rnd, const std::vector<Zonotope> &sets,
         const Tensor row = A.slice(-2, i, i + 1).matrix_transpose();
         b[std::size_t(i)] = -S.support_function(-row).item() + rnd.uniform(-1, 1);
     }
-    return {A, Tensor::from_data(b, {p, 1})};
+    if (!equality) return {A, Tensor::from_data(b, {p, 1})};
+    const Tensor Ae = rnd.matrix(1, n);
+    const Tensor be = Ae.matmul(sets.front().center()) + rnd.uniform(-2.0, 2.0);
+    return {A, Tensor::from_data(b, {p, 1}), Ae, be};
 }
 
 } // namespace
@@ -57,7 +62,7 @@ int main() {
             std::vector<Transition> transitions;
             const std::vector<int64_t> targets = {1, 2, 3};
             for (const int64_t target : targets) {
-                guards.push_back(aux_guard(rnd, sets, n, 2 + target % 2));
+                guards.push_back(aux_guard(rnd, sets, n, 2 + target % 2, target != 2));
                 transitions.emplace_back(guards.back(), LinearReset(rnd.matrix(n, n)), target);
             }
             const Location loc("l", Polytope::inf(n), transitions, LinearSys(rnd.matrix(n, n)));

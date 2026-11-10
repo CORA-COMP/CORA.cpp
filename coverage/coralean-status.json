@@ -1,5 +1,5 @@
 {
- "coralean_commit": "0a9650b49cfd81ccaf4a1cd6ebd0c1082599109a",
+ "coralean_commit": "76f25ea058f2942b0810db035cdc7875324ff755",
  "rows": {
   "contDynamics/contDynamics/conform": {
    "status": "out-of-scope",
@@ -1366,17 +1366,17 @@
   "contSet/capsule/capsule": {
    "status": "float",
    "decls": [
-    "Capsule.construct",
-    "Capsule.construct_eq_add",
-    "Capsule.construct_eq_empty",
-    "Capsule.convex_construct",
-    "Capsule.isCompact_construct"
+    "Capsule.toSet",
+    "Capsule.toSet_eq_add",
+    "Capsule.toSet_eq_empty",
+    "Capsule.convex_toSet",
+    "Capsule.isCompact_toSet"
    ]
   },
   "contSet/capsule/center": {
    "status": "float",
    "decls": [
-    "Capsule.center_mem_construct_iff",
+    "Capsule.center_mem_toSet_iff",
     "Capsule.center"
    ]
   },
@@ -1386,7 +1386,7 @@
     "Capsule.conPolyZono",
     "Capsule.conPolyZono_exact",
     "Capsule.conPolyZono_contains",
-    "Capsule.construct_eq_segment_add_ball"
+    "Capsule.toSet_eq_segment_add_ball"
    ]
   },
   "contSet/capsule/contains_": {
@@ -1444,7 +1444,7 @@
    "status": "float",
    "decls": [
     "Capsule.enclosePoints",
-    "Capsule.range_subset_construct"
+    "Capsule.range_subset_toSet"
    ]
   },
   "contSet/capsule/generateRandom": {
@@ -1465,9 +1465,9 @@
   "contSet/capsule/isBounded": {
    "status": "float",
    "decls": [
-    "Capsule.isCompact_construct",
-    "CompactSet.isBounded_construct",
-    "Capsule.construct"
+    "Capsule.isCompact_toSet",
+    "CompactSet.isBounded_toSet",
+    "Capsule.toSet"
    ]
   },
   "contSet/capsule/isFullDim": {
@@ -1498,7 +1498,7 @@
    "status": "float",
    "decls": [
     "Capsule.isequal",
-    "Capsule.isequal_construct",
+    "Capsule.isequal_toSet",
     "Capsule.isequal_sound"
    ]
   },
@@ -1598,7 +1598,7 @@
     "Capsule.representsa_point_iff",
     "Capsule.representsa_origin",
     "Capsule.representsa_origin_iff",
-    "Capsule.center_mem_construct_iff",
+    "Capsule.center_mem_toSet_iff",
     "Capsule.representsa_point_sound",
     "Capsule.representsa_origin_sound"
    ]
@@ -1609,7 +1609,7 @@
     "Capsule.spectraShadow",
     "Capsule.spectraShadow_exact",
     "Capsule.spectraShadow_contains",
-    "Capsule.construct_eq_segment_add_ball"
+    "Capsule.toSet_eq_segment_add_ball"
    ]
   },
   "contSet/capsule/supportFunc_": {
@@ -1670,7 +1670,7 @@
    "status": "float",
    "decls": [
     "ConPolyZono.center",
-    "ConPolyZono.center_mem_construct"
+    "ConPolyZono.center_mem_toSet"
    ]
   },
   "contSet/conPolyZono/compact_": {
@@ -1691,9 +1691,9 @@
   "contSet/conPolyZono/conPolyZono": {
    "status": "float",
    "decls": [
-    "ConPolyZono.construct",
-    "ConPolyZono.construct_eq_image",
-    "ConPolyZono.isCompact_construct"
+    "ConPolyZono.toSet",
+    "ConPolyZono.toSet_eq_image",
+    "ConPolyZono.isCompact_toSet"
    ]
   },
   "contSet/conPolyZono/conZonotope": {
@@ -1759,7 +1759,7 @@
    "status": "float",
    "decls": [
     "ConPolyZono.exactPlus",
-    "ConPolyZono.exactPlus_construct",
+    "ConPolyZono.exactPlus_toSet",
     "ConPolyZono.exactPlus_outer"
    ]
   },
@@ -1775,7 +1775,7 @@
    "status": "float",
    "decls": [
     "ConPolyZono.getSubset",
-    "ConPolyZono.getSubset_construct",
+    "ConPolyZono.getSubset_toSet",
     "ConPolyZono.getSubset_outer"
    ]
   },
@@ -1789,9 +1789,9 @@
   "contSet/conPolyZono/isBounded": {
    "status": "float",
    "decls": [
-    "ConPolyZono.isCompact_construct",
-    "CompactSet.isBounded_construct",
-    "ConPolyZono.construct"
+    "ConPolyZono.isCompact_toSet",
+    "CompactSet.isBounded_toSet",
+    "ConPolyZono.toSet"
    ]
   },
   "contSet/conPolyZono/isFullDim": {
@@ -1823,7 +1823,7 @@
    "status": "float",
    "decls": [
     "ConPolyZono.isequal",
-    "ConPolyZono.isequal_construct",
+    "ConPolyZono.isequal_toSet",
     "ConPolyZono.isequal_sound"
    ]
   },
@@ -1848,7 +1848,7 @@
    "status": "float",
    "decls": [
     "ConPolyZono.minkDiff",
-    "ConPolyZono.minkDiff_construct",
+    "ConPolyZono.minkDiff_toSet",
     "ConPolyZono.minkDiff_outer",
     "ConPolyZono.minkDiff_inner_of_convex",
     "ConPolyZono.minkDiff_not_inner"
@@ -1956,7 +1956,7 @@
    "status": "float",
    "decls": [
     "ConPolyZono.representsa_point",
-    "ConPolyZono.construct_subset_of_representsa_point"
+    "ConPolyZono.toSet_subset_of_representsa_point"
    ]
   },
   "contSet/conPolyZono/rescale": {
@@ -2081,11 +2081,11 @@
   "contSet/conZonotope/conZonotope": {
    "status": "float",
    "decls": [
-    "ConZonotope.construct",
-    "ConZonotope.construct_eq_image",
-    "ConZonotope.construct_foldl_intersection_eq",
-    "ConZonotope.convex_construct",
-    "ConZonotope.isCompact_construct"
+    "ConZonotope.toSet",
+    "ConZonotope.toSet_eq_image",
+    "ConZonotope.toSet_foldl_intersection_eq",
+    "ConZonotope.convex_toSet",
+    "ConZonotope.isCompact_toSet"
    ]
   },
   "contSet/conZonotope/contains_": {
@@ -2172,15 +2172,17 @@
    "status": "bound",
    "decls": [
     "ConZonotope.interval",
-    "ConZonotope.interval_contains"
+    "ConZonotope.interval_contains",
+    "ConZonotope.intervalTight",
+    "ConZonotope.intervalTight_contains"
    ]
   },
   "contSet/conZonotope/isBounded": {
    "status": "float",
    "decls": [
-    "ConZonotope.isBounded_construct",
-    "ConZonotope.construct",
-    "ConZonotope.isCompact_construct"
+    "ConZonotope.isBounded_toSet",
+    "ConZonotope.toSet",
+    "ConZonotope.isCompact_toSet"
    ]
   },
   "contSet/conZonotope/isFullDim": {
@@ -2213,7 +2215,7 @@
    "status": "float",
    "decls": [
     "ConZonotope.isequal",
-    "ConZonotope.isequal_construct",
+    "ConZonotope.isequal_toSet",
     "ConZonotope.isequal_sound",
     "HPolytope.isequal",
     "HPolytope.isequal_nominal"
@@ -2552,7 +2554,7 @@
    "decls": [
     "Isequal",
     "ContSet.eq",
-    "ContSet.eq_construct",
+    "ContSet.eq_toSet",
     "ContSet.eqBool",
     "ContSet.eqBool_sound"
    ]
@@ -2586,10 +2588,10 @@
   "contSet/contSet/isBounded": {
    "status": "float",
    "decls": [
-    "CompactSet.isBounded_construct",
+    "CompactSet.isBounded_toSet",
     "CompactSet",
-    "Zonotope.construct",
-    "Zonotope.isCompact_construct"
+    "Zonotope.toSet",
+    "Zonotope.isCompact_toSet"
    ]
   },
   "contSet/contSet/isConHyperplane": {
@@ -2703,9 +2705,9 @@
    "decls": [
     "Isequal",
     "ContSet.ne",
-    "ContSet.ne_of_construct_ne",
+    "ContSet.ne_of_toSet_ne",
     "ContSet.neBool",
-    "ContSet.neBool_of_construct_ne"
+    "ContSet.neBool_of_toSet_ne"
    ]
   },
   "contSet/contSet/norm": {
@@ -2759,7 +2761,7 @@
    "decls": [
     "ContSet.polygon",
     "ExactVertices",
-    "ContSet.construct_polygon"
+    "ContSet.toSet_polygon"
    ]
   },
   "contSet/contSet/polytope": {
@@ -2930,7 +2932,7 @@
   "contSet/ellipsoid/center": {
    "status": "float",
    "decls": [
-    "Ellipsoid.center_mem_construct",
+    "Ellipsoid.center_mem_toSet",
     "Ellipsoid.center"
    ]
   },
@@ -2973,11 +2975,11 @@
   "contSet/ellipsoid/ellipsoid": {
    "status": "float",
    "decls": [
-    "Ellipsoid.construct",
-    "Ellipsoid.construct_eq_image",
-    "Ellipsoid.convex_construct",
-    "Ellipsoid.isClosed_construct",
-    "Ellipsoid.isCompact_construct"
+    "Ellipsoid.toSet",
+    "Ellipsoid.toSet_eq_image",
+    "Ellipsoid.convex_toSet",
+    "Ellipsoid.isClosed_toSet",
+    "Ellipsoid.isCompact_toSet"
    ]
   },
   "contSet/ellipsoid/ellipsoidNorm": {
@@ -2993,7 +2995,7 @@
    "status": "float",
    "decls": [
     "OptEmpty",
-    "OptEmpty.construct_empty",
+    "OptEmpty.toSet_empty",
     "ContSet"
    ]
   },
@@ -3074,9 +3076,9 @@
   "contSet/ellipsoid/isBounded": {
    "status": "float",
    "decls": [
-    "Ellipsoid.isBounded_construct",
-    "Ellipsoid.construct",
-    "Ellipsoid.isCompact_construct"
+    "Ellipsoid.isBounded_toSet",
+    "Ellipsoid.toSet",
+    "Ellipsoid.isCompact_toSet"
    ]
   },
   "contSet/ellipsoid/isFullDim": {
@@ -3104,7 +3106,7 @@
    "status": "float",
    "decls": [
     "Ellipsoid.isequal",
-    "Ellipsoid.isequal_construct",
+    "Ellipsoid.isequal_toSet",
     "Ellipsoid.isequal_sound"
    ]
   },
@@ -3234,7 +3236,7 @@
     "Ellipsoid.representsa_point_iff",
     "Ellipsoid.representsa_origin",
     "Ellipsoid.representsa_origin_iff",
-    "Ellipsoid.center_mem_construct",
+    "Ellipsoid.center_mem_toSet",
     "Ellipsoid.representsa_point_sound",
     "Ellipsoid.representsa_origin_sound"
    ]
@@ -3325,7 +3327,7 @@
    "status": "float",
    "decls": [
     "EmptySet.empty",
-    "EmptySet.construct_empty"
+    "EmptySet.toSet_empty"
    ]
   },
   "contSet/emptySet/emptySet": {
@@ -3420,9 +3422,9 @@
     "EmptySet.hPolytope_exact",
     "EmptySet.vPolytope_exact",
     "HPolytope.emptySet",
-    "HPolytope.construct_emptySet",
+    "HPolytope.toSet_emptySet",
     "VPolytope.emptySet",
-    "VPolytope.construct_emptySet"
+    "VPolytope.toSet_emptySet"
    ]
   },
   "contSet/emptySet/project": {
@@ -3453,8 +3455,8 @@
   "contSet/emptySet/representsa_": {
    "status": "proved",
    "decls": [
-    "EmptySet.construct_ne_singleton",
-    "EmptySet.construct_ne_univ",
+    "EmptySet.toSet_ne_singleton",
+    "EmptySet.toSet_ne_univ",
     "EmptySet.hPolytope_exact",
     "EmptySet.vPolytope_exact"
    ]
@@ -3473,9 +3475,9 @@
     "EmptySet.vertices",
     "EmptySet.vertices_exact",
     "HPolytope.emptySet",
-    "HPolytope.construct_emptySet",
+    "HPolytope.toSet_emptySet",
     "VPolytope.emptySet",
-    "VPolytope.construct_emptySet"
+    "VPolytope.toSet_emptySet"
    ]
   },
   "contSet/emptySet/volume_": {
@@ -3489,7 +3491,7 @@
    "status": "float",
    "decls": [
     "Fullspace.Inf",
-    "Fullspace.construct_Inf"
+    "Fullspace.toSet_Inf"
    ]
   },
   "contSet/fullspace/and_": {
@@ -3510,7 +3512,7 @@
    "status": "float",
    "decls": [
     "Fullspace.center",
-    "Fullspace.center_mem_construct"
+    "Fullspace.center_mem_toSet"
    ]
   },
   "contSet/fullspace/contains_": {
@@ -3574,7 +3576,7 @@
   "contSet/fullspace/isBounded": {
    "status": "float",
    "decls": [
-    "Fullspace.isBounded_construct_iff",
+    "Fullspace.isBounded_toSet_iff",
     "Fullspace.isBounded",
     "Fullspace.isBounded_iff"
    ]
@@ -3668,8 +3670,8 @@
   "contSet/fullspace/representsa_": {
    "status": "proved",
    "decls": [
-    "Fullspace.construct_ne_singleton",
-    "Fullspace.construct_ne_empty",
+    "Fullspace.toSet_ne_singleton",
+    "Fullspace.toSet_ne_empty",
     "Fullspace.hPolytope_exact"
    ]
   },
@@ -3685,7 +3687,7 @@
    "decls": [
     "Fullspace.vertices",
     "Fullspace.truncatedVertices",
-    "Fullspace.construct_eq_iUnion_truncatedVertices"
+    "Fullspace.toSet_eq_iUnion_truncatedVertices"
    ]
   },
   "contSet/fullspace/volume_": {
@@ -3701,7 +3703,7 @@
     "Interval.Inf",
     "Interval.Inf_exact",
     "Interval.EBox",
-    "Interval.EBox.construct"
+    "Interval.EBox.toSet"
    ]
   },
   "contSet/interval/abs": {
@@ -4014,16 +4016,16 @@
    "status": "float",
    "decls": [
     "Interval.infimum",
-    "Interval.infimum_mem_construct"
+    "Interval.infimum_mem_toSet"
    ]
   },
   "contSet/interval/interval": {
    "status": "float",
    "decls": [
-    "Interval.construct",
-    "Interval.convex_construct",
-    "Interval.isClosed_construct",
-    "Interval.isCompact_construct"
+    "Interval.toSet",
+    "Interval.convex_toSet",
+    "Interval.isClosed_toSet",
+    "Interval.isCompact_toSet"
    ]
   },
   "contSet/interval/intervalMatrix": {
@@ -4039,9 +4041,9 @@
   "contSet/interval/isBounded": {
    "status": "float",
    "decls": [
-    "Interval.isBounded_construct",
-    "Interval.construct",
-    "Interval.isCompact_construct"
+    "Interval.isBounded_toSet",
+    "Interval.toSet",
+    "Interval.isCompact_toSet"
    ]
   },
   "contSet/interval/isFullDim": {
@@ -4068,7 +4070,7 @@
    "status": "float",
    "decls": [
     "Interval.isequal",
-    "Interval.construct_eq_of_isequal",
+    "Interval.toSet_eq_of_isequal",
     "Interval.isequal_iff",
     "Interval.isequal_sound"
    ]
@@ -4466,7 +4468,7 @@
    "status": "float",
    "decls": [
     "Interval.supremum",
-    "Interval.supremum_mem_construct"
+    "Interval.supremum_mem_toSet"
    ]
   },
   "contSet/interval/tan": {
@@ -4477,7 +4479,9 @@
     "Interval.monotoneImage_exact",
     "Interval.tan_outer",
     "tanDown",
-    "tanUp"
+    "tanUp",
+    "tanDownNeg",
+    "tanUpNeg"
    ]
   },
   "contSet/interval/tanh": {
@@ -4580,7 +4584,7 @@
    "status": "float",
    "decls": [
     "LevelSet.Inf",
-    "LevelSet.construct_Inf"
+    "LevelSet.toSet_Inf"
    ]
   },
   "contSet/levelSet/and_": {
@@ -4627,7 +4631,7 @@
    "status": "float",
    "decls": [
     "LevelSet.empty",
-    "LevelSet.construct_empty"
+    "LevelSet.toSet_empty"
    ]
   },
   "contSet/levelSet/enclosePoints": {
@@ -4660,7 +4664,7 @@
    "status": "proved",
    "decls": [
     "LevelSet.isequal",
-    "LevelSet.construct_eq_of_isequal",
+    "LevelSet.toSet_eq_of_isequal",
     "LevelSet.isequal_cora_counterexample"
    ]
   },
@@ -4668,8 +4672,8 @@
    "status": "float",
    "decls": [
     "LevelSet",
-    "LevelSet.construct",
-    "LevelSet.mem_construct_iff",
+    "LevelSet.toSet",
+    "LevelSet.mem_toSet_iff",
     "Ellipsoid.levelSet_exact",
     "HPolytope.levelSet_exact"
    ]
@@ -4745,7 +4749,7 @@
   "contSet/polyZonotope/center": {
    "status": "float",
    "decls": [
-    "PolyZonotope.center_mem_construct",
+    "PolyZonotope.center_mem_toSet",
     "PolyZonotope.center"
    ]
   },
@@ -4847,7 +4851,7 @@
    "status": "float",
    "decls": [
     "OptEmpty",
-    "OptEmpty.construct_empty"
+    "OptEmpty.toSet_empty"
    ]
   },
   "contSet/polyZonotope/enclose": {
@@ -4924,9 +4928,9 @@
   "contSet/polyZonotope/isBounded": {
    "status": "float",
    "decls": [
-    "PolyZonotope.isBounded_construct",
-    "PolyZonotope.construct",
-    "PolyZonotope.isCompact_construct"
+    "PolyZonotope.isBounded_toSet",
+    "PolyZonotope.toSet",
+    "PolyZonotope.isCompact_toSet"
    ]
   },
   "contSet/polyZonotope/isFullDim": {
@@ -4958,7 +4962,7 @@
    "status": "float",
    "decls": [
     "PolyZonotope.isequal",
-    "PolyZonotope.isequal_construct",
+    "PolyZonotope.isequal_toSet",
     "PolyZonotope.isequal_sound"
    ]
   },
@@ -5022,7 +5026,7 @@
    "status": "float",
    "decls": [
     "PolyZonotope.noIndep",
-    "PolyZonotope.noIndep_construct",
+    "PolyZonotope.noIndep_toSet",
     "PolyZonotope.noIndep_subset"
    ]
   },
@@ -5084,9 +5088,9 @@
   "contSet/polyZonotope/polyZonotope": {
    "status": "float",
    "decls": [
-    "PolyZonotope.construct",
-    "PolyZonotope.mem_construct_iff",
-    "PolyZonotope.isCompact_construct"
+    "PolyZonotope.toSet",
+    "PolyZonotope.mem_toSet_iff",
+    "PolyZonotope.isCompact_toSet"
    ]
   },
   "contSet/polyZonotope/polygon": {
@@ -5168,7 +5172,7 @@
    "status": "float",
    "decls": [
     "PolyZonotope.representsa_point",
-    "PolyZonotope.construct_eq_of_representsa_point",
+    "PolyZonotope.toSet_eq_of_representsa_point",
     "PolyZonotope.representsa_emptySet",
     "PolyZonotope.representsa_emptySet_iff",
     "PolyZonotope.representsa_point_sound",
@@ -5201,7 +5205,7 @@
    "status": "float",
    "decls": [
     "PolyZonotope.rmId",
-    "PolyZonotope.rmId_construct"
+    "PolyZonotope.rmId_toSet"
    ]
   },
   "contSet/polyZonotope/split": {
@@ -5251,7 +5255,7 @@
     "PolyZonotope.subsPow",
     "PolyZonotope.subsMul",
     "PolyZonotope.subs_point",
-    "PolyZonotope.subs_construct",
+    "PolyZonotope.subs_toSet",
     "PolyZonotope.subs_outer",
     "PolyZonotope.subsPoly",
     "PolyZonotope.subsFactor",
@@ -5327,7 +5331,7 @@
   "contSet/polygon/contains_": {
    "status": "float",
    "decls": [
-    "Polygon.mem_construct_iff",
+    "Polygon.mem_toSet_iff",
     "Polygon.containsPoint",
     "Polygon.containsPoint_sound",
     "Polygon.pieceHolds",
@@ -5355,7 +5359,7 @@
    "status": "float",
    "decls": [
     "Polygon.empty",
-    "Polygon.construct_empty"
+    "Polygon.toSet_empty"
    ]
   },
   "contSet/polygon/enclosePoints": {
@@ -5401,8 +5405,8 @@
   "contSet/polygon/isBounded": {
    "status": "float",
    "decls": [
-    "Polygon.isBounded_construct",
-    "Polygon.isCompact_construct",
+    "Polygon.isBounded_toSet",
+    "Polygon.isCompact_toSet",
     "Polygon"
    ]
   },
@@ -5513,7 +5517,7 @@
    "status": "float",
    "decls": [
     "Polygon.ofPieces",
-    "Polygon.construct_ofPieces"
+    "Polygon.toSet_ofPieces"
    ]
   },
   "contSet/polygon/polytope": {
@@ -5603,7 +5607,7 @@
    "decls": [
     "Polygon.triangulation",
     "Polygon.triangulation_exact",
-    "VPolytope.construct_eq_iUnion_triples"
+    "VPolytope.toSet_eq_iUnion_triples"
    ]
   },
   "contSet/polygon/vertices_": {
@@ -5628,7 +5632,7 @@
    "status": "float",
    "decls": [
     "HPolytope.fullspace",
-    "HPolytope.construct_fullspace",
+    "HPolytope.toSet_fullspace",
     "HPolytope.mem_fullspace"
    ]
   },
@@ -5736,8 +5740,8 @@
     "containsPolytopeZonotope",
     "step_containsRows_sound",
     "HPolytope.ineqs_subset_iff_supportFunc",
-    "VPolytope.construct_subset_iff",
-    "VPolytope.construct_subset_ineqs_iff"
+    "VPolytope.toSet_subset_iff",
+    "VPolytope.toSet_subset_ineqs_iff"
    ]
   },
   "contSet/polytope/convHull_": {
@@ -5777,9 +5781,9 @@
    "status": "float",
    "decls": [
     "HPolytope.emptySet",
-    "HPolytope.construct_emptySet",
+    "HPolytope.toSet_emptySet",
     "VPolytope.emptySet",
-    "VPolytope.construct_emptySet"
+    "VPolytope.toSet_emptySet"
    ]
   },
   "contSet/polytope/enclose": {
@@ -5829,10 +5833,10 @@
   "contSet/polytope/isBounded": {
    "status": "float",
    "decls": [
-    "VPolytope.isBounded_construct",
+    "VPolytope.isBounded_toSet",
     "HPolytope.isBounded_iff_supportFunc_simplex",
-    "VPolytope.construct",
-    "VPolytope.isCompact_construct"
+    "VPolytope.toSet",
+    "VPolytope.isCompact_toSet"
    ]
   },
   "contSet/polytope/isFullDim": {
@@ -5874,7 +5878,7 @@
     "HPolytope.isequalNondeg_iff",
     "HPolytope.isequalNondeg_duplicate_counterexample",
     "HPolytope.ineqs_eq_iff_supportFunc",
-    "VPolytope.construct_eq_iff_of_injective",
+    "VPolytope.toSet_eq_iff_of_injective",
     "HPolytope.isequal",
     "HPolytope.isequal_nominal"
    ]
@@ -5979,7 +5983,7 @@
    "status": "float",
    "decls": [
     "VPolytope.point",
-    "VPolytope.construct_point",
+    "VPolytope.toSet_point",
     "HPolytope.ofPoint",
     "HPolytope.mem_ofPoint_iff",
     "HPolytope.origin",
@@ -6015,15 +6019,15 @@
   "contSet/polytope/polytope": {
    "status": "float",
    "decls": [
-    "HPolytope.construct",
-    "VPolytope.construct",
-    "HPolytope.construct_eq_empty_of_dual",
-    "HPolytope.construct_eq_feasible",
-    "VPolytope.construct_point",
-    "VPolytope.construct_eq_convexHull",
-    "HPolytope.mem_construct_iff",
-    "VPolytope.isCompact_construct",
-    "VPolytope.convex_construct"
+    "HPolytope.toSet",
+    "VPolytope.toSet",
+    "HPolytope.toSet_eq_empty_of_dual",
+    "HPolytope.toSet_eq_feasible",
+    "VPolytope.toSet_point",
+    "VPolytope.toSet_eq_convexHull",
+    "HPolytope.mem_toSet_iff",
+    "VPolytope.isCompact_toSet",
+    "VPolytope.convex_toSet"
    ]
   },
   "contSet/polytope/project": {
@@ -6384,7 +6388,7 @@
    "decls": [
     "SpectraShadow.convHull_",
     "SpectraShadow.convHull_exact",
-    "SpectraShadow.cone_construct",
+    "SpectraShadow.cone_toSet",
     "SpectraShadow.convHull_outer"
    ]
   },
@@ -6540,8 +6544,8 @@
   "contSet/spectraShadow/spectraShadow": {
    "status": "float",
    "decls": [
-    "SpectraShadow.construct",
-    "SpectraShadow.convex_construct"
+    "SpectraShadow.toSet",
+    "SpectraShadow.convex_toSet"
    ]
   },
   "contSet/spectraShadow/supportFunc_": {
@@ -6742,7 +6746,7 @@
    "decls": [
     "Taylm.mtimes",
     "Taylm.mtimes_outer",
-    "Taylm.mtimes_construct_outer"
+    "Taylm.mtimes_toSet_outer"
    ]
   },
   "contSet/taylm/optBernstein": {
@@ -6861,7 +6865,7 @@
     "Taylm.representsa_emptySet",
     "Taylm.representsa_point",
     "Taylm.representsa_emptySet_iff",
-    "Taylm.construct_eq_of_representsa_point",
+    "Taylm.toSet_eq_of_representsa_point",
     "Taylm.representsa_emptySet_sound",
     "Taylm.representsa_point_sound"
    ]
@@ -6957,8 +6961,8 @@
    "decls": [
     "Taylm",
     "Taylm.Encloses",
-    "Taylm.construct",
-    "Taylm.mem_construct_iff",
+    "Taylm.toSet",
+    "Taylm.mem_toSet_iff",
     "Interval.taylm",
     "Interval.taylm_outer",
     "Interval.taylm_contains",
@@ -7102,7 +7106,7 @@
    "decls": [
     "ZonoBundle.enlarge",
     "ZonoBundle.enlarge_outer",
-    "ZonoBundle.construct_enlarge"
+    "ZonoBundle.toSet_enlarge"
    ]
   },
   "contSet/zonoBundle/generateRandom": {
@@ -7127,10 +7131,10 @@
   "contSet/zonoBundle/isBounded": {
    "status": "float",
    "decls": [
-    "ZonoBundle.isBounded_construct",
-    "ZonoBundle.construct",
-    "SetIntersection.isCompact_construct",
-    "Zonotope.isCompact_construct"
+    "ZonoBundle.isBounded_toSet",
+    "ZonoBundle.toSet",
+    "SetIntersection.isCompact_toSet",
+    "Zonotope.isCompact_toSet"
    ]
   },
   "contSet/zonoBundle/isFullDim": {
@@ -7162,7 +7166,7 @@
    "status": "float",
    "decls": [
     "ZonoBundle.isequal",
-    "ZonoBundle.isequal_construct",
+    "ZonoBundle.isequal_toSet",
     "ZonoBundle.isequal_cora_counterexample",
     "ZonoBundle.isequal_sound"
    ]
@@ -7273,7 +7277,7 @@
    "status": "float",
    "decls": [
     "ZonoBundle.replace",
-    "ZonoBundle.replace_construct"
+    "ZonoBundle.replace_toSet"
    ]
   },
   "contSet/zonoBundle/representsa_": {
@@ -7285,7 +7289,7 @@
     "ZonoBundle.representsa_origin_iff",
     "ZonoBundle.exists_conZonotope",
     "ZonoBundle.exists_hPolytope",
-    "ZonoBundle.construct_ne_univ",
+    "ZonoBundle.toSet_ne_univ",
     "ZonoBundle.isIntervalCora",
     "ZonoBundle.isIntervalCora_counterexample",
     "ZonoBundle.isBox_of_forall",
@@ -7362,11 +7366,11 @@
    "status": "float",
    "decls": [
     "ZonoBundle.toSetIntersection",
-    "ZonoBundle.construct",
-    "SetIntersection.convex_construct",
-    "SetIntersection.isCompact_construct",
-    "Zonotope.convex_construct",
-    "Zonotope.isCompact_construct"
+    "ZonoBundle.toSet",
+    "SetIntersection.convex_toSet",
+    "SetIntersection.isCompact_toSet",
+    "Zonotope.convex_toSet",
+    "Zonotope.isCompact_toSet"
    ]
   },
   "contSet/zonoBundle/zonotope": {
@@ -7384,7 +7388,7 @@
     "Zonotope.abs_corner_mem",
     "Zonotope.abs_le_abs_corner",
     "Zonotope.abs_abs",
-    "Zonotope.abs_corner_mem_construct",
+    "Zonotope.abs_corner_mem_toSet",
     "Zonotope.abs_nominal",
     "Zonotope.abs_le_absBound_of_mem_nominalSet"
    ]
@@ -7434,7 +7438,7 @@
   "contSet/zonotope/center": {
    "status": "float",
    "decls": [
-    "Zonotope.center_mem_construct",
+    "Zonotope.center_mem_toSet",
     "Zonotope.recenter"
    ]
   },
@@ -7443,7 +7447,7 @@
    "decls": [
     "Zonotope.compactZeros",
     "Zonotope.compactZeros_exact",
-    "Zonotope.filterGen_construct"
+    "Zonotope.filterGen_toSet"
    ]
   },
   "contSet/zonotope/conPolyZono": {
@@ -7558,7 +7562,7 @@
    "status": "float",
    "decls": [
     "OptEmpty",
-    "OptEmpty.construct_empty",
+    "OptEmpty.toSet_empty",
     "ContSet"
    ]
   },
@@ -7597,7 +7601,7 @@
    "status": "float",
    "decls": [
     "Zonotope.exactPlus",
-    "Zonotope.exactPlus_construct",
+    "Zonotope.exactPlus_toSet",
     "Zonotope.step_exactPlusGap",
     "Zonotope.exactPlus_outer"
    ]
@@ -7652,9 +7656,9 @@
   "contSet/zonotope/isBounded": {
    "status": "float",
    "decls": [
-    "Zonotope.isBounded_construct",
-    "Zonotope.construct",
-    "Zonotope.isCompact_construct"
+    "Zonotope.isBounded_toSet",
+    "Zonotope.toSet",
+    "Zonotope.isCompact_toSet"
    ]
   },
   "contSet/zonotope/isFullDim": {
@@ -7684,7 +7688,7 @@
    "status": "float",
    "decls": [
     "Zonotope.isequal",
-    "Zonotope.isequal_construct",
+    "Zonotope.isequal_toSet",
     "Zonotope.isequal_sound"
    ]
   },
@@ -7853,7 +7857,7 @@
    "status": "float",
    "decls": [
     "Zonotope.radius₂",
-    "Zonotope.construct_subset_ball_radius₂",
+    "Zonotope.toSet_subset_ball_radius₂",
     "Zonotope.radius",
     "Zonotope.radius_le"
    ]
@@ -7916,7 +7920,7 @@
     "Zonotope.representsa_point_iff",
     "Zonotope.representsa_origin",
     "Zonotope.representsa_origin_iff",
-    "Zonotope.center_mem_construct",
+    "Zonotope.center_mem_toSet",
     "Zonotope.representsa_point_sound",
     "Zonotope.representsa_origin_sound"
    ]
@@ -8052,18 +8056,21 @@
   "contSet/zonotope/zonotope": {
    "status": "float",
    "decls": [
-    "Zonotope.construct",
-    "Zonotope.convex_construct",
-    "Zonotope.isClosed_construct",
-    "Zonotope.isCompact_construct"
+    "Zonotope.toSet",
+    "Zonotope.convex_toSet",
+    "Zonotope.isClosed_toSet",
+    "Zonotope.isCompact_toSet"
    ]
   },
   "contSet/zonotope/zonotopeNorm": {
-   "status": "proved",
+   "status": "float",
    "decls": [
     "Zonotope.zonotopeNorm",
+    "Zonotope.zonotopeNormE",
+    "Zonotope.zonotopeNormE_eq_top",
     "Zonotope.zonotopeNorm_isNorm",
-    "Zonotope.zonotopeNorm_ball_eq"
+    "Zonotope.zonotopeNorm_ball_eq",
+    "Zonotope.zonotopeNorm_le"
    ]
   },
   "contSet/zoo/interval": {
@@ -9592,7 +9599,7 @@
    "status": "float",
    "decls": [
     "Interval.infimum",
-    "Interval.infimum_mem_construct"
+    "Interval.infimum_mem_toSet"
    ]
   },
   "others/intervalMatrix/interval": {
@@ -9602,8 +9609,8 @@
   "others/intervalMatrix/intervalMatrix": {
    "status": "float",
    "decls": [
-    "Interval.construct",
-    "Interval.convex_construct"
+    "Interval.toSet",
+    "Interval.convex_toSet"
    ]
   },
   "others/intervalMatrix/isempty": {
@@ -9686,7 +9693,7 @@
    "status": "float",
    "decls": [
     "Interval.vec",
-    "Interval.vec_construct",
+    "Interval.vec_toSet",
     "Interval.vec_representsa",
     "Interval.vec_exact",
     "Interval.vec_representsa_emptySet_sound",
@@ -9706,7 +9713,7 @@
    "status": "float",
    "decls": [
     "Interval.supremum",
-    "Interval.supremum_mem_construct"
+    "Interval.supremum_mem_toSet"
    ]
   },
   "others/intervalMatrix/vertices": {
@@ -9833,8 +9840,8 @@
   "others/matPolytope/matPolytope": {
    "status": "float",
    "decls": [
-    "VPolytope.construct",
-    "VPolytope.convex_construct",
+    "VPolytope.toSet",
+    "VPolytope.convex_toSet",
     "VPolytope"
    ]
   },
@@ -9912,7 +9919,7 @@
   "others/matZonotope/center": {
    "status": "float",
    "decls": [
-    "Zonotope.center_mem_construct",
+    "Zonotope.center_mem_toSet",
     "Zonotope",
     "Zonotope.center_mem_nominalSet"
    ]
@@ -9996,8 +10003,8 @@
   "others/matZonotope/matZonotope": {
    "status": "float",
    "decls": [
-    "Zonotope.construct",
-    "Zonotope.convex_construct"
+    "Zonotope.toSet",
+    "Zonotope.convex_toSet"
    ]
   },
   "others/matZonotope/mpower": {
@@ -10057,7 +10064,7 @@
    "status": "float",
    "decls": [
     "Zonotope.vec",
-    "Zonotope.vec_construct",
+    "Zonotope.vec_toSet",
     "Zonotope.vec_representsa",
     "Zonotope.vec_representsa_point_sound",
     "Zonotope.vec_representsa_origin_sound"
@@ -10104,7 +10111,7 @@
    "status": "float",
    "decls": [
     "Zonotope.vec",
-    "Zonotope.vec_construct",
+    "Zonotope.vec_toSet",
     "Zonotope.vec_exact"
    ]
   },

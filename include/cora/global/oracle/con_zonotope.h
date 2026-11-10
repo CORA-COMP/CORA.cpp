@@ -52,6 +52,10 @@ class ConZonotope {
     /// The box the oracle proves to enclose the set (`conZonotope.interval`).
     Interval interval() const;
 
+    /// The box of c + G J with J the factor bounds after k Fourier-Motzkin passes on the
+    /// constraint (`conZonotope.intervalTight`).
+    Interval interval_tight(int64_t k) const;
+
     // Set operations ---------------------------------------------------------------------------
 
     ConZonotope intersect(const ConZonotope &cz2) const;

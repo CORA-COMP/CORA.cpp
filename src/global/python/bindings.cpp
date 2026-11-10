@@ -4191,7 +4191,8 @@ void bind_plot(py::module_ &m) {
 
 /// The guard intersection method of its Python name, with the enclosure methods.
 alg::GuardIntersect hybrid_guard_method(const std::string &name,
-                                        const std::vector<std::string> &enclose, int guard_order) {
+                                        const std::vector<std::string> &enclose, int guard_order,
+                                        int fm_passes, bool exact_cut) {
     // the enclosure methods by their names
     std::vector<alg::Enclose> methods;
     for (const std::string &e : enclose) {
@@ -4207,8 +4208,9 @@ alg::GuardIntersect hybrid_guard_method(const std::string &name,
     }
     // the guard intersection by its name
     if (name == "zono_girard") return alg::ZonoGirard{methods};
-    if (name == "nondet_guard") return alg::NondetGuard{methods};
-    if (name == "con_zonotope") return alg::ConZonotopeGuard{methods, guard_order};
+    if (name == "nondet_guard") return alg::NondetGuard{methods, fm_passes, exact_cut};
+    if (name == "con_zonotope")
+        return alg::ConZonotopeGuard{methods, guard_order, fm_passes, exact_cut};
     CORA_FAIL(Error::wrong_value, "reach: guard_intersect is 'zono_girard', 'nondet_guard' or "
                                   "'con_zonotope', got '" +
                                       name + "'");
@@ -4353,7 +4355,7 @@ void bind_hybrid(py::module_ &m) {
                const py::object &input_set, const std::vector<int64_t> &final_locations,
                int taylor_terms, int zonotope_order, int intermediate_terms,
                const std::string &guard_intersect, const std::vector<std::string> &enclose,
-               int guard_order, const py::list &specs) {
+               int guard_order, int fm_passes, bool exact_cut, const py::list &specs) {
                 HybridReachProblem p;
                 p.initial_set = initial_set;
                 p.t_final = t_final;
@@ -4372,7 +4374,8 @@ void bind_hybrid(py::module_ &m) {
                 a.taylor_terms = taylor_terms;
                 a.zonotope_order = zonotope_order;
                 a.intermediate_terms = intermediate_terms;
-                a.guard_intersect = hybrid_guard_method(guard_intersect, enclose, guard_order);
+                a.guard_intersect = hybrid_guard_method(guard_intersect, enclose, guard_order,
+                                                        fm_passes, exact_cut);
                 // a specification, or (specification, locations)
                 std::vector<HybridSpecification> hs;
                 for (const py::handle &s : specs) {
@@ -4392,7 +4395,7 @@ void bind_hybrid(py::module_ &m) {
             py::arg("taylor_terms") = 10, py::arg("zonotope_order") = 50,
             py::arg("intermediate_terms") = 2, py::arg("guard_intersect") = "zono_girard",
             py::arg("enclose") = std::vector<std::string>{"box"}, py::arg("guard_order") = 0,
-            py::arg("specs") = py::list(),
+            py::arg("fm_passes") = 10, py::arg("exact_cut") = false, py::arg("specs") = py::list(),
             "The reachable sets up to t_final (alg::HybridStandard); specs are Specifications or "
             "(Specification, [locations]) pairs");
 }

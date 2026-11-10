@@ -11,7 +11,7 @@
 //             intersect_strip, contains, approximate_bounds, display, origin, plus, linear_map,
 //             lift, reduce, quad_map, rescale, representsa, isequal, is_intersecting, split, unite,
 //             minkowski_difference, project, support_function, vertices, rand_point, zonotope,
-//             zono_bundle, polytope, generate_random (one file each).
+//             zono_bundle, polytope, generate_random, cut, interval_tight (one file each).
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@conZonotope/conZonotope.m
@@ -143,6 +143,30 @@ class ConZonotope : public ContSet {
     /// With a polytope (CORA's polytope/and_): exact; its equalities become constraints, and every
     /// inequality the set breaks a constraint with a new factor. Not a batch.
     ConZonotope intersect(const Polytope &P) const;
+
+    /// A constrained zonotope in floating point: c + G x with A x = b and the halfspace rows
+    /// C x <= d on the factors x in [-1, 1]. What a polytope cuts from a set without CORA's slack
+    /// factors (CORALean's ConZonotope with its halfspace polytope). A single set.
+    struct Cut {
+        Tensor c, G, A, b, C, d;
+
+        /// The image M (m, n) of the set, the rows unchanged.
+        Cut linear_map(const Tensor &M) const;
+
+        /// A box that holds the set, from `passes` Fourier-Motzkin passes on the rows (see
+        /// ConZonotope::interval_tight); empty if a pass proves the rows infeasible.
+        Interval interval_tight(int passes) const;
+    };
+
+    /// The set cut by a polytope: each inequality a'x <= b stays a row a'G x <= b - a'c on the
+    /// factors (widened by the rounding of carrying it), an equality is two rows. CORALean's
+    /// intersectHPolytope; CORA's polytope/and_ adds a factor and solves a program per row.
+    Cut cut(const Polytope &P) const;
+
+    /// A box that holds the set and keeps the constraints, from `passes` Fourier-Motzkin passes
+    /// (Koller et al., ICLR 2026) from the unit box on the factors; pure float arithmetic, the
+    /// bits of CORALean's intervalTight. Never tighter than interval (a program per bound).
+    Interval interval_tight(int passes) const;
 
     /// The points of this set whose image under M (n2, n) is in cz2 (CORA's conIntersect): exact.
     ConZonotope con_intersect(const ConZonotope &cz2, const Tensor &M) const;

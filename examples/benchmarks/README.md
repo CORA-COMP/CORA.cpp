@@ -118,6 +118,16 @@ verdict 0, CORA's. Before that error CORA.cpp ran for over 30 minutes: Inf times
 (docs/cora-differences.md). The ARCH26 report lists BRKNP01 as verified (52.20 s), with a
 different setup.
 
+**Guard boxes.** The guards of `nondetGuard` and `conZonotope` cut each set by the polytope (the
+rows stay rows on the factors, `ConZonotope::cut`) and box the cut by `fm_passes` Fourier-Motzkin
+passes (`ConZonotope::interval_tight`, default 10), CORALean's float definitions bit for bit, where
+CORA solves two linear programs per coordinate. The boxes are never tighter than CORA's, and for
+SRA01-08, SRNA01, SRU01/02 and SPRE22 (`nondetGuard`) the verdicts and the number of sets do not
+change (the times are the same within the noise of the shared machine). BRKNC01 (`conZonotope`,
+order 5) loses its verdict with the passes: 2.7 s and verdict 0 for any number of passes from 1 to
+1000, where the linear programs give 5.8 s and verdict 1 (CORA's). The driver of BRKNC01 and BRKNP01
+therefore sets `exact_cut` (the cuts boxed by linear programs, `alg::ConZonotopeGuard::exact_cut`).
+
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
 of each family also an `example` test (CONTRIBUTING.md, "Test suites").
 

@@ -48,6 +48,12 @@ std::vector<Set> aux_check_flow(const Location &loc, const Polytope &guard, std:
     }
 }
 
+/// The passes that box a cut; none for the linear programs of CORA.
+template <class Method>
+std::optional<int> aux_passes(const Method &m) {
+    return m.exact_cut ? std::nullopt : std::optional<int>(m.fm_passes);
+}
+
 /// The enclosure of one crossing by the chosen method.
 std::optional<Set> aux_enclose(const Location &loc, const std::vector<Set> &P,
                                const Polytope &guard, const Zonotope &U_state,
@@ -59,9 +65,9 @@ std::optional<Set> aux_enclose(const Location &loc, const std::vector<Set> &P,
             if constexpr (std::is_same_v<M, alg::ZonoGirard>) {
                 return priv_guard_intersect_zono_girard(P, guard, B);
             } else if constexpr (std::is_same_v<M, alg::NondetGuard>) {
-                return priv_guard_intersect_nondet_guard(P, guard, B);
+                return priv_guard_intersect_nondet_guard(P, guard, B, aux_passes(m));
             } else {
-                return priv_guard_intersect_con_zonotope(P, guard, B, m.guard_order);
+                return priv_guard_intersect_con_zonotope(P, guard, B, m.guard_order, aux_passes(m));
             }
         },
         method);
