@@ -2,6 +2,7 @@
 //
 // See also: priv_matmul.h
 //
+// CORA.cpp only: a helper of mtimes for interval matrices.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
 // Last update:   ---

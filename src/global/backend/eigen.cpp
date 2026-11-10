@@ -4,6 +4,7 @@
 // last axis, the matrix exponential and the fused primitives are Eigen's kernels here, matrix by
 // matrix over the batch. Nothing else in the library includes Eigen for its own use.
 //
+// CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
 // Last update:   ---

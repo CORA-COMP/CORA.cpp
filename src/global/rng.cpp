@@ -7,6 +7,7 @@
 // Outputs:  -
 // See also: rng.h
 //
+// CORA.cpp only: MATLAB supplies rand and randn; the generator is part of the library.
 // Authors:       Claude Sonnet 5.5
 // Written:       29-September-2026
 // Last update:   ---

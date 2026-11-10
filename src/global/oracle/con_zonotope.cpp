@@ -2,6 +2,7 @@
 //
 // See also: lean/zonotope.h, lean/request.h
 //
+// CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
 // Last update:   ---

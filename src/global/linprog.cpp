@@ -10,6 +10,8 @@
 // Outputs:  r - status (Optimal, Infeasible, Unbounded), the minimizer x and the value fval
 // See also: contDynamics/linear_sys/private/priv_verify_ra_zonotope.cpp
 //
+// CORA: global/functions/matlab/converter/CORAlinprog.m
+// CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner
 // Written:       30-September-2026
 // Last update:   03-November-2026

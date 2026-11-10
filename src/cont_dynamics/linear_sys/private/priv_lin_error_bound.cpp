@@ -11,6 +11,8 @@
 // Outputs:  R - the bounds and checks of priv_linErrorBound.h
 // See also: priv_reach_adaptive
 //
+// CORA: contDynamics/@linearSys/private/priv_reach_adaptive.m
+// CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   03-November-2026

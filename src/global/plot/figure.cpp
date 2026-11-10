@@ -5,6 +5,7 @@
 // Outputs:  fig - the layers, the limits and the view of the axes
 // See also: cora/global/plot/plot.h, src/global/plot/svg.cpp, src/global/plot/tikz.cpp
 //
+// CORA.cpp only: a MATLAB figure's axes, as a value.
 // Authors:       Claude Sonnet 5.5
 // Written:       29-September-2026
 // Last update:   ---

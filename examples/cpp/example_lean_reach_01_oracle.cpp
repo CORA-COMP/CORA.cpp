@@ -22,6 +22,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 
 using namespace cora;
@@ -34,7 +35,9 @@ using namespace cora;
 int main() {
     if (!std::getenv("CORACPP_ORACLE")) {
         std::cout << "set CORACPP_ORACLE to the command that starts the CORALean oracle\n";
-        return 0;
+        // CI sets CORACPP_REQUIRE_ORACLE: a missing oracle is then a failure, not a skip
+        const char *required = std::getenv("CORACPP_REQUIRE_ORACLE");
+        return required && *required && std::string(required) != "0" ? 1 : 0;
     }
 
     // Parameters ------------------------------------------------------------------------------

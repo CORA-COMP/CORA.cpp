@@ -17,6 +17,13 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+# Skips without CORACPP_ORACLE; with CORACPP_REQUIRE_ORACLE (CI) the tests run and fail instead.
+needs_oracle = unittest.skipUnless(
+    os.environ.get("CORACPP_ORACLE") or os.environ.get("CORACPP_REQUIRE_ORACLE", "0") not in ("", "0"),
+    "needs CORACPP_ORACLE")
+
 
 # ============================================  MAIN  ============================================ #
 
@@ -43,7 +50,7 @@ class Crossing(unittest.TestCase):
             Z.reduce(1, "pca")
 
 
-@unittest.skipUnless(os.environ.get("CORACPP_ORACLE"), "needs CORACPP_ORACLE")
+@needs_oracle
 
 
 class Oracle(unittest.TestCase):

@@ -5,6 +5,7 @@
 // Outputs:  text - the SVG text, or the file
 // See also: cora/global/plot/figure.h, src/global/plot/figure.cpp
 //
+// CORA.cpp only: SVG output has no CORA counterpart.
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   03-November-2026

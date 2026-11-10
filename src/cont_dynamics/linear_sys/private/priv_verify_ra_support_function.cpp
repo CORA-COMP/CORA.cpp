@@ -16,6 +16,8 @@
 // Outputs:  res - verified (false if undecided at a step below 1e-12), and the run's statistics
 // See also: LinearSys::verify
 //
+// CORA: contDynamics/@linearSys/private/priv_verifyRA_supportFunc.m
+// CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
 // Last update:   09-November-2026

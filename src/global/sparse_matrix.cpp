@@ -10,6 +10,7 @@
 // Outputs:  A - the matrix
 // See also: LinearSys
 //
+// CORA.cpp only: MATLAB's sparse matrices, as compressed rows.
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
 // Last update:   ---

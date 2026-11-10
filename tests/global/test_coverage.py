@@ -111,6 +111,11 @@ class Checker(unittest.TestCase):
         write(self.root, "src/cont_set/zonotope/center.cpp", "// center - the center\n\nint y;\n")
         self.assert_fails("src/cont_set/zonotope/center.cpp: names no CORA file")
 
+    # every implementation file of src/ is tagged, not only the operations
+    def test_a_private_implementation_file_without_a_tag_fails(self):
+        write(self.root, "src/global/tensor/helper.cpp", "// helper - x\n\nint z;\n")
+        self.assert_fails("src/global/tensor/helper.cpp: names no CORA file")
+
     def test_a_reason_instead_of_a_tag_passes(self):
         write(self.root, "src/cont_set/zonotope/center.cpp", "// center - the center\n//\n"
               "// CORA.cpp only: batching\n\nint y;\n")

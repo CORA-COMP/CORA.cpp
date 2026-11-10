@@ -2,6 +2,7 @@
 //
 // See also: priv_broadcastable.h
 //
+// CORA.cpp only: MATLAB broadcasts implicitly; the shape check is explicit.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

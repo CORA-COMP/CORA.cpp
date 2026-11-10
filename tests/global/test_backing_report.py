@@ -79,6 +79,31 @@ class BackingReport(unittest.TestCase):
         self.assertEqual(summary["A"]["counts"]["property"], 1)
         self.assertEqual(summary["B"], {"skipped": "over 9 s"})
 
+    # a driver includes a header that names every algorithm
+    def test_a_header_counts_only_with_the_source_that_implements_it(self):
+        # the header names plus and center; only plus.cpp ran, and center.cpp implements center
+        (self.root / "include").mkdir()
+        (self.root / "include" / "all.h").write_text(
+            "// all - x\n//\n// CORA: contSet/@zonotope/plus.m\n// CORA: contSet/@zonotope/center.m\n\nint x;\n",
+            encoding="utf-8")
+        rows, _ = bench.rows_of_files(self.root, ["include/all.h", "src/plus.cpp"], GROUPS)
+        self.assertEqual(rows, ["contSet/zonotope/plus"])
+
+    # the denominator of the bit-exact count
+    def test_rows_out_of_scope_in_CORALean_leave_the_denominator(self):
+        measured = {"A": {"files": ["src/plus.cpp", "src/center.cpp"]}}
+        lean = {"contSet/zonotope/center": {"status": "out-of-scope"}}
+        s = bench.summarize(measured, STATUS, GROUPS, self.root, lean)["A"]
+        self.assertEqual((s["oracle"], s["total"], s["lean_out"], s["eligible"]), (1, 2, 1, 1))
+        self.assertIn("| A | 1/1 | 0 | 1 |", bench.render_table({"A": s}))
+
+    # a private step has no row, but it is listed
+    def test_private_steps_are_listed(self):
+        (self.root / "src" / "priv_x.cpp").write_text(
+            "// priv_x - x\n//\n// CORA: contDynamics/@linearSys/private/priv_x.m\n\nint x;\n", encoding="utf-8")
+        s = bench.summarize({"A": {"files": ["src/priv_x.cpp"]}}, STATUS, GROUPS, self.root)["A"]
+        self.assertEqual(s["steps"], ["contDynamics/@linearSys/private/priv_x.m"])
+
     def test_report_and_table_are_rendered_and_spliced(self):
         measured = {"A": {"files": ["src/plus.cpp", "src/center.cpp"]}}
         summary = bench.summarize(measured, STATUS, GROUPS, self.root)

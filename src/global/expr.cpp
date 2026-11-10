@@ -5,6 +5,7 @@
 // Syntax:   see expr.h
 // See also: cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h
 //
+// CORA.cpp only: CORA derives the dynamics with the symbolic toolbox.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       29-September-2026
 // Last update:   09-November-2026

@@ -217,11 +217,14 @@ def check_test_tag(root, file, kind, number):
 
 
 def untagged_operations(root, conv):
-    """The public operation files that have neither a CORA tag nor a `CORA.cpp only:` reason."""
+    """The files that have neither a CORA tag nor a `CORA.cpp only:` reason: the public operations,
+    the class headers and every implementation file of src/ (the private steps among them, which the
+    report of the benchmarks can only see through their tags)."""
     out = []
     for file in source_files(root):
         where = file.relative_to(root).as_posix()
-        if conv.needs_cora_tag_file(where) and not tags_of(root, file, True) and not has_only(file):
+        implementation = where.startswith("src/") and where.endswith(".cpp")
+        if (implementation or conv.needs_cora_tag_file(where)) and not tags_of(root, file, True) and not has_only(file):
             out.append(f"{where}: names no CORA file: `// CORA: <path>.m` or `// CORA.cpp only: <reason>`")
     return out
 

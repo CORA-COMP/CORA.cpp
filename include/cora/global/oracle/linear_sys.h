@@ -55,6 +55,11 @@ class LinearSys {
     /// alg.taylor_terms terms, zonotopes are reduced to alg.zonotope_order.
     ReachSet reach(const Zonotope &X0, double t_final, const alg::Standard &alg) const;
 
+    /// As above for x' = A x + B u with u in U (a zonotope of the input space), by
+    /// `linearSys.reach` (the system needs B): every trajectory under every signal in U.
+    ReachSet reach(const Zonotope &X0, const Zonotope &U, double t_final,
+                   const alg::Standard &alg) const;
+
     /// The input set B (U - c) and the constant input B (c + u_vec) (u_vec (m, 1)), as
     /// canonical_form.
     CanonicalForm canonical_form(const Zonotope &U, const cora::Tensor &u_vec) const;

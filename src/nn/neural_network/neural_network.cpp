@@ -2,6 +2,7 @@
 //
 // See also: neuralNetwork.h, evaluate.cpp
 //
+// CORA.cpp only: the class's construction and checks (the header names the CORA file).
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   ---

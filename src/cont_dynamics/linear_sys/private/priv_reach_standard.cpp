@@ -19,6 +19,8 @@
 // Outputs:  R - the reachable sets, see LinearSys::reach
 // See also: priv_reach_wrappingfree
 //
+// CORA: contDynamics/@linearSys/private/priv_reach_standard.m
+// CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   09-November-2026

@@ -2,6 +2,7 @@
 //
 // See also: priv_square_terms.h
 //
+// CORA.cpp only: the sums that square and the second-order terms share.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

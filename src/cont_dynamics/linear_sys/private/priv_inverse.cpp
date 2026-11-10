@@ -8,6 +8,7 @@
 // Outputs:  Ainv - the inverse, or empty if A is (numerically) singular
 // See also: priv_verify_ra_support_function, priv_reach_adaptive
 //
+// CORA.cpp only: MATLAB's inv and rank, which the linear verification calls.
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   ---

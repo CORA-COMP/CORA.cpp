@@ -7,6 +7,7 @@
 // Outputs:  nt - the threads to use: the whole pool, or 1
 // See also: threads.h
 //
+// CORA.cpp only: the thread pool has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5
 // Written:       29-September-2026
 // Last update:   ---

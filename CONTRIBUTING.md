@@ -277,6 +277,12 @@ CORA.cpp runs one executable, CORALean's `oracle-unsound`: it serves every dtype
 must match bit for bit; `tests/global/oracle/test_lean_backend.cpp` checks that. CORA.cpp certifies no
 floating-point enclosures: that is CORALean's job.
 
+**What this backs.** A bit-exact `oracle` test shows that CORA.cpp computes CORALean's float definition of an
+operation, on that test's inputs, at the deliberately unsound `nearest` rounding. That pins the algorithm; it
+does not make a result sound. Eigen and torch agree with lean within `tol`. A benchmark verdict is not a proof;
+the `sound_verdict/*` tests (`benchmark` label, nightly) ask the oracle's sound dtype for the same verdict
+of one instance per family: RAND01 so far; hybrid and nonlinear skip, with the reason they print.
+
 Use a local build (CORALean needs Lean via elan, leanprover.github.io):
 
 ```bash
@@ -289,7 +295,9 @@ cmake --build --preset core && ctest --preset core -R lean
 `CORACPP_ORACLE` is a CMake cache value (an environment variable of that name
 is read only by a test binary run by hand, outside CMake), and is OFF, `DOWNLOAD`, or the executable or a shell
 command that starts it (`cd /path/to/coralean && lake exe oracle-unsound`); without an oracle the tests and
-examples named `*lean*` skip. Outside CMake, set the environment variable of the same name. From WSL,
+examples named `*lean*` skip, unless the environment variable `CORACPP_REQUIRE_ORACLE` is set (to anything but
+`0`; every CI job that downloads the oracle sets it): a missing or unreachable oracle, or an op it does not
+serve, then fails the test instead. Outside CMake, set the environment variable of the same name. From WSL,
 the Windows `oracle.exe` works over its pipes. `DOWNLOAD` fetches the oracle pinned in
 `scripts/coralean.cmake` (Linux x86_64) and checks its hash. Protocol and operations:
 `experiments/oracle/README.md` in CORALean; the C++ side is `src/global/oracle/`. A dtype is set with
@@ -342,7 +350,8 @@ them; the nightly runs every test against the oracle on python-torch, `backend-t
 `github-oracle` links and self-tests both executables on main and pushes them to the public mirror as
 the tag `oracle-<yyyymmdd>-<sha>` (https://github.com/TUMcps/CORALean/tags). To take a newer oracle, set
 `CORALEAN_VERSION` and `CORALEAN_ARCHIVE_SHA256` in `scripts/coralean.cmake` to that tag and the hash in
-its `oracle-linux-x86_64.tar.xz.sha256`, in a pull request of their own.
+its `oracle-linux-x86_64.tar.xz.sha256`, in a pull request of their own. The nightly (`oracle-pin`,
+`scripts/ci/check_oracle_pin.py`) fails, and so opens its issue, when a newer tag than the pin is published.
 
 Not done yet: compare `ping`'s `version` (CORALean's commit, with a `dirty` flag) with the pinned tag,
 so that a mismatched local oracle is refused.

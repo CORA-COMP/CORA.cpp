@@ -29,7 +29,8 @@ import numpy as np
 
 if not os.environ.get("CORACPP_ORACLE"):
     print("set CORACPP_ORACLE to the command that starts the CORALean oracle")
-    sys.exit(0)
+    # CI sets CORACPP_REQUIRE_ORACLE: a missing oracle is then a failure, not a skip
+    sys.exit(1 if os.environ.get("CORACPP_REQUIRE_ORACLE", "0") not in ("", "0") else 0)
 
 
 # Parameters --------------------------------------------------------------------------------

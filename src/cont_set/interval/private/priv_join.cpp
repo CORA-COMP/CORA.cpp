@@ -7,6 +7,7 @@
 //           priv_join - the interval of the joined bounds (the shapes are not checked)
 // See also: cat, cart_prod
 //
+// CORA.cpp only: a helper of cat and cart_prod.
 // Authors:       Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

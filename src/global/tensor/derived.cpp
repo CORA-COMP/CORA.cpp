@@ -7,6 +7,7 @@
 //
 // See also: derived.h, tensor.cpp, fused.cpp, docs/tensor.md
 //
+// CORA.cpp only: Tensor replaces MATLAB's matrices.
 // Authors:       Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

@@ -2,6 +2,7 @@
 //
 // See also: lean/tensor.h
 //
+// CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
 // Last update:   07-November-2026

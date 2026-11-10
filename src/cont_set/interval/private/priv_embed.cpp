@@ -2,6 +2,7 @@
 //
 // See also: priv_embed.h
 //
+// CORA.cpp only: a helper of project and lift.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

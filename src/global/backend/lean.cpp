@@ -7,6 +7,7 @@
 // and fused ones as their portable defaults: the result of an operation then equals the oracle's
 // bit for bit. It is a reference, not a fast backend.
 //
+// CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
 // Last update:   ---

@@ -51,3 +51,11 @@ foreach(source IN LISTS benchmark_sources)
     endif()
   endforeach()
 endforeach()
+
+# One verdict per family asked of the CORALean oracle at a sound dtype (benchmark_sound_verdict_arch23): a
+# family the oracle cannot serve exits 77, which ctest reports as skipped. The label is `benchmark` (nightly).
+foreach(family IN ITEMS linear hybrid nonlinear)
+  cora_add_test(sound_verdict/${family} benchmark COMMAND benchmark_sound_verdict_arch23 ${family})
+  set_tests_properties(sound_verdict/${family} PROPERTIES TIMEOUT 3600 SKIP_RETURN_CODE 77)
+  cora_run_environment(sound_verdict/${family})
+endforeach()

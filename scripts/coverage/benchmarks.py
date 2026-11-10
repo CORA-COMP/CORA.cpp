@@ -49,6 +49,26 @@ the tags of the sources; never edited by hand (CONTRIBUTING.md, "Coverage"). A r
 instance if a source file tagged with it executed a line; the counts are file-level and approximate
 (built with -O2, inlined code may count toward the caller). `oracle` means the operation is bit-exact
 on its test inputs, not on this benchmark's exact path. Statuses are those of `status.json`.
+A row that CORALean marks out of scope (`coralean-status.json`), or that CORA.cpp's ledger does, can
+never become `oracle`: it has a column of its own and is left out of the bit-exact denominator.
+A header counts a row only if the .cpp file that implements it executed a line.
+"""
+
+
+# What keeps the rows of each family from `oracle`: one entry each, written by hand.
+WHY = """## What keeps the rows of each family from `oracle`
+
+- Linear verify (CBC, CBF, HEAT01/02, ISS, RAND): the oracle serves no `linearSys.verify` (CORALean's
+  `verifyFloat` takes the reach function and the distance routines as arguments), and its reach is
+  CORALean's algorithm, not CORA's step (the tests compare by tolerance: `property`). The classes
+  `zonotope`, `contSet`, `polytope` are constructors and accessors: no op to compare.
+- HEAT03: the Krylov `linAlg` of `linearSys/reach` has no float definition in CORALean.
+- Platoon (PLA): `linParamSys` `initReach`/`post` are CORALean's own mapping-matrix algorithm, not CORA's;
+  `expmOneParam` is only `bound`.
+- Hybrid (SRA, GRBX, DTN, BRK, SPRE22): `hybridAutomaton/reach` is not served (the oracle has the location
+  and transition steps), and `guardIntersect` follows CORALean's dual bound, not CORA's dichotomic search.
+- Nonlinear (TRAF22, SPRE22): the oracle serves `nonlinearSys.reach` and `linReach`, but CORALean's is
+  its own algorithm, not CORA's `lin` with tensor order 2, and CORA.cpp has no client for them yet.
 """
 
 
@@ -74,23 +94,49 @@ def parse_gcov(text, root):
                 executed.add(relative)
 
 
+def file_rows(root, name, groups):
+    """The row keys that the CORA tags of one file name."""
+    path = Path(root) / name
+    return [key for kind, tag, _ in cov.tags_of(Path(root), path, True) if kind == "CORA"
+            for key, error in [cov.resolve(tag, groups)] if key and not error]
+
+
+def private_steps(root, name):
+    """The private CORA files (`.../private/priv_*.m`) that one file names; they have no row."""
+    path = Path(root) / name
+    return [tag for kind, tag, _ in cov.tags_of(Path(root), path, True)
+            if kind == "CORA" and "/private/" in tag]
+
+
+def implemented_rows(root, groups):
+    """The rows that some .cpp file of src/ is tagged with: a header may name them too."""
+    return {key for path in sorted((Path(root) / "src").rglob("*.cpp"))
+            for key in file_rows(root, path.relative_to(root).as_posix(), groups)}
+
+
 def rows_of_files(root, files, groups):
-    """`(rows, only)`: the row keys the tags of the files name, and the files with no CORA counterpart."""
+    """`(rows, only)`: the rows the tags of the files name, and the files with no CORA counterpart."""
+    # a header counts a row that a .cpp file implements only if that file executed a line
+    implemented, executed = implemented_rows(root, groups), set()
+    for name in files:
+        if name.endswith(".cpp"):
+            executed.update(file_rows(root, name, groups))
     rows, only = [], []
     for name in files:
-        path = Path(root) / name
-        keys = [key for kind, tag, _ in cov.tags_of(Path(root), path, True) if kind == "CORA"
-                for key, error in [cov.resolve(tag, groups)] if key and not error]
+        keys = file_rows(root, name, groups)
+        if name.endswith(".h"):
+            keys = [key for key in keys if key not in implemented or key in executed]
         if keys:
             rows.extend(keys)
-        elif cov.has_only(path):
+        elif cov.has_only(Path(root) / name):
             only.append(name)
     return sorted(set(rows)), only
 
 
-def summarize(measured, status, groups, root):
+def summarize(measured, status, groups, root, lean=None):
     """Per instance: the rows with their status, the files without a counterpart, and the counts."""
-    out = {}
+    # rows out of scope in CORALean are counted apart (lean_out) and leave the denominator (eligible)
+    out, lean = {}, lean or {}
     # an instance that was not measured says why
     for name, entry in measured.items():
         if "files" not in entry:
@@ -99,23 +145,30 @@ def summarize(measured, status, groups, root):
         rows, only = rows_of_files(root, entry["files"], groups)
         states = {key: status.get(key, "todo") for key in rows}
         counts = {s: sum(v == s for v in states.values()) for s in STATUSES}
+        beyond = [key for key, v in states.items()
+                  if v != cov.OUT and lean.get(key, {}).get("status") == "out-of-scope"]
+        steps = sorted({tag for file in entry["files"] if file.endswith(".cpp")
+                        for tag in private_steps(root, file)})
         out[name] = {"rows": states, "only": only, "counts": counts, "total": len(rows),
-                     "oracle": counts["oracle"]}
+                     "oracle": counts["oracle"], "lean_out": len(beyond), "steps": steps,
+                     "eligible": len(rows) - counts[cov.OUT] - len(beyond)}
     return out
 
 
 def render_markdown(summary, lean):
     """coverage/benchmarks.md."""
     lines = [HEADER, "## Per instance", "",
-             "| instance | rows | oracle | property | ported | untested | todo | out of scope | bit-exact |",
-             "|---|---|---|---|---|---|---|---|---|"]
+             "| instance | rows | oracle | property | ported | untested | todo | out of scope | "
+             "CORALean out of scope | bit-exact |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for name, s in summary.items():
         if "skipped" in s:
-            lines.append(f"| {name} | not measured: {s['skipped']} | | | | | | | |")
+            lines.append(f"| {name} | not measured: {s['skipped']} | | | | | | | | |")
             continue
         c = s["counts"]
         lines.append(f"| {name} | {s['total']} | {c['oracle']} | {c['property']} | {c['ported']} | "
-                     f"{c['untested']} | {c['todo']} | {c[cov.OUT]} | {s['oracle']}/{s['total']} |")
+                     f"{c['untested']} | {c['todo']} | {c[cov.OUT]} | {s['lean_out']} | "
+                     f"{s['oracle']}/{s['eligible']} |")
     # the rows that are not bit-exact, with the instances that run them
     blocked = {}
     for name, s in summary.items():
@@ -137,25 +190,38 @@ def render_markdown(summary, lean):
     for name, s in summary.items():
         for file in s.get("only", []):
             apart.setdefault(file, []).append(name)
-    lines += [f"- `{file}`: {len(names)} instances" for file, names in sorted(apart.items())]
+    lines += [f"- `{file}`: {len(names)} instance{'s' * (len(names) != 1)}"
+              for file, names in sorted(apart.items())]
+    lines += ["", WHY.rstrip("\n")]
+    # the private CORA files that the instances run: they have no row of their own
+    lines += ["", "## Private CORA steps that the instances run", "",
+              "A private step (`private/priv_*.m`) is no row of the inventory; its file is tagged and shows here.", ""]
+    steps = {}
+    for name, s in summary.items():
+        for step in s.get("steps", []):
+            steps.setdefault(step, []).append(name)
+    lines += [f"- `{step}`: {len(names)} instance{'s' * (len(names) != 1)}"
+              for step, names in sorted(steps.items())]
     lines += ["", "## Per instance, the rows that are not bit-exact", ""]
     for name, s in summary.items():
         if "rows" not in s:
             continue
         rest = [f"`{k}` ({v})" for k, v in sorted(s["rows"].items()) if v != "oracle"]
-        lines += [f"<details><summary>{name}: {s['oracle']}/{s['total']}</summary>", "",
+        lines += [f"<details><summary>{name}: {s['oracle']}/{s['eligible']}</summary>", "",
                   ", ".join(rest) if rest else "none", "", "</details>", ""]
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
 def render_table(summary):
     """The table of the README: bit-exact rows per instance."""
-    lines = ["| instance | bit-exact vs CORALean | not bit-exact |", "|---|---|---|"]
+    lines = ["| instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |",
+             "|---|---|---|---|"]
     for name, s in summary.items():
         if "skipped" in s:
-            lines.append(f"| {name} | - | not measured |")
+            lines.append(f"| {name} | - | not measured | - |")
         else:
-            lines.append(f"| {name} | {s['oracle']}/{s['total']} | {s['total'] - s['oracle']} |")
+            lines.append(f"| {name} | {s['oracle']}/{s['eligible']} | {s['eligible'] - s['oracle']} | "
+                         f"{s['total'] - s['eligible']} |")
     return "\n".join(lines)
 
 
@@ -246,7 +312,7 @@ def main():
     inventory = cov.load_json(root / "coverage" / "cora-inventory.json")
     status = cov.load_json(root / "coverage" / "status.json").get("rows", {})
     lean = cov.load_json(root / "coverage" / "coralean-status.json").get("rows", {})
-    summary = summarize(measured, status, inventory["groups"], root)
+    summary = summarize(measured, status, inventory["groups"], root, lean)
     # the files to write, by path
     expected = {
         data: json.dumps({"instances": measured}, indent=1, sort_keys=True) + "\n",
