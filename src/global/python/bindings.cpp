@@ -16,6 +16,7 @@
 //           R = sys.reach(initial_set=X0, t_final=2.0, alg="standard", time_step=0.1);
 // See also: convert.h, the C++ headers, which document every method
 //
+// CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
 // Last update:   ---

@@ -20,6 +20,8 @@
 //        outer-approximations of reachable sets", TAC, 2023.
 // See also: LinearSys::verify, priv_reach_adaptive
 //
+// CORA: contDynamics/@linearSys/private/priv_verifyRA_zonotope.m
+// CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   ---

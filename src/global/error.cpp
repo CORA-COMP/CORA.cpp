@@ -3,6 +3,7 @@
 // Syntax:   detail::raise(Error::wrong_value, "...");   warn("CORA:deprecated", "...");
 // See also: cora/global/error.h
 //
+// CORA.cpp only: MATLAB's error and warning identifiers are raised through this hook.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
 // Last update:   06-November-2026

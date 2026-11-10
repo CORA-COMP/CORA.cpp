@@ -8,17 +8,17 @@
 //             backend (the same body there against the same oracle answer, within tol: the backend
 //             sanity check); $CORACPP_ORACLE_PASS (lean, eigen, torch) runs one pass only
 // Results:    double, Tensor, the sets, bool, indices, pairs; bools and counts exact in every pass
-// Tolerance:  the backend pass compares by within_tol with the repository tolerance; a body that
-//             needs another passes run(op, body, Tolerance{tol, "reason"})
-// Skip:       available() is false, with a note, unless CORACPP_ORACLE is set; a test then returns
-//             at once. run skips an op the oracle does not serve (`lean::serves`), naming it once
-//             on stderr; serves(op) asks for another op, and nearest_is_strict() for a check that
-//             needs the machine's strict order at nearest
+// Tolerance:  the backend pass compares by within_tol; a body that needs another tolerance passes
+//             run(op, body, Tolerance{tol, "reason"})
+// Skip:       available() is false, with a note, unless CORACPP_ORACLE is set; run skips an op the
+//             oracle does not serve (`lean::serves`), naming it once on stderr; serves(op) asks for
+//             another op, nearest_is_strict() for a check that needs the strict order at nearest.
+//             With CORACPP_REQUIRE_ORACLE (every CI job with the oracle) each skip is a failure
 // See also:   testing.h, cora/global/oracle/request.h
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   07-November-2026
+// Last update:   10-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -73,16 +73,40 @@ inline cora::Tol &tolerance() {
     return tol;
 }
 
-/// Whether the oracle is configured; says so on stderr when not.
+/// Whether CI demands the oracle: CORACPP_REQUIRE_ORACLE is set (and not 0). A skip is then a
+/// failure.
+inline bool required() {
+    const char *value = std::getenv("CORACPP_REQUIRE_ORACLE");
+    return value != nullptr && *value != '\0' && std::strcmp(value, "0") != 0;
+}
+
+/// Ends the test with a failure that names why the oracle is missing.
+[[noreturn]] inline void missing(const std::string &reason) {
+    std::cerr << "FAILED: CORACPP_REQUIRE_ORACLE is set, but " << reason << "\n";
+    std::exit(1);
+}
+
+/// Whether the oracle is configured; says so on stderr when not. With CORACPP_REQUIRE_ORACLE a
+/// missing or unreachable oracle fails the test instead.
 inline bool available() {
     const bool ok = std::getenv("CORACPP_ORACLE") != nullptr;
-    if (!ok) std::cerr << "skipped: set CORACPP_ORACLE\n";
+    if (!ok) {
+        if (required()) missing("CORACPP_ORACLE is not set");
+        std::cerr << "skipped: set CORACPP_ORACLE\n";
+    } else if (required()) {
+        try {
+            lean::serves("ping");
+        } catch (const std::exception &error) {
+            missing(std::string("the oracle does not answer: ") + error.what());
+        }
+    }
     return ok;
 }
 
 /// Says on stderr that a check is skipped, once per reason: an older oracle is still a valid one,
-/// its tests skip what it lacks.
+/// its tests skip what it lacks (with CORACPP_REQUIRE_ORACLE, that is a failure).
 inline void skipped(const std::string &reason) {
+    if (required()) missing(reason);
     static std::set<std::string> said;
     if (said.insert(reason).second) std::cerr << "skipped: " << reason << "\n";
 }

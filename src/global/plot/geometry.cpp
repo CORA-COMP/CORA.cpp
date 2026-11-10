@@ -5,6 +5,7 @@
 // Outputs:  hull - a polygon with fewer vertices, the faces of the hull
 // See also: cora/global/plot/geometry.h, cora/global/plot/figure.h
 //
+// CORA.cpp only: the polygons of a plot; MATLAB's plotting and polyshape do this in CORA.
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   03-November-2026

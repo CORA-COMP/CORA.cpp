@@ -53,6 +53,9 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      # a job that downloads the oracle must not skip a test that needs it (tests/global/oracle/oracle_testing.h)
+      CORACPP_REQUIRE_ORACLE: ${{ inputs.oracle && '1' || '' }}
     steps:
       - name: free disk space
         if: inputs.free_disk

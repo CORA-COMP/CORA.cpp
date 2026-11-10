@@ -2,6 +2,7 @@
 //
 // See also: priv_noops.h
 //
+// CORA.cpp only: CORA raises these from the abstract methods of contSet.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

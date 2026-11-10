@@ -7,6 +7,7 @@
 //
 // See also: derived.h, derived.cpp, ops.def
 //
+// CORA.cpp only: the fused Tensor primitives replace MATLAB's vectorised expressions.
 // Authors:       Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

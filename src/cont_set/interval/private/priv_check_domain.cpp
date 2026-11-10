@@ -7,6 +7,7 @@
 // Outputs:  -   (Error::out_of_domain if some bound lies outside, as CORA's NaN check does)
 // See also: acos, acosh
 //
+// CORA.cpp only: CORA's out-of-domain check of an interval function.
 // Authors:       Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

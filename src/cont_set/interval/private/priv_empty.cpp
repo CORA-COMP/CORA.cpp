@@ -2,6 +2,7 @@
 //
 // See also: priv_empty.h
 //
+// CORA.cpp only: a helper for the empty interval.
 // Authors:       Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

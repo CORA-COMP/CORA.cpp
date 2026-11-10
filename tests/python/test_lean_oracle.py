@@ -23,6 +23,11 @@ import numpy as np
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
+# Skips without CORACPP_ORACLE; with CORACPP_REQUIRE_ORACLE (CI) the tests run and fail instead.
+needs_oracle = unittest.skipUnless(
+    os.environ.get("CORACPP_ORACLE") or os.environ.get("CORACPP_REQUIRE_ORACLE", "0") not in ("", "0"),
+    "needs CORACPP_ORACLE")
+
 
 def same_bits(test, a, b):
     """a and b as float64 arrays of one shape and the same bits (-0 differs from 0)."""
@@ -38,7 +43,7 @@ def column(x):
 
 # ============================================  MAIN  ============================================ #
 
-@unittest.skipUnless(os.environ.get("CORACPP_ORACLE"), "needs CORACPP_ORACLE")
+@needs_oracle
 
 
 class RoundTrip(unittest.TestCase):

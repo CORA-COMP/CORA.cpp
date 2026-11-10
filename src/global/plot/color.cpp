@@ -7,6 +7,8 @@
 // Outputs:  c - the RGB color
 // See also: cora/global/plot/plot.h
 //
+// CORA: global/functions/verbose/plot/color/CORAcolor.m
+// CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
 // Written:       29-September-2026
 // Last update:   ---

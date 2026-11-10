@@ -210,50 +210,59 @@ A scalar `B` of the beam scripts is stored as `B*I`; an absent `params.U` (ISSC0
 Unsafe sets with several halfspaces (RAND) need a `Specification` that takes them; the programs
 stop with an error until then. Test: `python -m unittest tests/python/test_benchmarkData.py`.
 
+## What CORALean backs
+
+The lean backend is bit-exact against CORALean's `nearest` oracle (deliberately unsound rounding) on
+the tests' inputs. That pins the algorithms to CORALean's float definitions; it does not make the
+results sound, and a verdict above is not a proof (RAND01's is also proved by the oracle at a sound dtype:
+`benchmark_sound_verdict_arch23`; hybrid and nonlinear have no such check yet). Eigen and torch agree with lean within `tol`. The
+table counts, per instance, the rows it executes whose test is bit-exact; a row that CORALean marks out
+of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md` has the rest).
+
 <!-- BEGIN bit-exact -->
-| instance | bit-exact vs CORALean | not bit-exact |
-|---|---|---|
-| BRKDC01 | 4/25 | 21 |
-| BRKNC01 | 30/73 | 43 |
-| CBC01 | 1/22 | 21 |
-| CBC02 | 1/22 | 21 |
-| CBC03 | 1/22 | 21 |
-| CBF01 | 1/22 | 21 |
-| CBF02 | 1/22 | 21 |
-| CBF03 | 1/22 | 21 |
-| DTN01 | 21/52 | 31 |
-| DTN02 | 21/52 | 31 |
-| DTN03 | 21/52 | 31 |
-| DTN04 | 21/52 | 31 |
-| DTN05 | 21/52 | 31 |
-| DTN06 | 21/52 | 31 |
-| GRBX01 | 30/75 | 45 |
-| GRBX02 | 30/75 | 45 |
-| HEAT01 | 1/22 | 21 |
-| HEAT02 | 1/22 | 21 |
-| HEAT03 | 10/29 | 19 |
-| ISSC01_ISS02 | 1/22 | 21 |
-| ISSC01_ISU02 | 1/22 | 21 |
-| ISSF01_ISS01 | 1/22 | 21 |
-| ISSF01_ISU01 | 1/22 | 21 |
-| PLAA01_BND42 | 23/52 | 29 |
-| PLAA01_BND50 | 23/52 | 29 |
-| PLAD01_BND30 | 9/30 | 21 |
-| PLAD01_BND42 | 9/30 | 21 |
-| PLAN01 | - | not measured |
-| RAND01 | 5/27 | 22 |
-| RAND02 | 5/27 | 22 |
-| SPRE22 | 36/86 | 50 |
-| SRA01 | 26/63 | 37 |
-| SRA02 | 33/75 | 42 |
-| SRA03 | 33/75 | 42 |
-| SRA04 | 26/63 | 37 |
-| SRA05 | 33/75 | 42 |
-| SRA06 | 33/75 | 42 |
-| SRA07 | 41/87 | 46 |
-| SRA08 | 41/87 | 46 |
-| SRNA01 | 23/56 | 33 |
-| SRU01 | 27/64 | 37 |
-| SRU02 | 41/87 | 46 |
-| TRAF22 | 15/47 | 32 |
+| instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
+|---|---|---|---|
+| BRKDC01 | 4/12 | 8 | 5 |
+| BRKNC01 | 30/53 | 23 | 10 |
+| CBC01 | 1/8 | 7 | 4 |
+| CBC02 | 1/8 | 7 | 4 |
+| CBC03 | 1/8 | 7 | 4 |
+| CBF01 | 1/8 | 7 | 4 |
+| CBF02 | 1/8 | 7 | 4 |
+| CBF03 | 1/8 | 7 | 4 |
+| DTN01 | 21/36 | 15 | 6 |
+| DTN02 | 21/36 | 15 | 6 |
+| DTN03 | 21/36 | 15 | 6 |
+| DTN04 | 21/36 | 15 | 6 |
+| DTN05 | 21/36 | 15 | 6 |
+| DTN06 | 21/36 | 15 | 6 |
+| GRBX01 | 30/55 | 25 | 10 |
+| GRBX02 | 30/55 | 25 | 10 |
+| HEAT01 | 1/8 | 7 | 4 |
+| HEAT02 | 1/8 | 7 | 4 |
+| HEAT03 | 10/17 | 7 | 4 |
+| ISSC01_ISS02 | 1/8 | 7 | 4 |
+| ISSC01_ISU02 | 1/8 | 7 | 4 |
+| ISSF01_ISS01 | 1/8 | 7 | 4 |
+| ISSF01_ISU01 | 1/8 | 7 | 4 |
+| PLAA01_BND42 | 23/35 | 12 | 9 |
+| PLAA01_BND50 | 23/35 | 12 | 9 |
+| PLAD01_BND30 | 9/17 | 8 | 5 |
+| PLAD01_BND42 | 9/17 | 8 | 5 |
+| PLAN01 | - | not measured | - |
+| RAND01 | 5/13 | 8 | 4 |
+| RAND02 | 5/13 | 8 | 4 |
+| SPRE22 | 36/64 | 28 | 13 |
+| SRA01 | 26/45 | 19 | 8 |
+| SRA02 | 33/55 | 22 | 10 |
+| SRA03 | 33/55 | 22 | 10 |
+| SRA04 | 26/45 | 19 | 8 |
+| SRA05 | 33/55 | 22 | 10 |
+| SRA06 | 33/55 | 22 | 10 |
+| SRA07 | 41/66 | 25 | 11 |
+| SRA08 | 41/66 | 25 | 11 |
+| SRNA01 | 23/39 | 16 | 7 |
+| SRU01 | 27/46 | 19 | 8 |
+| SRU02 | 41/66 | 25 | 11 |
+| TRAF22 | 15/30 | 15 | 9 |
 <!-- END bit-exact -->

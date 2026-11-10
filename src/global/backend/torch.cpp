@@ -4,6 +4,7 @@
 // differentiates through them; TorchBackend makes tensors from host numbers. Masks and indices
 // are tensors of the operand's dtype, as on the other backends.
 //
+// CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
 // Last update:   ---

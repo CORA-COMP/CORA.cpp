@@ -7,6 +7,7 @@
 // Syntax:   for (const OpInfo &op : tensor_ops()) ...;   GradientsScope strict;
 // See also: ops.def, tensor.h, docs/tensor.md
 //
+// CORA.cpp only: the Tensor operation table replaces MATLAB's matrices.
 // Authors:       Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

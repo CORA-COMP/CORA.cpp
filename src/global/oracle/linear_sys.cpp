@@ -2,6 +2,7 @@
 //
 // See also: lean/zonotope.h
 //
+// CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
 // Last update:   06-November-2026
@@ -67,6 +68,30 @@ ReachSet LinearSys::reach(const Zonotope &X0, double t_final, const alg::Standar
                                            {"tFinal", t_final},
                                            {"taylorTerms", taylor_terms},
                                            {"zonotopeOrder", zonotope_order}});
+    return {r.get<std::vector<Zonotope>>("timePoint"),
+            r.get<std::vector<Zonotope>>("timeInterval")};
+}
+
+ReachSet LinearSys::reach(const Zonotope &X0, const Zonotope &U, double t_final,
+                          const alg::Standard &alg) const {
+    detail::Entry entry;
+    if (entry.check()) alg.validate();
+    CORA_CHECK(B_.has_value(), Error::wrong_value,
+               [] { return std::string("lean reach: an input set needs the matrix B"); });
+    const double steps = t_final / alg.time_step;
+    CORA_CHECK(
+        t_final > 0 && std::abs(steps - std::round(steps)) <= numerics::kStepCount * steps,
+        Error::wrong_value,
+        [] { return std::string("lean reach: t_final must be a positive multiple of time_step"); });
+    // the times are exact doubles; the start time is 0
+    const Reply r = ask_system("linearSys.reach", {{"X0", X0},
+                                                   {"U", U},
+                                                   {"tStart", 0.0},
+                                                   {"tFinal", t_final},
+                                                   {"timeStep", alg.time_step},
+                                                   {"taylorTerms", alg.taylor_terms},
+                                                   {"zonotopeOrder", alg.zonotope_order},
+                                                   {"linAlg", std::string("standard")}});
     return {r.get<std::vector<Zonotope>>("timePoint"),
             r.get<std::vector<Zonotope>>("timeInterval")};
 }

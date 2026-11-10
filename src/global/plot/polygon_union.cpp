@@ -10,6 +10,7 @@
 // polygon is one interval, found by clipping the edge against the polygon's half-planes. The
 // uncovered pieces keep their direction and chain into loops.
 //
+// CORA.cpp only: MATLAB's polyshape union, written out for the plots.
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   03-November-2026

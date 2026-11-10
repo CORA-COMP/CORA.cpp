@@ -9,6 +9,8 @@
 // Outputs:  R - the cached quantities of priv_taylorLinSys.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
 //
+// CORA: global/classes/taylorLinSys.m
+// CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   ---

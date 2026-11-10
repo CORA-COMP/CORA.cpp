@@ -2,6 +2,7 @@
 //
 // See also: priv_from_interval_matrix.h
 //
+// CORA.cpp only: a helper of the matrix zonotope constructor from an interval matrix.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner
 // Written:       03-November-2026
 // Last update:   ---

@@ -7,6 +7,7 @@
 // Outputs:  hull - the corners counter-clockwise; a point or a segment for a flat set; none for K =
 // 0 See also: priv_vertex_candidates, ConZonotope::vertices
 //
+// CORA.cpp only: the convex hull of plane points, which MATLAB's convhull supplies.
 // Authors:       Claude Sonnet 5.5
 // Written:       06-November-2026
 // Last update:   ---

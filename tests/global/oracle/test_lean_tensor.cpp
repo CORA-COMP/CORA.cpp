@@ -10,6 +10,7 @@
 
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/zonotope.h"
+#include "oracle_testing.h"
 #include "testing.h"
 
 #include <cstdlib>
@@ -75,7 +76,7 @@ int main() {
                     "plus of mixed throws");
         test::check(throws([&] { lean::Zonotope(a, a, box).reduce(1, "pca"); }), "unknown method");
 
-        if (!std::getenv("CORACPP_ORACLE")) return;
+        if (!test::oracle::available()) return;
 
         // round_to: 0.1 into dyadic:3 (3 significand bits: 0.09375); the error encloses x - value
         const lean::Tensor tenth = lean::Tensor::from(Tensor({{0.1}}));

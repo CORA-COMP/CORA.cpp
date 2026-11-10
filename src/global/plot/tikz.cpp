@@ -8,6 +8,7 @@
 // Outputs:  text - a tikzpicture with one \addplot per layer, or a LaTeX document around it
 // See also: cora/global/plot/tikz.h, cora/global/plot/figure.h, src/global/plot/svg.cpp
 //
+// CORA.cpp only: pgfplots output has no CORA counterpart.
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   03-November-2026

@@ -225,6 +225,10 @@ an oracle request and reads its response.
 - The tests share one helper (`tests/global/oracle/oracle_testing.h`): seeded operands, the lean
   backend bit for bit against the oracle at `nearest`, and the same body on every other backend
   within the repository tolerance. CORA.cpp certifies no floating-point enclosures; CORALean does.
+- What this backs: the lean backend is bit-exact against CORALean's `nearest` oracle (deliberately
+  unsound rounding) on the tests' inputs. That pins the algorithm to CORALean's float definition; it
+  does not make a result sound. Eigen and torch agree with lean within `tol`. A test skips when no
+  oracle is configured, unless `CORACPP_REQUIRE_ORACLE` is set (CI), when it fails.
 - Files: `include/cora/global/oracle/`, `src/global/oracle/`.
 
 **Test suites.** Every ctest test has one label of its kind, from its folder or name (`CMakeLists.txt`,

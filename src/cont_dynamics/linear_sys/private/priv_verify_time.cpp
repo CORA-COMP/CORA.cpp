@@ -8,6 +8,8 @@
 // Outputs:  R - the queries of priv_verifyTime.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
 //
+// CORA: global/classes/verifyTime.m
+// CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   ---

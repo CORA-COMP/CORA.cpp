@@ -7,6 +7,7 @@
 //
 // See also: host_tensor.h, eigen.cpp, lean.cpp
 //
+// CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
 // Last update:   06-November-2026

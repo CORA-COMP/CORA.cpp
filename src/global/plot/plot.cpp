@@ -7,6 +7,7 @@
 // Outputs:  -   (the figure has new layers)
 // See also: cora/global/plot/figure.h, contSet/zonotope/vertices, contSet/zonotope/project
 //
+// CORA.cpp only: CORA plots through MATLAB figures; this draws into a Figure.
 // Authors:       Claude Sonnet 5.5
 // Written:       29-September-2026
 // Last update:   ---

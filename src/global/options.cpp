@@ -6,6 +6,7 @@
 // Outputs:  hint - " (did you mean 'time_step'?)", or "" if no candidate is close
 // See also: cora/global/options.h
 //
+// CORA.cpp only: the message of a mistyped option; CORA's validateOptions has the checks only.
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
 // Last update:   ---
