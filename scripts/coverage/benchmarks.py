@@ -320,6 +320,8 @@ def main():
                            committed.get("instances", {}))
         if args.only:
             measured = {**committed.get("instances", {}), **measured}
+    # in the order of the committed file, not of ctest, so that the files do not depend on it
+    measured = dict(sorted(measured.items()))
     inventory = cov.load_json(root / "coverage" / "cora-inventory.json")
     status = cov.load_json(root / "coverage" / "status.json").get("rows", {})
     lean = cov.load_json(root / "coverage" / "coralean-status.json").get("rows", {})
