@@ -18,7 +18,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   10-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -88,6 +88,11 @@ class NonlinearSys {
 
     /// f over the box x (bounds (n, 1)) and u (bounds (m, 1)): a range of shape (n, 1).
     Range enclosure(const Range &x, const std::optional<Range> &u = std::nullopt) const;
+
+    /// The Jacobian dfi/dz_j over the box, row-major (i, j) with z = (x, u), each a range of shape
+    /// (1, 1); an entry that is identically 0 is empty.
+    std::vector<std::optional<Range>>
+    jacobian_enclosure(const Range &x, const std::optional<Range> &u = std::nullopt) const;
 
     /// The Hessians of the components over z = (x, u) at the point (CORA's hessian): n matrices
     /// (n + m, n + m).

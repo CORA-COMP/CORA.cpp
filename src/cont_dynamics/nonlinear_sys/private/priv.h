@@ -40,32 +40,6 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
                                    const Linearized &lin, const std::optional<Zonotope> &U0,
                                    const alg::Linearization &alg);
 
-// The interval arithmetic of the remainders (priv_remainder.cpp) --------------------------------
-
-/// The entries of a column (n, 1) as n tensors of shape (1, 1), and back.
-std::vector<Tensor> priv_entries(const Tensor &column);
-Tensor priv_column(const std::vector<Tensor> &entries);
-
-/// max(|inf|, |sup|) of a box: CORA's max(abs(infimum(I)), abs(supremum(I))).
-Tensor priv_abs_max(const Tensor &lo, const Tensor &hi);
-
-/// The bounds of z - z* as ranges (1, 1): the box of R, then that of U0.
-std::vector<Range> priv_dz(const Interval &IHx, const std::optional<Interval> &IHu);
-
-/// MATLAB's max(numerator ./ denominator): NaN entries (0/0) are skipped, NaN if all are.
-double priv_ratio_max(const Tensor &numerator, const Tensor &denominator);
-
-/// tensorOrder 2: 1/2 dz' max|H_i| dz per component over the nonzero entries of the Hessian;
-/// dz holds the largest |z - z*| per coordinate as (1, 1) tensors.
-Tensor priv_second_order(const std::vector<std::optional<Range>> &H, const std::vector<Tensor> &dz,
-                         int64_t n);
-
-/// tensorOrder 3: the box 1/6 sum_j dz_j (dz' T_ij dz) per component, over the j with an entry of
-/// T_ij that is not identically 0 (CORA's ind{i}); none if there is no such entry at all. With
-/// by_position, dz_j is the dz of the place of j in ind{i} (as CORA's adaptive error does).
-std::optional<Interval> priv_third_order(const std::vector<std::optional<Range>> &T,
-                                         const std::vector<Range> &dz, int64_t n, bool by_position);
-
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -12,7 +12,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   10-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -205,6 +205,15 @@ Range NonlinearSys::enclosure(const Range &x, const std::optional<Range> &u) con
         hi.push_back(r.hi);
     }
     return {Tensor::concat(lo, -2), Tensor::concat(hi, -2)};
+}
+
+// The constant zeros of the Jacobian are skipped.
+std::vector<std::optional<Range>>
+NonlinearSys::jacobian_enclosure(const Range &x, const std::optional<Range> &u) const {
+    detail::Entry entry;
+    if (entry.check())
+        validate_point("jacobian_enclosure", x.lo, u ? std::optional<Tensor>(u->lo) : std::nullopt);
+    return aux_enclose_nonzero(jacobian_, variables(x, u));
 }
 
 // Second and third derivatives --------------------------------------------------------------------

@@ -42,14 +42,11 @@ double aux_entry(const Tensor &r, const Tensor &at) { return r.take_along_axis(a
 
 // ===========================================  MAIN  =========================================== //
 
-// The checked entry -------------------------------------------------------------------------------
-
 Zonotope LinearSys::error_solution_adaptive(const Zonotope &Vdyn,
                                             const std::optional<Zonotope> &Vstat, double time_step,
                                             double zeta_tabs,
                                             std::optional<int> taylor_terms) const {
     detail::Entry entry;
-    // the step and the input set, then the dimension of Vstat and the options
     if (entry.check()) validate_step("error_solution_adaptive", Vdyn, time_step, 1);
     CORA_CHECK(!Vstat || Vstat->dim() == dim(), Error::dimension_mismatch, [&] {
         return std::string("error_solution_adaptive: Vstat must have the dimension of A");
@@ -63,26 +60,11 @@ Zonotope LinearSys::error_solution_adaptive(const Zonotope &Vdyn,
         return std::string("error_solution_adaptive: it supports a single system, not a batch of "
                            "matrices A");
     });
-    // the series itself, which also counts its terms
-    int terms = 0;
-    return priv_error_solution_adaptive(A(), Vdyn, Vstat, time_step, zeta_tabs, taylor_terms,
-                                        terms);
-}
-
-// The series --------------------------------------------------------------------------------------
-
-// The series itself; CORA returns the number of terms it used in options.tt_err.
-Zonotope priv_error_solution_adaptive(const Tensor &A, const Zonotope &Vdyn,
-                                      const std::optional<Zonotope> &Vstat, double time_step,
-                                      double zeta_tabs, std::optional<int> taylor_terms,
-                                      int &terms_used) {
-    detail::Entry entry;
-    // the powers of A, and the series built term by term
-    TaylorLinSys taylor(A);
-    const Tensor Aabs = A.abs();
+    TaylorLinSys taylor(A());
+    const Tensor Aabs = A().abs();
     // the series so far: the sum of the terms, the powers of |A| of the remainder, the radii
     Zonotope AVsum = Vdyn * time_step;
-    Tensor Asum = A.eye_like() * time_step, M = A.eye_like(), Aabs_power = A.eye_like();
+    Tensor Asum = A().eye_like() * time_step, M = A().eye_like(), Aabs_power = A().eye_like();
     Tensor radius = aux_radius(AVsum), critical;
     double former = 0;
     for (int eta = 1;; ++eta) {
@@ -111,7 +93,6 @@ Zonotope priv_error_solution_adaptive(const Tensor &A, const Zonotope &Vdyn,
         const Interval E{W * -1.0, W};
         const Zonotope F = Vdyn.linear_map(E) * time_step;
         const Zonotope dynamic = AVsum.plus(F);
-        terms_used = eta;
         if (!Vstat) return dynamic;
         const Interval integral{Asum + E.inf() * time_step, Asum + E.sup() * time_step};
         return dynamic.plus(Vstat->linear_map(integral));

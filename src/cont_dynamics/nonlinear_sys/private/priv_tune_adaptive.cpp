@@ -1,31 +1,30 @@
-// priv_tune_adaptive - the formulas that tune the step size of the adaptive algorithm
+// priv_tune_adaptive - the formulas that tune the step size and the order of the adaptive algorithm
 //
-// The gain of the abstraction error over a change of the step size (CORA's aux_varphitotal), the
-// step size that minimizes the estimated width of the sets over the following steps
-// (aux_optimaldeltat, eq. (49) of [1]) and the gain that explains the error measured at a smaller
-// step size (aux_varphiest, by bisection), with the small vector helpers they and the step share.
-// All of it is arithmetic on numbers: nothing here changes the options.
+// The upper exponential and logarithm by squaring and bisection, the gain of the abstraction error
+// over a change of the step size (eq. (54)), the step size that minimizes the estimated size of
+// the sets over the following steps (eqs. (57) and (58)), the gain that explains the error found
+// at that step size (eq. (56)) and the choice of the tensor order (eqs. (46) and (47)). All of it
+// is arithmetic on numbers, in the order CORALean's optDeltatFloat and estimateGainFloat compute.
 //
-// Syntax:   double dt = priv_optimal_delta_t(Rstart, Rerror, horizon, varphi, zeta_p, run);
+// Syntax:   StepSize s = priv_opt_delta_t(alg, zeta_a, phi, r0, rabs, horizon);
 // Inputs:   see the declarations in priv_adaptive.h
 // Outputs:  see the declarations in priv_adaptive.h
 // References:
 //    [1] M. Wetzlinger, A. Kulmburg, A. Le Penven and M. Althoff. "Adaptive Reachability
 //        Algorithms for Nonlinear Systems Using Abstraction Error Analysis", NAHS, 2022.
-// See also: priv_lin_reach_adaptive.cpp
+// See also: priv_adapt_step.cpp
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   10-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -35,141 +34,128 @@ namespace cora {
 
 namespace {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
+/// The product of the gains of the first `scalings` scalings.
+double aux_gain_product(double zeta_delta, double phi1, int scalings) {
+    double product = 1;
+    for (int j = 0; j < scalings; ++j) product *= priv_interp_gain(zeta_delta, phi1, j);
+    return product;
+}
+
+/// Eq. (57): the size estimated for the set after the horizon, walked in 1 / zeta_delta^s steps.
+double aux_size_estimate(const alg::LinearizationAdaptive &alg, double zeta_a, double phi,
+                         double r0, double rabs, int s) {
+    const double zd = alg.zeta_delta, zz = alg.zeta_z;
+    const double lam = priv_pow(1 / zd, s);
+    const int whole = int(std::floor(lam));
+    const double b = lam - whole;
+    const double base = 1 + (zz + zz);
+    // the logarithms of the two bases are the same in every term
+    const double log_base = priv_log_up(alg.exp_depth, alg.log_steps, base);
+    const double log_a = priv_log_up(alg.exp_depth, alg.log_steps, zeta_a);
+    const auto power = [&](double log_x, double y) {
+        return priv_exp_up(alg.exp_depth, y * log_x);
+    };
+    // the sum over the whole steps, from the last term to the first as CORALean's sumUp
+    double sum = 0;
+    for (int j = whole - 1; j >= 0; --j) {
+        const double e = b + double(j + 1);
+        sum = power(log_base, e) * power(log_a, (e - 1) / lam) + sum;
+    }
+    const double zeta_az = sum + b * power(log_base, b);
+    const double growth = (r0 * power(log_base, lam)) * zeta_a;
+    return growth + ((rabs / lam) * zeta_az) * aux_gain_product(zd, phi, s);
+}
 
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
-// The helpers -------------------------------------------------------------------------------------
+// The powers --------------------------------------------------------------------------------------
 
-/// The sum of the lengths of the generators per coordinate.
-std::vector<double> priv_row_sums(const Zonotope &Z) {
-    return Z.generators().abs().sum(-1, true).data();
+double priv_pow(double x, int k) {
+    double power = 1;
+    for (int i = 0; i < k; ++i) power *= x;
+    return power;
 }
 
-/// The Euclidean norm of the entries of the vector.
-double priv_vector_norm(const std::vector<double> &v) {
-    // the root of the sum of squares
-    double sum = 0;
-    for (const double x : v) sum += x * x;
-    return std::sqrt(sum);
+// The exponential and the logarithm ---------------------------------------------------------------
+
+double priv_exp_up(int depth, double a) {
+    // the seed 1 + y + 2 y^2 at y = a / 2^depth, squared depth times
+    const double y = std::ldexp(a, -depth);
+    double u = (1 + y) + ((y * y) + (y * y));
+    for (int k = 0; k < depth; ++k) u *= u;
+    return u;
 }
 
-/// The entries of v at the places where orders equals the minimal order.
-std::vector<double> priv_at_min_order(const std::vector<double> &v, const AdaptiveRun &run) {
-    std::vector<double> out;
-    for (std::size_t j = 0; j < v.size(); ++j)
-        if (run.orders[j] == run.min_order) out.push_back(v[j]);
-    return out;
+double priv_exp_down(int depth, double a) {
+    const double y = std::ldexp(a, -depth);
+    double u = std::max(0.0, 1 + y);
+    for (int k = 0; k < depth; ++k) u = std::max(0.0, u * u);
+    return u;
 }
 
-/// The step size gain zeta_phi of the minimal order (CORA's zetaphi(minorder + 1)).
-double priv_zeta_phi(const AdaptiveRun &run) {
-    if (run.min_order < 0 || std::size_t(run.min_order) >= run.alg.zeta_phi.size())
-        CORA_FAIL(Error::not_supported,
-                  "reach: the abstraction error of order " + std::to_string(run.min_order) +
-                      " is not tuned (zeta_phi has entries for the orders 0 to 2)");
-    return run.alg.zeta_phi[std::size_t(run.min_order)];
-}
-
-// The formulas -----------------------------------------------------------------------------------
-
-/// The product of the gains over the scalings from step size `prev` to `curr` (CORA's
-/// aux_varphitotal): each scaling by mu has a gain between varphi and the limit.
-double priv_varphitotal(double varphi, double varphi_lim, double prev, double curr, double mu) {
-    const double scalings = std::log(prev / curr) / std::log(mu);
-    const double eps = machine_eps();
-    std::vector<double> phis{varphi};
-    // one gain per scaling of the step size, the last one blended towards 1
-    if (scalings > 0) {
-        const int low = int(std::floor(scalings + 10 * eps)), high = low + 1;
-        for (int i = 1; i <= low; ++i)
-            phis.push_back(varphi +
-                           (varphi_lim - varphi) * (curr - std::pow(mu, i) * curr) / (curr - 0));
-        phis.back() = phis.back() + (1 - phis.back()) * (prev - curr * std::pow(mu, high)) /
-                                        (curr * (std::pow(mu, low) - std::pow(mu, high)));
-    } else {
-        const int low = int(std::ceil(scalings - 10 * eps)), high = low - 1;
-        for (int i = -1; i >= low; --i)
-            phis.push_back(varphi +
-                           (varphi_lim - varphi) * (curr - std::pow(mu, i) * curr) / (curr - 0));
-        phis.back() = phis.back() + (1 - phis.back()) * (prev - curr * std::pow(mu, high)) /
-                                        (curr * (std::pow(mu, low) - std::pow(mu, high)));
-        for (double &x : phis) x = 1 / x;
-    }
-    // the gains multiply (the reciprocals, when the step size grows)
-    double prod = 1;
-    for (const double x : phis) prod *= x;
-    return prod;
-}
-
-/// The step size below the horizon that minimizes the estimated width of the sets over the
-/// following steps (CORA's aux_optimaldeltat, eq. (49) of [1]).
-double priv_optimal_delta_t(const Zonotope &Rt, const Zonotope &Rerr, double deltat,
-                            double varphimin, double zeta_p, const AdaptiveRun &run) {
-    const double mu = run.alg.decr_factor;
-    const double zeta_z = run.alg.zeta_z * 0.5; // a better representation of the actual reduction
-    const int kprimemax = int(std::ceil(-std::log(100.0) / std::log(mu)));
-    const double r_start = priv_vector_norm(priv_row_sums(Rt)),
-                 rerr1 = priv_vector_norm(priv_row_sums(Rerr));
-    const double varphi_h = mu - varphimin;
-    // the candidates: the horizon scaled down by mu, k = mu^-k' times
-    std::vector<double> deltats, k, floork;
-    for (int kp = 0; kp <= kprimemax; ++kp) {
-        k.push_back(std::pow(mu, -kp));
-        deltats.push_back(deltat * std::pow(mu, kp));
-        floork.push_back(std::floor(k.back()));
-    }
-    // the objective over the candidates
-    double varphiprod = 1;
-    int best = -1;
-    double best_value = kInf;
-    for (int kp = 0; kp <= kprimemax; ++kp) {
-        const auto q = std::size_t(kp);
-        varphiprod *= (varphimin + (deltats[0] - deltats[q]) / deltats[0] * varphi_h) / mu;
-        double all_but_last = 0;
-        for (int j = 1; j <= int(floork[q]); ++j)
-            all_but_last += std::pow(1 + 2 * zeta_z, k[q] + 1 - j) * std::pow(zeta_p, 1 - j / k[q]);
-        const double objective =
-            r_start * std::pow(1 + 2 * zeta_z, k[q]) * zeta_p +
-            rerr1 / k[q] * varphiprod *
-                (all_but_last + std::pow(1 + zeta_z, k[q] - kp) * (k[q] - floork[q]));
-        if (!std::isnan(objective) && (best < 0 || objective < best_value)) {
-            best = kp;
-            best_value = objective;
-        }
-    }
-    return deltats[std::size_t(std::max(best, 0))];
-}
-
-/// The gain of the abstraction error that makes the error of a step of size deltat equal to the
-/// one measured at the horizon, by bisection (CORA's aux_varphiest).
-double priv_varphi_est(double horizon, double deltat, const Zonotope &Rerr_h,
-                       const Zonotope &Rerr_deltat, const AdaptiveRun &run) {
-    const double mu = run.alg.decr_factor;
-    const double rerr1 = priv_vector_norm(priv_at_min_order(priv_row_sums(Rerr_h), run));
-    const double rerrk = priv_vector_norm(priv_at_min_order(priv_row_sums(Rerr_deltat), run));
-    if (!(rerr1 > rerrk))
-        CORA_FAIL(Error::report_to_dev, "reach: check the abstraction errors of the tuning");
-    // bisection for the gain whose total equals the ratio of the errors
-    const double rhs = rerrk / rerr1;
-    const double varphi_lim = std::pow(mu, run.min_order + 1);
-    double low = 0, up = std::pow(mu, run.min_order + 1), previous = 0;
-    for (int count = 1; count <= 10000; ++count) {
-        const double varphi = low + 0.5 * (up - low);
-        const double residual = priv_varphitotal(varphi, varphi_lim, deltat, horizon, mu) - rhs;
-        if (residual < 0)
-            low = varphi;
+double priv_log_up(int depth, int steps, double a) {
+    // bisection of [0, a]: the upper end moves where exp(mid) is at least a
+    double lo = 0, hi = a;
+    for (int k = 0; k < steps; ++k) {
+        const double mid = 0.5 * (lo + hi);
+        if (a <= priv_exp_down(depth, mid))
+            hi = mid;
         else
-            up = varphi;
-        if (std::abs(residual) < numerics::kGainResidual ||
-            (count > 1 && std::abs(varphi - previous) < numerics::kGainStep))
-            return varphi;
-        previous = varphi;
+            lo = mid;
     }
-    CORA_FAIL(Error::special_error, "Bug in varphi estimation... report to devs");
+    return hi;
+}
+
+// The gain ----------------------------------------------------------------------------------------
+
+double priv_interp_gain(double zeta_delta, double phi1, int j) {
+    return zeta_delta + (phi1 - zeta_delta) * priv_pow(zeta_delta, j);
+}
+
+StepSize priv_opt_delta_t(const alg::LinearizationAdaptive &alg, double zeta_a, double phi,
+                          double r0, double rabs, double h) {
+    // eq. (58): increase s while the estimate keeps falling, and stop at the first increase
+    int s = 0;
+    double cost = aux_size_estimate(alg, zeta_a, phi, r0, rabs, 0);
+    for (int k = 0; k < alg.fuel; ++k) {
+        const double next = aux_size_estimate(alg, zeta_a, phi, r0, rabs, s + 1);
+        if (!(next <= cost)) break;
+        cost = next;
+        ++s;
+    }
+    return {h * priv_pow(alg.zeta_delta, s), s};
+}
+
+double priv_estimate_gain(double zeta_delta, double lam, double rabs1, double rabs_opt,
+                          int scalings, int fuel) {
+    // an error that is 0 at the horizon says nothing of the gain: the limit
+    if (!(rabs1 > 0)) return zeta_delta;
+    // eq. (56): bisection of the gain in [0, zeta_delta] whose product of gains meets the target
+    const double target = (lam * rabs_opt) / rabs1;
+    double lo = 0, hi = zeta_delta;
+    for (int k = 0; k < fuel; ++k) {
+        const double mid = 0.5 * (lo + hi);
+        if (aux_gain_product(zeta_delta, mid, scalings) <= target)
+            lo = mid;
+        else
+            hi = mid;
+    }
+    return 0.5 * (lo + hi);
+}
+
+// The order ---------------------------------------------------------------------------------------
+
+int priv_tune_order(double zeta_k, double phi, double rabs, double rabs_last, const Vec &d1,
+                    const Vec &d2, int kappa) {
+    // eq. (46): too close to re-tune
+    if (std::abs((phi * rabs) / rabs_last) <= 1 - zeta_k) return kappa;
+    // eq. (47): the second order wins too little, or it is worth its cost
+    for (std::size_t i = 0; i < d1.size(); ++i)
+        if (!(d1[i] <= 0 || zeta_k <= d2[i] / d1[i])) return 2;
+    return 1;
 }
 
 } // namespace cora

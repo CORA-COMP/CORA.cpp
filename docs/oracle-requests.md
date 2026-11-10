@@ -112,33 +112,20 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 
 ## Nonlinear systems, alg "lin-adaptive" (PR "port/nln-adaptive")
 
-CORALean's adaptive float definitions (`src/CORALean/ContDynamics/NonlinearSys/Operations/`:
-`adaptRunFloat`, `adaptStepFloat`, `adaptLinPassFloat`, `optDeltatFloat`, `estimateGainFloat`,
-`orderStepFloat`) are the sound-float version of Alg. 1 and 2 of Wetzlinger et al. (NAHS 2022). They
-are CORALean's own variant, not CORA's code, and CORA.cpp ports CORA's `reach_adaptive`: the
-abstraction orders are 1 and 2 (CORA: tensorOrder 2 and 3), the abstraction error is a checked region
-with no loop that enlarges it by 1.1, every rounding of the tuning goes upward, and `optDeltat`
-and `estimateGain` are searches with a fuel, where CORA evaluates a formula over the scalings and
-bisects with tolerances 1e-9 and 1e-6. The results are therefore not CORA's, and no bit-exact test
-of CORA.cpp against them is possible; only the pieces below could be.
-
-| CORALean definition (file) | what it is | follows CORA? |
-|---|---|---|
-| `NonlinearSys.FloatHessModel.adaptStepFloat` (`AdaptStepFloat.lean`) | one tuned step: horizon, linear pass, step at the optimal size, gain, reduction | own (CORA: `linReach_adaptive` with its passes at the horizon and the step size, the loops on the admissible error and the switch of the tensor order) |
-| `optDeltatFloat` (`OptDeltatFloat.lean`) | the step size that balances the two wrapping effects, by a search | own (CORA: `aux_optimaldeltat`, the minimum of an objective over the scalings mu^k') |
-| `estimateGainFloat` (`EstimateGainFloat.lean`) | the gain at the horizon, by bisection | own (CORA: `aux_varphiest` with `aux_varphitotal`) |
-| `Reduce.reduce` after each step | Girard's reduction to order rho | own (CORA: `reduce(.., 'adaptive', zeta_Z)`, which boxes as many generators as the Hausdorff bound allows) |
-| `LinearSys.errorSolutionAdaptive` (served) | the adaptive error solution | yes, tested in `test_lean_linear_sys_error_solution_adaptive` |
+CORA.cpp's `alg::LinearizationAdaptive` is CORALean's adaptive variant (Alg. 1 and 2 of Wetzlinger
+et al., NAHS 2022; CORA's own version is not sound as written, see `docs/cora-differences.md`).
+The pinned oracle (`oracle-20261110-4614dfa7d`) does not serve these ops yet (CORALean batch 12
+adds them); until then the coverage rows of `lin-adaptive` are oracle debt. At `nearest` the float
+definitions below are plain double arithmetic, and CORA.cpp computes them in that order, except
+for the linear step (`LinearSys::one_step` instead of `reachFloatInput`, see the differences).
 
 | op (proposed) | request fields | reply |
 |---|---|---|
-| `zonotope.reduceAdaptive` (CORA's `priv_reduceAdaptive`, 'girard') | `Z`, `diagPercent` | `Z`, `dHerror`, `gredIdx` (0-based) |
-| `zonotope.reduceIdx` (CORA's `priv_reduceIdx`) | `Z`, `idx` (0-based) | `Z` |
-| `linearSys.initReachAdaptive` (CORA's `initReach_adaptive`) | `A`, `uTrans`, `U` (zonotope), `Rstart`, `timeStep`, `zetaTlin`, `taylorTerms` (optional), `zetaZ` | `ti`, `tp` (zonotopes), `taylorTerms` |
-| `nonlinearSys.abstractionErrorAdaptive` | `f`, `R`, `xStar`, `uStar`, `U`, `tensorOrder`, `zetaZ`, `hessianConst` | `VerrorDyn` (zonotope), `trueError` |
-| `nonlinearSys.linReachAdaptive` | `f`, `Rstart`, `U`, the options (`zetaZ`, `zetaK`, `decrFactor`, `zetaTlin`, `zetaTabs`, `zetaPhi`) and the state of the analysis | `Rti`, `Rtp`, the updated state |
-| `nonlinearSys.reachAdaptive` | `f`, `R0`, `U`, `tFinal`, the options | `timeInterval`, `timePoint`, `time` |
+| `nonlinearSys.adaptLinPass` (`adaptLinPassFloat`) | `f`, `jacX`, `jacU` (models), `U`, `options` (`dt`, `eta`, `rho`), `R` | `A`, `Rtp`, `Rti` |
+| `nonlinearSys.orderStep` (`orderStepFloat`) | models with `hess`, `kappa`, `U`, `options`, `R` | `Rti`, `Rtp` or none |
+| `nonlinearSys.optDeltat` (`optDeltatFloat`) | `prec`, `bis`, `zetaDelta`, `zetaZ`, `zetaA`, `phi`, `r0`, `rabs`, `h`, `fuel` | `dt`, `exponent` |
+| `nonlinearSys.estimateGain` (`estimateGainFloat`) | `zetaDelta`, `lam`, `rabs1`, `rabsOpt`, `scalings`, `fuel` | `phi` |
+| `nonlinearSys.adaptStep` (`adaptStepFloat`) | models with `hess`, `U`, `options`, `zetaDelta`, `zetaH`, `zetaZ`, `zetaK`, `prec`, `bis`, `fuel`, the state `t`, `R`, `Rti`, `h`, `phi`, `kappa`, `rabs` | the state after the step or none |
+| `nonlinearSys.adaptRun` (`adaptRunFloat`) | as `adaptStep`, `tend`, the number of steps | the list of states |
 
-The pinned oracle (`oracle-20261110-4614dfa7d`) serves `nonlinearSys.linReach` and
-`nonlinearSys.reach` (the "lin" algorithm), which are the follow-up of the previous section and not
-part of this PR. These rows of the coverage table are oracle debt until the ops above exist.
+Already served and used: `zonotope.reduce` (Girard), `linearSys.errorSolution_adaptive`.

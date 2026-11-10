@@ -155,9 +155,9 @@ width of s, LOVO area) belong to the instances that have one; TRAF22 and SPRE22 
 | --- | --- | --- | --- | --- | --- | --- |
 | TRAF22 | 1 | 1 | 0.919 | 152 | 32 | - |
 | SPRE22 | 1 | 1 | 1.04 | 37 | 61 | - |
-| ROBE25 (1) | 1 | 1 | 5.50 | 151 | 25 | width of s 5.79e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
-| ROBE25 (2) | 1 | 1 | 7.78 | 239 | 92 | width of s 1.24e-5 (CORA 8.8e-6, JuliaReach 1.1e-9) |
-| ROBE25 (3) | 1 | 1 | 10.9 | 310 | 217 | width of s 1.01e-5 (CORA 8.3e-6, JuliaReach 6.5e-10) |
+| ROBE25 (1) | 1 | 1 | 52.2 | 151 | 25 | width of s 5.91e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
+| ROBE25 (2) | 1 | 1 | 379 | 239 | 92 | width of s 7.98e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
+| ROBE25 (3) | 1 | 1 | 718 | 310 | 217 | width of s 6.85e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -188,20 +188,31 @@ average 10 to 15 when they started).
 
 **ROBE25** (`..._Robertson.m`, ARCH26 instances (1), (2), (3) as `ROBE25_1` to `ROBE25_3`) is the
 Robertson reaction x' = -0.4 x + b y z, y' = 0.4 x - b y z - c y^2, z' = c y^2 from (1, 0, 0) to
-t = 40 with (b, c) = (10^2, 10^3), (10^3, 10^5), (10^3, 10^7) and the zeta_Z of the script (0.00025,
-0.0006, 0.017), which are the values of the ARCH26 report. The script prints the constant 1 once
-reach has finished, so does the program; the report asks for a width of s = x + y + z below 1e-5 at
-t = 40 (the script does not check it), which the program reports on stderr. MATLAB CORA v2026.1.0
-(R2024b, this machine, under a load of about 20) needs 411 s, 734 s and 1117 s and gives 16501,
-22494 and 25960 steps and widths 5.7785e-6, 8.7772e-6 and 8.3479e-6, as in the report. CORA.cpp
-follows `reach_adaptive` of CORA step for step. Case (1) agrees with MATLAB in all 16501 steps: the
-step sizes to 5e-13 relative, the first and last boxes to 15 digits, 58 generators at the end, and
-the width. In cases (2) and (3) the step sizes agree to 1e-9 for the first 15316 of 22494 and 9371
-of 25960 steps; then a tuning decision flips (the gains come from bisections and `min` over
-discrete candidates, and the error of the Taylor series is the difference `expm(|A| dt) - M` of two
-nearly equal matrices, whose rounding differs between `expm` of MATLAB and of CORA.cpp), the later
-steps differ, and the runs end with 22520 and 25946 steps and widths 1.24e-5 and 1.01e-5, both above
-the 1e-5 of the report. Nothing in the port differs from CORA beyond these roundings.
+t = 40 with (b, c) = (10^2, 10^3), (10^3, 10^5), (10^3, 10^7). The result is the specification of
+the report: the width of s = x + y + z at t = 40 below 1e-5 (the script prints the constant 1 and
+does not check it; the program prints 1 only if the width is below, and the width on stderr).
+CORA's `lin-adaptive` is not sound as written (its Hessian region and its third-order error:
+`LinReachAdaptiveCora1D.lean`, `AbstrErrAdaptiveTensor3Cora2D.lean`), so the program runs CORALean's
+variant (`adaptStepFloat`; `docs/cora-differences.md`), which has the tensor orders 1 and 2, a
+checked region instead of CORA's error loop and a fixed reduction order. Its error is first order
+in the region, so it needs many more steps than CORA's third-order one: 143287, 1153275 and
+2213084 sets against CORA's 16501, 22494 and 25960. A step costs 0.3 ms (CORA's 8 ms), so case (1) is
+2.6 times faster than MATLAB CORA without the checks and the cases (2) and (3) are 1.7 and 2.1 times
+slower (the report: CORA 151 s, 239 s and 310 s; JuliaReach 25 s, 92 s and 217 s).
+MATLAB CORA v2026.1.0 (R2024b, this machine) with `CHECKS_ENABLED` off, as the report's times
+probably are, needs 137.5 s, 225.7 s and 338.7 s (411 s, 734 s and 1117 s with the checks, under a
+load of about 20) and gives widths 5.7785e-6, 8.7772e-6 and 8.3479e-6, as in the report.
+
+The tuning (`alg::LinearizationAdaptive`) is the same in the three cases except for two numbers; the
+values of the script's `redFactor` (0.00025, 0.0006, 0.017) are CORA's reduction and have no
+counterpart. A smaller `zeta_z` makes the search take smaller steps, which is what the width needs
+(at 3e-7 in case (2) the step size converges to 0 and `reach` stops with `Error::not_converged`).
+
+| | zeta_delta | zeta_h | zeta_z | zeta_k | zonotope_order | taylor_terms | initial step, gain, error, order |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ROBE25_1 | 0.7 | 0.3 | 1e-5 | 0.99 | 20 | 4 | 1e-3, 0.4, 1e-6, 1 |
+| ROBE25_2 | 0.7 | 0.3 | 5e-7 | 0.99 | 50 | 4 | 1e-3, 0.4, 1e-6, 1 |
+| ROBE25_3 | 0.7 | 0.3 | 6e-6 | 0.99 | 20 | 4 | 1e-3, 0.4, 1e-6, 1 |
 
 ## Run
 
@@ -295,6 +306,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | PLAN01 | 31/45 | 14 | 9 |
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
+| ROBE25_1 | 9/21 | 12 | 7 |
+| ROBE25_2 | - | not measured | - |
+| ROBE25_3 | - | not measured | - |
 | SPRE22 | 36/64 | 28 | 13 |
 | SRA01 | 26/45 | 19 | 8 |
 | SRA02 | 33/55 | 22 | 10 |
@@ -308,7 +322,4 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRU01 | 27/46 | 19 | 8 |
 | SRU02 | 41/66 | 25 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
-| ROBE25_1 | 12/28 | 16 | 6 |
-| ROBE25_2 | 12/28 | 16 | 6 |
-| ROBE25_3 | 12/28 | 16 | 6 |
 <!-- END bit-exact -->

@@ -43,6 +43,9 @@ A header counts a row only if the .cpp file that implements it executed a line.
 | PLAN01 | not measured: failed or over 600 s | | | | | | | | |
 | RAND01 | 17 | 5 | 2 | 9 | 1 | 0 | 0 | 4 | 5/13 |
 | RAND02 | 17 | 5 | 2 | 9 | 1 | 0 | 0 | 4 | 5/13 |
+| ROBE25_1 | 28 | 9 | 4 | 12 | 3 | 0 | 0 | 7 | 9/21 |
+| ROBE25_2 | not measured: failed or over 600 s | | | | | | | | |
+| ROBE25_3 | not measured: failed or over 600 s | | | | | | | | |
 | SPRE22 | 77 | 36 | 12 | 24 | 5 | 0 | 0 | 13 | 36/64 |
 | SRA01 | 53 | 26 | 6 | 16 | 5 | 0 | 0 | 8 | 26/45 |
 | SRA02 | 65 | 33 | 8 | 19 | 5 | 0 | 0 | 10 | 33/55 |
@@ -56,9 +59,6 @@ A header counts a row only if the .cpp file that implements it executed a line.
 | SRU01 | 54 | 27 | 6 | 16 | 5 | 0 | 0 | 8 | 27/46 |
 | SRU02 | 77 | 41 | 10 | 21 | 5 | 0 | 0 | 11 | 41/66 |
 | TRAF22 | 39 | 15 | 5 | 15 | 4 | 0 | 0 | 9 | 15/30 |
-| ROBE25_1 | 34 | 12 | 9 | 11 | 2 | 0 | 0 | 6 | 12/28 |
-| ROBE25_2 | 34 | 12 | 9 | 11 | 2 | 0 | 0 | 6 | 12/28 |
-| ROBE25_3 | 34 | 12 | 9 | 11 | 2 | 0 | 0 | 6 | 12/28 |
 
 ## Rows that are not bit-exact, by the number of instances they touch
 
@@ -66,19 +66,19 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 | row | status | CORALean | instances | which |
 |---|---|---|---|---|
-| `contSet/contSet/contSet` | ported | float | 45 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contSet/contSet/dim` | ported | out-of-scope | 45 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contSet/zonotope/dim` | ported | out-of-scope | 45 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contSet/zonotope/generators` | ported | out-of-scope | 45 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contSet/zonotope/zonotope` | ported | float | 45 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/linearSys/linearSys` | ported | float | 43 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
+| `contSet/contSet/contSet` | ported | float | 43 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
+| `contSet/contSet/dim` | ported | out-of-scope | 43 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
+| `contSet/zonotope/dim` | ported | out-of-scope | 43 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
+| `contSet/zonotope/generators` | ported | out-of-scope | 43 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
+| `contSet/zonotope/zonotope` | ported | float | 43 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
+| `contDynamics/linearSys/linearSys` | ported | float | 41 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
 | `contSet/polytope/constraints` | property | float | 35 | BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `contSet/polytope/polytope` | property | float | 35 | BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contSet/interval/interval` | ported | float | 33 | BRKDC01, BRKNC01, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/linearSys/taylorMatrices` | ported | float | 26 | BRKDC01, BRKNC01, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, PLAD01_BND30, PLAD01_BND42, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
+| `contSet/interval/interval` | ported | float | 31 | BRKDC01, BRKNC01, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
+| `contDynamics/linearSys/taylorMatrices` | ported | float | 27 | BRKDC01, BRKNC01, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, PLAD01_BND30, PLAD01_BND42, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22 |
 | `specification/specification/specification` | ported | float | 26 | CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contDynamics/contDynamics/contDynamics` | untested | out-of-scope | 24 | BRKDC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contSet/contSet/interval` | untested | float | 24 | BRKDC01, BRKNC01, GRBX01, GRBX02, HEAT03, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
+| `contDynamics/contDynamics/contDynamics` | untested | out-of-scope | 22 | BRKDC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, TRAF22 |
+| `contSet/contSet/interval` | untested | float | 22 | BRKDC01, BRKNC01, GRBX01, GRBX02, HEAT03, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, ROBE25_1, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
 | `contSet/contSet/representsa_emptyObject` | ported | out-of-scope | 21 | BRKNC01, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `contSet/polytope/dim` | ported | out-of-scope | 21 | BRKNC01, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `contSet/polytope/isemptyobject` | untested | out-of-scope | 21 | BRKNC01, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
@@ -100,29 +100,23 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/contSet/isIntersecting` | untested | float | 11 | SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02 |
 | `contSet/conZonotope/interval` | property | bound | 9 | BRKNC01, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
 | `hybridDynamics/location/guardIntersect_nondetGuard` | property | float | 8 | SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
-| `contDynamics/contDynamics/reach` | property | float | 7 | PLAA01_BND42, PLAA01_BND50, SPRE22, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contSet/contSet/compact` | ported | out-of-scope | 7 | PLAA01_BND42, PLAA01_BND50, SPRE22, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contSet/conZonotope/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/dim` | ported | out-of-scope | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/zonoBundle` | ported | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
-| `contDynamics/contDynamics/derivatives` | ported | out-of-scope | 5 | SPRE22, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/initReach` | property | float | 5 | SPRE22, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/linearize` | ported | float | 5 | SPRE22, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/nonlinearSys` | ported | proved | 5 | SPRE22, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/post` | property | float | 5 | SPRE22, TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
+| `contDynamics/contDynamics/reach` | property | float | 5 | PLAA01_BND42, PLAA01_BND50, ROBE25_1, SPRE22, TRAF22 |
+| `contSet/contSet/compact` | ported | out-of-scope | 5 | PLAA01_BND42, PLAA01_BND50, ROBE25_1, SPRE22, TRAF22 |
+| `contSet/contSet/representsa` | ported | out-of-scope | 5 | PLAA01_BND42, PLAA01_BND50, ROBE25_1, SPRE22, TRAF22 |
 | `contDynamics/linearSys/reach` | ported | float | 4 | BRKDC01, HEAT03, PLAD01_BND30, PLAD01_BND42 |
-| `contSet/contSet/representsa` | ported | out-of-scope | 4 | PLAA01_BND42, PLAA01_BND50, SPRE22, TRAF22 |
-| `contSet/zonotope/quadMap` | property | float | 4 | TRAF22, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/linearSys/errorSolution_adaptive` | property | float | 3 | ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/linearSys/initReach_adaptive` | property | float | 3 | ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/initReach_adaptive` | property | float | 3 | ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/linReach_adaptive` | property | float | 3 | ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/reach_adaptive` | property | float | 3 | ROBE25_1, ROBE25_2, ROBE25_3 |
+| `contDynamics/contDynamics/derivatives` | ported | out-of-scope | 3 | ROBE25_1, SPRE22, TRAF22 |
+| `contDynamics/nonlinearSys/initReach` | property | float | 3 | ROBE25_1, SPRE22, TRAF22 |
+| `contDynamics/nonlinearSys/nonlinearSys` | ported | proved | 3 | ROBE25_1, SPRE22, TRAF22 |
+| `contDynamics/nonlinearSys/post` | property | float | 3 | ROBE25_1, SPRE22, TRAF22 |
 | `contDynamics/contDynamics/linReach` | property | float | 2 | SPRE22, TRAF22 |
 | `contDynamics/linParamSys/initReach` | property | float | 2 | PLAA01_BND42, PLAA01_BND50 |
 | `contDynamics/linParamSys/linParamSys` | ported | float | 2 | PLAA01_BND42, PLAA01_BND50 |
 | `contDynamics/linParamSys/post` | property | float | 2 | PLAA01_BND42, PLAA01_BND50 |
+| `contDynamics/nonlinearSys/linearize` | ported | float | 2 | SPRE22, TRAF22 |
 | `contSet/conZonotope/center` | property | proved | 2 | GRBX01, GRBX02 |
 | `contSet/conZonotope/isFullDim` | property | float | 2 | GRBX01, GRBX02 |
 | `contSet/conZonotope/rescale` | property | float | 2 | GRBX01, GRBX02 |
@@ -132,22 +126,25 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `others/matZonotope/expmOneParam` | property | bound | 2 | PLAA01_BND42, PLAA01_BND50 |
 | `others/matZonotope/matZonotope` | property | float | 2 | PLAA01_BND42, PLAA01_BND50 |
 | `others/matZonotope/numgens` | ported | out-of-scope | 2 | PLAA01_BND42, PLAA01_BND50 |
+| `contDynamics/nonlinearSys/linReach_adaptive` | untested | float | 1 | ROBE25_1 |
+| `contDynamics/nonlinearSys/reach_adaptive` | property | float | 1 | ROBE25_1 |
 | `contSet/contSet/vertices` | ported | out-of-scope | 1 | TRAF22 |
+| `contSet/zonotope/quadMap` | property | float | 1 | TRAF22 |
 | `contSet/zonotope/vertices_` | untested | float | 1 | TRAF22 |
 | `hybridDynamics/location/guardIntersect_conZonotope` | property | float | 1 | BRKNC01 |
 
 ## Files with no CORA counterpart
 
 - `include/cora/cont_set/set.h`: 41 instances
-- `include/cora/global/tensor/tolerance.h`: 29 instances
+- `include/cora/global/tensor/tolerance.h`: 27 instances
 - `src/cont_dynamics/linear_sys/input_solution.cpp`: 22 instances
-- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 2 instances
+- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 3 instances
 - `src/cont_dynamics/linear_sys/private/priv_canonical_input.cpp`: 14 instances
-- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 9 instances
-- `src/cont_dynamics/linear_sys/private/priv_steps.cpp`: 2 instances
-- `src/cont_dynamics/linear_sys/private/priv_steps.h`: 2 instances
+- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 10 instances
+- `src/cont_dynamics/linear_sys/private/priv_steps.cpp`: 3 instances
+- `src/cont_dynamics/linear_sys/private/priv_steps.h`: 3 instances
 - `src/cont_dynamics/linear_sys/validate.cpp`: 4 instances
-- `src/cont_dynamics/nonlinear_sys/private/priv_adaptive.h`: 3 instances
+- `src/cont_dynamics/nonlinear_sys/private/priv_adaptive.h`: 1 instance
 - `src/cont_set/con_zonotope/private/priv_blocks.cpp`: 35 instances
 - `src/cont_set/con_zonotope/private/priv_linear_programs.cpp`: 11 instances
 - `src/cont_set/con_zonotope/private/priv_null_space.cpp`: 2 instances
@@ -157,21 +154,21 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - `src/cont_set/zono_bundle/private/priv_linear_programs.cpp`: 3 instances
 - `src/cont_set/zono_bundle/private/priv_members_refusal.cpp`: 6 instances
 - `src/cont_set/zonotope/private/priv_host_zonotope.cpp`: 1 instance
-- `src/cont_set/zonotope/private/priv_select_generators.cpp`: 30 instances
+- `src/cont_set/zonotope/private/priv_select_generators.cpp`: 28 instances
 - `src/cont_set/zonotope/private/priv_zonotope_norm.cpp`: 1 instance
-- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 2 instances
-- `src/global/backend/eigen.cpp`: 45 instances
-- `src/global/backend/host_tensor.cpp`: 45 instances
-- `src/global/expr.cpp`: 5 instances
-- `src/global/settings.cpp`: 45 instances
+- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 3 instances
+- `src/global/backend/eigen.cpp`: 43 instances
+- `src/global/backend/host_tensor.cpp`: 43 instances
+- `src/global/expr.cpp`: 3 instances
+- `src/global/settings.cpp`: 43 instances
 - `src/global/sparse_matrix.cpp`: 1 instance
-- `src/global/tensor/derived.cpp`: 44 instances
-- `src/global/tensor/fused.cpp`: 33 instances
-- `src/global/tensor/ops.cpp`: 38 instances
-- `src/global/tensor/tensor.cpp`: 45 instances
-- `src/global/tensor/tolerance.cpp`: 29 instances
+- `src/global/tensor/derived.cpp`: 42 instances
+- `src/global/tensor/fused.cpp`: 31 instances
+- `src/global/tensor/ops.cpp`: 36 instances
+- `src/global/tensor/tensor.cpp`: 43 instances
+- `src/global/tensor/tolerance.cpp`: 27 instances
 - `src/global/threads.cpp`: 20 instances
-- `src/global/within_tol.cpp`: 14 instances
+- `src/global/within_tol.cpp`: 15 instances
 - `src/hybrid_dynamics/location/private/priv.h`: 21 instances
 - `src/hybrid_dynamics/location/private/priv_sets.cpp`: 21 instances
 - `src/matrix_set/mat_zonotope/private/priv_stacking.cpp`: 2 instances
@@ -194,12 +191,12 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 A private step (`private/priv_*.m`) is no row of the inventory; its file is tagged and shows here.
 
-- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 5 instances
+- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 2 instances
 - `contDynamics/@linParamSys/private/priv_inputSolution.m`: 2 instances
 - `contDynamics/@linParamSys/private/priv_inputTie.m`: 2 instances
 - `contDynamics/@linParamSys/private/priv_mappingMatrix.m`: 2 instances
 - `contDynamics/@linParamSys/private/priv_tie.m`: 2 instances
-- `contDynamics/@linearSys/private/priv_expmRemainder.m`: 25 instances
+- `contDynamics/@linearSys/private/priv_expmRemainder.m`: 26 instances
 - `contDynamics/@linearSys/private/priv_exponential_Krylov_projected_linSysInput.m`: 1 instance
 - `contDynamics/@linearSys/private/priv_initReach_Krylov.m`: 1 instance
 - `contDynamics/@linearSys/private/priv_inputSolution_Krylov.m`: 1 instance
@@ -214,7 +211,6 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 - `contDynamics/@linearSys/private/priv_subspace_Krylov_jaweckiBound.m`: 1 instance
 - `contDynamics/@linearSys/private/priv_verifyRA_supportFunc.m`: 14 instances
 - `contDynamics/@linearSys/private/priv_verifyRA_zonotope.m`: 14 instances
-- `contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m`: 3 instances
 - `contSet/@conZonotope/private/priv_ksi_iterative.m`: 2 instances
 - `contSet/@conZonotope/private/priv_ksi_optimizer.m`: 2 instances
 - `contSet/@polytope/private/priv_compact_1D.m`: 21 instances
@@ -230,9 +226,7 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 - `contSet/@polytope/private/priv_normalizeConstraints.m`: 21 instances
 - `contSet/@polytope/private/priv_representsa_emptySet.m`: 21 instances
 - `contSet/@polytope/private/priv_supportFunc.m`: 21 instances
-- `contSet/@zonotope/private/priv_reduceAdaptive.m`: 3 instances
-- `contSet/@zonotope/private/priv_reduceGirard.m`: 27 instances
-- `contSet/@zonotope/private/priv_reduceIdx.m`: 3 instances
+- `contSet/@zonotope/private/priv_reduceGirard.m`: 28 instances
 
 ## Per instance, the rows that are not bit-exact
 
@@ -410,6 +404,12 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
+<details><summary>ROBE25_1: 9/21</summary>
+
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+
+</details>
+
 <details><summary>SPRE22: 36/64</summary>
 
 `contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_nondetGuard` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
@@ -485,23 +485,5 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 <details><summary>TRAF22: 15/30</summary>
 
 `contDynamics/contDynamics/contDynamics` (untested), `contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa` (ported), `contSet/contSet/vertices` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/project` (untested), `contSet/zonotope/quadMap` (property), `contSet/zonotope/vertices_` (untested), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>ROBE25_1: 12/28</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/initReach_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/initReach_adaptive` (property), `contDynamics/nonlinearSys/linReach_adaptive` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>ROBE25_2: 12/28</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/initReach_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/initReach_adaptive` (property), `contDynamics/nonlinearSys/linReach_adaptive` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>ROBE25_3: 12/28</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/initReach_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/initReach_adaptive` (property), `contDynamics/nonlinearSys/linReach_adaptive` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported)
 
 </details>

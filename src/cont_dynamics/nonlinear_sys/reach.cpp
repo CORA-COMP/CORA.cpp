@@ -7,8 +7,8 @@
 // first step is not reduced, as in CORA. The error of a step is the first guess of the next.
 //
 // With alg::LinearizationAdaptive the step sizes and orders are tuned by the algorithm
-// (priv_reach_adaptive) and R.time holds the step times; init_reach and post are of
-// alg::Linearization only.
+// (priv_reach_adaptive: CORALean's adaptStepFloat) and R.time holds the step times; init_reach and
+// post are of alg::Linearization only.
 //
 // Syntax:   R = sys.reach(problem, alg);
 //           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step = .01});
@@ -23,10 +23,11 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   10-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
+#include "cont_dynamics/nonlinear_sys/private/priv.h"
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //

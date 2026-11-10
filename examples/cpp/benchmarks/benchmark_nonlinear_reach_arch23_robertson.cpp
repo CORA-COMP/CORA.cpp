@@ -2,11 +2,11 @@
 //
 // MATLAB CORA's benchmark_nonlinear_reach_ARCH23_Robertson.m: the three cases x' = -a x + b y z,
 // y' = a x - b y z - c y^2, z' = c y^2 with a = 0.4 from x(0) = (1, 0, 0), reached until t = 40
-// by alg "lin-adaptive" with the zeta_Z of the case (0.00025, 0.0006, 0.017). The script's
-// quality measure is the width of the sum of the concentrations s = x + y + z at t = 40, which
-// the ARCH-COMP report asks to be below 1e-5; the script prints the constant 1 once reach has
-// finished, as this program does, and the width goes to stderr. The line has the time of reach,
-// as the script's tic and toc.
+// by alg "lin-adaptive". The verdict is the specification of the ARCH-COMP report: the width of
+// the sum of the concentrations s = x + y + z at t = 40 below 1e-5 (the script prints the constant
+// 1 once reach has finished). The algorithm is CORALean's variant, not CORA's, so the tuning is
+// not the script's zeta_Z: kTuning below. The line has the time of reach, as the script's tic and
+// toc; the number of sets and the width go to stderr.
 //
 // Syntax:   build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...]
 // Outputs:  one line 'benchmark,instance,result,time' (on stderr: the number of sets, the width)
@@ -30,15 +30,23 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 
-/// One case: beta, gamma of the model and the zeta_Z of the script.
+/// One case: beta, gamma of the model and the tuning of the algorithm.
 struct Case {
     const char *name;
-    double beta, gamma, zeta_z;
+    double beta, gamma;
+    alg::LinearizationAdaptive alg;
 };
 
-constexpr Case kCases[] = {{"ROBE25_1", 1e2, 1e3, 0.00025},
-                           {"ROBE25_2", 1e3, 1e5, 0.0006},
-                           {"ROBE25_3", 1e3, 1e7, 0.0170}};
+/// The tuning of a case: the share of a reduction in the step size search (zeta_Z) and the order
+/// of the reduction are what the cases differ in; the second tensor order is taken whenever it
+/// wins at all (zeta_K), the rest are the defaults of the algorithm.
+alg::LinearizationAdaptive aux_tuning(double zeta_z, int order) {
+    return {.zeta_z = zeta_z, .zeta_k = 0.99, .zonotope_order = order};
+}
+
+const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, aux_tuning(0.00001, 20)},
+                       {"ROBE25_2", 1e3, 1e5, aux_tuning(0.0000005, 50)},
+                       {"ROBE25_3", 1e3, 1e7, aux_tuning(0.000006, 20)}};
 
 /// Robertson_case*.m: the right-hand side, written as the model file does; u is not used.
 NonlinearSys aux_robertson(double beta, double gamma) {
@@ -88,8 +96,7 @@ bool aux_run(const std::string &name) {
     const Zonotope X0(column({1, 0, 0}), Tensor::zeros({3, 0}));
     const Zonotope U(column({0}), Tensor::zeros({1, 0}));
     const auto start = std::chrono::steady_clock::now();
-    const ReachSet R = sys.reach({.initial_set = X0, .input_set = U, .t_final = 40},
-                                 alg::LinearizationAdaptive{.zeta_z = c->zeta_z});
+    const ReachSet R = sys.reach({.initial_set = X0, .input_set = U, .t_final = 40}, c->alg);
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
 
     // the width of s = x + y + z: 2 rad of the interval sum of the last set over a step
@@ -98,11 +105,13 @@ bool aux_run(const std::string &name) {
     for (const double v : last.inf().data()) lo += v;
     for (const double v : last.sup().data()) hi += v;
     const double width = hi - lo;
-    cora::bench::print_line("Robertson", name, true, wall.count());
+    const bool verified = width < 1e-5;
+    cora::bench::print_line("Robertson", name, verified, wall.count());
     std::cerr << "  " << R.time_interval.size() << " sets, width of s at t = 40: " << width
-              << (width < 1e-5 ? " (below" : " (not below") << " the 1e-5 of ARCH 2026)\n";
+              << (verified ? " (verified: below" : " (not verified: not below")
+              << " the 1e-5 of ARCH 2026)\n";
     if (std::getenv("CORACPP_BENCHMARK_VERBOSE")) aux_print_details(R);
-    return true;
+    return verified;
 }
 
 } // namespace

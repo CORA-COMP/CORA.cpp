@@ -73,13 +73,6 @@ BlockConstant priv_particular_constant(const LinearSys &sys, TaylorLinSys &taylo
                                        const Blocks &blocks, const Zonotope &U, double time_step,
                                        int taylor_terms);
 
-/// error_solution_adaptive of the system x' = A x (A is (n, n)), and the number of terms of the
-/// series it used (CORA's options.tt_err); taylor_terms, if given, fixes that number.
-Zonotope priv_error_solution_adaptive(const Tensor &A, const Zonotope &Vdyn,
-                                      const std::optional<Zonotope> &Vstat, double time_step,
-                                      double zeta_tabs, std::optional<int> taylor_terms,
-                                      int &terms_used);
-
 /// One step from X with the input set U and the constant input u.
 BlockStep priv_one_step(const LinearSys &sys, TaylorLinSys &taylor, const Blocks &blocks,
                         const Zonotope &X, const Zonotope &U, const Zonotope &u, double time_step,

@@ -1594,20 +1594,6 @@ void bind_zonotope(py::module_ &m) {
              "The zonotope of the convex combinations of this one and Z2")
         .def("reduce", &Zonotope::reduce, py::arg("order") = 1,
              "At most order * n generators; the smallest are enclosed by a box (Girard)")
-        // the adaptive reduction and its repetition by indices
-        .def(
-            "reduce_adaptive",
-            [](const Zonotope &Z, double diag_percent) {
-                // Girard's reduction with a bound on the Hausdorff distance to the box
-                AdaptiveReduction r = Z.reduce_adaptive(diag_percent);
-                return py::make_tuple(std::move(r.Z), r.error, std::move(r.idx));
-            },
-            py::arg("diag_percent"),
-            "reduce 'adaptive': (Z, error, idx), the zonotope, the bound of its Hausdorff "
-            "distance and the 0-based indices of the generators boxed")
-        .def("reduce_idx", &Zonotope::reduce_idx, py::arg("idx"),
-             "reduce 'idx': the generators with these 0-based indices are replaced by their box")
-        // the box and the compact form
         .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
         .def("box", &Zonotope::box, "The box around the zonotope, as a zonotope")
         .def("compact", &Zonotope::compact, py::arg("method") = py::none(),

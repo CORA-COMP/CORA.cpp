@@ -37,7 +37,6 @@ namespace cora {
 
 class MatZonotope;
 class Polytope;
-struct AdaptiveReduction;
 
 class Zonotope : public ContSet {
   public:
@@ -87,15 +86,6 @@ class Zonotope : public ContSet {
     /// A zonotope of at most order * n generators (n the dimension) that contains this one, by
     /// Girard's method: the longest generators stay, the others become a box. Not a batch.
     Zonotope reduce(int order = 1) const;
-
-    /// CORA's reduce "adaptive": Girard's method, boxing as many generators as keep the Hausdorff
-    /// distance below diag_percent times twice the norm of the box radius; also returns the
-    /// 0-based indices it boxed, for reduce_idx. Not a batch.
-    AdaptiveReduction reduce_adaptive(double diag_percent) const;
-
-    /// CORA's reduce "idx": the generators with these 0-based indices become their box, appended
-    /// as n generators; none: as it is. Not a batch.
-    Zonotope reduce_idx(const std::vector<int64_t> &idx) const;
 
     /// Encloses the segments between matching points of Z and Z2 = M*Z + t (same generator
     /// factors): 2m + 1 generators.
@@ -438,14 +428,6 @@ inline Zonotope operator-(const Zonotope &Z, const Tensor &v) {
 }
 /// -Z as CORA's uminus: centre and generators negated, like ContSet::uminus.
 inline Zonotope operator-(const Zonotope &Z) { return {Z.center() * -1.0, Z.generators() * -1.0}; }
-
-/// What reduce_adaptive returns: the zonotope, the bound of the Hausdorff distance of the reduction
-/// (CORA's dHerror) and the indices of the generators it replaced by their box.
-struct AdaptiveReduction {
-    Zonotope Z;
-    double error;
-    std::vector<int64_t> idx;
-};
 
 } // namespace cora
 
