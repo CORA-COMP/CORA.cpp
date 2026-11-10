@@ -78,7 +78,8 @@ IntervalMatrix aux_input_tie(const LinParamSys &sys, const LinParamSeries &serie
         // CORA warns and drops the remainder (cora-differences.md); here it has no bound
         CORA_FAIL(Error::reach_set_explosion,
                   "priv_inputTie: Taylor order not high enough (norm(A) r / (taylor_terms + 2) = " +
-                      std::to_string(epsilon) + " >= 1); the curvature of the constant input is "
+                      std::to_string(epsilon) +
+                      " >= 1); the curvature of the constant input is "
                       "unbounded");
     }
     const double phi = std::pow(norm_A, taylor_terms + 1) * std::pow(r, taylor_terms + 1) /
