@@ -2,10 +2,12 @@
 //
 // The abstraction error and the orders of its terms are computed by the same arithmetic as
 // CORALean's and agree with the oracle bit for bit at nearest (van der Pol with an input, the
-// Robertson reaction). A pass takes a linear step with the error as input: CORA.cpp's is CORA's
-// oneStep and CORALean's is the interval-matrix exponential, so the sets of a pass agree to
-// 1e-7 (relative) and the values read off them (the point of linearization, the matrix A, the
-// zero generators) exactly.
+// Robertson reaction). A pass takes a linear step with the error as input, CORALean's
+// reachFloatInput for one step (priv_float_one_step, bit for bit against the oracle in
+// test_lean_linear_sys_float_step), so the values read off a pass (the point of linearization, the
+// matrix A, the zero generators) are exact and the boxes of its sets (Rmax, the window, the end
+// set) agree to 1e-9 (relative) at order 2 on the default backend, whose sums are in another order
+// than CORALean's; at order 3 the quadratic map is CORA's and the sets lie inside the oracle's.
 //
 // CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
@@ -27,7 +29,7 @@ using namespace cora;
 
 namespace {
 
-constexpr double kSets = 5e-3, kError = 0.5;
+constexpr double kSets = 5e-3, kError = 0.5, kBox = 1e-9;
 
 NonlinearSys van_der_pol() {
     return NonlinearSys(
@@ -120,14 +122,23 @@ int main() {
                 const auto theirs =
                     oracle.lin_reach_adaptive_pass(lean_input, lean::Zonotope(c.R), c.dt, kappa,
                                                    priv_column(c.R.center(), adm), alg);
-                // the sets inside the oracle's (its linear step is coarser), the values exact
+                // the sets and the values exactly the oracle's
                 test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
                 if (!mine || !theirs) continue;
                 aux_same(b + " xs", priv_column(c.R.center(), mine->xs), theirs->xs);
                 aux_same(b + " A", mine->A, theirs->A);
-                aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kSets);
-                aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kSets);
-                aux_inside(b + " time point", mine->Rtp, theirs->time_point, kSets);
+                if (kappa == 2) {
+                    // the boxes agree to rounding; bit for bit is the step's test, on the lean
+                    // backend
+                    test::oracle::check_hull(mine->Rmax, theirs->Rmax, kBox);
+                    test::oracle::check_hull(mine->Rti, theirs->time_interval, kBox);
+                    test::oracle::check_hull(mine->Rtp, theirs->time_point, kBox);
+                } else {
+                    // the quadratic map of order 3 is CORA's here, so the sets lie inside
+                    aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kSets);
+                    aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kSets);
+                    aux_inside(b + " time point", mine->Rtp, theirs->time_point, kSets);
+                }
                 std::vector<bool> gzero(mine->gzero.begin(), mine->gzero.end());
                 test::check(gzero == theirs->g_zero, b + ": the zero generators");
 

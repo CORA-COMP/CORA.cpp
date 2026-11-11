@@ -19,11 +19,13 @@ namespace cora {
 
 namespace {
 
-/// The sum along axis -2 nested to the right, a(0) + (a(1) + (...)), as CORALean's sumDown and
-/// sumUp (a backend's own sum may add in another order, which the enclosure does not contain).
+/// The sum along axis -2 nested to the right, a(0) + (a(1) + (... + (a(n-1) + 0))), as CORALean's
+/// sumDown and sumUp (a backend's own sum may add in another order, which the enclosure does not
+/// contain; the seed 0 turns a sum of negative zeros into 0).
 Tensor aux_nested_sum(const Tensor &t) {
     const int64_t n = t.size(-2);
     Tensor acc = t.slice(-2, n - 1, n);
+    acc = acc + acc.zeros_like();
     for (int64_t k = n - 2; k >= 0; --k) acc = t.slice(-2, k, k + 1) + acc;
     return acc.squeeze(-2);
 }

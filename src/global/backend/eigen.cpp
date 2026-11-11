@@ -229,7 +229,8 @@ std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
     return {lo, hi};
 }
 
-// T = (inf + sup) / 2, S = (sup - inf) / 2 in scratch memory, then T c, T G, the box of S |[c G]|.
+// T = (inf + sup) / 2, S the larger of |inf - T| and |sup - T| in scratch memory, then T c, T G,
+// the box of S |[c G]|.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const HostTensor<T> &c,
@@ -249,7 +250,7 @@ zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const 
         const T *lo = inf.p + l * n * k, *up = sup.p + l * n * k;
         for (int64_t i = 0; i < n * k; ++i) {
             t[i] = (lo[i] + up[i]) * T(0.5);
-            s[i] = (up[i] - lo[i]) * T(0.5);
+            s[i] = std::max(std::abs(lo[i] - t[i]), std::abs(up[i] - t[i]));
         }
         const auto Gz = MapC<T>(G.p + r * k * m, k, m);
         const auto cz = MapC<T>(c.p + r * k, k, 1);

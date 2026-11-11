@@ -1,18 +1,18 @@
 // priv_lin_reach_adaptive_pass - one linearization of the adaptive algorithm at a fixed step size
 //
 // The system is linearized at x* (the center of R moved half a step along the flow) and at the
-// center of U. The step of the window is one linear step with the error as input: from the
-// admissible error (a box, 0 at first) the set Rmax of the window is reached, the error over it
-// is computed (priv_abstr_err_adaptive) and, if it exceeds the admissible one, enlarged by 1.1
-// and the step repeated; it ends when the error is admissible, or gives up when the ratio to the
-// admissible one does not fall after three passes. Then the sets are those with the error in the
-// input, and the radius of its solution is what the tuning reads (CORALean's
+// center of U. The step of the window is one linear step (priv_float_one_step) with the error as
+// input: from the admissible error (a box, 0 at first) the set Rmax of the window is reached, the
+// error over it is computed (priv_abstr_err_adaptive) and, if it exceeds the admissible one,
+// enlarged by 1.1 and the step repeated; it ends when the error is admissible, or gives up when the
+// ratio to the admissible one does not fall after three passes. Then the sets are those with the
+// error in the input, and the radius of its solution is what the tuning reads (CORALean's
 // linReachAdaptivePassFloat).
 //
 // Syntax:   auto P = priv_lin_reach_adaptive_pass(sys, kappa, U, alg, time_step, R, error_adm);
 // Inputs:   see the declarations in priv_adaptive.h
 // Outputs:  P - the sets and what the tuning reads of them; none if the loop gives up
-// See also: priv_abstrerr_adaptive.cpp, LinearSys::one_step
+// See also: priv_abstrerr_adaptive.cpp, priv_float_step.h
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
@@ -21,7 +21,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
-#include "cont_dynamics/linear_sys/private/priv_steps.h"
+#include "cont_dynamics/linear_sys/private/priv_float_step.h"
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
 
 #include <algorithm>
@@ -30,35 +30,6 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
-
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-// The linear step ---------------------------------------------------------------------------------
-
-/// One step of x' = A (x - x*) + v, v in V, from R (oneStepFloat): the linear system's step from
-/// R - x*, shifted back; the Taylor order is raised until it is admissible.
-std::optional<std::pair<Zonotope, Zonotope>> aux_linear_step(const LinearSys &lin,
-                                                             TaylorLinSys &taylor, int taylor_terms,
-                                                             const Tensor &xs, const Zonotope &V,
-                                                             const Zonotope &R, double dt) {
-    // eta + 2 >= 2 ||A dt||, from the larger of eta and 2
-    const double norm = lin.A().abs().sum(-1, true).max().item() * dt;
-    int eta = std::max(taylor_terms, 2);
-    while (double(eta + 2) < 2 * norm && eta < 4096) ++eta;
-    if (!(double(eta + 2) >= 2 * norm)) return std::nullopt;
-    // the constant input is the center of V, the time-varying one V without it
-    const Tensor &v = V.center();
-    const int64_t n = lin.dim();
-    const Zonotope point(v, v.zeros_like({n, 0}));
-    const BlockStep s =
-        priv_one_step(lin, taylor, priv_one_block(n), R - xs, V - v, point, dt, eta);
-    return std::make_pair(s.time_interval[0] + xs, s.time_point[0] + xs);
-}
-
-} // namespace
-
 
 // ===========================================  MAIN  =========================================== //
 
@@ -77,7 +48,6 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
     const Jacobians &J = L.J;
     const Zonotope &Vbase = L.Vbase;
     const LinearSys lin(J.A);
-    TaylorLinSys taylor(J.A);
 
     // the error loop: the window with the admissible error as input, the error over it
     std::optional<Zonotope> Rmax, Verror;
@@ -86,8 +56,9 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
         priv_error_loop_adaptive(error_adm, alg.fuel, [&](const Vec &adm) {
             Box ebox{Vec(adm.size()), adm};
             for (std::size_t i = 0; i < adm.size(); ++i) ebox.lo[i] = -adm[i];
-            const auto window = aux_linear_step(lin, taylor, alg.taylor_terms, xs_t,
-                                                Vbase + priv_box_zonotope(like, ebox), R, dt);
+            const auto window =
+                priv_float_one_step(J.A, xs_t, Vbase + priv_box_zonotope(like, ebox), R, dt,
+                                    alg.taylor_terms, alg.zonotope_order);
             if (!window) {
                 failed = true;
                 return Vec(adm.size(), 0.0);
@@ -100,7 +71,8 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
     const Vec &true_error = *found;
 
     // the sets with the error in the input, and the radius of the solution of the error
-    const auto S = aux_linear_step(lin, taylor, alg.taylor_terms, xs_t, Vbase + *Verror, R, dt);
+    const auto S = priv_float_one_step(J.A, xs_t, Vbase + *Verror, R, dt, alg.taylor_terms,
+                                       alg.zonotope_order);
     if (!S) return std::nullopt;
     const Zonotope Rerror =
         lin.error_solution_adaptive(*Verror, std::nullopt, dt, 0.0, alg.taylor_terms);
