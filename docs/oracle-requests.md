@@ -280,3 +280,18 @@ reach beyond the hypothesis of `reachWith`.
 
 `NeuralNetwork::evaluate`, `evaluate_with_input`, `NeurNetContrSys::reach` and `simulate` are
 oracle debt until then; their tests are `property` (the sets hold every simulated run).
+
+### Piece B (PR "port/ainncs-b")
+
+| CORALean definition (file under `src/CORALean/NN/Layers/`) | what CORA.cpp ports | request (proposed op `neuralNetwork.polyRelaxation`) |
+|---|---|---|
+| `sigmoidPolyRelaxation`, `tanhPolyRelaxation` (`Operations/SigmoidPolyRelaxation.lean`, `Operations/TanhPolyRelaxation.lean`; `Theorems/*PolyRelaxationEncloses.lean`), `leakyReluRelaxation` (ReLU) | `poly_method` "regression" of order 1 in `NeuralNetwork::evaluate`: the line `m x + t` of the 20-point least squares (CORA's `leastSquarePolyFunc`) and its exact error radius; CORALean takes the fit as data and certifies the error | `activation`, `l`, `u`, `coeffs` (`[m, t]`, the fit as CORA.cpp computes it); reply `error`, a certified bound: the test is containment (CORA.cpp's exact radius at most the oracle's), as the fit is not CORALean's |
+
+`NeuralNetwork::sensitivity` (CORA's `calcSensitivity`; CORALean has `Chain.sensitivity`,
+`Chain.sensitivity_eq_fderiv` and the interval `IntervalChain.sensitivity`; proposed op
+`neuralNetwork.sensitivity`: `layers`, `x` (a point), reply `J`, the Jacobian), the splitting of `NeurNetContrSys::verify`
+(CORA's `splitR0`) and the VCAS loop of the benchmark program (the discrete plant step, the
+advisory and the acceleration rule, composed of `NeuralNetwork::evaluate` and `PolyZonotope`
+affine maps) have no CORALean counterpart beyond `NeurNetContrSysDT` (whose `reach` is the
+sampled loop at a discrete-time plant, with the advisory choice an argument); they are oracle debt
+with the network ops of the first table.

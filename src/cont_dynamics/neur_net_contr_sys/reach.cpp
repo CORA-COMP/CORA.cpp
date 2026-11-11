@@ -7,7 +7,8 @@
 // first step is reduced to zonotope_order as CORA's aux_reachability does. The sets are projected
 // to the plant's states; the set at the end of the period starts the next. After every step the
 // set over it is checked against the specification, and the run stops at a violation, or when
-// the sets of a step explode (CORA's setexplosion), returning the sets so far.
+// the sets of a step explode (CORA's setexplosion, which includes a range that leaves the domain of
+// the dynamics' functions), returning the sets so far.
 //
 // Syntax:   R = sys.reach(X0, U, t_final, {.plant = {.time_step = 0.1}}, spec);
 // Inputs:   X0 - the initial set (Zonotope or PolyZonotope), U - the external input set (optional)
@@ -62,8 +63,8 @@ PolyZonotope aux_project(const PolyZonotope &P, int64_t n) {
 }
 
 /// The set of the pairs (x, N(x)) for x in X.
-Zonotope aux_joint(const NeuralNetwork &nn, const Zonotope &X, const NnOptions &) {
-    return nn.evaluate_with_input(X);
+Zonotope aux_joint(const NeuralNetwork &nn, const Zonotope &X, const NnOptions &options) {
+    return nn.evaluate_with_input(X, options);
 }
 
 PolyZonotope aux_joint(const NeuralNetwork &nn, const PolyZonotope &X, const NnOptions &options) {
@@ -131,7 +132,7 @@ void aux_validate(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
 template <class S, class Step>
 bool aux_period(const NeurNetContrSys &sys, const S &X, const std::optional<Zonotope> &U,
                 const std::vector<double> &period, const ClosedLoopOptions &options,
-                const std::optional<TimedSpecification> &spec, ClosedLoopReach<S> &R) {
+                const TimedSpecifications &specs, ClosedLoopReach<S> &R) {
     const S R0 = aux_joint(sys.network(), X, options.nn);
     const std::vector<double> inner = aux_grid(period[0], period[1], options.plant.time_step);
     alg::Linearization alg = options.plant;
@@ -145,9 +146,9 @@ bool aux_period(const NeurNetContrSys &sys, const S &X, const std::optional<Zono
         R.time_point.push_back(aux_project(step->time_point, sys.dim()));
         R.time.push_back(inner[i + 1]);
         // the set over the step against the specification
-        if (spec &&
-            !priv_holds(*spec, aux_zonotope(R.time_interval.back()), inner[i], inner[i + 1]))
-            return false;
+        for (const TimedSpecification &spec : specs)
+            if (!priv_holds(spec, aux_zonotope(R.time_interval.back()), inner[i], inner[i + 1]))
+                return false;
     }
     return true;
 }
@@ -156,7 +157,7 @@ bool aux_period(const NeurNetContrSys &sys, const S &X, const std::optional<Zono
 template <class S, class Step>
 ClosedLoopReach<S> aux_reach(const NeurNetContrSys &sys, S X, const std::optional<Zonotope> &U,
                              double t_final, const ClosedLoopOptions &options,
-                             const std::optional<TimedSpecification> &spec) {
+                             const TimedSpecifications &specs) {
     aux_validate(sys, X, U, t_final, options);
     ClosedLoopReach<S> R;
     R.time = {0.0};
@@ -164,7 +165,7 @@ ClosedLoopReach<S> aux_reach(const NeurNetContrSys &sys, S X, const std::optiona
     const std::vector<double> periods = aux_grid(0.0, t_final, sys.dt());
     try {
         for (std::size_t p = 0; p + 1 < periods.size(); ++p) {
-            if (!aux_period<S, Step>(sys, X, U, {periods[p], periods[p + 1]}, options, spec, R)) {
+            if (!aux_period<S, Step>(sys, X, U, {periods[p], periods[p + 1]}, options, specs, R)) {
                 R.violated = true;
                 R.completed = false;
                 return R;
@@ -173,8 +174,9 @@ ClosedLoopReach<S> aux_reach(const NeurNetContrSys &sys, S X, const std::optiona
             X = R.time_point.back();
         }
     } catch (const Error &e) {
-        // CORA returns the sets so far when they explode, and reports a failure
-        if (e.id() != Error::reach_set_explosion) std::rethrow_exception(std::current_exception());
+        // the sets so far are returned when they explode, or leave a domain (tan at a pole)
+        if (e.id() != Error::reach_set_explosion && e.id() != Error::out_of_domain)
+            std::rethrow_exception(std::current_exception());
         R.exploded = true;
         R.completed = false;
     }
@@ -191,7 +193,9 @@ NeurNetContrSys::reach(const Zonotope &X0, const std::optional<Zonotope> &U, dou
                        const ClosedLoopOptions &options,
                        const std::optional<TimedSpecification> &spec) const {
     detail::Entry entry;
-    return aux_reach<Zonotope, NonlinearStep>(*this, X0, U, t_final, options, spec);
+    // one specification or none is a list of at most one
+    return reach(X0, U, t_final, options,
+                 spec ? TimedSpecifications{*spec} : TimedSpecifications{});
 }
 
 ClosedLoopReach<PolyZonotope>
@@ -199,7 +203,26 @@ NeurNetContrSys::reach(const PolyZonotope &X0, const std::optional<Zonotope> &U,
                        const ClosedLoopOptions &options,
                        const std::optional<TimedSpecification> &spec) const {
     detail::Entry entry;
-    return aux_reach<PolyZonotope, PolyNonlinearStep>(*this, X0, U, t_final, options, spec);
+    // one specification or none is a list of at most one
+    return reach(X0, U, t_final, options,
+                 spec ? TimedSpecifications{*spec} : TimedSpecifications{});
+}
+
+// The lists of specifications ---------------------------------------------------------------------
+
+ClosedLoopReach<Zonotope> NeurNetContrSys::reach(const Zonotope &X0,
+                                                 const std::optional<Zonotope> &U, double t_final,
+                                                 const ClosedLoopOptions &options,
+                                                 const TimedSpecifications &specs) const {
+    detail::Entry entry;
+    return aux_reach<Zonotope, NonlinearStep>(*this, X0, U, t_final, options, specs);
+}
+
+ClosedLoopReach<PolyZonotope>
+NeurNetContrSys::reach(const PolyZonotope &X0, const std::optional<Zonotope> &U, double t_final,
+                       const ClosedLoopOptions &options, const TimedSpecifications &specs) const {
+    detail::Entry entry;
+    return aux_reach<PolyZonotope, PolyNonlinearStep>(*this, X0, U, t_final, options, specs);
 }
 
 } // namespace cora

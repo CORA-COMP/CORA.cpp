@@ -1,0 +1,9 @@
+{
+  "name": "quad",
+  "layers": [
+    {"out": 64, "in": 12, "activation": "sigmoid", "W": 0, "b": 768},
+    {"out": 64, "in": 64, "activation": "sigmoid", "W": 832, "b": 4928},
+    {"out": 64, "in": 64, "activation": "sigmoid", "W": 4992, "b": 9088},
+    {"out": 3, "in": 64, "activation": "identity", "W": 9152, "b": 9344}
+  ]
+}

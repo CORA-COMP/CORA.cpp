@@ -66,6 +66,15 @@ bool priv_holds_reach(const TimedSpecification &spec, const ClosedLoopReach<S> &
     return covered;
 }
 
+/// Whether the reachable sets satisfy every one of the specifications.
+template <class S, class Enclose>
+bool priv_holds_reach(const TimedSpecifications &specs, const ClosedLoopReach<S> &R,
+                      Enclose to_zonotope) {
+    for (const TimedSpecification &spec : specs)
+        if (!priv_holds_reach(spec, R, to_zonotope)) return false;
+    return true;
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -1,15 +1,14 @@
 // evaluate - the outputs of a network at points, and an enclosure of them over a set
 //
 // An activation y = a(x) over the range [l, u] of a neuron is enclosed by one line and an error,
-// y in slope x + offset +- radius (CORA's poly_method "singh", order 1, used by every layer here).
-// A ReLU is exact where l >= 0 (y = x) or u <= 0 (y = 0), else the tightest parallelogram has
-// slope u / (u - l) and offset and radius mu = -slope l / 2. A sigmoid or tanh is increasing and
-// S-shaped, so its derivative is at least the smaller one at the ends: slope = min(a'(l), a'(u)),
-// offset = (a(u) + a(l) - slope (u + l)) / 2, radius = (a(u) - a(l) - slope (u - l)) / 2
-// [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2]. The line maps (c, G, GI) exactly, so the factors
-// and the exponents never change; the radius is a new independent generator per neuron, or a new
-// factor of its own. evaluate_with_input carries the input rows along, so the output depends on
-// the same factors as the input. All neurons are handled at once by tensor operations.
+// y in slope x + offset +- radius (CORA's poly_method "singh" or "regression", order 1): singh is
+// the tightest parallelogram [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2], regression the
+// least-squares line through 20 equidistant points of [l, u] shifted by the middle of its
+// difference to the activation, whose bounds are exact (the ends and where f'(x) = slope). The
+// line maps (c, G, GI) exactly, so the factors and the exponents never change; the radius is a
+// new independent generator per neuron, or a new factor. evaluate_with_input carries the input
+// rows along, so the output depends on the same factors as the input. All neurons are handled at
+// once by tensor operations.
 //
 // Syntax:   y = nn.evaluate(x);   Y = nn.evaluate(X);   XY = nn.evaluate_with_input(X);
 // Inputs:   x - points, columns (in, N)
@@ -55,8 +54,41 @@ struct Line {
     Tensor slope, offset, radius;
 };
 
-/// The line that encloses the activation over [l, u] (elementwise; the formulas above).
-Line aux_line(Activation activation, const Tensor &l, const Tensor &u) {
+/// The derivative of the activation at the values y = a(x) (relu: at x, which y = max(x, 0) tells
+/// apart from the sign, so the ReLU takes y > 0).
+Tensor aux_derivative(Activation activation, const Tensor &y) {
+    const Tensor one = y.ones_like();
+    switch (activation) {
+    case Activation::identity:
+        return one;
+    case Activation::relu:
+        return Tensor::where(y.greater(y.zeros_like()), one, y.zeros_like());
+    case Activation::sigmoid:
+        return y.multiply(one - y);
+    case Activation::tanh:
+        return one - y.multiply(y);
+    }
+    CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
+}
+
+/// The values of the activation at the points.
+Tensor aux_apply(Activation activation, const Tensor &x) {
+    switch (activation) {
+    case Activation::identity:
+        return x;
+    case Activation::relu:
+        return x.maximum(0.0);
+    case Activation::sigmoid:
+        return x.sigmoid();
+    case Activation::tanh:
+        return x.tanh();
+    }
+    CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
+}
+
+/// The line over [l, u] by Singh's transformer: a ReLU is exact where l >= 0 or u <= 0, else the
+/// slope is u / (u - l) with radius -slope l / 2; a sigmoid or tanh has slope min(a'(l), a'(u)).
+Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
     const Tensor zero = l.zeros_like(), one = l.ones_like();
     switch (activation) {
     case Activation::identity:
@@ -75,8 +107,7 @@ Line aux_line(Activation activation, const Tensor &l, const Tensor &u) {
         const bool is_tanh = activation == Activation::tanh;
         const Tensor fl = is_tanh ? l.tanh() : l.sigmoid(), fu = is_tanh ? u.tanh() : u.sigmoid();
         // the derivative from the value: 1 - f^2 for tanh, f (1 - f) for the sigmoid
-        const Tensor dl = is_tanh ? one - fl.multiply(fl) : fl.multiply(one - fl);
-        const Tensor du = is_tanh ? one - fu.multiply(fu) : fu.multiply(one - fu);
+        const Tensor dl = aux_derivative(activation, fl), du = aux_derivative(activation, fu);
         const Tensor slope = dl.minimum(du);
         return {slope, (fu + fl - slope.multiply(u + l)) * 0.5,
                 (fu - fl - slope.multiply(u - l)) * 0.5};
@@ -85,19 +116,70 @@ Line aux_line(Activation activation, const Tensor &l, const Tensor &u) {
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
 
-/// The values of the activation at the points.
-Tensor aux_apply(Activation activation, const Tensor &x) {
-    switch (activation) {
-    case Activation::identity:
-        return x;
-    case Activation::relu:
-        return x.maximum(0.0);
-    case Activation::sigmoid:
-        return x.sigmoid();
-    case Activation::tanh:
-        return x.tanh();
+/// The least-squares line through 20 points of [l, u] with the exact error of the fit; where
+/// l == u the tangent (CORA's computeApproxPoly), and the extremes of f - p lie at the ends and at
+/// f' = m in closed form (tanh as CORA, sigmoid 2 atanh(sqrt(1 - 4m)), the ReLU at 0 and the ends).
+Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u) {
+    const Tensor zero = l.zeros_like(), one = l.ones_like();
+    if (activation == Activation::identity) return {one, zero, zero};
+    constexpr int64_t kPoints = 20; // 10 (order + 1) of CORA's computeApproxPoly
+    // the points x_k = l + (u - l) k / 19, and the fit y = m x + t by the normal equations
+    std::vector<double> grid(kPoints);
+    for (int64_t k = 0; k < kPoints; ++k) grid[std::size_t(k)] = double(k) / double(kPoints - 1);
+    const Tensor X = l + (u - l).multiply(Tensor::like(l, grid, {1, kPoints}));
+    const Tensor Y = aux_apply(activation, X);
+    const Tensor dx = X - X.mean(-1, true), dy = Y - Y.mean(-1, true);
+    const Tensor point = u.equal(l);
+    const Tensor var = Tensor::where(point, one, dx.multiply(dx).sum(-1, true));
+    const Tensor m_fit = dx.multiply(dy).sum(-1, true).divide(var);
+    // the tangent of a range of one point: the derivative from the value
+    const Tensor fl = aux_apply(activation, l);
+    const Tensor m = Tensor::where(point, aux_derivative(activation, fl), m_fit);
+    const Tensor t = Tensor::where(point, fl - aux_derivative(activation, fl).multiply(l),
+                                   Y.mean(-1, true) - m_fit.multiply(X.mean(-1, true)));
+    // the difference between the activation and the line, at the ends and where the slope is m
+    Tensor diff_max, diff_min;
+    if (activation == Activation::relu) {
+        // p - relu(x) of a piecewise linear function: at l, 0 and u
+        const Tensor p_l = m.multiply(l) + t, p_u = m.multiply(u) + t - u;
+        // outside the crossing the neuron is exact: the line is the activation itself
+        const Tensor cross =
+            Tensor::where(l.less(zero), Tensor::where(u.greater(zero), one, zero), zero);
+        const Tensor lo = p_l.minimum(t).minimum(p_u), hi = p_l.maximum(t).maximum(p_u);
+        const Tensor mid = (lo + hi) * 0.5, rad = (hi - lo) * 0.5;
+        const Tensor negative = u.less_equal(zero), positive = l.greater_equal(zero);
+        const Tensor exact = Tensor::where(cross.greater(zero), zero, one);
+        // the line shifts by the middle of p - f, so that |f - p'| <= radius
+        const Tensor slope = Tensor::where(negative, zero, Tensor::where(positive, one, m));
+        const Tensor offset = Tensor::where(exact, zero, t - mid);
+        return {slope, offset, Tensor::where(exact, zero, rad)};
     }
-    CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
+    // tanh and sigmoid: the points where f'(x) = m, +-x*, and the ends
+    const bool is_tanh = activation == Activation::tanh;
+    Tensor x_star;
+    if (is_tanh) {
+        x_star = (one - m).maximum(0.0).sqrt().atanh();
+    } else {
+        x_star = (one - m * 4.0).maximum(0.0).sqrt().atanh() * 2.0;
+    }
+    Tensor candidates[] = {l, u, x_star, x_star.negative()};
+    diff_max = diff_min = Tensor();
+    for (const Tensor &c : candidates) {
+        // a candidate outside the range, or not finite, counts as the end l
+        const Tensor x = Tensor::where(c.greater_equal(l), Tensor::where(c.less_equal(u), c, l), l);
+        const Tensor d = aux_apply(activation, x) - (m.multiply(x) + t);
+        diff_max = diff_max.defined() ? diff_max.maximum(d) : d;
+        diff_min = diff_min.defined() ? diff_min.minimum(d) : d;
+    }
+    // f - p in [diff_min, diff_max]: the line moves up by the middle, the error is the radius
+    const Tensor mid = (diff_max + diff_min) * 0.5, rad = (diff_max - diff_min) * 0.5;
+    return {m, Tensor::where(point, t, t + mid), Tensor::where(point, zero, rad)};
+}
+
+/// The line of the activation over [l, u] by the method.
+Line aux_line(Activation activation, const Tensor &l, const Tensor &u, PolyMethod method) {
+    return method == PolyMethod::regression ? aux_line_regression(activation, l, u)
+                                            : aux_line_singh(activation, l, u);
 }
 
 /// The rows of a set that goes through the layers: the center, the dependent generators with the
@@ -135,14 +217,14 @@ Tensor aux_error_columns(const Tensor &radius, bool keep_zero) {
 /// activation. keep_zero keeps the (zero) generator of a neuron without error.
 Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 const std::vector<Activation> &activations, Rows r, bool errors_in_gi,
-                bool keep_zero) {
+                bool keep_zero, PolyMethod method) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
         r.c = layers[k].W.matmul(r.c) + layers[k].b;
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);
         // the range of every neuron, the line over it, and the set it maps to
         const auto [l, u] = aux_bounds(r);
-        const Line line = aux_line(activations[k], l, u);
+        const Line line = aux_line(activations[k], l, u, method);
         r.c = line.slope.multiply(r.c) + line.offset;
         r.G = line.slope.multiply(r.G);
         r.GI = line.slope.multiply(r.GI);
@@ -194,7 +276,7 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
 
 // Sets --------------------------------------------------------------------------------------------
 
-Zonotope NeuralNetwork::evaluate(const Zonotope &X) const {
+Zonotope NeuralNetwork::evaluate(const Zonotope &X, const NnOptions &options) const {
     detail::Entry entry;
     CORA_CHECK(X.dim() == input_dim(), Error::dimension_mismatch, [&] {
         return "evaluate: the set has the dimension " + std::to_string(X.dim()) +
@@ -203,16 +285,18 @@ Zonotope NeuralNetwork::evaluate(const Zonotope &X) const {
     // the layers on the set, its generators independent; a zero generator stays for an exact neuron
     const Tensor none = X.generators().slice(-1, 0, 0);
     const Rows r = aux_layers(layers_, activations_, aux_rows(X.center(), none, X.generators(), {}),
-                              true, true);
+                              true, true, options.poly_method);
     return {r.c, r.GI};
 }
 
-Zonotope NeuralNetwork::evaluate_with_input(const Zonotope &X) const {
+Zonotope NeuralNetwork::evaluate_with_input(const Zonotope &X, const NnOptions &options) const {
     detail::Entry entry;
     // the generators of a zonotope are independent: the polynomial zonotope without dependent ones
     const Tensor none = X.generators().slice(-1, 0, 0);
+    NnOptions opt = options;
+    opt.add_approx_error_to_gi = true;
     const PolyZonotope joint =
-        evaluate_with_input(PolyZonotope(X.center(), none, X.generators(), {}, {}));
+        evaluate_with_input(PolyZonotope(X.center(), none, X.generators(), {}, {}), opt);
     return {joint.center(), joint.independent_generators()};
 }
 
@@ -226,7 +310,7 @@ PolyZonotope NeuralNetwork::evaluate_with_input(const PolyZonotope &X,
     const Rows r =
         aux_layers(layers_, activations_,
                    aux_rows(X.center(), X.generators(), X.independent_generators(), X.exponents()),
-                   options.add_approx_error_to_gi, false);
+                   options.add_approx_error_to_gi, false, options.poly_method);
     // the input rows keep their generators, and are zero in the generators the errors added
     const int64_t n = input_dim(), h = X.num_dependent(), q = X.independent_generators().shape()[1];
     const Tensor zeros_G = X.center().zeros_like({n, r.G.shape()[1] - h});
@@ -246,6 +330,15 @@ PolyZonotope NeuralNetwork::evaluate_with_input(const PolyZonotope &X,
             Tensor::concat({Tensor::concat({X.generators(), zeros_G}, 1), r.G}, 0),
             Tensor::concat({Tensor::concat({X.independent_generators(), zeros_GI}, 1), r.GI}, 0), E,
             ids};
+}
+
+PolyZonotope NeuralNetwork::evaluate(const PolyZonotope &X, const NnOptions &options) const {
+    detail::Entry entry;
+    // the output rows of the pairs
+    const PolyZonotope joint = evaluate_with_input(X, options);
+    const int64_t n = input_dim(), m = output_dim();
+    return {joint.center().slice(0, n, n + m), joint.generators().slice(0, n, n + m),
+            joint.independent_generators().slice(0, n, n + m), joint.exponents(), joint.ids()};
 }
 
 } // namespace cora

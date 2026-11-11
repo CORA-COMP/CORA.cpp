@@ -1,0 +1,8 @@
+{
+  "name": "cartpole",
+  "layers": [
+    {"out": 64, "in": 4, "activation": "tanh", "W": 0, "b": 256},
+    {"out": 64, "in": 64, "activation": "tanh", "W": 320, "b": 4416},
+    {"out": 1, "in": 64, "activation": "tanh", "W": 4480, "b": 4544}
+  ]
+}

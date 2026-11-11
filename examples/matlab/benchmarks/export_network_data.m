@@ -10,11 +10,12 @@ function export_network_data(varargin)
 %
 % Syntax:
 %    export_network_data()
-%    export_network_data('coraRoot', coraRoot, 'folder', folder)
+%    export_network_data('coraRoot', coraRoot, 'folder', folder, 'only', {'quad', 'nav_set'})
 %
 % Inputs:
 %    coraRoot - (optional) MATLAB CORA folder, default: environment variable CORA_ROOT
 %    folder - (optional) output folder, default: examples/benchmarks/data/networks
+%    only - (optional) cell array of the network names to write, default: all
 
 % Authors:       Claude Sonnet 5.5
 % Written:       11-November-2026
@@ -26,6 +27,7 @@ function export_network_data(varargin)
 p = inputParser;
 addParameter(p, 'coraRoot', getenv('CORA_ROOT'));
 addParameter(p, 'folder', fullfile(fileparts(fileparts(mfilename('fullpath'))), '..', 'benchmarks', 'data', 'networks'));
+addParameter(p, 'only', {});
 parse(p, varargin{:});
 if ~isfolder(p.Results.coraRoot)
     error('benchmarks:noCora', 'Pass coraRoot or set CORA_ROOT to the MATLAB CORA folder.');
@@ -44,12 +46,24 @@ nets = { ...
     'double_pendulum_less_robust', @() neuralNetwork.readONNXNetwork('controller_double_pendulum_less_robust.onnx'); ...
     'double_pendulum_more_robust', @() neuralNetwork.readONNXNetwork('controller_double_pendulum_more_robust.onnx'); ...
     'airplane', @() neuralNetwork.readONNXNetwork('controller_airplane.onnx'); ...
-    'attitude_control', @() neuralNetwork.readONNXNetwork('attitude_control_3_64_torch.onnx')};
+    'attitude_control', @() neuralNetwork.readONNXNetwork('attitude_control_3_64_torch.onnx'); ...
+    'quad', @() neuralNetwork.readONNXNetwork('quad_controller_3_64_torch.onnx'); ...
+    'docking', @() neuralNetwork.readONNXNetwork('controller_spacecraftDocking.onnx'); ...
+    'nav_point', @() neuralNetwork.readONNXNetwork('nn-nav-point.onnx'); ...
+    'nav_set', @() neuralNetwork.readONNXNetwork('nn-nav-set.onnx'); ...
+    'cartpole', @() neuralNetwork.readONNXNetwork('model-cartPole.onnx')};
+% the nine VertCAS networks, one per previous advisory, with the normalization of the example
+for i = 1:9
+    nets(end+1, :) = {sprintf('vcas_%d', i), @() aux_vcas(i)}; %#ok<AGROW>
+end
 
 if ~isfolder(p.Results.folder)
     mkdir(p.Results.folder);
 end
 for i = 1:size(nets, 1)
+    if ~isempty(p.Results.only) && ~ismember(nets{i, 1}, p.Results.only)
+        continue
+    end
     fprintf('%s ...\n', nets{i, 1});
     aux_write(nets{i, 1}, nets{i, 2}(), p.Results.folder);
 end
@@ -63,6 +77,15 @@ function nn = aux_cell(file, actFun, ~)
 % a network from the cell arrays W, b of a mat file
 data = load(file);
 nn = neuralNetwork.getFromCellArray(data.W, data.b, actFun);
+end
+
+function nn = aux_vcas(i)
+% example_neuralNet_reach_07_VCAS.m: the network of advisory i behind the normalization of its inputs
+network = neuralNetwork.readNNetNetwork(sprintf('VertCAS_noResp_pra0%d_v9_20HU_200.nnet', i));
+offset = -[0; 0; 20]; % Means
+scale = diag(1./[16000; 5000; 40]); % Ranges
+nn = neuralNetwork([{nnLinearLayer(eye(3), offset, "Means")}; ...
+    {nnLinearLayer(scale, zeros(3, 1), "Ranges")}; network.layers]);
 end
 
 function nn = aux_acc()

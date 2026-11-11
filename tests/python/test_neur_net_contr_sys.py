@@ -83,12 +83,24 @@ class ClosedLoop(unittest.TestCase):
     def test_verify_decides(self):
         sys = cora.NeurNetContrSys(plant(), network(), 0.05)
         rng = cora.Rng(1)
+        # a loose half-space is verified, one that the start violates is falsified by a run
         loose = cora.Specification.safe_set(cora.Polytope(np.array([[1.0, 0.0]]), np.array([10.0])))
         verdict = sys.verify(start(), 0.5, 10, rng, time_step=0.025, input_set=disturbance(), spec=loose)
         self.assertEqual(verdict, "VERIFIED")
         never = cora.Specification.safe_set(cora.Polytope(np.array([[1.0, 0.0]]), np.array([1.0])))
         verdict = sys.verify(start(), 0.5, 10, rng, time_step=0.025, input_set=disturbance(), spec=never)
         self.assertEqual(verdict, "FALSIFIED")
+
+    def test_verify_with_splitting_and_the_regression_line(self):
+        sys = cora.NeurNetContrSys(plant(), network(), 0.05)
+        loose = cora.Specification.safe_set(cora.Polytope(np.array([[1.0, 0.0]]), np.array([10.0])))
+        options = {"time_step": 0.025, "input_set": disturbance(), "spec": loose}
+        verdict = sys.verify(start(), 0.5, 10, cora.Rng(1), split_depth=3, split_threads=2,
+                             poly_method="regression", **options)
+        self.assertEqual(verdict, "VERIFIED")
+        # another method is refused
+        with self.assertRaises(ValueError):
+            sys.verify(start(), 0.5, 10, cora.Rng(1), poly_method="taylor", **options)
 
     def test_wrong_inputs_are_refused(self):
         sys = cora.NeurNetContrSys(plant(), network(), 0.05)

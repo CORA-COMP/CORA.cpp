@@ -1,0 +1,13 @@
+{
+  "name": "docking",
+  "layers": [
+    {"out": 4, "in": 4, "activation": "identity", "W": 0, "b": 16},
+    {"out": 256, "in": 4, "activation": "identity", "W": 20, "b": 1044},
+    {"out": 256, "in": 256, "activation": "tanh", "W": 1300, "b": 66836},
+    {"out": 256, "in": 256, "activation": "identity", "W": 67092, "b": 132628},
+    {"out": 256, "in": 256, "activation": "tanh", "W": 132884, "b": 198420},
+    {"out": 4, "in": 256, "activation": "identity", "W": 198676, "b": 199700},
+    {"out": 4, "in": 4, "activation": "identity", "W": 199704, "b": 199720},
+    {"out": 2, "in": 4, "activation": "tanh", "W": 199724, "b": 199732}
+  ]
+}
