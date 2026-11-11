@@ -144,6 +144,8 @@ Zonotope LinearSys::affine_solution(const Zonotope &V, double time_step, int tay
         .get<Zonotope>("Z");
 }
 
+// The steps ---------------------------------------------------------------------------------------
+
 // whole steps: a step of reach, and the homogeneous step the oracle calls post
 Step LinearSys::one_step(const Zonotope &X, const Zonotope &U, const cora::Tensor &u,
                          double time_step, int taylor_terms) const {
@@ -154,6 +156,21 @@ Step LinearSys::one_step(const Zonotope &X, const Zonotope &U, const cora::Tenso
                                                      {"timeStep", time_step},
                                                      {"taylorTerms", taylor_terms}});
     return {r.get<Zonotope>("timePoint"), r.get<Zonotope>("timeInterval")};
+}
+
+std::optional<Step> LinearSys::one_step_closed_form(const Zonotope &X, const Zonotope &U,
+                                                    const cora::Tensor &u, double time_step,
+                                                    int taylor_terms) const {
+    // the same operands as one_step; the answer is null if no order encloses the exponential
+    const Reply r = ask_system("linearSys.oneStepClosedForm", {{"X", X},
+                                                               {"U", U},
+                                                               {"u", Tensor::from(u)},
+                                                               {"timeStep", time_step},
+                                                               {"taylorTerms", taylor_terms}});
+    // both sets or none
+    const auto point = r.get<std::optional<Zonotope>>("timePoint");
+    if (!point) return std::nullopt;
+    return Step{*point, r.get<Zonotope>("timeInterval")};
 }
 
 Step LinearSys::post(const Zonotope &X, double time_step, int taylor_terms) const {

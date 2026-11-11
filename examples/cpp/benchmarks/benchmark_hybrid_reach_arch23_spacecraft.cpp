@@ -126,6 +126,7 @@ cora::bench::HybridInstance aux_instance(const std::string &name) {
     a.taylor_terms = 10;
     a.zonotope_order = 10;
     a.tensor_order = 2;
+    a.linear_step = cora::bench::linear_step();
     a.guard_intersect = alg::NondetGuard{{alg::Enclose::pca}};
     return {"Spacecraft", name, aux_automaton(), problem, a, aux_specs(), nullptr, true};
 }

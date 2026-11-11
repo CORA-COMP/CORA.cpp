@@ -317,9 +317,10 @@ inline void validate_tensor_orders(int tensor_order, int error_order, int interm
     }
 }
 
-/// The linear step of a linearization: CORA's oneStep (default), or CORALean's reachFloatInput for
-/// one step (bit for bit the oracle's, but slower).
-enum class LinearStep { cora, coralean };
+/// The linear step of a linearization: CORA's oneStep (default); closed_form, CORA's oneStep in
+/// CORALean's closed form (bit for bit the oracle's linearSys.oneStepClosedForm); or coralean,
+/// CORALean's reachFloatInput for one step (bit for bit the oracle's, but slower).
+enum class LinearStep { cora, closed_form, coralean };
 
 /// CORA's alg "lin": each step linearizes at the center of the set (moved half a step along the
 /// flow) and bounds the linearization error by the Lagrange remainder of the Taylor expansion of
@@ -604,6 +605,8 @@ struct HybridStandard {
     int intermediate_order = 0;    ///< a NonlinearSys flow: its Linearization::intermediate_order
     bool polynomialization = false; ///< a NonlinearSys flow: alg::Polynomialization (poly sets)
     GuardIntersect guard_intersect = ZonoGirard{}; ///< how the guards are intersected
+    LinearStep linear_step =
+        LinearStep::cora; ///< a NonlinearSys flow: its Linearization::linear_step
 
     // the fields as Python sees them, and their checks
     static constexpr const char *name = "standard";
@@ -616,7 +619,8 @@ struct HybridStandard {
                                field("error_order", &HybridStandard::error_order),
                                field("intermediate_order", &HybridStandard::intermediate_order),
                                field("polynomialization", &HybridStandard::polynomialization),
-                               field("guard_intersect", &HybridStandard::guard_intersect));
+                               field("guard_intersect", &HybridStandard::guard_intersect),
+                               field("linear_step", &HybridStandard::linear_step));
     }
     void validate() const {
         detail::Validation entry;

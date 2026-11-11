@@ -21,11 +21,13 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
 #include "cont_dynamics/linear_sys/private/priv_float_step.h"
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
 
 #include <cmath>
+#include <functional>
 #include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -36,23 +38,36 @@ namespace cora {
 
 namespace {
 
-/// The step with CORALean's linear step (alg.linear_step = coralean): the guess of the error enters
-/// the input of the step, and the accepted error is part of the input of the step that is returned.
-NonlinearStep aux_coralean_step(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
-                                const std::optional<Zonotope> &U, const alg::Linearization &alg) {
+/// The linear step of the input set V from R (the sets of the window and of the end of the step),
+/// CORALean's: reachFloatInput (coralean) or CORA's oneStep in closed form (closed_form).
+using LinearStepFn = std::function<FloatStep(const Zonotope &V)>;
+
+/// The step with a linear step of CORALean's (alg.linear_step): the guess of the error enters the
+/// input of the step, and the accepted error is part of the input of the step that is returned.
+NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
+                            const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     const double dt = alg.time_step;
     const int eta = alg.taylor_terms;
     // the affine system; its input without the error is f(x*, u*) + B (U - u*), centered at f
     const Linearized lin = sys.linearize(R, U, dt);
     const Zonotope V_base(lin.u_const, lin.U.generators());
-    // one linear step from R under the input set V (CORALean's oneStepFloat); the matrices once
-    const FloatStepper stepper(lin.sys.A(), dt, eta);
-    if (!stepper.admissible())
+    // one linear step from R under the input set V; the matrices once
+    const bool closed_form = alg.linear_step == alg::LinearStep::closed_form;
+    std::optional<FloatStepper> lean;
+    std::optional<ClosedFormStepper> closed;
+    if (closed_form)
+        closed.emplace(lin.sys.A(), dt, eta);
+    else
+        lean.emplace(lin.sys.A(), dt, eta);
+    if (!(closed_form ? closed->admissible() : lean->admissible()))
         CORA_FAIL(Error::not_converged,
                   "cora: no admissible Taylor order for the linearized system (the time_step may "
                   "be too large)");
-    const auto step = [&](const Zonotope &V) {
-        return stepper.step(lin.x_star, V, R, alg.zonotope_order);
+    const LinearStepFn step = [&](const Zonotope &V) {
+        if (!closed_form) return lean->step(lin.x_star, V, R, alg.zonotope_order);
+        // the constant input is the center of V, the time-varying one V without it
+        const ClosedFormStep S = closed->step(R - lin.x_star, V - V.center(), V.center());
+        return FloatStep{S.time_interval + lin.x_star, S.time_point + lin.x_star};
     };
     // the centered input set (CORA's params.U); without one, the input 0
     const std::optional<Zonotope> U0 = priv_centered_inputs(R.center(), sys.input_dim(), U);
@@ -128,8 +143,7 @@ priv_error_loop(const Linearized &lin, TaylorLinSys &taylor, const Tensor &error
 
 NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
                              const std::optional<Zonotope> &U, const alg::Linearization &alg) {
-    if (alg.linear_step == alg::LinearStep::coralean)
-        return aux_coralean_step(sys, R, error, U, alg);
+    if (alg.linear_step != alg::LinearStep::cora) return aux_lean_step(sys, R, error, U, alg);
     const double dt = alg.time_step;
     const int eta = alg.taylor_terms;
     // the affine system and its step from R - x*

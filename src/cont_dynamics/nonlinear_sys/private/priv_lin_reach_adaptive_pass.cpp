@@ -21,6 +21,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
 #include "cont_dynamics/linear_sys/private/priv_float_step.h"
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -78,14 +79,24 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
     const Jacobians &J = L.J;
     const Zonotope &Vbase = L.Vbase;
     const LinearSys lin(J.A);
-    // the linear step: CORA's (default) or CORALean's (alg.linear_step = coralean)
+    // the linear step: CORA's (default), its closed form or CORALean's reachFloatInput
+    const bool closed_form = alg.linear_step == alg::LinearStep::closed_form;
     const bool lean = alg.linear_step == alg::LinearStep::coralean;
     TaylorLinSys taylor(J.A);
-    const FloatStepper stepper(J.A, dt, alg.taylor_terms);
-    if (lean && !stepper.admissible()) return std::nullopt;
+    std::optional<FloatStepper> float_stepper;
+    std::optional<ClosedFormStepper> closed_stepper;
+    if (lean) float_stepper.emplace(J.A, dt, alg.taylor_terms);
+    if (closed_form) closed_stepper.emplace(J.A, dt, alg.taylor_terms);
+    if ((lean && !float_stepper->admissible()) || (closed_form && !closed_stepper->admissible()))
+        return std::nullopt;
     const auto step = [&](const Zonotope &V) -> std::optional<std::pair<Zonotope, Zonotope>> {
+        if (closed_form) {
+            // the constant input is the center of V, the time-varying one V without it
+            const ClosedFormStep S = closed_stepper->step(R - xs_t, V - V.center(), V.center());
+            return std::make_pair(S.time_interval + xs_t, S.time_point + xs_t);
+        }
         if (!lean) return aux_linear_step(lin, taylor, alg.taylor_terms, xs_t, V, R, dt);
-        const FloatStep S = stepper.step(xs_t, V, R, alg.zonotope_order);
+        const FloatStep S = float_stepper->step(xs_t, V, R, alg.zonotope_order);
         return std::make_pair(S.first, S.second);
     };
 

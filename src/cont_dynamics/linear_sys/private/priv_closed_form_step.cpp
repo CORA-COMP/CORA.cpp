@@ -1,0 +1,244 @@
+// priv_closed_form_step - CORA's oneStep in closed form, as CORALean's oneStepClosedFormFloat
+//
+// At nearest the interval matrices of the series are points: a box scaled by a point, a product of
+// points and a sum of points have equal bounds. So the powers and the series are computed on plain
+// (n, n) arrays, each product as the corner hull of the interval product would be (a NaN corner,
+// 0 * Inf, is 0), and the boxes are formed where the bounds differ.
+//
+// See also: priv_closed_form_step.h
+//
+// CORA.cpp only: CORA evaluates oneStep with expm and A^-1; this is its closed form in
+// CORALean's float definition (LinearSys.oneStepClosedFormFloat).
+// Authors:       Claude Sonnet 5.5
+// Written:       11-November-2026
+// Last update:   ---
+// Reviewed:      ---
+
+#include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
+#include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
+
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+// The matrices of the series ----------------------------------------------------------------------
+
+using Mat = std::vector<double>;
+
+/// a * b, a NaN corner (0 * Inf) taken as 0.
+double aux_mul(double a, double b) {
+    const double p = a * b;
+    return std::isnan(p) ? 0.0 : p;
+}
+
+/// L R, each sum over the inner index nested to the right, a(0) + (a(1) + ... + 0).
+Mat aux_matmul(const Mat &L, const Mat &R, std::size_t n) {
+    Mat out(n * n);
+    for (std::size_t i = 0; i < n; ++i)
+        for (std::size_t j = 0; j < n; ++j) {
+            double sum = 0;
+            for (std::size_t k = n; k-- > 0;) sum = aux_mul(L[i * n + k], R[k * n + j]) + sum;
+            out[i * n + j] = sum;
+        }
+    return out;
+}
+
+Mat aux_identity(std::size_t n) {
+    Mat I(n * n, 0.0);
+    for (std::size_t i = 0; i < n; ++i) I[i * n + i] = 1.0;
+    return I;
+}
+
+/// c M, entry by entry.
+Mat aux_scale(double c, const Mat &M) {
+    Mat out(M.size());
+    for (std::size_t e = 0; e < M.size(); ++e) out[e] = aux_mul(c, M[e]);
+    return out;
+}
+
+/// The largest row sum of the entries, each sum nested to the right, floored at 0
+/// (CORALean's normUpperBound of a nonnegative matrix).
+double aux_norm(const Mat &M, std::size_t n) {
+    double nrm = 0;
+    for (std::size_t i = 0; i < n; ++i) {
+        double sum = 0;
+        for (std::size_t j = n; j-- > 0;) sum = std::abs(M[i * n + j]) + sum;
+        nrm = std::max(nrm, sum);
+    }
+    return nrm;
+}
+
+/// The first order from taylor_terms (within 4096 orders) with norm <= (order + 2) / 2.
+std::optional<int> aux_admissible_order(double norm, int taylor_terms) {
+    for (int eta = taylor_terms; eta < taylor_terms + 4096; ++eta)
+        if (norm <= double(eta + 2) * 0.5) return eta;
+    return std::nullopt;
+}
+
+/// B = |A| dt.
+Mat aux_magnitude_scaled(const Tensor &A, double dt) {
+    Mat B = A.abs().data();
+    for (double &x : B) x = aux_mul(dt, x);
+    return B;
+}
+
+/// The partial sums of the Taylor series of M, expIntervalTaylor: the powers by left
+/// multiplication, the newest term added to the running sum. sums[k] is the sum up to order k.
+std::vector<Mat> aux_taylor_sums(const Mat &M, std::size_t n, int orders) {
+    Mat P = aux_identity(n);
+    std::vector<Mat> sums{aux_scale(1.0, P)};
+    for (int k = 0; k < orders; ++k) {
+        P = aux_matmul(M, P, n);
+        const double inv = 1.0 / priv_float_factorial(k + 1);
+        Mat S = aux_scale(inv, P);
+        for (std::size_t e = 0; e < S.size(); ++e) S[e] += sums.back()[e];
+        sums.push_back(std::move(S));
+    }
+    return sums;
+}
+
+/// The bounds of c M with c within [lo, hi]: the hull of the two products of each entry.
+std::pair<Mat, Mat> aux_box_scale(double lo, double hi, const Mat &M) {
+    Mat inf(M.size()), sup(M.size());
+    for (std::size_t e = 0; e < M.size(); ++e) {
+        const double a = aux_mul(lo, M[e]), b = aux_mul(hi, M[e]);
+        inf[e] = std::min(a, b);
+        sup[e] = std::max(a, b);
+    }
+    return {std::move(inf), std::move(sup)};
+}
+
+/// The sums of min(T, 0) and of max(T, 0) over the terms, each nested to the right (sumDown,
+/// sumUp), widened by the radius r: subDown and addUp.
+std::pair<Mat, Mat> aux_hull_of_terms(const std::vector<std::pair<Mat, Mat>> &terms,
+                                      std::size_t entries, const Mat &r) {
+    Mat lo(entries, 0.0), hi(entries, 0.0);
+    for (std::size_t i = terms.size(); i-- > 0;)
+        for (std::size_t e = 0; e < entries; ++e) {
+            lo[e] = std::min(terms[i].first[e], 0.0) + lo[e];
+            hi[e] = std::max(terms[i].second[e], 0.0) + hi[e];
+        }
+    for (std::size_t e = 0; e < entries; ++e) {
+        lo[e] -= r[e];
+        hi[e] += r[e];
+    }
+    return {std::move(lo), std::move(hi)};
+}
+
+// The sets ----------------------------------------------------------------------------------------
+
+/// The input solution of V: the orders 0 to eta, one box each, then the remainder, added in turn.
+Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &remainder,
+                            const Zonotope &V) {
+    Zonotope S = V.linear_map(terms[0]);
+    for (std::size_t i = 1; i < terms.size(); ++i) S = S.plus(V.linear_map(terms[i]));
+    return S.plus(V.linear_map(remainder));
+}
+
+} // namespace
+
+
+// ===========================================  MAIN  =========================================== //
+
+std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int taylor_terms) {
+    const std::size_t n = std::size_t(A.size(-1));
+    return aux_admissible_order(aux_norm(aux_magnitude_scaled(A, time_step), n), taylor_terms);
+}
+
+// The matrices ------------------------------------------------------------------------------------
+
+// The matrices of the step: [e^{A dt}], [F], [G], the boxes of the input solution
+struct ClosedFormStepper::Matrices {
+    Matrices(const Tensor &A, double r, int eta, int eta_enclosed)
+        : e_adt(A, A), F(A, A), G(A, A), remainder(A, A) {
+        const std::size_t n = std::size_t(A.size(-1));
+        const Shape shape{A.size(-1), A.size(-1)};
+        const auto tensor = [&](const Mat &M) { return Tensor::like(A, M, shape); };
+        const auto box = [&](const std::pair<Mat, Mat> &b) {
+            return Interval(tensor(b.first), tensor(b.second));
+        };
+        const Mat a = A.data();
+        // W >= E(r, eta): the enclosure of e^{|A| r} at the order eta_enclosed less the series
+        const Mat B = aux_magnitude_scaled(A, r);
+        const std::vector<Mat> B_sums = aux_taylor_sums(B, n, eta_enclosed);
+        const double tail = priv_float_remainder_bound(aux_norm(B, n), eta_enclosed);
+        Mat W(n * n);
+        for (std::size_t e = 0; e < W.size(); ++e)
+            W[e] = (B_sums[std::size_t(eta_enclosed)][e] + tail) - B_sums[std::size_t(eta)][e];
+        // [e^{A r}]: the series of [A r] widened by [-W, W]
+        const Mat T = aux_taylor_sums(aux_scale(r, a), n, eta).back();
+        Mat inf(T), sup(T);
+        for (std::size_t e = 0; e < T.size(); ++e) {
+            inf[e] -= W[e];
+            sup[e] += W[e];
+        }
+        e_adt = box({inf, sup});
+        // the powers of [A, A] by left multiplication
+        std::vector<Mat> powers{aux_identity(n)};
+        for (int i = 1; i <= eta; ++i) powers.push_back(aux_matmul(a, powers.back(), n));
+        // the box of every order of the input solution
+        for (int i = 0; i <= eta; ++i) {
+            const auto [lo, hi] = priv_float_taylor_coeff(r, i + 1);
+            terms.push_back(box(aux_box_scale(lo, hi, powers[std::size_t(i)])));
+        }
+        // [-r W, r W]
+        Mat scaled_w(W);
+        for (double &x : scaled_w) x = r * x;
+        Mat neg_scaled_w(scaled_w);
+        for (double &x : neg_scaled_w) x = -x;
+        remainder = box({neg_scaled_w, scaled_w});
+        // [F]: the orders 2 to eta, [G]: the orders 1 to eta of the constant input
+        std::vector<std::pair<Mat, Mat>> f_terms, g_terms;
+        for (int i = 2; i <= eta; ++i) {
+            const double c = priv_float_corr_coeff_low(i) * priv_float_taylor_coeff(r, i).second;
+            f_terms.push_back(aux_box_scale(c, 0.0, powers[std::size_t(i)]));
+        }
+        // [G]: the orders 1 to eta, the power one above the order of the coefficient
+        for (int i = 0; i < eta; ++i) {
+            const double c =
+                priv_float_corr_coeff_low(i + 2) * priv_float_taylor_coeff(r, i + 2).second;
+            g_terms.push_back(aux_box_scale(c, 0.0, powers[std::size_t(i) + 1]));
+        }
+        F = box(aux_hull_of_terms(f_terms, n * n, W));
+        G = box(aux_hull_of_terms(g_terms, n * n, scaled_w));
+    }
+    Interval e_adt, F, G, remainder;
+    std::vector<Interval> terms;
+};
+
+ClosedFormStepper::ClosedFormStepper(const Tensor &A, double time_step, int taylor_terms) {
+    const std::optional<int> enclosed = priv_closed_form_order(A, time_step, taylor_terms);
+    if (enclosed) m_ = std::make_unique<Matrices>(A, time_step, taylor_terms, *enclosed);
+}
+
+ClosedFormStepper::~ClosedFormStepper() = default;
+ClosedFormStepper::ClosedFormStepper(ClosedFormStepper &&) noexcept = default;
+
+bool ClosedFormStepper::admissible() const { return m_ != nullptr; }
+
+// The step ----------------------------------------------------------------------------------------
+
+ClosedFormStep ClosedFormStepper::step(const Zonotope &X, const Zonotope &U,
+                                       const Tensor &u) const {
+    const Matrices &m = *m_;
+    // the constant input is a point set
+    const Zonotope point(u, u.zeros_like({u.size(0), 0}));
+    const Zonotope Pu = aux_input_solution(m.terms, m.remainder, point);
+    const Zonotope PU = aux_input_solution(m.terms, m.remainder, U);
+    // Htp = [e^{A dt}] X + Pu, Hti = hull(X, Htp) + [F] X
+    const Zonotope Htp = X.linear_map(m.e_adt).plus(Pu);
+    const Zonotope Hti = priv_lin_comb(X, Htp).plus(X.linear_map(m.F));
+    return {Htp.plus(PU), Hti.plus(PU).plus(point.linear_map(m.G))};
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

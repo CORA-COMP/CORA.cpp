@@ -5,7 +5,7 @@
 // Operations: reach (the homogeneous run), and one method per `linearSys.*` op of the oracle named
 //             as CORA.cpp names CORA's: canonical_form, is_canonical_form, homogeneous_solution,
 //             particular_solution_time_varying, particular_solution_constant, affine_solution,
-//             one_step, post, init_reach, error_solution_adaptive
+//             one_step, one_step_closed_form, post, init_reach, error_solution_adaptive
 // Outputs:    lean zonotopes whose nominal part and error box together enclose the real result
 // Scheme:     CORALean's sound float definitions; the error terms are tuned bounds of their own,
 //             so they differ from CORA's (the nominal parts agree where no error term enters)
@@ -81,6 +81,12 @@ class LinearSys {
     /// One step from X with the input set U and the constant input u (n, 1).
     Step one_step(const Zonotope &X, const Zonotope &U, const cora::Tensor &u, double time_step,
                   int taylor_terms) const;
+
+    /// One step from X as `one_step`, in CORA's closed form (`linearSys.oneStepClosedForm`); none
+    /// if no Taylor order within 4096 of taylor_terms encloses e^{|A| dt}.
+    std::optional<Step> one_step_closed_form(const Zonotope &X, const Zonotope &U,
+                                             const cora::Tensor &u, double time_step,
+                                             int taylor_terms) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;

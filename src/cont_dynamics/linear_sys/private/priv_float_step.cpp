@@ -24,8 +24,7 @@ namespace cora {
 
 namespace {
 
-// The series --------------------------------------------------------------------------------------
-// The scalars and boxes are priv_float_scalars.h (CORALean's float layer, at nearest).
+// The series -------------------------------------------------------------------------------------
 
 /// The data of a step of length r: the powers of [A] and what the sets of the step are made of.
 class Series {
@@ -89,9 +88,11 @@ class Series {
 
 // ===========================================  MAIN  =========================================== //
 
+// The order ---------------------------------------------------------------------------------------
+
 std::optional<int> priv_float_order(const Tensor &A, double time_step, int taylor_terms) {
-    const Interval scaled = priv_float_smul(Interval(A, A), time_step, time_step);
-    const double nrm = priv_float_norm_upper_bound(scaled);
+    const double nrm =
+        priv_float_norm_upper_bound(priv_float_smul(Interval(A, A), time_step, time_step));
     const int first = std::max(taylor_terms, 2);
     for (int eta = first; eta < first + 4096; ++eta)
         if (nrm <= double(eta + 2) * 0.5) return eta;

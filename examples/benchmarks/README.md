@@ -78,7 +78,16 @@ The tables are CORA's linear step (`linear_step = LinearStep::cora`, the default
 and `alg::LinearizationAdaptive`). `LinearStep::coralean` takes CORALean's step instead, bit for bit
 (`test_lean_linear_sys_float_step`), at a price: TRAF22 and SPRE22 take 1.9x as long (SPRE22 needs a
 time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `zeta_z` and
-`taylor_terms` retuned), LALO20 W005 20x; the verdicts stay.
+`taylor_terms` retuned), LALO20 W005 20x; the verdicts stay. `LinearStep::closed_form` is CORA's `oneStep`
+in CORALean's closed form, bit for bit against the oracle's `linearSys.oneStepClosedForm`
+(`test_lean_linear_sys_closed_form_step`). With the script's parameters it takes as long as CORA's step
+on TRAF22 (0.90 s against 0.93 s), SPRE22 (0.95 s against 1.08 s) and LALO20 W001/W005 (2.1 s and
+14.0 s against 2.3 s and 14.3 s), the verdicts stay, and the reported ranges agree (TRAF22's inputs, LALO20's width of x4);
+on ROBE25 it does not verify at the script's `zeta_z` (the width of s is 2.9e-5, 7.5e-3 and 24 against 1e-5): its
+exponential carries an entrywise remainder, so ROBE25 (2) and (3) take `zeta_z = 3e-4` and `0.01` with 30
+Taylor terms (41 s and 32 s against 329 s and 100 s), and ROBE25 (1) takes `zeta_z = 3e-6` (441 s against 27 s,
+107 000 sets). The default stays CORA's step for that reason. The benchmark programs read the step from
+`CORACPP_LINEAR_STEP` (`cora`, `closed_form`, `coralean`) and take the closed form's tuning of ROBE25 with it.
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
