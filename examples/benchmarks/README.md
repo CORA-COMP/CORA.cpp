@@ -155,9 +155,9 @@ width of s, LOVO area) belong to the instances that have one; TRAF22 and SPRE22 
 | --- | --- | --- | --- | --- | --- | --- |
 | TRAF22 | 1 | 1 | 0.919 | 152 | 32 | - |
 | SPRE22 | 1 | 1 | 1.04 | 37 | 61 | - |
-| ROBE25 (1) | 1 | 1 | 52.2 | 151 | 25 | width of s 5.91e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
-| ROBE25 (2) | 1 | 1 | 379 | 239 | 92 | width of s 7.98e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
-| ROBE25 (3) | 1 | 1 | 718 | 310 | 217 | width of s 6.85e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
+| ROBE25 (1) | 1 | 1 | 25.6 | 151 | 25 | width of s 2.28e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
+| ROBE25 (2) | 1 | 1 | 325 | 239 | 92 | width of s 7.17e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
+| ROBE25 (3) | 1 | 1 | 100 | 310 | 217 | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -192,27 +192,30 @@ t = 40 with (b, c) = (10^2, 10^3), (10^3, 10^5), (10^3, 10^7). The result is the
 the report: the width of s = x + y + z at t = 40 below 1e-5 (the script prints the constant 1 and
 does not check it; the program prints 1 only if the width is below, and the width on stderr).
 CORA's `lin-adaptive` is not sound as written (its Hessian region and its third-order error:
-`LinReachAdaptiveCora1D.lean`, `AbstrErrAdaptiveTensor3Cora2D.lean`), so the program runs CORALean's
-variant (`adaptStepFloat`; `docs/cora-differences.md`), which has the tensor orders 1 and 2, a
-checked region instead of CORA's error loop and a fixed reduction order. Its error is first order
-in the region, so it needs many more steps than CORA's third-order one: 143287, 1153275 and
-2213084 sets against CORA's 16501, 22494 and 25960. A step costs 0.3 ms (CORA's 8 ms), so case (1) is
-2.6 times faster than MATLAB CORA without the checks and the cases (2) and (3) are 1.7 and 2.1 times
-slower (the report: CORA 151 s, 239 s and 310 s; JuliaReach 25 s, 92 s and 217 s).
-MATLAB CORA v2026.1.0 (R2024b, this machine) with `CHECKS_ENABLED` off, as the report's times
-probably are, needs 137.5 s, 225.7 s and 338.7 s (411 s, 734 s and 1117 s with the checks, under a
-load of about 20) and gives widths 5.7785e-6, 8.7772e-6 and 8.3479e-6, as in the report.
+`LinReachAdaptiveCora1D.lean`, `AbstrErrAdaptiveTensor3Cora2D.lean`), so the program runs CORA's
+algorithm as CORALean repairs it (`reachAdaptiveFloat`; `docs/cora-differences.md`): the same
+passes, tuning and tensor orders 2 and 3 as CORA's, with the Hessian read over the box of the set
+joined with the linearization point. It needs 28963, 16296 and 28093 sets (CORA 16501, 22494 and
+25960) and a set costs 0.9 ms, 20 ms and 3.6 ms (CORA's 8 ms, 10 ms and 13
+ms). The cost of case (2) is the linear step: its Taylor order is raised until `eta + 2 >= 2 ||A dt||`
+(CORA's is fixed, which is not sound for a large `||A dt||`), a step with `||A dt||` in the
+hundreds takes 29 ms. MATLAB CORA v2026.1.0 (R2024b, this machine) with `CHECKS_ENABLED` off, as
+the report's times probably are, needs 137.5 s, 225.7 s and 338.7 s (411 s, 734 s and 1117 s with
+the checks, under a load of about 20) and gives widths 5.7785e-6, 8.7772e-6 and 8.3479e-6, as in
+the report. CORA.cpp's times are from the core preset under a load of 7 to 10 on 16 CPUs.
 
-The tuning (`alg::LinearizationAdaptive`) is the same in the three cases except for two numbers; the
-values of the script's `redFactor` (0.00025, 0.0006, 0.017) are CORA's reduction and have no
-counterpart. A smaller `zeta_z` makes the search take smaller steps, which is what the width needs
-(at 3e-7 in case (2) the step size converges to 0 and `reach` stops with `Error::not_converged`).
+The tuning (`alg::LinearizationAdaptive`) is the defaults of CORA (decr_factor 0.9, zeta_phi
+0.85, 0.76, 0.68, zeta_k 0.9, 10 Taylor terms, zonotope order 1000) except for `zeta_z`, CORA's
+`redFactor`. The script's values (0.00025, 0.0006, 0.017) verify in MATLAB CORA, but the repaired
+algorithm is sound where CORA's is not and needs a smaller one in cases (1) and (3): at the script's
+values the width of s is 5.6e-5 (17651 sets) and 1.2e-5 (25850 sets), in case (2) it verifies at
+6.7e-6. The width is not monotone in `zeta_z`; the values below were found by a sweep.
 
-| | zeta_delta | zeta_h | zeta_z | zeta_k | zonotope_order | taylor_terms | initial step, gain, error, order |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| ROBE25_1 | 0.7 | 0.3 | 1e-5 | 0.99 | 20 | 4 | 1e-3, 0.4, 1e-6, 1 |
-| ROBE25_2 | 0.7 | 0.3 | 5e-7 | 0.99 | 50 | 4 | 1e-3, 0.4, 1e-6, 1 |
-| ROBE25_3 | 0.7 | 0.3 | 6e-6 | 0.99 | 20 | 4 | 1e-3, 0.4, 1e-6, 1 |
+| | zeta_z (script) | zeta_z | sets | width of s |
+| --- | --- | --- | --- | --- |
+| ROBE25_1 | 0.00025 | 1e-4 | 28963 | 2.28e-6 |
+| ROBE25_2 | 0.0006 | 1.5e-3 | 16296 | 7.17e-6 |
+| ROBE25_3 | 0.017 | 1e-2 | 28093 | 7.33e-6 |
 
 ## Run
 

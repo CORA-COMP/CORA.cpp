@@ -1,9 +1,9 @@
 """test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python.
 
 CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-Authors:       Tobias Ladner, Claude Opus 5.5
+Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 Written:       02-November-2026
-Last update:   09-November-2026
+Last update:   11-November-2026
 Reviewed:      ---
 """
 # CORA: contDynamics/@contDynamics/derivatives.m
@@ -149,6 +149,16 @@ class ReachSet(unittest.TestCase):
             d = torch.randn(3, dtype=torch.float64, generator=torch.Generator().manual_seed(k))
             # the support functions of the reachable set
             self.assertGreaterEqual(float(R.support_function(d)), float(Z.support_function(d)) - 1e-9)
+
+    def test_reduce_adaptive_boxes_the_small_generators(self):
+        Z = cora.Zonotope(cora.Tensor([1.0, 2.0]),
+                          cora.Tensor([[1.0, 0.5, 0.3], [1.0, -0.4, 0.01]]))
+        # the third generator is boxed: two kept and two box generators
+        self.assertEqual(np.asarray(Z.reduce_adaptive(0.05).generators).shape, (2, 4))
+        # everything boxed: the box of Z
+        self.assertTrue(np.allclose(np.asarray(Z.reduce_adaptive(1.0).generators), [[1.8, 0.0], [0.0, 1.41]]))
+        with self.assertRaises(RuntimeError):
+            Z.reduce_adaptive(-1.0)
 
 
 if __name__ == "__main__":

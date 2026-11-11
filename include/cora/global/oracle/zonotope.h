@@ -10,9 +10,9 @@
 //             a cora::Zonotope and the error as a cora::Interval, exactly or throws
 // See also:   lean/tensor.h, lean/interval.h, lean/request.h, cora/cont_set/zonotope/zonotope.h
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -67,6 +67,9 @@ class Zonotope {
 
     /// Order reduction to `order` with method "girard" or "combastel".
     Zonotope reduce(int order, const std::string &method = "girard") const;
+
+    /// CORA's reduce(Z, 'adaptive', diag_percent) (CORALean's reduceAdaptive).
+    Zonotope reduce_adaptive(double diag_percent) const;
 
     // Set operations ---------------------------------------------------------------------------
 

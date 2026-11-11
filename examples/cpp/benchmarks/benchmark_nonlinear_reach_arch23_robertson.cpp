@@ -4,9 +4,9 @@
 // y' = a x - b y z - c y^2, z' = c y^2 with a = 0.4 from x(0) = (1, 0, 0), reached until t = 40
 // by alg "lin-adaptive". The verdict is the specification of the ARCH-COMP report: the width of
 // the sum of the concentrations s = x + y + z at t = 40 below 1e-5 (the script prints the constant
-// 1 once reach has finished). The algorithm is CORALean's variant, not CORA's, so the tuning is
-// not the script's zeta_Z: kTuning below. The line has the time of reach, as the script's tic and
-// toc; the number of sets and the width go to stderr.
+// 1 once reach has finished). The algorithm is CORA's lin-adaptive as CORALean repairs it; its
+// zeta_z is tuned per case (kCases), the script's are 0.00025, 0.0006 and 0.017. The line has the
+// time of reach, as the script's tic and toc; the number of sets and the width go to stderr.
 //
 // Syntax:   build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...]
 // Outputs:  one line 'benchmark,instance,result,time' (on stderr: the number of sets, the width)
@@ -30,23 +30,17 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 
-/// One case: beta, gamma of the model and the tuning of the algorithm.
+/// One case: beta, gamma of the model and the tuning of the algorithm (zeta_z: the share of the
+/// width a reduction may add).
 struct Case {
     const char *name;
     double beta, gamma;
     alg::LinearizationAdaptive alg;
 };
 
-/// The tuning of a case: the share of a reduction in the step size search (zeta_Z) and the order
-/// of the reduction are what the cases differ in; the second tensor order is taken whenever it
-/// wins at all (zeta_K), the rest are the defaults of the algorithm.
-alg::LinearizationAdaptive aux_tuning(double zeta_z, int order) {
-    return {.zeta_z = zeta_z, .zeta_k = 0.99, .zonotope_order = order};
-}
-
-const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, aux_tuning(0.00001, 20)},
-                       {"ROBE25_2", 1e3, 1e5, aux_tuning(0.0000005, 50)},
-                       {"ROBE25_3", 1e3, 1e7, aux_tuning(0.000006, 20)}};
+const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, {.zeta_z = 0.0001}},
+                       {"ROBE25_2", 1e3, 1e5, {.zeta_z = 0.0015}},
+                       {"ROBE25_3", 1e3, 1e7, {.zeta_z = 0.01}}};
 
 /// Robertson_case*.m: the right-hand side, written as the model file does; u is not used.
 NonlinearSys aux_robertson(double beta, double gamma) {

@@ -207,15 +207,6 @@ Range NonlinearSys::enclosure(const Range &x, const std::optional<Range> &u) con
     return {Tensor::concat(lo, -2), Tensor::concat(hi, -2)};
 }
 
-// The constant zeros of the Jacobian are skipped.
-std::vector<std::optional<Range>>
-NonlinearSys::jacobian_enclosure(const Range &x, const std::optional<Range> &u) const {
-    detail::Entry entry;
-    if (entry.check())
-        validate_point("jacobian_enclosure", x.lo, u ? std::optional<Tensor>(u->lo) : std::nullopt);
-    return aux_enclose_nonzero(jacobian_, variables(x, u));
-}
-
 // Second and third derivatives --------------------------------------------------------------------
 
 std::vector<Tensor> NonlinearSys::hessian(const Tensor &x, const std::optional<Tensor> &u) const {

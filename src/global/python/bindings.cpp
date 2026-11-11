@@ -19,7 +19,7 @@
 // CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -1594,6 +1594,10 @@ void bind_zonotope(py::module_ &m) {
              "The zonotope of the convex combinations of this one and Z2")
         .def("reduce", &Zonotope::reduce, py::arg("order") = 1,
              "At most order * n generators; the smallest are enclosed by a box (Girard)")
+        // the reduction by the share of the box
+        .def("reduce_adaptive", &Zonotope::reduce_adaptive, py::arg("diag_percent"),
+             "The generators of least Girard metric within diag_percent of the box's norm are "
+             "enclosed by a box (CORA's reduce(Z, 'adaptive', diag_percent))")
         .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
         .def("box", &Zonotope::box, "The box around the zonotope, as a zonotope")
         .def("compact", &Zonotope::compact, py::arg("method") = py::none(),

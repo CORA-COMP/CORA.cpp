@@ -112,20 +112,20 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 
 ## Nonlinear systems, alg "lin-adaptive" (PR "port/nln-adaptive")
 
-CORA.cpp's `alg::LinearizationAdaptive` is CORALean's adaptive variant (Alg. 1 and 2 of Wetzlinger
-et al., NAHS 2022; CORA's own version is not sound as written, see `docs/cora-differences.md`).
-The pinned oracle (`oracle-20261110-4614dfa7d`) does not serve these ops yet (CORALean batch 12
-adds them); until then the coverage rows of `lin-adaptive` are oracle debt. At `nearest` the float
-definitions below are plain double arithmetic, and CORA.cpp computes them in that order, except
-for the linear step (`LinearSys::one_step` instead of `reachFloatInput`, see the differences).
+CORA.cpp's `alg::LinearizationAdaptive` is CORA's lin-adaptive as CORALean repairs it
+(`reachAdaptiveFloat`, CORALean !906). The oracle serves its ops from the pinned tag
+`oracle-20261110-06c34fec2` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
+an older oracle makes the tests skip them.
 
-| op (proposed) | request fields | reply |
+| op | test | agreement |
 |---|---|---|
-| `nonlinearSys.adaptLinPass` (`adaptLinPassFloat`) | `f`, `jacX`, `jacU` (models), `U`, `options` (`dt`, `eta`, `rho`), `R` | `A`, `Rtp`, `Rti` |
-| `nonlinearSys.orderStep` (`orderStepFloat`) | models with `hess`, `kappa`, `U`, `options`, `R` | `Rti`, `Rtp` or none |
-| `nonlinearSys.optDeltat` (`optDeltatFloat`) | `prec`, `bis`, `zetaDelta`, `zetaZ`, `zetaA`, `phi`, `r0`, `rabs`, `h`, `fuel` | `dt`, `exponent` |
-| `nonlinearSys.estimateGain` (`estimateGainFloat`) | `zetaDelta`, `lam`, `rabs1`, `rabsOpt`, `scalings`, `fuel` | `phi` |
-| `nonlinearSys.adaptStep` (`adaptStepFloat`) | models with `hess`, `U`, `options`, `zetaDelta`, `zetaH`, `zetaZ`, `zetaK`, `prec`, `bis`, `fuel`, the state `t`, `R`, `Rti`, `h`, `phi`, `kappa`, `rabs` | the state after the step or none |
-| `nonlinearSys.adaptRun` (`adaptRunFloat`) | as `adaptStep`, `tend`, the number of steps | the list of states |
+| `nonlinearSys.varphiTotalAdaptive`, `varphiEstAdaptive`, `optimalDeltatAdaptive` | `test_lean_nonlinear_sys_adaptive_tuning` | bit for bit |
+| `zonotope.reduce` with method `adaptive` | `test_lean_nonlinear_sys_adaptive_tuning` | bit for bit |
+| `nonlinearSys.abstrErrAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | bit for bit at tensor order 2; order 3 inside the oracle's box (quadMap, see the differences) |
+| `nonlinearSys.ordersAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | exact |
+| `nonlinearSys.linReachAdaptivePass` | `test_lean_nonlinear_sys_adaptive_pass` | `xs`, `A`, the zero generators exact; the sets inside the oracle's, 5e-3 tighter at most |
+| `nonlinearSys.reachAdaptive` | `test_lean_nonlinear_sys_reach_adaptive` | the same steps and tensor orders while the order is 2; the sets as in a pass |
 
-Already served and used: `zonotope.reduce` (Girard), `linearSys.errorSolution_adaptive`.
+Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reachAdaptive` runs it), and
+the bit-exact linear step (CORALean's `reachFloatInput` is the interval-matrix exponential, CORA.cpp's
+step is CORA's `oneStep`).

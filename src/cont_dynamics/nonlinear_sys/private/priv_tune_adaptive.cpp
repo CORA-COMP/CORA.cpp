@@ -1,24 +1,23 @@
-// priv_tune_adaptive - the formulas that tune the step size and the order of the adaptive algorithm
+// priv_tune_adaptive - the formulas that tune the step size and orders of lin-adaptive
 //
-// The upper exponential and logarithm by squaring and bisection, the gain of the abstraction error
-// over a change of the step size (eq. (54)), the step size that minimizes the estimated size of
-// the sets over the following steps (eqs. (57) and (58)), the gain that explains the error found
-// at that step size (eq. (56)) and the choice of the tensor order (eqs. (46) and (47)). All of it
-// is arithmetic on numbers, in the order CORALean's optDeltatFloat and estimateGainFloat compute.
+// The gain of the abstraction error over a change of the step size (CORA's aux_varphitotal), the
+// gain that explains the error measured at a smaller step size (aux_varphiest, by bisection), the
+// step size that minimizes the estimated size of the sets over the following steps
+// (aux_optimaldeltat, eq. (49) of [1]) and the orders of the abstraction error (aux_getPowers).
+// All of it is arithmetic on numbers, in the order CORALean's float definitions compute it.
 //
-// Syntax:   StepSize s = priv_opt_delta_t(alg, zeta_a, phi, r0, rabs, horizon);
-// Inputs:   see the declarations in priv_adaptive.h
-// Outputs:  see the declarations in priv_adaptive.h
-// References:
+// Syntax:   double dt = priv_optimal_delta_t(mu, red_factor, r_radius, rerr1, horizon, varphi,
+// zeta_p); Inputs:   see the declarations in priv_adaptive.h Outputs:  see the declarations in
+// priv_adaptive.h References:
 //    [1] M. Wetzlinger, A. Kulmburg, A. Le Penven and M. Althoff. "Adaptive Reachability
 //        Algorithms for Nonlinear Systems Using Abstraction Error Analysis", NAHS, 2022.
-// See also: priv_adapt_step.cpp
+// See also: priv_lin_reach_adaptive.cpp
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
-// Written:       10-November-2026
-// Last update:   10-November-2026
+// Written:       11-November-2026
+// Last update:   ---
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -34,128 +33,215 @@ namespace cora {
 
 namespace {
 
-/// The product of the gains of the first `scalings` scalings.
-double aux_gain_product(double zeta_delta, double phi1, int scalings) {
-    double product = 1;
-    for (int j = 0; j < scalings; ++j) product *= priv_interp_gain(zeta_delta, phi1, j);
-    return product;
+/// x^y for x > 0, as exp(y log x).
+double aux_rpow(double x, double y) { return std::exp(y * std::log(x)); }
+
+/// decr^i for any integer i.
+double aux_dpow(double decr, int64_t i) {
+    return i >= 0 ? priv_pow(decr, int(i)) : 1 / priv_pow(decr, int(-i));
 }
 
-/// Eq. (57): the size estimated for the set after the horizon, walked in 1 / zeta_delta^s steps.
-double aux_size_estimate(const alg::LinearizationAdaptive &alg, double zeta_a, double phi,
-                         double r0, double rabs, int s) {
-    const double zd = alg.zeta_delta, zz = alg.zeta_z;
-    const double lam = priv_pow(1 / zd, s);
-    const int whole = int(std::floor(lam));
-    const double b = lam - whole;
-    const double base = 1 + (zz + zz);
-    // the logarithms of the two bases are the same in every term
-    const double log_base = priv_log_up(alg.exp_depth, alg.log_steps, base);
-    const double log_a = priv_log_up(alg.exp_depth, alg.log_steps, zeta_a);
-    const auto power = [&](double log_x, double y) {
-        return priv_exp_up(alg.exp_depth, y * log_x);
-    };
-    // the sum over the whole steps, from the last term to the first as CORALean's sumUp
-    double sum = 0;
-    for (int j = whole - 1; j >= 0; --j) {
-        const double e = b + double(j + 1);
-        sum = power(log_base, e) * power(log_a, (e - 1) / lam) + sum;
-    }
-    const double zeta_az = sum + b * power(log_base, b);
-    const double growth = (r0 * power(log_base, lam)) * zeta_a;
-    return growth + ((rabs / lam) * zeta_az) * aux_gain_product(zd, phi, s);
+/// The norm of the entries of v where the mask holds, the others 0.
+double aux_masked_norm(const Vec &v, const std::vector<char> &mask) {
+    Vec w(v.size());
+    for (std::size_t i = 0; i < v.size(); ++i) w[i] = mask[i] ? v[i] : 0.0;
+    return priv_norm_up(w);
 }
+
+/// Whether the box [lo, hi] is not the point 0.
+bool aux_nonzero(double lo, double hi) { return !(lo <= 0 && 0 <= lo && hi <= 0 && 0 <= hi); }
+
+/// min(a, b) with -1 as Inf.
+int aux_opt_min(int a, int b) { return a < 0 ? b : (b < 0 ? a : std::min(a, b)); }
 
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
-// The powers --------------------------------------------------------------------------------------
+// The sums and powers -----------------------------------------------------------------------------
+
+double priv_sum_up(const Vec &v) {
+    double sum = 0;
+    for (std::size_t i = v.size(); i-- > 0;) sum = v[i] + sum;
+    return sum;
+}
+
+double priv_norm_up(const Vec &v) {
+    Vec squares(v.size());
+    for (std::size_t i = 0; i < v.size(); ++i) squares[i] = std::abs(v[i]) * std::abs(v[i]);
+    return std::sqrt(priv_sum_up(squares));
+}
 
 double priv_pow(double x, int k) {
     double power = 1;
-    for (int i = 0; i < k; ++i) power *= x;
+    for (int i = 0; i < k; ++i) power = power * x;
     return power;
-}
-
-// The exponential and the logarithm ---------------------------------------------------------------
-
-double priv_exp_up(int depth, double a) {
-    // the seed 1 + y + 2 y^2 at y = a / 2^depth, squared depth times
-    const double y = std::ldexp(a, -depth);
-    double u = (1 + y) + ((y * y) + (y * y));
-    for (int k = 0; k < depth; ++k) u *= u;
-    return u;
-}
-
-double priv_exp_down(int depth, double a) {
-    const double y = std::ldexp(a, -depth);
-    double u = std::max(0.0, 1 + y);
-    for (int k = 0; k < depth; ++k) u = std::max(0.0, u * u);
-    return u;
-}
-
-double priv_log_up(int depth, int steps, double a) {
-    // bisection of [0, a]: the upper end moves where exp(mid) is at least a
-    double lo = 0, hi = a;
-    for (int k = 0; k < steps; ++k) {
-        const double mid = 0.5 * (lo + hi);
-        if (a <= priv_exp_down(depth, mid))
-            hi = mid;
-        else
-            lo = mid;
-    }
-    return hi;
 }
 
 // The gain ----------------------------------------------------------------------------------------
 
-double priv_interp_gain(double zeta_delta, double phi1, int j) {
-    return zeta_delta + (phi1 - zeta_delta) * priv_pow(zeta_delta, j);
-}
-
-StepSize priv_opt_delta_t(const alg::LinearizationAdaptive &alg, double zeta_a, double phi,
-                          double r0, double rabs, double h) {
-    // eq. (58): increase s while the estimate keeps falling, and stop at the first increase
-    int s = 0;
-    double cost = aux_size_estimate(alg, zeta_a, phi, r0, rabs, 0);
-    for (int k = 0; k < alg.fuel; ++k) {
-        const double next = aux_size_estimate(alg, zeta_a, phi, r0, rabs, s + 1);
-        if (!(next <= cost)) break;
-        cost = next;
-        ++s;
+double priv_varphi_total(double varphi, double varphi_lim, double prev, double curr, double decr) {
+    const double scalings = std::log(prev / curr) / std::log(decr);
+    const double eps10 = numerics::kScalingSlack;
+    // the gain after i scalings, and the correction of the last one
+    const auto interp = [&](int64_t i) {
+        return varphi + (varphi_lim - varphi) * ((curr - aux_dpow(decr, i) * curr) / curr);
+    };
+    const auto correct = [&](double last, int64_t low, int64_t high) {
+        return last + (1 - last) * ((prev - curr * aux_dpow(decr, high)) /
+                                    (curr * (aux_dpow(decr, low) - aux_dpow(decr, high))));
+    };
+    Vec gains{varphi};
+    const bool growing = !(scalings <= 0);
+    // more scalings than one: the gains of 1 .. low, and the reciprocals of -1 .. low otherwise
+    int64_t low;
+    if (growing) {
+        low = int64_t(std::floor(scalings + eps10));
+        for (int64_t i = 1; i <= low; ++i) gains.push_back(interp(i));
+        gains.back() = correct(gains.back(), low, low + 1);
+    } else {
+        low = int64_t(std::ceil(scalings - eps10));
+        for (int64_t i = 1; i <= -low; ++i) gains.push_back(interp(-i));
+        gains.back() = correct(gains.back(), low, low - 1);
     }
-    return {h * priv_pow(alg.zeta_delta, s), s};
+    double product = 1;
+    for (const double g : gains) product = product * (growing ? g : 1 / g);
+    return product;
 }
 
-double priv_estimate_gain(double zeta_delta, double lam, double rabs1, double rabs_opt,
-                          int scalings, int fuel) {
-    // an error that is 0 at the horizon says nothing of the gain: the limit
-    if (!(rabs1 > 0)) return zeta_delta;
-    // eq. (56): bisection of the gain in [0, zeta_delta] whose product of gains meets the target
-    const double target = (lam * rabs_opt) / rabs1;
-    double lo = 0, hi = zeta_delta;
-    for (int k = 0; k < fuel; ++k) {
-        const double mid = 0.5 * (lo + hi);
-        if (aux_gain_product(zeta_delta, mid, scalings) <= target)
-            lo = mid;
+double priv_varphi_est(double horizon, double deltat, const Vec &abstrerr_h, const Vec &abstrerr,
+                       double decr, const std::vector<char> &mask, int minorder, int fuel) {
+    const double rerr1 = aux_masked_norm(abstrerr_h, mask), rerrk = aux_masked_norm(abstrerr, mask);
+    const double rhs = rerrk / rerr1, lim = priv_pow(decr, minorder + 1);
+    // bisection on [0, lim]: the mid gain whose total is within the tolerances of rhs
+    double low = 0, up = lim, prev = 0;
+    for (int count = 0; count < fuel; ++count) {
+        const double mid = low + 0.5 * (up - low);
+        const double residual = priv_varphi_total(mid, lim, deltat, horizon, decr) - rhs;
+        if (!(numerics::kGainResidual <= std::abs(residual)) ||
+            (count > 0 && !(numerics::kGainStep <= std::abs(mid - prev))))
+            return mid;
+        if (!(0 <= residual))
+            low = mid;
         else
-            hi = mid;
+            up = mid;
+        prev = mid;
     }
-    return 0.5 * (lo + hi);
+    return low;
 }
 
-// The order ---------------------------------------------------------------------------------------
+// The step size -----------------------------------------------------------------------------------
 
-int priv_tune_order(double zeta_k, double phi, double rabs, double rabs_last, const Vec &d1,
-                    const Vec &d2, int kappa) {
-    // eq. (46): too close to re-tune
-    if (std::abs((phi * rabs) / rabs_last) <= 1 - zeta_k) return kappa;
-    // eq. (47): the second order wins too little, or it is worth its cost
-    for (std::size_t i = 0; i < d1.size(); ++i)
-        if (!(d1[i] <= 0 || zeta_k <= d2[i] / d1[i])) return 2;
-    return 1;
+double priv_optimal_delta_t(double mu, double red_factor, double r_radius, double rerr1,
+                            double deltat, double varphimin, double zeta_p) {
+    const double zeta_z = 0.5 * red_factor;
+    const int kprimemax = int(std::ceil(-std::log(100.0) / std::log(mu)));
+    const double varphi_h = mu - varphimin, deltat0 = deltat * priv_pow(mu, 0);
+    const auto kk = [&](int j) { return 1 / priv_pow(mu, j); };
+    const auto deltats = [&](int j) { return deltat * priv_pow(mu, j); };
+    const double a = 1 + (zeta_z + zeta_z);
+    // the objective of the candidate j
+    const auto objective = [&](int j) {
+        const double k = kk(j);
+        const int floork = int(std::floor(k));
+        // the product of the gains over the first j + 1 scalings
+        double varphiprod = 1;
+        for (int i = 0; i <= j; ++i)
+            varphiprod =
+                varphiprod * ((varphimin + ((deltat0 - deltats(i)) / deltat0) * varphi_h) / mu);
+        // all but the last of the scalings, as a sum from the first to the last
+        double all_but_last = 0;
+        for (int i = 0; i < floork; ++i) {
+            const double ii = double(i + 1);
+            all_but_last = all_but_last + aux_rpow(a, (k + 1) - ii) * aux_rpow(zeta_p, 1 - ii / k);
+        }
+        return (r_radius * aux_rpow(a, k)) * zeta_p +
+               ((rerr1 / k) * varphiprod) *
+                   (all_but_last + aux_rpow(1 + zeta_z, k - double(j)) * (k - double(floork)));
+    };
+    int best = 0;
+    double best_value = objective(0);
+    for (int j = 0; j <= kprimemax; ++j) {
+        const double o = objective(j);
+        if (!(best_value <= o)) {
+            best = j;
+            best_value = o;
+        }
+    }
+    return deltats(best);
+}
+
+// The orders --------------------------------------------------------------------------------------
+
+std::vector<int> priv_adaptive_orders(const Tensor &A, const std::vector<char> &zero_width,
+                                      const std::vector<char> &gzero,
+                                      const std::vector<std::optional<Range>> &H, int64_t n,
+                                      int64_t m, int fuel) {
+    const int64_t d = n + m;
+    const Vec a = A.data();
+    const auto entry = [&](int64_t i, int64_t j, int64_t k) {
+        const auto &e = H[std::size_t((i * d + j) * d + k)];
+        return std::pair<double, double>{e ? e->lo.item() : 0.0, e ? e->hi.item() : 0.0};
+    };
+    const bool all_zero =
+        std::all_of(zero_width.begin(), zero_width.end(), [](char z) { return z; });
+    const bool none_zero =
+        std::none_of(zero_width.begin(), zero_width.end(), [](char z) { return z; });
+    // sigma: the order of the error of the dynamics of each dimension
+    std::vector<int> sigma(static_cast<std::size_t>(n), 0);
+    for (int64_t i = 0; i < n; ++i) {
+        if (all_zero) {
+            sigma[std::size_t(i)] = 2;
+        } else if (none_zero) {
+            sigma[std::size_t(i)] = 0;
+        } else {
+            // a nonzero diagonal Hessian entry of a dimension with width gives the order 0
+            bool diagonal = false;
+            for (int64_t j = 0; j < n; ++j) {
+                const auto h = entry(i, j, j);
+                diagonal =
+                    diagonal || (!zero_width[std::size_t(j)] && aux_nonzero(h.first, h.second));
+            }
+            // else the least number of zero-width dimensions among the mixed entries
+            int best = -1;
+            for (int64_t j = 0; j < n && !diagonal; ++j)
+                for (int64_t jj = j + 1; jj < n; ++jj) {
+                    const auto p = entry(i, j, jj), q = entry(i, jj, j);
+                    if (aux_nonzero(p.first + q.first, p.second + q.second)) {
+                        const int count = zero_width[std::size_t(j)] + zero_width[std::size_t(jj)];
+                        best = best < 0 ? count : std::min(best, count);
+                    }
+                }
+            sigma[std::size_t(i)] = diagonal ? 0 : (best < 0 ? 2 : best);
+        }
+    }
+    // the loop over the powers of A, as nonzero patterns
+    std::vector<char> power(static_cast<std::size_t>(n * n), 0);
+    for (int64_t i = 0; i < n; ++i) power[std::size_t(i * n + i)] = 1;
+    // qi stays Inf (-1) until a power of A reaches a dimension with an error term
+    std::vector<int> qi(static_cast<std::size_t>(n), -1);
+    for (int p = 0; p < fuel; ++p) {
+        bool done = true;
+        for (int64_t i = 0; i < n; ++i) {
+            int qip = -1;
+            for (int64_t j = 0; j < n; ++j)
+                if (!gzero[std::size_t(j)] && power[std::size_t(i * n + j)])
+                    qip = aux_opt_min(qip, sigma[std::size_t(j)]);
+            qi[std::size_t(i)] = aux_opt_min(qi[std::size_t(i)], qip < 0 ? -1 : qip + p);
+            done = done && qi[std::size_t(i)] >= 0 && qi[std::size_t(i)] < p + 1;
+        }
+        if (done) return qi;
+        // the next power: any k with power(i, k) and A(k, j) nonzero
+        std::vector<char> next(static_cast<std::size_t>(n * n), 0);
+        for (int64_t i = 0; i < n; ++i)
+            for (int64_t j = 0; j < n; ++j)
+                for (int64_t k = 0; k < n; ++k)
+                    if (power[std::size_t(i * n + k)] && a[std::size_t(k * n + j)] != 0)
+                        next[std::size_t(i * n + j)] = 1;
+        power = next;
+    }
+    return qi;
 }
 
 } // namespace cora

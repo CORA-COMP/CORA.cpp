@@ -13,21 +13,25 @@
 //             (rounding is not directed).
 // See also:   cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h
 //
-// Authors:       Tobias Ladner, Claude Opus 5.5
+// Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/global/tensor/tensor.h"
 
+#include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+// Ranges ------------------------------------------------------------------------------------------
 
 /// The interval [lo, hi] of every element of two tensors of one shape.
 struct Range {
@@ -49,6 +53,8 @@ Range operator*(const Range &a, double s);
 
 /// The square of a range: one that contains 0 squares to [0, ...], not to [-..., ...].
 Range square(const Range &a);
+
+// Expressions -------------------------------------------------------------------------------------
 
 class Expr {
   public:
@@ -77,6 +83,11 @@ class Expr {
     /// The values of all expressions at x; a subexpression they share is evaluated once.
     static std::vector<Tensor> eval_tensor(const std::vector<Expr> &exprs,
                                            const std::vector<Tensor> &x);
+
+    /// The tree as the JSON of the CORALean oracle: {"x":i} for a state, {"u":j} for an input (the
+    /// variables from `states` on), {"const":text} with the text `number` gives,
+    /// {"op":..,"args":..}. Throws for a power of a non-integer other than 1/2 (the square root).
+    std::string to_json(int states, const std::function<std::string(double)> &number) const;
 
     /// The ranges of all expressions over the box x; a shared subexpression is enclosed once.
     static std::vector<Range> enclose(const std::vector<Expr> &exprs, const std::vector<Range> &x);

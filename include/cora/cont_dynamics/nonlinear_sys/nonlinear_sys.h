@@ -78,6 +78,8 @@ class NonlinearSys {
     NonlinearSys(const InputDynamics &f, int64_t n, int64_t m);
 
     int64_t dim() const { return n_; }
+    /// The components of f, as written on the symbolic states and inputs.
+    const std::vector<Expr> &expressions() const { return f_; }
     int64_t input_dim() const { return m_; }
 
     /// f at the columns of x (n, N) and u (m, N) or (m, 1) (none: no inputs): (n, N).
@@ -88,11 +90,6 @@ class NonlinearSys {
 
     /// f over the box x (bounds (n, 1)) and u (bounds (m, 1)): a range of shape (n, 1).
     Range enclosure(const Range &x, const std::optional<Range> &u = std::nullopt) const;
-
-    /// The Jacobian dfi/dz_j over the box, row-major (i, j) with z = (x, u), each a range of shape
-    /// (1, 1); an entry that is identically 0 is empty.
-    std::vector<std::optional<Range>>
-    jacobian_enclosure(const Range &x, const std::optional<Range> &u = std::nullopt) const;
 
     /// The Hessians of the components over z = (x, u) at the point (CORA's hessian): n matrices
     /// (n + m, n + m).

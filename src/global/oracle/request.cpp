@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/request.h"
@@ -128,6 +128,26 @@ struct Decode<std::vector<int64_t>> {
         return indices;
     }
 };
+// A list of scalars, each an exact text of the dtype.
+template <>
+struct Decode<std::vector<double>> {
+    static std::vector<double> of(const std::string &, const Json &j) {
+        std::vector<double> values;
+        values.reserve(j.items.size());
+        for (const Json &v : j.items) values.push_back(Tensor::decode(v.text));
+        return values;
+    }
+};
+// A list of booleans.
+template <>
+struct Decode<std::vector<bool>> {
+    static std::vector<bool> of(const std::string &, const Json &j) {
+        std::vector<bool> flags;
+        flags.reserve(j.items.size());
+        for (const Json &b : j.items) flags.push_back(b.boolean);
+        return flags;
+    }
+};
 // Pairs of indices, such as the (transition, set) hits.
 template <>
 struct Decode<std::vector<std::vector<int64_t>>> {
@@ -163,6 +183,20 @@ struct Decode<std::optional<T>> {
     static std::optional<T> of(const std::string &dt, const Json &j) {
         if (j.kind == Json::Kind::null) return std::nullopt;
         return Decode<T>::of(dt, j);
+    }
+};
+
+// The orders of the abstraction error: a number, or null for Inf.
+template <>
+struct Decode<std::vector<std::optional<int64_t>>> {
+    static std::vector<std::optional<int64_t>> of(const std::string &, const Json &j) {
+        std::vector<std::optional<int64_t>> orders;
+        orders.reserve(j.items.size());
+        for (const Json &q : j.items)
+            orders.push_back(q.kind == Json::Kind::null
+                                 ? std::nullopt
+                                 : std::optional<int64_t>(std::stoll(q.text)));
+        return orders;
     }
 };
 
@@ -207,6 +241,9 @@ Wire::Wire(const std::vector<std::vector<Tensor>> &Tss) {
 Wire::Wire(const std::vector<int64_t> &indices) : json(Json::array()) {
     for (const int64_t i : indices) json.push(Json(i));
 }
+Wire::Wire(const std::vector<bool> &flags) : json(Json::array()) {
+    for (const bool b : flags) json.push(Json(b));
+}
 Wire::Wire(const std::vector<std::vector<int64_t>> &index_lists) : json(Json::array()) {
     for (const std::vector<int64_t> &indices : index_lists) json.push(Wire(indices).json);
 }
@@ -245,6 +282,10 @@ template Capsule Reply::get<Capsule>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 // the lists
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
+template std::vector<double> Reply::get<std::vector<double>>(const char *) const;
+template std::vector<bool> Reply::get<std::vector<bool>>(const char *) const;
+template std::vector<std::optional<int64_t>>
+Reply::get<std::vector<std::optional<int64_t>>>(const char *) const;
 template std::vector<std::vector<int64_t>>
 Reply::get<std::vector<std::vector<int64_t>>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
