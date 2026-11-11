@@ -80,7 +80,7 @@ here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet
 | GRBX01 | 1 | 1 | 0.03 | 2.28 | 2.89 |
 | GRBX02 | 1 | 1 | 0.037 | 2.44 | 3.15 |
 | BRKDC01 | 1 | 1 | 0.037 | 22.66 | 0.10 |
-| BRKNC01 | 1 | 1 | 5.40 | 32.07 | 0.17 |
+| BRKNC01 | 1 | 1 | 4.83 | 32.07 | 0.17 |
 | BRKNP01 | 0 | 0 (reach_set_explosion) | 0.001 | 52.20 | 16.99 |
 
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
