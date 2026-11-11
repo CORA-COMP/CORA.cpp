@@ -11,8 +11,9 @@
 //           xs - point of linearization (n, 1)
 //           V - input set of the state space, its center the constant input
 //           R - set at the start of the step
-//           time_step - step size, taylor_terms - least Taylor order, zonotope_order - order of
-//           the reduction
+//           time_step - step size
+//           taylor_terms - least Taylor order
+//           zonotope_order - order of the reduction
 // Outputs:  S - the window and the end set, none if no admissible order is found
 // See also: priv_steps.h, LinearSys::reach
 //

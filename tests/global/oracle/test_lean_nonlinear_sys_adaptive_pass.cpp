@@ -128,11 +128,10 @@ int main() {
                 aux_same(b + " xs", priv_column(c.R.center(), mine->xs), theirs->xs);
                 aux_same(b + " A", mine->A, theirs->A);
                 if (kappa == 2) {
-                    // the boxes agree to rounding; bit for bit is the step's test, on the lean
-                    // backend
-                    test::oracle::check_hull(mine->Rmax, theirs->Rmax, kBox);
-                    test::oracle::check_hull(mine->Rti, theirs->time_interval, kBox);
-                    test::oracle::check_hull(mine->Rtp, theirs->time_point, kBox);
+                    // the boxes agree to rounding (bit for bit: test_lean_linear_sys_float_step)
+                    aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kBox);
+                    aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kBox);
+                    aux_inside(b + " time point", mine->Rtp, theirs->time_point, kBox);
                 } else {
                     // the quadratic map of order 3 is CORA's here, so the sets lie inside
                     aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kSets);

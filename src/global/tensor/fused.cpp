@@ -126,9 +126,7 @@ std::pair<Tensor, Tensor> derived::zonotope_linear_map(const Tensor &M, const Te
     return {M.matmul(c), M.matmul(G)};
 }
 
-// The center T maps the zonotope; the box generators are the sums over j of R_ij (|c_j| + sum|G_j|),
-// R the larger of |inf - T| and |sup - T| (CORALean's mtimesIntervalMat: the residual of the
-// stored center, not half the width).
+// T maps the zonotope; the box is R (|c| + sum|G|), R = max(|inf - T|, |sup - T|), as CORALean.
 std::pair<Tensor, Tensor> derived::zonotope_interval_map(const Tensor &inf, const Tensor &sup,
                                                          const Tensor &c, const Tensor &G) {
     const Tensor T = (inf + sup) * 0.5;

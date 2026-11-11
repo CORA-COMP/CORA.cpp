@@ -175,15 +175,13 @@ std::optional<FloatStep> priv_float_one_step(const Tensor &A, const Tensor &xs, 
     const std::optional<int> order = priv_float_order(A, time_step, taylor_terms);
     if (!order) return std::nullopt;
     const Series series(A, time_step, *order);
-    const Interval eA = series.exp(), F = series.correction();
-    // CORALean's canonical system maps V by B = I and adds c = 0 (a negative zero becomes 0)
+    const Interval e_adt = series.exp(), F = series.correction();
+    // CORALean's canonical system maps V by B = I and adds c = 0 (-0 becomes 0)
     const int64_t n = A.size(-1);
     const Tensor zero = xs.zeros_like();
     const Zonotope Vi = V.linear_map(A.eye_like());
     const Zonotope Vc(Vi.center() + zero, Vi.generators());
-    // the constant input is V's center, the time-varying one V without it
-    // a box as a zonotope has a generator per dimension, here all zero (CORALean's
-    // Interval.zonotope)
+    // the input is V's center and V without it; a point has n zero generators (Interval.zonotope)
     const Zonotope u(Vc.center(), zero.zeros_like({n, n})), U(zero, Vc.generators());
     const Zonotope X(R.center() - xs, R.generators());
     const Zonotope Pu = series.input_solution(u);
@@ -191,9 +189,9 @@ std::optional<FloatStep> priv_float_one_step(const Tensor &A, const Tensor &xs, 
         series.input_solution(aux_lin_comb(Zonotope(zero, zero.zeros_like({n, n})), u));
     const Zonotope PU = series.input_solution(U);
     // H(t_1) = reduce([e^{A dt}] X + Pu), H(tau_0) = hull(X, [e^{A dt}] X) + [F] X + P^R
-    const Zonotope eAX = X.linear_map(eA);
-    const Zonotope Htp = eAX.plus(Pu).reduce(zonotope_order);
-    const Zonotope Hti = aux_lin_comb(X, eAX).plus(X.linear_map(F)).plus(PuR);
+    const Zonotope e_adt_x = X.linear_map(e_adt);
+    const Zonotope Htp = e_adt_x.plus(Pu).reduce(zonotope_order);
+    const Zonotope Hti = aux_lin_comb(X, e_adt_x).plus(X.linear_map(F)).plus(PuR);
     const auto back = [&](const Zonotope &Z) { return Zonotope(Z.center() + xs, Z.generators()); };
     return FloatStep{back(Hti.plus(PU)), back(Htp.plus(PU))};
 }
