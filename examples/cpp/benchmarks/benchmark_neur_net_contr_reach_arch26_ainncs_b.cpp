@@ -47,10 +47,10 @@ using Vars = std::vector<Expr>;
 
 // The plants -------------------------------------------------------------------------------------
 
-/// dynamics_quad.m (tau = 0); CORACPP_QUAD_REPORT=1 takes the report's x8', x9'
-/// (cora-differences.md).
+/// dynamics_quad.m (tau = 0) with the report's x8', x9'; CORACPP_QUAD_SCRIPT=1 takes the
+/// script's, which differ from the report (cora-differences.md).
 NonlinearSys aux_quad() {
-    const bool report = std::getenv("CORACPP_QUAD_REPORT") != nullptr;
+    const bool report = std::getenv("CORACPP_QUAD_SCRIPT") == nullptr;
     return {
         [=](const Vars &x, const Vars &u) {
             constexpr double g = 9.81, m = 1.4, Jx = 0.054, Jy = 0.054, Jz = 0.104;

@@ -626,7 +626,7 @@ The falsifications are the simulated runs
 **Settings of the piece B instances, next to CORA's.** QUAD: time step 0.1, tensor order 2, 1 Taylor term,
 zonotope order 20 and the sampling time 0.1 as the script; CORA verifies the whole set (with `nn.refine` to order 2 in a
 layer), CORA.cpp's order-1 sets explode at t = 1, so `verify` splits (`depth` 4: 7 pieces reached, 4 leaves, 2 splits
-deep, CROWN-Reach: 3465 s). The report's attitude equations (`CORACPP_QUAD_REPORT=1`) verify the same way. NAV: sampling
+deep, CROWN-Reach: 3465 s). It takes the report's attitude equations; the script's x8', x9' differ from the report (`CORACPP_QUAD_SCRIPT=1`) and verify the same way. NAV: sampling
 time 0.2, tensor order 2, 1 Taylor term, zonotope order 10, time step 0.05 (standard) and 0.1 (robust), splitting `depth` 9 as
 the script; the robust network verifies without it, the standard one needs 245 pieces (123 leaves, 8 splits deep, 8 threads).
 CartPole: time step and sampling time 0.02, zonotope order 50, `depth` 10 as the script; 7 pieces (4 leaves, 2 splits deep).
