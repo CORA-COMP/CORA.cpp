@@ -73,10 +73,7 @@ priv_error_loop(const Linearized &lin, TaylorLinSys &taylor, const Tensor &error
         err = error_over(R_guess);
         perf = priv_ratio_max(err->bound, applied);
         bound = err->bound;
-        if (priv_exploded(bound))
-            CORA_FAIL(Error::reach_set_explosion,
-                      "cora: the linearization error exploded; the reachable set grows without "
-                      "bound (the time_step may be too large)");
+        priv_check_exploded(bound);
     }
     return *err;
 }
@@ -85,30 +82,22 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
                              const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     const double dt = alg.time_step;
     const int eta = alg.taylor_terms;
-    const int64_t n = sys.dim();
-    // the affine system and its step from R - x*; the powers of A are shared by every solution
+    // the affine system and its step from R - x*
     const Linearized lin = sys.linearize(R, U, dt);
-    const Zonotope R_delta = R - lin.x_star;
-    TaylorLinSys taylor(lin.sys.A());
-    const Blocks blocks = priv_one_block(n);
-    const Zonotope u_const(lin.u_const, lin.u_const.zeros_like({n, 0}));
-    const BlockStep step = priv_one_step(lin.sys, taylor, blocks, R_delta, lin.U, u_const, dt, eta);
-    const Zonotope &R_ti = step.time_interval[0];
+    AffineStep step = priv_affine_step(lin.sys, R - lin.x_star, lin.U, lin.u_const, dt, eta);
+    const Zonotope &R_ti = step.time_interval;
     // the centered input set (CORA's params.U); without one, the input 0
-    std::optional<Zonotope> U0;
-    if (const int64_t m = sys.input_dim(); m > 0)
-        U0 = U ? *U - U->center()
-               : Zonotope(R.center().zeros_like({m, 1}), R.center().zeros_like({m, 0}));
+    const std::optional<Zonotope> U0 = priv_centered_inputs(R.center(), sys.input_dim(), U);
 
     // the error: guessed, checked over the set it allows, and enlarged until it holds
     const AbstractionError err =
-        priv_error_loop(lin, taylor, error, dt, eta, [&](const Zonotope &R_guess) {
+        priv_error_loop(lin, step.taylor, error, dt, eta, [&](const Zonotope &R_guess) {
             return priv_abstrerr_lin(sys, R_ti + R_guess, lin, U0, alg);
         });
     // the solution of the error moves both sets, which return to the coordinates of the state
     const Zonotope R_error =
-        priv_particular_time_varying(lin.sys, taylor, blocks, err.set, dt, eta)[0];
-    return {(R_ti + lin.x_star) + R_error, (step.time_point[0] + lin.x_star) + R_error, err.bound};
+        priv_particular_time_varying(lin.sys, step.taylor, step.blocks, err.set, dt, eta)[0];
+    return {(R_ti + lin.x_star) + R_error, (step.time_point + lin.x_star) + R_error, err.bound};
 }
 
 } // namespace cora

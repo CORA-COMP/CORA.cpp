@@ -29,15 +29,6 @@ namespace cora {
 
 namespace {
 
-/// The rows of X (n, N) as n tensors (N, 1), one per variable.
-std::vector<Tensor> aux_columns(const Tensor &X) {
-    const Tensor rows = X.matrix_transpose();
-    std::vector<Tensor> out;
-    out.reserve(X.shape()[0]);
-    for (int64_t i = 0; i < X.shape()[0]; ++i) out.push_back(rows.slice(-1, i, i + 1));
-    return out;
-}
-
 /// The message of a point that is not a column (n, 1) of the system's dimension.
 std::string aux_column_message(const Tensor &x, int64_t n, const std::string &what) {
     return what + " must be a column (" + std::to_string(n) + ", 1), got the shape " +
@@ -48,46 +39,6 @@ std::string aux_column_message(const Tensor &x, int64_t n, const std::string &wh
 bool aux_is_matrix(const Tensor &x, int64_t n, int64_t columns) {
     return x.defined() && x.shape().size() == 2 && x.shape()[0] == n &&
            (columns < 0 || x.shape()[1] == columns);
-}
-
-/// The ranges of the nonzero entries of `exprs` over the box z, in one pass; the zero ones empty.
-std::vector<std::optional<Range>> aux_enclose_nonzero(const std::vector<Expr> &exprs,
-                                                      const std::vector<Range> &z) {
-    std::vector<Expr> nonzero;
-    for (const Expr &e : exprs)
-        if (!e.is_zero()) nonzero.push_back(e);
-    const std::vector<Range> ranges = Expr::enclose(nonzero, z);
-    std::vector<std::optional<Range>> out;
-    out.reserve(exprs.size());
-    std::size_t next = 0;
-    for (const Expr &e : exprs)
-        out.push_back(e.is_zero() ? std::nullopt : std::optional<Range>(ranges[next++]));
-    return out;
-}
-
-/// The (rows, cols) matrix of the values at z of the expressions from `first` on, row by row; a
-/// zero entry stays a zero of the matrix without an evaluation.
-Tensor aux_matrix(const std::vector<Expr> &exprs, std::size_t first, int64_t rows, int64_t cols,
-                  const std::vector<Tensor> &z, const Tensor &like) {
-    if (rows == 0 || cols == 0) return like.zeros_like({rows, cols});
-    const auto begin = exprs.begin() + std::ptrdiff_t(first);
-    const std::vector<Expr> part(begin, begin + std::ptrdiff_t(rows * cols));
-    std::vector<Expr> nonzero;
-    for (const Expr &e : part)
-        if (!e.is_zero()) nonzero.push_back(e);
-    const std::vector<Tensor> values = Expr::eval_tensor(nonzero, z);
-    // every entry a (1, 1) tensor, the zeros made like the point
-    const Tensor zero = like.zeros_like({1, 1});
-    std::vector<Tensor> row_tensors;
-    std::size_t next = 0;
-    for (int64_t i = 0; i < rows; ++i) {
-        std::vector<Tensor> row;
-        row.reserve(cols);
-        for (int64_t j = 0; j < cols; ++j)
-            row.push_back(part[std::size_t(i * cols + j)].is_zero() ? zero : values[next++]);
-        row_tensors.push_back(Tensor::concat(row, -1));
-    }
-    return Tensor::concat(row_tensors, -2);
 }
 
 } // namespace
@@ -151,12 +102,12 @@ void NonlinearSys::validate_point(const char *op, const Tensor &x,
 }
 
 std::vector<Tensor> NonlinearSys::variables(const Tensor &x, const std::optional<Tensor> &u) const {
-    std::vector<Tensor> z = aux_columns(x);
+    std::vector<Tensor> z = variable_columns(x);
     if (m_ == 0) return z;
     // a single input column serves every point
     Tensor U = *u;
     if (U.shape()[1] == 1 && x.shape()[1] != 1) U = U.matmul(x.ones_like({1, x.shape()[1]}));
-    for (Tensor &column : aux_columns(U)) z.push_back(std::move(column));
+    for (Tensor &column : variable_columns(U)) z.push_back(std::move(column));
     return z;
 }
 
@@ -190,7 +141,7 @@ Tensor NonlinearSys::dynamics(const Tensor &x, const std::optional<Tensor> &u) c
 Jacobians NonlinearSys::jacobian(const Tensor &x, const std::optional<Tensor> &u) const {
     detail::Entry entry;
     if (entry.check()) validate_point("jacobian", x, u);
-    const Tensor J = aux_matrix(jacobian_, 0, n_, n_ + m_, variables(x, u), x);
+    const Tensor J = Expr::eval_matrix(jacobian_, 0, n_, n_ + m_, variables(x, u), x);
     return {J.slice(-1, 0, n_), m_ == 0 ? x.zeros_like({n_, 0}) : J.slice(-1, n_, n_ + m_)};
 }
 
@@ -217,7 +168,7 @@ std::vector<Tensor> NonlinearSys::hessian(const Tensor &x, const std::optional<T
     std::vector<Tensor> out;
     out.reserve(std::size_t(n_));
     for (int64_t i = 0; i < n_; ++i)
-        out.push_back(aux_matrix(hessian_, std::size_t(i * d * d), d, d, z, x));
+        out.push_back(Expr::eval_matrix(hessian_, std::size_t(i * d * d), d, d, z, x));
     return out;
 }
 
@@ -227,7 +178,7 @@ NonlinearSys::hessian_enclosure(const Range &x, const std::optional<Range> &u) c
     detail::Entry entry;
     if (entry.check())
         validate_point("hessian_enclosure", x.lo, u ? std::optional<Tensor>(u->lo) : std::nullopt);
-    return aux_enclose_nonzero(hessian_, variables(x, u));
+    return Expr::enclose_nonzero(hessian_, variables(x, u));
 }
 
 // T(i, j, k, l) is symmetric in j, k and l: each set of three indices is derived once.
@@ -257,7 +208,7 @@ NonlinearSys::third_order_enclosure(const Range &x, const std::optional<Range> &
                             T[at(i, p)] = t;
                     }
     });
-    return aux_enclose_nonzero(third_->T, variables(x, u));
+    return Expr::enclose_nonzero(third_->T, variables(x, u));
 }
 
 } // namespace cora

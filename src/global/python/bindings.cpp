@@ -26,6 +26,7 @@
 
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/cont_set/level_set/level_set.h"
 #include "cora/cont_set/registry.h"
@@ -4160,6 +4161,89 @@ void bind_nonlinear_sys(py::module_ &m) {
             "simulate_random(initial_set=X0, t_final=T, time_step=dt, points=N, rng=rng)");
 }
 
+/// The differential-algebraic systems: f(x, y, u) and g(x, y, u) as symbolic expressions.
+void bind_nonlin_das_sys(py::module_ &m) {
+    py::class_<DaeReachSet>(m, "DaeReachSet",
+                            "The reachable sets of a differential-algebraic system.")
+        .def_readonly("time_step", &DaeReachSet::time_step, "the step between the sets")
+        .def_readonly("time_interval", &DaeReachSet::time_interval, "the states over each step")
+        .def_readonly("time_point", &DaeReachSet::time_point, "the states at each step time")
+        .def_readonly("algebraic", &DaeReachSet::algebraic,
+                      "the algebraic variables over each step");
+    py::class_<NonlinDASys>(m, "NonlinDASys",
+                            "The system x' = f(x, y, u), 0 = g(x, y, u), index 1.")
+        .def(py::init([](const py::function &f, const py::function &g, int64_t dim, int64_t inputs,
+                         int64_t constraints) {
+                 // f and g run once, here, on symbolic states, algebraic variables and inputs
+                 const auto rows = [](const py::function &fn) {
+                     return [fn](const std::vector<Expr> &x, const std::vector<Expr> &y,
+                                 const std::vector<Expr> &u) {
+                         return fn(x, y, u).cast<std::vector<Expr>>();
+                     };
+                 };
+                 return NonlinDASys(rows(f), rows(g), dim, inputs, constraints);
+             }),
+             py::arg("f"), py::arg("g"), py::arg("dim"), py::arg("inputs") = 0,
+             py::arg("constraints") = 1,
+             // the sizes and the Newton solvers follow
+             "f(x, y, u) and g(x, y, u) return the dim and constraints components of the equations")
+        // the sizes and the Newton solvers
+        .def_property_readonly("dim", &NonlinDASys::dim, "The number of states n")
+        .def_property_readonly("input_dim", &NonlinDASys::input_dim, "The number of inputs m")
+        .def_property_readonly("constraint_dim", &NonlinDASys::constraint_dim,
+                               "The number of algebraic variables")
+        .def(
+            "consistent_initial_state",
+            [](const NonlinDASys &sys, const py::object &x0, const py::object &y0,
+               const py::object &u0) {
+                // the vectors from Python are columns
+                return vector(sys.consistent_initial_state(vector_of(x0, "x0"), vector_of(y0, "y0"),
+                                                           vector_of(u0, "u0")));
+            },
+            py::arg("x0"), py::arg("y0"), py::arg("u0") = py::list(),
+            "The algebraic variables with g(x0, y, u0) = 0 by Newton's method from y0")
+        .def(
+            "steady_state",
+            [](const NonlinDASys &sys, const py::object &x0, const py::object &y0,
+               const py::object &u0) {
+                // the state and y as a pair of vectors
+                const auto [x, y] =
+                    sys.steady_state(vector_of(x0, "x0"), vector_of(y0, "y0"), vector_of(u0, "u0"));
+                return py::make_tuple(vector(x), vector(y));
+            },
+            py::arg("x0"), py::arg("y0"), py::arg("u0") = py::list(),
+            // the steady state returns the state and the algebraic variables
+            "The state and the algebraic variables with f = 0 and g = 0 at the input u0")
+        // reach and simulate
+        .def(
+            "reach",
+            [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
+                // the problem and the algorithm from the keywords
+                const NonlinDASys &sys = py::cast<const NonlinDASys &>(self);
+                return run_with_kwargs<DaeReachProblem, alg::DaeReach>(
+                    self, "reach", args, kwargs, {},
+                    [&](const DaeReachProblem &p, const alg::DaeReach &a) {
+                        return py::cast(sys.reach(p, a));
+                    });
+            },
+            "reach(initial_set=X0, input_set=U, u_trans=u (m, steps), y0_guess=y0, t_start=0, "
+            "t_final=T, time_step=dt, taylor_terms=4, zonotope_order=50, error_order=3, "
+            "max_error_x, max_error_y): the reachable sets")
+        .def(
+            "simulate",
+            [](const NonlinDASys &sys, const py::object &x0, const py::object &y_guess,
+               double t_final, double time_step, const py::object &u, double max_step) {
+                // the Runge-Kutta samples of x and y
+                const DaeTrajectory T = sys.simulate(
+                    vector_of(x0, "x0"), vector_of(y_guess, "y_guess"), vector_of(u, "u"), t_final,
+                    alg::RungeKutta4{.time_step = time_step, .max_step = max_step});
+                return py::make_tuple(matrix(T.x), matrix(T.y));
+            },
+            py::arg("x0"), py::arg("y_guess"), py::arg("t_final"), py::arg("time_step"),
+            py::arg("u") = py::list(), py::arg("max_step") = 1e-3,
+            "The states (n, steps + 1) and the algebraic variables (p, steps + 1) of a trajectory");
+}
+
 void bind_neural_network(py::module_ &m) {
     py::class_<NeuralNetwork>(m, "NeuralNetwork",
                               "Affine layers with a ReLU after each but the last.")
@@ -5273,6 +5357,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_nonlinear_sys(m);
     bind_level_set(m);
     bind_taylm(m);
+    bind_nonlin_das_sys(m);
     bind_lin_param_sys(m);
     bind_neural_network(m);
     bind_plot(m);

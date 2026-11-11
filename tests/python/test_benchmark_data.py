@@ -29,6 +29,7 @@ import heat3d_data  # noqa: E402
 DATA = os.path.join(ROOT, "examples", "benchmarks", "data")
 INSTANCES = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01", "CBC01", "CBC02",
              "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02", "HEAT03"]
+OTHER_FORMAT = ["TSPS25"]  # the differential-algebraic equations, read by the C++ benchmark
 REACH = ["HEAT03"]  # instances of reach (linAlg), not of verify
 NAMES = ["A", "B", "C", "R0c", "R0G", "Uc", "UG"]
 
@@ -96,14 +97,15 @@ class Format(unittest.TestCase):
 class Instances(unittest.TestCase):
     def test_every_instance_is_there(self):
         found = sorted(os.path.basename(p)[:-5] for p in glob.glob(os.path.join(DATA, "*.json")))
-        self.assertTrue(set(found) <= set(INSTANCES), found)
+        self.assertTrue(set(found) <= set(INSTANCES) | set(OTHER_FORMAT), found)
         if not found:
             self.skipTest("examples/benchmarks/data is empty: run exportBenchmarkData.m")
 
     def test_the_schema_and_the_dimensions_agree(self):
         for path in glob.glob(os.path.join(DATA, "*.json")):
             name = os.path.basename(path)[:-5]
-            if name in REACH:  # its A is too large to load dense; Heat3dModel checks it
+            # REACH: its A is too large to load dense (Heat3dModel checks it)
+            if name in REACH or name in OTHER_FORMAT:
                 continue
             with self.subTest(name):
                 inst = benchmark_data.load_instance(name)

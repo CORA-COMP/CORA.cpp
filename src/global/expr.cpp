@@ -517,6 +517,56 @@ std::vector<Range> Expr::enclose(const std::vector<Expr> &exprs, const std::vect
     return out;
 }
 
+
+// The variables and matrices of derivatives -------------------------------------------------------
+
+std::vector<Tensor> variable_columns(const Tensor &X) {
+    const Tensor rows = X.matrix_transpose();
+    std::vector<Tensor> out;
+    out.reserve(std::size_t(X.shape()[0]));
+    for (int64_t i = 0; i < X.shape()[0]; ++i) out.push_back(rows.slice(-1, i, i + 1));
+    return out;
+}
+
+// The zero entries are skipped: most entries of a typical derivative.
+std::vector<std::optional<Range>> Expr::enclose_nonzero(const std::vector<Expr> &exprs,
+                                                        const std::vector<Range> &x) {
+    std::vector<Expr> nonzero;
+    for (const Expr &e : exprs)
+        if (!e.is_zero()) nonzero.push_back(e);
+    const std::vector<Range> ranges = Expr::enclose(nonzero, x);
+    std::vector<std::optional<Range>> out;
+    out.reserve(exprs.size());
+    std::size_t next = 0;
+    for (const Expr &e : exprs)
+        out.push_back(e.is_zero() ? std::nullopt : std::optional<Range>(ranges[next++]));
+    return out;
+}
+
+Tensor Expr::eval_matrix(const std::vector<Expr> &exprs, std::size_t first, int64_t rows,
+                         int64_t cols, const std::vector<Tensor> &x, const Tensor &like) {
+    // an empty matrix has no entries to evaluate
+    if (rows == 0 || cols == 0) return like.zeros_like({rows, cols});
+    const auto begin = exprs.begin() + std::ptrdiff_t(first);
+    const std::vector<Expr> part(begin, begin + std::ptrdiff_t(rows * cols));
+    std::vector<Expr> nonzero;
+    for (const Expr &e : part)
+        if (!e.is_zero()) nonzero.push_back(e);
+    // every entry a (1, 1) tensor, the zeros made like the point
+    const std::vector<Tensor> values = Expr::eval_tensor(nonzero, x);
+    const Tensor zero = like.zeros_like({1, 1});
+    std::vector<Tensor> row_tensors;
+    std::size_t next = 0;
+    for (int64_t i = 0; i < rows; ++i) {
+        std::vector<Tensor> row;
+        row.reserve(std::size_t(cols));
+        for (int64_t j = 0; j < cols; ++j)
+            row.push_back(part[std::size_t(i * cols + j)].is_zero() ? zero : values[next++]);
+        row_tensors.push_back(Tensor::concat(row, -1));
+    }
+    return Tensor::concat(row_tensors, -2);
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

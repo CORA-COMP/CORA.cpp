@@ -146,12 +146,13 @@ they are in CORA (ARCH23 scripts): `benchmark_nonlinear_reach_arch23_trafficscen
 (`alg::Linearization`, tensor order 2), and `benchmark_nonlinear_reach_arch23_robertson` (ROBE25,
 three cases) with alg "lin-adaptive" (`alg::LinearizationAdaptive`), `benchmark_hybrid_reach_arch23_vanderpol`
 (CVDP23) with alg "poly" (`alg::Polynomialization`, polynomial zonotopes) and
-`benchmark_nonlinear_reach_arch23_laubloomis` (LALO20, three cases). The expected verdict is that of the
+`benchmark_nonlinear_reach_arch23_laubloomis` (LALO20, three cases) and
+`benchmark_nonlinear_das_reach_arch23_powersystem` (TSPS25, `NonlinDASys` reach, `alg::DaeLinearization`). The expected verdict is that of the
 ARCH-COMP26 NLN report (Geretti et al., "ARCH-COMP26 Category Report: Continuous and Hybrid
 Systems with Nonlinear Dynamics", EPiC Series in Computing 110, pp. 52-84), whose CORA and
 JuliaReach times are from the same machine as CORA.cpp's (core preset, 09-November-2026, one run
 each; other jobs share its 16 CPUs). The quality metrics of the report (LALO width of x4, ROBE
-width of s, LOVO area) belong to the instances that have one; TRAF22 and SPRE22 have none.
+width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and TSPS25 have none.
 
 | instance | expected | CORA.cpp | CORA.cpp [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] | metric |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -164,6 +165,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22 and SPRE22 
 | LALO20 W001 | 1 | 1 | 2.24 | 9.3 | 1.1 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
 | LALO20 W005 | 1 | 1 | 15.3 | 17 | 0.7 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
 | LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 248 | 0.9 | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
+| TSPS25 | 1 | 1 | 65 | 299 | N/A | - |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -247,6 +249,36 @@ verifies x4 < 5, but its width of x4 at t = 20 is much larger than CORA's (0.345
 smaller step does not help (0.005: 0.40, 0.0025: 0.45; 0.02: 0.69), as the sets of the wrapping effect
 are reduced every step. MATLAB CORA v2026.1.0 (R2024b, this machine, `CHECKS_ENABLED` off) needs 12.3 s, 21.9 s and 346 s for W001, W005 and W01 and gives the widths 0.00402, 0.0425 and 0.0600; the widths of CORA.cpp for W001 and W005 are smaller because the repaired algorithm differs in its error terms (docs/cora-differences.md).
 
+**TSPS25** (`benchmark_nonlinearDAS_reach_ARCH23_powerSystem.m`) is the IEEE 14 bus power system as a
+differential-algebraic system of 15 states, 27 algebraic variables and 19 inputs, analysed in four runs, each from the end
+set of the one before: normal operation to 0.1 s (time step 0.005), the fault of bus 1 to 0.13 s (0.001), normal operation to
+2 s (0.005) and on to 5 s (0.02), zonotope order 400, Taylor terms 6, `errorOrder` 3, `maxError_x` 0.6 on the five speeds
+and 0 elsewhere, `maxError_y` 0.01. The verdict is the script's: the interval hull of the set at 5 s lies in the initial box,
+which is the report's goal (R(t) returns to R(0)); the script checks t = 5, the report asks for some t > tc. The report's
+x* is the steady state the script computes (`steadyState`). The Lagrange remainder is evaluated on the two subsystems of
+[Althoff, TPS 2014] (the buses 1, 2, 6 and 3, 8, with the other buses as inputs, CORA's `indexForSubsystems`, ported in
+`benchmark_power_system.h`), the sets are those of the whole system, as the report describes. The equations are those
+`powerSystem2cora` writes (MATLAB R2024b with the Symbolic Math Toolbox), kept as text in `data/TSPS25.json` by
+`examples/python/benchmarks/power_system_data.py`; the program parses them. The end set of 5 s is, in the (x1, x6) plane,
+x1 in [0.32976, 0.33330] and x6 in [376.980, 377.037] (the report's figure shows x1 in [0.15, 0.55], x6 in [374, 380]).
+MATLAB CORA v2026.1.0 (R2024b, this machine, `CHECKS_ENABLED` off, a pool of 2 workers, the derivatives already
+generated, load average 8 to 14) verifies it in 312 s (21, 18, 180 and 94 s for the four runs); a first run that generates
+the models and the derivatives and starts a pool of 64 workers needs 644 s, so the report's 299 s is the warm run.
+CORA.cpp runs the four runs in {secs} s on one thread (`NonlinDASys` does not run the subsystems in parallel, as
+CORA's `parfor` does). **CORA.cpp is not CORA here, on purpose:** CORA's linearization error is unsound in three ways
+(docs/cora-differences.md): it adds the algebraic error with `+ C F^-1` where the linearized equations have `- C F^-1`,
+it uses each subsystem's own block `Csub*pinv(Fsub)` where the coupling of the subsystems needs the one of the whole
+system, and it reads the Hessian on a box that need not contain the linearization point. CORA.cpp follows CORALean's
+corrections of all three, so its end set is wider: the widths of x1 and x6 at 5 s are 0.00353 and 0.0568, MATLAB's 0.00273
+and 0.0449 (the widths of all 15 states are 1.1 to 1.3 times CORA's). With CORA's three choices switched on in a local
+experiment (not in the tree) CORA.cpp's end set of the first run agrees with MATLAB's to 10 digits in the center
+(0.333360069691 against 0.333360069687) and to 6 to 7 digits in the widths (x6: 0.429442676 against 0.429442345), and at
+5 s the widths are those of MATLAB (0.002734 and 0.044901 against 0.0027 and 0.0449) with x1 in [0.330160, 0.332894]
+and x6 in [376.986408, 377.031309] (MATLAB: [0.3302, 0.3329] and [376.9864, 377.0313]): the rest of the algorithm is
+CORA's. The tests of `NonlinDASys` fail with those three switched on (the trajectories of x' = x^2 leave the sets).
+A step beyond `maxError_x` or `maxError_y` splits the set in CORA, but its split reads an undefined variable and aborts;
+the power system never exceeds them, and CORA.cpp refuses such a step.
+
 ## Run
 
 ```bash
@@ -257,6 +289,7 @@ build/core/benchmarks/benchmark_nonlinear_reach_arch23_trafficscenario         #
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...] # CORACPP_BENCHMARK_VERBOSE=1: step sizes
 build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   # CVDP23, about a minute
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
+build/core/benchmarks/benchmark_nonlinear_das_reach_arch23_powersystem         # TSPS25, about a minute
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 
@@ -361,4 +394,5 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRU01 | 27/46 | 19 | 8 |
 | SRU02 | 42/66 | 24 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
+| TSPS25 | 17/32 | 15 | 6 |
 <!-- END bit-exact -->

@@ -126,24 +126,23 @@ std::optional<Interval> aux_third_order(const std::vector<std::optional<Range>> 
     return Interval(aux_column(lo), aux_column(hi));
 }
 
-/// The box joined with the origin, which is the linearization point in these relative coordinates.
-Interval aux_with_origin(const Interval &I) {
-    const Tensor zero = I.inf().zeros_like();
-    return I.enclose(Interval(zero, zero));
-}
-
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
+Interval priv_with_origin(const Interval &I) {
+    const Tensor zero = I.inf().zeros_like();
+    return I.enclose(Interval(zero, zero));
+}
+
 std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Interval &IHx0,
                                              const std::optional<Interval> &IHu0,
                                              const Linearized &lin) {
     // the boxes joined with the linearization point (CORALean's Hessian-region repair)
-    const Interval IHx = aux_with_origin(IHx0);
+    const Interval IHx = priv_with_origin(IHx0);
     std::optional<Interval> IHu;
-    if (IHu0) IHu = aux_with_origin(*IHu0);
+    if (IHu0) IHu = priv_with_origin(*IHu0);
     const Range x_box(IHx.inf() + lin.x_star, IHx.sup() + lin.x_star);
     std::optional<Range> u_box;
     if (IHu) u_box = Range(IHu->inf() + lin.u_star, IHu->sup() + lin.u_star);
@@ -155,12 +154,12 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
                                    const alg::Linearization &alg) {
     const int64_t n = sys.dim();
     // the boxes of x - x* and u - u*, and of x and u
-    const Interval IHx = aux_with_origin(R.interval());
+    const Interval IHx = priv_with_origin(R.interval());
     const Range x_box(IHx.inf() + lin.x_star, IHx.sup() + lin.x_star);
     std::optional<Interval> IHu;
     std::optional<Range> u_box;
     if (U0) {
-        IHu = aux_with_origin(U0->interval());
+        IHu = priv_with_origin(U0->interval());
         u_box = Range(IHu->inf() + lin.u_star, IHu->sup() + lin.u_star);
     }
     if (alg.tensor_order == 2) {

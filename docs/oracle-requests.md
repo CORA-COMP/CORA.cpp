@@ -179,3 +179,28 @@ expression tree (`{"op":..,"args":..}`, `{"x":i}`, `{"const":text}`).
 | `levelSet.isIntersecting` | `LevelSet.isIntersecting_uniform`, `_cell` (`LevelSet/Float/Operations/IsIntersecting*.lean`) | `f`, `ops`, `I` (box), `tol` | `res` |
 | `levelSet.complement` | `LevelSet.not` (`LevelSet/Real/Operations/Not.lean`, no float layer) | `f`, `op` | `f` (the negated tree), `op` |
 | `levelSet.splitEquality`, `levelSet.lift` | `LevelSet.splitEquality`, `LevelSet.lift_` (real layer, route b) | `f`, `ops`, `N`, `dims` | the two level sets, or the lifted one |
+
+## Differential-algebraic systems (PR "port/nln-dae")
+
+The pinned oracle (`oracle-20261111-f9723f6f6`) serves no `nonlinDASys` op. CORALean's float
+definitions (`src/CORALean/ContDynamics/NonlinDASys/Operations/`) take the equations as a
+`FloatModel` (interval extensions of `f`, `g` and slope enclosures of the Jacobian blocks), which a
+request carries as expression trees of `x`, `y` and `u` (CORA.cpp's `Expr::to_json` with a third
+tag `{"y":k}`). Two of them are CORA's loops step for step; `reach` has no float definition that
+follows CORA's `initReach`.
+
+| CORALean definition (file) | what it is | follows CORA? |
+|---|---|---|
+| `NonlinDASys.FloatModel.consistentInitialStateFloat` (`ConsistentInitialStateFloat.lean`), `newtonTestFloat` | Newton's loop on `g` in `y`: `l` and `F` the centers of the model's enclosures, `delta_y` from an approximate inverse, the test `\|delta_y\|_2 < tol`; the end point is certified by Krawczyk's test and `none` otherwise | yes, `consistentInitialState.m`, plus a certificate (CORA returns the point unchecked); `F \ (-l)` is an approximate inverse product |
+| `NonlinDASys.FloatModel.steadyStateFloat` (`SteadyStateFloat.lean`) | the same loop on the stacked state `(x, y)` with `M = [A C; D F]` | yes, `steadyState.m`, with the same certificate |
+| `NonlinDASys.OutputFloatModel.outputSetLinearFloat` (`OutputSetLinearFloat.lean`) | the output set for a linear output | CORA.cpp ports no `outputSet` (the default output is the state) |
+| `NonlinDASys.reachFloat` (`ReachFloat.lean`) | the reduced ordinary system `x' = f(x, h(x, u), u)` run as `NonlinearSys.reachFloat`, `y` eliminated by a supplied `ReducedModel` | own: no `initReach`, no linearization of `g` |
+| `NonlinDASys.linReach`, `linError`, `initReach` (real layer, `Operations/`) | CORA's step with the sign and the coupling of the error corrected; the split decision an argument | CORA.cpp's `priv_dae_lin_reach` and `priv_dae_lin_error` follow these; no float layer, so no oracle op |
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `nonlinDASys.consistentInitialState` | `f`, `g` (expression trees of `x`, `y`, `u`), `x0`, `y0`, `u0` (vectors), `tol` | `y` (vector) or `null` |
+| `nonlinDASys.steadyState` | `f`, `g`, `x0`, `y0`, `u0`, `tol` | `x`, `y` (vectors) or `null` |
+
+The coverage rows `consistentInitialState` and `steadyState` are oracle debt until then; `initReach`,
+`linReach` and `post` have no float layer and stay `property`.

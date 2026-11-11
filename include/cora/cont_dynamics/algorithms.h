@@ -384,6 +384,44 @@ struct LinearizationAdaptive {
     }
 };
 
+// Reachability of nonlinear differential-algebraic systems --------------------------------------
+
+/// CORA's alg "lin" of nonlinDASys [Althoff, Krogh, TAC 2014]: each step linearizes f and g at the
+/// center of the set, eliminates y, and bounds the linearization error by the Lagrange remainder
+/// of the second order, enlarged from the step before's until it holds.
+struct DaeLinearization {
+    double time_step = 0;    ///< the step size, required
+    int taylor_terms = 4;    ///< the order of the Taylor series of the linearized system
+    int zonotope_order = 50; ///< the sets are reduced to zonotope_order * n generators
+    int tensor_order = 2;    ///< 2 only: the remainder by the Hessian over the reachable set
+    int error_order = 3;     ///< the order of the set the Hessians map (Girard)
+    std::vector<double> max_error_x{}; ///< the largest error per state (maxError_x); empty: Inf
+    std::vector<double> max_error_y{}; ///< the largest error per constraint (maxError_y)
+
+    static constexpr const char *name = "dae_linearization";
+    static constexpr auto fields() {
+        return std::make_tuple(field("time_step", &DaeLinearization::time_step),
+                               field("taylor_terms", &DaeLinearization::taylor_terms),
+                               field("zonotope_order", &DaeLinearization::zonotope_order),
+                               field("tensor_order", &DaeLinearization::tensor_order),
+                               field("error_order", &DaeLinearization::error_order),
+                               field("max_error_x", &DaeLinearization::max_error_x),
+                               field("max_error_y", &DaeLinearization::max_error_y));
+    }
+    void validate() const {
+        // the step, the orders and the tensor order
+        validate_time_step(time_step, "DaeLinearization");
+        validate_order(taylor_terms, 1, "taylor_terms", "DaeLinearization");
+        validate_order(zonotope_order, 1, "zonotope_order", "DaeLinearization");
+        validate_order(error_order, 1, "error_order", "DaeLinearization");
+        detail::Validation entry;
+        CORA_CHECK(tensor_order == 2, Error::not_supported, [] {
+            return std::string("DaeLinearization: only tensor_order 2 is ported (the Hessian over "
+                               "the reachable set); order 3 is CORA's priv_linError_thirdOrder");
+        });
+    }
+};
+
 // Reachability of hybrid automata --------------------------------------------------------------
 
 /// How a guard intersection is enclosed (CORA's options.enclose): in the axes ("box"), in the
@@ -511,6 +549,7 @@ using NonlinearReach = std::variant<Linearization, LinearizationAdaptive>;
 using PolyNonlinearReach = std::variant<Polynomialization, Linearization>;
 using LinParamReach = std::variant<LinParamStandard>;
 using NonlinearSimulate = std::variant<RungeKutta4>;
+using DaeReach = std::variant<DaeLinearization>;
 using HybridReach = std::variant<HybridStandard>;
 
 /// The name of the algorithm a variant holds.
