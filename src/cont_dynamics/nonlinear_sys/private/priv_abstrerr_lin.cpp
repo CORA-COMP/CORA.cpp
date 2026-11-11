@@ -6,7 +6,8 @@
 // with H_i the Hessian over the box Z of z, and the error set is the box [-l, l]. At tensorOrder 3
 // the second-order term is kept as the set 1/2 quadMap(R x U, H(z*)) (R reduced to error_order),
 // and the third-order remainder 1/6 sum_j dz_j (dz' T_ij(Z) dz) is added as a box; the sum is
-// reduced to intermediate_order and l is the bound of its box.
+// reduced to intermediate_order and l is the bound of its box. The boxes of x and u are joined with
+// the linearization point (CORALean's repair of the Hessian region: CORA reads them without it).
 //
 // Syntax:   AbstractionError e = priv_abstrerr_lin(sys, R, lin, U0, alg);
 // Inputs:   R - the set relative to lin.x_star, lin - the linearization, U0 - the centered input
@@ -125,14 +126,24 @@ std::optional<Interval> aux_third_order(const std::vector<std::optional<Range>> 
     return Interval(aux_column(lo), aux_column(hi));
 }
 
+/// The box joined with the origin, which is the linearization point in these relative coordinates.
+Interval aux_with_origin(const Interval &I) {
+    const Tensor zero = I.inf().zeros_like();
+    return I.enclose(Interval(zero, zero));
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
-std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Interval &IHx,
-                                             const std::optional<Interval> &IHu,
+std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Interval &IHx0,
+                                             const std::optional<Interval> &IHu0,
                                              const Linearized &lin) {
+    // the boxes joined with the linearization point (CORALean's Hessian-region repair)
+    const Interval IHx = aux_with_origin(IHx0);
+    std::optional<Interval> IHu;
+    if (IHu0) IHu = aux_with_origin(*IHu0);
     const Range x_box(IHx.inf() + lin.x_star, IHx.sup() + lin.x_star);
     std::optional<Range> u_box;
     if (IHu) u_box = Range(IHu->inf() + lin.u_star, IHu->sup() + lin.u_star);
@@ -144,12 +155,12 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
                                    const alg::Linearization &alg) {
     const int64_t n = sys.dim();
     // the boxes of x - x* and u - u*, and of x and u
-    const Interval IHx = R.interval();
+    const Interval IHx = aux_with_origin(R.interval());
     const Range x_box(IHx.inf() + lin.x_star, IHx.sup() + lin.x_star);
     std::optional<Interval> IHu;
     std::optional<Range> u_box;
     if (U0) {
-        IHu = U0->interval();
+        IHu = aux_with_origin(U0->interval());
         u_box = Range(IHu->inf() + lin.u_star, IHu->sup() + lin.u_star);
     }
     if (alg.tensor_order == 2) {

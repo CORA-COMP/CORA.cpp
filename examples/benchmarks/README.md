@@ -162,7 +162,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22 and SPRE22 
 | ROBE25 (3) | 1 | 1 | 100 | 310 | 217 | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
 | CVDP23 | 1 | 1 | 58.6 | 571 | 0.4 | - |
 | LALO20 W001 | 1 | 1 | 2.24 | 9.3 | 1.1 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
-| LALO20 W005 | 1 | 1 | 14.8 | 17 | 0.7 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
+| LALO20 W005 | 1 | 1 | 15.3 | 17 | 0.7 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
 | LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 248 | 0.9 | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
