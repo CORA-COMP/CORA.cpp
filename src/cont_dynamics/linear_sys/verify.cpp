@@ -35,6 +35,8 @@ namespace cora {
 
 namespace {
 
+// Specification checks ----------------------------------------------------------------------------
+
 /// Whether every number of t is zero (a NaN is not): the sum of |t| is exactly zero then only.
 bool aux_all_zero(const Tensor &t) { return t.abs().sum().item() == 0; }
 
@@ -53,6 +55,7 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
                                const alg::LinearVerify &alg) const {
     detail::Entry entry;
     std::visit([](const auto &a) { a.validate(); }, alg);
+    // Checks of the problem -----------------------------------------------------------------------
     // one system, one initial set and one input set of the right dimensions
     const int64_t n = dim();
     CORA_CHECK(A().shape().size() == 2, Error::not_supported,
@@ -99,6 +102,7 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
                        "dimension " +
                        std::to_string(p) + ", got " + std::to_string(h.a.size()) + " entries";
             });
+    // Dispatch ------------------------------------------------------------------------------------
     // the support function algorithm decides unsafe sets of one halfspace only
     if (std::holds_alternative<alg::ReachAvoidSupportFunction>(alg))
         for (const Specification &spec : specs)

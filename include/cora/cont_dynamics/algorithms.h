@@ -231,13 +231,15 @@ struct ReachAvoidZonotope {
     void validate() const {}
 };
 
+// Verification with Krylov subspaces --------------------------------------------------------------
+
 /// The Krylov support function algorithm for high-dimensional systems (ARCH-COMP26 AFF RND04-06):
 /// the support function of the reachable output set along the specification directions, from the
 /// Krylov subspace of each direction under A', with the step halved until every halfspace holds.
 struct ReachAvoidKrylov {
-    double time_step = 0;         ///< the first step size; 0 is t_final / 1000
-    double min_time_step = 1e-10; ///< the step size below which it gives up
-    int taylor_terms = 20;        ///< the order of the Taylor series of the curvature enlargement
+    double time_step = 0; ///< the first step size; 0 is t_final / 1000
+    double min_time_step = numerics::kKrylovMinTimeStep; ///< the step below which it gives up
+    int taylor_terms = 20; ///< the order of the Taylor series of the curvature enlargement
     double krylov_error = 2 * machine_eps(); ///< the error per vector
     int krylov_step = 50;                    ///< how much the order of a subspace grows per try
 

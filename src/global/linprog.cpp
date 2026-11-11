@@ -214,6 +214,8 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
 
 // ===========================================  MAIN  =========================================== //
 
+// Linear programs ---------------------------------------------------------------------------------
+
 LinProgResult linprog(const LinProg &lp) {
     if (lp.n <= 0)
         CORA_FAIL(Error::wrong_value, "linprog: the program needs at least one variable");

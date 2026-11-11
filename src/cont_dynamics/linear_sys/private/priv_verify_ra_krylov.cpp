@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,6 +44,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// Directions and norms ----------------------------------------------------------------------------
 
 /// One direction l = C' (normal) with the support value its set must stay below.
 struct Direction {
@@ -70,6 +73,8 @@ VectorNorms aux_norms(const Tensor &columns, int64_t m0) {
     return out;
 }
 
+// Bounds step by step -----------------------------------------------------------------------------
+
 /// The bound of a direction step by step: the hull of the time points and the curvature F(H) e_1
 /// (as alg::Krylov) for R0 and B U, the integral by the step times the integrand, the Krylov error.
 class Stepper {
@@ -91,7 +96,7 @@ class Stepper {
     double next_margin() {
         if (dir_.zero) return dir_.limit;
         // the curvature acts on the state at the start of the step
-        const Interval curvature = F1_.linear_map(E_).linear_map(dir_.W);
+        const Interval curvature = F1_->linear_map(E_).linear_map(dir_.W);
         E_ = e_hdt_.matmul(E_);
         const std::vector<double> current = dir_.W.matmul(E_.slice(-1, 0, 1)).data();
         const std::vector<double> c_inf = curvature.inf().data(), c_sup = curvature.sup().data();
@@ -116,7 +121,7 @@ class Stepper {
     int64_t m0_;
     double dt_, error_r0_, error_input_, integral_ = 0.0;
     Tensor e_hdt_, E_;
-    Interval F1_{Tensor::zeros({1, 1}), Tensor::zeros({1, 1})};
+    std::optional<Interval> F1_; ///< the first column of F; unset for a zero direction
     std::vector<double> previous_;
 };
 
@@ -161,9 +166,10 @@ VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, con
     const VectorNorms norms = aux_norms(vectors, m0);
     const Tensor vectors_t = vectors.matrix_transpose();
     const LinearSys dual = sys.A_sparse()
-                               ? LinearSys(sys.A_sparse()->transpose(), Tensor::zeros({n, 1}))
+                               ? LinearSys(sys.A_sparse()->transpose(), like.zeros_like({n, 1}))
                                : LinearSys(sys.A().matrix_transpose());
     const HostMatVec At = priv_state_matvec(dual);
+    // Directions ----------------------------------------------------------------------------------
     // one direction C' l and its Krylov subspace per halfspace of the specifications
     std::vector<Direction> dirs;
     int64_t order = 15;
