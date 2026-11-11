@@ -61,8 +61,11 @@ jobs:
         if: inputs.free_disk
         run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
       - uses: actions/checkout@v7
+      # the compiler cache is an optimisation: a failed install (e.g. a mirror outage) builds without it
       - uses: hendrikmuhs/ccache-action@v1.2.24
+        id: ccache
         if: runner.os != 'Windows'
+        continue-on-error: true
         with:
           key: ${{ inputs.preset }}-${{ inputs.os }}${{ inputs.ccache_key }}
       # the oracle archive (about 50 MB), fetched once per pinned version
@@ -73,7 +76,7 @@ jobs:
           key: coralean-${{ hashFiles('scripts/coralean.cmake') }}
       - name: configure
         env:
-          CMAKE_CXX_COMPILER_LAUNCHER: ${{ runner.os != 'Windows' && 'ccache' || '' }}
+          CMAKE_CXX_COMPILER_LAUNCHER: ${{ steps.ccache.outcome == 'success' && 'ccache' || '' }}
           BUILD_TYPE: ${{ inputs.build_type }}
           CXX_FLAGS: ${{ inputs.cxx_flags }}
           ORACLE: ${{ inputs.oracle && '-DCORACPP_ORACLE=DOWNLOAD' || '' }}
