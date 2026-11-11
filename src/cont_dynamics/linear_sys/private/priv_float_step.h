@@ -29,6 +29,7 @@
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 
+#include <memory>
 #include <optional>
 #include <utility>
 
@@ -42,6 +43,24 @@ using FloatStep = std::pair<Zonotope, Zonotope>;
 /// The first Taylor order from max(taylor_terms, 2) with ||time_step A|| <= (order + 2) / 2, the
 /// norm bounded as CORALean's normUpperBound; none within 4096 orders.
 std::optional<int> priv_float_order(const Tensor &A, double time_step, int taylor_terms);
+
+/// The matrices of a step of one system and length (the powers of A, [e^{A dt}], [F]), computed
+/// once for the steps of a linearization that differ in the input and the start set.
+class FloatStepper {
+  public:
+    /// The matrices for A and time_step; admissible() is false if no Taylor order is found.
+    FloatStepper(const Tensor &A, double time_step, int taylor_terms);
+    ~FloatStepper();
+    FloatStepper(FloatStepper &&) noexcept;
+    bool admissible() const;
+    /// One step of the linearization at xs from R under the input set V (see the header).
+    FloatStep step(const Tensor &xs, const Zonotope &V, const Zonotope &R,
+                   int zonotope_order) const;
+
+  private:
+    struct Matrices;
+    std::unique_ptr<Matrices> m_;
+};
 
 /// One step of the linearization at xs from R under the input set V (see the header).
 std::optional<FloatStep> priv_float_one_step(const Tensor &A, const Tensor &xs, const Zonotope &V,

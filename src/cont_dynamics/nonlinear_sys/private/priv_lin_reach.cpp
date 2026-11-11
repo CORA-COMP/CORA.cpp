@@ -86,15 +86,14 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
     // the affine system; its input without the error is f(x*, u*) + B (U - u*), centered at f
     const Linearized lin = sys.linearize(R, U, dt);
     const Zonotope V_base(lin.u_const, lin.U.generators());
-    // one linear step from R under the input set V (CORALean's oneStepFloat)
+    // one linear step from R under the input set V (CORALean's oneStepFloat); the matrices once
+    const FloatStepper stepper(lin.sys.A(), dt, eta);
+    if (!stepper.admissible())
+        CORA_FAIL(Error::not_converged,
+                  "cora: no admissible Taylor order for the linearized system (the time_step may "
+                  "be too large)");
     const auto step = [&](const Zonotope &V) {
-        const std::optional<FloatStep> S =
-            priv_float_one_step(lin.sys.A(), lin.x_star, V, R, dt, eta, alg.zonotope_order);
-        if (!S)
-            CORA_FAIL(Error::not_converged,
-                      "cora: no admissible Taylor order for the linearized system (the time_step "
-                      "may be too large)");
-        return *S;
+        return stepper.step(lin.x_star, V, R, alg.zonotope_order);
     };
     // the centered input set (CORA's params.U); without one, the input 0
     const std::optional<Zonotope> U0 = priv_centered_inputs(R.center(), sys.input_dim(), U);

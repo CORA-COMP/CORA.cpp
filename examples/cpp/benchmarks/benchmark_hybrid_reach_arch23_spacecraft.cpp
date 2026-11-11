@@ -122,7 +122,7 @@ cora::bench::HybridInstance aux_instance(const std::string &name) {
     problem.t_final = 200;
     // the options of the script
     alg::HybridStandard a;
-    a.time_step = {0.2, 0.05, 0.2};
+    a.time_step = {0.2, 0.04, 0.2}; // the script's 0.05 in the second mode does not verify (README)
     a.taylor_terms = 10;
     a.zonotope_order = 10;
     a.tensor_order = 2;

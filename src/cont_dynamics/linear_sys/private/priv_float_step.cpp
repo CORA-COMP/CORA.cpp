@@ -90,9 +90,15 @@ class Series {
   public:
     Series(const Tensor &A, double r, int eta)
         : r_(r), eta_(eta), point_(A, A), scaled_(aux_smul(point_, r, r)),
-          remainder_(aux_remainder_bound(aux_norm_upper_bound(scaled_), eta)) {
+          remainder_(aux_remainder_bound(aux_norm_upper_bound(scaled_), eta)),
+          spread_(aux_symmetric(A, r * remainder_)) {
         powers_.push_back(Interval(A.eye_like(), A.eye_like()));
         for (int i = 1; i <= eta; ++i) powers_.push_back(priv_matmul(point_, powers_.back()));
+        // the box of every order of the input solution, and of the remainder
+        for (int i = 0; i <= eta; ++i) {
+            const auto [lo, hi] = aux_taylor_coeff(r, i + 1);
+            terms_.push_back(aux_smul(powers_[std::size_t(i)], lo, hi));
+        }
     }
 
     /// [e^{A r}], the Taylor sum of [r A] with the remainder in every entry.
@@ -122,13 +128,9 @@ class Series {
     /// The set the input V contributes over one step: the orders 0 to eta, one box each, and the
     /// remainder, added one after the other.
     Zonotope input_solution(const Zonotope &V) const {
-        const auto term = [&](int i) {
-            const auto [lo, hi] = aux_taylor_coeff(r_, i + 1);
-            return V.linear_map(aux_smul(powers_[std::size_t(i)], lo, hi));
-        };
-        Zonotope S = term(0);
-        for (int i = 1; i <= eta_; ++i) S = S.plus(term(i));
-        return S.plus(V.linear_map(aux_symmetric(point_.inf(), r_ * remainder_)));
+        Zonotope S = V.linear_map(terms_[0]);
+        for (std::size_t i = 1; i < terms_.size(); ++i) S = S.plus(V.linear_map(terms_[i]));
+        return S.plus(V.linear_map(spread_));
     }
 
   private:
@@ -136,7 +138,8 @@ class Series {
     int eta_;
     Interval point_, scaled_;
     double remainder_;
-    std::vector<Interval> powers_;
+    std::vector<Interval> powers_, terms_;
+    Interval spread_;
 };
 
 // The sets ----------------------------------------------------------------------------------------
@@ -169,17 +172,35 @@ std::optional<int> priv_float_order(const Tensor &A, double time_step, int taylo
     return std::nullopt;
 }
 
-std::optional<FloatStep> priv_float_one_step(const Tensor &A, const Tensor &xs, const Zonotope &V,
-                                             const Zonotope &R, double time_step, int taylor_terms,
-                                             int zonotope_order) {
-    const std::optional<int> order = priv_float_order(A, time_step, taylor_terms);
-    if (!order) return std::nullopt;
-    const Series series(A, time_step, *order);
-    const Interval e_adt = series.exp(), F = series.correction();
+// The matrices of the step: the powers and terms, [e^{A dt}] and [F]
+struct FloatStepper::Matrices {
+    Matrices(const Tensor &A, int order, double time_step)
+        : series(A, time_step, order), e_adt(series.exp()), F(series.correction()), n(A.size(-1)),
+          eye(A.eye_like()) {}
+    Series series;
+    Interval e_adt, F;
+    int64_t n;
+    Tensor eye;
+};
+
+// The order is searched once; without an admissible one there are no matrices
+FloatStepper::FloatStepper(const Tensor &A, double time_step, int taylor_terms) {
+    if (const std::optional<int> order = priv_float_order(A, time_step, taylor_terms))
+        m_ = std::make_unique<Matrices>(A, *order, time_step);
+}
+
+FloatStepper::~FloatStepper() = default;
+FloatStepper::FloatStepper(FloatStepper &&) noexcept = default;
+
+bool FloatStepper::admissible() const { return m_ != nullptr; }
+
+FloatStep FloatStepper::step(const Tensor &xs, const Zonotope &V, const Zonotope &R,
+                             int zonotope_order) const {
+    const Series &series = m_->series;
+    const int64_t n = m_->n;
     // CORALean's canonical system maps V by B = I and adds c = 0 (-0 becomes 0)
-    const int64_t n = A.size(-1);
     const Tensor zero = xs.zeros_like();
-    const Zonotope Vi = V.linear_map(A.eye_like());
+    const Zonotope Vi = V.linear_map(m_->eye);
     const Zonotope Vc(Vi.center() + zero, Vi.generators());
     // the input is V's center and V without it; a point has n zero generators (Interval.zonotope)
     const Zonotope u(Vc.center(), zero.zeros_like({n, n})), U(zero, Vc.generators());
@@ -189,11 +210,19 @@ std::optional<FloatStep> priv_float_one_step(const Tensor &A, const Tensor &xs, 
         series.input_solution(aux_lin_comb(Zonotope(zero, zero.zeros_like({n, n})), u));
     const Zonotope PU = series.input_solution(U);
     // H(t_1) = reduce([e^{A dt}] X + Pu), H(tau_0) = hull(X, [e^{A dt}] X) + [F] X + P^R
-    const Zonotope e_adt_x = X.linear_map(e_adt);
+    const Zonotope e_adt_x = X.linear_map(m_->e_adt);
     const Zonotope Htp = e_adt_x.plus(Pu).reduce(zonotope_order);
-    const Zonotope Hti = aux_lin_comb(X, e_adt_x).plus(X.linear_map(F)).plus(PuR);
+    const Zonotope Hti = aux_lin_comb(X, e_adt_x).plus(X.linear_map(m_->F)).plus(PuR);
     const auto back = [&](const Zonotope &Z) { return Zonotope(Z.center() + xs, Z.generators()); };
     return FloatStep{back(Hti.plus(PU)), back(Htp.plus(PU))};
+}
+
+std::optional<FloatStep> priv_float_one_step(const Tensor &A, const Tensor &xs, const Zonotope &V,
+                                             const Zonotope &R, double time_step, int taylor_terms,
+                                             int zonotope_order) {
+    const FloatStepper stepper(A, time_step, taylor_terms);
+    if (!stepper.admissible()) return std::nullopt;
+    return stepper.step(xs, V, R, zonotope_order);
 }
 
 } // namespace cora
