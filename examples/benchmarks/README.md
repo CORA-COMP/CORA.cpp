@@ -338,8 +338,11 @@ dynamics (the pieces that meet the ring are split along their longest generator,
 1/1000) and intersects the final sets with the plane x3 = 3.64. The specification of the report has four parts:
 the box x1 x x2 of all final sets has an area below 1e-2 (8.92e-3 here), one final set crossed the ring twice
 (the branch of the full crossing: entry and exit), one four times (the tangential crossing, then the re-entry:
-two branches of 'inside'), and none an odd number of times. The driver counts the crossings from the branches
-that each final set passed and checks the area from the final boxes; the script itself records 1. CORA.cpp
+two branches of 'inside'), and none an odd number of times. The script is kept as `LOVO25-script` and records 1 without testing
+the sets. `LOVO25` instead gives the automaton a jump back out of `inside` and reaches 8 pieces of X0 with no restart and no cut;
+the piece with the tangential arc makes the linearization error explode and is enclosed by the flow alone, which is sound
+because the resets are the identity and both locations have the same dynamics. The area and the location of the sets at
+x3 = 3.64 are checked, and the runs with exactly 2 and exactly 4 crossings are simulated trajectories. CORA.cpp
 ports the unsolvable branch of `levelSet/and_.m` only (no symbolic solver); CORA also tries the solvable branch,
 which the ring can take where one of its two roots lies outside the box, and keeps the smaller error
 (docs/cora-differences.md); the areas agree to 0.1%. MATLAB CORA v2026.1.0 (R2024b, this
