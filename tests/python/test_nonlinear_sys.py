@@ -160,6 +160,14 @@ class ReachSet(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             Z.reduce_adaptive(-1.0)
 
+    def test_reduce_pca_boxes_the_generators(self):
+        Z = cora.Zonotope(cora.Tensor([0.0, 0.0]),
+                          cora.Tensor([[3.0, 1.0, 0.0], [0.0, 0.0, 2.0]]))
+        # three generators in the plane become two, the box of them
+        R = Z.reduce_pca()
+        self.assertEqual(np.asarray(R.generators).shape, (2, 2))
+        np.testing.assert_allclose(np.abs(np.asarray(R.generators)).sum(axis=1), [4.0, 2.0], atol=1e-12)
+
 
 if __name__ == "__main__":
     unittest.main()

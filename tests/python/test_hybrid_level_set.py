@@ -31,8 +31,14 @@ def particle():
     x, y = cora.Expr.var(0), cora.Expr.var(1)
     circle = cora.LevelSet(x * x + y * y - 1.0, 2, "==")
     flow = cora.NonlinearSys(lambda s: [cora.Expr(1.0), cora.Expr(0.0)], 2)
-    jump = cora.Transition(circle, cora.LinearReset(np.eye(2)), 0)
+    jump = cora.Transition(circle, cora.LinearReset(np.eye(2)), 1)
     return cora.Location("fly", disc(), [jump], flow)
+
+
+def beyond():
+    """The whole space, where the particle goes on after the circle."""
+    flow = cora.NonlinearSys(lambda s: [cora.Expr(1.0), cora.Expr(0.0)], 2)
+    return cora.Location("beyond", cora.LevelSet(cora.Expr(-1.0), 2, "<="), [], flow)
 
 
 # ============================================  MAIN  ============================================ #
@@ -54,12 +60,14 @@ class LevelSetLocation(unittest.TestCase):
         steps = len(R.branches[0].time_interval)
         self.assertTrue(15 <= steps <= 19)
 
-    # a level set guard that is reached cannot be enclosed yet
-    def test_guard_not_ported(self):
-        HA = cora.HybridAutomaton("disc", [particle()])
+    # the circle is crossed at x = 1: the branch beyond starts in a thin box around it
+    def test_guard_is_enclosed(self):
+        HA = cora.HybridAutomaton("disc", [particle(), beyond()])
         X0 = cora.Zonotope(np.array([-0.5, 0.0]), 0.05 * np.eye(2))
-        with self.assertRaises(cora.errors.NotSupported):
-            HA.reach(X0, t_final=3.0, time_step=0.1)
+        R = HA.reach(X0, t_final=3.0, time_step=0.1)
+        self.assertEqual(len(R.branches), 2)
+        first = R.branches[1].time_point[0].interval()
+        self.assertTrue(0.9 <= np.asarray(first.inf).ravel()[0] and np.asarray(first.sup).ravel()[0] <= 1.1)
 
 
 if __name__ == "__main__":

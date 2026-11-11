@@ -146,8 +146,9 @@ they are in CORA (ARCH23 scripts): `benchmark_nonlinear_reach_arch23_trafficscen
 (`alg::Linearization`, tensor order 2), and `benchmark_nonlinear_reach_arch23_robertson` (ROBE25,
 three cases) with alg "lin-adaptive" (`alg::LinearizationAdaptive`), `benchmark_hybrid_reach_arch23_vanderpol`
 (CVDP23) with alg "poly" (`alg::Polynomialization`, polynomial zonotopes) and
-`benchmark_nonlinear_reach_arch23_laubloomis` (LALO20, three cases) and
-`benchmark_nonlinear_das_reach_arch23_powersystem` (TSPS25, `NonlinDASys` reach, `alg::DaeLinearization`). The expected verdict is that of the
+`benchmark_nonlinear_reach_arch23_laubloomis` (LALO20, three cases),
+`benchmark_nonlinear_das_reach_arch23_powersystem` (TSPS25, `NonlinDASys` reach, `alg::DaeLinearization`) and
+`benchmark_hybrid_reach_arch23_lotkavolterra` (LOVO25, level set guards and invariants). The expected verdict is that of the
 ARCH-COMP26 NLN report (Geretti et al., "ARCH-COMP26 Category Report: Continuous and Hybrid
 Systems with Nonlinear Dynamics", EPiC Series in Computing 110, pp. 52-84), whose CORA and
 JuliaReach times are from the same machine as CORA.cpp's (core preset, 09-November-2026, one run
@@ -166,6 +167,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | LALO20 W005 | 1 | 1 | 15.3 | 17 | 0.7 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
 | LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 248 | 0.9 | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
 | TSPS25 | 1 | 1 | 65 | 299 | N/A | - |
+| LOVO25 | 1 | 1 | 0.185 | 9.6 | 1.6 | area 8.92e-3 (CORA 8.9e-3) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -189,7 +191,7 @@ times), and the box of its last set agrees with CORA.cpp's to all printed digits
 same specifications as the script (line of sight 20 degrees, velocity bounds, no hit of the station
 [-1, 1]^2 after the abort).
 
-**MATLAB times.** The MATLAB times quoted for PLAN01, BRKNP01, TRAF22, SPRE22, CVDP23 and LALO20 are from MATLAB R2024b,
+**MATLAB times.** The MATLAB times quoted for PLAN01, BRKNP01, TRAF22, SPRE22, CVDP23, LALO20 and LOVO25 are from MATLAB R2024b,
 CORA v2026.1.0, `CHECKS_ENABLED` off (as in the ARCH-COMP runs; CORA's default is on, which is slower),
 4 threads, this machine, run one at a time; the machine was shared (load
 average 10 to 15 when they started).
@@ -278,6 +280,23 @@ and x6 in [376.986408, 377.031309] (MATLAB: [0.3302, 0.3329] and [376.9864, 377.
 CORA's. The tests of `NonlinDASys` fail with those three switched on (the trajectories of x' = x^2 leave the sets).
 A step beyond `maxError_x` or `maxError_y` splits the set in CORA, but its split reads an undefined variable and aborts;
 the power system never exceeds them, and CORA.cpp refuses such a step.
+**LOVO25** (`benchmark_hybrid_reach_ARCH23_lotkaVolterra.m`) is the predator-prey system with a clock, started in
+x1 in [1.288, 1.312], x2 = 1, x3 = 0 up to t = 3.64, and a ring of radius 0.161 around (1, 1): the invariant of
+'inside' and the **level set** guard (`LevelSet`, `==`) of the jump from 'outside'. The orbit meets the ring
+tangentially in its upper arc and fully in the lower arc. The hybrid analysis (alg "lin", tensor order 3, 165
+steps) enclosed each guard intersection by `guardIntersect_levelSet` (the box of the sets contracted to the
+ring, then `LevelSet::intersect`, the second-order enclosure of Kochdumper et al., HSCC 2020, as a polynomial
+zonotope), and stops where a branch has left the ring; the script follows each branch with the continuous
+dynamics (the pieces that meet the ring are split along their longest generator, with the clock scaled by
+1/1000) and intersects the final sets with the plane x3 = 3.64. The specification of the report has four parts:
+the box x1 x x2 of all final sets has an area below 1e-2 (8.92e-3 here), one final set crossed the ring twice
+(the branch of the full crossing: entry and exit), one four times (the tangential crossing, then the re-entry:
+two branches of 'inside'), and none an odd number of times. The driver counts the crossings from the branches
+that each final set passed and checks the area from the final boxes; the script itself records 1. CORA.cpp
+ports the unsolvable branch of `levelSet/and_.m` only (no symbolic solver); CORA also tries the solvable branch,
+which the ring can take where one of its two roots lies outside the box, and keeps the smaller error
+(docs/cora-differences.md); the areas agree to 0.1%. MATLAB CORA v2026.1.0 (R2024b, this
+machine, `CHECKS_ENABLED` off, load average about 10) needs 11.4 s and gives the area 8.916e-3.
 
 ## Run
 
@@ -290,6 +309,7 @@ build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...] 
 build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   # CVDP23, about a minute
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
 build/core/benchmarks/benchmark_nonlinear_das_reach_arch23_powersystem         # TSPS25, about a minute
+build/core/benchmarks/benchmark_hybrid_reach_arch23_lotkavolterra               # LOVO25, CORACPP_BENCHMARK_VERBOSE=1: the branches
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 
@@ -344,7 +364,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
 | BRKDC01 | 4/12 | 8 | 5 |
-| BRKNC01 | 31/53 | 22 | 10 |
+| BRKNC01 | 31/54 | 23 | 10 |
 | BRKNP01 | 24/44 | 20 | 10 |
 | CBC01 | 1/8 | 7 | 4 |
 | CBC02 | 1/8 | 7 | 4 |
@@ -352,15 +372,15 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF01 | 1/8 | 7 | 4 |
 | CBF02 | 1/8 | 7 | 4 |
 | CBF03 | 1/8 | 7 | 4 |
-| CVDP23 | 30/69 | 39 | 11 |
-| DTN01 | 21/36 | 15 | 6 |
-| DTN02 | 21/36 | 15 | 6 |
-| DTN03 | 21/36 | 15 | 6 |
-| DTN04 | 21/36 | 15 | 6 |
-| DTN05 | 21/36 | 15 | 6 |
-| DTN06 | 21/36 | 15 | 6 |
-| GRBX01 | 30/55 | 25 | 10 |
-| GRBX02 | 30/55 | 25 | 10 |
+| CVDP23 | 30/70 | 40 | 11 |
+| DTN01 | 21/37 | 16 | 6 |
+| DTN02 | 21/37 | 16 | 6 |
+| DTN03 | 21/37 | 16 | 6 |
+| DTN04 | 21/37 | 16 | 6 |
+| DTN05 | 21/37 | 16 | 6 |
+| DTN06 | 21/37 | 16 | 6 |
+| GRBX01 | 30/56 | 26 | 10 |
+| GRBX02 | 30/56 | 26 | 10 |
 | HEAT01 | 1/8 | 7 | 4 |
 | HEAT02 | 1/8 | 7 | 4 |
 | HEAT03 | 10/17 | 7 | 4 |
@@ -371,6 +391,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W001 | 10/24 | 14 | 7 |
 | LALO20_W005 | 10/24 | 14 | 7 |
 | LALO20_W01 | 12/37 | 25 | 7 |
+| LOVO25 | 27/82 | 55 | 14 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |
@@ -381,18 +402,18 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ROBE25_1 | 10/24 | 14 | 7 |
 | ROBE25_2 | 10/24 | 14 | 7 |
 | ROBE25_3 | 10/24 | 14 | 7 |
-| SPRE22 | 37/64 | 27 | 13 |
-| SRA01 | 26/45 | 19 | 8 |
-| SRA02 | 34/55 | 21 | 10 |
-| SRA03 | 34/55 | 21 | 10 |
-| SRA04 | 26/45 | 19 | 8 |
-| SRA05 | 34/55 | 21 | 10 |
-| SRA06 | 34/55 | 21 | 10 |
-| SRA07 | 42/66 | 24 | 11 |
-| SRA08 | 42/66 | 24 | 11 |
-| SRNA01 | 23/39 | 16 | 7 |
-| SRU01 | 27/46 | 19 | 8 |
-| SRU02 | 42/66 | 24 | 11 |
+| SPRE22 | 37/65 | 28 | 13 |
+| SRA01 | 26/46 | 20 | 8 |
+| SRA02 | 34/56 | 22 | 10 |
+| SRA03 | 34/56 | 22 | 10 |
+| SRA04 | 26/46 | 20 | 8 |
+| SRA05 | 34/56 | 22 | 10 |
+| SRA06 | 34/56 | 22 | 10 |
+| SRA07 | 42/67 | 25 | 11 |
+| SRA08 | 42/67 | 25 | 11 |
+| SRNA01 | 23/40 | 17 | 7 |
+| SRU01 | 27/47 | 20 | 8 |
+| SRU02 | 42/67 | 25 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
 | TSPS25 | 17/32 | 15 | 6 |
 <!-- END bit-exact -->

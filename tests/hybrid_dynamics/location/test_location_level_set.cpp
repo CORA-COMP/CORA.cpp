@@ -2,12 +2,14 @@
 //
 // A particle moves right at speed 1 (x' = (1 + u, 0)); the invariant is the unit disc, a guard is
 // the unit circle. The reach stops when the sets have left the disc, the circle is hit by the
-// sets that cross it, a set moving inward is dropped by the flow check, and the enclosure of a
-// level set guard is refused as not ported (it is the next step of the port).
+// sets that cross it, a set moving inward is dropped by the flow check, and a set that reaches the
+// guard is enclosed around the circle (guardIntersect_levelSet).
 //
 // CORA: hybridDynamics/@location/potInt.m
 // CORA: hybridDynamics/@location/checkFlow.m
 // CORA: hybridDynamics/@location/reach.m
+// CORA: hybridDynamics/@location/guardIntersect.m
+// CORA: hybridDynamics/@location/guardIntersect_levelSet.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
@@ -36,7 +38,7 @@ Expr circle() {
 
 /// The particle: the unit disc as the invariant and the circle as a guard (or none), with an
 /// input u in the speed.
-Location particle(bool with_guard) {
+Location particle(bool with_guard, int64_t target = 0) {
     const NonlinearSys sys(
         [](const std::vector<Expr> &, const std::vector<Expr> &u) {
             return std::vector<Expr>{1.0 + u[0], Expr(0.0)};
@@ -44,7 +46,7 @@ Location particle(bool with_guard) {
         2, 1);
     std::vector<Transition> trans;
     if (with_guard)
-        trans.emplace_back(LevelSet(circle(), 2, CompOp::eq), LinearReset(Tensor::eye(2)), 0);
+        trans.emplace_back(LevelSet(circle(), 2, CompOp::eq), LinearReset(Tensor::eye(2)), target);
     return Location("fly", LevelSet(circle(), 2, CompOp::le), trans, sys);
 }
 
@@ -98,16 +100,26 @@ void the_flow_decides(const std::string &b) {
     check(priv_check_flow(loc, guard, top, U).size() == 2, b + ": a set that may move out stays");
 }
 
-/// A set that reaches a level set guard cannot be enclosed yet.
-void the_enclosure_is_not_ported(const std::string &b) {
-    HybridAutomaton HA("disc", {particle(true)});
+/// A set that reaches a level set guard is enclosed by a thin set around the circle at x = 1.
+void the_enclosure_is_around_the_circle(const std::string &b) {
+    const Location fly = particle(true, 1);
+    const NonlinearSys sys(
+        [](const std::vector<Expr> &, const std::vector<Expr> &u) {
+            return std::vector<Expr>{1.0 + u[0], Expr(0.0)};
+        },
+        2, 1);
+    HybridAutomaton HA("disc", {fly, Location("beyond", LevelSet::inf(2), {}, sys)});
     HybridReachProblem p;
     p.initial_set = box_at(-0.5, 0.0);
     p.t_final = 3.0;
     alg::HybridStandard a;
     a.time_step = {0.1};
-    check(test::raises([&] { HA.reach(p, a); }, Error::not_supported),
-          b + ": the guard enclosure is refused");
+    const HybridReachSet R = HA.reach(p, a);
+    check(R.branches.size() == 2, b + ": the guard is crossed once");
+    // the first set after the jump is on the circle, near x = 1, within the box of the start set
+    const Interval first = R.branches.at(1).time_point.front()->interval();
+    check(first.inf().data()[0] > 0.9 && first.sup().data()[0] < 1.1,
+          b + ": the jump set is around x = 1");
 }
 
 /// The constructors take level sets and check their dimension.
@@ -132,7 +144,7 @@ int main() {
         the_invariant_ends_the_reach(b);
         the_circle_is_hit_by_the_crossing_sets(b);
         the_flow_decides(b);
-        the_enclosure_is_not_ported(b);
+        the_enclosure_is_around_the_circle(b);
     });
     construction();
     ChecksScope off(false);

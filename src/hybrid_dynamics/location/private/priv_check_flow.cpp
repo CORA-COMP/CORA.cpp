@@ -54,23 +54,6 @@ std::pair<Tensor, double> aux_outward(const Location &loc, const Polytope &guard
     return {a, d};
 }
 
-/// CORA's reduce(Z, 'pca', 1): more nonzero generators than dimensions become the box of them in
-/// their principal axes.
-Zonotope aux_reduce_pca(const Zonotope &Z) {
-    const Tensor &G0 = Z.generators();
-    const std::vector<double> size = G0.abs().sum(0).data();
-    std::vector<int64_t> keep;
-    for (std::size_t j = 0; j < size.size(); ++j)
-        if (size[j] > 0) keep.push_back(int64_t(j));
-    const int64_t n = Z.dim();
-    if (int64_t(keep.size()) <= n) return Z;
-    const Tensor G = G0.take(keep, -1);
-    // the covariance of the points [G, -G] has the axes; its scale does not matter for them
-    const Tensor U = G.matmul(G.matrix_transpose()).svd()[0];
-    const Tensor box = U.matrix_transpose().matmul(G).abs().sum(-1, true);
-    return {Z.center(), U.matmul(box.diag())};
-}
-
 // The flow over a set -----------------------------------------------------------------------------
 
 /// An upper bound of a' f(z) over z in R x box(U): the second-order Taylor form at the center,
@@ -121,7 +104,7 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
             return true;
         const Zonotope Z = priv_zonotopes(S).front().linear_map(P) + a * d;
         const Tensor B = priv_basis_of(a);
-        const Zonotope R = aux_reduce_pca(Z.linear_map(B.matrix_transpose())).linear_map(B);
+        const Zonotope R = Z.linear_map(B.matrix_transpose()).reduce_pca().linear_map(B);
         return aux_nonlinear_flow_bound(*sys, a, R, U_state) > 0;
     }
     // a linear flow follows CORALean's checkFlowFloat on each zonotope of the set
@@ -182,7 +165,7 @@ bool aux_level_flow_along(const Location &loc, const LevelSet &guard, double out
                   "checkFlow: a level set guard is supported for a nonlinear flow only");
     if (aux_level_flow_at(*sys, guard, outside, S->center(), U_state) > 0) return true;
     // the models of the states and, if there are inputs, of the input box
-    const Zonotope R = aux_reduce_pca(priv_zonotopes(S).front());
+    const Zonotope R = priv_zonotopes(S).front().reduce_pca();
     const std::vector<Taylm> t = sys->input_dim() > 0
                                      ? Taylm::from_zonotope_and_box(R, U_state.interval())
                                      : Taylm::from_zonotope(R);

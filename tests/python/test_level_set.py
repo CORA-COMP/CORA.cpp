@@ -13,6 +13,7 @@ Reviewed:      ---
 # CORA: contSet/@levelSet/contains_.m
 # CORA: contSet/@levelSet/isIntersecting_.m
 # CORA: contSet/@levelSet/tightenDomain.m
+# CORA: contSet/@levelSet/and_.m
 # CORA: contSet/@levelSet/not.m
 # CORA: contSet/@levelSet/lift_.m
 # CORA: contSet/@levelSet/splitEquality.m
@@ -90,6 +91,15 @@ class Operations(unittest.TestCase):
         self.assertIsNone(sq.tighten_domain(box([-1], [1])))
         with self.assertRaises(cora.errors.NotSupported):
             line.tighten_domain(box([0], [3]), "taylor")
+
+    # x2 + x1^2 = 0 on [-1, 1] x [-2, 2] has x2 = -x1^2, in [-1, 0]; an empty contraction is None
+    def test_intersect(self):
+        x1, x2 = cora.Expr.var(0), cora.Expr.var(1)
+        parabola = cora.LevelSet(x2 + x1 * x1, 2, "==")
+        R = parabola.intersect(cora.PolyZonotope(box([-1, -2], [1, 2])))
+        np.testing.assert_allclose(np.asarray(R.interval().inf).ravel(), [-1.0, -1.0], atol=1e-12)
+        np.testing.assert_allclose(np.asarray(R.interval().sup).ravel(), [1.0, 0.0], atol=1e-12)
+        self.assertIsNone(cora.LevelSet(circle(), 2, "==").intersect(cora.PolyZonotope(box([3, 3], [4, 4]))))
 
     # complement, split, lift and the missing operations
     def test_complement_split_lift(self):

@@ -28,6 +28,7 @@
 #include "cora/cont_set/zonotope/zonotope.h"
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -112,6 +113,14 @@ class PolyZonotope : public ContSet {
     /// Whether the set may meet a polytope (CORA's isIntersecting_ with type "approx"): false is
     /// certain, true says nothing. tol (default: the repository tolerance) widens the equalities.
     bool is_intersecting(const Polytope &P, Tol tol = std::nullopt) const;
+
+    /// The halves along the factor with the identifier id (CORA's splitDepFactor): alpha becomes
+    /// (alpha +- 1) / 2, so the halves cover the set and have the identifiers of this one.
+    std::pair<PolyZonotope, PolyZonotope> split_dep_factor(int64_t id) const;
+
+    /// The halves along the factor of the exponent largest in the longest dependent generator
+    /// (CORA's splitLongestGen).
+    std::pair<PolyZonotope, PolyZonotope> split_longest_gen() const;
 
     /// The set without the generators that are zero and the factors that no generator uses (CORA's
     /// compact_ "all", whose exponent merging the constructor does).
