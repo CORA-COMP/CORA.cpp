@@ -28,9 +28,10 @@ import heat3d_data  # noqa: E402
 
 DATA = os.path.join(ROOT, "examples", "benchmarks", "data")
 INSTANCES = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01", "CBC01", "CBC02",
-             "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02", "HEAT03"]
+             "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02", "HEAT03",
+             "RND01", "RND02", "RND03", "RND04", "RND05", "RND06"]
 OTHER_FORMAT = ["TSPS25"]  # the differential-algebraic equations, read by the C++ benchmark
-REACH = ["HEAT03"]  # instances of reach (linAlg), not of verify
+REACH = ["HEAT03", "RND05", "RND06"]  # reach (linAlg), not verify; and A too big to load dense here
 NAMES = ["A", "B", "C", "R0c", "R0G", "Uc", "UG"]
 
 
@@ -120,8 +121,10 @@ class Instances(unittest.TestCase):
                 self.assertEqual(mat["R0G"].shape[0], n)
                 self.assertEqual(mat["Uc"].shape, (mat["B"].shape[1], 1))
                 self.assertEqual(mat["UG"].shape[0], mat["B"].shape[1])
+                # the metadata of the instance
                 self.assertGreater(inst["tFinal"], 0)
-                self.assertIn(inst["verifyAlg"], ["reachavoid:supportFunc", "reachavoid:zonotope"])
+                self.assertIn(inst["verifyAlg"], ["reachavoid:supportFunc", "reachavoid:zonotope",
+                                                   "reachavoid:krylovSuppFunc"])
                 self.assertEqual(inst["instance"], name)
                 self.assertTrue(inst["specs"])
                 for spec in inst["specs"]:

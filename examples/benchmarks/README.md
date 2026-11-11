@@ -4,14 +4,14 @@
 
 | category | instances run | verdict = ARCH26 | CORA.cpp fastest | speedup vs best ARCH26 tool (median / geo. mean) | speedup vs CORA ARCH26 (median / geo. mean) |
 | --- | --- | --- | --- | --- | --- |
-| AFF | 42 | 34 of 36 in ARCH26 (all 42 equal MATLAB CORA's) | 27 of 34 | 2.6 / 4.3 | 15 / 13 (34 instances) |
+| AFF | 48 | 40 of 42 in ARCH26 (the 47 run in MATLAB CORA equal its verdict) | 27 of 34 | 2.6 / 4.3 | 15 / 13 (34 instances) |
 | NLN | 11 | 11 of 11 | 8 of 11 | 4.2 / 3.4 | 5.9 / 8.7 (11 instances) |
 | AINNCS | 11 | 10 of 11 (all 11 equal CORA's) | 8 of 10 | 3.6 / 5.0 | 16 / 20 (10 instances) |
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
 has a time for it: they leave out PLAN01 and BRKNP01 (ARCH26 verifies them with another setup than
 the script's), Double Pendulum less-robust (ARCH26: verified by CROWN-Reach and JuliaReach, UNKNOWN
-for CORA and CORA.cpp) and the instances the report does not have (ISS, RAND). The AINNCS rows count the Unicycle twice
+for CORA and CORA.cpp) and the instances the report does not have (ISS, RAND) and RND01-06 (instances that are probably, not certainly, the report's, RND[c]). The AINNCS rows count the Unicycle twice
 (the script and the report's disturbance). Times are single runs on a shared machine.
 
 ## How to read the tables
@@ -48,6 +48,7 @@ as `savedata.tComp` in MATLAB. The MATLAB side is the original scripts, run from
 | `heat3D` | HEAT01, HEAT02 | reachavoid:supportFunc |
 | `heat3D` (reach) | HEAT03 (heat20, 8000 states, sparse `A`) | linearSys reach, linAlg krylov |
 | `rand` | RAND01, RAND02 (`rand0?_test.json` models) | reachavoid:zonotope |
+| `rnd` | RND01-06 (ARCH26: 10, 50, 100, 1000, 2500 and 5000 states) | reachavoid:zonotope (RND01, RND03), reachavoid:krylovSuppFunc (RND02, RND04-06) |
 | `rendezvous` | SRA01-08, SRNA01, SRU01, SRU02 | hybrid reach: zonoGirard or nondetGuard, enclose box / pca |
 | `gearbox` | GRBX01, GRBX02 | hybrid reach: zonoGirard, enclose box + pca |
 | `powertrain` | DTN01-06 | hybrid reach: zonoGirard, enclose pca |
@@ -66,7 +67,7 @@ Schilling, "ARCH-COMP26 Category Report: Continuous and Hybrid Systems with Line
 EPiC Series in Computing 110, pp. 28-51), whose CORA and JuliaReach times were run on the same machine as
 CORA.cpp's. The verdict of CORA.cpp is CORA's `res`; every one equals MATLAB CORA's on the script
 (ARCH23: the ISU instances, RAND02, SRU01 and SRU02, PLAN01 and BRKNP01 are not verified; PLAN01 and BRKNP01: below).
-ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 and adds HEAT04 (heat50, 125 000
+ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 (RND[c], run here on the files of CORA's package) and adds HEAT04 (heat50, 125 000
 states, Krylov), a target for later: not run here (its data would be about 14 MB). The instances
 here stay those of the ARCH23 scripts.
 
@@ -87,6 +88,12 @@ here stay those of the ARCH23 scripts.
 | ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.194 | 1/8 bit-exact, 2 property | - | - | - | - |
 | RAND01 | 1 (ARCH23) | 1 | 0.0023 | 5/13 bit-exact, 2 property | - | - | - | - |
 | RAND02 | 0 (ARCH23) | 0 | 0.017 | 5/13 bit-exact, 2 property | - | - | - | - |
+| RND01 | 1 | 1 | 0.023 | 5/13 bit-exact, 2 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
+| RND02 | 1 | 1 | 0.907 | 2/11 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 0.46 |
+| RND03 | 1 | 1 | 1330 | 5/13 bit-exact, 2 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 0.028 |
+| RND04 | 1 | 1 | 0.642 | 2/11 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 12.1 |
+| RND05 | 1 | 1 | 1.33 | 2/11 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 34.5 |
+| RND06 | 1 | 1 | 5.14 | 2/11 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 5.2 |
 | SRNA01 | 1 | 1 | 0.473 | 23/40 bit-exact, 6 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
 | SRA01 | 1 | 1 | 0.204 | 26/46 bit-exact, 6 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
 | SRA02 | 1 | 1 | 0.102 | 34/56 bit-exact, 7 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
@@ -118,6 +125,8 @@ here stay those of the ARCH23 scripts.
 [a] DTN01-06: JuliaReach's ARCH-COMP 2025 repeatability code (0.005-0.127 s) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %.
 
 [b] BRKNP01: JuliaReach's ARCH-COMP 2025 repeatability code (16.99 s) does not enforce the property (`validate=false`) and runs to t = 0.1, where the report verifies x < x0 up to t = 0.08.
+
+[c] RND01-06: the report's instances are created on the server, these are the files of CORA's package (RND06: our own), so the ARCH26 columns are indicative and the speedups stay out of the summary.
 
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
 (verdict 0, the CORA column), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
@@ -165,6 +174,74 @@ bounds with it in directed order (`ConZonotope::Cut::interval_cert`, CORALean's
 `intervalCertWith`): as tight as CORA's ranges, outer whatever the solver answers. BRKNC01
 (`conZonotope`, order 5) loses its verdict with the passes: 2.7 s and verdict 0 for any number of
 passes from 1 to 1000. The driver of BRKNC01 and BRKNP01 therefore sets `box = cert`.
+
+**RND01-06** are the random benchmarks of the ARCH26 report: x' = A x + B u, y = C x with m = 5 inputs, intervals as
+initial and input set, and unsafe sets at the border of the reachable set (the report's property (1), so the
+expected verdict is 1; it prints times only). The report's instances "are created on the server" and not
+published. RND01-05 are the files `rand01.json` to `rand05.json` of the ARCH-COMP repository
+(`gitlab.com/goranf/ARCH-COMP`, `2026/AFF/cora/code/cora/`, the same files in `2026/AFF/cora/secret-data/`) that CORA's
+repeatability package loads: 10, 50, 100, 1000 and 2500 states.
+
+**Are they the report's instances?** Probably, but nothing confirms it. MATLAB CORA v2026.1.0 takes 37.6 s on RND03
+here against 37.34 s in the report and 3.9 s on RND01 against 5.72 s; the report says 500 states for RND04, the file has
+1000. RND06 (5000 states) is not in the repository: `examples/python/benchmarks/rnd_data.py generate RND06` writes
+a sparse, diagonally dominant (so stable) system in the style of rand05 with the unsafe halfspace y >= 840.2, a tenth
+of the rise above the exact maximum 746.9 of the support function. `rnd_data.py convert` turns a json file of
+the repository into `data/RND0?.json` and `.bin` (CORA's `json2cora_linearSys` and `zonotope(interval)`;
+RND05 and RND06 are stored sparse, 0.3 MB and 0.7 MB).
+
+**All six are safe.** The exact maximum of the support function along the direction of the unsafe halfspace
+(scipy, `expm_multiply` on a 4000-point grid, not a proof) is 136.02 against the bound 141.28 for RND04 (3.9 % below),
+593.31 against 598.63 for RND05 (0.9 %), 56.936 against 56.941 for the row y <= lo of RND02 (0.009 %) and 0.039 below
+the row of RND03 (0.16 %). RND01 is not separated by one row over the whole horizon, but by a different one on each step,
+and the zonotope algorithm, the Krylov algorithm and MATLAB CORA all verify it.
+
+**Algorithms.** CORA's package runs `reachavoid:zonotope` for RND01 and RND03, `reachavoid:supportFunc` for RND02 and
+for RND04-06 a loop that halves the step until `reachSuppFuncsKrylov` (the competition's copy of CORA, not v2026.1.0)
+bounds the support function below the unsafe halfspace. CORA.cpp runs the zonotope algorithm of CORA on RND01 and RND03.
+Its `ReachAvoidSupportFunction` takes unsafe sets of one halfspace and the unsafe set of RND02 is an interval of two,
+so RND02 and RND04-06 run `alg::ReachAvoidKrylov`, which is not a port of `reachSuppFuncsKrylov` but follows its scheme on
+the Krylov machinery of `reach` (`priv_verify_ra_krylov.cpp`; no CORA file, no CORALean operation, tested by properties).
+Per halfspace of the specification it takes the Krylov subspace of `C' l` under `A'` (dense or sparse `A`; `l` the
+output direction), bounds the support function of the output set at every step by the hull of the support at the two
+time points plus the curvature `F(H) e_1` of the subspace, adds the integral of the input (the step times the largest
+integrand) and `krylov_error` times the norms of the vectors, and halves the step from t_final / 1000 until every safe
+halfspace and, per unsafe set, one of its halfspaces holds on every step. RND04-06 verify in the first pass.
+
+**Soundness of `reach_avoid_krylov`, step by step.**
+
+- The Krylov subspace is exact for the polynomials of degree below its order, which covers the Taylor part of the curvature
+  (degree 20, the order is at least 50), and a subspace of the order n is exact (RND02).
+- The order is chosen by Jawecki's bound, as in CORA, and that is **unsound**: Thm. 1 holds for nonexpansive matrices only
+  (CORALean `Krylov/Counterexamples/JaweckiBoundCora.lean`), and the A of RND04, RND05 and RND06 are not (largest eigenvalue of
+  the symmetric part 123.4, 94.0 and 1.9). It picks the orders 101, 101 and 151 there, whose error against scipy's
+  `expm_multiply` is at most 3e-14 at t = 1 and t = 5 (measured): the verdicts hold numerically, the bound is no proof.
+- The curvature acts on the state at the start of the step, as in the theory of `reach` (sound; CORA's `priv_reach_krylov`
+  uses the state at the end).
+- The hull of the two time points plus the curvature encloses the solution in between, and the integral is bounded by the step
+  times the supremum of the integrand (sound). One halfspace per step of an unsafe polytope is a sufficient test (sound).
+- Floating point is rounded to nearest, not outward, as in every float algorithm of CORA.cpp.
+
+`test_linear_sys_verify_krylov` checks a system with a closed-form support function and a 4-state system with two inputs
+against their exact maxima (0.2 % above verifies, 0.2 % below does not).
+
+**Soundness of the zonotope algorithm (RND01, RND03).** CORA's verdict is unsound where the unsafe set only touches the reachable
+set (CORALean `Counterexamples/VerifyRAOuterVerdictCora.lean`); the gaps of RND01 and RND03 are positive, and the Krylov
+algorithm confirms both verdicts.
+
+**MATLAB times (CORA [s]).** MATLAB R2024b, CORA v2026.1.0 on this machine, `CHECKS_ENABLED` off, 4 threads, one run in a fresh
+session at a load of 8 to 12: RND01 3.88 s (0.94 s on a second call in the session), RND03 37.6 s, both with
+`reachavoid:zonotope`. For RND02 v2026.1.0's `reachavoid:supportFunc` raises an error on the interval of two halfspaces,
+so `reachavoid:zonotope` took 2882 s, verdict 1. v2026.1.0 has no Krylov script: RND04 and RND05 are `reachavoid:supportFunc` on the
+sparse system with the unsafe halfspace y >= lb (the json has `"upperbound": null`, which CORA's loader reads as the
+point lb; the package's script uses `b(1)`), 6.13 s and 22.99 s, both verdict 1. RND06 was not run in MATLAB.
+
+**RND03** takes CORA.cpp 1330 s with the zonotope algorithm (CORA 37.6 s; 11 iterations, last step 1.3e-5, verdict 1), 35 times
+MATLAB's: the port is correct here, not fast (the program ran next to other jobs of the machine). The Krylov algorithm
+verifies RND03 in 0.40 s and RND01 in 0.04 s, an independent confirmation of the verdicts. RND02 with the zonotope algorithm
+of CORA.cpp did not finish in 3 minutes (MATLAB: 48 minutes).
+
+**Memory.** RND06 needs 1.2 GB (dense `A` of 5000 x 5000 and its transposed copy for the products), RND05 0.3 GB.
 
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
 
@@ -465,6 +542,7 @@ build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 .
 build/core/benchmarks/benchmark_nonlinear_das_reach_arch23_powersystem         # TSPS25, about a minute
 build/core/benchmarks/benchmark_hybrid_reach_arch23_lotkavolterra               # LOVO25, CORACPP_BENCHMARK_VERBOSE=1: the branches
 build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs [TORA-remain ...]   # the AINNCS instances, 3 s in all
+build/core/benchmarks/benchmark_linear_verify_arch26_rnd [RND01 ...]       # RND03 takes about 20 minutes (zonotope algorithm)
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 
@@ -475,7 +553,7 @@ script in CORA (`benchmark_linear_verifyFast_ARCH23_iss_ISSF01_ISS01`) and diffi
 
 ## Data
 
-`examples/benchmarks/data/` holds the instances, about 1.6 MB in all, written by MATLAB (HEAT03:
+`examples/benchmarks/data/` holds the instances, about 3.5 MB in all, written by MATLAB (HEAT03:
 by `examples/python/benchmarks/heat3d_data.py`, below):
 
 ```matlab
@@ -501,6 +579,11 @@ MATLAB is not available here. `heat3d_data.py` builds `A` from the finite differ
 benchmark (Bak, Tran, Johnson, HSCC 2019; see its header), which reproduce the exported `A` of
 HEAT01 (heat5) and HEAT02 (heat10) bit for bit (`--check`), and `R0` and `C` from the script;
 `linAlg` replaces `verifyAlg`, and `specs` is empty (the goal of the maximum is in the program).
+
+RND01-06 are not exported by MATLAB either: `examples/python/benchmarks/rnd_data.py convert rand0N.json RND0N`
+reads the files of the ARCH-COMP repository (CORA's `json2cora_linearSys` and `zonotope(interval)`), `generate RND06` writes
+the 5000-state instance that the repository lacks; `verifyAlg` is `reachavoid:zonotope` or `reachavoid:krylovSuppFunc`,
+`source` and `note` say where the numbers come from, and the unsafe set `y >= lb` is the polytope `-y <= -lb`.
 
 A scalar `B` of the beam scripts is stored as `B*I`; an absent `params.U` (ISSC01_ISU02) as `{0}`.
 Unsafe sets with several halfspaces (RAND) need a `Specification` that takes them; the programs
@@ -566,6 +649,12 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | PLAN01 | 31/45 | 14 | 9 |
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
+| RND01 | 5/13 | 8 | 4 |
+| RND02 | 2/11 | 9 | 4 |
+| RND03 | 5/13 | 8 | 4 |
+| RND04 | 2/11 | 9 | 4 |
+| RND05 | 2/11 | 9 | 4 |
+| RND06 | 2/11 | 9 | 4 |
 | ROBE25_1 | 10/24 | 14 | 7 |
 | ROBE25_2 | 10/24 | 14 | 7 |
 | ROBE25_3 | 10/24 | 14 | 7 |

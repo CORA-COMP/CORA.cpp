@@ -91,7 +91,8 @@ def run_instance(name):
     inst = load_instance(name)
     mat = inst["matrices"]
     algs = {"reachavoid:supportFunc": "reach_avoid_support_function",
-            "reachavoid:zonotope": "reach_avoid_zonotope"}
+            "reachavoid:zonotope": "reach_avoid_zonotope",
+            "reachavoid:krylovSuppFunc": "reach_avoid_krylov"}
     if inst["verifyAlg"] not in algs:
         raise ValueError(f"benchmark data: unknown verifyAlg {inst['verifyAlg']}")
     system = cora.LinearSys(mat["A"], mat["B"], mat["C"])
@@ -123,6 +124,11 @@ def run_instance(name):
 def main(family):
     """The instances named on the command line, else all of the family."""
     for name in sys.argv[1:] or family:
+        # an instance too big for the repository is generated on demand (export_benchmark_data.m)
+        if not os.path.exists(os.path.join(DATA, name + ".json")):
+            print(f"{name}: skipped: no data (too big for git: export_benchmark_data.m {name})",
+                  file=sys.stderr)
+            continue
         run_instance(name)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

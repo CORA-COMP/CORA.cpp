@@ -18,6 +18,7 @@ endforeach()
 
 # the instances of each program, the first a smoke test of under a second (if the family has one)
 set(benchmark_instances_benchmark_linear_verify_arch23_rand RAND01 RAND02)
+set(benchmark_instances_benchmark_linear_verify_arch26_rnd RND01 RND02 RND03 RND04 RND05 RND06)
 set(benchmark_instances_benchmark_linear_verify_fast_arch23_beam CBC01 CBC02 CBC03 CBF01 CBF02 CBF03)
 set(benchmark_instances_benchmark_linear_verify_fast_arch23_heat3d HEAT01 HEAT02)
 set(benchmark_instances_benchmark_linear_verify_fast_arch23_iss

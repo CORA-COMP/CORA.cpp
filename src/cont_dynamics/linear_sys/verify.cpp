@@ -1,13 +1,14 @@
 // verify - verifies a linear system against reach-avoid specifications, as CORA's linearSys.verify
 //
 // initial_set is one zonotope of the state space; without B the input_set must be zero.
-// ReachAvoidSupportFunction takes unsafe sets of one halfspace, ReachAvoidZonotope unsafe
-// polytopes too. A falsifying initial state is returned when a specification is hit.
+// ReachAvoidSupportFunction takes unsafe sets of one halfspace, ReachAvoidZonotope and
+// ReachAvoidKrylov unsafe polytopes too. A falsifying initial state is returned when a
+// specification is hit.
 //
 // Syntax:   res = sys.verify(problem, specs, alg);
 // Inputs:   problem - initial_set, input_set (a zonotope of the input space of B), t_final
 //           specs - safe sets and unsafe sets over the outputs y = C x
-//           alg - alg::ReachAvoidSupportFunction or alg::ReachAvoidZonotope
+//           alg - alg::ReachAvoidSupportFunction, alg::ReachAvoidZonotope or alg::ReachAvoidKrylov
 // Outputs:  res - verified, the iterations of the adaptive loop, the last step size and count
 // See also: reach, private/priv_verify_ra_support_function
 //
@@ -51,6 +52,7 @@ bool aux_normal_ok(const SpecRow &h, int64_t p) {
 VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Specification> &specs,
                                const alg::LinearVerify &alg) const {
     detail::Entry entry;
+    std::visit([](const auto &a) { a.validate(); }, alg);
     // one system, one initial set and one input set of the right dimensions
     const int64_t n = dim();
     CORA_CHECK(A().shape().size() == 2, Error::not_supported,
@@ -106,6 +108,8 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
                                               "sets of one halfspace; use reach_avoid_zonotope");
                        });
 
+    if (const auto *krylov = std::get_if<alg::ReachAvoidKrylov>(&alg))
+        return priv_verify_ra_krylov(*this, R0, U, problem.t_final, specs, *krylov);
     if (std::holds_alternative<alg::ReachAvoidSupportFunction>(alg))
         return priv_verify_ra_support_function(*this, R0, U, problem.t_final, specs);
     return priv_verify_ra_zonotope(*this, R0, U, problem.t_final, specs);

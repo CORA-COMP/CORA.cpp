@@ -108,7 +108,7 @@ of an oracle result.
 **Algorithms are types.** Each algorithm is a struct of exactly its options, with CORA's
 defaults, a `name` and a `validate()`:
 - `alg::Standard`, `alg::WrappingFree`, `alg::ReachAvoidSupportFunction`,
-  `alg::ReachAvoidZonotope` (linear systems);
+  `alg::ReachAvoidZonotope`, `alg::ReachAvoidKrylov` (linear systems);
 - `alg::Exact` (linear simulation);
 - `alg::Linearization` and `alg::RungeKutta4` (nonlinear systems);
 - `alg::LinParamStandard` (linear parametric systems) and `alg::HybridStandard` (hybrid automata).

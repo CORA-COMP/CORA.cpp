@@ -1,0 +1,96 @@
+{
+  "format": "cora-benchmark-1",
+  "benchmark": "Random",
+  "instance": "RND02",
+  "label": "RND02",
+  "verifyAlg": "reachavoid:krylovSuppFunc",
+  "tFinal": 1.594597053551261,
+  "data": "RND02.bin",
+  "source": "gitlab.com/goranf/ARCH-COMP 2026/AFF/cora/code/cora/rand02.json",
+  "note": "50 states; the file of CORA's ARCH26 package, not confirmed to be the server's instance",
+  "matrices": {
+    "A": {
+      "shape": [
+        50,
+        50
+      ],
+      "storage": "dense",
+      "offset": 0,
+      "nnz": 2500
+    },
+    "B": {
+      "shape": [
+        50,
+        5
+      ],
+      "storage": "dense",
+      "offset": 20000,
+      "nnz": 250
+    },
+    "C": {
+      "shape": [
+        1,
+        50
+      ],
+      "storage": "dense",
+      "offset": 22000,
+      "nnz": 50
+    },
+    "R0c": {
+      "shape": [
+        50,
+        1
+      ],
+      "storage": "dense",
+      "offset": 22400,
+      "nnz": 50
+    },
+    "R0G": {
+      "shape": [
+        50,
+        50
+      ],
+      "storage": "coo",
+      "offset": 22800,
+      "nnz": 50
+    },
+    "Uc": {
+      "shape": [
+        5,
+        1
+      ],
+      "storage": "dense",
+      "offset": 23600,
+      "nnz": 5
+    },
+    "UG": {
+      "shape": [
+        5,
+        5
+      ],
+      "storage": "coo",
+      "offset": 23640,
+      "nnz": 5
+    }
+  },
+  "specs": [
+    {
+      "type": "unsafeSet",
+      "A": [
+        [
+          1.0
+        ],
+        [
+          -1.0
+        ]
+      ],
+      "b": [
+        57.0067528243796,
+        -56.94144995438201
+      ]
+    }
+  ],
+  "expected": {
+    "verified": 1
+  }
+}
