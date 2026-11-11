@@ -298,6 +298,103 @@ which the ring can take where one of its two roots lies outside the box, and kee
 (docs/cora-differences.md); the areas agree to 0.1%. MATLAB CORA v2026.1.0 (R2024b, this
 machine, `CHECKS_ENABLED` off, load average about 10) needs 11.4 s and gives the area 8.916e-3.
 
+## AINNCS results
+
+The ARCH-COMP AINNCS instances of MATLAB CORA (`examples/contDynamics/neurNetContrSys/example_neuralNet_reach_*.m`,
+the ARCH25 settings of `run_arch_ainncs_category.m`), run through CORA's `verify` by
+`benchmark_neur_net_contr_reach_arch26_ainncs`: Unicycle, ACC, TORA (remain, reach-tanh, reach-sigmoid),
+Single Pendulum, Double Pendulum (less-robust, more-robust), Airplane and Attitude Control. The
+plants are `NonlinearSys` written out as the model files write them, the networks are
+`data/networks/<name>.nn.json` and `.nn.bin` (the layers, their activation and the doubles, written from
+the example scripts by `examples/matlab/benchmarks/export_network_data.m`, so the numbers are CORA's).
+The verdict is that of the specification of the ARCH-COMP26 AINNCS report (Sasaki et al., "ARCH-COMP26
+Category Report: Artificial Intelligence and Neural Network Control Systems (AINNCS) for Continuous and
+Hybrid Systems Plants", Table 1 for CORA, Table 4 for JuliaReach), and the program counts the
+instances that differ from CORA's verdict. The time is `verify`: the random simulations (20 runs
+here, 10 in CORA) and the reach, with the derivation of the plant's Jacobians and Hessians. CORA.cpp's
+times are wall clock (core preset, 11-November-2026, one run each, one at a time, load average 4 to 9
+on 16 CPUs); the MATLAB times are MATLAB R2024b, CORA v2026.1.0, `CHECKS_ENABLED` shadowed to `false`,
+4 threads, this machine, each example script run once after `rng(1)`, load average 6 to 10; the ARCH26
+columns are the times of CORA and JuliaReach in the report (probably the same kind of machine as the
+other ARCH26 columns here). A verdict `F` is FALSIFIED by a simulated run that the reach from its start
+point does not verify, `U` is UNKNOWN, `V` VERIFIED.
+
+| instance | expected (CORA ARCH26) | CORA.cpp | CORA.cpp [s] | MATLAB CORA, checks off [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] |
+| --- | --- | --- | --- | --- | --- | --- |
+| Unicycle reach | V | V | 0.41 | 8.87 (V) | 8.015 | 7.093 |
+| Unicycle reach, with the report's disturbance w | V | V | 0.40 | - | - | - |
+| ACC safe-distance | V | V | 0.24 | 4.20 (V) | 3.176 | 0.492 |
+| TORA remain | V | V | 1.22 (time_step 0.1) | 9.03 (V) | 8.998 | 65.557 |
+| TORA reach-tanh | V | V | 0.15 | 2.28 (V) | 2.356 | 0.115 |
+| TORA reach-sigmoid | V | V | 0.28 (time_step 0.025) | 5.09 (V) | 4.730 | 0.146 |
+| Single Pendulum reach | V | V | 0.041 | 4.03 (V) | 4.083 | 4.137 |
+| Double Pendulum less-robust | U | U | 0.13 | 5.06 (U) | 5.604 | 824.729 (V) |
+| Double Pendulum more-robust | F | F | 0.11 | 4.76 (F) | 5.589 | 0.394 (F) |
+| Airplane continuous | F | F | 0.53 | 6.78 (F) | 6.809 | 1.923 (F) |
+| Attitude Control avoid | V | V | 0.42 | 5.71 (V) | 5.226 | 7.176 |
+
+**The loop.** `NeurNetContrSys` is CORA's: per control period the network is enclosed over the current set
+together with its input (`NeuralNetwork::evaluate_with_input`), the plant extended by the held outputs
+as states of zero derivative (built from the plant's own expressions) is reached from that set by
+`NonlinearSys::init_reach` and `post` (alg "lin"), the step size cut to the period as CORA's `tVec`,
+and the set at the end of the period projected to the states starts the next. The network is
+enclosed by CORA's `poly_method` "singh" of order 1 (the tightest parallelogram of a ReLU,
+[Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and tanh); on a polynomial zonotope the
+factors and exponents stay. The Unicycle, Double Pendulum less-robust start from zonotopes, the
+others from polynomial zonotopes, as the scripts. The sets, the boxes and the sets over the
+steps agree with MATLAB CORA's to five digits over 50 control periods (TORA reach-tanh, checked at
+t = 0.5, 1, ..., 5).
+
+**Soundness, step by step** (docs/cora-differences.md has the rows).
+
+- *The network enclosure* (`computeApproxPoly` "singh" order 1, `evaluatePolyZonotope`): sound for the
+  layers here, in exact arithmetic. The ReLU parallelogram is exact outside the crossing
+  (CORALean `reluRelaxation_encloses`); for sigmoid and tanh the derivative rises and then falls, so it
+  is at least the smaller value at the ends and the two lines of that slope through the ends
+  enclose the function (`Real.deepZSShape_encloses`; CORA's transformer is not sound for a non-S-shaped
+  monotone function, which `nnActLayerFromHandle` allows and CORA.cpp does not). The rounding is not
+  directed: CORA.cpp's float arithmetic is at nearest, like the oracle's `nearest`, so a verdict is
+  not a proof (the radius is not rounded up, and one below 0 by rounding is dropped as CORA's `d > 0`).
+- *The generator sharing* (`aux_appendU2X`): CORA's stacking is right only while the first
+  generators of the network's output are the images of the input's, which singh without order
+  reduction gives and its source notes ('only works if no order reduction is applied within nn');
+  CORALean says the same (it needs an image that keeps the generators, more than `enclose`
+  promises). CORA.cpp carries the input rows through the layers, so it holds by construction.
+- *The plant reach*: `NonlinearSys` alg "lin" on the extended system, with the Hessian region joined
+  with the linearization point (the repair of `priv_abstrerr_lin`); the sets stay sound at tensor order 3,
+  looser than CORA's on polynomial zonotopes.
+- *The specification check*: exact on the zonotope (a polynomial zonotope on its zonotope
+  enclosure); a falsification is a simulated run (Runge-Kutta, steps of at most 1e-3) from a point of
+  the initial set whose reach from that point does not verify, as CORA's, so it is as sound as
+  the integration is accurate.
+
+None of the rows is bit-exact against CORALean: its oracle serves no network or controlled-system op
+(docs/oracle-requests.md), and the nonlinear plants have no CORALean reach beyond the argument of
+`reachWith`.
+
+**Tuned settings.** Two instances need a smaller step than the script's: with the script's 0.25 (TORA
+remain) and 0.1 (TORA reach-sigmoid) the sets end just outside the specification (the lower bound of
+x2 at t = 5 is -0.906 for the goal -0.9). CORA's tensor order 3 on a polynomial zonotope keeps the
+quadratic error term polynomial (`quadMap` of the polynomial zonotope), CORA.cpp's step encloses
+the set of the step by a zonotope first (`priv_lin_reach_poly`), which is looser but sound
+(docs/cora-differences.md). The settings that verify are 0.1 and 0.025 (others: 0.05 fails for the
+sigmoid, 0.1 and 0.05 verify the remain). The Unicycle row "with the report's disturbance" adds
+w in 1e-4 [-1, 1] to the speed, which the report states and the script sets to 0; it verifies too.
+The Double Pendulum less-robust reach stops at t = 0.05, where the set leaves the safe box (CORA's
+is also UNKNOWN); the falsifications are the simulated runs
+`x0 = (1.3, 1, 1, 1)` (more-robust: x3 = -1.510 < -1.5 at t = 0.32) and the Airplane run from
+`(0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0)` (y = 1.24 > 1 at t = 0.6).
+
+`CORACPP_BENCHMARK_VERBOSE=1` prints the box of every set of the reach, and
+`CORACPP_AINNCS_OPTIONS=time_step,tensor_order,taylor_terms,zonotope_order,error_order,intermediate_order`
+replaces the settings of the instance (how the two tuned steps were found).
+
+**Not ported here.** VCAS, QUAD, Docking, NAV and CartPole (piece B): the VCAS instances need CORA's
+custom discrete algorithm, and the scripts of QUAD, Docking, NAV and CartPole are not all in the CORA
+checkout. The plants of `NeurNetContrSys` are `NonlinearSys` only; `LinearSys`, `LinParamSys`
+and the discrete-time systems of CORA's class have no instance here, and CORA.cpp has no
+discrete-time systems yet. `verify` does not split the initial set (`splitR0` of CORA).
+
 ## Run
 
 ```bash
@@ -310,6 +407,7 @@ build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
 build/core/benchmarks/benchmark_nonlinear_das_reach_arch23_powersystem         # TSPS25, about a minute
 build/core/benchmarks/benchmark_hybrid_reach_arch23_lotkavolterra               # LOVO25, CORACPP_BENCHMARK_VERBOSE=1: the branches
+build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs [TORA-remain ...]   # the AINNCS instances, 3 s in all
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 
@@ -350,6 +448,12 @@ HEAT01 (heat5) and HEAT02 (heat10) bit for bit (`--check`), and `R0` and `C` fro
 A scalar `B` of the beam scripts is stored as `B*I`; an absent `params.U` (ISSC01_ISU02) as `{0}`.
 Unsafe sets with several halfspaces (RAND) need a `Specification` that takes them; the programs
 stop with an error until then. Test: `python -m unittest tests/python/test_benchmarkData.py`.
+
+The networks of the AINNCS instances are in `data/networks/`: `<name>.nn.json` lists the layers (`out`, `in`,
+`activation` identity, relu, sigmoid or tanh, and the offsets of `W` and `b` in doubles) and
+`<name>.nn.bin` the little-endian doubles (`W` row by row, then `b`).
+`examples/matlab/benchmarks/export_network_data.m` writes them from the example scripts' networks (an
+elementwise affine layer of an ONNX network as the layer with `W = diag(scale)`).
 
 ## What CORALean backs
 

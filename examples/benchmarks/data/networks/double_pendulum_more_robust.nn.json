@@ -1,0 +1,11 @@
+{
+  "name": "double_pendulum_more_robust",
+  "layers": [
+    {"out": 25, "in": 4, "activation": "identity", "W": 0, "b": 100},
+    {"out": 25, "in": 25, "activation": "relu", "W": 125, "b": 750},
+    {"out": 25, "in": 25, "activation": "identity", "W": 775, "b": 1400},
+    {"out": 25, "in": 25, "activation": "relu", "W": 1425, "b": 2050},
+    {"out": 2, "in": 25, "activation": "identity", "W": 2075, "b": 2125},
+    {"out": 2, "in": 2, "activation": "identity", "W": 2127, "b": 2131}
+  ]
+}

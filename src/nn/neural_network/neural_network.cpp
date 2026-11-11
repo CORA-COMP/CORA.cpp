@@ -20,10 +20,25 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-NeuralNetwork::NeuralNetwork(std::vector<Layer> layers) : layers_(std::move(layers)) {
+// the old rule: a ReLU after every layer but the last
+NeuralNetwork::NeuralNetwork(std::vector<Layer> layers)
+    : NeuralNetwork(layers, [&] {
+          std::vector<Activation> relus(layers.size(), Activation::relu);
+          if (!relus.empty()) relus.back() = Activation::identity;
+          return relus;
+      }()) {}
+
+NeuralNetwork::NeuralNetwork(std::vector<Layer> layers, std::vector<Activation> activations)
+    : layers_(std::move(layers)), activations_(std::move(activations)) {
     detail::Entry entry;
+    // at least one layer, one activation each, and matching sizes
     CORA_CHECK(!layers_.empty(), Error::wrong_input_in_constructor,
                [] { return std::string("NeuralNetwork: give at least one layer"); });
+    CORA_CHECK(activations_.size() == layers_.size(), Error::wrong_input_in_constructor, [&] {
+        return "NeuralNetwork: give one activation per layer, got " +
+               std::to_string(activations_.size()) + " for " + std::to_string(layers_.size()) +
+               " layers";
+    });
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         const std::vector<int64_t> w = layers_[k].W.shape(), b = layers_[k].b.shape();
         CORA_CHECK(w.size() == 2, Error::wrong_input_in_constructor, [&] {

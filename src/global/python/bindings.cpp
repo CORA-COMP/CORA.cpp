@@ -26,6 +26,7 @@
 
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_dynamics/neur_net_contr_sys/neur_net_contr_sys.h"
 #include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/cont_set/level_set/level_set.h"
@@ -4255,20 +4256,80 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "The states (n, steps + 1) and the algebraic variables (p, steps + 1) of a trajectory");
 }
 
+/// The activation of a name: identity, relu, sigmoid or tanh.
+Activation activation_of(const std::string &name) {
+    if (name == "identity") return Activation::identity;
+    if (name == "relu") return Activation::relu;
+    if (name == "sigmoid") return Activation::sigmoid;
+    if (name == "tanh") return Activation::tanh;
+    CORA_FAIL(Error::wrong_value,
+              "NeuralNetwork: the activation must be identity, relu, sigmoid or tanh, got " + name);
+}
+
+/// The options of the plant's alg "lin" and of the network from keyword arguments.
+ClosedLoopOptions closed_loop_options(const py::kwargs &kwargs) {
+    ClosedLoopOptions options;
+    options.plant.time_step = py::cast<double>(required(kwargs, "time_step", "reach"));
+    const auto read = [&](const char *key, auto &field) {
+        if (kwargs.contains(key)) field = py::cast<std::decay_t<decltype(field)>>(kwargs[key]);
+    };
+    read("taylor_terms", options.plant.taylor_terms);
+    read("zonotope_order", options.plant.zonotope_order);
+    read("tensor_order", options.plant.tensor_order);
+    read("error_order", options.plant.error_order);
+    read("intermediate_order", options.plant.intermediate_order);
+    read("add_approx_error_to_gi", options.nn.add_approx_error_to_gi);
+    return options;
+}
+
+/// The specification of keyword arguments: spec and the optional spec_time = (t0, t1).
+std::optional<TimedSpecification> timed_specification(const py::kwargs &kwargs) {
+    if (!kwargs.contains("spec") || kwargs["spec"].is_none()) return std::nullopt;
+    TimedSpecification out{py::cast<Specification>(kwargs["spec"])};
+    if (kwargs.contains("spec_time") && !kwargs["spec_time"].is_none()) {
+        const auto t = py::cast<std::array<double, 2>>(kwargs["spec_time"]);
+        out.time = std::make_pair(t[0], t[1]);
+    }
+    return out;
+}
+
+/// The sets of a closed-loop reach as a dict.
+template <class S>
+py::dict closed_loop_dict(const ClosedLoopReach<S> &R) {
+    // the sets and times as lists, the state of the run as flags
+    py::dict out;
+    out["time_interval"] = py::cast(R.time_interval);
+    out["time_point"] = py::cast(R.time_point);
+    out["time"] = py::cast(R.time);
+    out["completed"] = R.completed;
+    out["violated"] = R.violated;
+    out["exploded"] = R.exploded;
+    return out;
+}
+
 void bind_neural_network(py::module_ &m) {
+    // the network: layers, activations, and the evaluation on points and sets
     py::class_<NeuralNetwork>(m, "NeuralNetwork",
-                              "Affine layers with a ReLU after each but the last.")
-        .def(py::init([](const std::vector<std::pair<py::object, py::object>> &layers) {
+                              "Affine layers with an activation after each (a ReLU after each "
+                              "but the last by default).")
+        .def(py::init([](const std::vector<std::pair<py::object, py::object>> &layers,
+                         const std::optional<std::vector<std::string>> &activations) {
                  std::vector<NeuralNetwork::Layer> out;
                  out.reserve(layers.size());
                  for (const auto &[W, b] : layers)
                      out.push_back({tensor_of(W, "the weights"), tensor_of(b, "the bias")});
-                 // the layers as (W, b) pairs
-                 return NeuralNetwork(out);
+                 if (!activations) return NeuralNetwork(out);
+                 // one activation per layer
+                 std::vector<Activation> acts;
+                 for (const std::string &name : *activations) acts.push_back(activation_of(name));
+                 return NeuralNetwork(out, acts);
              }),
-             py::arg("layers"), "the layers as (W (out, in), b (out,)) pairs, first to last")
+             py::arg("layers"), py::arg("activations") = py::none(),
+             "the layers as (W (out, in), b (out,)) pairs, first to last, and optionally the "
+             "activation of each: 'identity', 'relu', 'sigmoid' or 'tanh'")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
+        // the outputs at points, the enclosure of the outputs over a set, and the pairs
         .def(
             "evaluate",
             [](const NeuralNetwork &nn, const py::object &x) -> py::object {
@@ -4280,7 +4341,89 @@ void bind_neural_network(py::module_ &m) {
             },
             py::arg("x"),
             "The outputs at a point (in,) or the columns of (in, N); for a zonotope, "
-            "a zonotope that contains the outputs of every point");
+            "a zonotope that contains the outputs of every point")
+        // the pairs (x, N(x)) of a set, the input rows kept
+        .def(
+            "evaluate_with_input",
+            [](const NeuralNetwork &nn, const py::object &X,
+               bool add_approx_error_to_gi) -> py::object {
+                if (py::isinstance<PolyZonotope>(X))
+                    return py::cast(
+                        nn.evaluate_with_input(py::cast<PolyZonotope>(X),
+                                               {.add_approx_error_to_gi = add_approx_error_to_gi}));
+                return py::cast(nn.evaluate_with_input(py::cast<Zonotope>(X)));
+            },
+            py::arg("X"), py::arg("add_approx_error_to_gi") = true,
+            "The set of the pairs (x, N(x)) of a zonotope or polynomial zonotope X");
+
+    // the neural network controlled system: reach, simulate and verify with keyword options
+    py::class_<NeurNetContrSys>(m, "NeurNetContrSys",
+                                "A NonlinearSys plant whose first inputs come from a neural "
+                                "network that is sampled every dt.")
+        .def(py::init<NonlinearSys, NeuralNetwork, double>(), py::arg("plant"), py::arg("nn"),
+             py::arg("dt"))
+        .def_property_readonly("dim", &NeurNetContrSys::dim, "The number of states of the plant")
+        .def_property_readonly("dt", &NeurNetContrSys::dt, "The sampling time")
+        // reach from a zonotope or a polynomial zonotope, with the options as keywords
+        .def(
+            "reach",
+            [](const NeurNetContrSys &sys, const py::object &X0, double t_final,
+               const py::kwargs &kwargs) -> py::object {
+                const std::optional<Zonotope> U =
+                    kwargs.contains("input_set") && !kwargs["input_set"].is_none()
+                        ? std::optional<Zonotope>(py::cast<Zonotope>(kwargs["input_set"]))
+                        : std::nullopt;
+                const ClosedLoopOptions options = closed_loop_options(kwargs);
+                const std::optional<TimedSpecification> spec = timed_specification(kwargs);
+                if (py::isinstance<PolyZonotope>(X0))
+                    return closed_loop_dict(
+                        sys.reach(py::cast<PolyZonotope>(X0), U, t_final, options, spec));
+                return closed_loop_dict(
+                    sys.reach(py::cast<Zonotope>(X0), U, t_final, options, spec));
+            },
+            py::arg("initial_set"), py::arg("t_final"),
+            // the keywords and the dict that comes back
+            "reach(X0, t_final, time_step=dt, input_set=U, spec=Specification, spec_time=(t0, t1), "
+            "taylor_terms=4, zonotope_order=50, tensor_order=2, ...): a dict of the sets over and "
+            "at the steps (time_interval, time_point, time) and completed, violated, exploded")
+        // runs with the output held over a control period
+        .def(
+            "simulate",
+            [](const NeurNetContrSys &sys, const py::object &x0, double t_final, double time_step,
+               const py::object &u) {
+                const ClosedLoopTrajectories T = sys.simulate(
+                    tensor_of(x0, "x0"),
+                    u.is_none() ? std::nullopt : std::optional<Tensor>(tensor_of(u, "u")), t_final,
+                    time_step);
+                return py::make_tuple(py::cast(T.time), stack_time(T.x));
+            },
+            py::arg("x0"), py::arg("t_final"), py::arg("time_step"), py::arg("u") = py::none(),
+            "The times and the states (steps + 1, n, N) of the runs from the columns x0 (n, N)")
+        // CORA's verify: random runs, then the reach, and the verdict as a string
+        .def(
+            "verify",
+            [](const NeurNetContrSys &sys, const py::object &X0, double t_final, int64_t points,
+               cora::Rng &rng, const py::kwargs &kwargs) {
+                const std::optional<Zonotope> U =
+                    kwargs.contains("input_set") && !kwargs["input_set"].is_none()
+                        ? std::optional<Zonotope>(py::cast<Zonotope>(kwargs["input_set"]))
+                        : std::nullopt;
+                const ClosedLoopOptions options = closed_loop_options(kwargs);
+                const std::optional<TimedSpecification> spec = timed_specification(kwargs);
+                // the specification is required, the verdict of either kind of start set
+                if (!spec) CORA_FAIL(Error::wrong_value, "verify: give the specification as spec=");
+                const ClosedLoopVerdict v = py::isinstance<PolyZonotope>(X0)
+                                                ? sys.verify(py::cast<PolyZonotope>(X0), U, t_final,
+                                                             options, *spec, points, rng)
+                                                : sys.verify(py::cast<Zonotope>(X0), U, t_final,
+                                                             options, *spec, points, rng);
+                return v.verdict == Verdict::verified    ? "VERIFIED"
+                       : v.verdict == Verdict::falsified ? "FALSIFIED"
+                                                         : "UNKNOWN";
+            },
+            py::arg("initial_set"), py::arg("t_final"), py::arg("points"), py::arg("rng"),
+            "verify(X0, t_final, points, rng, time_step=dt, spec=Specification, ...): 'VERIFIED', "
+            "'FALSIFIED' or 'UNKNOWN' (CORA's verify)");
 }
 
 // Plotting ----------------------------------------------------------------------------------------

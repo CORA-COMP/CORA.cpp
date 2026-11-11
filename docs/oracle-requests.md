@@ -219,3 +219,30 @@ nearest), so these ops are oracle debt; the requests that would close it:
 | `levelSet.intersectPolyZonotope` | `LevelSet.guardIntersectUnsolvable` (real) needs a float layer | `f` (expression tree), `pZ` (box as a polynomial zonotope) | `pZ` |
 | `polyZonotope.splitDepFactor`, `polyZonotope.splitLongestGen` | none | `pZ`, `id` | the two halves |
 | `zonotope.reducePCA` | `Zonotope.pcaBasis` (`PCABasis.lean`, real) | `Z` | `Z` |
+
+## Neural networks and neural network controlled systems (PR "port/ainncs-a")
+
+The pinned oracle (`oracle-20261111-f9723f6f6`) serves no `neuralNetwork` or `neurNetContrSys` op.
+CORALean's definitions are generic over the set representation (`NeuralNetwork.enclose`, no scalar
+named; the float layers instantiate it in `Examples/RunnableFloat.lean`) or over the plant
+(`NeurNetContrSys.reachWith`, the plant's reach an argument); only the linear plant has a float
+definition (`augmentFloat`, `reachFloat`). CORA.cpp's network enclosure is CORA's "singh" order 1
+(`NeuralNetwork::evaluate`, `evaluate_with_input`), whose per-layer enclosure is the interval
+rule of CORALean's float layers; the nonlinear plants of the AINNCS instances have no CORALean
+reach beyond the hypothesis of `reachWith`.
+
+| CORALean definition (file) | what it is | follows CORA? |
+|---|---|---|
+| `NeuralNetwork.enclose` (`NN/Operations/Enclose.lean`), float layers (`Examples/RunnableFloat.lean`) | the image of a set through the layers, each activation by its interval rule | CORA's `evaluate_` with `poly_method` "singh"; the zonotope layer rule is CORA's line and radius, the rounding is directed |
+| `NeurNetContrSys.augmentFloat` (`NeurNetContrSys/Operations/AugmentFloat.lean`) | the augmented matrices `[A B_nn; 0 0]`, `[B_ext; 0]`, `[c; 0]` of a linear plant | yes, `aux_augmentLinear` |
+| `NeurNetContrSys.reachFloat` (`Operations/ReachFloat.lean`) | CORA's loop at a linear plant: per period the network enclosure, the augmented system reached from `X x U` | CORA's loop; `reachFloat_outer` states the enclosure |
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.enclose` | `layers` (`W`, `b`, `activation` per layer), `Z` (a zonotope) | `Z` (the enclosure of the outputs) |
+| `neuralNetwork.encloseWithInput` | `layers`, `Z` | `Z` of dimension in + out (the pairs) |
+| `neurNetContrSys.augment` | `A`, `B`, `c`, `m` (outputs of the network) | `A_aug`, `B_aug`, `c_aug` |
+| `neurNetContrSys.reach` | `A`, `B`, `c`, `layers`, `dt`, `Z0`, `U`, `tFinal`, reach options | `timeInterval`, `timePoint` (zonotopes) |
+
+`NeuralNetwork::evaluate`, `evaluate_with_input`, `NeurNetContrSys::reach` and `simulate` are
+oracle debt until then; their tests are `property` (the sets hold every simulated run).

@@ -1,0 +1,12 @@
+{
+  "name": "acc",
+  "layers": [
+    {"out": 5, "in": 6, "activation": "identity", "W": 0, "b": 30},
+    {"out": 20, "in": 5, "activation": "relu", "W": 35, "b": 135},
+    {"out": 20, "in": 20, "activation": "relu", "W": 155, "b": 555},
+    {"out": 20, "in": 20, "activation": "relu", "W": 575, "b": 975},
+    {"out": 20, "in": 20, "activation": "relu", "W": 995, "b": 1395},
+    {"out": 20, "in": 20, "activation": "relu", "W": 1415, "b": 1815},
+    {"out": 1, "in": 20, "activation": "relu", "W": 1835, "b": 1855}
+  ]
+}

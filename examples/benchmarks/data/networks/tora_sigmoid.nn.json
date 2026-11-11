@@ -1,0 +1,9 @@
+{
+  "name": "tora_sigmoid",
+  "layers": [
+    {"out": 20, "in": 4, "activation": "sigmoid", "W": 0, "b": 80},
+    {"out": 20, "in": 20, "activation": "sigmoid", "W": 100, "b": 500},
+    {"out": 20, "in": 20, "activation": "sigmoid", "W": 520, "b": 920},
+    {"out": 1, "in": 20, "activation": "sigmoid", "W": 940, "b": 960}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "airplane",
+  "layers": [
+    {"out": 100, "in": 12, "activation": "identity", "W": 0, "b": 1200},
+    {"out": 100, "in": 100, "activation": "relu", "W": 1300, "b": 11300},
+    {"out": 100, "in": 100, "activation": "identity", "W": 11400, "b": 21400},
+    {"out": 100, "in": 100, "activation": "relu", "W": 21500, "b": 31500},
+    {"out": 20, "in": 100, "activation": "identity", "W": 31600, "b": 33600},
+    {"out": 20, "in": 20, "activation": "relu", "W": 33620, "b": 34020},
+    {"out": 6, "in": 20, "activation": "identity", "W": 34040, "b": 34160},
+    {"out": 6, "in": 6, "activation": "identity", "W": 34166, "b": 34202}
+  ]
+}

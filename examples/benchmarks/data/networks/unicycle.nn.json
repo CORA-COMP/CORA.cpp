@@ -1,0 +1,7 @@
+{
+  "name": "unicycle",
+  "layers": [
+    {"out": 500, "in": 4, "activation": "relu", "W": 0, "b": 2000},
+    {"out": 2, "in": 500, "activation": "relu", "W": 2500, "b": 3500}
+  ]
+}
