@@ -279,7 +279,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
 | BRKDC01 | 4/12 | 8 | 5 |
-| BRKNC01 | 30/53 | 23 | 10 |
+| BRKNC01 | 31/53 | 22 | 10 |
 | BRKNP01 | 24/44 | 20 | 10 |
 | CBC01 | 1/8 | 7 | 4 |
 | CBC02 | 1/8 | 7 | 4 |
@@ -309,20 +309,20 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | PLAN01 | 31/45 | 14 | 9 |
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
-| ROBE25_1 | 9/21 | 12 | 7 |
-| ROBE25_2 | - | not measured | - |
-| ROBE25_3 | - | not measured | - |
-| SPRE22 | 36/64 | 28 | 13 |
+| ROBE25_1 | 10/24 | 14 | 7 |
+| ROBE25_2 | 10/24 | 14 | 7 |
+| ROBE25_3 | 10/24 | 14 | 7 |
+| SPRE22 | 37/64 | 27 | 13 |
 | SRA01 | 26/45 | 19 | 8 |
-| SRA02 | 33/55 | 22 | 10 |
-| SRA03 | 33/55 | 22 | 10 |
+| SRA02 | 34/55 | 21 | 10 |
+| SRA03 | 34/55 | 21 | 10 |
 | SRA04 | 26/45 | 19 | 8 |
-| SRA05 | 33/55 | 22 | 10 |
-| SRA06 | 33/55 | 22 | 10 |
-| SRA07 | 41/66 | 25 | 11 |
-| SRA08 | 41/66 | 25 | 11 |
+| SRA05 | 34/55 | 21 | 10 |
+| SRA06 | 34/55 | 21 | 10 |
+| SRA07 | 42/66 | 24 | 11 |
+| SRA08 | 42/66 | 24 | 11 |
 | SRNA01 | 23/39 | 16 | 7 |
 | SRU01 | 27/46 | 19 | 8 |
-| SRU02 | 41/66 | 25 | 11 |
+| SRU02 | 42/66 | 24 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
 <!-- END bit-exact -->
