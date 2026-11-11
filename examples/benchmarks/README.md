@@ -554,7 +554,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W001 | 10/24 | 14 | 7 |
 | LALO20_W005 | 10/24 | 14 | 7 |
 | LALO20_W01 | 12/37 | 25 | 7 |
-| LOVO25 | 27/82 | 55 | 14 |
+| LOVO25 | 24/75 | 51 | 13 |
+| LOVO25-script | 27/82 | 55 | 14 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |
