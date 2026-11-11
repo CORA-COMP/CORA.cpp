@@ -118,6 +118,7 @@ jobs:
       # The runners' Ubuntu mirrors can fail to resolve; then valgrind comes from conda-forge.
       # Base and head are counted by the same valgrind, so the version does not matter.
       - name: install valgrind
+        timeout-minutes: 15
         run: |
           if ! (sudo apt-get update && sudo apt-get install -y valgrind); then
             curl -fsSL https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xj -C "$RUNNER_TEMP" bin/micromamba
