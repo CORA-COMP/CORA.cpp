@@ -297,3 +297,24 @@ advisory and the acceleration rule, composed of `NeuralNetwork::evaluate` and `P
 affine maps) have no CORALean counterpart beyond `NeurNetContrSysDT` (whose `reach` is the
 sampled loop at a discrete-time plant, with the advisory choice an argument); they are oracle debt
 with the network ops of the first table.
+
+## Rows the oracle serves that stay `property` or `untested` (Group A, batch 1)
+
+`zonotope.project`, the generic `interval` and `isIntersecting` entries are now `oracle`
+(`test_lean_zonotope_project`, `test_lean_cont_set`). The other float rows the benchmarks run were
+read against the pinned oracle's op and kept out of `oracle`; each stays until the named change.
+
+| row | op | why it is not bit-exact | what would close it |
+|---|---|---|---|
+| `zonotope/polytope` | `zonotope.polytope` (`Zonotope.hPolytopeFacets`) | the same facets, in the reverse order of `nchoosek`; sorted, the rows still differ in the last bits on random zonotopes (tested for 2 to 4 dimensions): CORA.cpp projects each cross product onto the orthogonal complement of its generators (`priv_zonotope_facet_normals`, kept for the gradient), CORALean normalizes the cross product itself | an oracle variant, or CORA.cpp dropping the projection (it costs the torch gradient) |
+| `zonotope/vertices_` | `zonotope.vertices` | CORA's `aux_vertices2Dfast` walks `V(:,i+1) = V(:,i) + 2 g_i` and shifts by the box, CORALean's `Zonotope.polygon` evaluates each corner as `c - sum g + 2 sum_{j<k} g`: another evaluation order, and for more than two dimensions `2^h` corners instead of the hull | `Zonotope.polygon` as a cumulative walk |
+| `zonotope/isIntersecting_` | `zonotope.isIntersecting` | the answer is certified one way (disjointness), CORA solves a linear program | none: a one-sided test stays `property` |
+| `zonotope/quadMap` | `zonotope.quadMap` | CORALean maps through a polynomial zonotope, a wider set than CORA's zonotope map | `Zonotope.quadMap` following `quadMap.m` |
+| `conZonotope/supportFunc_`, `zonoBundle/supportFunc_` | `conZonotope.supportFunc`, `zonoBundle.supportFunc` | an upper bound from a checked dual certificate, CORA's value is the optimum of the linear program | none |
+| `conZonotope/isFullDim`, `conZonotope/rescale` | `conZonotope.isFullDim` | certified one way; `ConZonotope.rescale` takes the ranges of the factors as arguments, CORA finds them by linear programs or Gauss-Jordan | an op `conZonotope.rescale` with the ranges, to test the scaling alone |
+| `polytope/constraints`, `polytope/polytope` | none | `VPolytope.hPolytope` encloses the vertices along given directions `Aq`; CORA computes the facets of the hull | a facet enumeration in CORALean |
+| `linearSys/taylorMatrices` | `linearSys.taylorMatrices` | the remainder: CORALean bounds it by a norm (`intervalCorrectionMatrix`) or, in `oneStepClosedForm`, by an enclosure of `e^{\|A\| dt}` (`expRemainderEntrywise`); CORA's `W` is `\|expm(\|A\| dt) - series\|` in floats | covered by the closed-form step (`correction_matrix_state` taking `expRemainderEntrywise`), another branch |
+| `linearSys/errorSolution_adaptive`, `linearSys/reach`, `contDynamics/reach`, `location/reach` | `linearSys.errorSolution_adaptive`, `linearSys.reach`, `location.reach` | CORALean's step is the interval-matrix one (`reachFloat`, `errorSolutionAdaptiveFloat`), tested by tolerance in `test_lean_linear_sys_steps_agreement` | the closed-form step |
+| `linearSys/verify` | none | `verifyFloat` is Alg. 3 with the reach function, the inner approximation and the distances as arguments; no concrete instance serves as an op | an op that instantiates it with CORA's support-function routines |
+| `contSet/interval/polyZonotope`, `contSet/zonotope/polyZonotope`, `polyZonotope/*` | none | the oracle has no polynomial zonotope codec until the poly-adaptive branch merges; then the generator order of the constructor (see above) decides | the ops of the section above |
+| `nn/layers/*`, `nn/neuralNetwork/*` | none | CORALean's network enclosure is generic (`Examples/RunnableFloat.lean` instantiates it); there is no concrete zonotope-layer float definition to serve | `neuralNetwork.enclose` of the section above |
