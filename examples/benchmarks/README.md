@@ -196,7 +196,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | LALO20 W005 | 1 | 1 | 15.3 | 10/24 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.11 |
 | LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 12/37 bit-exact, 11 property | 346 | 248 | 248 (CORA) [c] | 24.1 |
 | TSPS25 | 1 | 1 | 65 | 17/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
-| LOVO25 | 1 | 1 [e] | 0.185 | 27/82 bit-exact, 20 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 51.9 |
+| LOVO25 | 1 | 1 [e] | 3.72 | 24/75 bit-exact, 18 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
 
 [a] TRAF22: JuliaReach's ARCH-COMP 2025 repeatability code (32 s) holds the disturbances w constant (w' = 0), where the report lets them vary arbitrarily over time.
 
@@ -206,7 +206,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 [d] LOVO25: JuliaReach's ARCH-COMP 2025 repeatability code (1.6 s) integrates the flow without the hybrid automaton and checks only the area, not the crossing counts, and KeYmaera X (1.7 s) proves invariance only.
 
-[e] LOVO25: the CORA.cpp verdict follows CORA's ARCH script (fixed branch choice and an x1 cut); a sound verdict is in progress.
+[e] LOVO25: a sound verdict, not CORA's script (which writes `res = true`; it runs as `LOVO25-script`, 0.09 s, area 8.92e-3, MATLAB 11.4 s). The automaton (with a jump back out of `inside`) is reached from 8 pieces of the initial box with no restart and no cut; 7 pieces give one final branch with 2 jumps, and the piece with the tangential arc (x1 near 1.288 to 1.291) makes CORA's linearization error explode in the jumps in and out, so the flow alone encloses it. The area of all sets at x3 = 3.64 is below 1e-2 and none is in `inside`; exactly 2 and exactly 4 crossings are shown by simulated trajectories (x1 = 1.2891 and 1.288). The CORA time column is the script's.
 
 | instance | quality metric (CORA.cpp; ARCH26 CORA, JuliaReach) |
 | --- | --- |
@@ -216,7 +216,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | LALO20 W001 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
 | LALO20 W005 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
 | LALO20 W01 (stand-in) | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
-| LOVO25 | area 8.92e-3 (CORA 8.9e-3) |
+| LOVO25 | area 2.24e-3 (CORA 8.9e-3, JuliaReach 9e-5; the flow alone from the whole box 3.04e-5) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
