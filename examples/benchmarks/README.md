@@ -1,5 +1,40 @@
 # Benchmarks
 
+## Summary
+
+| category | instances run | verdict = ARCH26 | CORA.cpp fastest | speedup vs best ARCH26 tool (median / geo. mean) | speedup vs CORA ARCH26 (median / geo. mean) |
+| --- | --- | --- | --- | --- | --- |
+| AFF | 42 | 34 of 36 in ARCH26 (all 42 equal MATLAB CORA's) | 27 of 34 | 2.6 / 4.3 | 15 / 13 (34 instances) |
+| NLN | 11 | 11 of 11 | 8 of 11 | 4.2 / 3.4 | 5.9 / 8.7 (11 instances) |
+| AINNCS | 11 | 10 of 11 (all 11 equal CORA's) | 8 of 10 | 3.6 / 5.0 | 16 / 20 (10 instances) |
+
+The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
+has a time for it: they leave out PLAN01 and BRKNP01 (ARCH26 verifies them with another setup than
+the script's), Double Pendulum less-robust (ARCH26: verified by CROWN-Reach and JuliaReach, UNKNOWN
+for CORA and CORA.cpp) and the instances the report does not have (ISS, RAND). The AINNCS rows count the Unicycle twice
+(the script and the report's disturbance). Times are single runs on a shared machine.
+
+## How to read the tables
+
+- **expected (ARCH26)**: the verdict of the ARCH-COMP26 report of the category (1 or V verified, 0 or U
+  not verified, F falsified); `(ARCH23)` where the report has no such instance, `(script: 0)` where
+  the report verifies with another setup than CORA's script.
+- **CORA.cpp [s]**: wall clock, core preset, one run each, the programs run one at a time on 16 CPUs
+  that other jobs share (AFF and NLN: 09-November-2026, AINNCS: 11-November-2026).
+- **oracle check (rows)**: the rows of CORA the instance executes that are bit-exact against
+  CORALean's `nearest` oracle, of those that can be (`coverage/benchmarks.md`, table at the end), and
+  the rows tested by properties only.
+- **CORA [s]**: MATLAB R2024b, CORA v2026.1.0, on this machine, `CHECKS_ENABLED` off (CORA's default
+  is on and slower), 4 threads, one run; `-` where not measured.
+- **CORA ARCH26 [s]**: CORA's time in the report.
+- **best ARCH26 [s] (tool)**: the fastest time in the report of any tool with the expected verdict on
+  the same instance, from code that solves the report's problem. JuliaReach's discrete-time rows
+  (time points only) and immrax (continuous feedback instead of sample-and-hold) do not count. A faster
+  result of code that solves another problem is not counted either; a footnote says what differs.
+- **speedup** = best / CORA.cpp: above 1, CORA.cpp is faster.
+
+## Programs
+
 ARCH-COMP AFF instances of MATLAB CORA (`examples/ARCHcompetition/linear/benchmark_linear_verify*_ARCH23_*.m`)
 in C++ and Python, on the same numbers. Each program prints the line of the MATLAB script,
 `benchmark,instance,result,time` (e.g. `Spacestation,ISSF01-ISS01,1,0.42`); iterations, nrSteps and
@@ -24,69 +59,72 @@ functions in `examples/cpp/benchmarks/benchmark_hybrid_reach_arch23_*.cpp` and
 `benchmark_linear_param_reach_arch23_platoon.cpp`, the numbers copied from the scripts
 and the model files of `models/Cora/` (the powertrain's Jacobians written out from its equations).
 
-## Results
+## AFF results
 
-The verdict is CORA's `res` (1 verified, 0 not); every one equals MATLAB CORA's, the expected
-verdict of the script (the ARCH-COMP 2023 AFF report: the ISU instances, RAND02, SRU01 and
-SRU02, PLAN01 and BRKNP01 are not verified; PLAN01 and BRKNP01: below). CORA.cpp times are wall clock (core preset,
-09-November-2026, one run each, the programs run one at a time). The ARCH26 columns are the times of CORA (MATLAB) and JuliaReach
-(continuous time) in the ARCH-COMP26 AFF report (Althoff, Carraro, Forets, Perschl, Schilling,
-"ARCH-COMP26 Category Report: Continuous and Hybrid Systems with Linear Continuous Dynamics", EPiC
-Series in Computing 110, pp. 28-51), run on the same machine as CORA.cpp here, so the times compare
-directly; other jobs share its 16 CPUs, which can slow a single run.
+The expected verdict is that of the ARCH-COMP26 AFF report (Althoff, Carraro, Forets, Perschl,
+Schilling, "ARCH-COMP26 Category Report: Continuous and Hybrid Systems with Linear Continuous Dynamics",
+EPiC Series in Computing 110, pp. 28-51), whose CORA and JuliaReach times were run on the same machine as
+CORA.cpp's. The verdict of CORA.cpp is CORA's `res`; every one equals MATLAB CORA's on the script
+(ARCH23: the ISU instances, RAND02, SRU01 and SRU02, PLAN01 and BRKNP01 are not verified; PLAN01 and BRKNP01: below).
 ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 and adds HEAT04 (heat50, 125 000
 states, Krylov), a target for later: not run here (its data would be about 14 MB). The instances
-here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet.
+here stay those of the ARCH23 scripts.
 
-| instance | expected | CORA.cpp | CORA.cpp [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] |
-| --- | --- | --- | --- | --- | --- |
-| HEAT01 | 1 | 1 | 0.064 | 0.13 | 0.04 |
-| HEAT02 | 1 | 1 | 3.39 | 3.04 | 2.60 |
-| HEAT03 | 1 | 1 | 14.6 | 21.8 | - |
-| CBC01 | 1 | 1 | 0.162 | 0.28 | 0.05 |
-| CBC02 | 1 | 1 | 3.88 | 3.68 | 0.80 |
-| CBC03 | 1 | 1 | 44.5 | 37.27 | 3.74 |
-| CBF01 | 1 | 1 | 0.255 | 0.40 | 1.99 |
-| CBF02 | 1 | 1 | 4.51 | 5.38 | 70.0 |
-| CBF03 | 1 | 1 | 66.5 | 67.79 | 869 |
-| ISSC01_ISS02 | 1 | 1 | 0.153 | - | - |
-| ISSC01_ISU02 | 0 | 0 | 0.522 | - | - |
-| ISSF01_ISS01 | 1 | 1 | 0.628 | - | - |
-| ISSF01_ISU01 | 0 | 0 | 0.194 | - | - |
-| RAND01 | 1 | 1 | 0.0023 | - | - |
-| RAND02 | 0 | 0 | 0.017 | - | - |
-| SRNA01 | 1 | 1 | 0.473 | 51.87 | 1.09 |
-| SRA01 | 1 | 1 | 0.204 | 10.94 | 1.17 |
-| SRA02 | 1 | 1 | 0.102 | 17.49 | 1.24 |
-| SRA03 | 1 | 1 | 0.178 | 27.40 | 1.79 |
-| SRA04 | 1 | 1 | 0.484 | 39.05 | 108 |
-| SRA05 | 1 | 1 | 0.464 | 67.33 | - |
-| SRA06 | 1 | 1 | 0.472 | 71.46 | - |
-| SRA07 | 1 | 1 | 2.49 | 120 | - |
-| SRA08 | 1 | 1 | 5.27 | 239 | - |
-| SRU01 | 0 | 0 | 0.413 | 25.86 | 11.79 |
-| SRU02 | 0 | 0 | 5.93 | 244 | 20.00 |
-| DTN01\* | 1 | 1 | 0.508 | 9.69 | 0.005 |
-| DTN02\* | 1 | 1 | 0.618 | 10.43 | 0.005 |
-| DTN03\* | 1 | 1 | 0.914 | 10.27 | 0.006 |
-| DTN04\* | 1 | 1 | 19.4 | 48.29 | 0.127 |
-| DTN05\* | 1 | 1 | 35.5 | 90.76 | 0.007 |
-| DTN06\* | 1 | 1 | 110 | 227 | 0.009 |
-| PLAA01_BND42 | 1 | 1 | 10.5 | 25.02 | 180 |
-| PLAA01_BND50 | 1 | 1 | 4.19 | 7.77 | 22.01 |
-| PLAD01_BND30 | 1 | 1 | 0.306 | 4.03 | 62.82 |
-| PLAD01_BND42 | 1 | 1 | 0.066 | 3.07 | 0.05 |
-| PLAN01 | 0 | 0 | 47.9 | 162 (verified, other setup) | - |
-| GRBX01 | 1 | 1 | 0.03 | 2.28 | 2.89 |
-| GRBX02 | 1 | 1 | 0.037 | 2.44 | 3.15 |
-| BRKDC01 | 1 | 1 | 0.037 | 22.66 | 0.10 |
-| BRKNC01 | 1 | 1 | 4.83 | 32.07 | 0.17 |
-| BRKNP01 | 0 | 0 (reach_set_explosion) | 0.001 | 52.20 | 16.99 |
+| instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| HEAT01 | 1 | 1 | 0.064 | 1/8 bit-exact, 2 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
+| HEAT02 | 1 | 1 | 3.39 | 1/8 bit-exact, 2 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
+| HEAT03 | 1 | 1 | 14.6 | 10/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 1.49 |
+| CBC01 | 1 | 1 | 0.162 | 1/8 bit-exact, 2 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
+| CBC02 | 1 | 1 | 3.88 | 1/8 bit-exact, 2 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
+| CBC03 | 1 | 1 | 44.5 | 1/8 bit-exact, 2 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
+| CBF01 | 1 | 1 | 0.255 | 1/8 bit-exact, 2 property | - | 0.4 | 0.4 (CORA) | 1.57 |
+| CBF02 | 1 | 1 | 4.51 | 1/8 bit-exact, 2 property | - | 5.38 | 5.38 (CORA) | 1.19 |
+| CBF03 | 1 | 1 | 66.5 | 1/8 bit-exact, 2 property | - | 67.79 | 67.79 (CORA) | 1.02 |
+| ISSC01_ISS02 | 1 (ARCH23) | 1 | 0.153 | 1/8 bit-exact, 2 property | - | - | - | - |
+| ISSC01_ISU02 | 0 (ARCH23) | 0 | 0.522 | 1/8 bit-exact, 2 property | - | - | - | - |
+| ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.628 | 1/8 bit-exact, 2 property | - | - | - | - |
+| ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.194 | 1/8 bit-exact, 2 property | - | - | - | - |
+| RAND01 | 1 (ARCH23) | 1 | 0.0023 | 5/13 bit-exact, 2 property | - | - | - | - |
+| RAND02 | 0 (ARCH23) | 0 | 0.017 | 5/13 bit-exact, 2 property | - | - | - | - |
+| SRNA01 | 1 | 1 | 0.473 | 23/40 bit-exact, 6 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
+| SRA01 | 1 | 1 | 0.204 | 26/46 bit-exact, 6 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
+| SRA02 | 1 | 1 | 0.102 | 34/56 bit-exact, 7 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
+| SRA03 | 1 | 1 | 0.178 | 34/56 bit-exact, 7 property | - | 27.4 | 1.79 (JuliaReach) | 10.1 |
+| SRA04 | 1 | 1 | 0.484 | 26/46 bit-exact, 6 property | - | 39.05 | 39.05 (CORA) | 80.7 |
+| SRA05 | 1 | 1 | 0.464 | 34/56 bit-exact, 7 property | - | 67.33 | 67.33 (CORA) | 145 |
+| SRA06 | 1 | 1 | 0.472 | 34/56 bit-exact, 7 property | - | 71.46 | 71.46 (CORA) | 151 |
+| SRA07 | 1 | 1 | 2.49 | 42/67 bit-exact, 9 property | - | 120 | 120 (CORA) | 48.2 |
+| SRA08 | 1 | 1 | 5.27 | 42/67 bit-exact, 9 property | - | 239 | 239 (CORA) | 45.4 |
+| SRU01 | 0 | 0 | 0.413 | 27/47 bit-exact, 6 property | - | 25.86 | 11.79 (JuliaReach) | 28.5 |
+| SRU02 | 0 | 0 | 5.93 | 42/67 bit-exact, 9 property | - | 244 | 20 (JuliaReach) | 3.37 |
+| DTN01 | 1 | 1 | 0.508 | 21/37 bit-exact, 6 property | - | 9.69 | 9.69 (CORA) [a] | 19.1 |
+| DTN02 | 1 | 1 | 0.618 | 21/37 bit-exact, 6 property | - | 10.43 | 10.43 (CORA) [a] | 16.9 |
+| DTN03 | 1 | 1 | 0.914 | 21/37 bit-exact, 6 property | - | 10.27 | 10.27 (CORA) [a] | 11.2 |
+| DTN04 | 1 | 1 | 19.4 | 21/37 bit-exact, 6 property | - | 48.29 | 48.29 (CORA) [a] | 2.49 |
+| DTN05 | 1 | 1 | 35.5 | 21/37 bit-exact, 6 property | - | 90.76 | 90.76 (CORA) [a] | 2.56 |
+| DTN06 | 1 | 1 | 110 | 21/37 bit-exact, 6 property | - | 227 | 227 (CORA) [a] | 2.06 |
+| PLAA01_BND42 | 1 | 1 | 10.5 | 23/35 bit-exact, 7 property | - | 25.02 | 25.02 (CORA) | 2.38 |
+| PLAA01_BND50 | 1 | 1 | 4.19 | 23/35 bit-exact, 7 property | - | 7.77 | 7.77 (CORA) | 1.85 |
+| PLAD01_BND30 | 1 | 1 | 0.306 | 9/17 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.2 |
+| PLAD01_BND42 | 1 | 1 | 0.066 | 9/17 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.76 |
+| PLAN01 | 1 (script: 0) | 0 | 47.9 | 31/45 bit-exact, 8 property | 173 | 162 | 162 (CORA) | - |
+| GRBX01 | 1 | 1 | 0.03 | 30/56 bit-exact, 12 property | - | 2.28 | 2.28 (CORA) | 76.0 |
+| GRBX02 | 1 | 1 | 0.037 | 30/56 bit-exact, 12 property | - | 2.44 | 2.44 (CORA) | 65.9 |
+| BRKDC01 | 1 | 1 | 0.037 | 4/12 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.70 |
+| BRKNC01 | 1 | 1 | 4.83 | 31/54 bit-exact, 9 property | - | 32.07 | 0.17 (JuliaReach) | 0.035 |
+| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.001 | 24/44 bit-exact, 12 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
+
+[a] DTN01-06: JuliaReach's repeatability code (0.005-0.127 s) runs `powertrain_homog(θ=k)` for DTN0k with the full
+initial set; the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %.
+
+[b] BRKNP01: JuliaReach's code (16.99 s) does not enforce the property (`validate=false`) and runs up to
+1001 jumps (t = 0.1), where the report verifies x < x0 up to t = 0.08.
 
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
-(verdict 0 in 173 s, `CHECKS_ENABLED` off), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
+(verdict 0, the CORA column), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
 x7 >= -50.65, past the bound -50. The ARCH26 report lists PLAN01 as verified (162 s) with a different
-setup, so its time is not comparable. The algorithm is ported step by step (expmIndMixed, priv_tie,
+setup, so the speedup is left out. The algorithm is ported step by step (expmIndMixed, priv_tie,
 priv_inputSolution, initReach, post) and the constant-parameter instances PLAA01 agree. The
 script's invariant check stops after one step: its `aux_inViaProj(Z1, Z2)` tests that Z1 holds Z2
 (`contains(Z1proj, Z2proj)`), the reverse of its comment, and the first set holds the start set
@@ -106,7 +144,7 @@ time-interval enclosure and the Jawecki bound outside the nonexpansive case,
 CORA, so the same holds here. HEAT03 takes about 15 s, so it is a `benchmark` test only.
 
 **BRKNP01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
-(verdict 0 in 438 s, `CHECKS_ENABLED` off, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
+(verdict 0, the CORA column, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
 becomes the constant input `uTrans = 1` with `U = {0}`, which does not hold the origin, so
 `priv_inputTie` adds the curvature of the constant input; its series does not converge
 (`norm(A, inf) r / (taylorTerms + 2)` is 18.3 for `r = 2e-5`) and its remainder is unbounded.
@@ -116,7 +154,7 @@ sets are unbounded, `reach` raises `reach_set_explosion` at once (0.001 s) and t
 verdict 0, CORA's. Before that error CORA.cpp ran for over 30 minutes: Inf times a zero entry of
 `uTrans` gave NaN sets, which the hybrid loop jumped from again and again at the same time
 (docs/cora-differences.md). The ARCH26 report lists BRKNP01 as verified (52.20 s), with a
-different setup.
+different setup, so the speedup is left out.
 
 **Guard boxes.** The guards of `nondetGuard` and `conZonotope` cut each set by the polytope (the
 rows stay rows on the factors, `ConZonotope::cut`) and box the cut by the option `box`
@@ -131,12 +169,6 @@ bounds with it in directed order (`ConZonotope::Cut::interval_cert`, CORALean's
 passes from 1 to 1000. The driver of BRKNC01 and BRKNP01 therefore sets `box = cert`.
 
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
-of each family also an `example` test (CONTRIBUTING.md, "Test suites").
-
-\* The JuliaReach times of DTN01-06 are not comparable. Its public code
-(github.com/JuliaReach/ARCH2025_AFF_RE, `models/Powertrain/powertrain_benchmark.jl`, unchanged since
-2021) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report defines
-θ = 2/22 and the scales 5 %, 30 % and 100 % of the initial set.
 
 ## NLN results
 
@@ -151,23 +183,43 @@ three cases) with alg "lin-adaptive" (`alg::LinearizationAdaptive`), `benchmark_
 `benchmark_hybrid_reach_arch23_lotkavolterra` (LOVO25, level set guards and invariants). The expected verdict is that of the
 ARCH-COMP26 NLN report (Geretti et al., "ARCH-COMP26 Category Report: Continuous and Hybrid
 Systems with Nonlinear Dynamics", EPiC Series in Computing 110, pp. 52-84), whose CORA and
-JuliaReach times are from the same machine as CORA.cpp's (core preset, 09-November-2026, one run
-each; other jobs share its 16 CPUs). The quality metrics of the report (LALO width of x4, ROBE
+JuliaReach times are from the same machine as CORA.cpp's. The quality metrics of the report (LALO width of x4, ROBE
 width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and TSPS25 have none.
 
-| instance | expected | CORA.cpp | CORA.cpp [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] | metric |
-| --- | --- | --- | --- | --- | --- | --- |
-| TRAF22 | 1 | 1 | 0.919 | 152 | 32 | - |
-| SPRE22 | 1 | 1 | 1.04 | 37 | 61 | - |
-| ROBE25 (1) | 1 | 1 | 25.6 | 151 | 25 | width of s 2.28e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
-| ROBE25 (2) | 1 | 1 | 325 | 239 | 92 | width of s 7.17e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
-| ROBE25 (3) | 1 | 1 | 100 | 310 | 217 | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
-| CVDP23 | 1 | 1 | 58.6 | 571 | 0.4 | - |
-| LALO20 W001 | 1 | 1 | 2.24 | 9.3 | 1.1 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
-| LALO20 W005 | 1 | 1 | 15.3 | 17 | 0.7 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
-| LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 248 | 0.9 | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
-| TSPS25 | 1 | 1 | 65 | 299 | N/A | - |
-| LOVO25 | 1 | 1 | 0.185 | 9.6 | 1.6 | area 8.92e-3 (CORA 8.9e-3) |
+| instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TRAF22 | 1 | 1 | 0.919 | 15/30 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
+| SPRE22 | 1 | 1 | 1.04 | 37/65 bit-exact, 11 property | 34.3 | 37 | 37 (CORA) | 35.6 |
+| ROBE25 (1) | 1 | 1 | 25.6 | 10/24 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.98 |
+| ROBE25 (2) | 1 | 1 | 325 | 10/24 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.28 |
+| ROBE25 (3) | 1 | 1 | 100 | 10/24 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.17 |
+| CVDP23 | 1 | 1 | 58.6 | 30/70 bit-exact, 17 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
+| LALO20 W001 | 1 | 1 | 2.24 | 10/24 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.15 |
+| LALO20 W005 | 1 | 1 | 15.3 | 10/24 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.11 |
+| LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 12/37 bit-exact, 11 property | 346 | 248 | 248 (CORA) [c] | 24.1 |
+| TSPS25 | 1 | 1 | 65 | 17/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
+| LOVO25 | 1 | 1 | 0.185 | 27/82 bit-exact, 20 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 51.9 |
+
+[a] TRAF22: JuliaReach's code (32 s) holds the disturbances w constant (w' = 0), where the report lets them vary
+arbitrarily over time.
+
+[b] ROBE25: KeYmaera X (0.2 s) proves that x + y + z is preserved, not the width bound; not counted.
+
+[c] LALO20: JuliaReach's code (0.7-1.1 s) has x7' = 1.8 x6 - 1.6 x2 x7, where the report has 1.5; KeYmaera X (12.8 s)
+checks a model on t in [0, 0.1] and PRoTECT (4.4 s) a stronger one on t in [0, inf); none is counted.
+
+[d] LOVO25: JuliaReach's code (1.6 s) integrates the flow without the hybrid automaton and checks only the area, not the
+crossing counts; KeYmaera X (1.7 s) proves invariance only; neither is counted.
+
+| instance | quality metric (CORA.cpp; ARCH26 CORA, JuliaReach) |
+| --- | --- |
+| ROBE25 (1) | width of s 2.28e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
+| ROBE25 (2) | width of s 7.17e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
+| ROBE25 (3) | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
+| LALO20 W001 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
+| LALO20 W005 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
+| LALO20 W01 (stand-in) | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
+| LOVO25 | area 8.92e-3 (CORA 8.9e-3) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -191,10 +243,8 @@ times), and the box of its last set agrees with CORA.cpp's to all printed digits
 same specifications as the script (line of sight 20 degrees, velocity bounds, no hit of the station
 [-1, 1]^2 after the abort).
 
-**MATLAB times.** The MATLAB times quoted for PLAN01, BRKNP01, TRAF22, SPRE22, CVDP23, LALO20 and LOVO25 are from MATLAB R2024b,
-CORA v2026.1.0, `CHECKS_ENABLED` off (as in the ARCH-COMP runs; CORA's default is on, which is slower),
-4 threads, this machine, run one at a time; the machine was shared (load
-average 10 to 15 when they started).
+**MATLAB times.** The CORA column was measured with the machine shared (load
+average 10 to 15 when the runs started).
 
 **ROBE25** (`..._Robertson.m`, ARCH26 instances (1), (2), (3) as `ROBE25_1` to `ROBE25_3`) is the
 Robertson reaction x' = -0.4 x + b y z, y' = 0.4 x - b y z - c y^2, z' = c y^2 from (1, 0, 0) to
@@ -307,31 +357,40 @@ Single Pendulum, Double Pendulum (less-robust, more-robust), Airplane and Attitu
 plants are `NonlinearSys` written out as the model files write them, the networks are
 `data/networks/<name>.nn.json` and `.nn.bin` (the layers, their activation and the doubles, written from
 the example scripts by `examples/matlab/benchmarks/export_network_data.m`, so the numbers are CORA's).
-The verdict is that of the specification of the ARCH-COMP26 AINNCS report (Sasaki et al., "ARCH-COMP26
+The expected verdict is that of the specification of the ARCH-COMP26 AINNCS report (Sasaki et al., "ARCH-COMP26
 Category Report: Artificial Intelligence and Neural Network Control Systems (AINNCS) for Continuous and
-Hybrid Systems Plants", Table 1 for CORA, Table 4 for JuliaReach), and the program counts the
+Hybrid Systems Plants", Tables 1 to 4 for CORA, CROWN-Reach, immrax and JuliaReach; probably the same
+kind of machine as CORA.cpp's), and the program counts the
 instances that differ from CORA's verdict. The time is `verify`: the random simulations (20 runs
-here, 10 in CORA) and the reach, with the derivation of the plant's Jacobians and Hessians. CORA.cpp's
-times are wall clock (core preset, 11-November-2026, one run each, one at a time, load average 4 to 9
-on 16 CPUs); the MATLAB times are MATLAB R2024b, CORA v2026.1.0, `CHECKS_ENABLED` shadowed to `false`,
-4 threads, this machine, each example script run once after `rng(1)`, load average 6 to 10; the ARCH26
-columns are the times of CORA and JuliaReach in the report (probably the same kind of machine as the
-other ARCH26 columns here). A verdict `F` is FALSIFIED by a simulated run that the reach from its start
+here, 10 in CORA) and the reach, with the derivation of the plant's Jacobians and Hessians. The MATLAB
+example scripts ran once after `rng(1)`. A verdict `F` is FALSIFIED by a simulated run that the reach from its start
 point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
-| instance | expected (CORA ARCH26) | CORA.cpp | CORA.cpp [s] | MATLAB CORA, checks off [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] |
-| --- | --- | --- | --- | --- | --- | --- |
-| Unicycle reach | V | V | 0.41 | 8.87 (V) | 8.015 | 7.093 |
-| Unicycle reach, with the report's disturbance w | V | V | 0.40 | - | - | - |
-| ACC safe-distance | V | V | 0.24 | 4.20 (V) | 3.176 | 0.492 |
-| TORA remain | V | V | 1.22 (time_step 0.1) | 9.03 (V) | 8.998 | 65.557 |
-| TORA reach-tanh | V | V | 0.15 | 2.28 (V) | 2.356 | 0.115 |
-| TORA reach-sigmoid | V | V | 0.28 (time_step 0.025) | 5.09 (V) | 4.730 | 0.146 |
-| Single Pendulum reach | V | V | 0.041 | 4.03 (V) | 4.083 | 4.137 |
-| Double Pendulum less-robust | U | U | 0.13 | 5.06 (U) | 5.604 | 824.729 (V) |
-| Double Pendulum more-robust | F | F | 0.11 | 4.76 (F) | 5.589 | 0.394 (F) |
-| Airplane continuous | F | F | 0.53 | 6.78 (F) | 6.809 | 1.923 (F) |
-| Attitude Control avoid | V | V | 0.42 | 5.71 (V) | 5.226 | 7.176 |
+| instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Unicycle reach | V | V | 0.41 | 21/54 bit-exact, 8 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 17.3 |
+| Unicycle reach, with the report's disturbance w | V | V | 0.4 | 21/54 bit-exact, 8 property | - | 8.015 | 7.093 (JuliaReach) | 17.7 |
+| ACC safe-distance | V | V | 0.24 | 21/60 bit-exact, 13 property | 4.2 | 3.176 | 0.492 (JuliaReach) [a] | 2.05 |
+| TORA remain | V | V | 1.22 | 21/61 bit-exact, 14 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.34 |
+| TORA reach-tanh | V | V | 0.15 | 21/60 bit-exact, 13 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
+| TORA reach-sigmoid | V | V | 0.28 | 21/61 bit-exact, 14 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
+| Single Pendulum reach | V | V | 0.041 | 21/60 bit-exact, 13 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
+| Double Pendulum less-robust | V (CORA: U) | U | 0.13 | 21/54 bit-exact, 8 property | 5.06 | 5.604 | 67.334 (CROWN-Reach) | - |
+| Double Pendulum more-robust | F | F | 0.11 | 21/60 bit-exact, 13 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
+| Airplane continuous | F | F | 0.53 | 21/60 bit-exact, 13 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
+| Attitude Control avoid | V | V | 0.42 | 21/62 bit-exact, 14 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
+
+[a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback instead of the
+report's sample-and-hold control; not counted.
+
+[b] Single Pendulum: CROWN-Reach's code (0.647 s) checks an empty unsafe set (x1 <= 0 and x1 >= 1 at once) instead of
+theta outside [0, 1].
+
+[c] Attitude Control: CROWN-Reach's code (3.237 s) has an empty unsafe box (x4 >= -0.4 and x4 <= -0.6, where the report
+has x4 in [-0.7, -0.6]).
+
+Double Pendulum less-robust: CORA.cpp's time is for an UNKNOWN, the best time (CROWN-Reach) for a verification.
+TORA remain runs with time_step 0.1 and reach-sigmoid with time_step 0.025 (below).
 
 **The loop.** `NeurNetContrSys` is CORA's: per control period the network is enclosed over the current set
 together with its input (`NeuralNetwork::evaluate_with_input`), the plant extended by the held outputs
@@ -394,6 +453,7 @@ custom discrete algorithm, and the scripts of QUAD, Docking, NAV and CartPole ar
 checkout. The plants of `NeurNetContrSys` are `NonlinearSys` only; `LinearSys`, `LinParamSys`
 and the discrete-time systems of CORA's class have no instance here, and CORA.cpp has no
 discrete-time systems yet. `verify` does not split the initial set (`splitR0` of CORA).
+
 
 ## Run
 
