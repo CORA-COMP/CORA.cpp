@@ -24,6 +24,32 @@ namespace {
 // The constrained zonotope `cZ` of the response to `op` on the operands.
 ConZonotope aux_set(const Reply &reply) { return reply.get<ConZonotope>("cZ"); }
 
+/// The multipliers of one end as the oracle's {y, zu, zl}, three columns.
+CORA_FROM_NUMBERS Json aux_end(const cora::ConZonotope::CertWeights &w) {
+    const auto column = [](const std::vector<double> &v) {
+        return Tensor::from(cora::Tensor::from_data(v, {int64_t(v.size()), 1})).to_json();
+    };
+    Json end = Json::object();
+    end.set("y", column(w.y)).set("zu", column(w.zu)).set("zl", column(w.zl));
+    return end;
+}
+
+/// The multipliers of one end in the response.
+cora::ConZonotope::CertWeights aux_read_end(const Reply &end) {
+    return {end.get<Tensor>("y").gather().data(), end.get<Tensor>("zu").gather().data(),
+            end.get<Tensor>("zl").gather().data()};
+}
+
+/// The box and the multipliers of the response.
+ConZonotope::Cert aux_cert(const Reply &reply) {
+    ConZonotope::Cert out{reply.get<Interval>("I"), {}};
+    for (const Reply &entry : reply.list("weights")) {
+        out.weights.up.push_back(aux_read_end(entry.member("up")));
+        out.weights.lo.push_back(aux_read_end(entry.member("lo")));
+    }
+    return out;
+}
+
 } // namespace
 
 
@@ -36,6 +62,16 @@ ConZonotope::ConZonotope(const cora::ConZonotope &cz)
     : dtype_(Tensor(cz.c()).dtype()), json_(Json::object()) {
     json_.set("c", Tensor(cz.c()).to_json()).set("G", Tensor(cz.generators()).to_json());
     json_.set("A", Tensor(cz.A()).to_json()).set("b", Tensor(cz.b()).to_json());
+}
+
+// the wire form of a cut: the factor rows C x <= d are the polytope's inequalities
+ConZonotope::ConZonotope(const cora::ConZonotope::Cut &cut)
+    : dtype_(Tensor(cut.c).dtype()), json_(Json::object()) {
+    json_.set("c", Tensor(cut.c).to_json()).set("G", Tensor(cut.G).to_json());
+    Json P = Json::object();
+    P.set("A", Tensor(cut.C).to_json()).set("b", Tensor(cut.d).to_json());
+    P.set("Ae", Tensor(cut.A).to_json()).set("be", Tensor(cut.b).to_json());
+    json_.set("P", std::move(P));
 }
 
 bool ConZonotope::exact() const {
@@ -89,6 +125,24 @@ Interval ConZonotope::interval() const {
 Interval ConZonotope::interval_tight(int64_t k) const {
     return ask("conZonotope.intervalTight", {{"cZ", *this}, {"k", k}}).get<Interval>("I");
 }
+
+
+ConZonotope::Cert ConZonotope::interval_cert(const cora::ConZonotope::Certificate &w) const {
+    // the multipliers of both ends of every coordinate, as the oracle's `y`
+    Json y = Json::array();
+    for (std::size_t i = 0; i < w.up.size(); ++i) {
+        Json both = Json::object();
+        both.set("up", aux_end(w.up[i])).set("lo", aux_end(w.lo[i]));
+        y.push(std::move(both));
+    }
+    return aux_cert(ask("conZonotope.intervalCert", {{"cZ", *this}, {"y", Wire(y, dtype_)}}));
+}
+
+ConZonotope::Cert ConZonotope::interval_cert() const {
+    return aux_cert(ask("conZonotope.intervalCert", {{"cZ", *this}}));
+}
+
+// The bounds and predicates --------------------------------------------------------------------
 
 double ConZonotope::support_function(const Tensor &dir) const {
     return ask("conZonotope.supportFunc", {{"cZ", *this}, {"dir", dir}, {"type", "upper"}})

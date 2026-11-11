@@ -87,14 +87,15 @@ Cycle aux_cycle() {
 }
 
 /// The options of both: conZonotope guards of order 5, enclosed by box and pca; the cuts are boxed
-/// by linear programs (`exact_cut`, as CORA): the Fourier-Motzkin boxes lose the verdict of
-/// BRKNC01.
+/// by the dual certificates of linear programs (`CutBox::cert`, as tight as CORA's ranges): the
+/// Fourier-Motzkin boxes lose the verdict of BRKNC01.
 alg::HybridStandard aux_options(int taylor_terms) {
     alg::HybridStandard a;
     a.time_step = {T_sample / 5};
     a.taylor_terms = taylor_terms;
     a.zonotope_order = 20;
-    a.guard_intersect = alg::ConZonotopeGuard{{alg::Enclose::box, alg::Enclose::pca}, 5, 10, true};
+    a.guard_intersect =
+        alg::ConZonotopeGuard{{alg::Enclose::box, alg::Enclose::pca}, 5, alg::CutBox::cert};
     return a;
 }
 

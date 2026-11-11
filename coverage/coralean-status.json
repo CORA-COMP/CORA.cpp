@@ -1,5 +1,5 @@
 {
- "coralean_commit": "76f25ea058f2942b0810db035cdc7875324ff755",
+ "coralean_commit": "f9723f6f698bb8ced589902e6607cf8a4890391f",
  "rows": {
   "contDynamics/contDynamics/conform": {
    "status": "out-of-scope",
@@ -452,10 +452,10 @@
   "contDynamics/linearSys/initReach": {
    "status": "float",
    "decls": [
-    "LinearSys.reachStepk",
+    "LinearSys.reach",
     "LinearSys.WithInput.reachStepk",
     "LinearSys.WithInputSplit.reachStepk",
-    "LinearSys.reachStepk_outer",
+    "LinearSys.timeInterval_timePoint_outer",
     "LinearSys.reachStepkWrappingFree_outer",
     "LinearSys.reachStepkWrappingFreeFloat",
     "LinearSys.reachStepkWrappingFreeFloat_outer"
@@ -1200,6 +1200,17 @@
     "NonlinearSys.step_adaptLinPass",
     "NonlinearSys.IsTrajectory.confinement_of_subset",
     "NonlinearSys.reachSetExact_confinement_of_subset",
+    "NonlinearSys.FloatHessModel.linReachAdaptiveFloat",
+    "NonlinearSys.FloatHessModel.linReachAdaptivePassFloat",
+    "NonlinearSys.FloatHessModel.abstrErrAdaptiveFloat",
+    "NonlinearSys.optimalDeltatAdaptiveFloat",
+    "NonlinearSys.varphiEstFloat",
+    "NonlinearSys.varphiTotalFloat",
+    "NonlinearSys.adaptiveOrdersFloat",
+    "NonlinearSys.FloatHessModel.Encloses.linReachAdaptiveFloat_outer",
+    "NonlinearSys.FloatHessModel.Encloses.linReachAdaptivePassFloat_outer",
+    "NonlinearSys.FloatHessModel.Encloses.abstrErrAdaptiveFloat_mem",
+    "NonlinearSys.HasFixedPointConfinement",
     "NonlinearSys.FloatModel.adaptLinPassFloat",
     "NonlinearSys.FloatModel.adaptLinPassFloat_outer"
    ]
@@ -1258,6 +1269,9 @@
     "NonlinearSys.IsTrajectory.relinReach_evalOn",
     "NonlinearSys.IsTrajectory.relinReach_outer",
     "NonlinearSys.IsTrajectory.relinReach_outer_inputSolution",
+    "NonlinearSys.FloatHessModel.reachAdaptiveFloat",
+    "NonlinearSys.linReachAdaptiveInit",
+    "NonlinearSys.FloatHessModel.Encloses.reachAdaptiveFloat_outer",
     "NonlinearSys.FloatHessModel.adaptRunFloat",
     "NonlinearSys.FloatHessModel.Encloses.adaptRunFloat_outer"
    ]
@@ -2174,7 +2188,9 @@
     "ConZonotope.interval",
     "ConZonotope.interval_contains",
     "ConZonotope.intervalTight",
-    "ConZonotope.intervalTight_contains"
+    "ConZonotope.intervalTight_contains",
+    "ConZonotope.intervalCertWith",
+    "ConZonotope.intervalCertWith_contains"
    ]
   },
   "contSet/conZonotope/isBounded": {
@@ -2468,7 +2484,7 @@
   "contSet/contSet/contSet": {
    "status": "float",
    "decls": [
-    "ContSet"
+    "ContSetLike"
    ]
   },
   "contSet/contSet/contains": {
@@ -2996,7 +3012,7 @@
    "decls": [
     "OptEmpty",
     "OptEmpty.toSet_empty",
-    "ContSet"
+    "ContSetLike"
    ]
   },
   "contSet/ellipsoid/enclose": {
@@ -7563,7 +7579,7 @@
    "decls": [
     "OptEmpty",
     "OptEmpty.toSet_empty",
-    "ContSet"
+    "ContSetLike"
    ]
   },
   "contSet/zonotope/enclose": {
@@ -7887,7 +7903,9 @@
     "Zonotope.reduceLineCl",
     "Zonotope.reduceHybridPC",
     "Zonotope.reduceLineCl_outer",
-    "Zonotope.reduceHybridPC_outer"
+    "Zonotope.reduceHybridPC_outer",
+    "Zonotope.reduceAdaptive",
+    "Zonotope.reduceAdaptive_outer"
    ]
   },
   "contSet/zonotope/reduceUnderApprox": {

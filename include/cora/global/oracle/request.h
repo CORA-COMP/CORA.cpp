@@ -89,6 +89,9 @@ class Reply {
     /// The elements of the array `key`, each a reply on its own: their members are read with get.
     std::vector<Reply> list(const char *key) const;
 
+    /// The member `key`, an object, as a reply on its own.
+    Reply member(const char *key) const;
+
     /// The answer of a `contains` (a proof when true) or an `isIntersecting` (a proof of
     /// disjointness, so a proof when false) request.
     Certified proved_contains() const;

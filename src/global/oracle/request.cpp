@@ -263,6 +263,8 @@ std::vector<Reply> Reply::list(const char *key) const {
     return replies;
 }
 
+Reply Reply::member(const char *key) const { return {dtype_, json_.at(key)}; }
+
 // A contains proves with true, an isIntersecting (disjoint) proves with false.
 Certified Reply::proved_contains() const {
     const bool proved = get<bool>("contains");

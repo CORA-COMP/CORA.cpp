@@ -68,11 +68,13 @@ struct Location {
                                                   const cora::Tensor &normal, double gamma);
 
     /// The bundle with one box per basis of the parallelotope of the sets cut by the polytope
-    /// guard, each cut boxed by fm_passes passes (`location.guardIntersect_nondetGuard`).
+    /// guard, each cut boxed by the method box ("fm" with fm_passes passes, "cert", or "both";
+    /// `location.guardIntersect_nondetGuard`).
     static ZonoBundle guard_intersect_nondet_guard(const std::vector<cora::Tensor> &Bs,
                                                    const cora::Zonotope &R0,
                                                    const std::vector<cora::Zonotope> &R,
-                                                   const cora::Polytope &guard, int64_t fm_passes);
+                                                   const cora::Polytope &guard, int64_t fm_passes,
+                                                   const std::string &box = "fm");
 
     /// The same for the sets reduced to guard_order and cut one by one
     /// (`location.guardIntersect_conZonotope`).
@@ -80,7 +82,8 @@ struct Location {
                                                    const cora::Zonotope &R0,
                                                    const std::vector<cora::Zonotope> &R,
                                                    const cora::Polytope &guard, int64_t guard_order,
-                                                   int64_t fm_passes);
+                                                   int64_t fm_passes,
+                                                   const std::string &box = "fm");
 };
 
 struct Transition {

@@ -2,14 +2,15 @@
 //
 // Per basis B, the sets are enclosed by the box of their images B'R, united, and mapped back;
 // that zonotope is cut by the guard (its rows kept on the factors, ConZonotope::cut), and the cut
-// is enclosed by its box in the same basis, from fm_passes Fourier-Motzkin passes (CORALean's
-// guardIntersectNondetHFloat; CORA solves a linear program per bound). Several bases give a bundle.
+// is enclosed by its box in the same basis (priv_box_cut: Fourier-Motzkin passes, the dual
+// certificates of CORA's linear programs, or both; CORALean's guardIntersectNondetHFloat).
+// Several bases give a bundle.
 //
-// Syntax:   std::optional<Set> S = priv_guard_intersect_nondet_guard(R, guard, B, fm_passes);
+// Syntax:   std::optional<Set> S = priv_guard_intersect_nondet_guard(R, guard, B, box, k);
 // Inputs:   R - the sets that meet the guard
 //           guard - the guard (any polytope)
 //           B - the bases (n, n)
-//           fm_passes - the passes that box a cut; none: CORA's linear programs (exact, slower)
+//           box - how a cut is boxed (alg::CutBox), fm_passes - the passes of fm and both
 // Outputs:  S - the enclosure (a zonotope, or a bundle for several bases); none if empty
 // See also: priv_guard_intersect, priv_calc_basis
 //
@@ -32,8 +33,8 @@ namespace cora {
 
 std::optional<Set> priv_guard_intersect_nondet_guard(const std::vector<Set> &R,
                                                      const Polytope &guard,
-                                                     const std::vector<Tensor> &B,
-                                                     std::optional<int> fm_passes) {
+                                                     const std::vector<Tensor> &B, alg::CutBox box,
+                                                     int fm_passes) {
     std::vector<Zonotope> parts;
     for (const Tensor &basis : B) {
         // the union of the boxes of the sets in the basis, back in the state space
@@ -47,8 +48,7 @@ std::optional<Set> priv_guard_intersect_nondet_guard(const std::vector<Set> &R,
         const Zonotope Z = I->zonotope().linear_map(basis);
         // its cut by the guard, boxed in the same basis
         const ConZonotope cz(Z);
-        const Interval cut = fm_passes ? cz.cut(guard).linear_map(Bt).interval_tight(*fm_passes)
-                                       : cz.intersect(guard).linear_map(Bt).interval();
+        const Interval cut = priv_box_cut(cz.cut(guard).linear_map(Bt), box, fm_passes);
         if (cut.is_empty()) return std::nullopt; // CORA drops an empty part, and so the set
         parts.push_back(cut.zonotope().linear_map(basis));
     }

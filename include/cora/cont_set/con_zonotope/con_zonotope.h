@@ -11,7 +11,8 @@
 //             intersect_strip, contains, approximate_bounds, display, origin, plus, linear_map,
 //             lift, reduce, quad_map, rescale, representsa, isequal, is_intersecting, split, unite,
 //             minkowski_difference, project, support_function, vertices, rand_point, zonotope,
-//             zono_bundle, polytope, generate_random, cut, interval_tight (one file each).
+//             zono_bundle, polytope, generate_random, cut, interval_tight, interval_cert (one file
+//             each).
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@conZonotope/conZonotope.m
@@ -144,6 +145,19 @@ class ConZonotope : public ContSet {
     /// inequality the set breaks a constraint with a new factor. Not a batch.
     ConZonotope intersect(const Polytope &P) const;
 
+    /// The multipliers of one bound of max / min e'(c + G x): y for the rows C x <= d, zu and zl
+    /// for the two halves of A x = b. Any values bound soundly (below 0 counts as 0); the dual
+    /// solution of the program bounds tightly.
+    struct CertWeights {
+        std::vector<double> y, zu, zl;
+    };
+
+    /// The multipliers of both ends of every coordinate: `up[i]` bounds e_i'x, `lo[i]` bounds
+    /// -e_i'x.
+    struct Certificate {
+        std::vector<CertWeights> up, lo;
+    };
+
     /// A constrained zonotope in floating point: c + G x with A x = b and the halfspace rows
     /// C x <= d on the factors x in [-1, 1]. What a polytope cuts from a set without CORA's slack
     /// factors (CORALean's ConZonotope with its halfspace polytope). A single set.
@@ -156,6 +170,19 @@ class ConZonotope : public ContSet {
         /// A box that holds the set, from `passes` Fourier-Motzkin passes on the rows (see
         /// ConZonotope::interval_tight); empty if a pass proves the rows infeasible.
         Interval interval_tight(int passes) const;
+
+        /// The multipliers of the linear programs of every coordinate (see CertWeights); none if
+        /// a program has no solution, the set being empty.
+        std::optional<Certificate> certificate() const;
+
+        /// The box of the weak-duality bounds at the multipliers (see ConZonotope::interval_cert);
+        /// the second form takes them from the linear programs, empty if there are none.
+        Interval interval_cert(const Certificate &w) const;
+        Interval interval_cert() const;
+
+        /// The coordinatewise cut of interval_cert() and interval_tight(passes) (CORALean's
+        /// `intervalCertTight`); empty if either is or the cut is.
+        Interval interval_cert_tight(int passes) const;
     };
 
     /// The set cut by a polytope: each inequality a'x <= b stays a row a'G x <= b - a'c on the
@@ -167,6 +194,16 @@ class ConZonotope : public ContSet {
     /// (Koller et al., ICLR 2026) from the unit box on the factors; pure float arithmetic, the
     /// bits of CORALean's intervalTight. Never tighter than interval (a program per bound).
     Interval interval_tight(int passes) const;
+
+    /// The box of the weak-duality bounds along +e_i and -e_i, each at the multipliers w (see
+    /// CertWeights) in the directed order of CORALean's `ConZonotope.intervalCertWith`: outer
+    /// for every w. Pure float arithmetic, the bits of CORALean's box at the same multipliers.
+    Interval interval_cert(const Certificate &w) const;
+
+    /// The same at the dual solutions of the linear programs of CORA's interval (CORA.cpp's
+    /// solver proposes, the bound checks): outer whatever the solver says, the empty box if a
+    /// program has no solution. Not a batch.
+    Interval interval_cert() const;
 
     /// The points of this set whose image under M (n2, n) is in cz2 (CORA's conIntersect): exact.
     ConZonotope con_intersect(const ConZonotope &cz2, const Tensor &M) const;

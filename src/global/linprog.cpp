@@ -48,7 +48,8 @@ struct Standard {
     int m = 0, N = 0;
     std::vector<double> M; // (m, N) row-major
     std::vector<double> r, c;
-    std::vector<int> basis; // slack column with +1 of the row, or -1
+    std::vector<int> basis;    // slack column with +1 of the row, or -1
+    std::vector<char> flipped; // the row was multiplied by -1 (its right-hand side was negative)
 };
 
 // Simplex -----------------------------------------------------------------------------------------
@@ -148,6 +149,7 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
     s.r.assign(s.m, 0.0);
     s.c.assign(s.N, 0.0);
     s.basis.assign(s.m, -1);
+    s.flipped.assign(std::size_t(s.m), 0);
     for (int j = 0; j < n; ++j) {
         const double fj = lp.f.empty() ? 0.0 : lp.f[j];
         if (map[j].c1 >= 0) s.c[map[j].c1] += fj * map[j].s1;
@@ -178,6 +180,7 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
         if (s.r[i] < 0) {
             for (int j = 0; j < s.N; ++j) s.M[std::size_t(i) * s.N + j] *= -1;
             s.r[i] *= -1;
+            s.flipped[std::size_t(i)] = 1;
         }
         for (int j = n_var; j < s.N; ++j)
             if (s.M[std::size_t(i) * s.N + j] == 1.0) {
@@ -209,6 +212,7 @@ LinProgResult linprog(const LinProg &lp) {
     const int W = s.N + n_art + 1;
     std::vector<double> T(std::size_t(std::max(s.m, 1)) * W, 0.0);
     std::vector<int> basis(s.m);
+    std::vector<int> start(s.m); // the unit column of each row at the start: B^-1 sits there
     std::vector<double> phase1(s.N + n_art, 0.0);
     int art = s.N;
     for (int i = 0; i < s.m; ++i) {
@@ -216,9 +220,11 @@ LinProgResult linprog(const LinProg &lp) {
         T[std::size_t(i) * W + W - 1] = s.r[i];
         if (s.basis[i] >= 0) {
             basis[i] = s.basis[i];
+            start[i] = s.basis[i];
         } else {
             T[std::size_t(i) * W + art] = 1.0;
             phase1[art] = 1.0;
+            start[i] = art;
             basis[i] = art++;
         }
     }
@@ -272,6 +278,15 @@ LinProgResult linprog(const LinProg &lp) {
         if (map[j].c2 >= 0) v += map[j].s2 * y[map[j].c2];
         result.x[j] = v;
         if (!lp.f.empty()) result.fval += lp.f[j] * v;
+    }
+    // A row's multiplier is -pi (+pi if flipped), pi = c_B' B^-1 read at the starting unit column.
+    const int m_ineq = lp.Aineq.empty() ? 0 : static_cast<int>(lp.bineq.size());
+    const int m_eq = lp.Aeq.empty() ? 0 : static_cast<int>(lp.beq.size());
+    for (int k = 0; k < m_ineq + m_eq; ++k) {
+        double pi = 0.0;
+        for (int i = 0; i < s.m; ++i) pi += cost[basis[i]] * T[std::size_t(i) * W + start[k]];
+        const double lambda = s.flipped[std::size_t(k)] ? pi : -pi;
+        (k < m_ineq ? result.dual_ineq : result.dual_eq).push_back(lambda);
     }
     result.status = LinProgResult::Status::optimal;
     return result;

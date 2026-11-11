@@ -231,8 +231,9 @@ void checks_and_their_switch() {
     check(test::raises([&] { HA.reach(aux_drop(), aux_alg(alg::ConZonotopeGuard{})); },
                        Error::wrong_value),
           "reach: ConZonotopeGuard needs guard_order");
-    check(test::raises([&] { HA.reach(aux_drop(), aux_alg(alg::NondetGuard{{}, -1})); },
-                       Error::wrong_value),
+    check(test::raises(
+              [&] { HA.reach(aux_drop(), aux_alg(alg::NondetGuard{{}, alg::CutBox::fm, -1})); },
+              Error::wrong_value),
           "reach: NondetGuard fm_passes is not negative");
     check(test::raises(
               [&] {
@@ -259,9 +260,12 @@ int main() {
     ball("zonoGirard flow", alg::ZonoGirard{{Enclose::flow}});
     ball("nondetGuard pca", alg::NondetGuard{{Enclose::pca}});
     ball("conZonotope box pca", alg::ConZonotopeGuard{{Enclose::box, Enclose::pca}, 5});
-    // the cuts boxed by linear programs (CORA's way) and by a single pass
-    ball("conZonotope exact cut", alg::ConZonotopeGuard{{Enclose::box}, 5, 10, true});
-    ball("nondetGuard one pass", alg::NondetGuard{{Enclose::box}, 1});
+    // the cuts boxed by certificates of linear programs (CORA's ranges), by both, and by one pass
+    using alg::CutBox;
+    ball("conZonotope cert cut", alg::ConZonotopeGuard{{Enclose::box}, 5, CutBox::cert});
+    ball("conZonotope both cut", alg::ConZonotopeGuard{{Enclose::box}, 5, CutBox::both, 3});
+    ball("nondetGuard cert cut", alg::NondetGuard{{Enclose::box}, CutBox::cert});
+    ball("nondetGuard one pass", alg::NondetGuard{{Enclose::box}, CutBox::fm, 1});
     // a LinParamSys flow: CORA's initReach and post in the location
     ball("LinParamSys zonoGirard box", alg::ZonoGirard{{Enclose::box}}, BallFlow::parametric);
     ball("LinParamSys conZonotope box pca", alg::ConZonotopeGuard{{Enclose::box, Enclose::pca}, 5},

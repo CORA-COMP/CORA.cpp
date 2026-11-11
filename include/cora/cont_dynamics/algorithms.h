@@ -314,6 +314,11 @@ struct Linearization {
 /// zonotope bundle, the intersection of the enclosures.
 enum class Enclose { box, pca, flow };
 
+/// How a cut by a polytope guard is boxed (CORALean's `BoxMethod`): by Fourier-Motzkin passes
+/// ("fm", looser than CORA), by checked dual solutions of CORA's programs ("cert", as tight as
+/// CORA), or by the cut of both ("both").
+enum class CutBox { fm, cert, both };
+
 /// The enclosure methods of a guard intersection, one at least.
 inline void validate_enclose(const std::vector<Enclose> &enclose, const char *name) {
     detail::Validation entry;
@@ -338,14 +343,14 @@ struct ZonoGirard {
 /// intersected with the guard as constrained zonotopes; for large uncertain guards.
 struct NondetGuard {
     std::vector<Enclose> enclose{Enclose::box}; ///< the bases of the enclosure
-    int fm_passes = 10; ///< the Fourier-Motzkin passes that box a cut (instead of CORA's programs)
-    bool exact_cut = false; ///< box a cut by linear programs, as CORA (tighter, slower; no passes)
+    CutBox box = CutBox::fm;                    ///< how a cut is boxed
+    int fm_passes = 10;                         ///< the Fourier-Motzkin passes of box fm and both
 
     static constexpr const char *name = "nondet_guard";
     static constexpr auto fields() {
         return std::make_tuple(field("enclose", &NondetGuard::enclose),
-                               field("fm_passes", &NondetGuard::fm_passes),
-                               field("exact_cut", &NondetGuard::exact_cut));
+                               field("box", &NondetGuard::box),
+                               field("fm_passes", &NondetGuard::fm_passes));
     }
     void validate() const {
         validate_enclose(enclose, "NondetGuard");
@@ -358,15 +363,15 @@ struct NondetGuard {
 struct ConZonotopeGuard {
     std::vector<Enclose> enclose{Enclose::box}; ///< the bases of the enclosure
     int guard_order = 0; ///< the order the sets are reduced to first, required (CORA's guardOrder)
-    int fm_passes = 10;  ///< the Fourier-Motzkin passes that box a cut (instead of CORA's programs)
-    bool exact_cut = false; ///< box a cut by linear programs, as CORA (tighter, slower; no passes)
+    CutBox box = CutBox::fm; ///< how a cut is boxed
+    int fm_passes = 10;      ///< the Fourier-Motzkin passes of box fm and both
 
     static constexpr const char *name = "con_zonotope";
     static constexpr auto fields() {
         return std::make_tuple(field("enclose", &ConZonotopeGuard::enclose),
                                field("guard_order", &ConZonotopeGuard::guard_order),
-                               field("fm_passes", &ConZonotopeGuard::fm_passes),
-                               field("exact_cut", &ConZonotopeGuard::exact_cut));
+                               field("box", &ConZonotopeGuard::box),
+                               field("fm_passes", &ConZonotopeGuard::fm_passes));
     }
     void validate() const {
         validate_enclose(enclose, "ConZonotopeGuard");
