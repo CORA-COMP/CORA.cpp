@@ -26,6 +26,7 @@
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <limits>
@@ -56,7 +57,7 @@ NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Te
     std::optional<FloatStepper> lean;
     std::optional<ClosedFormStepper> closed;
     if (closed_form)
-        closed.emplace(lin.sys.A(), dt, eta);
+        closed.emplace(lin.sys.A(), dt, std::max(2, eta)); // CORALean: at least order 2
     else
         lean.emplace(lin.sys.A(), dt, eta);
     if (!(closed_form ? closed->admissible() : lean->admissible()))

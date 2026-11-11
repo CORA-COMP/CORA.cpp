@@ -2,12 +2,14 @@
 //
 // One step of x' = A x + u, u in U + u0, from a set X: the sets at its end (Rtp) and over it (Rti)
 // of CORA's oneStep, with the matrix exponential, the correction matrices [F] and [G] and the
-// input solutions as interval matrices whose entries carry the entrywise remainder W >= E(dt, eta)
-// of an enclosure of e^{|A| dt}. The order and the rounding are those of CORALean's float
-// definition (a Taylor sum with the newest term added to the running sum, powers by left
-// multiplication, sums nested to the right); the matrices are computed once per system and step
-// size, the steps of one linearization differ in the input and the start set only. The stepper is
-// not admissible when no order below eta + 4096 encloses e^{|A| dt}.
+// input solutions as interval matrices. [F], [G] and the input solutions carry the entrywise
+// remainder W >= E(dt, eta) of an enclosure of e^{|A| dt}; [e^{A dt}] is the order-16 enclosure
+// at A dt / 2^s squared s times (s from priv_closed_form_halvings), tight also for a stiff A. The
+// order and the rounding are those of CORALean's float definition (a Taylor sum with the newest
+// term added to the running sum, powers by left multiplication, sums nested to the right); the
+// matrices are computed once per system and step size, the steps of one linearization differ in the
+// input and the start set only. The stepper is not admissible when no order below eta + 4096
+// encloses e^{|A| dt}, or no s < 128 halves A dt to a norm of at most 1/2.
 //
 // Syntax:   const ClosedFormStepper stepper(A, time_step, taylor_terms);
 //           auto S = stepper.step(X, U, u);
@@ -46,6 +48,10 @@ struct ClosedFormStep {
 /// The first order from taylor_terms (within 4096) with ||dt |A|||, bounded as CORALean's
 /// normUpperBound, at most (order + 2) / 2; none if there is none.
 std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int taylor_terms);
+
+/// The first count s below 128 with ||dt A / 2^s||, bounded as CORALean's normUpperBound, at most
+/// 1/2 (LinearSys.halvingsFloat); none if there is none.
+std::optional<int> priv_closed_form_halvings(const Tensor &A, double time_step);
 
 /// The matrices of the closed-form step of one system and step size.
 class ClosedFormStepper {

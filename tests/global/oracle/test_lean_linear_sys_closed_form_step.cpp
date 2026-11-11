@@ -6,7 +6,10 @@
 // nearest, for random systems of three states at the orders 2, 4 and 10 and of five at order 4,
 // for the system of the oracle's self-test, for an input set without generators, and for systems
 // whose exponential needs a raised order or no order below eta + 4096 encloses (the oracle
-// answers null, the stepper is not admissible).
+// answers null, the stepper is not admissible; beyond a scale of about 100 the powers of |A| dt
+// overflow, which the oracle prints as a number out of range), and for stiff Robertson-like
+// Jacobians, where [e^{A dt}] is the order-16 enclosure at A dt / 2^s squared s times (the halvings
+// s agree with CORALean's halvingsFloat, which is none only where no order is admissible either).
 //
 // ORACLE: contSet/@zonotope/mtimes.m
 // CORA.cpp only: CORA evaluates oneStep with expm and A^-1; the closed form is CORALean's
@@ -77,6 +80,31 @@ int main() {
             for (const int eta : {2, 4})
                 aux_compare("stiff " + std::to_string(scale) + " eta" + std::to_string(eta), A,
                             rnd.zonotope(3, 2), rnd.zonotope(3, 2), rnd.vector(3), 1.0, eta);
+        }
+    });
+    // the Jacobian of a Robertson reaction: stiff, so e^{|A| dt} is far wider than e^{A dt}
+    test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {
+        const Tensor A = Tensor({{-0.4, 0.0, 0.01}, {0.4, -3000.0, -0.01}, {0.0, 3000.0, 0.0}});
+        for (const double dt : {1e-4, 1e-3, 1e-2, 0.02})
+            for (const int eta : {2, 4, 10})
+                aux_compare("Robertson dt" + std::to_string(dt) + " eta" + std::to_string(eta), A,
+                            rnd.zonotope(3, 2), rnd.zonotope(3, 2), rnd.vector(3), dt, eta);
+    });
+    // sparse generators (diagonal, with a zero column), as the passes of the nonlinear steps have
+    test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {
+        const Tensor A = Tensor({{-0.4, 0.0, 0.01}, {0.4, -30.0, -0.01}, {0.0, 30.0, 0.0}});
+        const Tensor G = Tensor({{1e-3, 0.0, 0.0}, {0.0, 1e-4, 0.0}, {0.0, 0.0, 0.0}});
+        const Tensor H = Tensor({{0.0, 0.0, 0.0}, {0.0, 2e-5, 0.0}, {0.0, 0.0, 3e-5}});
+        for (const int eta : {2, 4})
+            aux_compare("sparse eta" + std::to_string(eta), A, Zonotope(Tensor({1.0, 0.0, 0.0}), G),
+                        Zonotope(rnd.vector(3), H), rnd.vector(3), 0.01, eta);
+    });
+    // the halvings s: norms up to 40, beyond which the oracle's powers overflow (file docstring)
+    test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {
+        for (const double scale : {0.01, 0.3, 1.0, 10.0, 40.0}) {
+            const Tensor A = rnd.matrix(3, 3) * scale;
+            aux_compare("scaled " + std::to_string(scale), A, rnd.zonotope(3, 2),
+                        rnd.zonotope(3, 2), rnd.vector(3), 0.1, 4);
         }
     });
     return test::finish("lean linearSys closed-form step");

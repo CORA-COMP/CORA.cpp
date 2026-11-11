@@ -7,7 +7,9 @@
 // time is accumulated in doubles here and exactly there. The run is short because the oracle is
 // slow (the Robertson reaction is covered by the passes) and stops before the tensor order 3,
 // whose quadratic map is CORA's here and the coarser polynomial-zonotope one there (the step
-// sizes drift apart after it).
+// sizes drift apart after it). With linear_step = closed_form (the oracle's linearStep =
+// closedForm) the linear step is the oracle's, and the sets agree to 1e-9 (relative) from both
+// sides: what remains is the time, accumulated in doubles here.
 //
 // CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 // CORA authors: Mark Wetzlinger
@@ -30,7 +32,7 @@ using namespace cora;
 
 namespace {
 
-constexpr double kAgreement = 1e-6, kSets = 2e-2;
+constexpr double kAgreement = 1e-6, kSets = 2e-2, kClosed = 1e-9;
 
 NonlinearSys van_der_pol() {
     return NonlinearSys(
@@ -42,14 +44,15 @@ NonlinearSys van_der_pol() {
 
 /// The box of `mine` lies in the oracle's up to 1e-9 (relative) and is tighter by at most kSets:
 /// the oracle's linear step bounds the remainders more coarsely.
-void aux_inside(const std::string &what, const Zonotope &mine, const lean::Zonotope &theirs) {
+void aux_inside(const std::string &what, const Zonotope &mine, const lean::Zonotope &theirs,
+                double gap) {
     const Interval box = mine.interval();
     const auto [inf, sup] = theirs.interval().gather();
     const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
                               d = sup.data();
     bool ok = a.size() == b.size();
     for (std::size_t i = 0; ok && i < a.size(); ++i) {
-        const double slack = 1e-9 * (1 + std::abs(b[i])), far = kSets * (1 + std::abs(b[i]));
+        const double slack = 1e-9 * (1 + std::abs(b[i])), far = gap * (1 + std::abs(b[i]));
         ok = a[i] >= b[i] - slack && a[i] <= b[i] + far && c[i] <= d[i] + slack &&
              c[i] >= d[i] - far;
     }
@@ -58,8 +61,10 @@ void aux_inside(const std::string &what, const Zonotope &mine, const lean::Zonot
 
 /// The run of CORA.cpp against the oracle's: steps and sets.
 void aux_compare(const std::string &name, const NonlinearSys &sys, const Zonotope &R0,
-                 const Zonotope &U, double t_final) {
-    const alg::LinearizationAdaptive alg;
+                 const Zonotope &U, double t_final, alg::LinearStep step) {
+    alg::LinearizationAdaptive alg;
+    alg.linear_step = step;
+    const double gap = step == alg::LinearStep::closed_form ? kClosed : kSets;
     const ReachProblem problem{R0, U, t_final};
     const ReachSet mine = sys.reach(problem, alg);
     const lean::AdaptiveRun theirs =
@@ -76,8 +81,8 @@ void aux_compare(const std::string &name, const NonlinearSys &sys, const Zonotop
     test::check(same, name + ": the step sizes of the oracle");
     test::check(std::abs(mine.time.back() - theirs.t) <= kAgreement, name + ": the end time");
     for (std::size_t k = 0; k < theirs.steps.size(); ++k)
-        aux_inside(name, mine.time_interval[k], theirs.time_interval[k]);
-    aux_inside(name, mine.time_point.back(), theirs.time_point);
+        aux_inside(name, mine.time_interval[k], theirs.time_interval[k], gap);
+    aux_inside(name, mine.time_point.back(), theirs.time_point, gap);
 }
 
 } // namespace
@@ -89,9 +94,10 @@ int main() {
     if (!test::oracle::available()) return 0;
     if (!test::oracle::serves("nonlinearSys.reachAdaptive")) return test::finish("lean reach");
     const lean::DTypeScope dtype("nearest");
-    aux_compare("van der Pol", van_der_pol(),
-                Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.0}, {0.0, 0.05}})),
-                Zonotope(Tensor({0.0}), Tensor({{0.1}})), 0.015);
+    for (const alg::LinearStep step : {alg::LinearStep::cora, alg::LinearStep::closed_form})
+        aux_compare(step == alg::LinearStep::cora ? "van der Pol" : "van der Pol closed form",
+                    van_der_pol(), Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.0}, {0.0, 0.05}})),
+                    Zonotope(Tensor({0.0}), Tensor({{0.1}})), 0.015, step);
     return test::finish("lean nonlinearSys reach adaptive");
 }
 

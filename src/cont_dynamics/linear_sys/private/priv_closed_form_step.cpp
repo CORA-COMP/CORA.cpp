@@ -3,7 +3,8 @@
 // At nearest the interval matrices of the series are points: a box scaled by a point, a product of
 // points and a sum of points have equal bounds. So the powers and the series are computed on plain
 // (n, n) arrays, each product as the corner hull of the interval product would be (a NaN corner,
-// 0 * Inf, is 0), and the boxes are formed where the bounds differ.
+// 0 * Inf, is 0), and the boxes are formed where the bounds differ. [e^{A dt}] is the exception:
+// its squarings multiply true intervals (the remainder box), as interval matrix products.
 //
 // See also: priv_closed_form_step.h
 //
@@ -83,6 +84,33 @@ std::optional<int> aux_admissible_order(double norm, int taylor_terms) {
     return std::nullopt;
 }
 
+/// The bounds of the interval product [Llo, Lhi] [Rlo, Rhi]: per entry the sums over the inner
+/// index, nested to the right, of the smallest and the largest corner product (Interval.matMul).
+std::pair<Mat, Mat> aux_interval_matmul(const Mat &Llo, const Mat &Lhi, const Mat &Rlo,
+                                        const Mat &Rhi, std::size_t n) {
+    Mat lo(n * n), hi(n * n);
+    for (std::size_t i = 0; i < n; ++i)
+        for (std::size_t j = 0; j < n; ++j) {
+            double sum_lo = 0, sum_hi = 0;
+            for (std::size_t k = n; k-- > 0;) {
+                const double a = Llo[i * n + k], b = Lhi[i * n + k];
+                const double c = Rlo[k * n + j], d = Rhi[k * n + j];
+                const double p[4] = {aux_mul(a, c), aux_mul(a, d), aux_mul(b, c), aux_mul(b, d)};
+                sum_lo = std::min(std::min(p[0], p[1]), std::min(p[2], p[3])) + sum_lo;
+                sum_hi = std::max(std::max(p[0], p[1]), std::max(p[2], p[3])) + sum_hi;
+            }
+            lo[i * n + j] = sum_lo;
+            hi[i * n + j] = sum_hi;
+        }
+    return {std::move(lo), std::move(hi)};
+}
+
+/// 2^-s dt, by s exact halvings.
+double aux_halved(double dt, int s) {
+    for (int i = 0; i < s; ++i) dt *= 0.5;
+    return dt;
+}
+
 /// B = |A| dt.
 Mat aux_magnitude_scaled(const Tensor &A, double dt) {
     Mat B = A.abs().data();
@@ -148,6 +176,14 @@ Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &
 
 // ===========================================  MAIN  =========================================== //
 
+std::optional<int> priv_closed_form_halvings(const Tensor &A, double time_step) {
+    const std::size_t n = std::size_t(A.size(-1));
+    const Mat a = A.data();
+    for (int s = 0; s < 128; ++s)
+        if (aux_norm(aux_scale(aux_halved(time_step, s), a), n) <= 0.5) return s;
+    return std::nullopt;
+}
+
 std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int taylor_terms) {
     const std::size_t n = std::size_t(A.size(-1));
     return aux_admissible_order(aux_norm(aux_magnitude_scaled(A, time_step), n), taylor_terms);
@@ -157,7 +193,7 @@ std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int
 
 // The matrices of the step: [e^{A dt}], [F], [G], the boxes of the input solution
 struct ClosedFormStepper::Matrices {
-    Matrices(const Tensor &A, double r, int eta, int eta_enclosed)
+    Matrices(const Tensor &A, double r, int eta, int eta_enclosed, int halvings)
         : e_adt(A, A), F(A, A), G(A, A), remainder(A, A) {
         const std::size_t n = std::size_t(A.size(-1));
         const Shape shape{A.size(-1), A.size(-1)};
@@ -173,12 +209,19 @@ struct ClosedFormStepper::Matrices {
         Mat W(n * n);
         for (std::size_t e = 0; e < W.size(); ++e)
             W[e] = (B_sums[std::size_t(eta_enclosed)][e] + tail) - B_sums[std::size_t(eta)][e];
-        // [e^{A r}]: the series of [A r] widened by [-W, W]
-        const Mat T = aux_taylor_sums(aux_scale(r, a), n, eta).back();
+        // [e^{A r}]: the enclosure of order 16 at A r / 2^s, squared s times
+        const Mat M = aux_scale(aux_halved(r, halvings), a);
+        const Mat T = aux_taylor_sums(M, n, 16).back();
+        const double R = priv_float_remainder_bound(aux_norm(M, n), 16);
         Mat inf(T), sup(T);
         for (std::size_t e = 0; e < T.size(); ++e) {
-            inf[e] -= W[e];
-            sup[e] += W[e];
+            inf[e] -= R;
+            sup[e] += R;
+        }
+        for (int i = 0; i < halvings; ++i) {
+            auto squared = aux_interval_matmul(inf, sup, inf, sup, n);
+            inf = std::move(squared.first);
+            sup = std::move(squared.second);
         }
         e_adt = box({inf, sup});
         // the powers of [A, A] by left multiplication
@@ -216,7 +259,9 @@ struct ClosedFormStepper::Matrices {
 
 ClosedFormStepper::ClosedFormStepper(const Tensor &A, double time_step, int taylor_terms) {
     const std::optional<int> enclosed = priv_closed_form_order(A, time_step, taylor_terms);
-    if (enclosed) m_ = std::make_unique<Matrices>(A, time_step, taylor_terms, *enclosed);
+    if (!enclosed) return;
+    const std::optional<int> halvings = priv_closed_form_halvings(A, time_step);
+    if (halvings) m_ = std::make_unique<Matrices>(A, time_step, taylor_terms, *enclosed, *halvings);
 }
 
 ClosedFormStepper::~ClosedFormStepper() = default;

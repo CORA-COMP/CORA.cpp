@@ -108,91 +108,99 @@ void aux_run(const std::string &op, F body) {
 int main() {
     if (!test::oracle::available()) return 0;
     // the linear step of CORALean (the default, CORA's, lies inside the oracle's set)
-    alg::LinearizationAdaptive alg;
-    alg.linear_step = alg::LinearStep::coralean;
+    for (const alg::LinearStep step : {alg::LinearStep::coralean, alg::LinearStep::closed_form}) {
+        alg::LinearizationAdaptive alg;
+        alg.linear_step = step;
+        const bool closed = step == alg::LinearStep::closed_form;
 
-    // the passes of both systems: the error of the window, then the orders of its terms
-    aux_run("nonlinearSys.linReachAdaptivePass", [&] {
-        for (Case &c : cases()) {
-            const lean::NonlinearSys oracle(c.sys);
-            const std::optional<Zonotope> U = c.U;
-            const std::optional<lean::Zonotope> lean_input = lean::Zonotope(c.U);
-            const std::vector<double> adm(std::size_t(c.sys.dim()), 0.0);
-            for (const int kappa : {2, 3}) {
-                const std::string b = std::string(c.name) + " at order " + std::to_string(kappa);
-                const std::optional<AdaptivePass> mine =
-                    priv_lin_reach_adaptive_pass(c.sys, kappa, U, alg, c.dt, c.R, adm);
-                const auto theirs =
-                    oracle.lin_reach_adaptive_pass(lean_input, lean::Zonotope(c.R), c.dt, kappa,
-                                                   priv_column(c.R.center(), adm), alg);
-                // the sets and the values exactly the oracle's
-                test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
-                if (!mine || !theirs) continue;
-                aux_same(b + " xs", priv_column(c.R.center(), mine->xs), theirs->xs);
-                aux_same(b + " A", mine->A, theirs->A);
-                if (kappa == 2) {
-                    // the boxes agree to rounding (bit for bit: test_lean_linear_sys_float_step)
-                    aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kBox);
-                    aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kBox);
-                    aux_inside(b + " time point", mine->Rtp, theirs->time_point, kBox);
-                } else {
-                    // the quadratic map of order 3 is CORA's here, so the sets lie inside
-                    aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kSets);
-                    aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kSets);
-                    aux_inside(b + " time point", mine->Rtp, theirs->time_point, kSets);
-                }
-                std::vector<bool> gzero(mine->gzero.begin(), mine->gzero.end());
-                test::check(gzero == theirs->g_zero, b + ": the zero generators");
+        // the passes of both systems: the error of the window, then the orders of its terms
+        aux_run("nonlinearSys.linReachAdaptivePass", [&] {
+            for (Case &c : cases()) {
+                const lean::NonlinearSys oracle(c.sys);
+                const std::optional<Zonotope> U = c.U;
+                const std::optional<lean::Zonotope> lean_input = lean::Zonotope(c.U);
+                const std::vector<double> adm(std::size_t(c.sys.dim()), 0.0);
+                for (const int kappa : {2, 3}) {
+                    const std::string b = std::string(c.name) +
+                                          (closed ? " closed form" : " coralean") + " at order " +
+                                          std::to_string(kappa);
+                    const std::optional<AdaptivePass> mine =
+                        priv_lin_reach_adaptive_pass(c.sys, kappa, U, alg, c.dt, c.R, adm);
+                    const auto theirs =
+                        oracle.lin_reach_adaptive_pass(lean_input, lean::Zonotope(c.R), c.dt, kappa,
+                                                       priv_column(c.R.center(), adm), alg);
+                    // the sets and the values exactly the oracle's
+                    test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
+                    if (!mine || !theirs) continue;
+                    aux_same(b + " xs", priv_column(c.R.center(), mine->xs), theirs->xs);
+                    aux_same(b + " A", mine->A, theirs->A);
+                    if (kappa == 2) {
+                        // the boxes agree to rounding (test_lean_linear_sys_float_step)
+                        aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kBox);
+                        aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kBox);
+                        aux_inside(b + " time point", mine->Rtp, theirs->time_point, kBox);
+                    } else {
+                        // the quadratic map of order 3 is CORA's here, so the sets lie inside
+                        aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kSets);
+                        aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kSets);
+                        aux_inside(b + " time point", mine->Rtp, theirs->time_point, kSets);
+                    }
+                    std::vector<bool> gzero(mine->gzero.begin(), mine->gzero.end());
+                    test::check(gzero == theirs->g_zero, b + ": the zero generators");
 
-                // the error of the window over Rmax, from the matrices at the point of the pass
-                const Jacobians J =
-                    c.sys.jacobian(priv_column(c.R.center(), mine->xs), c.U.center());
-                // the error over Rmax from the point of the pass, against the oracle's
-                const Zonotope V = priv_abstr_err_adaptive(c.sys, kappa, J.A, J.B, mine->xs,
-                                                           mine->Rmax, U, alg.zeta_z);
-                const auto err =
-                    oracle.abstr_err_adaptive(lean_input, priv_column(c.R.center(), mine->xs),
-                                              lean::Zonotope(mine->Rmax), kappa, alg.zeta_z);
-                // order 2 is the oracle's bit for bit; at order 3 the quadratic map is CORA's
-                if (kappa == 2) {
-                    test::check(test::oracle::agree(b + " VerrorDyn", V, err.V),
-                                b + ": VerrorDyn is the oracle's");
-                    aux_same(b + " true error",
-                             priv_column(c.R.center(), priv_norm_mag(priv_zonotope_box(V))),
-                             err.true_error);
-                } else {
-                    aux_inside(b + " VerrorDyn", V, err.V, kError);
+                    // the error of the window over Rmax, from the matrices at the point of the pass
+                    const Jacobians J =
+                        c.sys.jacobian(priv_column(c.R.center(), mine->xs), c.U.center());
+                    // the error over Rmax from the point of the pass, against the oracle's
+                    const Zonotope V = priv_abstr_err_adaptive(c.sys, kappa, J.A, J.B, mine->xs,
+                                                               mine->Rmax, U, alg.zeta_z);
+                    const auto err =
+                        oracle.abstr_err_adaptive(lean_input, priv_column(c.R.center(), mine->xs),
+                                                  lean::Zonotope(mine->Rmax), kappa, alg.zeta_z);
+                    // order 2 is the oracle's bit for bit; at order 3 the quadratic map is CORA's
+                    if (kappa == 2) {
+                        test::check(test::oracle::agree(b + " VerrorDyn", V, err.V),
+                                    b + ": VerrorDyn is the oracle's");
+                        aux_same(b + " true error",
+                                 priv_column(c.R.center(), priv_norm_mag(priv_zonotope_box(V))),
+                                 err.true_error);
+                    } else {
+                        aux_inside(b + " VerrorDyn", V, err.V, kError);
+                    }
                 }
             }
-        }
-    });
-    // the orders of the error terms, for the dimensions of zero width and not
-    aux_run("nonlinearSys.ordersAdaptive", [&] {
-        for (Case &c : cases()) {
-            const lean::NonlinearSys oracle(c.sys);
-            const int64_t n = c.sys.dim();
-            const std::vector<double> adm(std::size_t(n), 0.0);
-            const auto pass = priv_lin_reach_adaptive_pass(c.sys, 2, c.U, alg, c.dt, c.R, adm);
-            if (!pass) continue;
-            const Tensor xs = priv_column(c.R.center(), pass->xs);
-            // every pattern of zero-width dimensions
-            for (int64_t mask = 0; mask < (int64_t(1) << n); ++mask) {
-                std::vector<bool> zero_width(static_cast<std::size_t>(n));
-                for (int64_t i = 0; i < n; ++i) zero_width[std::size_t(i)] = ((mask >> i) & 1) != 0;
-                const std::vector<char> flags(zero_width.begin(), zero_width.end());
-                const auto H = c.sys.hessian_enclosure(Range(xs), Range(c.U.center()));
-                const std::vector<int> mine =
-                    priv_adaptive_orders(pass->A, flags, pass->gzero, H, n, c.sys.input_dim(), 100);
-                const auto theirs = oracle.orders_adaptive(
-                    lean::Zonotope(c.U), pass->A, xs, zero_width,
-                    std::vector<bool>(pass->gzero.begin(), pass->gzero.end()));
-                bool same = mine.size() == theirs.size();
-                for (std::size_t i = 0; same && i < mine.size(); ++i)
-                    same = theirs[i] ? mine[i] == *theirs[i] : mine[i] < 0;
-                test::check(same, std::string(c.name) + ": the orders of the oracle");
+        });
+        // the orders of the error terms, for the dimensions of zero width and not
+        aux_run("nonlinearSys.ordersAdaptive", [&] {
+            for (Case &c : cases()) {
+                const lean::NonlinearSys oracle(c.sys);
+                const int64_t n = c.sys.dim();
+                const std::vector<double> adm(std::size_t(n), 0.0);
+                const auto pass = priv_lin_reach_adaptive_pass(c.sys, 2, c.U, alg, c.dt, c.R, adm);
+                if (!pass) continue;
+                const Tensor xs = priv_column(c.R.center(), pass->xs);
+                // every pattern of zero-width dimensions
+                for (int64_t mask = 0; mask < (int64_t(1) << n); ++mask) {
+                    std::vector<bool> zero_width(static_cast<std::size_t>(n));
+                    for (int64_t i = 0; i < n; ++i)
+                        zero_width[std::size_t(i)] = ((mask >> i) & 1) != 0;
+                    const std::vector<char> flags(zero_width.begin(), zero_width.end());
+                    // the orders from the Hessian enclosure at the point of the pass
+                    const auto H = c.sys.hessian_enclosure(Range(xs), Range(c.U.center()));
+                    const std::vector<int> mine = priv_adaptive_orders(
+                        pass->A, flags, pass->gzero, H, n, c.sys.input_dim(), 100);
+                    // the oracle's orders for the same pattern
+                    const auto theirs = oracle.orders_adaptive(
+                        lean::Zonotope(c.U), pass->A, xs, zero_width,
+                        std::vector<bool>(pass->gzero.begin(), pass->gzero.end()));
+                    bool same = mine.size() == theirs.size();
+                    for (std::size_t i = 0; same && i < mine.size(); ++i)
+                        same = theirs[i] ? mine[i] == *theirs[i] : mine[i] < 0;
+                    test::check(same, std::string(c.name) + ": the orders of the oracle");
+                }
             }
-        }
-    });
+        });
+    }
     return test::finish("lean nonlinearSys adaptive pass");
 }
 

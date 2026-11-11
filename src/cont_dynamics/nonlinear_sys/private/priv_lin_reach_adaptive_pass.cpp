@@ -86,7 +86,8 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
     std::optional<FloatStepper> float_stepper;
     std::optional<ClosedFormStepper> closed_stepper;
     if (lean) float_stepper.emplace(J.A, dt, alg.taylor_terms);
-    if (closed_form) closed_stepper.emplace(J.A, dt, alg.taylor_terms);
+    if (closed_form)
+        closed_stepper.emplace(J.A, dt, std::max(2, alg.taylor_terms)); // at least order 2
     if ((lean && !float_stepper->admissible()) || (closed_form && !closed_stepper->admissible()))
         return std::nullopt;
     const auto step = [&](const Zonotope &V) -> std::optional<std::pair<Zonotope, Zonotope>> {

@@ -80,14 +80,21 @@ and `alg::LinearizationAdaptive`). `LinearStep::coralean` takes CORALean's step 
 time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `zeta_z` and
 `taylor_terms` retuned), LALO20 W005 20x; the verdicts stay. `LinearStep::closed_form` is CORA's `oneStep`
 in CORALean's closed form, bit for bit against the oracle's `linearSys.oneStepClosedForm`
-(`test_lean_linear_sys_closed_form_step`). With the script's parameters it takes as long as CORA's step
-on TRAF22 (0.90 s against 0.93 s), SPRE22 (0.95 s against 1.08 s) and LALO20 W001/W005 (2.1 s and
-14.0 s against 2.3 s and 14.3 s), the verdicts stay, and the reported ranges agree (TRAF22's inputs, LALO20's width of x4);
-on ROBE25 it does not verify at the script's `zeta_z` (the width of s is 2.9e-5, 7.5e-3 and 24 against 1e-5): its
-exponential carries an entrywise remainder, so ROBE25 (2) and (3) take `zeta_z = 3e-4` and `0.01` with 30
-Taylor terms (41 s and 32 s against 329 s and 100 s), and ROBE25 (1) takes `zeta_z = 3e-6` (441 s against 27 s,
-107 000 sets). The default stays CORA's step for that reason. The benchmark programs read the step from
-`CORACPP_LINEAR_STEP` (`cora`, `closed_form`, `coralean`) and take the closed form's tuning of ROBE25 with it.
+(`test_lean_linear_sys_closed_form_step`; inside the nonlinear steps against `nonlinearSys.linReach`,
+`linReachAdaptivePass` and `reachAdaptive` with `linearStep: "closedForm"`); its `[e^{A dt}]` is a
+scaling-and-squaring enclosure (CORALean !913), no longer the series widened by the remainder of
+`e^{|A| dt}`. With the script's parameters it takes as long as CORA's step
+on TRAF22 (0.93 s against 0.95 s), SPRE22 (0.96 s against 1.08 s) and LALO20 W001/W005 (2.1 s and
+14.1 s against 2.3 s and 15.2 s), the verdicts stay, and the reported ranges agree (TRAF22's inputs, LALO20's width of x4);
+on ROBE25 it still does not verify at the script's `zeta_z` (the width of s is 4.2e-5, 3.6e-4 and 6.0e-2
+against 1e-5; at the `zeta_z` of the table below 2.9e-5, 6.7e-4 and 2.6e-2, where !911 gave 2.9e-5, 7.5e-3
+and 24): the entrywise remainder `W` of `e^{|A| dt}` stays in `[F]`, `[G]` and the input solutions, and
+the bound grows as `||dt |A|||^(eta+1)`, which is large at the step sizes the late steps reach
+(`||dt |A|||` near 3). So ROBE25
+(2) and (3) take `zeta_z = 3e-4` and `0.01` with 30 Taylor terms (42 s and 33 s against 325 s and 100 s),
+and ROBE25 (1) takes `zeta_z = 3e-6` (442 s against 26 s, 107 000 sets), as before !913. The default stays CORA's
+step for that reason. The benchmark programs read the step from `CORACPP_LINEAR_STEP` (`cora`,
+`closed_form`, `coralean`) and take the closed form's tuning of ROBE25 with it.
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
