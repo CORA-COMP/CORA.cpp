@@ -467,6 +467,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 <!-- BEGIN bit-exact -->
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
+| ACC-safe-distance | 21/60 | 39 | 11 |
+| Airplane-continuous | 21/60 | 39 | 11 |
+| Attitude_Control-avoid | 21/62 | 41 | 15 |
 | BRKDC01 | 4/12 | 8 | 5 |
 | BRKNC01 | 31/54 | 23 | 10 |
 | BRKNP01 | 24/44 | 20 | 10 |
@@ -483,6 +486,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | DTN04 | 21/37 | 16 | 6 |
 | DTN05 | 21/37 | 16 | 6 |
 | DTN06 | 21/37 | 16 | 6 |
+| Double_Pendulum-less-robust | 21/54 | 33 | 11 |
+| Double_Pendulum-more-robust | 21/60 | 39 | 11 |
 | GRBX01 | 30/56 | 26 | 10 |
 | GRBX02 | 30/56 | 26 | 10 |
 | HEAT01 | 1/8 | 7 | 4 |
@@ -518,6 +523,12 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRNA01 | 23/40 | 17 | 7 |
 | SRU01 | 27/47 | 20 | 8 |
 | SRU02 | 42/67 | 25 | 11 |
+| Single_Pendulum-reach | 21/60 | 39 | 11 |
+| TORA-reach-sigmoid | 21/61 | 40 | 11 |
+| TORA-reach-tanh | 21/60 | 39 | 11 |
+| TORA-remain | 21/61 | 40 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
 | TSPS25 | 17/32 | 15 | 6 |
+| Unicycle-reach | 21/54 | 33 | 11 |
+| Unicycle-reach-disturbance | 21/54 | 33 | 11 |
 <!-- END bit-exact -->
