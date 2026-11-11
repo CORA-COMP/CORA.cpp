@@ -26,6 +26,7 @@
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/level_set/level_set.h"
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/set.h"
@@ -227,6 +228,7 @@ inline Set set_of(const py::handle &o) {
     if (py::isinstance<Ellipsoid>(o)) return Set(py::cast<Ellipsoid>(o));
     if (py::isinstance<Capsule>(o)) return Set(py::cast<Capsule>(o));
     if (py::isinstance<PolyZonotope>(o)) return Set(py::cast<PolyZonotope>(o));
+    if (py::isinstance<LevelSet>(o)) return Set(py::cast<LevelSet>(o));
     if (py::isinstance<Interval>(o)) return Set(py::cast<Interval>(o));
     if (py::isinstance<EmptySet>(o)) return Set(py::cast<EmptySet>(o));
     if (py::isinstance<Fullspace>(o)) return Set(py::cast<Fullspace>(o));
@@ -247,7 +249,7 @@ inline Set set_of(const py::handle &o) {
     CORA_FAIL(
         Error::wrong_value,
         "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Ellipsoid, Capsule, "
-        "PolyZonotope, "
+        "PolyZonotope, LevelSet, "
         "Interval, EmptySet, Fullspace, a ContSet), got " +
             std::string(py::str(py::type::of(o).attr("__name__"))));
 }
@@ -269,6 +271,8 @@ inline py::object object_of(const Set &S) {
         return py::cast(S.as<Capsule>());
     case ClassId::poly_zonotope:
         return py::cast(S.as<PolyZonotope>());
+    case ClassId::level_set:
+        return py::cast(S.as<LevelSet>());
     // the box and the sets that are not sums of generators
     case ClassId::interval:
         return py::cast(S.as<Interval>());

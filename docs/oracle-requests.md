@@ -156,3 +156,26 @@ generators).
 | `polyZonotope.project` | `PolyZonotope.project` (`Project.lean`) | `pZ`, `dims` | `pZ` |
 | `polyZonotope.zonotope`, `polyZonotope.interval` | `Conversion/Float/Operations` | `pZ` | zonotope, box |
 | `nonlinearSys.reachPoly` | `NonlinearSys.FloatHessModel.linReachFloat` at `poly` (`LinReachFloat.lean`), `abstrErrPolyFloat` | the system (`f`, `n`, `m`), `X0` (a polynomial zonotope), `U`, `tFinal`, `timeStep`, `taylorTerms`, the orders | `timeInterval`, `timePoint` (polynomial zonotopes); CORALean's `poly` is its own variant (second-order Lagrange form), so a bit-exact test would need an op that follows `priv_poly_reach` |
+
+## Level sets and Taylor models (PR "nln-levelset-a")
+
+CORALean has float definitions of the Taylor-model arithmetic and of the level-set queries; the
+oracle serves none of them, so the coverage rows of `contSet/levelSet` and `contSet/taylm` are
+oracle debt. CORALean's `Taylm.times` truncates at the larger order of its operands and bounds the
+dropped and cross terms by interval arithmetic, its own bookkeeping of CORA's product; CORA.cpp
+follows CORA's (`max_order` of the left operand), so a bit-exact test needs the op to take `maxOrder`.
+CORALean has no float `tightenDomain` (only the `linear` contractor, real layer), and none of its
+level-set definitions evaluates an `Expr`: the request carries the constraint as the oracle's
+expression tree (`{"op":..,"args":..}`, `{"x":i}`, `{"const":text}`).
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `taylm.fromInterval` | `Interval.taylm` (`Conversion/Float/Operations/Basic.lean`) | `I` (box), `maxOrder` | `models`: per coordinate `{"coef": [[exps, c], ...], "rem": [lo, hi]}` |
+| `taylm.plus`, `taylm.minus` | `Taylm.plus`, `Taylm.minus` (`Taylm/Float/Operations/Basic.lean`) | `a`, `b` (models) | the model |
+| `taylm.times` | `Taylm.times`, `Taylm.smul` (`Taylm/Float/Operations/Times.lean`, `Smul.lean`) | `a`, `b` (models) or `s` | the model |
+| `taylm.pow` | `Taylm.pow` (`Taylm/Float/Operations/Pow.lean`) | `a`, `n` | the model |
+| `taylm.interval` | `Taylm.interval` (`Conversion/Float/Operations/Basic.lean`) | `a` (model) | `inf`, `sup` |
+| `levelSet.contains` | `LevelSet.containsPoint` (`LevelSet/Float/Operations/ContainsPoint.lean`) | `f` (expression trees), `ops`, `points`, `tol` | `res` |
+| `levelSet.isIntersecting` | `LevelSet.isIntersecting_uniform`, `_cell` (`LevelSet/Float/Operations/IsIntersecting*.lean`) | `f`, `ops`, `I` (box), `tol` | `res` |
+| `levelSet.complement` | `LevelSet.not` (`LevelSet/Real/Operations/Not.lean`, no float layer) | `f`, `op` | `f` (the negated tree), `op` |
+| `levelSet.splitEquality`, `levelSet.lift` | `LevelSet.splitEquality`, `LevelSet.lift_` (real layer, route b) | `f`, `ops`, `N`, `dims` | the two level sets, or the lifted one |

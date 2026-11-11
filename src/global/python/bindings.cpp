@@ -27,7 +27,9 @@
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
+#include "cora/cont_set/level_set/level_set.h"
 #include "cora/cont_set/registry.h"
+#include "cora/cont_set/taylm/taylm.h"
 #include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/linear_sys.h"
@@ -665,12 +667,14 @@ void bind_fullspace(py::module_ &m) {
             "convex_hull",
             [](const Fullspace &F, const py::object &S) { return F.convex_hull(set_of(S).get()); },
             py::arg("S"), "The convex hull with a set: the whole space")
+        // the queries take points or boxes
         .def(
             "contains",
             [](const Fullspace &F, const py::object &S, Tol tol) {
                 return F.contains(operand_set(S).get(), tol);
             },
             py::arg("S"), py::arg("tol") = py::none(), "Whether the set contains S: always")
+        // the box of any set decides the intersection
         .def(
             "is_intersecting",
             [](const Fullspace &F, const py::object &S, Tol tol) {
@@ -3387,7 +3391,7 @@ void bind_operators(py::module_ &m) {
     method(F, "__rmatmul__", fullspace_product);
 }
 
-// Dynamics ---------------------------------------------------------------------------------------
+// Dynamics ----------------------------------------------------------------------------------------
 
 /// The time points of a simulation as one array, the time first: (steps + 1, ..., n, N).
 py::object stack_time(const std::vector<Tensor> &points) {
@@ -3847,6 +3851,151 @@ void bind_linear_sys(py::module_ &m) {
     canonical.def_readonly("sys", &CanonicalForm::sys, "The system with B = I");
 }
 
+// LevelSet and Taylm ------------------------------------------------------------------------------
+
+/// The comparison of a constraint from its CORA string.
+CompOp comp_op_of(const std::string &op) {
+    if (op == "<=") return CompOp::le;
+    if (op == "<") return CompOp::lt;
+    if (op == "==") return CompOp::eq;
+    CORA_FAIL(Error::wrong_value, "LevelSet: a comparison is '<=', '<' or '==', got '" + op + "'");
+}
+
+/// The CORA string of a comparison.
+const char *comp_op_name(CompOp op) {
+    return op == CompOp::le ? "<=" : op == CompOp::lt ? "<" : "==";
+}
+
+/// A point or a matrix of points from Python: a vector is one point.
+Tensor points_of(const py::object &o) {
+    const py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
+    return a && a.ndim() == 1 ? vector_of(o, "the point") : tensor_of(o, "the points");
+}
+
+void bind_level_set(py::module_ &m) {
+    // a level set is built from expressions and strings, and queried with arrays or boxes
+    py::class_<LevelSet, ContSet>(m, "LevelSet",
+                                  "The level set {x | f_i(x) ~ 0}: every constraint f_i (an Expr "
+                                  "of the states) holds with its comparison '<=', '<' or '=='.")
+        .def(py::init(
+                 [](const std::vector<Expr> &eq, int64_t n, const std::vector<std::string> &ops) {
+                     std::vector<CompOp> o;
+                     o.reserve(ops.size());
+                     for (const std::string &s : ops) o.push_back(comp_op_of(s));
+                     return LevelSet(eq, n, std::move(o));
+                 }),
+             py::arg("eq"), py::arg("n"), py::arg("ops"),
+             "Constraints eq[i] ops[i] 0 on n states; ops are '<=', '<' or '=='")
+        .def(py::init([](const Expr &eq, int64_t n, const std::string &op) {
+                 return LevelSet(eq, n, comp_op_of(op));
+             }),
+             py::arg("eq"), py::arg("n"), py::arg("op"), "One constraint eq op 0 on n states")
+        // the two constants, the constraints and the queries
+        .def_static("empty", &LevelSet::empty, py::arg("n") = 0, "The empty set of n dimensions")
+        .def_static("inf", &LevelSet::inf, py::arg("n") = 0, "The whole space of n dimensions")
+        .def_property_readonly("num_equations", &LevelSet::num_equations,
+                               "The number of constraints")
+        .def_property_readonly(
+            "comp_ops",
+            [](const LevelSet &L) {
+                std::vector<std::string> out;
+                for (const CompOp op : L.comp_ops()) out.emplace_back(comp_op_name(op));
+                return out;
+            },
+            "The comparisons of the constraints")
+        // the values and the derivatives of the constraints
+        .def("gradient", &LevelSet::gradient, py::arg("i"), py::arg("j"),
+             "The derivative of constraint i with respect to state j")
+        // fun_han takes points or a box
+        .def(
+            "fun_han",
+            [](const LevelSet &L, const py::object &x) -> py::object {
+                if (py::isinstance<Interval>(x)) return py::cast(L.fun_han(py::cast<Interval>(x)));
+                return matrix(L.fun_han(points_of(x)));
+            },
+            py::arg("x"), "The constraints at the points x (n, N), or over the box x")
+        // contains takes points or a box
+        .def(
+            "contains",
+            [](const LevelSet &L, const py::object &S, Tol tol) {
+                if (py::isinstance<Interval>(S)) return L.contains(py::cast<Interval>(S), tol);
+                return L.contains(points_of(S), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether all points (n, N), or the box S, satisfy every constraint")
+        // is_intersecting goes through the box of the other set
+        .def(
+            "is_intersecting",
+            [](const LevelSet &L, const py::object &S, Tol tol) {
+                return L.is_intersecting(set_of(S).get(), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "False if the box of S shows that S and the level set are disjoint")
+        // the contractor, the complement and the split
+        .def("tighten_domain", &LevelSet::tighten_domain, py::arg("I"),
+             py::arg("type") = "forwardBackward",
+             "The box I cut to the solutions of f = 0, or None if there are none")
+        // the complement of an inequality
+        .def("complement", &LevelSet::complement,
+             "The complement of a single '<' or '<=' constraint")
+        // the equality part and the rest
+        .def("split_equality", &LevelSet::split_equality,
+             "The equality part and the inequality part, None for a part without constraints");
+}
+
+void bind_taylm(py::module_ &m) {
+    py::class_<Taylm>(m, "Taylm",
+                      "A Taylor model p(a) + [r1, r2] over variables a_i in [-1, 1]: an enclosure "
+                      "of the range of an expression.")
+        // the factories, one model per coordinate
+        .def_static("constant", &Taylm::constant, py::arg("c"), py::arg("vars"),
+                    py::arg("max_order") = Taylm::kDefaultMaxOrder,
+                    "The constant c in vars variables")
+        .def_static("from_interval", &Taylm::from_interval, py::arg("I"),
+                    py::arg("max_order") = Taylm::kDefaultMaxOrder,
+                    "One model per coordinate of the box I")
+        .def_static("from_zonotope", &Taylm::from_zonotope, py::arg("Z"),
+                    py::arg("max_order") = Taylm::kDefaultMaxOrder,
+                    "One model per coordinate of the zonotope Z")
+        .def_static("from_range", &Taylm::from_range, py::arg("lo"), py::arg("hi"), py::arg("vars"),
+                    py::arg("max_order") = Taylm::kDefaultMaxOrder,
+                    "The model with no dependency that holds [lo, hi]")
+        // an expression on models, and the data of a model
+        .def_static("evaluate", &Taylm::evaluate, py::arg("f"), py::arg("x"),
+                    "The expression f on the models x, one per state")
+        .def_property_readonly("num_vars", &Taylm::num_vars, "The number of variables")
+        .def_property_readonly("max_order", &Taylm::max_order, "The degree of the polynomial part")
+        // the range and the arithmetic
+        .def(
+            "bounds",
+            [](const Taylm &t) {
+                const auto b = t.bounds();
+                return std::make_pair(b[0], b[1]);
+            },
+            "The bounds (lo, hi) of the model")
+        .def("interval", &Taylm::interval, "The bounds as a box of one dimension")
+        .def("plus", py::overload_cast<const Taylm &>(&Taylm::plus, py::const_), py::arg("S"),
+             "The sum with a model")
+        .def("plus", py::overload_cast<double>(&Taylm::plus, py::const_), py::arg("s"),
+             "The sum with a number")
+        .def("minus", py::overload_cast<const Taylm &>(&Taylm::minus, py::const_), py::arg("S"),
+             "The difference with a model")
+        .def("minus", py::overload_cast<double>(&Taylm::minus, py::const_), py::arg("s"),
+             "The difference with a number")
+        // products, powers and the operators
+        .def("times", py::overload_cast<const Taylm &>(&Taylm::times, py::const_), py::arg("S"),
+             "The product with a model")
+        .def("times", py::overload_cast<double>(&Taylm::times, py::const_), py::arg("s"),
+             "The product with a number")
+        .def("power", &Taylm::power, py::arg("n"), "The n-th power, n >= 0")
+        .def("uminus", &Taylm::uminus, "The negated model")
+        .def("__add__", [](const Taylm &a, const Taylm &b) { return a + b; })
+        .def("__sub__", [](const Taylm &a, const Taylm &b) { return a - b; })
+        .def("__mul__", [](const Taylm &a, const Taylm &b) { return a * b; })
+        .def("__neg__", [](const Taylm &a) { return -a; })
+        .def("__pow__", &Taylm::power, py::arg("n"));
+}
+
 /// The dynamics as symbolic expressions: `x` is a list of Expr, `f(x)` a list of Expr or numbers.
 void bind_nonlinear_sys(py::module_ &m) {
     // the results of the steps
@@ -4033,7 +4182,7 @@ void bind_neural_network(py::module_ &m) {
             "a zonotope that contains the outputs of every point");
 }
 
-// Plotting ------------------------------------------------------------------------------------
+// Plotting ----------------------------------------------------------------------------------------
 // The plotting logic is C++ (plot/plot.h): a Figure collects layers, Python draws them.
 
 /// A color from Python: a CORA identifier ("CORA:red") or an RGB triple.
@@ -5105,6 +5254,8 @@ PYBIND11_MODULE(_cora, m) {
     bind_problems(m);
     bind_linear_sys(m);
     bind_nonlinear_sys(m);
+    bind_level_set(m);
+    bind_taylm(m);
     bind_lin_param_sys(m);
     bind_neural_network(m);
     bind_plot(m);

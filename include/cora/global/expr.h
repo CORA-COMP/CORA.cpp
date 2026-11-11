@@ -56,6 +56,11 @@ Range square(const Range &a);
 
 // Expressions -------------------------------------------------------------------------------------
 
+/// The operation of a node of the tree (see Expr::view).
+enum class ExprOp { constant, var, add, sub, mul, div, neg, pow, rpow, sin, cos, tan, exp };
+
+struct ExprView;
+
 class Expr {
   public:
     /// A constant.
@@ -92,6 +97,14 @@ class Expr {
     /// The ranges of all expressions over the box x; a shared subexpression is enclosed once.
     static std::vector<Range> enclose(const std::vector<Expr> &exprs, const std::vector<Range> &x);
 
+    /// The root of the tree for a walk over it: the operation, its constant (`value`: the number
+    /// of a constant, the real exponent of an rpow), its index (the variable of a var, the integer
+    /// exponent of a pow) and the operands `a` and `b` (empty where the operation has none).
+    ExprView view() const;
+
+    /// The identity of the node: two expressions that share a subtree have the same id there.
+    const void *id() const noexcept { return node_.get(); }
+
     struct Node; // the tree behind an expression
 
   private:
@@ -101,6 +114,14 @@ class Expr {
     std::shared_ptr<const Node> node_;
 
     friend struct ExprMaker; // builds the nodes (expr.cpp)
+};
+
+/// One level of an expression tree.
+struct ExprView {
+    ExprOp op;
+    double value;
+    int index;
+    Expr a, b;
 };
 
 Expr operator+(const Expr &a, const Expr &b);

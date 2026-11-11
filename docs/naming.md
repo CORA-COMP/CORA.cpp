@@ -233,6 +233,10 @@ changed, and the reasons are listed below.
 | `specification(@(S) ..., 'custom')` | `Specification::custom(predicate)` | `cora.Specification.custom(predicate)` |
 | `linearReset(A, B, c)`, `evaluate(reset, X, U)` | `LinearReset(A, B, c)`, `reset.evaluate(X, U)` | `cora.LinearReset(A, B, c)`, `reset.evaluate(X, U)` |
 | `transition(guard, reset, target)` | `Transition(guard, reset, target)` (0-based target) | `cora.Transition(guard, reset, target)` |
+| `levelSet(eq, vars, compOp)`, `levelSet.empty(n)`, `levelSet.Inf(n)` | `LevelSet(eq, n, ops)` (`eq` an `Expr` of the states), `LevelSet::empty(n)`, `LevelSet::inf(n)` | - |
+| `contains_(ls, S)`, `isIntersecting_(ls, S)`, `tightenDomain(ls, I, type)`, `not(ls)`, `splitEquality(ls)` | `ls.contains(S, tol)`, `ls.is_intersecting(S, tol)`, `ls.tighten_domain(I, type)`, `ls.complement()`, `ls.split_equality()` | - |
+| `taylm(I)`, `taylm(Z)`, `interval(tay)` | `Taylm::from_interval(I)`, `Taylm::from_zonotope(Z)`, `t.bounds()`, `t.interval()` | - |
+| `funHan(x)`, `ls.der.grad` | `ls.fun_han(x)`, `ls.gradient(i, j)` | - |
 | `location(name, inv, trans, sys)` (sys with c) | `Location(name, inv, trans, flow, c)` | `cora.Location(name, inv, trans, flow, c)` |
 | `hybridAutomaton(name, loc)`, `reach(HA, params, options, spec)` | `HybridAutomaton(name, locs)`, `HA.reach(problem, alg, specs)` | `cora.HybridAutomaton`, `HA.reach(X0, t_final=..., ...)` |
 | `params.startLoc`, `params.finalLoc`, `params.tStart` | `HybridReachProblem::start_location`, `final_locations`, `t_start` | the same keywords |
