@@ -80,7 +80,7 @@ here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet
 | GRBX01 | 1 | 1 | 0.03 | 2.28 | 2.89 |
 | GRBX02 | 1 | 1 | 0.037 | 2.44 | 3.15 |
 | BRKDC01 | 1 | 1 | 0.037 | 22.66 | 0.10 |
-| BRKNC01 | 1 | 1 | 6.58 | 32.07 | 0.17 |
+| BRKNC01 | 1 | 1 | 5.40 | 32.07 | 0.17 |
 | BRKNP01 | 0 | 0 (reach_set_explosion) | 0.001 | 52.20 | 16.99 |
 
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
@@ -119,14 +119,16 @@ verdict 0, CORA's. Before that error CORA.cpp ran for over 30 minutes: Inf times
 different setup.
 
 **Guard boxes.** The guards of `nondetGuard` and `conZonotope` cut each set by the polytope (the
-rows stay rows on the factors, `ConZonotope::cut`) and box the cut by `fm_passes` Fourier-Motzkin
-passes (`ConZonotope::interval_tight`, default 10), CORALean's float definitions bit for bit, where
-CORA solves two linear programs per coordinate. The boxes are never tighter than CORA's, and for
-SRA01-08, SRNA01, SRU01/02 and SPRE22 (`nondetGuard`) the verdicts and the number of sets do not
-change (the times are the same within the noise of the shared machine). BRKNC01 (`conZonotope`,
-order 5) loses its verdict with the passes: 2.7 s and verdict 0 for any number of passes from 1 to
-1000, where the linear programs give 5.8 s and verdict 1 (CORA's). The driver of BRKNC01 and BRKNP01
-therefore sets `exact_cut` (the cuts boxed by linear programs, `alg::ConZonotopeGuard::exact_cut`).
+rows stay rows on the factors, `ConZonotope::cut`) and box the cut by the option `box`
+(`alg::CutBox`, CORALean's `ConZonotope.BoxMethod`). `fm` uses `fm_passes` Fourier-Motzkin passes
+(`ConZonotope::interval_tight`, default 10), CORALean's float definition bit for bit; the boxes are
+never tighter than CORA's, and for SRA01-08, SRNA01, SRU01/02 and SPRE22 (`nondetGuard`) the
+verdicts and the number of sets do not change (the times are the same within the noise of the
+shared machine). `cert` takes the dual solution of CORA's two linear programs per coordinate and
+bounds with it in directed order (`ConZonotope::Cut::interval_cert`, CORALean's
+`intervalCertWith`): as tight as CORA's ranges, outer whatever the solver answers. BRKNC01
+(`conZonotope`, order 5) loses its verdict with the passes: 2.7 s and verdict 0 for any number of
+passes from 1 to 1000. The driver of BRKNC01 and BRKNP01 therefore sets `box = cert`.
 
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
 of each family also an `example` test (CONTRIBUTING.md, "Test suites").

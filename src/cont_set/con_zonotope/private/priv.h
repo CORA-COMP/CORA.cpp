@@ -24,6 +24,17 @@
 
 namespace cora {
 
+// Floats ------------------------------------------------------------------------------------------
+
+/// CORALean's `maximum` and `minimum` of two floats: the larger or smaller one, a NaN is kept.
+inline double priv_float_max(double a, double b) { return a <= b ? b : (b < a ? a : a + b); }
+inline double priv_float_min(double a, double b) { return a <= b ? a : (b < a ? b : a + b); }
+
+/// The values of a (rows, cols) matrix on the host, row-major; none for zero rows.
+inline std::vector<double> priv_host_rows(const Tensor &T) {
+    return T.shape()[0] == 0 ? std::vector<double>{} : T.data();
+}
+
 // Blocks ------------------------------------------------------------------------------------------
 
 /// Zeros (..., rows, cols) with the batch shape and the data of `like`.

@@ -116,12 +116,16 @@ std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,
                                                     const std::vector<Tensor> &B);
 std::optional<Set> priv_guard_intersect_nondet_guard(const std::vector<Set> &R,
                                                      const Polytope &guard,
-                                                     const std::vector<Tensor> &B,
-                                                     std::optional<int> fm_passes);
+                                                     const std::vector<Tensor> &B, alg::CutBox box,
+                                                     int fm_passes);
 std::optional<Set> priv_guard_intersect_con_zonotope(const std::vector<Set> &R,
                                                      const Polytope &guard,
                                                      const std::vector<Tensor> &B, int guard_order,
-                                                     std::optional<int> fm_passes);
+                                                     alg::CutBox box, int fm_passes);
+
+/// The box of a cut of a set by a polytope guard by the method (see alg::CutBox); empty if the
+/// cut has no point.
+Interval priv_box_cut(const ConZonotope::Cut &cut, alg::CutBox box, int fm_passes);
 
 /// The zonotopes of a set: itself, or those of a bundle.
 std::vector<Zonotope> priv_zonotopes(const Set &S);

@@ -38,6 +38,25 @@ std::vector<Zonotope> aux_lean(const std::vector<cora::Zonotope> &R) {
     return std::vector<Zonotope>(R.begin(), R.end());
 }
 
+/// The members every polytope guard op takes: the bases, the sets, the guard and the box method.
+std::vector<Operand> aux_cut_operands(const std::vector<cora::Tensor> &Bs, const cora::Zonotope &R0,
+                                      const std::vector<cora::Zonotope> &R,
+                                      const cora::Polytope &guard, const std::string &box,
+                                      int64_t fm_passes) {
+    // the bases cross as lean tensors, then the sets and the guard
+    std::vector<Tensor> bases;
+    bases.reserve(Bs.size());
+    for (const cora::Tensor &B : Bs) bases.push_back(Tensor::from(B));
+    std::vector<Operand> operands = {{"Bs", bases},
+                                     {"R0", Zonotope(R0)},
+                                     {"R", aux_lean(R)},
+                                     {"guard", Polytope(guard)},
+                                     {"box", box}};
+    // the box "cert" has no passes
+    if (box != "cert") operands.push_back({"fmPasses", fm_passes});
+    return operands;
+}
+
 } // namespace
 
 
@@ -108,20 +127,15 @@ ZonoBundle Location::guard_intersect_zono_girard(const std::vector<cora::Tensor>
 
 // The polytope guards ------------------------------------------------------------------------
 
-// The bases, the sets, the polytope guard and the passes that box a cut.
+
+// The bases, the sets, the polytope guard, the box method and the passes of the box.
 ZonoBundle Location::guard_intersect_nondet_guard(const std::vector<cora::Tensor> &Bs,
                                                   const cora::Zonotope &R0,
                                                   const std::vector<cora::Zonotope> &R,
-                                                  const cora::Polytope &guard, int64_t fm_passes) {
-    // the bases cross as lean tensors, then the sets and the guard
-    std::vector<Tensor> bases;
-    bases.reserve(Bs.size());
-    for (const cora::Tensor &B : Bs) bases.push_back(Tensor::from(B));
-    return ask("location.guardIntersect_nondetGuard", {{"Bs", bases},
-                                                       {"R0", Zonotope(R0)},
-                                                       {"R", aux_lean(R)},
-                                                       {"guard", Polytope(guard)},
-                                                       {"fmPasses", fm_passes}})
+                                                  const cora::Polytope &guard, int64_t fm_passes,
+                                                  const std::string &box) {
+    return ask("location.guardIntersect_nondetGuard",
+               aux_cut_operands(Bs, R0, R, guard, box, fm_passes))
         .get<ZonoBundle>("zB");
 }
 
@@ -129,18 +143,11 @@ ZonoBundle Location::guard_intersect_con_zonotope(const std::vector<cora::Tensor
                                                   const cora::Zonotope &R0,
                                                   const std::vector<cora::Zonotope> &R,
                                                   const cora::Polytope &guard, int64_t guard_order,
-                                                  int64_t fm_passes) {
-    std::vector<Tensor> bases;
-    bases.reserve(Bs.size());
-    for (const cora::Tensor &B : Bs) bases.push_back(Tensor::from(B));
+                                                  int64_t fm_passes, const std::string &box) {
     // the guard order is the reduction of the sets before they are cut
-    return ask("location.guardIntersect_conZonotope", {{"Bs", bases},
-                                                       {"R0", Zonotope(R0)},
-                                                       {"R", aux_lean(R)},
-                                                       {"guard", Polytope(guard)},
-                                                       {"guardOrder", guard_order},
-                                                       {"fmPasses", fm_passes}})
-        .get<ZonoBundle>("zB");
+    std::vector<Operand> operands = aux_cut_operands(Bs, R0, R, guard, box, fm_passes);
+    operands.push_back({"guardOrder", guard_order});
+    return ask("location.guardIntersect_conZonotope", operands).get<ZonoBundle>("zB");
 }
 
 // The reset ---------------------------------------------------------------------------------

@@ -131,6 +131,83 @@ void random_planar_programs() {
     }
 }
 
+// The multipliers of the optimal basis: known ones, and strong duality on random programs.
+void multipliers() {
+    // x >= 1 as -x <= -1 (a negative right-hand side: the row is flipped inside): lambda = 1
+    LinProg low;
+    low.n = 1;
+    low.f = {1};
+    low.Aineq = {-1};
+    low.bineq = {-1};
+    LinProgResult r = linprog(low);
+    check(r.status == Status::optimal && r.dual_ineq.size() == 1 && r.dual_eq.empty() &&
+              test::close(r.dual_ineq[0], 1.0),
+          "the multiplier of a row with a negative right-hand side");
+    // min x s.t. x - y = 1, y = 3: stationarity in x gives mu_1 = -1, in y mu_2 = mu_1
+    LinProg eq;
+    eq.n = 2;
+    eq.f = {1, 0};
+    eq.Aeq = {1, -1, 0, 1};
+    eq.beq = {1, 3};
+    r = linprog(eq);
+    check(r.status == Status::optimal && r.dual_eq.size() == 2 && test::close(r.dual_eq[0], -1.0) &&
+              test::close(r.dual_eq[1], -1.0),
+          "the multipliers of equalities");
+    // a row that does not bind has multiplier 0: min x s.t. x <= 5, x >= 0
+    LinProg slack;
+    slack.n = 1;
+    slack.f = {1};
+    slack.Aineq = {1};
+    slack.bineq = {5};
+    slack.lb = {0};
+    r = linprog(slack);
+    check(r.status == Status::optimal && test::close(r.dual_ineq[0], 0.0), "a slack row");
+
+    // random programs: the dual value -l'b - m'beq - |f + A'l + Aeq'm|_1 is the optimum
+    Rng rng(11);
+    const auto uniform = [&](double lo, double hi) {
+        double x = 0.0;
+        rng.uniform(&x, 1, lo, hi);
+        return x;
+    };
+    for (int trial = 0; trial < 100; ++trial) {
+        // three variables, some rows and one equality
+        const int n = 3, rows = 2 + trial % 3;
+        LinProg lp;
+        lp.n = n;
+        lp.f = test::random_direction(rng, n);
+        for (int i = 0; i < rows; ++i) {
+            const std::vector<double> a = test::random_direction(rng, n);
+            lp.Aineq.insert(lp.Aineq.end(), a.begin(), a.end());
+            lp.bineq.push_back(uniform(-0.2, 0.8));
+        }
+        const std::vector<double> e = test::random_direction(rng, n);
+        lp.Aeq = e;
+        lp.beq = {uniform(-0.3, 0.3)};
+        lp.lb.assign(std::size_t(n), -1.0);
+        lp.ub.assign(std::size_t(n), 1.0);
+        r = linprog(lp);
+        if (r.status != Status::optimal) continue;
+        // the dual value over the box [-1, 1]^n
+        double dual = 0.0;
+        bool signs = true;
+        for (int i = 0; i < rows; ++i) {
+            dual -= r.dual_ineq[std::size_t(i)] * lp.bineq[std::size_t(i)];
+            signs = signs && r.dual_ineq[std::size_t(i)] > -1e-9;
+        }
+        dual -= r.dual_eq[0] * lp.beq[0];
+        // the residual of the stationarity condition, paid by the box
+        for (int j = 0; j < n; ++j) {
+            double g = lp.f[std::size_t(j)] + r.dual_eq[0] * e[std::size_t(j)];
+            for (int i = 0; i < rows; ++i)
+                g += r.dual_ineq[std::size_t(i)] *
+                     lp.Aineq[std::size_t(i) * std::size_t(n) + std::size_t(j)];
+            dual -= std::abs(g);
+        }
+        check(signs && std::abs(dual - r.fval) < 1e-7, "strong duality " + std::to_string(trial));
+    }
+}
+
 } // namespace
 
 
@@ -139,6 +216,7 @@ void random_planar_programs() {
 int main() {
     known_programs();
     random_planar_programs();
+    multipliers();
     return test::finish("linprog");
 }
 

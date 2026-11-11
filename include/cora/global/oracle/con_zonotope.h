@@ -31,6 +31,10 @@ class ConZonotope {
     /// An exact constrained zonotope (empty error boxes) in the current dtype.
     ConZonotope(const cora::ConZonotope &cz);
 
+    /// An exact set from a cut: the rows C x <= d of the cut are the inequalities of the oracle's
+    /// polytope on the factors, the equalities A x = b its equalities.
+    ConZonotope(const cora::ConZonotope::Cut &cut);
+
     /// The dtype of the values.
     const std::string &dtype() const noexcept { return dtype_; }
 
@@ -55,6 +59,19 @@ class ConZonotope {
     /// The box of c + G J with J the factor bounds after k Fourier-Motzkin passes on the
     /// constraint (`conZonotope.intervalTight`).
     Interval interval_tight(int64_t k) const;
+
+    /// A box from dual certificates and the multipliers it was made from
+    /// (`conZonotope.intervalCert`).
+    struct Cert {
+        Interval I;
+        cora::ConZonotope::Certificate weights;
+    };
+
+    /// The box at the multipliers w, bit for bit; the multipliers are the ones sent.
+    Cert interval_cert(const cora::ConZonotope::Certificate &w) const;
+
+    /// The box at the multipliers of the oracle's own exact simplex, which it returns.
+    Cert interval_cert() const;
 
     // Set operations ---------------------------------------------------------------------------
 

@@ -2,15 +2,15 @@
 //
 // Each set is reduced to guard_order (Girard) and cut by the guard (its rows kept on the factors,
 // ConZonotope::cut); per basis B the boxes of the images B' of the cuts, from fm_passes Fourier-
-// Motzkin passes, are united and mapped back (CORALean's guardIntersectPolytopeHFloat; CORA solves
-// a linear program per bound). Several bases give a zonotope bundle.
+// Motzkin passes or the dual certificates of CORA's linear programs (priv_box_cut), are united and
+// mapped back (CORALean's guardIntersectPolytopeHFloat). Several bases give a zonotope bundle.
 //
-// Syntax:   std::optional<Set> S = priv_guard_intersect_con_zonotope(R, guard, B, order, k);
+// Syntax:   std::optional<Set> S = priv_guard_intersect_con_zonotope(R, guard, B, order, box, k);
 // Inputs:   R - the sets that meet the guard
 //           guard - the guard (any polytope)
 //           B - the bases (n, n)
 //           order - the order of the reduction first (CORA's guardOrder)
-//           fm_passes - the passes that box a cut; none: CORA's linear programs (exact, slower)
+//           box - how a cut is boxed (alg::CutBox), fm_passes - the passes of fm and both
 // Outputs:  S - the enclosure (a zonotope, or a bundle for several bases); none if empty
 // See also: priv_guard_intersect, priv_calc_basis
 //
@@ -47,29 +47,19 @@ ConZonotope aux_reduced(const Set &S, int order) {
 std::optional<Set> priv_guard_intersect_con_zonotope(const std::vector<Set> &R,
                                                      const Polytope &guard,
                                                      const std::vector<Tensor> &B, int guard_order,
-                                                     std::optional<int> fm_passes) {
-    // the reduced sets cut by the guard (exactly, as CORA, without passes)
+                                                     alg::CutBox box, int fm_passes) {
+    // the reduced sets cut by the guard
     std::vector<ConZonotope::Cut> cut;
-    std::vector<ConZonotope> exact;
-    for (const Set &S : R) {
-        const ConZonotope reduced = aux_reduced(S, guard_order);
-        if (fm_passes)
-            cut.push_back(reduced.cut(guard));
-        else
-            exact.push_back(reduced.intersect(guard));
-    }
+    cut.reserve(R.size());
+    for (const Set &S : R) cut.push_back(aux_reduced(S, guard_order).cut(guard));
     std::vector<Zonotope> parts;
     for (const Tensor &basis : B) {
         // the union of their boxes in the basis, back in the state space
         const Tensor Bt = basis.matrix_transpose();
         std::optional<Interval> I;
         for (const ConZonotope::Cut &K : cut) {
-            const Interval box = K.linear_map(Bt).interval_tight(*fm_passes);
-            if (!box.is_empty()) I = I ? I->unite(box) : box;
-        }
-        for (const ConZonotope &cz : exact) {
-            const Interval box = cz.linear_map(Bt).interval();
-            if (!box.is_empty()) I = I ? I->unite(box) : box;
+            const Interval part = priv_box_cut(K.linear_map(Bt), box, fm_passes);
+            if (!part.is_empty()) I = I ? I->unite(part) : part;
         }
         if (!I) return std::nullopt;
         parts.push_back(I->zonotope().linear_map(basis));

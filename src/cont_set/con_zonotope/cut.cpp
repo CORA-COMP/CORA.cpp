@@ -33,9 +33,6 @@ namespace {
 
 using Vec = std::vector<double>;
 
-/// The values of a (rows, cols) matrix on the host; none for zero rows.
-Vec aux_host(const Tensor &T) { return T.shape()[0] == 0 ? Vec{} : T.data(); }
-
 /// The dot product of a and the column j of the (n, h) matrix G, summed from the last term.
 double aux_dot(const double *a, const Vec &G, int64_t n, int64_t h, int64_t j) {
     double acc = 0.0;
@@ -45,7 +42,8 @@ double aux_dot(const double *a, const Vec &G, int64_t n, int64_t h, int64_t j) {
 
 /// The rows a x <= r of the polytope with its equalities as two halves, the rows of a first.
 std::pair<Vec, Vec> aux_rows(const Polytope::Constraints &H) {
-    const Vec A = aux_host(H.A), b = aux_host(H.b), Ae = aux_host(H.Ae), be = aux_host(H.be);
+    const Vec A = priv_host_rows(H.A), b = priv_host_rows(H.b), Ae = priv_host_rows(H.Ae),
+              be = priv_host_rows(H.be);
     Vec a = A, r;
     for (const double x : b) r.push_back(x + 0.0);
     a.insert(a.end(), Ae.begin(), Ae.end());

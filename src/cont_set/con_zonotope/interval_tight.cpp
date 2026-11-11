@@ -35,10 +35,6 @@ using Vec = std::vector<double>;
 
 // Floats and rows ---------------------------------------------------------------------------------
 
-/// CORALean's `maximum` and `minimum` of two floats (a NaN is kept).
-double aux_max(double a, double b) { return a <= b ? b : (b < a ? a : a + b); }
-double aux_min(double a, double b) { return a <= b ? a : (b < a ? b : a + b); }
-
 /// The rows a x <= r on the h factors, row-major.
 struct Rows {
     int64_t h = 0;
@@ -46,15 +42,13 @@ struct Rows {
     std::size_t count() const { return r.size(); }
 };
 
-/// The values of a (rows, cols) matrix on the host; none for zero rows.
-Vec aux_host(const Tensor &T) { return T.shape()[0] == 0 ? Vec{} : T.data(); }
-
 /// The rows that absorbRounding makes of the constraints: C x <= d, then A x <= b and -A x <= -b.
 /// The right-hand side is d + 0 (the slack and the error box of a float set are zero).
 Rows aux_rows(const ConZonotope::Cut &cut) {
     Rows rows;
     rows.h = cut.G.shape()[1];
-    const Vec C = aux_host(cut.C), d = aux_host(cut.d), A = aux_host(cut.A), b = aux_host(cut.b);
+    const Vec C = priv_host_rows(cut.C), d = priv_host_rows(cut.d), A = priv_host_rows(cut.A),
+              b = priv_host_rows(cut.b);
     rows.a = C;
     for (const double x : d) rows.r.push_back(x + 0.0);
     // an equality is its two halves
@@ -71,7 +65,7 @@ Rows aux_rows(const ConZonotope::Cut &cut) {
 double aux_rest(const double *a, const Vec &lo, const Vec &hi, int64_t h, int64_t j) {
     double acc = 0.0;
     for (int64_t k = h; k-- > 0;) {
-        const double term = k == j ? 0.0 : aux_max((-a[k]) * hi[k], (-a[k]) * lo[k]);
+        const double term = k == j ? 0.0 : priv_float_max((-a[k]) * hi[k], (-a[k]) * lo[k]);
         acc = term + acc;
     }
     return acc;
@@ -89,13 +83,13 @@ void aux_pass(const Rows &rows, Vec &lo, Vec &hi) {
             double cut_lo = from_lo[jj], cut_hi = from_hi[jj];
             if (a[j] < 0.0) {
                 const double c = rows.r[i] + aux_rest(a, from_lo, from_hi, h, j);
-                cut_lo = aux_max(from_lo[jj], -(c / (-a[j])));
+                cut_lo = priv_float_max(from_lo[jj], -(c / (-a[j])));
             } else if (0.0 < a[j]) {
                 const double c = rows.r[i] + aux_rest(a, from_lo, from_hi, h, j);
-                cut_hi = aux_min(from_hi[jj], c / a[j]);
+                cut_hi = priv_float_min(from_hi[jj], c / a[j]);
             }
-            lo[jj] = aux_max(lo[jj], cut_lo);
-            hi[jj] = aux_min(hi[jj], cut_hi);
+            lo[jj] = priv_float_max(lo[jj], cut_lo);
+            hi[jj] = priv_float_min(hi[jj], cut_hi);
         }
     }
 }

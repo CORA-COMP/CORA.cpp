@@ -31,12 +31,15 @@ struct LinProg {
     std::vector<double> lb, ub;       ///< (n) each, or empty
 };
 
-/// The outcome: x and fval are only set if the status is Optimal.
+/// The outcome: x, fval and the multipliers are only set if the status is Optimal. The multipliers
+/// of f'x + lambda'(Aineq x - bineq) + mu'(Aeq x - beq) at the optimal basis: lambda >= 0, mu free.
+/// Candidates only, to be checked by weak duality; the multipliers of the bounds are not given.
 struct LinProgResult {
     enum class Status { optimal, infeasible, unbounded };
     Status status = Status::infeasible;
     std::vector<double> x;
     double fval = std::numeric_limits<double>::quiet_NaN();
+    std::vector<double> dual_ineq, dual_eq;
 };
 
 /// The minimizer and minimal value of the program, or the reason there is none.
