@@ -4,7 +4,7 @@
 
 | category | instances run | verdict = ARCH26 | CORA.cpp fastest | speedup vs best ARCH26 tool (median / geo. mean) | speedup vs CORA ARCH26 (median / geo. mean) |
 | --- | --- | --- | --- | --- | --- |
-| AFF | 48 | 40 of 42 in ARCH26 (the 47 run in MATLAB CORA equal its verdict) | 27 of 34 | 2.6 / 4.3 | 15 / 13 (34 instances) |
+| AFF | 49 | 41 of 43 in ARCH26 (the 47 run in MATLAB CORA equal its verdict; HEAT04 not run there to the end) | 27 of 35 | 2.6 / 4.1 | 13 / 12 (35 instances) |
 | NLN | 11 | 11 of 11 | 8 of 11 | 4.2 / 3.4 | 5.9 / 8.7 (11 instances) |
 | AINNCS | 11 | 10 of 11 (all 11 equal CORA's) | 8 of 10 | 3.6 / 5.0 | 16 / 20 (10 instances) |
 
@@ -20,7 +20,7 @@ for CORA and CORA.cpp) and the instances the report does not have (ISS, RAND) an
   not verified, F falsified); `(ARCH23)` where the report has no such instance, `(script: 0)` where
   the report verifies with another setup than CORA's script.
 - **CORA.cpp [s]**: wall clock, core preset, one run each, the programs run one at a time on 16 CPUs
-  that other jobs share (AFF and NLN: 09-November-2026, AINNCS: 11-November-2026).
+  that other jobs share (AFF and NLN: 09-November-2026, AINNCS and HEAT04: 11-November-2026).
 - **oracle check (rows)**: the rows of CORA the instance executes that are bit-exact against
   CORALean's `nearest` oracle, of those that can be (`coverage/benchmarks.md`, table at the end), and
   the rows tested by properties only.
@@ -46,7 +46,7 @@ as `savedata.tComp` in MATLAB. The MATLAB side is the original scripts, run from
 | `iss` | ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01 | reachavoid:supportFunc |
 | `beam` | CBC01-03, CBF01-03 | reachavoid:supportFunc |
 | `heat3D` | HEAT01, HEAT02 | reachavoid:supportFunc |
-| `heat3D` (reach) | HEAT03 (heat20, 8000 states, sparse `A`) | linearSys reach, linAlg krylov |
+| `heat3D` (reach) | HEAT03 (heat20, 8000 states), HEAT04 (heat50, 125 000 states), sparse `A` | linearSys reach, linAlg krylov |
 | `rand` | RAND01, RAND02 (`rand0?_test.json` models) | reachavoid:zonotope |
 | `rnd` | RND01-06 (ARCH26: 10, 50, 100, 1000, 2500 and 5000 states) | reachavoid:zonotope (RND01, RND03), reachavoid:krylovSuppFunc (RND02, RND04-06) |
 | `rendezvous` | SRA01-08, SRNA01, SRU01, SRU02 | hybrid reach: zonoGirard or nondetGuard, enclose box / pca |
@@ -68,7 +68,7 @@ EPiC Series in Computing 110, pp. 28-51), whose CORA and JuliaReach times were r
 CORA.cpp's. The verdict of CORA.cpp is CORA's `res`; every one equals MATLAB CORA's on the script
 (ARCH23: the ISU instances, RAND02, SRU01 and SRU02, PLAN01 and BRKNP01 are not verified; PLAN01 and BRKNP01: below).
 ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 (RND[c], run here on the files of CORA's package) and adds HEAT04 (heat50, 125 000
-states, Krylov), a target for later: not run here (its data would be about 14 MB). The instances
+states, Krylov), which runs here (its `A` is built from the mesh, not stored). The other instances
 here stay those of the ARCH23 scripts.
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
@@ -76,6 +76,7 @@ here stay those of the ARCH23 scripts.
 | HEAT01 | 1 | 1 | 0.064 | 1/8 bit-exact, 2 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
 | HEAT02 | 1 | 1 | 3.39 | 1/8 bit-exact, 2 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
 | HEAT03 | 1 | 1 | 14.6 | 10/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 1.49 |
+| HEAT04 | 1 | 1 | 1303 | 10/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 0.92 |
 | CBC01 | 1 | 1 | 0.162 | 1/8 bit-exact, 2 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
 | CBC02 | 1 | 1 | 3.88 | 1/8 bit-exact, 2 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
 | CBC03 | 1 | 1 | 44.5 | 1/8 bit-exact, 2 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
@@ -128,6 +129,8 @@ here stay those of the ARCH23 scripts.
 
 [c] RND01-06: the report's instances are created on the server, these are the files of CORA's package (RND06: our own), so the ARCH26 columns are indicative and the speedups stay out of the summary.
 
+[d] HEAT04: ARCH26 ran a new support-function Krylov verification (Perschl and Althoff, HSCC 2026, not in CORA v2026.1.0); CORA.cpp runs the ARCH23 script's reach with a step of 0.001, and JuliaReach's 3180 s are its discrete-time mode (continuous did not solve it), so CORA's 1193 s is the best.
+
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
 (verdict 0, the CORA column), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
 x7 >= -50.65, past the bound -50. The ARCH26 report lists PLAN01 as verified (162 s) with a different
@@ -149,6 +152,21 @@ time-interval enclosure and the Jawecki bound outside the nonexpansive case,
 `Krylov.reach_krylov_counterexample`, `Krylov.printed_time_interval_counterexample`,
 `Krylov.jawecki_bound_cora_counterexample`); CORA.cpp follows
 CORA, so the same holds here. HEAT03 takes about 15 s, so it is a `benchmark` test only.
+
+**HEAT04** is HEAT03's script on heat50 (125 000 states, `A` of 860 000 entries built from the mesh
+in C++, bit-identical to `models/Cora/heat3D/heat50.mat` in its action on a test vector and in
+nnz; `R0` has 1386 hot cells, `e_mid` is cell (25, 25, 25)). The maximum temperature over
+the steps must lie in 0.01161 +- 1e-4 (the report's Tmax; the true value, from the ODE solution,
+is 0.0116118 at t = 18.87). The script's step of 0.005 gives 0.0158, 36 % too high, because the
+enlargement of a time interval grows with the 1387 outputs; the step 0.001 gives 0.0116902 and
+the verdict 1, in 1303 s on 16 shared CPUs and 4.0 GB peak memory (the dual system keeps `A'`,
+the 1387 x 125 000 output matrix, 1.4 GB, and a subspace of order 181 per vector). Sets of 1387
+outputs have 2774 generators, so `reach` takes a callback (`LinearSys::reach(problem, alg,
+on_time_interval)`) that sees each step's set and stores none: all 40 000 sets would need 2.5 TB.
+MATLAB CORA cannot run it on this machine (64 GB limit): the same script to t = 0.2 (200 steps)
+takes 32.4 s there against 7.3 s for CORA.cpp, with the same maximum (8.79442e-15). `Interval::zonotope`
+no longer forms the dense n x n diagonal of its radii (125 GB here). The Krylov steps are those of
+HEAT03, with the same unsound spots (above). The coverage build (3 times slower, over the 3600 s of a test) measured it with `CORACPP_HEAT04_T_FINAL=1`, which shortens the horizon: the files executed are the same.
 
 **BRKNP01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
 (verdict 0, the CORA column, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
@@ -576,6 +594,9 @@ Per instance:
 - `specs`: `{"type": "safeSet"|"unsafeSet", "A": rows, "b": values}` over the output `y = C x`;
   a safe set must stay inside `A y <= b`, an unsafe set must avoid its intersection.
 
+HEAT04 has no data files: its `A` (860 000 entries, 14 MB) is built from the mesh by `aux_mesh` in
+`benchmark_linear_reach_arch23_heat3d.cpp`, the same construction as `heat3d_data.py`, and equals `heat50.mat`.
+
 HEAT03 is not exported by MATLAB: CORA's `models/Cora/heat3D/heat20.mat` is a Git LFS file and
 MATLAB is not available here. `heat3d_data.py` builds `A` from the finite differences of the
 benchmark (Bak, Tran, Johnson, HSCC 2019; see its header), which reproduce the exported `A` of
@@ -635,6 +656,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | HEAT01 | 1/8 | 7 | 4 |
 | HEAT02 | 1/8 | 7 | 4 |
 | HEAT03 | 10/17 | 7 | 4 |
+| HEAT04 | 10/17 | 7 | 3 |
 | ISSC01_ISS02 | 1/8 | 7 | 4 |
 | ISSC01_ISU02 | 1/8 | 7 | 4 |
 | ISSF01_ISS01 | 1/8 | 7 | 4 |
