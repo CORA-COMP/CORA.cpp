@@ -196,7 +196,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | LALO20 W005 | 1 | 1 | 15.3 | 10/24 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.11 |
 | LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 12/37 bit-exact, 11 property | 346 | 248 | 248 (CORA) [c] | 24.1 |
 | TSPS25 | 1 | 1 | 65 | 17/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
-| LOVO25 | 1 | 1 [e] | 0.185 | 27/82 bit-exact, 20 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 51.9 |
+| LOVO25 | 1 | 1 [e] | 3.72 | 24/75 bit-exact, 18 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
 
 [a] TRAF22: JuliaReach's ARCH-COMP 2025 repeatability code (32 s) holds the disturbances w constant (w' = 0), where the report lets them vary arbitrarily over time.
 
@@ -206,7 +206,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 [d] LOVO25: JuliaReach's ARCH-COMP 2025 repeatability code (1.6 s) integrates the flow without the hybrid automaton and checks only the area, not the crossing counts, and KeYmaera X (1.7 s) proves invariance only.
 
-[e] LOVO25: the CORA.cpp verdict follows CORA's ARCH script (fixed branch choice and an x1 cut); a sound verdict is in progress.
+[e] LOVO25: a sound verdict, not CORA's script (which writes `res = true`; it runs as `LOVO25-script`, 0.09 s, area 8.92e-3, MATLAB 11.4 s). The automaton (with a jump back out of `inside`) is reached from 8 pieces of the initial box with no restart and no cut; 7 pieces give one final branch with 2 jumps, and the piece with the tangential arc (x1 near 1.288 to 1.291) makes CORA's linearization error explode in the jumps in and out, so the flow alone encloses it. The area of all sets at x3 = 3.64 is below 1e-2 and none is in `inside`; exactly 2 and exactly 4 crossings are shown by simulated trajectories (x1 = 1.2891 and 1.288). The CORA time column is the script's.
 
 | instance | quality metric (CORA.cpp; ARCH26 CORA, JuliaReach) |
 | --- | --- |
@@ -216,7 +216,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | LALO20 W001 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
 | LALO20 W005 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
 | LALO20 W01 (stand-in) | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
-| LOVO25 | area 8.92e-3 (CORA 8.9e-3) |
+| LOVO25 | area 2.24e-3 (CORA 8.9e-3, JuliaReach 9e-5; the flow alone from the whole box 3.04e-5) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -338,8 +338,11 @@ dynamics (the pieces that meet the ring are split along their longest generator,
 1/1000) and intersects the final sets with the plane x3 = 3.64. The specification of the report has four parts:
 the box x1 x x2 of all final sets has an area below 1e-2 (8.92e-3 here), one final set crossed the ring twice
 (the branch of the full crossing: entry and exit), one four times (the tangential crossing, then the re-entry:
-two branches of 'inside'), and none an odd number of times. The driver counts the crossings from the branches
-that each final set passed and checks the area from the final boxes; the script itself records 1. CORA.cpp
+two branches of 'inside'), and none an odd number of times. The script is kept as `LOVO25-script` and records 1 without testing
+the sets. `LOVO25` instead gives the automaton a jump back out of `inside` and reaches 8 pieces of X0 with no restart and no cut;
+the piece with the tangential arc makes the linearization error explode and is enclosed by the flow alone, which is sound
+because the resets are the identity and both locations have the same dynamics. The area and the location of the sets at
+x3 = 3.64 are checked, and the runs with exactly 2 and exactly 4 crossings are simulated trajectories. CORA.cpp
 ports the unsolvable branch of `levelSet/and_.m` only (no symbolic solver); CORA also tries the solvable branch,
 which the ring can take where one of its two roots lies outside the box, and keeps the smaller error
 (docs/cora-differences.md); the areas agree to 0.1%. MATLAB CORA v2026.1.0 (R2024b, this
@@ -554,7 +557,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W001 | 10/24 | 14 | 7 |
 | LALO20_W005 | 10/24 | 14 | 7 |
 | LALO20_W01 | 12/37 | 25 | 7 |
-| LOVO25 | 27/82 | 55 | 14 |
+| LOVO25 | 24/75 | 51 | 13 |
+| LOVO25-script | 27/82 | 55 | 14 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |
