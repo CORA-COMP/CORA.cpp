@@ -87,10 +87,10 @@ here stay those of the ARCH23 scripts.
 | ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.628 | 1/8 bit-exact, 2 property | - | - | - | - |
 | ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.194 | 1/8 bit-exact, 2 property | - | - | - | - |
 | RAND01 | 1 (ARCH23) | 1 | 0.0023 | 5/13 bit-exact, 2 property | - | - | - | - |
-| RAND02 | 0 (ARCH23) | 0 | 0.017 | 5/13 bit-exact, 2 property | - | - | - | - |
-| RND01 | 1 | 1 | 0.023 | 5/13 bit-exact, 2 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
+| RAND02 | 0 (ARCH23) | 0 | 0.015 | 5/13 bit-exact, 2 property | - | - | - | - |
+| RND01 | 1 | 1 | 0.022 | 5/13 bit-exact, 2 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
 | RND02 | 1 | 1 | 0.907 | 2/11 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 0.46 |
-| RND03 | 1 | 1 | 1330 | 5/13 bit-exact, 2 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 0.028 |
+| RND03 | 1 | 1 | 29.8 | 5/13 bit-exact, 2 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
 | RND04 | 1 | 1 | 0.642 | 2/11 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 12.1 |
 | RND05 | 1 | 1 | 1.33 | 2/11 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 34.5 |
 | RND06 | 1 | 1 | 5.14 | 2/11 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 5.2 |
@@ -236,8 +236,10 @@ so `reachavoid:zonotope` took 2882 s, verdict 1. v2026.1.0 has no Krylov script:
 sparse system with the unsafe halfspace y >= lb (the json has `"upperbound": null`, which CORA's loader reads as the
 point lb; the package's script uses `b(1)`), 6.13 s and 22.99 s, both verdict 1. RND06 was not run in MATLAB.
 
-**RND03** takes CORA.cpp 1330 s with the zonotope algorithm (CORA 37.6 s; 11 iterations, last step 1.3e-5, verdict 1), 35 times
-MATLAB's: the port is correct here, not fast (the program ran next to other jobs of the machine). The Krylov algorithm
+**RND03** takes CORA.cpp 29.8 s with the zonotope algorithm (CORA 37.6 s; 11 iterations, last step 1.3e-5, verdict 1). It took
+1330 s (1464 s on a second run) until the simplex of `linprog` was made sparse: the verification solves 1876 linear programs
+of up to 1200 variables with one bound row each, and 95% of the time was in their dense tableau (the results of every program
+are bit-identical before and after). The Krylov algorithm
 verifies RND03 in 0.40 s and RND01 in 0.04 s, an independent confirmation of the verdicts. RND02 with the zonotope algorithm
 of CORA.cpp did not finish in 3 minutes (MATLAB: 48 minutes).
 
