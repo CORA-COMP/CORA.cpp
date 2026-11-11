@@ -138,7 +138,7 @@ Remainder aux_reach_rem(const std::vector<Set> &branch, double t_final, double t
     lin.intermediate_order = 20;
     Remainder out;
     out.R =
-        aux_flow().reach({.initial_set = *jump, .t_final = horizon}, alg::PolyNonlinearReach{lin});
+        aux_flow().reach({.initial_set = jump, .t_final = horizon}, alg::PolyNonlinearReach{lin});
     out.t_stop = horizon + t_start;
     return out;
 }

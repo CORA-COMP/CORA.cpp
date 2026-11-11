@@ -142,11 +142,10 @@ Exponents aux_quadratic_exponents(std::size_t n) {
 /// an exponent (CORA's aux_isavector).
 bool aux_is_point(const PolyZonotope &S) {
     if (S.independent_generators().shape().back() > 0) return false;
-    for (std::size_t k = 0; k < S.exponents().size(); ++k)
-        if (std::any_of(S.exponents()[k].begin(), S.exponents()[k].end(),
-                        [](int e) { return e != 0; }))
-            return false;
-    return true;
+    const auto zero = [](const std::vector<int> &e) {
+        return std::all_of(e.begin(), e.end(), [](int x) { return x == 0; });
+    };
+    return std::all_of(S.exponents().begin(), S.exponents().end(), zero);
 }
 
 } // namespace

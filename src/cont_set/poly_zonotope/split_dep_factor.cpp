@@ -120,7 +120,7 @@ std::pair<PolyZonotope, PolyZonotope> PolyZonotope::split_dep_factor(int64_t id)
             for (int64_t j = 0; j < h; ++j) {
                 if (E_[std::size_t(j)][row] != i) continue;
                 // the generator scaled for each half, with the exponent m of the factor
-                std::vector<double> g1 = column(j), g2 = g1;
+                std::vector<double> g1 = column(j), g2 = column(j);
                 for (std::size_t r = 0; r < g1.size(); ++r) {
                     g1[r] *= c1;
                     g2[r] *= c2;

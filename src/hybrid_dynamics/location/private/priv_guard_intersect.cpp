@@ -92,6 +92,7 @@ std::optional<Set> aux_enclose_level_set(const std::vector<Set> &P, const LevelS
             // domain tightening needs equalities; an empty contraction keeps the box as well
             if (const std::optional<Interval> tight = guard.tighten_domain(I)) I = *tight;
         } catch (const Error &) {
+            I = S->interval(); // CORA's try: the box stays as it is
         }
         box = box ? box->unite(I) : I;
     }

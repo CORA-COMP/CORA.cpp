@@ -14,7 +14,7 @@ A header counts a row only if the .cpp file that implements it executed a line.
 | instance | rows | oracle | property | ported | untested | todo | out of scope | CORALean out of scope | bit-exact |
 |---|---|---|---|---|---|---|---|---|---|
 | BRKDC01 | 17 | 4 | 0 | 10 | 3 | 0 | 0 | 5 | 4/12 |
-| BRKNC01 | 63 | 31 | 9 | 20 | 3 | 0 | 0 | 10 | 31/53 |
+| BRKNC01 | 64 | 31 | 9 | 20 | 4 | 0 | 0 | 10 | 31/54 |
 | BRKNP01 | 54 | 24 | 12 | 16 | 2 | 0 | 0 | 10 | 24/44 |
 | CBC01 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
 | CBC02 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
@@ -22,15 +22,15 @@ A header counts a row only if the .cpp file that implements it executed a line.
 | CBF01 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
 | CBF02 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
 | CBF03 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
-| CVDP23 | 80 | 30 | 17 | 26 | 7 | 0 | 0 | 11 | 30/69 |
-| DTN01 | 42 | 21 | 6 | 14 | 1 | 0 | 0 | 6 | 21/36 |
-| DTN02 | 42 | 21 | 6 | 14 | 1 | 0 | 0 | 6 | 21/36 |
-| DTN03 | 42 | 21 | 6 | 14 | 1 | 0 | 0 | 6 | 21/36 |
-| DTN04 | 42 | 21 | 6 | 14 | 1 | 0 | 0 | 6 | 21/36 |
-| DTN05 | 42 | 21 | 6 | 14 | 1 | 0 | 0 | 6 | 21/36 |
-| DTN06 | 42 | 21 | 6 | 14 | 1 | 0 | 0 | 6 | 21/36 |
-| GRBX01 | 65 | 30 | 12 | 20 | 3 | 0 | 0 | 10 | 30/55 |
-| GRBX02 | 65 | 30 | 12 | 20 | 3 | 0 | 0 | 10 | 30/55 |
+| CVDP23 | 81 | 30 | 17 | 26 | 8 | 0 | 0 | 11 | 30/70 |
+| DTN01 | 43 | 21 | 6 | 14 | 2 | 0 | 0 | 6 | 21/37 |
+| DTN02 | 43 | 21 | 6 | 14 | 2 | 0 | 0 | 6 | 21/37 |
+| DTN03 | 43 | 21 | 6 | 14 | 2 | 0 | 0 | 6 | 21/37 |
+| DTN04 | 43 | 21 | 6 | 14 | 2 | 0 | 0 | 6 | 21/37 |
+| DTN05 | 43 | 21 | 6 | 14 | 2 | 0 | 0 | 6 | 21/37 |
+| DTN06 | 43 | 21 | 6 | 14 | 2 | 0 | 0 | 6 | 21/37 |
+| GRBX01 | 66 | 30 | 12 | 20 | 4 | 0 | 0 | 10 | 30/56 |
+| GRBX02 | 66 | 30 | 12 | 20 | 4 | 0 | 0 | 10 | 30/56 |
 | HEAT01 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
 | HEAT02 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
 | HEAT03 | 21 | 10 | 0 | 9 | 2 | 0 | 0 | 4 | 10/17 |
@@ -41,6 +41,7 @@ A header counts a row only if the .cpp file that implements it executed a line.
 | LALO20_W001 | 31 | 10 | 6 | 12 | 3 | 0 | 0 | 7 | 10/24 |
 | LALO20_W005 | 31 | 10 | 6 | 12 | 3 | 0 | 0 | 7 | 10/24 |
 | LALO20_W01 | 44 | 12 | 11 | 17 | 4 | 0 | 0 | 7 | 12/37 |
+| LOVO25 | 96 | 27 | 20 | 42 | 7 | 0 | 0 | 14 | 27/82 |
 | PLAA01_BND42 | 44 | 23 | 7 | 11 | 3 | 0 | 0 | 9 | 23/35 |
 | PLAA01_BND50 | 44 | 23 | 7 | 11 | 3 | 0 | 0 | 9 | 23/35 |
 | PLAD01_BND30 | 22 | 9 | 0 | 10 | 3 | 0 | 0 | 5 | 9/17 |
@@ -51,18 +52,18 @@ A header counts a row only if the .cpp file that implements it executed a line.
 | ROBE25_1 | 31 | 10 | 6 | 12 | 3 | 0 | 0 | 7 | 10/24 |
 | ROBE25_2 | 31 | 10 | 6 | 12 | 3 | 0 | 0 | 7 | 10/24 |
 | ROBE25_3 | 31 | 10 | 6 | 12 | 3 | 0 | 0 | 7 | 10/24 |
-| SPRE22 | 77 | 37 | 11 | 24 | 5 | 0 | 0 | 13 | 37/64 |
-| SRA01 | 53 | 26 | 6 | 16 | 5 | 0 | 0 | 8 | 26/45 |
-| SRA02 | 65 | 34 | 7 | 19 | 5 | 0 | 0 | 10 | 34/55 |
-| SRA03 | 65 | 34 | 7 | 19 | 5 | 0 | 0 | 10 | 34/55 |
-| SRA04 | 53 | 26 | 6 | 16 | 5 | 0 | 0 | 8 | 26/45 |
-| SRA05 | 65 | 34 | 7 | 19 | 5 | 0 | 0 | 10 | 34/55 |
-| SRA06 | 65 | 34 | 7 | 19 | 5 | 0 | 0 | 10 | 34/55 |
-| SRA07 | 77 | 42 | 9 | 21 | 5 | 0 | 0 | 11 | 42/66 |
-| SRA08 | 77 | 42 | 9 | 21 | 5 | 0 | 0 | 11 | 42/66 |
-| SRNA01 | 46 | 23 | 6 | 15 | 2 | 0 | 0 | 7 | 23/39 |
-| SRU01 | 54 | 27 | 6 | 16 | 5 | 0 | 0 | 8 | 27/46 |
-| SRU02 | 77 | 42 | 9 | 21 | 5 | 0 | 0 | 11 | 42/66 |
+| SPRE22 | 78 | 37 | 11 | 24 | 6 | 0 | 0 | 13 | 37/65 |
+| SRA01 | 54 | 26 | 6 | 16 | 6 | 0 | 0 | 8 | 26/46 |
+| SRA02 | 66 | 34 | 7 | 19 | 6 | 0 | 0 | 10 | 34/56 |
+| SRA03 | 66 | 34 | 7 | 19 | 6 | 0 | 0 | 10 | 34/56 |
+| SRA04 | 54 | 26 | 6 | 16 | 6 | 0 | 0 | 8 | 26/46 |
+| SRA05 | 66 | 34 | 7 | 19 | 6 | 0 | 0 | 10 | 34/56 |
+| SRA06 | 66 | 34 | 7 | 19 | 6 | 0 | 0 | 10 | 34/56 |
+| SRA07 | 78 | 42 | 9 | 21 | 6 | 0 | 0 | 11 | 42/67 |
+| SRA08 | 78 | 42 | 9 | 21 | 6 | 0 | 0 | 11 | 42/67 |
+| SRNA01 | 47 | 23 | 6 | 15 | 3 | 0 | 0 | 7 | 23/40 |
+| SRU01 | 55 | 27 | 6 | 16 | 6 | 0 | 0 | 8 | 27/47 |
+| SRU02 | 78 | 42 | 9 | 21 | 6 | 0 | 0 | 11 | 42/67 |
 | TRAF22 | 39 | 15 | 5 | 15 | 4 | 0 | 0 | 9 | 15/30 |
 | TSPS25 | 38 | 17 | 6 | 14 | 1 | 0 | 0 | 6 | 17/32 |
 
@@ -72,82 +73,84 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 | row | status | CORALean | instances | which |
 |---|---|---|---|---|
-| `contSet/contSet/contSet` | ported | float | 52 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contSet/contSet/dim` | ported | out-of-scope | 52 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contSet/zonotope/dim` | ported | out-of-scope | 52 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contSet/zonotope/generators` | ported | out-of-scope | 52 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contSet/zonotope/zonotope` | ported | float | 52 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contDynamics/linearSys/linearSys` | ported | float | 48 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contSet/interval/interval` | ported | float | 40 | BRKDC01, BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contSet/polytope/constraints` | property | float | 37 | BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contSet/polytope/polytope` | property | float | 37 | BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contDynamics/linearSys/taylorMatrices` | ported | float | 34 | BRKDC01, BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, LALO20_W001, LALO20_W005, LALO20_W01, PLAD01_BND30, PLAD01_BND42, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
-| `contSet/contSet/interval` | untested | float | 31 | BRKDC01, BRKNC01, BRKNP01, CVDP23, GRBX01, GRBX02, HEAT03, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/contSet/contSet` | ported | float | 53 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/contSet/dim` | ported | out-of-scope | 53 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/zonotope/dim` | ported | out-of-scope | 53 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/zonotope/generators` | ported | out-of-scope | 53 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/zonotope/zonotope` | ported | float | 53 | BRKDC01, BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contDynamics/linearSys/linearSys` | ported | float | 49 | BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAD01_BND30, PLAD01_BND42, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/interval/interval` | ported | float | 41 | BRKDC01, BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/polytope/constraints` | property | float | 38 | BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LOVO25, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `contSet/polytope/polytope` | property | float | 38 | BRKNC01, BRKNP01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LOVO25, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `contDynamics/linearSys/taylorMatrices` | ported | float | 35 | BRKDC01, BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, HEAT03, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAD01_BND30, PLAD01_BND42, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TRAF22, TSPS25 |
+| `contSet/contSet/interval` | untested | float | 32 | BRKDC01, BRKNC01, BRKNP01, CVDP23, GRBX01, GRBX02, HEAT03, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22, TSPS25 |
 | `contDynamics/contDynamics/contDynamics` | untested | out-of-scope | 27 | BRKDC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, ROBE25_1, ROBE25_2, ROBE25_3, TRAF22 |
 | `specification/specification/specification` | ported | float | 27 | CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contSet/contSet/representsa_emptyObject` | ported | out-of-scope | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contSet/polytope/dim` | ported | out-of-scope | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contSet/polytope/isemptyobject` | untested | out-of-scope | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `hybridDynamics/hybridAutomaton/hybridAutomaton` | ported | float | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `hybridDynamics/hybridAutomaton/reach` | property | float | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `hybridDynamics/linearReset/linearReset` | ported | float | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `hybridDynamics/location/location` | ported | float | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `hybridDynamics/location/reach` | property | float | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `hybridDynamics/transition/transition` | ported | float | 23 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `contSet/contSet/representsa_emptyObject` | ported | out-of-scope | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `contSet/polytope/dim` | ported | out-of-scope | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `contSet/polytope/isemptyobject` | untested | out-of-scope | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/hybridAutomaton/hybridAutomaton` | ported | float | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/hybridAutomaton/reach` | property | float | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/linearReset/linearReset` | ported | float | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/location/location` | ported | float | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/location/reach` | property | float | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/transition/transition` | ported | float | 24 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/location/guardIntersect` | property | float | 23 | BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `hybridDynamics/location/guardIntersect_levelSet` | untested | bound | 23 | BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `contSet/zonotope/isIntersecting_` | property | float | 22 | BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `hybridDynamics/location/guardIntersect` | property | float | 22 | BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `contSet/contSet/project` | ported | out-of-scope | 21 | BRKDC01, BRKNC01, GRBX01, GRBX02, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
 | `contSet/zonotope/project` | untested | float | 21 | BRKDC01, BRKNC01, GRBX01, GRBX02, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
+| `contSet/contSet/compact` | ported | out-of-scope | 15 | BRKNP01, CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
+| `contSet/contSet/representsa` | ported | out-of-scope | 15 | BRKNP01, CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
+| `contDynamics/contDynamics/reach` | property | float | 14 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
 | `contDynamics/linearSys/verify` | ported | float | 14 | CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02 |
-| `contSet/contSet/compact` | ported | out-of-scope | 14 | BRKNP01, CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
-| `contSet/contSet/representsa` | ported | out-of-scope | 14 | BRKNP01, CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
-| `contDynamics/contDynamics/reach` | property | float | 13 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
 | `contSet/contSet/reorder` | untested | out-of-scope | 13 | CVDP23, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
+| `contSet/conZonotope/conZonotope` | ported | float | 12 | BRKNC01, GRBX01, GRBX02, LOVO25, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
+| `contSet/conZonotope/dim` | ported | out-of-scope | 12 | BRKNC01, GRBX01, GRBX02, LOVO25, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
+| `contSet/conZonotope/generators` | ported | out-of-scope | 12 | BRKNC01, GRBX01, GRBX02, LOVO25, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
 | `contSet/contSet/isIntersecting` | untested | float | 12 | CVDP23, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02 |
-| `contSet/conZonotope/conZonotope` | ported | float | 11 | BRKNC01, GRBX01, GRBX02, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
-| `contSet/conZonotope/dim` | ported | out-of-scope | 11 | BRKNC01, GRBX01, GRBX02, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
-| `contSet/conZonotope/generators` | ported | out-of-scope | 11 | BRKNC01, GRBX01, GRBX02, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
-| `contDynamics/contDynamics/derivatives` | ported | out-of-scope | 10 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
-| `contDynamics/nonlinearSys/initReach` | property | float | 9 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22 |
-| `contDynamics/nonlinearSys/nonlinearSys` | ported | proved | 9 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22 |
-| `contDynamics/nonlinearSys/post` | property | float | 9 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22 |
-| `contSet/conZonotope/interval` | property | bound | 9 | BRKNC01, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
-| `contSet/zonotope/quadMap` | property | float | 9 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3, TRAF22, TSPS25 |
+| `contDynamics/contDynamics/derivatives` | ported | out-of-scope | 11 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, TSPS25 |
+| `contDynamics/nonlinearSys/initReach` | property | float | 10 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22 |
+| `contDynamics/nonlinearSys/nonlinearSys` | ported | proved | 10 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22 |
+| `contDynamics/nonlinearSys/post` | property | float | 10 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22 |
+| `contSet/conZonotope/interval` | property | bound | 10 | BRKNC01, LOVO25, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
+| `contSet/zonotope/quadMap` | property | float | 10 | CVDP23, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, ROBE25_1, ROBE25_2, ROBE25_3, TRAF22, TSPS25 |
+| `contDynamics/contDynamics/linReach` | property | float | 6 | CVDP23, LALO20_W01, LOVO25, SPRE22, TRAF22, TSPS25 |
 | `contSet/conZonotope/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/dim` | ported | out-of-scope | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/zonoBundle` | ported | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
-| `contDynamics/contDynamics/linReach` | property | float | 5 | CVDP23, LALO20_W01, SPRE22, TRAF22, TSPS25 |
 | `contDynamics/linearSys/errorSolution_adaptive` | property | float | 5 | LALO20_W001, LALO20_W005, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contDynamics/nonlinearSys/linReach_adaptive` | untested | float | 5 | LALO20_W001, LALO20_W005, ROBE25_1, ROBE25_2, ROBE25_3 |
+| `contDynamics/nonlinearSys/linearize` | ported | float | 5 | CVDP23, LALO20_W01, LOVO25, SPRE22, TRAF22 |
 | `contDynamics/nonlinearSys/reach_adaptive` | property | float | 5 | LALO20_W001, LALO20_W005, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contDynamics/linParamSys/initReach` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `contDynamics/linParamSys/linParamSys` | ported | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `contDynamics/linParamSys/post` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `contDynamics/linearSys/reach` | ported | float | 4 | BRKDC01, HEAT03, PLAD01_BND30, PLAD01_BND42 |
-| `contDynamics/nonlinearSys/linearize` | ported | float | 4 | CVDP23, LALO20_W01, SPRE22, TRAF22 |
 | `others/intervalMatrix/exponentialRemainder` | property | proved | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `others/intervalMatrix/interval` | property | out-of-scope | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `others/matZonotope/matZonotope` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `others/matZonotope/numgens` | ported | out-of-scope | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
+| `contSet/interval/polyZonotope` | untested | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/dim` | untested | out-of-scope | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/enclose` | property | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/interval` | ported | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/mtimes` | property | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/plus` | property | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/polyZonotope` | ported | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/reduce` | property | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/polyZonotope/zonotope` | property | float | 3 | CVDP23, LALO20_W01, LOVO25 |
+| `contSet/zonotope/polyZonotope` | untested | float | 3 | CVDP23, LALO20_W01, LOVO25 |
 | `others/matZonotope/expmOneParam` | property | bound | 3 | BRKNP01, PLAA01_BND42, PLAA01_BND50 |
 | `contSet/conZonotope/center` | property | proved | 2 | GRBX01, GRBX02 |
 | `contSet/conZonotope/isFullDim` | property | float | 2 | GRBX01, GRBX02 |
 | `contSet/conZonotope/rescale` | property | float | 2 | GRBX01, GRBX02 |
-| `contSet/interval/polyZonotope` | untested | float | 2 | CVDP23, LALO20_W01 |
 | `contSet/polyZonotope/cartProd_` | ported | float | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/dim` | untested | out-of-scope | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/enclose` | property | float | 2 | CVDP23, LALO20_W01 |
+| `contSet/polyZonotope/center` | ported | float | 2 | CVDP23, LOVO25 |
 | `contSet/polyZonotope/exactPlus` | ported | float | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/interval` | ported | float | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/mtimes` | property | float | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/plus` | property | float | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/polyZonotope` | ported | float | 2 | CVDP23, LALO20_W01 |
 | `contSet/polyZonotope/quadMap` | property | float | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/reduce` | property | float | 2 | CVDP23, LALO20_W01 |
-| `contSet/polyZonotope/zonotope` | property | float | 2 | CVDP23, LALO20_W01 |
 | `contSet/zonoBundle/center` | property | proved | 2 | GRBX01, GRBX02 |
-| `contSet/zonotope/polyZonotope` | untested | float | 2 | CVDP23, LALO20_W01 |
 | `contDynamics/nonlinDASys/consistentInitialState` | ported | float | 1 | TSPS25 |
 | `contDynamics/nonlinDASys/initReach` | property | proved | 1 | TSPS25 |
 | `contDynamics/nonlinDASys/linReach` | property | proved | 1 | TSPS25 |
@@ -155,55 +158,79 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/nonlinDASys/post` | property | float | 1 | TSPS25 |
 | `contDynamics/nonlinDASys/steadyState` | ported | float | 1 | TSPS25 |
 | `contSet/contSet/vertices` | ported | out-of-scope | 1 | TRAF22 |
-| `contSet/polyZonotope/center` | ported | float | 1 | CVDP23 |
+| `contSet/levelSet/Inf` | ported | float | 1 | LOVO25 |
+| `contSet/levelSet/and_` | property | float | 1 | LOVO25 |
+| `contSet/levelSet/contains_` | ported | float | 1 | LOVO25 |
+| `contSet/levelSet/dim` | ported | out-of-scope | 1 | LOVO25 |
+| `contSet/levelSet/empty` | ported | float | 1 | LOVO25 |
+| `contSet/levelSet/isIntersecting_` | ported | float | 1 | LOVO25 |
+| `contSet/levelSet/levelSet` | ported | float | 1 | LOVO25 |
+| `contSet/levelSet/tightenDomain` | property | proved | 1 | LOVO25 |
 | `contSet/polyZonotope/isIntersecting_` | ported | float | 1 | CVDP23 |
+| `contSet/polyZonotope/splitDepFactor` | property | float | 1 | LOVO25 |
+| `contSet/polyZonotope/splitLongestGen` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/dim` | ported | out-of-scope | 1 | LOVO25 |
+| `contSet/taylm/interval` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/minus` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/mpower` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/mtimes` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/plus` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/power` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/taylm` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/times` | property | float | 1 | LOVO25 |
+| `contSet/taylm/uminus` | ported | float | 1 | LOVO25 |
+| `contSet/taylm/uplus` | ported | float | 1 | LOVO25 |
 | `contSet/zonotope/polytope` | untested | float | 1 | PLAN01 |
 | `contSet/zonotope/vertices_` | untested | float | 1 | TRAF22 |
 | `others/intervalMatrix/expmInd` | property | bound | 1 | PLAN01 |
 | `others/intervalMatrix/norm` | property | float | 1 | BRKNP01 |
 | `others/matZonotope/expmIndMixed` | property | - | 1 | PLAN01 |
 | `others/matZonotope/norm` | property | float | 1 | BRKNP01 |
+| `specification/syntaxTree/syntaxTree` | untested | float | 1 | LOVO25 |
 
 ## Files with no CORA counterpart
 
-- `include/cora/cont_set/set.h`: 44 instances
-- `include/cora/global/tensor/tolerance.h`: 36 instances
+- `include/cora/cont_set/dimension_set.h`: 1 instance
+- `include/cora/cont_set/set.h`: 45 instances
+- `include/cora/global/tensor/tolerance.h`: 37 instances
+- `include/cora/hybrid_dynamics/region.h`: 1 instance
 - `src/cont_dynamics/linear_sys/input_solution.cpp`: 22 instances
-- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 10 instances
+- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 11 instances
 - `src/cont_dynamics/linear_sys/private/priv_canonical_input.cpp`: 14 instances
-- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 17 instances
-- `src/cont_dynamics/linear_sys/private/priv_steps.cpp`: 10 instances
-- `src/cont_dynamics/linear_sys/private/priv_steps.h`: 8 instances
+- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 18 instances
+- `src/cont_dynamics/linear_sys/private/priv_steps.cpp`: 11 instances
+- `src/cont_dynamics/linear_sys/private/priv_steps.h`: 9 instances
 - `src/cont_dynamics/linear_sys/validate.cpp`: 4 instances
 - `src/cont_dynamics/nonlinear_sys/private/priv_adaptive.h`: 5 instances
-- `src/cont_set/con_zonotope/private/priv_blocks.cpp`: 37 instances
-- `src/cont_set/con_zonotope/private/priv_linear_programs.cpp`: 11 instances
+- `src/cont_set/con_zonotope/private/priv_blocks.cpp`: 38 instances
+- `src/cont_set/con_zonotope/private/priv_linear_programs.cpp`: 12 instances
 - `src/cont_set/con_zonotope/private/priv_null_space.cpp`: 2 instances
 - `src/cont_set/interval/private/priv_empty.cpp`: 3 instances
 - `src/cont_set/interval/private/priv_matmul.cpp`: 1 instance
 - `src/cont_set/interval/private/priv_times.cpp`: 4 instances
-- `src/cont_set/polytope/private/priv_host.cpp`: 23 instances
+- `src/cont_set/polytope/private/priv_host.cpp`: 24 instances
+- `src/cont_set/taylm/evaluate.cpp`: 1 instance
 - `src/cont_set/zono_bundle/private/priv_linear_programs.cpp`: 3 instances
 - `src/cont_set/zono_bundle/private/priv_members_refusal.cpp`: 6 instances
 - `src/cont_set/zonotope/private/priv_host_zonotope.cpp`: 2 instances
-- `src/cont_set/zonotope/private/priv_select_generators.cpp`: 37 instances
+- `src/cont_set/zonotope/private/priv_select_generators.cpp`: 38 instances
 - `src/cont_set/zonotope/private/priv_zonotope_norm.cpp`: 1 instance
-- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 10 instances
-- `src/global/backend/eigen.cpp`: 52 instances
-- `src/global/backend/host_tensor.cpp`: 52 instances
+- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 11 instances
+- `src/global/backend/eigen.cpp`: 53 instances
+- `src/global/backend/host_tensor.cpp`: 53 instances
 - `src/global/error.cpp`: 1 instance
-- `src/global/expr.cpp`: 10 instances
-- `src/global/settings.cpp`: 52 instances
+- `src/global/expr.cpp`: 11 instances
+- `src/global/settings.cpp`: 53 instances
 - `src/global/sparse_matrix.cpp`: 1 instance
-- `src/global/tensor/derived.cpp`: 51 instances
-- `src/global/tensor/fused.cpp`: 40 instances
-- `src/global/tensor/ops.cpp`: 45 instances
-- `src/global/tensor/tensor.cpp`: 52 instances
-- `src/global/tensor/tolerance.cpp`: 36 instances
+- `src/global/tensor/derived.cpp`: 52 instances
+- `src/global/tensor/fused.cpp`: 41 instances
+- `src/global/tensor/ops.cpp`: 46 instances
+- `src/global/tensor/tensor.cpp`: 53 instances
+- `src/global/tensor/tolerance.cpp`: 37 instances
 - `src/global/threads.cpp`: 25 instances
-- `src/global/within_tol.cpp`: 24 instances
-- `src/hybrid_dynamics/location/private/priv.h`: 22 instances
-- `src/hybrid_dynamics/location/private/priv_sets.cpp`: 23 instances
+- `src/global/within_tol.cpp`: 25 instances
+- `src/hybrid_dynamics/location/private/priv.h`: 23 instances
+- `src/hybrid_dynamics/location/private/priv_sets.cpp`: 24 instances
 - `src/matrix_set/interval_matrix/private/priv_expm_series.cpp`: 1 instance
 - `src/matrix_set/mat_zonotope/private/priv_stacking.cpp`: 4 instances
 
@@ -225,14 +252,14 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 A private step (`private/priv_*.m`) is no row of the inventory; its file is tagged and shows here.
 
-- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 5 instances
+- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 6 instances
 - `contDynamics/@contDynamics/private/priv_abstrerr_poly.m`: 2 instances
 - `contDynamics/@contDynamics/private/priv_precompStatError.m`: 2 instances
 - `contDynamics/@linParamSys/private/priv_inputSolution.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_inputTie.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_mappingMatrix.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_tie.m`: 4 instances
-- `contDynamics/@linearSys/private/priv_expmRemainder.m`: 33 instances
+- `contDynamics/@linearSys/private/priv_expmRemainder.m`: 34 instances
 - `contDynamics/@linearSys/private/priv_exponential_Krylov_projected_linSysInput.m`: 1 instance
 - `contDynamics/@linearSys/private/priv_initReach_Krylov.m`: 1 instance
 - `contDynamics/@linearSys/private/priv_inputSolution_Krylov.m`: 1 instance
@@ -267,7 +294,8 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 - `contSet/@polytope/private/priv_representsa_emptySet.m`: 23 instances
 - `contSet/@polytope/private/priv_supportFunc.m`: 23 instances
 - `contSet/@zonotope/private/priv_reduceAdaptive.m`: 5 instances
-- `contSet/@zonotope/private/priv_reduceGirard.m`: 31 instances
+- `contSet/@zonotope/private/priv_reduceGirard.m`: 32 instances
+- `contSet/@zonotope/private/priv_reducePCA.m`: 1 instance
 - `contSet/@zonotope/private/priv_zonotopeContainment_pointContainment.m`: 2 instances
 
 ## Per instance, the rows that are not bit-exact
@@ -278,9 +306,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>BRKNC01: 31/53</summary>
+<details><summary>BRKNC01: 31/54</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
 
 </details>
 
@@ -326,57 +354,57 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>CVDP23: 30/69</summary>
+<details><summary>CVDP23: 30/70</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/interval/polyZonotope` (untested), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/center` (ported), `contSet/polyZonotope/dim` (untested), `contSet/polyZonotope/enclose` (property), `contSet/polyZonotope/exactPlus` (ported), `contSet/polyZonotope/interval` (ported), `contSet/polyZonotope/isIntersecting_` (ported), `contSet/polyZonotope/mtimes` (property), `contSet/polyZonotope/plus` (property), `contSet/polyZonotope/polyZonotope` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/polyZonotope/reduce` (property), `contSet/polyZonotope/zonotope` (property), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/polyZonotope` (untested), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
-
-</details>
-
-<details><summary>DTN01: 21/36</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/interval/polyZonotope` (untested), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/center` (ported), `contSet/polyZonotope/dim` (untested), `contSet/polyZonotope/enclose` (property), `contSet/polyZonotope/exactPlus` (ported), `contSet/polyZonotope/interval` (ported), `contSet/polyZonotope/isIntersecting_` (ported), `contSet/polyZonotope/mtimes` (property), `contSet/polyZonotope/plus` (property), `contSet/polyZonotope/polyZonotope` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/polyZonotope/reduce` (property), `contSet/polyZonotope/zonotope` (property), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/polyZonotope` (untested), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 
-<details><summary>DTN02: 21/36</summary>
+<details><summary>DTN01: 21/37</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
-
-</details>
-
-<details><summary>DTN03: 21/36</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
 
 </details>
 
-<details><summary>DTN04: 21/36</summary>
+<details><summary>DTN02: 21/37</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
-
-</details>
-
-<details><summary>DTN05: 21/36</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
 
 </details>
 
-<details><summary>DTN06: 21/36</summary>
+<details><summary>DTN03: 21/37</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
-
-</details>
-
-<details><summary>GRBX01: 30/55</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/center` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/isFullDim` (property), `contSet/conZonotope/rescale` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/center` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
 
 </details>
 
-<details><summary>GRBX02: 30/55</summary>
+<details><summary>DTN04: 21/37</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/center` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/isFullDim` (property), `contSet/conZonotope/rescale` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/center` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+
+</details>
+
+<details><summary>DTN05: 21/37</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+
+</details>
+
+<details><summary>DTN06: 21/37</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+
+</details>
+
+<details><summary>GRBX01: 30/56</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/center` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/isFullDim` (property), `contSet/conZonotope/rescale` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/center` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
+
+</details>
+
+<details><summary>GRBX02: 30/56</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/center` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/isFullDim` (property), `contSet/conZonotope/rescale` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/center` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported)
 
 </details>
 
@@ -440,6 +468,12 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
+<details><summary>LOVO25: 27/82</summary>
+
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/interval/polyZonotope` (untested), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polyZonotope/center` (ported), `contSet/polyZonotope/dim` (untested), `contSet/polyZonotope/enclose` (property), `contSet/polyZonotope/interval` (ported), `contSet/polyZonotope/mtimes` (property), `contSet/polyZonotope/plus` (property), `contSet/polyZonotope/polyZonotope` (ported), `contSet/polyZonotope/reduce` (property), `contSet/polyZonotope/splitDepFactor` (property), `contSet/polyZonotope/splitLongestGen` (ported), `contSet/polyZonotope/zonotope` (property), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/taylm/dim` (ported), `contSet/taylm/interval` (ported), `contSet/taylm/minus` (ported), `contSet/taylm/mpower` (ported), `contSet/taylm/mtimes` (ported), `contSet/taylm/plus` (ported), `contSet/taylm/power` (ported), `contSet/taylm/taylm` (ported), `contSet/taylm/times` (property), `contSet/taylm/uminus` (ported), `contSet/taylm/uplus` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/polyZonotope` (untested), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/syntaxTree/syntaxTree` (untested)
+
+</details>
+
 <details><summary>PLAA01_BND42: 23/35</summary>
 
 `contDynamics/contDynamics/contDynamics` (untested), `contDynamics/contDynamics/reach` (property), `contDynamics/linParamSys/initReach` (property), `contDynamics/linParamSys/linParamSys` (ported), `contDynamics/linParamSys/post` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/project` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/exponentialRemainder` (property), `others/intervalMatrix/interval` (property), `others/matZonotope/expmOneParam` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
@@ -500,75 +534,75 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>SPRE22: 37/64</summary>
+<details><summary>SPRE22: 37/65</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
-
-</details>
-
-<details><summary>SRA01: 26/45</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 
-<details><summary>SRA02: 34/55</summary>
+<details><summary>SRA01: 26/46</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
-
-</details>
-
-<details><summary>SRA03: 34/55</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 
-<details><summary>SRA04: 26/45</summary>
+<details><summary>SRA02: 34/56</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
-
-</details>
-
-<details><summary>SRA05: 34/55</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 
-<details><summary>SRA06: 34/55</summary>
+<details><summary>SRA03: 34/56</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
-
-</details>
-
-<details><summary>SRA07: 42/66</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 
-<details><summary>SRA08: 42/66</summary>
+<details><summary>SRA04: 26/46</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
-
-</details>
-
-<details><summary>SRNA01: 23/39</summary>
-
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 
-<details><summary>SRU01: 27/46</summary>
+<details><summary>SRA05: 34/56</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 
-<details><summary>SRU02: 42/66</summary>
+<details><summary>SRA06: 34/56</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+
+</details>
+
+<details><summary>SRA07: 42/67</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+
+</details>
+
+<details><summary>SRA08: 42/67</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+
+</details>
+
+<details><summary>SRNA01: 23/40</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+
+</details>
+
+<details><summary>SRU01: 27/47</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
+
+</details>
+
+<details><summary>SRU02: 42/67</summary>
+
+`contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/isIntersecting` (untested), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/constraints` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/polytope/polytope` (property), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/project` (untested), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/hybridAutomaton/reach` (property), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect` (property), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/location/reach` (property), `hybridDynamics/transition/transition` (ported), `specification/specification/specification` (ported)
 
 </details>
 

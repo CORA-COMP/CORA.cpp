@@ -364,7 +364,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
 | BRKDC01 | 4/12 | 8 | 5 |
-| BRKNC01 | 31/53 | 22 | 10 |
+| BRKNC01 | 31/54 | 23 | 10 |
 | BRKNP01 | 24/44 | 20 | 10 |
 | CBC01 | 1/8 | 7 | 4 |
 | CBC02 | 1/8 | 7 | 4 |
@@ -372,15 +372,15 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF01 | 1/8 | 7 | 4 |
 | CBF02 | 1/8 | 7 | 4 |
 | CBF03 | 1/8 | 7 | 4 |
-| CVDP23 | 30/69 | 39 | 11 |
-| DTN01 | 21/36 | 15 | 6 |
-| DTN02 | 21/36 | 15 | 6 |
-| DTN03 | 21/36 | 15 | 6 |
-| DTN04 | 21/36 | 15 | 6 |
-| DTN05 | 21/36 | 15 | 6 |
-| DTN06 | 21/36 | 15 | 6 |
-| GRBX01 | 30/55 | 25 | 10 |
-| GRBX02 | 30/55 | 25 | 10 |
+| CVDP23 | 30/70 | 40 | 11 |
+| DTN01 | 21/37 | 16 | 6 |
+| DTN02 | 21/37 | 16 | 6 |
+| DTN03 | 21/37 | 16 | 6 |
+| DTN04 | 21/37 | 16 | 6 |
+| DTN05 | 21/37 | 16 | 6 |
+| DTN06 | 21/37 | 16 | 6 |
+| GRBX01 | 30/56 | 26 | 10 |
+| GRBX02 | 30/56 | 26 | 10 |
 | HEAT01 | 1/8 | 7 | 4 |
 | HEAT02 | 1/8 | 7 | 4 |
 | HEAT03 | 10/17 | 7 | 4 |
@@ -391,6 +391,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W001 | 10/24 | 14 | 7 |
 | LALO20_W005 | 10/24 | 14 | 7 |
 | LALO20_W01 | 12/37 | 25 | 7 |
+| LOVO25 | 27/82 | 55 | 14 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |
@@ -401,18 +402,18 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ROBE25_1 | 10/24 | 14 | 7 |
 | ROBE25_2 | 10/24 | 14 | 7 |
 | ROBE25_3 | 10/24 | 14 | 7 |
-| SPRE22 | 37/64 | 27 | 13 |
-| SRA01 | 26/45 | 19 | 8 |
-| SRA02 | 34/55 | 21 | 10 |
-| SRA03 | 34/55 | 21 | 10 |
-| SRA04 | 26/45 | 19 | 8 |
-| SRA05 | 34/55 | 21 | 10 |
-| SRA06 | 34/55 | 21 | 10 |
-| SRA07 | 42/66 | 24 | 11 |
-| SRA08 | 42/66 | 24 | 11 |
-| SRNA01 | 23/39 | 16 | 7 |
-| SRU01 | 27/46 | 19 | 8 |
-| SRU02 | 42/66 | 24 | 11 |
+| SPRE22 | 37/65 | 28 | 13 |
+| SRA01 | 26/46 | 20 | 8 |
+| SRA02 | 34/56 | 22 | 10 |
+| SRA03 | 34/56 | 22 | 10 |
+| SRA04 | 26/46 | 20 | 8 |
+| SRA05 | 34/56 | 22 | 10 |
+| SRA06 | 34/56 | 22 | 10 |
+| SRA07 | 42/67 | 25 | 11 |
+| SRA08 | 42/67 | 25 | 11 |
+| SRNA01 | 23/40 | 17 | 7 |
+| SRU01 | 27/47 | 20 | 8 |
+| SRU02 | 42/67 | 25 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
 | TSPS25 | 17/32 | 15 | 6 |
 <!-- END bit-exact -->
