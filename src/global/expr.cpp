@@ -8,7 +8,7 @@
 // CORA.cpp only: CORA derives the dynamics with the symbolic toolbox.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   09-November-2026
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #include "cora/global/expr.h"
@@ -420,6 +420,8 @@ Expr Expr::diff(int i) const {
     CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
 }
 
+// Queries -----------------------------------------------------------------------------------------
+
 bool Expr::is_zero() const { return M::is_const(*this, 0); }
 
 // The first variable gives the constants their shape and backend.
@@ -428,6 +430,56 @@ Tensor Expr::eval_tensor(const std::vector<Tensor> &x) const {
     return Evaluator<Tensor>{x, like}(*this);
 }
 
+// The oracle's form -------------------------------------------------------------------------------
+
+std::string Expr::to_json(int states, const std::function<std::string(double)> &number) const {
+    const Node &n = *node_;
+    const auto one = [&](const char *op, const Expr &a) {
+        return std::string("{\"op\":\"") + op + "\",\"args\":[" + a.to_json(states, number) + "]}";
+    };
+    const auto two = [&](const char *op) {
+        return std::string("{\"op\":\"") + op + "\",\"args\":[" + n.a.to_json(states, number) +
+               "," + n.b.to_json(states, number) + "]}";
+    };
+    // a leaf is a constant or a variable, a node an operation on its arguments
+    switch (n.op) {
+    case Op::constant:
+        return "{\"const\":\"" + number(n.value) + "\"}";
+    case Op::var:
+        return n.index < states ? "{\"x\":" + std::to_string(n.index) + "}"
+                                : "{\"u\":" + std::to_string(n.index - states) + "}";
+    case Op::add:
+        return two("add");
+    case Op::sub:
+        return two("sub");
+    case Op::mul:
+        return two("mul");
+    case Op::div:
+        return two("div");
+    case Op::neg:
+        return one("neg", n.a);
+    // a power takes its integer exponent, a real power only as the square root
+    case Op::pow:
+        return "{\"op\":\"pow\",\"args\":[" + n.a.to_json(states, number) +
+               "],\"exponent\":" + std::to_string(n.index) + "}";
+    case Op::rpow:
+        if (n.value == 0.5) return one("sqrt", n.a);
+        CORA_FAIL(Error::not_supported,
+                  "Expr::to_json: the oracle has no real power other than sqrt");
+    // the elementary functions have one argument
+    case Op::sin:
+        return one("sin", n.a);
+    case Op::cos:
+        return one("cos", n.a);
+    case Op::tan:
+        return one("tan", n.a);
+    case Op::exp:
+        return one("exp", n.a);
+    }
+    return {};
+}
+
+// The value at a point, from one-element tensors.
 CORA_FROM_NUMBERS double Expr::eval(const std::vector<double> &x) const {
     std::vector<Tensor> tensors;
     tensors.reserve(x.size());

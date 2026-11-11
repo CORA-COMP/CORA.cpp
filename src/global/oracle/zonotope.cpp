@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/zonotope.h"
@@ -120,6 +120,13 @@ Zonotope Zonotope::reduce(int order, const std::string &method) const {
         CORA_FAIL(Error::wrong_value, "lean: the reduction method '" + method +
                                           "' is unknown; use 'girard' or 'combastel'");
     return aux_set("zonotope.reduce", {{"Z", *this}, {"order", order}, {"method", method}});
+}
+
+// the share of the box the reduction may add, and the precision of the elementary functions
+Zonotope Zonotope::reduce_adaptive(double diag_percent) const {
+    return aux_set(
+        "zonotope.reduce",
+        {{"Z", *this}, {"method", "adaptive"}, {"diagpercent", diag_percent}, {"p", 53}});
 }
 
 // Set operations -----------------------------------------------------------------------------

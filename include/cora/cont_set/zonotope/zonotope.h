@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -86,6 +86,11 @@ class Zonotope : public ContSet {
     /// A zonotope of at most order * n generators (n the dimension) that contains this one, by
     /// Girard's method: the longest generators stay, the others become a box. Not a batch.
     Zonotope reduce(int order = 1) const;
+
+    /// CORA's reduce(Z, 'adaptive', diag_percent): the generators of least Girard metric are boxed
+    /// while the box's distance stays within diag_percent of ||box(Z)|| (CORALean's
+    /// reduceAdaptive); the others stay in order, then n box generators. Not a batch.
+    Zonotope reduce_adaptive(double diag_percent) const;
 
     /// Encloses the segments between matching points of Z and Z2 = M*Z + t (same generator
     /// factors): 2m + 1 generators.

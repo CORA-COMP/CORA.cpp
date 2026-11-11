@@ -19,7 +19,7 @@
 // CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -1594,6 +1594,10 @@ void bind_zonotope(py::module_ &m) {
              "The zonotope of the convex combinations of this one and Z2")
         .def("reduce", &Zonotope::reduce, py::arg("order") = 1,
              "At most order * n generators; the smallest are enclosed by a box (Girard)")
+        // the reduction by the share of the box
+        .def("reduce_adaptive", &Zonotope::reduce_adaptive, py::arg("diag_percent"),
+             "The generators of least Girard metric within diag_percent of the box's norm are "
+             "enclosed by a box (CORA's reduce(Z, 'adaptive', diag_percent))")
         .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
         .def("box", &Zonotope::box, "The box around the zonotope, as a zonotope")
         .def("compact", &Zonotope::compact, py::arg("method") = py::none(),
@@ -3329,15 +3333,21 @@ py::object run_with_kwargs(const py::object &self, const char *operation, const 
 }
 
 void bind_problems(py::module_ &m) {
+    // the reachable sets, with the times of an adaptive step size
     py::class_<ReachSet>(m, "ReachSet", "The reachable sets: lists of zonotopes.")
         .def(py::init([](std::vector<Zonotope> time_interval, std::vector<Zonotope> time_point,
-                         double time_step) {
+                         double time_step, std::vector<double> time) {
                  // the reachable sets and their step
-                 return ReachSet{std::move(time_interval), std::move(time_point), time_step};
+                 return ReachSet{std::move(time_interval), std::move(time_point), time_step,
+                                 std::move(time)};
              }),
              py::arg("time_interval") = std::vector<Zonotope>(),
-             py::arg("time_point") = std::vector<Zonotope>(), py::arg("time_step") = 0.0)
+             py::arg("time_point") = std::vector<Zonotope>(), py::arg("time_step") = 0.0,
+             py::arg("time") = std::vector<double>())
         .def_readonly("time_step", &ReachSet::time_step, "the step between the sets; 0 if unknown")
+        .def_readonly("time", &ReachSet::time,
+                      "the step times t_0, ..., t_K of an adaptive step size; empty otherwise")
+        // the sets over the steps and at their ends
         .def_readonly("time_interval", &ReachSet::time_interval,
                       "time_interval[k] over [k*time_step, (k+1)*time_step]")
         .def_readonly("time_point", &ReachSet::time_point, "time_point[k] at k*time_step");
@@ -3811,7 +3821,8 @@ void bind_nonlinear_sys(py::module_ &m) {
             },
             "reach(initial_set=X0, input_set=U, t_final=T, alg='linearization', time_step=dt, "
             "taylor_terms=4, zonotope_order=50, tensor_order=2, error_order, intermediate_order): "
-            "the reachable sets")
+            "the reachable sets; alg='linearization_adaptive' (zeta_z, ...) chooses the step "
+            "sizes itself, and the result has their times")
         // the simulations
         .def(
             "simulate",

@@ -109,3 +109,23 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 | `nonlinearSys.abstrerr_lin` | `f`, `R` (zonotope, relative to `x_star`), `x_star`, `u_star`, `U`, `tensorOrder`, `errorOrder`, `intermediateOrder` | `trueError` (vector), `VerrorDyn` (zonotope) |
 | `nonlinearSys.linReach` (CORA's steps, as CORA.cpp's `priv_lin_reach`) | `f`, `R`, `error`, `U`, `timeStep`, `taylorTerms`, the orders | `ti`, `tp` (zonotopes), `error` |
 | `nonlinearSys.reach` | `f`, `R0`, `U`, `tFinal`, the options of `alg::Linearization` | `timeInterval`, `timePoint`: arrays of zonotopes |
+
+## Nonlinear systems, alg "lin-adaptive" (PR "port/nln-adaptive")
+
+CORA.cpp's `alg::LinearizationAdaptive` is CORA's lin-adaptive as CORALean repairs it
+(`reachAdaptiveFloat`, CORALean !906). The oracle serves its ops from the pinned tag
+`oracle-20261111-f9723f6f6` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
+an older oracle makes the tests skip them.
+
+| op | test | agreement |
+|---|---|---|
+| `nonlinearSys.varphiTotalAdaptive`, `varphiEstAdaptive`, `optimalDeltatAdaptive` | `test_lean_nonlinear_sys_adaptive_tuning` | bit for bit |
+| `zonotope.reduce` with method `adaptive` | `test_lean_nonlinear_sys_adaptive_tuning` | bit for bit |
+| `nonlinearSys.abstrErrAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | bit for bit at tensor order 2; order 3 inside the oracle's box (quadMap, see the differences) |
+| `nonlinearSys.ordersAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | exact |
+| `nonlinearSys.linReachAdaptivePass` | `test_lean_nonlinear_sys_adaptive_pass` | `xs`, `A`, the zero generators exact; the sets inside the oracle's, 5e-3 tighter at most |
+| `nonlinearSys.reachAdaptive` | `test_lean_nonlinear_sys_reach_adaptive` | the same steps and tensor orders while the order is 2; the sets as in a pass |
+
+Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reachAdaptive` runs it), and
+the bit-exact linear step (CORALean's `reachFloatInput` is the interval-matrix exponential, CORA.cpp's
+step is CORA's `oneStep`).

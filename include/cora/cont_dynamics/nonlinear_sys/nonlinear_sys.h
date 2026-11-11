@@ -18,7 +18,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   10-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -78,6 +78,8 @@ class NonlinearSys {
     NonlinearSys(const InputDynamics &f, int64_t n, int64_t m);
 
     int64_t dim() const { return n_; }
+    /// The components of f, as written on the symbolic states and inputs.
+    const std::vector<Expr> &expressions() const { return f_; }
     int64_t input_dim() const { return m_; }
 
     /// f at the columns of x (n, N) and u (m, N) or (m, 1) (none: no inputs): (n, N).

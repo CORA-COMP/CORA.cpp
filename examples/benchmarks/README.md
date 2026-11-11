@@ -143,17 +143,21 @@ of each family also an `example` test (CONTRIBUTING.md, "Test suites").
 The ARCH-COMP NLN instances of MATLAB CORA (`examples/ARCHcompetition/nonlinear/*.m`), ported as
 they are in CORA (ARCH23 scripts): `benchmark_nonlinear_reach_arch23_trafficscenario` (TRAF22) and
 `benchmark_hybrid_reach_arch23_spacecraft` (SPRE22), both by `NonlinearSys` reach with alg "lin"
-(`alg::Linearization`, tensor order 2). The expected verdict is that of the script and of the
+(`alg::Linearization`, tensor order 2), and `benchmark_nonlinear_reach_arch23_robertson` (ROBE25,
+three cases) with alg "lin-adaptive" (`alg::LinearizationAdaptive`). The expected verdict is that of the
 ARCH-COMP26 NLN report (Geretti et al., "ARCH-COMP26 Category Report: Continuous and Hybrid
 Systems with Nonlinear Dynamics", EPiC Series in Computing 110, pp. 52-84), whose CORA and
 JuliaReach times are from the same machine as CORA.cpp's (core preset, 09-November-2026, one run
 each; other jobs share its 16 CPUs). The quality metrics of the report (LALO width of x4, ROBE
-width of s, LOVO area) belong to instances that are not ported yet; TRAF22 and SPRE22 have none.
+width of s, LOVO area) belong to the instances that have one; TRAF22 and SPRE22 have none.
 
 | instance | expected | CORA.cpp | CORA.cpp [s] | CORA ARCH26 [s] | JuliaReach ARCH26 [s] | metric |
 | --- | --- | --- | --- | --- | --- | --- |
 | TRAF22 | 1 | 1 | 0.919 | 152 | 32 | - |
 | SPRE22 | 1 | 1 | 1.04 | 37 | 61 | - |
+| ROBE25 (1) | 1 | 1 | 25.6 | 151 | 25 | width of s 2.28e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
+| ROBE25 (2) | 1 | 1 | 325 | 239 | 92 | width of s 7.17e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
+| ROBE25 (3) | 1 | 1 | 100 | 310 | 217 | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -182,6 +186,37 @@ CORA v2026.1.0, `CHECKS_ENABLED` off (as in the ARCH-COMP runs; CORA's default i
 4 threads, this machine, run one at a time; the machine was shared (load
 average 10 to 15 when they started).
 
+**ROBE25** (`..._Robertson.m`, ARCH26 instances (1), (2), (3) as `ROBE25_1` to `ROBE25_3`) is the
+Robertson reaction x' = -0.4 x + b y z, y' = 0.4 x - b y z - c y^2, z' = c y^2 from (1, 0, 0) to
+t = 40 with (b, c) = (10^2, 10^3), (10^3, 10^5), (10^3, 10^7). The result is the specification of
+the report: the width of s = x + y + z at t = 40 below 1e-5 (the script prints the constant 1 and
+does not check it; the program prints 1 only if the width is below, and the width on stderr).
+CORA's `lin-adaptive` is not sound as written (its Hessian region and its third-order error:
+`LinReachAdaptiveCora1D.lean`, `AbstrErrAdaptiveTensor3Cora2D.lean`), so the program runs CORA's
+algorithm as CORALean repairs it (`reachAdaptiveFloat`; `docs/cora-differences.md`): the same
+passes, tuning and tensor orders 2 and 3 as CORA's, with the Hessian read over the box of the set
+joined with the linearization point. It needs 28963, 16296 and 28093 sets (CORA 16501, 22494 and
+25960) and a set costs 0.9 ms, 20 ms and 3.6 ms (CORA's 8 ms, 10 ms and 13
+ms). The cost of case (2) is the linear step: its Taylor order is raised until `eta + 2 >= 2 ||A dt||`
+(CORA's is fixed, which is not sound for a large `||A dt||`), a step with `||A dt||` in the
+hundreds takes 29 ms. MATLAB CORA v2026.1.0 (R2024b, this machine) with `CHECKS_ENABLED` off, as
+the report's times probably are, needs 137.5 s, 225.7 s and 338.7 s (411 s, 734 s and 1117 s with
+the checks, under a load of about 20) and gives widths 5.7785e-6, 8.7772e-6 and 8.3479e-6, as in
+the report. CORA.cpp's times are from the core preset under a load of 7 to 10 on 16 CPUs.
+
+The tuning (`alg::LinearizationAdaptive`) is the defaults of CORA (decr_factor 0.9, zeta_phi
+0.85, 0.76, 0.68, zeta_k 0.9, 10 Taylor terms, zonotope order 1000) except for `zeta_z`, CORA's
+`redFactor`. The script's values (0.00025, 0.0006, 0.017) verify in MATLAB CORA, but the repaired
+algorithm is sound where CORA's is not and needs a smaller one in cases (1) and (3): at the script's
+values the width of s is 5.6e-5 (17651 sets) and 1.2e-5 (25850 sets), in case (2) it verifies at
+6.7e-6. The width is not monotone in `zeta_z`; the values below were found by a sweep.
+
+| | zeta_z (script) | zeta_z | sets | width of s |
+| --- | --- | --- | --- | --- |
+| ROBE25_1 | 0.00025 | 1e-4 | 28963 | 2.28e-6 |
+| ROBE25_2 | 0.0006 | 1.5e-3 | 16296 | 7.17e-6 |
+| ROBE25_3 | 0.017 | 1e-2 | 28093 | 7.33e-6 |
+
 ## Run
 
 ```bash
@@ -189,6 +224,7 @@ cmake --build --preset core                                   # build/core/bench
 build/core/benchmarks/benchmark_linear_verify_fast_arch23_iss [ISSF01_ISS01 ...]
 build/core/benchmarks/benchmark_hybrid_reach_arch23_rendezvous [SRA01 ...]   # CORACPP_BENCHMARK_VERBOSE=1: the branches
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_trafficscenario         # TRAF22
+build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...] # CORACPP_BENCHMARK_VERBOSE=1: step sizes
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 
@@ -243,7 +279,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
 | BRKDC01 | 4/12 | 8 | 5 |
-| BRKNC01 | 30/53 | 23 | 10 |
+| BRKNC01 | 31/53 | 22 | 10 |
 | BRKNP01 | 24/44 | 20 | 10 |
 | CBC01 | 1/8 | 7 | 4 |
 | CBC02 | 1/8 | 7 | 4 |
@@ -273,17 +309,20 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | PLAN01 | 31/45 | 14 | 9 |
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
-| SPRE22 | 36/64 | 28 | 13 |
+| ROBE25_1 | 10/24 | 14 | 7 |
+| ROBE25_2 | 10/24 | 14 | 7 |
+| ROBE25_3 | 10/24 | 14 | 7 |
+| SPRE22 | 37/64 | 27 | 13 |
 | SRA01 | 26/45 | 19 | 8 |
-| SRA02 | 33/55 | 22 | 10 |
-| SRA03 | 33/55 | 22 | 10 |
+| SRA02 | 34/55 | 21 | 10 |
+| SRA03 | 34/55 | 21 | 10 |
 | SRA04 | 26/45 | 19 | 8 |
-| SRA05 | 33/55 | 22 | 10 |
-| SRA06 | 33/55 | 22 | 10 |
-| SRA07 | 41/66 | 25 | 11 |
-| SRA08 | 41/66 | 25 | 11 |
+| SRA05 | 34/55 | 21 | 10 |
+| SRA06 | 34/55 | 21 | 10 |
+| SRA07 | 42/66 | 24 | 11 |
+| SRA08 | 42/66 | 24 | 11 |
 | SRNA01 | 23/39 | 16 | 7 |
 | SRU01 | 27/46 | 19 | 8 |
-| SRU02 | 41/66 | 25 | 11 |
+| SRU02 | 42/66 | 24 | 11 |
 | TRAF22 | 15/30 | 15 | 9 |
 <!-- END bit-exact -->

@@ -218,6 +218,8 @@ changed, and the reasons are listed below.
 | `options.verifyAlg = 'reachavoid:zonotope'` | `alg::ReachAvoidZonotope{}` | `alg="reach_avoid_zonotope"` |
 | `options.alg = 'lin'` (nonlinearSys) | `alg::Linearization{...}` | `alg="linearization"` |
 | `options.tensorOrder`, `options.errorOrder`, `options.intermediateOrder` | `alg::Linearization::tensor_order`, `error_order`, `intermediate_order` (also `alg::HybridStandard`) | `tensor_order`, `error_order`, `intermediate_order` |
+| `options.alg = 'lin-adaptive'` (nonlinearSys), `options.redFactor` | `alg::LinearizationAdaptive{...}`: `zeta_z` (`redFactor`), `decr_factor`, `zeta_phi`, `zeta_k`, `taylor_terms`, `zonotope_order` | `alg="linearization_adaptive"`, the same names |
+| `R.timeInterval.time`, `R.timePoint.time` (adaptive step sizes) | `R.time`: the step times t_0, ..., t_K | `R.time` |
 | `nonlinearSys(fun)` with `fun(x, u)`; `[A, B] = jacobian(x, u)` | `NonlinearSys(f, n, m)`, `Jacobians{A, B}` | `NonlinearSys(f, dim, inputs=m)` |
 | `reachSet` | `ReachSet` | `cora.ReachSet` |
 | `R.timeInterval.set` | `R.time_interval` | `R.time_interval` |

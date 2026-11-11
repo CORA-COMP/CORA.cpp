@@ -1,9 +1,9 @@
 """test_nonlinear_sys - NonlinearSys, Expr and Zonotope.reduce in Python.
 
 CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-Authors:       Tobias Ladner, Claude Opus 5.5
+Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 Written:       02-November-2026
-Last update:   09-November-2026
+Last update:   11-November-2026
 Reviewed:      ---
 """
 # CORA: contDynamics/@contDynamics/derivatives.m
@@ -13,6 +13,7 @@ Reviewed:      ---
 # CORA: contDynamics/@nonlinearSys/initReach.m
 # CORA: contDynamics/@nonlinearSys/linearize.m
 # CORA: contDynamics/@nonlinearSys/nonlinearSys.m
+# CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 # CORA: contDynamics/@nonlinearSys/post.m
 # CORA: contDynamics/@nonlinearSys/simulate.m
 # CORA: contSet/@zonotope/generateRandom.m
@@ -125,6 +126,16 @@ class ReachSet(unittest.TestCase):
         step = sys.post(sys.init_reach(start(), U, **options), U, **options)
         self.assertTrue(np.allclose(np.asarray(step.time_point.center), np.asarray(R.time_point[2].center)))
 
+    def test_the_adaptive_algorithm_chooses_the_steps(self):
+        R = van_der_pol().reach(start(), alg="linearization_adaptive", t_final=0.5)
+        # one time per set boundary, from 0 to t_final, increasing
+        t = np.asarray(R.time)
+        self.assertEqual(len(t), len(R.time_point))
+        self.assertEqual(len(R.time_point), len(R.time_interval) + 1)
+        self.assertEqual(t[0], 0.0)
+        self.assertGreaterEqual(t[-1], 0.5)
+        self.assertTrue(np.all(np.diff(t) > 0))
+
     def test_a_step_that_is_too_large_is_described(self):
         with self.assertRaises(RuntimeError) as caught:
             van_der_pol().reach(start(), time_step=5.0, t_final=10.0)
@@ -138,6 +149,16 @@ class ReachSet(unittest.TestCase):
             d = torch.randn(3, dtype=torch.float64, generator=torch.Generator().manual_seed(k))
             # the support functions of the reachable set
             self.assertGreaterEqual(float(R.support_function(d)), float(Z.support_function(d)) - 1e-9)
+
+    def test_reduce_adaptive_boxes_the_small_generators(self):
+        Z = cora.Zonotope(cora.Tensor([1.0, 2.0]),
+                          cora.Tensor([[1.0, 0.5, 0.3], [1.0, -0.4, 0.01]]))
+        # the third generator is boxed: two kept and two box generators
+        self.assertEqual(np.asarray(Z.reduce_adaptive(0.05).generators).shape, (2, 4))
+        # everything boxed: the box of Z
+        self.assertTrue(np.allclose(np.asarray(Z.reduce_adaptive(1.0).generators), [[1.8, 0.0], [0.0, 1.41]]))
+        with self.assertRaises(RuntimeError):
+            Z.reduce_adaptive(-1.0)
 
 
 if __name__ == "__main__":

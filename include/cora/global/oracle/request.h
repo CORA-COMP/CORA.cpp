@@ -7,13 +7,14 @@
 //             sets the request's dtype, all lean operands must agree, none means lean::dtype()
 // Results:    Reply::get<T>(key) decodes double, bool, int64, int64 list, Tensor, Interval,
 //             Fullspace, Zonotope, ConZonotope, MatZonotope, ZonoBundle, Polytope, Ellipsoid,
-//             Capsule, Zonotope list, or std::optional of one of them (a JSON null is nothing);
-//             list(key) splits an array of objects into replies
+//             Capsule, Zonotope list, double, bool and (optional) int64 lists, or std::optional of
+//             one of them (a JSON null is nothing); list(key) splits an array of objects into
+//             replies
 // See also:   lean/oracle.h, lean/interval.h, lean/zonotope.h
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -50,6 +51,7 @@ struct Wire {
     template <class I, std::enable_if_t<std::is_integral_v<I> && !std::is_same_v<I, bool>, int> = 0>
     Wire(I n) : json(static_cast<int64_t>(n)) {}
     Wire(const std::vector<int64_t> &indices);
+    Wire(const std::vector<bool> &flags);
     Wire(const std::vector<std::vector<int64_t>> &index_lists);
     Wire(const Tensor &T);
     // the sets, one constructor each
