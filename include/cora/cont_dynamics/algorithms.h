@@ -317,6 +317,10 @@ inline void validate_tensor_orders(int tensor_order, int error_order, int interm
     }
 }
 
+/// The linear step of a linearization: CORA's oneStep (default), or CORALean's reachFloatInput for
+/// one step (bit for bit the oracle's, but slower).
+enum class LinearStep { cora, coralean };
+
 /// CORA's alg "lin": each step linearizes at the center of the set (moved half a step along the
 /// flow) and bounds the linearization error by the Lagrange remainder of the Taylor expansion of
 /// order tensor_order over the reachable set of the step, enlarged until it holds.
@@ -327,6 +331,7 @@ struct Linearization {
     int tensor_order = 2;       ///< 2: the remainder by the Hessian; 3: by the third derivatives
     int error_order = 0;        ///< tensor_order 3: the order of the set the Hessian maps
     int intermediate_order = 0; ///< tensor_order 3: the order of the error set
+    LinearStep linear_step = LinearStep::cora; ///< the linear step of the linearized system
 
     static constexpr const char *name = "linearization";
     static constexpr auto fields() {
@@ -335,7 +340,8 @@ struct Linearization {
                                field("zonotope_order", &Linearization::zonotope_order),
                                field("tensor_order", &Linearization::tensor_order),
                                field("error_order", &Linearization::error_order),
-                               field("intermediate_order", &Linearization::intermediate_order));
+                               field("intermediate_order", &Linearization::intermediate_order),
+                               field("linear_step", &Linearization::linear_step));
     }
     void validate() const {
         validate_time_step(time_step, "Linearization");
@@ -391,6 +397,7 @@ struct LinearizationAdaptive {
     int taylor_terms = 10;     ///< the least order of the Taylor series of the linear step
     int zonotope_order = 1000; ///< the order of Girard's reduction inside the linear step
     int fuel = 10000;          ///< the bound of every loop CORA writes as while true
+    LinearStep linear_step = LinearStep::cora; ///< the linear step of the linearized system
 
     // the name and the fields, for the algorithm tables of Python and the checks
     static constexpr const char *name = "linearization_adaptive";
@@ -401,7 +408,8 @@ struct LinearizationAdaptive {
                                field("zeta_k", &LinearizationAdaptive::zeta_k),
                                field("taylor_terms", &LinearizationAdaptive::taylor_terms),
                                field("zonotope_order", &LinearizationAdaptive::zonotope_order),
-                               field("fuel", &LinearizationAdaptive::fuel));
+                               field("fuel", &LinearizationAdaptive::fuel),
+                               field("linear_step", &LinearizationAdaptive::linear_step));
     }
     // every constant lies in the range the algorithm needs it in
     void validate() const {

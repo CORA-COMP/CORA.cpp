@@ -5,8 +5,7 @@
 // by alg "lin-adaptive". The verdict is the specification of the ARCH-COMP report: the width of
 // the sum of the concentrations s = x + y + z at t = 40 below 1e-5 (the script prints the constant
 // 1 once reach has finished). The algorithm is CORA's lin-adaptive as CORALean repairs it; its
-// zeta_z and the Taylor terms are tuned per case (kCases); the script's zeta_z are 0.00025, 0.0006
-// and 0.017 with the default 10 terms. The line has the
+// zeta_z is tuned per case (kCases), the script's are 0.00025, 0.0006 and 0.017. The line has the
 // time of reach, as the script's tic and toc; the number of sets and the width go to stderr.
 //
 // Syntax:   build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...]
@@ -39,17 +38,9 @@ struct Case {
     alg::LinearizationAdaptive alg;
 };
 
-/// The defaults of CORA with the given zeta_z and Taylor terms.
-alg::LinearizationAdaptive aux_tuning(double zeta_z, int taylor_terms) {
-    alg::LinearizationAdaptive a;
-    a.zeta_z = zeta_z;
-    a.taylor_terms = taylor_terms;
-    return a;
-}
-
-const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, aux_tuning(0.00003, 10)},
-                       {"ROBE25_2", 1e3, 1e5, aux_tuning(0.0015, 60)},
-                       {"ROBE25_3", 1e3, 1e7, aux_tuning(0.01, 60)}};
+const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, {.zeta_z = 0.0001}},
+                       {"ROBE25_2", 1e3, 1e5, {.zeta_z = 0.0015}},
+                       {"ROBE25_3", 1e3, 1e7, {.zeta_z = 0.01}}};
 
 /// Robertson_case*.m: the right-hand side, written as the model file does; u is not used.
 NonlinearSys aux_robertson(double beta, double gamma) {

@@ -2,12 +2,13 @@
 //
 // The abstraction error and the orders of its terms are computed by the same arithmetic as
 // CORALean's and agree with the oracle bit for bit at nearest (van der Pol with an input, the
-// Robertson reaction). A pass takes a linear step with the error as input, CORALean's
-// reachFloatInput for one step (priv_float_one_step, bit for bit against the oracle in
-// test_lean_linear_sys_float_step), so the values read off a pass (the point of linearization, the
-// matrix A, the zero generators) are exact and the boxes of its sets (Rmax, the window, the end
-// set) agree to 1e-9 (relative) at order 2 on the default backend, whose sums are in another order
-// than CORALean's; at order 3 the quadratic map is CORA's and the sets lie inside the oracle's.
+// Robertson reaction). A pass takes a linear step with the error as input; with the option
+// linear_step = coralean it is CORALean's reachFloatInput for one step (priv_float_one_step, bit
+// for bit against the oracle in test_lean_linear_sys_float_step), so the values read off a pass
+// (the point of linearization, the matrix A, the zero generators) are exact and the boxes of its
+// sets (Rmax, the window, the end set) agree to 1e-9 (relative) at order 2 on the default backend,
+// whose sums are in another order than CORALean's; at order 3 the quadratic map is CORA's and the
+// sets lie inside the oracle's.
 //
 // CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
@@ -106,7 +107,9 @@ void aux_run(const std::string &op, F body) {
 
 int main() {
     if (!test::oracle::available()) return 0;
-    const alg::LinearizationAdaptive alg;
+    // the linear step of CORALean (the default, CORA's, lies inside the oracle's set)
+    alg::LinearizationAdaptive alg;
+    alg.linear_step = alg::LinearStep::coralean;
 
     // the passes of both systems: the error of the window, then the orders of its terms
     aux_run("nonlinearSys.linReachAdaptivePass", [&] {
