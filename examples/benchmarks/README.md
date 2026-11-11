@@ -84,7 +84,7 @@ here stay those of the ARCH23 scripts. `-`: not in the report, or not ported yet
 | BRKNP01 | 0 | 0 (reach_set_explosion) | 0.001 | 52.20 | 16.99 |
 
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
-(verdict 0 in 169 s), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
+(verdict 0 in 173 s, `CHECKS_ENABLED` off), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
 x7 >= -50.65, past the bound -50. The ARCH26 report lists PLAN01 as verified (162 s) with a different
 setup, so its time is not comparable. The algorithm is ported step by step (expmIndMixed, priv_tie,
 priv_inputSolution, initReach, post) and the constant-parameter instances PLAA01 agree. The
@@ -106,7 +106,7 @@ time-interval enclosure and the Jawecki bound outside the nonexpansive case,
 CORA, so the same holds here. HEAT03 takes about 15 s, so it is a `benchmark` test only.
 
 **BRKNP01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
-(verdict 0 in 883 s, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
+(verdict 0 in 438 s, `CHECKS_ENABLED` off, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
 becomes the constant input `uTrans = 1` with `U = {0}`, which does not hold the origin, so
 `priv_inputTie` adds the curvature of the constant input; its series does not converge
 (`norm(A, inf) r / (taylorTerms + 2)` is 18.3 for `r = 2e-5`) and its remainder is unbounded.
@@ -162,7 +162,7 @@ a `linearSys`; CORA.cpp builds one `NonlinearSys` per segment with the parameter
 same system (`intermediateTerms` has no effect there; docs/cora-differences.md). Its time includes
 the occupancy sets of the script (the car's body over each set, 660 zonotopes and their vertices;
 no file is written), as the script's `tComp` does; the ARCH26 report times the reachable sets only.
-MATLAB CORA v2026.1.0 (R2024b, this machine) gives the same verdict in 262 s, and the hull of the
+MATLAB CORA v2026.1.0 (R2024b, this machine) gives the same verdict in 138 s, and the hull of the
 applied inputs, `[-0.4988, 0.5001] x [-8.4882, 0.4826]`, agrees with CORA.cpp's to all printed
 digits, as do the boxes of the first and the last set. ARCH26 defines the same scenario
 (BEL_Putte-4_2_T-1, the same sets Z, U, W) and adds a collision check of the occupancy sets by the
@@ -172,10 +172,15 @@ benchmark's Python script, which neither CORA's script nor CORA.cpp runs.
 (`rendezvous_nonlinear_passive_nondet.m`), nondetGuard with PCA, time steps 0.2 / 0.05 / 0.2. CORA
 checks the flow across the guard x = -100 by a Taylor model, CORA.cpp by a second-order Taylor form,
 which agrees for this guard (its flow x' = vx is linear; docs/cora-differences.md). MATLAB CORA v2026.1.0 (R2024b,
-this machine) verifies it in 68.8 s with the same three branches (559, 830 and 415 sets, the same
+this machine) verifies it in 34.3 s with the same three branches (559, 830 and 415 sets, the same
 times), and the box of its last set agrees with CORA.cpp's to all printed digits. ARCH26 states the
 same specifications as the script (line of sight 20 degrees, velocity bounds, no hit of the station
 [-1, 1]^2 after the abort).
+
+**MATLAB times.** The MATLAB times quoted for PLAN01, BRKNP01, TRAF22 and SPRE22 are from MATLAB R2024b,
+CORA v2026.1.0, `CHECKS_ENABLED` off (as in the ARCH-COMP runs; CORA's default is on, which is slower),
+4 threads, this machine, run one at a time; the machine was shared (load
+average 10 to 15 when they started).
 
 ## Run
 
