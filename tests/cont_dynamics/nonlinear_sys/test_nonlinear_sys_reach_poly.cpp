@@ -140,11 +140,13 @@ int main() {
               Error::dimension_mismatch),
           "init_reach: the dimension");
     // tensor order 2 has no static error and is refused
-    check(
-        test::raises(
-            [&] { sys.init_reach(start(), std::nullopt, {.time_step = 0.01, .tensor_order = 2}); },
-            Error::not_supported),
-        "init_reach: tensor order 2");
+    check(test::raises(
+              [&] {
+                  sys.init_reach(start(), std::nullopt,
+                                 alg::Polynomialization{.time_step = 0.01, .tensor_order = 2});
+              },
+              Error::not_supported),
+          "init_reach: tensor order 2");
     check(test::raises([&] { sys.reach({.t_final = 1.0}, alg::PolyNonlinearReach{options(0.01)}); },
                        Error::wrong_value),
           "reach: no initial set");

@@ -48,6 +48,16 @@ std::vector<Set> aux_check_flow(const Location &loc, const Polytope &guard, std:
     }
 }
 
+/// The same for a level set guard.
+std::vector<Set> aux_check_flow(const Location &loc, const LevelSet &guard, std::vector<Set> P,
+                                const Zonotope &U_state) {
+    try {
+        return priv_check_flow(loc, guard, P, U_state);
+    } catch (const Error &) {
+        return P; // CORA keeps the sets if the check fails
+    }
+}
+
 /// The enclosure of one crossing by the chosen method.
 std::optional<Set> aux_enclose(const Location &loc, const std::vector<Set> &P,
                                const Polytope &guard, const Zonotope &U_state,
@@ -115,10 +125,20 @@ std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const G
     std::vector<GuardIntersection> out;
     const std::vector<Set> &sets = hits.time_point ? R.time_point : R.time_interval;
     for (const GuardGroup &group : priv_guard_groups(hits)) {
-        const Polytope &guard = loc.transitions()[std::size_t(group.transition)].guard();
+        const Region &region = loc.transitions()[std::size_t(group.transition)].guard();
         std::vector<Set> P;
         P.reserve(group.sets.size());
         for (int64_t j : group.sets) P.push_back(sets[std::size_t(j)]);
+        // a level set is crossed only where the flow points out along its gradient
+        if (const auto *level = std::get_if<LevelSet>(&region)) {
+            if (!hits.time_point) {
+                P = aux_check_flow(loc, *level, std::move(P), U_state);
+                if (P.empty()) continue;
+            }
+            CORA_FAIL(Error::not_supported,
+                      "guardIntersect: the enclosure of a level set guard is not ported yet");
+        }
+        const Polytope &guard = std::get<Polytope>(region);
         // a hyperplane is crossed only where the flow points into it
         if (!hits.time_point && guard.representsa("conHyperplane", numerics::kGuardHyperplane)) {
             P = aux_check_flow(loc, guard, std::move(P), U_state);

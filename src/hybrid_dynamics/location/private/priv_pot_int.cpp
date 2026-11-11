@@ -73,7 +73,11 @@ bool aux_time_triggered(const Location &loc, const LocationReachSet &R, const Gu
     const bool two = count == 2 && hits.transitions[0] == hits.transitions[1] &&
                      hits.sets[1] == hits.sets[0] + 1;
     if (R.time_interval.empty() || !(one || two)) return false;
-    const Polytope &guard = loc.transitions()[std::size_t(hits.transitions[0])].guard();
+    // only a polytope can be a hyperplane
+    const auto *polytope =
+        std::get_if<Polytope>(&loc.transitions()[std::size_t(hits.transitions[0])].guard());
+    if (polytope == nullptr) return false;
+    const Polytope &guard = *polytope;
     if (!guard.representsa("conHyperplane", numerics::kGuardHyperplane)) return false;
     // the time point at the end of the first set, against the time-interval sets
     if (!aux_on_guard(guard, R.time_point[std::size_t(hits.sets[0] + 1)])) return false;
@@ -87,6 +91,10 @@ bool aux_time_triggered(const Location &loc, const LocationReachSet &R, const Gu
 
 // ===========================================  MAIN  =========================================== //
 
+// The hits ----------------------------------------------------------------------------------------
+
+// The pairs ---------------------------------------------------------------------------------------
+
 GuardHits priv_pot_int(const Location &loc, const LocationReachSet &R,
                        const std::vector<int64_t> &final_locations) {
     GuardHits hits;
@@ -98,9 +106,13 @@ GuardHits priv_pot_int(const Location &loc, const LocationReachSet &R,
         const Transition &trans = loc.transitions()[i];
         if (std::count(final_locations.begin(), final_locations.end(), trans.target()) > 0)
             continue;
-        const Polytope::Constraints guard = trans.guard().constraints();
+        // a level set meets a set if its constraints may hold on the box of the set
+        const auto *level = std::get_if<LevelSet>(&trans.guard());
+        const Polytope::Constraints guard =
+            level ? Polytope::Constraints{} : std::get<Polytope>(trans.guard()).constraints();
         for (std::size_t j = 0; j < sets.size(); ++j)
-            if (aux_may_meet(guard, sets[j])) {
+            if (level ? level->is_intersecting(*sets[j], numerics::kGuardMeet)
+                      : aux_may_meet(guard, sets[j])) {
                 hits.transitions.push_back(int64_t(i));
                 hits.sets.push_back(int64_t(j));
             }

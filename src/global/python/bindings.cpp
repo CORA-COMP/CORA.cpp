@@ -3872,6 +3872,12 @@ Tensor points_of(const py::object &o) {
     return a && a.ndim() == 1 ? vector_of(o, "the point") : tensor_of(o, "the points");
 }
 
+/// An invariant or a guard from Python: a level set or a polytope.
+Region region_of(const py::object &o) {
+    if (py::isinstance<LevelSet>(o)) return py::cast<LevelSet>(o);
+    return py::cast<Polytope>(o);
+}
+
 void bind_level_set(py::module_ &m) {
     // a level set is built from expressions and strings, and queried with arrays or boxes
     py::class_<LevelSet, ContSet>(m, "LevelSet",
@@ -4612,37 +4618,48 @@ void bind_hybrid(py::module_ &m) {
             py::arg("X"), py::arg("U") = py::none(),
             "The image A X + B U + c of a zonotope or a bundle, or of points (n, N)");
     py::class_<Transition>(m, "Transition", "A jump: guard, reset and target location.")
-        .def(
-            py::init([](const py::object &guard, const LinearReset &reset, int64_t target) {
-                // a box guard is held as its polytope
-                if (py::isinstance<Interval>(guard))
-                    return Transition(py::cast<Interval>(guard), reset, target);
-                return Transition(py::cast<Polytope>(guard), reset, target);
-            }),
-            py::arg("guard"), py::arg("reset"), py::arg("target"),
-            "The jump to location `target` (0-based) through the guard (a Polytope or an Interval)")
-        .def_property_readonly("guard", &Transition::guard, "The guard as a polytope")
+        .def(py::init([](const py::object &guard, const LinearReset &reset, int64_t target) {
+                 // a box guard is held as its polytope
+                 if (py::isinstance<Interval>(guard))
+                     return Transition(py::cast<Interval>(guard), reset, target);
+                 if (py::isinstance<LevelSet>(guard))
+                     return Transition(py::cast<LevelSet>(guard), reset, target);
+                 return Transition(py::cast<Polytope>(guard), reset, target);
+             }),
+             py::arg("guard"), py::arg("reset"), py::arg("target"),
+             "The jump to location `target` (0-based) through the guard (a Polytope, an Interval "
+             "or a "
+             "LevelSet)")
+        .def_property_readonly("guard", &Transition::guard, "The guard: a polytope or a level set")
         .def_property_readonly("reset", &Transition::reset, "The reset")
         .def_property_readonly("target", &Transition::target, "The target location, 0-based");
-    // the location, with its flow and invariant
+    // the location, with its flow and invariant (a polytope or a level set)
     py::class_<Location>(m, "Location", "A location: invariant, transitions and flow.")
-        .def(py::init([](const std::string &name, const Polytope &inv,
+        .def(py::init([](const std::string &name, const py::object &inv,
                          const std::vector<Transition> &trans, const LinearSys &flow,
                          const py::object &c) {
-                 return Location(name, inv, trans, flow,
+                 return Location(name, region_of(inv), trans, flow,
                                  c.is_none() ? std::nullopt
                                              : std::optional<Tensor>(tensor_of(c, "c")));
              }),
              py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
              py::arg("c") = py::none(), "x' = A x + B u + c of the flow inside the invariant")
-        .def(py::init<std::string, Polytope, std::vector<Transition>, LinParamSys>(),
+        // a parametric flow and a nonlinear flow take the invariant too
+        .def(py::init([](const std::string &name, const py::object &inv,
+                         const std::vector<Transition> &trans, const LinParamSys &flow) {
+                 return Location(name, region_of(inv), trans, flow);
+             }),
              py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
              "x' = A x + B u + c of a LinParamSys flow (its own c) inside the invariant")
-        .def(py::init<std::string, Polytope, std::vector<Transition>, NonlinearSys>(),
+        .def(py::init([](const std::string &name, const py::object &inv,
+                         const std::vector<Transition> &trans, const NonlinearSys &flow) {
+                 return Location(name, region_of(inv), trans, flow);
+             }),
              py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
              "x' = f(x, u) of a NonlinearSys flow inside the invariant")
         .def_property_readonly("name", &Location::name, "The name")
-        .def_property_readonly("invariant", &Location::invariant, "The invariant")
+        .def_property_readonly("invariant", &Location::invariant,
+                               "The invariant: a polytope or a level set")
         .def_property_readonly("transitions", &Location::transitions, "The transitions")
         .def_property_readonly("dim", &Location::dim, "The number of states");
     // the results: one branch per visit of a location

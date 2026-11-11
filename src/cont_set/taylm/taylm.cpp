@@ -102,6 +102,35 @@ std::vector<Taylm> Taylm::from_interval(const Interval &I, int max_order) {
     return out;
 }
 
+Taylm Taylm::embedded(int64_t before, int64_t after) const {
+    Taylm out(before + vars_ + after, max_order_);
+    // every monomial gets zero exponents for the variables around
+    for (const auto &[m, c] : terms_) {
+        Monomial wide(std::size_t(before), 0);
+        wide.insert(wide.end(), m.begin(), m.end());
+        wide.resize(std::size_t(before + vars_ + after), 0);
+        out.terms_[wide] = c;
+    }
+    out.rem_lo_ = rem_lo_;
+    out.rem_hi_ = rem_hi_;
+    return out;
+}
+
+// The state and the input -------------------------------------------------------------------------
+
+std::vector<Taylm> Taylm::from_zonotope_and_box(const Zonotope &Z, const Interval &U,
+                                                int max_order) {
+    detail::Entry entry;
+    std::vector<Taylm> x = from_zonotope(Z, max_order), u = from_interval(U, max_order);
+    // the state keeps the first variables, the input the last ones
+    const int64_t p = x.front().vars_, m = u.front().vars_;
+    std::vector<Taylm> out;
+    out.reserve(x.size() + u.size());
+    for (const Taylm &t : x) out.push_back(t.embedded(0, m));
+    for (const Taylm &t : u) out.push_back(t.embedded(p, 0));
+    return out;
+}
+
 std::vector<Taylm> Taylm::from_zonotope(const Zonotope &Z, int max_order) {
     detail::Entry entry;
     aux_check_order(max_order, "Taylm::from_zonotope");

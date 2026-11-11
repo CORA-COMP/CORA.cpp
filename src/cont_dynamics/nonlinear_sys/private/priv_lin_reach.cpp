@@ -34,9 +34,12 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
+// The ratios of the errors ------------------------------------------------------------------------
+
 double priv_ratio_max(const Tensor &true_error, const Tensor &applied) {
     const std::vector<double> e = true_error.data(), a = applied.data();
     double out = std::numeric_limits<double>::quiet_NaN();
+    // a 0/0 entry is skipped, as MATLAB's max skips NaN
     for (std::size_t i = 0; i < e.size(); ++i) {
         const double r = e[i] / a[i];
         if (!std::isnan(r) && (std::isnan(out) || r > out)) out = r;
@@ -48,6 +51,34 @@ bool priv_exploded(const Tensor &error) {
     for (const double v : error.data())
         if (v > 1e100) return true;
     return false;
+}
+
+// The loop and the step ---------------------------------------------------------------------------
+
+AbstractionError
+priv_error_loop(const Linearized &lin, TaylorLinSys &taylor, const Tensor &error, double dt,
+                int eta,
+                const std::function<AbstractionError(const Zonotope &R_guess)> &error_over) {
+    // the sets of the guess live on one block of the state
+    const Blocks blocks = priv_one_block(error.shape()[0]);
+    Tensor bound = error;
+    std::optional<AbstractionError> err;
+    double perf = std::numeric_limits<double>::infinity();
+    // guess 1.1 times the last error, solve it over the step, check the error over that set
+    while (perf > 1) {
+        const Tensor applied = bound * 1.1;
+        const Zonotope V_guess(applied.zeros_like(), applied.diag());
+        const Zonotope R_guess =
+            priv_particular_time_varying(lin.sys, taylor, blocks, V_guess, dt, eta)[0];
+        err = error_over(R_guess);
+        perf = priv_ratio_max(err->bound, applied);
+        bound = err->bound;
+        if (priv_exploded(bound))
+            CORA_FAIL(Error::reach_set_explosion,
+                      "cora: the linearization error exploded; the reachable set grows without "
+                      "bound (the time_step may be too large)");
+    }
+    return *err;
 }
 
 NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
@@ -70,26 +101,14 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
                : Zonotope(R.center().zeros_like({m, 1}), R.center().zeros_like({m, 0}));
 
     // the error: guessed, checked over the set it allows, and enlarged until it holds
-    Tensor bound = error;
-    std::optional<AbstractionError> err;
-    double perf = std::numeric_limits<double>::infinity();
-    while (perf > 1) {
-        const Tensor applied = bound * 1.1;
-        const Zonotope V_guess(applied.zeros_like(), applied.diag());
-        const Zonotope R_all =
-            priv_particular_time_varying(lin.sys, taylor, blocks, V_guess, dt, eta)[0];
-        err = priv_abstrerr_lin(sys, R_ti + R_all, lin, U0, alg);
-        perf = priv_ratio_max(err->bound, applied);
-        bound = err->bound;
-        if (priv_exploded(bound))
-            CORA_FAIL(Error::reach_set_explosion,
-                      "cora: the linearization error exploded; the reachable set grows without "
-                      "bound (the time_step may be too large)");
-    }
+    const AbstractionError err =
+        priv_error_loop(lin, taylor, error, dt, eta, [&](const Zonotope &R_guess) {
+            return priv_abstrerr_lin(sys, R_ti + R_guess, lin, U0, alg);
+        });
     // the solution of the error moves both sets, which return to the coordinates of the state
     const Zonotope R_error =
-        priv_particular_time_varying(lin.sys, taylor, blocks, err->set, dt, eta)[0];
-    return {(R_ti + lin.x_star) + R_error, (step.time_point[0] + lin.x_star) + R_error, bound};
+        priv_particular_time_varying(lin.sys, taylor, blocks, err.set, dt, eta)[0];
+    return {(R_ti + lin.x_star) + R_error, (step.time_point[0] + lin.x_star) + R_error, err.bound};
 }
 
 } // namespace cora

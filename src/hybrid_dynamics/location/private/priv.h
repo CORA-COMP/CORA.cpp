@@ -67,8 +67,19 @@ LocationResult priv_location_reach(const Location &loc, int64_t index, const Set
 
 // The guards --------------------------------------------------------------------------------------
 
-/// Whether a set (zonotope or bundle) meets a polytope by CORA's 'approx' test.
+/// Whether a set (zonotope, bundle or polynomial zonotope) meets a polytope, CORA's 'approx'.
 bool priv_meets(const Polytope &P, const Set &S);
+
+/// The same for an invariant or a guard that is a polytope or a level set (CORA's isIntersecting_
+/// with 'approx' and 1e-8): the level set evaluates its constraints over the box of the set.
+bool priv_meets(const Region &R, const Set &S);
+
+/// Whether the region is certainly empty (CORA's representsa(inv, 'emptySet')): a polytope by its
+/// constraints, a level set by the range of one constraint over the whole space.
+bool priv_region_empty(const Region &R);
+
+/// Whether the point c (n, 1) lies in the region, up to 100 eps (CORA's contains_ 'exact').
+bool priv_region_contains(const Region &R, const Tensor &c);
 
 /// The guards that the sets of R meet (CORA's potInt), with CORA's switch to the time-point set
 /// when a time-triggered hyperplane is hit exactly between two steps.
@@ -103,6 +114,12 @@ std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> 
 
 /// The sets whose flow may point into the hyperplane guard (CORA's checkFlow).
 std::vector<Set> priv_check_flow(const Location &loc, const Polytope &guard,
+                                 const std::vector<Set> &R, const Zonotope &U_state);
+
+/// CORA's checkFlow for a level set guard: the sets whose flow along the outward gradient may be
+/// positive, by the flow at the center, else by Taylor models over the PCA box of the set.
+/// The orientation of the guard is decided by the center of the first set (aux_getOutside).
+std::vector<Set> priv_check_flow(const Location &loc, const LevelSet &guard,
                                  const std::vector<Set> &R, const Zonotope &U_state);
 
 /// The same for the hyperplane a'x = d with the outward unit normal a (the caller's choice).

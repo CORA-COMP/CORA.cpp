@@ -48,6 +48,41 @@ bool priv_meets(const Polytope &P, const Set &S) {
     return P.is_intersecting(S.as<ZonoBundle>(), "approx", numerics::kGuardMeet);
 }
 
+// The regions ----------------------------------------------------------------------------------
+
+bool priv_meets(const Region &R, const Set &S) {
+    if (const auto *P = std::get_if<Polytope>(&R)) return priv_meets(*P, S);
+    return std::get<LevelSet>(R).is_intersecting(*S, numerics::kGuardMeet);
+}
+
+bool priv_region_empty(const Region &R) {
+    if (const auto *P = std::get_if<Polytope>(&R)) return P->representsa("emptySet");
+    // a constraint with no solution anywhere leaves nothing (an unevaluable range proves nothing)
+    const LevelSet &L = std::get<LevelSet>(R);
+    try {
+        const Interval F = L.fun_han(Interval::unbounded(L.dim()));
+        const std::vector<double> lo = F.inf().data(), hi = F.sup().data();
+        // one constraint that no point can satisfy is enough
+        for (std::size_t i = 0; i < lo.size(); ++i) {
+            const CompOp op = L.comp_ops()[i];
+            if (op == CompOp::le && lo[i] > 0) return true;
+            if (op == CompOp::lt && lo[i] >= 0) return true;
+            if (op == CompOp::eq && (lo[i] > 0 || hi[i] < 0)) return true;
+        }
+    } catch (const Error &) {
+        return false;
+    }
+    return false;
+}
+
+// The point test ----------------------------------------------------------------------------------
+
+bool priv_region_contains(const Region &R, const Tensor &c) {
+    if (const auto *P = std::get_if<Polytope>(&R))
+        return P->contains(c, "exact", numerics::kGuardSide);
+    return std::get<LevelSet>(R).contains(c, numerics::kGuardSide);
+}
+
 Tensor priv_basis_of(const Tensor &a) {
     const Rows Q = priv_gram_schmidt(a.data());
     const std::size_t n = Q.size();
