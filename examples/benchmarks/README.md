@@ -144,7 +144,9 @@ The ARCH-COMP NLN instances of MATLAB CORA (`examples/ARCHcompetition/nonlinear/
 they are in CORA (ARCH23 scripts): `benchmark_nonlinear_reach_arch23_trafficscenario` (TRAF22) and
 `benchmark_hybrid_reach_arch23_spacecraft` (SPRE22), both by `NonlinearSys` reach with alg "lin"
 (`alg::Linearization`, tensor order 2), and `benchmark_nonlinear_reach_arch23_robertson` (ROBE25,
-three cases) with alg "lin-adaptive" (`alg::LinearizationAdaptive`). The expected verdict is that of the
+three cases) with alg "lin-adaptive" (`alg::LinearizationAdaptive`), `benchmark_hybrid_reach_arch23_vanderpol`
+(CVDP23) with alg "poly" (`alg::Polynomialization`, polynomial zonotopes) and
+`benchmark_nonlinear_reach_arch23_laubloomis` (LALO20, three cases). The expected verdict is that of the
 ARCH-COMP26 NLN report (Geretti et al., "ARCH-COMP26 Category Report: Continuous and Hybrid
 Systems with Nonlinear Dynamics", EPiC Series in Computing 110, pp. 52-84), whose CORA and
 JuliaReach times are from the same machine as CORA.cpp's (core preset, 09-November-2026, one run
@@ -158,6 +160,10 @@ width of s, LOVO area) belong to the instances that have one; TRAF22 and SPRE22 
 | ROBE25 (1) | 1 | 1 | 25.6 | 151 | 25 | width of s 2.28e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
 | ROBE25 (2) | 1 | 1 | 325 | 239 | 92 | width of s 7.17e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
 | ROBE25 (3) | 1 | 1 | 100 | 310 | 217 | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
+| CVDP23 | 1 | 1 | 58.6 | 571 | 0.4 | - |
+| LALO20 W001 | 1 | 1 | 2.24 | 9.3 | 1.1 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
+| LALO20 W005 | 1 | 1 | 15.3 | 17 | 0.7 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
+| LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 248 | 0.9 | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
 segments of 0.1 s, each reached in 20 steps from the end of the one before. CORA's script uses a
@@ -181,7 +187,7 @@ times), and the box of its last set agrees with CORA.cpp's to all printed digits
 same specifications as the script (line of sight 20 degrees, velocity bounds, no hit of the station
 [-1, 1]^2 after the abort).
 
-**MATLAB times.** The MATLAB times quoted for PLAN01, BRKNP01, TRAF22 and SPRE22 are from MATLAB R2024b,
+**MATLAB times.** The MATLAB times quoted for PLAN01, BRKNP01, TRAF22, SPRE22, CVDP23 and LALO20 are from MATLAB R2024b,
 CORA v2026.1.0, `CHECKS_ENABLED` off (as in the ARCH-COMP runs; CORA's default is on, which is slower),
 4 threads, this machine, run one at a time; the machine was shared (load
 average 10 to 15 when they started).
@@ -217,6 +223,30 @@ values the width of s is 5.6e-5 (17651 sets) and 1.2e-5 (25850 sets), in case (2
 | ROBE25_2 | 0.0006 | 1.5e-3 | 16296 | 7.17e-6 |
 | ROBE25_3 | 0.017 | 1e-2 | 28093 | 7.33e-6 |
 
+**CVDP23** (`benchmark_nonlinear_reach_ARCH23_vanDerPol.m`) is two coupled van der Pol oscillators with
+x5 = b as a constant state, three locations that only split the analysis at the plane c'x = d, and 13
+boxes of the initial set, each a polynomial zonotope (`PolyZonotope(Interval)`). The program runs
+the options of the script (`timeStep` 0.005, `taylorTerms` 3, `zonotopeOrder` 100, `tensorOrder` 3,
+`errorOrder` 10, `intermediateOrder` 50, guards by `zonoGirard` with PCA) with `alg::Polynomialization`
+and verifies y1, y2 < 2.75 for all 13: the time is that of the 13 runs together, as the script's. The
+sets of a location are polynomial zonotopes; the guards act on their enclosing zonotopes and the
+set that leaves is turned back into a polynomial zonotope, as CORA's `guardIntersect` does
+(docs/cora-differences.md). MATLAB CORA v2026.1.0 (R2024b, this machine, `CHECKS_ENABLED` off) verifies it in
+461.7 s with the same verdict; the report's time (571 s) is CORA's.
+
+**LALO20** (`benchmark_nonlinear_reach_ARCH23_laubLoomis.m`, W001, W005, W01) is the Laub-Loomis model from
+x0 = (1.2, 1.05, 1.5, 2.4, 1, 0.1, 0.45) with boxes of the half-width 0.01, 0.05 and 0.1 up to t = 20; the
+specification of the report is x4 < 4.5 (W001, W005) and x4 < 5 (W01) over the whole horizon. W001 and W005 run
+the script's alg "lin-adaptive" (`alg::LinearizationAdaptive`, defaults, CORALean's repair). **W01 is not the
+script's algorithm:** the script runs "poly-adaptive", which is not ported (it needs the adaptive tuning on
+polynomial zonotopes: `reach_adaptive`, `linReach_adaptive`, `priv_abstractionError_adaptive` and
+`priv_reduceAdaptive` for polynomial zonotopes, about the size of the `lin-adaptive` port). The row W01
+uses the fixed-step `alg::Polynomialization` as a stand-in, with `timeStep` 0.01, `taylorTerms` 4,
+`zonotopeOrder` 50, `errorOrder` 10, `intermediateOrder` 50 (tuned here; the script has no step size). It
+verifies x4 < 5, but its width of x4 at t = 20 is much larger than CORA's (0.345 against 0.060): a
+smaller step does not help (0.005: 0.40, 0.0025: 0.45; 0.02: 0.69), as the sets of the wrapping effect
+are reduced every step. MATLAB CORA v2026.1.0 (R2024b, this machine, `CHECKS_ENABLED` off) needs 12.3 s, 21.9 s and 346 s for W001, W005 and W01 and gives the widths 0.00402, 0.0425 and 0.0600; the widths of CORA.cpp for W001 and W005 are smaller because the repaired algorithm differs in its error terms (docs/cora-differences.md).
+
 ## Run
 
 ```bash
@@ -225,6 +255,8 @@ build/core/benchmarks/benchmark_linear_verify_fast_arch23_iss [ISSF01_ISS01 ...]
 build/core/benchmarks/benchmark_hybrid_reach_arch23_rendezvous [SRA01 ...]   # CORACPP_BENCHMARK_VERBOSE=1: the branches
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_trafficscenario         # TRAF22
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...] # CORACPP_BENCHMARK_VERBOSE=1: step sizes
+build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   # CVDP23, about a minute
+build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
 
@@ -287,6 +319,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF01 | 1/8 | 7 | 4 |
 | CBF02 | 1/8 | 7 | 4 |
 | CBF03 | 1/8 | 7 | 4 |
+| CVDP23 | 30/69 | 39 | 11 |
 | DTN01 | 21/36 | 15 | 6 |
 | DTN02 | 21/36 | 15 | 6 |
 | DTN03 | 21/36 | 15 | 6 |
@@ -302,6 +335,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ISSC01_ISU02 | 1/8 | 7 | 4 |
 | ISSF01_ISS01 | 1/8 | 7 | 4 |
 | ISSF01_ISU01 | 1/8 | 7 | 4 |
+| LALO20_W001 | 10/24 | 14 | 7 |
+| LALO20_W005 | 10/24 | 14 | 7 |
+| LALO20_W01 | 12/37 | 25 | 7 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |

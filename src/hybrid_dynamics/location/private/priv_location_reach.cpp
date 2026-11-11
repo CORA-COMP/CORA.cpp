@@ -56,6 +56,15 @@ class BundleSteps {
                 const Zonotope &U_state, double dt, const alg::HybridStandard &alg)
         : start_(priv_zonotopes(R0)) {
         if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow())) {
+            // the polynomial zonotopes of alg "poly"
+            if (alg.polynomialization) {
+                poly_ = {sys,
+                         U,
+                         {dt, alg.taylor_terms, alg.zonotope_order, 3, alg.error_order,
+                          alg.intermediate_order},
+                         R0.as<PolyZonotope>()};
+                return;
+            }
             if (start_.size() != 1)
                 CORA_FAIL(Error::not_supported,
                           "reach: a nonlinear flow starts from one zonotope, not a bundle; enclose "
@@ -89,6 +98,12 @@ class BundleSteps {
 
     /// The time-interval set of the next step; time_point() is then its end.
     Set next() {
+        if (poly_) {
+            Poly &f = *poly_;
+            poly_step_ = poly_step_ ? f.sys->post(*poly_step_, f.U, f.alg)
+                                    : f.sys->init_reach(f.start, f.U, f.alg);
+            return poly_step_->time_interval;
+        }
         if (nonlinear_) {
             const Nonlinear &f = *nonlinear_;
             step_ =
@@ -115,6 +130,7 @@ class BundleSteps {
 
     /// The set at the start of the next step (the initial set before the first).
     Set time_point() const {
+        if (poly_) return poly_step_ ? poly_step_->time_point : poly_->start;
         if (nonlinear_) return step_ ? step_->time_point : start_[0];
         std::vector<Zonotope> parts;
         parts.reserve(start_.size());
@@ -135,7 +151,17 @@ class BundleSteps {
         alg::Linearization alg;
     };
 
+    /// A nonlinear flow on polynomial zonotopes, its input set, algorithm and start set.
+    struct Poly {
+        const NonlinearSys *sys;
+        std::optional<Zonotope> U;
+        alg::Polynomialization alg;
+        PolyZonotope start;
+    };
+
     std::vector<Zonotope> start_;
+    std::optional<Poly> poly_;
+    std::optional<PolyNonlinearStep> poly_step_;
     std::optional<Nonlinear> nonlinear_;
     std::optional<NonlinearStep> step_;
     std::vector<StandardSteps> steps_;
@@ -236,7 +262,11 @@ LocationResult priv_location_reach(const Location &loc, int64_t index, const Set
             hits.time_point ? out.R.time_point_times : out.R.time_interval_times;
         const TimeRange time{times[std::size_t(g.first)][0],
                              times[std::size_t(g.last)][1] + (hits.time_point ? 0 : widen)};
-        out.jumps.push_back({trans.reset().evaluate(*g.set, U), trans.target(), time});
+        // CORA turns the zonotope of a guard intersection back into a polynomial zonotope
+        const Set before = alg.polynomialization && g.set.is<Zonotope>()
+                               ? Set(PolyZonotope(g.set.as<Zonotope>()))
+                               : g.set;
+        out.jumps.push_back({trans.reset().evaluate(before, U), trans.target(), time});
     }
     // an uncertain start time widens the times of the sets (CORA's updateTime)
     for (TimeRange &t : out.R.time_point_times) t[1] += widen;

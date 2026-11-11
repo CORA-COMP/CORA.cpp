@@ -6,11 +6,16 @@
 // (CORA's linReach, private/priv_lin_reach.cpp). post reduces both sets to zonotope_order; the
 // first step is not reduced, as in CORA. The error of a step is the first guess of the next.
 //
+// A PolyZonotope as the initial set with alg::Polynomialization runs the same steps on polynomial
+// zonotopes (priv_poly_reach, CORA's linReach "poly"); CORA's restructuring (polyZono, default
+// Inf: off) is not ported.
+//
 // With alg::LinearizationAdaptive the step sizes and orders are tuned by the algorithm
 // (priv_reach_adaptive: CORALean's adaptStepFloat) and R.time holds the step times; init_reach and
 // post are of alg::Linearization only.
 //
 // Syntax:   R = sys.reach(problem, alg);
+//           Rp = sys.reach({.initial_set = pZ, .t_final = 1}, alg::Polynomialization{...});
 //           R = sys.reach({.initial_set = X0, .t_final = 1}, alg::Linearization{.time_step = .01});
 // Inputs:   problem - initial_set (one zonotope), input_set (of the m inputs, optional), t_final
 //           alg - alg::Linearization (time_step, taylor_terms, zonotope_order, the orders)
@@ -48,12 +53,44 @@ const alg::Linearization &aux_fixed(const alg::NonlinearReach &alg, const char *
     return *fixed;
 }
 
+/// The sets of reach from the first step on, the same for the sets of both algorithms: init for
+/// the first step, post for each one after it.
+template <class Reach, class Step, class Start, class Init, class Post>
+Reach aux_steps(const Start &X0, int steps, double time_step, Init init, Post post) {
+    Reach R;
+    R.time_point.push_back(X0);
+    Step step = init();
+    for (int k = 1; k < steps; ++k) {
+        R.time_interval.push_back(step.time_interval);
+        R.time_point.push_back(step.time_point);
+        step = post(step);
+    }
+    R.time_interval.push_back(step.time_interval);
+    R.time_point.push_back(step.time_point);
+    R.time_step = time_step;
+    return R;
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
 // The checks --------------------------------------------------------------------------------------
+
+void NonlinearSys::validate_inputs(const char *op, const std::optional<Zonotope> &U) const {
+    detail::Validation entry;
+    CORA_CHECK(!U || m_ > 0, Error::not_supported, [&] {
+        return std::string(op) + ": the system has no inputs; leave the input set empty";
+    });
+    // and it is one zonotope of the m inputs
+    CORA_CHECK(!U || (U->center().shape() == std::vector<int64_t>({m_, 1}) &&
+                      U->generators().shape().size() == 2),
+               Error::dimension_mismatch, [&] {
+                   return std::string(op) + ": the input set must be one zonotope of the " +
+                          std::to_string(m_) + " inputs";
+               });
+}
 
 void NonlinearSys::validate_sets(const char *op, const Zonotope &R,
                                  const std::optional<Zonotope> &U) const {
@@ -64,15 +101,7 @@ void NonlinearSys::validate_sets(const char *op, const Zonotope &R,
                    return std::string(op) + ": the set of a nonlinear system is one zonotope of " +
                           "the dimension " + std::to_string(n_) + "; batches are not supported";
                });
-    CORA_CHECK(!U || m_ > 0, Error::not_supported, [&] {
-        return std::string(op) + ": the system has no inputs; leave the input set empty";
-    });
-    CORA_CHECK(!U || (U->center().shape() == std::vector<int64_t>({m_, 1}) &&
-                      U->generators().shape().size() == 2),
-               Error::dimension_mismatch, [&] {
-                   return std::string(op) + ": the input set must be one zonotope of the " +
-                          std::to_string(m_) + " inputs";
-               });
+    validate_inputs(op, U);
 }
 
 // The steps ---------------------------------------------------------------------------------------
@@ -128,20 +157,74 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
         return priv_reach_adaptive(*this, problem, *adaptive);
     // the start set, the first step, then the step after each one
     const double time_step = std::get<alg::Linearization>(alg).time_step;
-    const int steps = priv_num_steps(problem.t_final, time_step);
-    ReachSet R;
-    R.time_point.push_back(*problem.initial_set);
-    NonlinearStep step = init_reach(*problem.initial_set, problem.input_set, alg);
-    for (int k = 1; k < steps; ++k) {
-        R.time_interval.push_back(step.time_interval);
-        R.time_point.push_back(step.time_point);
-        step = post(step, problem.input_set, alg);
-    }
-    R.time_interval.push_back(step.time_interval);
-    R.time_point.push_back(step.time_point);
-    R.time_step = time_step;
-    return R;
+    return aux_steps<ReachSet, NonlinearStep>(
+        *problem.initial_set, priv_num_steps(problem.t_final, time_step), time_step,
+        [&] { return init_reach(*problem.initial_set, problem.input_set, alg); },
+        [&](const NonlinearStep &step) { return post(step, problem.input_set, alg); });
 }
+
+// The reachable sets of polynomial zonotopes ------------------------------------------------------
+
+void NonlinearSys::validate_poly_sets(const char *op, const PolyZonotope &R,
+                                      const std::optional<Zonotope> &U) const {
+    detail::Validation entry;
+    // the dimension of the set and the input set, as for a zonotope
+    CORA_CHECK(R.dim() == n_, Error::dimension_mismatch, [&] {
+        return std::string(op) + ": the polynomial zonotope has the dimension " +
+               std::to_string(R.dim()) + ", the system " + std::to_string(n_);
+    });
+    validate_inputs(op, U);
+}
+
+// The first step from the initial set, with the error 0.
+PolyNonlinearStep NonlinearSys::init_reach(const PolyZonotope &R0, const std::optional<Zonotope> &U,
+                                           const alg::Polynomialization &alg) const {
+    detail::Entry entry;
+    if (entry.check()) {
+        validate_poly_sets("init_reach", R0, U);
+        alg.validate();
+    }
+    // CORA starts from the error 0
+    return priv_poly_reach(*this, R0, R0.center().zeros_like(), U, alg);
+}
+
+// CORA's post reduces the sets that initReach returns, and keeps the error.
+PolyNonlinearStep NonlinearSys::post(const PolyNonlinearStep &step,
+                                     const std::optional<Zonotope> &U,
+                                     const alg::Polynomialization &alg) const {
+    detail::Entry entry;
+    if (entry.check()) {
+        validate_poly_sets("post", step.time_point, U);
+        alg.validate();
+        CORA_CHECK(step.error.defined() && step.error.shape() == std::vector<int64_t>({n_, 1}),
+                   Error::dimension_mismatch, [&] {
+                       return "post: the error of the step must be a column (" +
+                              std::to_string(n_) + ", 1)";
+                   });
+    }
+    // the step from the end of the one before, then both sets are reduced
+    PolyNonlinearStep next = priv_poly_reach(*this, step.time_point, step.error, U, alg);
+    return {next.time_interval.reduce(alg.zonotope_order),
+            next.time_point.reduce(alg.zonotope_order), next.error};
+}
+
+PolyReachSet NonlinearSys::reach(const PolyReachProblem &problem,
+                                 const alg::PolyNonlinearReach &alg) const {
+    detail::Entry entry;
+    CORA_CHECK(problem.initial_set.has_value(), Error::wrong_value,
+               [] { return std::string("reach: the problem needs an initial_set"); });
+    CORA_CHECK(problem.t_final > 0 && problem.t_final < 1e300, Error::wrong_value, [&] {
+        return "reach: t_final must be positive and finite, got " + std::to_string(problem.t_final);
+    });
+    const alg::Polynomialization &options = std::get<alg::Polynomialization>(alg);
+    if (entry.check()) validate_poly_sets("reach", *problem.initial_set, problem.input_set);
+    // the start set, the first step, then the step after each one
+    return aux_steps<PolyReachSet, PolyNonlinearStep>(
+        *problem.initial_set, priv_num_steps(problem.t_final, options.time_step), options.time_step,
+        [&] { return init_reach(*problem.initial_set, problem.input_set, options); },
+        [&](const PolyNonlinearStep &step) { return post(step, problem.input_set, options); });
+}
+
 
 } // namespace cora
 

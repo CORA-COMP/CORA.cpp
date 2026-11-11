@@ -153,6 +153,54 @@ void ball(const std::string &name, alg::GuardIntersect method, BallFlow kind = B
     }
 }
 
+/// The nonlinear ball on polynomial zonotopes (alg "poly"): the sets are polynomial zonotopes, the
+/// bounce lies between the hit times, and exact trajectories lie in the boxes of their times.
+void ball_poly() {
+    alg::HybridStandard a = aux_alg(alg::ZonoGirard{{alg::Enclose::box}});
+    a.polynomialization = true;
+    a.tensor_order = 3;
+    a.error_order = 5;
+    a.intermediate_order = 10;
+    HybridReachProblem p = aux_drop();
+    p.initial_poly_set = PolyZonotope(*p.initial_set);
+    p.initial_set.reset();
+    const HybridReachSet R = aux_ball(BallFlow::nonlinear).reach(p, a);
+    check(R.verified && R.branches.size() >= 3 && R.branches[0].time_interval[0].is<PolyZonotope>(),
+          "poly ball: polynomial zonotopes, two bounces by 1.5 s");
+    const double t_lo = std::sqrt(2 * 1.0 / kG), t_hi = std::sqrt(2 * 1.2 / kG);
+    const TimeRange first = R.branches[1].time_point_times[0];
+    check(first[0] <= t_lo && first[1] >= t_hi && first[0] > t_lo - 0.05,
+          "poly ball: the first bounce between the hit times");
+    // exact trajectories from random heights lie in the boxes of the sets of their times
+    Rng rng(43);
+    int missed = 0;
+    for (int k = 0; k < 40; ++k) {
+        double u[2];
+        rng.uniform(u, 2, 0.0, 1.0);
+        const double t = 1.45 * u[1];
+        const std::array<double, 2> exact = aux_exact(1.0 + 0.2 * u[0], t);
+        bool covered = false;
+        for (const LocationReachSet &b : R.branches)
+            for (std::size_t j = 0; j < b.time_interval.size() && !covered; ++j) {
+                const Interval box = b.time_interval[j]->interval();
+                const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
+                covered = t >= b.time_interval_times[j][0] && t <= b.time_interval_times[j][1] &&
+                          exact[0] >= lo[0] - 1e-9 && exact[0] <= hi[0] + 1e-9 &&
+                          exact[1] >= lo[1] - 1e-9 && exact[1] <= hi[1] + 1e-9;
+            }
+        missed += covered ? 0 : 1;
+    }
+    check(missed == 0, "poly ball: exact states lie in the boxes");
+    // exactly one initial set, and polynomialization goes with the polynomial one
+    HybridReachProblem both = p;
+    both.initial_set = aux_drop().initial_set;
+    check(test::raises([&] { aux_ball(BallFlow::nonlinear).reach(both, a); }, Error::wrong_value),
+          "poly ball: two initial sets");
+    check(test::raises([&] { aux_ball(BallFlow::nonlinear).reach(p, aux_alg(alg::ZonoGirard{})); },
+                       Error::wrong_value),
+          "poly ball: a polynomial set needs polynomialization");
+}
+
 /// A clock reaches t = 1 exactly at a step: the jump uses the set at t = 1, at that time only.
 void time_triggered() {
     const Polytope before(Tensor({{0.0, 1.0}}), column({1.0}));
@@ -273,6 +321,7 @@ int main() {
     // a NonlinearSys flow: alg "lin" in the location, the flow evaluated by checkFlow
     ball("NonlinearSys nondetGuard pca", alg::NondetGuard{{Enclose::pca}}, BallFlow::nonlinear);
     ball("NonlinearSys zonoGirard flow", alg::ZonoGirard{{Enclose::flow}}, BallFlow::nonlinear);
+    ball_poly();
     time_triggered();
     specifications();
     checks_and_their_switch();

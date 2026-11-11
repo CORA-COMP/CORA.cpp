@@ -34,8 +34,13 @@ Linearized NonlinearSys::linearize(const Zonotope &R, const std::optional<Zonoto
     CORA_CHECK(time_step > 0 && time_step < 1e300, Error::wrong_value, [&] {
         return "linearize: time_step must be positive and finite, got " + std::to_string(time_step);
     });
+    return linearize_impl(R.center(), U, time_step);
+}
+
+Linearized NonlinearSys::linearize_impl(const Tensor &center, const std::optional<Zonotope> &U,
+                                        double time_step) const {
     // the expansion point: the input set's center, the set's center half a step on
-    const Tensor &c = R.center();
+    const Tensor &c = center;
     const std::optional<Tensor> u_star =
         m_ == 0 ? std::nullopt : std::optional<Tensor>(U ? U->center() : c.zeros_like({m_, 1}));
     const Tensor x_star = c + dynamics(c, u_star) * (0.5 * time_step);

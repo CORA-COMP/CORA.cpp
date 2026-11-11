@@ -26,6 +26,7 @@
 #include "cora/cont_set/empty_set/empty_set.h"
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -421,6 +422,20 @@ constexpr Table aux_build() {
         t, [](const ConZonotope &A, const Zonotope &Z, Tol tol) { return A.isequal(Z, tol); });
     aux_add_predicate<BinaryOp::isequal, ConZonotope, Interval>(
         t, [](const ConZonotope &A, const Interval &I, Tol tol) { return A.isequal(I, tol); });
+    // the polynomial zonotope: sums, the product, and the test against a polytope
+    aux_add_set<BinaryOp::plus, PolyZonotope, PolyZonotope>(
+        t, [](const PolyZonotope &A, const PolyZonotope &B) { return A.plus(B); });
+    aux_add_set<BinaryOp::plus, PolyZonotope, Zonotope>(
+        t, [](const PolyZonotope &A, const Zonotope &Z) { return A.plus(Z); });
+    aux_add_set<BinaryOp::plus, PolyZonotope, Interval>(
+        t, [](const PolyZonotope &A, const Interval &I) { return A.plus(I); });
+    aux_add_set<BinaryOp::cart_prod, PolyZonotope, Zonotope>(
+        t, [](const PolyZonotope &A, const Zonotope &Z) { return A.cart_prod(Z); });
+    // CORA's isIntersecting_ with type approx answers the test against a polytope
+    aux_add_predicate<BinaryOp::is_intersecting, PolyZonotope, Polytope>(
+        t, [](const PolyZonotope &A, const Polytope &P, Tol tol) {
+            return A.is_intersecting(P, tol);
+        });
     // the capsule: hull, containment, intersection with itself, empty set, whole space
     aux_add_set<BinaryOp::convex_hull, Capsule, Capsule>(
         t, [](const Capsule &A, const Capsule &B) { return A.convex_hull(B); });
