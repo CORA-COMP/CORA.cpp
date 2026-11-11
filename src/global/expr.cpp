@@ -27,7 +27,7 @@ namespace cora {
 
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
-enum class Op { constant, var, add, sub, mul, div, neg, pow, rpow, sin, cos, tan, exp };
+using Op = ExprOp;
 
 struct Expr::Node {
     Op op;
@@ -423,6 +423,11 @@ Expr Expr::diff(int i) const {
 // Queries -----------------------------------------------------------------------------------------
 
 bool Expr::is_zero() const { return M::is_const(*this, 0); }
+
+ExprView Expr::view() const {
+    const Node &n = *node_;
+    return {n.op, n.value, n.index, n.a, n.b};
+}
 
 // The first variable gives the constants their shape and backend.
 Tensor Expr::eval_tensor(const std::vector<Tensor> &x) const {
