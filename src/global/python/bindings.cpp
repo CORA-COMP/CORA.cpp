@@ -3854,7 +3854,8 @@ void bind_linear_sys(py::module_ &m) {
                     });
             },
             "verify(initial_set=R0, input_set=U, t_final=T, specs=[...], "
-            "alg='reach_avoid_support_function' or 'reach_avoid_zonotope'): whether every "
+            "alg='reach_avoid_support_function', 'reach_avoid_zonotope' or 'reach_avoid_krylov'): "
+            "whether every "
             "specification holds for the outputs up to t_final");
     // a canonical form holds a system, bound just now
     canonical.def_readonly("sys", &CanonicalForm::sys, "The system with B = I");

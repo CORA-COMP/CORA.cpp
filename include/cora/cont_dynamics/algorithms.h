@@ -231,6 +231,44 @@ struct ReachAvoidZonotope {
     void validate() const {}
 };
 
+// Verification with Krylov subspaces --------------------------------------------------------------
+
+/// The Krylov support function algorithm for high-dimensional systems (ARCH-COMP26 AFF RND04-06):
+/// the support function of the reachable output set along the specification directions, from the
+/// Krylov subspace of each direction under A', with the step halved until every halfspace holds.
+struct ReachAvoidKrylov {
+    double time_step = 0; ///< the first step size; 0 is t_final / 1000
+    double min_time_step = numerics::kKrylovMinTimeStep; ///< the step below which it gives up
+    int taylor_terms = 20; ///< the order of the Taylor series of the curvature enlargement
+    double krylov_error = 2 * machine_eps(); ///< the error per vector
+    int krylov_step = 50;                    ///< how much the order of a subspace grows per try
+
+    static constexpr const char *name = "reach_avoid_krylov";
+    static constexpr auto fields() {
+        // the options of the Python keywords
+        return std::make_tuple(field("time_step", &ReachAvoidKrylov::time_step),
+                               field("min_time_step", &ReachAvoidKrylov::min_time_step),
+                               field("taylor_terms", &ReachAvoidKrylov::taylor_terms),
+                               field("krylov_error", &ReachAvoidKrylov::krylov_error),
+                               field("krylov_step", &ReachAvoidKrylov::krylov_step));
+    }
+    void validate() const {
+        detail::Validation entry;
+        CORA_CHECK(time_step >= 0 && time_step < 1e300, Error::wrong_value, [&] {
+            return "ReachAvoidKrylov: time_step must be nonnegative, got " +
+                   std::to_string(time_step);
+        });
+        // the step, the orders and the error
+        validate_time_step(min_time_step, "ReachAvoidKrylov");
+        validate_order(taylor_terms, 1, "taylor_terms", "ReachAvoidKrylov");
+        validate_order(krylov_step, 1, "krylov_step", "ReachAvoidKrylov");
+        CORA_CHECK(krylov_error >= 0 && krylov_error < 1e300, Error::wrong_value, [&] {
+            return "ReachAvoidKrylov: krylov_error must be nonnegative and finite, got " +
+                   std::to_string(krylov_error);
+        });
+    }
+};
+
 // Simulation ---------------------------------------------------------------------------------
 
 /// The exact solution of a linear system, sampled every time_step.
@@ -543,7 +581,7 @@ struct HybridStandard {
 
 /// The algorithms of each system and operation; the first is the default of Python.
 using LinearReach = std::variant<Standard, WrappingFree, FromStart, Decomposition>;
-using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope>;
+using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope, ReachAvoidKrylov>;
 using LinearSimulate = std::variant<Exact>;
 using NonlinearReach = std::variant<Linearization, LinearizationAdaptive>;
 using PolyNonlinearReach = std::variant<Polynomialization, Linearization>;

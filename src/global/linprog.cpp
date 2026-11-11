@@ -54,16 +54,24 @@ struct Standard {
 
 // Simplex -----------------------------------------------------------------------------------------
 
-/// Pivots the tableau T (rows of width W) on entry (row, col).
+/// Pivots the tableau T (rows of width W) on entry (row, col). The tableaus are sparse (slacks,
+/// bound rows): only the nonzero entries of the pivot row are updated, which leaves every
+/// nonzero value unchanged (a zero entry only subtracts f * 0).
 void aux_pivot(std::vector<double> &T, int m, int W, int row, int col) {
-    const double p = T[std::size_t(row) * W + col];
-    for (int j = 0; j < W; ++j) T[std::size_t(row) * W + j] /= p;
+    double *prow = &T[std::size_t(row) * W];
+    const double p = prow[col];
+    std::vector<int> nz;
+    for (int j = 0; j < W; ++j) {
+        prow[j] /= p;
+        if (prow[j] != 0) nz.push_back(j);
+    }
     for (int i = 0; i < m; ++i) {
         if (i == row) continue;
-        const double f = T[std::size_t(i) * W + col];
+        double *irow = &T[std::size_t(i) * W];
+        const double f = irow[col];
         if (f == 0) continue;
-        for (int j = 0; j < W; ++j) T[std::size_t(i) * W + j] -= f * T[std::size_t(row) * W + j];
-        T[std::size_t(i) * W + col] = 0;
+        for (const int j : nz) irow[j] -= f * prow[j];
+        irow[col] = 0;
     }
 }
 
@@ -73,15 +81,23 @@ int aux_simplex(std::vector<double> &T, std::vector<int> &basis, int m, int W,
                 const std::vector<double> &cost, const std::vector<char> &allowed) {
     const int N = W - 1;
     int stall = 0;
+    std::vector<double> red(N);
     for (int iter = 0; iter < kMaxPivots; ++iter) {
         // Reduced costs r_j = c_j - c_B' T[:, j]; entering column by Dantzig or Bland.
         const bool bland = stall > 100;
         int enter = -1;
         double best = -numerics::kSimplexOptimal;
+        // Row by row, in the order of the rows; basic variables of cost 0 subtract nothing.
+        red = cost;
+        for (int i = 0; i < m; ++i) {
+            const double cb = cost[basis[i]];
+            if (cb == 0) continue;
+            const double *irow = &T[std::size_t(i) * W];
+            for (int j = 0; j < N; ++j) red[j] -= cb * irow[j];
+        }
         for (int j = 0; j < N; ++j) {
             if (!allowed[j]) continue;
-            double r = cost[j];
-            for (int i = 0; i < m; ++i) r -= cost[basis[i]] * T[std::size_t(i) * W + j];
+            const double r = red[j];
             if (bland ? r < -numerics::kSimplexOptimal : r < best) {
                 best = r;
                 enter = j;
@@ -197,6 +213,8 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// Linear programs ---------------------------------------------------------------------------------
 
 LinProgResult linprog(const LinProg &lp) {
     if (lp.n <= 0)

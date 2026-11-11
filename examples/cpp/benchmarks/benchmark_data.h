@@ -257,6 +257,9 @@ inline Instance load_instance(const std::string &name) {
         inst.alg = alg::ReachAvoidSupportFunction{};
     else if (verify_alg == "reachavoid:zonotope")
         inst.alg = alg::ReachAvoidZonotope{};
+    // the Krylov support function algorithm of the scripts of RAND04-06 of the ARCH26 package
+    else if (verify_alg == "reachavoid:krylovSuppFunc")
+        inst.alg = alg::ReachAvoidKrylov{};
     else
         throw std::runtime_error("benchmark data: unknown verifyAlg " + verify_alg);
     inst.sys = std::make_unique<LinearSys>(read_tensor(mat, bin, "A"), read_tensor(mat, bin, "B"),

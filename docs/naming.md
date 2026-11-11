@@ -219,6 +219,7 @@ changed, and the reasons are listed below.
 | `options.linAlg = 'decomp'`, `options.partition` | `alg::Decomposition{...}`, `partition` (0-based blocks) | `alg="decomposition"`, `partition=[[0, 1], [2, 2]]` |
 | `options.verifyAlg = 'reachavoid:supportFunc'` | `alg::ReachAvoidSupportFunction{}` | `alg="reach_avoid_support_function"` |
 | `options.verifyAlg = 'reachavoid:zonotope'` | `alg::ReachAvoidZonotope{}` | `alg="reach_avoid_zonotope"` |
+| `options.verifyAlg = 'reachavoid:krylovSuppFunc'` (the ARCH26 competition's copy of CORA; its scripts call `reachSuppFuncsKrylov`) | `alg::ReachAvoidKrylov{...}`: `time_step` (`options.timeStep`, 0: `t_final / 1000`), `min_time_step`, `taylor_terms`, `krylov_error` (`krylovError`), `krylov_step` (`krylovStep`) | `alg="reach_avoid_krylov"`, the same names |
 | `options.alg = 'lin'` (nonlinearSys) | `alg::Linearization{...}` | `alg="linearization"` |
 | `options.tensorOrder`, `options.errorOrder`, `options.intermediateOrder` | `alg::Linearization::tensor_order`, `error_order`, `intermediate_order` (also `alg::HybridStandard`) | `tensor_order`, `error_order`, `intermediate_order` |
 | `options.alg = 'lin-adaptive'` (nonlinearSys), `options.redFactor` | `alg::LinearizationAdaptive{...}`: `zeta_z` (`redFactor`), `decr_factor`, `zeta_phi`, `zeta_k`, `taylor_terms`, `zonotope_order` | `alg="linearization_adaptive"`, the same names |

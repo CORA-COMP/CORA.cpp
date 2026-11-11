@@ -84,6 +84,24 @@ A bit-exact test of CORA.cpp's `alg::Krylov` needs float ops that follow CORA's 
 The Krylov path is a private algorithm of `reach`, so no coverage row changes; its tests are unit and
 property tests (`test_linear_sys_reach_krylov`) until these ops exist.
 
+## Krylov support function verify (PR "port/arch26-rnd")
+
+`alg::ReachAvoidKrylov` (the verify of the random benchmarks RND02, RND04-06) is built on the
+Krylov subspaces above and follows no CORA file of v2026.1.0: the competition's copy of CORA has
+`reachSuppFuncsKrylov`, which is not in the release. It is a bound by construction: per step the
+hull of the support function at the time points plus the curvature `F(H) e_1` of the subspace, the
+integral of the input by the step times the largest integrand. So there are two things the oracle
+could serve, both new:
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `krylov.subspace` (as above) | `A'` (matrix), `v`, `krylovError`, `krylovStep`, `tFinal` | `V`, `H`, `krylovOrder` |
+| `linearSys.verifyKrylov` (the loop of `priv_verify_ra_krylov`) | `A`, `B`, `C`, `R0`, `U`, `tFinal`, `timeStep`, `taylorTerms`, `krylovError`, `krylovStep`, specifications as rows | `res`, `iterations`, `timeStep`, `nrSteps` |
+
+Neither exists in CORALean (no `krylov` op in `ping`), so the algorithm is tested by properties
+(`test_linear_sys_verify_krylov`: the verdicts of a system whose support function is known in closed form,
+agreement with `alg::ReachAvoidSupportFunction`, sparse against dense `A`).
+
 ## Nonlinear systems, alg "lin" (PR "port/nln-lin")
 
 CORALean's float definitions of `NonlinearSys` (`src/CORALean/ContDynamics/NonlinearSys/Operations/`)

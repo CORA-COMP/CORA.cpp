@@ -53,6 +53,12 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
 VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
                                      double t_final, const std::vector<Specification> &specs);
 
+/// The algorithm "reach_avoid_krylov": Krylov subspaces of the specification directions under A',
+/// the support function of the output set bounded per step, the step halved until it decides.
+VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
+                                   double t_final, const std::vector<Specification> &specs,
+                                   const alg::ReachAvoidKrylov &alg);
+
 /// The seconds since `start`: the computation time of verify (CORA's tComp).
 inline double priv_seconds_since(std::chrono::steady_clock::time_point start) {
     return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
