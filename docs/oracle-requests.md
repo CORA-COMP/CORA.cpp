@@ -204,3 +204,18 @@ follows CORA's `initReach`.
 
 The coverage rows `consistentInitialState` and `steadyState` are oracle debt until then; `initReach`,
 `linReach` and `post` have no float layer and stay `property`.
+## Level set guards (PR "nln-levelset-c")
+
+CORALean states the unsolvable-case enclosure of a level set and a polynomial zonotope as a real
+definition with its subset theorem (`LevelSet/Real/Operations/GuardIntersectUnsolvable.lean`,
+`Theorems/GuardIntersectUnsolvableSubset.lean`; the counterexample file shows that the printed sign of
+`v(x)` in eq. (11) is wrong and CORA's `-` is right); there is no float layer, no `splitDepFactor` /
+`splitLongestGen` for a polynomial zonotope, and no PCA reduction on the float layer
+(`ReducePCA*` is a cost model on the real layer). CORA.cpp follows CORA's arithmetic (doubles,
+nearest), so these ops are oracle debt; the requests that would close it:
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `levelSet.intersectPolyZonotope` | `LevelSet.guardIntersectUnsolvable` (real) needs a float layer | `f` (expression tree), `pZ` (box as a polynomial zonotope) | `pZ` |
+| `polyZonotope.splitDepFactor`, `polyZonotope.splitLongestGen` | none | `pZ`, `id` | the two halves |
+| `zonotope.reducePCA` | `Zonotope.pcaBasis` (`PCABasis.lean`, real) | `Z` | `Z` |

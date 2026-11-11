@@ -24,6 +24,8 @@ Reviewed:      ---
 # CORA: contSet/@polyZonotope/randPoint_.m
 # CORA: contSet/@polyZonotope/compact_.m
 # CORA: contSet/@polyZonotope/isIntersecting_.m
+# CORA: contSet/@polyZonotope/splitDepFactor.m
+# CORA: contSet/@polyZonotope/splitLongestGen.m
 # CORA: contSet/@polyZonotope/cartProd_.m
 
 import unittest
@@ -119,6 +121,20 @@ class Operations(unittest.TestCase):
         Q = P.quad_map([np.array([[0.0, 1.0], [0.0, 0.0]])])
         self.assertEqual(Q.dim, 1)
         self.assertEqual(P.compact().dim, 2)
+
+    # c = 1, 2 a + 3 a^2 halved along a: 2.75 + 2.5 b + 0.75 b^2 and 0.75 - 0.5 b + 0.75 b^2
+    def test_split(self):
+        P = cora.PolyZonotope(np.array([1.0]), np.array([[2.0, 3.0]]), np.zeros((1, 0)),
+                              np.array([[1, 2]]), [1])
+        P1, P2 = P.split_dep_factor(1)
+        np.testing.assert_allclose(np.asarray(P1.c).ravel(), [2.75])
+        np.testing.assert_allclose(np.asarray(P1.G), [[2.5, 0.75]])
+        np.testing.assert_allclose(np.asarray(P2.c).ravel(), [0.75])
+        np.testing.assert_allclose(np.asarray(P2.G), [[-0.5, 0.75]])
+        L1, L2 = P.split_longest_gen()
+        np.testing.assert_allclose(np.asarray(L1.G), np.asarray(P1.G))
+        with self.assertRaises(cora.errors.WrongValue):
+            P.split_dep_factor(7)
 
     # sampled points lie in the zonotope, and a polytope far away is missed
     def test_points_and_polytope(self):

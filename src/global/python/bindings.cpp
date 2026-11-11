@@ -1603,6 +1603,8 @@ void bind_zonotope(py::module_ &m) {
         .def("reduce_adaptive", &Zonotope::reduce_adaptive, py::arg("diag_percent"),
              "The generators of least Girard metric within diag_percent of the box's norm are "
              "enclosed by a box (CORA's reduce(Z, 'adaptive', diag_percent))")
+        .def("reduce_pca", &Zonotope::reduce_pca,
+             "The box of the generators in their principal axes (CORA's reduce(Z, 'pca', 1))")
         .def("abs", &Zonotope::abs, "|c| and |G| entrywise (not the image of the set)")
         .def("box", &Zonotope::box, "The box around the zonotope, as a zonotope")
         .def("compact", &Zonotope::compact, py::arg("method") = py::none(),
@@ -3150,6 +3152,11 @@ void bind_poly_zonotope(py::module_ &m) {
             },
             py::arg("method") = py::none(), py::arg("tol") = py::none(),
             "The set without zero generators and unused factors (method 'all')")
+        // the halves along a dependent factor
+        .def("split_dep_factor", &PolyZonotope::split_dep_factor, py::arg("id"),
+             "The halves along the factor with the identifier id: alpha becomes (alpha +- 1) / 2")
+        .def("split_longest_gen", &PolyZonotope::split_longest_gen,
+             "The halves along the factor of the longest dependent generator")
         // CORA's approximate test: False is certain
         .def(
             "is_intersecting",
@@ -3942,6 +3949,10 @@ void bind_level_set(py::module_ &m) {
         .def("tighten_domain", &LevelSet::tighten_domain, py::arg("I"),
              py::arg("type") = "forwardBackward",
              "The box I cut to the solutions of f = 0, or None if there are none")
+        // the intersection with a polynomial zonotope
+        .def("intersect", &LevelSet::intersect, py::arg("S"),
+             "A polynomial zonotope that holds the intersection with S (one '==' constraint), or "
+             "None if the contraction of the box of S shows it empty")
         // the complement of an inequality
         .def("complement", &LevelSet::complement,
              "The complement of a single '<' or '<=' constraint")

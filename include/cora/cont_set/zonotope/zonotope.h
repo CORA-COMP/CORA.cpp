@@ -92,6 +92,10 @@ class Zonotope : public ContSet {
     /// reduceAdaptive); the others stay in order, then n box generators. Not a batch.
     Zonotope reduce_adaptive(double diag_percent) const;
 
+    /// CORA's reduce(Z, 'pca', 1): with more nonzero generators than dimensions, the box of the
+    /// generators in their principal axes (the left singular vectors of G G'). Not a batch.
+    Zonotope reduce_pca() const;
+
     /// Encloses the segments between matching points of Z and Z2 = M*Z + t (same generator
     /// factors): 2m + 1 generators.
     Zonotope linear_combination(const Zonotope &Z2) const;

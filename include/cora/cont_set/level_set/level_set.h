@@ -6,14 +6,13 @@
 // guard methods. An operation that needs the range of f over a box evaluates the expression over
 // it (Expr::enclose), so a range is an enclosure and not exact. The set has no interval,
 // center, support function, vertices or random points (CORA raises noops for them as well).
-// Not ported: CORA's solved forms (the symbolic solution for one variable, `solved`), plot,
-// enclosePoints, generateRandom, isequal, compact_, and the methods split, taylor and linear of
-// tightenDomain (docs/cora-differences.md).
+// Not ported: CORA's solved forms (`solved`), plot, enclosePoints, generateRandom, isequal,
+// compact_, and the methods split, taylor and linear of tightenDomain (docs/cora-differences.md).
 //
 // Syntax:     LevelSet ls(f, n, CompOp::eq);   LevelSet ls({f1, f2}, n, {CompOp::le, CompOp::eq});
-// Operations: contains, is_intersecting, tighten_domain, complement, lift_impl, split_equality (one
-//             file each in src/cont_set/level_set/, named as CORA's); the constructor checks its
-//             input (level_set.cpp)
+// Operations: contains, is_intersecting, tighten_domain, intersect, complement, lift_impl,
+//             split_equality (one file each in src/cont_set/level_set/, named as CORA's); the
+//             constructor checks its input (level_set.cpp)
 // See also:   cora/global/expr.h, cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
 //
 // CORA: contSet/@levelSet/levelSet.m
@@ -28,6 +27,7 @@
 
 #include "cora/cont_set/dimension_set.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cora/cont_set/set.h"
 #include "cora/global/expr.h"
 
@@ -95,6 +95,11 @@ class LevelSet : public detail::DimensionSet {
 
     /// The complement of a single constraint with '<' or '<=': -f <= 0 or -f < 0 (CORA's not).
     LevelSet complement() const;
+
+    /// A polynomial zonotope that holds the intersection with S (CORA's and_, "approx"; Kochdumper
+    /// et al., HSCC 2020): f == 0 expanded to second order and solved for one state; the box if
+    /// that is no tighter, none if empty. One '==' constraint only (see intersect.cpp).
+    std::optional<PolyZonotope> intersect(const PolyZonotope &S) const;
 
     /// The set split into its equality constraints and the others (CORA's splitEquality); None
     /// for a part without constraints.
