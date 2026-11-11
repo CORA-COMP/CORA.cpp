@@ -1,0 +1,11 @@
+{
+  "name": "single_pendulum",
+  "layers": [
+    {"out": 25, "in": 2, "activation": "identity", "W": 0, "b": 50},
+    {"out": 25, "in": 25, "activation": "relu", "W": 75, "b": 700},
+    {"out": 25, "in": 25, "activation": "identity", "W": 725, "b": 1350},
+    {"out": 25, "in": 25, "activation": "relu", "W": 1375, "b": 2000},
+    {"out": 1, "in": 25, "activation": "identity", "W": 2025, "b": 2050},
+    {"out": 1, "in": 1, "activation": "identity", "W": 2051, "b": 2052}
+  ]
+}

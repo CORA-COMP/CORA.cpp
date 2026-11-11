@@ -183,6 +183,9 @@ changed, and the reasons are listed below.
 | `options.intermediateTerms`, `options.compTimePoint` | `alg::LinParamStandard::intermediate_terms`, `comp_time_point` | `intermediate_terms`, `comp_time_point` |
 | `neuralNetwork` | `NeuralNetwork` | `cora.NeuralNetwork` |
 | `evaluate(nn, X)` | `nn.evaluate(X)` | `nn.evaluate(X)` |
+| `nnLinearLayer`, `nnReLULayer`, `nnTanhLayer`, `nnSigmoidLayer`, `nnIdentityLayer` | `NeuralNetwork::Layer{W, b}` with an `Activation` (`identity`, `relu`, `sigmoid`, `tanh`) | `NeuralNetwork(layers, activations)` with the names as strings |
+| `neurNetContrSys(sysOL, nn, dt)` | `NeurNetContrSys(plant, nn, dt)` | `cora.NeurNetContrSys(plant, nn, dt)` |
+| `reach(sys, params, options)` (neurNetContrSys), `options.nn.add_approx_error_to_GI` | `sys.reach(X0, U, t_final, {.plant = alg::Linearization{...}, .nn = NnOptions{...}}, spec)` | `sys.reach(X0, t_final, time_step=..., input_set=..., add_approx_error_to_gi=...)` |
 | `reach(sys, params, options)` | `sys.reach(problem, alg)` | `sys.reach(X0, t_final=..., alg=..., ...)` |
 | `simulate(sys, params)` | `sys.simulate(problem, alg)` | `sys.simulate(x0, t_final=..., time_step=...)` |
 | `simulateRandom(sys, params, options)` | `sys.simulate_random(problem, alg, points, rng)` | `sys.simulate_random(X0, points=..., rng=..., ...)` |

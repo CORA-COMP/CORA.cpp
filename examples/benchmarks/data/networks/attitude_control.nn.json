@@ -1,0 +1,9 @@
+{
+  "name": "attitude_control",
+  "layers": [
+    {"out": 64, "in": 6, "activation": "sigmoid", "W": 0, "b": 384},
+    {"out": 64, "in": 64, "activation": "sigmoid", "W": 448, "b": 4544},
+    {"out": 64, "in": 64, "activation": "sigmoid", "W": 4608, "b": 8704},
+    {"out": 3, "in": 64, "activation": "identity", "W": 8768, "b": 8960}
+  ]
+}
