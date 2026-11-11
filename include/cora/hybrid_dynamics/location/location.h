@@ -43,19 +43,19 @@ class Location {
   public:
     /// The flow x' = A x + B u + c of `flow` (without an output map C) and the constant input c
     /// (n, 1; none: zero) inside `invariant`, left by `transitions`.
-    Location(std::string name, Polytope invariant, std::vector<Transition> transitions,
+    Location(std::string name, Region invariant, std::vector<Transition> transitions,
              LinearSys flow, std::optional<Tensor> c = std::nullopt);
 
     /// The flow x' = A x + B u + c of a linear parametric system, with its own c.
-    Location(std::string name, Polytope invariant, std::vector<Transition> transitions,
+    Location(std::string name, Region invariant, std::vector<Transition> transitions,
              LinParamSys flow);
 
     /// The nonlinear flow x' = f(x, u); c is zero.
-    Location(std::string name, Polytope invariant, std::vector<Transition> transitions,
+    Location(std::string name, Region invariant, std::vector<Transition> transitions,
              NonlinearSys flow);
 
     const std::string &name() const noexcept { return name_; }
-    const Polytope &invariant() const noexcept { return invariant_; }
+    const Region &invariant() const noexcept { return invariant_; }
     const std::vector<Transition> &transitions() const noexcept { return transitions_; }
     const Flow &flow() const noexcept { return flow_; }
     const Tensor &c() const noexcept { return c_; }
@@ -73,7 +73,7 @@ class Location {
 
   private:
     std::string name_;
-    Polytope invariant_;
+    Region invariant_;
     std::vector<Transition> transitions_;
     Flow flow_;
     Tensor c_;

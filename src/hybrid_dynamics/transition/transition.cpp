@@ -25,14 +25,15 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Transition::Transition(Polytope guard, LinearReset reset, int64_t target)
+Transition::Transition(Region guard, LinearReset reset, int64_t target)
     : guard_(std::move(guard)), reset_(std::move(reset)), target_(target) {
     detail::Entry entry;
     // the guard lives where the reset starts, and the target is a location number
-    CORA_CHECK(guard_.dim() == reset_.pre_state_dim(), Error::wrong_input_in_constructor, [&] {
-        return "Transition: the guard has the dimension " + std::to_string(guard_.dim()) +
-               ", the reset maps " + std::to_string(reset_.pre_state_dim());
-    });
+    CORA_CHECK(
+        region_dim(guard_) == reset_.pre_state_dim(), Error::wrong_input_in_constructor, [&] {
+            return "Transition: the guard has the dimension " + std::to_string(region_dim(guard_)) +
+                   ", the reset maps " + std::to_string(reset_.pre_state_dim());
+        });
     CORA_CHECK(target_ >= 0, Error::wrong_input_in_constructor, [&] {
         return "Transition: the target must be a location number from 0, got " +
                std::to_string(target_);

@@ -147,7 +147,8 @@ class NonlinearSys {
                        const alg::NonlinearReach &alg) const;
 
     /// The reachable sets from a polynomial zonotope with alg "poly" (CORA's reach with R0 a
-    /// polyZonotope): tensor order 3, the Hessian at the expansion point as a polynomial zonotope.
+    /// polyZonotope): tensor order 3, the Hessian at the expansion point as a polynomial zonotope;
+    /// or with alg "lin", which keeps the dependency through the linear part only.
     PolyReachSet reach(const PolyReachProblem &problem, const alg::PolyNonlinearReach &alg) const;
 
     /// The first step of that reach (CORA's initReach); post continues from it.
@@ -157,6 +158,12 @@ class NonlinearSys {
     /// The step after `step` (CORA's post): as init_reach, then both sets are reduced.
     PolyNonlinearStep post(const PolyNonlinearStep &step, const std::optional<Zonotope> &U,
                            const alg::Polynomialization &alg) const;
+
+    /// The same two steps for alg "lin" from a polynomial zonotope.
+    PolyNonlinearStep init_reach(const PolyZonotope &R0, const std::optional<Zonotope> &U,
+                                 const alg::Linearization &alg) const;
+    PolyNonlinearStep post(const PolyNonlinearStep &step, const std::optional<Zonotope> &U,
+                           const alg::Linearization &alg) const;
 
     /// linearize from the center (n, 1) of a set of any class, unchecked (the algorithms check).
     Linearized linearize_impl(const Tensor &center, const std::optional<Zonotope> &U,
@@ -185,6 +192,11 @@ class NonlinearSys {
     void validate_inputs(const char *op, const std::optional<Zonotope> &U) const;
 
     /// The checks of a polynomial zonotope R (one set of the dimension) and the input set U.
+    /// The checks of a step on polynomial zonotopes for either algorithm (the error: post only).
+    template <class Alg>
+    void validate_poly_step(const char *op, const PolyZonotope &R,
+                            const std::optional<Tensor> &error, const std::optional<Zonotope> &U,
+                            const Alg &alg) const;
     void validate_poly_sets(const char *op, const PolyZonotope &R,
                             const std::optional<Zonotope> &U) const;
 

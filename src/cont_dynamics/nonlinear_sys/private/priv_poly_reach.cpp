@@ -79,57 +79,29 @@ PolyNonlinearStep priv_poly_reach(const NonlinearSys &sys, const PolyZonotope &R
                                   const alg::Polynomialization &alg) {
     const double dt = alg.time_step;
     const int eta = alg.taylor_terms;
-    const int64_t n = sys.dim();
     // the affine system and the pieces of its step; the powers of A are shared
-    const Linearized lin = sys.linearize_impl(R.center(), U, dt);
-    const PolyZonotope R_delta = R.plus(lin.x_star * -1.0);
-    TaylorLinSys taylor(lin.sys.A());
-    const Blocks blocks = priv_one_block(n);
-    const Zonotope u_const(lin.u_const, lin.u_const.zeros_like({n, 0}));
-    const Zonotope PU = priv_particular_time_varying(lin.sys, taylor, blocks, lin.U, dt, eta)[0];
-    const BlockConstant Pu = priv_particular_constant(lin.sys, taylor, blocks, u_const, dt, eta);
-    // the homogeneous solution at the end, the hull of the start and it, and the state curvature
-    const PolyZonotope H_tp = R_delta.linear_map(taylor.e_adt(dt)).plus(Pu.time_point[0]);
-    const PolyZonotope C_state = R_delta.linear_map(lin.sys.correction_matrix_state(dt, eta));
-    const PolyZonotope R_tp = H_tp.plus(PU);
-    const PolyZonotope R_ti = R_delta.enclose(H_tp).plus(C_state).plus(PU + Pu.input_curvature[0]);
+    PolyStepPieces s(sys, R, U, dt, eta);
     // the differences over the step, and the static error, which the loop does not change
     const PolyZonotope Rdiff =
-        aux_delta_reach(lin.sys, taylor, R_delta, PU, Pu.time_point[0], Pu.input_curvature[0], dt,
-                        eta, alg.intermediate_order);
-    const bool has_inputs = sys.input_dim() > 0;
-    const PolyStaticError stat = priv_precomp_stat_error(sys, R_delta, lin, has_inputs, alg);
-    // the centered input set (CORA's params.U); none for a system without inputs
-    std::optional<Zonotope> U0;
-    if (const int64_t m = sys.input_dim(); m > 0)
-        U0 = U ? *U - U->center()
-               : Zonotope(R.center().zeros_like({m, 1}), R.center().zeros_like({m, 0}));
-
+        aux_delta_reach(s.lin.sys, s.taylor, s.R_delta, s.PU, s.Pu.time_point[0],
+                        s.Pu.input_curvature[0], dt, eta, alg.intermediate_order);
+    const PolyStaticError stat =
+        priv_precomp_stat_error(sys, s.R_delta, s.lin, sys.input_dim() > 0, alg);
     // the error: guessed, checked over the set it allows, and enlarged until it holds
-    Tensor bound = error;
-    std::optional<PolyAbstractionError> err;
-    double perf = std::numeric_limits<double>::infinity();
-    while (perf > 1) {
-        const Tensor applied = bound * 1.1;
-        const Zonotope V_guess(applied.zeros_like(), applied.diag());
-        const Zonotope R_guess =
-            priv_particular_time_varying(lin.sys, taylor, blocks, V_guess, dt, eta)[0];
-        const PolyZonotope R_max = R_delta.plus(Rdiff.zonotope()).plus(R_guess);
-        err = priv_abstrerr_poly(sys, R_max, Rdiff.plus(R_guess), lin, U0, stat, alg);
-        perf = priv_ratio_max(err->bound, applied);
-        bound = err->bound;
-        if (priv_exploded(bound))
-            CORA_FAIL(Error::reach_set_explosion,
-                      "cora: the linearization error exploded; the reachable set grows without "
-                      "bound (the time_step may be too large)");
-    }
+    const AbstractionError err =
+        priv_error_loop(s.lin, s.taylor, error, dt, eta, [&](const Zonotope &R_guess) {
+            const PolyZonotope R_max = s.R_delta.plus(Rdiff.zonotope()).plus(R_guess);
+            const PolyAbstractionError e =
+                priv_abstrerr_poly(sys, R_max, Rdiff.plus(R_guess), s.lin, s.U0, stat, alg);
+            return AbstractionError{e.bound, e.set};
+        });
     // the solutions of the dynamic and the static error; exact_plus keeps the dependency
     const Zonotope R_dyn =
-        priv_particular_time_varying(lin.sys, taylor, blocks, err->set, dt, eta)[0];
+        priv_particular_time_varying(s.lin.sys, s.taylor, s.blocks, err.set, dt, eta)[0];
     const PolyZonotope R_error =
-        aux_constant_input(lin.sys, taylor, stat.error, dt, eta).plus(R_dyn);
-    return {R_ti.plus(lin.x_star).exact_plus(R_error), R_tp.plus(lin.x_star).exact_plus(R_error),
-            bound};
+        aux_constant_input(s.lin.sys, s.taylor, stat.error, dt, eta).plus(R_dyn);
+    return {s.R_ti.plus(s.lin.x_star).exact_plus(R_error),
+            s.R_tp.plus(s.lin.x_star).exact_plus(R_error), err.bound};
 }
 
 } // namespace cora

@@ -38,6 +38,8 @@
 
 namespace cora {
 
+// Taylor models -----------------------------------------------------------------------------------
+
 class Taylm {
   public:
     /// The exponents of the variables of one monomial.
@@ -61,9 +63,17 @@ class Taylm {
     /// generator), CORA's taylm(zonotope).
     static std::vector<Taylm> from_zonotope(const Zonotope &Z, int max_order = kDefaultMaxOrder);
 
+    /// The models of the coordinates of Z followed by those of the box U (one variable per
+    /// generator, then one per coordinate of U), all over the same variables: the state and the
+    /// input of a flow f(x, u).
+    static std::vector<Taylm> from_zonotope_and_box(const Zonotope &Z, const Interval &U,
+                                                    int max_order = kDefaultMaxOrder);
+
     /// The value of the expression f on the models x (one per variable of f): an enclosure of
     /// its range over the variables' box, where the dependency stays as far as f is polynomial.
     static Taylm evaluate(const Expr &f, const std::vector<Taylm> &x);
+
+    // The data of a model -------------------------------------------------------------------------
 
     int64_t num_vars() const noexcept { return vars_; }
     int max_order() const noexcept { return max_order_; }
@@ -96,6 +106,8 @@ class Taylm {
 
   private:
     Taylm(int64_t vars, int max_order) : vars_(vars), max_order_(max_order) {}
+    /// The model over `before + vars_ + after` variables, its own ones in the middle.
+    Taylm embedded(int64_t before, int64_t after) const;
     /// The range of the polynomial part alone, by the monomial bounds.
     std::array<double, 2> polynomial_bounds() const;
 

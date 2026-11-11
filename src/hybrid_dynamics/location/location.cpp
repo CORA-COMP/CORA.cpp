@@ -31,16 +31,19 @@ namespace cora {
 
 namespace {
 
+/// The zero constant input of a nonlinear flow, a column of n entries.
+CORA_FROM_NUMBERS Tensor aux_zero_column(int64_t n) { return Tensor::zeros({n, 1}); }
+
 /// The invariant and every guard and reset of the dimension of the flow.
 void aux_validate(const Location &loc) {
     detail::Validation entry;
     const int64_t n = loc.dim();
-    CORA_CHECK(loc.invariant().dim() == n, Error::wrong_input_in_constructor, [&] {
+    CORA_CHECK(region_dim(loc.invariant()) == n, Error::wrong_input_in_constructor, [&] {
         return "Location: the invariant has the dimension " +
-               std::to_string(loc.invariant().dim()) + ", the flow " + std::to_string(n);
+               std::to_string(region_dim(loc.invariant())) + ", the flow " + std::to_string(n);
     });
     for (const Transition &t : loc.transitions())
-        CORA_CHECK(t.guard().dim() == n && t.reset().post_state_dim() == n,
+        CORA_CHECK(region_dim(t.guard()) == n && t.reset().post_state_dim() == n,
                    Error::wrong_input_in_constructor, [&] {
                        return "Location: every guard and reset must have the dimension " +
                               std::to_string(n) + " of the flow";
@@ -52,7 +55,7 @@ void aux_validate(const Location &loc) {
 
 // ===========================================  MAIN  =========================================== //
 
-Location::Location(std::string name, Polytope invariant, std::vector<Transition> transitions,
+Location::Location(std::string name, Region invariant, std::vector<Transition> transitions,
                    LinearSys flow, std::optional<Tensor> c)
     : name_(std::move(name)), invariant_(std::move(invariant)),
       transitions_(std::move(transitions)), flow_(std::move(flow)) {
@@ -71,7 +74,7 @@ Location::Location(std::string name, Polytope invariant, std::vector<Transition>
     aux_validate(*this);
 }
 
-Location::Location(std::string name, Polytope invariant, std::vector<Transition> transitions,
+Location::Location(std::string name, Region invariant, std::vector<Transition> transitions,
                    LinParamSys flow)
     : name_(std::move(name)), invariant_(std::move(invariant)),
       transitions_(std::move(transitions)), flow_(std::move(flow)),
@@ -81,11 +84,11 @@ Location::Location(std::string name, Polytope invariant, std::vector<Transition>
     aux_validate(*this);
 }
 
-Location::Location(std::string name, Polytope invariant, std::vector<Transition> transitions,
+Location::Location(std::string name, Region invariant, std::vector<Transition> transitions,
                    NonlinearSys flow)
     : name_(std::move(name)), invariant_(std::move(invariant)),
       transitions_(std::move(transitions)), flow_(std::move(flow)),
-      c_(invariant_.b().zeros_like({std::get<NonlinearSys>(flow_).dim(), 1})) {
+      c_(aux_zero_column(std::get<NonlinearSys>(flow_).dim())) {
     detail::Entry entry;
     aux_validate(*this);
 }

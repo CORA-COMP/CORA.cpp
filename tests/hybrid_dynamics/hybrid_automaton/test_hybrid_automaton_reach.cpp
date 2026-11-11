@@ -196,9 +196,17 @@ void ball_poly() {
     both.initial_set = aux_drop().initial_set;
     check(test::raises([&] { aux_ball(BallFlow::nonlinear).reach(both, a); }, Error::wrong_value),
           "poly ball: two initial sets");
-    check(test::raises([&] { aux_ball(BallFlow::nonlinear).reach(p, aux_alg(alg::ZonoGirard{})); },
+    // without polynomialization a polynomial start set runs "lin" on it (CORA's reach with alg lin)
+    alg::HybridStandard lin = aux_alg(alg::ZonoGirard{});
+    lin.polynomialization = false;
+    check(aux_ball(BallFlow::nonlinear).reach(p, lin).branches.size() >= 2,
+          "poly ball: a polynomial set runs lin without polynomialization");
+    // and polynomialization needs the polynomial start set
+    alg::HybridStandard poly = aux_alg(alg::ZonoGirard{});
+    poly.polynomialization = true;
+    check(test::raises([&] { aux_ball(BallFlow::nonlinear).reach(aux_drop(), poly); },
                        Error::wrong_value),
-          "poly ball: a polynomial set needs polynomialization");
+          "poly ball: polynomialization needs a polynomial set");
 }
 
 /// A clock reaches t = 1 exactly at a step: the jump uses the set at t = 1, at that time only.

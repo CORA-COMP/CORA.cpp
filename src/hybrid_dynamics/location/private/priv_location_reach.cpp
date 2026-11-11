@@ -56,13 +56,19 @@ class BundleSteps {
                 const Zonotope &U_state, double dt, const alg::HybridStandard &alg)
         : start_(priv_zonotopes(R0)) {
         if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow())) {
-            // the polynomial zonotopes of alg "poly"
-            if (alg.polynomialization) {
-                poly_ = {sys,
-                         U,
-                         {dt, alg.taylor_terms, alg.zonotope_order, 3, alg.error_order,
-                          alg.intermediate_order},
-                         R0.as<PolyZonotope>()};
+            // polynomial zonotopes: alg "poly" by choice, alg "lin" for a polynomial start set
+            if (alg.polynomialization || R0.is<PolyZonotope>()) {
+                alg::PolyNonlinearReach poly_alg = alg::Linearization{dt,
+                                                                      alg.taylor_terms,
+                                                                      alg.zonotope_order,
+                                                                      alg.tensor_order,
+                                                                      alg.error_order,
+                                                                      alg.intermediate_order};
+                if (alg.polynomialization)
+                    poly_alg = alg::Polynomialization{dt, alg.taylor_terms, alg.zonotope_order,
+                                                      3,  alg.error_order,  alg.intermediate_order};
+                // the polynomial start set and the algorithm chosen above
+                poly_ = {sys, U, poly_alg, R0.as<PolyZonotope>()};
                 return;
             }
             if (start_.size() != 1)
@@ -98,18 +104,25 @@ class BundleSteps {
 
     /// The time-interval set of the next step; time_point() is then its end.
     Set next() {
+        // polynomial zonotopes first, then the zonotopes of the nonlinear and linear flows
         if (poly_) {
             Poly &f = *poly_;
-            poly_step_ = poly_step_ ? f.sys->post(*poly_step_, f.U, f.alg)
-                                    : f.sys->init_reach(f.start, f.U, f.alg);
+            poly_step_ = std::visit(
+                [&](const auto &a) {
+                    return poly_step_ ? f.sys->post(*poly_step_, f.U, a)
+                                      : f.sys->init_reach(f.start, f.U, a);
+                },
+                f.alg);
             return poly_step_->time_interval;
         }
+        // a nonlinear flow on a zonotope: init for the first step, post for the others
         if (nonlinear_) {
             const Nonlinear &f = *nonlinear_;
             step_ =
                 step_ ? f.sys->post(*step_, f.U, f.alg) : f.sys->init_reach(start_[0], f.U, f.alg);
             return step_->time_interval;
         }
+        // the linear flows step every zonotope of the bundle
         std::vector<Zonotope> parts;
         parts.reserve(start_.size());
         if (!mappings_) {
@@ -155,7 +168,7 @@ class BundleSteps {
     struct Poly {
         const NonlinearSys *sys;
         std::optional<Zonotope> U;
-        alg::Polynomialization alg;
+        alg::PolyNonlinearReach alg;
         PolyZonotope start;
     };
 
@@ -190,7 +203,7 @@ aux_flow(const Location &loc, int64_t index, const Set &R0, double t0, double t_
     R.time_point.push_back(R0);
     R.time_point_times.push_back({t0, t0});
     // CORA: tStart = tFinal or an empty invariant leave the start set alone
-    if (within_tol(t0, t_final, numerics::kTimeRound) || loc.invariant().representsa("emptySet"))
+    if (within_tol(t0, t_final, numerics::kTimeRound) || priv_region_empty(loc.invariant()))
         return {R, true};
     const int steps = static_cast<int>(std::floor((t_final - t0) / dt + numerics::kStepCount));
     BundleSteps step(loc, R0, U, U_state, dt, alg);
@@ -209,13 +222,19 @@ aux_flow(const Location &loc, int64_t index, const Set &R0, double t0, double t_
 
 // The specifications ------------------------------------------------------------------------------
 
+/// Whether a set may meet the invariant: the generic test of the pair for a polytope, the box
+/// evaluation for a level set.
+bool aux_meets_invariant(const Location &loc, const Set &S) {
+    if (const auto *P = std::get_if<Polytope>(&loc.invariant())) return is_intersecting(*P, S);
+    return std::get<LevelSet>(loc.invariant()).is_intersecting(*S);
+}
+
 /// The specifications that apply: an unsafe set only if it meets the invariant (CORA).
 std::vector<Specification> aux_active(const Location &loc,
                                       const std::vector<Specification> &specs) {
     std::vector<Specification> out;
     for (const Specification &spec : specs) {
-        if (spec.type() == SpecType::unsafe_set && !is_intersecting(loc.invariant(), spec.set()))
-            continue;
+        if (spec.type() == SpecType::unsafe_set && !aux_meets_invariant(loc, spec.set())) continue;
         out.push_back(spec);
     }
     return out;

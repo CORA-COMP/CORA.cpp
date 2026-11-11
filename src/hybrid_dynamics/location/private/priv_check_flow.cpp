@@ -23,6 +23,7 @@
 // Last update:   09-November-2026
 // Reviewed:      ---
 
+#include "cora/cont_set/taylm/taylm.h"
 #include "cora/global/tensor/tolerance.h"
 #include "hybrid_dynamics/location/private/priv.h"
 
@@ -47,7 +48,7 @@ std::pair<Tensor, double> aux_outward(const Location &loc, const Polytope &guard
                                       const Set &first) {
     auto [a, d] = priv_hyperplane(guard);
     const Tensor c = first->center();
-    const bool inside = loc.invariant().contains(c, "exact", numerics::kGuardSide);
+    const bool inside = priv_region_contains(loc.invariant(), c);
     // CORA flips when the center is inside the invariant xor below the hyperplane
     if (inside != aux_below(a, d, c)) return {-a, -d};
     return {a, d};
@@ -148,6 +149,53 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
     return true;
 }
 
+// The flow along a level set ----------------------------------------------------------------------
+
+/// CORA's aux_getOutside: +1 if g >= 0 is outside the invariant, -1 if g < 0 is, by the first set.
+double aux_outside(const Location &loc, const LevelSet &guard, const Set &first) {
+    const Tensor c = first->center();
+    const double g = guard.fun_han(c).item();
+    if (priv_region_contains(loc.invariant(), c)) return g > 0 ? -1.0 : 1.0;
+    return g <= 0 ? -1.0 : 1.0;
+}
+
+/// outside * grad g(x)' f(x, u) at the point c of the set with the input at the center of U.
+double aux_level_flow_at(const NonlinearSys &sys, const LevelSet &guard, double outside,
+                         const Tensor &c, const Zonotope &U_state) {
+    const std::vector<double> x = c.data();
+    const std::vector<double> f =
+        (sys.input_dim() == 0 ? sys.dynamics(c) : sys.dynamics(c, U_state.center())).data();
+    double flow = 0;
+    // sum_j dg/dx_j f_j
+    for (int64_t j = 0; j < sys.dim(); ++j)
+        flow += guard.gradient(0, j).eval(x) * f[std::size_t(j)];
+    return outside * flow;
+}
+
+/// Whether the flow may point out along the gradient at some point of the set S: the fast test at
+/// the center, then the upper bound of outside * grad g' f over the PCA box of S by Taylor models.
+bool aux_level_flow_along(const Location &loc, const LevelSet &guard, double outside, const Set &S,
+                          const Zonotope &U_state) {
+    const auto *sys = std::get_if<NonlinearSys>(&loc.flow());
+    if (sys == nullptr)
+        CORA_FAIL(Error::not_supported,
+                  "checkFlow: a level set guard is supported for a nonlinear flow only");
+    if (aux_level_flow_at(*sys, guard, outside, S->center(), U_state) > 0) return true;
+    // the models of the states and, if there are inputs, of the input box
+    const Zonotope R = aux_reduce_pca(priv_zonotopes(S).front());
+    const std::vector<Taylm> t = sys->input_dim() > 0
+                                     ? Taylm::from_zonotope_and_box(R, U_state.interval())
+                                     : Taylm::from_zonotope(R);
+    // outside * sum_j grad_j(tay) f_j(tay, u)
+    Taylm flow = Taylm::constant(0.0, t.front().num_vars());
+    for (int64_t j = 0; j < sys->dim(); ++j)
+        flow = flow.plus(Taylm::evaluate(guard.gradient(0, j), t)
+                             .times(Taylm::evaluate(sys->expressions()[std::size_t(j)], t)));
+    // the upper bound of outside * flow, from the bound of flow on the side of its sign
+    const std::array<double, 2> range = flow.bounds();
+    return (outside > 0 ? range[1] : -range[0]) > 0;
+}
+
 } // namespace
 
 
@@ -158,6 +206,19 @@ std::vector<Set> priv_check_flow_outward(const Location &loc, const Tensor &a, d
     std::vector<Set> out;
     for (const Set &S : R)
         if (aux_flow_along(loc, a, d, S, U_state)) out.push_back(S);
+    return out;
+}
+
+std::vector<Set> priv_check_flow(const Location &loc, const LevelSet &guard,
+                                 const std::vector<Set> &R, const Zonotope &U_state) {
+    if (guard.num_equations() != 1)
+        CORA_FAIL(Error::not_supported,
+                  "checkFlow: a level set guard needs exactly one constraint");
+    // the orientation of the guard by the first set, then each set against it
+    const double outside = aux_outside(loc, guard, R.front());
+    std::vector<Set> out;
+    for (const Set &S : R)
+        if (aux_level_flow_along(loc, guard, outside, S, U_state)) out.push_back(S);
     return out;
 }
 

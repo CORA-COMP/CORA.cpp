@@ -65,9 +65,9 @@ void aux_validate(const HybridAutomaton &HA, const HybridReachProblem &p,
             return "reach: the initial set must be one set of the dimension " + std::to_string(n);
         });
     // the algorithm goes with the class of the initial set
-    CORA_CHECK(p.initial_poly_set.has_value() == a.polynomialization, Error::wrong_value, [] {
-        return std::string("reach: a polynomial zonotope as initial_poly_set goes with "
-                           "polynomialization = true, and only with it");
+    CORA_CHECK(!a.polynomialization || p.initial_poly_set.has_value(), Error::wrong_value, [] {
+        return std::string("reach: polynomialization = true needs initial_poly_set (the "
+                           "polynomial zonotope alg \"poly\" starts from one)");
     });
     CORA_CHECK(p.start_location >= 0 && p.start_location < count, Error::wrong_value, [&] {
         return "reach: start_location must be a location from 0 to " + std::to_string(count - 1) +

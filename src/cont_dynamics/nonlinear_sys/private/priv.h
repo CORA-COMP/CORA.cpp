@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "cont_dynamics/linear_sys/private/priv_steps.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 
 #include <optional>
@@ -21,6 +22,8 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+// The error of a step -----------------------------------------------------------------------------
 
 /// The linearization error of a step (CORA's trueError and VerrorDyn): the bound per state (n, 1)
 /// and the set of the error.
@@ -55,6 +58,39 @@ struct PolyStaticError {
     Zonotope Zdelta;
     PolyZonotope error;
 };
+
+// The steps ---------------------------------------------------------------------------------------
+
+/// The loop of CORA's linReach that every algorithm shares: the error is guessed as 1.1 times
+/// `error`, error_over(R_guess) computes the error over the set that the guess allows (R_guess is
+/// the solution of the guess), and while it exceeds the guess somewhere it becomes the guess.
+AbstractionError
+priv_error_loop(const Linearized &lin, TaylorLinSys &taylor, const Tensor &error, double dt,
+                int eta,
+                const std::function<AbstractionError(const Zonotope &R_guess)> &error_over);
+
+/// What the steps "lin" and "poly" from a polynomial zonotope share (CORA's linReach before the
+/// error): the affine system at the center, R - x*, and its solution at the end of the step
+/// (R_tp) and over it (R_ti), without the error.
+struct PolyStepPieces {
+    PolyStepPieces(const NonlinearSys &sys, const PolyZonotope &R, const std::optional<Zonotope> &U,
+                   double dt, int eta);
+
+    Linearized lin;
+    PolyZonotope R_delta;
+    TaylorLinSys taylor;
+    Blocks blocks;
+    Zonotope PU;
+    BlockConstant Pu;
+    PolyZonotope R_tp, R_ti;
+    std::optional<Zonotope> U0; ///< the centered input set (CORA's params.U), none without inputs
+};
+
+/// One step of "lin" from a polynomial zonotope (CORA's linReach with alg 'lin' and a
+/// polyZonotope): the dependency stays through the linear part, the error is a zonotope.
+PolyNonlinearStep priv_lin_reach_poly(const NonlinearSys &sys, const PolyZonotope &R,
+                                      const Tensor &error, const std::optional<Zonotope> &U,
+                                      const alg::Linearization &alg);
 
 /// One step from the polynomial zonotope R (CORA's linReach with alg "poly").
 PolyNonlinearStep priv_poly_reach(const NonlinearSys &sys, const PolyZonotope &R,

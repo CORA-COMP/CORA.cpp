@@ -71,6 +71,19 @@ Reach aux_steps(const Start &X0, int steps, double time_step, Init init, Post po
     return R;
 }
 
+
+/// One step on polynomial zonotopes by the algorithm: "poly" or "lin".
+PolyNonlinearStep aux_poly_step(const NonlinearSys &sys, const PolyZonotope &R, const Tensor &error,
+                                const std::optional<Zonotope> &U,
+                                const alg::Polynomialization &alg) {
+    return priv_poly_reach(sys, R, error, U, alg);
+}
+
+PolyNonlinearStep aux_poly_step(const NonlinearSys &sys, const PolyZonotope &R, const Tensor &error,
+                                const std::optional<Zonotope> &U, const alg::Linearization &alg) {
+    return priv_lin_reach_poly(sys, R, error, U, alg);
+}
+
 } // namespace
 
 
@@ -165,6 +178,7 @@ ReachSet NonlinearSys::reach(const ReachProblem &problem, const alg::NonlinearRe
 
 // The reachable sets of polynomial zonotopes ------------------------------------------------------
 
+
 void NonlinearSys::validate_poly_sets(const char *op, const PolyZonotope &R,
                                       const std::optional<Zonotope> &U) const {
     detail::Validation entry;
@@ -176,16 +190,36 @@ void NonlinearSys::validate_poly_sets(const char *op, const PolyZonotope &R,
     validate_inputs(op, U);
 }
 
-// The first step from the initial set, with the error 0.
+// The checks of a step on polynomial zonotopes: the set, the input, the algorithm, the error.
+template <class Alg>
+void NonlinearSys::validate_poly_step(const char *op, const PolyZonotope &R,
+                                      const std::optional<Tensor> &error,
+                                      const std::optional<Zonotope> &U, const Alg &alg) const {
+    detail::Validation entry;
+    validate_poly_sets(op, R, U);
+    alg.validate();
+    CORA_CHECK(!error || (error->defined() && error->shape() == std::vector<int64_t>({n_, 1})),
+               Error::dimension_mismatch, [&] {
+                   return std::string(op) + ": the error of the step must be a column (" +
+                          std::to_string(n_) + ", 1)";
+               });
+}
+
+// The first step from the initial set, with the error 0, for either algorithm on polynomial sets.
 PolyNonlinearStep NonlinearSys::init_reach(const PolyZonotope &R0, const std::optional<Zonotope> &U,
                                            const alg::Polynomialization &alg) const {
     detail::Entry entry;
-    if (entry.check()) {
-        validate_poly_sets("init_reach", R0, U);
-        alg.validate();
-    }
+    if (entry.check()) validate_poly_step("init_reach", R0, std::nullopt, U, alg);
     // CORA starts from the error 0
-    return priv_poly_reach(*this, R0, R0.center().zeros_like(), U, alg);
+    return aux_poly_step(*this, R0, R0.center().zeros_like(), U, alg);
+}
+
+// The first step of "lin" from a polynomial zonotope, also with the error 0.
+PolyNonlinearStep NonlinearSys::init_reach(const PolyZonotope &R0, const std::optional<Zonotope> &U,
+                                           const alg::Linearization &alg) const {
+    detail::Entry entry;
+    if (entry.check()) validate_poly_step("init_reach", R0, std::nullopt, U, alg);
+    return aux_poly_step(*this, R0, R0.center().zeros_like(), U, alg);
 }
 
 // CORA's post reduces the sets that initReach returns, and keeps the error.
@@ -193,17 +227,20 @@ PolyNonlinearStep NonlinearSys::post(const PolyNonlinearStep &step,
                                      const std::optional<Zonotope> &U,
                                      const alg::Polynomialization &alg) const {
     detail::Entry entry;
-    if (entry.check()) {
-        validate_poly_sets("post", step.time_point, U);
-        alg.validate();
-        CORA_CHECK(step.error.defined() && step.error.shape() == std::vector<int64_t>({n_, 1}),
-                   Error::dimension_mismatch, [&] {
-                       return "post: the error of the step must be a column (" +
-                              std::to_string(n_) + ", 1)";
-                   });
-    }
+    if (entry.check()) validate_poly_step("post", step.time_point, step.error, U, alg);
     // the step from the end of the one before, then both sets are reduced
-    PolyNonlinearStep next = priv_poly_reach(*this, step.time_point, step.error, U, alg);
+    const PolyNonlinearStep next = aux_poly_step(*this, step.time_point, step.error, U, alg);
+    return {next.time_interval.reduce(alg.zonotope_order),
+            next.time_point.reduce(alg.zonotope_order), next.error};
+}
+
+PolyNonlinearStep NonlinearSys::post(const PolyNonlinearStep &step,
+                                     const std::optional<Zonotope> &U,
+                                     const alg::Linearization &alg) const {
+    detail::Entry entry;
+    if (entry.check()) validate_poly_step("post", step.time_point, step.error, U, alg);
+    // the same step and reduction for "lin"
+    const PolyNonlinearStep next = aux_poly_step(*this, step.time_point, step.error, U, alg);
     return {next.time_interval.reduce(alg.zonotope_order),
             next.time_point.reduce(alg.zonotope_order), next.error};
 }
@@ -216,13 +253,19 @@ PolyReachSet NonlinearSys::reach(const PolyReachProblem &problem,
     CORA_CHECK(problem.t_final > 0 && problem.t_final < 1e300, Error::wrong_value, [&] {
         return "reach: t_final must be positive and finite, got " + std::to_string(problem.t_final);
     });
-    const alg::Polynomialization &options = std::get<alg::Polynomialization>(alg);
     if (entry.check()) validate_poly_sets("reach", *problem.initial_set, problem.input_set);
-    // the start set, the first step, then the step after each one
-    return aux_steps<PolyReachSet, PolyNonlinearStep>(
-        *problem.initial_set, priv_num_steps(problem.t_final, options.time_step), options.time_step,
-        [&] { return init_reach(*problem.initial_set, problem.input_set, options); },
-        [&](const PolyNonlinearStep &step) { return post(step, problem.input_set, options); });
+    // the start set, the first step, then the step after each one, by the algorithm's own steps
+    return std::visit(
+        [&](const auto &options) {
+            return aux_steps<PolyReachSet, PolyNonlinearStep>(
+                *problem.initial_set, priv_num_steps(problem.t_final, options.time_step),
+                options.time_step,
+                [&] { return init_reach(*problem.initial_set, problem.input_set, options); },
+                [&](const PolyNonlinearStep &step) {
+                    return post(step, problem.input_set, options);
+                });
+        },
+        alg);
 }
 
 

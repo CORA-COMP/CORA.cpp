@@ -1,8 +1,8 @@
 // transition - a jump of a hybrid automaton, as CORA's transition
 //
 // When the state reaches the guard, it may jump to the location `target` (0-based), mapped by the
-// reset. A guard is a polytope; a box is held as the polytope of its sides, and a hyperplane with
-// inequalities (CORA's constrained hyperplane) is a polytope with one equality.
+// reset. A guard is a polytope or a level set; a box is held as the polytope of its sides, and a
+// hyperplane with inequalities (CORA's constrained hyperplane) is a polytope with one equality.
 //
 // Syntax:     Transition trans(guard, reset, target);
 // Operations: the constructor checks its input (transition.cpp)
@@ -20,6 +20,7 @@
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/hybrid_dynamics/linear_reset/linear_reset.h"
+#include "cora/hybrid_dynamics/region.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,15 +30,15 @@ class Transition {
   public:
     /// The jump to the location `target` (0-based) through `guard`, mapped by `reset`; the
     /// dimension of the guard is that of the state before the jump.
-    Transition(Polytope guard, LinearReset reset, int64_t target);
+    Transition(Region guard, LinearReset reset, int64_t target);
     Transition(const Interval &guard, LinearReset reset, int64_t target);
 
-    const Polytope &guard() const noexcept { return guard_; }
+    const Region &guard() const noexcept { return guard_; }
     const LinearReset &reset() const noexcept { return reset_; }
     int64_t target() const noexcept { return target_; }
 
   private:
-    Polytope guard_;
+    Region guard_;
     LinearReset reset_;
     int64_t target_;
 };
