@@ -115,14 +115,14 @@ jobs:
         continue-on-error: true
         with:
           key: instructions
-      # The runners' apt mirror list (azure.archive.ubuntu.com) can fail to resolve; then
-      # retry once against archive.ubuntu.com directly.
+      # The runners' Ubuntu mirrors can fail to resolve; then valgrind comes from conda-forge.
+      # Base and head are counted by the same valgrind, so the version does not matter.
       - name: install valgrind
         run: |
           if ! (sudo apt-get update && sudo apt-get install -y valgrind); then
-            sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu/|' \
-              /etc/apt/sources.list.d/ubuntu.sources
-            sudo apt-get update && sudo apt-get install -y valgrind
+            curl -fsSL https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xj -C "$RUNNER_TEMP" bin/micromamba
+            "$RUNNER_TEMP/bin/micromamba" create -y -q -p "$RUNNER_TEMP/vg" -c conda-forge valgrind
+            echo "$RUNNER_TEMP/vg/bin" >> "$GITHUB_PATH"
           fi
       - name: compare with the base commit
         env:
