@@ -6,7 +6,7 @@
 // quadMap(Zdiff)) with the Hessians at x*, where Zdiff is Rdiff reduced to error_order and
 // extended by the input set. The third-order remainder is the box of priv_third_order_box. Their
 // sum is reduced to intermediate_order; the bound is the largest |x| of its box plus that of the
-// static error.
+// static error. The state box is joined with x*, as CORALean's repair of CORA's Hessian region.
 //
 // Syntax:   PolyAbstractionError e = priv_abstrerr_poly(sys, Rall, Rdiff, lin, U0, stat, alg);
 // Inputs:   Rall, Rdiff - polynomial zonotopes relative to lin.x_star
@@ -37,8 +37,9 @@ PolyAbstractionError priv_abstrerr_poly(const NonlinearSys &sys, const PolyZonot
                                         const std::optional<Zonotope> &U0,
                                         const PolyStaticError &stat,
                                         const alg::Polynomialization &alg) {
-    // the boxes of the states and of the inputs
-    const Interval IHx = Rall.interval();
+    // the state box joined with x* = 0 (CORALean's Hessian-region repair), the input box
+    const Tensor origin = Rall.center().zeros_like();
+    const Interval IHx = Rall.interval().enclose(Interval(origin, origin));
     std::optional<Interval> IHu;
     if (U0) IHu = U0->interval();
     // the differences as a zonotope with the inputs

@@ -319,6 +319,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF01 | 1/8 | 7 | 4 |
 | CBF02 | 1/8 | 7 | 4 |
 | CBF03 | 1/8 | 7 | 4 |
+| CVDP23 | 30/69 | 39 | 11 |
 | DTN01 | 21/36 | 15 | 6 |
 | DTN02 | 21/36 | 15 | 6 |
 | DTN03 | 21/36 | 15 | 6 |
@@ -334,6 +335,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ISSC01_ISU02 | 1/8 | 7 | 4 |
 | ISSF01_ISS01 | 1/8 | 7 | 4 |
 | ISSF01_ISU01 | 1/8 | 7 | 4 |
+| LALO20_W001 | 10/24 | 14 | 7 |
+| LALO20_W005 | 10/24 | 14 | 7 |
+| LALO20_W01 | 12/37 | 25 | 7 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |
