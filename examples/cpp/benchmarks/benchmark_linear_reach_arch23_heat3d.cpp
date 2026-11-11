@@ -7,22 +7,20 @@
 // over the steps (each set's first row summed plus |rest|, as the script) must lie in
 // 0.01716509 +- 1e-4. The script's random simulation and plot are left out.
 //
-// HEAT04 needs the step 0.001 (HEAT03: 0.005): the enlargement of a time interval grows with the
-// number of outputs (1387), and the step 0.005 gives 0.0158 against the true Tmax 0.01161.
-// HEAT04 (ARCH 2026, heat50, 125 000 states, Tmax 0.01161) is the same script with heat50: its A
-// (860 000 entries, 14 MB as data) is built here from the mesh instead of being stored; it equals
-// CORA's models/Cora/heat3D/heat50.mat (860 000 entries, the same product A x for a test vector;
-// heat3d_data.py is the same construction).
+// HEAT04 needs the step 0.001 (0.005 gives 0.0158 > Tmax 0.01161; the enlargement grows with its
+// 1387 outputs). CORACPP_HEAT04_T_FINAL=1 shortens its horizon, the exit code then ignores the
+// verdict. HEAT04 (ARCH 2026, heat50, 125 000 states, Tmax 0.01161) is the same script with heat50:
+// its A (860 000 entries, 14 MB as data) is built here from the mesh instead of being stored; it
+// equals CORA's models/Cora/heat3D/heat50.mat (860 000 entries, the same product A x for a test
+// vector; heat3d_data.py is the same construction).
 //
 // Syntax:   build/core/benchmarks/benchmark_linear_reach_arch23_heat3d [HEAT03|HEAT04]
-//           (CORACPP_HEAT04_T_FINAL=1 shortens the horizon of HEAT04; the exit code then ignores
-//           the verdict)
 // Outputs:  the line 'Heat3D,HEAT03,result,time', as the MATLAB script; the maximum on stderr
 // See also: benchmark_data.h, benchmark_linear_verify_fast_arch23_heat3d.cpp
 //
 // Authors:       Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       09-November-2026
-// Last update:   11-November-2026 (HEAT04)
+// Last update:   11-November-2026
 // Reviewed:      ---
 
 #include "benchmark_data.h"
@@ -47,10 +45,9 @@ double aux_temperature(const Zonotope &Z) {
     return R.slice(0, 0, 1).sum().item() + R.slice(0, 1, p).abs().sum().item();
 }
 
-/// The instance of heat3d_data.py for samples^3 states built from the mesh: the finite differences
-/// A (x fastest, then y, then z; a = 0.01 / d^2, -6 a on the diagonal plus a per insulated side,
-/// the outflow a / (1 + 0.5 d) at x = 1 added last), the script's R0 (aux_getInit: 1 on
-/// [0, 0.4] x [0, 0.2] x [0, 0.1] of the block, the generators diag(0.1 x0)) and C at the middle.
+/// The instance of heat3d_data.py for samples^3 states built from the mesh: A (finite differences,
+/// x fastest; -6 a plus a per insulated side, the outflow a / (1 + 0.5 d) at x = 1 added last),
+/// the script's R0 (1 on [0, 0.4] x [0, 0.2] x [0, 0.1], generators diag(0.1 x0)) and C.
 struct Heat {
     SparseMatrix A;
     Tensor c, G, C;
@@ -61,6 +58,7 @@ Heat aux_mesh(int64_t samples) {
     const double d = 1.0 / double(samples + 1), a = 0.01 / (d * d), leaving = a / (1 + 0.5 * d);
     std::vector<int64_t> rows, cols;
     std::vector<double> vals;
+    // one row per cell: its neighbours, its diagonal, and the outflow at x = 1
     for (int64_t z = 0; z < samples; ++z)
         for (int64_t y = 0; y < samples; ++y)
             for (int64_t x = 0; x < samples; ++x) {
@@ -68,6 +66,7 @@ Heat aux_mesh(int64_t samples) {
                 double diag = -6 * a;
                 bool outflow = false;
                 const int64_t coord[3] = {x, y, z}, stride[3] = {1, samples, samples * samples};
+                // a neighbour per side, or an insulated side added to the diagonal
                 for (int k = 0; k < 3; ++k) {
                     if (coord[k] > 0) {
                         rows.push_back(i), cols.push_back(i - stride[k]), vals.push_back(a);
@@ -138,7 +137,6 @@ bool aux_heat03(const std::string &name) {
 
     const auto start = std::chrono::steady_clock::now();
     // the maximum temperature over the steps, in the goal + [-1e-4, 1e-4]; the sets are not kept
-    // (HEAT04: 1387 outputs, 2774 generators per set, 8000 steps)
     double maximum = -std::numeric_limits<double>::infinity();
     sys.reach(problem, krylov,
               [&](const Zonotope &Z) { maximum = std::max(maximum, aux_temperature(Z)); });

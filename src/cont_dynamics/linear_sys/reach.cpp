@@ -86,6 +86,16 @@ ReachSet aux_reach(const LinearSys &sys, const ReachProblem &problem, const alg:
     return priv_reach_wrappingfree(X0, s.e_adt, s.F, s.steps);
 }
 
+/// The Krylov steps (of a checked single system and initial set), each time-interval set handed
+/// to on_time_interval when given (then nothing is stored).
+ReachSet aux_reach_krylov(const LinearSys &sys, const ReachProblem &problem, const alg::Krylov &alg,
+                          const std::function<void(const Zonotope &)> &on_time_interval) {
+    ReachSet R = priv_reach_krylov(sys, *problem.initial_set, problem.input_set, alg,
+                                   problem.t_final, on_time_interval);
+    R.time_step = alg.time_step;
+    return R;
+}
+
 } // namespace
 
 
@@ -111,13 +121,8 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::LinearReach &a
 // Krylov ------------------------------------------------------------------------------------------
 
 ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg) const {
-    return reach(problem, alg, nullptr);
-}
-
-ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg,
-                          const std::function<void(const Zonotope &)> &on_time_interval) const {
     detail::Entry entry;
-    // the problem and the options, then a single system and initial set
+    // the problem and the options; then the steps, keeping every set
     if (entry.check()) {
         validate(problem);
         alg.validate();
@@ -126,10 +131,22 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg,
                Error::not_supported, [] {
                    return std::string("reach: alg::Krylov takes a single system and initial set");
                });
-    ReachSet R = priv_reach_krylov(*this, *problem.initial_set, problem.input_set, alg,
-                                   problem.t_final, on_time_interval);
-    R.time_step = alg.time_step;
-    return R;
+    return aux_reach_krylov(*this, problem, alg, nullptr);
+}
+
+ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg,
+                          const std::function<void(const Zonotope &)> &on_time_interval) const {
+    detail::Entry entry;
+    // the problem and the options; then the steps, handing each set to on_time_interval
+    if (entry.check()) {
+        validate(problem);
+        alg.validate();
+    }
+    CORA_CHECK(problem.initial_set->center().ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
+               Error::not_supported, [] {
+                   return std::string("reach: alg::Krylov takes a single system and initial set");
+               });
+    return aux_reach_krylov(*this, problem, alg, on_time_interval);
 }
 
 } // namespace cora

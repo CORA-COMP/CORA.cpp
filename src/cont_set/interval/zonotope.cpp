@@ -43,8 +43,7 @@ Zonotope Interval::zonotope() const {
     while (any_radius.ndim() > 2) any_radius = any_radius.any(0);
     const std::vector<int64_t> axes = any_radius.nonzero();
     if (r.ndim() == 2 && !r.requires_grad()) {
-        // one interval (n, 1): the generators of its axes directly, not through a dense n x n
-        // diagonal (125 GB for the 125 000 states of the HEAT04 benchmark)
+        // one interval (n, 1): the generators of its axes directly, no dense n x n diagonal
         const int64_t n = r.shape()[0], k = static_cast<int64_t>(axes.size());
         const std::vector<double> radius = r.data();
         std::vector<double> G(static_cast<size_t>(n * k), 0.0);
