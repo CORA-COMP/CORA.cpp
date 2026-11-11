@@ -114,7 +114,7 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 
 CORA.cpp's `alg::LinearizationAdaptive` is CORA's lin-adaptive as CORALean repairs it
 (`reachAdaptiveFloat`, CORALean !906). The oracle serves its ops from the pinned tag
-`oracle-20261110-06c34fec2` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
+`oracle-20261111-f9723f6f6` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
 an older oracle makes the tests skip them.
 
 | op | test | agreement |
