@@ -70,10 +70,12 @@ KrylovConstantInput priv_krylov_constant_input(const HostMatVec &A, const std::v
 Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, const alg::Krylov &alg,
                                     double t_final);
 
-/// The sets of reach with alg::Krylov from R0 with the input set (none: no input).
+/// The sets of reach with alg::Krylov from R0 with the input set (none: no input); with
+/// on_time_interval, the time-interval sets go to it and none are stored.
 ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
                            const std::optional<Zonotope> &input_set, const alg::Krylov &alg,
-                           double t_final);
+                           double t_final,
+                           const std::function<void(const Zonotope &)> &on_time_interval = nullptr);
 
 } // namespace cora
 

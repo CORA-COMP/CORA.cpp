@@ -154,7 +154,8 @@ Tensor aux_at_time(const std::vector<std::optional<Projected>> &spaces, double t
 
 ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
                            const std::optional<Zonotope> &input_set, const alg::Krylov &alg,
-                           double t_final) {
+                           double t_final,
+                           const std::function<void(const Zonotope &)> &on_time_interval) {
     const int64_t n = sys.dim();
     const Tensor &like = R0.center();
     const Tensor C = sys.C() ? *sys.C() : like.eye_like(n);
@@ -179,8 +180,8 @@ ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
     const Projected u_space{constant.proj, constant.H};
 
     ReachSet R;
-    R.time_point.push_back(R0.linear_map(C));
-    Zonotope previous = R.time_point.back();
+    Zonotope previous = R0.linear_map(C);
+    if (!on_time_interval) R.time_point.push_back(previous);
     std::optional<Interval> U0;
     const int steps = priv_num_steps(t_final, alg.time_step);
     for (int k = 1; k <= steps; ++k) {
@@ -199,8 +200,12 @@ ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
         const Zonotope R_tp = Rhom_tp + U0_set;
         const Zonotope R_ti =
             previous.enclose(Rhom_tp) + U0_set + curvature.zonotope() + constant.correction;
-        R.time_interval.push_back(R_ti.reduce(alg.zonotope_order));
-        R.time_point.push_back(R_tp.reduce(alg.zonotope_order));
+        if (on_time_interval) {
+            on_time_interval(R_ti.reduce(alg.zonotope_order));
+        } else {
+            R.time_interval.push_back(R_ti.reduce(alg.zonotope_order));
+            R.time_point.push_back(R_tp.reduce(alg.zonotope_order));
+        }
         previous = Rhom_tp;
     }
     return R;

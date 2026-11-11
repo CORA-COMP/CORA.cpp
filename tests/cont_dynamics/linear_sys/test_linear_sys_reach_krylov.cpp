@@ -76,6 +76,25 @@ void flow_in_one_dimension() {
           "krylov: the first step's enclosure");
 }
 
+/// With a callback, reach passes each step's time-interval set to it and stores nothing: the
+/// sets are those of the call without it.
+void callback_receives_the_time_intervals() {
+    const LinearSys sys(heat_grid(3), Tensor::zeros({27, 1}), Tensor::eye(27));
+    const Zonotope R0(Tensor::ones({27, 1}), Tensor::eye(27) * 0.1);
+    const ReachProblem problem{.initial_set = R0, .t_final = 0.3};
+    const alg::Krylov krylov{.time_step = 0.1, .zonotope_order = 2};
+    const ReachSet kept = sys.reach(problem, krylov);
+    std::vector<Zonotope> seen;
+    const ReachSet none = sys.reach(problem, krylov, [&](const Zonotope &Z) { seen.push_back(Z); });
+    check(none.time_interval.empty() && none.time_point.empty(), "krylov callback: nothing stored");
+    check(seen.size() == kept.time_interval.size(), "krylov callback: one set per step");
+    for (size_t k = 0; k < seen.size(); ++k) {
+        const Interval a = seen[k].interval(), b = kept.time_interval[k].interval();
+        check(a.inf().data() == b.inf().data() && a.sup().data() == b.sup().data(),
+              "krylov callback: step " + std::to_string(k) + " equals the stored set");
+    }
+}
+
 /// On a 4 x 4 x 4 heat grid (n = 64), with subspaces accurate to eps, the output time
 /// points agree with those of alg::Standard; the sparse and the dense A give the same sets.
 void agrees_with_standard() {
@@ -185,6 +204,7 @@ void checks_and_their_switch() {
 
 int main() {
     flow_in_one_dimension();
+    callback_receives_the_time_intervals();
     agrees_with_standard();
     encloses_trajectories();
     checks_and_their_switch();

@@ -34,6 +34,7 @@
 #include "cora/specification/specification.h"
 
 #include <array>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -156,6 +157,13 @@ class LinearSys {
     /// The output sets y = C x (the states without C) by CORA's Krylov subspace algorithm, which
     /// never forms a set of the state space; output_set must not be applied to them again.
     ReachSet reach(const ReachProblem &problem, const alg::Krylov &alg) const;
+
+    /// As reach with alg::Krylov, but each step's time-interval set is passed to on_time_interval
+    /// and nothing is stored: for p outputs the sets of order zonotope_order have 2 p generators,
+    /// so p = 1387 outputs over 8000 steps (HEAT04) would take 250 GB. The returned ReachSet has
+    /// no sets.
+    ReachSet reach(const ReachProblem &problem, const alg::Krylov &alg,
+                   const std::function<void(const Zonotope &)> &on_time_interval) const;
 
     /// The output sets y = C x of every set of R (R itself without C), as CORA's outputSet.
     ReachSet output_set(const ReachSet &R) const;

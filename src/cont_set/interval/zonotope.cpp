@@ -41,7 +41,19 @@ Zonotope Interval::zonotope() const {
     // the axes with a radius (in some member of a batch), by their index
     Tensor any_radius = r.detach().not_equal(r.zeros_like(r.shape()));
     while (any_radius.ndim() > 2) any_radius = any_radius.any(0);
-    return {c, priv_select_generators(r.diag(), any_radius.nonzero())};
+    const std::vector<int64_t> axes = any_radius.nonzero();
+    if (r.ndim() == 2 && !r.requires_grad()) {
+        // one interval (n, 1): the generators of its axes directly, not through a dense n x n
+        // diagonal (125 GB for the 125 000 states of the HEAT04 benchmark)
+        const int64_t n = r.shape()[0], k = static_cast<int64_t>(axes.size());
+        const std::vector<double> radius = r.data();
+        std::vector<double> G(static_cast<size_t>(n * k), 0.0);
+        for (int64_t j = 0; j < k; ++j)
+            G[static_cast<size_t>(axes[static_cast<size_t>(j)] * k + j)] =
+                radius[static_cast<size_t>(axes[static_cast<size_t>(j)])];
+        return {c, k == 0 ? r.zeros_like({n, 0}) : Tensor::like(r, G, {n, k})};
+    }
+    return {c, priv_select_generators(r.diag(), axes)};
 }
 
 } // namespace cora

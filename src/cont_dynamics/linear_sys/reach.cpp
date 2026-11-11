@@ -111,6 +111,11 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::LinearReach &a
 // Krylov ------------------------------------------------------------------------------------------
 
 ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg) const {
+    return reach(problem, alg, nullptr);
+}
+
+ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg,
+                          const std::function<void(const Zonotope &)> &on_time_interval) const {
     detail::Entry entry;
     // the problem and the options, then a single system and initial set
     if (entry.check()) {
@@ -121,8 +126,8 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg) c
                Error::not_supported, [] {
                    return std::string("reach: alg::Krylov takes a single system and initial set");
                });
-    ReachSet R =
-        priv_reach_krylov(*this, *problem.initial_set, problem.input_set, alg, problem.t_final);
+    ReachSet R = priv_reach_krylov(*this, *problem.initial_set, problem.input_set, alg,
+                                   problem.t_final, on_time_interval);
     R.time_step = alg.time_step;
     return R;
 }
