@@ -20,6 +20,7 @@
 #include "cora/cont_dynamics/cont_dynamics.h"
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 // sets, the type-erased Set and the binary registry
 #include "cora/cont_set/capsule/capsule.h"

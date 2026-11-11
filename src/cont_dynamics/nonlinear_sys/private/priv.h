@@ -32,6 +32,31 @@ struct AbstractionError {
     Zonotope set;
 };
 
+// The affine step ---------------------------------------------------------------------------------
+
+/// One step of the affine system x' = A x + u, with what the solutions of the error of the step
+/// reuse: the powers of A and the block structure (the step of nonlinear and algebraic systems).
+struct AffineStep {
+    TaylorLinSys taylor;
+    Blocks blocks;
+    Zonotope time_interval, time_point;
+};
+
+/// The step of sys from R_delta (relative to the expansion point) with the input set U and the
+/// constant input u_const, in n = dim states (CORA's oneStep of linReach).
+AffineStep priv_affine_step(const LinearSys &sys, const Zonotope &R_delta, const Zonotope &U,
+                            const Tensor &u_const, double time_step, int taylor_terms);
+
+/// The input set U without its center (CORA's params.U after the split into U and uTrans); without
+/// a set, the input 0; none for a system without inputs (m = 0). `like` gives the backend.
+std::optional<Zonotope> priv_centered_inputs(const Tensor &like, int64_t m,
+                                             const std::optional<Zonotope> &U);
+
+/// The failure of a linearization error beyond 1e100: the reachable set explodes.
+void priv_check_exploded(const Tensor &error);
+
+// The errors and the steps ------------------------------------------------------------------------
+
 /// One step from R whose linearization error was `error` in the step before (CORA's linReach
 /// with alg "lin"): the sets over the step, at its end, and the error of this step.
 NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
@@ -117,6 +142,10 @@ PolyAbstractionError priv_abstrerr_poly(const NonlinearSys &sys, const PolyZonot
 std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Interval &IHx,
                                              const std::optional<Interval> &IHu,
                                              const Linearized &lin);
+
+/// The box joined with the origin, which is the linearization point in coordinates relative to it:
+/// the region of a Lagrange remainder must contain the point it expands at (CORALean's repair).
+Interval priv_with_origin(const Interval &I);
 
 /// MATLAB's max(true_error ./ applied): NaN entries (0/0) are skipped, NaN if all are.
 double priv_ratio_max(const Tensor &true_error, const Tensor &applied);

@@ -24,6 +24,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -104,6 +105,14 @@ class Expr {
 
     /// The identity of the node: two expressions that share a subtree have the same id there.
     const void *id() const noexcept { return node_.get(); }
+    /// As enclose, one entry per expression, in one pass over the nonzero ones; a zero is empty.
+    static std::vector<std::optional<Range>> enclose_nonzero(const std::vector<Expr> &exprs,
+                                                             const std::vector<Range> &x);
+
+    /// The (rows, cols) matrix of the values at x of the expressions from `first` on, row by row;
+    /// a zero entry stays a zero without an evaluation. `like` gives the backend of the zeros.
+    static Tensor eval_matrix(const std::vector<Expr> &exprs, std::size_t first, int64_t rows,
+                              int64_t cols, const std::vector<Tensor> &x, const Tensor &like);
 
     struct Node; // the tree behind an expression
 
@@ -123,6 +132,8 @@ struct ExprView {
     int index;
     Expr a, b;
 };
+/// The rows of X (n, N) as n tensors (N, 1), one per variable, as eval_tensor takes them.
+std::vector<Tensor> variable_columns(const Tensor &X);
 
 Expr operator+(const Expr &a, const Expr &b);
 Expr operator-(const Expr &a, const Expr &b);
