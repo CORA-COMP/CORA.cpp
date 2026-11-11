@@ -26,6 +26,7 @@
 #include "cora/cont_dynamics/algorithms.h"
 #include "cora/cont_dynamics/cont_dynamics.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cora/global/expr.h"
 
 #include <functional>
@@ -65,6 +66,29 @@ struct Linearized {
 struct NonlinearStep {
     Zonotope time_interval, time_point;
     Tensor error;
+};
+
+// The polynomial zonotopes of alg poly ------------------------------------------------------------
+
+/// The sets of reach with alg::Polynomialization: the same fields as NonlinearStep.
+struct PolyNonlinearStep {
+    PolyZonotope time_interval, time_point;
+    Tensor error;
+};
+
+/// What reach is asked with a polynomial zonotope as the initial set (CORA's params with R0 a
+/// polyZonotope).
+struct PolyReachProblem {
+    std::optional<PolyZonotope> initial_set = std::nullopt; ///< the initial set X0, required
+    std::optional<Zonotope> input_set = std::nullopt;       ///< the input set U; none: no input
+    double t_final = 0;                                     ///< the time horizon, positive
+};
+
+/// The reachable sets of PolyReachProblem: time_interval[k] encloses the states over
+/// [k*time_step, (k+1)*time_step], time_point[k] those at k*time_step.
+struct PolyReachSet {
+    std::vector<PolyZonotope> time_interval, time_point;
+    double time_step = 0;
 };
 
 // The System --------------------------------------------------------------------------------------
@@ -122,6 +146,22 @@ class NonlinearSys {
     NonlinearStep post(const NonlinearStep &step, const std::optional<Zonotope> &U,
                        const alg::NonlinearReach &alg) const;
 
+    /// The reachable sets from a polynomial zonotope with alg "poly" (CORA's reach with R0 a
+    /// polyZonotope): tensor order 3, the Hessian at the expansion point as a polynomial zonotope.
+    PolyReachSet reach(const PolyReachProblem &problem, const alg::PolyNonlinearReach &alg) const;
+
+    /// The first step of that reach (CORA's initReach); post continues from it.
+    PolyNonlinearStep init_reach(const PolyZonotope &R0, const std::optional<Zonotope> &U,
+                                 const alg::Polynomialization &alg) const;
+
+    /// The step after `step` (CORA's post): as init_reach, then both sets are reduced.
+    PolyNonlinearStep post(const PolyNonlinearStep &step, const std::optional<Zonotope> &U,
+                           const alg::Polynomialization &alg) const;
+
+    /// linearize from the center (n, 1) of a set of any class, unchecked (the algorithms check).
+    Linearized linearize_impl(const Tensor &center, const std::optional<Zonotope> &U,
+                              double time_step) const;
+
     /// Trajectories from the points initial_state (n, N) at the times k*time_step, k = 0..steps,
     /// with the constant input `input` (m, N) or (m, 1).
     std::vector<Tensor> simulate(const SimulationProblem &problem,
@@ -140,6 +180,13 @@ class NonlinearSys {
 
     /// The checks of a reach problem's sets, for reach, linearize, init_reach and post.
     void validate_sets(const char *op, const Zonotope &R, const std::optional<Zonotope> &U) const;
+
+    /// The checks of the input set U: only for a system with inputs, one zonotope of them.
+    void validate_inputs(const char *op, const std::optional<Zonotope> &U) const;
+
+    /// The checks of a polynomial zonotope R (one set of the dimension) and the input set U.
+    void validate_poly_sets(const char *op, const PolyZonotope &R,
+                            const std::optional<Zonotope> &U) const;
 
     /// The checks of a point x (n, 1) and an input u (m, 1) of the derivatives.
     void validate_point(const char *op, const Tensor &x, const std::optional<Tensor> &u) const;

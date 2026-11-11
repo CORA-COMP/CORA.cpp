@@ -129,3 +129,30 @@ an older oracle makes the tests skip them.
 Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reachAdaptive` runs it), and
 the bit-exact linear step (CORALean's `reachFloatInput` is the interval-matrix exponential, CORA.cpp's
 step is CORA's `oneStep`).
+
+## Polynomial zonotopes and alg "poly" (PR "nln-poly")
+
+The pinned oracle (`oracle-20261111-f9723f6f6`) serves no polynomial zonotope operation and no
+`nonlinearSys.reach` with a polynomial zonotope. CORALean has float definitions of the operations
+below (`src/CORALean/ContSet/PolyZonotope/Float/Operations/`). Their request is `{"op": ..., "S"
+or "pZ": {"c", "G", "GI", "E", "id"}, ...}` with `E` the p x h exponent matrix and `id` the
+identifiers, the reply a polynomial zonotope in the same style; a bit-exact test needs the order
+of the generators to be CORA's or CORALean's, which CORA.cpp's constructor does not reproduce
+(CORA merges equal exponents in the order of a hash, CORA.cpp in the order of first occurrence).
+All rows are oracle debt until served; none is known to follow CORA step for step (read as far as
+the headers: `reduce` compacts first, so the order bound counts distinct monomials, CORA's
+counts columns; `zonotope` and `interval` of CORALean are not CORA's halving of the even
+generators).
+
+| op (proposed) | CORALean definition (file) | request fields | reply |
+|---|---|---|---|
+| `polyZonotope.plus` | `PolyZonotope.plus` (`Plus.lean`) | `pZ`, `S` (a polynomial zonotope) | `pZ` |
+| `polyZonotope.exactPlus` | `PolyZonotope.exactPlus` (`ExactPlus.lean`, same identifiers) | `pZ`, `S` | `pZ` |
+| `polyZonotope.mtimes` | `PolyZonotope.mtimes` (`Mtimes.lean`) | `M` (matrix), `pZ` | `pZ` |
+| `polyZonotope.quadMap` | `PolyZonotope.quadMap` (`QuadMap.lean`) | `Q` (matrices), `pZ` | `pZ` |
+| `polyZonotope.enclose` | `PolyZonotope.convHull` (`ConvHull.lean`) | `pZ`, `S` | `pZ` |
+| `polyZonotope.cartProd` | `PolyZonotope.cartProd` (`CartProd.lean`) | `pZ`, `S` | `pZ` |
+| `polyZonotope.reduce` | `PolyZonotope.reduce` (`Reduce.lean`) | `pZ`, `order` | `pZ` |
+| `polyZonotope.project` | `PolyZonotope.project` (`Project.lean`) | `pZ`, `dims` | `pZ` |
+| `polyZonotope.zonotope`, `polyZonotope.interval` | `Conversion/Float/Operations` | `pZ` | zonotope, box |
+| `nonlinearSys.reachPoly` | `NonlinearSys.FloatHessModel.linReachFloat` at `poly` (`LinReachFloat.lean`), `abstrErrPolyFloat` | the system (`f`, `n`, `m`), `X0` (a polynomial zonotope), `U`, `tFinal`, `timeStep`, `taylorTerms`, the orders | `timeInterval`, `timePoint` (polynomial zonotopes); CORALean's `poly` is its own variant (second-order Lagrange form), so a bit-exact test would need an op that follows `priv_poly_reach` |

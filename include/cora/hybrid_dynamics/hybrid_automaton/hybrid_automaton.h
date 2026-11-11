@@ -33,7 +33,10 @@ namespace cora {
 
 /// What reach of a hybrid automaton is asked (CORA's params).
 struct HybridReachProblem {
-    std::optional<Zonotope> initial_set = std::nullopt; ///< the initial set (CORA's R0), required
+    std::optional<Zonotope> initial_set = std::nullopt; ///< the initial set (CORA's R0)
+    /// Instead of initial_set: R0 as a polynomial zonotope, with the algorithm
+    /// alg::HybridStandard::polynomialization (the nonlinear flows run alg "poly").
+    std::optional<PolyZonotope> initial_poly_set = std::nullopt;
     int64_t start_location = 0; ///< the location of the initial set, 0-based (CORA's startLoc)
     double t_start = 0;         ///< the start time (CORA's tStart)
     double t_final = 0;         ///< the time horizon, after t_start (CORA's tFinal)
@@ -45,6 +48,7 @@ struct HybridReachProblem {
 
     static constexpr auto fields() {
         return std::make_tuple(field("initial_set", &HybridReachProblem::initial_set),
+                               field("initial_poly_set", &HybridReachProblem::initial_poly_set),
                                field("start_location", &HybridReachProblem::start_location),
                                field("t_start", &HybridReachProblem::t_start),
                                field("t_final", &HybridReachProblem::t_final),

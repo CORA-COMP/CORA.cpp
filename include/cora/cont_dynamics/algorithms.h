@@ -307,6 +307,41 @@ struct Linearization {
     }
 };
 
+/// CORA's alg "poly" [Althoff, HSCC 2013] on polynomial zonotopes: as Linearization at tensor_order
+/// 3, but the static linearization error (the Hessian at the expansion point) is a polynomial
+/// zonotope that keeps its dependency on the initial set; only the rest is enclosed.
+struct Polynomialization {
+    double time_step = 0;        ///< the step size, required
+    int taylor_terms = 4;        ///< the order of the Taylor series of the linearized system
+    int zonotope_order = 50;     ///< the sets are reduced to zonotope_order * n generators
+    int tensor_order = 3;        ///< 3 only: the Hessian as a set, the third derivatives as a box
+    int error_order = 10;        ///< the order of the sets the Hessian maps
+    int intermediate_order = 50; ///< the order of the error sets
+
+    // the name and the fields, for the algorithm tables of Python and the checks
+    static constexpr const char *name = "polynomialization";
+    static constexpr auto fields() {
+        // every field by its name
+        return std::make_tuple(field("time_step", &Polynomialization::time_step),
+                               field("taylor_terms", &Polynomialization::taylor_terms),
+                               field("zonotope_order", &Polynomialization::zonotope_order),
+                               field("tensor_order", &Polynomialization::tensor_order),
+                               field("error_order", &Polynomialization::error_order),
+                               field("intermediate_order", &Polynomialization::intermediate_order));
+    }
+    void validate() const {
+        validate_time_step(time_step, "Polynomialization");
+        validate_order(taylor_terms, 1, "taylor_terms", "Polynomialization");
+        validate_order(zonotope_order, 1, "zonotope_order", "Polynomialization");
+        validate_tensor_orders(tensor_order, error_order, intermediate_order, "Polynomialization");
+        detail::Validation entry;
+        CORA_CHECK(tensor_order == 3, Error::not_supported, [] {
+            return std::string("Polynomialization: only tensor_order 3 is ported (the Hessian as a "
+                               "set); order 2 has no static error and CORA's poly needs order > 2");
+        });
+    }
+};
+
 /// CORA's alg "lin-adaptive" [Wetzlinger et al., NAHS 2022] as CORALean repairs it
 /// (reachAdaptiveFloat): step size, tensor order (2 or 3) and horizon are tuned from the
 /// abstraction error. The constants are CORA's: zeta_z is its redFactor.
@@ -436,6 +471,7 @@ struct HybridStandard {
     int tensor_order = 2;          ///< a NonlinearSys flow: its Linearization::tensor_order
     int error_order = 0;           ///< a NonlinearSys flow: its Linearization::error_order
     int intermediate_order = 0;    ///< a NonlinearSys flow: its Linearization::intermediate_order
+    bool polynomialization = false; ///< a NonlinearSys flow: alg::Polynomialization (poly sets)
     GuardIntersect guard_intersect = ZonoGirard{}; ///< how the guards are intersected
 
     // the fields as Python sees them, and their checks
@@ -448,6 +484,7 @@ struct HybridStandard {
                                field("tensor_order", &HybridStandard::tensor_order),
                                field("error_order", &HybridStandard::error_order),
                                field("intermediate_order", &HybridStandard::intermediate_order),
+                               field("polynomialization", &HybridStandard::polynomialization),
                                field("guard_intersect", &HybridStandard::guard_intersect));
     }
     void validate() const {
@@ -471,6 +508,7 @@ using LinearReach = std::variant<Standard, WrappingFree, FromStart, Decompositio
 using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope>;
 using LinearSimulate = std::variant<Exact>;
 using NonlinearReach = std::variant<Linearization, LinearizationAdaptive>;
+using PolyNonlinearReach = std::variant<Polynomialization>;
 using LinParamReach = std::variant<LinParamStandard>;
 using NonlinearSimulate = std::variant<RungeKutta4>;
 using HybridReach = std::variant<HybridStandard>;

@@ -3004,6 +3004,158 @@ void bind_capsule(py::module_ &m) {
              "A capsule that encloses the capsule and S");
 }
 
+// PolyZonotope ------------------------------------------------------------------------------------
+
+/// The exponent matrix E (p, h) of Python, as one column of p exponents per generator.
+Exponents exponents_from_python(const py::object &E, std::size_t generators) {
+    if (E.is_none()) {
+        // CORA's default: the identity, a factor per generator
+        Exponents out(generators, std::vector<int>(generators, 0));
+        for (std::size_t j = 0; j < generators; ++j) out[j][j] = 1;
+        return out;
+    }
+    const py::object rows = py::hasattr(E, "tolist") ? E.attr("tolist")() : py::object(E);
+    const auto matrix = py::cast<std::vector<std::vector<int64_t>>>(rows);
+    Exponents out(generators);
+    for (std::size_t j = 0; j < generators; ++j)
+        for (const auto &row : matrix) {
+            if (row.size() != generators)
+                CORA_FAIL(Error::wrong_input_in_constructor,
+                          "PolyZonotope: E needs one column per generator of G");
+            out[j].push_back(int(row[j]));
+        }
+    return out;
+}
+
+/// The tensor of an optional generator matrix: none is a matrix without columns.
+Tensor generators_from_python(const py::object &G, const Tensor &c, const char *what) {
+    // a missing matrix has the rows of the center and no column
+    return G.is_none() ? c.zeros_like({c.shape()[0], 0}) : tensor_of(G, what);
+}
+
+void bind_poly_zonotope(py::module_ &m) {
+    py::class_<PolyZonotope, ContSet>(
+        m, "PolyZonotope",
+        "The polynomial zonotope c + sum_j (prod_i a_i^E[i,j]) G[:,j] "
+        "+ GI b with factors a_i, b in [-1, 1].")
+        .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope: its generators are dependent")
+        .def(py::init<const Interval &>(), py::arg("I"), "A box: a dependent generator per axis")
+        .def(py::init([](const py::object &c, const py::object &G, const py::object &GI,
+                         const py::object &E, const py::object &id) {
+                 const Tensor center = vector_of(c, "the center");
+                 const Tensor dependent = generators_from_python(G, center, "G");
+                 const auto h = std::size_t(dependent.shape()[1]);
+                 // the exponents, and the identifiers 1..p unless they are given
+                 Exponents exps = exponents_from_python(E, h);
+                 std::vector<int64_t> ids;
+                 if (id.is_none()) {
+                     const std::size_t p = exps.empty() ? 0 : exps.front().size();
+                     for (std::size_t i = 0; i < p; ++i) ids.push_back(int64_t(i) + 1);
+                 } else {
+                     ids = py::cast<std::vector<int64_t>>(id);
+                 }
+                 return PolyZonotope(center, dependent, generators_from_python(GI, center, "GI"),
+                                     std::move(exps), std::move(ids));
+             }),
+             py::arg("c"), py::arg("G") = py::none(), py::arg("GI") = py::none(),
+             py::arg("E") = py::none(), py::arg("id") = py::none(),
+             "center c (n), dependent generators G (n, h), independent generators GI (n, q), "
+             "exponents E (p, h; default the identity) and identifiers id (p; default 1..p)")
+        // the stored parts as arrays
+        .def_property_readonly(
+            "c", [](const PolyZonotope &P) { return vector(P.center()); }, "The center c (n)")
+        .def_property_readonly(
+            "G", [](const PolyZonotope &P) { return matrix(P.generators()); },
+            "The dependent generators G (n, h)")
+        .def_property_readonly(
+            "GI", [](const PolyZonotope &P) { return matrix(P.independent_generators()); },
+            "The independent generators GI (n, q)")
+        // the exponents as the matrix E (p, h) of CORA
+        .def_property_readonly(
+            "E",
+            [](const PolyZonotope &P) {
+                const auto p = P.num_factors(), h = P.num_dependent();
+                py::array_t<int64_t> out({p, h});
+                auto view = out.mutable_unchecked<2>();
+                for (int64_t i = 0; i < p; ++i)
+                    for (int64_t j = 0; j < h; ++j)
+                        view(i, j) = P.exponents()[std::size_t(j)][std::size_t(i)];
+                return out;
+            },
+            "The exponent matrix E (p, h)")
+        .def_property_readonly(
+            "id", [](const PolyZonotope &P) { return P.ids(); }, "The identifiers (p)")
+        // the conversion, the sums and the maps
+        .def("zonotope", &PolyZonotope::zonotope, "A zonotope that holds the set")
+        .def(
+            "plus",
+            [](const PolyZonotope &P, const py::object &S) {
+                if (py::isinstance<PolyZonotope>(S)) return P.plus(py::cast<PolyZonotope>(S));
+                if (py::isinstance<Zonotope>(S)) return P.plus(py::cast<Zonotope>(S));
+                if (py::isinstance<Interval>(S)) return P.plus(py::cast<Interval>(S));
+                return P.plus(vector_of(S, "the point"));
+            },
+            py::arg("S"),
+            "The sum with a zonotope, a box or a point (they join the independent part) or with a "
+            "polynomial zonotope (on factors of its own)")
+        // the sum with shared factors, and the maps
+        .def("exact_plus", &PolyZonotope::exact_plus, py::arg("S"),
+             "The sum in which equal identifiers are one factor")
+        .def(
+            "linear_map",
+            [](const PolyZonotope &P, const py::object &M) {
+                if (py::isinstance<IntervalMatrix>(M))
+                    return P.linear_map(py::cast<IntervalMatrix>(M).interval());
+                if (py::isinstance<Interval>(M)) return P.linear_map(py::cast<Interval>(M));
+                return P.linear_map(tensor_of(M, "the matrix"));
+            },
+            py::arg("M"), "M * P for a matrix, or [M] * P for an interval matrix")
+        // the hull, the product and the reduction
+        .def(
+            "enclose",
+            [](const PolyZonotope &P, const ContSet &S) {
+                return P.enclose(dynamic_cast<const PolyZonotope &>(S));
+            },
+            py::arg("S"),
+            "A polynomial zonotope that holds the segments between the points of both")
+        .def("cart_prod", &PolyZonotope::cart_prod, py::arg("Z"),
+             "The Cartesian product with a zonotope (its generators are independent)")
+        .def("reduce", &PolyZonotope::reduce, py::arg("order") = 1,
+             "A set with at most order * dim generators that holds the set (Girard)")
+        // the quadratic map
+        .def(
+            "quad_map",
+            [](const PolyZonotope &P, const std::vector<py::object> &Q) {
+                // the matrices Q[i] of the map
+                std::vector<Tensor> matrices;
+                matrices.reserve(Q.size());
+                for (const py::object &q : Q) matrices.push_back(tensor_of(q, "a matrix of Q"));
+                return P.quad_map(matrices);
+            },
+            py::arg("Q"), "The image under z_i = x' Q[i] x")
+        // the canonical form
+        .def(
+            "compact",
+            [](const PolyZonotope &P, const std::optional<std::string> &method, Tol) {
+                if (method && *method != "all")
+                    CORA_FAIL(Error::no_specific_alg, "compact: a polynomial zonotope has the "
+                                                      "method 'all' only, got '" +
+                                                          *method + "'");
+                return P.compact();
+            },
+            py::arg("method") = py::none(), py::arg("tol") = py::none(),
+            "The set without zero generators and unused factors (method 'all')")
+        // CORA's approximate test: False is certain
+        .def(
+            "is_intersecting",
+            [](const PolyZonotope &P, const Polytope &S, Tol tol) {
+                return P.is_intersecting(S, tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "False if the set certainly misses the polytope, else True");
+    m.attr("PolyZonotope").attr("__array_ufunc__") = py::none();
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
@@ -4945,6 +5097,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_polytope(m);
     bind_ellipsoid(m);
     bind_capsule(m);
+    bind_poly_zonotope(m);
     bind_interval_matrix(m);
     bind_mat_zonotope(m);
     // the operators, the problems and the systems

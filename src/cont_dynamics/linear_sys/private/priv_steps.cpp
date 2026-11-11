@@ -18,19 +18,6 @@ namespace cora {
 
 namespace {
 
-/// dt E, the remainder of the series of e^{A dt} that enters the input solutions.
-Interval aux_remainder(const LinearSys &sys, double time_step, int taylor_terms) {
-    return time_step * sys.expm_remainder(time_step, taylor_terms);
-}
-
-/// The series sum_{eta=0}^{order} A^eta dt^(eta+1) / (eta+1)! as one matrix.
-Tensor aux_series(const LinearSys &sys, TaylorLinSys &taylor, double time_step, int taylor_terms) {
-    Tensor sum = sys.A().eye_like() * time_step;
-    for (int eta = 1; eta <= taylor_terms; ++eta)
-        sum = sum + taylor.Apower(eta) * taylor.dtoverfac(time_step, eta + 1);
-    return sum;
-}
-
 /// conv(0, Ptp) for every block.
 BlockSets aux_hull_with_origin(const BlockSets &Ptp) {
     BlockSets out;
@@ -55,6 +42,17 @@ StepAlgorithm priv_step_algorithm(const char *op, const alg::LinearReach &alg) {
                                         ": it serves the algorithms standard and "
                                         "wrapping_free, not " +
                                         alg::name_of(alg));
+}
+
+Interval priv_remainder(const LinearSys &sys, double time_step, int taylor_terms) {
+    return time_step * sys.expm_remainder(time_step, taylor_terms);
+}
+
+Tensor priv_series(const LinearSys &sys, TaylorLinSys &taylor, double time_step, int taylor_terms) {
+    Tensor sum = sys.A().eye_like() * time_step;
+    for (int eta = 1; eta <= taylor_terms; ++eta)
+        sum = sum + taylor.Apower(eta) * taylor.dtoverfac(time_step, eta + 1);
+    return sum;
 }
 
 // Homogeneous solution ----------------------------------------------------------------------------
@@ -88,7 +86,7 @@ BlockSets priv_particular_time_varying(const LinearSys &sys, TaylorLinSys &taylo
         const Tensor term = taylor.Apower(eta) * taylor.dtoverfac(time_step, eta + 1);
         P = priv_block_plus(P, priv_block_mtimes(term, blocks, Ub));
     }
-    const Interval E = aux_remainder(sys, time_step, taylor_terms);
+    const Interval E = priv_remainder(sys, time_step, taylor_terms);
     return priv_block_plus(P, priv_block_mtimes(E, blocks, Ub));
 }
 
@@ -106,8 +104,8 @@ BlockConstant priv_particular_constant(const LinearSys &sys, TaylorLinSys &taylo
         const Tensor M = Ainv->matmul(taylor.e_adt(time_step) - sys.A().eye_like());
         Ptp = priv_block_mtimes(M, blocks, Ub);
     } else {
-        const Tensor Asum = aux_series(sys, taylor, time_step, taylor_terms);
-        const Interval E = aux_remainder(sys, time_step, taylor_terms);
+        const Tensor Asum = priv_series(sys, taylor, time_step, taylor_terms);
+        const Interval E = priv_remainder(sys, time_step, taylor_terms);
         Ptp =
             priv_block_plus(priv_block_mtimes(Asum, blocks, Ub), priv_block_mtimes(E, blocks, Ub));
     }

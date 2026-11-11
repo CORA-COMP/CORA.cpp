@@ -52,13 +52,23 @@ void aux_validate(const HybridAutomaton &HA, const HybridReachProblem &p,
                   const alg::HybridStandard &a, const std::vector<HybridSpecification> &specs) {
     detail::Validation entry;
     const int64_t n = HA.dim(), count = int64_t(HA.locations().size());
+    // exactly one initial set, of the dimension, and the algorithm that goes with its class
+    CORA_CHECK(p.initial_set.has_value() != p.initial_poly_set.has_value(), Error::wrong_value, [] {
+        return std::string("reach: the problem needs exactly one of initial_set and "
+                           "initial_poly_set");
+    });
     CORA_CHECK(
-        p.initial_set && p.initial_set->center().shape() == std::vector<int64_t>({n, 1}) &&
-            p.initial_set->generators().ndim() == 2,
+        p.initial_poly_set ? p.initial_poly_set->dim() == n
+                           : (p.initial_set->center().shape() == std::vector<int64_t>({n, 1}) &&
+                              p.initial_set->generators().ndim() == 2),
         Error::wrong_value, [&] {
-            return "reach: the problem needs an initial_set, one zonotope of the dimension " +
-                   std::to_string(n);
+            return "reach: the initial set must be one set of the dimension " + std::to_string(n);
         });
+    // the algorithm goes with the class of the initial set
+    CORA_CHECK(p.initial_poly_set.has_value() == a.polynomialization, Error::wrong_value, [] {
+        return std::string("reach: a polynomial zonotope as initial_poly_set goes with "
+                           "polynomialization = true, and only with it");
+    });
     CORA_CHECK(p.start_location >= 0 && p.start_location < count, Error::wrong_value, [&] {
         return "reach: start_location must be a location from 0 to " + std::to_string(count - 1) +
                ", got " + std::to_string(p.start_location);
@@ -127,7 +137,10 @@ HybridReachSet HybridAutomaton::reach(const HybridReachProblem &problem,
     }
     HybridReachSet out;
     std::deque<Pending> queue{
-        {*problem.initial_set, problem.start_location, {problem.t_start, problem.t_start}, -1}};
+        {problem.initial_poly_set ? Set(*problem.initial_poly_set) : Set(*problem.initial_set),
+         problem.start_location,
+         {problem.t_start, problem.t_start},
+         -1}};
     // one location at a time, first come first served, until the queue is empty or a violation
     while (!queue.empty() && out.verified) {
         const Pending next = std::move(queue.front());

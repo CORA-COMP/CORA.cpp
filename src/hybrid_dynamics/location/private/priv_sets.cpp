@@ -14,6 +14,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/global/tensor/tolerance.h"
 #include "hybrid_dynamics/location/private/priv.h"
@@ -29,6 +30,8 @@ namespace cora {
 
 std::vector<Zonotope> priv_zonotopes(const Set &S) {
     if (S.is<Zonotope>()) return {S.as<Zonotope>()};
+    // CORA's guard code works on zonotope(R) of a polynomial zonotope
+    if (S.is<PolyZonotope>()) return {S.as<PolyZonotope>().zonotope()};
     return S.as<ZonoBundle>().zonotopes();
 }
 
@@ -41,6 +44,7 @@ bool priv_meets(const Polytope &P, const Set &S) {
     // CORA's isIntersecting_(P, S, 'approx', 1e-8) for the two classes a location holds
     if (S.is<Zonotope>())
         return P.is_intersecting(S.as<Zonotope>(), "approx", numerics::kGuardMeet);
+    if (S.is<PolyZonotope>()) return S.as<PolyZonotope>().is_intersecting(P, numerics::kGuardMeet);
     return P.is_intersecting(S.as<ZonoBundle>(), "approx", numerics::kGuardMeet);
 }
 

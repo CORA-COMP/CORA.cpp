@@ -130,6 +130,15 @@ std::optional<Interval> aux_third_order(const std::vector<std::optional<Range>> 
 
 // ===========================================  MAIN  =========================================== //
 
+std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Interval &IHx,
+                                             const std::optional<Interval> &IHu,
+                                             const Linearized &lin) {
+    const Range x_box(IHx.inf() + lin.x_star, IHx.sup() + lin.x_star);
+    std::optional<Range> u_box;
+    if (IHu) u_box = Range(IHu->inf() + lin.u_star, IHu->sup() + lin.u_star);
+    return aux_third_order(sys.third_order_enclosure(x_box, u_box), aux_dz(IHx, IHu), sys.dim());
+}
+
 AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
                                    const Linearized &lin, const std::optional<Zonotope> &U0,
                                    const alg::Linearization &alg) {

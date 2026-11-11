@@ -31,12 +31,10 @@
 
 namespace cora {
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
-namespace {
+// ===========================================  MAIN  =========================================== //
 
-/// MATLAB's max(true_error ./ applied): NaN entries (0/0) are skipped, NaN if all are.
-double aux_ratio_max(const Tensor &true_error, const Tensor &applied) {
+double priv_ratio_max(const Tensor &true_error, const Tensor &applied) {
     const std::vector<double> e = true_error.data(), a = applied.data();
     double out = std::numeric_limits<double>::quiet_NaN();
     for (std::size_t i = 0; i < e.size(); ++i) {
@@ -46,17 +44,11 @@ double aux_ratio_max(const Tensor &true_error, const Tensor &applied) {
     return out;
 }
 
-/// Whether some entry is above CORA's bound of an exploding error, 1e100.
-bool aux_exploded(const Tensor &error) {
+bool priv_exploded(const Tensor &error) {
     for (const double v : error.data())
         if (v > 1e100) return true;
     return false;
 }
-
-} // namespace
-
-
-// ===========================================  MAIN  =========================================== //
 
 NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
                              const std::optional<Zonotope> &U, const alg::Linearization &alg) {
@@ -87,9 +79,9 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
         const Zonotope R_all =
             priv_particular_time_varying(lin.sys, taylor, blocks, V_guess, dt, eta)[0];
         err = priv_abstrerr_lin(sys, R_ti + R_all, lin, U0, alg);
-        perf = aux_ratio_max(err->bound, applied);
+        perf = priv_ratio_max(err->bound, applied);
         bound = err->bound;
-        if (aux_exploded(bound))
+        if (priv_exploded(bound))
             CORA_FAIL(Error::reach_set_explosion,
                       "cora: the linearization error exploded; the reachable set grows without "
                       "bound (the time_step may be too large)");

@@ -55,6 +55,12 @@ struct StepAlgorithm {
 /// init_reach and post) are refused with Error::not_supported, naming the operation.
 StepAlgorithm priv_step_algorithm(const char *op, const alg::LinearReach &alg);
 
+/// dt E, the remainder of the series of e^{A dt} that enters the input solutions.
+Interval priv_remainder(const LinearSys &sys, double time_step, int taylor_terms);
+
+/// The series sum_{eta=0}^{order} A^eta dt^(eta+1) / (eta+1)! as one matrix.
+Tensor priv_series(const LinearSys &sys, TaylorLinSys &taylor, double time_step, int taylor_terms);
+
 /// e^{A dt} X and F X for the blocks Xb of a set.
 BlockHomogeneous priv_homogeneous(const LinearSys &sys, TaylorLinSys &taylor, const Blocks &blocks,
                                   const BlockSets &Xb, double time_step, int taylor_terms);
