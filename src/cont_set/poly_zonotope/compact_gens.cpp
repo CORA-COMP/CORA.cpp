@@ -20,7 +20,6 @@
 
 #include "cont_set/poly_zonotope/private/priv.h"
 
-#include <map>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,13 +32,11 @@ PolyZonotope PolyZonotope::compact_gens() const {
     detail::Entry entry;
     const int64_t n = dim(), h = num_dependent();
     // the least column of each exponent column
-    std::map<std::vector<int>, int64_t> first;
-    std::vector<int64_t> rep(static_cast<std::size_t>(h)), kept;
-    for (int64_t j = 0; j < h; ++j) {
-        const auto [at, inserted] = first.emplace(E_[std::size_t(j)], j);
-        rep[std::size_t(j)] = at->second;
-        if (inserted) kept.push_back(j);
-    }
+    const std::vector<int64_t> rep = priv_least_equal_column(E_);
+    std::vector<int64_t> kept;
+    kept.reserve(static_cast<std::size_t>(h));
+    for (int64_t j = 0; j < h; ++j)
+        if (rep[std::size_t(j)] == j) kept.push_back(j);
     if (int64_t(kept.size()) == h) return *this;
     // the sums of the classes, each from the last member to the first (masked zeros add nothing)
     const std::vector<double> g = G_.data();

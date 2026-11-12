@@ -4,8 +4,11 @@
 // (the generators ranked by their length, the longest prefix whose box distance stays within
 // diagpercent boxed, an even-exponent generator at its full radius), aux_reduceOnlyDep (past
 // (order + 1) n dependent generators the shortest are boxed), restructure (the independent part
-// boxed and made dependent) and approxVolumeRatio. Sums add from the last term to the first and a
-// norm is the root of the sum of squares, as CORALean's sumUp and normUp at nearest.
+// boxed and made dependent) and approxVolumeRatio. The boxed prefix of the ranking ends where the
+// cumulative box distance first exceeds dHmax (the increments are not negative), so the rankings of
+// the blocks are produced only that far (lazy_rank.h) and merged. Sums add from the last term to
+// the first and a norm is the root of the sum of squares, as CORALean's sumUp and normUp at
+// nearest.
 //
 // Syntax:   PolyZonotope R = priv_reduce_adaptive_poly(Z, diagpercent);
 // Inputs:   Z - polynomial zonotope
@@ -23,6 +26,7 @@
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
 #include "cont_set/poly_zonotope/private/priv.h"
+#include "global/lazy_rank.h"
 
 #include <algorithm>
 #include <cmath>
@@ -45,7 +49,7 @@ struct Host {
 
     int64_t n, h, q;
     Vec c, G, GI;
-    Exponents E;
+    const Exponents &E; // the exponents of the set, which outlives the view
 
     double g(int64_t i, int64_t l) const { return G[std::size_t(i * h + l)]; }
     double gi(int64_t i, int64_t l) const { return GI[std::size_t(i * q + l)]; }
@@ -61,16 +65,27 @@ bool aux_all_even(const std::vector<int> &col) {
     return std::all_of(col.begin(), col.end(), [](int e) { return e % 2 == 0; });
 }
 
-/// The indices 0 .. m-1 sorted by the key, the smaller first, ties in index order.
+/// The indices 0 .. m-1 sorted by the key, the smaller first, ties in index order. The pairs
+/// (key, index) are sorted, which is the same total order as sorting the indices by the key with
+/// the index as the tie-break (a stable order), without the indirection.
 std::vector<std::size_t> aux_rank(const Vec &key, bool descending = false) {
-    std::vector<std::size_t> idx(key.size());
-    std::iota(idx.begin(), idx.end(), std::size_t(0));
-    // std::sort with the index as the tie-break is the stable order, without a temporary buffer
-    std::sort(idx.begin(), idx.end(), [&](std::size_t a, std::size_t b) {
-        if (key[a] != key[b]) return descending ? key[b] < key[a] : key[a] < key[b];
-        return a < b;
+    std::vector<std::pair<double, std::size_t>> pairs(key.size());
+    for (std::size_t i = 0; i < key.size(); ++i) pairs[i] = {key[i], i};
+    std::sort(pairs.begin(), pairs.end(), [descending](const auto &a, const auto &b) {
+        if (a.first != b.first) return descending ? b.first < a.first : a.first < b.first;
+        return a.second < b.second;
     });
+    std::vector<std::size_t> idx(key.size());
+    for (std::size_t i = 0; i < key.size(); ++i) idx[i] = pairs[i].second;
     return idx;
+}
+
+/// The set with equal exponent columns added (compact_gens), without a copy when there are none.
+PolyZonotope aux_compact(PolyZonotope &&Z) {
+    const std::vector<int64_t> rep = priv_least_equal_column(Z.exponents());
+    for (std::size_t j = 0; j < rep.size(); ++j)
+        if (rep[j] != int64_t(j)) return Z.compact_gens();
+    return std::move(Z);
 }
 
 /// The set with the dependent generators `keep` (in that order) and the independent generators
@@ -89,22 +104,21 @@ PolyZonotope aux_reduce_by(const PolyZonotope &Z, const Host &a,
             GI[std::size_t(i * (qk + n) + l)] = a.gi(i, int64_t(keep_i[std::size_t(l)]));
         GI[std::size_t(i * (qk + n) + qk + i)] = drop[std::size_t(i)];
     }
-    Exponents E;
-    for (const std::size_t l : keep) E.push_back(a.E[l]);
     // factors no kept generator carries go with their identifiers (no value changes)
     std::vector<int64_t> id;
     std::vector<std::size_t> used;
     for (std::size_t k = 0; k < Z.ids().size(); ++k)
-        if (std::any_of(E.begin(), E.end(),
-                        [&](const std::vector<int> &col) { return col[k] != 0; })) {
+        if (std::any_of(keep.begin(), keep.end(), [&](std::size_t l) { return a.E[l][k] != 0; })) {
             used.push_back(k);
             id.push_back(Z.ids()[k]);
         }
-    for (std::vector<int> &col : E) {
+    Exponents E;
+    E.reserve(keep.size());
+    for (const std::size_t l : keep) {
         std::vector<int> c;
         c.reserve(used.size());
-        for (const std::size_t k : used) c.push_back(col[k]);
-        col = std::move(c);
+        for (const std::size_t k : used) c.push_back(a.E[l][k]);
+        E.push_back(std::move(c));
     }
     return {
         Z.center(),    aux_tensor(like, G, n, hk), aux_tensor(like, GI, n, qk + n), std::move(E),
@@ -117,10 +131,10 @@ Vec aux_drop_radius(const Host &a, const std::vector<std::size_t> &dep,
                     const std::vector<std::size_t> &ind) {
     Vec out(std::size_t(a.n));
     for (int64_t i = 0; i < a.n; ++i) {
-        Vec d, e;
-        for (const std::size_t l : dep) d.push_back(std::abs(a.g(i, int64_t(l))));
-        for (const std::size_t l : ind) e.push_back(std::abs(a.gi(i, int64_t(l))));
-        out[std::size_t(i)] = priv_sum_up(d) + priv_sum_up(e);
+        double d = 0, e = 0;
+        for (std::size_t l = dep.size(); l-- > 0;) d = std::abs(a.g(i, int64_t(dep[l]))) + d;
+        for (std::size_t l = ind.size(); l-- > 0;) e = std::abs(a.gi(i, int64_t(ind[l]))) + e;
+        out[std::size_t(i)] = d + e;
     }
     return out;
 }
@@ -193,6 +207,53 @@ Apart aux_apart(const PolyZonotope &Z1, const PolyZonotope &Z2) {
     return out;
 }
 
+/// Which generators are boxed (the dependent ones, then the independent ones): the longest prefix
+/// of the ranking of the metrics whose cumulative distance stays within dh_max, the rankings read
+/// only as far as it goes.
+std::vector<char> aux_boxed_prefix(const Host &a, const Vec &m_dep, const Vec &m_ind,
+                                   double dh_max) {
+    const auto n = static_cast<std::size_t>(a.n), h = m_dep.size();
+    std::vector<char> boxed(h + m_ind.size(), 0);
+    // both blocks ranked together are the merge of their rankings (a dependent first on a tie)
+    LazyRank next_dep(m_dep), next_ind(m_ind);
+    Vec acc_dep(n, 0.0), acc_ind(n, 0.0), v(n);
+    double prev_dep = 0, prev_ind = 0, acc = 0;
+    while (!next_dep.empty() || !next_ind.empty()) {
+        const bool dependent = next_ind.empty() || (!next_dep.empty() &&
+                                                    next_dep.peek().first <= next_ind.peek().first);
+        double inc;
+        std::size_t id;
+        if (dependent) {
+            // a dependent generator adds its magnitudes to the box
+            id = next_dep.peek().second;
+            next_dep.pop();
+            for (std::size_t i = 0; i < n; ++i)
+                acc_dep[i] = acc_dep[i] + std::abs(a.g(int64_t(i), int64_t(id)));
+            const double dist = 0.5 * priv_norm_up(acc_dep);
+            inc = dist - prev_dep;
+            prev_dep = dist;
+        } else {
+            // an independent one adds its magnitudes, the first largest entry dropped
+            const std::size_t j = next_ind.peek().second;
+            next_ind.pop();
+            id = h + j;
+            std::size_t top = 0;
+            for (std::size_t i = 0; i < n; ++i) {
+                v[i] = std::abs(a.gi(int64_t(i), int64_t(j)));
+                if (v[top] < v[i]) top = i;
+            }
+            for (std::size_t i = 0; i < n; ++i) acc_ind[i] = acc_ind[i] + (i == top ? 0.0 : v[i]);
+            const double dist = 2.0 * priv_norm_up(acc_ind);
+            inc = dist - prev_ind;
+            prev_ind = dist;
+        }
+        acc = acc + inc;
+        if (!(acc <= dh_max)) break;
+        boxed[id] = 1;
+    }
+    return boxed;
+}
+
 } // namespace
 
 
@@ -203,89 +264,43 @@ Apart aux_apart(const PolyZonotope &Z1, const PolyZonotope &Z2) {
 PolyZonotope priv_reduce_adaptive_poly(const PolyZonotope &Z, double diagpercent) {
     const Host a(Z);
     const int64_t n = a.n, h = a.h, q = a.q;
-    const auto nn = static_cast<std::size_t>(n), hh = static_cast<std::size_t>(h),
-               qq = static_cast<std::size_t>(q);
-    // the metrics: 1-norm of a dependent generator, 1-norm less the largest entry of an independent
+    const auto hh = static_cast<std::size_t>(h), qq = static_cast<std::size_t>(q);
+    // the magnitudes of a dependent generator: even exponents only, at half
     std::vector<char> halfs(hh);
     for (int64_t j = 0; j < h; ++j) halfs[std::size_t(j)] = aux_all_even(a.E[std::size_t(j)]);
-    const auto column = [&](int64_t j) {
-        Vec v(nn);
-        for (int64_t i = 0; i < n; ++i)
-            v[std::size_t(i)] = std::abs(halfs[std::size_t(j)] ? 0.5 * a.g(i, j) : a.g(i, j));
-        return v;
+    const auto mag = [&](int64_t i, int64_t j) {
+        return std::abs(halfs[std::size_t(j)] ? 0.5 * a.g(i, j) : a.g(i, j));
     };
-    // the magnitudes of an independent generator
-    const auto column_i = [&](int64_t j) {
-        Vec v(nn);
-        for (int64_t i = 0; i < n; ++i) v[std::size_t(i)] = std::abs(a.gi(i, j));
-        return v;
-    };
-    // the metrics of all generators, ranked together (stable, smallest first)
-    Vec m_dep(hh), m_ind(qq);
-    for (int64_t j = 0; j < h; ++j) m_dep[std::size_t(j)] = priv_sum_up(column(j));
+    // the metrics: 1-norm of a dependent generator, 1-norm less the largest entry of an independent
+    Vec m_dep(hh, 0.0), m_ind(qq, 0.0);
+    for (int64_t i = n; i-- > 0;) {
+        for (int64_t j = 0; j < h; ++j) m_dep[std::size_t(j)] = mag(i, j) + m_dep[std::size_t(j)];
+        for (int64_t j = 0; j < q; ++j)
+            m_ind[std::size_t(j)] = std::abs(a.gi(i, j)) + m_ind[std::size_t(j)];
+    }
     for (int64_t j = 0; j < q; ++j) {
-        const Vec v = column_i(j);
-        m_ind[std::size_t(j)] = priv_sum_up(v) - *std::max_element(v.begin(), v.end());
+        double largest = std::abs(a.gi(0, j));
+        for (int64_t i = 1; i < n; ++i) largest = std::max(largest, std::abs(a.gi(i, j)));
+        m_ind[std::size_t(j)] = m_ind[std::size_t(j)] - largest;
     }
-    Vec metric = m_dep;
-    metric.insert(metric.end(), m_ind.begin(), m_ind.end());
-    const std::vector<std::size_t> rank = aux_rank(metric);
-
-    // the increments of the box distance in the ranking of each block (dependent first)
-    Vec inc(hh + qq, 0.0);
-    {
-        Vec acc(nn, 0.0);
-        double previous = 0;
-        for (const std::size_t j : aux_rank(m_dep)) {
-            for (int64_t i = 0; i < n; ++i)
-                acc[std::size_t(i)] = acc[std::size_t(i)] + std::abs(a.g(i, int64_t(j)));
-            const double dist = 0.5 * priv_norm_up(acc);
-            inc[j] = dist - previous;
-            previous = dist;
-        }
-    }
-    // the independent ones: the largest entry of each generator drops out
-    {
-        Vec acc(nn, 0.0);
-        double previous = 0;
-        for (const std::size_t j : aux_rank(m_ind)) {
-            const Vec v = column_i(int64_t(j));
-            const std::size_t top = std::size_t(
-                std::find(v.begin(), v.end(), *std::max_element(v.begin(), v.end())) - v.begin());
-            for (std::size_t i = 0; i < std::size_t(n); ++i)
-                acc[i] = acc[i] + (i == top ? 0.0 : v[i]);
-            const double dist = 2.0 * priv_norm_up(acc);
-            inc[std::size_t(h) + j] = dist - previous;
-            previous = dist;
-        }
-    }
-
-    // the longest prefix of the ranking whose cumulative distance is within dHmax
-    Vec box(nn);
+    // the allowed distance: the share of the norm of the box of the set
+    Vec box(static_cast<std::size_t>(n));
     for (int64_t i = 0; i < n; ++i) {
-        Vec d(hh), e(qq);
-        for (int64_t j = 0; j < h; ++j)
-            d[std::size_t(j)] = std::abs(halfs[std::size_t(j)] ? 0.5 * a.g(i, j) : a.g(i, j));
-        for (int64_t j = 0; j < q; ++j) e[std::size_t(j)] = std::abs(a.gi(i, j));
-        box[std::size_t(i)] = priv_sum_up(d) + priv_sum_up(e);
+        double d = 0, e = 0;
+        for (int64_t j = h; j-- > 0;) d = mag(i, j) + d;
+        for (int64_t j = q; j-- > 0;) e = std::abs(a.gi(i, j)) + e;
+        box[std::size_t(i)] = d + e;
     }
     const double dh_max = (diagpercent * 0.5) * priv_norm_up(box);
-    double acc = 0;
-    std::size_t count = 0, until = 0;
-    for (const std::size_t j : rank) {
-        acc = acc + inc[j];
-        ++count;
-        if (acc <= dh_max) until = count;
-    }
-    std::vector<char> boxed(hh + qq, 0);
-    for (std::size_t k = 0; k < until; ++k) boxed[rank[k]] = 1;
+    // the longest prefix of the ranking whose cumulative distance is within dHmax
+    const std::vector<char> boxed = aux_boxed_prefix(a, m_dep, m_ind, dh_max);
 
     // the others stay, in their order; the boxed ones become the independent generators
     std::vector<std::size_t> keep, keep_i, drop, drop_i;
     for (int64_t j = 0; j < h; ++j) (boxed[std::size_t(j)] ? drop : keep).push_back(std::size_t(j));
     for (int64_t j = 0; j < q; ++j)
         (boxed[std::size_t(h + j)] ? drop_i : keep_i).push_back(std::size_t(j));
-    return aux_reduce_by(Z, a, keep, keep_i, aux_drop_radius(a, drop, drop_i)).compact_gens();
+    return aux_compact(aux_reduce_by(Z, a, keep, keep_i, aux_drop_radius(a, drop, drop_i)));
 }
 
 // The dependent generators ------------------------------------------------------------------------
@@ -294,9 +309,8 @@ PolyZonotope priv_reduce_only_dep(const PolyZonotope &Z, int order) {
     const Host a(Z);
     if (a.h < int64_t(order + 1) * a.n) return Z;
     // the longest order * n stay, in the order of their length; the rest is boxed
-    Vec length(std::size_t(a.h));
+    Vec length(std::size_t(a.h)), v(std::size_t(a.n));
     for (int64_t l = 0; l < a.h; ++l) {
-        Vec v(std::size_t(a.n));
         for (int64_t i = 0; i < a.n; ++i) v[std::size_t(i)] = a.g(i, l);
         length[std::size_t(l)] = priv_norm_up(v);
     }
@@ -307,7 +321,7 @@ PolyZonotope priv_reduce_only_dep(const PolyZonotope &Z, int order) {
         drop(rank.begin() + std::ptrdiff_t(kept), rank.end());
     std::vector<std::size_t> keep_i(std::size_t(a.q));
     std::iota(keep_i.begin(), keep_i.end(), std::size_t(0));
-    return aux_reduce_by(Z, a, keep, keep_i, aux_drop_radius(a, drop, {})).compact_gens();
+    return aux_compact(aux_reduce_by(Z, a, keep, keep_i, aux_drop_radius(a, drop, {})));
 }
 
 // The sets of CORALean's float layer -------------------------------------------------------------

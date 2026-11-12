@@ -68,9 +68,10 @@ double priv_sum_up(const Vec &v) {
 }
 
 double priv_norm_up(const Vec &v) {
-    Vec squares(v.size());
-    for (std::size_t i = 0; i < v.size(); ++i) squares[i] = std::abs(v[i]) * std::abs(v[i]);
-    return std::sqrt(priv_sum_up(squares));
+    // each square is rounded before it is added (no fused multiply-add here, see CMakeLists.txt)
+    double sum = 0;
+    for (std::size_t i = v.size(); i-- > 0;) sum = std::abs(v[i]) * std::abs(v[i]) + sum;
+    return std::sqrt(sum);
 }
 
 double priv_pow(double x, int k) {
