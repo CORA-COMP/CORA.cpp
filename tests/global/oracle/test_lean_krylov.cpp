@@ -281,11 +281,12 @@ int main() {
                         lean::Krylov::lyapunov_certificate(A, Pc, Lc, a);
                     const LyapunovCertificate c =
                         priv_lyapunov_certificate(S, Pc.data(), Lc.data(), a);
-                    // the same bits of the verdict, the bounds and the rate
+                    // the same bits of the verdict, the bounds and the rate, named by the solve
                     const std::string what = std::to_string(n) + " " + name +
                                              (method == LyapunovMethod::sign          ? " sign"
                                               : method == LyapunovMethod::sign_single ? " single"
                                                                                       : "");
+                    // the Schur weight of a stable matrix passes the check
                     if (std::string(name) == "solved" && method == LyapunovMethod::schur)
                         test::check(c.ok, "the solved weight is accepted");
                     test::oracle::check("ok " + what, c.ok, r.ok);

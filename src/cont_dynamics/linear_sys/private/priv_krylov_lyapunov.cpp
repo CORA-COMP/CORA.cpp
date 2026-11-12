@@ -63,9 +63,8 @@ double aux_quad_bound(const std::vector<double> &M, int64_t n) {
 }
 
 /// C_E = |P - aI - L'L| entrywise (matMulDown/Up and the roundings of the difference are the
-/// machine's at nearest), formed in place of L'L. L is upper triangular: the sum of an entry runs
-/// over the rows k of L from the last, k up to min(i, j), and a block of rows of C shares each
-/// row of L (what the summing order of an entry allows, the blocking does not change it).
+/// machine's at nearest), formed in place of L'L; L is upper triangular, so an entry sums over the
+/// rows k of L from the last, up to min(i, j), and a block of rows of C shares each row of L.
 std::vector<double> aux_error_bounds(const std::vector<double> &P, const std::vector<double> &L,
                                      double a, int64_t n) {
     constexpr int64_t rows = 4, chunk = 1024;
@@ -76,6 +75,7 @@ std::vector<double> aux_error_bounds(const std::vector<double> &P, const std::ve
         // (L'L)_ij = sum over k from the last of L_ki L_kj, zero for k > i or k > j
         for (int64_t k = last; k-- > 0;) {
             const double *Lk = &L[size_t(k * n)];
+            // a chunk of the row of L stays in the cache for all rows of the block
             for (int64_t start = k; start < n; start += chunk) {
                 const int64_t stop = std::min(start + chunk, n);
                 for (int64_t i = first; i < last; ++i) {
@@ -89,6 +89,7 @@ std::vector<double> aux_error_bounds(const std::vector<double> &P, const std::ve
                 }
             }
         }
+        // the difference to P - aI in absolute value
         for (int64_t i = first; i < last; ++i) {
             double *row = &C[size_t(i * n)];
             for (int64_t j = 0; j < n; ++j) {
@@ -170,11 +171,11 @@ LyapunovCertificate priv_lyapunov_certificate(const SparseMatrix &A, const std::
 const LyapunovCertificate &HostMatVec::lyapunov() const {
     LyapunovSlot &slot = *lyapunov_slot;
     if (slot.formed) return slot.certificate;
-    // the sign function solve in single precision if the check accepts it, else in double, else the
-    // Schur solve
+    // single precision if the check accepts it, else double, else the Schur solve
     double solve = 0.0, check = 0.0;
     for (const LyapunovMethod method :
          {LyapunovMethod::sign_single, LyapunovMethod::sign, LyapunovMethod::schur}) {
+        // the solve and the check, timed apart
         const auto t0 = std::chrono::steady_clock::now();
         const LyapunovWeight w = priv_lyapunov_solve(*M, method);
         const auto t1 = std::chrono::steady_clock::now();
@@ -182,6 +183,7 @@ const LyapunovCertificate &HostMatVec::lyapunov() const {
         const auto t2 = std::chrono::steady_clock::now();
         solve += std::chrono::duration<double>(t1 - t0).count();
         check += std::chrono::duration<double>(t2 - t1).count();
+        // the first weight the check accepts is the one
         if (!w.P.empty() && slot.certificate.ok) {
             slot.method = method == LyapunovMethod::sign_single ? "sign_single"
                           : method == LyapunovMethod::sign      ? "sign"

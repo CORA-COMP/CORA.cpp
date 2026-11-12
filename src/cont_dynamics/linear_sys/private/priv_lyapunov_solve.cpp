@@ -2,10 +2,8 @@
 //
 // Roberts' sign function iteration A_{k+1} = (cA_k + (cA_k)^{-1}) / 2, R_{k+1} = (cR_k +
 // (cA_k)^{-T} cR_k (cA_k)^{-1}) / 2, R_0 = I, c the norm scaling: A_k'P + PA_k = -R_k, P = R_inf /
-// 2. It is run in single precision (matrix products Eigen runs on all threads at twice the speed)
-// and stops as soon as the weight leaves the equation a residual of at most half, in the sense of
-// the certificate (the Gershgorin bound of |PA + (PA)' + I| below 1/2: no need to converge to the
-// last bit); then in double precision, and as a last resort Bartels-Stewart on the real Schur form:
+// 2. It runs in single precision (twice the speed) and stops once the residual |PA + (PA)' + I|
+// has a Gershgorin bound below 1/2, not at the last bit; then in double, last Bartels-Stewart:
 // with A = U T U' (T quasi upper triangular, blocks of 1 or 2) the equation reads T'Y + YT = -I
 // for Y = U'PU, solved block column by block column (a block pair by a small Sylvester equation
 // of at most 4 unknowns); P = U Y U' is symmetrized. The result is not trusted, the certificate
@@ -200,7 +198,8 @@ template <class S>
 Matrix aux_solve_sign(const SparseMatrix &A, const Matrix &D) {
     const int64_t n = D.rows();
     Dense<S> Ak = D.cast<S>(), R = Dense<S>::Identity(n, n), Y(n, n);
-    const double eps = std::numeric_limits<S>::epsilon();
+    // converged: a relative step below the cube root of the double epsilon, single reaches it too
+    const double converged = std::cbrt(machine_eps());
     for (int step = 0; step < 100; ++step) {
         Dense<S> inverse = aux_inverse<S>(Ak);
         // the scaling c = sqrt(|A^-1| / |A|) of the determinant-free kind; Abar = c A, Rbar = c R
@@ -213,7 +212,7 @@ Matrix aux_solve_sign(const SparseMatrix &A, const Matrix &D) {
         const double change = (inverse - Ak).norm() / inverse.norm();
         Ak = std::move(inverse);
         if (!std::isfinite(change)) return Matrix();
-        if (aux_gap<S>(R, A) >= kStopGap || change <= 100 * eps)
+        if (aux_gap<S>(R, A) >= kStopGap || change <= converged)
             return 0.5 * R.template cast<double>();
     }
     return Matrix();
