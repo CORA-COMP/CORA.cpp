@@ -100,6 +100,7 @@ PolyZonotope aux_reduce_by(const PolyZonotope &Z, const Host &a,
         }
     for (std::vector<int> &col : E) {
         std::vector<int> c;
+        c.reserve(used.size());
         for (const std::size_t k : used) c.push_back(col[k]);
         col = std::move(c);
     }
