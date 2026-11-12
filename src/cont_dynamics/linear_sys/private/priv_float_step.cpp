@@ -92,7 +92,7 @@ class Series {
         : r_(r), eta_(eta), point_(A, A), scaled_(aux_smul(point_, r, r)),
           remainder_(aux_remainder_bound(aux_norm_upper_bound(scaled_), eta)),
           spread_(aux_symmetric(A, r * remainder_)) {
-        powers_.push_back(Interval(A.eye_like(), A.eye_like()));
+        powers_.emplace_back(A.eye_like(), A.eye_like());
         for (int i = 1; i <= eta; ++i) powers_.push_back(priv_matmul(point_, powers_.back()));
         // the box of every order of the input solution, and of the remainder
         for (int i = 0; i <= eta; ++i) {
