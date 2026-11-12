@@ -7,7 +7,7 @@
 // more memory than the machine has (require_memory_gb) is skipped: exit code 77 if all were.
 // linear_step() reads the linear step of the nonlinear algorithms from CORACPP_LINEAR_STEP (cora,
 // closed_form, coralean) for the programs that run a lin or lin-adaptive instance, and
-// error_bound() the error of a lin step at tensor order 2 from CORACPP_ERROR_BOUND (region, loop).
+// error_bound() the error of a lin step at tensor order 2 from CORACPP_ERROR_BOUND (loop, region).
 //
 // Syntax:   return cora::bench::run_family(argc, argv, {"A01", "A02"}, run_one);
 //           cora::bench::require_memory_gb(24);   // in run_one, before the work
@@ -55,13 +55,15 @@ inline cora::alg::LinearStep linear_step() {
     return cora::alg::LinearStep::closed_form;
 }
 
-/// The error of a lin step: CORACPP_ERROR_BOUND = region (default, CORALean's) or loop (CORA's).
+/// The error of a lin step: CORACPP_ERROR_BOUND = loop (default, CORA's, as CORALean's
+/// linReachLoopFloat) or region (CORALean's linReachFloat, which needs smaller time steps where its
+/// check fails).
 inline cora::alg::ErrorBound error_bound() {
     const char *value = std::getenv("CORACPP_ERROR_BOUND");
-    const std::string name = value ? value : "region";
-    if (name == "loop") return cora::alg::ErrorBound::loop;
-    if (name != "region") throw std::runtime_error("CORACPP_ERROR_BOUND must be region or loop");
-    return cora::alg::ErrorBound::region;
+    const std::string name = value ? value : "loop";
+    if (name == "region") return cora::alg::ErrorBound::region;
+    if (name != "loop") throw std::runtime_error("CORACPP_ERROR_BOUND must be loop or region");
+    return cora::alg::ErrorBound::loop;
 }
 
 /// Thrown by require_memory_gb: the instance is skipped, not failed.

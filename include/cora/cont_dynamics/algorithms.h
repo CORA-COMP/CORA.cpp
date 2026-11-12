@@ -321,9 +321,9 @@ inline void validate_tensor_orders(int tensor_order, int error_order, int interm
 /// form; cora, CORA's oneStep with expm and A^-1; coralean, CORALean's reachFloatInput (slower).
 enum class LinearStep { cora, closed_form, coralean };
 
-/// The error of a Linearization step at tensor_order 2: region, CORALean's linReach (the Hessian
-/// over the region the step stays in, checked once; fails if the time step is too large), or loop,
-/// CORA's (guessed, solved over the step, enlarged until it holds; tensor order 3 always).
+/// The error of a Linearization step at tensor_order 2: region, CORALean's linReachFloat (checks a
+/// region once; fails if the time step is too large), or loop, CORA's guess-and-enlarge loop
+/// (CORALean's linReachLoopFloat; tensor order 3 always).
 enum class ErrorBound { region, loop };
 
 /// CORA's alg "lin": each step linearizes at the center of the set (moved half a step along the

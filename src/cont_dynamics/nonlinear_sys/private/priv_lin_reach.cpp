@@ -1,18 +1,18 @@
 // priv_lin_reach - one step of a nonlinear system by conservative linearization, as CORA's linReach
 //
 // The step linearizes at (x*, u*) (linearize), solves the affine system from R - x* by one step
-// of LinearSys (oneStep), and adds the solution of the linearization error L. L is not known
-// before the step: it is guessed as 1.1 times the error of the step before (0 at the first), the
-// set of the step is enlarged by the solution of the guess, and the error over that set is
-// computed (priv_abstrerr_lin). While the error exceeds the guess somewhere, the guess becomes the
-// error and the loop repeats; then the solution of the error is added to both sets. MATLAB's max
-// skips NaN, so an error of 0 over a guess of 0 does not count, and all-NaN ends the loop.
+// of LinearSys (oneStep), and adds the solution of the linearization error L. L is guessed as 1.1
+// times the error of the step before (0 at the first), the set of the step is enlarged by the
+// solution of the guess, and the error over that set is computed (priv_abstrerr_lin). While it
+// exceeds the guess somewhere, the guess becomes the error; then its solution is added to both
+// sets. MATLAB's max skips NaN: an error of 0 over a guess of 0 does not count, and all-NaN ends
+// the loop.
 //
-// With alg.error_bound = region (the default at tensor_order 2 and a linear step of CORALean's)
-// the step is CORALean's linReachFloat instead, bit for bit: the region Omega the step stays in
-// (Picard iterates of X + [0, dt] f(Omega, U), checked once against M dt < delta) replaces the
-// guess, the Hessian over Omega and U joined with the expansion point bounds the error, and the
-// affine system is stepped once with the error as input. No loop, so no error of the step before.
+// With a linear step of CORALean's at tensor order 2 the step is CORALean's, bit for bit at
+// nearest. error_bound = loop is linReachLoopFloat: 1.1 times the last error is the input [-g, g]
+// of one linear step, the Hessian over its set (with the expansion point) is the error, accepted
+// when it is at most g entry by entry, else the new guess; the sets are one step with it as input.
+// error_bound = region is linReachFloat: a region checked once replaces the guess and the loop.
 //
 // Syntax:   NonlinearStep s = priv_lin_reach(sys, R, error, U, alg);
 // Inputs:   R - the set at the start of the step, error - the error bound of the step before
@@ -155,6 +155,54 @@ NonlinearStep aux_region_step(const NonlinearSys &sys, const Zonotope &R,
     return {S.first, S.second, priv_column(like, err.hi)};
 }
 
+/// The step as CORALean's linReachLoopFloat: CORA's loop of linReach.m, accepted when the error is
+/// at most the applied one entry by entry (floats, not their quotient); NaN repeats, fuel fails.
+NonlinearStep aux_loop_step(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
+                            const std::optional<Zonotope> &U, const alg::Linearization &alg) {
+    constexpr double enlarge = 1.1; // 2476979795053773 * 2^-51
+    constexpr int fuel = 10000;
+    const Tensor &like = R.center();
+    const int64_t n = sys.dim(), m = sys.input_dim();
+    const std::optional<Zonotope> Uz =
+        m > 0 ? std::optional<Zonotope>(
+                    U ? *U : Zonotope(like.zeros_like({m, 1}), like.zeros_like({m, 0})))
+              : std::nullopt;
+    // x*, A, B and f(x*, u*) + B (U - u*), as the region step
+    const AdaptiveLinearization L = priv_linearize_adaptive(sys, Uz, like, alg.time_step);
+    const Vec us = Uz ? Uz->center().data() : Vec{};
+    const std::optional<Box> Ub = Uz ? std::optional<Box>(priv_zonotope_box(*Uz)) : std::nullopt;
+    // U joined with the expansion point
+    const std::optional<Box> Uh = Ub ? std::optional<Box>(priv_hull(*Ub, us)) : std::nullopt;
+    const LeanStepper step(L.J.A, L.xs_t, R, alg);
+
+    Vec abstrerr = error.data();
+    for (int pass = 0; pass < fuel; ++pass) {
+        // the applied error, and the time-interval set of the step with it in the input
+        Box applied{Vec(abstrerr.size()), Vec(abstrerr.size())};
+        for (std::size_t i = 0; i < abstrerr.size(); ++i) {
+            applied.hi[i] = enlarge * abstrerr[i];
+            applied.lo[i] = -applied.hi[i];
+        }
+        const Zonotope Rmax = step(L.Vbase + priv_box_zonotope(like, applied)).first;
+        // the Hessian remainder over Rmax joined with x*, its magnitude
+        const Box Xh = priv_hull(priv_zonotope_box(Rmax), L.xs);
+        const Zonotope Verror = priv_box_zonotope(
+            like, priv_hessian_remainder(priv_hessian(sys, like, Xh, Uh), {}, Xh, Uh, L.xs, us, n));
+        const Vec true_error = priv_norm_mag(priv_zonotope_box(Verror));
+        priv_check_exploded(priv_column(like, true_error));
+        bool holds = true;
+        for (std::size_t i = 0; i < true_error.size(); ++i)
+            holds = holds && true_error[i] <= applied.hi[i];
+        if (holds) {
+            // the sets with the accepted remainder in the input
+            const FloatStep S = step(L.Vbase + Verror);
+            return {S.first, S.second, priv_column(like, true_error)};
+        }
+        abstrerr = true_error;
+    }
+    CORA_FAIL(Error::not_converged, "cora: the error loop of the step did not converge");
+}
+
 /// The step with a linear step of CORALean's (alg.linear_step): the guess of the error enters the
 /// input of the step, and the accepted error is part of the input of the step that is returned.
 NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
@@ -242,6 +290,7 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
         // CORALean's region at tensor order 2, else CORA's loop with the step of CORALean's
         if (alg.error_bound == alg::ErrorBound::region && alg.tensor_order == 2)
             return aux_region_step(sys, R, U, alg);
+        if (alg.tensor_order == 2) return aux_loop_step(sys, R, error, U, alg);
         return aux_lean_step(sys, R, error, U, alg);
     }
     const double dt = alg.time_step;

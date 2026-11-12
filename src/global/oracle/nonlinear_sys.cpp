@@ -71,6 +71,13 @@ void aux_linear_step(std::vector<Operand> &request, alg::LinearStep step) {
     if (step == alg::LinearStep::coralean) request.push_back({"linearStep", "reachFloatInput"});
 }
 
+// CORA's loop instead of the region (errorBound: loop, with its enlargement 1.1)
+void aux_error_bound(std::vector<Operand> &request, const alg::Linearization &alg) {
+    if (alg.error_bound != alg::ErrorBound::loop) return;
+    request.push_back({"errorBound", "loop"});
+    request.push_back({"enlarge", 1.1});
+}
+
 } // namespace
 
 
@@ -119,7 +126,9 @@ AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional
 
 std::optional<LinReachResult> NonlinearSys::lin_reach(const std::optional<Zonotope> &U,
                                                       const Zonotope &R,
-                                                      const alg::Linearization &alg) const {
+                                                      const alg::Linearization &alg,
+                                                      const std::optional<cora::Tensor> &abstrerr,
+                                                      bool with_abstrerr) const {
     // the window, the input set and the options of the step
     std::vector<Operand> request = system();
     request.push_back({"R", R});
@@ -129,10 +138,15 @@ std::optional<LinReachResult> NonlinearSys::lin_reach(const std::optional<Zonoto
                                                  {"zonotopeOrder", alg.zonotope_order}})
         request.push_back(o);
     aux_linear_step(request, alg.linear_step);
+    aux_error_bound(request, alg);
+    if (abstrerr) request.push_back({"abstrerr", Tensor::from(*abstrerr)});
     // a failed step is an error of the oracle: no step
     try {
         const Reply r = ask("nonlinearSys.linReach", request);
-        return LinReachResult{r.get<Zonotope>("timeInterval"), r.get<Zonotope>("timePoint")};
+        LinReachResult out{r.get<Zonotope>("timeInterval"), r.get<Zonotope>("timePoint"),
+                           std::nullopt};
+        if (with_abstrerr) out.abstrerr = r.get<Tensor>("abstrerr").gather();
+        return out;
     } catch (const std::runtime_error &) {
         return std::nullopt;
     }
@@ -142,7 +156,7 @@ std::optional<std::vector<Zonotope>> NonlinearSys::reach(const Zonotope &X0,
                                                          const std::optional<Zonotope> &U,
                                                          double t_final,
                                                          const alg::Linearization &alg) const {
-    // the oracle's reach takes no linear step: it is reachFloatInput
+    // the window, the input set and the options of the run
     std::vector<Operand> request = system();
     request.push_back({"X0", X0});
     if (U) request.push_back({"U", *U});
@@ -151,6 +165,8 @@ std::optional<std::vector<Zonotope>> NonlinearSys::reach(const Zonotope &X0,
                                                  {"taylorTerms", alg.taylor_terms},
                                                  {"zonotopeOrder", alg.zonotope_order}})
         request.push_back(o);
+    aux_linear_step(request, alg.linear_step);
+    aux_error_bound(request, alg);
     // a failed step is an error of the oracle: no run
     try {
         return ask("nonlinearSys.reach", request).get<std::vector<Zonotope>>("timeInterval");

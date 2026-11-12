@@ -56,8 +56,10 @@ std::vector<AinncsInstance> aux_instances() {
                  {.depth = split ? 14 : 0}),
              split ? "splitting of the initial set (CROWN-Reach: 5 x 5 x 3 x 3 uniform pieces); "
                      "the expected time is CROWN-Reach's, CORA's script is UNKNOWN in 5.604 s; "
-                     "time_step 0.005 (the region check fails at the script's 0.01)"
-                   : "the script, without splitting; time_step 0.005 (script 0.01, see above)"});
+                     "time_step 0.01 as the script (0.005 under the region step, whose check fails "
+                     "at 0.01)"
+                   : "the script, without splitting; time_step 0.01 as the script (0.005 under the "
+                     "region step)"});
     }
     return v;
 }
