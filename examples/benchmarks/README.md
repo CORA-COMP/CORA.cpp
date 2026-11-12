@@ -636,6 +636,8 @@ t = 0.5, 1, ..., 5).
   dimension whose radius is largest relative to the initial set's, CORA.cpp only) verifies at depth 11: 507 pieces, 254 leaves,
   10 splits deep. The failure of the whole set is the width of the velocities after the first step (the box of `vx` grows from
   [-0.28, 0.28] to [-0.2915, 0.2844] while the margin is 0.0074); pieces of a quarter of the widths in each dimension hold.
+  A visualization of this verification (the margin of the check over time, the cuts of the initial set, the runs under
+  the speed limit in 3D and the 32-gon at the tight corner): https://claude.ai/artifact/65csLQFHAMLGhkGSvH4TvH
 - *The Docking check* of the sets is CORA.cpp's own: interval arithmetic on the box of the set and its halves
   (up to 2^10), sound. CORA's (`quadMap`, the order-1 Singh enclosure of a root layer, `interval(., 'split')`)
   was ported first and does not hold the initial set (its error 0.1 for `v^2` in `[0, 0.157]`, against the margin of 0.007);

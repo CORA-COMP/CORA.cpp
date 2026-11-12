@@ -155,7 +155,8 @@ bool aux_docking_point_safe(const std::vector<double> &x, double n) {
 }
 
 /// example_neuralNet_reach_10_spacecraftDocking.m: random runs against the constraint, then the
-/// reach of the whole set and the check of every set over a step.
+/// reach of the whole set and the check of every set over a step; with polygon, verify against the
+/// 32-gon polytope (visualized: https://claude.ai/artifact/65csLQFHAMLGhkGSvH4TvH).
 ClosedLoopVerdict aux_docking_run(Rng &rng, bool polygon) {
     constexpr double n = 0.001027;
     const NeurNetContrSys sys(aux_docking(), load_network("docking"), 0.1);
