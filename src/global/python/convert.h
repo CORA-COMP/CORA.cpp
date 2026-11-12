@@ -301,12 +301,14 @@ T value_of(const py::handle &o, const char *name) {
         if (o.is_none()) return std::nullopt;
         return set_of(o);
     } else if constexpr (std::is_same_v<T, alg::LinearStep>) {
-        // "cora" or "coralean"
+        // "cora", "closed_form" or "coralean"
         const std::string text = py::cast<std::string>(o);
         if (text == "cora") return alg::LinearStep::cora;
+        if (text == "closed_form") return alg::LinearStep::closed_form;
         if (text == "coralean") return alg::LinearStep::coralean;
         CORA_FAIL(Error::wrong_value, std::string("cora: ") + name +
-                                          " must be 'cora' or 'coralean', got '" + text + "'");
+                                          " must be 'cora', 'closed_form' or 'coralean', got '" +
+                                          text + "'");
     } else {
         return py::cast<T>(o);
     }

@@ -73,10 +73,11 @@ bool aux_run(const std::string &name) {
     std::size_t sets = 0;
     // W001 and W005: the adaptive linearization of the script
     if (name == "LALO20_W001" || name == "LALO20_W005") {
-        const ReachSet R = sys.reach({.initial_set = aux_start(name == "LALO20_W001" ? 0.01 : 0.05),
-                                      .input_set = U,
-                                      .t_final = 20},
-                                     alg::LinearizationAdaptive{});
+        const ReachSet R =
+            sys.reach({.initial_set = aux_start(name == "LALO20_W001" ? 0.01 : 0.05),
+                       .input_set = U,
+                       .t_final = 20},
+                      alg::LinearizationAdaptive{.linear_step = cora::bench::linear_step()});
         x4 = aux_x4(R);
         sets = R.time_interval.size();
     } else if (name == "LALO20_W01") {

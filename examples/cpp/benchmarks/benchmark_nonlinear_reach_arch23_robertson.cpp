@@ -5,8 +5,9 @@
 // by alg "lin-adaptive". The verdict is the specification of the ARCH-COMP report: the width of
 // the sum of the concentrations s = x + y + z at t = 40 below 1e-5 (the script prints the constant
 // 1 once reach has finished). The algorithm is CORA's lin-adaptive as CORALean repairs it; its
-// zeta_z is tuned per case (kCases), the script's are 0.00025, 0.0006 and 0.017. The line has the
-// time of reach, as the script's tic and toc; the number of sets and the width go to stderr.
+// zeta_z is tuned per case (kCases, the same for the linear steps closed_form and cora), the
+// script's are 0.00025, 0.0006 and 0.017 (README). The line has the time of reach, as the
+// script's tic and toc; the number of sets and the width go to stderr.
 //
 // Syntax:   build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...]
 // Outputs:  one line 'benchmark,instance,result,time' (on stderr: the number of sets, the width)
@@ -31,15 +32,15 @@ using namespace cora;
 using cora::bench::column;
 
 /// One case: beta, gamma of the model and the tuning of the algorithm (zeta_z: the share of the
-/// width a reduction may add).
+/// width a reduction may add), the script's and the one of linear_step = closed_form (README).
 struct Case {
     const char *name;
     double beta, gamma;
     alg::LinearizationAdaptive alg;
 };
 
-const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, {.zeta_z = 0.0001}},
-                       {"ROBE25_2", 1e3, 1e5, {.zeta_z = 0.0015}},
+const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, {.zeta_z = 5e-5}},
+                       {"ROBE25_2", 1e3, 1e5, {.zeta_z = 3e-4}},
                        {"ROBE25_3", 1e3, 1e7, {.zeta_z = 0.01}}};
 
 /// Robertson_case*.m: the right-hand side, written as the model file does; u is not used.
@@ -90,7 +91,9 @@ bool aux_run(const std::string &name) {
     const Zonotope X0(column({1, 0, 0}), Tensor::zeros({3, 0}));
     const Zonotope U(column({0}), Tensor::zeros({1, 0}));
     const auto start = std::chrono::steady_clock::now();
-    const ReachSet R = sys.reach({.initial_set = X0, .input_set = U, .t_final = 40}, c->alg);
+    alg::LinearizationAdaptive alg = c->alg;
+    alg.linear_step = cora::bench::linear_step();
+    const ReachSet R = sys.reach({.initial_set = X0, .input_set = U, .t_final = 40}, alg);
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
 
     // the width of s = x + y + z: 2 rad of the interval sum of the last set over a step

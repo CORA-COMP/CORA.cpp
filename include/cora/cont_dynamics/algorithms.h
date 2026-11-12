@@ -317,9 +317,9 @@ inline void validate_tensor_orders(int tensor_order, int error_order, int interm
     }
 }
 
-/// The linear step of a linearization: CORA's oneStep (default), or CORALean's reachFloatInput for
-/// one step (bit for bit the oracle's, but slower).
-enum class LinearStep { cora, coralean };
+/// The linear step of a linearization: closed_form (default), CORA's oneStep in CORALean's closed
+/// form; cora, CORA's oneStep with expm and A^-1; coralean, CORALean's reachFloatInput (slower).
+enum class LinearStep { cora, closed_form, coralean };
 
 /// CORA's alg "lin": each step linearizes at the center of the set (moved half a step along the
 /// flow) and bounds the linearization error by the Lagrange remainder of the Taylor expansion of
@@ -331,7 +331,7 @@ struct Linearization {
     int tensor_order = 2;       ///< 2: the remainder by the Hessian; 3: by the third derivatives
     int error_order = 0;        ///< tensor_order 3: the order of the set the Hessian maps
     int intermediate_order = 0; ///< tensor_order 3: the order of the error set
-    LinearStep linear_step = LinearStep::cora; ///< the linear step of the linearized system
+    LinearStep linear_step = LinearStep::closed_form; ///< the linear step of the linearized system
 
     static constexpr const char *name = "linearization";
     static constexpr auto fields() {
@@ -397,7 +397,7 @@ struct LinearizationAdaptive {
     int taylor_terms = 10;     ///< the least order of the Taylor series of the linear step
     int zonotope_order = 1000; ///< the order of Girard's reduction inside the linear step
     int fuel = 10000;          ///< the bound of every loop CORA writes as while true
-    LinearStep linear_step = LinearStep::cora; ///< the linear step of the linearized system
+    LinearStep linear_step = LinearStep::closed_form; ///< the linear step of the linearized system
 
     // the name and the fields, for the algorithm tables of Python and the checks
     static constexpr const char *name = "linearization_adaptive";
@@ -604,6 +604,8 @@ struct HybridStandard {
     int intermediate_order = 0;    ///< a NonlinearSys flow: its Linearization::intermediate_order
     bool polynomialization = false; ///< a NonlinearSys flow: alg::Polynomialization (poly sets)
     GuardIntersect guard_intersect = ZonoGirard{}; ///< how the guards are intersected
+    LinearStep linear_step =
+        LinearStep::closed_form; ///< a NonlinearSys flow: its Linearization::linear_step
 
     // the fields as Python sees them, and their checks
     static constexpr const char *name = "standard";
@@ -616,7 +618,8 @@ struct HybridStandard {
                                field("error_order", &HybridStandard::error_order),
                                field("intermediate_order", &HybridStandard::intermediate_order),
                                field("polynomialization", &HybridStandard::polynomialization),
-                               field("guard_intersect", &HybridStandard::guard_intersect));
+                               field("guard_intersect", &HybridStandard::guard_intersect),
+                               field("linear_step", &HybridStandard::linear_step));
     }
     void validate() const {
         detail::Validation entry;

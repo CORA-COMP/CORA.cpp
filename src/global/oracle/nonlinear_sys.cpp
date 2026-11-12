@@ -66,6 +66,12 @@ cora::Interval aux_poly_box(const Reply &set) {
     return cora::Interval(c - radius, c + radius);
 }
 
+// the linear step of the oracle's linearStep option; CORA's own is left to the oracle's default
+void aux_linear_step(std::vector<Operand> &request, alg::LinearStep step) {
+    if (step == alg::LinearStep::closed_form) request.push_back({"linearStep", "closedForm"});
+    if (step == alg::LinearStep::coralean) request.push_back({"linearStep", "reachFloatInput"});
+}
+
 } // namespace
 
 
@@ -102,11 +108,35 @@ AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional
                                                  {"zetaK", alg.zeta_k},
                                                  {"fuel", alg.fuel}})
         request.push_back(o);
+    aux_linear_step(request, alg.linear_step);
     // the steps with their tensor orders, the end and the sets
     const Reply r = ask("nonlinearSys.reachAdaptive", request);
     return {r.get<std::vector<double>>("steps"), r.get<std::vector<int64_t>>("tensorOrders"),
             r.get<double>("t"), r.get<Zonotope>("timePoint"),
             r.get<std::vector<Zonotope>>("timeInterval")};
+}
+
+// The step ----------------------------------------------------------------------------------------
+
+std::optional<LinReachResult> NonlinearSys::lin_reach(const std::optional<Zonotope> &U,
+                                                      const Zonotope &R,
+                                                      const alg::Linearization &alg) const {
+    // the window, the input set and the options of the step
+    std::vector<Operand> request = system();
+    request.push_back({"R", R});
+    if (U) request.push_back({"U", *U});
+    for (const Operand &o : std::vector<Operand>{{"timeStep", alg.time_step},
+                                                 {"taylorTerms", alg.taylor_terms},
+                                                 {"zonotopeOrder", alg.zonotope_order}})
+        request.push_back(o);
+    aux_linear_step(request, alg.linear_step);
+    // a failed step is an error of the oracle: no step
+    try {
+        const Reply r = ask("nonlinearSys.linReach", request);
+        return LinReachResult{r.get<Zonotope>("timeInterval"), r.get<Zonotope>("timePoint")};
+    } catch (const std::runtime_error &) {
+        return std::nullopt;
+    }
 }
 
 PolyAdaptiveRun NonlinearSys::reach_poly_adaptive(const Zonotope &R0,
@@ -177,6 +207,7 @@ std::optional<AdaptivePassResult> NonlinearSys::lin_reach_adaptive_pass(
                                                  {"redFactor", alg.zeta_z},
                                                  {"fuel", alg.fuel}})
         request.push_back(o);
+    aux_linear_step(request, alg.linear_step);
     // the loop's failure is an error of the oracle: no pass
     try {
         const Reply r = ask("nonlinearSys.linReachAdaptivePass", request);

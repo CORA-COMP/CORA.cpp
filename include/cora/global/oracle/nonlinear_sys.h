@@ -2,9 +2,10 @@
 //
 // Syntax:     lean::NonlinearSys sys(my_sys);   auto run = sys.reach_adaptive(R0, U, t_final, alg);
 //             double v = lean::NonlinearSys::varphi_total_adaptive(alg, varphi, lim, prev, curr);
-// Operations: reach_adaptive and one method per `nonlinearSys.*Adaptive` op of the oracle:
-//             lin_reach_adaptive_pass, abstr_err_adaptive, orders_adaptive, and the three tuning
-//             formulas optimal_delta_t_adaptive, varphi_total_adaptive, varphi_est_adaptive
+// Operations: reach_adaptive, lin_reach (nonlinearSys.linReach) and one method per
+//             `nonlinearSys.*Adaptive` op of the oracle: lin_reach_adaptive_pass,
+//             abstr_err_adaptive, orders_adaptive, and the three tuning formulas
+//             optimal_delta_t_adaptive, varphi_total_adaptive, varphi_est_adaptive
 // Outputs:    the oracle's float definitions at a dtype of the unguaranteed ops (nearest)
 // Scheme:     the dynamics go as the tree of the system's expressions; CORALean differentiates it
 // See also:   lean/linear_sys.h, contDynamics/nonlinear_sys/nonlinear_sys.h
@@ -46,6 +47,11 @@ struct AdaptivePassResult {
     std::vector<bool> g_zero;
 };
 
+/// One step of alg lin: the sets over the step and at its end.
+struct LinReachResult {
+    Zonotope time_interval, time_point;
+};
+
 /// VerrorDyn and its true error (the largest magnitude of its box).
 struct AbstrErrResult {
     Zonotope V;
@@ -78,6 +84,10 @@ class NonlinearSys {
     /// CORA's lin-adaptive from R0 with the input set U (none: no input) to t_final.
     AdaptiveRun reach_adaptive(const Zonotope &R0, const std::optional<Zonotope> &U, double t_final,
                                const alg::LinearizationAdaptive &alg) const;
+
+    /// One step of alg lin from R with the input set U (none: no input) and the options alg.
+    std::optional<LinReachResult> lin_reach(const std::optional<Zonotope> &U, const Zonotope &R,
+                                            const alg::Linearization &alg) const;
 
     /// One pass at time_step from R with the tensor order 2 or 3 and the admissible error.
     std::optional<AdaptivePassResult>

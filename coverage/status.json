@@ -974,7 +974,7 @@
   "contDynamics/linearSys/linearSysDT": "todo",
   "contDynamics/linearSys/ne": "ported",
   "contDynamics/linearSys/nonlinearSys": "ported",
-  "contDynamics/linearSys/oneStep": "property",
+  "contDynamics/linearSys/oneStep": "oracle",
   "contDynamics/linearSys/outputSet": "ported",
   "contDynamics/linearSys/particularSolution_constant": "property",
   "contDynamics/linearSys/particularSolution_timeVarying": "property",

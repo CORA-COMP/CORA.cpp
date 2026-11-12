@@ -74,11 +74,32 @@ ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 (RND[c], run here 
 states, Krylov), which runs here (its `A` is built from the mesh, not stored). The other instances
 here stay those of the ARCH23 scripts.
 
-The tables are CORA's linear step (`linear_step = LinearStep::cora`, the default of `alg::Linearization`
-and `alg::LinearizationAdaptive`). `LinearStep::coralean` takes CORALean's step instead, bit for bit
+The tables use the default linear step, `linear_step = LinearStep::closed_form` of `alg::Linearization`
+and `alg::LinearizationAdaptive`: CORA's `oneStep` in CORALean's closed form, bit for bit against the
+oracle's `linearSys.oneStepClosedForm` (`test_lean_linear_sys_closed_form_step`; inside the nonlinear
+steps against `nonlinearSys.linReach`, `linReachAdaptivePass` and `reachAdaptive` with
+`linearStep: "closedForm"`). Its `[e^{A dt}]` is a scaling-and-squaring enclosure (CORALean !913) and its
+entrywise remainder `W` of `e^{|A| dt}` is the enclosure at the order `eta_e + 8` less the series at `eta_e`,
+entry by entry (CORALean !917; before, a scalar tail was added to every entry, which kept ROBE25 from
+verifying at CORA's tuning). `LinearStep::cora` is CORA's `oneStep` with `expm` and `A^-1`.
+`LinearStep::coralean` takes CORALean's step instead, bit for bit
 (`test_lean_linear_sys_float_step`), at a price: TRAF22 and SPRE22 take 1.9x as long (SPRE22 needs a
 time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `zeta_z` and
-`taylor_terms` retuned), LALO20 W005 20x; the verdicts stay.
+`taylor_terms` retuned), LALO20 W005 20x; the verdicts stay. The closed form takes as long as CORA's
+step, with the same parameters: TRAF22 0.92 s against 0.93 to 0.95 s, SPRE22 0.97 to 0.99 s against
+1.10 s, LALO20 W001/W005 2.1 s and 14.3 to 15.7 s against 2.3 s and 15.8 s, and ROBE25 at the same
+`zeta_z` for both (5e-5, 3e-4, 1e-2) 29 s, 437 s and 94 s against 37 s, 341 s and 102 s (1.28x on
+ROBE25 (2), run side by side; the load was 5 to 14); the verdicts stay, and the reported ranges agree (TRAF22's inputs, LALO20's width
+of x4). The width of s of ROBE25 depends on `zeta_z` irregularly, for both steps (default `taylor_terms`):
+at the script's `zeta_z` (2.5e-4, 6e-4, 0.017) the closed form gives 4.5e-6 (verified), 1.1e-5 and 1.3e-5 and
+`cora` 5.6e-5, 6.7e-6 (verified) and 1.2e-5; at the `zeta_z` that suited `cora` (1e-4, 1.5e-3, 1e-2) the closed
+form gives 2.9e-5, 1.4e-5 and 5.1e-6 and `cora` 2.3e-6, 7.2e-6 and 7.3e-6 (all verified); neither value set makes
+both steps verify all three, and the widths move by a factor of 10 between neighbouring values (ROBE25 (1)
+with the closed form: 2.9e-5 at 1e-4, 1.6e-5 at 1.5e-4, 4.9e-5 at 2e-4, 4.3e-6 at 5e-5 and 4.5e-6 at 2.5e-4;
+ROBE25 (2): 9.6e-6 at 3e-4, 1.1e-5 at 6e-4, 8.0e-6 at 1e-3, 3.2e-5 at 2.5e-3). So the benchmark takes one value
+for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e-6 and 5.1e-6, `cora` 5.1e-6,
+4.5e-6 and 7.3e-6). The benchmark programs read the step from `CORACPP_LINEAR_STEP`
+(`closed_form`, the default, `cora`, `coralean`).
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -317,14 +338,14 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TRAF22 | 1 | 1 | 0.919 | 18/30 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
-| SPRE22 | 1 | 1 | 1.04 | 42/65 bit-exact, 11 property | 34.3 | 37 | 37 (CORA) | 35.6 |
-| ROBE25 (1) | 1 | 1 | 25.6 | 11/24 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.98 |
-| ROBE25 (2) | 1 | 1 | 325 | 11/24 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.28 |
-| ROBE25 (3) | 1 | 1 | 100 | 11/24 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.17 |
+| TRAF22 | 1 | 1 | 0.919 | 17/28 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
+| SPRE22 | 1 | 1 | 0.972 | 36/57 bit-exact, 10 property | 34.3 | 37 | 37 (CORA) | 38.1 |
+| ROBE25 (1) | 1 | 1 | 29.1 | 8/20 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
+| ROBE25 (2) | 1 | 1 | 437 | 8/20 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
+| ROBE25 (3) | 1 | 1 | 93.8 | 8/20 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
 | CVDP23 | 1 | 1 | 58.6 | 34/70 bit-exact, 17 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
-| LALO20 W001 | 1 | 1 | 2.24 | 11/24 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.15 |
-| LALO20 W005 | 1 | 1 | 15.3 | 11/24 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.11 |
+| LALO20 W001 | 1 | 1 | 2.07 | 8/20 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
+| LALO20 W005 | 1 | 1 | 14.3 | 8/20 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
 | LALO20 W01 | 1 | 0 | 529 | 7/27 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.47 |
 | TSPS25 | 1 | 1 | 65 | 18/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
 | LOVO25 | 1 | 1 [e] | 3.72 | 27/75 bit-exact, 18 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
@@ -341,11 +362,11 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 | instance | quality metric (CORA.cpp; ARCH26 CORA, JuliaReach) |
 | --- | --- |
-| ROBE25 (1) | width of s 2.28e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
-| ROBE25 (2) | width of s 7.17e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
-| ROBE25 (3) | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
+| ROBE25 (1) | width of s 4.27e-6 (CORA 5.8e-6, JuliaReach 1.5e-8) |
+| ROBE25 (2) | width of s 9.58e-6 (CORA 8.8e-6, JuliaReach 1.1e-9) |
+| ROBE25 (3) | width of s 5.12e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
 | LALO20 W001 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
-| LALO20 W005 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
+| LALO20 W005 | width of x4 0.0395 (CORA 0.042, JuliaReach 0.019) |
 | LALO20 W01 | width of x4 0.0681 (CORA 0.060, JuliaReach 0.031) |
 | LOVO25 | area 2.24e-3 (CORA 8.9e-3, JuliaReach 9e-5; the flow alone from the whole box 3.04e-5) |
 
@@ -383,27 +404,30 @@ CORA's `lin-adaptive` is not sound as written (its Hessian region and its third-
 `LinReachAdaptiveCora1D.lean`, `AbstrErrAdaptiveTensor3Cora2D.lean`), so the program runs CORA's
 algorithm as CORALean repairs it (`reachAdaptiveFloat`; `docs/cora-differences.md`): the same
 passes, tuning and tensor orders 2 and 3 as CORA's, with the Hessian read over the box of the set
-joined with the linearization point. It needs 28963, 16296 and 28093 sets (CORA 16501, 22494 and
-25960) and a set costs 0.9 ms, 20 ms and 3.6 ms (CORA's 8 ms, 10 ms and 13
+joined with the linearization point. It needs 38787, 40269 and 28381 sets (CORA 16501, 22494 and
+25960) and a set costs 0.75 ms, 10.9 ms and 3.3 ms (CORA's 8 ms, 10 ms and 13
 ms). The cost of case (2) is the linear step: its Taylor order is raised until `eta + 2 >= 2 ||A dt||`
 (CORA's is fixed, which is not sound for a large `||A dt||`), a step with `||A dt||` in the
 hundreds takes 29 ms. MATLAB CORA v2026.1.0 (R2024b, this machine) with `CHECKS_ENABLED` off, as
 the report's times probably are, needs 137.5 s, 225.7 s and 338.7 s (411 s, 734 s and 1117 s with
 the checks, under a load of about 20) and gives widths 5.7785e-6, 8.7772e-6 and 8.3479e-6, as in
-the report. CORA.cpp's times are from the core preset under a load of 7 to 10 on 16 CPUs.
+the report. CORA.cpp's times are from the core preset under a load of 5 to 14 on 16 CPUs.
 
 The tuning (`alg::LinearizationAdaptive`) is the defaults of CORA (decr_factor 0.9, zeta_phi
 0.85, 0.76, 0.68, zeta_k 0.9, 10 Taylor terms, zonotope order 1000) except for `zeta_z`, CORA's
 `redFactor`. The script's values (0.00025, 0.0006, 0.017) verify in MATLAB CORA, but the repaired
-algorithm is sound where CORA's is not and needs a smaller one in cases (1) and (3): at the script's
-values the width of s is 5.6e-5 (17651 sets) and 1.2e-5 (25850 sets), in case (2) it verifies at
-6.7e-6. The width is not monotone in `zeta_z`; the values below were found by a sweep.
+algorithm is sound where CORA's is not and needs another one in cases (1) and (3) with `cora`'s linear step
+(5.6e-5 with 17651 sets and 1.2e-5 with 25850 sets at the script's values; in case (2) it verifies at 6.7e-6),
+and the closed form, the default linear step, in cases (2) and (3) (1.1e-5 and 1.3e-5; case (1) 4.5e-6). The
+width is not monotone in `zeta_z`, for neither step; the values below, one set for both steps, were found by a
+sweep (the closed form's widths, set counts and 29 s, 437 s and 94 s; `cora`'s widths 5.1e-6, 4.5e-6 and 7.3e-6 in
+37 s, 341 s and 102 s).
 
 | | zeta_z (script) | zeta_z | sets | width of s |
 | --- | --- | --- | --- | --- |
-| ROBE25_1 | 0.00025 | 1e-4 | 28963 | 2.28e-6 |
-| ROBE25_2 | 0.0006 | 1.5e-3 | 16296 | 7.17e-6 |
-| ROBE25_3 | 0.017 | 1e-2 | 28093 | 7.33e-6 |
+| ROBE25_1 | 0.00025 | 5e-5 | 38787 | 4.27e-6 |
+| ROBE25_2 | 0.0006 | 3e-4 | 40269 | 9.58e-6 |
+| ROBE25_3 | 0.017 | 1e-2 | 28381 | 5.12e-6 |
 
 **CVDP23** (`benchmark_nonlinear_reach_ARCH23_vanDerPol.m`) is two coupled van der Pol oscillators with
 x5 = b as a constant state, three locations that only split the analysis at the plane c'x = d, and 13
@@ -771,8 +795,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ISSC01_ISU02 | 3/8 | 5 | 4 |
 | ISSF01_ISS01 | 3/8 | 5 | 4 |
 | ISSF01_ISU01 | 3/8 | 5 | 4 |
-| LALO20_W001 | 11/24 | 13 | 7 |
-| LALO20_W005 | 11/24 | 13 | 7 |
+| LALO20_W001 | 8/20 | 12 | 5 |
+| LALO20_W005 | 8/20 | 12 | 5 |
 | LALO20_W01 | 7/27 | 20 | 6 |
 | LOVO25 | 27/75 | 48 | 13 |
 | LOVO25-script | 30/82 | 52 | 14 |
@@ -792,10 +816,10 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | RND04 | 7/14 | 7 | 4 |
 | RND05 | 7/14 | 7 | 4 |
 | RND06 | 7/14 | 7 | 4 |
-| ROBE25_1 | 11/24 | 13 | 7 |
-| ROBE25_2 | 11/24 | 13 | 7 |
-| ROBE25_3 | 11/24 | 13 | 7 |
-| SPRE22 | 42/65 | 23 | 13 |
+| ROBE25_1 | 8/20 | 12 | 5 |
+| ROBE25_2 | 8/20 | 12 | 5 |
+| ROBE25_3 | 8/20 | 12 | 5 |
+| SPRE22 | 36/57 | 21 | 11 |
 | SRA01 | 31/46 | 15 | 8 |
 | SRA02 | 39/56 | 17 | 10 |
 | SRA03 | 39/56 | 17 | 10 |
@@ -811,7 +835,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | TORA-reach-sigmoid | 24/61 | 37 | 11 |
 | TORA-reach-tanh | 24/60 | 36 | 11 |
 | TORA-remain | 24/61 | 37 | 11 |
-| TRAF22 | 18/30 | 12 | 9 |
+| TRAF22 | 17/28 | 11 | 7 |
 | TSPS25 | 18/32 | 14 | 6 |
 | Unicycle-reach | 24/54 | 30 | 11 |
 | Unicycle-reach-disturbance | 24/54 | 30 | 11 |

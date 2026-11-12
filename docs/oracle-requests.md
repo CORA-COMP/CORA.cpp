@@ -64,7 +64,7 @@ The coverage rows `linParamSys`, `initReach` and `post` are oracle debt until th
 CORALean's `Krylov` float definitions (MR !914) are served as `krylov.arnoldi`, `krylov.errorBound`,
 `krylov.subspace` and `krylov.windows`, and the sound Krylov of CORA.cpp (`priv_krylov_float.cpp`,
 `priv_krylov_subspace.cpp`) is tested against them, `test_lean_krylov`, on the pinned oracle
-(`oracle-20261112-05b8e9279`, CORALean `main` with !914).
+(`oracle-20261112-31fbe981b`, CORALean `main` with !914).
 
 | op | tested | against |
 |---|---|---|
@@ -122,7 +122,7 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 | `NonlinearSys.FloatModel.linearizeFloat` (`LinearizeFloat.lean`) | `A`, `B` at the expansion point: the centers of the model's Jacobian enclosures | own (CORA: the symbolic Jacobian at the point) |
 | `NonlinearSys.FloatHessModel.hessRemainder` (`HessRemainder.lean`) | `l_i = 1/2 dz' max\|H_i\| dz`, plus the first-order slack of the rounded `A`, `B` | close to `priv_abstrerr_lin` at tensorOrder 2; the slack term and the outward rounding are its own |
 | `lagrangeRemainderFloat` (`LagrangeRemainderFloat.lean`) | `1/6 sum_j g_j (g' E_ij g)` with `g` the box radius, the sixth as 11/64 | own (CORA, tensorOrder 3: the interval product `(dz' T_ij dz) dz_j` with `dz` the box, not its radius, and a quadratic set `1/2 quadMap(Z, H)`) |
-| `NonlinearSys.oneStepFloat` (`OneStepFloat.lean`) | one affine step with the input `V = f(z*) + B (U - u*) + L`: `LinearSys.reachFloatInput` for one step | own (CORA: `oneStep` of the linear system, then the error solution by `particularSolution_timeVarying`); CORA.cpp follows CORALean bit for bit with `linear_step = LinearStep::coralean` (`priv_float_step.cpp`, `alg::Linearization` and `alg::LinearizationAdaptive`) |
+| `NonlinearSys.oneStepFloat` (`OneStepFloat.lean`) | one affine step with the input `V = f(z*) + B (U - u*) + L`: `LinearSys.reachFloatInput` for one step | own (CORA: `oneStep` of the linear system, then the error solution by `particularSolution_timeVarying`); CORA.cpp follows CORALean bit for bit with `linear_step = LinearStep::coralean` (`priv_float_step.cpp`, `alg::Linearization` and `alg::LinearizationAdaptive`); `linear_step = LinearStep::closed_form`, the default, takes CORALean's `oneStepClosedFormFloat` (`priv_closed_form_step.cpp`), bit for bit against `linearSys.oneStepClosedForm` as a linear step and, inside the nonlinear ops (`nonlinearSys.linReach`, `linReachAdaptivePass`, `reachAdaptive`) with `linearStep: "closedForm"`, by `test_lean_nonlinear_sys_lin_reach`, `test_lean_nonlinear_sys_adaptive_pass` and `test_lean_nonlinear_sys_reach_adaptive` |
 | `NonlinearSys.FloatHessModel.linReachFloat` (`LinReachFloat.lean`) | one step: the region checked first, a single pass | own (CORA: the `while perfIndCurr > 1` loop that enlarges the guessed error) |
 | `NonlinearSys.FloatModel.reachFloat` (`ReachFloat.lean`) | the steps over the horizon | own, by the steps above |
 
@@ -137,7 +137,7 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 
 CORA.cpp's `alg::LinearizationAdaptive` is CORA's lin-adaptive as CORALean repairs it
 (`reachAdaptiveFloat`, CORALean !906). The oracle serves its ops from the pinned tag
-`oracle-20261112-05b8e9279` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
+`oracle-20261112-31fbe981b` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
 an older oracle makes the tests skip them.
 
 | op | test | agreement |
@@ -149,6 +149,7 @@ an older oracle makes the tests skip them.
 | `nonlinearSys.linReachAdaptivePass` | `test_lean_nonlinear_sys_adaptive_pass` | with `linear_step = coralean`: `xs`, `A`, the zero generators and, at tensor order 2, the sets (`Rmax`, the window, the end set) bit for bit; at order 3 the sets inside the oracle's, 5e-3 tighter at most (quadMap) |
 | `linearSys.reach` with an input set (the linear step of `lin` and `lin-adaptive`) | `test_lean_linear_sys_float_step` | bit for bit: the window and the end set of one step, for random systems, orders 4 and 6, reductions to 1 and 10 generators per dimension, a Robertson-like and a van der Pol-like linearization |
 | `zonotope.mtimesInterval` | `test_lean_linear_sys_float_step` | bit for bit |
+| `linearSys.oneStepClosedForm` (CORA's `oneStep` in closed form, `LinearSys.oneStepClosedFormFloat`, CORALean !911, tight `[e^{A dt}]` !913, entrywise `W` at the order `eta_e + 8` !917) | `test_lean_linear_sys_closed_form_step` | bit for bit: the end set and the window of one step, for random systems of 3 states at the orders 2, 4, 10 and of 5 at order 4, the oracle's self-test system with and without input generators, a stiff system whose order is raised, one for which the oracle answers `null` (no order below `eta + 4096`), Jacobians of the Robertson reaction (stiff, with zeros) at four step sizes, a stiff two-state system that conserves x + y (fixtures 3090 to 3093), sparse generators, and matrices of norms from 0.01 to 40 (the halvings `s` of `[e^{A dt}]`); `halvingsFloat` is `none` only where the order search has already failed, so that case is not separate. Beyond a scale of about 100 the powers of `|A| dt` overflow and the oracle prints a number out of range, which the client refuses (oracle debt: print the infinity) |
 | `nonlinearSys.reachAdaptive` | `test_lean_nonlinear_sys_reach_adaptive` | the same steps and tensor orders while the order is 2; the sets as in a pass |
 
 Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reachAdaptive` runs it).
@@ -157,7 +158,7 @@ Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reach
 
 CORA.cpp's `alg::PolynomializationAdaptive` is CORA's poly-adaptive as CORALean repairs it
 (`reachPolyAdaptiveFloat`, CORALean !912). The oracle serves its ops (`nonlinearSys.reachPolyAdaptive`,
-`linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261112-05b8e9279`
+`linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261112-31fbe981b`
 on (`lean::NonlinearSys`, `reach_poly_adaptive`, `lin_reach_poly_adaptive_pass`). The linear step (`polyWindowFloat`, `polyPointFloat`, !915) follows the float definition; the free boxes of the sets
 agree with the oracle's to 1e-4 on the van der Pol fixture 3201 but not bit for bit: the abstraction error
 (`abstrErrPolyAdaptiveFloat`: its `zonotopeEven` error box, `quadMapMixed`) and the error solution are not yet
@@ -183,7 +184,7 @@ build.
 
 ## Polynomial zonotopes and alg "poly" (PR "nln-poly")
 
-The pinned oracle (`oracle-20261112-05b8e9279`) serves no polynomial zonotope operation and no
+The pinned oracle (`oracle-20261112-31fbe981b`) serves no polynomial zonotope operation and no
 `nonlinearSys.reach` with a polynomial zonotope. CORALean has float definitions of the operations
 below (`src/CORALean/ContSet/PolyZonotope/Float/Operations/`). Their request is `{"op": ..., "S"
 or "pZ": {"c", "G", "GI", "E", "id"}, ...}` with `E` the p x h exponent matrix and `id` the
@@ -233,7 +234,7 @@ expression tree (`{"op":..,"args":..}`, `{"x":i}`, `{"const":text}`).
 
 ## Differential-algebraic systems (PR "port/nln-dae")
 
-The pinned oracle (`oracle-20261112-05b8e9279`) serves no `nonlinDASys` op. CORALean's float
+The pinned oracle (`oracle-20261112-31fbe981b`) serves no `nonlinDASys` op. CORALean's float
 definitions (`src/CORALean/ContDynamics/NonlinDASys/Operations/`) take the equations as a
 `FloatModel` (interval extensions of `f`, `g` and slope enclosures of the Jacobian blocks), which a
 request carries as expression trees of `x`, `y` and `u` (CORA.cpp's `Expr::to_json` with a third
@@ -273,7 +274,7 @@ nearest), so these ops are oracle debt; the requests that would close it:
 
 ## Neural networks and neural network controlled systems (PR "port/ainncs-a")
 
-The pinned oracle (`oracle-20261112-05b8e9279`) serves no `neuralNetwork` or `neurNetContrSys` op.
+The pinned oracle (`oracle-20261112-31fbe981b`) serves no `neuralNetwork` or `neurNetContrSys` op.
 CORALean's definitions are generic over the set representation (`NeuralNetwork.enclose`, no scalar
 named; the float layers instantiate it in `Examples/RunnableFloat.lean`) or over the plant
 (`NeurNetContrSys.reachWith`, the plant's reach an argument); only the linear plant has a float

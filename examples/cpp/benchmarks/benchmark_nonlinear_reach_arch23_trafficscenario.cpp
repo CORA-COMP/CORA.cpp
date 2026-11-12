@@ -212,12 +212,14 @@ bool aux_run(const std::string &name) {
     std::vector<std::vector<Zonotope>> R;
     for (std::size_t i = 0; i < c.u.size(); ++i) {
         const double T = c.t[i + 1] - c.t[i];
-        const ReachSet Ri = aux_controlled_car(c.K[i], c.u[i])
-                                .reach({.initial_set = X, .input_set = U, .t_final = T},
-                                       alg::Linearization{.time_step = T / 20,
-                                                          .taylor_terms = 10,
-                                                          .zonotope_order = 20,
-                                                          .tensor_order = 2});
+        const ReachSet Ri =
+            aux_controlled_car(c.K[i], c.u[i])
+                .reach({.initial_set = X, .input_set = U, .t_final = T},
+                       alg::Linearization{.time_step = T / 20,
+                                          .taylor_terms = 10,
+                                          .zonotope_order = 20,
+                                          .tensor_order = 2,
+                                          .linear_step = cora::bench::linear_step()});
         R.push_back(Ri.time_interval);
         X = Ri.time_point.back();
     }

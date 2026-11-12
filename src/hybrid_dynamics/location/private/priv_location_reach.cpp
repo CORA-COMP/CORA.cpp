@@ -78,7 +78,7 @@ class BundleSteps {
             nonlinear_ = {sys,
                           U,
                           {dt, alg.taylor_terms, alg.zonotope_order, alg.tensor_order,
-                           alg.error_order, alg.intermediate_order}};
+                           alg.error_order, alg.intermediate_order, alg.linear_step}};
             return;
         }
         if (const auto *sys = std::get_if<LinearSys>(&loc.flow())) {

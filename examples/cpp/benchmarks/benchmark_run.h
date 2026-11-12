@@ -5,6 +5,8 @@
 // MATLAB CORA's. An instance that fails (an unknown name, missing data) prints its error and
 // counts as differing, so the program exits non-zero instead of aborting. An instance that needs
 // more memory than the machine has (require_memory_gb) is skipped: exit code 77 if all were.
+// linear_step() reads the linear step of the nonlinear algorithms from CORACPP_LINEAR_STEP (cora,
+// closed_form, coralean) for the programs that run a lin or lin-adaptive instance.
 //
 // Syntax:   return cora::bench::run_family(argc, argv, {"A01", "A02"}, run_one);
 //           cora::bench::require_memory_gb(24);   // in run_one, before the work
@@ -18,6 +20,9 @@
 
 #pragma once
 
+#include "cora/cont_dynamics/algorithms.h"
+
+#include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -35,6 +40,18 @@ inline void print_line(const std::string &benchmark, const std::string &instance
                        double seconds) {
     std::cout << benchmark << "," << instance << "," << verified << "," << seconds << '\n'
               << std::flush;
+}
+
+/// The linear step of the nonlinear algorithms: CORACPP_LINEAR_STEP = closed_form (default), cora
+/// or coralean.
+inline cora::alg::LinearStep linear_step() {
+    const char *value = std::getenv("CORACPP_LINEAR_STEP");
+    const std::string name = value ? value : "closed_form";
+    if (name == "cora") return cora::alg::LinearStep::cora;
+    if (name == "coralean") return cora::alg::LinearStep::coralean;
+    if (name != "closed_form")
+        throw std::runtime_error("CORACPP_LINEAR_STEP must be cora, closed_form or coralean");
+    return cora::alg::LinearStep::closed_form;
 }
 
 /// Thrown by require_memory_gb: the instance is skipped, not failed.
