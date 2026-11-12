@@ -100,8 +100,13 @@ struct ClosedLoopVerdict {
 /// radius times network sensitivity is largest, every piece reached on its own, split at most
 /// depth - 1 times (the whole set counts as one level); a piece that still fails gives UNKNOWN.
 struct VerifySplit {
+    /// Where a piece is cut: CORA's rule (largest radius times network sensitivity) or the
+    /// dimension whose radius is largest relative to that of the initial set (CORA.cpp only: it
+    /// shrinks every dimension, which a constraint on the velocities of Docking needs).
+    enum class Rule { sensitivity, widest };
     int depth = 0;       ///< splitR0; 0 and 1 reach the whole set only
     int max_threads = 8; ///< the pieces run on at most this many threads
+    Rule rule = Rule::sensitivity;
 };
 
 // The system --------------------------------------------------------------------------------------

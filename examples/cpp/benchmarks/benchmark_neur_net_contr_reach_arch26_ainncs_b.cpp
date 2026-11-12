@@ -8,8 +8,10 @@
 // layer to order 2, so QUAD splits here). QUAD, NAV and CartPole run through verify with the
 // splitting of CORA's script (NAV 9, CartPole 10) or the one that was needed; Docking is CORA's
 // script with its own check of the sets (below). CartPole starts from the smaller initial set of
-// CORA's script. Each instance prints the line of the scripts, and on stderr the expected verdict
-// and time of the ARCH-COMP 2026 report (Table 1).
+// CORA's script, and in a second row from the report's. Docking has a second row too: the
+// constraint from inside by a polytope, verified with the splitting of the initial set (below).
+// Each instance prints the line of the scripts, and on stderr the expected verdict and time of
+// the ARCH-COMP 2026 report (Table 1).
 //
 // Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs_b [QUAD-reach ...]
 // Outputs:  one line per instance on stdout
@@ -130,6 +132,25 @@ bool aux_docking_safe(const PolyZonotope &P, double n, int depth) {
     return aux_docking_safe(a, n, depth - 1) && aux_docking_safe(b, n, depth - 1);
 }
 
+/// The constraint |v| <= 0.2 + 2n |s| from inside, as a polytope in (sx, sy, vx, vy): |s| >=
+/// (sx + sy) / sqrt 2 (Cauchy-Schwarz), and the disk |v| <= R is replaced by the regular
+/// `sides`-gon inscribed in it (a_k . v <= R cos(pi / sides), |a_k| = 1). Every coefficient is
+/// shrunk by 1e-9 relative, which covers the rounding of the cosines and sines; the polytope is
+/// inside the constraint, so a set inside it satisfies the constraint.
+Polytope aux_docking_polytope(double n, int sides) {
+    constexpr double pi = 3.14159265358979323846, shrink = 1.0 - 1e-9;
+    const double c = std::cos(pi / sides) * shrink;
+    std::vector<double> A, b;
+    for (int k = 0; k < sides; ++k) {
+        const double phi = 2 * pi * k / sides;
+        // cos(phi_k) vx + sin(phi_k) vy - c 2n (sx + sy) / sqrt 2 <= 0.2 c
+        const double w = c * 2 * n / std::sqrt(2.0) * shrink;
+        A.insert(A.end(), {-w, -w, std::cos(phi), std::sin(phi)});
+        b.push_back(0.2 * c);
+    }
+    return {Tensor::from_data(A, {sides, 4}), Tensor::from_data(b, {sides, 1})};
+}
+
 /// Whether the state (sx, sy, vx, vy) satisfies the constraint of the docking.
 bool aux_docking_point_safe(const std::vector<double> &x, double n) {
     return std::sqrt(x[2] * x[2] + x[3] * x[3]) <=
@@ -138,25 +159,75 @@ bool aux_docking_point_safe(const std::vector<double> &x, double n) {
 
 /// example_neuralNet_reach_10_spacecraftDocking.m: random runs against the constraint, then the
 /// reach of the whole set and the check of every set over a step.
-ClosedLoopVerdict aux_docking_run(Rng &rng) {
+ClosedLoopVerdict aux_docking_run(Rng &rng, bool polygon) {
     constexpr double n = 0.001027;
     const NeurNetContrSys sys(aux_docking(), load_network("docking"), 0.1);
-    const PolyZonotope X0 = box_poly({70, 70, -0.28, -0.28}, {106, 106, 0.28, 0.28});
+    // CORACPP_DOCKING_PIECE = f,a,b,c,d: only the corner of fraction f of the widths at
+    // (70 + 36 a, 70 + 36 b, -0.28 + 0.56 c, -0.28 + 0.56 d), a, b, c, d in {0, 1} (diagnosis)
+    std::vector<double> lo{70, 70, -0.28, -0.28}, hi{106, 106, 0.28, 0.28};
+    if (const char *env = std::getenv("CORACPP_DOCKING_PIECE")) {
+        double f, a[4];
+        std::sscanf(env, "%lf,%lf,%lf,%lf,%lf", &f, a, a + 1, a + 2, a + 3);
+        for (std::size_t i = 0; i < 4; ++i) {
+            const double w = hi[i] - lo[i], l = lo[i];
+            lo[i] = l + (w - f * w) * a[i];
+            hi[i] = lo[i] + f * w;
+        }
+    }
+    const PolyZonotope X0 = box_poly(lo, hi);
     const ClosedLoopOptions options = loop_options(0.1, 2, 4, 20, 0, 0, PolyMethod::regression);
     ClosedLoopVerdict out;
     out.simulations = 20;
+    if (const char *env = std::getenv("CORACPP_AINNCS_POINTS")) out.simulations = std::atoi(env);
     // the random runs, the constraint at every sample
-    const ClosedLoopTrajectories traj = sys.simulate_random(X0.zonotope(), std::nullopt, 40.0,
-                                                            options.plant.time_step, 20, 0.5, rng);
+    const ClosedLoopTrajectories traj = sys.simulate_random(
+        X0.zonotope(), std::nullopt, 40.0, options.plant.time_step, out.simulations, 0.5, rng);
+    const bool verbose = std::getenv("CORACPP_BENCHMARK_VERBOSE") != nullptr;
+    double worst = 1e9, worst_time = 0;
     for (std::size_t k = 0; k < traj.x.size(); ++k) {
         const std::vector<double> x = traj.x[k].data();
         const std::size_t N = std::size_t(traj.x[k].shape()[1]);
-        for (std::size_t j = 0; j < N; ++j)
+        for (std::size_t j = 0; j < N; ++j) {
+            if (verbose) {
+                const double margin = 0.2 + 2 * n * std::hypot(x[j], x[N + j]) -
+                                      std::hypot(x[2 * N + j], x[3 * N + j]);
+                if (margin < worst) worst = margin, worst_time = traj.time[k];
+            }
             if (!aux_docking_point_safe({x[j], x[N + j], x[2 * N + j], x[3 * N + j]}, n)) {
                 out.verdict = Verdict::falsified;
                 out.violation_time = traj.time[k];
                 return out;
             }
+        }
+    }
+    if (verbose)
+        std::cerr << "  smallest margin of the runs " << worst << " at t = " << worst_time << '\n';
+    // the polygon: verify with the splitting, against the polytope inside the constraint (a miss
+    // of the polytope is not a violation of the constraint, so only VERIFIED is taken)
+    if (polygon) {
+        VerifySplit split{.depth = 11, .rule = VerifySplit::Rule::widest};
+        if (const char *env = std::getenv("CORACPP_AINNCS_SPLIT"))
+            std::sscanf(env, "%d,%d", &split.depth, &split.max_threads);
+        if (std::getenv("CORACPP_BENCHMARK_VERBOSE")) {
+            const ClosedLoopReach<PolyZonotope> R = sys.reach(X0, std::nullopt, 40.0, options);
+            for (std::size_t k = 0; k < R.time_point.size() && k < 60; ++k) {
+                const Interval box = R.time_point[k].interval();
+                std::cerr << "  t = " << R.time[k] << ": inf";
+                for (const double d : box.inf().data()) std::cerr << ' ' << d;
+                std::cerr << " sup";
+                for (const double d : box.sup().data()) std::cerr << ' ' << d;
+                std::cerr << '\n';
+            }
+        }
+        int sides = 32;
+        if (const char *env = std::getenv("CORACPP_DOCKING_SIDES")) sides = std::atoi(env);
+        out =
+            sys.verify(X0, std::nullopt, 40.0, options,
+                       TimedSpecification{Specification::safe_set(aux_docking_polytope(n, sides))},
+                       1, rng, split);
+        out.simulations = 20;
+        if (out.verdict == Verdict::falsified) out.verdict = Verdict::unknown;
+        return out;
     }
     // the reach, and the check of the sets over the steps
     const ClosedLoopReach<PolyZonotope> R = sys.reach(X0, std::nullopt, 40.0, options);
@@ -192,7 +263,12 @@ std::vector<AinncsInstance> aux_instances() {
              "order-1 enclosure and splitting (CORA: order 2 in one layer, no splitting)"});
     }
     // Docking: the constraint is not a polytope; the script's own check
-    v.push_back({"Docking", "constraint", Verdict::unknown, 95.038, aux_docking_run});
+    v.push_back({"Docking", "constraint", Verdict::unknown, 95.038,
+                 [](Rng &rng) { return aux_docking_run(rng, false); }});
+    v.push_back({"Docking", "constraint-polygon", Verdict::verified, 95.038,
+                 [](Rng &rng) { return aux_docking_run(rng, true); },
+                 "the constraint from inside by a 32-gon polytope, initial set split in its widest "
+                 "dimension (depth 11); CORA's script is UNKNOWN"});
     // NAV: the goal at t = 6, the obstacle all the time
     for (const bool point : {true, false}) {
         const TimedSpecifications specs{
@@ -207,19 +283,26 @@ std::vector<AinncsInstance> aux_instances() {
                          loop_options(point ? 0.05 : 0.1, 2, 1, 10, 0, 0, PolyMethod::regression),
                          specs, {.depth = 9})});
     }
-    // CartPole: x1, x3, x4 in [-0.001, 0.001] for t in [8, 10], from the smaller set
-    {
-        const std::vector<double> lo{-0.04, -0.02, -0.04, -0.02}, hi{0.04, 0.02, 0.04, 0.02};
+    // CartPole: x1, x3, x4 in [-0.001, 0.001] for t in [8, 10], from the smaller set of the script
+    // and from the report's
+    for (const bool report : {false, true}) {
+        const double r = report ? 1.0 : 0.4;
+        const std::vector<double> lo{-0.1 * r, -0.05 * r, -0.1 * r, -0.05 * r},
+            hi{0.1 * r, 0.05 * r, 0.1 * r, 0.05 * r};
         v.push_back(
-            {"CartPole", "reach", Verdict::verified, 227.216,
+            {"CartPole", report ? "reach-report" : "reach",
+             report ? Verdict::unknown : Verdict::verified, 227.216,
              make_verify(aux_cart_pole(), "cartpole", 0.02, box_poly(lo, hi), none, 10.0,
                          loop_options(0.02, 2, 1, 50, 0, 0, PolyMethod::regression),
                          TimedSpecification{
                              Specification::safe_set(box_polytope({-0.001, -kInf, -0.001, -0.001},
                                                                   {0.001, kInf, 0.001, 0.001})),
                              std::make_pair(8.0, 10.0)},
-                         {.depth = 10}),
-             "the smaller initial set of the script (0.4 times the radius of the report's)"});
+                         {.depth = report ? 16 : 10}),
+             report
+                 ? "the report's initial set (no tool ran it), split to depth 16 (CORA's time is "
+                   "for the smaller set)"
+                 : "the smaller initial set of the script (0.4 times the radius of the report's)"});
     }
     return v;
 }
