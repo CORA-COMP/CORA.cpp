@@ -14,7 +14,7 @@
 // admissible either).
 //
 // ORACLE: contSet/@zonotope/mtimes.m
-// CORA.cpp only: CORA evaluates oneStep with expm and A^-1; the closed form is CORALean's
+// ORACLE: contDynamics/@linearSys/oneStep.m
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
 // Last update:   ---

@@ -3,9 +3,9 @@
 # Of the two executables in the archive CORA.cpp runs the unsound one: it serves every dtype, nearest
 # included. Bump the tag and the hash together, to the values of that job's
 # `oracle-linux-x86_64.tar.xz.sha256`.
-set(CORALEAN_VERSION "oracle-20261112-05b8e9279")
+set(CORALEAN_VERSION "oracle-20261112-31fbe981b")
 set(CORALEAN_URL "https://github.com/TUMcps/CORALean/raw/${CORALEAN_VERSION}")
 set(CORALEAN_ARCHIVE "oracle-linux-x86_64.tar.xz")
-set(CORALEAN_ARCHIVE_SHA256 "22c5ef4aafcbc6a9a931872deec9876b7bdec8650c09c420123df72d6c77e65c")
+set(CORALEAN_ARCHIVE_SHA256 "dbeb3c3feba9da2fcc235aaaa6c672761aeede62b2df015da791e7094c93b227")
 # the executable inside the archive that CORACPP_ORACLE runs
 set(CORALEAN_ORACLE_ASSET "oracle-unsound-linux-x86_64")

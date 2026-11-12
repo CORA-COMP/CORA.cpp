@@ -8,8 +8,10 @@
 //
 // See also: priv_closed_form_step.h
 //
-// CORA.cpp only: CORA evaluates oneStep with expm and A^-1; this is its closed form in
-// CORALean's float definition (LinearSys.oneStepClosedFormFloat).
+// CORA: contDynamics/@linearSys/oneStep.m
+// CORA evaluates oneStep with expm and A^-1; this is its closed form in CORALean's float
+// definition (LinearSys.oneStepClosedFormFloat).
+// CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
 // Last update:   12-November-2026
@@ -34,49 +36,6 @@ namespace {
 
 using Mat = std::vector<double>;
 
-/// a * b, a NaN corner (0 * Inf) taken as 0.
-double aux_mul(double a, double b) {
-    const double p = a * b;
-    return std::isnan(p) ? 0.0 : p;
-}
-
-/// L R, each sum over the inner index nested to the right, a(0) + (a(1) + ... + 0).
-Mat aux_matmul(const Mat &L, const Mat &R, std::size_t n) {
-    Mat out(n * n);
-    for (std::size_t i = 0; i < n; ++i)
-        for (std::size_t j = 0; j < n; ++j) {
-            double sum = 0;
-            for (std::size_t k = n; k-- > 0;) sum = aux_mul(L[i * n + k], R[k * n + j]) + sum;
-            out[i * n + j] = sum;
-        }
-    return out;
-}
-
-Mat aux_identity(std::size_t n) {
-    Mat I(n * n, 0.0);
-    for (std::size_t i = 0; i < n; ++i) I[i * n + i] = 1.0;
-    return I;
-}
-
-/// c M, entry by entry.
-Mat aux_scale(double c, const Mat &M) {
-    Mat out(M.size());
-    for (std::size_t e = 0; e < M.size(); ++e) out[e] = aux_mul(c, M[e]);
-    return out;
-}
-
-/// The largest row sum of the entries, each sum nested to the right, floored at 0
-/// (CORALean's normUpperBound of a nonnegative matrix).
-double aux_norm(const Mat &M, std::size_t n) {
-    double nrm = 0;
-    for (std::size_t i = 0; i < n; ++i) {
-        double sum = 0;
-        for (std::size_t j = n; j-- > 0;) sum = std::abs(M[i * n + j]) + sum;
-        nrm = std::max(nrm, sum);
-    }
-    return nrm;
-}
-
 /// The first order from taylor_terms (within 4096 orders) with norm <= (order + 2) / 2.
 std::optional<int> aux_admissible_order(double norm, int taylor_terms) {
     for (int eta = taylor_terms; eta < taylor_terms + 4096; ++eta)
@@ -84,64 +43,26 @@ std::optional<int> aux_admissible_order(double norm, int taylor_terms) {
     return std::nullopt;
 }
 
-/// The bounds of the interval product [Llo, Lhi] [Rlo, Rhi]: per entry the sums over the inner
-/// index, nested to the right, of the smallest and the largest corner product (Interval.matMul).
-std::pair<Mat, Mat> aux_interval_matmul(const Mat &Llo, const Mat &Lhi, const Mat &Rlo,
-                                        const Mat &Rhi, std::size_t n) {
-    Mat lo(n * n), hi(n * n);
-    for (std::size_t i = 0; i < n; ++i)
-        for (std::size_t j = 0; j < n; ++j) {
-            double sum_lo = 0, sum_hi = 0;
-            for (std::size_t k = n; k-- > 0;) {
-                const double a = Llo[i * n + k], b = Lhi[i * n + k];
-                const double c = Rlo[k * n + j], d = Rhi[k * n + j];
-                const double p[4] = {aux_mul(a, c), aux_mul(a, d), aux_mul(b, c), aux_mul(b, d)};
-                sum_lo = std::min(std::min(p[0], p[1]), std::min(p[2], p[3])) + sum_lo;
-                sum_hi = std::max(std::max(p[0], p[1]), std::max(p[2], p[3])) + sum_hi;
-            }
-            lo[i * n + j] = sum_lo;
-            hi[i * n + j] = sum_hi;
-        }
-    return {std::move(lo), std::move(hi)};
-}
-
-/// 2^-s dt, by s exact halvings.
-double aux_halved(double dt, int s) {
-    for (int i = 0; i < s; ++i) dt *= 0.5;
-    return dt;
-}
-
 /// B = |A| dt.
 Mat aux_magnitude_scaled(const Tensor &A, double dt) {
     Mat B = A.abs().data();
-    for (double &x : B) x = aux_mul(dt, x);
+    for (double &x : B) x = priv_float_mul(dt, x);
     return B;
 }
 
 /// The partial sums of the Taylor series of M, expIntervalTaylor: the powers by left
 /// multiplication, the newest term added to the running sum. sums[k] is the sum up to order k.
 std::vector<Mat> aux_taylor_sums(const Mat &M, std::size_t n, int orders) {
-    Mat P = aux_identity(n);
-    std::vector<Mat> sums{aux_scale(1.0, P)};
+    Mat P = priv_float_dense_identity(n);
+    std::vector<Mat> sums{priv_float_dense_scale(1.0, P)};
     for (int k = 0; k < orders; ++k) {
-        P = aux_matmul(M, P, n);
+        P = priv_float_dense_matmul(M, P, n);
         const double inv = 1.0 / priv_float_factorial(k + 1);
-        Mat S = aux_scale(inv, P);
+        Mat S = priv_float_dense_scale(inv, P);
         for (std::size_t e = 0; e < S.size(); ++e) S[e] += sums.back()[e];
         sums.push_back(std::move(S));
     }
     return sums;
-}
-
-/// The bounds of c M with c within [lo, hi]: the hull of the two products of each entry.
-std::pair<Mat, Mat> aux_box_scale(double lo, double hi, const Mat &M) {
-    Mat inf(M.size()), sup(M.size());
-    for (std::size_t e = 0; e < M.size(); ++e) {
-        const double a = aux_mul(lo, M[e]), b = aux_mul(hi, M[e]);
-        inf[e] = std::min(a, b);
-        sup[e] = std::max(a, b);
-    }
-    return {std::move(inf), std::move(sup)};
 }
 
 /// The sums of min(T, 0) and of max(T, 0) over the terms, each nested to the right (sumDown,
@@ -180,13 +101,16 @@ std::optional<int> priv_closed_form_halvings(const Tensor &A, double time_step) 
     const std::size_t n = std::size_t(A.size(-1));
     const Mat a = A.data();
     for (int s = 0; s < 128; ++s)
-        if (aux_norm(aux_scale(aux_halved(time_step, s), a), n) <= 0.5) return s;
+        if (priv_float_dense_norm(priv_float_dense_scale(priv_float_halved(time_step, s), a), n) <=
+            0.5)
+            return s;
     return std::nullopt;
 }
 
 std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int taylor_terms) {
     const std::size_t n = std::size_t(A.size(-1));
-    return aux_admissible_order(aux_norm(aux_magnitude_scaled(A, time_step), n), taylor_terms);
+    return aux_admissible_order(priv_float_dense_norm(aux_magnitude_scaled(A, time_step), n),
+                                taylor_terms);
 }
 
 // The matrices ------------------------------------------------------------------------------------
@@ -205,32 +129,33 @@ struct ClosedFormStepper::Matrices {
         // W(j,k): e^{|A| r} enclosed at the order eta + 8, less its series at eta (CORALean !917)
         const Mat B = aux_magnitude_scaled(A, r);
         const std::vector<Mat> B_sums = aux_taylor_sums(B, n, eta + 8);
-        const double tail = priv_float_remainder_bound(aux_norm(B, n), eta + 8);
+        const double tail = priv_float_remainder_bound(priv_float_dense_norm(B, n), eta + 8);
         Mat W(n * n);
         for (std::size_t e = 0; e < W.size(); ++e)
             W[e] = (B_sums[std::size_t(eta) + 8][e] + tail) - B_sums[std::size_t(eta)][e];
         // [e^{A r}]: the enclosure of order 16 at A r / 2^s, squared s times
-        const Mat M = aux_scale(aux_halved(r, halvings), a);
+        const Mat M = priv_float_dense_scale(priv_float_halved(r, halvings), a);
         const Mat T = aux_taylor_sums(M, n, 16).back();
-        const double R = priv_float_remainder_bound(aux_norm(M, n), 16);
+        const double R = priv_float_remainder_bound(priv_float_dense_norm(M, n), 16);
         Mat inf(T), sup(T);
         for (std::size_t e = 0; e < T.size(); ++e) {
             inf[e] -= R;
             sup[e] += R;
         }
         for (int i = 0; i < halvings; ++i) {
-            auto squared = aux_interval_matmul(inf, sup, inf, sup, n);
+            auto squared = priv_float_interval_matmul(inf, sup, inf, sup, n);
             inf = std::move(squared.first);
             sup = std::move(squared.second);
         }
         e_adt = box({inf, sup});
         // the powers of [A, A] by left multiplication
-        std::vector<Mat> powers{aux_identity(n)};
-        for (int i = 1; i <= eta; ++i) powers.push_back(aux_matmul(a, powers.back(), n));
+        std::vector<Mat> powers{priv_float_dense_identity(n)};
+        for (int i = 1; i <= eta; ++i)
+            powers.push_back(priv_float_dense_matmul(a, powers.back(), n));
         // the box of every order of the input solution
         for (int i = 0; i <= eta; ++i) {
             const auto [lo, hi] = priv_float_taylor_coeff(r, i + 1);
-            terms.push_back(box(aux_box_scale(lo, hi, powers[std::size_t(i)])));
+            terms.push_back(box(priv_float_dense_box_scale(lo, hi, powers[std::size_t(i)])));
         }
         // [-r W, r W]
         Mat scaled_w(W);
@@ -242,13 +167,13 @@ struct ClosedFormStepper::Matrices {
         std::vector<std::pair<Mat, Mat>> f_terms, g_terms;
         for (int i = 2; i <= eta; ++i) {
             const double c = priv_float_corr_coeff_low(i) * priv_float_taylor_coeff(r, i).second;
-            f_terms.push_back(aux_box_scale(c, 0.0, powers[std::size_t(i)]));
+            f_terms.push_back(priv_float_dense_box_scale(c, 0.0, powers[std::size_t(i)]));
         }
         // [G]: the orders 1 to eta, the power one above the order of the coefficient
         for (int i = 0; i < eta; ++i) {
             const double c =
                 priv_float_corr_coeff_low(i + 2) * priv_float_taylor_coeff(r, i + 2).second;
-            g_terms.push_back(aux_box_scale(c, 0.0, powers[std::size_t(i) + 1]));
+            g_terms.push_back(priv_float_dense_box_scale(c, 0.0, powers[std::size_t(i) + 1]));
         }
         F = box(aux_hull_of_terms(f_terms, n * n, W));
         G = box(aux_hull_of_terms(g_terms, n * n, scaled_w));

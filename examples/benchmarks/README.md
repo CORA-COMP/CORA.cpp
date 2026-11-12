@@ -338,14 +338,14 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TRAF22 | 1 | 1 | 0.919 | 16/27 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
-| SPRE22 | 1 | 1 | 0.972 | 35/56 bit-exact, 10 property | 34.3 | 37 | 37 (CORA) | 38.1 |
-| ROBE25 (1) | 1 | 1 | 29.1 | 7/19 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
-| ROBE25 (2) | 1 | 1 | 437 | 7/19 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
-| ROBE25 (3) | 1 | 1 | 93.8 | 7/19 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
+| TRAF22 | 1 | 1 | 0.919 | 17/28 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
+| SPRE22 | 1 | 1 | 0.972 | 36/57 bit-exact, 10 property | 34.3 | 37 | 37 (CORA) | 38.1 |
+| ROBE25 (1) | 1 | 1 | 29.1 | 8/20 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
+| ROBE25 (2) | 1 | 1 | 437 | 8/20 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
+| ROBE25 (3) | 1 | 1 | 93.8 | 8/20 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
 | CVDP23 | 1 | 1 | 58.6 | 34/70 bit-exact, 17 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
-| LALO20 W001 | 1 | 1 | 2.07 | 7/19 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
-| LALO20 W005 | 1 | 1 | 14.3 | 7/19 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
+| LALO20 W001 | 1 | 1 | 2.07 | 8/20 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
+| LALO20 W005 | 1 | 1 | 14.3 | 8/20 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
 | LALO20 W01 | 1 | 0 | 529 | 7/27 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.47 |
 | TSPS25 | 1 | 1 | 65 | 18/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
 | LOVO25 | 1 | 1 [e] | 3.72 | 27/75 bit-exact, 18 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
@@ -795,8 +795,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ISSC01_ISU02 | 3/8 | 5 | 4 |
 | ISSF01_ISS01 | 3/8 | 5 | 4 |
 | ISSF01_ISU01 | 3/8 | 5 | 4 |
-| LALO20_W001 | 7/19 | 12 | 5 |
-| LALO20_W005 | 7/19 | 12 | 5 |
+| LALO20_W001 | 8/20 | 12 | 5 |
+| LALO20_W005 | 8/20 | 12 | 5 |
 | LALO20_W01 | 7/27 | 20 | 6 |
 | LOVO25 | 27/75 | 48 | 13 |
 | LOVO25-script | 30/82 | 52 | 14 |
@@ -816,10 +816,10 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | RND04 | 7/14 | 7 | 4 |
 | RND05 | 7/14 | 7 | 4 |
 | RND06 | 7/14 | 7 | 4 |
-| ROBE25_1 | 7/19 | 12 | 5 |
-| ROBE25_2 | 7/19 | 12 | 5 |
-| ROBE25_3 | 7/19 | 12 | 5 |
-| SPRE22 | 35/56 | 21 | 11 |
+| ROBE25_1 | 8/20 | 12 | 5 |
+| ROBE25_2 | 8/20 | 12 | 5 |
+| ROBE25_3 | 8/20 | 12 | 5 |
+| SPRE22 | 36/57 | 21 | 11 |
 | SRA01 | 31/46 | 15 | 8 |
 | SRA02 | 39/56 | 17 | 10 |
 | SRA03 | 39/56 | 17 | 10 |
@@ -835,7 +835,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | TORA-reach-sigmoid | 24/61 | 37 | 11 |
 | TORA-reach-tanh | 24/60 | 36 | 11 |
 | TORA-remain | 24/61 | 37 | 11 |
-| TRAF22 | 16/27 | 11 | 7 |
+| TRAF22 | 17/28 | 11 | 7 |
 | TSPS25 | 18/32 | 14 | 6 |
 | Unicycle-reach | 24/54 | 30 | 11 |
 | Unicycle-reach-disturbance | 24/54 | 30 | 11 |
