@@ -1,18 +1,22 @@
 // priv_check_flow - the sets whose flow may cross a hyperplane guard, as CORA's checkFlow
 //
 // The normal of the guard is turned to point out of the invariant (judged at the center of the
-// first set). A set is kept if the flow at the center of its projection onto the hyperplane points
-// along the normal, or else if the flow over a box of the projection (in the Gram-Schmidt basis of
-// the normal, reduced by PCA to order 1) can: sup(a'(A x + u)) > 0 for x in it and u in U. For a
-// nonlinear flow CORA bounds a' f over that box by a Taylor model; CORA.cpp bounds it by the
-// second-order Taylor form with the Hessian over the box, which is as exact for an affine f
-// (docs/cora-differences.md).
+// first set; for a linear flow with `certified`, by a row of the invariant, as CORALean's
+// Location.guardOrientFloat?, and no filtering if no row certifies a side). A set is kept if the
+// flow at the center of its projection onto the hyperplane points along the normal, or else if the
+// flow over a box of the projection (in the Gram-Schmidt basis of the normal, reduced by PCA to
+// order 1) can: sup(a'(A x + u)) > 0 for x in it and u in U. For a nonlinear flow CORA bounds a' f
+// over that box by a Taylor model; CORA.cpp bounds it by the second-order Taylor form with the
+// Hessian over the box, which is as exact for an affine f (docs/cora-differences.md). With
+// `certified` a linear flow drops a set only where the flow set is certified strictly inward (CORA
+// drops at sup <= 0, which loses a run tangential to the guard).
 //
-// Syntax:   std::vector<Set> P = priv_check_flow(loc, guard, R, U);
+// Syntax:   std::vector<Set> P = priv_check_flow(loc, guard, R, U, certified);
 // Inputs:   loc - the location
 //           guard - a hyperplane guard (one equality, maybe inequalities)
 //           R - the sets that meet it
 //           U - the input set in the state space (B U + c), or that of f
+//           certified - a linear flow: orientation by an invariant row, strict drop
 // Outputs:  P - the sets of R that the flow may carry through the guard, in their order
 // See also: priv_guard_intersect
 //
@@ -20,7 +24,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   09-November-2026
+// Last update:   12-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -52,6 +56,32 @@ std::pair<Tensor, double> aux_outward(const Location &loc, const Polytope &guard
     // CORA flips when the center is inside the invariant xor below the hyperplane
     if (inside != aux_below(a, d, c)) return {-a, -d};
     return {a, d};
+}
+
+/// CORALean's Location.guardOrientFloat?: the guard normal n and offset g as they are, or negated,
+/// whichever an inequality row of the invariant certifies (the row equal to it with a right-hand
+/// side at most g); none if no row does, also for an invariant that is not a polytope.
+std::optional<std::pair<Tensor, double>> aux_oriented_by_row(const Location &loc,
+                                                             const Polytope &guard) {
+    const auto *inv = std::get_if<Polytope>(&loc.invariant());
+    if (inv == nullptr) return std::nullopt;
+    const Tensor n = guard.Ae().slice(-2, 0, 1).matrix_transpose();
+    const double g = guard.be().data()[0];
+    const std::vector<double> nv = n.data();
+    const std::vector<double> A = inv->A().data(), b = inv->b().data();
+    const std::size_t dim = nv.size(), rows = b.size();
+    // whether some row i has A_i = s n and b_i <= s g
+    const auto certifies = [&](double s) {
+        for (std::size_t i = 0; i < rows; ++i) {
+            bool same = true;
+            for (std::size_t j = 0; j < dim && same; ++j) same = A[i * dim + j] == s * nv[j];
+            if (same && b[i] <= s * g) return true;
+        }
+        return false;
+    };
+    if (certifies(1.0)) return std::make_pair(n, g);
+    if (certifies(-1.0)) return std::make_pair(-n, -g);
+    return std::nullopt;
 }
 
 // The flow over a set -----------------------------------------------------------------------------
@@ -95,7 +125,7 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
 /// Whether the flow may point along a at some point of the set projected onto the hyperplane;
 /// false if a member of a bundle is certified to have no outward flow.
 bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S,
-                    const Zonotope &U_state) {
+                    const Zonotope &U_state, bool strict) {
     if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow())) {
         // the fast test at the projected center, then the bound over the reduced projection
         const Tensor P = a.eye_like(a.shape()[0]) - a.matmul(a.matrix_transpose());
@@ -127,7 +157,7 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
         if (!(outward <= 0)) continue;
         // the flow set A proj + V, bounded from above along the normal
         const double up = proj.linear_map(A).plus(U_state).support_function(a).item();
-        if (up <= 0) return false;
+        if (strict ? up < 0 : up <= 0) return false;
     }
     return true;
 }
@@ -185,10 +215,11 @@ bool aux_level_flow_along(const Location &loc, const LevelSet &guard, double out
 // ===========================================  MAIN  =========================================== //
 
 std::vector<Set> priv_check_flow_outward(const Location &loc, const Tensor &a, double d,
-                                         const std::vector<Set> &R, const Zonotope &U_state) {
+                                         const std::vector<Set> &R, const Zonotope &U_state,
+                                         bool strict) {
     std::vector<Set> out;
     for (const Set &S : R)
-        if (aux_flow_along(loc, a, d, S, U_state)) out.push_back(S);
+        if (aux_flow_along(loc, a, d, S, U_state, strict)) out.push_back(S);
     return out;
 }
 
@@ -206,9 +237,16 @@ std::vector<Set> priv_check_flow(const Location &loc, const LevelSet &guard,
 }
 
 std::vector<Set> priv_check_flow(const Location &loc, const Polytope &guard,
-                                 const std::vector<Set> &R, const Zonotope &U_state) {
+                                 const std::vector<Set> &R, const Zonotope &U_state,
+                                 bool certified) {
+    if (certified && std::holds_alternative<LinearSys>(loc.flow())) {
+        // no row of the invariant certifies a side: no filtering
+        const auto oriented = aux_oriented_by_row(loc, guard);
+        if (!oriented) return R;
+        return priv_check_flow_outward(loc, oriented->first, oriented->second, R, U_state, true);
+    }
     const auto [a, d] = aux_outward(loc, guard, R.front());
-    return priv_check_flow_outward(loc, a, d, R, U_state);
+    return priv_check_flow_outward(loc, a, d, R, U_state, false);
 }
 
 } // namespace cora

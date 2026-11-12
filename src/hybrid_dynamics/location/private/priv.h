@@ -106,11 +106,10 @@ struct GuardIntersection {
     int64_t transition, first, last;
     Set set;
 };
-std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const GuardHits &hits,
-                                                    const LocationReachSet &R,
-                                                    const Zonotope &U_state,
-                                                    const alg::GuardIntersect &method,
-                                                    bool check_flow = true, bool dense = false);
+std::vector<GuardIntersection>
+priv_guard_intersect(const Location &loc, const GuardHits &hits, const LocationReachSet &R,
+                     const Zonotope &U_state, const alg::GuardIntersect &method,
+                     bool check_flow = true, bool dense = false, bool certified = true);
 
 /// The orthogonal bases of the enclosure (CORA's calcBasis), one per method of `enclose`.
 std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> &R,
@@ -118,8 +117,11 @@ std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> 
                                     const Zonotope &U_state);
 
 /// The sets whose flow may point into the hyperplane guard (CORA's checkFlow).
+/// With `certified`, a linear flow follows CORALean: the normal is oriented by an invariant row
+/// (none: no set is dropped) and a set is dropped only where the flow is certified inward.
 std::vector<Set> priv_check_flow(const Location &loc, const Polytope &guard,
-                                 const std::vector<Set> &R, const Zonotope &U_state);
+                                 const std::vector<Set> &R, const Zonotope &U_state,
+                                 bool certified = true);
 
 /// CORA's checkFlow for a level set guard: the sets whose flow along the outward gradient may be
 /// positive, by the flow at the center, else by Taylor models over the PCA box of the set.
@@ -127,9 +129,11 @@ std::vector<Set> priv_check_flow(const Location &loc, const Polytope &guard,
 std::vector<Set> priv_check_flow(const Location &loc, const LevelSet &guard,
                                  const std::vector<Set> &R, const Zonotope &U_state);
 
-/// The same for the hyperplane a'x = d with the outward unit normal a (the caller's choice).
+/// The same for the hyperplane a'x = d with the outward normal a (the caller's choice); `strict`
+/// drops a linear flow's set only at a flow certified below 0, else at at most 0.
 std::vector<Set> priv_check_flow_outward(const Location &loc, const Tensor &a, double d,
-                                         const std::vector<Set> &R, const Zonotope &U_state);
+                                         const std::vector<Set> &R, const Zonotope &U_state,
+                                         bool strict = false);
 
 /// The enclosures of the guard intersection of the sets R per basis (CORA's
 /// guardIntersect_zonoGirard, _nondetGuard and _conZonotope); none if it is empty.

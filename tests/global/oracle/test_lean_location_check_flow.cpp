@@ -45,7 +45,7 @@ int main() {
                 std::vector<int64_t> mine, theirs;
                 // the steps of one set at a time: a hyperplane through the set carries its flow
                 for (std::size_t k = 0; k < sets.size(); ++k)
-                    if (!priv_check_flow_outward(loc, normal, d, {reach[k]}, V).empty())
+                    if (!priv_check_flow_outward(loc, normal, d, {reach[k]}, V, true).empty())
                         mine.push_back(int64_t(k));
                 theirs = lean::Location::check_flow({A, B, c, U}, normal, d, sets);
                 test::oracle::check(mine, theirs);

@@ -1,12 +1,15 @@
 // test_lean_hybrid_automaton_reach - hybrid reach against the CORALean oracle
 //
-// With time_point_swap and check_flow off and linear_step coralean, HybridAutomaton::reach is the
-// oracle's `hybridAutomaton.reach`: the same branches in the same order, the same time-interval
-// sets bit for bit, the same start times. The automata are small random ones in two states: a
-// drift towards hyperplane guards, halfspace invariants that end each stay, linear resets, a
-// guard that two stays cross at different times and a clock-like location. The invariant exit
-// follows CORALean (a row of the invariant lies strictly beyond the set). With
-// CORACPP_ORACLE_SLOW the rendezvous instances SRA01, SRNA01 and SRU01 run as well (minutes).
+// With time_point_swap off, check_flow_certified on and linear_step coralean (check_flow on or
+// off), HybridAutomaton::reach is the oracle's `hybridAutomaton.reach`: the same branches in the
+// same order, the same time-interval sets bit for bit, the same start times. The automata are small
+// random ones in two states: a drift towards hyperplane guards, halfspace invariants that end each
+// stay, linear resets, a guard that two stays cross at different times and a clock-like location.
+// The invariant exit follows CORALean (a row of the invariant lies strictly beyond the set). With
+// check_flow on, the guard x1 = 0 of the invariant x1 >= 0 is crossed by a flow that leaves (kept),
+// enters (the group is dropped) or is tangential (kept), and a guard no invariant row bounds is not
+// filtered. With CORACPP_ORACLE_SLOW the rendezvous instances SRA01, SRNA01 and SRU01 run as well
+// (minutes).
 //
 // ORACLE: hybridDynamics/@hybridAutomaton/reach.m
 // Authors:       Claude Sonnet 5.5
@@ -20,6 +23,7 @@
 #include "oracle_testing.h"
 
 #include <cstdlib>
+#include <tuple>
 
 using namespace cora;
 
@@ -103,10 +107,12 @@ std::vector<Spec> aux_specs(test::oracle::Random &rnd, double dt) {
 
 /// CORA.cpp's reach of the automaton without CORA's two unsound steps against the oracle's, branch
 /// by branch: the location, the producing branch, the start times and every set bit for bit.
-std::pair<std::size_t, std::size_t>
-aux_compare(const HybridAutomaton &HA, const HybridReachProblem &problem, alg::HybridStandard alg) {
+std::pair<std::size_t, std::size_t> aux_compare(const HybridAutomaton &HA,
+                                                const HybridReachProblem &problem,
+                                                alg::HybridStandard alg, bool check_flow = false) {
     alg.linear_step = alg::LinearStep::coralean;
-    alg.check_flow = false;
+    alg.check_flow = check_flow;
+    alg.check_flow_certified = true;
     alg.time_point_swap = false;
     const HybridReachSet mine = HA.reach(problem, alg);
     const std::vector<lean::HybridBranch> theirs = lean::HybridAutomaton::reach(HA, problem, alg);
@@ -136,6 +142,23 @@ aux_compare(const HybridAutomaton &HA, const HybridReachProblem &problem, alg::H
     return {theirs.size(), sets};
 }
 
+/// The automaton of the checkFlow fixtures: x' = flow, the invariant x1 >= 0 and the guard x1 = 0
+/// to a box location (`bounded`: the invariant row x1 >= 0 is -0.5 x1 <= 0, which certifies no
+/// side).
+std::vector<Spec> aux_flow_specs(double flow, bool bounded) {
+    const Tensor I = Tensor::eye(2), Z = Tensor::zeros({2, 2});
+    const auto vec = [](double a) { return Tensor::from_data({a, 0.0}, {2, 1}); };
+    const double scale = bounded ? 0.5 : 1.0;
+    std::vector<Spec> specs;
+    specs.push_back({Z,
+                     vec(flow),
+                     aux_halfspace({-scale, 0}, 0.0),
+                     {{aux_hyperplane({1, 0}, 0.0), I, vec(0.0), 1}},
+                     0.25});
+    specs.push_back({Z, vec(0.0), aux_halfspace({1, 0}, 1.0), {}, 0.25});
+    return specs;
+}
+
 } // namespace
 
 
@@ -155,6 +178,18 @@ int main() {
             sets += m;
         }
         test::check(stays >= 6 && sets > 100, "hybridAutomaton.reach: the stays and their sets");
+        // checkFlow at x1 = 0: a flow out, in, along the guard, and a guard no row certifies
+        for (const auto &[flow, bounded, centre, branches] :
+             {std::tuple{-1.0, false, 0.25, 2}, std::tuple{1.0, false, 0.0625, 1},
+              std::tuple{0.0, false, 0.0625, 2}, std::tuple{1.0, true, 0.0625, 2}}) {
+            const HybridAutomaton HA = aux_build(aux_flow_specs(flow, bounded));
+            const Zonotope R0(Tensor::from_data({centre, 0.0}, {2, 1}),
+                              Tensor::from_data({0.0625, 0.0, 0.0, 0.0}, {2, 2}));
+            alg::HybridStandard alg{{0.25}, 3, 10};
+            const auto [n, m] = aux_compare(HA, {.initial_set = R0, .t_final = 1.0}, alg, true);
+            test::check(n == std::size_t(branches), "hybridAutomaton.reach: checkFlow branches");
+            sets += m;
+        }
         // the rendezvous instances that the op serves, with coarse steps (the oracle is slow)
         if (std::getenv("CORACPP_ORACLE_SLOW") != nullptr)
             for (const char *name : {"SRA01", "SRNA01", "SRU01"}) {
