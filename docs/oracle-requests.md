@@ -160,9 +160,13 @@ CORA.cpp's `alg::PolynomializationAdaptive` is CORA's poly-adaptive as CORALean 
 (`reachPolyAdaptiveFloat`, CORALean !912). The oracle serves its ops (`nonlinearSys.reachPolyAdaptive`,
 `linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261112-31fbe981b`
 on (`lean::NonlinearSys`, `reach_poly_adaptive`, `lin_reach_poly_adaptive_pass`). The linear step (`polyWindowFloat`, `polyPointFloat`, !915) follows the float definition; the free boxes of the sets
-agree with the oracle's to 1e-4 on the van der Pol fixture 3201 but not bit for bit: the abstraction error
-(`abstrErrPolyAdaptiveFloat`: its `zonotopeEven` error box, `quadMapMixed`) and the error solution are not yet
-CORALean's operations step for step, the true error differs by a factor 2 (open). The operations of the polynomial zonotope float
+agree with the oracle's to 1e-5 on the van der Pol and quadratic fixtures, not bit for bit. The true error and the
+radius of the error solutions are bit for bit (`priv_poly_quad.cpp`: CORALean's `quadMap`, `quadMapMixed` and
+`zonotopeEven`, pairs (i, j) and (j, i) apart). What stays open: `zonotopeEven` moves the shift of the even and
+constant columns into the error box of `VerrorDyn`, where `polyWindowFloat` reads it as part of the varying input;
+CORA.cpp's zonotopes have no error box and add it to the center, so the window and the end set differ by up to the
+error scale (7e-7 on the quadratic fixture). Needs an error box on `Zonotope` (or a shift carried beside it) first.
+The operations of the polynomial zonotope float
 layer behind them (`reduceAdaptive`, `restructure`, `quadMapMixed`, `mtimesIntervalMat`) stay oracle debt: the
 oracle serves none of them on its own. `linReachPolyAdaptive` (one step with its tuning) is not tested; the
 tuning formulas are the lin-adaptive ones (`dHused` aside).

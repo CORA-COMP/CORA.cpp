@@ -121,6 +121,20 @@ PolyZonotope priv_poly_exact_plus(const PolyZonotope &Z1, const PolyZonotope &Z2
 
 // The errors and the linear steps -----------------------------------------------------------------
 
+/// CORALean's PolyZonotope.quadMap (priv_poly_quad.cpp): the bilinear map of the set with itself
+/// after absorbRounding, all (h + 1)^2 pairs of columns apart (the n absorbed zero generators
+/// stay). Not CORA's quadMap, which merges (i, j) and (j, i).
+PolyZonotope priv_poly_quad_map(const PolyZonotope &Z, const std::vector<Tensor> &Q);
+
+/// The generators and the center shift (zonotopeEven) of the three products with a difference
+/// in CORALean's abstrErrPolyAdaptiveFloat; structurally zero generators are left out.
+struct SecondOrder {
+    Tensor G;
+    Vec shift;
+};
+SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdiff,
+                                    const std::vector<Tensor> &Q);
+
 /// priv_precompStatError_adaptive for the start set Rdelta (relative to xs) and the input set U.
 PolyStatic priv_precomp_stat_error_adaptive(const NonlinearSys &sys, const Vec &xs,
                                             const std::optional<Zonotope> &U, double red_factor,
