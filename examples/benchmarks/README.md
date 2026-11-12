@@ -99,11 +99,11 @@ time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `
 | RAND01 | 1 (ARCH23) | 1 | 0.0023 | 7/13 bit-exact, 2 property | - | - | - | - |
 | RAND02 | 0 (ARCH23) | 0 | 0.015 | 7/13 bit-exact, 2 property | - | - | - | - |
 | RND01 | 1 | 1 | 0.022 | 7/13 bit-exact, 2 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
-| RND02 | 1 | 1 | 0.242 | 7/14 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.73 |
+| RND02 | 1 | 1 | 0.244 | 7/14 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.73 |
 | RND03 | 1 | 1 | 29.8 | 7/13 bit-exact, 2 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
-| RND04 | 1 | 1 | 4.21 | 7/14 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 1.85 |
-| RND05 | 1 | 1 | 42.4 | 7/14 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 1.08 |
-| RND06 | 1 | 1 | 237 | 7/14 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 0.11 |
+| RND04 | 1 | 1 | 1.14 | 7/14 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 6.82 |
+| RND05 | 1 | 1 | 6.5 | 7/14 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 7.06 |
+| RND06 | 1 | 1 | 26.6 | 7/14 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 1.00 |
 | SRNA01 | 1 | 1 | 0.473 | 25/40 bit-exact, 6 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
 | SRA01 | 1 | 1 | 0.204 | 31/46 bit-exact, 6 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
 | SRA02 | 1 | 1 | 0.102 | 39/56 bit-exact, 7 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
@@ -223,7 +223,8 @@ with CORALean's `Krylov.errorBoundFloat` and carries it across the restart windo
 `e^{t mu_A}`, `mu_A` Gershgorin's bound of the quadratic form of `A`, is useless here (551 on RND02, `e^{551 t}` over its
 horizon 1.59; `lambda_max` of the symmetric part of `A` is 123, 94 and 1.9 for RND04-06) although every `A` is stable. So
 the error is also carried in a Lyapunov weight `P` (`A'P + PA = -I`): CORA.cpp solves it (the matrix sign function
-iteration, Bartels-Stewart on the real Schur form where that fails the check), factors `P - aI` by Cholesky, and
+iteration in single precision, stopped once the residual of `A'P + PA + I` has a Gershgorin bound below 1/2, then in
+double precision, then Bartels-Stewart on the real Schur form where a step fails the check), factors `P - aI` by Cholesky, and
 CORALean's `Krylov.lyapunovCertificateFloat` checks it, bit for bit (`priv_krylov_lyapunov.cpp`). Then
 `||e^{tA}|| <= kappa e^{rate t}` with `kappa = sqrt(upper / lower)`, and `Krylov.restartedErrorBoundFloat` carries the
 windows' errors as `beta_{j+1} = e^{rate dt_j} beta_j + sqrt(upper) eps_j`; the smaller of the two carries is reported.
@@ -231,15 +232,18 @@ The certificate was accepted on all four instances (the Gershgorin carry was nev
 
 | instance | states | kappa | rate | solve (check) [s] | windows | carried error x vector norms | margin of the property |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| RND02 | 50 | 388 | -8.1e-5 | 0.003 (0.001) | 85 | 2.4e-6 x 51.7 = 1.2e-4 | 5.4e-3 |
-| RND04 | 1000 | 73.5 | -1.8e-3 | 3.3 (0.03) | 111 | 4.2e-7 x 334 = 1.4e-4 | 5.3 |
-| RND05 | 2500 | 146 | -7.6e-4 | 40 (0.3) | 118 | 9.3e-7 x 1142 = 1.1e-3 | 5.3 |
-| RND06 | 5000 | 21.1 | -7.9e-2 | 227 (7.9) | 11 | 1.7e-8 x 2089 = 3.5e-5 | 93 |
+| RND02 | 50 | 447 | -6.6e-5 | 0.003 (0.001) | 85 | 2.8e-6 x 51.7 = 1.4e-4 | 5.4e-3 |
+| RND04 | 1000 | 84.6 | -1.7e-3 | 0.5 (0.02) | 111 | 4.9e-7 x 334 = 1.6e-4 | 5.3 |
+| RND05 | 2500 | 168 | -6.7e-4 | 7.7 (0.25) | 118 | 1.1e-6 x 1142 = 1.2e-3 | 5.3 |
+| RND06 | 5000 | 24.5 | -7.0e-2 | 21 (2.9) | 11 | 2.0e-8 x 2089 = 4.2e-5 | 93 |
 
 The margin is the limit of the unsafe halfspace minus the maximum of the support function (scipy, below). The solve is the
-cost: the sign function iteration takes 3.3, 40 and 227 s for 1000, 2500 and 5000 states (2.2 GB of memory at 5000, where
-the Schur form took 1095 s); RND06 is 9 times slower than CORA's 26.7 s, so a cheaper weight (a structured one, or a
-solve in the sparse pattern) is the next step there. Before, the first windows alone exceeded the margin whatever the step
+cost: it took 3.3, 40 and 227 s for 1000, 2500 and 5000 states with the sign function iteration in double precision run to
+the last bit (the Schur form 1095 s), and takes 0.5, 7.7 and 21 s with the single precision iteration that stops at a residual
+gap of 1/2, an inverse by blocks of dense matrix products (Eigen's triangular solves and products run at a quarter of the
+speed of its matrix product), a shift from inverse iteration instead of a bisection, and a check of `L'L` that uses the
+triangular `L` (same bits, 2.9 s instead of 7.9 s on RND06). RND06 takes 26.6 s on this machine when it is not loaded (31 to 35 s at a
+load of 17 on 16 CPUs), against CORA's 26.7 s. The weight is a little less tight than before (kappa 24.5 instead of 21.1). Before, the first windows alone exceeded the margin whatever the step
 and the verdict was 0 after one pass. The early exit of the loop ("no finer step helps") also counted the points of `R0`
 as a floor of the bound, although the signed input center lowers it (RND02): it counts the least the input integral can be.
 
