@@ -552,15 +552,15 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Unicycle reach | V | V | 0.41 | 27/54 bit-exact, 3 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 17.3 |
-| Unicycle reach, with the report's disturbance w | V | V | 0.4 | 27/54 bit-exact, 3 property | - | 8.015 | 7.093 (JuliaReach) | 17.7 |
+| Unicycle reach | V | V | 0.41 | 16/41 bit-exact, 3 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 17.3 |
+| Unicycle reach, with the report's disturbance w | V | V | 0.4 | 16/41 bit-exact, 3 property | - | 8.015 | 7.093 (JuliaReach) | 17.7 |
 | ACC safe-distance | V | V | 0.24 | 27/60 bit-exact, 8 property | 4.2 | 3.176 | 0.492 (JuliaReach) [a] | 2.05 |
 | TORA remain | V | V | 1.22 | 28/61 bit-exact, 8 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.34 |
 | TORA reach-tanh | V | V | 0.15 | 27/60 bit-exact, 8 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
 | TORA reach-sigmoid | V | V | 0.28 | 28/61 bit-exact, 8 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
 | Single Pendulum reach | V | V | 0.041 | 27/60 bit-exact, 8 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
 | Double Pendulum less-robust | V (CORA: U) | V | 65 | 28/56 bit-exact, 4 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.04 |
-| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.18 | 27/54 bit-exact, 3 property | 5.06 | 5.604 | - | - |
+| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.18 | 16/41 bit-exact, 3 property | 5.06 | 5.604 | - | - |
 | Double Pendulum more-robust | F | F | 0.11 | 27/60 bit-exact, 8 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
 | Airplane continuous | F | F | 0.53 | 27/60 bit-exact, 8 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
 | VCAS middle-19.5 | V | V | 0.0034 | 5/24 bit-exact, 4 property | 0.88 | 0.215 | 0.215 (CORA) [e] | 62.5 |
@@ -573,10 +573,10 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | VCAS worst-28.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.047 | 0.032 | 0.032 (CORA) | 31.7 |
 | Attitude Control avoid | V | V | 0.42 | 27/62 bit-exact, 9 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
 | QUAD reach | V | V | 1.70 | 28/62 bit-exact, 9 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
-| Docking constraint | U | U | 4.59 | 20/54 bit-exact, 9 property | 594 [m] | 95.038 | - [f] | - |
+| Docking constraint | U | U | 4.59 | 18/51 bit-exact, 9 property | 594 [m] | 95.038 | - [f] | - |
 | Docking constraint, polytope and splitting | U (script) | V | 157 | 27/60 bit-exact, 8 property | - | 95.038 (U) | - [f] | - |
-| NAV standard | V | V | 13.3 | 33/63 bit-exact, 5 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
-| NAV robust | V | V | 0.36 | 32/61 bit-exact, 4 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
+| NAV standard | V | V | 13.3 | 24/52 bit-exact, 5 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
+| NAV robust | V | V | 0.36 | 21/48 bit-exact, 4 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
 | CartPole* reach | V | V | 2.09 | 28/62 bit-exact, 9 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
 | CartPole reach, the report's set | - | V | 37 | 28/62 bit-exact, 9 property | - | - | - [g] | - |
 
@@ -817,10 +817,10 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | DTN04 | 23/36 | 13 | 6 |
 | DTN05 | 23/36 | 13 | 6 |
 | DTN06 | 24/37 | 13 | 6 |
-| Docking-constraint | 23/54 | 31 | 9 |
+| Docking-constraint | 21/51 | 30 | 9 |
 | Docking-constraint-polygon | 30/60 | 30 | 11 |
 | Double_Pendulum-less-robust | 31/56 | 25 | 11 |
-| Double_Pendulum-less-robust-script | 30/54 | 24 | 11 |
+| Double_Pendulum-less-robust-script | 19/41 | 22 | 9 |
 | Double_Pendulum-more-robust | 30/60 | 30 | 11 |
 | GRBX01 | 34/52 | 18 | 10 |
 | GRBX02 | 35/56 | 21 | 10 |
@@ -837,8 +837,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W01 | 8/25 | 17 | 5 |
 | LOVO25 | 33/76 | 43 | 12 |
 | LOVO25-script | 36/83 | 47 | 14 |
-| NAV-robust | 35/61 | 26 | 15 |
-| NAV-standard | 36/63 | 27 | 15 |
+| NAV-robust | 24/48 | 24 | 13 |
+| NAV-standard | 27/52 | 25 | 13 |
 | PLAA01_BND42 | 25/35 | 10 | 9 |
 | PLAA01_BND50 | 25/35 | 10 | 9 |
 | PLAD01_BND30 | 11/17 | 6 | 5 |
@@ -874,8 +874,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | TORA-remain | 31/61 | 30 | 11 |
 | TRAF22 | 19/25 | 6 | 8 |
 | TSPS25 | 20/32 | 12 | 6 |
-| Unicycle-reach | 30/54 | 24 | 11 |
-| Unicycle-reach-disturbance | 30/54 | 24 | 11 |
+| Unicycle-reach | 19/41 | 22 | 9 |
+| Unicycle-reach-disturbance | 19/41 | 22 | 9 |
 | VCAS-middle-19.5 | 8/24 | 16 | 4 |
 | VCAS-middle-22.5 | 8/24 | 16 | 4 |
 | VCAS-middle-25.5 | 3/10 | 7 | 0 |
