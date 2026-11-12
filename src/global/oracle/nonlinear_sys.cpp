@@ -116,6 +116,8 @@ AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional
             r.get<std::vector<Zonotope>>("timeInterval")};
 }
 
+// The step ----------------------------------------------------------------------------------------
+
 std::optional<LinReachResult> NonlinearSys::lin_reach(const std::optional<Zonotope> &U,
                                                       const Zonotope &R,
                                                       const alg::Linearization &alg) const {
