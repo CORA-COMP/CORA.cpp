@@ -822,7 +822,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | DTN06 | 24/37 | 13 | 6 |
 | Docking-constraint | 21/51 | 30 | 9 |
 | Docking-constraint-polygon | 30/60 | 30 | 11 |
-| Double_Pendulum-less-robust | 31/56 | 25 | 11 |
+| Double_Pendulum-less-robust | - | not measured | - |
 | Double_Pendulum-less-robust-script | 19/41 | 22 | 9 |
 | Double_Pendulum-more-robust | 30/60 | 30 | 11 |
 | GRBX01 | 34/52 | 18 | 10 |
@@ -875,7 +875,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | TORA-reach-sigmoid | 31/61 | 30 | 11 |
 | TORA-reach-tanh | 30/60 | 30 | 11 |
 | TORA-remain | 31/61 | 30 | 11 |
-| TRAF22 | 19/25 | 6 | 8 |
+| TRAF22 | 19/25 | 6 | 7 |
 | TSPS25 | 20/32 | 12 | 6 |
 | Unicycle-reach | 19/41 | 22 | 9 |
 | Unicycle-reach-disturbance | 19/41 | 22 | 9 |
