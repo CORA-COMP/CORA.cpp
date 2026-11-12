@@ -186,10 +186,14 @@ double Polytope::support_function(const Tensor &dir) const {
     return ask("polytope.supportFunc", {{"P", *this}, {"dir", dir}}).get<double>("value");
 }
 
-// the conversion of a box
+// Conversions -------------------------------------------------------------------------------------
 
 Polytope Polytope::from_interval(const Interval &I) {
     return aux_set(ask("interval.polytope", {{"I", I}}));
+}
+
+Polytope Polytope::from_zonotope(const Zonotope &Z, int p) {
+    return aux_set(ask("zonotope.polytope", {{"Z", Z}, {"p", int64_t(p)}}));
 }
 
 } // namespace cora::lean

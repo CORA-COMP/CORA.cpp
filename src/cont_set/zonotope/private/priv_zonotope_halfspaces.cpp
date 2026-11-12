@@ -31,10 +31,15 @@ namespace cora {
 namespace {
 
 /// The halfspaces +-C0 x <= +-C0 c + sum|C0 G| of the facet normals C0 of a full-dimensional
-/// zonotope (CORA's aux_polytope_fullDim).
+/// zonotope (CORA's aux_polytope_fullDim), the normals in the order of CORALean's hPolytopeFacets:
+/// the reverse of CORA's.
 std::pair<Tensor, Tensor> aux_full_dim(const Zonotope &Z) {
     const Tensor &c = Z.center(), &G = Z.generators();
-    const Tensor C0 = priv_zonotope_facet_normals(Z);
+    const Tensor facets = priv_zonotope_facet_normals(Z);
+    std::vector<int64_t> reversed(std::size_t(facets.shape()[0]));
+    for (std::size_t i = 0; i < reversed.size(); ++i)
+        reversed[i] = int64_t(reversed.size() - 1 - i);
+    const Tensor C0 = facets.take(reversed, 0);
     const Tensor shift = C0.matmul(c), spread = C0.matmul(G).abs().sum(-1, true);
     return {Tensor::concat({C0, C0.negative()}, 0),
             Tensor::concat({shift + spread, shift.negative() + spread}, 0)};

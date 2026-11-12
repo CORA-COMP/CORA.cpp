@@ -194,6 +194,10 @@ class Zonotope : public ContSet {
     /// A simplex (n + 1 halfspaces) that contains the zonotope (CORA's simplex). Not a batch.
     Polytope simplex() const;
 
+    /// The same set in halfspace form (CORA's polytope): the facets [C; -C] x <= [d; d'] of the
+    /// cross products of its generators, in CORALean's order and arithmetic. Not a batch.
+    Polytope polytope() const;
+
     /// The same set as a matrix zonotope of n x 1 matrices (CORA's matZonotope).
     MatZonotope mat_zonotope() const;
 

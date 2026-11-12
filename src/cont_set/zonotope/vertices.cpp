@@ -27,7 +27,7 @@ namespace cora {
 
 namespace {
 
-// The generators, in the upper half-plane by angle, are the edges: walk 2 g_i from c - sum(g).
+// The generators, in the upper half-plane by angle, are the edges of the walk from c - sum(g).
 Polygon aux_polygon(const double *c, const double *G, int64_t m) {
     std::vector<Point> g; // the generators (G is row-major (2, m))
     for (int64_t j = 0; j < m; ++j) {
@@ -52,12 +52,20 @@ Polygon aux_polygon(const double *c, const double *G, int64_t m) {
             merged.push_back(g[i]);
     }
     g = merged;
-    Point v = {c[0], c[1]};
-    for (const Point &p : g) v = {v[0] - p[0], v[1] - p[1]};
-    Polygon out = {v};
-    for (const Point &p : g) out.push_back(v = {v[0] + 2 * p[0], v[1] + 2 * p[1]});
-    for (std::size_t i = 0; i + 1 < g.size(); ++i)
-        out.push_back(v = {v[0] - 2 * g[i][0], v[1] - 2 * g[i][1]});
+    // a corner as CORALean's cornerLo sums it: c + (s_0 g_0 + (... + (s_(h-1) g_(h-1) + 0)))
+    const auto corner = [&](std::size_t stop, double before) {
+        Point v = {0.0, 0.0};
+        for (std::size_t j = g.size(); j-- > 0;) {
+            // before `stop` the sign is `before`, after it the opposite; a flip, not a product
+            const bool plus = (j < stop) == (before > 0);
+            v = {(plus ? g[j][0] : -g[j][0]) + v[0], (plus ? g[j][1] : -g[j][1]) + v[1]};
+        }
+        return Point{c[0] + v[0], c[1] + v[1]};
+    };
+    // c - sum(g) + 2 sum_(j<k) g, the walk up to the corner c + sum(g), then its mirror image
+    Polygon out;
+    for (std::size_t k = 0; k <= g.size(); ++k) out.push_back(corner(k, 1.0));
+    for (std::size_t k = 1; k < g.size(); ++k) out.push_back(corner(k, -1.0));
     return out;
 }
 

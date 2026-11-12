@@ -152,8 +152,8 @@ Refusal priv_tensor_multiplication_refusal(const Zonotope &Z, const Tensor &M,
 Zonotope priv_tensor_multiplication(const Zonotope &Z, const Tensor &M,
                                     const Zonotope::TensorLists &list);
 
-/// The unit normals of the facets of a full-dimensional zonotope as rows (k, n), in CORA's order
-/// (the first half of polytope(Z).A); a single zonotope without zero generators.
+/// The unit normals of the facets of a full-dimensional zonotope as rows (k, n), in CORA's
+/// order (the first half of polytope(Z).A); a single zonotope without zero generators.
 Tensor priv_zonotope_facet_normals(const Zonotope &Z);
 
 /// The halfspaces C x <= d (C (k, n), d (k, 1)) whose intersection is the single zonotope Z,

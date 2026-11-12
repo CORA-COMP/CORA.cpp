@@ -79,6 +79,9 @@ class Polytope {
     /// A box as a polytope (`interval.polytope`).
     static Polytope from_interval(const Interval &I);
 
+    /// A zonotope as its facets (`zonotope.polytope`); p is the steps of the oracle's root.
+    static Polytope from_zonotope(const Zonotope &Z, int p = 20);
+
     // The operations of the second batch ---------------------------------------------------------
 
     /// The origin of R^n (`origin`).
