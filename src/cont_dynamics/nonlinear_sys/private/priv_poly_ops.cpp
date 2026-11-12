@@ -336,6 +336,7 @@ PolyZonotope priv_poly_exact_plus(const PolyZonotope &Z1, const PolyZonotope &Z2
         }
         return E;
     };
+    // the exponents of both sets side by side, the columns of Z1 first
     Exponents E = over(Z1);
     const Exponents E2 = over(Z2);
     E.insert(E.end(), E2.begin(), E2.end());

@@ -41,17 +41,21 @@ PolyZonotope PolyZonotope::compact_gens() const {
         if (inserted) kept.push_back(j);
     }
     if (int64_t(kept.size()) == h) return *this;
-    // the sums of the classes, each from the last column to the first
+    // the sums of the classes, each from the last member to the first (masked zeros add nothing)
     const std::vector<double> g = G_.data();
     const auto k = kept.size();
+    std::vector<std::vector<int64_t>> members(k);
+    std::vector<std::size_t> slot(static_cast<std::size_t>(h));
+    for (std::size_t t = 0; t < k; ++t) slot[std::size_t(kept[t])] = t;
+    for (int64_t l = 0; l < h; ++l) members[slot[std::size_t(rep[std::size_t(l)])]].push_back(l);
     std::vector<double> merged(std::size_t(n) * k);
     Exponents E;
     for (std::size_t t = 0; t < k; ++t) {
         E.push_back(E_[std::size_t(kept[t])]);
         for (int64_t i = 0; i < n; ++i) {
             double sum = 0;
-            for (int64_t l = h; l-- > 0;)
-                sum = (rep[std::size_t(l)] == kept[t] ? g[std::size_t(i * h + l)] : 0.0) + sum;
+            for (std::size_t m = members[t].size(); m-- > 0;)
+                sum = g[std::size_t(i * h + members[t][m])] + sum;
             merged[std::size_t(i) * k + t] = sum;
         }
     }
