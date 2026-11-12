@@ -145,6 +145,47 @@ FloatStep FloatStepper::step(const Tensor &xs, const Zonotope &V, const Zonotope
     return FloatStep{back(Hti.plus(PU)), back(Htp.plus(PU))};
 }
 
+// The run -----------------------------------------------------------------------------------------
+
+FloatStepper::Run::Run(const FloatStepper *stepper, Zonotope Pu, Zonotope Htp, Zonotope Hti,
+                       Zonotope PU, Zonotope X0, int zonotope_order)
+    : stepper_(stepper), Pu_(std::move(Pu)), Htp_(std::move(Htp)), Hti_(std::move(Hti)), PU_(PU),
+      PUnext_(std::move(PU)), tp_(std::move(X0)), zonotope_order_(zonotope_order) {}
+
+FloatStepper::Run FloatStepper::run(const Zonotope &V, const Zonotope &X0,
+                                    int zonotope_order) const {
+    const Series &series = m_->series;
+    const int64_t n = m_->n;
+    // the canonical system again: V mapped by B = I with c = 0, the center split off as u
+    const Tensor zero = X0.center().zeros_like();
+    const Zonotope Vi = V.linear_map(m_->eye);
+    const Zonotope Vc(Vi.center() + zero, Vi.generators());
+    const Zonotope u(Vc.center(), zero.zeros_like({n, n})), U(zero, Vc.generators());
+    Zonotope Pu = series.input_solution(u);
+    const Zonotope PuR =
+        series.input_solution(priv_lin_comb(Zonotope(zero, zero.zeros_like({n, n})), u));
+    Zonotope PU = series.input_solution(U);
+    // H(t_1) = reduce([e^{A dt}] X0 + Pu), H(tau_0) = hull(X0, [e^{A dt}] X0) + [F] X0 + P^R
+    const Zonotope e_adt_x = X0.linear_map(m_->e_adt);
+    Zonotope Htp = e_adt_x.plus(Pu).reduce(zonotope_order);
+    Zonotope Hti = priv_lin_comb(X0, e_adt_x).plus(X0.linear_map(m_->F)).plus(PuR);
+    return Run(this, std::move(Pu), std::move(Htp), std::move(Hti), std::move(PU), X0,
+               zonotope_order);
+}
+
+Zonotope FloatStepper::Run::next() {
+    const Interval &e_adt = stepper_->m_->e_adt;
+    // the window H(tau_k) + P^R(t_{k+1}) and the set H(t_{k+1}) + P^R(t_{k+1})
+    Zonotope window = Hti_.plus(PU_);
+    tp_ = Htp_.plus(PU_);
+    // the loop state one step on
+    PUnext_ = PUnext_.linear_map(e_adt);
+    PU_ = PU_.plus(PUnext_).reduce(zonotope_order_);
+    Htp_ = Htp_.linear_map(e_adt).plus(Pu_).reduce(zonotope_order_);
+    Hti_ = Hti_.linear_map(e_adt).plus(Pu_).reduce(zonotope_order_);
+    return window;
+}
+
 std::optional<FloatStep> priv_float_one_step(const Tensor &A, const Tensor &xs, const Zonotope &V,
                                              const Zonotope &R, double time_step, int taylor_terms,
                                              int zonotope_order) {

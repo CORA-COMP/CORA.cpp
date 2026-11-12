@@ -138,6 +138,16 @@ struct Decode<std::vector<double>> {
         return values;
     }
 };
+// A list of strings, the exact texts of values that are not doubles (the times of a stay).
+template <>
+struct Decode<std::vector<std::string>> {
+    static std::vector<std::string> of(const std::string &, const Json &j) {
+        std::vector<std::string> texts;
+        texts.reserve(j.items.size());
+        for (const Json &s : j.items) texts.push_back(s.text);
+        return texts;
+    }
+};
 // A list of booleans.
 template <>
 struct Decode<std::vector<bool>> {
@@ -284,6 +294,7 @@ template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<double> Reply::get<std::vector<double>>(const char *) const;
 template std::vector<bool> Reply::get<std::vector<bool>>(const char *) const;
+template std::vector<std::string> Reply::get<std::vector<std::string>>(const char *) const;
 template std::vector<std::optional<int64_t>>
 Reply::get<std::vector<std::optional<int64_t>>>(const char *) const;
 template std::vector<std::vector<int64_t>>
@@ -291,6 +302,7 @@ Reply::get<std::vector<std::vector<int64_t>>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
 template std::vector<Zonotope> Reply::get<std::vector<Zonotope>>(const char *) const;
 template std::optional<double> Reply::get<std::optional<double>>(const char *) const;
+template std::optional<int64_t> Reply::get<std::optional<int64_t>>(const char *) const;
 template std::optional<Tensor> Reply::get<std::optional<Tensor>>(const char *) const;
 template std::optional<Interval> Reply::get<std::optional<Interval>>(const char *) const;
 template std::optional<Zonotope> Reply::get<std::optional<Zonotope>>(const char *) const;

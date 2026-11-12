@@ -64,13 +64,13 @@ std::vector<Set> aux_check_flow(const Location &loc, const LevelSet &guard, std:
 /// The enclosure of one crossing by the chosen method.
 std::optional<Set> aux_enclose(const Location &loc, const std::vector<Set> &P,
                                const Polytope &guard, const Zonotope &U_state,
-                               const alg::GuardIntersect &method) {
+                               const alg::GuardIntersect &method, bool dense) {
     return std::visit(
         [&](const auto &m) -> std::optional<Set> {
             using M = std::decay_t<decltype(m)>;
             const std::vector<Tensor> B = priv_calc_basis(loc, P, guard, m.enclose, U_state);
             if constexpr (std::is_same_v<M, alg::ZonoGirard>) {
-                return priv_guard_intersect_zono_girard(P, guard, B);
+                return priv_guard_intersect_zono_girard(P, guard, B, dense);
             } else if constexpr (std::is_same_v<M, alg::NondetGuard>) {
                 return priv_guard_intersect_nondet_guard(P, guard, B, m.box, m.fm_passes);
             } else {
@@ -144,7 +144,8 @@ std::vector<GuardGroup> priv_guard_groups(const GuardHits &hits) {
 std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const GuardHits &hits,
                                                     const LocationReachSet &R,
                                                     const Zonotope &U_state,
-                                                    const alg::GuardIntersect &method) {
+                                                    const alg::GuardIntersect &method,
+                                                    bool check_flow, bool dense) {
     std::vector<GuardIntersection> out;
     const std::vector<Set> &sets = hits.time_point ? R.time_point : R.time_interval;
     for (const GuardGroup &group : priv_guard_groups(hits)) {
@@ -154,7 +155,7 @@ std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const G
         for (int64_t j : group.sets) P.push_back(sets[std::size_t(j)]);
         // a level set is crossed only where the flow points out along its gradient
         if (const auto *level = std::get_if<LevelSet>(&region)) {
-            if (!hits.time_point) {
+            if (check_flow && !hits.time_point) {
                 P = aux_check_flow(loc, *level, std::move(P), U_state);
                 if (P.empty()) continue;
             }
@@ -165,11 +166,12 @@ std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const G
         }
         const Polytope &guard = std::get<Polytope>(region);
         // a hyperplane is crossed only where the flow points into it
-        if (!hits.time_point && guard.representsa("conHyperplane", numerics::kGuardHyperplane)) {
+        if (check_flow && !hits.time_point &&
+            guard.representsa("conHyperplane", numerics::kGuardHyperplane)) {
             P = aux_check_flow(loc, guard, std::move(P), U_state);
             if (P.empty()) continue;
         }
-        std::optional<Set> S = aux_enclose(loc, P, guard, U_state, method);
+        std::optional<Set> S = aux_enclose(loc, P, guard, U_state, method, dense);
         if (S) out.push_back({group.transition, group.sets.front(), group.sets.back(), *S});
     }
     return out;

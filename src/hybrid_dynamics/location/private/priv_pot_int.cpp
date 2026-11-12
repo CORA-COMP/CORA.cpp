@@ -10,10 +10,11 @@
 // neighbouring time-interval sets meet one hyperplane, the time-point set between them lies on it
 // and they do not, that set is taken instead.
 //
-// Syntax:   GuardHits hits = priv_pot_int(loc, R, final_locations);
+// Syntax:   GuardHits hits = priv_pot_int(loc, R, final_locations, time_point_swap);
 // Inputs:   loc - the location
 //           R - its reachable sets
 //           final_locations - targets that are not followed
+//           time_point_swap - false: no switch to the time-point set (CORALean's potInt)
 // Outputs:  hits - per hit the transition and the set; time_point if the sets are time points
 // See also: priv_guard_intersect, priv_location_reach
 //
@@ -37,28 +38,6 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-/// Whether the set may meet the polytope of C: no row lies strictly beyond it, b < -h(-a) (see the
-/// docstring of the file for the bundle and the equalities).
-bool aux_may_meet(const Polytope::Constraints &C, const Set &S) {
-    // the rows of A x <= b, and each equality Ae x = be as the rows Ae x <= be and -Ae x <= -be
-    std::vector<std::pair<Tensor, double>> rows;
-    const auto add = [&](const Tensor &M, const Tensor &offsets, double sign) {
-        const std::vector<double> b = offsets.data();
-        for (std::size_t i = 0; i < b.size(); ++i)
-            rows.emplace_back(sign * M.slice(-2, int64_t(i), int64_t(i) + 1).matrix_transpose(),
-                              sign * b[i]);
-    };
-    add(C.A, C.b, 1.0);
-    if (C.Ae.numel() > 0) {
-        add(C.Ae, C.be, 1.0);
-        add(C.Ae, C.be, -1.0);
-    }
-    for (const Zonotope &Z : priv_zonotopes(S))
-        for (const auto &[row, offset] : rows)
-            if (offset < -Z.support_function(-row).item()) return false;
-    return true;
-}
 
 /// Whether the guard holds the set, as CORA's contains_(guard, S, 'exact', 1e-10).
 bool aux_on_guard(const Polytope &guard, const Set &S) {
@@ -93,10 +72,32 @@ bool aux_time_triggered(const Location &loc, const LocationReachSet &R, const Gu
 
 // The hits ----------------------------------------------------------------------------------------
 
+/// Whether the set may meet the polytope of C: no row lies strictly beyond it, b < -h(-a) (see the
+/// docstring of the file for the bundle and the equalities).
+bool priv_may_meet(const Polytope::Constraints &C, const Set &S) {
+    // the rows of A x <= b, and each equality Ae x = be as the rows Ae x <= be and -Ae x <= -be
+    std::vector<std::pair<Tensor, double>> rows;
+    const auto add = [&](const Tensor &M, const Tensor &offsets, double sign) {
+        const std::vector<double> b = offsets.data();
+        for (std::size_t i = 0; i < b.size(); ++i)
+            rows.emplace_back(sign * M.slice(-2, int64_t(i), int64_t(i) + 1).matrix_transpose(),
+                              sign * b[i]);
+    };
+    add(C.A, C.b, 1.0);
+    if (C.Ae.numel() > 0) {
+        add(C.Ae, C.be, 1.0);
+        add(C.Ae, C.be, -1.0);
+    }
+    for (const Zonotope &Z : priv_zonotopes(S))
+        for (const auto &[row, offset] : rows)
+            if (offset < -Z.support_function(-row).item()) return false;
+    return true;
+}
+
 // The pairs ---------------------------------------------------------------------------------------
 
 GuardHits priv_pot_int(const Location &loc, const LocationReachSet &R,
-                       const std::vector<int64_t> &final_locations) {
+                       const std::vector<int64_t> &final_locations, bool time_point_swap) {
     GuardHits hits;
     const bool points = R.time_interval.empty();
     const std::vector<Set> &sets = points ? R.time_point : R.time_interval;
@@ -112,12 +113,13 @@ GuardHits priv_pot_int(const Location &loc, const LocationReachSet &R,
             level ? Polytope::Constraints{} : std::get<Polytope>(trans.guard()).constraints();
         for (std::size_t j = 0; j < sets.size(); ++j)
             if (level ? level->is_intersecting(*sets[j], numerics::kGuardMeet)
-                      : aux_may_meet(guard, sets[j])) {
+                      : priv_may_meet(guard, sets[j])) {
                 hits.transitions.push_back(int64_t(i));
                 hits.sets.push_back(int64_t(j));
             }
     }
-    if (aux_time_triggered(loc, R, hits)) return {{hits.transitions[0]}, {hits.sets[0] + 1}, true};
+    if (time_point_swap && aux_time_triggered(loc, R, hits))
+        return {{hits.transitions[0]}, {hits.sets[0] + 1}, true};
     return hits;
 }
 

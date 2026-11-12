@@ -30,12 +30,14 @@
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
 #include "cont_dynamics/linear_sys/private/priv.h"
+#include "cont_dynamics/linear_sys/private/priv_float_step.h"
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/global/within_tol.h"
 #include "hybrid_dynamics/location/private/priv.h"
 
 #include <cmath>
+#include <memory>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -82,6 +84,19 @@ class BundleSteps {
             return;
         }
         if (const auto *sys = std::get_if<LinearSys>(&loc.flow())) {
+            // CORALean's reachFloatInput on a single zonotope, window by window
+            if (alg.linear_step == alg::LinearStep::coralean) {
+                if (start_.size() != 1)
+                    CORA_FAIL(Error::not_supported,
+                              "reach: linear_step = coralean starts from one zonotope, not a "
+                              "bundle");
+                float_stepper_ = std::make_unique<FloatStepper>(sys->A(), dt, alg.taylor_terms);
+                if (!float_stepper_->admissible())
+                    CORA_FAIL(Error::wrong_value,
+                              "reach: no Taylor order admits the step; shorten the time step");
+                float_run_.emplace(float_stepper_->run(U_state, start_[0], alg.zonotope_order));
+                return;
+            }
             // x' = A x + u with u in B U + c
             const LinearSys canonical(sys->A(), sys->A().eye_like());
             const Tensor e_adt = (canonical.A() * dt).expm();
@@ -122,6 +137,7 @@ class BundleSteps {
                 step_ ? f.sys->post(*step_, f.U, f.alg) : f.sys->init_reach(start_[0], f.U, f.alg);
             return step_->time_interval;
         }
+        if (float_run_) return float_run_->next();
         // the linear flows step every zonotope of the bundle
         std::vector<Zonotope> parts;
         parts.reserve(start_.size());
@@ -145,6 +161,7 @@ class BundleSteps {
     Set time_point() const {
         if (poly_) return poly_step_ ? poly_step_->time_point : poly_->start;
         if (nonlinear_) return step_ ? step_->time_point : start_[0];
+        if (float_run_) return float_run_->time_point();
         std::vector<Zonotope> parts;
         parts.reserve(start_.size());
         if (!mappings_)
@@ -178,6 +195,8 @@ class BundleSteps {
     std::optional<Nonlinear> nonlinear_;
     std::optional<NonlinearStep> step_;
     std::vector<StandardSteps> steps_;
+    std::unique_ptr<FloatStepper> float_stepper_;
+    std::optional<FloatStepper::Run> float_run_;
     std::optional<alg::LinParamStandard> param_alg_;
     std::optional<LinParamMappings> mappings_;
     std::vector<LinParamStep> param_;
@@ -207,6 +226,9 @@ aux_flow(const Location &loc, int64_t index, const Set &R0, double t0, double t_
         return {R, true};
     const int steps = static_cast<int>(std::floor((t_final - t0) / dt + numerics::kStepCount));
     BundleSteps step(loc, R0, U, U_state, dt, alg);
+    // without the time-point swap the analysis is CORALean's, its invariant test too
+    const auto *inv = std::get_if<Polytope>(&loc.invariant());
+    const bool rows = inv != nullptr && !alg.time_point_swap;
     for (int k = 0; k < steps; ++k) {
         // one step: the enclosure of [t_k, t_k+1], then the set at t_k+1
         const Set ti = step.next();
@@ -215,12 +237,24 @@ aux_flow(const Location &loc, int64_t index, const Set &R0, double t0, double t_
         R.time_point.push_back(step.time_point());
         R.time_point_times.push_back({t0 + (k + 1) * dt, t0 + (k + 1) * dt});
         if (!aux_specs_hold(specs, ti)) return {R, false};
-        if (!priv_meets(loc.invariant(), ti)) break; // the set has left the invariant
+        // the set has left the invariant (CORALean: a row of it lies strictly beyond the set)
+        if (rows ? !priv_may_meet(inv->constraints(), ti) : !priv_meets(loc.invariant(), ti)) break;
     }
     return {R, true};
 }
 
 // The specifications ------------------------------------------------------------------------------
+
+/// The image of the guard intersection under the reset. CORALean's W Rg + {w} adds the point {w}
+/// as a zonotope with a zero generator per state; `lean` takes that for a zonotope and a reset
+/// without input.
+Set aux_reset(const LinearReset &reset, const Set &S, const std::optional<Zonotope> &U, bool lean) {
+    if (!lean || !S.is<Zonotope>() || reset.B()) return reset.evaluate(S, U);
+    const Zonotope image = S.as<Zonotope>().linear_map(reset.A());
+    const Tensor w = reset.c() ? *reset.c() : image.center().zeros_like();
+    const int64_t n = w.shape()[0];
+    return image.plus(Zonotope(w, w.zeros_like({n, n})));
+}
 
 /// Whether a set may meet the invariant: the generic test of the pair for a polytope, the box
 /// evaluation for a level set.
@@ -259,6 +293,8 @@ Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U)
     return U->linear_map(B) + loc.c();
 }
 
+// The reach ---------------------------------------------------------------------------------------
+
 LocationResult priv_location_reach(const Location &loc, int64_t index, const Set &R0,
                                    const TimeRange &t_start, double t_final,
                                    const std::optional<Zonotope> &U, double time_step,
@@ -271,11 +307,12 @@ LocationResult priv_location_reach(const Location &loc, int64_t index, const Set
     LocationResult out{std::move(R), {}, verified};
     if (!verified) return out; // the analysis ends at a violation
 
-    // the guards the sets meet, their intersections, and the resets of those
-    const GuardHits hits = priv_pot_int(loc, out.R, final_locations);
+    // the guards the sets meet, their intersections and resets (CORALean's boxes: dense)
+    const bool lean = !alg.time_point_swap;
+    const GuardHits hits = priv_pot_int(loc, out.R, final_locations, alg.time_point_swap);
     const double widen = t_start[1] - t_start[0];
-    for (const GuardIntersection &g :
-         priv_guard_intersect(loc, hits, out.R, U_state, alg.guard_intersect)) {
+    for (const GuardIntersection &g : priv_guard_intersect(
+             loc, hits, out.R, U_state, alg.guard_intersect, alg.check_flow, lean)) {
         const Transition &trans = loc.transitions()[std::size_t(g.transition)];
         const std::vector<TimeRange> &times =
             hits.time_point ? out.R.time_point_times : out.R.time_interval_times;
@@ -285,7 +322,7 @@ LocationResult priv_location_reach(const Location &loc, int64_t index, const Set
         const Set before = alg.polynomialization && g.set.is<Zonotope>()
                                ? Set(PolyZonotope(g.set.as<Zonotope>()))
                                : g.set;
-        out.jumps.push_back({trans.reset().evaluate(before, U), trans.target(), time});
+        out.jumps.push_back({aux_reset(trans.reset(), before, U, lean), trans.target(), time});
     }
     // an uncertain start time widens the times of the sets (CORA's updateTime)
     for (TimeRange &t : out.R.time_point_times) t[1] += widen;
