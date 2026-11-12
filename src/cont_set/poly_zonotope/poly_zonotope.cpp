@@ -131,6 +131,11 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E,
     E_ = std::move(kept);
 }
 
+PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id,
+                           detail::Verbatim)
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), GI_(std::move(GI)), E_(std::move(E)),
+      id_(std::move(id)) {}
+
 // The conversions ---------------------------------------------------------------------------------
 
 PolyZonotope::PolyZonotope(const Zonotope &Z)

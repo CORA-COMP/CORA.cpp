@@ -53,10 +53,7 @@ PolyStatic priv_precomp_stat_error_adaptive(const NonlinearSys &sys, const Vec &
     const Zonotope Urec =
         m > 0 ? *U - U->center() : Zonotope(like.zeros_like(), like.zeros_like({n, 0}));
     const PolyZonotope Z = m > 0 ? Rred.cart_prod(Urec) : Rred;
-    // the new factors must differ from those of Rdelta, which the reduction may have dropped
-    const auto &ids = Rdelta.ids();
-    const int64_t above = ids.empty() ? 0 : *std::max_element(ids.begin(), ids.end());
-    const PolyZonotope second = priv_absorb_independent(Z, above).quad_map(Q);
+    const PolyZonotope second = Z.quad_map(Q);
     return {priv_reduce_adaptive_poly(second, rf), m > 0 ? Rdz.cart_prod(Urec) : Rdz};
 }
 

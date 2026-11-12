@@ -28,13 +28,21 @@ namespace cora {
 Zonotope PolyZonotope::zonotope() const {
     detail::Entry entry;
     const int64_t h = num_dependent();
-    // the even generators are split into center and half generator, the odd ones stay
-    std::vector<int64_t> even, odd;
-    for (int64_t j = 0; j < h; ++j) (priv_is_even(E_[std::size_t(j)]) ? even : odd).push_back(j);
-    if (even.empty()) return {c_, Tensor::concat({G_, GI_}, -1)};
-    const Tensor G_even = priv_columns(G_, even) * 0.5;
-    const Tensor c = c_ + G_even.sum(-1, true);
-    return {c, Tensor::concat({priv_columns(G_, odd), G_even, GI_}, -1)};
+    // a constant generator joins the center, an even one is split into center and half generator
+    std::vector<int64_t> keep, even, constant;
+    for (int64_t j = 0; j < h; ++j) {
+        const std::vector<int> &col = E_[std::size_t(j)];
+        if (std::all_of(col.begin(), col.end(), [](int e) { return e == 0; }))
+            constant.push_back(j);
+        else
+            (priv_is_even(col) ? even : keep).push_back(j);
+    }
+    if (even.empty() && constant.empty()) return {c_, Tensor::concat({G_, GI_}, -1)};
+    Tensor c = c_;
+    if (!constant.empty()) c = c + priv_columns(G_, constant).sum(-1, true);
+    const Tensor G_even = even.empty() ? G_.zeros_like({dim(), 0}) : priv_columns(G_, even) * 0.5;
+    if (!even.empty()) c = c + G_even.sum(-1, true);
+    return {c, Tensor::concat({priv_columns(G_, keep), G_even, GI_}, -1)};
 }
 
 } // namespace cora

@@ -158,8 +158,10 @@ step is CORA's `oneStep`).
 CORA.cpp's `alg::PolynomializationAdaptive` is CORA's poly-adaptive as CORALean repairs it
 (`reachPolyAdaptiveFloat`, CORALean !912). The oracle serves its ops (`nonlinearSys.reachPolyAdaptive`,
 `linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261112-05b8e9279`
-on (`lean::NonlinearSys`, `reach_poly_adaptive`, `lin_reach_poly_adaptive_pass`). The sets are compared by
-their boxes, not bit for bit (docs/cora-differences.md), so the operations of the polynomial zonotope float
+on (`lean::NonlinearSys`, `reach_poly_adaptive`, `lin_reach_poly_adaptive_pass`). The linear step (`polyWindowFloat`, `polyPointFloat`, !915) follows the float definition; the free boxes of the sets
+agree with the oracle's to 1e-4 on the van der Pol fixture 3201 but not bit for bit: the abstraction error
+(`abstrErrPolyAdaptiveFloat`: its `zonotopeEven` error box, `quadMapMixed`) and the error solution are not yet
+CORALean's operations step for step, the true error differs by a factor 2 (open). The operations of the polynomial zonotope float
 layer behind them (`reduceAdaptive`, `restructure`, `quadMapMixed`, `mtimesIntervalMat`) stay oracle debt: the
 oracle serves none of them on its own. `linReachPolyAdaptive` (one step with its tuning) is not tested; the
 tuning formulas are the lin-adaptive ones (`dHused` aside).

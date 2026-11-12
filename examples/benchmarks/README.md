@@ -319,7 +319,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | CVDP23 | 1 | 1 | 58.6 | 30/70 bit-exact, 17 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
 | LALO20 W001 | 1 | 1 | 2.24 | 10/24 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.15 |
 | LALO20 W005 | 1 | 1 | 15.3 | 10/24 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.11 |
-| LALO20 W01 | 1 | 1 | 224 | 7/35 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 1.09 |
+| LALO20 W01 | 1 | 0 | 529 | 6/27 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.47 |
 | TSPS25 | 1 | 1 | 65 | 17/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
 | LOVO25 | 1 | 1 [e] | 3.72 | 24/75 bit-exact, 18 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
 
@@ -327,7 +327,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 [b] ROBE25: KeYmaera X (0.2 s) proves that x + y + z is preserved, not the width bound.
 
-[c] LALO20: JuliaReach's ARCH-COMP 2025 repeatability code (0.7-1.1 s) has x7' = 1.8 x6 - 1.6 x2 x7, where the report has 1.5 x2 x7, and KeYmaera X (12.8 s) and PRoTECT (4.4 s) prove other properties (t in [0, 0.1] and t in [0, inf)).
+[c] LALO20: JuliaReach's ARCH-COMP 2025 repeatability code (0.7-1.1 s) has x7' = 1.8 x6 - 1.6 x2 x7, where the report has 1.5 x2 x7, and KeYmaera X (12.8 s) and PRoTECT (4.4 s) prove other properties (t in [0, 0.1] and t in [0, inf)). W01 gives the verdict 0: the sound step bounds x4 by 5.050, above the limit 5 of the report, which CORA's step (unsound as written) keeps below.
 
 [d] LOVO25: JuliaReach's ARCH-COMP 2025 repeatability code (1.6 s) integrates the flow without the hybrid automaton and checks only the area, not the crossing counts, and KeYmaera X (1.7 s) proves invariance only.
 
@@ -340,7 +340,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | ROBE25 (3) | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
 | LALO20 W001 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
 | LALO20 W005 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
-| LALO20 W01 | width of x4 0.0570 (CORA 0.060, JuliaReach 0.031) |
+| LALO20 W01 | width of x4 0.0681 (CORA 0.060, JuliaReach 0.031) |
 | LOVO25 | area 2.24e-3 (CORA 8.9e-3, JuliaReach 9e-5; the flow alone from the whole box 3.04e-5) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
@@ -415,11 +415,15 @@ x0 = (1.2, 1.05, 1.5, 2.4, 1, 0.1, 0.45) with boxes of the half-width 0.01, 0.05
 specification of the report is x4 < 4.5 (W001, W005) and x4 < 5 (W01) over the whole horizon. W001 and W005 run
 the script's alg "lin-adaptive" (`alg::LinearizationAdaptive`, defaults, CORALean's repair) and W01 its alg
 "poly-adaptive" (`alg::PolynomializationAdaptive`, the constants of the script, CORALean's repair of
-`reachPolyAdaptiveFloat`, !912): 1124 steps (CORA 1193), the largest x4 is 4.62, and the width of x4 at t = 20
-is 0.0570 (CORA 0.0600). The time of 224 s (machine load 1 to 3) is 8 % above MATLAB CORA's
-208 s; the profile (gprof, t in [0, 4]) has no single hot spot: the merge of equal exponents in the constructor
-of a polynomial zonotope 18 %, `Zonotope::reduce_adaptive` 9 %, the adaptive reduction of polynomial zonotopes 7 %,
-the column gathers 5 %, the sorts of the rankings 12 %. The independent part of the sets grows over many steps until the volume test restructures, as in CORA. The step with the stand-in that this row replaced (the fixed-step `alg::Polynomialization`, `timeStep` 0.01) took 10.3 s and
+`reachPolyAdaptiveFloat`, !912 and !915): 1203 steps (CORA 1193), the largest x4 is 5.050 (the limit is 5,
+so the verdict is 0, CORA's script says 1), and the width of x4 at t = 20 is 0.0681 (CORA 0.0600). The time of
+529 s (machine load 6 to 10; 683 s at load 10 to 15) is 2.5 times MATLAB CORA's 208 s. The earlier
+row (224 s, width 0.0571, verdict 1) was an unsound step: it applied the summed series matrix to the
+time-varying input and to the segment (docs/cora-differences.md). The sound step is wider and its steps
+are not CORA's: the abstraction error agrees with CORALean's operation to 0.2 % (true error) and to
+about 10 % (the radius of the error solutions), not bit for bit (`test_lean_nonlinear_sys_poly_adaptive`).
+The coverage build (several times slower than 3000 s) measured W01 with `CORACPP_LALO20_W01_T_FINAL=2`, which shortens the horizon.
+The step with the stand-in that this row replaced (the fixed-step `alg::Polynomialization`, `timeStep` 0.01) took 10.3 s and
 gave the width 0.345. MATLAB CORA v2026.1.0 (R2024b, this machine, 4 threads, `CHECKS_ENABLED` off, one run at a time) needs 12.3 s, 21.9 s and 208 s for W001,
 W005 and W01 and gives the widths 0.00402, 0.0425 and 0.0600 (W001 and W005 from an earlier run); the widths of CORA.cpp for W001 and W005 are smaller because the repaired algorithm differs in its error terms
 (docs/cora-differences.md).
@@ -763,7 +767,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ISSF01_ISU01 | 1/8 | 7 | 4 |
 | LALO20_W001 | 10/24 | 14 | 7 |
 | LALO20_W005 | 10/24 | 14 | 7 |
-| LALO20_W01 | 7/35 | 28 | 6 |
+| LALO20_W01 | 6/27 | 21 | 6 |
 | LOVO25 | 24/75 | 51 | 13 |
 | LOVO25-script | 27/82 | 55 | 14 |
 | NAV-robust | 26/61 | 35 | 15 |

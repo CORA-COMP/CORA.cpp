@@ -102,6 +102,23 @@ Vec priv_poly_radius(const PolyZonotope &Z);
 /// factors are above those of Z and above `above` (those of the sets it is later added to).
 PolyZonotope priv_absorb_independent(const PolyZonotope &Z, int64_t above = 0);
 
+/// The sets of CORALean's float layer, each as it lays its columns out (nothing merged, no zero
+/// column dropped). priv_poly_lin_comb is linComb: the factors of both sets apart and one fresh
+/// one.
+PolyZonotope priv_poly_lin_comb(const PolyZonotope &Z1, const PolyZonotope &Z2);
+
+/// [M] Z for an interval matrix (mtimesIntervalMat): mid(M) Z and the box of the residual on the
+/// free box of Z as independent generators.
+PolyZonotope priv_poly_interval_map(const Interval &M, const PolyZonotope &Z);
+
+/// Z1 + Z2 with the factors of Z2 apart (plus), Z + Z2 as independent generators (ofIndep, plus).
+PolyZonotope priv_poly_plus(const PolyZonotope &Z1, const PolyZonotope &Z2);
+PolyZonotope priv_poly_plus(const PolyZonotope &Z, const Zonotope &Z2);
+
+/// The sum in which equal factors are the same (exactPlusAlign), the shorter list of factors
+/// padded.
+PolyZonotope priv_poly_exact_plus(const PolyZonotope &Z1, const PolyZonotope &Z2);
+
 // The errors and the linear steps -----------------------------------------------------------------
 
 /// priv_precompStatError_adaptive for the start set Rdelta (relative to xs) and the input set U.
@@ -115,23 +132,53 @@ Zonotope priv_abstr_err_poly_adaptive(const NonlinearSys &sys, const Vec &xs, co
                                       const Zonotope &Zdelta, const PolyZonotope &Rdiff,
                                       const std::optional<Zonotope> &U, double red_factor);
 
-/// The integral of e^{As} over the step as an interval matrix (CORA's eAtInt of
-/// errorSolution_adaptive): the series up to eta and the remainder dt [-W, W].
-Interval priv_adaptive_integral(const LinearSys &lin, TaylorLinSys &taylor, double dt, int eta);
+// The linear step ---------------------------------------------------------------------------------
 
-/// The window over a step and the differences to its start of x' = A x + u, u in V, from X0 (CORA's
-/// initReach_adaptive with a polynomial zonotope): V is time-varying, its center held through
-/// hull(0, u). The Taylor order eta must be admissible.
-std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const LinearSys &lin, TaylorLinSys &taylor,
-                                                       double dt, int eta, const Zonotope &V,
+/// CORALean's float matrices of one linear step of length dt (polyWindowFloat, polyPointFloat):
+/// the Taylor order, [e^{A dt}] by squaring, [F], the input boxes and the integral of e^{As}.
+/// Computed once per linearization, every sum nested to the right as CORALean's sumDown and sumUp.
+class PolySeries {
+  public:
+    /// The matrices of A at dt from the Taylor order taylor_terms (raised until admissible unless
+    /// raise is false), none where no order or no number of halvings s < 128 is admissible.
+    static std::optional<PolySeries> make(const Tensor &A, double dt, int taylor_terms,
+                                          bool raise = true);
+
+    int eta() const noexcept { return eta_; }
+    const Interval &e_adt() const noexcept { return e_adt_; }
+    const Interval &F() const noexcept { return F_; }
+    const Interval &integral() const noexcept { return integral_; }
+
+    /// CORALean's inputSolutionFloat: the sum, from the order 0 up, of the boxes [A^i dt^(i+1) /
+    /// (i+1)!] applied to Z, then the remainder box applied to Z. The terms stay apart, since the
+    /// input of Z varies in time: a summed matrix bounds only a constant input.
+    Zonotope input_solution(const Zonotope &Z) const;
+
+  private:
+    PolySeries(int eta, Interval e_adt, Interval F, Interval integral, Interval spread,
+               std::vector<Interval> terms)
+        : eta_(eta), e_adt_(std::move(e_adt)), F_(std::move(F)), integral_(std::move(integral)),
+          spread_(std::move(spread)), terms_(std::move(terms)) {}
+    int eta_ = 0;
+    Interval e_adt_, F_, integral_, spread_;
+    std::vector<Interval> terms_;
+};
+
+/// The zonotope [M] Z for an interval matrix (CORALean's Zonotope.mtimesIntervalMat): mid(M) Z and
+/// one box generator per coordinate for what the residual M - mid(M) does to the nominal part.
+Zonotope priv_interval_map(const Interval &M, const Zonotope &Z);
+
+/// The window over a step and the differences to its start of x' = A x + u, u in V, from X0
+/// (CORALean's polyWindowFloat, CORA's initReach_adaptive with a polynomial zonotope): V is
+/// time-varying, its center held through hull(0, u), so the window covers every time of the step.
+std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series, const Zonotope &V,
                                                        const PolyZonotope &X0, double zeta_z);
 
-/// The end set of the step with the constant input Vs (a polynomial zonotope over the factors of
-/// X0): its dependent part through the integral of e^{As} and exact_plus, its independent part in
-/// V.
-PolyZonotope priv_poly_point(const LinearSys &lin, TaylorLinSys &taylor, double dt, int eta,
-                             const Zonotope &V, const PolyZonotope &X0, const PolyZonotope &Vs,
-                             double zeta_z);
+/// The end set of the step with the input V and the constant input Vs (a polynomial zonotope over
+/// the factors of X0; CORALean's polyPointFloat): its dependent part through the integral of e^{As}
+/// and exact_plus, its independent part in V.
+PolyZonotope priv_poly_point(const PolySeries &series, const Zonotope &V, const PolyZonotope &X0,
+                             const PolyZonotope &Vs, double zeta_z);
 
 /// One linearization at time_step from R: the error loop from error_adm, then the sets; none where
 /// the loop or the linear step fails.
@@ -139,10 +186,6 @@ std::optional<PolyAdaptivePass>
 priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Zonotope> &U,
                                   const alg::PolynomializationAdaptive &alg, double time_step,
                                   const PolyZonotope &R, const Vec &error_adm);
-
-/// The Taylor order of a window: the least order from the given one (at least 2) with eta + 2 >=
-/// 2 ||A dt||, none if there is none up to 4096 (CORALean's reachOrderFloat).
-std::optional<int> priv_reach_order(const Tensor &A, double dt, int eta);
 
 /// One step of CORA's linReach_adaptive at "poly" from st: the state after it, its sets unreduced.
 PolyAdaptiveState priv_lin_reach_poly_adaptive(const NonlinearSys &sys,
