@@ -512,11 +512,14 @@ machine, `CHECKS_ENABLED` off, load average about 10) needs 11.4 s and gives the
 
 The ARCH-COMP AINNCS instances of MATLAB CORA (`examples/contDynamics/neurNetContrSys/example_neuralNet_reach_*.m`
 and `benchmark_neuralNet_reach_09_QUAD.m`, the ARCH25 settings of `run_arch_ainncs_category.m`), run through CORA's
-`verify` by three programs: `benchmark_neur_net_contr_reach_arch26_ainncs` (Unicycle, ACC, TORA with remain,
-reach-tanh and reach-sigmoid, Single Pendulum, Double Pendulum, Airplane, Attitude Control),
-`benchmark_neur_net_contr_reach_arch26_ainncs_b` (QUAD, Docking, NAV standard and robust, CartPole) and
-`benchmark_neur_net_contr_reach_arch26_vcas` (the eight VCAS instances: CORA's own loop over the nine
-controllers). The plants are `NonlinearSys` written out as the scripts write them, the networks are
+`verify`, one program per script, named after it (`benchmark_neur_net_contr_reach_<script>`; the instance names in the
+tables stay): `unicycle` (Unicycle, the script and with the report's disturbance), `acc`, `tora` (TORA remain),
+`tora_heterogeneous_tanh` (TORA reach-tanh), `tora_heterogeneous_sigmoid` (TORA reach-sigmoid), `single_pendulum`,
+`double_pendulum_less_robust` (the script without splitting, and with it), `double_pendulum_more_robust`, `airplane`,
+`vcas` (the eight VCAS instances: CORA's own loop over the nine
+controllers), `attitude_control`, `quad`, `spacecraft_docking` (the script's check and the polytope with splitting),
+`nav` (standard and robust) and `cart_pole` (the script's set and the report's). The plants are `NonlinearSys` written
+out as the scripts write them, the networks are
 `data/networks/<name>.nn.json` and `.nn.bin` (the layers, their activation and the doubles, written from
 the example scripts by `examples/matlab/benchmarks/export_network_data.m`, so the numbers are CORA's).
 The expected verdict is that of the specification of the ARCH-COMP26 AINNCS report (Sasaki et al., "ARCH-COMP26
@@ -636,7 +639,7 @@ t = 0.5, 1, ..., 5).
   dimension whose radius is largest relative to the initial set's, CORA.cpp only) verifies at depth 11: 507 pieces, 254 leaves,
   10 splits deep. The failure of the whole set is the width of the velocities after the first step (the box of `vx` grows from
   [-0.28, 0.28] to [-0.2915, 0.2844] while the margin is 0.0074); pieces of a quarter of the widths in each dimension hold.
-  A visualization of this verification (the margin of the check over time, the cuts of the initial set, the runs under
+  A visualization of this verification (`benchmark_neur_net_contr_reach_spacecraft_docking`: the margin of the check over time, the cuts of the initial set, the runs under
   the speed limit in 3D and the 32-gon at the tight corner): https://claude.ai/artifact/65csLQFHAMLGhkGSvH4TvH
 - *The Docking check* of the sets is CORA.cpp's own: interval arithmetic on the box of the set and its halves
   (up to 2^10), sound. CORA's (`quadMap`, the order-1 Singh enclosure of a root layer, `interval(., 'split')`)
@@ -689,7 +692,8 @@ the splitting of `verify` (rule 0: CORA's sensitivity, 1: `widest`; for CartPole
 **Not ported here.** CORA's `refine` of the network (order 2 in a layer, which QUAD's script uses; `NeuralNetwork` has order 1),
 `LinearSys`, `LinParamSys` plants and the discrete-time systems of CORA's `neurNetContrSys` (the VCAS loop is the
 benchmark's own, composed of `NeuralNetwork::evaluate` and `PolyZonotope` maps), the root layer, and CORA's check of
-the Docking sets (above). `split(pZ, n)` of a set that is not a box splits its box.
+the Docking sets (above). `split(pZ, n)` of a set that is not a box splits its box. CORA's `refine` in QUAD's script is not used
+for ARCH-COMP (a leftover of the network-reduction work), and QUAD verifies with order 1; order-k evaluation is CORA.cpp#112.
 
 
 ## Run
@@ -704,9 +708,9 @@ build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
 build/core/benchmarks/benchmark_nonlinear_das_reach_arch23_powersystem         # TSPS25, about a minute
 build/core/benchmarks/benchmark_hybrid_reach_arch23_lotkavolterra               # LOVO25, CORACPP_BENCHMARK_VERBOSE=1: the branches
-build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs [TORA-remain ...]   # the AINNCS instances, 1 min in all
-build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs_b [QUAD-reach ...]  # QUAD, Docking, NAV, CartPole, 30 s in all
-build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_vcas [VCAS-middle-19.5 ...] # the eight VCAS instances
+build/core/benchmarks/benchmark_neur_net_contr_reach_tora [TORA-remain]            # one program per AINNCS script (AINNCS results), 1 min or less
+build/core/benchmarks/benchmark_neur_net_contr_reach_vcas [VCAS-middle-19.5 ...]   # the eight VCAS instances
+build/core/benchmarks/benchmark_neur_net_contr_reach_spacecraft_docking            # Docking, about 160 s on 8 threads (NAV standard, CartPole: minutes)
 build/core/benchmarks/benchmark_linear_verify_arch26_rnd [RND01 ...]       # RND03 takes about 20 minutes (zonotope algorithm)
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```

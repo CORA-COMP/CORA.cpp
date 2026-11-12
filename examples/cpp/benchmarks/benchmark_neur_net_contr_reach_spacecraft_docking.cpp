@@ -1,31 +1,31 @@
-// benchmark_neur_net_contr_reach_arch26_ainncs_b - QUAD, Docking, NAV, CartPole (ARCH-COMP 2026)
+// benchmark_neur_net_contr_reach_spacecraft_docking - Spacecraft Docking (ARCH-COMP 2026)
 //
-// MATLAB CORA's benchmark_neuralNet_reach_09_QUAD.m,
-// example_neuralNet_reach_10_spacecraftDocking.m, example_neuralNet_reach_11_NAV.m (standard:
-// point-trained network, robust: set-trained) and example_neuralNet_reach_12_cartPole.m with CORA's
-// settings (poly_method regression of order 1). QUAD, NAV and CartPole run through verify with the
-// splitting of the script (NAV 9, CartPole 10) or the one that was needed. Docking is CORA's script
-// with its own check of the sets, and a second row: the constraint from inside by a polytope (|s|
-// >= (sx + sy) / sqrt 2, the disk |v| <= R by the inscribed 32-gon, coefficients shrunk by 1e-9),
-// verified with the splitting rule `widest`. CartPole has a second row too, from the report's
-// initial set (the script's has 0.4 times its radius). Each instance prints the line of the scripts
-// and, on stderr, the verdict and time of the ARCH-COMP 2026 report. Environment:
-// CORACPP_AINNCS_OPTIONS, CORACPP_AINNCS_SPLIT, CORACPP_AINNCS_POINTS, CORACPP_DOCKING_SIDES,
-// CORACPP_DOCKING_PIECE = f,a,b,c,d (a corner).
+// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_10_spacecraftDocking.m
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs_b [QUAD-reach ...]
-// Outputs:  one line per instance on stdout
-// See also: benchmark_neur_net_contr_reach_arch26_ainncs.cpp, benchmark_neur_net.h
+// Docking with CORA's script and its own check of the sets, and a second row: the constraint from
+// inside by a polytope
+// (|s| >= (sx + sy) / sqrt 2, the disk |v| <= R by the inscribed 32-gon, coefficients shrunk by
+// 1e-9), verified with the splitting rule widest. Environment: CORACPP_AINNCS_OPTIONS,
+// CORACPP_AINNCS_SPLIT, CORACPP_AINNCS_POINTS, CORACPP_DOCKING_SIDES, CORACPP_DOCKING_PIECE =
+// f,a,b,c,d (a corner). The network is examples/benchmarks/data/networks/<name>.nn.json and .nn.bin
+// that matlab/benchmarks/export_network_data.m writes from the script; the plant is written out as
+// the model file writes it. The line of the scripts, 'benchmark,instance,verdict,time', goes to
+// stdout (the time of verify, simulations included), the expected verdict and time of the ARCH-COMP
+// 2026 report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
+// report's.
+//
+// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_spacecraft_docking
+// [Docking-constraint ...] Outputs:  one line 'benchmark,instance,verdict,time' per instance on
+// stdout See also: benchmark_neur_net.h
 //
 // Authors:       Claude Sonnet 5.5
-// Written:       11-November-2026
+// Written:       12-November-2026
 // Last update:   ---
 // Reviewed:      ---
 
 #include "benchmark_neur_net.h"
 #include "benchmark_run.h"
 #include "cora/cora.h"
-
 #include <algorithm>
 #include <cmath>
 
@@ -38,43 +38,12 @@ namespace {
 using namespace cora;
 using cora::bench::AinncsInstance;
 using cora::bench::box_poly;
-using cora::bench::box_polytope;
-using cora::bench::box_zonotope;
-using cora::bench::kInf;
 using cora::bench::load_network;
 using cora::bench::loop_options;
-using cora::bench::make_verify;
 
 using Vars = std::vector<Expr>;
 
-// The plants -------------------------------------------------------------------------------------
-
-/// dynamics_quad.m (tau = 0) with the report's x8', x9'; CORACPP_QUAD_SCRIPT=1 takes the
-/// script's, which differ from the report (cora-differences.md).
-NonlinearSys aux_quad() {
-    const bool report = std::getenv("CORACPP_QUAD_SCRIPT") == nullptr;
-    return {
-        [=](const Vars &x, const Vars &u) {
-            constexpr double g = 9.81, m = 1.4, Jx = 0.054, Jy = 0.054, Jz = 0.104;
-            // the sines and cosines of the angles, then the positions, velocities and rates
-            const Expr s7 = sin(x[6]), c7 = cos(x[6]), s8 = sin(x[7]), c8 = cos(x[7]),
-                       s9 = sin(x[8]), c9 = cos(x[8]);
-            return Vars{
-                c8 * c9 * x[3] + (s7 * s8 * c9 - c7 * s9) * x[4] + (c7 * s8 * c9 + s7 * s9) * x[5],
-                c8 * s9 * x[3] + (s7 * s8 * s9 + c7 * c9) * x[4] + (c7 * s8 * s9 - s7 * c9) * x[5],
-                s8 * x[3] - s7 * c8 * x[4] - c7 * c8 * x[5],
-                x[11] * x[4] - x[10] * x[5] - g * s8,
-                x[9] * x[5] - x[11] * x[3] + g * c8 * s7,
-                x[10] * x[3] - x[9] * x[4] + g * c8 * c7 - g - u[0] / m,
-                x[9] + s7 * tan(x[7]) * x[10] + c7 * tan(x[7]) * x[11],
-                report ? c7 * x[10] - s7 * x[11] : c7 * x[10] + s7 * x[11],
-                report ? s7 / c8 * x[10] - c7 / c8 * x[11] : s7 / c8 * x[10] - s7 * x[11],
-                (Jy - Jz) / Jx * x[10] * x[11] + u[1] / Jx,
-                (Jz - Jx) / Jy * x[9] * x[11] + u[2] / Jy,
-                (Jx - Jy) / Jz * x[9] * x[10] + 0.0 / Jz};
-        },
-        12, 3};
-}
+// The plant ------------------------------------------------------------------------------------
 
 /// The Clohessy-Wiltshire equations of the docking: f(x, u) = A x + B u.
 NonlinearSys aux_docking() {
@@ -84,27 +53,6 @@ NonlinearSys aux_docking() {
                             3 * n * n * x[0] + 2 * n * x[3] + u[0] / m, -2 * n * x[2] + u[1] / m};
             },
             4, 2};
-}
-
-/// f(x, u) = (x3 cos x4, x3 sin x4, u1, u2) of the navigation task.
-NonlinearSys aux_nav() {
-    return {[](const Vars &x, const Vars &u) {
-                return Vars{x[2] * cos(x[3]), x[2] * sin(x[3]), u[0] + 0.0 * x[0],
-                            u[1] + 0.0 * x[0]};
-            },
-            4, 2};
-}
-
-/// The cart pole: x1' = x2, x2' = 2 u, x3' = x4, x4' = (0.08 0.41 (9.8 sin x3 - 2 u cos x3) -
-/// 0.0021 x4) / 0.0105.
-NonlinearSys aux_cart_pole() {
-    return {[](const Vars &x, const Vars &u) {
-                return Vars{
-                    x[1] + 0.0 * x[0], 2.0 * u[0], x[3] + 0.0 * x[0],
-                    (0.08 * 0.41 * (9.8 * sin(x[2]) - 2.0 * u[0] * cos(x[2])) - 0.0021 * x[3]) /
-                        0.0105};
-            },
-            4, 1};
 }
 
 // The docking check -------------------------------------------------------------------------------
@@ -233,22 +181,7 @@ ClosedLoopVerdict aux_docking_run(Rng &rng, bool polygon) {
 // The instances ----------------------------------------------------------------------------------
 
 std::vector<AinncsInstance> aux_instances() {
-    const std::optional<Zonotope> none = std::nullopt;
     std::vector<AinncsInstance> v;
-    // QUAD: x3 in [0.94, 1.06] at t = 5, from x1..x6 in [-0.4, 0.4]
-    {
-        std::vector<double> lo(12, 0.0), hi(12, 0.0), lo_g(12, -kInf), hi_g(12, kInf);
-        for (int i = 0; i < 6; ++i) lo[std::size_t(i)] = -0.4, hi[std::size_t(i)] = 0.4;
-        lo_g[2] = 0.94, hi_g[2] = 1.06;
-        v.push_back(
-            {"QUAD", "reach", Verdict::verified, 33.415,
-             make_verify(aux_quad(), "quad", 0.1, box_poly(lo, hi), none, 5.0,
-                         loop_options(0.1, 2, 1, 20, 0, 0, PolyMethod::regression),
-                         TimedSpecification{Specification::safe_set(box_polytope(lo_g, hi_g)),
-                                            std::make_pair(5.0, 5.0)},
-                         {.depth = 4}),
-             "order-1 enclosure and splitting (CORA: order 2 in one layer, no splitting)"});
-    }
     // Docking: the constraint is not a polytope; the script's own check
     v.push_back({"Docking", "constraint", Verdict::unknown, 95.038,
                  [](Rng &rng) { return aux_docking_run(rng, false); }});
@@ -256,40 +189,6 @@ std::vector<AinncsInstance> aux_instances() {
                  [](Rng &rng) { return aux_docking_run(rng, true); },
                  "the constraint from inside by a 32-gon polytope, initial set split in its widest "
                  "dimension (depth 11); CORA's script is UNKNOWN"});
-    // NAV: the goal at t = 6, the obstacle all the time
-    for (const bool point : {true, false}) {
-        const TimedSpecifications specs{
-            {Specification::safe_set(
-                 box_polytope({-0.5, -0.5, -kInf, -kInf}, {0.5, 0.5, kInf, kInf})),
-             std::make_pair(6.0, 6.0)},
-            {Specification::unsafe_set(box_polytope({1, 1, -kInf, -kInf}, {2, 2, kInf, kInf}))}};
-        v.push_back(
-            {"NAV", point ? "standard" : "robust", Verdict::verified, point ? 411.641 : 2.271,
-             make_verify(aux_nav(), point ? "nav_point" : "nav_set", 0.2,
-                         box_zonotope({2.9, 2.9, 0, 0}, {3.1, 3.1, 0, 0}), none, 6.0,
-                         loop_options(point ? 0.05 : 0.1, 2, 1, 10, 0, 0, PolyMethod::regression),
-                         specs, {.depth = 9})});
-    }
-    // CartPole: x1, x3, x4 in [-0.001, 0.001] for t in [8, 10]
-    for (const bool report : {false, true}) {
-        // the script's set has 0.4 times the radius of the report's
-        const double r = report ? 1.0 : 0.4;
-        const std::vector<double> lo{-0.1 * r, -0.05 * r, -0.1 * r, -0.05 * r},
-            hi{0.1 * r, 0.05 * r, 0.1 * r, 0.05 * r};
-        v.push_back(
-            {"CartPole", report ? "reach-report" : "reach", Verdict::verified, 227.216,
-             make_verify(aux_cart_pole(), "cartpole", 0.02, box_poly(lo, hi), none, 10.0,
-                         loop_options(0.02, 2, 1, 50, 0, 0, PolyMethod::regression),
-                         TimedSpecification{
-                             Specification::safe_set(box_polytope({-0.001, -kInf, -0.001, -0.001},
-                                                                  {0.001, kInf, 0.001, 0.001})),
-                             std::make_pair(8.0, 10.0)},
-                         {.depth = report ? 16 : 10}),
-             report
-                 ? "the report's initial set (no tool ran it), split to depth 16 (CORA's time is "
-                   "for the smaller set)"
-                 : "the smaller initial set of the script (0.4 times the radius of the report's)"});
-    }
     return v;
 }
 
@@ -298,13 +197,6 @@ std::vector<AinncsInstance> aux_instances() {
 
 // ===========================================  MAIN  =========================================== //
 
-int main(int argc, char **argv) {
-    std::vector<std::string> names;
-    for (const AinncsInstance &inst : aux_instances())
-        names.push_back(inst.benchmark + "-" + inst.label);
-    return cora::bench::run_family(argc, argv, names, [&](const std::string &name) {
-        return cora::bench::run_instance(aux_instances(), name);
-    });
-}
+int main(int argc, char **argv) { return cora::bench::run_instances(argc, argv, aux_instances); }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

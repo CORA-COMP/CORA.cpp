@@ -7,7 +7,7 @@
 //
 // Syntax:   const NeuralNetwork nn = cora::bench::load_network("quad");
 //           const PolyZonotope X0 = cora::bench::box_poly({-1, 0}, {1, 0});
-// See also: benchmark_data.h, benchmark_neur_net_contr_reach_arch26_ainncs.cpp
+// See also: benchmark_data.h, benchmark_neur_net_contr_reach_unicycle.cpp
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
@@ -214,6 +214,16 @@ inline bool run_instance(const std::vector<AinncsInstance> &instances, const std
         return out.verdict == inst.expected;
     }
     CORA_FAIL(Error::wrong_value, "ainncs: unknown instance " + name);
+}
+
+/// The main of a program: the instances named on the command line, else all of them; the exit code
+/// counts the verdicts that differ from the report's.
+inline int run_instances(int argc, char **argv,
+                         const std::function<std::vector<AinncsInstance>()> &make) {
+    std::vector<std::string> names;
+    for (const AinncsInstance &inst : make()) names.push_back(inst.benchmark + "-" + inst.label);
+    return run_family(argc, argv, names,
+                      [&](const std::string &name) { return run_instance(make(), name); });
 }
 
 } // namespace cora::bench

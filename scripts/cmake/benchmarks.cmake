@@ -38,16 +38,25 @@ set(benchmark_instances_benchmark_hybrid_reach_arch23_vanderpol CVDP23)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_lotkavolterra LOVO25 LOVO25-script)
 set(benchmark_instances_benchmark_nonlinear_reach_arch23_laubloomis LALO20_W001 LALO20_W005 LALO20_W01)
 set(benchmark_instances_benchmark_nonlinear_das_reach_arch23_powersystem TSPS25)
-set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_ainncs
-    ACC-safe-distance Unicycle-reach Unicycle-reach-disturbance TORA-remain TORA-reach-tanh
-    TORA-reach-sigmoid Single_Pendulum-reach Double_Pendulum-less-robust Double_Pendulum-less-robust-script Double_Pendulum-more-robust
-    Airplane-continuous Attitude_Control-avoid)
-set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_ainncs_b
-    QUAD-reach Docking-constraint Docking-constraint-polygon NAV-robust NAV-standard CartPole-reach
-    CartPole-reach-report)
-set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_vcas
+set(benchmark_instances_benchmark_neur_net_contr_reach_unicycle Unicycle-reach Unicycle-reach-disturbance)
+set(benchmark_instances_benchmark_neur_net_contr_reach_acc ACC-safe-distance)
+set(benchmark_instances_benchmark_neur_net_contr_reach_tora TORA-remain)
+set(benchmark_instances_benchmark_neur_net_contr_reach_tora_heterogeneous_tanh TORA-reach-tanh)
+set(benchmark_instances_benchmark_neur_net_contr_reach_tora_heterogeneous_sigmoid TORA-reach-sigmoid)
+set(benchmark_instances_benchmark_neur_net_contr_reach_single_pendulum Single_Pendulum-reach)
+set(benchmark_instances_benchmark_neur_net_contr_reach_double_pendulum_less_robust
+    Double_Pendulum-less-robust-script Double_Pendulum-less-robust)
+set(benchmark_instances_benchmark_neur_net_contr_reach_double_pendulum_more_robust Double_Pendulum-more-robust)
+set(benchmark_instances_benchmark_neur_net_contr_reach_airplane Airplane-continuous)
+set(benchmark_instances_benchmark_neur_net_contr_reach_vcas
     VCAS-middle-19.5 VCAS-middle-22.5 VCAS-middle-25.5 VCAS-middle-28.5
     VCAS-worst-19.5 VCAS-worst-22.5 VCAS-worst-25.5 VCAS-worst-28.5)
+set(benchmark_instances_benchmark_neur_net_contr_reach_attitude_control Attitude_Control-avoid)
+set(benchmark_instances_benchmark_neur_net_contr_reach_quad QUAD-reach)
+set(benchmark_instances_benchmark_neur_net_contr_reach_spacecraft_docking
+    Docking-constraint Docking-constraint-polygon)
+set(benchmark_instances_benchmark_neur_net_contr_reach_nav NAV-robust NAV-standard)
+set(benchmark_instances_benchmark_neur_net_contr_reach_cart_pole CartPole-reach CartPole-reach-report)
 # the families whose fastest instance takes longer than a smoke test may (about 5 s)
 # (the spacecraft: one smoke instance per change, TRAF22 is the nonlinear one; Robertson takes
 # thousands of steps)
@@ -55,7 +64,9 @@ set(benchmark_without_smoke_test benchmark_linear_reach_arch23_heat3d
     benchmark_hybrid_reach_arch23_spacecraft benchmark_nonlinear_reach_arch23_robertson
     benchmark_hybrid_reach_arch23_vanderpol benchmark_nonlinear_reach_arch23_laubloomis
     benchmark_nonlinear_das_reach_arch23_powersystem
-    benchmark_hybrid_reach_arch23_lotkavolterra)
+    benchmark_hybrid_reach_arch23_lotkavolterra
+    benchmark_neur_net_contr_reach_spacecraft_docking benchmark_neur_net_contr_reach_nav
+    benchmark_neur_net_contr_reach_cart_pole)
 foreach(source IN LISTS benchmark_sources)
   get_filename_component(name "${source}" NAME_WE)
   set(first TRUE)

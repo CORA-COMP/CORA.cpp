@@ -1,4 +1,6 @@
-// benchmark_neur_net_contr_reach_arch26_vcas - the VCAS instances of ARCH-COMP 2026
+// benchmark_neur_net_contr_reach_vcas - the VCAS instances of ARCH-COMP 2026
+//
+// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_07_VCAS.m
 //
 // The vertical collision avoidance system has discrete time steps and nine controllers, which
 // CORA's neurNetContrSys does not run; CORA's example_neuralNet_reach_07_VCAS.m is its own loop
@@ -11,9 +13,9 @@
 // CORACPP_VCAS_RULE=script takes the script's (0 whenever hdot complies). The unsafe set |h| <= 100
 // is checked after every step k = 1..10, as the report states (the script checks the last only).
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_vcas [VCAS-middle-19.5 ...]
+// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_vcas [VCAS-middle-19.5 ...]
 // Outputs:  one line per instance on stdout
-// See also: benchmark_neur_net_contr_reach_arch26_ainncs.cpp, benchmark_neur_net.h
+// See also: benchmark_neur_net_contr_reach_acc.cpp, benchmark_neur_net.h
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
@@ -224,13 +226,6 @@ std::vector<AinncsInstance> aux_instances() {
 
 // ===========================================  MAIN  =========================================== //
 
-int main(int argc, char **argv) {
-    std::vector<std::string> names;
-    for (const AinncsInstance &inst : aux_instances())
-        names.push_back(inst.benchmark + "-" + inst.label);
-    return cora::bench::run_family(argc, argv, names, [&](const std::string &name) {
-        return cora::bench::run_instance(aux_instances(), name);
-    });
-}
+int main(int argc, char **argv) { return cora::bench::run_instances(argc, argv, aux_instances); }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
