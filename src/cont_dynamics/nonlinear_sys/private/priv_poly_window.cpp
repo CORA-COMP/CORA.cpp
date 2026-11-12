@@ -2,15 +2,13 @@
 //
 // The system x' = A x + u with the input u in V, from the polynomial zonotope X0: the window over
 // the step and the differences to its start, and the set at the end for a constant input with a
-// polynomial zonotope over the factors of X0 (CORALean's polyWindowFloat and polyPointFloat, in the
-// order CORA's initReach_adaptive does). [e^{A dt}] maps X0 as an interval matrix, so the factors
-// stay and its width joins the independent part; the correction F X0 likewise. The input V is
-// time-varying and its center is held through hull(0, u), so the window covers every time of the
-// step. The solutions of the time-varying inputs are the term by term sums of the boxes of the
-// series: a summed series matrix bounds only a constant input, which only the integral of e^{As}
-// at the end of the step does (it maps the constant inputs ũ and the dependent part of Vs). As in
-// CORA the homogeneous solution and the solutions of the inputs are reduced adaptively at zeta_z
-// before they are added.
+// polynomial zonotope over the factors of X0 (CORALean's polyWindowFloat and polyPointFloat). The
+// matrix [e^{A dt}] and the correction F are interval matrices, so the factors of X0 stay. The
+// input V is time-varying, its center held through hull(0, u). Its solutions are term by term
+// sums of the series boxes: a summed series matrix bounds only a constant input, which only the
+// integral of e^{As} at the end of the step does. As in CORA the pieces are reduced adaptively at
+// zeta_z before they are added. The varying input is first boxed to n generators (a superset),
+// since the sum multiplies its generators by the Taylor order and the independent part grows.
 //
 // Syntax:   auto series = PolySeries::make(A, dt, taylor_terms);
 //           auto [Rti, Rdiff] = priv_poly_window(*series, V, X0, zeta_z);
@@ -175,6 +173,10 @@ Zonotope aux_zonotope(const Tensor &like, const Vec &c, const Vec &G, std::size_
             h == 0 ? like.zeros_like({N, 0}) : Tensor::like(like, G, {N, H})};
 }
 
+/// The time-varying input without its center, kept to a box of n generators (a superset): the
+/// series applies it term by term, once per order, so every generator it has is multiplied.
+Zonotope aux_cap(const Zonotope &Z) { return Z.reduce(1); }
+
 } // namespace
 
 
@@ -298,7 +300,7 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
     const Tensor &u = V.center();
     const Zonotope point_zero(zero, zero.zeros_like({n, n})), point_u(u, zero.zeros_like({n, n}));
     const Zonotope seg = priv_lin_comb(point_zero, point_u);
-    const Zonotope V0(zero, V.generators());
+    const Zonotope V0 = aux_cap(Zonotope(zero, V.generators()));
     const Zonotope PuR = series.input_solution(seg).reduce_adaptive(zeta_z);
     const Zonotope PU = series.input_solution(V0).reduce_adaptive(zeta_z);
     // [F] X0, the hull of X0 and [e^{A dt}] X0, the hull of {0} and ([e^{A dt}] - I) X0
@@ -327,7 +329,7 @@ PolyZonotope priv_poly_point(const PolySeries &series, const Zonotope &V, const 
     const Zonotope point_u(u, zero.zeros_like({n, n}));
     const Zonotope Pu = priv_interval_map(series.integral(), point_u);
     const Zonotope PU =
-        series.input_solution(Zonotope(zero, Vt.generators())).reduce_adaptive(zeta_z);
+        series.input_solution(aux_cap(Zonotope(zero, Vt.generators()))).reduce_adaptive(zeta_z);
     // [e^{A dt}] X0 reduced, the integral of the dependent part of Vs, the dependency on X0 kept
     const PolyZonotope e_adt_red =
         priv_reduce_adaptive_poly(priv_poly_interval_map(series.e_adt(), X0), zeta_z);
