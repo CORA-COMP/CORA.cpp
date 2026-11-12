@@ -35,6 +35,7 @@ int main() {
                  {1, 1, 1}, {2, 3, 2}, {3, 5, 3}, {4, 6, 1}, {6, 4, 6}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             std::vector<Tensor> Q;
+            Q.reserve(std::size_t(k));
             for (int i = 0; i < k; ++i) Q.push_back(rnd.matrix(n, n));
             const std::vector<lean::Tensor> theirs_Q(Q.begin(), Q.end());
             // inside up to the rounding of the bounds: both sum the same products in other orders
