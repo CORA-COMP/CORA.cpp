@@ -65,8 +65,10 @@ bool aux_all_even(const std::vector<int> &col) {
 std::vector<std::size_t> aux_rank(const Vec &key, bool descending = false) {
     std::vector<std::size_t> idx(key.size());
     std::iota(idx.begin(), idx.end(), std::size_t(0));
-    std::stable_sort(idx.begin(), idx.end(), [&](std::size_t a, std::size_t b) {
-        return descending ? key[b] < key[a] : key[a] < key[b];
+    // std::sort with the index as the tie-break is the stable order, without a temporary buffer
+    std::sort(idx.begin(), idx.end(), [&](std::size_t a, std::size_t b) {
+        if (key[a] != key[b]) return descending ? key[b] < key[a] : key[a] < key[b];
+        return a < b;
     });
     return idx;
 }
@@ -89,8 +91,24 @@ PolyZonotope aux_reduce_by(const PolyZonotope &Z, const Host &a,
     }
     Exponents E;
     for (const std::size_t l : keep) E.push_back(a.E[l]);
-    return {Z.center(), aux_tensor(like, G, n, hk), aux_tensor(like, GI, n, qk + n), std::move(E),
-            Z.ids(),    detail::Verbatim{}};
+    // factors no kept generator carries go with their identifiers (no value changes)
+    std::vector<int64_t> id;
+    std::vector<std::size_t> used;
+    for (std::size_t k = 0; k < Z.ids().size(); ++k)
+        if (std::any_of(E.begin(), E.end(),
+                        [&](const std::vector<int> &col) { return col[k] != 0; })) {
+            used.push_back(k);
+            id.push_back(Z.ids()[k]);
+        }
+    for (std::vector<int> &col : E) {
+        std::vector<int> c;
+        c.reserve(used.size());
+        for (const std::size_t k : used) c.push_back(col[k]);
+        col = std::move(c);
+    }
+    return {
+        Z.center(),    aux_tensor(like, G, n, hk), aux_tensor(like, GI, n, qk + n), std::move(E),
+        std::move(id), detail::Verbatim{}};
 }
 
 /// The radius per coordinate of the dependent generators `dep` and the independent ones `ind`: the
@@ -325,15 +343,18 @@ PolyZonotope priv_poly_exact_plus(const PolyZonotope &Z1, const PolyZonotope &Z2
     id.erase(std::unique(id.begin(), id.end()), id.end());
     // the exponents of a set over the union of the identifiers
     const auto over = [&](const PolyZonotope &Z) {
+        std::vector<std::size_t> pos(Z.ids().size());
+        for (std::size_t k = 0; k < pos.size(); ++k)
+            pos[k] = std::size_t(std::lower_bound(id.begin(), id.end(), Z.ids()[k]) - id.begin());
         Exponents E;
         for (const std::vector<int> &col : Z.exponents()) {
             std::vector<int> c(id.size(), 0);
-            for (std::size_t k = 0; k < Z.ids().size(); ++k)
-                c[std::size_t(std::find(id.begin(), id.end(), Z.ids()[k]) - id.begin())] = col[k];
+            for (std::size_t k = 0; k < pos.size(); ++k) c[pos[k]] = col[k];
             E.push_back(std::move(c));
         }
         return E;
     };
+    // the exponents of both sets side by side, the columns of Z1 first
     Exponents E = over(Z1);
     const Exponents E2 = over(Z2);
     E.insert(E.end(), E2.begin(), E2.end());

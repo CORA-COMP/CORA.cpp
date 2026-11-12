@@ -3,17 +3,18 @@
 // The static error Vstat is the quadratic map of the start set, reduced and with the Hessian at
 // the linearization point, kept as a polynomial zonotope over the factors of the start set Rdelta
 // (priv_precompStatError_adaptive); the independent generators go through the map as dependent
-// ones, as CORALean's absorbRounding does. Zdelta is the zonotope of Rdelta with the input. The
-// dynamic error VerrorDyn of a region Rmax with the differences Rdiff to the start of the step is
-// the three second-order products carrying a difference (Zdelta with Zdiff, Zdiff with Zdelta,
-// Zdiff with itself) and the Hessian remainder over the box of Rmax joined with the linearization
-// point, less the Hessian at the point (CORALean's abstrErrPolyAdaptiveFloat).
+// ones, as CORALean's absorbRounding does (priv_poly_quad.cpp: its quadMap, pairs (i, j) and (j, i)
+// apart). Zdelta is the zonotope of Rdelta with the input. The dynamic error VerrorDyn of a region
+// Rmax with the differences Rdiff to the start of the step is the three second-order products
+// carrying a difference (Zdelta with Zdiff, Zdiff with Zdelta, Zdiff with itself) and the Hessian
+// remainder over the box of Rmax joined with the linearization point, less the Hessian at the point
+// (CORALean's abstrErrPolyAdaptiveFloat).
 //
 // Syntax:   PolyStatic S = priv_precomp_stat_error_adaptive(sys, xs, U, zeta_z, Rdelta);
 //           Zonotope V = priv_abstr_err_poly_adaptive(sys, xs, Rmax, Zdelta, Rdiff, U, zeta_z);
 // Inputs:   xs - the linearization point, U - the input set (none: no input), zeta_z - redFactor
 // Outputs:  the static error with Zdelta, and the dynamic error as a zonotope
-// See also: priv_abstrerr_adaptive.cpp, priv_lin_reach_poly_adaptive_pass.cpp
+// See also: priv_poly_quad.cpp, priv_abstrerr_adaptive.cpp, priv_lin_reach_poly_adaptive_pass.cpp
 //
 // CORA: contDynamics/@nonlinearSys/private/priv_precompStatError_adaptive.m
 // CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m
@@ -53,7 +54,7 @@ PolyStatic priv_precomp_stat_error_adaptive(const NonlinearSys &sys, const Vec &
     const Zonotope Urec =
         m > 0 ? *U - U->center() : Zonotope(like.zeros_like(), like.zeros_like({n, 0}));
     const PolyZonotope Z = m > 0 ? Rred.cart_prod(Urec) : Rred;
-    const PolyZonotope second = Z.quad_map(Q);
+    const PolyZonotope second = priv_poly_quad_map(Z, Q);
     return {priv_reduce_adaptive_poly(second, rf), m > 0 ? Rdz.cart_prod(Urec) : Rdz};
 }
 
@@ -75,13 +76,15 @@ Zonotope priv_abstr_err_poly_adaptive(const NonlinearSys &sys, const Vec &xs, co
     const Hessian Hp = priv_hessian(sys, like, Box{xs, xs},
                                     m > 0 ? std::optional<Box>(Box{us, us}) : std::nullopt);
     const std::vector<Tensor> Q = priv_half_hessians(like, Hp, n, n + m);
-    const Zonotope second =
-        (Zdelta.quad_map(Zdiff, Q) + Zdiff.quad_map(Zdelta, Q)) + Zdiff.quad_map(Q);
+    const SecondOrder second = priv_second_order_error(Zdelta, Zdiff, Q);
     // the Hessian over the region less the one at the point
     const Hessian H = priv_hessian(sys, like, X, Ub);
     const Zonotope rest =
         priv_box_zonotope(like, priv_hessian_remainder(H, Hp.lo, X, Ub, xs, us, n));
-    return (second + rest).reduce_adaptive(rf);
+    // the generators of the products, then those of the remainder; the shift joins the center
+    const Zonotope sum(rest.center(), Tensor::concat({second.G, rest.generators()}, -1));
+    const Zonotope red = sum.reduce_adaptive(rf);
+    return Zonotope(red.center() + Tensor::like(like, second.shift, {n, 1}), red.generators());
 }
 
 } // namespace cora

@@ -56,14 +56,13 @@ std::vector<Operand> aux_poly_options(const alg::PolynomializationAdaptive &alg,
             {"fuel", alg.fuel}};
 }
 
-// the box of a polynomial zonotope of a reply: center, row sums of both blocks, error box
+// the box of a polynomial zonotope of a reply: row sums of both blocks, shifted by the error box
 cora::Interval aux_poly_box(const Reply &set) {
     const cora::Tensor c = set.get<Tensor>("c").gather(), G = set.get<Tensor>("G").gather();
     const cora::Tensor GI = set.get<Tensor>("GI").gather();
     const auto [inf, sup] = set.get<lean::Interval>("E").gather();
-    const cora::Tensor radius =
-        G.abs().sum(-1, true) + GI.abs().sum(-1, true) + inf.abs().maximum(sup.abs());
-    return cora::Interval(c - radius, c + radius);
+    const cora::Tensor radius = G.abs().sum(-1, true) + GI.abs().sum(-1, true);
+    return cora::Interval((c - radius) + inf, (c + radius) + sup);
 }
 
 // the linear step of the oracle's linearStep option; CORA's own is left to the oracle's default

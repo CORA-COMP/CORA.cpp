@@ -4,9 +4,11 @@
 // the van der Pol oscillator with an input (the system of the oracle's fixture 3201) and a small
 // quadratic system whose third-order tensor is empty. The values that tuning reads off a pass (the
 // point of linearization xs, the matrix A, the zero generators of the error) are the oracle's bit
-// for bit, as are the first step sizes of a run. The free boxes of the window and of the end set
-// (PolyZonotope.interval) agree to 1e-4, the errors to the tolerance below: the abstraction error
-// of CORA.cpp is not yet CORALean's operation for operation (docs/cora-differences.md).
+// for bit, as are the first step sizes of a run, the true error and the radius of the solutions of
+// the errors (the abstraction error is CORALean's operation for operation, priv_poly_quad.cpp). The
+// boxes of the window and of the end set (PolyZonotope.interval, error box included) agree to 1e-5
+// only: CORALean keeps the center shift of zonotopeEven in the error box of VerrorDyn, where it is
+// part of the varying input, and CORA.cpp's zonotopes have no error box (docs/oracle-requests.md).
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA: contDynamics/@nonlinearSys/reach_adaptive.m
@@ -149,13 +151,13 @@ int main() {
             std::vector<bool> gzero(mine->gzero.begin(), mine->gzero.end());
             test::check(gzero == theirs->g_zero, b + ": the zero generators of the error");
             const Interval hull_i = aux_free_box(mine->Rti), hull_p = aux_free_box(mine->Rtp);
-            test::check(aux_close(mine->true_error, theirs->true_error.data(), 5e-2),
+            test::check(aux_close(mine->true_error, theirs->true_error.data(), 0.0),
                         b + ": the true error");
-            test::check(aux_close(mine->abstrerr, theirs->abstrerr.data(), 5e-2),
+            test::check(aux_close(mine->abstrerr, theirs->abstrerr.data(), 0.0),
                         b + ": the radius of the solutions of the errors");
-            test::check(aux_close_box(hull_i, theirs->time_interval, 1e-4),
+            test::check(aux_close_box(hull_i, theirs->time_interval, 1e-5),
                         b + ": the window over the step agrees with the oracle's");
-            test::check(aux_close_box(hull_p, theirs->time_point, 1e-4),
+            test::check(aux_close_box(hull_p, theirs->time_point, 1e-5),
                         b + ": the set at the end of the step agrees with the oracle's");
         }
     });

@@ -161,12 +161,37 @@ CORA.cpp's `alg::PolynomializationAdaptive` is CORA's poly-adaptive as CORALean 
 (`reachPolyAdaptiveFloat`, CORALean !912). The oracle serves its ops (`nonlinearSys.reachPolyAdaptive`,
 `linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261112-e3fba3c5b`
 on (`lean::NonlinearSys`, `reach_poly_adaptive`, `lin_reach_poly_adaptive_pass`). The linear step (`polyWindowFloat`, `polyPointFloat`, !915) follows the float definition; the free boxes of the sets
-agree with the oracle's to 1e-4 on the van der Pol fixture 3201 but not bit for bit: the abstraction error
-(`abstrErrPolyAdaptiveFloat`: its `zonotopeEven` error box, `quadMapMixed`) and the error solution are not yet
-CORALean's operations step for step, the true error differs by a factor 2 (open). The operations of the polynomial zonotope float
+agree with the oracle's to 1e-5 on the van der Pol and quadratic fixtures, not bit for bit. The true error and the
+radius of the error solutions are bit for bit (`priv_poly_quad.cpp`: CORALean's `quadMap`, `quadMapMixed` and
+`zonotopeEven`, pairs (i, j) and (j, i) apart). What stays open: `zonotopeEven` moves the shift of the even and
+constant columns into the error box of `VerrorDyn`, where `polyWindowFloat` reads it as part of the varying input;
+CORA.cpp's zonotopes have no error box and add it to the center, so the window and the end set differ by up to the
+error scale (7e-7 on the quadratic fixture). Needs an error box on `Zonotope` (or a shift carried beside it) first.
+The operations of the polynomial zonotope float
 layer behind them (`reduceAdaptive`, `restructure`, `quadMapMixed`, `mtimesIntervalMat`) stay oracle debt: the
 oracle serves none of them on its own. `linReachPolyAdaptive` (one step with its tuning) is not tested; the
 tuning formulas are the lin-adaptive ones (`dHused` aside).
+
+### Request: `polyWindowFloat` and `polyPointFloat` without the box cap on the varying input
+
+LALO20 W01 (CORA.cpp, 13-Nov-2026, 7 states, x0 +- 0.1, tFinal 20) gives verdict 0 (largest x4 5.044 against
+the limit 5, width of x4 0.0639) where CORA gives width 0.0600 and the report verdict 1. Step by step against MATLAB
+CORA (checks off) the first difference is not the step size rule: the width of x4 over time is the same to 0.1 % up to
+t = 0.5 and then drifts to +2.5 % at t = 2.9. The cause is the line `let Ũb := Zonotope.reduce Ũ 1` of
+`LinearSys.polyWindowFloat` (and the same box in `polyPointFloat`, CORALean !918): the varying part `Ũ = V - ũ` of the
+error input is replaced by a box of `n` generators before the term-by-term series. That box is a sound superset but not
+needed: `inputSolutionFloat` applied to `Ũ` itself is the sound term-by-term sum (each order bounds the input of that
+order), and the pieces are reduced adaptively at `ζ` afterwards. Without the box the same CORA.cpp code gives, on the
+first 3 time units, the width of x4 within 0.1 % of CORA's at every time (2.9: 0.6622 against 0.6617, with the box
+0.6785), and the full W01 gives verdict 1 (largest x4 4.995, width 0.0582, 1130 steps; CORA 0.0600). Request:
+replace `Ũb` by `Ũ` in both definitions (the soundness theorems need no change: `Ũb` was only used to shrink the
+input), and re-serve the ops. CORA.cpp then drops `aux_cap` in `priv_poly_window.cpp`; until then W01 stays at verdict 0.
+Checked and not the cause: holding the constant linearization offset `ũ` as `hull(0, ũ)` in the window (the window is 4 to
+8 % wider than CORA's in the first step; `oneStepClosedFormFloat`'s split, the summed series for `ũ` plus `[G] ũ`,
+matches CORA's window to 6 digits and is sound, but it moves the final width only from 0.0639 to 0.0638), and the
+restructure by `reducePca` (CORA.cpp restructures from step 261, CORA not at all in the first 327 steps, but the
+drift starts at t = 0.6). Also seen: CORA's `Zdelta` of the second run of a step is the one of the first run (the
+linearization point of the other step size; larger here, so conservative in the step observed, not shown unsound), CORALean recomputes it per pass.
 
 ## Zonotope quadMap and the facets of vertex polytopes (PR "oracle/group-b-1")
 
