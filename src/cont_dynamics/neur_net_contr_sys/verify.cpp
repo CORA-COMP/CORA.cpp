@@ -118,7 +118,8 @@ int64_t aux_cut(const NeurNetContrSys &sys, const S &X0, const Interval &box,
     return best;
 }
 
-// The dump -----------------------------------------------------------------------------------------
+// The dump
+// -----------------------------------------------------------------------------------------
 
 /// The opt-in dump of the splitting (CORACPP_VERIFY_DUMP=<path>, diagnosis only): every piece and,
 /// for the leaves of a system with four states, the box of every step with the bounds vmax and slo
@@ -145,8 +146,8 @@ struct Dump {
     void piece(int id, int parent, int depth, const Interval &b, const char *state) {
         const std::lock_guard lock(mutex);
         pieces += "{\"id\":" + std::to_string(id) + ",\"parent\":" + std::to_string(parent) +
-                  ",\"depth\":" + std::to_string(depth) + ",\"box\":" + box(b) +
-                  ",\"state\":\"" + state + "\"},\n";
+                  ",\"depth\":" + std::to_string(depth) + ",\"box\":" + box(b) + ",\"state\":\"" +
+                  state + "\"},\n";
     }
     /// The steps of a leaf: [t0, t1, box, vmax, slo] each. vmax bounds |v| over the 32 directions
     /// of the polygon, slo bounds |s| from below, both on the zonotope that the check sees.
@@ -226,7 +227,9 @@ void aux_run_tree(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
                 const bool splits = !ok && piece.splits < split.depth - 1;
                 if (tree.dump.on()) {
                     tree.dump.piece(piece.id, piece.parent, piece.splits, piece.box,
-                                    ok ? "verified" : splits ? "split" : "failed");
+                                    ok       ? "verified"
+                                    : splits ? "split"
+                                             : "failed");
                     if (ok) tree.dump.leaf(piece.id, R);
                 }
                 std::unique_lock lock(tree.mutex);
