@@ -49,7 +49,8 @@ struct LyapunovSlot {
     bool formed = false;
     LyapunovCertificate certificate;
     double solve_seconds = 0, check_seconds = 0;
-    const char *method = "none"; ///< the weight that was accepted ("sign" or "schur")
+    const char *method =
+        "none"; ///< the weight that was accepted ("sign_single", "sign" or "schur")
 };
 
 /// The products y = M x of a square matrix with host vectors, summed in CORALean's order.
@@ -181,8 +182,9 @@ struct LyapunovWeight {
 };
 
 /// How the weight A'P + PA = -I is solved: by the matrix sign function iteration (matrix products,
-/// all threads) or by Bartels-Stewart on the real Schur form (one thread, slower, more robust).
-enum class LyapunovMethod { sign, schur };
+/// all threads) in single or in double precision, or by Bartels-Stewart on the real Schur form (one
+/// thread, slower, more robust).
+enum class LyapunovMethod { sign_single, sign, schur };
 
 /// The weight of the stable A by the method: for the Schur form P is symmetrized and P - aI
 /// factored by Cholesky with a just below the smallest eigenvalue (empty if there is none).

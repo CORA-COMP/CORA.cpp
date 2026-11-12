@@ -305,10 +305,11 @@ int main() {
         for (const Tensor &A : aux_stable(rnd)) {
             const int64_t n = A.shape()[0];
             const SparseMatrix S = SparseMatrix::from_dense(A);
-            for (const LyapunovMethod method : {LyapunovMethod::schur, LyapunovMethod::sign}) {
+            for (const LyapunovMethod method :
+                 {LyapunovMethod::schur, LyapunovMethod::sign, LyapunovMethod::sign_single}) {
                 const LyapunovWeight w = priv_lyapunov_solve(S, method);
-                // the Schur solve always has a weight, the sign iteration where it converges
-                if (method == LyapunovMethod::sign && w.P.empty()) continue;
+                // the Schur solve always has a weight, the sign iterations where they converge
+                if (method != LyapunovMethod::schur && w.P.empty()) continue;
                 test::check(!w.P.empty(), "the solve of the weight is definite");
                 const Tensor P = Tensor::from_data(w.P, {n, n}), L = Tensor::from_data(w.L, {n, n});
                 // the accepted weight, one that is not symmetric and one the equation fails for
@@ -324,9 +325,12 @@ int main() {
                         lean::Krylov::lyapunov_certificate(A, Pc, Lc, a);
                     const LyapunovCertificate c =
                         priv_lyapunov_certificate(S, Pc.data(), Lc.data(), a);
-                    // the same bits of the verdict, the bounds and the rate
+                    // the same bits of the verdict, the bounds and the rate, named by the solve
                     const std::string what = std::to_string(n) + " " + name +
-                                             (method == LyapunovMethod::sign ? " sign" : "");
+                                             (method == LyapunovMethod::sign          ? " sign"
+                                              : method == LyapunovMethod::sign_single ? " single"
+                                                                                      : "");
+                    // the Schur weight of a stable matrix passes the check
                     if (std::string(name) == "solved" && method == LyapunovMethod::schur)
                         test::check(c.ok, "the solved weight is accepted");
                     test::oracle::check("ok " + what, c.ok, r.ok);
