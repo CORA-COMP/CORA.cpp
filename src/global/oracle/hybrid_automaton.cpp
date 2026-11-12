@@ -81,8 +81,8 @@ std::vector<HybridBranch> HybridAutomaton::reach(const std::vector<HybridLocatio
                                                  int64_t start_loc, const cora::Zonotope &R0,
                                                  double t_start, double t_final,
                                                  int64_t taylor_terms, int64_t zonotope_order,
-                                                 std::optional<int64_t> final_loc,
-                                                 bool check_flow) {
+                                                 std::optional<int64_t> final_loc, bool check_flow,
+                                                 const std::vector<std::string> &names) {
     // the locations travel as a list of objects
     Json list = Json::array();
     std::string dtype;
@@ -92,7 +92,7 @@ std::vector<HybridBranch> HybridAutomaton::reach(const std::vector<HybridLocatio
         list.push(w.json);
     }
     Json enclose = Json::array();
-    enclose.push(Json("box"));
+    for (const std::string &name : names) enclose.push(Json(name));
     std::vector<Operand> operands = {{"locations", Wire(std::move(list), dtype)},
                                      {"startLoc", start_loc},
                                      {"R0", Zonotope(R0)},
@@ -152,11 +152,19 @@ std::vector<HybridBranch> HybridAutomaton::reach(const cora::HybridAutomaton &HA
         }
         locations.push_back(std::move(out));
     }
+    // the bases of zonoGirard, one name each
+    const auto *girard = std::get_if<cora::alg::ZonoGirard>(&alg.guard_intersect);
+    aux_require(girard && girard->enclose.size() == 1 &&
+                    girard->enclose[0] != cora::alg::Enclose::flow,
+                "lean reach: zonoGirard with the one basis box or pca");
+    const std::vector<std::string> names{girard->enclose[0] == cora::alg::Enclose::box ? "box"
+                                                                                       : "pca"};
     // the final location and the call
     std::optional<int64_t> final_loc;
     if (!problem.final_locations.empty()) final_loc = problem.final_locations.front();
     return reach(locations, problem.start_location, *problem.initial_set, problem.t_start,
-                 problem.t_final, alg.taylor_terms, alg.zonotope_order, final_loc, alg.check_flow);
+                 problem.t_final, alg.taylor_terms, alg.zonotope_order, final_loc, alg.check_flow,
+                 names);
 }
 
 } // namespace cora::lean

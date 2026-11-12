@@ -23,6 +23,7 @@
 
 #include <array>
 #include <optional>
+#include <string>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -60,10 +61,11 @@ struct HybridAutomaton {
     static std::vector<HybridBranch>
     reach(const std::vector<HybridLocation> &locations, int64_t start_loc, const cora::Zonotope &R0,
           double t_start, double t_final, int64_t taylor_terms, int64_t zonotope_order,
-          std::optional<int64_t> final_loc = std::nullopt, bool check_flow = false);
+          std::optional<int64_t> final_loc = std::nullopt, bool check_flow = false,
+          const std::vector<std::string> &enclose = {"box"});
 
     /// The same for a CORA.cpp automaton of linear flows with polytope invariants and guards, the
-    /// problem and the algorithm "standard" (its time steps, orders and final location); the
+    /// problem and the algorithm "standard" (zonoGirard with the basis box or pca); the
     /// specifications play no part. Fails for what the op does not serve.
     static std::vector<HybridBranch> reach(const cora::HybridAutomaton &HA,
                                            const cora::HybridReachProblem &problem,
