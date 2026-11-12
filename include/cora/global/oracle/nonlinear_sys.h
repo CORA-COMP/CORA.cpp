@@ -2,7 +2,8 @@
 //
 // Syntax:     lean::NonlinearSys sys(my_sys);   auto run = sys.reach_adaptive(R0, U, t_final, alg);
 //             double v = lean::NonlinearSys::varphi_total_adaptive(alg, varphi, lim, prev, curr);
-// Operations: reach_adaptive, lin_reach (nonlinearSys.linReach) and one method per
+// Operations: reach_adaptive, lin_reach (nonlinearSys.linReach), reach (nonlinearSys.reach) and one
+// method per
 //             `nonlinearSys.*Adaptive` op of the oracle: lin_reach_adaptive_pass,
 //             abstr_err_adaptive, orders_adaptive, and the three tuning formulas
 //             optimal_delta_t_adaptive, varphi_total_adaptive, varphi_est_adaptive
@@ -88,6 +89,11 @@ class NonlinearSys {
     /// One step of alg lin from R with the input set U (none: no input) and the options alg.
     std::optional<LinReachResult> lin_reach(const std::optional<Zonotope> &U, const Zonotope &R,
                                             const alg::Linearization &alg) const;
+
+    /// The windows of alg lin from X0 with the input set U to t_final (nonlinearSys.reach), one per
+    /// step of CORALean's reachFloatInput; none if a step fails.
+    std::optional<std::vector<Zonotope>> reach(const Zonotope &X0, const std::optional<Zonotope> &U,
+                                               double t_final, const alg::Linearization &alg) const;
 
     /// One pass at time_step from R with the tensor order 2 or 3 and the admissible error.
     std::optional<AdaptivePassResult>

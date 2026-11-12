@@ -19,6 +19,8 @@
 #include "benchmark_hybrid.h"
 
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -122,11 +124,18 @@ cora::bench::HybridInstance aux_instance(const std::string &name) {
     problem.t_final = 200;
     // the options of the script
     alg::HybridStandard a;
-    a.time_step = {0.2, 0.05, 0.2};
+    // the script's steps are for CORA's loop; the region check of CORALean needs smaller ones
+    a.time_step = cora::bench::error_bound() == alg::ErrorBound::loop
+                      ? std::vector<double>{0.2, 0.05, 0.2}
+                      : std::vector<double>{0.05, 0.025, 0.05};
+    // CORACPP_SPACECRAFT_STEPS = a,b,c overrides the step sizes of the three locations (tuning)
+    if (const char *tune = std::getenv("CORACPP_SPACECRAFT_STEPS"))
+        std::sscanf(tune, "%lf,%lf,%lf", &a.time_step[0], &a.time_step[1], &a.time_step[2]);
     a.taylor_terms = 10;
     a.zonotope_order = 10;
     a.tensor_order = 2;
     a.linear_step = cora::bench::linear_step();
+    a.error_bound = cora::bench::error_bound();
     a.guard_intersect = alg::NondetGuard{{alg::Enclose::pca}};
     return {"Spacecraft", name, aux_automaton(), problem, a, aux_specs(), nullptr, true};
 }

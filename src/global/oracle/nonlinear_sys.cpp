@@ -138,6 +138,27 @@ std::optional<LinReachResult> NonlinearSys::lin_reach(const std::optional<Zonoto
     }
 }
 
+std::optional<std::vector<Zonotope>> NonlinearSys::reach(const Zonotope &X0,
+                                                         const std::optional<Zonotope> &U,
+                                                         double t_final,
+                                                         const alg::Linearization &alg) const {
+    // the oracle's reach takes no linear step: it is reachFloatInput
+    std::vector<Operand> request = system();
+    request.push_back({"X0", X0});
+    if (U) request.push_back({"U", *U});
+    for (const Operand &o : std::vector<Operand>{{"tFinal", t_final},
+                                                 {"timeStep", alg.time_step},
+                                                 {"taylorTerms", alg.taylor_terms},
+                                                 {"zonotopeOrder", alg.zonotope_order}})
+        request.push_back(o);
+    // a failed step is an error of the oracle: no run
+    try {
+        return ask("nonlinearSys.reach", request).get<std::vector<Zonotope>>("timeInterval");
+    } catch (const std::runtime_error &) {
+        return std::nullopt;
+    }
+}
+
 PolyAdaptiveRun NonlinearSys::reach_poly_adaptive(const Zonotope &R0,
                                                   const std::optional<Zonotope> &U, double t_final,
                                                   int max_steps,

@@ -321,6 +321,11 @@ inline void validate_tensor_orders(int tensor_order, int error_order, int interm
 /// form; cora, CORA's oneStep with expm and A^-1; coralean, CORALean's reachFloatInput (slower).
 enum class LinearStep { cora, closed_form, coralean };
 
+/// The error of a Linearization step at tensor_order 2: region, CORALean's linReach (the Hessian
+/// over the region the step stays in, checked once; fails if the time step is too large), or loop,
+/// CORA's (guessed, solved over the step, enlarged until it holds; tensor order 3 always).
+enum class ErrorBound { region, loop };
+
 /// CORA's alg "lin": each step linearizes at the center of the set (moved half a step along the
 /// flow) and bounds the linearization error by the Lagrange remainder of the Taylor expansion of
 /// order tensor_order over the reachable set of the step, enlarged until it holds.
@@ -332,6 +337,7 @@ struct Linearization {
     int error_order = 0;        ///< tensor_order 3: the order of the set the Hessian maps
     int intermediate_order = 0; ///< tensor_order 3: the order of the error set
     LinearStep linear_step = LinearStep::closed_form; ///< the linear step of the linearized system
+    ErrorBound error_bound = ErrorBound::region; ///< the error of tensor_order 2: see ErrorBound
 
     static constexpr const char *name = "linearization";
     static constexpr auto fields() {
@@ -341,7 +347,8 @@ struct Linearization {
                                field("tensor_order", &Linearization::tensor_order),
                                field("error_order", &Linearization::error_order),
                                field("intermediate_order", &Linearization::intermediate_order),
-                               field("linear_step", &Linearization::linear_step));
+                               field("linear_step", &Linearization::linear_step),
+                               field("error_bound", &Linearization::error_bound));
     }
     void validate() const {
         validate_time_step(time_step, "Linearization");
@@ -613,26 +620,28 @@ struct HybridStandard {
     bool check_flow_certified = true; ///< a LinearSys flow: CORALean's checkFlow (the guard normal
                                       ///< oriented by an invariant row, a set dropped only where
                                       ///< the flow is certified inward)
+    ErrorBound error_bound =
+        ErrorBound::region; ///< a NonlinearSys flow: its Linearization::error_bound
 
     // the fields as Python sees them, and their checks
     static constexpr const char *name = "standard";
     static constexpr auto fields() {
         // one entry per member, in the order of the struct
-        return std::make_tuple(
-            field("time_step", &HybridStandard::time_step),
-            field("taylor_terms", &HybridStandard::taylor_terms),
-            field("zonotope_order", &HybridStandard::zonotope_order),
-            field("intermediate_terms", &HybridStandard::intermediate_terms),
-            field("tensor_order", &HybridStandard::tensor_order),
-            field("error_order", &HybridStandard::error_order),
-            field("intermediate_order", &HybridStandard::intermediate_order),
-            field("polynomialization", &HybridStandard::polynomialization),
-            field("guard_intersect", &HybridStandard::guard_intersect),
-            field("linear_step", &HybridStandard::linear_step),
-            // the filter of the jumps
-            field("check_flow", &HybridStandard::check_flow),
-            field("time_point_swap", &HybridStandard::time_point_swap),
-            field("check_flow_certified", &HybridStandard::check_flow_certified));
+        return std::make_tuple(field("time_step", &HybridStandard::time_step),
+                               field("taylor_terms", &HybridStandard::taylor_terms),
+                               field("zonotope_order", &HybridStandard::zonotope_order),
+                               field("intermediate_terms", &HybridStandard::intermediate_terms),
+                               field("tensor_order", &HybridStandard::tensor_order),
+                               field("error_order", &HybridStandard::error_order),
+                               field("intermediate_order", &HybridStandard::intermediate_order),
+                               field("polynomialization", &HybridStandard::polynomialization),
+                               field("guard_intersect", &HybridStandard::guard_intersect),
+                               field("linear_step", &HybridStandard::linear_step),
+                               // the filter of the jumps
+                               field("check_flow", &HybridStandard::check_flow),
+                               field("time_point_swap", &HybridStandard::time_point_swap),
+                               field("check_flow_certified", &HybridStandard::check_flow_certified),
+                               field("error_bound", &HybridStandard::error_bound));
     }
     void validate() const {
         detail::Validation entry;

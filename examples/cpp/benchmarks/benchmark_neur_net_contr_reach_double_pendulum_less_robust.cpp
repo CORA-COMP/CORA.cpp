@@ -50,12 +50,14 @@ std::vector<AinncsInstance> aux_instances() {
              make_verify(
                  cora::bench::double_pendulum_plant(), "double_pendulum_less_robust", 0.05,
                  box_zonotope({1, 1, 1, 1}, {1.3, 1.3, 1.3, 1.3}), none, 1.0,
-                 loop_options(0.01, 2, 4, 20),
+                 loop_options(cora::bench::error_bound() == alg::ErrorBound::loop ? 0.01 : 0.005, 2,
+                              4, 20),
                  {Specification::safe_set(box_polytope({-1.7, -1.7, -1.7, -1.7}, {2, 2, 2, 2}))},
                  {.depth = split ? 14 : 0}),
              split ? "splitting of the initial set (CROWN-Reach: 5 x 5 x 3 x 3 uniform pieces); "
-                     "the expected time is CROWN-Reach's, CORA's script is UNKNOWN in 5.604 s"
-                   : "the script, without splitting"});
+                     "the expected time is CROWN-Reach's, CORA's script is UNKNOWN in 5.604 s; "
+                     "time_step 0.005 (the region check fails at the script's 0.01)"
+                   : "the script, without splitting; time_step 0.005 (script 0.01, see above)"});
     }
     return v;
 }

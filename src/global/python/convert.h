@@ -309,6 +309,13 @@ T value_of(const py::handle &o, const char *name) {
         CORA_FAIL(Error::wrong_value, std::string("cora: ") + name +
                                           " must be 'cora', 'closed_form' or 'coralean', got '" +
                                           text + "'");
+    } else if constexpr (std::is_same_v<T, alg::ErrorBound>) {
+        // "region" or "loop"
+        const std::string text = py::cast<std::string>(o);
+        if (text == "region") return alg::ErrorBound::region;
+        if (text == "loop") return alg::ErrorBound::loop;
+        CORA_FAIL(Error::wrong_value,
+                  std::string("cora: ") + name + " must be 'region' or 'loop', got '" + text + "'");
     } else {
         return py::cast<T>(o);
     }
