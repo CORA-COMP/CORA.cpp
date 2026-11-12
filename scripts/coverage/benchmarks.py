@@ -69,8 +69,10 @@ WHY = """## What keeps the rows of each family from `oracle`
   `expmOneParam` is only `bound`.
 - Hybrid (SRA, GRBX, DTN, BRK, SPRE22): `hybridAutomaton/reach` is not served (the oracle has the location
   and transition steps), and `guardIntersect` follows CORALean's dual bound, not CORA's dichotomic search.
-- Nonlinear (TRAF22, SPRE22): the oracle serves `nonlinearSys.reach` and `linReach`, but CORALean's is
-  its own algorithm, not CORA's `lin` with tensor order 2, and CORA.cpp has no client for them yet.
+- Nonlinear (TRAF22, SPRE22): the `lin` step at tensor order 2 is CORALean's `linReachFloat` (the region
+  step, bit for bit: `test_lean_nonlinear_sys_lin_reach`). The AINNCS plants step polynomial zonotopes
+  (CORA's loop, `priv_lin_reach_poly`), which the oracle does not serve: their `initReach`, `post` and
+  `linReach` are `oracle` on the zonotope step only, not on the instance's own path.
 """
 
 

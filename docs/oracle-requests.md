@@ -132,6 +132,7 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 | `nonlinearSys.linearize` | `f` (expression trees of `x`, `u`), `R`, `U` (zonotopes), `timeStep` | `x_star`, `u_star`, `f0`, `A`, `U` (zonotope), `u_const` |
 | `nonlinearSys.abstrerr_lin` | `f`, `R` (zonotope, relative to `x_star`), `x_star`, `u_star`, `U`, `tensorOrder`, `errorOrder`, `intermediateOrder` | `trueError` (vector), `VerrorDyn` (zonotope) |
 | `nonlinearSys.linReach` (CORA's steps, as CORA.cpp's `priv_lin_reach`) | `f`, `R`, `error`, `U`, `timeStep`, `taylorTerms`, the orders | `ti`, `tp` (zonotopes), `error` |
+| `nonlinearSys.linReach` as CORALean's `linReachFloat` (the region step, `ErrorBound::region`) | `f`, `R`, `U`, `timeStep`, `taylorTerms`, `zonotopeOrder`, `linearStep` | `timeInterval`, `timePoint`: bit for bit by `test_lean_nonlinear_sys_lin_reach` (van der Pol, Robertson, recorded steps of TORA, ACC, the TRAF22 car); the step of a polynomial zonotope (the AINNCS plants, `priv_lin_reach_poly`) has no op, nor has the closed loop of TRAF22 at ten states (the oracle's trees take an hour) |
 | `nonlinearSys.reach` | `f`, `R0`, `U`, `tFinal`, the options of `alg::Linearization` | `timeInterval`, `timePoint`: arrays of zonotopes |
 
 ## Nonlinear systems, alg "lin-adaptive" (PR "port/nln-adaptive")

@@ -8,6 +8,12 @@
 // error and the loop repeats; then the solution of the error is added to both sets. MATLAB's max
 // skips NaN, so an error of 0 over a guess of 0 does not count, and all-NaN ends the loop.
 //
+// With alg.error_bound = region (the default at tensor_order 2 and a linear step of CORALean's)
+// the step is CORALean's linReachFloat instead, bit for bit: the region Omega the step stays in
+// (Picard iterates of X + [0, dt] f(Omega, U), checked once against M dt < delta) replaces the
+// guess, the Hessian over Omega and U joined with the expansion point bounds the error, and the
+// affine system is stepped once with the error as input. No loop, so no error of the step before.
+//
 // Syntax:   NonlinearStep s = priv_lin_reach(sys, R, error, U, alg);
 // Inputs:   R - the set at the start of the step, error - the error bound of the step before
 //           U - the input set (uncentered), alg - the options of "lin"
@@ -25,6 +31,7 @@
 #include "cont_dynamics/linear_sys/private/priv_float_step.h"
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
+#include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
 
 #include <algorithm>
 #include <cmath>
@@ -43,33 +50,120 @@ namespace {
 /// CORALean's: reachFloatInput (coralean) or CORA's oneStep in closed form (closed_form).
 using LinearStepFn = std::function<FloatStep(const Zonotope &V)>;
 
+// The linear step ---------------------------------------------------------------------------------
+
+/// The linear step of the affine system at x* from R under the input set V (oneStepFloat):
+/// CORALean's reachFloatInput or CORA's oneStep in closed form; the matrices once.
+class LeanStepper {
+  public:
+    LeanStepper(const Tensor &A, const Tensor &xs, const Zonotope &R, const alg::Linearization &alg)
+        : xs_(xs), R_(R), order_(alg.zonotope_order),
+          closed_form_(alg.linear_step == alg::LinearStep::closed_form) {
+        if (closed_form_)
+            closed_.emplace(A, alg.time_step, std::max(2, alg.taylor_terms)); // CORALean: >= 2
+        else
+            lean_.emplace(A, alg.time_step, alg.taylor_terms);
+        if (!(closed_form_ ? closed_->admissible() : lean_->admissible()))
+            CORA_FAIL(Error::not_converged,
+                      "cora: no admissible Taylor order for the linearized system (the time_step "
+                      "may be too large)");
+    }
+
+    /// The sets over the step and at its end, for the input set V.
+    FloatStep operator()(const Zonotope &V) const {
+        if (!closed_form_) return lean_->step(xs_, V, R_, order_);
+        // the constant input is the center of V, the time-varying one V without it
+        const ClosedFormStep S = closed_->step(R_ - xs_, V - V.center(), V.center());
+        return FloatStep{S.time_interval + xs_, S.time_point + xs_};
+    }
+
+  private:
+    Tensor xs_;
+    Zonotope R_;
+    int order_;
+    bool closed_form_;
+    std::optional<FloatStepper> lean_;
+    std::optional<ClosedFormStepper> closed_;
+};
+
+// The region step ---------------------------------------------------------------------------------
+
+/// max over the coordinates of max(|lo|, |hi|), the bound of CORALean's regionFloat; NaN if one is.
+double aux_bound(const Box &b) {
+    double out = 0;
+    for (std::size_t i = 0; i < b.lo.size(); ++i) {
+        const double v = std::max(std::abs(b.lo[i]), std::abs(b.hi[i]));
+        if (std::isnan(v)) return v;
+        out = std::max(out, v);
+    }
+    return out;
+}
+
+/// The region the step stays in (regionFloat): X + [-delta, delta] at delta = (2 M0 + 1) dt, if
+/// the bound M of f over it and U keeps M dt < delta, then two Picard iterates; none otherwise.
+std::optional<Box> aux_region(const NonlinearSys &sys, const Tensor &like, const Box &X,
+                              const std::optional<Box> &Ub, double dt) {
+    const double M0 = aux_bound(priv_enclosure(sys, like, X, Ub));
+    const double delta = ((M0 + M0) + 1.0) * dt;
+    Box Omega = X;
+    for (std::size_t i = 0; i < X.lo.size(); ++i) {
+        Omega.lo[i] = X.lo[i] - delta;
+        Omega.hi[i] = X.hi[i] + delta;
+    }
+    const double M = aux_bound(priv_enclosure(sys, like, Omega, Ub));
+    if (!(M * dt < delta)) return std::nullopt;
+    // X + [0, dt] f(Omega, U), twice
+    const auto picard = [&](const Box &O) {
+        const Box F = priv_enclosure(sys, like, O, Ub);
+        Box out = X;
+        for (std::size_t i = 0; i < X.lo.size(); ++i) {
+            out.lo[i] = X.lo[i] + std::min(0.0, dt * F.lo[i]);
+            out.hi[i] = X.hi[i] + std::max(0.0, dt * F.hi[i]);
+        }
+        return out;
+    };
+    return picard(picard(Omega));
+}
+
+/// The step as CORALean's linReachFloat at 'lin': the region, the Hessian remainder over it, and
+/// one linear step with f(x*, u*) + B (U - u*) + [-l, l] as input.
+NonlinearStep aux_region_step(const NonlinearSys &sys, const Zonotope &R,
+                              const std::optional<Zonotope> &U, const alg::Linearization &alg) {
+    const Tensor &like = R.center();
+    const int64_t n = sys.dim(), m = sys.input_dim();
+    // without an input set the input is the origin
+    const std::optional<Zonotope> Uz =
+        m > 0 ? std::optional<Zonotope>(
+                    U ? *U : Zonotope(like.zeros_like({m, 1}), like.zeros_like({m, 0})))
+              : std::nullopt;
+    const Box X = priv_zonotope_box(R);
+    const std::optional<Box> Ub = Uz ? std::optional<Box>(priv_zonotope_box(*Uz)) : std::nullopt;
+    const std::optional<Box> Omega = aux_region(sys, like, X, Ub, alg.time_step);
+    if (!Omega)
+        CORA_FAIL(Error::not_converged,
+                  "cora: the region check of the step failed (the time_step may be too large)");
+    // x*, A, B and f(x*, u*) + B (U - u*)
+    const AdaptiveLinearization L = priv_linearize_adaptive(sys, Uz, like, alg.time_step);
+    const Vec us = Uz ? Uz->center().data() : Vec{};
+    // the Hessian over the region and U, both holding the expansion point
+    const Box Xh = priv_hull(*Omega, L.xs);
+    const std::optional<Box> Uh = Uz ? std::optional<Box>(priv_hull(*Ub, us)) : std::nullopt;
+    const Box err =
+        priv_hessian_remainder(priv_hessian(sys, like, Xh, Uh), {}, Xh, Uh, L.xs, us, n);
+    const LeanStepper step(L.J.A, L.xs_t, R, alg);
+    const FloatStep S = step(L.Vbase + priv_box_zonotope(like, err));
+    return {S.first, S.second, priv_column(like, err.hi)};
+}
+
 /// The step with a linear step of CORALean's (alg.linear_step): the guess of the error enters the
 /// input of the step, and the accepted error is part of the input of the step that is returned.
 NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
                             const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     const double dt = alg.time_step;
-    const int eta = alg.taylor_terms;
     // the affine system; its input without the error is f(x*, u*) + B (U - u*), centered at f
     const Linearized lin = sys.linearize(R, U, dt);
     const Zonotope V_base(lin.u_const, lin.U.generators());
-    // one linear step from R under the input set V; the matrices once
-    const bool closed_form = alg.linear_step == alg::LinearStep::closed_form;
-    std::optional<FloatStepper> lean;
-    std::optional<ClosedFormStepper> closed;
-    if (closed_form)
-        closed.emplace(lin.sys.A(), dt, std::max(2, eta)); // CORALean: at least order 2
-    else
-        lean.emplace(lin.sys.A(), dt, eta);
-    if (!(closed_form ? closed->admissible() : lean->admissible()))
-        CORA_FAIL(Error::not_converged,
-                  "cora: no admissible Taylor order for the linearized system (the time_step may "
-                  "be too large)");
-    const LinearStepFn step = [&](const Zonotope &V) {
-        if (!closed_form) return lean->step(lin.x_star, V, R, alg.zonotope_order);
-        // the constant input is the center of V, the time-varying one V without it
-        const ClosedFormStep S = closed->step(R - lin.x_star, V - V.center(), V.center());
-        return FloatStep{S.time_interval + lin.x_star, S.time_point + lin.x_star};
-    };
+    const LeanStepper step(lin.sys.A(), lin.x_star, R, alg);
     // the centered input set (CORA's params.U); without one, the input 0
     const std::optional<Zonotope> U0 = priv_centered_inputs(R.center(), sys.input_dim(), U);
 
@@ -144,7 +238,12 @@ priv_error_loop(const Linearized &lin, TaylorLinSys &taylor, const Tensor &error
 
 NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
                              const std::optional<Zonotope> &U, const alg::Linearization &alg) {
-    if (alg.linear_step != alg::LinearStep::cora) return aux_lean_step(sys, R, error, U, alg);
+    if (alg.linear_step != alg::LinearStep::cora) {
+        // CORALean's region at tensor order 2, else CORA's loop with the step of CORALean's
+        if (alg.error_bound == alg::ErrorBound::region && alg.tensor_order == 2)
+            return aux_region_step(sys, R, U, alg);
+        return aux_lean_step(sys, R, error, U, alg);
+    }
     const double dt = alg.time_step;
     const int eta = alg.taylor_terms;
     // the affine system and its step from R - x*

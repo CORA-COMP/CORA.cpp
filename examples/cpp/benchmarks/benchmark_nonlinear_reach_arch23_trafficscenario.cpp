@@ -219,7 +219,8 @@ bool aux_run(const std::string &name) {
                                           .taylor_terms = 10,
                                           .zonotope_order = 20,
                                           .tensor_order = 2,
-                                          .linear_step = cora::bench::linear_step()});
+                                          .linear_step = cora::bench::linear_step(),
+                                          .error_bound = cora::bench::error_bound()});
         R.push_back(Ri.time_interval);
         X = Ri.time_point.back();
     }

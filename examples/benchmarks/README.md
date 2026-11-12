@@ -82,6 +82,11 @@ steps against `nonlinearSys.linReach`, `linReachAdaptivePass` and `reachAdaptive
 entrywise remainder `W` of `e^{|A| dt}` is the enclosure at the order `eta_e + 8` less the series at `eta_e`,
 entry by entry (CORALean !917; before, a scalar tail was added to every entry, which kept ROBE25 from
 verifying at CORA's tuning). `LinearStep::cora` is CORA's `oneStep` with `expm` and `A^-1`.
+The error of a `lin` step at tensor order 2 is CORALean's `linReachFloat` by default (`ErrorBound::region`: the region check
+and the Hessian over it, bit for bit against `nonlinearSys.linReach` in `test_lean_nonlinear_sys_lin_reach`);
+`ErrorBound::loop` (`CORACPP_ERROR_BOUND=loop`) is CORA's guess-and-enlarge loop. TRAF22 verifies with both (0.93 s against 0.89 s; the
+inputs lie in [-0.502, 0.503] x [-8.488, 0.483] against [-0.499, 0.500] x [-8.488, 0.483]), SPRE22 as in [f]. The AINNCS
+plants step polynomial zonotopes, which `linReachFloat` does not cover: CORA's loop.
 `LinearStep::coralean` takes CORALean's step instead, bit for bit
 (`test_lean_linear_sys_float_step`), at a price: TRAF22 and SPRE22 take 1.9x as long (SPRE22 needs a
 time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `zeta_z` and
@@ -103,55 +108,55 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| HEAT01 | 1 | 1 | 0.064 | 3/8 bit-exact, 2 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
-| HEAT02 | 1 | 1 | 3.39 | 3/8 bit-exact, 2 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
+| HEAT01 | 1 | 1 | 0.064 | 3/8 bit-exact, 0 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
+| HEAT02 | 1 | 1 | 3.39 | 3/8 bit-exact, 0 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
 | HEAT03 | 1 | 1 | 3.45 | 11/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 6.32 |
 | HEAT04 | 1 | 1 | 580 | 11/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 2.06 |
-| CBC01 | 1 | 1 | 0.162 | 3/8 bit-exact, 2 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
-| CBC02 | 1 | 1 | 3.88 | 3/8 bit-exact, 2 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
-| CBC03 | 1 | 1 | 44.5 | 3/8 bit-exact, 2 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
-| CBF01 | 1 | 1 | 0.255 | 3/8 bit-exact, 2 property | - | 0.4 | 0.4 (CORA) | 1.57 |
-| CBF02 | 1 | 1 | 4.51 | 3/8 bit-exact, 2 property | - | 5.38 | 5.38 (CORA) | 1.19 |
-| CBF03 | 1 | 1 | 66.5 | 3/8 bit-exact, 2 property | - | 67.79 | 67.79 (CORA) | 1.02 |
-| ISSC01_ISS02 | 1 (ARCH23) | 1 | 0.153 | 3/8 bit-exact, 2 property | - | - | - | - |
-| ISSC01_ISU02 | 0 (ARCH23) | 0 | 0.522 | 3/8 bit-exact, 2 property | - | - | - | - |
-| ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.628 | 3/8 bit-exact, 2 property | - | - | - | - |
-| ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.194 | 3/8 bit-exact, 2 property | - | - | - | - |
-| RAND01 | 1 (ARCH23) | 1 | 0.0023 | 7/13 bit-exact, 2 property | - | - | - | - |
-| RAND02 | 0 (ARCH23) | 0 | 0.015 | 7/13 bit-exact, 2 property | - | - | - | - |
-| RND01 | 1 | 1 | 0.022 | 7/13 bit-exact, 2 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
-| RND02 | 1 | 1 | 0.244 | 7/14 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.73 |
-| RND03 | 1 | 1 | 29.8 | 7/13 bit-exact, 2 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
-| RND04 | 1 | 1 | 1.14 | 7/14 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 6.82 |
-| RND05 | 1 | 1 | 6.5 | 7/14 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 7.06 |
-| RND06 | 1 | 1 | 26.6 | 7/14 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 1.00 |
-| SRNA01 | 1 | 1 | 0.473 | 26/40 bit-exact, 6 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
-| SRA01 | 1 | 1 | 0.204 | 31/45 bit-exact, 6 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
-| SRA02 | 1 | 1 | 0.102 | 40/56 bit-exact, 7 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
-| SRA03 | 1 | 1 | 0.178 | 40/56 bit-exact, 7 property | - | 27.4 | 1.79 (JuliaReach) | 10.1 |
-| SRA04 | 1 | 1 | 0.484 | 32/46 bit-exact, 6 property | - | 39.05 | 39.05 (CORA) | 80.7 |
-| SRA05 | 1 | 1 | 0.464 | 40/56 bit-exact, 7 property | - | 67.33 | 67.33 (CORA) | 145 |
-| SRA06 | 1 | 1 | 0.472 | 40/56 bit-exact, 7 property | - | 71.46 | 71.46 (CORA) | 151 |
-| SRA07 | 1 | 1 | 2.49 | 48/67 bit-exact, 9 property | - | 120 | 120 (CORA) | 48.2 |
-| SRA08 | 1 | 1 | 5.27 | 48/67 bit-exact, 9 property | - | 239 | 239 (CORA) | 45.4 |
-| SRU01 | 0 | 0 | 0.413 | 33/47 bit-exact, 6 property | - | 25.86 | 11.79 (JuliaReach) | 28.5 |
-| SRU02 | 0 | 0 | 5.93 | 48/67 bit-exact, 9 property | - | 244 | 20 (JuliaReach) | 3.37 |
-| DTN01 | 1 | 1 | 0.508 | 23/36 bit-exact, 6 property | - | 9.69 | 9.69 (CORA) [a] | 19.1 |
-| DTN02 | 1 | 1 | 0.618 | 23/36 bit-exact, 6 property | - | 10.43 | 10.43 (CORA) [a] | 16.9 |
-| DTN03 | 1 | 1 | 0.914 | 22/35 bit-exact, 6 property | - | 10.27 | 10.27 (CORA) [a] | 11.2 |
-| DTN04 | 1 | 1 | 19.4 | 23/36 bit-exact, 6 property | - | 48.29 | 48.29 (CORA) [a] | 2.49 |
-| DTN05 | 1 | 1 | 35.5 | 23/36 bit-exact, 6 property | - | 90.76 | 90.76 (CORA) [a] | 2.56 |
-| DTN06 | 1 | 1 | 110 | 24/37 bit-exact, 6 property | - | 227 | 227 (CORA) [a] | 2.06 |
+| CBC01 | 1 | 1 | 0.162 | 3/8 bit-exact, 0 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
+| CBC02 | 1 | 1 | 3.88 | 3/8 bit-exact, 0 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
+| CBC03 | 1 | 1 | 44.5 | 3/8 bit-exact, 0 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
+| CBF01 | 1 | 1 | 0.255 | 3/8 bit-exact, 0 property | - | 0.4 | 0.4 (CORA) | 1.57 |
+| CBF02 | 1 | 1 | 4.51 | 3/8 bit-exact, 0 property | - | 5.38 | 5.38 (CORA) | 1.19 |
+| CBF03 | 1 | 1 | 66.5 | 3/8 bit-exact, 0 property | - | 67.79 | 67.79 (CORA) | 1.02 |
+| ISSC01_ISS02 | 1 (ARCH23) | 1 | 0.153 | 3/8 bit-exact, 0 property | - | - | - | - |
+| ISSC01_ISU02 | 0 (ARCH23) | 0 | 0.522 | 3/8 bit-exact, 0 property | - | - | - | - |
+| ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.628 | 3/8 bit-exact, 0 property | - | - | - | - |
+| ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.194 | 3/8 bit-exact, 0 property | - | - | - | - |
+| RAND01 | 1 (ARCH23) | 1 | 0.0023 | 7/13 bit-exact, 0 property | - | - | - | - |
+| RAND02 | 0 (ARCH23) | 0 | 0.015 | 7/13 bit-exact, 0 property | - | - | - | - |
+| RND01 | 1 | 1 | 0.022 | 7/13 bit-exact, 0 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
+| RND02 | 1 | 1 | 0.244 | 7/14 bit-exact, 0 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.73 |
+| RND03 | 1 | 1 | 29.8 | 7/13 bit-exact, 0 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
+| RND04 | 1 | 1 | 1.14 | 7/14 bit-exact, 0 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 6.82 |
+| RND05 | 1 | 1 | 6.5 | 7/14 bit-exact, 0 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 7.06 |
+| RND06 | 1 | 1 | 26.6 | 7/14 bit-exact, 0 property | - | 26.70 | 26.70 (CORA) [c] | 1.00 |
+| SRNA01 | 1 | 1 | 0.473 | 26/40 bit-exact, 4 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
+| SRA01 | 1 | 1 | 0.204 | 31/45 bit-exact, 4 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
+| SRA02 | 1 | 1 | 0.102 | 40/56 bit-exact, 5 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
+| SRA03 | 1 | 1 | 0.178 | 40/56 bit-exact, 5 property | - | 27.4 | 1.79 (JuliaReach) | 10.1 |
+| SRA04 | 1 | 1 | 0.484 | 32/46 bit-exact, 4 property | - | 39.05 | 39.05 (CORA) | 80.7 |
+| SRA05 | 1 | 1 | 0.464 | 40/56 bit-exact, 5 property | - | 67.33 | 67.33 (CORA) | 145 |
+| SRA06 | 1 | 1 | 0.472 | 40/56 bit-exact, 5 property | - | 71.46 | 71.46 (CORA) | 151 |
+| SRA07 | 1 | 1 | 2.49 | 48/67 bit-exact, 7 property | - | 120 | 120 (CORA) | 48.2 |
+| SRA08 | 1 | 1 | 5.27 | 48/67 bit-exact, 7 property | - | 239 | 239 (CORA) | 45.4 |
+| SRU01 | 0 | 0 | 0.413 | 33/47 bit-exact, 4 property | - | 25.86 | 11.79 (JuliaReach) | 28.5 |
+| SRU02 | 0 | 0 | 5.93 | 48/67 bit-exact, 7 property | - | 244 | 20 (JuliaReach) | 3.37 |
+| DTN01 | 1 | 1 | 0.508 | 23/36 bit-exact, 4 property | - | 9.69 | 9.69 (CORA) [a] | 19.1 |
+| DTN02 | 1 | 1 | 0.618 | 23/36 bit-exact, 4 property | - | 10.43 | 10.43 (CORA) [a] | 16.9 |
+| DTN03 | 1 | 1 | 0.914 | 22/35 bit-exact, 4 property | - | 10.27 | 10.27 (CORA) [a] | 11.2 |
+| DTN04 | 1 | 1 | 19.4 | 23/36 bit-exact, 4 property | - | 48.29 | 48.29 (CORA) [a] | 2.49 |
+| DTN05 | 1 | 1 | 35.5 | 23/36 bit-exact, 4 property | - | 90.76 | 90.76 (CORA) [a] | 2.56 |
+| DTN06 | 1 | 1 | 110 | 24/37 bit-exact, 4 property | - | 227 | 227 (CORA) [a] | 2.06 |
 | PLAA01_BND42 | 1 | 1 | 10.5 | 25/35 bit-exact, 7 property | - | 25.02 | 25.02 (CORA) | 2.38 |
 | PLAA01_BND50 | 1 | 1 | 4.19 | 25/35 bit-exact, 7 property | - | 7.77 | 7.77 (CORA) | 1.85 |
 | PLAD01_BND30 | 1 | 1 | 0.306 | 11/17 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.2 |
 | PLAD01_BND42 | 1 | 1 | 0.066 | 11/17 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.76 |
 | PLAN01 | 1 (script: 0) | 0 | 47.9 | 34/45 bit-exact, 8 property | 173 | 162 | 162 (CORA) | - |
-| GRBX01 | 1 | 1 | 0.03 | 34/52 bit-exact, 12 property | - | 2.28 | 2.28 (CORA) | 76.0 |
-| GRBX02 | 1 | 1 | 0.037 | 35/56 bit-exact, 12 property | - | 2.44 | 2.44 (CORA) | 65.9 |
+| GRBX01 | 1 | 1 | 0.03 | 34/52 bit-exact, 10 property | - | 2.28 | 2.28 (CORA) | 76.0 |
+| GRBX02 | 1 | 1 | 0.037 | 35/56 bit-exact, 10 property | - | 2.44 | 2.44 (CORA) | 65.9 |
 | BRKDC01 | 1 | 1 | 0.037 | 6/12 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.70 |
-| BRKNC01 | 1 | 1 | 4.83 | 35/52 bit-exact, 9 property | - | 32.07 | 0.17 (JuliaReach) | 0.035 |
-| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.001 | 28/44 bit-exact, 12 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
+| BRKNC01 | 1 | 1 | 4.83 | 35/52 bit-exact, 7 property | - | 32.07 | 0.17 (JuliaReach) | 0.035 |
+| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.001 | 28/44 bit-exact, 10 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
 
 [a] DTN01-06: JuliaReach's ARCH-COMP 2025 repeatability code (0.005-0.127 s) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %.
 
@@ -342,19 +347,21 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TRAF22 | 1 | 1 | 0.919 | 18/28 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
-| SPRE22 | 1 | 1 | 0.972 | 37/57 bit-exact, 10 property | 34.3 | 37 | 37 (CORA) | 38.1 |
-| ROBE25 (1) | 1 | 1 | 29.1 | 9/20 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
-| ROBE25 (2) | 1 | 1 | 437 | 9/20 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
-| ROBE25 (3) | 1 | 1 | 93.8 | 9/20 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
-| CVDP23 | 1 | 1 | 58.6 | 36/70 bit-exact, 17 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
-| LALO20 W001 | 1 | 1 | 2.07 | 9/20 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
-| LALO20 W005 | 1 | 1 | 14.3 | 9/20 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
-| LALO20 W01 | 1 | 1 | 526 | 6/25 bit-exact, 5 property | 208 | 248 | 248 (CORA) [c] | 0.47 |
-| TSPS25 | 1 | 1 | 65 | 19/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
-| LOVO25 | 1 | 1 [e] | 3.72 | 30/76 bit-exact, 18 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
+| TRAF22 | 1 | 1 | 0.93 | 19/25 bit-exact, 1 property | 138 | 152 | 152 (CORA) [a] | 163 |
+| SPRE22 | 1 | 1 [f] | 2.6 | 39/55 bit-exact, 5 property | 34.3 | 37 | 37 (CORA) | 14.2 |
+| ROBE25 (1) | 1 | 1 | 29.1 | 11/20 bit-exact, 3 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
+| ROBE25 (2) | 1 | 1 | 437 | 11/20 bit-exact, 3 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
+| ROBE25 (3) | 1 | 1 | 93.8 | 11/20 bit-exact, 3 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
+| CVDP23 | 1 | 1 | 58.6 | 39/70 bit-exact, 11 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
+| LALO20 W001 | 1 | 1 | 2.07 | 11/20 bit-exact, 3 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
+| LALO20 W005 | 1 | 1 | 14.3 | 11/20 bit-exact, 3 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
+| LALO20 W01 | 1 | 0 | 529 | 8/25 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.47 |
+| TSPS25 | 1 | 1 | 65 | 20/32 bit-exact, 4 property | 312 | 299 | 299 (CORA) | 4.60 |
+| LOVO25 | 1 | 1 [e] | 3.72 | 33/76 bit-exact, 12 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
 
 [a] TRAF22: JuliaReach's ARCH-COMP 2025 repeatability code (32 s) holds the disturbances w constant (w' = 0), where the report lets them vary arbitrarily over time.
+
+[f] SPRE22: the region step needs the time steps 0.05 / 0.025 / 0.05 (the script's 0.2 / 0.05 / 0.2 fail its region check); with `CORACPP_ERROR_BOUND=loop` (CORA's loop) it runs the script's steps in 0.94 s.
 
 [b] ROBE25: KeYmaera X (0.2 s) proves that x + y + z is preserved, not the width bound.
 
@@ -388,7 +395,7 @@ digits, as do the boxes of the first and the last set. ARCH26 defines the same s
 benchmark's Python script, which neither CORA's script nor CORA.cpp runs.
 
 **SPRE22** is the nonlinear spacecraft rendezvous with the passive mode entered for t in [120, 150]
-(`rendezvous_nonlinear_passive_nondet.m`), nondetGuard with PCA, time steps 0.2 / 0.05 / 0.2. CORA
+(`rendezvous_nonlinear_passive_nondet.m`), nondetGuard with PCA, time steps 0.2 / 0.05 / 0.2 in CORA (CORA.cpp's region step: 0.05 / 0.025 / 0.05, [f]). CORA
 checks the flow across the guard x = -100 by a Taylor model, CORA.cpp by a second-order Taylor form,
 which agrees for this guard (its flow x' = vx is linear; docs/cora-differences.md). MATLAB CORA v2026.1.0 (R2024b,
 this machine) verifies it in 34.3 s with the same three branches (559, 830 and 415 sets, the same
@@ -544,33 +551,33 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Unicycle reach | V | V | 0.41 | 27/54 bit-exact, 5 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 17.3 |
-| Unicycle reach, with the report's disturbance w | V | V | 0.4 | 27/54 bit-exact, 5 property | - | 8.015 | 7.093 (JuliaReach) | 17.7 |
-| ACC safe-distance | V | V | 0.24 | 27/60 bit-exact, 10 property | 4.2 | 3.176 | 0.492 (JuliaReach) [a] | 2.05 |
-| TORA remain | V | V | 1.22 | 27/61 bit-exact, 11 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.34 |
-| TORA reach-tanh | V | V | 0.15 | 27/60 bit-exact, 10 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
-| TORA reach-sigmoid | V | V | 0.28 | 27/61 bit-exact, 11 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
-| Single Pendulum reach | V | V | 0.041 | 27/60 bit-exact, 10 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
-| Double Pendulum less-robust | V (CORA: U) | V | 44 | 28/56 bit-exact, 6 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.53 |
-| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.14 | 27/54 bit-exact, 5 property | 5.06 | 5.604 | - | - |
-| Double Pendulum more-robust | F | F | 0.11 | 27/60 bit-exact, 10 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
-| Airplane continuous | F | F | 0.53 | 27/60 bit-exact, 10 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
-| VCAS middle-19.5 | V | V | 0.0034 | 8/24 bit-exact, 3 property | 0.88 | 0.215 | 0.215 (CORA) [e] | 62.5 |
-| VCAS middle-22.5 | V | V | 0.0035 | 8/24 bit-exact, 3 property | 0.16 | 0.129 | 0.129 (CORA) [e] | 36.5 |
-| VCAS middle-25.5 | F | F | 0.0011 | 3/10 bit-exact, 0 property | 0.048 | 0.065 | 0.030 (CROWN-Reach) [e] | 28.3 |
-| VCAS middle-28.5 | F | F | 0.00098 | 3/10 bit-exact, 0 property | 0.048 | 0.064 | 0.034 (CROWN-Reach) [e] | 34.8 |
-| VCAS worst-19.5 | V | V | 0.0035 | 8/24 bit-exact, 3 property | 0.11 | 0.118 | 0.118 (CORA) | 33.9 |
-| VCAS worst-22.5 | F | F | 0.0010 | 3/10 bit-exact, 0 property | 0.048 | 0.061 | 0.061 (CORA) | 58.1 |
-| VCAS worst-25.5 | F | F | 0.0010 | 3/10 bit-exact, 0 property | 0.047 | 0.042 | 0.030 (CROWN-Reach) | 29.7 |
-| VCAS worst-28.5 | F | F | 0.0010 | 3/10 bit-exact, 0 property | 0.047 | 0.032 | 0.032 (CORA) | 31.7 |
-| Attitude Control avoid | V | V | 0.42 | 27/62 bit-exact, 11 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
-| QUAD reach | V | V | 1.70 | 28/62 bit-exact, 11 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
-| Docking constraint | U | U | 4.59 | 20/54 bit-exact, 11 property | 594 [m] | 95.038 | - [f] | - |
-| Docking constraint, polytope and splitting | U (script) | V | 157 | 27/60 bit-exact, 10 property | - | 95.038 (U) | - [f] | - |
-| NAV standard | V | V | 13.3 | 33/63 bit-exact, 7 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
-| NAV robust | V | V | 0.36 | 32/61 bit-exact, 6 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
-| CartPole* reach | V | V | 2.09 | 28/62 bit-exact, 11 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
-| CartPole reach, the report's set | - | V | 37 | 28/62 bit-exact, 11 property | - | - | - [g] | - |
+| Unicycle reach | V | V | 0.41 | 27/54 bit-exact, 3 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 17.3 |
+| Unicycle reach, with the report's disturbance w | V | V | 0.4 | 27/54 bit-exact, 3 property | - | 8.015 | 7.093 (JuliaReach) | 17.7 |
+| ACC safe-distance | V | V | 0.24 | 27/60 bit-exact, 8 property | 4.2 | 3.176 | 0.492 (JuliaReach) [a] | 2.05 |
+| TORA remain | V | V | 1.22 | 28/61 bit-exact, 8 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.34 |
+| TORA reach-tanh | V | V | 0.15 | 27/60 bit-exact, 8 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
+| TORA reach-sigmoid | V | V | 0.28 | 28/61 bit-exact, 8 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
+| Single Pendulum reach | V | V | 0.041 | 27/60 bit-exact, 8 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
+| Double Pendulum less-robust | V (CORA: U) | V | 44 | 28/56 bit-exact, 4 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.53 |
+| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.14 | 27/54 bit-exact, 3 property | 5.06 | 5.604 | - | - |
+| Double Pendulum more-robust | F | F | 0.11 | 27/60 bit-exact, 8 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
+| Airplane continuous | F | F | 0.53 | 27/60 bit-exact, 8 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
+| VCAS middle-19.5 | V | V | 0.0034 | 5/24 bit-exact, 4 property | 0.88 | 0.215 | 0.215 (CORA) [e] | 62.5 |
+| VCAS middle-22.5 | V | V | 0.0035 | 5/24 bit-exact, 4 property | 0.16 | 0.129 | 0.129 (CORA) [e] | 36.5 |
+| VCAS middle-25.5 | F | F | 0.0011 | 0/10 bit-exact, 1 property | 0.048 | 0.065 | 0.030 (CROWN-Reach) [e] | 28.3 |
+| VCAS middle-28.5 | F | F | 0.00098 | 0/10 bit-exact, 1 property | 0.048 | 0.064 | 0.034 (CROWN-Reach) [e] | 34.8 |
+| VCAS worst-19.5 | V | V | 0.0035 | 5/24 bit-exact, 4 property | 0.11 | 0.118 | 0.118 (CORA) | 33.9 |
+| VCAS worst-22.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.048 | 0.061 | 0.061 (CORA) | 58.1 |
+| VCAS worst-25.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.047 | 0.042 | 0.030 (CROWN-Reach) | 29.7 |
+| VCAS worst-28.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.047 | 0.032 | 0.032 (CORA) | 31.7 |
+| Attitude Control avoid | V | V | 0.42 | 27/62 bit-exact, 9 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
+| QUAD reach | V | V | 1.70 | 28/62 bit-exact, 9 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
+| Docking constraint | U | U | 4.59 | 20/54 bit-exact, 9 property | 594 [m] | 95.038 | - [f] | - |
+| Docking constraint, polytope and splitting | U (script) | V | 157 | 27/60 bit-exact, 8 property | - | 95.038 (U) | - [f] | - |
+| NAV standard | V | V | 13.3 | 33/63 bit-exact, 5 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
+| NAV robust | V | V | 0.36 | 32/61 bit-exact, 4 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
+| CartPole* reach | V | V | 2.09 | 28/62 bit-exact, 9 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
+| CartPole reach, the report's set | - | V | 37 | 28/62 bit-exact, 9 property | - | - | - [g] | - |
 
 [a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback, as the report states, instead of sample-and-hold control.
 
@@ -788,9 +795,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 <!-- BEGIN bit-exact -->
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
-| ACC-safe-distance | 27/60 | 33 | 11 |
-| Airplane-continuous | 27/60 | 33 | 11 |
-| Attitude_Control-avoid | 27/62 | 35 | 15 |
+| ACC-safe-distance | 30/60 | 30 | 11 |
+| Airplane-continuous | 30/60 | 30 | 11 |
+| Attitude_Control-avoid | 30/62 | 32 | 15 |
 | BRKDC01 | 6/12 | 6 | 5 |
 | BRKNC01 | 35/52 | 17 | 10 |
 | BRKNP01 | 28/44 | 16 | 10 |
@@ -800,20 +807,20 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF01 | 3/8 | 5 | 4 |
 | CBF02 | 3/8 | 5 | 4 |
 | CBF03 | 3/8 | 5 | 4 |
-| CVDP23 | 36/70 | 34 | 11 |
-| CartPole-reach | 28/62 | 34 | 11 |
-| CartPole-reach-report | 28/62 | 34 | 11 |
+| CVDP23 | 39/70 | 31 | 11 |
+| CartPole-reach | 31/62 | 31 | 11 |
+| CartPole-reach-report | 31/62 | 31 | 11 |
 | DTN01 | 23/36 | 13 | 6 |
 | DTN02 | 23/36 | 13 | 6 |
 | DTN03 | 22/35 | 13 | 6 |
 | DTN04 | 23/36 | 13 | 6 |
 | DTN05 | 23/36 | 13 | 6 |
 | DTN06 | 24/37 | 13 | 6 |
-| Docking-constraint | 20/54 | 34 | 9 |
-| Docking-constraint-polygon | 27/60 | 33 | 11 |
-| Double_Pendulum-less-robust | 28/56 | 28 | 11 |
-| Double_Pendulum-less-robust-script | 27/54 | 27 | 11 |
-| Double_Pendulum-more-robust | 27/60 | 33 | 11 |
+| Docking-constraint | 23/54 | 31 | 9 |
+| Docking-constraint-polygon | 30/60 | 30 | 11 |
+| Double_Pendulum-less-robust | 31/56 | 25 | 11 |
+| Double_Pendulum-less-robust-script | 30/54 | 24 | 11 |
+| Double_Pendulum-more-robust | 30/60 | 30 | 11 |
 | GRBX01 | 34/52 | 18 | 10 |
 | GRBX02 | 35/56 | 21 | 10 |
 | HEAT01 | 3/8 | 5 | 4 |
@@ -824,19 +831,19 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ISSC01_ISU02 | 3/8 | 5 | 4 |
 | ISSF01_ISS01 | 3/8 | 5 | 4 |
 | ISSF01_ISU01 | 3/8 | 5 | 4 |
-| LALO20_W001 | 9/20 | 11 | 5 |
-| LALO20_W005 | 9/20 | 11 | 5 |
-| LALO20_W01 | 6/25 | 19 | 5 |
-| LOVO25 | 30/76 | 46 | 12 |
-| LOVO25-script | 33/83 | 50 | 14 |
-| NAV-robust | 32/61 | 29 | 15 |
-| NAV-standard | 33/63 | 30 | 15 |
+| LALO20_W001 | 11/20 | 9 | 5 |
+| LALO20_W005 | 11/20 | 9 | 5 |
+| LALO20_W01 | 8/25 | 17 | 5 |
+| LOVO25 | 33/76 | 43 | 12 |
+| LOVO25-script | 36/83 | 47 | 14 |
+| NAV-robust | 35/61 | 26 | 15 |
+| NAV-standard | 36/63 | 27 | 15 |
 | PLAA01_BND42 | 25/35 | 10 | 9 |
 | PLAA01_BND50 | 25/35 | 10 | 9 |
 | PLAD01_BND30 | 11/17 | 6 | 5 |
 | PLAD01_BND42 | 11/17 | 6 | 5 |
 | PLAN01 | 34/45 | 11 | 9 |
-| QUAD-reach | 28/62 | 34 | 11 |
+| QUAD-reach | 31/62 | 31 | 11 |
 | RAND01 | 7/13 | 6 | 4 |
 | RAND02 | 7/13 | 6 | 4 |
 | RND01 | 7/13 | 6 | 4 |
@@ -845,10 +852,10 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | RND04 | 7/14 | 7 | 4 |
 | RND05 | 7/14 | 7 | 4 |
 | RND06 | 7/14 | 7 | 4 |
-| ROBE25_1 | 9/20 | 11 | 5 |
-| ROBE25_2 | 9/20 | 11 | 5 |
-| ROBE25_3 | 9/20 | 11 | 5 |
-| SPRE22 | 37/57 | 20 | 11 |
+| ROBE25_1 | 11/20 | 9 | 5 |
+| ROBE25_2 | 11/20 | 9 | 5 |
+| ROBE25_3 | 11/20 | 9 | 5 |
+| SPRE22 | 39/55 | 16 | 11 |
 | SRA01 | 31/45 | 14 | 8 |
 | SRA02 | 40/56 | 16 | 10 |
 | SRA03 | 40/56 | 16 | 10 |
@@ -860,14 +867,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRNA01 | 26/40 | 14 | 7 |
 | SRU01 | 33/47 | 14 | 8 |
 | SRU02 | 48/67 | 19 | 11 |
-| Single_Pendulum-reach | 27/60 | 33 | 11 |
-| TORA-reach-sigmoid | 28/61 | 33 | 11 |
-| TORA-reach-tanh | 27/60 | 33 | 11 |
-| TORA-remain | 28/61 | 33 | 11 |
-| TRAF22 | 18/28 | 10 | 7 |
-| TSPS25 | 19/32 | 13 | 6 |
-| Unicycle-reach | 27/54 | 27 | 11 |
-| Unicycle-reach-disturbance | 27/54 | 27 | 11 |
+| Single_Pendulum-reach | 30/60 | 30 | 11 |
+| TORA-reach-sigmoid | 31/61 | 30 | 11 |
+| TORA-reach-tanh | 30/60 | 30 | 11 |
+| TORA-remain | 31/61 | 30 | 11 |
+| TRAF22 | 19/25 | 6 | 8 |
+| TSPS25 | 20/32 | 12 | 6 |
+| Unicycle-reach | 30/54 | 24 | 11 |
+| Unicycle-reach-disturbance | 30/54 | 24 | 11 |
 | VCAS-middle-19.5 | 8/24 | 16 | 4 |
 | VCAS-middle-22.5 | 8/24 | 16 | 4 |
 | VCAS-middle-25.5 | 3/10 | 7 | 0 |

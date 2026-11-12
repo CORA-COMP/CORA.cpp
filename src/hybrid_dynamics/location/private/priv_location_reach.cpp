@@ -80,7 +80,8 @@ class BundleSteps {
             nonlinear_ = {sys,
                           U,
                           {dt, alg.taylor_terms, alg.zonotope_order, alg.tensor_order,
-                           alg.error_order, alg.intermediate_order, alg.linear_step}};
+                           alg.error_order, alg.intermediate_order, alg.linear_step,
+                           alg.error_bound}};
             return;
         }
         if (const auto *sys = std::get_if<LinearSys>(&loc.flow())) {
@@ -210,6 +211,8 @@ bool aux_specs_hold(const std::vector<Specification> &specs, const Set &S) {
         if (!spec.check(S)) return false;
     return true;
 }
+
+// The continuous part -----------------------------------------------------------------------------
 
 /// The continuous part: the sets from t0 until they leave the invariant or reach t_final; false
 /// in the second member if a specification is violated (the sets end with the violating one).
