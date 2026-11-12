@@ -1555,6 +1555,7 @@ void bind_zonotope(py::module_ &m) {
                     "The indices (0-based) of the zonotopes that no other zonotope contains")
         // the simplex around it, and the matrix zonotope of its columns
         .def("simplex", &Zonotope::simplex, "A simplex (as a Polytope) that contains the zonotope")
+        .def("polytope", &Zonotope::polytope, "The same set in halfspace form")
         .def("mat_zonotope", &Zonotope::mat_zonotope,
              "The same set as a matrix zonotope of n x 1 matrices")
         .def_static("stack", &Zonotope::stack, py::arg("zonotopes"),

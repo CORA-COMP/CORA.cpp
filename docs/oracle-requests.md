@@ -166,6 +166,21 @@ layer behind them (`reduceAdaptive`, `restructure`, `quadMapMixed`, `mtimesInter
 oracle serves none of them on its own. `linReachPolyAdaptive` (one step with its tuning) is not tested; the
 tuning formulas are the lin-adaptive ones (`dHused` aside).
 
+## Zonotope quadMap and the facets of vertex polytopes (PR "oracle/group-b-1")
+
+`zonotope.quadMap` is served (`Zonotope.quadMap`), but it is not CORA's map: CORALean applies
+`PolyZonotope.quadMap` to the zonotope seen as a polynomial zonotope, which returns `(n + m + 1)^2`
+generators and the center as a generator (an enclosure, looser than CORA's `1 + m + m(m + 1)/2`
+generators with the center kept). CORALean has CORA's structure only over the reals
+(`Zonotope.quadMapTri`, `QuadMapTriOuter`); a float `quadMapTri` with its enclosure theorem is the
+open work (more than a day), after which CORA.cpp's `quad_map` is tested bit for bit and the 13
+instances that use it (`coverage/benchmarks.md`) move to `oracle`. Until then `contSet/zonotope/quadMap`
+stays `property`.
+
+`polytope.constraints` of a vertex polytope (CORALean's `VPolytope.hPolytope`, qhull in CORA) has no
+op; `test_lean_polytope_constraints` compares the halfspace form only, which is what the benchmarks
+build.
+
 ## Polynomial zonotopes and alg "poly" (PR "nln-poly")
 
 The pinned oracle (`oracle-20261112-05b8e9279`) serves no polynomial zonotope operation and no

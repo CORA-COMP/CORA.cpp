@@ -1,4 +1,4 @@
-"""test_zonotope_conversions - the zonotope filter, the simplex and the matrix zonotope conversions.
+"""test_zonotope_conversions - the zonotope filter, simplex, polytope, vertices and matrix zonotope.
 
 CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 Authors:       Claude Sonnet 5.5
@@ -10,7 +10,9 @@ Reviewed:      ---
 # CORA: contSet/@zonotope/filterOut.m
 # CORA: contSet/@zonotope/generators.m
 # CORA: contSet/@zonotope/matZonotope.m
+# CORA: contSet/@zonotope/polytope.m
 # CORA: contSet/@zonotope/simplex.m
+# CORA: contSet/@zonotope/vertices_.m
 # CORA: matrixSet/@intervalMatrix/matZonotope.m
 # CORA: matrixSet/@matZonotope/expmIndMixed.m
 # CORA: matrixSet/@matZonotope/numgens.m
@@ -61,6 +63,17 @@ class ZonotopeConversions(unittest.TestCase):
         self.assertEqual(Z.dim, 3)
         np.testing.assert_array_equal(Z.generators, [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]])
         self.assertEqual(cora.MatZonotope(np.zeros((2, 2))).num_generators, 0)
+
+    def test_polytope_and_vertices(self):
+        # the rectangle [0, 2] x [-1, 5]: four facets and four corners, counter-clockwise
+        Z = zonotope([1.0, 2.0], [[1.0, 0.0], [0.0, 3.0]])
+        Q = Z.polytope()
+        self.assertEqual(Q.A.shape, (4, 2))
+        np.testing.assert_allclose(sorted(Q.b.ravel()), [0.0, 1.0, 2.0, 5.0])
+        corners = Z.vertices()[0]
+        self.assertEqual(corners.shape, (4, 2))
+        self.assertTrue(Q.contains(corners.T))
+        np.testing.assert_allclose(sorted(map(tuple, corners)), [(0, -1), (0, 5), (2, -1), (2, 5)])
 
     def test_simplex_and_mat_zonotope(self):
         # the simplex has n + 1 facets and contains the zonotope
