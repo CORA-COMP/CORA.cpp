@@ -36,11 +36,28 @@ namespace cora {
 
 // The products with the matrix --------------------------------------------------------------------
 
+/// What Krylov.lyapunovCertificateFloat accepts of a weight P of A: with `ok`, |e^{tA}| is at most
+/// sqrt(upper / lower) e^{rate t}, rate < 0.
+struct LyapunovCertificate {
+    bool ok = false;
+    double lower = 0, upper = 0, rate = 0;
+};
+
+/// What a matrix remembers of its weight: whether it was formed, the certificate, and how long the
+/// solve and the check took (seconds), shared by the copies of the matrix.
+struct LyapunovSlot {
+    bool formed = false;
+    LyapunovCertificate certificate;
+    double solve_seconds = 0, check_seconds = 0;
+    const char *method = "none"; ///< the weight that was accepted ("sign" or "schur")
+};
+
 /// The products y = M x of a square matrix with host vectors, summed in CORALean's order.
 struct HostMatVec {
     int64_t n = 0;
     std::shared_ptr<const SparseMatrix> M;
     mutable std::optional<double> quad_;
+    std::shared_ptr<LyapunovSlot> lyapunov_slot = std::make_shared<LyapunovSlot>();
 
     void apply(const double *x, double *y) const { M->matvec_down(x, y); }
     /// CORALean's Krylov.quadBoundUp of the matrix, formed on the first call.
@@ -48,6 +65,9 @@ struct HostMatVec {
         if (!quad_) quad_ = M->quad_bound_up();
         return *quad_;
     }
+    /// A certified Lyapunov weight of the matrix, solved and checked on the first call (see
+    /// priv_krylov_lyapunov.cpp); `ok` is false if the check fails.
+    const LyapunovCertificate &lyapunov() const;
 };
 
 /// The products of the state matrix of the system: the sparse A, or the dense one on the host.
@@ -147,6 +167,46 @@ KrylovSubspace priv_krylov_subspace(const HostMatVec &A, const std::vector<doubl
 /// Fails with not_converged if the subspace does not meet the tolerance.
 void priv_krylov_require_ok(const KrylovSubspace &S, double krylov_error, const char *caller);
 
+// The Lyapunov weight of the carried error --------------------------------------------------------
+
+/// Krylov.lyapunovCertificateFloat of the square sparse A with the weight P and the factor L of
+/// P - aI (row-major n x n, any origin: the weight is checked, not trusted), at nearest.
+LyapunovCertificate priv_lyapunov_certificate(const SparseMatrix &A, const std::vector<double> &P,
+                                              const std::vector<double> &L, double a);
+
+/// What the solve of the weight produced: P (row-major, symmetric), a factor L of P - aI, a.
+struct LyapunovWeight {
+    std::vector<double> P, L;
+    double a = 0;
+};
+
+/// How the weight A'P + PA = -I is solved: by the matrix sign function iteration (matrix products,
+/// all threads) or by Bartels-Stewart on the real Schur form (one thread, slower, more robust).
+enum class LyapunovMethod { sign, schur };
+
+/// The weight of the stable A by the method: for the Schur form P is symmetrized and P - aI
+/// factored by Cholesky with a just below the smallest eigenvalue (empty if there is none).
+LyapunovWeight priv_lyapunov_solve(const SparseMatrix &A, LyapunovMethod method);
+
+/// Krylov.restartedErrorBoundFloat step by step: the 2-norm error of restarted windows in the
+/// weight of an accepted certificate, beta_{j+1} = e^{rate dt_j} beta_j + sqrt(upper) eps_j, at
+/// nearest.
+class RestartedBound {
+  public:
+    explicit RestartedBound(const LyapunovCertificate &c);
+    /// beta after the window of length dt with the local 2-norm error eps.
+    void step(double dt, double eps);
+    /// The bound after the windows so far: beta / sqrt(lower), rounded up.
+    double bound() const;
+    /// The bound at every time of the next window of local error eps (the rate is negative): the
+    /// decay of beta within it is not counted.
+    double window_bound(double eps) const;
+
+  private:
+    LyapunovCertificate c_;
+    double root_ = 0, scale_ = 0, beta_ = 0;
+};
+
 // Restart windows ---------------------------------------------------------------------------------
 
 /// One restart window of e^{tA} v: its subspace, the steps it is valid for, and the error bound
@@ -167,11 +227,17 @@ class KrylovWindows {
     bool done() const { return done_ >= steps_; }
     /// The next window; fails with not_converged if not even one step meets the tolerance.
     KrylovWindow next();
+    /// Whether the error is carried in a Lyapunov weight (also), and the certificate that was
+    /// tried (none if the Gershgorin carry could not matter over the horizon).
+    bool weighted() const { return weighted_.has_value(); }
+    const std::optional<LyapunovCertificate> &certificate() const { return certificate_; }
 
   private:
     HostMatVec A_;
     std::vector<double> start_;
     double dt_, tol_, mu_A_, error_ = 0;
+    std::optional<RestartedBound> weighted_;
+    std::optional<LyapunovCertificate> certificate_;
     int64_t steps_, done_ = 0, first_order_;
     int step_;
     Tensor like_;

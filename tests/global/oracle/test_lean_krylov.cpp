@@ -22,6 +22,8 @@
 #include "cora/global/oracle/krylov.h"
 #include "oracle_testing.h"
 
+#include <tuple>
+
 using namespace cora;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -100,6 +102,37 @@ std::vector<Problem> aux_problems(test::oracle::Random &rnd) {
         if (i + 1 < 30) chain[size_t(i * 30 + i + 1)] = 1.0 + 0.01 * rnd.scalar();
     }
     out.push_back({"chain", Tensor::from_data(chain, {30, 30}), rnd.vector(30)});
+    return out;
+}
+
+/// The stable systems of the weight: random shifted left, a non-normal one, a chain with a 2 x 2
+/// block.
+std::vector<Tensor> aux_stable(test::oracle::Random &rnd) {
+    std::vector<Tensor> out;
+    std::vector<double> a = rnd.matrix(7, 7).data();
+    for (int64_t i = 0; i < 7; ++i) a[size_t(i * 7 + i)] -= 4.0;
+    out.push_back(Tensor::from_data(a, {7, 7}));
+    std::vector<double> nn(36, 0.0);
+    for (int64_t i = 0; i < 6; ++i)
+        for (int64_t j = i; j < 6; ++j) nn[size_t(i * 6 + j)] = i == j ? -1.0 - i : 30.0;
+    out.push_back(Tensor::from_data(nn, {6, 6}));
+    // complex eigenvalues: rotation blocks with a negative real part, coupled upward
+    std::vector<double> rot(64, 0.0);
+    for (int64_t b = 0; b < 4; ++b) {
+        const int64_t i = 2 * b;
+        rot[size_t(i * 8 + i)] = rot[size_t((i + 1) * 8 + i + 1)] = -0.5;
+        rot[size_t(i * 8 + i + 1)] = 2.0 + b, rot[size_t((i + 1) * 8 + i)] = -2.0 - b;
+        if (b < 3) rot[size_t(i * 8 + i + 2)] = 5.0;
+    }
+    out.push_back(Tensor::from_data(rot, {8, 8}));
+    // row-dominant with a sparse pattern and off-diagonals of both signs
+    std::vector<double> dom(81, 0.0);
+    for (int64_t i = 0; i < 9; ++i) {
+        dom[size_t(i * 9 + i)] = -3.0 - 0.1 * i;
+        dom[size_t(i * 9 + (i + 1) % 9)] = 1.0 + 0.05 * i;
+        dom[size_t(i * 9 + (i + 4) % 9)] = -0.7;
+    }
+    out.push_back(Tensor::from_data(dom, {9, 9}));
     return out;
 }
 
@@ -222,6 +255,64 @@ int main() {
             }
         }
     }
+
+    // the Lyapunov weight: CORA.cpp's solve, checked by both, and the error carried in it
+    test::oracle::run("krylov.lyapunovCertificate", [](test::oracle::Random &rnd) {
+        for (const Tensor &A : aux_stable(rnd)) {
+            const int64_t n = A.shape()[0];
+            const SparseMatrix S = SparseMatrix::from_dense(A);
+            for (const LyapunovMethod method : {LyapunovMethod::schur, LyapunovMethod::sign}) {
+                const LyapunovWeight w = priv_lyapunov_solve(S, method);
+                // the Schur solve always has a weight, the sign iteration where it converges
+                if (method == LyapunovMethod::sign && w.P.empty()) continue;
+                test::check(!w.P.empty(), "the solve of the weight is definite");
+                const Tensor P = Tensor::from_data(w.P, {n, n}), L = Tensor::from_data(w.L, {n, n});
+                // the accepted weight, one that is not symmetric and one the equation fails for
+                std::vector<double> lop = w.P;
+                lop[1] += 1e-9;
+                const Tensor Pskew = Tensor::from_data(lop, {n, n});
+                const Tensor identity = Tensor::eye(n);
+                for (const auto &[name, Pc, Lc, a] :
+                     {std::tuple{"solved", P, L, w.a}, std::tuple{"skew", Pskew, L, w.a},
+                      std::tuple{"identity", identity, identity * 0.5, 0.5}}) {
+                    // the oracle's check and CORA.cpp's, bit for bit
+                    const lean::KrylovCertificate r =
+                        lean::Krylov::lyapunov_certificate(A, Pc, Lc, a);
+                    const LyapunovCertificate c =
+                        priv_lyapunov_certificate(S, Pc.data(), Lc.data(), a);
+                    // the same bits of the verdict, the bounds and the rate
+                    const std::string what = std::to_string(n) + " " + name +
+                                             (method == LyapunovMethod::sign ? " sign" : "");
+                    if (std::string(name) == "solved" && method == LyapunovMethod::schur)
+                        test::check(c.ok, "the solved weight is accepted");
+                    test::oracle::check("ok " + what, c.ok, r.ok);
+                    test::oracle::check("lower " + what, c.lower, r.lower);
+                    test::oracle::check("upper " + what, c.upper, r.upper);
+                    test::oracle::check("rate " + what, c.rate, r.rate);
+                }
+            }
+        }
+    });
+    test::oracle::run("krylov.restartedBound", [](test::oracle::Random &rnd) {
+        for (const Tensor &A : aux_stable(rnd)) {
+            const int64_t n = A.shape()[0];
+            const SparseMatrix S = SparseMatrix::from_dense(A);
+            const LyapunovWeight w = priv_lyapunov_solve(S, LyapunovMethod::schur);
+            const LyapunovCertificate c = priv_lyapunov_certificate(S, w.P, w.L, w.a);
+            const Tensor P = Tensor::from_data(w.P, {n, n}), L = Tensor::from_data(w.L, {n, n});
+            // five windows of different lengths and local errors
+            const std::vector<double> dt{0.1, 0.25, 0.5, 0.05, 2.0},
+                eps{1e-3, 2e-4, 5e-5, 1e-3, 1e-6};
+            const lean::KrylovRestarted r = lean::Krylov::restarted_bound(
+                A, P, L, w.a, Tensor::from_data(dt, {5, 1}), Tensor::from_data(eps, {5, 1}));
+            RestartedBound carried(c);
+            for (size_t j = 0; j < dt.size(); ++j) carried.step(dt[j], eps[j]);
+            const std::string what = std::to_string(n);
+            test::oracle::check("ok " + what, c.ok, r.ok);
+            test::oracle::check("windows ok " + what, c.ok, r.windows_ok);
+            test::oracle::check("bound " + what, carried.bound(), r.bound);
+        }
+    });
 
     return test::finish("lean krylov");
 }

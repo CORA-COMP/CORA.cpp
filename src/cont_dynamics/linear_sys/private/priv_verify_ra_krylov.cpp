@@ -108,11 +108,10 @@ class Stepper {
         const std::vector<double> c_inf = curvature.inf().data(), c_sup = curvature.sup().data();
         // the bound of the homogeneous part and of the integrand over this step
         double homogeneous = window.error * norms_.r0, integrand = window.error * norms_.input;
-        // what no finer step removes: the points of R0 and the error of the subspace
-        double floor = homogeneous;
+        // what no finer step removes: the points of R0, the error, the input integral's lower end
+        double floor = homogeneous, center_low = 0.0;
         for (size_t i = 0; i < current.size() && int64_t(i) <= m0_; ++i)
             floor += (i == 0) ? current[i] : std::abs(current[i]);
-        hopeless_ = dir_.strict ? dir_.limit - floor <= 0 : dir_.limit - floor < 0;
         for (size_t i = 0; i < current.size(); ++i) {
             const double lo = std::min(previous_[i], current[i]) + c_inf[i];
             const double hi = std::max(previous_[i], current[i]) + c_sup[i];
@@ -120,9 +119,14 @@ class Stepper {
             const bool signed_term = i == 0 || int64_t(i) == m0_ + 1;
             const double term = signed_term ? hi : std::max(std::abs(lo), std::abs(hi));
             (int64_t(i) <= m0_ ? homogeneous : integrand) += term;
+            if (int64_t(i) == m0_ + 1) center_low = lo;
         }
+        const double step_low = center_low + window.error * norms_.input;
+        floor += integral_low_ + dt_ * std::max(step_low, 0.0);
+        hopeless_ = dir_.strict ? dir_.limit - floor <= 0 : dir_.limit - floor < 0;
         const double bound = homogeneous + integral_ + dt_ * std::max(integrand, 0.0);
         integral_ += dt_ * integrand;
+        integral_low_ += dt_ * step_low;
         previous_ = current;
         return dir_.limit - bound;
     }
@@ -146,7 +150,7 @@ class Stepper {
     double dt_;
     int64_t ratio_;
     const alg::ReachAvoidKrylov &alg_;
-    double integral_ = 0.0;
+    double integral_ = 0.0, integral_low_ = 0.0;
     bool hopeless_ = false;
     size_t window_ = 0;
     int64_t left_ = 0;

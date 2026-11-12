@@ -34,6 +34,7 @@
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_krylov.h"
+#include "cont_dynamics/linear_sys/private/priv_krylov_rounding.h"
 
 #include <algorithm>
 #include <cfloat>
@@ -47,34 +48,6 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-// Rounding as CORALean --------------------------------------------------------------------------
-
-/// CORALean's `absolute`: `maximum a (-a)`, so that |0| is -0.
-double aux_absolute(double a) { return a <= -a ? -a : a; }
-
-/// CORALean's `maximum` (NaN stays).
-double aux_maximum(double a, double b) { return a <= b ? b : (b < a ? a : a + b); }
-
-/// CORALean's `half`: exact, NaN where the result is not normal.
-double aux_half(double a) {
-    const double r = a * 0.5;
-    if (r == 0.0 && a != 0.0) return std::numeric_limits<double>::quiet_NaN();
-    if (!(std::isfinite(r) && (r == 0.0 || std::abs(r) >= DBL_MIN)))
-        return std::numeric_limits<double>::quiet_NaN();
-    return r;
-}
-
-/// `sumUp f` of n terms: nested to the right, so summed from the last term, from zero.
-template <class F>
-double aux_sum(int64_t n, F f) {
-    double acc = 0.0;
-    for (int64_t i = n; i-- > 0;) {
-        const double term = f(i);
-        acc = term + acc;
-    }
-    return acc;
-}
 
 /// Whether every entry is zero.
 bool aux_is_zero(const std::vector<double> &x) {
@@ -95,8 +68,8 @@ double aux_h(const ArnoldiFloat &s, int64_t i, int64_t j) {
 
 double priv_krylov_norm_up(const std::vector<double> &x) {
     // sqrtUp of the squares of the magnitudes, summed from the last entry
-    return std::sqrt(aux_sum(int64_t(x.size()), [&](int64_t i) {
-        const double m = aux_absolute(x[size_t(i)]);
+    return std::sqrt(lean_sum(int64_t(x.size()), [&](int64_t i) {
+        const double m = lean_absolute(x[size_t(i)]);
         return m * m;
     }));
 }
@@ -127,7 +100,7 @@ void priv_arnoldi_extend(ArnoldiFloat &s, const HostMatVec &A, int64_t passes, d
             // 4.-7. w swept against v(1), ..., v(k+1), each h from the w the earlier ones left
             for (size_t j = 0; j <= k; ++j) {
                 const std::vector<double> &v = s.V[j];
-                h[j] = aux_sum(int64_t(n), [&](int64_t r) { return w[size_t(r)] * v[size_t(r)]; });
+                h[j] = lean_sum(int64_t(n), [&](int64_t r) { return w[size_t(r)] * v[size_t(r)]; });
                 for (size_t r = 0; r < n; ++r) {
                     const double product = h[j] * v[r];
                     w[r] = w[r] - product;
@@ -146,7 +119,7 @@ void priv_arnoldi_extend(ArnoldiFloat &s, const HostMatVec &A, int64_t passes, d
                     column[r] = term + column[r];
                 }
             }
-            for (size_t r = 0; r < n; ++r) column[r] = aux_absolute(w0[r] - column[r]);
+            for (size_t r = 0; r < n; ++r) column[r] = lean_absolute(w0[r] - column[r]);
             epsilon = priv_krylov_norm_up(column);
         }
         s.H.push_back(std::move(h));
@@ -161,25 +134,25 @@ double priv_hessenberg_quad_bound(const ArnoldiFloat &s, int64_t k) {
     if (k == 0) return 0.0;
     double bound = 0.0;
     for (int64_t i = k; i-- > 0;) {
-        const double other = aux_sum(k, [&](int64_t j) {
-            return j == i ? 0.0 : aux_absolute(aux_h(s, i, j)) + aux_absolute(aux_h(s, j, i));
+        const double other = lean_sum(k, [&](int64_t j) {
+            return j == i ? 0.0 : lean_absolute(aux_h(s, i, j)) + lean_absolute(aux_h(s, j, i));
         });
-        const double row = aux_h(s, i, i) + aux_half(other);
-        bound = i == k - 1 ? row : aux_maximum(row, bound);
+        const double row = aux_h(s, i, i) + lean_half(other);
+        bound = i == k - 1 ? row : lean_maximum(row, bound);
     }
     return bound;
 }
 
 KrylovBoundFn::KrylovBoundFn(const ArnoldiFloat &s, double mu_A, int64_t k) : s_(s), k_(k) {
-    mu_ = aux_maximum(0.0, aux_maximum(mu_A, priv_hessenberg_quad_bound(s, k)));
+    mu_ = lean_maximum(0.0, lean_maximum(mu_A, priv_hessenberg_quad_bound(s, k)));
     wn_ = priv_krylov_norm_up(s.V[size_t(k)]);
     // the residuals' share and the start vector's error
-    share_ = aux_sum(k, [&](int64_t j) { return s.residual[size_t(j)]; });
+    share_ = lean_sum(k, [&](int64_t j) { return s.residual[size_t(j)]; });
     std::vector<double> d(s.c.size());
     for (size_t r = 0; r < d.size(); ++r) {
         const double product = s.nu * s.V[0][r];
         const double diff = s.c[r] - product;
-        d[r] = aux_maximum(aux_absolute(diff), aux_absolute(diff));
+        d[r] = lean_maximum(lean_absolute(diff), lean_absolute(diff));
     }
     rho_ = priv_krylov_norm_up(d);
 }
@@ -188,12 +161,12 @@ double KrylovBoundFn::at(double t) const {
     // the decay product |w| Prod_{j<=k} |h_{j+1,j}| t / j, by ratios
     double decay = wn_;
     for (int64_t j = 0; j < k_; ++j) {
-        const double scaled = decay * aux_absolute(aux_h(s_, j + 1, j));
+        const double scaled = decay * lean_absolute(aux_h(s_, j + 1, j));
         const double times = scaled * t;
-        decay = times / aux_maximum(1.0, double(j + 1));
+        decay = times / lean_maximum(1.0, double(j + 1));
     }
     const double growth = std::exp(t * mu_);
-    const double inner = aux_absolute(s_.nu) * (decay + share_ * t);
+    const double inner = lean_absolute(s_.nu) * (decay + share_ * t);
     return growth * (inner + rho_);
 }
 

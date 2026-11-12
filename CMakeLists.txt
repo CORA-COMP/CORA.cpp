@@ -83,6 +83,7 @@ if(NOT MSVC)
   # and sum too, in its host loops and in the sparse products they call.
   set_source_files_properties("${CMAKE_SOURCE_DIR}/src/global/sparse_matrix.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_krylov_float.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_krylov_lyapunov.cpp"
                               PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
 endif()
 

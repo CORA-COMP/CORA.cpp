@@ -51,6 +51,12 @@ class SparseMatrix {
     /// `M_ii + (sum_{j != i} |M_ij| + |M_ji|) / 2` of the quadratic form, in CORALean's order.
     double quad_bound_up() const;
 
+    /// The compressed rows: row r holds the entries row_start()[r] .. row_start()[r + 1] - 1 of
+    /// columns() and values(), the columns ascending.
+    const std::vector<int64_t> &row_start() const noexcept { return row_start_; }
+    const std::vector<int64_t> &columns() const noexcept { return columns_; }
+    const std::vector<double> &values() const noexcept { return values_; }
+
     /// The transpose M'.
     SparseMatrix transpose() const;
 

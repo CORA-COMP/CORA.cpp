@@ -35,6 +35,15 @@ void aux_subspace(const Reply &r, KrylovSubspace &out) {
     out.bound = r.get<double>("bound");
 }
 
+KrylovCertificate aux_certificate(const Reply &r) {
+    KrylovCertificate out;
+    out.ok = r.get<bool>("ok");
+    out.lower = r.get<double>("lower");
+    out.upper = r.get<double>("upper");
+    out.rate = r.get<double>("rate");
+    return out;
+}
+
 } // namespace
 
 
@@ -113,6 +122,34 @@ KrylovWindows Krylov::windows(const cora::Tensor &A, const cora::Tensor &c, int 
         out.time_interval = r.get<std::vector<Zonotope>>("timeInterval");
         out.time_point = r.get<std::vector<Zonotope>>("timePoint");
     }
+    return out;
+}
+
+// The Lyapunov weight -----------------------------------------------------------------------------
+
+KrylovCertificate Krylov::lyapunov_certificate(const cora::Tensor &A, const cora::Tensor &P,
+                                               const cora::Tensor &L, double a) {
+    // the matrix, the weight, its factor and the shift
+    const Reply r =
+        ask("krylov.lyapunovCertificate",
+            {{"A", Tensor::from(A)}, {"P", Tensor::from(P)}, {"L", Tensor::from(L)}, {"a", a}});
+    return aux_certificate(r);
+}
+
+KrylovRestarted Krylov::restarted_bound(const cora::Tensor &A, const cora::Tensor &P,
+                                        const cora::Tensor &L, double a, const cora::Tensor &dt,
+                                        const cora::Tensor &eps) {
+    // as the certificate, with the lengths and local errors of the windows
+    const Reply r = ask("krylov.restartedBound", {{"A", Tensor::from(A)},
+                                                  {"P", Tensor::from(P)},
+                                                  {"L", Tensor::from(L)},
+                                                  {"a", a},
+                                                  {"dt", Tensor::from(dt)},
+                                                  {"eps", Tensor::from(eps)}});
+    KrylovRestarted out;
+    static_cast<KrylovCertificate &>(out) = aux_certificate(r);
+    out.windows_ok = r.get<bool>("windowsOk");
+    out.bound = r.get<double>("bound");
     return out;
 }
 

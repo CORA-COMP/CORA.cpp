@@ -1,16 +1,15 @@
 // priv_krylov_windows - a Krylov trajectory in restart windows, each with a certified bound
 //
 // The bound of Krylov.errorBoundFloat grows with e^{t mu}, mu = max(0, mu_A, mu_T) the Gershgorin
-// bounds of the quadratic forms of A and of the Hessenberg matrix T. On a long horizon mu_T alone
-// makes it useless (the heat equation of HEAT03 has mu_A = 0 and mu_T near 2: the bound at 40 is
-// 1e33 times the tolerance). The trajectory is cut into windows: Arnoldi restarts from the
-// approximate state at the start of a window, which is as long as the bound at its end stays
-// within the tolerance, and the error of that state is carried on by e^{t mu_A}
-// (||e^{sA} e|| <= e^{s mu_A} ||e||), so that at every time of the window
-//   ||e^{tA} v - |s| V e^{(t - t_w) T} e_1|| <= e^{(t - t_w) mu_A} E_w + bound_w(t - t_w)
-// with E_w the error of the state at the start. For a nonexpansive A that is the sum of the local
-// errors (CORALean's Krylov.restarted_error_le); CORALean has no float definition of the restart
-// (oracle debt, docs/oracle-requests.md).
+// bounds of the quadratic forms of A and of the Hessenberg matrix T, so the trajectory is cut into
+// windows: Arnoldi restarts from the approximate state at the start of a window, which is as long
+// as the bound at its end stays within the tolerance. The error E_w of that state is carried on by
+// e^{t mu_A} (||e^{sA} e|| <= e^{s mu_A} ||e||): at every time of the window the error is at most
+// e^{(t - t_w) mu_A} E_w + bound_w(t - t_w), the sum of the local errors for a nonexpansive A
+// (CORALean's Krylov.restarted_error_le). Where mu_A times the horizon exceeds 1 (RND02: 551, A
+// stable) the error is also carried in a certified Lyapunov weight (priv_krylov_lyapunov.cpp,
+// Krylov.restartedErrorBoundFloat) and the smaller of the two is reported. CORALean has no float
+// definition of the window length and the Gershgorin carry (oracle debt, docs/oracle-requests.md).
 //
 // Syntax:   KrylovWindows traj(A, v, dt, steps, tol, krylov_step, 15, like);
 //           while (!traj.done()) { KrylovWindow w = traj.next(); ... }
@@ -23,6 +22,7 @@
 //           first_order - the order of the first try
 //           like - backend, device and dtype of V and H
 // Outputs:  window - V (n, k), H (k, k), |s|, the order, the steps it covers and the error bound
+//           weighted() - whether the Lyapunov carry is in use; certificate() - its certificate
 // See also: priv_krylov_subspace, priv_krylov_float
 //
 // CORA.cpp only: CORA has no restart; its single subspace runs to the final time.
@@ -68,7 +68,14 @@ KrylovWindows::KrylovWindows(HostMatVec A, std::vector<double> v, double time_st
                              double tol, int krylov_step, int64_t first_order, const Tensor &like)
     : A_(std::move(A)), start_(std::move(v)), dt_(time_step), tol_(tol),
       mu_A_(std::max(0.0, A_.quad_bound())), steps_(steps), first_order_(first_order),
-      step_(krylov_step), like_(like) {}
+      step_(krylov_step), like_(like) {
+    // the weight, if the Gershgorin carry would grow by more than e over the horizon
+    if (mu_A_ * time_step * double(steps) > 1.0) {
+        const LyapunovCertificate &c = A_.lyapunov();
+        certificate_ = c;
+        if (c.ok) weighted_.emplace(c);
+    }
+}
 
 // The restart ------------------------------------------------------------------------------------
 
@@ -121,8 +128,17 @@ KrylovWindow KrylovWindows::next() {
     // the error at every time of the window, and the state it ends in as the next start vector
     const double length = double(m) * dt_;
     const KrylovBoundFn bound(state, A_.quad_bound(), k);
-    error_ = std::exp(length * mu_A_) * error_ + bound.at(length);
+    const double local = bound.at(length);
+    // carried by e^{t mu_A}; no error yet is no growth (0 * inf)
+    const double growth = std::exp(length * mu_A_);
+    error_ = (error_ == 0.0 ? 0.0 : growth * error_) + local;
     window.error = error_;
+    if (weighted_) {
+        // in the weight: at every time of the window at most the start's beta plus the local error
+        const double inside = weighted_->window_bound(local);
+        if (!(window.error <= inside)) window.error = inside;
+        weighted_->step(length, local);
+    }
     done_ += m;
     if (!done()) {
         const Tensor y = (window.H * length).expm().slice(-1, 0, 1);

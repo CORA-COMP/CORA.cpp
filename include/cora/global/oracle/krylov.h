@@ -2,8 +2,9 @@
 //
 // Syntax:     auto r = lean::Krylov::subspace(A, c, k0, step, tf, tol, eps);
 // Operations: one function per op: arnoldi (Krylov.arnoldiFloat), error_bound (errorBoundFloat and
-//             orderOkFloat), subspace (subspaceFloat) and windows (windowsFloat); p and q are
-//             Newton steps per norm and squarings of the exponential, ignored at dtype nearest
+//             orderOkFloat), subspace (subspaceFloat), windows (windowsFloat), lyapunov_certificate
+//             (lyapunovCertificateFloat) and restarted_bound (restartedErrorBoundFloat); p and q
+//             are Newton steps per norm and squarings of the exponential, ignored at dtype nearest
 // Outputs:    V (n, k + 1) and H (k + 1, k) as tensors of doubles, the scalars as doubles
 // See also:   lean/request.h, lean/linear_sys.h, contDynamics/linear_sys/private/priv_krylov.h
 //
@@ -48,6 +49,18 @@ struct KrylovWindows : KrylovSubspace {
     std::optional<std::vector<Zonotope>> time_interval, time_point;
 };
 
+/// A checked Lyapunov weight: accepted, the bounds a' and b of P, the rate of e^{tA} in it.
+struct KrylovCertificate {
+    bool ok = false;
+    double lower = 0, upper = 0, rate = 0;
+};
+
+/// The certificate and the 2-norm error bound of restarted windows in its weight.
+struct KrylovRestarted : KrylovCertificate {
+    bool windows_ok = false;
+    double bound = 0;
+};
+
 class Krylov {
   public:
     /// `passes` passes of Arnoldi on A (n, n) from c (n, 1), breakdown threshold eps.
@@ -66,6 +79,15 @@ class Krylov {
     static KrylovWindows windows(const cora::Tensor &A, const cora::Tensor &c, int k0, int step,
                                  double tf, double tol, double eps, double time_step,
                                  int taylor_terms, int zonotope_order, int fuel = -1);
+
+    /// The check of the weight P with the factor L of P - aI for A (all n x n).
+    static KrylovCertificate lyapunov_certificate(const cora::Tensor &A, const cora::Tensor &P,
+                                                  const cora::Tensor &L, double a);
+
+    /// The error bound after the windows of lengths dt (N, 1) with local errors eps (N, 1).
+    static KrylovRestarted restarted_bound(const cora::Tensor &A, const cora::Tensor &P,
+                                           const cora::Tensor &L, double a, const cora::Tensor &dt,
+                                           const cora::Tensor &eps);
 };
 
 } // namespace cora::lean
