@@ -154,15 +154,15 @@ struct Decomposition {
     }
 };
 
-/// CORA's linAlg "krylov": the center and each generator of the initial set (and of the input
-/// solution) are propagated in their own Krylov subspace, whose order grows by krylov_step until
-/// the error bound of Jawecki et al. is below krylov_error; the sets are those of the output.
+/// CORA's linAlg "krylov": the center and each generator of the initial set are propagated in
+/// their own Krylov subspace, restarted in windows; a window ends where CORALean's error bound
+/// (Krylov.errorBoundFloat, for every matrix) would exceed krylov_error. The sets are the output's.
 struct Krylov {
     double time_step = 0;    ///< the step size, required
     int taylor_terms = 10;   ///< the order of the Taylor series of the curvature enlargement
     int zonotope_order = 50; ///< the order the sets are reduced to per step
-    double krylov_error = machine_eps(); ///< the error per vector (CORA has no default)
-    int krylov_step = 20;                ///< how much the order of a subspace grows per try
+    double krylov_error = numerics::kKrylovError; ///< the tolerance of the error bound per window
+    int krylov_step = 20; ///< how much the order of a subspace grows per try
 
     static constexpr const char *name = "krylov";
     static constexpr auto fields() {
@@ -240,8 +240,8 @@ struct ReachAvoidKrylov {
     double time_step = 0; ///< the first step size; 0 is t_final / 1000
     double min_time_step = numerics::kKrylovMinTimeStep; ///< the step below which it gives up
     int taylor_terms = 20; ///< the order of the Taylor series of the curvature enlargement
-    double krylov_error = 2 * machine_eps(); ///< the error per vector
-    int krylov_step = 50;                    ///< how much the order of a subspace grows per try
+    double krylov_error = numerics::kKrylovError; ///< the tolerance of the error bound per window
+    int krylov_step = 50; ///< how much the order of a subspace grows per try
 
     static constexpr const char *name = "reach_avoid_krylov";
     static constexpr auto fields() {

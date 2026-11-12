@@ -93,6 +93,7 @@ inline constexpr double kTimeRound = 1e-14;    ///< times this close are the sam
 inline constexpr double kAtMaxStep = 1e-12;    ///< a step this close to the maximum is the maximum
 inline constexpr double kMinTimeStep = 1e-12;  ///< below this step size an adaptive pass gives up
 inline constexpr double kKrylovMinTimeStep = 1e-10; ///< Krylov verify: below this step it gives up
+inline constexpr double kKrylovError = 1e-10;       ///< Krylov: default tolerance of the bound
 inline constexpr double kTaylorStepMatch = 1e-10;   ///< step sizes this close share a cache entry
 inline constexpr double kBoxMargin = 1e-10;  ///< the absolute margin of an inflated enclosure
 inline constexpr double kNewtonStep = 1e-10; ///< a Newton step of this 2-norm ends the iteration

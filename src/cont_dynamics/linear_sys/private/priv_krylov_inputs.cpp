@@ -72,17 +72,19 @@ KrylovConstantInput priv_krylov_constant_input(const HostMatVec &A, const std::v
     const KrylovSubspace S =
         priv_krylov_subspace(priv_integrator_matvec(A, u), aux_last_unit(n), order,
                              alg.krylov_error, alg.krylov_step, t_final, C);
+    priv_krylov_require_ok(S, alg.krylov_error, "reach (constant input)");
     const Tensor V_state = S.V.slice(0, 0, n);
     // the curvature of the constant input, |e_{n+1}| = 1
     const Interval G = LinearSys(S.H).correction_matrix_input(alg.time_step, alg.taylor_terms);
     const Zonotope correction = aux_first_column(G).linear_map(V_state).zonotope().linear_map(C);
-    return {C.matmul(V_state), S.H, correction};
+    return {C.matmul(V_state), S.H, correction, S.bound};
 }
 
 // The input solution ------------------------------------------------------------------------------
 
 Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, const alg::Krylov &alg,
                                     double t_final) {
+    double bound = 0; // the sum of the bounds of the errors of the subspaces
     const int64_t n = A.n, m = V.generators().shape().back();
     const double dt = alg.time_step;
     const Tensor &like = V.center();
@@ -102,6 +104,8 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         const HostMatVec integrator = priv_integrator_matvec(A, u);
         const KrylovSubspace S = priv_krylov_subspace(
             integrator, aux_last_unit(n), order, alg.krylov_error, alg.krylov_step, t_final, like);
+        priv_krylov_require_ok(S, alg.krylov_error, "reach (input solution)");
+        bound += S.bound;
         // the Taylor terms V H^i e_1 dt^i / i!, i = 1..eta+1, of the state rows
         Tensor power = S.H;
         for (int i = 1; i <= alg.taylor_terms + 1; ++i) {
@@ -120,8 +124,9 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         if (std::abs(r) < machine_eps()) r = 0.0;
     const Tensor r = Tensor::like(like, radius, {n, 1});
     Interval box(r.negative(), r);
-    if (alg.krylov_error > 2 * machine_eps()) {
-        const Tensor red = like.full_like({n, 1}, alg.krylov_error * double(m));
+    if (bound > 0) {
+        // the subspace errors of the generators, a ball of 2-norm `bound` in the box of its radius
+        const Tensor red = like.full_like({n, 1}, bound);
         box = box + Interval(red.negative(), red);
     }
     const Tensor generators = terms.empty() ? like.zeros_like({n, 0}) : Tensor::concat(terms, -1);

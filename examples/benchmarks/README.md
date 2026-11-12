@@ -4,7 +4,7 @@
 
 | category | instances run | verdict = ARCH26 | CORA.cpp fastest | speedup vs best ARCH26 tool (median / geo. mean) | speedup vs CORA ARCH26 (median / geo. mean) |
 | --- | --- | --- | --- | --- | --- |
-| AFF | 49 | 41 of 43 in ARCH26 (the 47 run in MATLAB CORA equal its verdict; HEAT04 not run there to the end) | 27 of 35 | 2.6 / 4.1 | 13 / 12 (35 instances) |
+| AFF | 49 | 41 of 43 in ARCH26 (the 47 run in MATLAB CORA equal its verdict; HEAT04 not run there to the end) | 28 of 35 | 2.7 / 4.4 | 13 / 13 (35 instances) |
 | NLN | 11 | 11 of 11 | 8 of 11 | 4.2 / 3.4 | 5.9 / 8.7 (11 instances) |
 | AINNCS | 11 | 10 of 11 (all 11 equal CORA's) | 8 of 10 | 3.6 / 5.0 | 16 / 20 (10 instances) |
 
@@ -20,7 +20,7 @@ for CORA and CORA.cpp) and the instances the report does not have (ISS, RAND) an
   not verified, F falsified); `(ARCH23)` where the report has no such instance, `(script: 0)` where
   the report verifies with another setup than CORA's script.
 - **CORA.cpp [s]**: wall clock, core preset, one run each, the programs run one at a time on 16 CPUs
-  that other jobs share (AFF and NLN: 09-November-2026, AINNCS and HEAT04: 11-November-2026).
+  that other jobs share (AFF and NLN: 09-November-2026, AINNCS: 11-November-2026, RND02, RND04-06, HEAT03 and HEAT04: 12-November-2026).
 - **oracle check (rows)**: the rows of CORA the instance executes that are bit-exact against
   CORALean's `nearest` oracle, of those that can be (`coverage/benchmarks.md`, table at the end), and
   the rows tested by properties only.
@@ -75,8 +75,8 @@ here stay those of the ARCH23 scripts.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | HEAT01 | 1 | 1 | 0.064 | 1/8 bit-exact, 2 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
 | HEAT02 | 1 | 1 | 3.39 | 1/8 bit-exact, 2 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
-| HEAT03 | 1 | 1 | 14.6 | 10/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 1.49 |
-| HEAT04 | 1 | 1 | 1303 | 10/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 0.92 |
+| HEAT03 | 1 | 1 | 3.45 | 10/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 6.32 |
+| HEAT04 | 1 | 1 | 580 | 10/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 2.06 |
 | CBC01 | 1 | 1 | 0.162 | 1/8 bit-exact, 2 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
 | CBC02 | 1 | 1 | 3.88 | 1/8 bit-exact, 2 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
 | CBC03 | 1 | 1 | 44.5 | 1/8 bit-exact, 2 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
@@ -90,11 +90,11 @@ here stay those of the ARCH23 scripts.
 | RAND01 | 1 (ARCH23) | 1 | 0.0023 | 5/13 bit-exact, 2 property | - | - | - | - |
 | RAND02 | 0 (ARCH23) | 0 | 0.015 | 5/13 bit-exact, 2 property | - | - | - | - |
 | RND01 | 1 | 1 | 0.022 | 5/13 bit-exact, 2 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
-| RND02 | 1 | 1 | 0.907 | 2/11 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 0.46 |
+| RND02 | 1 | 1 | 0.242 | 4/14 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.73 |
 | RND03 | 1 | 1 | 29.8 | 5/13 bit-exact, 2 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
-| RND04 | 1 | 1 | 0.642 | 2/11 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 12.1 |
-| RND05 | 1 | 1 | 1.33 | 2/11 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 34.5 |
-| RND06 | 1 | 1 | 5.14 | 2/11 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 5.2 |
+| RND04 | 1 | 1 | 4.21 | 4/14 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 1.85 |
+| RND05 | 1 | 1 | 42.4 | 4/14 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 1.08 |
+| RND06 | 1 | 1 | 237 | 4/14 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 0.11 |
 | SRNA01 | 1 | 1 | 0.473 | 23/40 bit-exact, 6 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
 | SRA01 | 1 | 1 | 0.204 | 26/46 bit-exact, 6 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
 | SRA02 | 1 | 1 | 0.102 | 34/56 bit-exact, 7 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
@@ -143,30 +143,31 @@ script's invariant check stops after one step: its `aux_inViaProj(Z1, Z2)` tests
 
 **HEAT03** runs the script's dual problem: `x' = A' x` from the point `e_mid` with the outputs
 `[c G]' x`, by the Krylov subspace algorithm (`alg::Krylov`, CORA's linAlg `krylov`) on the sparse
-`A`; the maximum temperature over the steps is 0.0172513, in the goal 0.01716509 +- 1e-4 (its
-upper end is 0.0172651). The subspace has order 181, as in CORA: there the error bound
-`tau gamma 40^k / k!` is 0 because `k!` overflows from `k = 171` on, while at order 161 it is
-4.9e149, far above `krylovError = eps` (docs/cora-differences.md); with `krylovError <= 2 eps`
-no error box is added. CORALean shows that CORA's Krylov reach misses trajectories in general (its
-time-interval enclosure and the Jawecki bound outside the nonexpansive case,
-`Krylov.reach_krylov_counterexample`, `Krylov.printed_time_interval_counterexample`,
-`Krylov.jawecki_bound_cora_counterexample`); CORA.cpp follows
-CORA, so the same holds here. HEAT03 takes about 15 s, so it is a `benchmark` test only.
+`A`; the maximum temperature over the steps is 0.0171655, in the goal 0.01716509 +- 1e-4 (CORA's
+unsound steps gave 0.0172513). The Krylov steps are CORALean's sound ones (docs/cora-differences.md):
+the order comes from the bound of `Krylov.errorBoundFloat`, not from Jawecki's `tau gamma 40^k / k!`,
+which is 0 from `k = 171` on because `k!` overflows (CORA: order 181, the bound at 161 is 4.9e149);
+the curvature acts at the start of the step; the error of the subspace is added to the sets. The
+bound grows with `e^{t mu}` and `mu` of the Hessenberg matrix, by Gershgorin, is 2 to 20, so one
+subspace over `[0, 40]` has the bound `1e33 krylovError`: the trajectory is cut into restart windows
+(CORA.cpp only, `KrylovWindows`) of 190 to 360 steps and order 35 to 55, about 30 in all, each within
+`krylovError = 1e-9` (the script has `eps`, which no bound of a subspace meets), and the sets carry
+the accumulated error 3e-8. HEAT03 takes 3.5 s, so it is a `benchmark` test only.
 
 **HEAT04** is HEAT03's script on heat50 (125 000 states, `A` of 860 000 entries built from the mesh
 in C++, bit-identical to `models/Cora/heat3D/heat50.mat` in its action on a test vector and in
 nnz; `R0` has 1386 hot cells, `e_mid` is cell (25, 25, 25)). The maximum temperature over
 the steps must lie in 0.01161 +- 1e-4 (the report's Tmax; the true value, from the ODE solution,
 is 0.0116118 at t = 18.87). The script's step of 0.005 gives 0.0158, 36 % too high, because the
-enlargement of a time interval grows with the 1387 outputs; the step 0.001 gives 0.0116902 and
-the verdict 1, in 1303 s on 16 shared CPUs and 4.0 GB peak memory (the dual system keeps `A'`,
-the 1387 x 125 000 output matrix, 1.4 GB, and a subspace of order 181 per vector). Sets of 1387
+enlargement of a time interval grows with the 1387 outputs; the step 0.001 gives 0.0116269 and
+the verdict 1, in 580 s on 16 shared CPUs (load 10 to 12) and 4.0 GB peak memory (the dual system keeps `A'`,
+the 1387 x 125 000 output matrix, 1.4 GB, and the subspace of the current restart window). Sets of 1387
 outputs have 2774 generators, so `reach` takes a callback (`LinearSys::reach(problem, alg,
 on_time_interval)`) that sees each step's set and stores none: all 40 000 sets would need 2.5 TB.
 MATLAB CORA cannot run it on this machine (64 GB limit): the same script to t = 0.2 (200 steps)
 takes 32.4 s there against 7.3 s for CORA.cpp, with the same maximum (8.79442e-15). `Interval::zonotope`
 no longer forms the dense n x n diagonal of its radii (125 GB here). The Krylov steps are those of
-HEAT03, with the same unsound spots (above). The coverage build (3 times slower, over the 3600 s of a test) measured it with `CORACPP_HEAT04_T_FINAL=1`, which shortens the horizon: the files executed are the same.
+HEAT03 (sound, in restart windows). The coverage build (3 times slower, over the 3600 s of a test) measured it with `CORACPP_HEAT04_T_FINAL=1`, which shortens the horizon: the files executed are the same.
 
 **BRKNP01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
 (verdict 0, the CORA column, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
@@ -208,6 +209,31 @@ of the rise above the exact maximum 746.9 of the support function. `rnd_data.py 
 the repository into `data/RND0?.json` and `.bin` (CORA's `json2cora_linearSys` and `zonotope(interval)`;
 RND05 and RND06 are stored sparse, 0.3 MB and 0.7 MB).
 
+**Krylov verification (RND02, RND04-06) is sound and verifies all four.** The verify bounds the error of each subspace
+with CORALean's `Krylov.errorBoundFloat` and carries it across the restart windows (`KrylovWindows`). The carry by
+`e^{t mu_A}`, `mu_A` Gershgorin's bound of the quadratic form of `A`, is useless here (551 on RND02, `e^{551 t}` over its
+horizon 1.59; `lambda_max` of the symmetric part of `A` is 123, 94 and 1.9 for RND04-06) although every `A` is stable. So
+the error is also carried in a Lyapunov weight `P` (`A'P + PA = -I`): CORA.cpp solves it (the matrix sign function
+iteration, Bartels-Stewart on the real Schur form where that fails the check), factors `P - aI` by Cholesky, and
+CORALean's `Krylov.lyapunovCertificateFloat` checks it, bit for bit (`priv_krylov_lyapunov.cpp`). Then
+`||e^{tA}|| <= kappa e^{rate t}` with `kappa = sqrt(upper / lower)`, and `Krylov.restartedErrorBoundFloat` carries the
+windows' errors as `beta_{j+1} = e^{rate dt_j} beta_j + sqrt(upper) eps_j`; the smaller of the two carries is reported.
+The certificate was accepted on all four instances (the Gershgorin carry was never the fallback):
+
+| instance | states | kappa | rate | solve (check) [s] | windows | carried error x vector norms | margin of the property |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| RND02 | 50 | 388 | -8.1e-5 | 0.003 (0.001) | 85 | 2.4e-6 x 51.7 = 1.2e-4 | 5.4e-3 |
+| RND04 | 1000 | 73.5 | -1.8e-3 | 3.3 (0.03) | 111 | 4.2e-7 x 334 = 1.4e-4 | 5.3 |
+| RND05 | 2500 | 146 | -7.6e-4 | 40 (0.3) | 118 | 9.3e-7 x 1142 = 1.1e-3 | 5.3 |
+| RND06 | 5000 | 21.1 | -7.9e-2 | 227 (7.9) | 11 | 1.7e-8 x 2089 = 3.5e-5 | 93 |
+
+The margin is the limit of the unsafe halfspace minus the maximum of the support function (scipy, below). The solve is the
+cost: the sign function iteration takes 3.3, 40 and 227 s for 1000, 2500 and 5000 states (2.2 GB of memory at 5000, where
+the Schur form took 1095 s); RND06 is 9 times slower than CORA's 26.7 s, so a cheaper weight (a structured one, or a
+solve in the sparse pattern) is the next step there. Before, the first windows alone exceeded the margin whatever the step
+and the verdict was 0 after one pass. The early exit of the loop ("no finer step helps") also counted the points of `R0`
+as a floor of the bound, although the signed input center lowers it (RND02): it counts the least the input integral can be.
+
 **All six are safe.** The exact maximum of the support function along the direction of the unsafe halfspace
 (scipy, `expm_multiply` on a 4000-point grid, not a proof) is 136.02 against the bound 141.28 for RND04 (3.9 % below),
 593.31 against 598.63 for RND05 (0.9 %), 56.936 against 56.941 for the row y <= lo of RND02 (0.009 %) and 0.039 below
@@ -230,10 +256,9 @@ halfspace and, per unsafe set, one of its halfspaces holds on every step. RND04-
 
 - The Krylov subspace is exact for the polynomials of degree below its order, which covers the Taylor part of the curvature
   (degree 20, the order is at least 50), and a subspace of the order n is exact (RND02).
-- The order is chosen by Jawecki's bound, as in CORA, and that is **unsound**: Thm. 1 holds for nonexpansive matrices only
-  (CORALean `Krylov/Counterexamples/JaweckiBoundCora.lean`), and the A of RND04, RND05 and RND06 are not (largest eigenvalue of
-  the symmetric part 123.4, 94.0 and 1.9). It picks the orders 101, 101 and 151 there, whose error against scipy's
-  `expm_multiply` is at most 3e-14 at t = 1 and t = 5 (measured): the verdicts hold numerically, the bound is no proof.
+- The order is chosen by CORALean's `Krylov.errorBoundFloat`, valid for every `A` (Jawecki's test of CORA holds for nonexpansive
+  matrices only, CORALean `Krylov/Counterexamples/JaweckiBoundCora.lean`), and the restart windows carry the error by
+  `e^{t mu_A}` or in the certified Lyapunov weight above (sound; the weight is checked, not trusted).
 - The curvature acts on the state at the start of the step, as in the theory of `reach` (sound; CORA's `priv_reach_krylov`
   uses the state at the end).
 - The hull of the two time points plus the curvature encloses the solution in between, and the integral is bounded by the step
@@ -261,7 +286,7 @@ are bit-identical before and after). The Krylov algorithm
 verifies RND03 in 0.40 s and RND01 in 0.04 s, an independent confirmation of the verdicts. RND02 with the zonotope algorithm
 of CORA.cpp did not finish in 3 minutes (MATLAB: 48 minutes).
 
-**Memory.** RND06 needs 1.2 GB (dense `A` of 5000 x 5000 and its transposed copy for the products), RND05 0.3 GB.
+**Memory.** RND06 needs 2.2 GB (dense `A` of 5000 x 5000 for the sign function iteration of the Lyapunov weight, with its inverse, iterates and the weight and its factor of the check), RND05 0.56 GB, RND04 0.1 GB.
 
 In the test suite every ported instance is a test of the label `benchmark` (nightly), and the first
 
@@ -657,7 +682,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | HEAT01 | 1/8 | 7 | 4 |
 | HEAT02 | 1/8 | 7 | 4 |
 | HEAT03 | 10/17 | 7 | 4 |
-| HEAT04 | 10/17 | 7 | 3 |
+| HEAT04 | 10/17 | 7 | 4 |
 | ISSC01_ISS02 | 1/8 | 7 | 4 |
 | ISSC01_ISU02 | 1/8 | 7 | 4 |
 | ISSF01_ISS01 | 1/8 | 7 | 4 |
@@ -675,11 +700,11 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
 | RND01 | 5/13 | 8 | 4 |
-| RND02 | 2/11 | 9 | 4 |
+| RND02 | 4/14 | 10 | 4 |
 | RND03 | 5/13 | 8 | 4 |
-| RND04 | 2/11 | 9 | 4 |
-| RND05 | 2/11 | 9 | 4 |
-| RND06 | 2/11 | 9 | 4 |
+| RND04 | 4/14 | 10 | 4 |
+| RND05 | 4/14 | 10 | 4 |
+| RND06 | 4/14 | 10 | 4 |
 | ROBE25_1 | 10/24 | 14 | 7 |
 | ROBE25_2 | 10/24 | 14 | 7 |
 | ROBE25_3 | 10/24 | 14 | 7 |

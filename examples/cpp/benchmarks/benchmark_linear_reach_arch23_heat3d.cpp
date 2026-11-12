@@ -132,7 +132,7 @@ bool aux_heat03(const std::string &name) {
     const alg::Krylov krylov{.time_step = mesh ? 0.001 : 0.005,
                              .taylor_terms = 10,
                              .zonotope_order = 2,
-                             .krylov_error = std::numeric_limits<double>::epsilon(),
+                             .krylov_error = 1e-9,
                              .krylov_step = 20};
 
     const auto start = std::chrono::steady_clock::now();

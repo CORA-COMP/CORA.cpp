@@ -28,6 +28,15 @@
 
 namespace cora {
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// CORALean's `absolute`: `maximum a (-a)`, so that |0| is -0.
+double aux_absolute(double a) { return a <= -a ? -a : a; }
+
+} // namespace
+
 
 // ===========================================  MAIN  =========================================== //
 
@@ -101,6 +110,77 @@ void SparseMatrix::matvec(const double *x, double *y) const {
             sum += values_[size_t(k)] * x[columns_[size_t(k)]];
         y[r] = sum;
     }
+}
+
+void SparseMatrix::matvec_down(const double *x, double *y) const {
+    for (int64_t r = 0; r < rows_; ++r) {
+        double sum = 0.0;
+        for (int64_t k = row_start_[size_t(r) + 1]; k-- > row_start_[size_t(r)];) {
+            const double product = values_[size_t(k)] * x[columns_[size_t(k)]];
+            sum = product + sum;
+        }
+        y[r] = sum;
+    }
+}
+
+// The Gershgorin bound ----------------------------------------------------------------------------
+
+double SparseMatrix::quad_bound_up() const {
+    detail::Entry entry;
+    CORA_CHECK(rows_ == cols_, Error::dimension_mismatch, [&] {
+        return "SparseMatrix::quad_bound_up: a square matrix is needed, got " +
+               std::to_string(rows_) + " x " + std::to_string(cols_);
+    });
+    const SparseMatrix T = transpose();
+    double bound = 0.0;
+    for (int64_t i = rows_; i-- > 0;) {
+        // the diagonal and the sum over the other columns, merging row i of M and of M' by column
+        double diagonal = 0.0, sum = 0.0;
+        int64_t a = row_start_[size_t(i) + 1], b = T.row_start_[size_t(i) + 1];
+        const int64_t a0 = row_start_[size_t(i)], b0 = T.row_start_[size_t(i)];
+        while (a > a0 || b > b0) {
+            const int64_t ja = a > a0 ? columns_[size_t(a) - 1] : -1;
+            const int64_t jb = b > b0 ? T.columns_[size_t(b) - 1] : -1;
+            const int64_t j = std::max(ja, jb);
+            const double mij = ja == j ? values_[size_t(a) - 1] : 0.0;
+            const double mji = jb == j ? T.values_[size_t(b) - 1] : 0.0;
+            if (ja == j) --a;
+            if (jb == j) --b;
+            if (j == i) {
+                diagonal = mij;
+                continue;
+            }
+            sum = (aux_absolute(mij) + aux_absolute(mji)) + sum;
+        }
+        const double row = diagonal + sum * 0.5;
+        // the maximum, seeded at the last row: maximum(row, bound) = row <= bound ? bound : row
+        bound = i == rows_ - 1 ? row : (row <= bound ? bound : (bound < row ? row : row + bound));
+    }
+    return rows_ == 0 ? 0.0 : bound;
+}
+
+SparseMatrix SparseMatrix::augment_column(const std::vector<double> &u) const {
+    detail::Entry entry;
+    CORA_CHECK(rows_ == cols_ && int64_t(u.size()) == rows_, Error::dimension_mismatch, [&] {
+        return "SparseMatrix::augment_column: a square matrix and a column of its size are needed";
+    });
+    SparseMatrix out(0, 0, {}, {}, {});
+    out.rows_ = out.cols_ = rows_ + 1;
+    out.row_start_.assign(size_t(rows_) + 2, 0);
+    // each row keeps its entries and gets the last column's entry (the largest column) after them
+    for (int64_t r = 0; r < rows_; ++r) {
+        for (int64_t k = row_start_[size_t(r)]; k < row_start_[size_t(r) + 1]; ++k) {
+            out.columns_.push_back(columns_[size_t(k)]);
+            out.values_.push_back(values_[size_t(k)]);
+        }
+        if (u[size_t(r)] != 0.0) {
+            out.columns_.push_back(rows_);
+            out.values_.push_back(u[size_t(r)]);
+        }
+        out.row_start_[size_t(r) + 1] = int64_t(out.values_.size());
+    }
+    out.row_start_[size_t(rows_) + 1] = int64_t(out.values_.size());
+    return out;
 }
 
 SparseMatrix SparseMatrix::transpose() const {

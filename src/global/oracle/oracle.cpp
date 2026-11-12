@@ -202,9 +202,10 @@ Json call(const Json &request) {
     fflush(oracle.out);
     // one line per request, one per response
     const Json response = Json::parse(aux_read_line(oracle));
+    // a failure is "ok": false with an "error" (the krylov ops reply their order test in "ok")
     const Json *ok = response.find("ok");
-    if (!ok || !ok->boolean) {
-        const Json *error = response.find("error");
+    const Json *error = response.find("error");
+    if (!ok || (!ok->boolean && error)) {
         const std::string message = error ? error->text : "no message";
         CORA_FAIL(Error::special_error, "lean: the oracle failed: " + message);
     }
