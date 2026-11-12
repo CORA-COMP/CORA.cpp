@@ -408,7 +408,7 @@ PolyZonotope priv_poly_lin_comb(const PolyZonotope &Z1, const PolyZonotope &Z2) 
 PolyZonotope priv_poly_interval_map(const Interval &M, const PolyZonotope &Z) {
     const Host a(Z);
     const Tensor &like = Z.center();
-    const auto m = static_cast<int64_t>(M.inf().size(-2)), n = a.n;
+    const auto m = M.inf().size(-2), n = a.n;
     const Vec lo = M.inf().data(), hi = M.sup().data();
     // mid(M) and the box M - mid(M)
     Vec C(std::size_t(m * n)), Rlo(C.size()), Rhi(C.size());
