@@ -6,7 +6,7 @@
 // summed), or from a dense matrix.
 //
 // Syntax:     SparseMatrix A(rows, cols, i, j, v);   A.matvec(x, y);   Tensor D = A.dense();
-// Operations: matvec, transpose, dense (sparse_matrix.cpp)
+// Operations: matvec, matvec_down, quad_bound_up, transpose, dense (sparse_matrix.cpp)
 // See also:   LinearSys, benchmark_data.h
 //
 // Authors:       Claude Opus 5.5
@@ -43,8 +43,19 @@ class SparseMatrix {
     /// y = M x for host vectors x (cols) and y (rows); y must not overlap x.
     void matvec(const double *x, double *y) const;
 
+    /// y = M x with every product rounded and each row summed from its last entry, as CORALean's
+    /// `dotUp` at `nearest`: the order of the float Arnoldi iteration (no fused multiply-add).
+    void matvec_down(const double *x, double *y) const;
+
+    /// CORALean's `Krylov.quadBoundUp` of the square matrix: the largest Gershgorin bound
+    /// `M_ii + (sum_{j != i} |M_ij| + |M_ji|) / 2` of the quadratic form, in CORALean's order.
+    double quad_bound_up() const;
+
     /// The transpose M'.
     SparseMatrix transpose() const;
+
+    /// [M u; 0 0] for the square M and the column u (rows entries): CORA's integrator matrix.
+    SparseMatrix augment_column(const std::vector<double> &u) const;
 
     /// The dense matrix (rows, cols) like `like` (its backend, device and dtype), else float64 on
     /// the default backend.

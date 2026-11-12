@@ -79,6 +79,11 @@ set_source_files_properties("${CMAKE_SOURCE_DIR}/src/global/rng.cpp" PROPERTIES 
 # as CORALean does: no fused multiply-add.
 if(NOT MSVC)
   set_source_files_properties("${CMAKE_SOURCE_DIR}/src/global/backend/host_tensor.cpp" PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+  # The float Krylov iteration of CORALean (Arnoldi, residuals, error bound) rounds every product
+  # and sum too, in its host loops and in the sparse products they call.
+  set_source_files_properties("${CMAKE_SOURCE_DIR}/src/global/sparse_matrix.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_krylov_float.cpp"
+                              PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
 endif()
 
 # ------------------------------------------- tests ------------------------------------------------

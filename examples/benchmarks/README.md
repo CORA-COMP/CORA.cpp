@@ -4,7 +4,7 @@
 
 | category | instances run | verdict = ARCH26 | CORA.cpp fastest | speedup vs best ARCH26 tool (median / geo. mean) | speedup vs CORA ARCH26 (median / geo. mean) |
 | --- | --- | --- | --- | --- | --- |
-| AFF | 49 | 41 of 43 in ARCH26 (the 47 run in MATLAB CORA equal its verdict; HEAT04 not run there to the end) | 27 of 35 | 2.6 / 4.1 | 13 / 12 (35 instances) |
+| AFF | 49 | 37 of 43 in ARCH26 (the 47 run in MATLAB CORA equal its verdict; HEAT04 not run there to the end) | 27 of 35 | 2.6 / 4.1 | 13 / 12 (35 instances) |
 | NLN | 11 | 11 of 11 | 8 of 11 | 4.2 / 3.4 | 5.9 / 8.7 (11 instances) |
 | AINNCS | 11 | 10 of 11 (all 11 equal CORA's) | 8 of 10 | 3.6 / 5.0 | 16 / 20 (10 instances) |
 
@@ -75,8 +75,8 @@ here stay those of the ARCH23 scripts.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | HEAT01 | 1 | 1 | 0.064 | 1/8 bit-exact, 2 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
 | HEAT02 | 1 | 1 | 3.39 | 1/8 bit-exact, 2 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
-| HEAT03 | 1 | 1 | 14.6 | 10/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 1.49 |
-| HEAT04 | 1 | 1 | 1303 | 10/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 0.92 |
+| HEAT03 | 1 | 1 | 4.02 | 10/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 5.4 |
+| HEAT04 | 1 | 1 | 599 | 10/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 1.99 |
 | CBC01 | 1 | 1 | 0.162 | 1/8 bit-exact, 2 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
 | CBC02 | 1 | 1 | 3.88 | 1/8 bit-exact, 2 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
 | CBC03 | 1 | 1 | 44.5 | 1/8 bit-exact, 2 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
@@ -90,11 +90,11 @@ here stay those of the ARCH23 scripts.
 | RAND01 | 1 (ARCH23) | 1 | 0.0023 | 5/13 bit-exact, 2 property | - | - | - | - |
 | RAND02 | 0 (ARCH23) | 0 | 0.015 | 5/13 bit-exact, 2 property | - | - | - | - |
 | RND01 | 1 | 1 | 0.022 | 5/13 bit-exact, 2 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
-| RND02 | 1 | 1 | 0.907 | 2/11 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | 0.46 |
+| RND02 | 1 | 0 [e] | 0.083 | 2/11 bit-exact, 2 property | 2882 | 0.42 | 0.42 (CORA) [c] | - |
 | RND03 | 1 | 1 | 29.8 | 5/13 bit-exact, 2 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
-| RND04 | 1 | 1 | 0.642 | 2/11 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 12.1 |
-| RND05 | 1 | 1 | 1.33 | 2/11 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 34.5 |
-| RND06 | 1 | 1 | 5.14 | 2/11 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | 5.2 |
+| RND04 | 1 | 0 [e] | 0.96 | 2/11 bit-exact, 2 property | 6.13 | 7.77 | 7.77 (CORA) [c] | - |
+| RND05 | 1 | 0 [e] | 2.06 | 2/11 bit-exact, 2 property | 22.99 | 45.86 | 45.86 (CORA) [c] | - |
+| RND06 | 1 | 0 [e] | 2.38 | 2/11 bit-exact, 2 property | - | 26.70 | 26.70 (CORA) [c] | - |
 | SRNA01 | 1 | 1 | 0.473 | 23/40 bit-exact, 6 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
 | SRA01 | 1 | 1 | 0.204 | 26/46 bit-exact, 6 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
 | SRA02 | 1 | 1 | 0.102 | 34/56 bit-exact, 7 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
@@ -129,6 +129,8 @@ here stay those of the ARCH23 scripts.
 
 [c] RND01-06: the report's instances are created on the server, these are the files of CORA's package (RND06: our own), so the ARCH26 columns are indicative and the speedups stay out of the summary.
 
+[e] RND02, RND04-06: not verified with the sound Krylov steps (below); the unsound ones verified them in 0.9, 0.6, 1.3 and 5.1 s.
+
 [d] HEAT04: ARCH26 ran a new support-function Krylov verification (Perschl and Althoff, HSCC 2026, not in CORA v2026.1.0); CORA.cpp runs the ARCH23 script's reach with a step of 0.001, and JuliaReach's 3180 s are its discrete-time mode (continuous did not solve it), so CORA's 1193 s is the best.
 
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
@@ -143,30 +145,31 @@ script's invariant check stops after one step: its `aux_inViaProj(Z1, Z2)` tests
 
 **HEAT03** runs the script's dual problem: `x' = A' x` from the point `e_mid` with the outputs
 `[c G]' x`, by the Krylov subspace algorithm (`alg::Krylov`, CORA's linAlg `krylov`) on the sparse
-`A`; the maximum temperature over the steps is 0.0172513, in the goal 0.01716509 +- 1e-4 (its
-upper end is 0.0172651). The subspace has order 181, as in CORA: there the error bound
-`tau gamma 40^k / k!` is 0 because `k!` overflows from `k = 171` on, while at order 161 it is
-4.9e149, far above `krylovError = eps` (docs/cora-differences.md); with `krylovError <= 2 eps`
-no error box is added. CORALean shows that CORA's Krylov reach misses trajectories in general (its
-time-interval enclosure and the Jawecki bound outside the nonexpansive case,
-`Krylov.reach_krylov_counterexample`, `Krylov.printed_time_interval_counterexample`,
-`Krylov.jawecki_bound_cora_counterexample`); CORA.cpp follows
-CORA, so the same holds here. HEAT03 takes about 15 s, so it is a `benchmark` test only.
+`A`; the maximum temperature over the steps is 0.0171655, in the goal 0.01716509 +- 1e-4 (CORA's
+unsound steps gave 0.0172513). The Krylov steps are CORALean's sound ones (docs/cora-differences.md):
+the order comes from the bound of `Krylov.errorBoundFloat`, not from Jawecki's `tau gamma 40^k / k!`,
+which is 0 from `k = 171` on because `k!` overflows (CORA: order 181, the bound at 161 is 4.9e149);
+the curvature acts at the start of the step; the error of the subspace is added to the sets. The
+bound grows with `e^{t mu}` and `mu` of the Hessenberg matrix, by Gershgorin, is 2 to 20, so one
+subspace over `[0, 40]` has the bound `1e33 krylovError`: the trajectory is cut into restart windows
+(CORA.cpp only, `KrylovWindows`) of 190 to 360 steps and order 35 to 55, about 30 in all, each within
+`krylovError = 1e-9` (the script has `eps`, which no bound of a subspace meets), and the sets carry
+the accumulated error 3e-8. HEAT03 takes 4 s, so it is a `benchmark` test only.
 
 **HEAT04** is HEAT03's script on heat50 (125 000 states, `A` of 860 000 entries built from the mesh
 in C++, bit-identical to `models/Cora/heat3D/heat50.mat` in its action on a test vector and in
 nnz; `R0` has 1386 hot cells, `e_mid` is cell (25, 25, 25)). The maximum temperature over
 the steps must lie in 0.01161 +- 1e-4 (the report's Tmax; the true value, from the ODE solution,
 is 0.0116118 at t = 18.87). The script's step of 0.005 gives 0.0158, 36 % too high, because the
-enlargement of a time interval grows with the 1387 outputs; the step 0.001 gives 0.0116902 and
-the verdict 1, in 1303 s on 16 shared CPUs and 4.0 GB peak memory (the dual system keeps `A'`,
-the 1387 x 125 000 output matrix, 1.4 GB, and a subspace of order 181 per vector). Sets of 1387
+enlargement of a time interval grows with the 1387 outputs; the step 0.001 gives 0.0116269 and
+the verdict 1, in 599 s on 16 shared CPUs (load 10 to 12) and 4.0 GB peak memory (the dual system keeps `A'`,
+the 1387 x 125 000 output matrix, 1.4 GB, and the subspace of the current restart window). Sets of 1387
 outputs have 2774 generators, so `reach` takes a callback (`LinearSys::reach(problem, alg,
 on_time_interval)`) that sees each step's set and stores none: all 40 000 sets would need 2.5 TB.
 MATLAB CORA cannot run it on this machine (64 GB limit): the same script to t = 0.2 (200 steps)
 takes 32.4 s there against 7.3 s for CORA.cpp, with the same maximum (8.79442e-15). `Interval::zonotope`
 no longer forms the dense n x n diagonal of its radii (125 GB here). The Krylov steps are those of
-HEAT03, with the same unsound spots (above). The coverage build (3 times slower, over the 3600 s of a test) measured it with `CORACPP_HEAT04_T_FINAL=1`, which shortens the horizon: the files executed are the same.
+HEAT03 (sound, in restart windows). The coverage build (3 times slower, over the 3600 s of a test) measured it with `CORACPP_HEAT04_T_FINAL=1`, which shortens the horizon: the files executed are the same.
 
 **BRKNP01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
 (verdict 0, the CORA column, with the warning 'Taylor order not high enough'). The input `U = zonotope(1)`
@@ -207,6 +210,13 @@ a sparse, diagonally dominant (so stable) system in the style of rand05 with the
 of the rise above the exact maximum 746.9 of the support function. `rnd_data.py convert` turns a json file of
 the repository into `data/RND0?.json` and `.bin` (CORA's `json2cora_linearSys` and `zonotope(interval)`;
 RND05 and RND06 are stored sparse, 0.3 MB and 0.7 MB).
+
+**Krylov verification (RND02, RND04-06) is sound now and no longer verifies.** The verify bounds the error of each
+subspace with CORALean's `Krylov.errorBoundFloat` and carries it across restart windows by `e^{t mu_A}`, `mu_A` Gershgorin's
+bound of the quadratic form of `A`; the growth rate of a window of RND02 is 551 (`e^{551 t}` over its horizon 1.59), and `lambda_max`
+of the symmetric part of `A` is 123, 94 and 1.9 for RND04-06, where Jawecki's test does not hold. The error of the
+first windows alone exceeds the margin of the property whatever the step, so the verdict is 0 after one pass (0.1 to 2.4 s). Raising
+the margin needs a sharper certified bound of `||e^{tA}||`, not of the Krylov error.
 
 **All six are safe.** The exact maximum of the support function along the direction of the unsafe halfspace
 (scipy, `expm_multiply` on a 4000-point grid, not a proof) is 136.02 against the bound 141.28 for RND04 (3.9 % below),
@@ -657,7 +667,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | HEAT01 | 1/8 | 7 | 4 |
 | HEAT02 | 1/8 | 7 | 4 |
 | HEAT03 | 10/17 | 7 | 4 |
-| HEAT04 | 10/17 | 7 | 3 |
+| HEAT03,RND02,RND04,RND05,RND06 | 0/0 | 0 | 0 |
+| HEAT04 | 11/22 | 11 | 4 |
 | ISSC01_ISS02 | 1/8 | 7 | 4 |
 | ISSC01_ISU02 | 1/8 | 7 | 4 |
 | ISSF01_ISS01 | 1/8 | 7 | 4 |
@@ -675,11 +686,11 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
 | RND01 | 5/13 | 8 | 4 |
-| RND02 | 2/11 | 9 | 4 |
+| RND02 | 4/14 | 10 | 4 |
 | RND03 | 5/13 | 8 | 4 |
-| RND04 | 2/11 | 9 | 4 |
-| RND05 | 2/11 | 9 | 4 |
-| RND06 | 2/11 | 9 | 4 |
+| RND04 | 4/14 | 10 | 4 |
+| RND05 | 11/22 | 11 | 4 |
+| RND06 | 4/14 | 10 | 4 |
 | ROBE25_1 | 10/24 | 14 | 7 |
 | ROBE25_2 | 10/24 | 14 | 7 |
 | ROBE25_3 | 10/24 | 14 | 7 |

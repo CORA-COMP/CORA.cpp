@@ -62,7 +62,9 @@ WHY = """## What keeps the rows of each family from `oracle`
   `verifyFloat` takes the reach function and the distance routines as arguments), and its reach is
   CORALean's algorithm, not CORA's step (the tests compare by tolerance: `property`). The classes
   `zonotope`, `contSet`, `polytope` are constructors and accessors: no op to compare.
-- HEAT03: the Krylov `linAlg` of `linearSys/reach` has no float definition in CORALean.
+- HEAT03, HEAT04, RND02, RND04-06: the subspaces are CORALean's float definitions (bit-exact, `test_lean_krylov`); the
+  restart windows, their lifting and the assembly of `linearSys/reach` and of the support function bound are not
+  (docs/oracle-requests.md).
 - Platoon (PLA): `linParamSys` `initReach`/`post` are CORALean's own mapping-matrix algorithm, not CORA's;
   `expmOneParam` is only `bound`.
 - Hybrid (SRA, GRBX, DTN, BRK, SPRE22): `hybridAutomaton/reach` is not served (the oracle has the location

@@ -59,48 +59,51 @@ A bit-exact test needs ops that follow `initReach`/`post` of CORA (the request i
 
 The coverage rows `linParamSys`, `initReach` and `post` are oracle debt until then.
 
-## Krylov subspace reach (PR "HEAT03")
+## Krylov subspaces (PR "port/krylov-sound")
 
-CORALean's `ContDynamics/LinearSys/Krylov/` has no float definitions: its operations are over ℝ,
-so the oracle serves none of them (no `krylov` op in `ping`). They follow the paper (Althoff, TAC
-2020), not CORA's code, except for the Arnoldi iteration:
+CORALean's `Krylov` float definitions (MR !914) are served as `krylov.arnoldi`, `krylov.errorBound`,
+`krylov.subspace` and `krylov.windows`, and the sound Krylov of CORA.cpp (`priv_krylov_float.cpp`,
+`priv_krylov_subspace.cpp`) is tested against them, `test_lean_krylov`, on the pinned oracle
+(`oracle-20261111-ded25a884`, CORALean `main` with !914).
 
-| CORALean definition (file under `Krylov/Operations/`) | what it is | follows CORA? |
+| op | tested | against |
 |---|---|---|
-| `Krylov.arnoldi` (`Arnoldi.lean`), `gramSchmidtStep` (`GramSchmidtStep.lean`), `arnoldiBasis`, `arnoldiHessenberg` | Alg. 1: `v₁ = v/‖v‖`, `w = C v_k` swept against the earlier vectors one by one, `h_{k+1,k} = ‖w‖`; the happy breakdown is the caller stopping | yes, step for step as `arnoldi.m` (modified Gram-Schmidt), over ℝ |
-| `Krylov.augment` (`Augment.lean`) | the integrator matrix `[A u; 0 0]` | yes (`A_int` of `priv_krylov_R_uTrans`, `priv_inputSolution_Krylov`) |
-| `Krylov.alg2` (`Alg2.lean`) | Alg. 2 as printed, its subroutines as parameters | the paper's listing, which CORA's `priv_reach_krylov` implements (with its own handling of the inputs) |
-| `Krylov.alg2Corrected` (`Alg2Corrected.lean`) | Alg. 2 with lines 8 and 10 repaired | own (sound); CORA keeps the printed lines |
-| `Krylov.correctionSet` (`Definitions/CorrectionSet.lean`) | the set of correction matrices of `H` | a set, not CORA's interval matrix `F` |
+| `krylov.arnoldi` | bit for bit | `arnoldiFloat`: `nu`, `V`, `H` (random, non-normal with entries 30 above the diagonal, a breakdown, a chain of 30 states, 180 passes on 6 states) |
+| `krylov.errorBound` | bit for bit | `errorBoundFloat`, `orderOkFloat`: the residuals, `muA`, `muT`, `bound`, `ok` (the decay product at order 180, where CORA's `k!` is `Inf`) |
+| `krylov.subspace` | bit for bit | `subspaceFloat`: order, `ok`, `bound`, `nu`, `V`, `H` |
+| `krylov.windows` | time points to 1e-7, time intervals inside | `windowsFloat` is `reachFloat` of `y' = T y`: the lean backend has no `expm`, and CORALean's curvature bounds the Taylor remainder by a norm, so CORA.cpp's standard reach of `T` is not bit for bit |
 
-A bit-exact test of CORA.cpp's `alg::Krylov` needs float ops that follow CORA's code:
+The sums run from the last term and no product is fused (`-ffp-contract=off` for these files and
+`SparseMatrix::matvec_down`), as `sumUp` and `dotUp` do; `p` and `q` are ignored at `nearest`, where
+`sqrtUp` and `expUp` are the machine's. `krylov.errorBound` and `krylov.subspace` reply `"ok"`, the
+order test, which is also the protocol's success flag: a reply with `"ok": false` and no `"error"` is
+a result, and the client reads it so. A request that renames the field (`accepted`) would be cleaner.
 
-| op (proposed) | request fields | reply |
+What is not formalized, and so oracle debt (the coverage rows stay below `oracle`):
+
+| op (proposed) | CORA.cpp step | what it needs |
 |---|---|---|
-| `krylov.arnoldi` (CORA's `arnoldi.m` in float) | `A` (matrix, or coordinates), `v`, `redDim` | `V`, `H`, `Hlast`, `happyBreakdown` |
-| `krylov.subspace` (`priv_subspace_Krylov_individual_Jawecki`) | `A`, `v`, `initKrylovOrder`, `krylovError`, `krylovStep`, `tFinal` | `V`, `H`, `krylovOrder` (with CORA's `t^k/k!` in double) |
-| `linearSys.reachKrylov` (`priv_initReach_Krylov`, `priv_reach_krylov`) | `A`, `B`, `C`, `R0`, `U`, `tFinal`, `timeStep`, `taylorTerms`, `zonotopeOrder`, `krylovError`, `krylovStep` | `timeInterval`, `timePoint` (output zonotopes) |
-
-The Krylov path is a private algorithm of `reach`, so no coverage row changes; its tests are unit and
-property tests (`test_linear_sys_reach_krylov`) until these ops exist.
+| `krylov.restart` | `KrylovWindows` (`priv_krylov_windows.cpp`): the longest window whose bound at its end meets `tol`, the restart from `\|s\| V e^{T t} e_1`, the error carried on by `e^{t mu_A}` | `Krylov.restarted_error_le` is for a nonexpansive map; the float window length and the carry for any `A` have no definition |
+| `krylov.lift` | the windows lifted through `\|s\| C V` and the ball of the bound added in the output rows (`\|C_r\|` times it) | `windowsFloat` stops at the small space |
+| `linearSys.reachKrylov` | the assembly of `priv_reach_krylov`: the sum over the vectors of `R0`, the generator curvature scaled by `[-1, 1]` | `Krylov.alg2Corrected` for one vector |
+| `krylov.inputSolution`, `krylov.constantInput` | `priv_inputSolution_Krylov`, `priv_krylov_R_uTrans`: the subspace of the integrator system `[A u; 0 0]` (the order search above applies to it), the Taylor terms `V H^i e_1 dt^i / i!`, the box of their remainders, the correction `C V G(H) e_1` | the input solution of the printed corollaries fails (`Krylov.partial_input_solution_counterexample`, `varying_input_reach_counterexample`); its corrected form has no float definition |
 
 ## Krylov support function verify (PR "port/arch26-rnd")
 
-`alg::ReachAvoidKrylov` (the verify of the random benchmarks RND02, RND04-06) is built on the
-Krylov subspaces above and follows no CORA file of v2026.1.0: the competition's copy of CORA has
-`reachSuppFuncsKrylov`, which is not in the release. It is a bound by construction: per step the
-hull of the support function at the time points plus the curvature `F(H) e_1` of the subspace, the
-integral of the input by the step times the largest integrand. So there are two things the oracle
-could serve, both new:
+`alg::ReachAvoidKrylov` (the verify of the random benchmarks RND02, RND04-06) follows no CORA file of
+v2026.1.0: the competition's copy of CORA has `reachSuppFuncsKrylov`, which is not in the release. Its
+subspaces are CORALean's (`krylov.subspace`, tested above, in the restart windows above); per step it
+bounds the support function by the hull of the time points plus the curvature `F(H) y_k` of the
+subspace, the integral of the input by the step times the largest integrand, and the error of the
+subspace times the length of each vector of `R0` and `B U`. The loop and these bounds are not in CORALean:
 
 | op (proposed) | request fields | reply |
 |---|---|---|
-| `krylov.subspace` (as above) | `A'` (matrix), `v`, `krylovError`, `krylovStep`, `tFinal` | `V`, `H`, `krylovOrder` |
 | `linearSys.verifyKrylov` (the loop of `priv_verify_ra_krylov`) | `A`, `B`, `C`, `R0`, `U`, `tFinal`, `timeStep`, `taylorTerms`, `krylovError`, `krylovStep`, specifications as rows | `res`, `iterations`, `timeStep`, `nrSteps` |
 
-Neither exists in CORALean (no `krylov` op in `ping`), so the algorithm is tested by properties
-(`test_linear_sys_verify_krylov`: the verdicts of a system whose support function is known in closed form,
-agreement with `alg::ReachAvoidSupportFunction`, sparse against dense `A`).
+The algorithm is tested by properties (`test_linear_sys_verify_krylov`: the verdicts of a system whose
+support function is known in closed form, agreement with `alg::ReachAvoidSupportFunction`, sparse
+against dense `A`).
 
 ## Nonlinear systems, alg "lin" (PR "port/nln-lin")
 

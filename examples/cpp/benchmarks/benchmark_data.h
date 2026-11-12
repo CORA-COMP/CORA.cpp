@@ -297,7 +297,9 @@ inline bool run_instance(const std::string &name) {
                   << inst.expected["timeStep"].number << ")";
     std::cerr << std::endl;
     if (inst.expected.is_null() || !inst.expected.object.count("verified")) return true;
-    return res.verified == (inst.expected["verified"].number != 0);
+    // CORA.cpp's sound Krylov steps do not verify what CORA's unsound ones do (README, RND02)
+    const char *key = inst.expected.object.count("coraCppVerified") ? "coraCppVerified" : "verified";
+    return res.verified == (inst.expected[key].number != 0);
 }
 
 } // namespace cora::bench

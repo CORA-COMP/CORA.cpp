@@ -87,6 +87,7 @@
     }
   ],
   "expected": {
-    "verified": 1
+    "verified": 1,
+    "coraCppVerified": 0
   }
 }

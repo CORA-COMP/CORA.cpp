@@ -163,6 +163,40 @@ void encloses_trajectories() {
     check(worst >= -1e-9, "krylov: a trajectory left the sets by " + std::to_string(-worst));
 }
 
+/// A non-normal chain over a long horizon, where one subspace has no useful bound: the subspace is
+/// restarted in windows, and the trajectories of points of R0 stay in the time points.
+void restarted_windows_enclose_trajectories() {
+    const int n = 30;
+    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
+    for (int i = 0; i < n; ++i) {
+        A(i, i) = -1.0;
+        if (i > 0) A(i, i - 1) = 0.6;
+        if (i + 1 < n) A(i, i + 1) = -0.5;
+    }
+    cora::Rng rng(3);
+    const Zonotope R0 = Zonotope::generate_random(rng, n, std::nullopt, 2);
+    const double dt = 0.5, t_final = 20.0;
+    const LinearSys sys(tensor_of(A), Tensor::zeros({n, 1}));
+    const ReachSet R =
+        sys.reach({.initial_set = R0, .t_final = t_final},
+                  alg::Krylov{.time_step = dt, .krylov_error = 1e-8, .krylov_step = 5});
+    const Eigen::MatrixXd c0 = host_matrix(R0.center().data(), n, 1),
+                          g0 = host_matrix(R0.generators().data(), n, 2);
+    // points of R0 along their exact trajectories, in the directions of the time points
+    double worst = 1e9;
+    for (int i = 0; i < 20; ++i) {
+        Eigen::VectorXd beta(2), d(n);
+        rng.uniform(beta.data(), 2, -1.0, 1.0);
+        rng.normal(d.data(), n, 1.0);
+        for (size_t k = 0; k < R.time_point.size(); ++k) {
+            const Eigen::VectorXd xk = (A * (double(k) * dt)).exp() * (c0 + g0 * beta);
+            worst = std::min(worst, support(R.time_point[k], d) - d.dot(xk));
+        }
+    }
+    check(worst >= -1e-9,
+          "krylov windows: a trajectory left the sets by " + std::to_string(-worst));
+}
+
 /// Wrong options and a batch of initial sets are refused; with the checks off the result is the
 /// same.
 void checks_and_their_switch() {
@@ -207,6 +241,7 @@ int main() {
     callback_receives_the_time_intervals();
     agrees_with_standard();
     encloses_trajectories();
+    restarted_windows_enclose_trajectories();
     checks_and_their_switch();
     return test::finish("linear_sys reach krylov");
 }
