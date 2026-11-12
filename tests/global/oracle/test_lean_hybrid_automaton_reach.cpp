@@ -59,9 +59,11 @@ struct Spec {
 /// The automaton of the locations.
 HybridAutomaton aux_build(const std::vector<Spec> &specs) {
     std::vector<Location> locations;
+    locations.reserve(specs.size());
     int k = 0;
     for (const Spec &s : specs) {
         std::vector<Transition> transitions;
+        transitions.reserve(s.edges.size());
         for (const Edge &e : s.edges)
             transitions.emplace_back(e.guard, LinearReset(e.W, std::nullopt, e.w), e.target);
         const int64_t n = s.A.shape()[0];

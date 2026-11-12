@@ -28,7 +28,6 @@ namespace {
 
 using namespace cora;
 using cora::bench::column;
-using cora::bench::hyperplane;
 using cora::bench::matrix;
 namespace rendezvous = cora::bench::rendezvous;
 

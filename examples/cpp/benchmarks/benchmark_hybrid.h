@@ -78,14 +78,14 @@ inline bool run_hybrid(const HybridInstance &inst) {
     std::size_t sets = 0;
     for (const LocationReachSet &b : R.branches) sets += b.time_interval.size();
     std::cerr << "  " << R.branches.size() << " branches, " << sets
-              << " time-interval sets  (MATLAB CORA: " << inst.expected << ")" << std::endl;
+              << " time-interval sets  (MATLAB CORA: " << inst.expected << ")" << '\n';
     // with CORACPP_BENCHMARK_VERBOSE, each branch: its location, parent, sets and times
     if (std::getenv("CORACPP_BENCHMARK_VERBOSE"))
         for (const LocationReachSet &b : R.branches)
             std::cerr << "    location " << b.location << " (parent " << b.parent
                       << "): " << b.time_interval.size() << " sets from "
                       << b.time_point_times.front()[0] << " to " << b.time_point_times.back()[1]
-                      << std::endl;
+                      << '\n';
     // and the box of the last set, to compare with MATLAB
     if (std::getenv("CORACPP_BENCHMARK_VERBOSE") && !R.branches.empty()) {
         const Interval I = R.branches.back().time_point.back()->interval();
