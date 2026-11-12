@@ -17,6 +17,7 @@
 #pragma once
 
 #include "benchmark_data.h"
+#include "benchmark_run.h"
 #include "cora/cora.h"
 
 #include <chrono>
@@ -116,7 +117,8 @@ inline ClosedLoopOptions loop_options(double time_step, int tensor_order, int ta
                .zonotope_order = zonotope_order,
                .tensor_order = tensor_order,
                .error_order = error_order,
-               .intermediate_order = intermediate_order};
+               .intermediate_order = intermediate_order,
+               .error_bound = cora::bench::error_bound()};
     o.nn.poly_method = method;
     return o;
 }

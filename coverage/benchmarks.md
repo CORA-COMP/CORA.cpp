@@ -303,8 +303,8 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - Hybrid (SRA, GRBX, DTN, BRK, SPRE22): `hybridAutomaton/reach` is not served (the oracle has the location
   and transition steps), and `guardIntersect` follows CORALean's dual bound, not CORA's dichotomic search.
 - Nonlinear (TRAF22, SPRE22): the `lin` step at tensor order 2 is CORALean's `linReachFloat` (the region
-  step, bit for bit: `test_lean_nonlinear_sys_lin_reach`). The AINNCS plants step polynomial zonotopes
-  (CORA's loop, `priv_lin_reach_poly`), which the oracle does not serve: their `initReach`, `post` and
+  step, bit for bit: `test_lean_nonlinear_sys_lin_reach`). AINNCS instances on polynomial zonotopes
+  step CORA's loop (`priv_lin_reach_poly`), which the oracle does not serve: their `initReach`, `post` and
   `linReach` are `oracle` on the zonotope step only, not on the instance's own path.
 
 ## Private CORA steps that the instances run

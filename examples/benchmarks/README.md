@@ -86,7 +86,8 @@ The error of a `lin` step at tensor order 2 is CORALean's `linReachFloat` by def
 and the Hessian over it, bit for bit against `nonlinearSys.linReach` in `test_lean_nonlinear_sys_lin_reach`);
 `ErrorBound::loop` (`CORACPP_ERROR_BOUND=loop`) is CORA's guess-and-enlarge loop. TRAF22 verifies with both (0.93 s against 0.89 s; the
 inputs lie in [-0.502, 0.503] x [-8.488, 0.483] against [-0.499, 0.500] x [-8.488, 0.483]), SPRE22 as in [f]. The AINNCS
-plants step polynomial zonotopes, which `linReachFloat` does not cover: CORA's loop.
+instances on polynomial zonotopes step CORA's loop (`linReachFloat` is zonotope-only); Double Pendulum, NAV and Unicycle
+step zonotopes and take the region step, with the same verdicts (Double Pendulum less-robust at 0.005, see [d]).
 `LinearStep::coralean` takes CORALean's step instead, bit for bit
 (`test_lean_linear_sys_float_step`), at a price: TRAF22 and SPRE22 take 1.9x as long (SPRE22 needs a
 time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `zeta_z` and
@@ -558,8 +559,8 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | TORA reach-tanh | V | V | 0.15 | 27/60 bit-exact, 8 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
 | TORA reach-sigmoid | V | V | 0.28 | 28/61 bit-exact, 8 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
 | Single Pendulum reach | V | V | 0.041 | 27/60 bit-exact, 8 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
-| Double Pendulum less-robust | V (CORA: U) | V | 44 | 28/56 bit-exact, 4 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.53 |
-| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.14 | 27/54 bit-exact, 3 property | 5.06 | 5.604 | - | - |
+| Double Pendulum less-robust | V (CORA: U) | V | 65 | 28/56 bit-exact, 4 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.04 |
+| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.18 | 27/54 bit-exact, 3 property | 5.06 | 5.604 | - | - |
 | Double Pendulum more-robust | F | F | 0.11 | 27/60 bit-exact, 8 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
 | Airplane continuous | F | F | 0.53 | 27/60 bit-exact, 8 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
 | VCAS middle-19.5 | V | V | 0.0034 | 5/24 bit-exact, 4 property | 0.88 | 0.215 | 0.215 (CORA) [e] | 62.5 |
@@ -585,7 +586,7 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
 [c] Attitude Control: CROWN-Reach's public code (commit 7b90f30, 3.237 s) has an empty unsafe box (x4 >= -0.4 and x4 <= -0.6, where the report has x4 in [-0.7, -0.6]).
 
-[d] Double Pendulum less-robust: CORA.cpp splits the initial set (depth 14: 3103 pieces reached, 1552 leaves, up to 12 splits deep, 8 threads), as CROWN-Reach does with 5 x 5 x 3 x 3 uniform pieces; the script without splitting is UNKNOWN for CORA and CORA.cpp (the second row), CORA's 5.604 s is for that UNKNOWN. JuliaReach verifies it in 824.729 s.
+[d] Double Pendulum less-robust: the region step (the default for sets that are zonotopes) fails its region check at the script's time step 0.01, CORA.cpp runs 0.005 (44 s and 0.14 s with CORA's loop, `CORACPP_ERROR_BOUND=loop`, at 0.01; load 14); CORA.cpp splits the initial set (depth 14: 3103 pieces reached, 1552 leaves, up to 12 splits deep, 8 threads), as CROWN-Reach does with 5 x 5 x 3 x 3 uniform pieces; the script without splitting is UNKNOWN for CORA and CORA.cpp (the second row), CORA's 5.604 s is for that UNKNOWN. JuliaReach verifies it in 824.729 s.
 
 [e] VCAS middle: JuliaReach (0.022, 0.001, 0.000, 0.000 s) analyses the discrete-time plant at the time points only, which the best-tool column does not count.
 
