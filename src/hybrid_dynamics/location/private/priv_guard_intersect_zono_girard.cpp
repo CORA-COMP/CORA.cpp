@@ -75,6 +75,138 @@ std::pair<std::vector<double>, std::vector<double>> aux_cut(const Zonotope &Z, c
     return {lo, hi};
 }
 
+// The box as a zonotope ---------------------------------------------------------------------------
+
+/// The zonotope of the box [lo, hi]; dense keeps a generator per axis, a flat axis too, as
+/// CORALean's Interval.zonotope (CORA's drops the axes without a radius).
+Zonotope aux_box_zonotope(const std::vector<double> &lo, const std::vector<double> &hi,
+                          const Tensor &like, bool dense) {
+    const int64_t n = static_cast<int64_t>(lo.size());
+    const Interval box(Tensor::like(like, lo, {n, 1}), Tensor::like(like, hi, {n, 1}));
+    if (!dense) return box.zonotope();
+    const Tensor center = box.center();
+    return Zonotope(center, (box.sup() - center).maximum(center - box.inf()).diag());
+}
+
+// The joined cuts ---------------------------------------------------------------------------------
+
+using Box = std::pair<std::vector<double>, std::vector<double>>;
+
+/// The cuts of all sets along the columns of the basis, joined: the least lower and the greatest
+/// upper end. A bundle is the intersection of its members: its cut lies in each member's.
+Box aux_joined(const std::vector<Set> &R, const Tensor &normal, double gamma, const Tensor &basis) {
+    std::vector<double> lo, hi;
+    for (const Set &S : R) {
+        std::vector<double> l, u;
+        // the members' cuts, intersected
+        for (const Zonotope &Z : priv_zonotopes(S)) {
+            auto [lz, uz] = aux_cut(Z, normal, gamma, basis);
+            if (l.empty()) {
+                l = lz;
+                u = uz;
+            }
+            for (std::size_t k = 0; k < l.size(); ++k) {
+                l[k] = std::max(l[k], lz[k]);
+                u[k] = std::min(u[k], uz[k]);
+            }
+        }
+        // joined with the cuts of the sets before
+        if (lo.empty()) {
+            lo = l;
+            hi = u;
+        }
+        for (std::size_t k = 0; k < l.size(); ++k) {
+            lo[k] = std::min(lo[k], l[k]);
+            hi[k] = std::max(hi[k], u[k]);
+        }
+    }
+    return {lo, hi};
+}
+
+// The hull of the sets ----------------------------------------------------------------------------
+
+/// The box of a zonotope, c -/+ the sum of the absolute generators (summed from the last one)
+/// (CORALean's Zonotope.interval, without an error box).
+Box aux_box_of(const Zonotope &Z) {
+    const std::vector<double> c = Z.center().data(), g = Z.generators().data();
+    const std::size_t n = c.size(), h = g.size() / (n == 0 ? 1 : n);
+    Box box{std::vector<double>(n), std::vector<double>(n)};
+    for (std::size_t i = 0; i < n; ++i) {
+        double rad = 0.0;
+        for (std::size_t j = h; j-- > 0;) rad = std::fabs(g[i * h + j]) + rad;
+        box.first[i] = (c[i] - rad) + 0.0;
+        box.second[i] = (c[i] + rad) + 0.0;
+    }
+    return box;
+}
+
+/// The boxes of all sets, joined (the members of a bundle intersected): it holds every state of R.
+Box aux_hull(const std::vector<Set> &R) {
+    Box hull;
+    for (const Set &S : R) {
+        // the box of one set: its members' boxes, intersected
+        Box box;
+        for (const Zonotope &Z : priv_zonotopes(S)) {
+            const Box member = aux_box_of(Z);
+            if (box.first.empty()) box = member;
+            for (std::size_t k = 0; k < box.first.size(); ++k) {
+                box.first[k] = std::max(box.first[k], member.first[k]);
+                box.second[k] = std::min(box.second[k], member.second[k]);
+            }
+        }
+        // joined with the boxes of the sets before
+        if (hull.first.empty()) hull = box;
+        for (std::size_t k = 0; k < box.first.size(); ++k) {
+            hull.first[k] = std::min(hull.first[k], box.first[k]);
+            hull.second[k] = std::max(hull.second[k], box.second[k]);
+        }
+    }
+    return hull;
+}
+
+// The defect --------------------------------------------------------------------------------------
+
+/// |I - B B'|, entry by entry, or none where B B' = I exactly (CORALean's step_orthDefect, the
+/// dot products summed from the last entry).
+std::optional<std::vector<double>> aux_defect_magnitude(const Tensor &basis) {
+    const std::size_t m = static_cast<std::size_t>(basis.shape()[0]);
+    const std::vector<double> B = basis.data();
+    std::vector<double> mag(m * m);
+    bool zero = true;
+    for (std::size_t i = 0; i < m; ++i) {
+        for (std::size_t j = 0; j < m; ++j) {
+            double dot = 0.0;
+            for (std::size_t k = m; k-- > 0;) {
+                const double prod = B[i * m + k] * B[j * m + k];
+                dot = prod + dot;
+            }
+            const double e = (i == j ? 1.0 : 0.0) - dot;
+            if (e != 0.0) zero = false;
+            mag[i * m + j] = std::fabs(e);
+        }
+    }
+    if (zero) return std::nullopt;
+    return mag;
+}
+
+/// The radius r of the box [-r, r] of (I - B B') x over the states x of the cuts:
+/// r_i = sum_j |I - B B'|_ij |X|_j, X the hull of the sets, summed from the last term (CORALean's
+/// Location.zonoGirardMemberFloat).
+std::vector<double> aux_defect_radius(const std::vector<double> &mag, const Box &X) {
+    const std::size_t m = X.first.size();
+    std::vector<double> r(m);
+    for (std::size_t i = 0; i < m; ++i) {
+        double acc = 0.0;
+        for (std::size_t j = m; j-- > 0;) {
+            const double mag_x = std::max(std::fabs(X.first[j]), std::fabs(X.second[j]));
+            const double term = mag[i * m + j] * mag_x;
+            acc = term + acc;
+        }
+        r[i] = acc;
+    }
+    return r;
+}
+
 /// CORA's aux_tightenSet: the zonotope cut by the inequalities P of the guard; none if it misses.
 std::optional<Zonotope> aux_tighten(const Zonotope &Z, const Polytope &P) {
     if (!P.is_intersecting(Z, "approx", numerics::kGuardMeet)) return std::nullopt;
@@ -101,44 +233,22 @@ std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,
     const bool inequalities = guard.A().shape()[0] > 0;
     std::vector<Zonotope> parts;
     // The boxes per basis -------------------------------------------------------------------------
+    std::optional<Box> coordinate; // the hull of the sets, for the defect
     for (const Tensor &basis : B) {
-        // the cuts of all sets, joined: the least lower and the greatest upper end
-        std::vector<double> lo, hi;
-        for (const Set &S : R) {
-            // a bundle is the intersection of its members: its cut lies in each member's
-            std::vector<double> l, u;
-            // the members' cuts, intersected
-            for (const Zonotope &Z : priv_zonotopes(S)) {
-                auto [lz, uz] = aux_cut(Z, normal, gamma, basis);
-                if (l.empty()) {
-                    l = lz;
-                    u = uz;
-                }
-                for (std::size_t k = 0; k < l.size(); ++k) {
-                    l[k] = std::max(l[k], lz[k]);
-                    u[k] = std::min(u[k], uz[k]);
-                }
-            }
-            if (lo.empty()) {
-                lo = l;
-                hi = u;
-            }
-            for (std::size_t k = 0; k < l.size(); ++k) {
-                lo[k] = std::min(lo[k], l[k]);
-                hi[k] = std::max(hi[k], u[k]);
-            }
-        }
+        const Box box = aux_joined(R, normal, gamma, basis);
+        const std::vector<double> &lo = box.first, &hi = box.second;
         // a box with inverted ends is an empty cut
         for (std::size_t k = 0; k < lo.size(); ++k)
             if (lo[k] > hi[k]) return std::nullopt;
-        const int64_t n = int64_t(lo.size());
-        const Interval box(Tensor::like(basis, lo, {n, 1}), Tensor::like(basis, hi, {n, 1}));
-        // CORALean's Interval.zonotope has a generator per axis, also for a flat axis
-        const Tensor center = box.center();
-        Zonotope Z =
-            (dense ? Zonotope(center, (box.sup() - center).maximum(center - box.inf()).diag())
-                   : box.zonotope())
-                .linear_map(basis);
+        Zonotope Z = aux_box_zonotope(lo, hi, basis, dense).linear_map(basis);
+        // a basis that is not orthogonal adds the box of (I - B B') x
+        if (const auto mag = aux_defect_magnitude(basis)) {
+            if (!coordinate) coordinate = aux_hull(R);
+            const std::vector<double> r = aux_defect_radius(*mag, *coordinate);
+            std::vector<double> negr(r.size());
+            for (std::size_t k = 0; k < r.size(); ++k) negr[k] = -r[k];
+            Z = Z.plus(aux_box_zonotope(negr, r, basis, dense));
+        }
         if (inequalities) {
             const std::optional<Zonotope> cut = aux_tighten(Z, Polytope(guard.A(), guard.b()));
             if (!cut) continue; // CORA drops the basis

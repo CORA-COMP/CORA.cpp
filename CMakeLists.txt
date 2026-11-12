@@ -84,6 +84,8 @@ if(NOT MSVC)
   set_source_files_properties("${CMAKE_SOURCE_DIR}/src/global/sparse_matrix.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_krylov_float.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_krylov_lyapunov.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/hybrid_dynamics/location/private/priv_calc_basis.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/hybrid_dynamics/location/private/priv_guard_intersect_zono_girard.cpp"
                               PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
   # the facet normals of a zonotope (determinants and lengths) are CORALean's roundings too
   set_source_files_properties("${CMAKE_SOURCE_DIR}/src/cont_set/zonotope/private/priv_zonotope_facet_normals.cpp" PROPERTIES COMPILE_OPTIONS -ffp-contract=off)

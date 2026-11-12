@@ -89,10 +89,21 @@ Location::guard_groups(const std::vector<std::vector<int64_t>> &hits) {
     return out;
 }
 
-std::vector<cora::Tensor> Location::calc_basis(int64_t n, const std::vector<std::string> &enclose) {
+std::vector<cora::Tensor> Location::calc_basis(int64_t n, const std::vector<std::string> &enclose,
+                                               const std::vector<cora::Zonotope> &R,
+                                               const std::optional<cora::Tensor> &normal) {
     Json names = Json::array();
     for (const std::string &s : enclose) names.push(Json(s));
-    const Reply r = ask("location.calcBasis", {{"n", n}, {"enclose", Wire(std::move(names), "")}});
+    std::vector<Operand> operands = {{"n", n}, {"enclose", Wire(std::move(names), "")}};
+    // "pca" reads the sets and the hyperplane of the guard
+    if (!R.empty()) operands.push_back({"R", aux_lean(R)});
+    if (normal) {
+        Json hyperplane = Json::object();
+        hyperplane.set("normal", Tensor::from(*normal).to_json());
+        operands.push_back(
+            {"hyperplane", Wire(std::move(hyperplane), Tensor::from(*normal).dtype())});
+    }
+    const Reply r = ask("location.calcBasis", operands);
     std::vector<cora::Tensor> bases;
     for (const Tensor &B : r.get<std::vector<Tensor>>("B")) bases.push_back(B.gather());
     return bases;
