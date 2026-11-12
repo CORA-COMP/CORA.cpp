@@ -98,9 +98,12 @@ std::vector<Column> aux_generators(const std::vector<Set> &R, const Column &nv, 
     for (std::size_t j = 0; j < cols.size(); ++j) len[j] = aux_dot(cols[j], cols[j]);
     std::vector<std::size_t> order(cols.size());
     std::iota(order.begin(), order.end(), std::size_t{0});
-    std::stable_sort(order.begin(), order.end(),
-                     [&](std::size_t i, std::size_t j) { return len[i] > len[j]; });
+    // ties keep their order: the comparison is a total order
+    std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j) {
+        return len[i] > len[j] || (len[i] == len[j] && i < j);
+    });
     std::vector<Column> kept;
+    kept.reserve(static_cast<std::size_t>(kMaxPcaGenerators));
     for (std::size_t k = 0; k < static_cast<std::size_t>(kMaxPcaGenerators); ++k)
         kept.push_back(cols[order[k]]);
     return kept;
@@ -173,8 +176,9 @@ Tensor aux_pca(const std::vector<Column> &G, int64_t n, const Tensor &like) {
     for (std::size_t i = 0; i < m; ++i) len[i] = aux_col_dot(W[i], W[i]);
     std::vector<std::size_t> order(m);
     std::iota(order.begin(), order.end(), std::size_t{0});
-    std::stable_sort(order.begin(), order.end(),
-                     [&](std::size_t i, std::size_t j) { return len[i] > len[j]; });
+    std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j) {
+        return len[i] > len[j] || (len[i] == len[j] && i < j);
+    });
     std::vector<double> data(m * m);
     for (std::size_t r = 0; r < m; ++r)
         for (std::size_t k = 0; k < m; ++k) data[r * m + k] = V[order[k]][r];
