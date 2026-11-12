@@ -544,33 +544,33 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Unicycle reach | V | V | 0.41 | 21/54 bit-exact, 8 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 17.3 |
-| Unicycle reach, with the report's disturbance w | V | V | 0.4 | 21/54 bit-exact, 8 property | - | 8.015 | 7.093 (JuliaReach) | 17.7 |
-| ACC safe-distance | V | V | 0.24 | 21/60 bit-exact, 13 property | 4.2 | 3.176 | 0.492 (JuliaReach) [a] | 2.05 |
-| TORA remain | V | V | 1.22 | 21/61 bit-exact, 14 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.34 |
-| TORA reach-tanh | V | V | 0.15 | 21/60 bit-exact, 13 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
-| TORA reach-sigmoid | V | V | 0.28 | 21/61 bit-exact, 14 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
-| Single Pendulum reach | V | V | 0.041 | 21/60 bit-exact, 13 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
-| Double Pendulum less-robust | V (CORA: U) | V | 44 | 22/56 bit-exact, 9 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.53 |
-| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.14 | 21/54 bit-exact, 8 property | 5.06 | 5.604 | - | - |
-| Double Pendulum more-robust | F | F | 0.11 | 21/60 bit-exact, 13 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
-| Airplane continuous | F | F | 0.53 | 21/60 bit-exact, 13 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
-| VCAS middle-19.5 | V | V | 0.0034 | 4/24 bit-exact, 4 property | 0.88 | 0.215 | 0.215 (CORA) [e] | 62.5 |
-| VCAS middle-22.5 | V | V | 0.0035 | 4/24 bit-exact, 4 property | 0.16 | 0.129 | 0.129 (CORA) [e] | 36.5 |
-| VCAS middle-25.5 | F | F | 0.0011 | 0/10 bit-exact, 1 property | 0.048 | 0.065 | 0.030 (CROWN-Reach) [e] | 28.3 |
-| VCAS middle-28.5 | F | F | 0.00098 | 0/10 bit-exact, 1 property | 0.048 | 0.064 | 0.034 (CROWN-Reach) [e] | 34.8 |
-| VCAS worst-19.5 | V | V | 0.0035 | 4/24 bit-exact, 4 property | 0.11 | 0.118 | 0.118 (CORA) | 33.9 |
-| VCAS worst-22.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.048 | 0.061 | 0.061 (CORA) | 58.1 |
-| VCAS worst-25.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.047 | 0.042 | 0.030 (CROWN-Reach) | 29.7 |
-| VCAS worst-28.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.047 | 0.032 | 0.032 (CORA) | 31.7 |
-| Attitude Control avoid | V | V | 0.42 | 21/62 bit-exact, 14 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
-| QUAD reach | V | V | 1.70 | 22/62 bit-exact, 14 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
-| Docking constraint | U | U | 4.59 | 15/54 bit-exact, 13 property | 594 [m] | 95.038 | - [f] | - |
-| Docking constraint, polytope and splitting | U (script) | V | 157 | 21/60 bit-exact, 13 property | - | 95.038 (U) | - [f] | - |
-| NAV standard | V | V | 13.3 | 27/63 bit-exact, 10 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
-| NAV robust | V | V | 0.36 | 26/61 bit-exact, 9 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
-| CartPole* reach | V | V | 2.09 | 22/62 bit-exact, 14 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
-| CartPole reach, the report's set | - | V | 37 | 22/62 bit-exact, 14 property | - | - | - [g] | - |
+| Unicycle reach | V | V | 0.41 | 27/54 bit-exact, 5 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 17.3 |
+| Unicycle reach, with the report's disturbance w | V | V | 0.4 | 27/54 bit-exact, 5 property | - | 8.015 | 7.093 (JuliaReach) | 17.7 |
+| ACC safe-distance | V | V | 0.24 | 27/60 bit-exact, 10 property | 4.2 | 3.176 | 0.492 (JuliaReach) [a] | 2.05 |
+| TORA remain | V | V | 1.22 | 27/61 bit-exact, 11 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.34 |
+| TORA reach-tanh | V | V | 0.15 | 27/60 bit-exact, 10 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
+| TORA reach-sigmoid | V | V | 0.28 | 27/61 bit-exact, 11 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
+| Single Pendulum reach | V | V | 0.041 | 27/60 bit-exact, 10 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
+| Double Pendulum less-robust | V (CORA: U) | V | 44 | 28/56 bit-exact, 6 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.53 |
+| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.14 | 27/54 bit-exact, 5 property | 5.06 | 5.604 | - | - |
+| Double Pendulum more-robust | F | F | 0.11 | 27/60 bit-exact, 10 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
+| Airplane continuous | F | F | 0.53 | 27/60 bit-exact, 10 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
+| VCAS middle-19.5 | V | V | 0.0034 | 8/24 bit-exact, 3 property | 0.88 | 0.215 | 0.215 (CORA) [e] | 62.5 |
+| VCAS middle-22.5 | V | V | 0.0035 | 8/24 bit-exact, 3 property | 0.16 | 0.129 | 0.129 (CORA) [e] | 36.5 |
+| VCAS middle-25.5 | F | F | 0.0011 | 3/10 bit-exact, 0 property | 0.048 | 0.065 | 0.030 (CROWN-Reach) [e] | 28.3 |
+| VCAS middle-28.5 | F | F | 0.00098 | 3/10 bit-exact, 0 property | 0.048 | 0.064 | 0.034 (CROWN-Reach) [e] | 34.8 |
+| VCAS worst-19.5 | V | V | 0.0035 | 8/24 bit-exact, 3 property | 0.11 | 0.118 | 0.118 (CORA) | 33.9 |
+| VCAS worst-22.5 | F | F | 0.0010 | 3/10 bit-exact, 0 property | 0.048 | 0.061 | 0.061 (CORA) | 58.1 |
+| VCAS worst-25.5 | F | F | 0.0010 | 3/10 bit-exact, 0 property | 0.047 | 0.042 | 0.030 (CROWN-Reach) | 29.7 |
+| VCAS worst-28.5 | F | F | 0.0010 | 3/10 bit-exact, 0 property | 0.047 | 0.032 | 0.032 (CORA) | 31.7 |
+| Attitude Control avoid | V | V | 0.42 | 27/62 bit-exact, 11 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
+| QUAD reach | V | V | 1.70 | 28/62 bit-exact, 11 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
+| Docking constraint | U | U | 4.59 | 20/54 bit-exact, 11 property | 594 [m] | 95.038 | - [f] | - |
+| Docking constraint, polytope and splitting | U (script) | V | 157 | 27/60 bit-exact, 10 property | - | 95.038 (U) | - [f] | - |
+| NAV standard | V | V | 13.3 | 33/63 bit-exact, 7 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
+| NAV robust | V | V | 0.36 | 32/61 bit-exact, 6 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
+| CartPole* reach | V | V | 2.09 | 28/62 bit-exact, 11 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
+| CartPole reach, the report's set | - | V | 37 | 28/62 bit-exact, 11 property | - | - | - [g] | - |
 
 [a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback, as the report states, instead of sample-and-hold control.
 
@@ -788,9 +788,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 <!-- BEGIN bit-exact -->
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
-| ACC-safe-distance | 24/60 | 36 | 11 |
-| Airplane-continuous | 24/60 | 36 | 11 |
-| Attitude_Control-avoid | 24/62 | 38 | 15 |
+| ACC-safe-distance | 27/60 | 33 | 11 |
+| Airplane-continuous | 27/60 | 33 | 11 |
+| Attitude_Control-avoid | 27/62 | 35 | 15 |
 | BRKDC01 | 6/12 | 6 | 5 |
 | BRKNC01 | 35/54 | 19 | 10 |
 | BRKNP01 | 27/44 | 17 | 10 |
@@ -801,19 +801,19 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF02 | 3/8 | 5 | 4 |
 | CBF03 | 3/8 | 5 | 4 |
 | CVDP23 | 35/70 | 35 | 11 |
-| CartPole-reach | 25/62 | 37 | 11 |
-| CartPole-reach-report | 25/62 | 37 | 11 |
+| CartPole-reach | 28/62 | 34 | 11 |
+| CartPole-reach-report | 28/62 | 34 | 11 |
 | DTN01 | 23/37 | 14 | 6 |
 | DTN02 | 23/37 | 14 | 6 |
 | DTN03 | 23/37 | 14 | 6 |
 | DTN04 | 23/37 | 14 | 6 |
 | DTN05 | 23/37 | 14 | 6 |
 | DTN06 | 23/37 | 14 | 6 |
-| Docking-constraint | 17/54 | 37 | 9 |
-| Docking-constraint-polygon | 24/60 | 36 | 11 |
-| Double_Pendulum-less-robust | 25/56 | 31 | 11 |
-| Double_Pendulum-less-robust-script | 24/54 | 30 | 11 |
-| Double_Pendulum-more-robust | 24/60 | 36 | 11 |
+| Docking-constraint | 20/54 | 34 | 9 |
+| Docking-constraint-polygon | 27/60 | 33 | 11 |
+| Double_Pendulum-less-robust | 28/56 | 28 | 11 |
+| Double_Pendulum-less-robust-script | 27/54 | 27 | 11 |
+| Double_Pendulum-more-robust | 27/60 | 33 | 11 |
 | GRBX01 | 34/56 | 22 | 10 |
 | GRBX02 | 34/56 | 22 | 10 |
 | HEAT01 | 3/8 | 5 | 4 |
@@ -829,14 +829,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W01 | 6/25 | 19 | 5 |
 | LOVO25 | 28/75 | 47 | 13 |
 | LOVO25-script | 31/82 | 51 | 14 |
-| NAV-robust | 29/61 | 32 | 15 |
-| NAV-standard | 30/63 | 33 | 15 |
+| NAV-robust | 32/61 | 29 | 15 |
+| NAV-standard | 33/63 | 30 | 15 |
 | PLAA01_BND42 | 25/35 | 10 | 9 |
 | PLAA01_BND50 | 25/35 | 10 | 9 |
 | PLAD01_BND30 | 11/17 | 6 | 5 |
 | PLAD01_BND42 | 11/17 | 6 | 5 |
 | PLAN01 | 34/45 | 11 | 9 |
-| QUAD-reach | 25/62 | 37 | 11 |
+| QUAD-reach | 28/62 | 34 | 11 |
 | RAND01 | 7/13 | 6 | 4 |
 | RAND02 | 7/13 | 6 | 4 |
 | RND01 | 7/13 | 6 | 4 |
@@ -860,20 +860,20 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRNA01 | 25/40 | 15 | 7 |
 | SRU01 | 32/47 | 15 | 8 |
 | SRU02 | 47/67 | 20 | 11 |
-| Single_Pendulum-reach | 24/60 | 36 | 11 |
-| TORA-reach-sigmoid | 25/61 | 36 | 11 |
-| TORA-reach-tanh | 24/60 | 36 | 11 |
-| TORA-remain | 25/61 | 36 | 11 |
+| Single_Pendulum-reach | 27/60 | 33 | 11 |
+| TORA-reach-sigmoid | 28/61 | 33 | 11 |
+| TORA-reach-tanh | 27/60 | 33 | 11 |
+| TORA-remain | 28/61 | 33 | 11 |
 | TRAF22 | 18/28 | 10 | 7 |
 | TSPS25 | 19/32 | 13 | 6 |
-| Unicycle-reach | 24/54 | 30 | 11 |
-| Unicycle-reach-disturbance | 24/54 | 30 | 11 |
-| VCAS-middle-19.5 | 5/24 | 19 | 4 |
-| VCAS-middle-22.5 | 5/24 | 19 | 4 |
-| VCAS-middle-25.5 | 0/10 | 10 | 0 |
-| VCAS-middle-28.5 | 0/10 | 10 | 0 |
-| VCAS-worst-19.5 | 5/24 | 19 | 4 |
-| VCAS-worst-22.5 | 0/10 | 10 | 0 |
-| VCAS-worst-25.5 | 0/10 | 10 | 0 |
-| VCAS-worst-28.5 | 0/10 | 10 | 0 |
+| Unicycle-reach | 27/54 | 27 | 11 |
+| Unicycle-reach-disturbance | 27/54 | 27 | 11 |
+| VCAS-middle-19.5 | 8/24 | 16 | 4 |
+| VCAS-middle-22.5 | 8/24 | 16 | 4 |
+| VCAS-middle-25.5 | 3/10 | 7 | 0 |
+| VCAS-middle-28.5 | 3/10 | 7 | 0 |
+| VCAS-worst-19.5 | 8/24 | 16 | 4 |
+| VCAS-worst-22.5 | 3/10 | 7 | 0 |
+| VCAS-worst-25.5 | 3/10 | 7 | 0 |
+| VCAS-worst-28.5 | 3/10 | 7 | 0 |
 <!-- END bit-exact -->

@@ -6,7 +6,10 @@
 // least-squares line through 20 equidistant points of [l, u] shifted by the middle of its
 // difference to the activation, whose bounds are exact (the ends and where f'(x) = slope). The
 // line maps (c, G, GI) exactly, so the factors and the exponents never change; the radius is a
-// new independent generator per neuron, or a new factor. evaluate_with_input carries the input
+// new independent generator per neuron, or a new factor. The order of the operations is that of
+// CORALean's Layer.activation, bit for bit at nearest for singh (test_lean_nn_evaluate): the
+// slope, the box [offset - radius, offset + radius] as a zonotope whose middle is added to the
+// center and whose reach is the generator. evaluate_with_input carries the input
 // rows along, so the output depends on the same factors as the input. All neurons are handled at
 // once by tensor operations.
 //
@@ -86,31 +89,53 @@ Tensor aux_apply(Activation activation, const Tensor &x) {
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
 
-/// The line over [l, u] by Singh's transformer: a ReLU is exact where l >= 0 or u <= 0, else the
-/// slope is u / (u - l) with radius -slope l / 2; a sigmoid or tanh has slope min(a'(l), a'(u)).
+/// The sigmoid's value from below, 1 - 1 / (1 + exp x), and from above, 1 / (1 + exp(-x)): the
+/// enclosure of CORALean's sigmoidEnclosure (at nearest both are the machine's results).
+Tensor aux_sigmoid_lo(const Tensor &x) {
+    const Tensor one = x.ones_like();
+    return one - one.divide((one + x.exp()).maximum(1.0));
+}
+
+Tensor aux_sigmoid_hi(const Tensor &x) {
+    const Tensor one = x.ones_like();
+    return one.divide((one + x.negative().exp()).maximum(1.0));
+}
+
+/// The sigmoid's line by Singh's transformer (CORALean's sigmoidSinghRelaxation, in the file's
+/// docstring): the slope is the smaller lower bound sig(x) sig(-x) of the derivative at the ends.
+Line aux_line_sigmoid_singh(const Tensor &l, const Tensor &u) {
+    const Tensor zero = l.zeros_like();
+    auto derivative = [&](const Tensor &x) {
+        return aux_sigmoid_lo(x).maximum(zero).multiply(aux_sigmoid_lo(x.negative()).maximum(zero));
+    };
+    const Tensor slope = derivative(l).minimum(derivative(u));
+    const Tensor lo = aux_sigmoid_lo(l) - slope.multiply(l);
+    const Tensor hi = aux_sigmoid_hi(u) - slope.multiply(u);
+    const Tensor offset = (lo + hi) * 0.5;
+    return {slope, offset, (hi - offset).maximum(offset - lo)};
+}
+
+/// The line over [l, u] by Singh's transformer (CORALean's relaxations, bit for bit at nearest).
 Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
     const Tensor zero = l.zeros_like(), one = l.ones_like();
     switch (activation) {
     case Activation::identity:
         return {one, zero, zero};
     case Activation::relu: {
-        // a stable neuron is exact; u - l is positive where the range crosses 0
-        const Tensor negative = u.less_equal(zero), positive = l.greater_equal(zero);
-        const Tensor slope = u.divide((u - l).maximum(numerics::kTiny));
-        const Tensor mu = slope.multiply(l) * -0.5;
-        const Tensor exact = Tensor::where(negative, one, Tensor::where(positive, one, zero));
-        return {Tensor::where(negative, zero, Tensor::where(positive, one, slope)),
-                Tensor::where(exact, zero, mu), Tensor::where(exact, zero, mu)};
+        // exact if l >= 0 or u <= 0, else slope u / (u - l); half the gap to relu is the line
+        const Tensor negative = u.less_equal(zero), positive = zero.less_equal(l);
+        const Tensor secant = u.divide((u - l).maximum(numerics::kTiny)).minimum(1.0).maximum(0.0);
+        const Tensor slope = Tensor::where(negative, zero, Tensor::where(positive, one, secant));
+        const Tensor gap = (u - slope.multiply(u)).maximum(slope.multiply(l).negative()) * 0.5;
+        return {slope, gap, gap};
     }
     case Activation::sigmoid:
+        return aux_line_sigmoid_singh(l, u);
     case Activation::tanh: {
-        const bool is_tanh = activation == Activation::tanh;
-        const Tensor fl = is_tanh ? l.tanh() : l.sigmoid(), fu = is_tanh ? u.tanh() : u.sigmoid();
-        // the derivative from the value: 1 - f^2 for tanh, f (1 - f) for the sigmoid
-        const Tensor dl = aux_derivative(activation, fl), du = aux_derivative(activation, fu);
-        const Tensor slope = dl.minimum(du);
-        return {slope, (fu + fl - slope.multiply(u + l)) * 0.5,
-                (fu - fl - slope.multiply(u - l)) * 0.5};
+        // the sigmoid's line at the doubled range, scaled by 4 and shifted by -1
+        const Line s = aux_line_sigmoid_singh(l + l, u + u);
+        const Tensor four = (s.slope + s.slope) + (s.slope + s.slope);
+        return {four, (s.offset + s.offset) + (-1.0), s.radius + s.radius};
     }
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
@@ -225,13 +250,16 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
         // the range of every neuron, the line over it, and the set it maps to
         const auto [l, u] = aux_bounds(r);
         const Line line = aux_line(activations[k], l, u, method);
-        r.c = line.slope.multiply(r.c) + line.offset;
-        r.G = line.slope.multiply(r.G);
-        r.GI = line.slope.multiply(r.GI);
+        // CORALean's Layer.activation: the slope map (+ 0.0: -0 times a zero slope is +0), the box
+        const Tensor lo = line.offset - line.radius, hi = line.offset + line.radius;
+        const Tensor middle = (lo + hi) * 0.5, reach = (hi - middle).maximum(middle - lo);
+        r.c = line.slope.multiply(r.c) + 0.0 + middle;
+        r.G = line.slope.multiply(r.G) + 0.0;
+        r.GI = line.slope.multiply(r.GI) + 0.0;
         // the identity has no error
         if (activations[k] == Activation::identity) continue;
         // the error, as independent generators or as new factors
-        const Tensor D = aux_error_columns(line.radius, keep_zero);
+        const Tensor D = aux_error_columns(reach, keep_zero);
         if (errors_in_gi) {
             r.GI = Tensor::concat({r.GI, D}, -1);
         } else {
