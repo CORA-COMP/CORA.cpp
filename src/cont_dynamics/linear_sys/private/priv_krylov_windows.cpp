@@ -136,8 +136,7 @@ KrylovWindow KrylovWindows::next() {
     error_ = (error_ == 0.0 ? 0.0 : growth * error_) + local;
     window.error = error_;
     if (weighted_) {
-        // in the weight: at every time of the window at most the start's beta plus the local error
-        // and the smaller of it and the Gershgorin carry (Krylov.carryMinFloat)
+        // in the weight, at most the start's beta plus the local error; the smaller of it and g
         const double inside = weighted_->window_bound(local);
         const double carried = RestartedBound::carry_min(window.error, inside);
         carries_.push_back({length, local, window.error, inside, carried});

@@ -1,5 +1,4 @@
-// test_lean_zonotope_quad_map - Zonotope::quad_map against CORALean's Zonotope.quadMapTri, bit for
-// bit
+// test_lean_zonotope_quad_map - Zonotope::quad_map against quadMapTri, bit for bit
 //
 // CORA's quadMap of one zonotope (the center kept, 1 + N + N(N+1)/2 generators per output) is the
 // float definition Zonotope.quadMapTri (MR !921): the entries of M = [c G]' Q [c G] formed as
@@ -11,7 +10,7 @@
 // linearization of a step of the traffic scenario (TRAF22) and of Robertson (ROBE25_1) dumped from
 // CORA.cpp.
 //
-// CORA: contSet/@zonotope/quadMap.m
+// ORACLE: contSet/@zonotope/quadMap.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
@@ -67,6 +66,7 @@ void aux_recorded(const std::string &name) {
         for (double &x : v) in >> x;
         return v;
     };
+    // each call of the section: its header line, the center, the generators and the matrices
     int index = 0;
     while (std::getline(in, line)) {
         if (line.rfind("# ", 0) == 0) section = line.substr(2);

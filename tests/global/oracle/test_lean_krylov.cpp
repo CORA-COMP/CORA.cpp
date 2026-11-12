@@ -57,8 +57,7 @@ Weight aux_weight(const SparseMatrix &S) {
 /// eps (one more) and the Gershgorin carry g, against CORA.cpp's, bit for bit.
 void aux_window_bound(const Tensor &A, const Weight &wt, const std::vector<double> &dt,
                       const std::vector<double> &eps, double carry, const std::string &what) {
-    // an overflown Gershgorin carry (the reason for the weight) is no lean value: the largest
-    // float is the same bound for the minimum, and a NaN carry is the one case that differs
+    // an overflown carry is no lean value: the largest float is the same minimum (a NaN differs)
     const bool overflow = !std::isfinite(carry);
     const double g = overflow ? std::numeric_limits<double>::max() : carry;
     const int64_t n = A.shape()[0];
@@ -379,10 +378,7 @@ int main() {
         }
     });
 
-    // the windows of the random benchmarks (A' and the first output direction, as the verify):
-    // RND02 in its own weight, RND04 (n = 1000, whose three dense matrices take the oracle minutes
-    // per request) with its window lengths, local errors and carries in the weight of a fixture
-    // (outside run: the windows form e^{H t}, which the lean backend has no expm for)
+    // RND02 in its own weight, RND04 (n = 1000: minutes per request) in a fixture's, outside run
     if (test::oracle::serves("krylov.windowBound")) {
         test::oracle::op_name() = "krylov.windowBound";
         const lean::DTypeScope dtype("nearest");
