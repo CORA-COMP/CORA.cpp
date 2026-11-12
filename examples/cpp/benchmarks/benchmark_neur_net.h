@@ -148,15 +148,21 @@ make_verify(const NonlinearSys &plant, const std::string &net, double dt, const 
             const ClosedLoopReach<S> R = sys.reach(X0, U, t_final, options);
             for (std::size_t k = 0; k < R.time_point.size(); ++k) {
                 const Interval box = R.time_point[k].interval();
-                std::cerr << "  t = " << R.time[k] << ": inf " << box.inf().matrix_transpose()
-                          << " sup " << box.sup().matrix_transpose() << '\n';
+                std::cerr << "  t = " << R.time[k] << ": inf";
+                for (const double d : box.inf().data()) std::cerr << ' ' << d;
+                std::cerr << " sup";
+                for (const double d : box.sup().data()) std::cerr << ' ' << d;
+                std::cerr << '\n';
             }
         }
         // CORACPP_AINNCS_SPLIT = depth,threads overrides the splitting of verify
         VerifySplit tuned = split;
         if (const char *env = std::getenv("CORACPP_AINNCS_SPLIT"))
             std::sscanf(env, "%d,%d", &tuned.depth, &tuned.max_threads);
-        return sys.verify(X0, U, t_final, options, specs, points, rng, tuned);
+        // CORACPP_AINNCS_POINTS = n sets the number of random runs
+        int64_t runs = points;
+        if (const char *env = std::getenv("CORACPP_AINNCS_POINTS")) runs = std::atoll(env);
+        return sys.verify(X0, U, t_final, options, specs, runs, rng, tuned);
     };
 }
 

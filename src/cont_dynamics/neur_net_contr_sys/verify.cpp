@@ -98,6 +98,22 @@ std::pair<Interval, Interval> aux_halves(const Interval &box, int64_t n) {
     return {Interval(box.inf(), cut(box.sup(), mid)), Interval(cut(box.inf(), mid), box.sup())};
 }
 
+/// The dimension in which a piece is cut: CORA's, or the one whose radius is largest relative to
+/// the initial set's.
+template <class S>
+int64_t aux_cut(const NeurNetContrSys &sys, const S &X0, const Interval &box,
+                const VerifySplit &split) {
+    if (split.rule == VerifySplit::Rule::sensitivity) return sys.split_dimension(box);
+    const std::vector<double> rad = box.rad().data(), rad0 = aux_box(X0).rad().data();
+    int64_t best = 0;
+    double best_ratio = -1;
+    for (std::size_t i = 0; i < rad.size(); ++i) {
+        const double ratio = rad0[i] > 0 ? rad[i] / rad0[i] : 0.0;
+        if (ratio > best_ratio) best_ratio = ratio, best = int64_t(i);
+    }
+    return best;
+}
+
 /// A queue of pieces, taken by a pool of threads; a piece can add its two halves.
 struct Tree {
     struct Piece {
@@ -147,7 +163,7 @@ void aux_run_tree(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
                     tree.failed_at_depth = true;
                     tree.stop = true;
                 } else {
-                    const auto [lo, hi] = aux_halves(piece.box, sys.split_dimension(piece.box));
+                    const auto [lo, hi] = aux_halves(piece.box, aux_cut(sys, X0, piece.box, split));
                     tree.queue.push_back({hi, piece.splits + 1});
                     tree.queue.push_back({lo, piece.splits + 1});
                 }
@@ -162,7 +178,7 @@ void aux_run_tree(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
         }
     };
     // CORA does not reach the whole set again at level 1: it is split at once
-    const auto [lo, hi] = aux_halves(aux_box(X0), sys.split_dimension(aux_box(X0)));
+    const auto [lo, hi] = aux_halves(aux_box(X0), aux_cut(sys, X0, aux_box(X0), split));
     tree.queue = {{hi, 1}, {lo, 1}};
     const int threads = std::max(1, split.max_threads);
     // the pieces are the parallelism: the pools inside an operation stay at one thread
