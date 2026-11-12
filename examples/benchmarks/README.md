@@ -520,7 +520,7 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | Attitude Control avoid | V | V | 0.42 | 21/62 bit-exact, 14 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
 | QUAD reach | V | V | 1.70 | 22/62 bit-exact, 14 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
 | Docking constraint | U | U | 4.59 | 15/54 bit-exact, 13 property | 594 [m] | 95.038 | - [f] | - |
-| Docking constraint, polytope and splitting | U (script) | V | 157 | 15/54 bit-exact, 13 property | - | 95.038 (U) | - [f] | - |
+| Docking constraint, polytope and splitting | U (script) | V | 157 | 21/60 bit-exact, 13 property | - | 95.038 (U) | - [f] | - |
 | NAV standard | V | V | 13.3 | 27/63 bit-exact, 10 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
 | NAV robust | V | V | 0.36 | 26/61 bit-exact, 9 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
 | CartPole* reach | V | V | 2.09 | 22/62 bit-exact, 14 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
@@ -647,8 +647,8 @@ CartPole on the report's set: the settings of the script and `depth` 16 (depths 
 
 `CORACPP_BENCHMARK_VERBOSE=1` prints the box of every set of the reach,
 `CORACPP_AINNCS_OPTIONS=time_step,tensor_order,taylor_terms,zonotope_order,error_order,intermediate_order`
-replaces the settings of the instance (how the two tuned steps were found), and `CORACPP_AINNCS_SPLIT=depth,threads`
-the splitting of `verify`; `CORACPP_AINNCS_POINTS` sets the number of random runs and `CORACPP_DOCKING_SIDES` the sides of the polygon.
+replaces the settings of the instance (how the two tuned steps were found), and `CORACPP_AINNCS_SPLIT=depth,threads[,rule]`
+the splitting of `verify` (rule 0: CORA's sensitivity, 1: `widest`; for CartPole `widest` is worse: depth 16 ends UNKNOWN, depth 18 verifies after 6215 pieces, 452 s); `CORACPP_AINNCS_POINTS` sets the number of random runs and `CORACPP_DOCKING_SIDES` the sides of the polygon.
 
 **Not ported here.** CORA's `refine` of the network (order 2 in a layer, which QUAD's script uses; `NeuralNetwork` has order 1),
 `LinearSys`, `LinParamSys` plants and the discrete-time systems of CORA's `neurNetContrSys` (the VCAS loop is the
@@ -753,6 +753,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF03 | 1/8 | 7 | 4 |
 | CVDP23 | 30/70 | 40 | 11 |
 | CartPole-reach | 22/62 | 40 | 11 |
+| CartPole-reach-report | 22/62 | 40 | 11 |
 | DTN01 | 21/37 | 16 | 6 |
 | DTN02 | 21/37 | 16 | 6 |
 | DTN03 | 21/37 | 16 | 6 |
@@ -760,6 +761,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | DTN05 | 21/37 | 16 | 6 |
 | DTN06 | 21/37 | 16 | 6 |
 | Docking-constraint | 15/54 | 39 | 9 |
+| Docking-constraint-polygon | 21/60 | 39 | 11 |
 | Double_Pendulum-less-robust | 22/56 | 34 | 11 |
 | Double_Pendulum-less-robust-script | 21/54 | 33 | 11 |
 | Double_Pendulum-more-robust | 21/60 | 39 | 11 |

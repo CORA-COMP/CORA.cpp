@@ -155,10 +155,14 @@ make_verify(const NonlinearSys &plant, const std::string &net, double dt, const 
                 std::cerr << '\n';
             }
         }
-        // CORACPP_AINNCS_SPLIT = depth,threads overrides the splitting of verify
+        // CORACPP_AINNCS_SPLIT = depth,threads[,rule] overrides the splitting of verify (rule 1:
+        // widest)
         VerifySplit tuned = split;
-        if (const char *env = std::getenv("CORACPP_AINNCS_SPLIT"))
-            std::sscanf(env, "%d,%d", &tuned.depth, &tuned.max_threads);
+        if (const char *env = std::getenv("CORACPP_AINNCS_SPLIT")) {
+            int rule = int(tuned.rule);
+            std::sscanf(env, "%d,%d,%d", &tuned.depth, &tuned.max_threads, &rule);
+            tuned.rule = VerifySplit::Rule(rule);
+        }
         // CORACPP_AINNCS_POINTS = n sets the number of random runs
         int64_t runs = points;
         if (const char *env = std::getenv("CORACPP_AINNCS_POINTS")) runs = std::atoll(env);
