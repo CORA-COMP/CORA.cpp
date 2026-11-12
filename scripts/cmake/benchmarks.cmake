@@ -43,7 +43,8 @@ set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_ainncs
     TORA-reach-sigmoid Single_Pendulum-reach Double_Pendulum-less-robust Double_Pendulum-less-robust-script Double_Pendulum-more-robust
     Airplane-continuous Attitude_Control-avoid)
 set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_ainncs_b
-    QUAD-reach Docking-constraint NAV-robust NAV-standard CartPole-reach)
+    QUAD-reach Docking-constraint Docking-constraint-polygon NAV-robust NAV-standard CartPole-reach
+    CartPole-reach-report)
 set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_vcas
     VCAS-middle-19.5 VCAS-middle-22.5 VCAS-middle-25.5 VCAS-middle-28.5
     VCAS-worst-19.5 VCAS-worst-22.5 VCAS-worst-25.5 VCAS-worst-28.5)
