@@ -7,7 +7,7 @@ generate_random, lift, norm, enclose and the unchecked and_, contains_ and isInt
 CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
 Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 Written:       03-November-2026
-Last update:   04-November-2026
+Last update:   11-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@contSet/center.m
@@ -29,7 +29,9 @@ Reviewed:      ---
 # CORA: contSet/@contSet/generateRandom.m
 # CORA: contSet/@contSet/and_.m
 # CORA: contSet/@contSet/contains_.m
+# CORA: contSet/@contSet/isIntersecting.m
 # CORA: contSet/@contSet/isIntersecting_.m
+# CORA: contSet/@contSet/interval.m
 # CORA: contSet/@contSet/supportFunc.m
 # CORA: contSet/@contSet/supportFunc_.m
 # CORA: contSet/@contSet/uminus.m
@@ -130,6 +132,15 @@ class Generic(unittest.TestCase):
         self.assertEqual(self.I.project_high_dim(4, [2, 0]).sup.tolist(), [2.0, 0.0, 1.0, 0.0])
         with self.assertRaises(cora.errors.WrongValue):
             cora.ContSet.project_high_dim(self.Z, 1, [0, 0])
+
+    def test_interval_hull_and_intersection(self):
+        # the interval hull of a zonotope, and the generic intersection predicate of two sets
+        H = cora.ContSet.interval(self.Z)
+        np.testing.assert_array_equal((H.inf, H.sup), ([0.5, -0.5], [1.5, 0.5]))
+        self.assertTrue(cora.is_intersecting(self.I, self.Z))
+        self.assertFalse(cora.is_intersecting(self.I, zonotope([5.0, 5.0], [[0.5, 0.0], [0.0, 0.5]])))
+        with self.assertRaises(cora.errors.DimensionMismatch):
+            cora.is_intersecting(self.I, box([0.0], [1.0]))
 
     def test_project_on_hyperplane(self):
         Z = zonotope([0.0, 0.0], [[1.0, 0.0], [0.0, 1.0]])

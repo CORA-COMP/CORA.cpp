@@ -24,7 +24,9 @@
 // ORACLE: contSet/@contSet/projectHighDim_.m
 // ORACLE: contSet/@contSet/and_.m
 // ORACLE: contSet/@contSet/contains_.m
+// ORACLE: contSet/@contSet/isIntersecting.m
 // ORACLE: contSet/@contSet/isIntersecting_.m
+// ORACLE: contSet/@contSet/interval.m
 // ORACLE: contSet/@contSet/supportFunc.m
 // ORACLE: contSet/@contSet/supportFunc_.m
 // ORACLE: contSet/@contSet/uminus.m
@@ -32,12 +34,14 @@
 // ORACLE: contSet/@contSet/times.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   11-November-2026
 // Reviewed:      ---
 
+#include "cora/cont_set/capsule/capsule.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/oracle/capsule.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/zonotope.h"
 #include "oracle_testing.h"
@@ -318,6 +322,29 @@ int main() {
             const Interval I = rnd.box(n), J = rnd.box(n), K = I.enlarge(0.5);
             for (const Interval *S : {&J, &K, &I})
                 oracle::check(cora::detail::is_intersecting_impl(I, *S, 0.0),
+                              lean::Interval(I).is_intersecting(lean::Interval(*S), 0.0));
+        }
+    });
+
+    // the generic entry: the interval hull of a box, a zonotope and a capsule
+    oracle::run("interval", [&](oracle::Random &rnd) {
+        for (const auto &[n, m] : sizes) {
+            const Interval I = rnd.box(n);
+            oracle::check(aux_set(I).interval(), lean::Interval(I));
+            const Zonotope Z = rnd.zonotope(n, m);
+            oracle::check(aux_set(Z).interval(), lean::Zonotope(Z).interval());
+        }
+        const Capsule C = rnd.capsule(3);
+        const ContSet &S = C;
+        oracle::check(S.interval(), lean::Capsule(C).interval());
+    });
+
+    // the generic entry, with its checks: two boxes
+    oracle::run("isIntersecting", [](oracle::Random &rnd) {
+        for (const int n : {2, 5, 20}) {
+            const Interval I = rnd.box(n), J = rnd.box(n), K = I.enlarge(0.5);
+            for (const Interval *S : {&J, &K, &I})
+                oracle::check(is_intersecting(I, *S, 0.0),
                               lean::Interval(I).is_intersecting(lean::Interval(*S), 0.0));
         }
     });

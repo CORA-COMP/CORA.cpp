@@ -14,6 +14,7 @@ Reviewed:      ---
 # CORA: contSet/@zonotope/rank.m
 # CORA: contSet/@zonotope/representsa_.m
 # CORA: contSet/@contSet/representsa.m
+# CORA: contSet/@zonotope/project.m
 # CORA: contSet/@zonotope/projectHighDim_.m
 # CORA: contSet/@contSet/projectHighDim.m
 # CORA: contSet/@zonotope/rotate.m
@@ -101,6 +102,16 @@ class Measures(unittest.TestCase):
 
 
 class Embedding(unittest.TestCase):
+    def test_project(self):
+        # the third and the first coordinate, in that order
+        Z = zonotope([1, 2, 3], [[1, 0], [0, 3], [2, 2]])
+        R = Z.project([2, 0])
+        np.testing.assert_array_equal(R.center, [3, 1])
+        np.testing.assert_array_equal(R.generators, [[2, 2], [1, 0]])
+        # a dimension the set does not have
+        with self.assertRaises(cora.errors.WrongValue):
+            Z.project([0, 3])
+
     def test_project_high_dim(self):
         Z = zonotope([1, 2], [[1, 0], [0, 3]])
         R = Z.project_high_dim(4, [3, 1])
