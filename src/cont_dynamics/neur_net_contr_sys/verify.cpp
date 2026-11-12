@@ -32,6 +32,7 @@
 #include "global/format.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <condition_variable>
@@ -118,8 +119,12 @@ int64_t aux_cut(const NeurNetContrSys &sys, const S &X0, const Interval &box,
     return best;
 }
 
-// The dump
-// -----------------------------------------------------------------------------------------
+// The dump ----------------------------------------------------------------------------------------
+
+/// A tensor from four numbers: a direction in (sx, sy, vx, vy).
+CORA_FROM_NUMBERS Tensor aux_dir(double a, double b, double c, double d) {
+    return Tensor::from_data({a, b, c, d}, {4, 1});
+}
 
 /// The opt-in dump of the splitting (CORACPP_VERIFY_DUMP=<path>, diagnosis only): every piece and,
 /// for the leaves of a system with four states, the box of every step with the bounds vmax and slo
@@ -142,6 +147,22 @@ struct Dump {
             out.append(i ? "," : "").append(num(lo[i])).append(",").append(num(hi[i]));
         return out + "]";
     }
+    /// The bounds vmax of |v| and slo of |s| (see the dump) and pm, the smallest margin of the 32
+    /// rows of the polytope of the benchmark (coefficients shrunk by 1e-9).
+    static std::array<double, 3> bounds(const Zonotope &Z) {
+        constexpr double pi = 3.14159265358979323846, n = 0.001027, shrink = 0.999999999;
+        const double cc = std::cos(pi / 32) * shrink, w = cc * 2 * n / std::sqrt(2.0) * shrink;
+        double vmax = -1e300, pm = 1e300;
+        // the support function in the 32 directions of v, and in the rows of the polytope
+        for (int k = 0; k < 32; ++k) {
+            const double c = std::cos(2 * pi * k / 32), s = std::sin(2 * pi * k / 32);
+            pm = std::min(pm, 0.2 * cc - Z.support_function(aux_dir(-w, -w, c, s)).data()[0]);
+            vmax = std::max(vmax, Z.support_function(aux_dir(0, 0, c, s)).data()[0]);
+        }
+        const double h = std::sqrt(0.5);
+        const double slo = std::max(0.0, -Z.support_function(aux_dir(-h, -h, 0, 0)).data()[0]);
+        return {vmax / std::cos(pi / 32), slo, pm};
+    }
     /// A piece: its id, parent, depth, box (inf, sup per dimension) and state.
     void piece(int id, int parent, int depth, const Interval &b, const char *state) {
         const std::lock_guard lock(mutex);
@@ -154,27 +175,12 @@ struct Dump {
     template <class S>
     void leaf(int id, const ClosedLoopReach<S> &R) {
         if (R.time_interval.empty() || R.time_interval[0].dim() != 4) return;
-        constexpr double pi = 3.14159265358979323846;
         std::string out = "\"";
         out.append(std::to_string(id)).append("\":[");
         for (std::size_t j = 0; j < R.time_interval.size(); ++j) {
             const Zonotope Z = aux_zonotope(R.time_interval[j]);
-            // pm: the smallest margin of the 32 rows of the polytope of the benchmark (n =
-            // 0.001027)
-            constexpr double n = 0.001027, shrink = 1.0 - 1e-9;
-            const double cc = std::cos(pi / 32) * shrink, w = cc * 2 * n / std::sqrt(2.0) * shrink;
-            double vmax = -1e300, pm = 1e300;
-            for (int k = 0; k < 32; ++k) {
-                const double phi = 2 * pi * k / 32;
-                const Tensor row =
-                    Tensor::from_data({-w, -w, std::cos(phi), std::sin(phi)}, {4, 1});
-                pm = std::min(pm, 0.2 * cc - Z.support_function(row).data()[0]);
-                const Tensor d = Tensor::from_data({0, 0, std::cos(phi), std::sin(phi)}, {4, 1});
-                vmax = std::max(vmax, Z.support_function(d).data()[0]);
-            }
-            vmax /= std::cos(pi / 32);
-            const Tensor ds = Tensor::from_data({-std::sqrt(0.5), -std::sqrt(0.5), 0, 0}, {4, 1});
-            const double slo = std::max(0.0, -Z.support_function(ds).data()[0]);
+            // the bounds vmax, slo and the margin pm of the check (n = 0.001027)
+            const auto [vmax, slo, pm] = bounds(Z);
             out.append(j ? ",[" : "[").append(num(R.time[j])).append(",");
             out.append(num(R.time[j + 1])).append(",").append(box(aux_box(R.time_interval[j])));
             out.append(",").append(num(vmax)).append(",").append(num(slo));
@@ -231,6 +237,7 @@ void aux_run_tree(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
                 ++tree.running;
             }
             try {
+                // reach the piece; a failing one is split, a verified one is a leaf
                 const ClosedLoopReach<S> R =
                     sys.reach(aux_set(X0, piece.box), U, t_final, options, specs);
                 const bool ok = aux_verified(specs, R);
