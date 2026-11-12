@@ -65,8 +65,10 @@ bool aux_all_even(const std::vector<int> &col) {
 std::vector<std::size_t> aux_rank(const Vec &key, bool descending = false) {
     std::vector<std::size_t> idx(key.size());
     std::iota(idx.begin(), idx.end(), std::size_t(0));
-    std::stable_sort(idx.begin(), idx.end(), [&](std::size_t a, std::size_t b) {
-        return descending ? key[b] < key[a] : key[a] < key[b];
+    // std::sort with the index as the tie-break is the stable order, without a temporary buffer
+    std::sort(idx.begin(), idx.end(), [&](std::size_t a, std::size_t b) {
+        if (key[a] != key[b]) return descending ? key[b] < key[a] : key[a] < key[b];
+        return a < b;
     });
     return idx;
 }
