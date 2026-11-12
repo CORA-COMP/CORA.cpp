@@ -136,26 +136,28 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 | SRA08 | 1 | 1 | 5.27 | 48/67 bit-exact, 9 property | - | 239 | 239 (CORA) | 45.4 |
 | SRU01 | 0 | 0 | 0.413 | 33/47 bit-exact, 6 property | - | 25.86 | 11.79 (JuliaReach) | 28.5 |
 | SRU02 | 0 | 0 | 5.93 | 48/67 bit-exact, 9 property | - | 244 | 20 (JuliaReach) | 3.37 |
-| DTN01 | 1 | 1 | 0.508 | 23/36 bit-exact, 6 property | - | 9.69 | 9.69 (CORA) [a] | 19.1 |
-| DTN02 | 1 | 1 | 0.618 | 23/36 bit-exact, 6 property | - | 10.43 | 10.43 (CORA) [a] | 16.9 |
-| DTN03 | 1 | 1 | 0.914 | 22/35 bit-exact, 6 property | - | 10.27 | 10.27 (CORA) [a] | 11.2 |
-| DTN04 | 1 | 1 | 19.4 | 23/36 bit-exact, 6 property | - | 48.29 | 48.29 (CORA) [a] | 2.49 |
-| DTN05 | 1 | 1 | 35.5 | 23/36 bit-exact, 6 property | - | 90.76 | 90.76 (CORA) [a] | 2.56 |
-| DTN06 | 1 | 1 | 110 | 24/37 bit-exact, 6 property | - | 227 | 227 (CORA) [a] | 2.06 |
+| DTN01 | 1 | 1 | 0.652 | 23/36 bit-exact, 6 property | - | 9.69 | 9.69 (CORA) [a] | 14.9 |
+| DTN02 | 1 | 1 | 0.753 | 23/36 bit-exact, 6 property | - | 10.43 | 10.43 (CORA) [a] | 13.9 |
+| DTN03 | 1 | 1 | 1.11 | 22/35 bit-exact, 6 property | - | 10.27 | 10.27 (CORA) [a] | 9.25 |
+| DTN04 | 1 | 1 | 24.2 | 23/36 bit-exact, 6 property | - | 48.29 | 48.29 (CORA) [a] | 2 |
+| DTN05 | 1 | 1 | 41.6 | 23/36 bit-exact, 6 property | - | 90.76 | 90.76 (CORA) [a] | 2.18 |
+| DTN06 | 1 | 1 | 116 | 24/37 bit-exact, 6 property | - | 227 | 227 (CORA) [a] | 1.96 |
 | PLAA01_BND42 | 1 | 1 | 10.5 | 25/35 bit-exact, 7 property | - | 25.02 | 25.02 (CORA) | 2.38 |
 | PLAA01_BND50 | 1 | 1 | 4.19 | 25/35 bit-exact, 7 property | - | 7.77 | 7.77 (CORA) | 1.85 |
 | PLAD01_BND30 | 1 | 1 | 0.306 | 11/17 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.2 |
 | PLAD01_BND42 | 1 | 1 | 0.066 | 11/17 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.76 |
 | PLAN01 | 1 (script: 0) | 0 | 47.9 | 34/45 bit-exact, 8 property | 173 | 162 | 162 (CORA) | - |
-| GRBX01 | 1 | 1 | 0.03 | 34/52 bit-exact, 12 property | - | 2.28 | 2.28 (CORA) | 76.0 |
-| GRBX02 | 1 | 1 | 0.037 | 35/56 bit-exact, 12 property | - | 2.44 | 2.44 (CORA) | 65.9 |
+| GRBX01 | 1 | 1 | 0.127 [h] | 34/52 bit-exact, 12 property | - | 2.28 | 2.28 (CORA) | 18 |
+| GRBX02 | 1 | 1 | 0.157 [h] | 35/56 bit-exact, 12 property | - | 2.44 | 2.44 (CORA) | 15.5 |
 | BRKDC01 | 1 | 1 | 0.037 | 6/12 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.70 |
-| BRKNC01 | 1 | 1 | 4.83 | 35/52 bit-exact, 9 property | - | 32.07 | 0.17 (JuliaReach) | 0.035 |
+| BRKNC01 | 1 | 1 | 4.24 | 35/52 bit-exact, 9 property | - | 32.07 | 0.17 (JuliaReach) | 0.0401 |
 | BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.001 | 28/44 bit-exact, 12 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
 
 [a] DTN01-06: JuliaReach's ARCH-COMP 2025 repeatability code (0.005-0.127 s) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %.
 
 [b] BRKNP01: JuliaReach's ARCH-COMP 2025 repeatability code (16.99 s) does not enforce the property (`validate=false`) and runs to t = 0.1, where the report verifies x < x0 up to t = 0.08.
+
+[h] GRBX01-02: 5 stays and 172 sets (2 and 61 before). The pca box in the direction of the guard normal is a point, and the SVD basis of the earlier runs gave it ends inverted by 1e-19, so a crossing was dropped as an empty cut; CORALean's Jacobi basis (`Location.calcBasisPcaFloat`) does not at `nearest`, which is rounding noise, not a property of the instance.
 
 [c] RND01-06: the report's instances are created on the server, these are the files of CORA's package (RND06: our own), so the ARCH26 columns are indicative and the speedups stay out of the summary.
 
@@ -343,7 +345,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TRAF22 | 1 | 1 | 0.919 | 18/28 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
-| SPRE22 | 1 | 1 | 0.972 | 37/57 bit-exact, 10 property | 34.3 | 37 | 37 (CORA) | 38.1 |
+| SPRE22 | 1 | 1 | 0.989 | 37/57 bit-exact, 10 property | 34.3 | 37 | 37 (CORA) | 37.4 |
 | ROBE25 (1) | 1 | 1 | 29.1 | 9/20 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
 | ROBE25 (2) | 1 | 1 | 437 | 9/20 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
 | ROBE25 (3) | 1 | 1 | 93.8 | 9/20 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |

@@ -176,6 +176,9 @@ int main() {
             const auto [n, m] = aux_compare(HA, {.initial_set = R0, .t_final = 6.0}, alg);
             stays += n;
             sets += m;
+            // and with the pca basis of each crossing
+            alg.guard_intersect = alg::ZonoGirard{{alg::Enclose::pca}};
+            sets += aux_compare(HA, {.initial_set = R0, .t_final = 6.0}, alg).second;
         }
         test::check(stays >= 6 && sets > 100, "hybridAutomaton.reach: the stays and their sets");
         // checkFlow at x1 = 0: a flow out, in, along the guard, and a guard no row certifies
