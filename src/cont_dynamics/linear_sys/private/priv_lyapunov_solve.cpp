@@ -140,6 +140,48 @@ void aux_invert_lower(Eigen::Ref<Dense<S>> L) {
     L21.noalias() = -(L22 * product);
 }
 
+/// W = U L for the upper triangular U and the lower triangular L, by blocks: with the halves W11 =
+/// U11 L11 + U12 L21, W12 = U12 L22, W21 = U22 L21, W22 = U22 L22, where the first and the last
+/// product are of the same kind (half of the work of the dense product).
+template <class S>
+void aux_multiply_upper_lower(const Eigen::Ref<const Dense<S>> &U,
+                              const Eigen::Ref<const Dense<S>> &L, Eigen::Ref<Dense<S>> W) {
+    const int64_t n = U.rows();
+    if (n <= kBaseOrder) {
+        W.noalias() = U * L;
+        return;
+    }
+    const int64_t h = n / 2, m = n - h;
+    aux_multiply_upper_lower<S>(U.topLeftCorner(h, h), L.topLeftCorner(h, h),
+                                W.topLeftCorner(h, h));
+    W.topLeftCorner(h, h).noalias() += U.topRightCorner(h, m) * L.bottomLeftCorner(m, h);
+    W.topRightCorner(h, m).noalias() = U.topRightCorner(h, m) * L.bottomRightCorner(m, m);
+    W.bottomLeftCorner(m, h).noalias() = U.bottomRightCorner(m, m) * L.bottomLeftCorner(m, h);
+    aux_multiply_upper_lower<S>(U.bottomRightCorner(m, m), L.bottomRightCorner(m, m),
+                                W.bottomRightCorner(m, m));
+}
+
+/// Below this order the symmetric product is formed whole.
+constexpr int64_t kSymmetricOrder = 512;
+
+/// Z = G'Y for the symmetric result (Y = RG with a symmetric R) on the rows and columns first to
+/// first + size - 1, from the blocks on and below the diagonal, the upper ones mirrored.
+template <class S>
+void aux_symmetric_product(const Dense<S> &G, const Dense<S> &Y, Dense<S> &Z, int64_t first,
+                           int64_t size) {
+    if (size <= kSymmetricOrder) {
+        Z.block(first, first, size, size).noalias() =
+            G.middleCols(first, size).transpose() * Y.middleCols(first, size);
+        return;
+    }
+    const int64_t h = size / 2, m = size - h;
+    aux_symmetric_product<S>(G, Y, Z, first, h);
+    aux_symmetric_product<S>(G, Y, Z, first + h, m);
+    Z.block(first + h, first, m, h).noalias() =
+        G.middleCols(first + h, m).transpose() * Y.middleCols(first, h);
+    Z.block(first, first + h, h, m) = Z.block(first + h, first, m, h).transpose();
+}
+
 /// The inverse of A by its LU factorization: A = P'LU gives A^-1 = U^-1 L^-1 P.
 template <class S>
 Dense<S> aux_inverse(const Dense<S> &A) {
@@ -150,8 +192,9 @@ Dense<S> aux_inverse(const Dense<S> &A) {
     Dense<S> Ut = lu.matrixLU().transpose().template triangularView<Eigen::Lower>();
     aux_invert_lower<S>(Li);
     aux_invert_lower<S>(Ut);
+    const Dense<S> Ui = Ut.transpose();
     Dense<S> product(n, n);
-    product.noalias() = Ut.transpose() * Li;
+    aux_multiply_upper_lower<S>(Ui, Li, product);
     return product * lu.permutationP();
 }
 
@@ -197,7 +240,7 @@ constexpr double kStopGap = 0.5;
 template <class S>
 Matrix aux_solve_sign(const SparseMatrix &A, const Matrix &D) {
     const int64_t n = D.rows();
-    Dense<S> Ak = D.cast<S>(), R = Dense<S>::Identity(n, n), Y(n, n);
+    Dense<S> Ak = D.cast<S>(), R = Dense<S>::Identity(n, n), Y(n, n), Z(n, n);
     // converged: a relative step below the cube root of the double epsilon, single reaches it too
     const double converged = std::cbrt(machine_eps());
     for (int step = 0; step < 100; ++step) {
@@ -207,7 +250,8 @@ Matrix aux_solve_sign(const SparseMatrix &A, const Matrix &D) {
         inverse /= c;
         R *= c;
         Y.noalias() = R * inverse;
-        R = S(0.5) * (R + inverse.transpose() * Y);
+        aux_symmetric_product<S>(inverse, Y, Z, 0, n);
+        R = S(0.5) * (R + Z);
         inverse = S(0.5) * (c * Ak + inverse);
         const double change = (inverse - Ak).norm() / inverse.norm();
         Ak = std::move(inverse);
@@ -217,6 +261,8 @@ Matrix aux_solve_sign(const SparseMatrix &A, const Matrix &D) {
     }
     return Matrix();
 }
+
+// The shift ---------------------------------------------------------------------------------------
 
 /// An upper bound of the least eigenvalue of the symmetric positive definite P by inverse
 /// iteration with its Cholesky factor (the Rayleigh quotients decrease to it), 0 if P has none.
