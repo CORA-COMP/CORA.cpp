@@ -172,26 +172,16 @@ layer behind them (`reduceAdaptive`, `restructure`, `quadMapMixed`, `mtimesInter
 oracle serves none of them on its own. `linReachPolyAdaptive` (one step with its tuning) is not tested; the
 tuning formulas are the lin-adaptive ones (`dHused` aside).
 
-### Request: `polyWindowFloat` and `polyPointFloat` without the box cap on the varying input
+### Done in CORALean !926: no box cap on the varying input
 
-LALO20 W01 (CORA.cpp, 13-Nov-2026, 7 states, x0 +- 0.1, tFinal 20) gives verdict 0 (largest x4 5.044 against
-the limit 5, width of x4 0.0639) where CORA gives width 0.0600 and the report verdict 1. Step by step against MATLAB
-CORA (checks off) the first difference is not the step size rule: the width of x4 over time is the same to 0.1 % up to
-t = 0.5 and then drifts to +2.5 % at t = 2.9. The cause is the line `let Ũb := Zonotope.reduce Ũ 1` of
-`LinearSys.polyWindowFloat` (and the same box in `polyPointFloat`, CORALean !918): the varying part `Ũ = V - ũ` of the
-error input is replaced by a box of `n` generators before the term-by-term series. That box is a sound superset but not
-needed: `inputSolutionFloat` applied to `Ũ` itself is the sound term-by-term sum (each order bounds the input of that
-order), and the pieces are reduced adaptively at `ζ` afterwards. Without the box the same CORA.cpp code gives, on the
-first 3 time units, the width of x4 within 0.1 % of CORA's at every time (2.9: 0.6622 against 0.6617, with the box
-0.6785), and the full W01 gives verdict 1 (largest x4 4.995, width 0.0582, 1130 steps; CORA 0.0600). Request:
-replace `Ũb` by `Ũ` in both definitions (the soundness theorems need no change: `Ũb` was only used to shrink the
-input), and re-serve the ops. CORA.cpp then drops `aux_cap` in `priv_poly_window.cpp`; until then W01 stays at verdict 0.
-Checked and not the cause: holding the constant linearization offset `ũ` as `hull(0, ũ)` in the window (the window is 4 to
-8 % wider than CORA's in the first step; `oneStepClosedFormFloat`'s split, the summed series for `ũ` plus `[G] ũ`,
-matches CORA's window to 6 digits and is sound, but it moves the final width only from 0.0639 to 0.0638), and the
-restructure by `reducePca` (CORA.cpp restructures from step 261, CORA not at all in the first 327 steps, but the
-drift starts at t = 0.6). Also seen: CORA's `Zdelta` of the second run of a step is the one of the first run (the
-linearization point of the other step size; larger here, so conservative in the step observed, not shown unsound), CORALean recomputes it per pass.
+`polyWindowFloat` and `polyPointFloat` run `inputSolutionFloat` on `Ũ` itself, not on `Reduce Ũ 1` (the
+cap of !918, which widened LALO20 W01's x4 by 2.5 % at t = 3 against CORA). CORA.cpp follows (`aux_cap`
+is gone); the oracle tests of the poly-adaptive window and pass run against the oracle of !926 until the
+pin is bumped to a tag that has it. Not taken in !926: the constant-offset split (summed series plus
+`[G] ũ` as in `oneStepClosedFormFloat`), which matches CORA's step-1 time step exactly but moves W01's
+final width only from 0.0582 to 0.0581. CORA's `Zdelta` of the second run of a step is the one of the first
+run (the linearization point of the other step size; conservative in the step observed, not shown
+unsound); CORALean recomputes it per pass.
 
 ## Zonotope quadMap and the facets of vertex polytopes (PR "oracle/group-b-1")
 
