@@ -26,6 +26,7 @@
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 
+#include <functional>
 #include <optional>
 #include <vector>
 
@@ -97,11 +98,73 @@ Vec priv_row_sums(const Zonotope &Z);
 /// The largest magnitude of each coordinate of the box (CORALean's Interval.normMag).
 Vec priv_norm_mag(const Box &b);
 
+/// The box of b joined with the point p (the Hessian region must contain the expansion point).
+Box priv_hull(const Box &b, const Vec &p);
+
+/// The Hessian over a box as bounds (lo, hi) of the entries (i, a, b), row-major, 0 where it is.
+struct Hessian {
+    Vec lo, hi;
+};
+Hessian priv_hessian(const NonlinearSys &sys, const Tensor &like, const Box &x,
+                     const std::optional<Box> &u);
+
+/// The box [-l, l] with l_i = 1/2 dz' max(|H_i - Hp|) dz, dz the largest deviation of X and U from
+/// the expansion point (hessRemainder; Hp the Hessian to subtract, empty for none).
+Box priv_hessian_remainder(const Hessian &H, const Vec &Hp, const Box &X,
+                           const std::optional<Box> &U, const Vec &xs, const Vec &us, int64_t n);
+
+// The linearization -------------------------------------------------------------------------------
+
+/// The matrices 1/2 H_i of the Hessian at the point, (n + m, n + m) each (the quadratic maps of the
+/// second-order error).
+std::vector<Tensor> priv_half_hessians(const Tensor &like, const Hessian &Hp, int64_t n, int64_t d);
+
+/// What a pass linearizes (CORA's linearize at the center of the set): the point x* = c + dt/2 f(c,
+/// u*), the Jacobians there and the constant input f(x*, u*) with B (U - u*) of the linear system.
+struct AdaptiveLinearization {
+    Vec xs;
+    Tensor xs_t;
+    Jacobians J;
+    Zonotope Vbase;
+};
+AdaptiveLinearization priv_linearize_adaptive(const NonlinearSys &sys,
+                                              const std::optional<Zonotope> &U,
+                                              const Tensor &center, double dt);
+
+/// The error loop of a pass: from the admissible error, the true error of the guess (computed by
+/// true_error_of, which keeps what else it computes) is checked and the guess becomes 1.1 times
+/// it, until it holds; none if the ratio does not shrink after two rounds or the fuel runs out.
+std::optional<Vec> priv_error_loop_adaptive(const Vec &error_adm, int fuel,
+                                            const std::function<Vec(const Vec &)> &true_error_of);
+
 // The tuning (priv_tune_adaptive.cpp) -------------------------------------------------------------
 
 /// The sum from the last entry to the first, and the Euclidean norm of the magnitudes.
 double priv_sum_up(const Vec &v);
 double priv_norm_up(const Vec &v);
+
+/// The zero-width dimensions, the orders of the abstraction error and their least one.
+struct OrdersState {
+    std::vector<char> zero_width;
+    std::vector<int> orders;
+    int minorder = 0;
+};
+
+/// The update of the orders after a pass (aux_getPowers), at the very first step or when the
+/// dimensions of zero width (row sums of the generators of the set at most kZeroWidth) change.
+void priv_update_orders(const NonlinearSys &sys, const std::optional<Zonotope> &U,
+                        const Tensor &like, const Vec &row_sums, bool veryfirststep,
+                        const Tensor &A, const Vec &xs, const std::vector<char> &gzero, int shift,
+                        OrdersState &st);
+
+/// withinTol(a, b, tol): absolutely or relatively within tol.
+bool priv_within_tol(double a, double b, double tol);
+
+/// max(errRatio(~isnan(errRatio))) over the dimensions of the mask, 0/0 skipped.
+double priv_max_ratio(const std::vector<char> &mask, const Vec &num, const Vec &den);
+
+/// zetaP: exp(trace(A dt)) from the diagonal of A.
+double priv_zeta_p(const Tensor &A, double time_step);
 
 /// x^k by k multiplications (CORALean's powUp).
 double priv_pow(double x, int k);
@@ -113,16 +176,19 @@ double priv_varphi_total(double varphi, double varphi_lim, double prev, double c
 double priv_varphi_est(double horizon, double deltat, const Vec &abstrerr_h, const Vec &abstrerr,
                        double decr, const std::vector<char> &mask, int minorder, int fuel);
 
-/// aux_optimaldeltat at alg "lin": the candidate step size with the smallest estimated size.
+/// aux_optimaldeltat: the candidate step size with the smallest estimated size. dHused is 0.5 at
+/// alg "lin" (none), 0.3 at "poly".
 double priv_optimal_delta_t(double mu, double red_factor, double r_radius, double rerr1,
-                            double deltat, double varphimin, double zeta_p);
+                            double deltat, double varphimin, double zeta_p,
+                            std::optional<double> d_h_used = std::nullopt);
 
-/// aux_getPowers at alg "lin": the order q_i of the abstraction error (-1 for Inf), from the
-/// pattern of A, the zero-width dimensions, the zero generators of the error and the Hessian.
+/// aux_getPowers: the order q_i of the abstraction error (-1 for Inf), from the pattern of A, the
+/// zero-width dimensions, the zero generators of the error and the Hessian. shift is 1 at "poly"
+/// when the third-order tensor is empty (sigma + 1), else 0.
 std::vector<int> priv_adaptive_orders(const Tensor &A, const std::vector<char> &zero_width,
                                       const std::vector<char> &gzero,
                                       const std::vector<std::optional<Range>> &H, int64_t n,
-                                      int64_t m, int fuel);
+                                      int64_t m, int fuel, int shift = 0);
 
 // The steps ---------------------------------------------------------------------------------------
 

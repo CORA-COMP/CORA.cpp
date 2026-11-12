@@ -34,7 +34,12 @@ PolyZonotope PolyZonotope::cart_prod(const Zonotope &Z) const {
     const Tensor G = Tensor::concat({G_, G_.zeros_like({n2, G_.shape()[1]})}, -2);
     const Tensor top = Tensor::concat({GI_, GI_.zeros_like({n, q2})}, -1);
     const Tensor bottom = Tensor::concat({GI_.zeros_like({n2, q}), Z.generators()}, -1);
-    return {Tensor::concat({c_, Z.center()}, -2), G, Tensor::concat({top, bottom}, -2), E_, id_};
+    return {Tensor::concat({c_, Z.center()}, -2),
+            G,
+            Tensor::concat({top, bottom}, -2),
+            E_,
+            id_,
+            detail::Normalized{}};
 }
 
 } // namespace cora

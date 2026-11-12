@@ -32,7 +32,8 @@ PolyZonotope PolyZonotope::plus(const Zonotope &Z) const {
     CORA_CHECK(Z.dim() == dim() && Z.center().ndim() == 2, Error::dimension_mismatch, [&] {
         return "plus: the zonotope must be a single set of the dimension " + std::to_string(dim());
     });
-    return {c_ + Z.center(), G_, Tensor::concat({GI_, Z.generators()}, -1), E_, id_};
+    return {c_ + Z.center(),     G_, Tensor::concat({GI_, Z.generators()}, -1), E_, id_,
+            detail::Normalized{}};
 }
 
 // A box is a zonotope.
@@ -46,7 +47,7 @@ PolyZonotope PolyZonotope::plus(const Tensor &v) const {
                    return "plus: the point must be a column of the dimension " +
                           std::to_string(dim());
                });
-    return {c_ + v, G_, GI_, E_, id_};
+    return {c_ + v, G_, GI_, E_, id_, detail::Normalized{}};
 }
 
 PolyZonotope PolyZonotope::plus(const PolyZonotope &S) const {
@@ -59,6 +60,7 @@ PolyZonotope PolyZonotope::plus(const PolyZonotope &S) const {
     const int64_t shift = id_.empty() ? 0 : *std::max_element(id_.begin(), id_.end());
     std::vector<int64_t> id = id_;
     for (const int64_t v : S.id_) id.push_back(shift + v);
+    // the exponents of this set, then of S, each over all identifiers (0 for those of the other)
     Exponents E;
     for (const std::vector<int> &col : E_) {
         std::vector<int> c = col;
@@ -70,8 +72,13 @@ PolyZonotope PolyZonotope::plus(const PolyZonotope &S) const {
         c.insert(c.end(), col.begin(), col.end());
         E.push_back(std::move(c));
     }
-    return {c_ + S.c_, Tensor::concat({G_, S.G_}, -1), Tensor::concat({GI_, S.GI_}, -1),
-            std::move(E), std::move(id)};
+    // the generators side by side, the exponents of the two sets stay distinct
+    return {c_ + S.c_,
+            Tensor::concat({G_, S.G_}, -1),
+            Tensor::concat({GI_, S.GI_}, -1),
+            std::move(E),
+            std::move(id),
+            detail::Normalized{}};
 }
 
 Set PolyZonotope::translate_impl(const Tensor &v) const { return plus(v); }

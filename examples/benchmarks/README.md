@@ -291,7 +291,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | CVDP23 | 1 | 1 | 58.6 | 30/70 bit-exact, 17 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
 | LALO20 W001 | 1 | 1 | 2.24 | 10/24 bit-exact, 6 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.15 |
 | LALO20 W005 | 1 | 1 | 15.3 | 10/24 bit-exact, 6 property | 21.9 | 17 | 17 (CORA) [c] | 1.11 |
-| LALO20 W01 (stand-in) | 1 | 1 | 10.3 | 12/37 bit-exact, 11 property | 346 | 248 | 248 (CORA) [c] | 24.1 |
+| LALO20 W01 | 1 | 1 | 224 | 7/35 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 1.09 |
 | TSPS25 | 1 | 1 | 65 | 17/32 bit-exact, 6 property | 312 | 299 | 299 (CORA) | 4.60 |
 | LOVO25 | 1 | 1 [e] | 3.72 | 24/75 bit-exact, 18 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
 
@@ -312,7 +312,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | ROBE25 (3) | width of s 7.33e-6 (CORA 8.3e-6, JuliaReach 6.5e-10) |
 | LALO20 W001 | width of x4 0.00380 (CORA 0.004, JuliaReach 0.003) |
 | LALO20 W005 | width of x4 0.0394 (CORA 0.042, JuliaReach 0.019) |
-| LALO20 W01 (stand-in) | width of x4 0.345 (CORA 0.060, JuliaReach 0.031) |
+| LALO20 W01 | width of x4 0.0570 (CORA 0.060, JuliaReach 0.031) |
 | LOVO25 | area 2.24e-3 (CORA 8.9e-3, JuliaReach 9e-5; the flow alone from the whole box 3.04e-5) |
 
 **TRAF22** reads the controls from `data/BEL_Putte-4_2_T-1_controls.csv` (copied from CORA): 33
@@ -385,15 +385,16 @@ set that leaves is turned back into a polynomial zonotope, as CORA's `guardInter
 **LALO20** (`benchmark_nonlinear_reach_ARCH23_laubLoomis.m`, W001, W005, W01) is the Laub-Loomis model from
 x0 = (1.2, 1.05, 1.5, 2.4, 1, 0.1, 0.45) with boxes of the half-width 0.01, 0.05 and 0.1 up to t = 20; the
 specification of the report is x4 < 4.5 (W001, W005) and x4 < 5 (W01) over the whole horizon. W001 and W005 run
-the script's alg "lin-adaptive" (`alg::LinearizationAdaptive`, defaults, CORALean's repair). **W01 is not the
-script's algorithm:** the script runs "poly-adaptive", which is not ported (it needs the adaptive tuning on
-polynomial zonotopes: `reach_adaptive`, `linReach_adaptive`, `priv_abstractionError_adaptive` and
-`priv_reduceAdaptive` for polynomial zonotopes, about the size of the `lin-adaptive` port). The row W01
-uses the fixed-step `alg::Polynomialization` as a stand-in, with `timeStep` 0.01, `taylorTerms` 4,
-`zonotopeOrder` 50, `errorOrder` 10, `intermediateOrder` 50 (tuned here; the script has no step size). It
-verifies x4 < 5, but its width of x4 at t = 20 is much larger than CORA's (0.345 against 0.060): a
-smaller step does not help (0.005: 0.40, 0.0025: 0.45; 0.02: 0.69), as the sets of the wrapping effect
-are reduced every step. MATLAB CORA v2026.1.0 (R2024b, this machine, `CHECKS_ENABLED` off) needs 12.3 s, 21.9 s and 346 s for W001, W005 and W01 and gives the widths 0.00402, 0.0425 and 0.0600; the widths of CORA.cpp for W001 and W005 are smaller because the repaired algorithm differs in its error terms (docs/cora-differences.md).
+the script's alg "lin-adaptive" (`alg::LinearizationAdaptive`, defaults, CORALean's repair) and W01 its alg
+"poly-adaptive" (`alg::PolynomializationAdaptive`, the constants of the script, CORALean's repair of
+`reachPolyAdaptiveFloat`, !912): 1124 steps (CORA 1193), the largest x4 is 4.62, and the width of x4 at t = 20
+is 0.0570 (CORA 0.0600). The time of 224 s (machine load 1 to 3) is 8 % above MATLAB CORA's
+208 s; the profile (gprof, t in [0, 4]) has no single hot spot: the merge of equal exponents in the constructor
+of a polynomial zonotope 18 %, `Zonotope::reduce_adaptive` 9 %, the adaptive reduction of polynomial zonotopes 7 %,
+the column gathers 5 %, the sorts of the rankings 12 %. The independent part of the sets grows over many steps until the volume test restructures, as in CORA. The step with the stand-in that this row replaced (the fixed-step `alg::Polynomialization`, `timeStep` 0.01) took 10.3 s and
+gave the width 0.345. MATLAB CORA v2026.1.0 (R2024b, this machine, 4 threads, `CHECKS_ENABLED` off, one run at a time) needs 12.3 s, 21.9 s and 208 s for W001,
+W005 and W01 and gives the widths 0.00402, 0.0425 and 0.0600 (W001 and W005 from an earlier run); the widths of CORA.cpp for W001 and W005 are smaller because the repaired algorithm differs in its error terms
+(docs/cora-differences.md).
 
 **TSPS25** (`benchmark_nonlinearDAS_reach_ARCH23_powerSystem.m`) is the IEEE 14 bus power system as a
 differential-algebraic system of 15 states, 27 algebraic variables and 19 inputs, analysed in four runs, each from the end
@@ -663,7 +664,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | ISSF01_ISU01 | 1/8 | 7 | 4 |
 | LALO20_W001 | 10/24 | 14 | 7 |
 | LALO20_W005 | 10/24 | 14 | 7 |
-| LALO20_W01 | 12/37 | 25 | 7 |
+| LALO20_W01 | 7/35 | 28 | 6 |
 | LOVO25 | 24/75 | 51 | 13 |
 | LOVO25-script | 27/82 | 55 | 14 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |

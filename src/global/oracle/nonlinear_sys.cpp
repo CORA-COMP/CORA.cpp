@@ -40,6 +40,32 @@ Wire aux_gains(const alg::LinearizationAdaptive &alg) {
     return Wire(column, "");
 }
 
+// the options of poly-adaptive the oracle reads; the others are CORA's defaults
+std::vector<Operand> aux_poly_options(const alg::PolynomializationAdaptive &alg, bool empty) {
+    Json data = Json::array(), column = Json::object();
+    for (const double g : alg.zeta_phi) data.push(Tensor::encode(g));
+    column.set("rows", Json(int64_t(3))).set("cols", Json(int64_t(1))).set("data", data);
+    return {{"taylorTerms", alg.taylor_terms},
+            {"redFactor", alg.zeta_z},
+            {"decrFactor", alg.decr_factor},
+            {"zetaphi", Wire(column, "")},
+            {"dHused", alg.d_h_used},
+            {"maxDepGenOrder", alg.max_dep_gen_order},
+            {"maxPolyZonoRatio", alg.max_poly_zono_ratio},
+            {"thirdOrderEmpty", empty},
+            {"fuel", alg.fuel}};
+}
+
+// the box of a polynomial zonotope of a reply: center, row sums of both blocks, error box
+cora::Interval aux_poly_box(const Reply &set) {
+    const cora::Tensor c = set.get<Tensor>("c").gather(), G = set.get<Tensor>("G").gather();
+    const cora::Tensor GI = set.get<Tensor>("GI").gather();
+    const auto [inf, sup] = set.get<lean::Interval>("E").gather();
+    const cora::Tensor radius =
+        G.abs().sum(-1, true) + GI.abs().sum(-1, true) + inf.abs().maximum(sup.abs());
+    return cora::Interval(c - radius, c + radius);
+}
+
 } // namespace
 
 
@@ -81,6 +107,59 @@ AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional
     return {r.get<std::vector<double>>("steps"), r.get<std::vector<int64_t>>("tensorOrders"),
             r.get<double>("t"), r.get<Zonotope>("timePoint"),
             r.get<std::vector<Zonotope>>("timeInterval")};
+}
+
+PolyAdaptiveRun NonlinearSys::reach_poly_adaptive(const Zonotope &R0,
+                                                  const std::optional<Zonotope> &U, double t_final,
+                                                  int max_steps,
+                                                  const alg::PolynomializationAdaptive &alg,
+                                                  bool third_order_empty) const {
+    // the start set, the input set and the options of the algorithm
+    std::vector<Operand> request = system();
+    request.push_back({"R0", R0});
+    if (U) request.push_back({"U", *U});
+    request.push_back({"sets", true});
+    request.push_back({"tFinal", t_final});
+    request.push_back({"maxSteps", max_steps});
+    // the steps and the sets over them
+    for (const Operand &o : aux_poly_options(alg, third_order_empty)) request.push_back(o);
+    const Reply r = ask("nonlinearSys.reachPolyAdaptive", request);
+    PolyAdaptiveRun run{r.get<std::vector<double>>("steps"),
+                        r.get<double>("t"),
+                        aux_poly_box(r.member("timePoint")),
+                        {}};
+    for (const Reply &set : r.list("timeInterval")) run.time_interval.push_back(aux_poly_box(set));
+    return run;
+}
+
+std::optional<PolyAdaptivePassResult>
+NonlinearSys::lin_reach_poly_adaptive_pass(const std::optional<Zonotope> &U, const Zonotope &R,
+                                           double time_step, const cora::Tensor &error_adm,
+                                           const alg::PolynomializationAdaptive &alg,
+                                           bool third_order_empty) const {
+    std::vector<Operand> request = system();
+    request.push_back({"R", R});
+    if (U) request.push_back({"U", *U});
+    request.push_back({"timeStep", time_step});
+    request.push_back({"errorAdm", Tensor::from(error_adm)});
+    request.push_back({"zonotopeOrder", 1000});
+    // a pass takes only these options
+    (void)third_order_empty;
+    for (const Operand &o : std::vector<Operand>{
+             {"taylorTerms", alg.taylor_terms}, {"redFactor", alg.zeta_z}, {"fuel", alg.fuel}})
+        request.push_back(o);
+    try {
+        const Reply r = ask("nonlinearSys.linReachPolyAdaptivePass", request);
+        return PolyAdaptivePassResult{aux_poly_box(r.member("timeInterval")),
+                                      aux_poly_box(r.member("timePoint")),
+                                      r.get<Tensor>("A").gather(),
+                                      r.get<Tensor>("xs").gather(),
+                                      r.get<Tensor>("trueError").gather(),
+                                      r.get<Tensor>("abstrerr").gather(),
+                                      r.get<std::vector<bool>>("Gzero")};
+    } catch (const std::runtime_error &) {
+        return std::nullopt;
+    }
 }
 
 std::optional<AdaptivePassResult> NonlinearSys::lin_reach_adaptive_pass(

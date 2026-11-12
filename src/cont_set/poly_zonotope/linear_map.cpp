@@ -32,7 +32,7 @@ PolyZonotope PolyZonotope::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(dim()) +
                " columns, got the shape " + shape_text(M.shape());
     });
-    return {M.matmul(c_), M.matmul(G_), M.matmul(GI_), E_, id_};
+    return {M.matmul(c_), M.matmul(G_), M.matmul(GI_), E_, id_, detail::Normalized{}};
 }
 
 PolyZonotope PolyZonotope::linear_map(const Interval &M) const {
@@ -47,7 +47,7 @@ PolyZonotope PolyZonotope::linear_map(const Interval &M) const {
     const Tensor center = (box.sup() + box.inf()) * 0.5, radius = (box.sup() - box.inf()) * 0.5;
     const Tensor S = center.abs() + radius;
     const Tensor GI = Tensor::concat({Mc.matmul(GI_), R.matmul(S).diag()}, -1);
-    return {Mc.matmul(c_), Mc.matmul(G_), GI, E_, id_};
+    return {Mc.matmul(c_), Mc.matmul(G_), GI, E_, id_, detail::Normalized{}};
 }
 
 Set PolyZonotope::linear_map_impl(const Tensor &M) const { return linear_map(M); }

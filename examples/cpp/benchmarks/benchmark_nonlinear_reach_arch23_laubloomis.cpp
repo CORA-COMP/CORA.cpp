@@ -6,9 +6,6 @@
 // it, up to t = 20. The script runs W001 and W005 with CORA's alg "lin-adaptive" and W01 with
 // "poly-adaptive". The specification of the ARCH-COMP report is x4 < 4.5 for W001 and W005 and
 // x4 < 5 for W01, over the whole horizon; the script prints the width of x4 at t = 20.
-// W01 stands in with the fixed-step alg::Polynomialization: poly-adaptive is not ported, so the
-// step size and the orders below are tuned here and differ from the script's
-// (docs/cora-differences).
 //
 // Syntax:   build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
 // Outputs:  one line 'benchmark,instance,result,time' per instance, the width of x4 on stderr
@@ -79,18 +76,11 @@ bool aux_run(const std::string &name) {
         x4 = aux_x4(R);
         sets = R.time_interval.size();
     } else if (name == "LALO20_W01") {
-        // W01: the fixed-step polynomialization as a stand-in for poly-adaptive
+        // W01: CORA's poly-adaptive with the constants of the script
         limit = 5;
-        alg::Polynomialization a;
-        a.time_step = 0.01;
-        a.taylor_terms = 4;
-        a.zonotope_order = 50;
-        a.error_order = 10;
-        a.intermediate_order = 50;
-        // the box as a polynomial zonotope, and reach
         const PolyReachSet R =
             sys.reach({.initial_set = PolyZonotope(aux_start(0.1)), .input_set = U, .t_final = 20},
-                      alg::PolyNonlinearReach{a});
+                      alg::PolynomializationAdaptive{});
         x4 = aux_x4(R);
         sets = R.time_interval.size();
     } else {

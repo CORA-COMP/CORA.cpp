@@ -109,6 +109,28 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vect
     GI_ = aux_nonzero_columns(GI_);
 }
 
+PolyZonotope::PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E,
+                           std::vector<int64_t> id, detail::Normalized)
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), GI_(aux_nonzero_columns(GI)),
+      E_(std::move(E)), id_(std::move(id)) {
+    // zero dependent generators go with their exponents
+    const int64_t n = G_.shape()[0], h = G_.shape()[1];
+    if (h == 0) return;
+    const std::vector<double> g = G_.data();
+    std::vector<int64_t> keep;
+    for (int64_t j = 0; j < h; ++j)
+        for (int64_t i = 0; i < n; ++i)
+            if (g[std::size_t(i * h + j)] != 0.0) {
+                keep.push_back(j);
+                break;
+            }
+    if (int64_t(keep.size()) == h) return;
+    Exponents kept;
+    for (const int64_t j : keep) kept.push_back(E_[std::size_t(j)]);
+    G_ = priv_columns(G_, keep);
+    E_ = std::move(kept);
+}
+
 // The conversions ---------------------------------------------------------------------------------
 
 PolyZonotope::PolyZonotope(const Zonotope &Z)

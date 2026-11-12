@@ -27,6 +27,8 @@
 
 namespace cora::lean {
 
+// The results -------------------------------------------------------------------------------------
+
 /// The run of reach_adaptive: the step sizes, the tensor order of every step, the time reached, the
 /// set at the end and over every step.
 struct AdaptiveRun {
@@ -50,6 +52,24 @@ struct AbstrErrResult {
     cora::Tensor true_error;
 };
 
+/// The run of reach_poly_adaptive: the step sizes, the time reached, the box of the set at the end
+/// and of the set over every step (the boxes of the polynomial zonotopes, free in every generator).
+struct PolyAdaptiveRun {
+    std::vector<double> steps;
+    double t;
+    cora::Interval time_point;
+    std::vector<cora::Interval> time_interval;
+};
+
+/// One pass of poly-adaptive: the boxes of its sets and what the tuning reads of them.
+struct PolyAdaptivePassResult {
+    cora::Interval time_interval, time_point;
+    cora::Tensor A, xs, true_error, abstrerr;
+    std::vector<bool> g_zero;
+};
+
+// The class ---------------------------------------------------------------------------------------
+
 class NonlinearSys {
   public:
     /// The system of sys's expressions.
@@ -64,6 +84,20 @@ class NonlinearSys {
     lin_reach_adaptive_pass(const std::optional<Zonotope> &U, const Zonotope &R, double time_step,
                             int tensor_order, const cora::Tensor &error_adm,
                             const alg::LinearizationAdaptive &alg) const;
+
+    /// CORA's poly-adaptive from the zonotope R0 (as a polynomial zonotope with E = I) to t_final,
+    /// at most max_steps steps.
+    PolyAdaptiveRun reach_poly_adaptive(const Zonotope &R0, const std::optional<Zonotope> &U,
+                                        double t_final, int max_steps,
+                                        const alg::PolynomializationAdaptive &alg,
+                                        bool third_order_empty = false) const;
+
+    /// One pass of poly-adaptive at time_step from the zonotope R (as a polynomial zonotope).
+    std::optional<PolyAdaptivePassResult>
+    lin_reach_poly_adaptive_pass(const std::optional<Zonotope> &U, const Zonotope &R,
+                                 double time_step, const cora::Tensor &error_adm,
+                                 const alg::PolynomializationAdaptive &alg,
+                                 bool third_order_empty = false) const;
 
     /// VerrorDyn for Rmax around the linearization point xs.
     AbstrErrResult abstr_err_adaptive(const std::optional<Zonotope> &U, const cora::Tensor &xs,

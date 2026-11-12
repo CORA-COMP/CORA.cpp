@@ -967,7 +967,7 @@
   "contDynamics/linearSys/homogeneousSolution": "property",
   "contDynamics/linearSys/identify": "todo",
   "contDynamics/linearSys/initReach": "property",
-  "contDynamics/linearSys/initReach_adaptive": "todo",
+  "contDynamics/linearSys/initReach_adaptive": "untested",
   "contDynamics/linearSys/isCanonicalForm": "oracle",
   "contDynamics/linearSys/isequal": "ported",
   "contDynamics/linearSys/linearSys": "ported",

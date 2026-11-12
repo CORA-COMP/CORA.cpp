@@ -13,7 +13,7 @@
 #include "cont_set/poly_zonotope/private/priv.h"
 
 #include <algorithm>
-#include <map>
+#include <unordered_map>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,11 +37,10 @@ bool priv_is_even(const std::vector<int> &exponents) {
 MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
     const int64_t n = G.shape()[0], h = G.shape()[1];
     if (h == 0) return {G, E};
-    // the columns of G that are not zero, grouped by their exponents (first occurrence first)
     const std::vector<double> g = G.data();
-    std::map<std::vector<int>, int64_t> slot;
-    std::vector<int64_t> target(std::size_t(h), -1);
-    Exponents kept;
+    // the columns that are not zero, with a hash of their exponents
+    std::vector<int64_t> live;
+    std::vector<std::size_t> hash(std::size_t(h), 0);
     bool changed = false;
     for (int64_t j = 0; j < h; ++j) {
         bool nonzero = false;
@@ -50,34 +49,70 @@ MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
             changed = true;
             continue;
         }
-        const auto [it, fresh] = slot.emplace(E[std::size_t(j)], int64_t(kept.size()));
-        if (fresh)
-            kept.push_back(E[std::size_t(j)]);
-        else
-            changed = true;
-        target[std::size_t(j)] = it->second;
+        std::size_t x = 1469598103934665603ULL;
+        for (const int e : E[std::size_t(j)]) x = (x ^ std::size_t(e)) * 1099511628211ULL;
+        hash[std::size_t(j)] = x;
+        live.push_back(j);
+    }
+    // group the live columns of equal exponents: sorted by (hash, index), runs verified
+    std::vector<int64_t> order = live;
+    std::sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
+        return hash[std::size_t(a)] != hash[std::size_t(b)]
+                   ? hash[std::size_t(a)] < hash[std::size_t(b)]
+                   : a < b;
+    });
+    std::vector<int64_t> first(std::size_t(h), -1); // the first column of the group of j
+    for (std::size_t r = 0; r < order.size();) {
+        std::size_t end = r;
+        while (end < order.size() && hash[std::size_t(order[end])] == hash[std::size_t(order[r])])
+            ++end;
+        std::vector<int64_t> leaders; // the distinct exponents of this run
+        for (std::size_t t = r; t < end; ++t) {
+            const int64_t j = order[t];
+            int64_t lead = j;
+            for (const int64_t l : leaders)
+                if (E[std::size_t(l)] == E[std::size_t(j)]) {
+                    lead = l;
+                    break;
+                }
+            if (lead == j)
+                leaders.push_back(j);
+            else
+                changed = true;
+            first[std::size_t(j)] = lead;
+        }
+        r = end;
     }
     if (!changed) return {G, E};
-    // G times the 0/1 matrix that adds the columns of one group
+    // the groups in the order of their first column, the columns of a group added in order
+    std::vector<int64_t> slot(std::size_t(h), -1);
+    Exponents kept;
+    for (const int64_t j : live)
+        if (first[std::size_t(j)] == j) {
+            slot[std::size_t(j)] = int64_t(kept.size());
+            kept.push_back(E[std::size_t(j)]);
+        }
     const auto k = int64_t(kept.size());
     if (k == 0) return {G.zeros_like({n, 0}), {}};
-    std::vector<double> S(std::size_t(h * k), 0.0);
-    for (int64_t j = 0; j < h; ++j)
-        if (target[std::size_t(j)] >= 0) S[std::size_t(j * k + target[std::size_t(j)])] = 1.0;
-    const Tensor merged = G.matmul(Tensor::like(G, S, {h, k}));
+    std::vector<double> merged(std::size_t(n * k), 0.0);
+    for (const int64_t j : live) {
+        const auto t = std::size_t(slot[std::size_t(first[std::size_t(j)])]);
+        for (int64_t i = 0; i < n; ++i)
+            merged[std::size_t(i) * std::size_t(k) + t] += g[std::size_t(i * h + j)];
+    }
     // generators that cancel in the sum (x and -x) go too
-    const std::vector<double> m = merged.data();
     std::vector<int64_t> nonzero;
     for (int64_t j = 0; j < k; ++j)
         for (int64_t i = 0; i < n; ++i)
-            if (m[std::size_t(i * k + j)] != 0.0) {
+            if (merged[std::size_t(i * k + j)] != 0.0) {
                 nonzero.push_back(j);
                 break;
             }
-    if (int64_t(nonzero.size()) == k) return {merged, std::move(kept)};
+    const Tensor all = Tensor::like(G, merged, {n, k});
+    if (int64_t(nonzero.size()) == k) return {all, std::move(kept)};
     Exponents E_out;
     for (const int64_t j : nonzero) E_out.push_back(kept[std::size_t(j)]);
-    return {priv_columns(merged, nonzero), std::move(E_out)};
+    return {priv_columns(all, nonzero), std::move(E_out)};
 }
 
 // The identifiers -------------------------------------------------------------------------------
@@ -147,8 +182,12 @@ PolyZonotope priv_fold_constants(const PolyZonotope &set) {
     Exponents E;
     for (const int64_t j : rest) E.push_back(set.exponents()[std::size_t(j)]);
     const Tensor c = set.center() + priv_columns(set.generators(), constant).sum(-1, true);
-    return {c, priv_columns(set.generators(), rest), set.independent_generators(), std::move(E),
-            set.ids()};
+    return {c,
+            priv_columns(set.generators(), rest),
+            set.independent_generators(),
+            std::move(E),
+            set.ids(),
+            detail::Normalized{}};
 }
 
 } // namespace cora

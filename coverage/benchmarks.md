@@ -46,7 +46,7 @@ A header counts a row only if the .cpp file that implements it executed a line.
 | ISSF01_ISU01 | 12 | 1 | 2 | 8 | 1 | 0 | 0 | 4 | 1/8 |
 | LALO20_W001 | 31 | 10 | 6 | 12 | 3 | 0 | 0 | 7 | 10/24 |
 | LALO20_W005 | 31 | 10 | 6 | 12 | 3 | 0 | 0 | 7 | 10/24 |
-| LALO20_W01 | 44 | 12 | 11 | 17 | 4 | 0 | 0 | 7 | 12/37 |
+| LALO20_W01 | 41 | 7 | 12 | 16 | 6 | 0 | 0 | 6 | 7/35 |
 | LOVO25 | 88 | 24 | 18 | 39 | 7 | 0 | 0 | 13 | 24/75 |
 | LOVO25-script | 96 | 27 | 20 | 42 | 7 | 0 | 0 | 14 | 27/82 |
 | PLAA01_BND42 | 44 | 23 | 7 | 11 | 3 | 0 | 0 | 9 | 23/35 |
@@ -107,8 +107,8 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/polytope/dim` | ported | out-of-scope | 36 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, Double_Pendulum-less-robust, Double_Pendulum-more-robust, GRBX01, GRBX02, LOVO25, LOVO25-script, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/contDynamics/contDynamics` | untested | out-of-scope | 34 | BRKDC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, HEAT03, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LOVO25, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, RND01, RND02, RND03, RND04, RND05, RND06, ROBE25_1, ROBE25_2, ROBE25_3, TRAF22 |
 | `contSet/contSet/compact` | ported | out-of-scope | 27 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKNP01, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
-| `contSet/contSet/representsa` | ported | out-of-scope | 27 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKNP01, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/contDynamics/reach` | property | float | 26 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
+| `contSet/contSet/representsa` | ported | out-of-scope | 26 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKNP01, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/contSet/representsa_emptyObject` | ported | out-of-scope | 25 | Attitude_Control-avoid, BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25-script, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `contSet/polytope/isemptyobject` | untested | out-of-scope | 25 | Attitude_Control-avoid, BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25-script, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `hybridDynamics/hybridAutomaton/hybridAutomaton` | ported | float | 25 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, LOVO25-script, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
@@ -128,8 +128,8 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/contSet/project` | ported | out-of-scope | 21 | BRKDC01, BRKNC01, GRBX01, GRBX02, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
 | `contSet/zonotope/project` | untested | float | 21 | BRKDC01, BRKNC01, GRBX01, GRBX02, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
 | `contDynamics/linearSys/verify` | ported | float | 20 | CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, RND01, RND02, RND03, RND04, RND05, RND06 |
-| `contDynamics/contDynamics/linReach` | property | float | 18 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W01, LOVO25, LOVO25-script, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
-| `contDynamics/nonlinearSys/linearize` | ported | float | 17 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W01, LOVO25, LOVO25-script, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, Unicycle-reach, Unicycle-reach-disturbance |
+| `contDynamics/contDynamics/linReach` | property | float | 17 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LOVO25, LOVO25-script, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
+| `contDynamics/nonlinearSys/linearize` | ported | float | 16 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LOVO25, LOVO25-script, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/interval/polyZonotope` | untested | float | 15 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W01, LOVO25, LOVO25-script, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/polyZonotope/dim` | untested | out-of-scope | 15 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W01, LOVO25, LOVO25-script, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/polyZonotope/polyZonotope` | ported | float | 15 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W01, LOVO25, LOVO25-script, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
@@ -163,14 +163,14 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `nn/neuralNetwork/evaluate_` | untested | float | 11 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, Double_Pendulum-less-robust, Double_Pendulum-more-robust, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `nn/neuralNetwork/neuralNetwork` | ported | float | 11 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, Double_Pendulum-less-robust, Double_Pendulum-more-robust, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/conZonotope/interval` | property | bound | 10 | BRKNC01, LOVO25-script, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
+| `contDynamics/linearSys/errorSolution_adaptive` | property | float | 6 | LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3 |
+| `contDynamics/nonlinearSys/linReach_adaptive` | untested | float | 6 | LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3 |
+| `contDynamics/nonlinearSys/reach_adaptive` | property | float | 6 | LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contSet/conZonotope/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/dim` | ported | out-of-scope | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/zonoBundle` | ported | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
-| `contDynamics/linearSys/errorSolution_adaptive` | property | float | 5 | LALO20_W001, LALO20_W005, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contDynamics/linearSys/reach` | ported | float | 5 | BRKDC01, HEAT03, HEAT04, PLAD01_BND30, PLAD01_BND42 |
-| `contDynamics/nonlinearSys/linReach_adaptive` | untested | float | 5 | LALO20_W001, LALO20_W005, ROBE25_1, ROBE25_2, ROBE25_3 |
-| `contDynamics/nonlinearSys/reach_adaptive` | property | float | 5 | LALO20_W001, LALO20_W005, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contDynamics/linParamSys/initReach` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `contDynamics/linParamSys/linParamSys` | ported | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `contDynamics/linParamSys/post` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
@@ -205,6 +205,7 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/taylm/uplus` | ported | float | 2 | LOVO25, LOVO25-script |
 | `contSet/zonoBundle/center` | property | proved | 2 | GRBX01, GRBX02 |
 | `specification/syntaxTree/syntaxTree` | untested | float | 2 | LOVO25, LOVO25-script |
+| `contDynamics/linearSys/initReach_adaptive` | untested | float | 1 | LALO20_W01 |
 | `contDynamics/nonlinDASys/consistentInitialState` | ported | float | 1 | TSPS25 |
 | `contDynamics/nonlinDASys/initReach` | property | proved | 1 | TSPS25 |
 | `contDynamics/nonlinDASys/linReach` | property | proved | 1 | TSPS25 |
@@ -212,6 +213,7 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/nonlinDASys/post` | property | float | 1 | TSPS25 |
 | `contDynamics/nonlinDASys/steadyState` | ported | float | 1 | TSPS25 |
 | `contSet/contSet/vertices` | ported | out-of-scope | 1 | TRAF22 |
+| `contSet/polyZonotope/compact_` | ported | float | 1 | LALO20_W01 |
 | `contSet/polyZonotope/isIntersecting_` | ported | float | 1 | CVDP23 |
 | `contSet/polyZonotope/splitDepFactor` | property | float | 1 | LOVO25-script |
 | `contSet/polyZonotope/splitLongestGen` | ported | float | 1 | LOVO25-script |
@@ -228,17 +230,18 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 - `include/cora/cont_set/dimension_set.h`: 2 instances
 - `include/cora/cont_set/set.h`: 63 instances
-- `include/cora/global/tensor/tolerance.h`: 51 instances
+- `include/cora/global/tensor/tolerance.h`: 50 instances
 - `include/cora/hybrid_dynamics/region.h`: 2 instances
 - `src/cont_dynamics/linear_sys/input_solution.cpp`: 22 instances
-- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 23 instances
+- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 22 instances
 - `src/cont_dynamics/linear_sys/private/priv_canonical_input.cpp`: 20 instances
-- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 32 instances
+- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 31 instances
 - `src/cont_dynamics/linear_sys/private/priv_steps.cpp`: 23 instances
 - `src/cont_dynamics/linear_sys/private/priv_steps.h`: 13 instances
 - `src/cont_dynamics/linear_sys/private/priv_verify_ra_krylov.cpp`: 4 instances
 - `src/cont_dynamics/linear_sys/validate.cpp`: 5 instances
-- `src/cont_dynamics/nonlinear_sys/private/priv_adaptive.h`: 5 instances
+- `src/cont_dynamics/nonlinear_sys/private/priv_adaptive.h`: 6 instances
+- `src/cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h`: 1 instance
 - `src/cont_set/con_zonotope/cut.cpp`: 1 instance
 - `src/cont_set/con_zonotope/interval_cert.cpp`: 1 instance
 - `src/cont_set/con_zonotope/interval_tight.cpp`: 1 instance
@@ -256,7 +259,7 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - `src/cont_set/zonotope/private/priv_host_zonotope.cpp`: 2 instances
 - `src/cont_set/zonotope/private/priv_select_generators.cpp`: 50 instances
 - `src/cont_set/zonotope/private/priv_zonotope_norm.cpp`: 1 instance
-- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 23 instances
+- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 22 instances
 - `src/global/backend/eigen.cpp`: 72 instances
 - `src/global/backend/host_tensor.cpp`: 72 instances
 - `src/global/error.cpp`: 2 instances
@@ -270,7 +273,7 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - `src/global/tensor/tensor.cpp`: 72 instances
 - `src/global/tensor/tolerance.cpp`: 51 instances
 - `src/global/threads.cpp`: 36 instances
-- `src/global/within_tol.cpp`: 37 instances
+- `src/global/within_tol.cpp`: 36 instances
 - `src/hybrid_dynamics/location/private/priv.h`: 24 instances
 - `src/hybrid_dynamics/location/private/priv_sets.cpp`: 25 instances
 - `src/matrix_set/interval_matrix/private/priv_expm_series.cpp`: 1 instance
@@ -295,9 +298,9 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 A private step (`private/priv_*.m`) is no row of the inventory; its file is tagged and shows here.
 
-- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 18 instances
-- `contDynamics/@contDynamics/private/priv_abstrerr_poly.m`: 2 instances
-- `contDynamics/@contDynamics/private/priv_precompStatError.m`: 2 instances
+- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 17 instances
+- `contDynamics/@contDynamics/private/priv_abstrerr_poly.m`: 1 instance
+- `contDynamics/@contDynamics/private/priv_precompStatError.m`: 1 instance
 - `contDynamics/@linParamSys/private/priv_inputSolution.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_inputTie.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_mappingMatrix.m`: 4 instances
@@ -320,9 +323,11 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 - `contDynamics/@nonlinDASys/private/priv_linError_mixed_noInt.m`: 1 instance
 - `contDynamics/@nonlinDASys/private/priv_linError_mixed_noInt_comp.m`: 1 instance
 - `contDynamics/@nonlinDASys/private/priv_linearize.m`: 1 instance
-- `contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m`: 5 instances
+- `contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m`: 6 instances
+- `contDynamics/@nonlinearSys/private/priv_precompStatError_adaptive.m`: 1 instance
 - `contSet/@conZonotope/private/priv_ksi_iterative.m`: 2 instances
 - `contSet/@conZonotope/private/priv_ksi_optimizer.m`: 2 instances
+- `contSet/@polyZonotope/private/priv_reduceAdaptive.m`: 1 instance
 - `contSet/@polytope/private/priv_compact_1D.m`: 32 instances
 - `contSet/@polytope/private/priv_compact_2D.m`: 32 instances
 - `contSet/@polytope/private/priv_compact_alignedEq.m`: 32 instances
@@ -336,8 +341,8 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 - `contSet/@polytope/private/priv_normalizeConstraints.m`: 32 instances
 - `contSet/@polytope/private/priv_representsa_emptySet.m`: 33 instances
 - `contSet/@polytope/private/priv_supportFunc.m`: 33 instances
-- `contSet/@zonotope/private/priv_reduceAdaptive.m`: 5 instances
-- `contSet/@zonotope/private/priv_reduceGirard.m`: 45 instances
+- `contSet/@zonotope/private/priv_reduceAdaptive.m`: 6 instances
+- `contSet/@zonotope/private/priv_reduceGirard.m`: 44 instances
 - `contSet/@zonotope/private/priv_reducePCA.m`: 2 instances
 - `contSet/@zonotope/private/priv_zonotopeContainment_pointContainment.m`: 2 instances
 
@@ -541,9 +546,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>LALO20_W01: 12/37</summary>
+<details><summary>LALO20_W01: 7/35</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/linReach` (property), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linearize` (ported), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/interval/polyZonotope` (untested), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/dim` (untested), `contSet/polyZonotope/enclose` (property), `contSet/polyZonotope/exactPlus` (ported), `contSet/polyZonotope/interval` (ported), `contSet/polyZonotope/mtimes` (property), `contSet/polyZonotope/plus` (property), `contSet/polyZonotope/polyZonotope` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/polyZonotope/reduce` (property), `contSet/polyZonotope/zonotope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/polyZonotope` (untested), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/reach` (property), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/initReach_adaptive` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/taylorMatrices` (ported), `contDynamics/nonlinearSys/initReach` (property), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/nonlinearSys` (ported), `contDynamics/nonlinearSys/post` (property), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/interval` (untested), `contSet/interval/interval` (ported), `contSet/interval/polyZonotope` (untested), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/compact_` (ported), `contSet/polyZonotope/dim` (untested), `contSet/polyZonotope/enclose` (property), `contSet/polyZonotope/exactPlus` (ported), `contSet/polyZonotope/interval` (ported), `contSet/polyZonotope/mtimes` (property), `contSet/polyZonotope/plus` (property), `contSet/polyZonotope/polyZonotope` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/polyZonotope/reduce` (property), `contSet/polyZonotope/zonotope` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/polyZonotope` (untested), `contSet/zonotope/quadMap` (property), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
