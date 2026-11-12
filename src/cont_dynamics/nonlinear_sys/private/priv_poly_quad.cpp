@@ -82,6 +82,7 @@ double aux_dot(const Vec &a, const Vec &w) {
 
 std::vector<Vec> aux_matrices(const std::vector<Tensor> &Q) {
     std::vector<Vec> out;
+    out.reserve(Q.size());
     for (const Tensor &Qk : Q) out.push_back(Qk.data());
     return out;
 }
@@ -92,6 +93,7 @@ std::vector<Vec> aux_products(const std::vector<Vec> &Q, int64_t d, const std::v
                               const std::vector<Vec> &B) {
     // Q applied to every column of B once, then the dot products with the columns of A
     std::vector<QB> qb;
+    qb.reserve(B.size());
     for (const Vec &b : B) qb.push_back(aux_apply(Q, d, b));
     std::vector<Vec> out;
     for (const Vec &a : A)
@@ -138,7 +140,7 @@ PolyZonotope priv_poly_quad_map(const PolyZonotope &Z, const std::vector<Tensor>
             E.push_back(std::move(col));
         }
     // the image: center 0, no independent generators
-    const Tensor like = Z.center();
+    const Tensor &like = Z.center();
     return {like.zeros_like({m, 1}),
             aux_matrix(like, prod, m),
             like.zeros_like({m, 0}),
