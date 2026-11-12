@@ -200,7 +200,7 @@ carries over to the other backends up to these bounds of its primitives.
 | operation | kind | gradient | agreement | what it computes |
 |---|---|---|---|---|
 | `zonotope_linear_map` | fused | differentiable | sum 2 | M c and M G of a zonotope in one call |
-| `zonotope_interval_map` | fused | piecewise | sum 2 | T c and [T G, diag(S sum|[c G]|)] for the interval matrix T +- S (CORA's mtimes) |
+| `zonotope_interval_map` | fused | piecewise | sum 2 | T c and [T G, diag(R (|c| + sum|G|))] for the interval matrix [inf, sup], T its stored center and R the larger of |inf - T| and |sup - T| (CORALean's mtimesIntervalMat) |
 | `zonotope_linear_combination` | fused | differentiable | exact | (c1 + c2)/2 and [(G1 + G2)/2, (G1 - G2)/2, (c1 - c2)/2] (CORA's linComb) |
 | `interval_matmul` | fused | piecewise | sum 2 | the bounds of I M for an interval matrix I (CORA's mtimes) |
 | `matmul_interval` | fused | piecewise | sum 2 | the bounds of M I for an interval matrix I (CORA's mtimes) |

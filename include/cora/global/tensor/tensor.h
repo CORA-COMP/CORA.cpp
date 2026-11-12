@@ -605,8 +605,8 @@ class Tensor {
     /// M c and M G, the linear map of the zonotope (c, G).
     static std::pair<Tensor, Tensor> zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                          const Tensor &G);
-    /// The map of the zonotope (c, G) by the interval matrix [inf, sup] = T +- S, CORA's mtimes:
-    /// T c and [T G, diag(S sum|[c G]|)], the sum along the rows.
+    /// The map of (c, G) by the interval matrix [inf, sup], CORALean's mtimesIntervalMat: T c and
+    /// [T G, diag(R (|c| + sum|G|))], T = (inf + sup) / 2, R the larger of |inf - T|, |sup - T|.
     static std::pair<Tensor, Tensor> zonotope_interval_map(const Tensor &inf, const Tensor &sup,
                                                            const Tensor &c, const Tensor &G);
     /// CORA's linComb of (c1, G1) and (c2, G2) of one shape: (c1 + c2) / 2 and

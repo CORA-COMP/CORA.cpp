@@ -74,6 +74,12 @@ ARCH26 has no ISS, uses the new RND01-06 instead of RAND01/02 (RND[c], run here 
 states, Krylov), which runs here (its `A` is built from the mesh, not stored). The other instances
 here stay those of the ARCH23 scripts.
 
+The tables are CORA's linear step (`linear_step = LinearStep::cora`, the default of `alg::Linearization`
+and `alg::LinearizationAdaptive`). `LinearStep::coralean` takes CORALean's step instead, bit for bit
+(`test_lean_linear_sys_float_step`), at a price: TRAF22 and SPRE22 take 1.9x as long (SPRE22 needs a
+time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `zeta_z` and
+`taylor_terms` retuned), LALO20 W005 20x; the verdicts stay.
+
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | HEAT01 | 1 | 1 | 0.064 | 1/8 bit-exact, 2 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |

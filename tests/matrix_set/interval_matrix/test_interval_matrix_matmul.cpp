@@ -66,7 +66,7 @@ void product_with_other_sets(const std::string &b) {
     const Zonotope R = A * Z;
     check(close(R.center(), std::vector<double>{1.5, 3.5}), b + ": the center T c");
     check(close(R.generators(), test::matrix({1.5, 0, 3, 0, 1.5, 2, 0, 3}, 2, 4)),
-          b + ": the generators [T G, diag(S sum|[c G]|)]");
+          b + ": the generators [T G, diag(R (|c| + sum|G|))]");
     Rng rng(13);
     bool inside = true;
     for (int trial = 0; trial < 30; ++trial)

@@ -11,7 +11,7 @@
 //           Z - zonotope;
 //           E - empty set; the inner dimensions agree
 // Outputs:  C - each entry the sum over k of the hull of the corner products
-//           Z2 - the zonotope T c, [T G, diag(S sum|[c G]|)], an enclosure of [A] Z
+//           Z2 - the zonotope T c, [T G, diag(R (|c| + sum|G|))], an enclosure of [A] Z
 //           E2 - the empty set of rows(A) dimensions
 // See also: matrix_power, Zonotope::linear_map
 //

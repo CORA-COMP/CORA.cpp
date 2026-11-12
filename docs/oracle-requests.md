@@ -122,7 +122,7 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 | `NonlinearSys.FloatModel.linearizeFloat` (`LinearizeFloat.lean`) | `A`, `B` at the expansion point: the centers of the model's Jacobian enclosures | own (CORA: the symbolic Jacobian at the point) |
 | `NonlinearSys.FloatHessModel.hessRemainder` (`HessRemainder.lean`) | `l_i = 1/2 dz' max\|H_i\| dz`, plus the first-order slack of the rounded `A`, `B` | close to `priv_abstrerr_lin` at tensorOrder 2; the slack term and the outward rounding are its own |
 | `lagrangeRemainderFloat` (`LagrangeRemainderFloat.lean`) | `1/6 sum_j g_j (g' E_ij g)` with `g` the box radius, the sixth as 11/64 | own (CORA, tensorOrder 3: the interval product `(dz' T_ij dz) dz_j` with `dz` the box, not its radius, and a quadratic set `1/2 quadMap(Z, H)`) |
-| `NonlinearSys.oneStepFloat` (`OneStepFloat.lean`) | one affine step with the input `V = f(z*) + B (U - u*) + L` | own (CORA: `oneStep` of the linear system, then the error solution by `particularSolution_timeVarying`) |
+| `NonlinearSys.oneStepFloat` (`OneStepFloat.lean`) | one affine step with the input `V = f(z*) + B (U - u*) + L`: `LinearSys.reachFloatInput` for one step | own (CORA: `oneStep` of the linear system, then the error solution by `particularSolution_timeVarying`); CORA.cpp follows CORALean bit for bit with `linear_step = LinearStep::coralean` (`priv_float_step.cpp`, `alg::Linearization` and `alg::LinearizationAdaptive`) |
 | `NonlinearSys.FloatHessModel.linReachFloat` (`LinReachFloat.lean`) | one step: the region checked first, a single pass | own (CORA: the `while perfIndCurr > 1` loop that enlarges the guessed error) |
 | `NonlinearSys.FloatModel.reachFloat` (`ReachFloat.lean`) | the steps over the horizon | own, by the steps above |
 
@@ -146,12 +146,12 @@ an older oracle makes the tests skip them.
 | `zonotope.reduce` with method `adaptive` | `test_lean_nonlinear_sys_adaptive_tuning` | bit for bit |
 | `nonlinearSys.abstrErrAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | bit for bit at tensor order 2; order 3 inside the oracle's box (quadMap, see the differences) |
 | `nonlinearSys.ordersAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | exact |
-| `nonlinearSys.linReachAdaptivePass` | `test_lean_nonlinear_sys_adaptive_pass` | `xs`, `A`, the zero generators exact; the sets inside the oracle's, 5e-3 tighter at most |
+| `nonlinearSys.linReachAdaptivePass` | `test_lean_nonlinear_sys_adaptive_pass` | with `linear_step = coralean`: `xs`, `A`, the zero generators and, at tensor order 2, the sets (`Rmax`, the window, the end set) bit for bit; at order 3 the sets inside the oracle's, 5e-3 tighter at most (quadMap) |
+| `linearSys.reach` with an input set (the linear step of `lin` and `lin-adaptive`) | `test_lean_linear_sys_float_step` | bit for bit: the window and the end set of one step, for random systems, orders 4 and 6, reductions to 1 and 10 generators per dimension, a Robertson-like and a van der Pol-like linearization |
+| `zonotope.mtimesInterval` | `test_lean_linear_sys_float_step` | bit for bit |
 | `nonlinearSys.reachAdaptive` | `test_lean_nonlinear_sys_reach_adaptive` | the same steps and tensor orders while the order is 2; the sets as in a pass |
 
-Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reachAdaptive` runs it), and
-the bit-exact linear step (CORALean's `reachFloatInput` is the interval-matrix exponential, CORA.cpp's
-step is CORA's `oneStep`).
+Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reachAdaptive` runs it).
 
 ## Nonlinear systems, alg "poly-adaptive"
 
