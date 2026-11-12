@@ -356,7 +356,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | CVDP23 | 1 | 1 | 58.6 | 39/70 bit-exact, 11 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
 | LALO20 W001 | 1 | 1 | 2.07 | 11/20 bit-exact, 3 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
 | LALO20 W005 | 1 | 1 | 14.3 | 11/20 bit-exact, 3 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
-| LALO20 W01 | 1 | 0 | 529 | 8/25 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.47 |
+| LALO20 W01 | 1 | 1 | 261 | 8/25 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.95 |
 | TSPS25 | 1 | 1 | 65 | 20/32 bit-exact, 4 property | 312 | 299 | 299 (CORA) | 4.60 |
 | LOVO25 | 1 | 1 [e] | 3.72 | 33/76 bit-exact, 12 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
 
@@ -458,7 +458,7 @@ specification of the report is x4 < 4.5 (W001, W005) and x4 < 5 (W01) over the w
 the script's alg "lin-adaptive" (`alg::LinearizationAdaptive`, defaults, CORALean's repair) and W01 its alg
 "poly-adaptive" (`alg::PolynomializationAdaptive`, the constants of the script, CORALean's repair of
 `reachPolyAdaptiveFloat`, !912 and !915): 1130 steps (CORA 1193), the largest x4 is 4.995 (the limit is 5, the verdict 1 as CORA's script says), and the
-width of x4 at t = 20 is 0.0582 (CORA 0.0600). The time of 526 s (machine load 15) is 2.5 times MATLAB CORA's 208 s.
+width of x4 at t = 20 is 0.0582 (CORA 0.0600). The time of 261 s (machine load 6 to 8) is 1.3 times MATLAB CORA's 208 s.
 The earlier row (224 s, width 0.0571, verdict 1) was an unsound step: it applied the summed series matrix to the
 time-varying input and to the segment (docs/cora-differences.md). The sound step keeps the terms apart; with the
 varying input boxed to n generators before the series (CORALean's !918) it was 2.5 % wider than CORA's at t = 3 and

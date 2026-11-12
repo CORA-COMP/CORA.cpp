@@ -24,6 +24,25 @@ namespace cora {
 
 // The columns -----------------------------------------------------------------------------------
 
+std::vector<int64_t> priv_least_equal_column(const Exponents &E) {
+    // an open-addressing table of column indices, compared by their exponents
+    const std::size_t h = E.size();
+    std::size_t capacity = 16;
+    while (capacity < 2 * h) capacity *= 2;
+    std::vector<int64_t> table(capacity, -1), rep(h);
+    for (std::size_t j = 0; j < h; ++j) {
+        std::size_t hash = 1469598103934665603ULL; // FNV-1a over the exponents
+        for (const int e : E[j]) hash = (hash ^ static_cast<std::size_t>(e)) * 1099511628211ULL;
+        // probe from the hash to the first column equal to this one, or to a free slot
+        std::size_t slot = (hash ^ (hash >> 29)) & (capacity - 1);
+        while (table[slot] >= 0 && E[std::size_t(table[slot])] != E[j])
+            slot = (slot + 1) & (capacity - 1);
+        if (table[slot] < 0) table[slot] = int64_t(j);
+        rep[j] = table[slot];
+    }
+    return rep;
+}
+
 Tensor priv_columns(const Tensor &G, const std::vector<int64_t> &index) {
     const int64_t n = G.shape()[0];
     if (index.empty()) return G.zeros_like({n, 0});

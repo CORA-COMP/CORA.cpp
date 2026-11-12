@@ -52,6 +52,10 @@ void priv_drop_unused_ids(Exponents &E, std::vector<int64_t> &id);
 /// The columns of G (n, h) at the indices, in that order (n, k).
 Tensor priv_columns(const Tensor &G, const std::vector<int64_t> &index);
 
+/// For each exponent column, the least index of a column equal to it (a column that is the first of
+/// its kind is its own).
+std::vector<int64_t> priv_least_equal_column(const Exponents &E);
+
 /// Whether all exponents of the column are even (such a generator only reaches [0, 1]).
 bool priv_is_even(const std::vector<int> &exponents);
 
