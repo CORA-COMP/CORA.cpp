@@ -17,6 +17,8 @@
 #include "cora/global/oracle/zonotope.h"
 #include "oracle_testing.h"
 
+#include <cmath>
+
 using namespace cora;
 
 namespace oracle = test::oracle;
@@ -35,8 +37,16 @@ int main() {
             std::vector<Tensor> Q;
             for (int i = 0; i < k; ++i) Q.push_back(rnd.matrix(n, n));
             const std::vector<lean::Tensor> theirs_Q(Q.begin(), Q.end());
-            oracle::check_inside(Z.quad_map(Q).interval(),
-                                 lean::Zonotope(Z).quad_map(theirs_Q).interval());
+            // inside up to the rounding of the bounds: both sum the same products in other orders
+            const Interval mine = Z.quad_map(Q).interval();
+            const auto [inf, sup] = lean::Zonotope(Z).quad_map(theirs_Q).interval().gather();
+            const std::vector<double> lo = mine.inf().data(), hi = mine.sup().data(),
+                                      blo = inf.data(), bhi = sup.data();
+            bool inside = lo.size() == blo.size();
+            for (std::size_t i = 0; inside && i < lo.size(); ++i)
+                inside = lo[i] >= blo[i] - 1e-12 * (1 + std::abs(blo[i])) &&
+                         hi[i] <= bhi[i] + 1e-12 * (1 + std::abs(bhi[i]));
+            test::check(inside, "zonotope.quadMap: the box inside the oracle's");
         }
     });
     return test::finish("lean zonotope quad_map");
