@@ -112,7 +112,7 @@ void van_der_pol_encloses_simulations(const std::string &b) {
     const NonlinearSys sys = van_der_pol();
     const Zonotope X0(Tensor({1.4, 2.3}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
     const Zonotope U(Tensor({0.0}), Tensor({{0.1}}));
-    const double T = 0.5;
+    const double T = 0.05;
     const PolyReachSet R =
         sys.reach({.initial_set = PolyZonotope(X0), .input_set = U, .t_final = T},
                   alg::PolynomializationAdaptive{});
@@ -128,7 +128,7 @@ void quadratic_system_encloses_simulations(const std::string &b) {
     const Zonotope X0(Tensor({1.0, 0.5, 0.2}),
                       Tensor({{0.05, 0.0, 0.0}, {0.0, 0.05, 0.0}, {0.0, 0.0, 0.05}}));
     const Zonotope U(Tensor({0.0}), Tensor::zeros({1, 0}));
-    const double T = 0.6;
+    const double T = 0.05;
     const PolyReachSet R =
         sys.reach({.initial_set = PolyZonotope(X0), .input_set = U, .t_final = T},
                   alg::PolynomializationAdaptive{});

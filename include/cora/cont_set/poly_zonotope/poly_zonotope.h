@@ -45,6 +45,10 @@ namespace detail {
 /// Tag of the constructor for generators whose exponents are known to be distinct already (a set
 /// made from another by an operation that keeps the exponents): the merge is skipped.
 struct Normalized {};
+
+/// Tag of the constructor that stores its generators exactly as given: no merge of equal exponents
+/// and no zero generator dropped (the poly-adaptive algorithm, whose float definition keeps both).
+struct Verbatim {};
 } // namespace detail
 
 class PolyZonotope : public ContSet {
@@ -59,6 +63,11 @@ class PolyZonotope : public ContSet {
     /// stay as they are (no merge of equal exponents, zero generators stay).
     PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E, std::vector<int64_t> id,
                  detail::Normalized);
+
+    /// As the constructors above for a set whose columns are kept exactly as they are: equal
+    /// exponents stay apart, and zero generators stay, dependent and independent.
+    PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id,
+                 detail::Verbatim);
 
     /// The zonotope as a polynomial zonotope: its generators are dependent, E = I (CORA's
     /// polyZonotope(Z)); the identifiers are 1, 2, ...
@@ -136,6 +145,10 @@ class PolyZonotope : public ContSet {
     /// The set without the generators that are zero and the factors that no generator uses (CORA's
     /// compact_ "all", whose exponent merging the constructor does).
     PolyZonotope compact() const;
+
+    /// The dependent generators of equal exponents added into the one of the least index, the sum
+    /// from the last column to the first (CORALean's compactGens); no zero generator is dropped.
+    PolyZonotope compact_gens() const;
 
 
   protected:

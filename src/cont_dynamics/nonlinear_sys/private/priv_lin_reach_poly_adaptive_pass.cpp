@@ -36,15 +36,6 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::optional<int> priv_reach_order(const Tensor &A, double dt, int eta) {
-    // eta + 2 >= 2 ||A dt||, from the larger of eta and 2
-    const double norm = A.abs().sum(-1, true).max().item() * dt;
-    eta = std::max(eta, 2);
-    while (double(eta + 2) < 2 * norm && eta < 4096) ++eta;
-    if (!(double(eta + 2) >= 2 * norm)) return std::nullopt;
-    return eta;
-}
-
 std::optional<PolyAdaptivePass>
 priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Zonotope> &U,
                                   const alg::PolynomializationAdaptive &alg, double dt,
@@ -59,9 +50,8 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     const Jacobians &J = L.J;
     const Zonotope &Vbase = L.Vbase;
     const LinearSys lin(J.A);
-    TaylorLinSys taylor(J.A);
-    const std::optional<int> eta = priv_reach_order(J.A, dt, alg.taylor_terms);
-    if (!eta) return std::nullopt;
+    const std::optional<PolySeries> series = PolySeries::make(J.A, dt, alg.taylor_terms);
+    if (!series) return std::nullopt;
 
     // the start set relative to x*, and the static error over it
     const PolyZonotope Rdelta = R.plus(xs_t * -1.0);
@@ -74,8 +64,8 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
         priv_error_loop_adaptive(error_adm, alg.fuel, [&](const Vec &adm) {
             Box ebox{Vec(adm.size()), adm};
             for (std::size_t i = 0; i < adm.size(); ++i) ebox.lo[i] = -adm[i];
-            const auto window = priv_poly_window(
-                lin, taylor, dt, *eta, Vbase + priv_box_zonotope(like, ebox), Rdelta, alg.zeta_z);
+            const auto window = priv_poly_window(*series, Vbase + priv_box_zonotope(like, ebox),
+                                                 Rdelta, alg.zeta_z);
             const Zonotope Rmax = (Rdelta.zonotope() + window.second.zonotope()) + xs_t;
             Verror =
                 priv_abstr_err_poly_adaptive(sys, xs, Rmax, S.Zdelta, window.second, U, alg.zeta_z);
@@ -87,13 +77,12 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     // the sets: the dynamic and the static error in the window, the dynamic error in the end set
     const Zonotope Vdyn = *Verror;
     const PolyZonotope Rti =
-        priv_poly_window(lin, taylor, dt, *eta, (Vbase + Vdyn) + Vsz, Rdelta, alg.zeta_z).first;
-    const PolyZonotope Rtp =
-        priv_poly_point(lin, taylor, dt, *eta, Vbase + Vdyn, Rdelta, S.Vstat, alg.zeta_z);
+        priv_poly_window(*series, (Vbase + Vdyn) + Vsz, Rdelta, alg.zeta_z).first;
+    const PolyZonotope Rtp = priv_poly_point(*series, Vbase + Vdyn, Rdelta, S.Vstat, alg.zeta_z);
 
     // the radius of the solutions of the errors (independent generators of both)
-    const Zonotope Rdyn = lin.error_solution_adaptive(Vdyn, std::nullopt, dt, 0.0, eta);
-    const PolyZonotope Rstat = S.Vstat.linear_map(priv_adaptive_integral(lin, taylor, dt, *eta));
+    const Zonotope Rdyn = lin.error_solution_adaptive(Vdyn, std::nullopt, dt, 0.0, series->eta());
+    const PolyZonotope Rstat = priv_poly_interval_map(series->integral(), S.Vstat);
     const Tensor GI = Tensor::concat({Rdyn.generators(), Rstat.independent_generators()}, -1);
     const int64_t q = GI.shape()[1];
     const Vec gi = GI.data();
