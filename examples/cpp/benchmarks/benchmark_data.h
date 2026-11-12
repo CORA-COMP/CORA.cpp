@@ -282,7 +282,7 @@ inline bool run_instance(const std::string &name) {
     // what will run, before it does
     std::cerr << name << ": " << inst.params->initial_set->dim() << " states, " << inst.specs.size()
               << " specifications, " << alg::name_of(inst.alg) << " algorithm, t_final "
-              << inst.params->t_final << std::endl;
+              << inst.params->t_final << '\n';
     const auto start = std::chrono::steady_clock::now();
     const VerifyResult res = inst.sys->verify(*inst.params, inst.specs, inst.alg);
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
@@ -295,7 +295,7 @@ inline bool run_instance(const std::string &name) {
         std::cerr << "  (MATLAB: iterations " << inst.expected["iterations"].integer()
                   << ", nrSteps " << inst.expected["nrSteps"].integer() << ", timeStep "
                   << inst.expected["timeStep"].number << ")";
-    std::cerr << std::endl;
+    std::cerr << '\n';
     if (inst.expected.is_null() || !inst.expected.object.count("verified")) return true;
     return res.verified == (inst.expected["verified"].number != 0);
 }

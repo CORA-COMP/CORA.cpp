@@ -7,6 +7,8 @@ Last update:   ---
 Reviewed:      ---
 """
 # CORA: nn/@neuralNetwork/evaluate.m
+# CORA: nn/@neuralNetwork/evaluate_.m
+# CORA: nn/layers/nonlinear/nnReLULayer.m
 # CORA: nn/@neuralNetwork/neuralNetwork.m
 # CORA: nn/@neuralNetwork/calcSensitivity.m
 
