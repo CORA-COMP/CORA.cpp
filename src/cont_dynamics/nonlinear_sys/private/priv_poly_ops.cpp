@@ -89,8 +89,23 @@ PolyZonotope aux_reduce_by(const PolyZonotope &Z, const Host &a,
     }
     Exponents E;
     for (const std::size_t l : keep) E.push_back(a.E[l]);
-    return {Z.center(), aux_tensor(like, G, n, hk), aux_tensor(like, GI, n, qk + n), std::move(E),
-            Z.ids(),    detail::Verbatim{}};
+    // factors no kept generator carries go with their identifiers (no value changes)
+    std::vector<int64_t> id;
+    std::vector<std::size_t> used;
+    for (std::size_t k = 0; k < Z.ids().size(); ++k)
+        if (std::any_of(E.begin(), E.end(),
+                        [&](const std::vector<int> &col) { return col[k] != 0; })) {
+            used.push_back(k);
+            id.push_back(Z.ids()[k]);
+        }
+    for (std::vector<int> &col : E) {
+        std::vector<int> c;
+        for (const std::size_t k : used) c.push_back(col[k]);
+        col = std::move(c);
+    }
+    return {
+        Z.center(),    aux_tensor(like, G, n, hk), aux_tensor(like, GI, n, qk + n), std::move(E),
+        std::move(id), detail::Verbatim{}};
 }
 
 /// The radius per coordinate of the dependent generators `dep` and the independent ones `ind`: the
