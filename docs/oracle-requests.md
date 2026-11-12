@@ -295,3 +295,12 @@ advisory and the acceleration rule, composed of `NeuralNetwork::evaluate` and `P
 affine maps) have no CORALean counterpart beyond `NeurNetContrSysDT` (whose `reach` is the
 sampled loop at a discrete-time plant, with the advisory choice an argument); they are oracle debt
 with the network ops of the first table.
+
+### AINNCS hard instances (PR "ainncs/hard")
+
+The splitting rule `VerifySplit::Rule::widest` of `NeurNetContrSys::verify` (cut the dimension of the
+largest radius relative to the initial set's; CORA.cpp only, CORA's `splitR0` cuts by radius times
+sensitivity) and the Docking constraint from inside by a polytope (`|s| >= (sx + sy) / sqrt 2`, the
+disk by an inscribed regular polygon) have no CORALean counterpart: they are oracle debt with the
+splitting of `verify` above. CORALean needs `NeurNetContrSys.verify` with a split rule, and an
+`IsInside` lemma for the inscribed polygon and the Cauchy-Schwarz bound of `|s|`.
