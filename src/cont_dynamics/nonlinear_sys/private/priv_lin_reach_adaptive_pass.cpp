@@ -70,53 +70,34 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
                                                          double dt, const Zonotope &R,
                                                          const Vec &error_adm) {
     const Tensor &like = R.center();
-    const int64_t n = sys.dim(), m = sys.input_dim();
-    // x* = center + dt/2 f(center, u*), u* the center of U
-    const Vec center = R.center().data(), us = m > 0 ? U->center().data() : Vec{};
-    const auto point_u = [&](const Vec &u) {
-        return m > 0 ? std::optional<Box>(Box{u, u}) : std::nullopt;
-    };
-    const Box fc = priv_enclosure(sys, like, Box{center, center}, point_u(us));
-    Vec xs(static_cast<std::size_t>(n));
-    for (int64_t i = 0; i < n; ++i)
-        xs[std::size_t(i)] = center[std::size_t(i)] +
-                             (0.5 * dt) * (0.5 * (fc.lo[std::size_t(i)] + fc.hi[std::size_t(i)]));
-    // the linearization and the input of the linear system without the error
-    const Tensor xs_t = priv_column(like, xs);
-    const Jacobians J =
-        sys.jacobian(xs_t, m > 0 ? std::optional<Tensor>(priv_column(like, us)) : std::nullopt);
-    Zonotope Vbase = priv_box_zonotope(like, priv_enclosure(sys, like, Box{xs, xs}, point_u(us)));
-    if (m > 0) Vbase = Vbase + (*U - U->center()).linear_map(J.B);
+    const int64_t n = sys.dim();
+    const AdaptiveLinearization L = priv_linearize_adaptive(sys, U, like, dt);
+    const Vec &xs = L.xs;
+    const Tensor &xs_t = L.xs_t;
+    const Jacobians &J = L.J;
+    const Zonotope &Vbase = L.Vbase;
     const LinearSys lin(J.A);
     TaylorLinSys taylor(J.A);
 
     // the error loop: the window with the admissible error as input, the error over it
-    Vec admissible = error_adm;
-    double previous = 0;
     std::optional<Zonotope> Rmax, Verror;
-    Vec true_error;
-    for (int pass = 0, counter = 1; pass < alg.fuel; ++pass, ++counter) {
-        Box ebox{Vec(admissible.size()), admissible};
-        for (std::size_t i = 0; i < admissible.size(); ++i) ebox.lo[i] = -admissible[i];
-        const auto window = aux_linear_step(lin, taylor, alg.taylor_terms, xs_t,
-                                            Vbase + priv_box_zonotope(like, ebox), R, dt);
-        if (!window) return std::nullopt;
-        Rmax = window->first;
-        Verror = priv_abstr_err_adaptive(sys, kappa, J.A, J.B, xs, *Rmax, U, alg.zeta_z);
-        true_error = priv_norm_mag(priv_zonotope_box(*Verror));
-        // the largest ratio of the error to the admissible one
-        double current = 0;
-        bool within = true;
-        for (std::size_t i = 0; i < admissible.size(); ++i) {
-            current = std::max(current, true_error[i] <= 0 ? 0.0 : true_error[i] / admissible[i]);
-            within = within && true_error[i] <= admissible[i];
-        }
-        if (within) break;
-        if (2 < counter && !(current <= previous)) return std::nullopt;
-        previous = current;
-        for (std::size_t i = 0; i < admissible.size(); ++i) admissible[i] = 1.1 * true_error[i];
-        if (pass + 1 == alg.fuel) return std::nullopt;
-    }
+    bool failed = false;
+    const std::optional<Vec> found =
+        priv_error_loop_adaptive(error_adm, alg.fuel, [&](const Vec &adm) {
+            Box ebox{Vec(adm.size()), adm};
+            for (std::size_t i = 0; i < adm.size(); ++i) ebox.lo[i] = -adm[i];
+            const auto window = aux_linear_step(lin, taylor, alg.taylor_terms, xs_t,
+                                                Vbase + priv_box_zonotope(like, ebox), R, dt);
+            if (!window) {
+                failed = true;
+                return Vec(adm.size(), 0.0);
+            }
+            Rmax = window->first;
+            Verror = priv_abstr_err_adaptive(sys, kappa, J.A, J.B, xs, *Rmax, U, alg.zeta_z);
+            return priv_norm_mag(priv_zonotope_box(*Verror));
+        });
+    if (failed || !found) return std::nullopt;
+    const Vec &true_error = *found;
 
     // the sets with the error in the input, and the radius of the solution of the error
     const auto S = aux_linear_step(lin, taylor, alg.taylor_terms, xs_t, Vbase + *Verror, R, dt);

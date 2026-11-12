@@ -132,7 +132,7 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 
 CORA.cpp's `alg::LinearizationAdaptive` is CORA's lin-adaptive as CORALean repairs it
 (`reachAdaptiveFloat`, CORALean !906). The oracle serves its ops from the pinned tag
-`oracle-20261111-f9723f6f6` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
+`oracle-20261111-ded25a884` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
 an older oracle makes the tests skip them.
 
 | op | test | agreement |
@@ -148,9 +148,20 @@ Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reach
 the bit-exact linear step (CORALean's `reachFloatInput` is the interval-matrix exponential, CORA.cpp's
 step is CORA's `oneStep`).
 
+## Nonlinear systems, alg "poly-adaptive"
+
+CORA.cpp's `alg::PolynomializationAdaptive` is CORA's poly-adaptive as CORALean repairs it
+(`reachPolyAdaptiveFloat`, CORALean !912). The oracle serves its ops (`nonlinearSys.reachPolyAdaptive`,
+`linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261111-ded25a884`
+on (`lean::NonlinearSys`, `reach_poly_adaptive`, `lin_reach_poly_adaptive_pass`). The sets are compared by
+their boxes, not bit for bit (docs/cora-differences.md), so the operations of the polynomial zonotope float
+layer behind them (`reduceAdaptive`, `restructure`, `quadMapMixed`, `mtimesIntervalMat`) stay oracle debt: the
+oracle serves none of them on its own. `linReachPolyAdaptive` (one step with its tuning) is not tested; the
+tuning formulas are the lin-adaptive ones (`dHused` aside).
+
 ## Polynomial zonotopes and alg "poly" (PR "nln-poly")
 
-The pinned oracle (`oracle-20261111-f9723f6f6`) serves no polynomial zonotope operation and no
+The pinned oracle (`oracle-20261111-ded25a884`) serves no polynomial zonotope operation and no
 `nonlinearSys.reach` with a polynomial zonotope. CORALean has float definitions of the operations
 below (`src/CORALean/ContSet/PolyZonotope/Float/Operations/`). Their request is `{"op": ..., "S"
 or "pZ": {"c", "G", "GI", "E", "id"}, ...}` with `E` the p x h exponent matrix and `id` the
@@ -200,7 +211,7 @@ expression tree (`{"op":..,"args":..}`, `{"x":i}`, `{"const":text}`).
 
 ## Differential-algebraic systems (PR "port/nln-dae")
 
-The pinned oracle (`oracle-20261111-f9723f6f6`) serves no `nonlinDASys` op. CORALean's float
+The pinned oracle (`oracle-20261111-ded25a884`) serves no `nonlinDASys` op. CORALean's float
 definitions (`src/CORALean/ContDynamics/NonlinDASys/Operations/`) take the equations as a
 `FloatModel` (interval extensions of `f`, `g` and slope enclosures of the Jacobian blocks), which a
 request carries as expression trees of `x`, `y` and `u` (CORA.cpp's `Expr::to_json` with a third
@@ -240,7 +251,7 @@ nearest), so these ops are oracle debt; the requests that would close it:
 
 ## Neural networks and neural network controlled systems (PR "port/ainncs-a")
 
-The pinned oracle (`oracle-20261111-f9723f6f6`) serves no `neuralNetwork` or `neurNetContrSys` op.
+The pinned oracle (`oracle-20261111-ded25a884`) serves no `neuralNetwork` or `neurNetContrSys` op.
 CORALean's definitions are generic over the set representation (`NeuralNetwork.enclose`, no scalar
 named; the float layers instantiate it in `Examples/RunnableFloat.lean`) or over the plant
 (`NeurNetContrSys.reachWith`, the plant's reach an argument); only the linear plant has a float

@@ -34,6 +34,7 @@
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
+#include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -257,6 +258,7 @@ PolyReachSet NonlinearSys::reach(const PolyReachProblem &problem,
     // the start set, the first step, then the step after each one, by the algorithm's own steps
     return std::visit(
         [&](const auto &options) {
+            // init_reach from the start set, then post from each step
             return aux_steps<PolyReachSet, PolyNonlinearStep>(
                 *problem.initial_set, priv_num_steps(problem.t_final, options.time_step),
                 options.time_step,
@@ -268,6 +270,22 @@ PolyReachSet NonlinearSys::reach(const PolyReachProblem &problem,
         alg);
 }
 
+PolyReachSet NonlinearSys::reach(const PolyReachProblem &problem,
+                                 const alg::PolynomializationAdaptive &alg) const {
+    detail::Entry entry;
+    // as for the other algorithms: a start set and a positive finite horizon
+    CORA_CHECK(problem.initial_set.has_value(), Error::wrong_value,
+               [] { return std::string("reach: the problem needs an initial_set"); });
+    CORA_CHECK(problem.t_final > 0 && problem.t_final < 1e300, Error::wrong_value, [&] {
+        return "reach: t_final must be positive and finite, got " + std::to_string(problem.t_final);
+    });
+    if (entry.check()) {
+        validate_poly_sets("reach", *problem.initial_set, problem.input_set);
+        alg.validate();
+    }
+    // the steps are tuned by the algorithm
+    return priv_reach_poly_adaptive(*this, problem, alg);
+}
 
 } // namespace cora
 

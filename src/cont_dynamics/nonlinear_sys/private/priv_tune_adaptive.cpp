@@ -79,6 +79,57 @@ double priv_pow(double x, int k) {
     return power;
 }
 
+// The step ----------------------------------------------------------------------------------------
+
+bool priv_within_tol(double a, double b, double tol) {
+    const double d = std::abs(a - b);
+    return d <= tol || d / std::min(std::abs(a), std::abs(b)) <= tol;
+}
+
+double priv_max_ratio(const std::vector<char> &mask, const Vec &num, const Vec &den) {
+    double best = 0;
+    for (std::size_t i = 0; i < num.size(); ++i) {
+        const double r = mask[i] && !(num[i] <= 0 && den[i] <= 0) ? num[i] / den[i] : 0.0;
+        best = i == 0 ? r : std::max(best, r);
+    }
+    return best;
+}
+
+void priv_update_orders(const NonlinearSys &sys, const std::optional<Zonotope> &U,
+                        const Tensor &like, const Vec &row_sums, bool veryfirststep,
+                        const Tensor &A, const Vec &xs, const std::vector<char> &gzero, int shift,
+                        OrdersState &st) {
+    // a dimension has zero width where its generators sum to almost nothing
+    std::vector<char> zw(row_sums.size());
+    bool changed = false;
+    for (std::size_t i = 0; i < zw.size(); ++i) {
+        zw[i] = row_sums[i] <= numerics::kZeroWidth;
+        changed = changed || zw[i] != st.zero_width[i];
+    }
+    if (!(veryfirststep || changed)) return;
+    // the Hessian at the linearization point gives the orders of the error terms
+    const int64_t n = sys.dim(), m = sys.input_dim();
+    const Vec us = m > 0 ? U->center().data() : Vec{};
+    const auto H = sys.hessian_enclosure(Range(priv_column(like, xs)),
+                                         m > 0 ? std::optional<Range>(Range(priv_column(like, us)))
+                                               : std::nullopt);
+    st.zero_width = zw;
+    st.orders = priv_adaptive_orders(A, zw, gzero, H, n, m, 100, shift);
+    // the least order of the dimensions with an error
+    int minorder = -1;
+    for (const int q : st.orders)
+        if (q >= 0) minorder = minorder < 0 ? q : std::min(minorder, q);
+    st.minorder = std::max(minorder, 0);
+}
+
+double priv_zeta_p(const Tensor &A, double time_step) {
+    const Vec a = A.data();
+    const int64_t n = std::lround(std::sqrt(double(a.size())));
+    Vec diag(static_cast<std::size_t>(n));
+    for (int64_t i = 0; i < n; ++i) diag[std::size_t(i)] = a[std::size_t(i * n + i)] * time_step;
+    return std::exp(priv_sum_up(diag));
+}
+
 // The gain ----------------------------------------------------------------------------------------
 
 double priv_varphi_total(double varphi, double varphi_lim, double prev, double curr, double decr) {
@@ -134,8 +185,9 @@ double priv_varphi_est(double horizon, double deltat, const Vec &abstrerr_h, con
 // The step size -----------------------------------------------------------------------------------
 
 double priv_optimal_delta_t(double mu, double red_factor, double r_radius, double rerr1,
-                            double deltat, double varphimin, double zeta_p) {
-    const double zeta_z = 0.5 * red_factor;
+                            double deltat, double varphimin, double zeta_p,
+                            std::optional<double> d_h_used) {
+    const double zeta_z = d_h_used ? red_factor * *d_h_used : 0.5 * red_factor;
     const int kprimemax = int(std::ceil(-std::log(100.0) / std::log(mu)));
     const double varphi_h = mu - varphimin, deltat0 = deltat * priv_pow(mu, 0);
     const auto kk = [&](int j) { return 1 / priv_pow(mu, j); };
@@ -177,7 +229,7 @@ double priv_optimal_delta_t(double mu, double red_factor, double r_radius, doubl
 std::vector<int> priv_adaptive_orders(const Tensor &A, const std::vector<char> &zero_width,
                                       const std::vector<char> &gzero,
                                       const std::vector<std::optional<Range>> &H, int64_t n,
-                                      int64_t m, int fuel) {
+                                      int64_t m, int fuel, int shift) {
     const int64_t d = n + m;
     const Vec a = A.data();
     const auto entry = [&](int64_t i, int64_t j, int64_t k) {
@@ -215,6 +267,7 @@ std::vector<int> priv_adaptive_orders(const Tensor &A, const std::vector<char> &
                 }
             sigma[std::size_t(i)] = diagonal ? 0 : (best < 0 ? 2 : best);
         }
+        sigma[std::size_t(i)] += shift;
     }
     // the loop over the powers of A, as nonzero patterns
     std::vector<char> power(static_cast<std::size_t>(n * n), 0);

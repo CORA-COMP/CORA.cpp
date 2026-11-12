@@ -223,6 +223,7 @@ changed, and the reasons are listed below.
 | `options.alg = 'lin'` (nonlinearSys) | `alg::Linearization{...}` | `alg="linearization"` |
 | `options.tensorOrder`, `options.errorOrder`, `options.intermediateOrder` | `alg::Linearization::tensor_order`, `error_order`, `intermediate_order` (also `alg::HybridStandard`) | `tensor_order`, `error_order`, `intermediate_order` |
 | `options.alg = 'lin-adaptive'` (nonlinearSys), `options.redFactor` | `alg::LinearizationAdaptive{...}`: `zeta_z` (`redFactor`), `decr_factor`, `zeta_phi`, `zeta_k`, `taylor_terms`, `zonotope_order` | `alg="linearization_adaptive"`, the same names |
+| `options.alg = 'poly-adaptive'` (nonlinearSys), `options.polyZono.maxDepGenOrder`, `maxPolyZonoRatio` | `alg::PolynomializationAdaptive{...}`: `zeta_z` (`redFactor`), `decr_factor`, `zeta_phi`, `d_h_used` (`dHused`), `taylor_terms`, `max_dep_gen_order`, `max_poly_zono_ratio`; C++ only (`NonlinearSys::reach` with a `PolyReachProblem`) | none |
 | `R.timeInterval.time`, `R.timePoint.time` (adaptive step sizes) | `R.time`: the step times t_0, ..., t_K | `R.time` |
 | `nonlinearSys(fun)` with `fun(x, u)`; `[A, B] = jacobian(x, u)` | `NonlinearSys(f, n, m)`, `Jacobians{A, B}` | `NonlinearSys(f, dim, inputs=m)` |
 | `reachSet` | `ReachSet` | `cora.ReachSet` |

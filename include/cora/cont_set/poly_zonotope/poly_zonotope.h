@@ -41,6 +41,12 @@ using Exponents = std::vector<std::vector<int>>;
 
 class Polytope;
 
+namespace detail {
+/// Tag of the constructor for generators whose exponents are known to be distinct already (a set
+/// made from another by an operation that keeps the exponents): the merge is skipped.
+struct Normalized {};
+} // namespace detail
+
 class PolyZonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::poly_zonotope;
@@ -48,6 +54,11 @@ class PolyZonotope : public ContSet {
     /// The set of the center c (n, 1), the dependent generators G (n, h) with the exponents E of
     /// the factors id (p identifiers), and the independent generators GI (n, q).
     PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id);
+
+    /// As the constructor above for a set whose dependent generators have distinct exponents, which
+    /// stay as they are (no merge of equal exponents, zero generators stay).
+    PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E, std::vector<int64_t> id,
+                 detail::Normalized);
 
     /// The zonotope as a polynomial zonotope: its generators are dependent, E = I (CORA's
     /// polyZonotope(Z)); the identifiers are 1, 2, ...

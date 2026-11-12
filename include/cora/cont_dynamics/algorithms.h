@@ -422,6 +422,53 @@ struct LinearizationAdaptive {
     }
 };
 
+/// CORA's alg "poly-adaptive" [Wetzlinger et al., NAHS 2022] on polynomial zonotopes as CORALean
+/// repairs it (reachPolyAdaptiveFloat): step size and horizon are tuned from the abstraction error,
+/// the tensor order is 3. The constants are CORA's: zeta_z is its redFactor.
+struct PolynomializationAdaptive {
+    double zeta_z = 0.0001;   ///< the share of the width a reduction may add (redFactor)
+    double decr_factor = 0.9; ///< the factor by which a step size is scaled down while tuning
+    std::vector<double> zeta_phi{0.80, 0.75, 0.63}; ///< the step size gain per order (0, 1, 2)
+    double d_h_used = 0.3;      ///< the share of zeta_z the step size tuning counts per reduction
+    int taylor_terms = 10;      ///< the least order of the Taylor series of the linear step
+    int max_dep_gen_order = 50; ///< the sets keep at most this order * n dependent generators
+    double max_poly_zono_ratio = 0.05; ///< above this ratio of the independent volume: restructure
+    int fuel = 10000;                  ///< the bound of every loop CORA writes as while true
+
+    // the name and the fields, for the algorithm tables of Python and the checks
+    static constexpr const char *name = "polynomialization_adaptive";
+    static constexpr auto fields() {
+        return std::make_tuple(
+            field("zeta_z", &PolynomializationAdaptive::zeta_z),
+            field("decr_factor", &PolynomializationAdaptive::decr_factor),
+            field("zeta_phi", &PolynomializationAdaptive::zeta_phi),
+            field("d_h_used", &PolynomializationAdaptive::d_h_used),
+            field("taylor_terms", &PolynomializationAdaptive::taylor_terms),
+            field("max_dep_gen_order", &PolynomializationAdaptive::max_dep_gen_order),
+            field("max_poly_zono_ratio", &PolynomializationAdaptive::max_poly_zono_ratio),
+            field("fuel", &PolynomializationAdaptive::fuel));
+    }
+    // every constant lies in the range the algorithm needs it in
+    void validate() const {
+        detail::Validation entry;
+        CORA_CHECK(zeta_z > 0 && zeta_z < 1 && decr_factor > 0 && decr_factor < 1 && d_h_used > 0 &&
+                       d_h_used <= 1 && max_poly_zono_ratio > 0,
+                   Error::wrong_value, [] {
+                       return std::string(
+                           "PolynomializationAdaptive: zeta_z, decr_factor and "
+                           "d_h_used must lie in (0, 1], max_poly_zono_ratio above 0");
+                   });
+        CORA_CHECK(zeta_phi.size() == 3, Error::wrong_value, [] {
+            return std::string("PolynomializationAdaptive: zeta_phi needs three entries");
+        });
+        validate_order(taylor_terms, 1, "taylor_terms", "PolynomializationAdaptive");
+        validate_order(max_dep_gen_order, 1, "max_dep_gen_order", "PolynomializationAdaptive");
+        CORA_CHECK(fuel >= 1, Error::wrong_value, [] {
+            return std::string("PolynomializationAdaptive: fuel must be at least 1");
+        });
+    }
+};
+
 // Reachability of nonlinear differential-algebraic systems --------------------------------------
 
 /// CORA's alg "lin" of nonlinDASys [Althoff, Krogh, TAC 2014]: each step linearizes f and g at the

@@ -88,7 +88,8 @@ struct PolyReachProblem {
 /// [k*time_step, (k+1)*time_step], time_point[k] those at k*time_step.
 struct PolyReachSet {
     std::vector<PolyZonotope> time_interval, time_point;
-    double time_step = 0;
+    double time_step = 0;     ///< the fixed step size; 0 for an adaptive algorithm
+    std::vector<double> time; ///< the times of the time_point sets (the adaptive algorithms only)
 };
 
 // The System --------------------------------------------------------------------------------------
@@ -150,6 +151,12 @@ class NonlinearSys {
     /// polyZonotope): tensor order 3, the Hessian at the expansion point as a polynomial zonotope;
     /// or with alg "lin", which keeps the dependency through the linear part only.
     PolyReachSet reach(const PolyReachProblem &problem, const alg::PolyNonlinearReach &alg) const;
+
+    /// The same with CORA's alg "poly-adaptive" (CORALean's repaired version): the step size and
+    /// the horizon are tuned from the abstraction error, the sets of the steps have the step times
+    /// in `time`.
+    PolyReachSet reach(const PolyReachProblem &problem,
+                       const alg::PolynomializationAdaptive &alg) const;
 
     /// The first step of that reach (CORA's initReach); post continues from it.
     PolyNonlinearStep init_reach(const PolyZonotope &R0, const std::optional<Zonotope> &U,
