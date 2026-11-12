@@ -24,8 +24,10 @@ namespace {
 std::vector<std::size_t> stable_order(const std::vector<double> &key) {
     std::vector<std::size_t> idx(key.size());
     std::iota(idx.begin(), idx.end(), std::size_t(0));
-    std::stable_sort(idx.begin(), idx.end(),
-                     [&](std::size_t a, std::size_t b) { return key[a] < key[b]; });
+    // the index as the tie-break is the stable order
+    std::sort(idx.begin(), idx.end(), [&](std::size_t a, std::size_t b) {
+        return key[a] != key[b] ? key[a] < key[b] : a < b;
+    });
     return idx;
 }
 
