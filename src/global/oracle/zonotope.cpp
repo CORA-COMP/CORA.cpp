@@ -160,6 +160,9 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
 Zonotope Zonotope::quad_map(const std::vector<Tensor> &Q) const {
     return aux_set("zonotope.quadMap", {{"Z", *this}, {"Q", Q}});
 }
+Zonotope Zonotope::quad_map_tri(const std::vector<Tensor> &Q) const {
+    return aux_set("zonotope.quadMapTri", {{"Z", *this}, {"Q", Q}});
+}
 Zonotope Zonotope::cub_map(const std::vector<std::vector<Tensor>> &T) const {
     return aux_set("zonotope.cubMap", {{"Z", *this}, {"T", T}});
 }

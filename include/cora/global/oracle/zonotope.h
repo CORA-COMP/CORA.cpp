@@ -88,6 +88,10 @@ class Zonotope {
 
     /// The image of the quadratic map x' Q_i x and of the cubic map T_ij x x x.
     Zonotope quad_map(const std::vector<Tensor> &Q) const;
+
+    /// CORA's quadMap of one zonotope (Zonotope.quadMapTri): 1 + N + N(N+1)/2 generators per
+    /// output.
+    Zonotope quad_map_tri(const std::vector<Tensor> &Q) const;
     Zonotope cub_map(const std::vector<std::vector<Tensor>> &T) const;
 
     /// The oriented box around the zonotopes along `direction` (nothing for the zero direction).

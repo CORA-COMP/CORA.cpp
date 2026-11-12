@@ -64,7 +64,7 @@ The coverage rows `linParamSys`, `initReach` and `post` are oracle debt until th
 CORALean's `Krylov` float definitions (MR !914) are served as `krylov.arnoldi`, `krylov.errorBound`,
 `krylov.subspace` and `krylov.windows`, and the sound Krylov of CORA.cpp (`priv_krylov_float.cpp`,
 `priv_krylov_subspace.cpp`) is tested against them, `test_lean_krylov`, on the pinned oracle
-(`oracle-20261112-31fbe981b`, CORALean `main` with !914).
+(`oracle-20261112-e3fba3c5b`, CORALean `main` with !914).
 
 | op | tested | against |
 |---|---|---|
@@ -74,6 +74,7 @@ CORALean's `Krylov` float definitions (MR !914) are served as `krylov.arnoldi`, 
 | `krylov.windows` | time points to 1e-7, time intervals inside | `windowsFloat` is `reachFloat` of `y' = T y`: the lean backend has no `expm`, and CORALean's curvature bounds the Taylor remainder by a norm, so CORA.cpp's standard reach of `T` is not bit for bit |
 | `krylov.lyapunovCertificate` | bit for bit | `lyapunovCertificateFloat` (MR !916): `ok`, `lower`, `upper`, `rate` of the weight `P` that CORA.cpp solves (`priv_lyapunov_solve`, Bartels-Stewart on the real Schur form, Cholesky factor of `P - aI`) on a random, a non-normal and a complex-eigenvalue matrix; also a weight that is not symmetric and one the equation fails for |
 | `krylov.restartedBound` | bit for bit | `restartedErrorBoundFloat`, `restartedErrorOkFloat`: the bound of five windows of different lengths and local errors in the weight (`RestartedBound`, `priv_krylov_lyapunov.cpp`) |
+| `krylov.windowBound` | bit for bit | `windowErrorBoundFloat`, `windowErrorOkFloat`, `carryMinFloat` (MR !921): `windowsOk`, `bound` and `carry` of the next window after the finished ones, from the stable fixtures (every `N` up to five finished windows; the Gershgorin carry below, between and above the bound, and `0`; a NaN is no lean value, so the one case where `carry_min` differs from CORA.cpp's old choice is untested) and from the windows `KrylovWindows` forms on RND02 (all 85) and RND04 (three of 111, in the weight of a fixture: its n = 1000 takes the oracle minutes per request; an overflown carry is passed as the largest float) (`RestartedBound::window_bound`, `carry_min`, `windows_ok`; the oracle takes the Gershgorin carry as given). Needs an oracle tag that includes !921 |
 
 The sums run from the last term and no product is fused (`-ffp-contract=off` for these files and
 `SparseMatrix::matvec_down`), as `sumUp` and `dotUp` do; `p` and `q` are ignored at `nearest`, where
@@ -85,7 +86,7 @@ What is not formalized, and so oracle debt (the coverage rows stay below `oracle
 
 | op (proposed) | CORA.cpp step | what it needs |
 |---|---|---|
-| `krylov.restart` | `KrylovWindows` (`priv_krylov_windows.cpp`): the longest window whose bound at its end meets `tol`, the restart from `\|s\| V e^{T t} e_1`, the error carried on by `e^{t mu_A}` (and, if the horizon makes that large, in the Lyapunov weight above; the smaller of the two is reported, and inside a window the weighted bound is `(beta + sqrt(upper) eps) / sqrt(lower)`, the decay of `beta` within it not counted) | `Krylov.restarted_error_le` is for a nonexpansive map; the float window length and the Gershgorin carry for any `A` have no definition, the weighted carry only at the window ends (`krylov.restartedBound`) |
+| `krylov.restart` | `KrylovWindows` (`priv_krylov_windows.cpp`): the longest window whose bound at its end meets `tol`, the restart from `\|s\| V e^{T t} e_1`, the error carried on by `e^{t mu_A}` (and, if the horizon makes that large, in the Lyapunov weight above; the smaller of the two is reported, as `carryMinFloat`, and inside a window the weighted bound is `(beta + sqrt(upper) eps) / sqrt(lower)`, the decay of `beta` within it not counted; a weight with a positive rate is not used) | the weighted bound and the carry in a window are `krylov.windowBound`; the float window length and the Gershgorin carry for any `A` have no definition (oracle debt) |
 | `krylov.lift` | the windows lifted through `\|s\| C V` and the ball of the bound added in the output rows (`\|C_r\|` times it) | `windowsFloat` stops at the small space |
 | `linearSys.reachKrylov` | the assembly of `priv_reach_krylov`: the sum over the vectors of `R0`, the generator curvature scaled by `[-1, 1]` | `Krylov.alg2Corrected` for one vector |
 | `krylov.inputSolution`, `krylov.constantInput` | `priv_inputSolution_Krylov`, `priv_krylov_R_uTrans`: the subspace of the integrator system `[A u; 0 0]` (the order search above applies to it), the Taylor terms `V H^i e_1 dt^i / i!`, the box of their remainders, the correction `C V G(H) e_1` | the input solution of the printed corollaries fails (`Krylov.partial_input_solution_counterexample`, `varying_input_reach_counterexample`); its corrected form has no float definition |
@@ -137,7 +138,7 @@ CORA.cpp's `Expr`) and ops that follow `linReach`.
 
 CORA.cpp's `alg::LinearizationAdaptive` is CORA's lin-adaptive as CORALean repairs it
 (`reachAdaptiveFloat`, CORALean !906). The oracle serves its ops from the pinned tag
-`oracle-20261112-31fbe981b` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
+`oracle-20261112-e3fba3c5b` on (`lean::NonlinearSys`, `include/cora/global/oracle/nonlinear_sys.h`);
 an older oracle makes the tests skip them.
 
 | op | test | agreement |
@@ -158,7 +159,7 @@ Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reach
 
 CORA.cpp's `alg::PolynomializationAdaptive` is CORA's poly-adaptive as CORALean repairs it
 (`reachPolyAdaptiveFloat`, CORALean !912). The oracle serves its ops (`nonlinearSys.reachPolyAdaptive`,
-`linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261112-31fbe981b`
+`linReachPolyAdaptive`, `linReachPolyAdaptivePass`) from the pinned tag `oracle-20261112-e3fba3c5b`
 on (`lean::NonlinearSys`, `reach_poly_adaptive`, `lin_reach_poly_adaptive_pass`). The linear step (`polyWindowFloat`, `polyPointFloat`, !915) follows the float definition; the free boxes of the sets
 agree with the oracle's to 1e-4 on the van der Pol fixture 3201 but not bit for bit: the abstraction error
 (`abstrErrPolyAdaptiveFloat`: its `zonotopeEven` error box, `quadMapMixed`) and the error solution are not yet
@@ -184,7 +185,7 @@ build.
 
 ## Polynomial zonotopes and alg "poly" (PR "nln-poly")
 
-The pinned oracle (`oracle-20261112-31fbe981b`) serves no polynomial zonotope operation and no
+The pinned oracle (`oracle-20261112-e3fba3c5b`) serves no polynomial zonotope operation and no
 `nonlinearSys.reach` with a polynomial zonotope. CORALean has float definitions of the operations
 below (`src/CORALean/ContSet/PolyZonotope/Float/Operations/`). Their request is `{"op": ..., "S"
 or "pZ": {"c", "G", "GI", "E", "id"}, ...}` with `E` the p x h exponent matrix and `id` the
@@ -234,7 +235,7 @@ expression tree (`{"op":..,"args":..}`, `{"x":i}`, `{"const":text}`).
 
 ## Differential-algebraic systems (PR "port/nln-dae")
 
-The pinned oracle (`oracle-20261112-31fbe981b`) serves no `nonlinDASys` op. CORALean's float
+The pinned oracle (`oracle-20261112-e3fba3c5b`) serves no `nonlinDASys` op. CORALean's float
 definitions (`src/CORALean/ContDynamics/NonlinDASys/Operations/`) take the equations as a
 `FloatModel` (interval extensions of `f`, `g` and slope enclosures of the Jacobian blocks), which a
 request carries as expression trees of `x`, `y` and `u` (CORA.cpp's `Expr::to_json` with a third
@@ -274,7 +275,7 @@ nearest), so these ops are oracle debt; the requests that would close it:
 
 ## Neural networks and neural network controlled systems (PR "port/ainncs-a")
 
-The pinned oracle (`oracle-20261112-31fbe981b`) serves no `neuralNetwork` or `neurNetContrSys` op.
+The pinned oracle (`oracle-20261112-e3fba3c5b`) serves no `neuralNetwork` or `neurNetContrSys` op.
 CORALean's definitions are generic over the set representation (`NeuralNetwork.enclose`, no scalar
 named; the float layers instantiate it in `Examples/RunnableFloat.lean`) or over the plant
 (`NeurNetContrSys.reachWith`, the plant's reach an argument); only the linear plant has a float
@@ -326,7 +327,11 @@ splitting of `verify` above. CORALean needs `NeurNetContrSys.verify` with a spli
 ## Rows the oracle serves that stay `property` or `untested` (Group A, batch 1)
 
 `zonotope.project`, the generic `interval` and `isIntersecting` entries are now `oracle`
-(`test_lean_zonotope_project`, `test_lean_cont_set`). The other float rows the benchmarks run were
+(`test_lean_zonotope_project`, `test_lean_cont_set`), and `zonotope/quadMap` is `oracle` against
+`zonotope.quadMapTri` (MR !921; `test_lean_zonotope_quad_map`: random zonotopes and the recorded calls of
+TRAF22 and ROBE25_1; the lean backend's matmul and sums already follow its evaluation order, the
+`nonzeroFilter` and the box of a single nonzero output are CORA.cpp's own). It needs an oracle tag that
+includes !921. The other float rows the benchmarks run were
 read against the pinned oracle's op and kept out of `oracle`; each stays until the named change.
 
 | row | op | why it is not bit-exact | what would close it |
@@ -334,7 +339,6 @@ read against the pinned oracle's op and kept out of `oracle`; each stays until t
 | `zonotope/polytope` | `zonotope.polytope` (`Zonotope.hPolytopeFacets`) | the same facets, in the reverse order of `nchoosek`; sorted, the rows still differ in the last bits on random zonotopes (tested for 2 to 4 dimensions): CORA.cpp projects each cross product onto the orthogonal complement of its generators (`priv_zonotope_facet_normals`, kept for the gradient), CORALean normalizes the cross product itself | an oracle variant, or CORA.cpp dropping the projection (it costs the torch gradient) |
 | `zonotope/vertices_` | `zonotope.vertices` | CORA's `aux_vertices2Dfast` walks `V(:,i+1) = V(:,i) + 2 g_i` and shifts by the box, CORALean's `Zonotope.polygon` evaluates each corner as `c - sum g + 2 sum_{j<k} g`: another evaluation order, and for more than two dimensions `2^h` corners instead of the hull | `Zonotope.polygon` as a cumulative walk |
 | `zonotope/isIntersecting_` | `zonotope.isIntersecting` | the answer is certified one way (disjointness), CORA solves a linear program | none: a one-sided test stays `property` |
-| `zonotope/quadMap` | `zonotope.quadMap` | CORALean maps through a polynomial zonotope, a wider set than CORA's zonotope map | `Zonotope.quadMap` following `quadMap.m` |
 | `conZonotope/supportFunc_`, `zonoBundle/supportFunc_` | `conZonotope.supportFunc`, `zonoBundle.supportFunc` | an upper bound from a checked dual certificate, CORA's value is the optimum of the linear program | none |
 | `conZonotope/isFullDim`, `conZonotope/rescale` | `conZonotope.isFullDim` | certified one way; `ConZonotope.rescale` takes the ranges of the factors as arguments, CORA finds them by linear programs or Gauss-Jordan | an op `conZonotope.rescale` with the ranges, to test the scaling alone |
 | `polytope/constraints`, `polytope/polytope` | none | `VPolytope.hPolytope` encloses the vertices along given directions `Aq`; CORA computes the facets of the hull | a facet enumeration in CORALean |

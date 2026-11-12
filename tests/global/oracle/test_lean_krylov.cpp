@@ -9,6 +9,9 @@
 // the standard reach of CORA.cpp on T, which agree with CORALean's up to the exponential (the
 // lean backend has no expm): the time points to 1e-7, the time intervals inside CORALean's, whose
 // curvature bounds the Taylor remainder by a norm (CORA's is elementwise, tighter by 1e-3).
+// The bound at every time of the next restart window and the carry min(g, bound) of KrylovWindows
+// (RestartedBound::window_bound, carry_min, windows_ok) are krylov.windowBound, bit for bit: on the
+// stable fixtures with carries below and above the bound, and on the windows of RND02 and RND04.
 //
 // CORA: global/functions/helper/dynamics/contDynamics/linearSys/arnoldi.m
 // CORA: contDynamics/@linearSys/private/priv_subspace_Krylov_individual_Jawecki.m
@@ -18,10 +21,12 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "benchmark_data.h"
 #include "cont_dynamics/linear_sys/private/priv_krylov.h"
 #include "cora/global/oracle/krylov.h"
 #include "oracle_testing.h"
 
+#include <cmath>
 #include <tuple>
 
 using namespace cora;
@@ -31,6 +36,45 @@ using namespace cora;
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+/// The weight of A as KrylovWindows forms it (the sign function solve if accepted, else Schur).
+struct Weight {
+    LyapunovWeight w;
+    LyapunovCertificate c;
+};
+Weight aux_weight(const SparseMatrix &S) {
+    Weight out;
+    for (const LyapunovMethod method : {LyapunovMethod::sign, LyapunovMethod::schur}) {
+        out.w = priv_lyapunov_solve(S, method);
+        if (out.w.P.empty()) continue;
+        out.c = priv_lyapunov_certificate(S, out.w.P, out.w.L, out.w.a);
+        if (out.c.ok) break;
+    }
+    return out;
+}
+
+/// The oracle's bound and carry of the window after dt (finished lengths) with the local errors
+/// eps (one more) and the Gershgorin carry g, against CORA.cpp's, bit for bit.
+void aux_window_bound(const Tensor &A, const Weight &wt, const std::vector<double> &dt,
+                      const std::vector<double> &eps, double carry, const std::string &what) {
+    // an overflown carry is no lean value: the largest float is the same minimum (a NaN differs)
+    const bool overflow = !std::isfinite(carry);
+    const double g = overflow ? std::numeric_limits<double>::max() : carry;
+    const int64_t n = A.shape()[0];
+    const Tensor P = Tensor::from_data(wt.w.P, {n, n}), L = Tensor::from_data(wt.w.L, {n, n});
+    const int64_t N = int64_t(dt.size());
+    const lean::KrylovWindowBound r = lean::Krylov::window_bound(
+        A, P, L, wt.w.a, Tensor::from_data(dt, {N, 1}), Tensor::from_data(eps, {N + 1, 1}), g);
+    RestartedBound carried(wt.c);
+    for (size_t j = 0; j < dt.size(); ++j) carried.step(dt[j], eps[j]);
+    const double inside = carried.window_bound(eps.back());
+    test::oracle::check("windows ok " + what, carried.windows_ok(), r.windows_ok);
+    test::oracle::check("bound " + what, inside, r.bound);
+    test::oracle::check("carry " + what, RestartedBound::carry_min(g, inside), r.carry);
+    if (overflow && !std::isnan(carry))
+        test::check(RestartedBound::carry_min(carry, inside) == r.carry,
+                    "an infinite carry: " + what);
+}
 
 constexpr double kBreakdown = 1e-12;
 constexpr double kTol = 1e-9;
@@ -313,6 +357,66 @@ int main() {
             test::oracle::check("bound " + what, carried.bound(), r.bound);
         }
     });
+
+    // the bound at every time of the next window and the carry, from the stable fixtures
+    test::oracle::run("krylov.windowBound", [](test::oracle::Random &rnd) {
+        for (const Tensor &A : aux_stable(rnd)) {
+            const SparseMatrix S = SparseMatrix::from_dense(A);
+            const Weight wt = aux_weight(S);
+            const std::vector<double> dt{0.1, 0.25, 0.5, 0.05, 2.0},
+                eps{1e-3, 2e-4, 5e-5, 1e-3, 1e-6, 3e-4};
+            for (size_t N = 0; N <= dt.size(); ++N) {
+                const std::vector<double> d(dt.begin(), dt.begin() + std::ptrdiff_t(N)),
+                    e(eps.begin(), eps.begin() + std::ptrdiff_t(N + 1));
+                // the carry below, between and above the bound, and zero (a NaN is no lean value)
+                for (const double g : {1e-12, 1e-4, 1e-3, 1.0, 1e300, 0.0}) {
+                    const std::string what = std::to_string(A.shape()[0]) + " N " +
+                                             std::to_string(N) + " g " + std::to_string(g);
+                    aux_window_bound(A, wt, d, e, g, what);
+                }
+            }
+        }
+    });
+
+    // RND02 in its own weight, RND04 (n = 1000: minutes per request) in a fixture's, outside run
+    if (test::oracle::serves("krylov.windowBound")) {
+        test::oracle::op_name() = "krylov.windowBound";
+        const lean::DTypeScope dtype("nearest");
+        test::oracle::Random rnd(11);
+        const Tensor fixture = aux_stable(rnd).front();
+        const Weight fixed = aux_weight(SparseMatrix::from_dense(fixture));
+        for (const char *name : {"RND02", "RND04"}) {
+            const bench::Instance inst = bench::load_instance(name);
+            // A' as the verify forms it
+            const Tensor like = inst.params->initial_set->center();
+            const LinearSys dual = inst.sys->A_sparse()
+                                       ? LinearSys(inst.sys->A_sparse()->transpose(),
+                                                   like.zeros_like({inst.sys->dim(), 1}))
+                                       : LinearSys(inst.sys->A().matrix_transpose());
+            const HostMatVec At = priv_state_matvec(dual);
+            const SparseMatrix S = inst.sys->A_sparse() ? inst.sys->A_sparse()->transpose()
+                                                        : SparseMatrix::from_dense(dual.A());
+            const bool own = S.rows() < 500;
+            const Tensor A = own ? S.dense() : fixture;
+            const Weight wt = own ? aux_weight(S) : fixed;
+            const auto &alg = std::get<alg::ReachAvoidKrylov>(inst.alg);
+            const double dt0 = inst.params->t_final / 1000.0;
+            const std::vector<double> d = inst.sys->C()->matrix_transpose().slice(-1, 0, 1).data();
+            KrylovWindows trajectory(At, d, dt0, 1000, alg.krylov_error, alg.krylov_step, 15, like);
+            test::check(trajectory.weighted(), std::string(name) + ": the weight is in use");
+            while (!trajectory.done()) trajectory.next();
+            // every window of RND02, of RND04 the first, a middle and the last
+            const std::vector<KrylovCarry> &carries = trajectory.carries();
+            std::vector<double> lengths, locals;
+            for (size_t j = 0; j < carries.size(); ++j) {
+                locals.push_back(carries[j].local);
+                if (own || j == 0 || j == carries.size() / 2 || j + 1 == carries.size())
+                    aux_window_bound(A, wt, lengths, locals, carries[j].gershgorin,
+                                     std::string(name) + " window " + std::to_string(j));
+                lengths.push_back(carries[j].length);
+            }
+        }
+    }
 
     return test::finish("lean krylov");
 }

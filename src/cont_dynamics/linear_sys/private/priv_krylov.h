@@ -194,13 +194,18 @@ LyapunovWeight priv_lyapunov_solve(const SparseMatrix &A, LyapunovMethod method)
 class RestartedBound {
   public:
     explicit RestartedBound(const LyapunovCertificate &c);
+    /// Krylov.windowErrorOkFloat: the weight is accepted and its rate is not positive (the decay
+    /// of beta within a window is not counted); window_bound is a certificate only then.
+    bool windows_ok() const { return c_.ok && c_.rate <= 0.0; }
     /// beta after the window of length dt with the local 2-norm error eps.
     void step(double dt, double eps);
     /// The bound after the windows so far: beta / sqrt(lower), rounded up.
     double bound() const;
-    /// The bound at every time of the next window of local error eps (the rate is negative): the
-    /// decay of beta within it is not counted.
+    /// The bound at every time of the next window of local error eps (rate <= 0): the decay of
+    /// beta within it is not counted.
     double window_bound(double eps) const;
+    /// Krylov.carryMinFloat: min(g, bound), both bound the same error (NaN: g + bound).
+    static double carry_min(double g, double bound);
 
   private:
     LyapunovCertificate c_;
@@ -218,6 +223,12 @@ struct KrylovWindow {
     double error = 0;
 };
 
+/// One window's carry in the weight: the window length, the local 2-norm error, the Gershgorin
+/// carry g = e^{dt mu_A} E_prev + eps, the weighted bound and the smaller of the two.
+struct KrylovCarry {
+    double length = 0, local = 0, gershgorin = 0, bound = 0, carry = 0;
+};
+
 /// The windows of e^{tA} v over `steps` steps of `time_step`, one after the other (see
 /// priv_krylov_windows.cpp): each restarts Arnoldi from the approximate state at its start.
 class KrylovWindows {
@@ -231,6 +242,8 @@ class KrylovWindows {
     /// tried (none if the Gershgorin carry could not matter over the horizon).
     bool weighted() const { return weighted_.has_value(); }
     const std::optional<LyapunovCertificate> &certificate() const { return certificate_; }
+    /// The carries of the windows so far (empty without the weight), for the oracle test.
+    const std::vector<KrylovCarry> &carries() const { return carries_; }
 
   private:
     HostMatVec A_;
@@ -238,6 +251,7 @@ class KrylovWindows {
     double dt_, tol_, mu_A_, error_ = 0;
     std::optional<RestartedBound> weighted_;
     std::optional<LyapunovCertificate> certificate_;
+    std::vector<KrylovCarry> carries_;
     int64_t steps_, done_ = 0, first_order_;
     int step_;
     Tensor like_;

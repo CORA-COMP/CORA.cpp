@@ -73,7 +73,9 @@ KrylovWindows::KrylovWindows(HostMatVec A, std::vector<double> v, double time_st
     if (mu_A_ * time_step * double(steps) > 1.0) {
         const LyapunovCertificate &c = A_.lyapunov();
         certificate_ = c;
-        if (c.ok) weighted_.emplace(c);
+        const RestartedBound candidate(c);
+        // a weight that fails Krylov.windowErrorOkFloat (rate <= 0) is not accepted
+        if (candidate.windows_ok()) weighted_.emplace(candidate);
     }
 }
 
@@ -134,9 +136,11 @@ KrylovWindow KrylovWindows::next() {
     error_ = (error_ == 0.0 ? 0.0 : growth * error_) + local;
     window.error = error_;
     if (weighted_) {
-        // in the weight: at every time of the window at most the start's beta plus the local error
+        // in the weight, at most the start's beta plus the local error; the smaller of it and g
         const double inside = weighted_->window_bound(local);
-        if (!(window.error <= inside)) window.error = inside;
+        const double carried = RestartedBound::carry_min(window.error, inside);
+        carries_.push_back({length, local, window.error, inside, carried});
+        window.error = carried;
         weighted_->step(length, local);
     }
     done_ += m;

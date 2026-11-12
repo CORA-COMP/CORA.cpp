@@ -153,6 +153,25 @@ KrylovRestarted Krylov::restarted_bound(const cora::Tensor &A, const cora::Tenso
     return out;
 }
 
+KrylovWindowBound Krylov::window_bound(const cora::Tensor &A, const cora::Tensor &P,
+                                       const cora::Tensor &L, double a, const cora::Tensor &dt,
+                                       const cora::Tensor &eps, double g) {
+    // as the restarted bound, with the next window's error and the Gershgorin carry
+    const Reply r = ask("krylov.windowBound", {{"A", Tensor::from(A)},
+                                               {"P", Tensor::from(P)},
+                                               {"L", Tensor::from(L)},
+                                               {"a", a},
+                                               {"dt", Tensor::from(dt)},
+                                               {"eps", Tensor::from(eps)},
+                                               {"g", g}});
+    KrylovWindowBound out;
+    static_cast<KrylovCertificate &>(out) = aux_certificate(r);
+    out.windows_ok = r.get<bool>("windowsOk");
+    out.bound = r.get<double>("bound");
+    out.carry = r.get<double>("carry");
+    return out;
+}
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

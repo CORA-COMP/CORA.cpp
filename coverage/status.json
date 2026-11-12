@@ -871,7 +871,7 @@
   "contSet/zonotope/polytope": "oracle",
   "contSet/zonotope/project": "oracle",
   "contSet/zonotope/projectHighDim_": "oracle",
-  "contSet/zonotope/quadMap": "property",
+  "contSet/zonotope/quadMap": "oracle",
   "contSet/zonotope/quadMap_parallel": "todo",
   "contSet/zonotope/radius": "property",
   "contSet/zonotope/randPoint_": "ported",
