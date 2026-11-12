@@ -95,6 +95,7 @@ std::vector<Vec> aux_products(const std::vector<Vec> &Q, int64_t d, const std::v
     std::vector<QB> qb;
     qb.reserve(B.size());
     for (const Vec &b : B) qb.push_back(aux_apply(Q, d, b));
+    // one column per pair (a, b): the entry k is a' Q_k b
     std::vector<Vec> out;
     for (const Vec &a : A)
         for (const QB &w : qb) {
