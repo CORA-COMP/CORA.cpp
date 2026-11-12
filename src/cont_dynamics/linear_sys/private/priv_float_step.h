@@ -57,6 +57,29 @@ class FloatStepper {
     FloatStep step(const Tensor &xs, const Zonotope &V, const Zonotope &R,
                    int zonotope_order) const;
 
+    /// CORALean's LinearSys.reachFloatInput, one step at a time: the windows and the sets at the
+    /// ends of the steps of x' = A x + u from X0 with u in V (its center the constant input).
+    class Run {
+      public:
+        /// The window of the next step; time_point() is then the set at its end.
+        Zonotope next();
+
+        /// The set at the start of the next step (X0 before the first).
+        const Zonotope &time_point() const noexcept { return tp_; }
+
+      private:
+        friend class FloatStepper;
+        Run(const FloatStepper *stepper, Zonotope Pu, Zonotope Htp, Zonotope Hti, Zonotope PU,
+            Zonotope X0, int zonotope_order);
+        const FloatStepper *stepper_;
+        Zonotope Pu_, Htp_, Hti_, PU_, PUnext_, tp_;
+        int zonotope_order_;
+    };
+
+    /// The run from X0 under the input set V of the state space (B U + c), reduced to the order;
+    /// this stepper outlives it.
+    Run run(const Zonotope &V, const Zonotope &X0, int zonotope_order) const;
+
   private:
     struct Matrices;
     std::unique_ptr<Matrices> m_;

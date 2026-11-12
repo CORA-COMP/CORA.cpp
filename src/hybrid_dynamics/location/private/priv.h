@@ -81,10 +81,14 @@ bool priv_region_empty(const Region &R);
 /// Whether the point c (n, 1) lies in the region, up to 100 eps (CORA's contains_ 'exact').
 bool priv_region_contains(const Region &R, const Tensor &c);
 
+/// Whether the set may meet the polytope of C: no row lies strictly beyond it (CORALean's test,
+/// `IsDisjoint` of a halfspace polytope and a zonotope; an equality is its two rows).
+bool priv_may_meet(const Polytope::Constraints &C, const Set &S);
+
 /// The guards that the sets of R meet (CORA's potInt), with CORA's switch to the time-point set
 /// when a time-triggered hyperplane is hit exactly between two steps.
 GuardHits priv_pot_int(const Location &loc, const LocationReachSet &R,
-                       const std::vector<int64_t> &final_locations);
+                       const std::vector<int64_t> &final_locations, bool time_point_swap = true);
 
 /// One crossing of a guard: the transition and the indices of its sets, without gaps.
 struct GuardGroup {
@@ -105,7 +109,8 @@ struct GuardIntersection {
 std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const GuardHits &hits,
                                                     const LocationReachSet &R,
                                                     const Zonotope &U_state,
-                                                    const alg::GuardIntersect &method);
+                                                    const alg::GuardIntersect &method,
+                                                    bool check_flow = true, bool dense = false);
 
 /// The orthogonal bases of the enclosure (CORA's calcBasis), one per method of `enclose`.
 std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> &R,
@@ -130,7 +135,8 @@ std::vector<Set> priv_check_flow_outward(const Location &loc, const Tensor &a, d
 /// guardIntersect_zonoGirard, _nondetGuard and _conZonotope); none if it is empty.
 std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,
                                                     const Polytope &guard,
-                                                    const std::vector<Tensor> &B);
+                                                    const std::vector<Tensor> &B,
+                                                    bool dense = false);
 std::optional<Set> priv_guard_intersect_nondet_guard(const std::vector<Set> &R,
                                                      const Polytope &guard,
                                                      const std::vector<Tensor> &B, alg::CutBox box,

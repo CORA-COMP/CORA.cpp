@@ -13,6 +13,7 @@
 // Inputs:   R - the sets that cross the guard
 //           guard - a hyperplane n'x = gamma with inequalities
 //           B - the bases (n, n)
+//           dense - a generator per axis in every box, as CORALean's Interval.zonotope
 // Outputs:  S - the enclosure (a zonotope, or a bundle for several bases); none if empty
 // See also: priv_guard_intersect, priv_calc_basis
 //
@@ -94,7 +95,7 @@ std::optional<Zonotope> aux_tighten(const Zonotope &Z, const Polytope &P) {
 
 std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,
                                                     const Polytope &guard,
-                                                    const std::vector<Tensor> &B) {
+                                                    const std::vector<Tensor> &B, bool dense) {
     const Tensor normal = guard.Ae().slice(-2, 0, 1).matrix_transpose();
     const double gamma = guard.be().data()[0];
     const bool inequalities = guard.A().shape()[0] > 0;
@@ -131,9 +132,13 @@ std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,
         for (std::size_t k = 0; k < lo.size(); ++k)
             if (lo[k] > hi[k]) return std::nullopt;
         const int64_t n = int64_t(lo.size());
-        Zonotope Z = Interval(Tensor::like(basis, lo, {n, 1}), Tensor::like(basis, hi, {n, 1}))
-                         .zonotope()
-                         .linear_map(basis);
+        const Interval box(Tensor::like(basis, lo, {n, 1}), Tensor::like(basis, hi, {n, 1}));
+        // CORALean's Interval.zonotope has a generator per axis, also for a flat axis
+        const Tensor center = box.center();
+        Zonotope Z =
+            (dense ? Zonotope(center, (box.sup() - center).maximum(center - box.inf()).diag())
+                   : box.zonotope())
+                .linear_map(basis);
         if (inequalities) {
             const std::optional<Zonotope> cut = aux_tighten(Z, Polytope(guard.A(), guard.b()));
             if (!cut) continue; // CORA drops the basis

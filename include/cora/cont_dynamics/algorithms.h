@@ -603,13 +603,18 @@ struct HybridStandard {
     int error_order = 0;           ///< a NonlinearSys flow: its Linearization::error_order
     int intermediate_order = 0;    ///< a NonlinearSys flow: its Linearization::intermediate_order
     bool polynomialization = false; ///< a NonlinearSys flow: alg::Polynomialization (poly sets)
-    GuardIntersect guard_intersect = ZonoGirard{}; ///< how the guards are intersected
-    LinearStep linear_step =
-        LinearStep::closed_form; ///< a NonlinearSys flow: its Linearization::linear_step
+    GuardIntersect guard_intersect = ZonoGirard{};    ///< how the guards are intersected
+    LinearStep linear_step = LinearStep::closed_form; ///< a NonlinearSys flow: its
+                                                      ///< Linearization::linear_step; a LinearSys
+                                                      ///< flow: coralean runs CORALean's
+                                                      ///< reachFloatInput
+    bool check_flow = true; ///< CORA's checkFlow: drop the sets whose flow cannot cross a guard
+    bool time_point_swap = true; ///< CORA: a lone hit of a hyperplane takes the next time point
 
     // the fields as Python sees them, and their checks
     static constexpr const char *name = "standard";
     static constexpr auto fields() {
+        // one entry per member, in the order of the struct
         return std::make_tuple(field("time_step", &HybridStandard::time_step),
                                field("taylor_terms", &HybridStandard::taylor_terms),
                                field("zonotope_order", &HybridStandard::zonotope_order),
@@ -619,7 +624,9 @@ struct HybridStandard {
                                field("intermediate_order", &HybridStandard::intermediate_order),
                                field("polynomialization", &HybridStandard::polynomialization),
                                field("guard_intersect", &HybridStandard::guard_intersect),
-                               field("linear_step", &HybridStandard::linear_step));
+                               field("linear_step", &HybridStandard::linear_step),
+                               field("check_flow", &HybridStandard::check_flow),
+                               field("time_point_swap", &HybridStandard::time_point_swap));
     }
     void validate() const {
         detail::Validation entry;

@@ -1083,7 +1083,7 @@
   "hybridDynamics/hybridAutomaton/isemptyobject": "todo",
   "hybridDynamics/hybridAutomaton/isequal": "todo",
   "hybridDynamics/hybridAutomaton/ne": "todo",
-  "hybridDynamics/hybridAutomaton/reach": "property",
+  "hybridDynamics/hybridAutomaton/reach": "oracle",
   "hybridDynamics/hybridAutomaton/simulate": "todo",
   "hybridDynamics/hybridAutomaton/simulateRandom": "todo",
   "hybridDynamics/hybridAutomaton/viewGraph": "todo",
