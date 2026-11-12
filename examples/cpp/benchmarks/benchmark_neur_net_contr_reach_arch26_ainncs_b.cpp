@@ -11,7 +11,7 @@
 // initial set (the script's has 0.4 times its radius). Each instance prints the line of the scripts
 // and, on stderr, the verdict and time of the ARCH-COMP 2026 report. Environment:
 // CORACPP_AINNCS_OPTIONS, CORACPP_AINNCS_SPLIT, CORACPP_AINNCS_POINTS, CORACPP_DOCKING_SIDES,
-// CORACPP_DOCKING_PIECE = f,a,b,c,d (a corner).
+// CORACPP_DOCKING_PIECE = f,a,b,c,d (a corner), CORACPP_VERIFY_DUMP = path (diagnosis).
 //
 // Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs_b [QUAD-reach ...]
 // Outputs:  one line per instance on stdout
@@ -28,6 +28,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <string>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -178,6 +180,27 @@ ClosedLoopVerdict aux_docking_run(Rng &rng, bool polygon) {
     // the random runs, the constraint at every sample
     const ClosedLoopTrajectories traj = sys.simulate_random(
         X0.zonotope(), std::nullopt, 40.0, options.plant.time_step, out.simulations, 0.5, rng);
+    // diagnosis: the runs as JSON next to the dump of verify (CORACPP_VERIFY_DUMP)
+    if (const char *env = std::getenv("CORACPP_VERIFY_DUMP")) {
+        if (std::FILE *f = std::fopen((std::string(env) + ".sim.json").c_str(), "w")) {
+            std::fprintf(f, "{\"time\":[");
+            for (std::size_t k = 0; k < traj.x.size(); ++k)
+                std::fprintf(f, "%s%.9g", k ? "," : "", traj.time[k]);
+            std::fprintf(f, "],\"runs\":[");
+            for (int64_t j = 0; j < traj.x[0].shape()[1]; ++j) {
+                std::fprintf(f, "%s[", j ? "," : "");
+                for (std::size_t k = 0; k < traj.x.size(); ++k) {
+                    const std::vector<double> x = traj.x[k].data();
+                    const std::size_t N = std::size_t(traj.x[k].shape()[1]);
+                    std::fprintf(f, "%s[%.9g,%.9g,%.9g,%.9g]", k ? "," : "", x[j], x[N + j],
+                                 x[2 * N + j], x[3 * N + j]);
+                }
+                std::fprintf(f, "]");
+            }
+            std::fprintf(f, "]}\n");
+            std::fclose(f);
+        }
+    }
     // the smallest margin of the constraint over the samples is printed in verbose mode
     const bool verbose = std::getenv("CORACPP_BENCHMARK_VERBOSE") != nullptr;
     double worst = 1e9, worst_time = 0;

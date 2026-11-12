@@ -33,9 +33,13 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <condition_variable>
+#include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <mutex>
+#include <string>
 #include <thread>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -114,12 +118,79 @@ int64_t aux_cut(const NeurNetContrSys &sys, const S &X0, const Interval &box,
     return best;
 }
 
+// The dump -----------------------------------------------------------------------------------------
+
+/// The opt-in dump of the splitting (CORACPP_VERIFY_DUMP=<path>, diagnosis only): every piece and,
+/// for the leaves of a system with four states, the box of every step with the bounds vmax and slo
+/// of the docking check. Off, nothing is recorded; on, the pieces are appended under a lock.
+struct Dump {
+    const char *path = std::getenv("CORACPP_VERIFY_DUMP");
+    std::mutex mutex;
+    std::string pieces, steps;
+    bool on() const { return path != nullptr; }
+
+    static std::string num(double x) {
+        char buf[32];
+        std::snprintf(buf, sizeof buf, "%.9g", x);
+        return buf;
+    }
+    static std::string box(const Interval &b) {
+        const std::vector<double> lo = b.inf().data(), hi = b.sup().data();
+        std::string out = "[";
+        for (std::size_t i = 0; i < lo.size(); ++i)
+            out += (i ? "," : "") + num(lo[i]) + "," + num(hi[i]);
+        return out + "]";
+    }
+    /// A piece: its id, parent, depth, box (inf, sup per dimension) and state.
+    void piece(int id, int parent, int depth, const Interval &b, const char *state) {
+        const std::lock_guard lock(mutex);
+        pieces += "{\"id\":" + std::to_string(id) + ",\"parent\":" + std::to_string(parent) +
+                  ",\"depth\":" + std::to_string(depth) + ",\"box\":" + box(b) +
+                  ",\"state\":\"" + state + "\"},\n";
+    }
+    /// The steps of a leaf: [t0, t1, box, vmax, slo] each. vmax bounds |v| over the 32 directions
+    /// of the polygon, slo bounds |s| from below, both on the zonotope that the check sees.
+    template <class S>
+    void leaf(int id, const ClosedLoopReach<S> &R) {
+        if (R.time_interval.empty() || R.time_interval[0].dim() != 4) return;
+        constexpr double pi = 3.14159265358979323846;
+        std::string out = "\"" + std::to_string(id) + "\":[";
+        for (std::size_t j = 0; j < R.time_interval.size(); ++j) {
+            const Zonotope Z = aux_zonotope(R.time_interval[j]);
+            double vmax = -1e300;
+            for (int k = 0; k < 32; ++k) {
+                const double phi = 2 * pi * k / 32;
+                const Tensor d = Tensor::from_data({0, 0, std::cos(phi), std::sin(phi)}, {4, 1});
+                vmax = std::max(vmax, Z.support_function(d).data()[0]);
+            }
+            vmax /= std::cos(pi / 32);
+            const Tensor ds = Tensor::from_data({-std::sqrt(0.5), -std::sqrt(0.5), 0, 0}, {4, 1});
+            const double slo = std::max(0.0, -Z.support_function(ds).data()[0]);
+            out += std::string(j ? "," : "") + "[" + num(R.time[j]) + "," + num(R.time[j + 1]) +
+                   "," + box(aux_box(R.time_interval[j])) + "," + num(vmax) + "," + num(slo) + "]";
+        }
+        out += "]";
+        const std::lock_guard lock(mutex);
+        steps += (steps.empty() ? "" : ",\n") + out;
+    }
+    void write() {
+        if (std::FILE *f = std::fopen(path, "w")) {
+            std::fprintf(f, "{\"pieces\":[\n%s{}],\n\"steps\":{\n%s}}\n", pieces.c_str(),
+                         steps.c_str());
+            std::fclose(f);
+        }
+    }
+};
+
 /// A queue of pieces, taken by a pool of threads; a piece can add its two halves.
 struct Tree {
     struct Piece {
         Interval box;
         int splits;
+        int id = 0, parent = 0; ///< for the dump
     };
+    int next_id = 3;
+    Dump dump;
     std::mutex mutex;
     std::condition_variable wake;
     std::vector<Piece> queue;
@@ -152,6 +223,12 @@ void aux_run_tree(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
                 const ClosedLoopReach<S> R =
                     sys.reach(aux_set(X0, piece.box), U, t_final, options, specs);
                 const bool ok = aux_verified(specs, R);
+                const bool splits = !ok && piece.splits < split.depth - 1;
+                if (tree.dump.on()) {
+                    tree.dump.piece(piece.id, piece.parent, piece.splits, piece.box,
+                                    ok ? "verified" : splits ? "split" : "failed");
+                    if (ok) tree.dump.leaf(piece.id, R);
+                }
                 std::unique_lock lock(tree.mutex);
                 --tree.running;
                 ++tree.reached;
@@ -164,8 +241,10 @@ void aux_run_tree(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
                     tree.stop = true;
                 } else {
                     const auto [lo, hi] = aux_halves(piece.box, aux_cut(sys, X0, piece.box, split));
-                    tree.queue.push_back({hi, piece.splits + 1});
-                    tree.queue.push_back({lo, piece.splits + 1});
+                    const int id = tree.next_id;
+                    tree.next_id += 2;
+                    tree.queue.push_back({hi, piece.splits + 1, id + 1, piece.id});
+                    tree.queue.push_back({lo, piece.splits + 1, id, piece.id});
                 }
                 tree.wake.notify_all();
             } catch (...) {
@@ -179,7 +258,7 @@ void aux_run_tree(const NeurNetContrSys &sys, const S &X0, const std::optional<Z
     };
     // CORA does not reach the whole set again at level 1: it is split at once
     const auto [lo, hi] = aux_halves(aux_box(X0), aux_cut(sys, X0, aux_box(X0), split));
-    tree.queue = {{hi, 1}, {lo, 1}};
+    tree.queue = {{hi, 1, 2, 0}, {lo, 1, 1, 0}};
     const int threads = std::max(1, split.max_threads);
     // the pieces are the parallelism: the pools inside an operation stay at one thread
     const int previous = max_threads();
@@ -217,24 +296,31 @@ ClosedLoopVerdict aux_verify(const NeurNetContrSys &sys, const S &X0, const Zono
         return out;
     }
     // the whole initial set, stopping at a violation
+    Tree tree;
     const ClosedLoopReach<S> R = sys.reach(X0, U, t_final, options, specs);
     out.pieces_reached = 1;
     out.time_reached = R.time.back();
     out.exploded = R.exploded;
     out.violated = R.violated;
-    if (aux_verified(specs, R)) {
+    const bool root_ok = aux_verified(specs, R);
+    if (tree.dump.on()) {
+        tree.dump.piece(0, -1, 0, aux_box(X0), root_ok ? "verified" : "split");
+        if (root_ok) tree.dump.leaf(0, R);
+    }
+    if (root_ok) {
         out.verdict = Verdict::verified;
         out.pieces_verified = 1;
+        if (tree.dump.on()) tree.dump.write();
         return out;
     }
     // split recursively (CORA's aux_VerifyRecursively)
     if (split.depth > 1) {
-        Tree tree;
         aux_run_tree(sys, X0, U, t_final, options, specs, split, tree);
         out.pieces_reached += tree.reached;
         out.pieces_verified = tree.verified;
         out.max_splits = tree.max_splits;
         out.verdict = tree.stop ? Verdict::unknown : Verdict::verified;
+        if (tree.dump.on()) tree.dump.write();
     }
     return out;
 }
