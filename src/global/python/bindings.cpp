@@ -4267,6 +4267,13 @@ Activation activation_of(const std::string &name) {
               "NeuralNetwork: the activation must be identity, relu, sigmoid or tanh, got " + name);
 }
 
+/// The method of the network's line over an activation from its name.
+PolyMethod poly_method_of(const std::string &name) {
+    if (name != "singh" && name != "regression")
+        CORA_FAIL(Error::wrong_value, "poly_method must be 'singh' or 'regression', got " + name);
+    return name == "singh" ? PolyMethod::singh : PolyMethod::regression;
+}
+
 /// The options of the plant's alg "lin" and of the network from keyword arguments.
 ClosedLoopOptions closed_loop_options(const py::kwargs &kwargs) {
     ClosedLoopOptions options;
@@ -4280,6 +4287,8 @@ ClosedLoopOptions closed_loop_options(const py::kwargs &kwargs) {
     read("error_order", options.plant.error_order);
     read("intermediate_order", options.plant.intermediate_order);
     read("add_approx_error_to_gi", options.nn.add_approx_error_to_gi);
+    if (kwargs.contains("poly_method"))
+        options.nn.poly_method = poly_method_of(py::cast<std::string>(kwargs["poly_method"]));
     return options;
 }
 
@@ -4333,28 +4342,40 @@ void bind_neural_network(py::module_ &m) {
         // the outputs at points, the enclosure of the outputs over a set, and the pairs
         .def(
             "evaluate",
-            [](const NeuralNetwork &nn, const py::object &x) -> py::object {
+            [](const NeuralNetwork &nn, const py::object &x,
+               const std::string &poly_method) -> py::object {
                 if (py::isinstance<Zonotope>(x))
-                    return py::cast(nn.evaluate(py::cast<Zonotope>(x)));
+                    return py::cast(nn.evaluate(py::cast<Zonotope>(x),
+                                                {.poly_method = poly_method_of(poly_method)}));
                 const Tensor y = nn.evaluate(tensor_of(x, "the points"));
                 const bool one = py::hasattr(x, "ndim") && py::cast<int>(x.attr("ndim")) == 1;
                 return one ? vector(y) : matrix(y);
             },
-            py::arg("x"),
+            py::arg("x"), py::arg("poly_method") = "singh",
             "The outputs at a point (in,) or the columns of (in, N); for a zonotope, "
-            "a zonotope that contains the outputs of every point")
+            "a zonotope that contains the outputs of every point, the line of each activation by "
+            "poly_method 'singh' or 'regression'")
+        // the Jacobian at a point
+        .def(
+            "sensitivity",
+            [](const NeuralNetwork &nn, const py::object &x) {
+                const Tensor point = tensor_of(x, "the point");
+                return matrix(nn.sensitivity(point.reshape({point.numel(), 1})));
+            },
+            py::arg("x"), "The Jacobian (out, in) of the network at the point x (in,)")
         // the pairs (x, N(x)) of a set, the input rows kept
         .def(
             "evaluate_with_input",
-            [](const NeuralNetwork &nn, const py::object &X,
-               bool add_approx_error_to_gi) -> py::object {
+            [](const NeuralNetwork &nn, const py::object &X, bool add_approx_error_to_gi,
+               const std::string &poly_method) -> py::object {
+                const NnOptions options{.add_approx_error_to_gi = add_approx_error_to_gi,
+                                        .poly_method = poly_method_of(poly_method)};
                 if (py::isinstance<PolyZonotope>(X))
-                    return py::cast(
-                        nn.evaluate_with_input(py::cast<PolyZonotope>(X),
-                                               {.add_approx_error_to_gi = add_approx_error_to_gi}));
-                return py::cast(nn.evaluate_with_input(py::cast<Zonotope>(X)));
+                    return py::cast(nn.evaluate_with_input(py::cast<PolyZonotope>(X), options));
+                return py::cast(nn.evaluate_with_input(py::cast<Zonotope>(X), options));
             },
             py::arg("X"), py::arg("add_approx_error_to_gi") = true,
+            py::arg("poly_method") = "singh",
             "The set of the pairs (x, N(x)) of a zonotope or polynomial zonotope X");
 
     // the neural network controlled system: reach, simulate and verify with keyword options
@@ -4413,18 +4434,24 @@ void bind_neural_network(py::module_ &m) {
                 const std::optional<TimedSpecification> spec = timed_specification(kwargs);
                 // the specification is required, the verdict of either kind of start set
                 if (!spec) CORA_FAIL(Error::wrong_value, "verify: give the specification as spec=");
+                VerifySplit split;
+                if (kwargs.contains("split_depth"))
+                    split.depth = py::cast<int>(kwargs["split_depth"]);
+                if (kwargs.contains("split_threads"))
+                    split.max_threads = py::cast<int>(kwargs["split_threads"]);
                 const ClosedLoopVerdict v = py::isinstance<PolyZonotope>(X0)
                                                 ? sys.verify(py::cast<PolyZonotope>(X0), U, t_final,
-                                                             options, *spec, points, rng)
+                                                             options, *spec, points, rng, split)
                                                 : sys.verify(py::cast<Zonotope>(X0), U, t_final,
-                                                             options, *spec, points, rng);
+                                                             options, *spec, points, rng, split);
                 return v.verdict == Verdict::verified    ? "VERIFIED"
                        : v.verdict == Verdict::falsified ? "FALSIFIED"
                                                          : "UNKNOWN";
             },
             py::arg("initial_set"), py::arg("t_final"), py::arg("points"), py::arg("rng"),
-            "verify(X0, t_final, points, rng, time_step=dt, spec=Specification, ...): 'VERIFIED', "
-            "'FALSIFIED' or 'UNKNOWN' (CORA's verify)");
+            "verify(X0, t_final, points, rng, time_step=dt, spec=Specification, split_depth=0, "
+            "split_threads=8, poly_method='singh', ...): 'VERIFIED', 'FALSIFIED' or 'UNKNOWN' "
+            "(CORA's verify with splitR0 = split_depth)");
 }
 
 // Plotting ----------------------------------------------------------------------------------------

@@ -1205,7 +1205,7 @@
   "nn/neuralNetwork/backpropIntervalBatch": "todo",
   "nn/neuralNetwork/backpropZonotopeBatch": "todo",
   "nn/neuralNetwork/backpropZonotopeBatch_": "todo",
-  "nn/neuralNetwork/calcSensitivity": "todo",
+  "nn/neuralNetwork/calcSensitivity": "property",
   "nn/neuralNetwork/castWeights": "todo",
   "nn/neuralNetwork/clearVisualizationLayerPlots": "todo",
   "nn/neuralNetwork/computeFGSMAttack": "todo",

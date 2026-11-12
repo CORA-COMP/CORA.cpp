@@ -40,8 +40,13 @@ set(benchmark_instances_benchmark_nonlinear_reach_arch23_laubloomis LALO20_W001 
 set(benchmark_instances_benchmark_nonlinear_das_reach_arch23_powersystem TSPS25)
 set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_ainncs
     ACC-safe-distance Unicycle-reach Unicycle-reach-disturbance TORA-remain TORA-reach-tanh
-    TORA-reach-sigmoid Single_Pendulum-reach Double_Pendulum-less-robust Double_Pendulum-more-robust
+    TORA-reach-sigmoid Single_Pendulum-reach Double_Pendulum-less-robust Double_Pendulum-less-robust-script Double_Pendulum-more-robust
     Airplane-continuous Attitude_Control-avoid)
+set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_ainncs_b
+    QUAD-reach Docking-constraint NAV-robust NAV-standard CartPole-reach)
+set(benchmark_instances_benchmark_neur_net_contr_reach_arch26_vcas
+    VCAS-middle-19.5 VCAS-middle-22.5 VCAS-middle-25.5 VCAS-middle-28.5
+    VCAS-worst-19.5 VCAS-worst-22.5 VCAS-worst-25.5 VCAS-worst-28.5)
 # the families whose fastest instance takes longer than a smoke test may (about 5 s)
 # (the spacecraft: one smoke instance per change, TRAF22 is the nonlinear one; Robertson takes
 # thousands of steps)

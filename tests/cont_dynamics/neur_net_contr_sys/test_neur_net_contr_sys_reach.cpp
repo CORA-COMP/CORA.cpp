@@ -113,6 +113,35 @@ void checks_and_their_switch() {
           "reach: the same with the checks off");
 }
 
+/// A set whose box holds a pole of the dynamics (tan at pi/2) ends the run as an explosion, with
+/// the sets so far (here none), and several specifications all stop it.
+void a_pole_and_several_specifications(const std::string &b) {
+    const NonlinearSys tangent(
+        [](const std::vector<Expr> &x, const std::vector<Expr> &u) {
+            return std::vector<Expr>{tan(x[0]) + u[0]};
+        },
+        1, 1);
+    const NeuralNetwork net({{Tensor({{0.5}}), Tensor({0.0})}}, {Activation::tanh});
+    const NeurNetContrSys sys(tangent, net, 0.1);
+    ClosedLoopOptions o;
+    o.plant = {.time_step = 0.05, .taylor_terms = 4, .zonotope_order = 20};
+    const Zonotope across(Tensor({1.5}), Tensor({{0.2}}));
+    const ClosedLoopReach<Zonotope> R = sys.reach(across, std::nullopt, 0.2, o);
+    check(R.exploded && !R.completed, b + ": a pole ends the run as an explosion");
+    // two specifications: the run stops at the first that a step violates
+    const NeurNetContrSys loop(plant(), network(), 0.05);
+    const Polytope loose(Tensor({{1.0, 0.0}}), Tensor({10.0})),
+        never(Tensor({{1.0, 0.0}}), Tensor({1.0}));
+    const ClosedLoopReach<Zonotope> ok = loop.reach(
+        X0(), U(), 0.2, options(),
+        TimedSpecifications{{Specification::safe_set(loose)}, {Specification::safe_set(loose)}});
+    const ClosedLoopReach<Zonotope> bad = loop.reach(
+        X0(), U(), 0.2, options(),
+        TimedSpecifications{{Specification::safe_set(loose)}, {Specification::safe_set(never)}});
+    check(ok.completed && bad.violated && !bad.completed,
+          b + ": one violated specification of two stops the run");
+}
+
 } // namespace
 
 
@@ -122,6 +151,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         the_sets_hold_every_run(b);
         the_specification_stops_the_run(b);
+        a_pole_and_several_specifications(b);
     });
     wrong_arguments_are_described();
     checks_and_their_switch();

@@ -20,7 +20,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
-#include "benchmark_data.h"
+#include "benchmark_neur_net.h"
 #include "benchmark_run.h"
 #include "cora/cora.h"
 
@@ -38,81 +38,13 @@
 namespace {
 
 using namespace cora;
-using cora::bench::Json;
-using cora::bench::JsonParser;
-using cora::bench::read_file;
-
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
-/// The network <name>.nn.json / .nn.bin of examples/benchmarks/data/networks.
-NeuralNetwork aux_network(const std::string &name) {
-    // the folder of the data, and the numbers of the binary file
-    const std::string folder = std::getenv("CORACPP_BENCHMARK_DATA")
-                                   ? std::getenv("CORACPP_BENCHMARK_DATA")
-                                   : CORACPP_BENCHMARK_DATA;
-    const Json meta = JsonParser(read_file(folder + "/networks/" + name + ".nn.json")).parse();
-    const std::string bin = read_file(folder + "/networks/" + name + ".nn.bin");
-    const auto *numbers = reinterpret_cast<const double *>(bin.data());
-    // a layer: W row-major and b at their offsets, and the activation by name
-    std::vector<NeuralNetwork::Layer> layers;
-    std::vector<Activation> activations;
-    for (const Json &layer : meta["layers"].array) {
-        const int64_t rows = layer["out"].integer(), cols = layer["in"].integer();
-        const double *W = numbers + layer["W"].integer(), *b = numbers + layer["b"].integer();
-        layers.push_back({Tensor::from_data(std::vector<double>(W, W + rows * cols), {rows, cols}),
-                          Tensor::from_data(std::vector<double>(b, b + rows), {rows, 1})});
-        const std::string &act = layer["activation"].string;
-        activations.push_back(act == "relu"      ? Activation::relu
-                              : act == "tanh"    ? Activation::tanh
-                              : act == "sigmoid" ? Activation::sigmoid
-                                                 : Activation::identity);
-    }
-    return {layers, activations};
-}
-
-/// The box [lo, hi] (bounds may be infinite) as the halfspaces of a polytope.
-Polytope aux_box(const std::vector<double> &lo, const std::vector<double> &hi) {
-    // one halfspace per finite bound
-    const auto n = int64_t(lo.size());
-    std::vector<double> A, b;
-    int64_t rows = 0;
-    // the upper bound as x_i <= hi, the lower one as -x_i <= -lo
-    for (int64_t i = 0; i < n; ++i) {
-        for (const double sign : {1.0, -1.0}) {
-            const double bound = sign > 0 ? hi[std::size_t(i)] : -lo[std::size_t(i)];
-            if (std::isinf(bound)) continue;
-            // the row of the halfspace
-            for (int64_t j = 0; j < n; ++j) A.push_back(j == i ? sign : 0.0);
-            b.push_back(bound);
-            ++rows;
-        }
-    }
-    return {Tensor::from_data(A, {rows, n}), Tensor::from_data(b, {rows, 1})};
-}
-
-Zonotope aux_zonotope(const std::vector<double> &lo, const std::vector<double> &hi) {
-    const auto n = int64_t(lo.size());
-    std::vector<double> c, r;
-    for (std::size_t i = 0; i < lo.size(); ++i) {
-        c.push_back((lo[i] + hi[i]) / 2);
-        r.push_back((hi[i] - lo[i]) / 2);
-    }
-    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(r, {n, 1}).diag()};
-}
-
-PolyZonotope aux_poly(const std::vector<double> &lo, const std::vector<double> &hi) {
-    const auto n = int64_t(lo.size());
-    return PolyZonotope(Interval(Tensor::from_data(lo, {n, 1}), Tensor::from_data(hi, {n, 1})));
-}
-
-/// One instance: how to verify it, and the verdict of the ARCH-COMP 2026 report (CORA).
-struct Instance {
-    std::string benchmark, label;
-    Verdict expected;
-    double expected_time; ///< CORA's time in the report (Table 1)
-    std::function<ClosedLoopVerdict(Rng &)> run;
-    std::string tuning = ""; ///< what differs from the script (settings, input), if anything
-};
+using cora::bench::AinncsInstance;
+using cora::bench::box_poly;
+using cora::bench::box_polytope;
+using cora::bench::box_zonotope;
+using cora::bench::kInf;
+using cora::bench::loop_options;
+using cora::bench::make_verify;
 
 // The plants -------------------------------------------------------------------------------------
 
@@ -234,171 +166,106 @@ NonlinearSys aux_attitude() {
 
 // The instances ----------------------------------------------------------------------------------
 
-/// The options of the scripts: alg lin with the step, orders and the sampling of the network.
-ClosedLoopOptions aux_options(double time_step, int tensor_order, int taylor_terms,
-                              int zonotope_order, int error_order = 0, int intermediate_order = 0) {
-    ClosedLoopOptions o;
-    // CORACPP_AINNCS_OPTIONS = time_step,tensor_order,taylor,zonotope,error,intermediate overrides
-    if (const char *tune = std::getenv("CORACPP_AINNCS_OPTIONS")) {
-        std::sscanf(tune, "%lf,%d,%d,%d,%d,%d", &time_step, &tensor_order, &taylor_terms,
-                    &zonotope_order, &error_order, &intermediate_order);
-    }
-    o.plant = {.time_step = time_step,
-               .taylor_terms = taylor_terms,
-               .zonotope_order = zonotope_order,
-               .tensor_order = tensor_order,
-               .error_order = error_order,
-               .intermediate_order = intermediate_order};
-    return o;
-}
-
-template <class S>
-std::function<ClosedLoopVerdict(Rng &)>
-aux_verify(const NonlinearSys &plant, const std::string &net, double dt, const S &X0,
-           const std::optional<Zonotope> &U, double t_final, const ClosedLoopOptions &options,
-           const TimedSpecification &spec) {
-    // the closure owns copies, the instance outlives its arguments
-    return [=](Rng &rng) {
-        const NeurNetContrSys sys(plant, aux_network(net), dt);
-        // CORACPP_BENCHMARK_VERBOSE prints the box of every set of a reach without the spec
-        if (std::getenv("CORACPP_BENCHMARK_VERBOSE")) {
-            const ClosedLoopReach<S> R = sys.reach(X0, U, t_final, options);
-            for (std::size_t k = 0; k < R.time_point.size(); ++k) {
-                const Interval box = R.time_point[k].interval();
-                std::cerr << "  t = " << R.time[k] << ": inf " << box.inf().matrix_transpose()
-                          << " sup " << box.sup().matrix_transpose() << '\n';
-            }
-        }
-        return sys.verify(X0, U, t_final, options, spec, 20, rng);
-    };
-}
-
-std::vector<Instance> aux_instances() {
+std::vector<AinncsInstance> aux_instances() {
     const std::optional<Zonotope> none = std::nullopt;
     const std::vector<double> inf4(4, kInf), box4(4, 0.0);
-    std::vector<Instance> v;
+    std::vector<AinncsInstance> v;
     // Unicycle: the disturbance input is the script's default zonotope(0)
     const Zonotope no_disturbance(Tensor::from_data({0.0}, {1, 1}), Tensor::zeros({1, 0}));
     v.push_back({"Unicycle", "reach", Verdict::verified, 8.015,
-                 aux_verify(aux_unicycle(), "unicycle", 0.2,
-                            aux_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}),
-                            no_disturbance, 10.0, aux_options(0.1, 2, 1, 10),
-                            {Specification::safe_set(
-                                 aux_box({-0.6, -0.2, -0.06, -0.3}, {0.6, 0.2, 0.06, 0.3})),
-                             std::make_pair(10.0, 10.0)})});
+                 make_verify(aux_unicycle(), "unicycle", 0.2,
+                             box_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}),
+                             no_disturbance, 10.0, loop_options(0.1, 2, 1, 10),
+                             {Specification::safe_set(
+                                  box_polytope({-0.6, -0.2, -0.06, -0.3}, {0.6, 0.2, 0.06, 0.3})),
+                              std::make_pair(10.0, 10.0)})});
     // the same with the report's disturbance w in 1e-4 [-1, 1] on the speed, which the script drops
     const Zonotope disturbance(Tensor::from_data({0.0}, {1, 1}), Tensor::from_data({1e-4}, {1, 1}));
     v.push_back({"Unicycle", "reach-disturbance", Verdict::verified, 8.015,
-                 aux_verify(aux_unicycle(), "unicycle", 0.2,
-                            aux_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}),
-                            disturbance, 10.0, aux_options(0.1, 2, 1, 10),
-                            {Specification::safe_set(
-                                 aux_box({-0.6, -0.2, -0.06, -0.3}, {0.6, 0.2, 0.06, 0.3})),
-                             std::make_pair(10.0, 10.0)}),
+                 make_verify(aux_unicycle(), "unicycle", 0.2,
+                             box_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}),
+                             disturbance, 10.0, loop_options(0.1, 2, 1, 10),
+                             {Specification::safe_set(
+                                  box_polytope({-0.6, -0.2, -0.06, -0.3}, {0.6, 0.2, 0.06, 0.3})),
+                              std::make_pair(10.0, 10.0)}),
                  "the disturbance w of the report (the script sets w = 0)"});
     // ACC: the safe distance D_rel >= 10 + 1.4 v_ego is one halfspace
     v.push_back(
         {"ACC", "safe-distance", Verdict::verified, 3.176,
-         aux_verify(
-             aux_acc(), "acc", 0.1, aux_poly({90, 32, 0, 10, 30, 0}, {110, 32.2, 0, 11, 30.2, 0}),
-             none, 5.0, aux_options(0.1, 2, 1, 10),
+         make_verify(
+             aux_acc(), "acc", 0.1, box_poly({90, 32, 0, 10, 30, 0}, {110, 32.2, 0, 11, 30.2, 0}),
+             none, 5.0, loop_options(0.1, 2, 1, 10),
              {Specification::safe_set(Polytope(Tensor::from_data({-1, 0, 0, 1, 1.4, 0}, {1, 6}),
                                                Tensor::from_data({-10.0}, {1, 1})))})});
     // TORA, remain
-    v.push_back({"TORA", "remain", Verdict::verified, 8.998,
-                 aux_verify(aux_tora(1.0, -10.0), "tora_relu", 1.0,
-                            aux_poly({0.6, -0.7, -0.4, 0.5}, {0.7, -0.6, -0.3, 0.6}), none, 20.0,
-                            aux_options(0.1, 3, 4, 200, 10, 20),
-                            {Specification::safe_set(aux_box({-2, -2, -2, -2}, {2, 2, 2, 2}))}),
-                 "time_step 0.1 (script 0.25)"});
+    v.push_back(
+        {"TORA", "remain", Verdict::verified, 8.998,
+         make_verify(aux_tora(1.0, -10.0), "tora_relu", 1.0,
+                     box_poly({0.6, -0.7, -0.4, 0.5}, {0.7, -0.6, -0.3, 0.6}), none, 20.0,
+                     loop_options(0.1, 3, 4, 200, 10, 20),
+                     {Specification::safe_set(box_polytope({-2, -2, -2, -2}, {2, 2, 2, 2}))}),
+         "time_step 0.1 (script 0.25)"});
     // TORA, reach (tanh and sigmoid controllers): the goal set at the end
     for (const bool tanh : {true, false}) {
         v.push_back(
             {"TORA", tanh ? "reach-tanh" : "reach-sigmoid", Verdict::verified, tanh ? 2.356 : 4.730,
-             aux_verify(aux_tora(11.0, 0.0), tanh ? "tora_tanh" : "tora_sigmoid", 0.5,
-                        aux_poly({-0.77, -0.45, 0.51, -0.3}, {-0.75, -0.43, 0.54, -0.28}), none,
-                        5.0,
-                        tanh ? aux_options(0.1, 2, 1, 10) : aux_options(0.025, 3, 4, 20, 10, 50),
-                        {Specification::safe_set(
-                             aux_box({-0.1, -0.9, -kInf, -kInf}, {0.2, -0.6, kInf, kInf})),
-                         std::make_pair(5.0, 5.0)}),
+             make_verify(aux_tora(11.0, 0.0), tanh ? "tora_tanh" : "tora_sigmoid", 0.5,
+                         box_poly({-0.77, -0.45, 0.51, -0.3}, {-0.75, -0.43, 0.54, -0.28}), none,
+                         5.0,
+                         tanh ? loop_options(0.1, 2, 1, 10) : loop_options(0.025, 3, 4, 20, 10, 50),
+                         {Specification::safe_set(
+                              box_polytope({-0.1, -0.9, -kInf, -kInf}, {0.2, -0.6, kInf, kInf})),
+                          std::make_pair(5.0, 5.0)}),
              tanh ? "" : "time_step 0.025 (script 0.1)"});
     }
     // Single Pendulum: the angle in [0, 1] from 0.5 to 1
     v.push_back(
         {"Single_Pendulum", "reach", Verdict::verified, 4.083,
-         aux_verify(aux_single_pendulum(), "single_pendulum", 0.05,
-                    aux_poly({1.0, 0.0}, {1.175, 0.2}), none, 1.0, aux_options(0.02, 2, 1, 10),
-                    {Specification::safe_set(aux_box({0.0, -kInf}, {1.0, kInf})),
-                     std::make_pair(0.5, 1.0)})});
-    // Double Pendulum
-    v.push_back(
-        {"Double_Pendulum", "less-robust", Verdict::unknown, 5.604,
-         aux_verify(aux_double_pendulum(), "double_pendulum_less_robust", 0.05,
-                    aux_zonotope({1, 1, 1, 1}, {1.3, 1.3, 1.3, 1.3}), none, 1.0,
-                    aux_options(0.01, 2, 4, 20),
-                    {Specification::safe_set(aux_box({-1.7, -1.7, -1.7, -1.7}, {2, 2, 2, 2}))})});
-    v.push_back(
-        {"Double_Pendulum", "more-robust", Verdict::falsified, 5.589,
-         aux_verify(
-             aux_double_pendulum(), "double_pendulum_more_robust", 0.02,
-             aux_poly({1, 1, 1, 1}, {1.3, 1.3, 1.3, 1.3}), none, 0.4, aux_options(0.02, 2, 1, 10),
-             {Specification::safe_set(aux_box({-1.5, -1.5, -1.5, -1.5}, {1.5, 1.5, 1.5, 1.5}))})});
+         make_verify(aux_single_pendulum(), "single_pendulum", 0.05,
+                     box_poly({1.0, 0.0}, {1.175, 0.2}), none, 1.0, loop_options(0.02, 2, 1, 10),
+                     {Specification::safe_set(box_polytope({0.0, -kInf}, {1.0, kInf})),
+                      std::make_pair(0.5, 1.0)})});
+    // Double Pendulum less-robust: UNKNOWN by the script, verified by the report's splitting tools
+    for (const bool split : {true, false}) {
+        v.push_back(
+            {"Double_Pendulum", split ? "less-robust" : "less-robust-script",
+             split ? Verdict::verified : Verdict::unknown, split ? 67.334 : 5.604,
+             make_verify(
+                 aux_double_pendulum(), "double_pendulum_less_robust", 0.05,
+                 box_zonotope({1, 1, 1, 1}, {1.3, 1.3, 1.3, 1.3}), none, 1.0,
+                 loop_options(0.01, 2, 4, 20),
+                 {Specification::safe_set(box_polytope({-1.7, -1.7, -1.7, -1.7}, {2, 2, 2, 2}))},
+                 {.depth = split ? 14 : 0}),
+             split ? "splitting of the initial set (CROWN-Reach: 5 x 5 x 3 x 3 uniform pieces); "
+                     "the expected time is CROWN-Reach's, CORA's script is UNKNOWN in 5.604 s"
+                   : "the script, without splitting"});
+    }
+    v.push_back({"Double_Pendulum", "more-robust", Verdict::falsified, 5.589,
+                 make_verify(aux_double_pendulum(), "double_pendulum_more_robust", 0.02,
+                             box_poly({1, 1, 1, 1}, {1.3, 1.3, 1.3, 1.3}), none, 0.4,
+                             loop_options(0.02, 2, 1, 10),
+                             {Specification::safe_set(
+                                 box_polytope({-1.5, -1.5, -1.5, -1.5}, {1.5, 1.5, 1.5, 1.5}))})});
     // Airplane: y, phi, theta, psi in [-1, 1]; falsified by a simulation
     std::vector<double> lo(12, -kInf), hi(12, kInf);
     for (const int i : {1, 6, 7, 8}) lo[std::size_t(i)] = -1, hi[std::size_t(i)] = 1;
     std::vector<double> a_lo(12, 0.0), a_hi(12, 0.0);
     for (const int i : {3, 4, 5, 6, 7, 8}) a_hi[std::size_t(i)] = 1;
-    v.push_back(
-        {"Airplane", "continuous", Verdict::falsified, 6.809,
-         aux_verify(aux_airplane(), "airplane", 0.1, aux_poly(a_lo, a_hi), none, 2.0,
-                    aux_options(0.1, 2, 4, 10), {Specification::safe_set(aux_box(lo, hi))})});
+    v.push_back({"Airplane", "continuous", Verdict::falsified, 6.809,
+                 make_verify(aux_airplane(), "airplane", 0.1, box_poly(a_lo, a_hi), none, 2.0,
+                             loop_options(0.1, 2, 4, 10),
+                             {Specification::safe_set(box_polytope(lo, hi))})});
     // Attitude Control: the unsafe set at t = 3 must not be reached
-    v.push_back({"Attitude_Control", "avoid", Verdict::verified, 5.226,
-                 aux_verify(aux_attitude(), "attitude_control", 0.1,
-                            aux_poly({-0.45, -0.55, 0.65, -0.75, 0.85, -0.65},
-                                     {-0.44, -0.54, 0.66, -0.74, 0.86, -0.64}),
-                            none, 3.0, aux_options(0.1, 2, 1, 10),
-                            {Specification::unsafe_set(aux_box({-0.2, -0.5, 0, -0.7, 0.7, -0.4},
-                                                               {0, -0.4, 0.2, -0.6, 0.8, -0.2})),
-                             std::make_pair(3.0, 3.0)})});
+    v.push_back(
+        {"Attitude_Control", "avoid", Verdict::verified, 5.226,
+         make_verify(aux_attitude(), "attitude_control", 0.1,
+                     box_poly({-0.45, -0.55, 0.65, -0.75, 0.85, -0.65},
+                              {-0.44, -0.54, 0.66, -0.74, 0.86, -0.64}),
+                     none, 3.0, loop_options(0.1, 2, 1, 10),
+                     {Specification::unsafe_set(box_polytope({-0.2, -0.5, 0, -0.7, 0.7, -0.4},
+                                                             {0, -0.4, 0.2, -0.6, 0.8, -0.2})),
+                      std::make_pair(3.0, 3.0)})});
     return v;
-}
-
-const char *aux_name(Verdict v) {
-    return v == Verdict::verified ? "VERIFIED" : v == Verdict::falsified ? "FALSIFIED" : "UNKNOWN";
-}
-
-/// Runs one instance, prints the line of the scripts and CORA's verdict and time of the report.
-bool aux_run(const std::string &name) {
-    // the instance of the name
-    for (const Instance &inst : aux_instances()) {
-        if (inst.benchmark + "-" + inst.label != name) continue;
-        // verify with a seeded generator, timed with the simulations as the scripts' tTotal
-        Rng rng(1);
-        const auto start = std::chrono::steady_clock::now();
-        const ClosedLoopVerdict out = inst.run(rng);
-        const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
-        // the line of the scripts, then what the reach and the report add on stderr
-        std::cout << inst.benchmark << "," << inst.label << "," << aux_name(out.verdict) << ","
-                  << wall.count() << '\n'
-                  << std::flush;
-        if (out.verdict == Verdict::unknown)
-            std::cerr << "  reach stopped at t = " << out.time_reached
-                      << (out.exploded   ? " (sets exploded)"
-                          : out.violated ? " (violation)"
-                                         : "")
-                      << '\n';
-        if (out.violating_start)
-            std::cerr << "  a simulated run from " << out.violating_start->matrix_transpose()
-                      << " violates at t = " << out.violation_time << " in "
-                      << out.violating_state->matrix_transpose() << '\n';
-        if (!inst.tuning.empty()) std::cerr << "  differs from the script: " << inst.tuning << '\n';
-        std::cerr << "  " << name << ": ARCH26 report (CORA): " << aux_name(inst.expected) << ", "
-                  << inst.expected_time << " s\n";
-        return out.verdict == inst.expected;
-    }
-    CORA_FAIL(Error::wrong_value, "ainncs: unknown instance " + name);
 }
 
 } // namespace
@@ -408,8 +275,11 @@ bool aux_run(const std::string &name) {
 
 int main(int argc, char **argv) {
     std::vector<std::string> names;
-    for (const Instance &inst : aux_instances()) names.push_back(inst.benchmark + "-" + inst.label);
-    return cora::bench::run_family(argc, argv, names, aux_run);
+    for (const AinncsInstance &inst : aux_instances())
+        names.push_back(inst.benchmark + "-" + inst.label);
+    return cora::bench::run_family(argc, argv, names, [&](const std::string &name) {
+        return cora::bench::run_instance(aux_instances(), name);
+    });
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

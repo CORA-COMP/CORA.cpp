@@ -8,6 +8,7 @@ Reviewed:      ---
 """
 # CORA: nn/@neuralNetwork/evaluate.m
 # CORA: nn/@neuralNetwork/neuralNetwork.m
+# CORA: nn/@neuralNetwork/calcSensitivity.m
 
 import unittest
 
@@ -48,6 +49,7 @@ def torch_forward(parameters, x):
 
 class Evaluate(unittest.TestCase):
     def test_points_agree_with_torch(self):
+        # the same network in torch, on 50 points and on one
         parameters = layers([3, 8, 8, 2])
         x = torch.randn(3, 50, dtype=torch.float64)
         y = cora.NeuralNetwork(parameters).evaluate(x)
@@ -63,6 +65,23 @@ class Evaluate(unittest.TestCase):
         box = net.evaluate(X).interval()
         y = net.evaluate(X.rand_point(500, cora.Rng(1)))
         self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
+
+    def test_the_regression_line_contains_the_outputs_and_sensitivity_is_the_jacobian(self):
+        parameters = layers([2, 10, 10, 3])
+        net = cora.NeuralNetwork(parameters)
+        X = cora.Zonotope(torch.tensor([0.3, -0.2], dtype=torch.float64),
+                          0.2 * torch.eye(2, dtype=torch.float64))
+        # the regression line encloses the outputs of sampled points
+        box = net.evaluate(X, poly_method="regression").interval()
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
+        self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
+        # the Jacobian at a point, against autograd
+        x = torch.tensor([0.1, 0.4], dtype=torch.float64)
+        reference = torch.autograd.functional.jacobian(
+            lambda v: torch_forward(parameters, v[:, None])[:, 0], x)
+        self.assertTrue(torch.allclose(net.sensitivity(x), reference, atol=1e-10))
+        with self.assertRaises(ValueError):
+            net.evaluate(X, poly_method="taylor")
 
     def test_a_batch_of_sets_is_one_call(self):
         parameters = layers([2, 6, 2])

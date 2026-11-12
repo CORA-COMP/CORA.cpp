@@ -6,13 +6,16 @@
 | --- | --- | --- | --- | --- | --- |
 | AFF | 49 | 41 of 43 in ARCH26 (the 47 run in MATLAB CORA equal its verdict; HEAT04 not run there to the end) | 28 of 35 | 2.7 / 4.4 | 13 / 13 (35 instances) |
 | NLN | 11 | 11 of 11 | 8 of 11 | 4.2 / 3.4 | 5.9 / 8.7 (11 instances) |
-| AINNCS | 11 | 10 of 11 (all 11 equal CORA's) | 8 of 10 | 3.6 / 5.0 | 16 / 20 (10 instances) |
+| AINNCS | 25 | 23 of 23 in ARCH26 (24 of 25 equal CORA's) | 21 of 23 | 17.7 / 12.1 | 31 / 28 (23 instances) |
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
 has a time for it: they leave out PLAN01 and BRKNP01 (ARCH26 verifies them with another setup than
-the script's), Double Pendulum less-robust (ARCH26: verified by CROWN-Reach and JuliaReach, UNKNOWN
-for CORA and CORA.cpp) and the instances the report does not have (ISS, RAND) and RND01-06 (instances that are probably, not certainly, the report's, RND[c]). The AINNCS rows count the Unicycle twice
-(the script and the report's disturbance). Times are single runs on a shared machine.
+the script's) and the instances the report does not have (ISS, RAND) and RND01-06 (instances that are
+probably, not certainly, the report's, RND[c]). The AINNCS rows count the Unicycle twice (the script and
+the report's disturbance) and the Double Pendulum less-robust twice (with the splitting of the initial set
+and as the script); the speedups leave out the script row and the Docking row (no tool verifies it) from
+the best-tool column and the VCAS rows of JuliaReach, which analyse time points only. Times are single runs
+on a shared machine.
 
 ## How to read the tables
 
@@ -473,11 +476,13 @@ machine, `CHECKS_ENABLED` off, load average about 10) needs 11.4 s and gives the
 
 ## AINNCS results
 
-The ARCH-COMP AINNCS instances of MATLAB CORA (`examples/contDynamics/neurNetContrSys/example_neuralNet_reach_*.m`,
-the ARCH25 settings of `run_arch_ainncs_category.m`), run through CORA's `verify` by
-`benchmark_neur_net_contr_reach_arch26_ainncs`: Unicycle, ACC, TORA (remain, reach-tanh, reach-sigmoid),
-Single Pendulum, Double Pendulum (less-robust, more-robust), Airplane and Attitude Control. The
-plants are `NonlinearSys` written out as the model files write them, the networks are
+The ARCH-COMP AINNCS instances of MATLAB CORA (`examples/contDynamics/neurNetContrSys/example_neuralNet_reach_*.m`
+and `benchmark_neuralNet_reach_09_QUAD.m`, the ARCH25 settings of `run_arch_ainncs_category.m`), run through CORA's
+`verify` by three programs: `benchmark_neur_net_contr_reach_arch26_ainncs` (Unicycle, ACC, TORA with remain,
+reach-tanh and reach-sigmoid, Single Pendulum, Double Pendulum, Airplane, Attitude Control),
+`benchmark_neur_net_contr_reach_arch26_ainncs_b` (QUAD, Docking, NAV standard and robust, CartPole) and
+`benchmark_neur_net_contr_reach_arch26_vcas` (the eight VCAS instances: CORA's own loop over the nine
+controllers). The plants are `NonlinearSys` written out as the scripts write them, the networks are
 `data/networks/<name>.nn.json` and `.nn.bin` (the layers, their activation and the doubles, written from
 the example scripts by `examples/matlab/benchmarks/export_network_data.m`, so the numbers are CORA's).
 The expected verdict is that of the specification of the ARCH-COMP26 AINNCS report (Sasaki et al., "ARCH-COMP26
@@ -485,7 +490,9 @@ Category Report: Artificial Intelligence and Neural Network Control Systems (AIN
 Hybrid Systems Plants", Tables 1 to 4 for CORA, CROWN-Reach, immrax and JuliaReach; probably the same
 kind of machine as CORA.cpp's), and the program counts the
 instances that differ from CORA's verdict. The time is `verify`: the random simulations (20 runs
-here, 10 in CORA) and the reach, with the derivation of the plant's Jacobians and Hessians. The MATLAB
+here, 10 in CORA) and the reach, with the derivation of the plant's Jacobians and Hessians; the instances
+that split the initial set (Double Pendulum less-robust, QUAD, NAV, CartPole) run the pieces on 8 threads
+(the option `VerifySplit::max_threads`), wall clock, where MATLAB CORA runs them one after the other. The MATLAB
 example scripts ran once after `rng(1)`. A verdict `F` is FALSIFIED by a simulated run that the reach from its start
 point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
@@ -498,10 +505,24 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | TORA reach-tanh | V | V | 0.15 | 21/60 bit-exact, 13 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.77 |
 | TORA reach-sigmoid | V | V | 0.28 | 21/61 bit-exact, 14 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.52 |
 | Single Pendulum reach | V | V | 0.041 | 21/60 bit-exact, 13 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 99.6 |
-| Double Pendulum less-robust | V (CORA: U) | U | 0.13 | 21/54 bit-exact, 8 property | 5.06 | 5.604 | 67.334 (CROWN-Reach) | - |
+| Double Pendulum less-robust | V (CORA: U) | V | 44 | 22/56 bit-exact, 9 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.53 |
+| Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.14 | 21/54 bit-exact, 8 property | 5.06 | 5.604 | - | - |
 | Double Pendulum more-robust | F | F | 0.11 | 21/60 bit-exact, 13 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.58 |
 | Airplane continuous | F | F | 0.53 | 21/60 bit-exact, 13 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.63 |
+| VCAS middle-19.5 | V | V | 0.0034 | 4/24 bit-exact, 4 property | 0.88 | 0.215 | 0.215 (CORA) [e] | 62.5 |
+| VCAS middle-22.5 | V | V | 0.0035 | 4/24 bit-exact, 4 property | 0.16 | 0.129 | 0.129 (CORA) [e] | 36.5 |
+| VCAS middle-25.5 | F | F | 0.0011 | 0/10 bit-exact, 1 property | 0.048 | 0.065 | 0.030 (CROWN-Reach) [e] | 28.3 |
+| VCAS middle-28.5 | F | F | 0.00098 | 0/10 bit-exact, 1 property | 0.048 | 0.064 | 0.034 (CROWN-Reach) [e] | 34.8 |
+| VCAS worst-19.5 | V | V | 0.0035 | 4/24 bit-exact, 4 property | 0.11 | 0.118 | 0.118 (CORA) | 33.9 |
+| VCAS worst-22.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.048 | 0.061 | 0.061 (CORA) | 58.1 |
+| VCAS worst-25.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.047 | 0.042 | 0.030 (CROWN-Reach) | 29.7 |
+| VCAS worst-28.5 | F | F | 0.0010 | 0/10 bit-exact, 1 property | 0.047 | 0.032 | 0.032 (CORA) | 31.7 |
 | Attitude Control avoid | V | V | 0.42 | 21/62 bit-exact, 14 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
+| QUAD reach | V | V | 1.70 | 22/62 bit-exact, 14 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
+| Docking constraint | U | U | 4.59 | 15/54 bit-exact, 13 property | 594 [m] | 95.038 | - [f] | - |
+| NAV standard | V | V | 13.3 | 27/63 bit-exact, 10 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
+| NAV robust | V | V | 0.36 | 26/61 bit-exact, 9 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
+| CartPole* reach | V | V | 2.09 | 22/62 bit-exact, 14 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
 
 [a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback, as the report states, instead of sample-and-hold control.
 
@@ -509,8 +530,15 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
 [c] Attitude Control: CROWN-Reach's public code (commit 7b90f30, 3.237 s) has an empty unsafe box (x4 >= -0.4 and x4 <= -0.6, where the report has x4 in [-0.7, -0.6]).
 
-Double Pendulum less-robust: CORA.cpp's time is for an UNKNOWN, the best time (CROWN-Reach) for a verification.
-TORA remain runs with time_step 0.1 and reach-sigmoid with time_step 0.025 (below).
+[d] Double Pendulum less-robust: CORA.cpp splits the initial set (depth 14: 3103 pieces reached, 1552 leaves, up to 12 splits deep, 8 threads), as CROWN-Reach does with 5 x 5 x 3 x 3 uniform pieces; the script without splitting is UNKNOWN for CORA and CORA.cpp (the second row), CORA's 5.604 s is for that UNKNOWN. JuliaReach verifies it in 824.729 s.
+
+[e] VCAS middle: JuliaReach (0.022, 0.001, 0.000, 0.000 s) analyses the discrete-time plant at the time points only, which the best-tool column does not count.
+
+[f] Docking: no tool verifies the constraint for the whole initial set (CORA 95.038 s and JuliaReach 7.489 s end UNKNOWN; JuliaReach verifies the smaller set [70, 106]^2 x [-0.14, 0.14]^2 in 7 s); there is no best time for a verdict.
+
+[g] CartPole: only CORA ran it, on the initial set of 0.4 times the radius of the report's (the `*`).
+
+[m] MATLAB times of Docking, CartPole and NAV standard were measured with other jobs running (load average about 7), those of VCAS, QUAD and NAV robust at 4 to 5; the first runs of the three (722, 580 and 536 s) were at 13 to 47.
 
 **The loop.** `NeurNetContrSys` is CORA's: per control period the network is enclosed over the current set
 together with its input (`NeuralNetwork::evaluate_with_input`), the plant extended by the held outputs
@@ -519,8 +547,10 @@ as states of zero derivative (built from the plant's own expressions) is reached
 and the set at the end of the period projected to the states starts the next. The network is
 enclosed by CORA's `poly_method` "singh" of order 1 (the tightest parallelogram of a ReLU,
 [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and tanh); on a polynomial zonotope the
-factors and exponents stay. The Unicycle, Double Pendulum less-robust start from zonotopes, the
-others from polynomial zonotopes, as the scripts. The sets, the boxes and the sets over the
+factors and exponents stay. QUAD, Docking, NAV and CartPole use CORA's `poly_method` "regression" of
+order 1: the least-squares line through 20 points of the range of the neuron and, as its error, the
+exact maximum of the difference to the activation. The Unicycle, Double Pendulum less-robust and NAV
+start from zonotopes, the others from polynomial zonotopes, as the scripts. The sets, the boxes and the sets over the
 steps agree with MATLAB CORA's to five digits over 50 control periods (TORA reach-tanh, checked at
 t = 0.5, 1, ..., 5).
 
@@ -542,14 +572,41 @@ t = 0.5, 1, ..., 5).
 - *The plant reach*: `NonlinearSys` alg "lin" on the extended system, with the Hessian region joined
   with the linearization point (the repair of `priv_abstrerr_lin`); the sets stay sound at tensor order 3,
   looser than CORA's on polynomial zonotopes.
+- *The regression line* (`computeApproxPoly` "regression", `computeApproxError`): sound in exact arithmetic.
+  The extremes of `f(x) - (m x + t)` over `[l, u]` lie at the ends and where `f'(x) = m`; tanh has them
+  in closed form in CORA, the sigmoid is sampled there with a Lipschitz tolerance (sound, looser) and
+  CORA.cpp takes the closed form `2 atanh(sqrt(1 - 4m))` for it; the ReLU is piecewise linear, so its
+  extremes are at `l`, 0 and `u`. A test compares each radius with a grid of 20000 points
+  (`test_neural_network_regression`), and CORALean's `sigmoidPolyRelaxation_encloses` and
+  `tanhPolyRelaxation_encloses` state the same for any fit with a certified error.
+- *The splitting of `verify`* (`splitR0`): sound. The pieces are the halves of the box of the initial set
+  (tested to cover it), VERIFIED needs every leaf verified, and a piece is split at most `depth - 1` times as CORA
+  does; the depth-first search with the early stop gives CORA's verdict. FALSIFIED still needs a simulated run.
+  CORA's `split(pZ, n)` encloses `zonotope(pZ)` by a parallelotope, the box of a box, so the pieces agree for the
+  boxes of every instance here.
+- *The VCAS loop* (the script's, not a class of CORA): the advisory is taken only when its logit beats all
+  others on the whole set (else UNKNOWN), which is sound. The script's acceleration rule is not sound for the
+  report's problem: it sets the acceleration to 0 whenever the climb rate complies, also when the previous
+  advisory differs, and takes the advisory's acceleration for a set that complies in part, and it checks the
+  unsafe set after the last step only. CORA.cpp follows the report (0 only if the advisory stays and hdot complies,
+  the hull for a set that complies in part, every step k = 1..10 checked); with the script's rule (`CORACPP_VCAS_RULE=script`)
+  the verdicts of the eight instances are the same.
+- *The Docking check* of the sets is CORA.cpp's own: interval arithmetic on the box of the set and its halves
+  (up to 2^10), sound. CORA's (`quadMap`, the order-1 Singh enclosure of a root layer, `interval(., 'split')`)
+  was ported first and does not hold the initial set (its error 0.1 for `v^2` in `[0, 0.157]`, against the margin of 0.007);
+  CORA's root layer has the derivative `sqrt(x)/2` for `1/(2 sqrt(x))` (CORALean
+  `Layer.rootDf_cora_counterexample`). Both CORA and CORA.cpp fail at `t in [0, 0.1]`: MATLAB CORA prints
+  'Unable to verify t in [0.00, 0.10]'.
+- *A range outside a domain* (QUAD's `tan` over a pole): CORA's interval arithmetic gives `(-Inf, Inf)` and the sets
+  explode; CORA.cpp raises `CORA:outOfDomain`, which the closed loop treats as that explosion, so `verify` splits.
 - *The specification check*: exact on the zonotope (a polynomial zonotope on its zonotope
   enclosure); a falsification is a simulated run (Runge-Kutta, steps of at most 1e-3) from a point of
   the initial set whose reach from that point does not verify, as CORA's, so it is as sound as
   the integration is accurate.
 
 None of the rows is bit-exact against CORALean: its oracle serves no network or controlled-system op
-(docs/oracle-requests.md), and the nonlinear plants have no CORALean reach beyond the argument of
-`reachWith`.
+(docs/oracle-requests.md: the networks' regression line and error, the Jacobian, and the loops of
+`NeurNetContrSys`, whose nonlinear plants have no CORALean reach beyond the argument of `reachWith`).
 
 **Tuned settings.** Two instances need a smaller step than the script's: with the script's 0.25 (TORA
 remain) and 0.1 (TORA reach-sigmoid) the sets end just outside the specification (the lower bound of
@@ -559,20 +616,32 @@ the set of the step by a zonotope first (`priv_lin_reach_poly`), which is looser
 (docs/cora-differences.md). The settings that verify are 0.1 and 0.025 (others: 0.05 fails for the
 sigmoid, 0.1 and 0.05 verify the remain). The Unicycle row "with the report's disturbance" adds
 w in 1e-4 [-1, 1] to the speed, which the report states and the script sets to 0; it verifies too.
-The Double Pendulum less-robust reach stops at t = 0.05, where the set leaves the safe box (CORA's
-is also UNKNOWN); the falsifications are the simulated runs
+The Double Pendulum less-robust reach of the script stops at t = 0.05, where the set leaves the safe box (CORA's
+is also UNKNOWN); splitting verifies it only at `depth` 14 (depth 12 ends UNKNOWN after 1277 pieces, depth 14
+verifies after 3103 pieces; the pieces are cut where the radius times the sensitivity is largest, not uniformly).
+The falsifications are the simulated runs
 `x0 = (1.3, 1, 1, 1)` (more-robust: x3 = -1.510 < -1.5 at t = 0.32) and the Airplane run from
 `(0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0)` (y = 1.24 > 1 at t = 0.6).
 
-`CORACPP_BENCHMARK_VERBOSE=1` prints the box of every set of the reach, and
-`CORACPP_AINNCS_OPTIONS=time_step,tensor_order,taylor_terms,zonotope_order,error_order,intermediate_order`
-replaces the settings of the instance (how the two tuned steps were found).
+**Settings of the piece B instances, next to CORA's.** QUAD: time step 0.1, tensor order 2, 1 Taylor term,
+zonotope order 20 and the sampling time 0.1 as the script; CORA verifies the whole set (with `nn.refine` to order 2 in a
+layer), CORA.cpp's order-1 sets explode at t = 1, so `verify` splits (`depth` 4: 7 pieces reached, 4 leaves, 2 splits
+deep, CROWN-Reach: 3465 s). It takes the report's attitude equations; the script's x8', x9' differ from the report (`CORACPP_QUAD_SCRIPT=1`) and verify the same way. NAV: sampling
+time 0.2, tensor order 2, 1 Taylor term, zonotope order 10, time step 0.05 (standard) and 0.1 (robust), splitting `depth` 9 as
+the script; the robust network verifies without it, the standard one needs 245 pieces (123 leaves, 8 splits deep, 8 threads).
+CartPole: time step and sampling time 0.02, zonotope order 50, `depth` 10 as the script; 7 pieces (4 leaves, 2 splits deep).
+Docking: time step 0.1, 4 Taylor terms, zonotope order 20, no splitting as the script; the reach completes (t = 40) and the
+check fails at the first step. VCAS: the ten random runs and the reach as the script, `middle` and `worst` accelerations.
 
-**Not ported here.** VCAS, QUAD, Docking, NAV and CartPole (piece B): the VCAS instances need CORA's
-custom discrete algorithm, and the scripts of QUAD, Docking, NAV and CartPole are not all in the CORA
-checkout. The plants of `NeurNetContrSys` are `NonlinearSys` only; `LinearSys`, `LinParamSys`
-and the discrete-time systems of CORA's class have no instance here, and CORA.cpp has no
-discrete-time systems yet. `verify` does not split the initial set (`splitR0` of CORA).
+`CORACPP_BENCHMARK_VERBOSE=1` prints the box of every set of the reach,
+`CORACPP_AINNCS_OPTIONS=time_step,tensor_order,taylor_terms,zonotope_order,error_order,intermediate_order`
+replaces the settings of the instance (how the two tuned steps were found), and `CORACPP_AINNCS_SPLIT=depth,threads`
+the splitting of `verify`.
+
+**Not ported here.** CORA's `refine` of the network (order 2 in a layer, which QUAD's script uses; `NeuralNetwork` has order 1),
+`LinearSys`, `LinParamSys` plants and the discrete-time systems of CORA's `neurNetContrSys` (the VCAS loop is the
+benchmark's own, composed of `NeuralNetwork::evaluate` and `PolyZonotope` maps), the root layer, and CORA's check of
+the Docking sets (above). `split(pZ, n)` of a set that is not a box splits its box.
 
 
 ## Run
@@ -587,7 +656,9 @@ build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
 build/core/benchmarks/benchmark_nonlinear_das_reach_arch23_powersystem         # TSPS25, about a minute
 build/core/benchmarks/benchmark_hybrid_reach_arch23_lotkavolterra               # LOVO25, CORACPP_BENCHMARK_VERBOSE=1: the branches
-build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs [TORA-remain ...]   # the AINNCS instances, 3 s in all
+build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs [TORA-remain ...]   # the AINNCS instances, 1 min in all
+build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_ainncs_b [QUAD-reach ...]  # QUAD, Docking, NAV, CartPole, 30 s in all
+build/core/benchmarks/benchmark_neur_net_contr_reach_arch26_vcas [VCAS-middle-19.5 ...] # the eight VCAS instances
 build/core/benchmarks/benchmark_linear_verify_arch26_rnd [RND01 ...]       # RND03 takes about 20 minutes (zonotope algorithm)
 PYTHONPATH=build/python python examples/python/benchmarks/benchmark_linear_verifyFast_ARCH23_iss.py [instance ...]
 ```
@@ -669,13 +740,16 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF02 | 1/8 | 7 | 4 |
 | CBF03 | 1/8 | 7 | 4 |
 | CVDP23 | 30/70 | 40 | 11 |
+| CartPole-reach | 22/62 | 40 | 11 |
 | DTN01 | 21/37 | 16 | 6 |
 | DTN02 | 21/37 | 16 | 6 |
 | DTN03 | 21/37 | 16 | 6 |
 | DTN04 | 21/37 | 16 | 6 |
 | DTN05 | 21/37 | 16 | 6 |
 | DTN06 | 21/37 | 16 | 6 |
-| Double_Pendulum-less-robust | 21/54 | 33 | 11 |
+| Docking-constraint | 15/54 | 39 | 9 |
+| Double_Pendulum-less-robust | 22/56 | 34 | 11 |
+| Double_Pendulum-less-robust-script | 21/54 | 33 | 11 |
 | Double_Pendulum-more-robust | 21/60 | 39 | 11 |
 | GRBX01 | 30/56 | 26 | 10 |
 | GRBX02 | 30/56 | 26 | 10 |
@@ -692,11 +766,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W01 | 7/35 | 28 | 6 |
 | LOVO25 | 24/75 | 51 | 13 |
 | LOVO25-script | 27/82 | 55 | 14 |
+| NAV-robust | 26/61 | 35 | 15 |
+| NAV-standard | 27/63 | 36 | 15 |
 | PLAA01_BND42 | 23/35 | 12 | 9 |
 | PLAA01_BND50 | 23/35 | 12 | 9 |
 | PLAD01_BND30 | 9/17 | 8 | 5 |
 | PLAD01_BND42 | 9/17 | 8 | 5 |
 | PLAN01 | 31/45 | 14 | 9 |
+| QUAD-reach | 22/62 | 40 | 11 |
 | RAND01 | 5/13 | 8 | 4 |
 | RAND02 | 5/13 | 8 | 4 |
 | RND01 | 5/13 | 8 | 4 |
@@ -728,4 +805,12 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | TSPS25 | 17/32 | 15 | 6 |
 | Unicycle-reach | 21/54 | 33 | 11 |
 | Unicycle-reach-disturbance | 21/54 | 33 | 11 |
+| VCAS-middle-19.5 | 4/24 | 20 | 4 |
+| VCAS-middle-22.5 | 4/24 | 20 | 4 |
+| VCAS-middle-25.5 | 0/10 | 10 | 0 |
+| VCAS-middle-28.5 | 0/10 | 10 | 0 |
+| VCAS-worst-19.5 | 4/24 | 20 | 4 |
+| VCAS-worst-22.5 | 0/10 | 10 | 0 |
+| VCAS-worst-25.5 | 0/10 | 10 | 0 |
+| VCAS-worst-28.5 | 0/10 | 10 | 0 |
 <!-- END bit-exact -->

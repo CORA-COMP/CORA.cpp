@@ -8,7 +8,8 @@
 // over the current set together with the input (evaluate_with_input), the extended system is
 // reached from that set with its own init_reach and post, and the set at the end of the period
 // projected to x starts the next, on zonotopes or polynomial zonotopes. simulate holds the output
-// over the period; verify simulates, then reaches (CORA's verify without the splitting).
+// over the period; verify simulates, then reaches, and splits the initial set recursively when the
+// reach does not verify (CORA's verify with splitR0, the pieces on a pool of threads).
 //
 // Syntax:     NeurNetContrSys sys(plant, nn, dt);   ClosedLoopReach<PolyZonotope> R =
 //             sys.reach(PolyZonotope(X0), std::nullopt, 5.0, {.time_step = 0.1}, {}, spec);
@@ -27,6 +28,7 @@
 
 #include "cora/cont_dynamics/algorithms.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
+#include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
@@ -48,6 +50,9 @@ struct TimedSpecification {
     Specification spec;
     std::optional<std::pair<double, double>> time = std::nullopt;
 };
+
+/// The specifications of a problem: all of them must hold (CORA's add(spec1, spec2)).
+using TimedSpecifications = std::vector<TimedSpecification>;
 
 /// The reachable sets of the closed loop in the states of the plant, one entry per step of the
 /// plant's reach (CORA's reachSet): time_interval[k] over [time[k], time[k+1]], time_point[k] at
@@ -79,6 +84,9 @@ enum class Verdict { verified, falsified, unknown };
 
 struct ClosedLoopVerdict {
     Verdict verdict = Verdict::unknown;
+    int pieces_reached = 0;  ///< the pieces of the split initial set that were reached
+    int pieces_verified = 0; ///< the leaves of the split that verified
+    int max_splits = 0;      ///< the most splits along the way to a leaf, or to the failed piece
     std::optional<Tensor> violating_start; ///< the start (n, 1) of the simulation that violates
     double violation_time = 0;             ///< when it first violates the specification
     std::optional<Tensor> violating_state; ///< its state (n, 1) then
@@ -86,6 +94,14 @@ struct ClosedLoopVerdict {
     double time_reached = 0;               ///< the time up to which the reach was computed
     bool exploded = false;                 ///< the reach stopped because its sets exploded
     bool violated = false;                 ///< the reach stopped at a step that violates
+};
+
+/// The recursive splitting of verify (CORA's splitR0): the box of the initial set is cut where
+/// radius times network sensitivity is largest, every piece reached on its own, split at most
+/// depth - 1 times (the whole set counts as one level); a piece that still fails gives UNKNOWN.
+struct VerifySplit {
+    int depth = 0;       ///< splitR0; 0 and 1 reach the whole set only
+    int max_threads = 8; ///< the pieces run on at most this many threads
 };
 
 // The system --------------------------------------------------------------------------------------
@@ -115,6 +131,15 @@ class NeurNetContrSys {
           const ClosedLoopOptions &options,
           const std::optional<TimedSpecification> &spec = std::nullopt) const;
 
+    /// The same with several specifications, each on its own window; the run stops at the first
+    /// step that violates one.
+    ClosedLoopReach<Zonotope> reach(const Zonotope &X0, const std::optional<Zonotope> &U,
+                                    double t_final, const ClosedLoopOptions &options,
+                                    const TimedSpecifications &specs) const;
+    ClosedLoopReach<PolyZonotope> reach(const PolyZonotope &X0, const std::optional<Zonotope> &U,
+                                        double t_final, const ClosedLoopOptions &options,
+                                        const TimedSpecifications &specs) const;
+
     /// The runs from the points x0 (n, N) with a constant external input u (n_ext, N) or (n_ext, 1)
     /// per run, sampled every time_step (at most dt) with the network output held over a period.
     ClosedLoopTrajectories simulate(const Tensor &x0, const std::optional<Tensor> &u,
@@ -126,15 +151,31 @@ class NeurNetContrSys {
                                            double t_final, double time_step, int64_t points,
                                            double fraction_vertices, Rng &rng) const;
 
-    /// CORA's verify: random simulations, a violating one is reached from its start point
-    /// (FALSIFIED if that reach does not verify), else the whole set is reached with the
-    /// specification (VERIFIED, or UNKNOWN when the run stops).
+    /// CORA's verify: random simulations, a violating one is reached from its start (FALSIFIED if
+    /// that reach does not verify), else the whole set is reached with the specifications, and
+    /// split as `split` says if that does not verify (VERIFIED if every piece does).
     ClosedLoopVerdict verify(const PolyZonotope &X0, const std::optional<Zonotope> &U,
                              double t_final, const ClosedLoopOptions &options,
-                             const TimedSpecification &spec, int64_t points, Rng &rng) const;
+                             const TimedSpecifications &specs, int64_t points, Rng &rng,
+                             const VerifySplit &split = {}) const;
+    ClosedLoopVerdict verify(const Zonotope &X0, const std::optional<Zonotope> &U, double t_final,
+                             const ClosedLoopOptions &options, const TimedSpecifications &specs,
+                             int64_t points, Rng &rng, const VerifySplit &split = {}) const;
+    ClosedLoopVerdict verify(const PolyZonotope &X0, const std::optional<Zonotope> &U,
+                             double t_final, const ClosedLoopOptions &options,
+                             const TimedSpecification &spec, int64_t points, Rng &rng,
+                             const VerifySplit &split = {}) const;
     ClosedLoopVerdict verify(const Zonotope &X0, const std::optional<Zonotope> &U, double t_final,
                              const ClosedLoopOptions &options, const TimedSpecification &spec,
-                             int64_t points, Rng &rng) const;
+                             int64_t points, Rng &rng, const VerifySplit &split = {}) const;
+
+    /// The pieces of the split of X0 (CORA's aux_VerifyRecursively, the first `levels` levels
+    /// without reaching): the 2^levels boxes that cover X0, each cut at the dimension that
+    /// split_dimension picks for it. Exposed for the coverage test.
+    std::vector<Interval> split_pieces(const Interval &box, int levels) const;
+    /// The dimension verify cuts a box at: the largest radius times mean(abs(sensitivity), 1) at
+    /// the center, the first on ties.
+    int64_t split_dimension(const Interval &box) const;
 
   private:
     NonlinearSys plant_;

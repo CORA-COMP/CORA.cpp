@@ -1,0 +1,11 @@
+{
+  "name": "nav_set",
+  "layers": [
+    {"out": 64, "in": 4, "activation": "identity", "W": 0, "b": 256},
+    {"out": 64, "in": 64, "activation": "relu", "W": 320, "b": 4416},
+    {"out": 32, "in": 64, "activation": "identity", "W": 4480, "b": 6528},
+    {"out": 32, "in": 32, "activation": "relu", "W": 6560, "b": 7584},
+    {"out": 2, "in": 32, "activation": "identity", "W": 7616, "b": 7680},
+    {"out": 2, "in": 2, "activation": "tanh", "W": 7682, "b": 7686}
+  ]
+}

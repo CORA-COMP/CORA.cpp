@@ -1,0 +1,13 @@
+{
+  "name": "vcas_8",
+  "layers": [
+    {"out": 3, "in": 3, "activation": "identity", "W": 0, "b": 9},
+    {"out": 3, "in": 3, "activation": "identity", "W": 12, "b": 21},
+    {"out": 20, "in": 3, "activation": "relu", "W": 24, "b": 84},
+    {"out": 20, "in": 20, "activation": "relu", "W": 104, "b": 504},
+    {"out": 20, "in": 20, "activation": "relu", "W": 524, "b": 924},
+    {"out": 20, "in": 20, "activation": "relu", "W": 944, "b": 1344},
+    {"out": 20, "in": 20, "activation": "relu", "W": 1364, "b": 1764},
+    {"out": 9, "in": 20, "activation": "relu", "W": 1784, "b": 1964}
+  ]
+}
