@@ -17,6 +17,7 @@
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
+#include "cora/global/rng.h"
 #include "testing.h"
 
 #include <cmath>
@@ -84,18 +85,25 @@ int main() {
             const auto [window, diff] = priv_poly_window(*series, V, X0, 1e-4);
             const PolyZonotope end = priv_poly_point(*series, V, X0, Vs, 1e-4);
             bool inside = true, ends = true, diffs = true;
+            // the corners, the center and 12 starts drawn from the box (a fixed seed)
+            std::vector<std::array<double, 2>> starts;
             for (const double sx : {-1.0, 0.0, 1.0})
-                for (const double sy : {-1.0, 0.0, 1.0}) {
-                    const std::array<double, 2> x0{0.01 * sx, 0.01 * sy};
-                    for (int k = 0; k <= 40; ++k) {
-                        const double t = double(k) / 40;
-                        const auto x = state(R, t, x0, center, r);
-                        inside = inside && in_box(window, x, 1e-9);
-                        // the difference to the start: the set holds x(t) - x(0)
-                        diffs = diffs && in_box(diff, {x[0] - x0[0], x[1] - x0[1]}, 1e-9);
-                    }
-                    ends = ends && in_box(end, state(R, 1.0, x0, center, r), 1e-9);
+                for (const double sy : {-1.0, 0.0, 1.0}) starts.push_back({0.01 * sx, 0.01 * sy});
+            Rng rng(4);
+            std::vector<double> draw(24);
+            rng.uniform(draw.data(), draw.size(), -0.01, 0.01);
+            for (std::size_t i = 0; i < draw.size(); i += 2)
+                starts.push_back({draw[i], draw[i + 1]});
+            for (const std::array<double, 2> &x0 : starts) {
+                for (int k = 0; k <= 40; ++k) {
+                    const double t = double(k) / 40;
+                    const auto x = state(R, t, x0, center, r);
+                    inside = inside && in_box(window, x, 1e-9);
+                    // the difference to the start: the set holds x(t) - x(0)
+                    diffs = diffs && in_box(diff, {x[0] - x0[0], x[1] - x0[1]}, 1e-9);
                 }
+                ends = ends && in_box(end, state(R, 1.0, x0, center, r), 1e-9);
+            }
             const std::string what = shifted ? "a shifted center" : "a centered input";
             check(inside, b + ": the window holds the states over the step, " + what);
             check(diffs, b + ": the differences hold x(t) - x(0), " + what);

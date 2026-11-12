@@ -184,10 +184,11 @@ Zonotope aux_cap(const Zonotope &Z) { return Z.reduce(1); }
 
 // The series --------------------------------------------------------------------------------------
 
-std::optional<PolySeries> PolySeries::make(const Tensor &A, double dt, int taylor_terms) {
+std::optional<PolySeries> PolySeries::make(const Tensor &A, double dt, int taylor_terms,
+                                           bool raise) {
     const auto n = static_cast<std::size_t>(A.size(-1));
     const Mat a = A.data();
-    const std::optional<int> eta = aux_order(a, n, dt, taylor_terms);
+    const std::optional<int> eta = raise ? aux_order(a, n, dt, taylor_terms) : taylor_terms;
     if (!eta) return std::nullopt;
     const std::optional<int> halvings = aux_halvings(a, n, dt);
     if (!halvings) return std::nullopt;
@@ -308,7 +309,8 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
     const PolyZonotope e_adt_x = priv_poly_interval_map(series.e_adt(), X0);
     const PolyZonotope hom =
         priv_reduce_adaptive_poly(priv_poly_plus(priv_poly_lin_comb(X0, e_adt_x), FX), zeta_z);
-    const Tensor eye = X0.center().eye_like();
+    // the (n, n) identity (eye_like of the column vector alone would not be)
+    const Tensor eye = X0.center().eye_like(n);
     const Interval e_adt_minus_i(series.e_adt().inf() + eye * -1.0,
                                  series.e_adt().sup() + eye * -1.0);
     const PolyZonotope origin(zero, zero.zeros_like({n, 0}), zero.zeros_like({n, n}), {}, {},

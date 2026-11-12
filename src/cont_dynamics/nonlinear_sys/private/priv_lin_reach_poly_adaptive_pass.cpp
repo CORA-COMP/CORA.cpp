@@ -49,7 +49,6 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     const Tensor &xs_t = L.xs_t;
     const Jacobians &J = L.J;
     const Zonotope &Vbase = L.Vbase;
-    const LinearSys lin(J.A);
     const std::optional<PolySeries> series = PolySeries::make(J.A, dt, alg.taylor_terms);
     if (!series) return std::nullopt;
 
@@ -80,9 +79,10 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
         priv_poly_window(*series, (Vbase + Vdyn) + Vsz, Rdelta, alg.zeta_z).first;
     const PolyZonotope Rtp = priv_poly_point(*series, Vbase + Vdyn, Rdelta, S.Vstat, alg.zeta_z);
 
-    // the radius of the solutions of the errors (independent generators of both)
-    const Zonotope Rdyn = lin.error_solution_adaptive(Vdyn, std::nullopt, dt, 0.0, series->eta());
-    const PolyZonotope Rstat = priv_poly_interval_map(series->integral(), S.Vstat);
+    // the radius of the error solutions, at the unraised order of CORALean's errorSolution
+    const std::optional<PolySeries> errser = PolySeries::make(J.A, dt, alg.taylor_terms, false);
+    const Zonotope Rdyn = errser->input_solution(Vdyn);
+    const PolyZonotope Rstat = priv_poly_interval_map(errser->integral(), S.Vstat);
     const Tensor GI = Tensor::concat({Rdyn.generators(), Rstat.independent_generators()}, -1);
     const int64_t q = GI.shape()[1];
     const Vec gi = GI.data();

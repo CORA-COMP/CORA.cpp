@@ -139,9 +139,10 @@ Zonotope priv_abstr_err_poly_adaptive(const NonlinearSys &sys, const Vec &xs, co
 /// Computed once per linearization, every sum nested to the right as CORALean's sumDown and sumUp.
 class PolySeries {
   public:
-    /// The matrices of A at dt from the Taylor order taylor_terms (raised until admissible), none
-    /// where no order is admissible or no number of halvings s < 128 brings ||A dt / 2^s|| to 1/2.
-    static std::optional<PolySeries> make(const Tensor &A, double dt, int taylor_terms);
+    /// The matrices of A at dt from the Taylor order taylor_terms (raised until admissible unless
+    /// raise is false), none where no order or no number of halvings s < 128 is admissible.
+    static std::optional<PolySeries> make(const Tensor &A, double dt, int taylor_terms,
+                                          bool raise = true);
 
     int eta() const noexcept { return eta_; }
     const Interval &e_adt() const noexcept { return e_adt_; }
