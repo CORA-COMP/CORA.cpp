@@ -186,6 +186,13 @@ foreach(source IN LISTS test_sources)
   endif()
   cora_executable(${name} "${source}" "tests/${folder}")
   target_include_directories(${name} PRIVATE "${CMAKE_SOURCE_DIR}/tests" "${CMAKE_SOURCE_DIR}/src")
+  # a test on the data of the benchmarks reads it as the benchmark programs do
+  file(READ "${source}" benchmark_text)
+  if(benchmark_text MATCHES "benchmark_data\\.h")
+    target_include_directories(${name} PRIVATE "${CMAKE_SOURCE_DIR}/examples/cpp/benchmarks")
+    target_compile_definitions(${name} PRIVATE
+      "CORACPP_BENCHMARK_DATA=\"${CMAKE_SOURCE_DIR}/examples/benchmarks/data\"")
+  endif()
   cora_test_label("${relative}" label)
   cora_add_test(${folder}/${name} ${label} COMMAND ${name})
   cora_run_environment(${folder}/${name})

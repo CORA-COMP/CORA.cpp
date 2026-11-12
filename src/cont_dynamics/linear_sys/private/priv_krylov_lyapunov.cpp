@@ -209,6 +209,10 @@ double RestartedBound::window_bound(double eps) const {
     return (beta_ + added) * scale_;
 }
 
+double RestartedBound::carry_min(double g, double bound) {
+    return g <= bound ? g : (bound < g ? bound : g + bound);
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

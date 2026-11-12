@@ -61,6 +61,12 @@ struct KrylovRestarted : KrylovCertificate {
     double bound = 0;
 };
 
+/// The error bound at every time of the next window and the carry min(g, bound).
+struct KrylovWindowBound : KrylovCertificate {
+    bool windows_ok = false;
+    double bound = 0, carry = 0;
+};
+
 class Krylov {
   public:
     /// `passes` passes of Arnoldi on A (n, n) from c (n, 1), breakdown threshold eps.
@@ -88,6 +94,12 @@ class Krylov {
     static KrylovRestarted restarted_bound(const cora::Tensor &A, const cora::Tensor &P,
                                            const cora::Tensor &L, double a, const cora::Tensor &dt,
                                            const cora::Tensor &eps);
+
+    /// The bound of the next window after those of lengths dt (N, 1); eps (N + 1, 1) holds the
+    /// local errors of those and the next; g is the Gershgorin carry of the next window.
+    static KrylovWindowBound window_bound(const cora::Tensor &A, const cora::Tensor &P,
+                                          const cora::Tensor &L, double a, const cora::Tensor &dt,
+                                          const cora::Tensor &eps, double g);
 };
 
 } // namespace cora::lean
