@@ -325,11 +325,13 @@ PolyZonotope priv_poly_exact_plus(const PolyZonotope &Z1, const PolyZonotope &Z2
     id.erase(std::unique(id.begin(), id.end()), id.end());
     // the exponents of a set over the union of the identifiers
     const auto over = [&](const PolyZonotope &Z) {
+        std::vector<std::size_t> pos(Z.ids().size());
+        for (std::size_t k = 0; k < pos.size(); ++k)
+            pos[k] = std::size_t(std::lower_bound(id.begin(), id.end(), Z.ids()[k]) - id.begin());
         Exponents E;
         for (const std::vector<int> &col : Z.exponents()) {
             std::vector<int> c(id.size(), 0);
-            for (std::size_t k = 0; k < Z.ids().size(); ++k)
-                c[std::size_t(std::find(id.begin(), id.end(), Z.ids()[k]) - id.begin())] = col[k];
+            for (std::size_t k = 0; k < pos.size(); ++k) c[pos[k]] = col[k];
             E.push_back(std::move(c));
         }
         return E;
