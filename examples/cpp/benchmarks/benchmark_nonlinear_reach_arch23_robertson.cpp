@@ -7,7 +7,7 @@
 // 1 once reach has finished). The algorithm is CORA's lin-adaptive as CORALean repairs it; its
 // zeta_z is tuned per case (kCases), the script's are 0.00025, 0.0006 and 0.017; with the linear
 // step closed_form (CORACPP_LINEAR_STEP) the smaller zeta_z and the 30 Taylor terms of kCases are
-// used, as its exponential carries an entrywise remainder (README). The line has the
+// used, as its entrywise remainder W is a norm bound in every entry (README). The line has the
 // time of reach, as the script's tic and toc; the number of sets and the width go to stderr.
 //
 // Syntax:   build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...]

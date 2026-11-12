@@ -193,7 +193,7 @@ std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int
 
 // The matrices of the step: [e^{A dt}], [F], [G], the boxes of the input solution
 struct ClosedFormStepper::Matrices {
-    Matrices(const Tensor &A, double r, int eta, int eta_enclosed, int halvings)
+    Matrices(const Tensor &A, double r, int eta, int halvings)
         : e_adt(A, A), F(A, A), G(A, A), remainder(A, A) {
         const std::size_t n = std::size_t(A.size(-1));
         const Shape shape{A.size(-1), A.size(-1)};
@@ -202,13 +202,13 @@ struct ClosedFormStepper::Matrices {
             return Interval(tensor(b.first), tensor(b.second));
         };
         const Mat a = A.data();
-        // W >= E(r, eta): the enclosure of e^{|A| r} at the order eta_enclosed less the series
+        // W >= E(r, eta): the enclosure of e^{|A| r} at the order eta less the series (past eta)
         const Mat B = aux_magnitude_scaled(A, r);
-        const std::vector<Mat> B_sums = aux_taylor_sums(B, n, eta_enclosed);
-        const double tail = priv_float_remainder_bound(aux_norm(B, n), eta_enclosed);
+        const std::vector<Mat> B_sums = aux_taylor_sums(B, n, eta);
+        const double tail = priv_float_remainder_bound(aux_norm(B, n), eta);
         Mat W(n * n);
         for (std::size_t e = 0; e < W.size(); ++e)
-            W[e] = (B_sums[std::size_t(eta_enclosed)][e] + tail) - B_sums[std::size_t(eta)][e];
+            W[e] = (B_sums[std::size_t(eta)][e] + tail) - B_sums[std::size_t(eta)][e];
         // [e^{A r}]: the enclosure of order 16 at A r / 2^s, squared s times
         const Mat M = aux_scale(aux_halved(r, halvings), a);
         const Mat T = aux_taylor_sums(M, n, 16).back();
@@ -261,7 +261,7 @@ ClosedFormStepper::ClosedFormStepper(const Tensor &A, double time_step, int tayl
     const std::optional<int> enclosed = priv_closed_form_order(A, time_step, taylor_terms);
     if (!enclosed) return;
     const std::optional<int> halvings = priv_closed_form_halvings(A, time_step);
-    if (halvings) m_ = std::make_unique<Matrices>(A, time_step, taylor_terms, *enclosed, *halvings);
+    if (halvings) m_ = std::make_unique<Matrices>(A, time_step, *enclosed, *halvings);
 }
 
 ClosedFormStepper::~ClosedFormStepper() = default;

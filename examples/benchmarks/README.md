@@ -89,8 +89,9 @@ on TRAF22 (0.93 s against 0.95 s), SPRE22 (0.96 s against 1.08 s) and LALO20 W00
 on ROBE25 it still does not verify at the script's `zeta_z` (the width of s is 4.2e-5, 3.6e-4 and 6.0e-2
 against 1e-5; at the `zeta_z` of the table below 2.9e-5, 6.7e-4 and 2.6e-2, where !911 gave 2.9e-5, 7.5e-3
 and 24): the entrywise remainder `W` of `e^{|A| dt}` stays in `[F]`, `[G]` and the input solutions, and
-the bound grows as `||dt |A|||^(eta+1)`, which is large at the step sizes the late steps reach
-(`||dt |A|||` near 3). So ROBE25
+the bound is a norm bound, added to every entry, also to those whose true tail is 0 (with `W` set to 0, a
+diagnostic, the widths are 4.5e-6, 3.4e-6 and 7.5e-6; `cora`'s step at the script's `zeta_z` gives 5.6e-5,
+6.7e-6 and 1.2e-5), and the conserved sum x + y + z picks it up without cancelling. So ROBE25
 (2) and (3) take `zeta_z = 3e-4` and `0.01` with 30 Taylor terms (42 s and 33 s against 325 s and 100 s),
 and ROBE25 (1) takes `zeta_z = 3e-6` (442 s against 26 s, 107 000 sets), as before !913. The default stays CORA's
 step for that reason. The benchmark programs read the step from `CORACPP_LINEAR_STEP` (`cora`,

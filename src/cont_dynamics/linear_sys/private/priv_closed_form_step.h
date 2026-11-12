@@ -3,8 +3,9 @@
 // One step of x' = A x + u, u in U + u0, from a set X: the sets at its end (Rtp) and over it (Rti)
 // of CORA's oneStep, with the matrix exponential, the correction matrices [F] and [G] and the
 // input solutions as interval matrices. [F], [G] and the input solutions carry the entrywise
-// remainder W >= E(dt, eta) of an enclosure of e^{|A| dt}; [e^{A dt}] is the order-16 enclosure
-// at A dt / 2^s squared s times (s from priv_closed_form_halvings), tight also for a stiff A. The
+// remainder W >= E(dt, eta_e), the tail of e^{|A| dt} past the admissible order eta_e >= eta that
+// every sum runs to; [e^{A dt}] is the order-16 enclosure at A dt / 2^s squared s times (s from
+// priv_closed_form_halvings), tight also for a stiff A. The
 // order and the rounding are those of CORALean's float definition (a Taylor sum with the newest
 // term added to the running sum, powers by left multiplication, sums nested to the right); the
 // matrices are computed once per system and step size, the steps of one linearization differ in the
@@ -15,7 +16,7 @@
 //           auto S = stepper.step(X, U, u);
 // Inputs:   A - state matrix (n, n)
 //           time_step - step size
-//           taylor_terms - order of the series eta
+//           taylor_terms - order of the series eta (raised to the admissible order eta_e)
 //           X - start set
 //           U - time-varying input set
 //           u - constant input (n, 1)

@@ -8,8 +8,10 @@
 // whose exponential needs a raised order or no order below eta + 4096 encloses (the oracle
 // answers null, the stepper is not admissible; beyond a scale of about 100 the powers of |A| dt
 // overflow, which the oracle prints as a number out of range), and for stiff Robertson-like
-// Jacobians, where [e^{A dt}] is the order-16 enclosure at A dt / 2^s squared s times (the halvings
-// s agree with CORALean's halvingsFloat, which is none only where no order is admissible either).
+// Jacobians (dt up to 0.01: from dt 0.02 on, the raised order lets the powers of A overflow, which
+// the oracle prints out of range), where [e^{A dt}] is the order-16 enclosure at A dt / 2^s squared
+// s times (the halvings s agree with CORALean's halvingsFloat, which is none only where no order is
+// admissible either).
 //
 // ORACLE: contSet/@zonotope/mtimes.m
 // CORA.cpp only: CORA evaluates oneStep with expm and A^-1; the closed form is CORALean's
@@ -85,7 +87,7 @@ int main() {
     // the Jacobian of a Robertson reaction: stiff, so e^{|A| dt} is far wider than e^{A dt}
     test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {
         const Tensor A = Tensor({{-0.4, 0.0, 0.01}, {0.4, -3000.0, -0.01}, {0.0, 3000.0, 0.0}});
-        for (const double dt : {1e-4, 1e-3, 1e-2, 0.02})
+        for (const double dt : {1e-4, 1e-3, 1e-2})
             for (const int eta : {2, 4, 10})
                 aux_compare("Robertson dt" + std::to_string(dt) + " eta" + std::to_string(eta), A,
                             rnd.zonotope(3, 2), rnd.zonotope(3, 2), rnd.vector(3), dt, eta);
