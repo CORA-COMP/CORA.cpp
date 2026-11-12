@@ -3,9 +3,11 @@
 # `checks` needs no build (it includes clang-format and ruff on the changed files); `tidy` configures the
 # python preset and runs clang-tidy on the changed translation units. linux-core runs the labels unit, oracle,
 # backend-eigen and example, linux-python the label python, both against the CORALean oracle, one step per label:
-# on a pull request the tests the change can affect (scripts/ci/affected_tests.py), in the merge queue every test
-# of the group on the main it lands on. A documentation-only change skips them. backend-torch and gradcheck need a
-# libtorch build (about 30 minutes), so they run nightly. `instructions` compares the micro-benchmarks with the
+# every test (a documentation-only change skips them, scripts/ci/affected_tests.py). In the merge queue a group
+# whose tree is the tree of its pull request's head, which passed `ci-gate`, is not built again: that run tested
+# this very tree (the usual case, a pull request rebased onto main right before it is queued). Any other group
+# (several pull requests, or one based on an older main) runs every test of the group on the main it lands on.
+# backend-torch and gradcheck need a libtorch build (about 30 minutes), so they run nightly. `instructions` compares the micro-benchmarks with the
 # base commit's (pull requests only). The whole matrix (every preset, Windows, macOS, sanitizers) is tier 3
 # (nightly.yml), which opens an issue when it fails; merge.yml runs it on demand. Require `ci-gate`.
 
@@ -21,6 +23,8 @@ concurrency:
 
 permissions:
   contents: read
+  checks: read
+  pull-requests: read
 
 jobs:
   checks:
@@ -28,10 +32,34 @@ jobs:
     outputs:
       tests: ${{ steps.select.outputs.tests }}
       perf: ${{ steps.select.outputs.perf }}
+      tested: ${{ steps.tested.outputs.tested }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # Merge queue only: is this group's tree the tree of a pull request head that passed `ci-gate`?
+      # Then that run tested exactly this tree, and the builds below are skipped.
+      - name: already tested
+        id: tested
+        if: github.event_name == 'merge_group'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD: ${{ github.event.merge_group.head_sha }}
+          REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          tested=false
+          pr=$(printf '%s' "$REF" | sed -nE 's#^(refs/heads/)?gh-readonly-queue/[^/]+/pr-([0-9]+)-[0-9a-f]+$#\2#p')
+          if [ -n "$pr" ]; then
+            prhead=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" --jq .head.sha)
+            git fetch --quiet origin "refs/pull/$pr/head"
+            gate=$(gh api "repos/$GITHUB_REPOSITORY/commits/$prhead/check-runs?check_name=ci-gate" \
+              --jq '[.check_runs[] | select(.conclusion == "success")] | length')
+            if [ "$(git rev-parse "$HEAD^{tree}")" = "$(git rev-parse "$prhead^{tree}")" ] && [ "$gate" -gt 0 ]; then
+              tested=true
+            fi
+            echo "pull request #$pr, head $prhead, ci-gate successes: $gate, same tree: $tested"
+          fi
+          echo "tested=$tested" >> "$GITHUB_OUTPUT"
       - run: python3 -m pip install --quiet pyyaml -r scripts/requirements-quality.txt
       - name: format
         run: python3 scripts/ci/check_format.py
@@ -55,21 +83,24 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
           HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
-          EVENT: ${{ github.event_name }}
+          TESTED: ${{ steps.tested.outputs.tested }}
         run: |
-          tests=$(python3 scripts/ci/affected_tests.py "$BASE" "$HEAD")
-          # the merge queue runs every test unless the change is documentation only
-          if [ "$EVENT" = merge_group ] && [ "$tests" != NONE ]; then tests=ALL; fi
-          echo "selected: $tests"
-          echo "tests=$tests" >> "$GITHUB_OUTPUT"
+          affected=$(python3 scripts/ci/affected_tests.py "$BASE" "$HEAD")
           # the micro-benchmarks run when the library, the build or the benchmarks changed
-          if [ "$tests" = ALL ] || git diff --name-only "$BASE...$HEAD" | grep -qE '^(src|include|benchmarks)/'; then
+          if [ "$affected" = ALL ] || git diff --name-only "$BASE...$HEAD" | grep -qE '^(src|include|benchmarks)/'; then
             echo "perf=true" >> "$GITHUB_OUTPUT"
           else
             echo "perf=false" >> "$GITHUB_OUTPUT"
           fi
+          # every test unless the change is documentation only; none for a tree a pull request run tested
+          tests=ALL
+          if [ "$affected" = NONE ] || [ "$TESTED" = true ]; then tests=NONE; fi
+          echo "affected: $affected, selected: $tests"
+          echo "tests=$tests" >> "$GITHUB_OUTPUT"
 
   tidy:
+    needs: checks
+    if: needs.checks.outputs.tested != 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
