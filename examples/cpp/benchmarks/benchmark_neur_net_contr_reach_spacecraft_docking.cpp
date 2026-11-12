@@ -1,23 +1,22 @@
-// benchmark_neur_net_contr_reach_spacecraft_docking - Spacecraft Docking (ARCH-COMP 2026)
-//
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_10_spacecraftDocking.m
+// benchmark_neur_net_contr_reach_spacecraft_docking - Spacecraft Docking
 //
 // Docking with CORA's script and its own check of the sets, and a second row: the constraint from
 // inside by a polytope
-// (|s| >= (sx + sy) / sqrt 2, the disk |v| <= R by the inscribed 32-gon, coefficients shrunk by
-// 1e-9), verified with the splitting rule widest. Environment: CORACPP_AINNCS_OPTIONS,
-// CORACPP_AINNCS_SPLIT, CORACPP_AINNCS_POINTS, CORACPP_DOCKING_SIDES, CORACPP_DOCKING_PIECE =
-// f,a,b,c,d (a corner). The network is examples/benchmarks/data/networks/<name>.nn.json and .nn.bin
-// that matlab/benchmarks/export_network_data.m writes from the script; the plant is written out as
-// the model file writes it. The line of the scripts, 'benchmark,instance,verdict,time', goes to
-// stdout (the time of verify, simulations included), the expected verdict and time of the ARCH-COMP
-// 2026 report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
+// (|s| >= (sx + sy) / sqrt 2, the disk |v| <= R by the inscribed 32-gon, shrunk by 1e-9), verified
+// with the splitting rule widest (environment: the README). The network is
+// examples/benchmarks/data/networks/<name>.nn.json and .nn.bin that
+// matlab/benchmarks/export_network_data.m writes from the script; the plant is written out as the
+// model file writes it. The line of the scripts, 'benchmark,instance,verdict,time', goes to stdout
+// (the time of verify, simulations included), the expected verdict and time of the ARCH-COMP 2026
+// report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
 // report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_spacecraft_docking
-// [Docking-constraint ...] Outputs:  one line 'benchmark,instance,verdict,time' per instance on
-// stdout See also: benchmark_neur_net.h
+// Syntax:   benchmark_neur_net_contr_reach_spacecraft_docking [instance ...]
+// Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
+// See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_10_spacecraftDocking.m
+// CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

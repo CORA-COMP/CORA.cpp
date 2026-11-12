@@ -1,7 +1,5 @@
 // benchmark_neur_net_contr_reach_vcas - the VCAS instances of ARCH-COMP 2026
 //
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_07_VCAS.m
-//
 // The vertical collision avoidance system has discrete time steps and nine controllers, which
 // CORA's neurNetContrSys does not run; CORA's example_neuralNet_reach_07_VCAS.m is its own loop
 // over the nine ReLU networks, the advisory of the previous step choosing the network. This is that
@@ -13,10 +11,12 @@
 // CORACPP_VCAS_RULE=script takes the script's (0 whenever hdot complies). The unsafe set |h| <= 100
 // is checked after every step k = 1..10, as the report states (the script checks the last only).
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_vcas [VCAS-middle-19.5 ...]
+// Syntax:   benchmark_neur_net_contr_reach_vcas [instance ...]
 // Outputs:  one line per instance on stdout
 // See also: benchmark_neur_net_contr_reach_acc.cpp, benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_07_VCAS.m
+// CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
 // Last update:   ---

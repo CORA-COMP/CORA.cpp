@@ -1,8 +1,4 @@
-// benchmark_neur_net_contr_reach_double_pendulum_less_robust - Double Pendulum less robust
-// (ARCH-COMP 2026)
-//
-// CORA:
-// examples/contDynamics/neurNetContrSys/example_neuralNet_reach_05_doublePendulum_lessRobust.m
+// benchmark_neur_net_contr_reach_double_pendulum_less_robust - Double Pendulum, less robust
 //
 // Double pendulum, less robust controller: the script is UNKNOWN, the report's tools split the
 // initial set. The network is examples/benchmarks/data/networks/<name>.nn.json and .nn.bin that
@@ -12,10 +8,12 @@
 // report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
 // report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_double_pendulum_less_robust
-// [Double_Pendulum-less-robust-script ...] Outputs:  one line 'benchmark,instance,verdict,time' per
-// instance on stdout See also: benchmark_neur_net.h
+// Syntax:   benchmark_neur_net_contr_reach_double_pendulum_less_robust [instance ...]
+// Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
+// See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_05_doublePendulum_lessRobust.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

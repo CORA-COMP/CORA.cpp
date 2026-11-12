@@ -1,6 +1,4 @@
-// benchmark_neur_net_contr_reach_acc - ACC (ARCH-COMP 2026)
-//
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_02_ACC.m
+// benchmark_neur_net_contr_reach_acc - ACC
 //
 // Adaptive cruise control, the safe distance D_rel >= 10 + 1.4 v_ego. The network is
 // examples/benchmarks/data/networks/<name>.nn.json and .nn.bin that
@@ -10,10 +8,12 @@
 // report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
 // report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_acc [ACC-safe-distance ...]
+// Syntax:   benchmark_neur_net_contr_reach_acc [instance ...]
 // Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
 // See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_02_ACC.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

@@ -1,8 +1,5 @@
 // benchmark_neur_net_tora - the TORA plant of the three TORA programs
 //
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_03_TORA.m (and the
-// heterogeneous ones)
-//
 // The translational oscillator with rotational actuator, which the scripts of TORA, TORA
 // heterogeneous sigmoid and TORA heterogeneous tanh share; the controllers differ in the output
 // scaling.
@@ -10,6 +7,8 @@
 // Syntax:   const NonlinearSys plant = cora::bench::tora_plant(1.0, -10.0);
 // See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_03_TORA.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

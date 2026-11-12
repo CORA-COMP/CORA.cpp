@@ -1,6 +1,4 @@
-// benchmark_neur_net_contr_reach_nav - NAV (ARCH-COMP 2026)
-//
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_11_NAV.m
+// benchmark_neur_net_contr_reach_nav - NAV
 //
 // Navigation, standard (point-trained network) and robust (set-trained): the goal at t = 6, the
 // obstacle all the time. The network is examples/benchmarks/data/networks/<name>.nn.json and
@@ -10,10 +8,12 @@
 // ARCH-COMP 2026 report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ
 // from the report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_nav [NAV-robust ...]
+// Syntax:   benchmark_neur_net_contr_reach_nav [instance ...]
 // Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
 // See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_11_NAV.m
+// CORA authors: Manuel Wendl, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

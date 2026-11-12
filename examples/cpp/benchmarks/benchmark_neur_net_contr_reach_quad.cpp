@@ -1,6 +1,4 @@
-// benchmark_neur_net_contr_reach_quad - QUAD (ARCH-COMP 2026)
-//
-// CORA: examples/contDynamics/neurNetContrSys/benchmark_neuralNet_reach_09_QUAD.m
+// benchmark_neur_net_contr_reach_quad - QUAD
 //
 // Quadrotor: x3 in [0.94, 1.06] at t = 5 from x1..x6 in [-0.4, 0.4], with CORA's poly_method
 // regression of order 1 and the splitting of verify. The network is
@@ -11,10 +9,12 @@
 // report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
 // report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_quad [QUAD-reach ...]
+// Syntax:   benchmark_neur_net_contr_reach_quad [instance ...]
 // Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
 // See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/benchmark_neuralNet_reach_09_QUAD.m
+// CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

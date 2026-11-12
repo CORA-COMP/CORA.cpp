@@ -1,8 +1,4 @@
-// benchmark_neur_net_contr_reach_tora_heterogeneous_sigmoid - TORA heterogeneous sigmoid (ARCH-COMP
-// 2026)
-//
-// CORA:
-// examples/contDynamics/neurNetContrSys/example_neuralNet_reach_03_TORA_heterogeneousSigmoid.m
+// benchmark_neur_net_contr_reach_tora_heterogeneous_sigmoid - TORA heterogeneous sigmoid
 //
 // TORA with the sigmoid controller. The network is examples/benchmarks/data/networks/<name>.nn.json
 // and .nn.bin that matlab/benchmarks/export_network_data.m writes from the script; the plant is
@@ -11,10 +7,12 @@
 // expected verdict and time of the ARCH-COMP 2026 report (CORA, Table 1) go to stderr. The exit
 // code counts the verdicts that differ from the report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_tora_heterogeneous_sigmoid
-// [TORA-reach-sigmoid ...] Outputs:  one line 'benchmark,instance,verdict,time' per instance on
-// stdout See also: benchmark_neur_net.h
+// Syntax:   benchmark_neur_net_contr_reach_tora_heterogeneous_sigmoid [instance ...]
+// Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
+// See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_03_TORA_heterogeneousSigmoid.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

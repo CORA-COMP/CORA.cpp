@@ -1,6 +1,4 @@
-// benchmark_neur_net_contr_reach_attitude_control - Attitude Control (ARCH-COMP 2026)
-//
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_08_attitudeControl.m
+// benchmark_neur_net_contr_reach_attitude_control - Attitude Control
 //
 // Attitude control: the unsafe set at t = 3 must not be reached. The network is
 // examples/benchmarks/data/networks/<name>.nn.json and .nn.bin that
@@ -10,10 +8,12 @@
 // report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
 // report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_attitude_control
-// [Attitude_Control-avoid ...] Outputs:  one line 'benchmark,instance,verdict,time' per instance on
-// stdout See also: benchmark_neur_net.h
+// Syntax:   benchmark_neur_net_contr_reach_attitude_control [instance ...]
+// Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
+// See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_08_attitudeControl.m
+// CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

@@ -1,6 +1,4 @@
-// benchmark_neur_net_contr_reach_cart_pole - CartPole (ARCH-COMP 2026)
-//
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_12_cartPole.m
+// benchmark_neur_net_contr_reach_cart_pole - CartPole
 //
 // Cart pole: x1, x3, x4 in [-0.001, 0.001] for t in [8, 10], from the script's initial set and from
 // the report's (0.4 times the radius of the script's). The network is
@@ -11,10 +9,12 @@
 // report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
 // report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_cart_pole [CartPole-reach ...]
+// Syntax:   benchmark_neur_net_contr_reach_cart_pole [instance ...]
 // Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
 // See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_12_cartPole.m
+// CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

@@ -1,15 +1,12 @@
-// benchmark_neur_net_double_pendulum - the double pendulum plant of the two Double Pendulum
-// programs
-//
-// CORA:
-// examples/contDynamics/neurNetContrSys/example_neuralNet_reach_05_doublePendulum_lessRobust.m (and
-// moreRobust)
+// benchmark_neur_net_double_pendulum - the double pendulum plant of the two programs
 //
 // The model of models/Cora/doublePendulum.m, which both scripts use.
 //
 // Syntax:   const NonlinearSys plant = cora::bench::double_pendulum_plant();
 // See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_05_doublePendulum_lessRobust.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

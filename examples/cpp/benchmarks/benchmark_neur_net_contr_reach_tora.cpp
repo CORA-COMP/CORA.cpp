@@ -1,6 +1,4 @@
-// benchmark_neur_net_contr_reach_tora - TORA, remain (ARCH-COMP 2026)
-//
-// CORA: examples/contDynamics/neurNetContrSys/example_neuralNet_reach_03_TORA.m
+// benchmark_neur_net_contr_reach_tora - TORA, remain
 //
 // TORA with the ReLU controller: the state stays in [-2, 2]^4 for 20 s. The network is
 // examples/benchmarks/data/networks/<name>.nn.json and .nn.bin that
@@ -10,10 +8,12 @@
 // report (CORA, Table 1) go to stderr. The exit code counts the verdicts that differ from the
 // report's.
 //
-// Syntax:   build/core/benchmarks/benchmark_neur_net_contr_reach_tora [TORA-remain ...]
+// Syntax:   benchmark_neur_net_contr_reach_tora [instance ...]
 // Outputs:  one line 'benchmark,instance,verdict,time' per instance on stdout
 // See also: benchmark_neur_net.h
 //
+// CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_03_TORA.m
+// CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---
