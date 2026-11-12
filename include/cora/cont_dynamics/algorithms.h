@@ -610,23 +610,29 @@ struct HybridStandard {
                                                       ///< reachFloatInput
     bool check_flow = true; ///< CORA's checkFlow: drop the sets whose flow cannot cross a guard
     bool time_point_swap = true; ///< CORA: a lone hit of a hyperplane takes the next time point
+    bool check_flow_certified = true; ///< a LinearSys flow: CORALean's checkFlow (the guard normal
+                                      ///< oriented by an invariant row, a set dropped only where
+                                      ///< the flow is certified inward)
 
     // the fields as Python sees them, and their checks
     static constexpr const char *name = "standard";
     static constexpr auto fields() {
         // one entry per member, in the order of the struct
-        return std::make_tuple(field("time_step", &HybridStandard::time_step),
-                               field("taylor_terms", &HybridStandard::taylor_terms),
-                               field("zonotope_order", &HybridStandard::zonotope_order),
-                               field("intermediate_terms", &HybridStandard::intermediate_terms),
-                               field("tensor_order", &HybridStandard::tensor_order),
-                               field("error_order", &HybridStandard::error_order),
-                               field("intermediate_order", &HybridStandard::intermediate_order),
-                               field("polynomialization", &HybridStandard::polynomialization),
-                               field("guard_intersect", &HybridStandard::guard_intersect),
-                               field("linear_step", &HybridStandard::linear_step),
-                               field("check_flow", &HybridStandard::check_flow),
-                               field("time_point_swap", &HybridStandard::time_point_swap));
+        return std::make_tuple(
+            field("time_step", &HybridStandard::time_step),
+            field("taylor_terms", &HybridStandard::taylor_terms),
+            field("zonotope_order", &HybridStandard::zonotope_order),
+            field("intermediate_terms", &HybridStandard::intermediate_terms),
+            field("tensor_order", &HybridStandard::tensor_order),
+            field("error_order", &HybridStandard::error_order),
+            field("intermediate_order", &HybridStandard::intermediate_order),
+            field("polynomialization", &HybridStandard::polynomialization),
+            field("guard_intersect", &HybridStandard::guard_intersect),
+            field("linear_step", &HybridStandard::linear_step),
+            // the filter of the jumps
+            field("check_flow", &HybridStandard::check_flow),
+            field("time_point_swap", &HybridStandard::time_point_swap),
+            field("check_flow_certified", &HybridStandard::check_flow_certified));
     }
     void validate() const {
         detail::Validation entry;

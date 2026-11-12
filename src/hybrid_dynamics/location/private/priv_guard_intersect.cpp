@@ -3,10 +3,10 @@
 // The hits are grouped by guard, and each group is split where its set indices have a gap, so
 // that one group is one crossing of a guard (CORA's order: a split-off part goes to the front).
 // A hyperplane guard crossed by time-interval sets keeps only the sets whose flow may point into
-// it (checkFlow; a failure keeps them all). The method then encloses the intersection per basis
-// of calcBasis; empty intersections are dropped. A level set guard has one method of its own: the
-// union of the boxes of the sets, contracted to the guard, intersected with it
-// (LevelSet::intersect).
+// it (checkFlow; a failure keeps them all; `certified`: CORALean's strict, certified filter). The
+// method then encloses the intersection per basis of calcBasis; empty intersections are dropped. A
+// level set guard has one method of its own: the union of the boxes of the sets, contracted to the
+// guard, intersected with it (LevelSet::intersect).
 //
 // Syntax:   std::vector<GuardIntersection> G = priv_guard_intersect(loc, hits, R, U, method);
 //           std::vector<GuardGroup> groups = priv_guard_groups(hits);
@@ -43,9 +43,9 @@ namespace {
 
 /// CORA's checkFlow in its try: the sets whose flow may point into the guard, all if it fails.
 std::vector<Set> aux_check_flow(const Location &loc, const Polytope &guard, std::vector<Set> P,
-                                const Zonotope &U_state) {
+                                const Zonotope &U_state, bool certified) {
     try {
-        return priv_check_flow(loc, guard, P, U_state);
+        return priv_check_flow(loc, guard, P, U_state, certified);
     } catch (const Error &) {
         return P; // CORA keeps the sets if the check fails
     }
@@ -145,7 +145,7 @@ std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const G
                                                     const LocationReachSet &R,
                                                     const Zonotope &U_state,
                                                     const alg::GuardIntersect &method,
-                                                    bool check_flow, bool dense) {
+                                                    bool check_flow, bool dense, bool certified) {
     std::vector<GuardIntersection> out;
     const std::vector<Set> &sets = hits.time_point ? R.time_point : R.time_interval;
     for (const GuardGroup &group : priv_guard_groups(hits)) {
@@ -168,7 +168,7 @@ std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const G
         // a hyperplane is crossed only where the flow points into it
         if (check_flow && !hits.time_point &&
             guard.representsa("conHyperplane", numerics::kGuardHyperplane)) {
-            P = aux_check_flow(loc, guard, std::move(P), U_state);
+            P = aux_check_flow(loc, guard, std::move(P), U_state, certified);
             if (P.empty()) continue;
         }
         std::optional<Set> S = aux_enclose(loc, P, guard, U_state, method, dense);

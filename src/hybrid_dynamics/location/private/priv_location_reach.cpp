@@ -311,8 +311,9 @@ LocationResult priv_location_reach(const Location &loc, int64_t index, const Set
     const bool lean = !alg.time_point_swap;
     const GuardHits hits = priv_pot_int(loc, out.R, final_locations, alg.time_point_swap);
     const double widen = t_start[1] - t_start[0];
-    for (const GuardIntersection &g : priv_guard_intersect(
-             loc, hits, out.R, U_state, alg.guard_intersect, alg.check_flow, lean)) {
+    for (const GuardIntersection &g :
+         priv_guard_intersect(loc, hits, out.R, U_state, alg.guard_intersect, alg.check_flow, lean,
+                              alg.check_flow_certified)) {
         const Transition &trans = loc.transitions()[std::size_t(g.transition)];
         const std::vector<TimeRange> &times =
             hits.time_point ? out.R.time_point_times : out.R.time_interval_times;
