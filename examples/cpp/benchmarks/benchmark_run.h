@@ -42,16 +42,16 @@ inline void print_line(const std::string &benchmark, const std::string &instance
               << std::flush;
 }
 
-/// The linear step of the nonlinear algorithms: CORACPP_LINEAR_STEP = cora (default), closed_form
+/// The linear step of the nonlinear algorithms: CORACPP_LINEAR_STEP = closed_form (default), cora
 /// or coralean.
 inline cora::alg::LinearStep linear_step() {
     const char *value = std::getenv("CORACPP_LINEAR_STEP");
-    const std::string name = value ? value : "cora";
-    if (name == "closed_form") return cora::alg::LinearStep::closed_form;
+    const std::string name = value ? value : "closed_form";
+    if (name == "cora") return cora::alg::LinearStep::cora;
     if (name == "coralean") return cora::alg::LinearStep::coralean;
-    if (name != "cora")
+    if (name != "closed_form")
         throw std::runtime_error("CORACPP_LINEAR_STEP must be cora, closed_form or coralean");
-    return cora::alg::LinearStep::cora;
+    return cora::alg::LinearStep::closed_form;
 }
 
 /// Thrown by require_memory_gb: the instance is skipped, not failed.

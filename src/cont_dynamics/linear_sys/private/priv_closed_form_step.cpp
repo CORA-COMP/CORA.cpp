@@ -12,7 +12,7 @@
 // CORALean's float definition (LinearSys.oneStepClosedFormFloat).
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   12-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -202,13 +202,13 @@ struct ClosedFormStepper::Matrices {
             return Interval(tensor(b.first), tensor(b.second));
         };
         const Mat a = A.data();
-        // W >= E(r, eta): the enclosure of e^{|A| r} at the order eta less the series (past eta)
+        // W(j,k): e^{|A| r} enclosed at the order eta + 8, less its series at eta (CORALean !917)
         const Mat B = aux_magnitude_scaled(A, r);
-        const std::vector<Mat> B_sums = aux_taylor_sums(B, n, eta);
-        const double tail = priv_float_remainder_bound(aux_norm(B, n), eta);
+        const std::vector<Mat> B_sums = aux_taylor_sums(B, n, eta + 8);
+        const double tail = priv_float_remainder_bound(aux_norm(B, n), eta + 8);
         Mat W(n * n);
         for (std::size_t e = 0; e < W.size(); ++e)
-            W[e] = (B_sums[std::size_t(eta)][e] + tail) - B_sums[std::size_t(eta)][e];
+            W[e] = (B_sums[std::size_t(eta) + 8][e] + tail) - B_sums[std::size_t(eta)][e];
         // [e^{A r}]: the enclosure of order 16 at A r / 2^s, squared s times
         const Mat M = aux_scale(aux_halved(r, halvings), a);
         const Mat T = aux_taylor_sums(M, n, 16).back();

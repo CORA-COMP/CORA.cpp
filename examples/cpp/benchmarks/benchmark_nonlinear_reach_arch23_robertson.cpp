@@ -5,10 +5,9 @@
 // by alg "lin-adaptive". The verdict is the specification of the ARCH-COMP report: the width of
 // the sum of the concentrations s = x + y + z at t = 40 below 1e-5 (the script prints the constant
 // 1 once reach has finished). The algorithm is CORA's lin-adaptive as CORALean repairs it; its
-// zeta_z is tuned per case (kCases), the script's are 0.00025, 0.0006 and 0.017; with the linear
-// step closed_form (CORACPP_LINEAR_STEP) the smaller zeta_z and the 30 Taylor terms of kCases are
-// used, as its entrywise remainder W is a norm bound in every entry (README). The line has the
-// time of reach, as the script's tic and toc; the number of sets and the width go to stderr.
+// zeta_z is tuned per case (kCases, the same for the linear steps closed_form and cora), the
+// script's are 0.00025, 0.0006 and 0.017 (README). The line has the time of reach, as the
+// script's tic and toc; the number of sets and the width go to stderr.
 //
 // Syntax:   build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...]
 // Outputs:  one line 'benchmark,instance,result,time' (on stderr: the number of sets, the width)
@@ -37,13 +36,12 @@ using cora::bench::column;
 struct Case {
     const char *name;
     double beta, gamma;
-    alg::LinearizationAdaptive alg, closed_form;
+    alg::LinearizationAdaptive alg;
 };
 
-const Case kCases[] = {
-    {"ROBE25_1", 1e2, 1e3, {.zeta_z = 0.0001}, {.zeta_z = 3e-6}},
-    {"ROBE25_2", 1e3, 1e5, {.zeta_z = 0.0015}, {.zeta_z = 3e-4, .taylor_terms = 30}},
-    {"ROBE25_3", 1e3, 1e7, {.zeta_z = 0.01}, {.zeta_z = 0.01, .taylor_terms = 30}}};
+const Case kCases[] = {{"ROBE25_1", 1e2, 1e3, {.zeta_z = 5e-5}},
+                       {"ROBE25_2", 1e3, 1e5, {.zeta_z = 3e-4}},
+                       {"ROBE25_3", 1e3, 1e7, {.zeta_z = 0.01}}};
 
 /// Robertson_case*.m: the right-hand side, written as the model file does; u is not used.
 NonlinearSys aux_robertson(double beta, double gamma) {
@@ -93,9 +91,7 @@ bool aux_run(const std::string &name) {
     const Zonotope X0(column({1, 0, 0}), Tensor::zeros({3, 0}));
     const Zonotope U(column({0}), Tensor::zeros({1, 0}));
     const auto start = std::chrono::steady_clock::now();
-    // the script's tuning, or the one of the closed form (CORACPP_LINEAR_STEP)
     alg::LinearizationAdaptive alg = c->alg;
-    if (cora::bench::linear_step() == alg::LinearStep::closed_form) alg = c->closed_form;
     alg.linear_step = cora::bench::linear_step();
     const ReachSet R = sys.reach({.initial_set = X0, .input_set = U, .t_final = 40}, alg);
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;

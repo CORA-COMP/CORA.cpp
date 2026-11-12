@@ -24,6 +24,10 @@
 #include "cora/global/oracle/linear_sys.h"
 #include "oracle_testing.h"
 
+#include <cmath>
+#include <utility>
+#include <vector>
+
 using namespace cora;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -91,6 +95,17 @@ int main() {
             for (const int eta : {2, 4, 10})
                 aux_compare("Robertson dt" + std::to_string(dt) + " eta" + std::to_string(eta), A,
                             rnd.zonotope(3, 2), rnd.zonotope(3, 2), rnd.vector(3), dt, eta);
+    });
+    // a stiff two-state system conserving x + y (fixtures 3090 to 3093)
+    test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &) {
+        const Tensor A = Tensor({{-2621.0 / 65536.0, 1300.0}, {2621.0 / 65536.0, -1300.0}});
+        const Tensor G = Tensor({{1.0 / 1024.0, 0.0}, {0.0, 1.0 / 1024.0}});
+        const Tensor H = Tensor({{1.0 / 32.0, 0.0}, {0.0, 0.0}});
+        for (const auto &[dt, eta] : std::vector<std::pair<double, int>>{
+                 {std::ldexp(1.0, -17), 5}, {std::ldexp(1.0, -9), 4}, {std::ldexp(1.0, -9), 8}})
+            aux_compare("conserved sum dt" + std::to_string(dt) + " eta" + std::to_string(eta), A,
+                        Zonotope(Tensor({0.5, 0.5}), G), Zonotope(Tensor({0.0, 0.0}), H),
+                        Tensor({0.0, 1.0 / 1024.0}), dt, eta);
     });
     // sparse generators (diagonal, with a zero column), as the passes of the nonlinear steps have
     test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {
