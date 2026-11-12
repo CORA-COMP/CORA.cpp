@@ -139,7 +139,7 @@ struct Dump {
         const std::vector<double> lo = b.inf().data(), hi = b.sup().data();
         std::string out = "[";
         for (std::size_t i = 0; i < lo.size(); ++i)
-            out += (i ? "," : "") + num(lo[i]) + "," + num(hi[i]);
+            out.append(i ? "," : "").append(num(lo[i])).append(",").append(num(hi[i]));
         return out + "]";
     }
     /// A piece: its id, parent, depth, box (inf, sup per dimension) and state.
@@ -155,20 +155,30 @@ struct Dump {
     void leaf(int id, const ClosedLoopReach<S> &R) {
         if (R.time_interval.empty() || R.time_interval[0].dim() != 4) return;
         constexpr double pi = 3.14159265358979323846;
-        std::string out = "\"" + std::to_string(id) + "\":[";
+        std::string out = "\"";
+        out.append(std::to_string(id)).append("\":[");
         for (std::size_t j = 0; j < R.time_interval.size(); ++j) {
             const Zonotope Z = aux_zonotope(R.time_interval[j]);
-            double vmax = -1e300;
+            // pm: the smallest margin of the 32 rows of the polytope of the benchmark (n =
+            // 0.001027)
+            constexpr double n = 0.001027, shrink = 1.0 - 1e-9;
+            const double cc = std::cos(pi / 32) * shrink, w = cc * 2 * n / std::sqrt(2.0) * shrink;
+            double vmax = -1e300, pm = 1e300;
             for (int k = 0; k < 32; ++k) {
                 const double phi = 2 * pi * k / 32;
+                const Tensor row =
+                    Tensor::from_data({-w, -w, std::cos(phi), std::sin(phi)}, {4, 1});
+                pm = std::min(pm, 0.2 * cc - Z.support_function(row).data()[0]);
                 const Tensor d = Tensor::from_data({0, 0, std::cos(phi), std::sin(phi)}, {4, 1});
                 vmax = std::max(vmax, Z.support_function(d).data()[0]);
             }
             vmax /= std::cos(pi / 32);
             const Tensor ds = Tensor::from_data({-std::sqrt(0.5), -std::sqrt(0.5), 0, 0}, {4, 1});
             const double slo = std::max(0.0, -Z.support_function(ds).data()[0]);
-            out += std::string(j ? "," : "") + "[" + num(R.time[j]) + "," + num(R.time[j + 1]) +
-                   "," + box(aux_box(R.time_interval[j])) + "," + num(vmax) + "," + num(slo) + "]";
+            out.append(j ? ",[" : "[").append(num(R.time[j])).append(",");
+            out.append(num(R.time[j + 1])).append(",").append(box(aux_box(R.time_interval[j])));
+            out.append(",").append(num(vmax)).append(",").append(num(slo));
+            out.append(",").append(num(pm)).append("]");
         }
         out += "]";
         const std::lock_guard lock(mutex);
