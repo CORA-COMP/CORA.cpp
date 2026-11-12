@@ -62,38 +62,40 @@ double aux_quad_bound(const std::vector<double> &M, int64_t n) {
     return n == 0 ? 0.0 : bound;
 }
 
-/// The transpose of the row-major n x n matrix.
-std::vector<double> aux_transpose(const std::vector<double> &M, int64_t n) {
-    std::vector<double> T(M.size());
-#pragma omp parallel for schedule(static) if (n >= 256)
-    for (int64_t i = 0; i < n; ++i)
-        for (int64_t j = 0; j < n; ++j) T[size_t(j * n + i)] = M[size_t(i * n + j)];
-    return T;
-}
-
 /// C_E = |P - aI - L'L| entrywise (matMulDown/Up and the roundings of the difference are the
-/// machine's at nearest), formed in place of L'L.
+/// machine's at nearest), formed in place of L'L. L is upper triangular: the sum of an entry runs
+/// over the rows k of L from the last, k up to min(i, j), and a block of rows of C shares each
+/// row of L (what the summing order of an entry allows, the blocking does not change it).
 std::vector<double> aux_error_bounds(const std::vector<double> &P, const std::vector<double> &L,
                                      double a, int64_t n) {
-    const std::vector<double> Lt = aux_transpose(L, n);
+    constexpr int64_t rows = 4, chunk = 1024;
     std::vector<double> C(size_t(n * n), 0.0);
-#pragma omp parallel for schedule(static) if (n >= 64)
-    for (int64_t i = 0; i < n; ++i) {
-        double *row = &C[size_t(i * n)];
-        // (L'L)_ij = sum over k from the last of L_ki L_kj
-        for (int64_t k = n; k-- > 0;) {
-            const double factor = Lt[size_t(i * n + k)];
-            if (factor == 0.0) continue;
+#pragma omp parallel for schedule(dynamic) if (n >= 64)
+    for (int64_t first = 0; first < n; first += rows) {
+        const int64_t last = std::min(first + rows, n);
+        // (L'L)_ij = sum over k from the last of L_ki L_kj, zero for k > i or k > j
+        for (int64_t k = last; k-- > 0;) {
             const double *Lk = &L[size_t(k * n)];
-            for (int64_t j = 0; j < n; ++j) {
-                const double product = factor * Lk[j];
-                row[j] = product + row[j];
+            for (int64_t start = k; start < n; start += chunk) {
+                const int64_t stop = std::min(start + chunk, n);
+                for (int64_t i = first; i < last; ++i) {
+                    const double factor = Lk[i];
+                    if (factor == 0.0) continue;
+                    double *row = &C[size_t(i * n)];
+                    for (int64_t j = start; j < stop; ++j) {
+                        const double product = factor * Lk[j];
+                        row[j] = product + row[j];
+                    }
+                }
             }
         }
-        for (int64_t j = 0; j < n; ++j) {
-            const double shifted = P[size_t(i * n + j)] - (i == j ? a : 0.0);
-            const double e = shifted - row[j];
-            row[j] = lean_maximum(lean_absolute(e), lean_absolute(e));
+        for (int64_t i = first; i < last; ++i) {
+            double *row = &C[size_t(i * n)];
+            for (int64_t j = 0; j < n; ++j) {
+                const double shifted = P[size_t(i * n + j)] - (i == j ? a : 0.0);
+                const double e = shifted - row[j];
+                row[j] = lean_maximum(lean_absolute(e), lean_absolute(e));
+            }
         }
     }
     return C;
@@ -168,9 +170,11 @@ LyapunovCertificate priv_lyapunov_certificate(const SparseMatrix &A, const std::
 const LyapunovCertificate &HostMatVec::lyapunov() const {
     LyapunovSlot &slot = *lyapunov_slot;
     if (slot.formed) return slot.certificate;
-    // the sign function solve if the check accepts it, else the Schur solve
+    // the sign function solve in single precision if the check accepts it, else in double, else the
+    // Schur solve
     double solve = 0.0, check = 0.0;
-    for (const LyapunovMethod method : {LyapunovMethod::sign, LyapunovMethod::schur}) {
+    for (const LyapunovMethod method :
+         {LyapunovMethod::sign_single, LyapunovMethod::sign, LyapunovMethod::schur}) {
         const auto t0 = std::chrono::steady_clock::now();
         const LyapunovWeight w = priv_lyapunov_solve(*M, method);
         const auto t1 = std::chrono::steady_clock::now();
@@ -179,7 +183,9 @@ const LyapunovCertificate &HostMatVec::lyapunov() const {
         solve += std::chrono::duration<double>(t1 - t0).count();
         check += std::chrono::duration<double>(t2 - t1).count();
         if (!w.P.empty() && slot.certificate.ok) {
-            slot.method = method == LyapunovMethod::sign ? "sign" : "schur";
+            slot.method = method == LyapunovMethod::sign_single ? "sign_single"
+                          : method == LyapunovMethod::sign      ? "sign"
+                                                                : "schur";
             break;
         }
     }

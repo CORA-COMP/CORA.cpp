@@ -1,25 +1,30 @@
 // priv_lyapunov_solve - the Lyapunov weight P of a stable matrix, A'P + PA = -I, with a factor
 //
-// Bartels-Stewart: with the real Schur form A = U T U' (T quasi upper triangular, blocks of 1 or 2)
-// the equation reads T'Y + YT = -I for Y = U'PU, solved block column by block column (a block pair
-// by a small Sylvester equation of at most 4 unknowns); P = U Y U' is symmetrized. Faster is
 // Roberts' sign function iteration A_{k+1} = (cA_k + (cA_k)^{-1}) / 2, R_{k+1} = (cR_k +
 // (cA_k)^{-T} cR_k (cA_k)^{-1}) / 2, R_0 = I, c the norm scaling: A_k'P + PA_k = -R_k, P = R_inf /
-// 2 (matrix products Eigen runs on all threads, but less accurate for an ill conditioned A). The
-// result is not trusted, priv_lyapunov_certificate checks it, so any method and arithmetic will do.
-// A shift a just below the least eigenvalue of P comes from bisection on the success of the
-// Cholesky factorization of P - aI (within 1 %).
+// 2. It is run in single precision (matrix products Eigen runs on all threads at twice the speed)
+// and stops as soon as the weight leaves the equation a residual of at most half, in the sense of
+// the certificate (the Gershgorin bound of |PA + (PA)' + I| below 1/2: no need to converge to the
+// last bit); then in double precision, and as a last resort Bartels-Stewart on the real Schur form:
+// with A = U T U' (T quasi upper triangular, blocks of 1 or 2) the equation reads T'Y + YT = -I
+// for Y = U'PU, solved block column by block column (a block pair by a small Sylvester equation
+// of at most 4 unknowns); P = U Y U' is symmetrized. The result is not trusted, the certificate
+// (priv_lyapunov_certificate) checks it, so any method and arithmetic will do. The inverse of the
+// iteration is the LU factorization with both triangular factors inverted by blocks, so that all
+// of the work is in matrix products. A shift a below the least eigenvalue of P comes from an
+// inverse iteration with the Cholesky factor of P, then the Cholesky factorization of P - aI.
 //
 // Syntax:   LyapunovWeight w = priv_lyapunov_solve(A, LyapunovMethod::schur);
 // Inputs:   A - the sparse square matrix (stable: all eigenvalues in the open left half-plane)
-//           method - the sign function iteration or the Schur form
+//           method - the sign function iteration (single or double precision) or the Schur form
 // Outputs:  w - P and L (row-major, n x n; L'L = P - aI) and a; empty if there is none
 // See also: priv_krylov_lyapunov
 //
 // CORA.cpp only: CORA has no Lyapunov weight; the solve is Bartels-Stewart (Comm. ACM 15, 1972)
+//                and Roberts (Int. J. Control 32, 1980)
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   12-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_krylov.h"
@@ -31,6 +36,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -107,25 +114,128 @@ bool aux_factor(const Matrix &P, double a, Matrix &work) {
 
 // The sign function -------------------------------------------------------------------------------
 
-/// P with A'P + PA = -I by the sign function iteration (empty-sized if it does not converge).
-Matrix aux_solve_sign(const Matrix &A) {
+template <class S>
+using Dense = Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>;
+
+/// Below this order the triangular inverse is Eigen's own solve.
+constexpr int64_t kBaseOrder = 96;
+
+/// The inverse of the lower triangular L in place, by blocks: with L = [L11 0; L21 L22] the inverse
+/// is [L11^-1 0; -L22^-1 L21 L11^-1, L22^-1], and the products are dense (Eigen's triangular
+/// products run on one thread and no faster).
+template <class S>
+void aux_invert_lower(Eigen::Ref<Dense<S>> L) {
+    const int64_t n = L.rows();
+    if (n <= kBaseOrder) {
+        const Dense<S> inverse =
+            L.template triangularView<Eigen::Lower>().solve(Dense<S>::Identity(n, n));
+        L = inverse;
+        return;
+    }
+    const int64_t h = n / 2;
+    Eigen::Ref<Dense<S>> L11 = L.topLeftCorner(h, h), L22 = L.bottomRightCorner(n - h, n - h);
+    Eigen::Ref<Dense<S>> L21 = L.bottomLeftCorner(n - h, h);
+    aux_invert_lower<S>(L11);
+    aux_invert_lower<S>(L22);
+    Dense<S> product(n - h, h);
+    product.noalias() = L21 * L11;
+    L21.noalias() = -(L22 * product);
+}
+
+/// The inverse of A by its LU factorization: A = P'LU gives A^-1 = U^-1 L^-1 P.
+template <class S>
+Dense<S> aux_inverse(const Dense<S> &A) {
     const int64_t n = A.rows();
-    Matrix Ak = A, R = Matrix::Identity(n, n);
+    const Eigen::PartialPivLU<Dense<S>> lu(A);
+    Dense<S> Li = lu.matrixLU().template triangularView<Eigen::UnitLower>();
+    // U' is lower triangular, so the inverse of U is the transpose of the inverse of U'
+    Dense<S> Ut = lu.matrixLU().transpose().template triangularView<Eigen::Lower>();
+    aux_invert_lower<S>(Li);
+    aux_invert_lower<S>(Ut);
+    Dense<S> product(n, n);
+    product.noalias() = Ut.transpose() * Li;
+    return product * lu.permutationP();
+}
+
+/// The Gershgorin bound 1 - max_i sum_j |W_ij| of W = PA + (PA)' + I for P = R / 2, A sparse: the
+/// gap the certificate sees (the weight passes with a gap above 0, and a rate proportional to it).
+template <class S>
+double aux_gap(const Dense<S> &R, const SparseMatrix &A) {
+    const int64_t n = R.rows();
+    const std::vector<int64_t> &start = A.row_start(), &cols = A.columns();
+    const std::vector<double> &vals = A.values();
+    // (RA)_ij = sum over k of R_ik A_kj, row i from the column i of the symmetric R
+    std::vector<S> RA(size_t(n * n), S(0));
+#pragma omp parallel for schedule(static)
+    for (int64_t i = 0; i < n; ++i) {
+        S *row = &RA[size_t(i * n)];
+        for (int64_t k = 0; k < n; ++k) {
+            const S factor = R(k, i);
+            for (int64_t e = start[size_t(k)]; e < start[size_t(k) + 1]; ++e)
+                row[cols[size_t(e)]] += factor * S(vals[size_t(e)]);
+        }
+    }
+    // the row sums of |W|, blockwise for the cache
+    constexpr int64_t tile = 64;
+    std::vector<double> sums(size_t(n), 0.0);
+#pragma omp parallel for schedule(static)
+    for (int64_t ib = 0; ib < n; ib += tile)
+        for (int64_t jb = 0; jb < n; jb += tile)
+            for (int64_t i = ib; i < std::min(ib + tile, n); ++i)
+                for (int64_t j = jb; j < std::min(jb + tile, n); ++j) {
+                    const double w = 0.5 * (double(RA[size_t(i * n + j)]) + RA[size_t(j * n + i)]) +
+                                     (i == j ? 1.0 : 0.0);
+                    sums[size_t(i)] += std::abs(w);
+                }
+    return 1.0 - *std::max_element(sums.begin(), sums.end());
+}
+
+/// The weight gap above which the iteration stops: the certificate wants a gap above 0, and the
+/// rate of the decay it proves is proportional to the gap.
+constexpr double kStopGap = 0.5;
+
+/// P with A'P + PA = -I by the sign function iteration in the arithmetic S, as soon as its gap
+/// (aux_gap) is at least kStopGap or the iteration converged; empty-sized if it does neither.
+template <class S>
+Matrix aux_solve_sign(const SparseMatrix &A, const Matrix &D) {
+    const int64_t n = D.rows();
+    Dense<S> Ak = D.cast<S>(), R = Dense<S>::Identity(n, n), Y(n, n);
+    const double eps = std::numeric_limits<S>::epsilon();
     for (int step = 0; step < 100; ++step) {
-        Matrix inverse = Ak.partialPivLu().inverse();
+        Dense<S> inverse = aux_inverse<S>(Ak);
         // the scaling c = sqrt(|A^-1| / |A|) of the determinant-free kind; Abar = c A, Rbar = c R
-        const double c = std::sqrt(inverse.norm() / Ak.norm());
+        const S c = std::sqrt(inverse.norm() / Ak.norm());
         inverse /= c;
         R *= c;
-        const Matrix next_R = 0.5 * (R + inverse.transpose() * R * inverse);
-        const Matrix next_A = 0.5 * (c * Ak + inverse);
-        const double change = (next_A - Ak).norm();
-        Ak = next_A;
-        R = next_R;
-        if (!(change <= 100 * machine_eps() * Ak.norm())) continue;
-        return 0.5 * R;
+        Y.noalias() = R * inverse;
+        R = S(0.5) * (R + inverse.transpose() * Y);
+        inverse = S(0.5) * (c * Ak + inverse);
+        const double change = (inverse - Ak).norm() / inverse.norm();
+        Ak = std::move(inverse);
+        if (!std::isfinite(change)) return Matrix();
+        if (aux_gap<S>(R, A) >= kStopGap || change <= 100 * eps)
+            return 0.5 * R.template cast<double>();
     }
     return Matrix();
+}
+
+/// An upper bound of the least eigenvalue of the symmetric positive definite P by inverse
+/// iteration with its Cholesky factor (the Rayleigh quotients decrease to it), 0 if P has none.
+double aux_least_eigenvalue(const Matrix &P) {
+    const int64_t n = P.rows();
+    Matrix factor = P;
+    const Eigen::LLT<Eigen::Ref<Matrix>> llt(factor);
+    if (llt.info() != Eigen::Success) return 0.0;
+    // a start vector that is not an eigenvector of a structured matrix
+    Eigen::VectorXd x(n);
+    for (int64_t i = 0; i < n; ++i) x(i) = 1.0 + 0.5 * std::sin(double(i * i + 1));
+    double rayleigh = (x.dot(P * x)) / x.squaredNorm();
+    for (int step = 0; step < 30; ++step) {
+        x = llt.solve(x);
+        x /= x.norm();
+        rayleigh = std::min(rayleigh, x.dot(P * x));
+    }
+    return rayleigh;
 }
 
 } // namespace
@@ -145,8 +255,9 @@ LyapunovWeight priv_lyapunov_solve(const SparseMatrix &A, LyapunovMethod method)
         for (int64_t e = A.row_start()[size_t(r)]; e < A.row_start()[size_t(r) + 1]; ++e)
             D(r, A.columns()[size_t(e)]) = A.values()[size_t(e)];
     Matrix P;
-    if (method == LyapunovMethod::sign) {
-        P = aux_solve_sign(D);
+    if (method == LyapunovMethod::sign_single || method == LyapunovMethod::sign) {
+        P = method == LyapunovMethod::sign ? aux_solve_sign<double>(A, D)
+                                           : aux_solve_sign<float>(A, D);
         if (P.rows() != n) return out;
     } else {
         // A = U T U', then the equation for T
@@ -159,21 +270,17 @@ LyapunovWeight priv_lyapunov_solve(const SparseMatrix &A, LyapunovMethod method)
     // the symmetric part, the same bits above and below the diagonal
     for (int64_t i = 0; i < n; ++i)
         for (int64_t j = i; j < n; ++j) P(i, j) = P(j, i) = 0.5 * (P(i, j) + P(j, i));
-    // the shift: the largest a within 1 % of the failure point with a Cholesky factor of P - aI
-    double lo = 0.0, hi = P.diagonal().minCoeff();
-    if (!(hi > 0.0)) return out;
-    Matrix work, best;
-    for (double mid = 0.5 * hi; hi - lo > 0.01 * hi; mid = 0.5 * (lo + hi)) {
-        if (aux_factor(P, mid, work)) {
-            lo = mid;
-            best.swap(work);
-        } else {
-            hi = mid;
-        }
-    }
-    if (lo == 0.0) return out;
+    // the shift: a fraction of the least eigenvalue, lowered until P - aI has a Cholesky factor
+    double a = 0.75 * aux_least_eigenvalue(P);
+    if (!(a > 0.0)) return out;
+    Matrix best;
+    bool factored = false;
+    for (int attempt = 0; attempt < 40 && !factored; ++attempt, a *= 0.75)
+        factored = aux_factor(P, a, best);
+    if (!factored) return out;
+    a /= 0.75; // the shift that was factored
     // L (upper) with L'L = P - aI: the transpose of the lower factor
-    out.a = lo;
+    out.a = a;
     out.P.resize(size_t(n * n));
     out.L.assign(size_t(n * n), 0.0);
     for (int64_t i = 0; i < n; ++i)
