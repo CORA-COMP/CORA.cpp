@@ -339,7 +339,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TRAF22 | 1 | 1 | 0.919 | 16/27 bit-exact, 5 property | 138 | 152 | 152 (CORA) [a] | 165 |
-| SPRE22 | 1 | 1 | 0.972 | 35/56 bit-exact, 11 property | 34.3 | 37 | 37 (CORA) | 38.1 |
+| SPRE22 | 1 | 1 | 0.972 | 35/56 bit-exact, 10 property | 34.3 | 37 | 37 (CORA) | 38.1 |
 | ROBE25 (1) | 1 | 1 | 29.1 | 7/19 bit-exact, 6 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
 | ROBE25 (2) | 1 | 1 | 437 | 7/19 bit-exact, 6 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
 | ROBE25 (3) | 1 | 1 | 93.8 | 7/19 bit-exact, 6 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
