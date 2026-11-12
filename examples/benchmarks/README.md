@@ -6,14 +6,14 @@
 | --- | --- | --- | --- | --- | --- |
 | AFF | 49 | 41 of 43 in ARCH26 (the 47 run in MATLAB CORA equal its verdict; HEAT04 not run there to the end) | 28 of 35 | 2.7 / 4.4 | 13 / 13 (35 instances) |
 | NLN | 11 | 11 of 11 | 8 of 11 | 4.2 / 3.4 | 5.9 / 8.7 (11 instances) |
-| AINNCS | 25 | 23 of 23 in ARCH26 (24 of 25 equal CORA's) | 21 of 23 | 17.7 / 12.1 | 31 / 28 (23 instances) |
+| AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 17.7 / 12.1 | 31 / 28 (23 instances) |
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
 has a time for it: they leave out PLAN01 and BRKNP01 (ARCH26 verifies them with another setup than
 the script's) and the instances the report does not have (ISS, RAND) and RND01-06 (instances that are
 probably, not certainly, the report's, RND[c]). The AINNCS rows count the Unicycle twice (the script and
 the report's disturbance) and the Double Pendulum less-robust twice (with the splitting of the initial set
-and as the script); the speedups leave out the script row and the Docking row (no tool verifies it) from
+and as the script), the Docking constraint twice (the script and the polytope with splitting) and the CartPole twice (the script's set and the report's); the speedups leave out the script row, the two Docking rows (no tool has a time for the verdict) and the CartPole report-set row (no tool ran it) from
 the best-tool column and the VCAS rows of JuliaReach, which analyse time points only. Times are single runs
 on a shared machine.
 
@@ -520,9 +520,11 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | Attitude Control avoid | V | V | 0.42 | 21/62 bit-exact, 14 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12.4 |
 | QUAD reach | V | V | 1.70 | 22/62 bit-exact, 14 property | 34.7 | 33.415 | 33.415 (CORA) | 19.7 |
 | Docking constraint | U | U | 4.59 | 15/54 bit-exact, 13 property | 594 [m] | 95.038 | - [f] | - |
+| Docking constraint, polytope and splitting | U (script) | V | 157 | 15/54 bit-exact, 13 property | - | 95.038 (U) | - [f] | - |
 | NAV standard | V | V | 13.3 | 27/63 bit-exact, 10 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 10.1 |
 | NAV robust | V | V | 0.36 | 26/61 bit-exact, 9 property | 8.71 | 2.271 | 2.271 (CORA) | 6.31 |
 | CartPole* reach | V | V | 2.09 | 22/62 bit-exact, 14 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 109 |
+| CartPole reach, the report's set | - | V | 37 | 22/62 bit-exact, 14 property | - | - | - [g] | - |
 
 [a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback, as the report states, instead of sample-and-hold control.
 
@@ -534,9 +536,9 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 
 [e] VCAS middle: JuliaReach (0.022, 0.001, 0.000, 0.000 s) analyses the discrete-time plant at the time points only, which the best-tool column does not count.
 
-[f] Docking: no tool verifies the constraint for the whole initial set (CORA 95.038 s and JuliaReach 7.489 s end UNKNOWN; JuliaReach verifies the smaller set [70, 106]^2 x [-0.14, 0.14]^2 in 7 s); there is no best time for a verdict.
+[f] Docking: CORA (95.038 s) and JuliaReach (7.489 s) end UNKNOWN on the whole initial set, and JuliaReach verifies only the smaller set [70, 106]^2 x [-0.14, 0.14]^2 (7 s); so does the script's check of CORA.cpp (first row). The second row verifies the whole set, by a polytope inside the constraint and 507 pieces of the initial set; no other tool has a verdict, so there is no best time.
 
-[g] CartPole: only CORA ran it, on the initial set of 0.4 times the radius of the report's (the `*`).
+[g] CartPole: only CORA ran it, on the initial set of 0.4 times the radius of the report's (the `*`); the second row is the report's set `[-0.1, 0.1] x [-0.05, 0.05] x [-0.1, 0.1] x [-0.05, 0.05]`, which no tool ran: it needs `depth` 16 (1023 pieces, 512 leaves, 15 splits deep, 8 threads; depths 12 to 15 end UNKNOWN after the sets of a piece explode).
 
 [m] MATLAB times of Docking, CartPole and NAV standard were measured with other jobs running (load average about 7), those of VCAS, QUAD and NAV robust at 4 to 5; the first runs of the three (722, 580 and 536 s) were at 13 to 47.
 
@@ -591,6 +593,15 @@ t = 0.5, 1, ..., 5).
   unsafe set after the last step only. CORA.cpp follows the report (0 only if the advisory stays and hdot complies,
   the hull for a set that complies in part, every step k = 1..10 checked); with the script's rule (`CORACPP_VCAS_RULE=script`)
   the verdicts of the eight instances are the same.
+- *The Docking polytope* (the second Docking row): the constraint `|v| <= 0.2 + 2n |s|` from inside by a polytope in
+  (sx, sy, vx, vy), with `|s| >= (sx + sy) / sqrt 2` (Cauchy-Schwarz) and the disk `|v| <= R` by the regular 32-gon inscribed
+  in it (coefficients shrunk by 1e-9 relative for the rounding of the sines and cosines), checked by `verify` exactly on the
+  zonotope of each set. A miss of the polytope is not a violation, so only VERIFIED is taken from it; the falsification is the
+  runs against the constraint itself (5000 runs: no violation; the smallest margin of 1000 runs is 0.00736, at t = 0). Splitting by CORA's rule
+  (radius times sensitivity) keeps cutting the positions and ends UNKNOWN at depth 20; `VerifySplit::Rule::widest` (cut the
+  dimension whose radius is largest relative to the initial set's, CORA.cpp only) verifies at depth 11: 507 pieces, 254 leaves,
+  10 splits deep. The failure of the whole set is the width of the velocities after the first step (the box of `vx` grows from
+  [-0.28, 0.28] to [-0.2915, 0.2844] while the margin is 0.0074); pieces of a quarter of the widths in each dimension hold.
 - *The Docking check* of the sets is CORA.cpp's own: interval arithmetic on the box of the set and its halves
   (up to 2^10), sound. CORA's (`quadMap`, the order-1 Singh enclosure of a root layer, `interval(., 'split')`)
   was ported first and does not hold the initial set (its error 0.1 for `v^2` in `[0, 0.157]`, against the margin of 0.007);
@@ -631,12 +642,13 @@ time 0.2, tensor order 2, 1 Taylor term, zonotope order 10, time step 0.05 (stan
 the script; the robust network verifies without it, the standard one needs 245 pieces (123 leaves, 8 splits deep, 8 threads).
 CartPole: time step and sampling time 0.02, zonotope order 50, `depth` 10 as the script; 7 pieces (4 leaves, 2 splits deep).
 Docking: time step 0.1, 4 Taylor terms, zonotope order 20, no splitting as the script; the reach completes (t = 40) and the
-check fails at the first step. VCAS: the ten random runs and the reach as the script, `middle` and `worst` accelerations.
+check fails at the first step. The polytope row has the same settings and `depth` 11 with the `widest` rule.
+CartPole on the report's set: the settings of the script and `depth` 16 (depths 12 to 15 end UNKNOWN; time step 0.01 does not help, Taylor terms 2 or zonotope order 100 need 815 and 819 pieces). VCAS: the ten random runs and the reach as the script, `middle` and `worst` accelerations.
 
 `CORACPP_BENCHMARK_VERBOSE=1` prints the box of every set of the reach,
 `CORACPP_AINNCS_OPTIONS=time_step,tensor_order,taylor_terms,zonotope_order,error_order,intermediate_order`
 replaces the settings of the instance (how the two tuned steps were found), and `CORACPP_AINNCS_SPLIT=depth,threads`
-the splitting of `verify`.
+the splitting of `verify`; `CORACPP_AINNCS_POINTS` sets the number of random runs and `CORACPP_DOCKING_SIDES` the sides of the polygon.
 
 **Not ported here.** CORA's `refine` of the network (order 2 in a layer, which QUAD's script uses; `NeuralNetwork` has order 1),
 `LinearSys`, `LinParamSys` plants and the discrete-time systems of CORA's `neurNetContrSys` (the VCAS loop is the
