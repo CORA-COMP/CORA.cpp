@@ -1,17 +1,12 @@
 // test_lean_zonotope_quad_map - Zonotope::quad_map against quadMapTri, bit for bit
 //
-// CORA's quadMap of one zonotope (the center kept, 1 + N + N(N+1)/2 generators per output) is the
-// float definition Zonotope.quadMapTri (MR !921): the entries of M = [c G]' Q [c G] formed as
-// ([c G]' Q) [c G] with every dot product summed from its last entry, the center M_00 plus the sum
-// of the halved squares, the squares first and then the strict lower triangle of M + M' down its
-// columns. The caller's nonzeroFilter and the box of a single nonzero output are exact operations
-// on it: a random Q with at least two outputs has none to filter, one output is checked at its
-// center and its box. The inputs are random zonotopes and the Hessians and zonotope of the
-// linearization of a step of the traffic scenario (TRAF22) and of Robertson (ROBE25_1) dumped from
-// CORA.cpp.
+// CORA's quadMap of one zonotope is Zonotope.quadMapTri (MR !921): M = ([c G]' Q) [c G] with every
+// dot product summed from its last entry, the center M_00 plus the halved squares, the squares and
+// then the strict lower triangle of M + M' as generators. The caller's nonzeroFilter and the box of
+// a single nonzero output are applied to the oracle's set. The inputs are random zonotopes and the
+// recorded calls of TRAF22 and ROBE25_1 (data/quad_map_steps.txt, dumped from CORA.cpp).
 //
 // ORACLE: contSet/@zonotope/quadMap.m
-// CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---
