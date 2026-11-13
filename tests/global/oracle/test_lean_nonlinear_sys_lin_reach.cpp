@@ -8,9 +8,10 @@
 // nearest on van der Pol with an input, the Robertson reaction, and the recorded steps of TORA,
 // ACC and TRAF22 (data/nonlinear_lin_steps.txt, dumped from CORA.cpp: the sets and inputs that
 // init_reach and post received); a step whose region check fails fails in both. Several steps in
-// a row (post) are the oracle's reach windows. error_bound = loop is CORA's own loop, which the
-// oracle does not have: its boxes are of the oracle's width. TRAF22 is its car (five states, the
-// disturbance as input): the closed loop of ten states is too slow for the oracle's trees.
+// a row (post) are the oracle's reach windows. error_bound = loop is CORALean's linReachLoopFloat,
+// bit for bit in the sets and the error the next step starts from: from the error 0 and from an
+// error of the step before (post), in reach, and on x' = x^2 at 1/8, where only the loop succeeds.
+// TRAF22 is its car (five states): the closed loop of ten states is too slow for the oracle.
 //
 // ORACLE: contDynamics/@contDynamics/linReach.m
 // ORACLE: contDynamics/@nonlinearSys/initReach.m
@@ -40,8 +41,7 @@ namespace oracle = test::oracle;
 
 namespace {
 
-constexpr double kSlack = 1e-9;
-
+// the systems, then the helpers that compare a step with the oracle's
 using Vars = std::vector<Expr>;
 
 NonlinearSys van_der_pol() {
@@ -50,6 +50,10 @@ NonlinearSys van_der_pol() {
             return Vars{x[1], (1 - x[0] * x[0]) * x[1] - x[0] + u[0]};
         },
         2, 1);
+}
+
+NonlinearSys square() {
+    return NonlinearSys([](const Vars &x, const Vars &) { return Vars{pow(x[0], 2)}; }, 1, 0);
 }
 
 NonlinearSys robertson() {
@@ -98,22 +102,6 @@ NonlinearSys traf22_car(const std::vector<double> &p) {
         5, 2);
 }
 
-/// The box of CORA's loop and the oracle's agree to a factor 2 in every width: the two bound the
-/// error differently (neither is always the tighter), both enclose the true set.
-void aux_close(const std::string &what, const Zonotope &mine, const lean::Zonotope &theirs) {
-    const Interval box = mine.interval();
-    const auto [inf, sup] = theirs.interval().gather();
-    const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
-                              d = sup.data();
-    // the widths of both, coordinate by coordinate
-    bool ok = a.size() == b.size();
-    for (std::size_t i = 0; ok && i < a.size(); ++i) {
-        const double wm = c[i] - a[i], wt = d[i] - b[i];
-        ok = wm <= 2 * wt + kSlack && wt <= 2 * wm + kSlack;
-    }
-    test::check(ok, what + ": a box of the width of the oracle's");
-}
-
 alg::Linearization aux_alg(double dt, int eta, int rho, alg::LinearStep step,
                            alg::ErrorBound bound) {
     alg::Linearization alg;
@@ -135,41 +123,56 @@ std::optional<lean::Zonotope> aux_lean(const std::optional<Zonotope> &U) {
     return lean::Zonotope(*U);
 }
 
-/// One step of both from R under U: the region step bit for bit, the loop's box inside.
+/// One step of both from R under U, bit for bit: the region step, then CORA's loop from the error 0
+/// and from 'start' (the error of the step before, through post; rho large so that post reduces
+/// nothing). A step that fails in the oracle fails here too.
 void aux_compare(const std::string &name, const NonlinearSys &sys, const Zonotope &R,
                  const std::optional<Zonotope> &U, double dt, int eta = 4, int rho = 50,
-                 bool with_loop = true, bool with_closed_form = true) {
+                 bool with_loop = true, bool with_closed_form = true,
+                 const std::optional<Tensor> &start = std::nullopt) {
     for (const alg::LinearStep step : {alg::LinearStep::coralean, alg::LinearStep::closed_form}) {
         // the oracle's closed form takes a minute on five states and much more on seven
         if (step == alg::LinearStep::closed_form && !with_closed_form) continue;
         const std::string what = name + " " + aux_name(step);
-        const alg::Linearization region = aux_alg(dt, eta, rho, step, alg::ErrorBound::region);
-        const std::optional<lean::LinReachResult> theirs =
-            lean::NonlinearSys(sys).lin_reach(aux_lean(U), lean::Zonotope(R), region);
-        // the region step: exactly the oracle's, or a failure in both
-        if (!theirs) {
-            test::check(test::throws([&] { sys.init_reach(R, U, region); }),
-                        what + ": the step fails as the oracle's does");
-            continue;
+        for (const alg::ErrorBound bound : {alg::ErrorBound::region, alg::ErrorBound::loop}) {
+            const bool loop = bound == alg::ErrorBound::loop;
+            // the oracle's closed form takes minutes for the passes of a loop on more than 2 states
+            if (loop && (!with_loop || (step == alg::LinearStep::closed_form && sys.dim() > 2)))
+                continue;
+            const std::string kind = what + (loop ? " loop" : "");
+            const alg::Linearization alg = aux_alg(dt, eta, rho, step, bound);
+            // the loop from the error of the step before: post from R with that error
+            const auto mine_step = [&](const std::optional<Tensor> &from) {
+                if (!from) return sys.init_reach(R, U, alg);
+                return sys.post(NonlinearStep{R, R, *from}, U, alg);
+            };
+            std::vector<std::optional<Tensor>> starts{std::nullopt};
+            if (loop && start) starts.push_back(start);
+            for (const std::optional<Tensor> &from : starts) {
+                const std::string tag = kind + (from ? " from an error" : "");
+                const std::optional<lean::LinReachResult> theirs =
+                    lean::NonlinearSys(sys).lin_reach(aux_lean(U), lean::Zonotope(R), alg, from,
+                                                      loop);
+                // a step the oracle refuses fails here too
+                if (!theirs) {
+                    test::check(test::throws([&] { mine_step(from); }),
+                                tag + ": the step fails as the oracle's does");
+                    continue;
+                }
+                const NonlinearStep mine = mine_step(from);
+                oracle::check(tag + " time interval", mine.time_interval, theirs->time_interval);
+                oracle::check(tag + " time point", mine.time_point, theirs->time_point);
+                if (loop) oracle::check(tag + " error", mine.error, *theirs->abstrerr);
+            }
         }
-        const NonlinearStep mine = sys.init_reach(R, U, region);
-        oracle::check(what + " time interval", mine.time_interval, theirs->time_interval);
-        oracle::check(what + " time point", mine.time_point, theirs->time_point);
-        // CORA's loop, which the oracle does not have (not for the recorded steps: slow on lean)
-        if (!with_loop) continue;
-        const NonlinearStep loop =
-            sys.init_reach(R, U, aux_alg(dt, eta, rho, step, alg::ErrorBound::loop));
-        aux_close(what + " loop time interval", loop.time_interval, theirs->time_interval);
-        aux_close(what + " loop time point", loop.time_point, theirs->time_point);
     }
 }
 
 /// Several steps in a row, init_reach then post: the windows of the oracle's reach (the order is
-/// large: post reduces the windows too, which the oracle does not).
+/// large: post reduces the windows too, which the oracle does not); the loop carries its error.
 void aux_chain(const std::string &name, const NonlinearSys &sys, const Zonotope &R,
-               const std::optional<Zonotope> &U, double dt, int steps) {
-    const alg::Linearization alg =
-        aux_alg(dt, 4, 1000, alg::LinearStep::coralean, alg::ErrorBound::region);
+               const std::optional<Zonotope> &U, double dt, int steps, alg::ErrorBound bound) {
+    const alg::Linearization alg = aux_alg(dt, 4, 1000, alg::LinearStep::coralean, bound);
     const std::optional<std::vector<lean::Zonotope>> theirs =
         lean::NonlinearSys(sys).reach(lean::Zonotope(R), aux_lean(U), dt * steps, alg);
     test::check(theirs.has_value() && int(theirs->size()) == steps, name + ": the oracle's run");
@@ -228,7 +231,7 @@ void aux_recorded(const std::string &name, int count, bool car, bool closed_form
             U = Zonotope(U->center().slice(-2, 0, 2), U->generators().slice(-2, 0, 2));
         }
         aux_compare(name + " step " + std::to_string(index), make(r), R, U, r.dt, r.eta, r.rho,
-                    false, closed_form && index == 0);
+                    index == 0, closed_form && index == 0);
         ++index;
     }
     test::check(index > 0, "no recorded step of " + name);
@@ -253,7 +256,13 @@ int main() {
         aux_compare("Robertson", robertson(), rob_R, Zonotope(Tensor({0.0}), Tensor::zeros({1, 0})),
                     0.001);
         // a time step too large for the region: the step fails in both
-        aux_compare("van der Pol, large step", van_der_pol(), vdp_R(), vdp_U(), 3.0);
+        aux_compare("van der Pol, large step", van_der_pol(), vdp_R(), vdp_U(), 3.0, 4, 50, false);
+        // CORA's loop from the error of the step before (rho large: post reduces nothing)
+        aux_compare("van der Pol, from an error", van_der_pol(), vdp_R(), vdp_U(), 0.03125, 4, 1000,
+                    true, true, Tensor::from_data({0.0, 0x1p-20}, {2, 1}));
+        // x' = x^2 at a time step of 1/8: the region check fails, the loop succeeds
+        aux_compare("x' = x^2", square(), Zonotope(Tensor({1.5}), Tensor({{0.5}})), std::nullopt,
+                    0.125, 6, 10);
         // the recorded steps
         aux_recorded("TORA", 6, false, true, [](const Record &) { return tora(); });
         aux_recorded("ACC", 4, false, false, [](const Record &) { return acc(); });
@@ -261,7 +270,9 @@ int main() {
                      [](const Record &r) { return traf22_car(r.params); });
     });
     oracle::run("nonlinearSys.reach", [&](oracle::Random &) {
-        aux_chain("van der Pol", van_der_pol(), vdp_R(), vdp_U(), 0.015625, 5);
+        for (const alg::ErrorBound bound : {alg::ErrorBound::region, alg::ErrorBound::loop})
+            aux_chain(bound == alg::ErrorBound::loop ? "van der Pol loop" : "van der Pol",
+                      van_der_pol(), vdp_R(), vdp_U(), 0.015625, 5, bound);
     });
     return test::finish("lean nonlinearSys lin reach");
 }

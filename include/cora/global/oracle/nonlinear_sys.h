@@ -51,6 +51,7 @@ struct AdaptivePassResult {
 /// One step of alg lin: the sets over the step and at its end.
 struct LinReachResult {
     Zonotope time_interval, time_point;
+    std::optional<cora::Tensor> abstrerr; ///< the error the next step starts from (the loop only)
 };
 
 /// VerrorDyn and its true error (the largest magnitude of its box).
@@ -86,12 +87,16 @@ class NonlinearSys {
     AdaptiveRun reach_adaptive(const Zonotope &R0, const std::optional<Zonotope> &U, double t_final,
                                const alg::LinearizationAdaptive &alg) const;
 
-    /// One step of alg lin from R with the input set U (none: no input) and the options alg.
+    /// One step of alg lin from R with the input set U (none: no input) and the options alg; the
+    /// loop (alg.error_bound) starts from abstrerr (none: zero) and with_abstrerr asks for its
+    /// error.
     std::optional<LinReachResult> lin_reach(const std::optional<Zonotope> &U, const Zonotope &R,
-                                            const alg::Linearization &alg) const;
+                                            const alg::Linearization &alg,
+                                            const std::optional<cora::Tensor> &abstrerr = {},
+                                            bool with_abstrerr = false) const;
 
     /// The windows of alg lin from X0 with the input set U to t_final (nonlinearSys.reach), one per
-    /// step of CORALean's reachFloatInput; none if a step fails.
+    /// step of alg.linear_step; none if a step fails.
     std::optional<std::vector<Zonotope>> reach(const Zonotope &X0, const std::optional<Zonotope> &U,
                                                double t_final, const alg::Linearization &alg) const;
 
