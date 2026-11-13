@@ -55,6 +55,7 @@ Columns aux_by_exponent(const PolyZonotope &P) {
     const std::vector<double> g = P.generators().data();
     for (int64_t j = 0; j < h; ++j) {
         std::vector<double> column;
+        column.reserve(std::size_t(n));
         for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(i * h + j)]);
         out[P.exponents()[std::size_t(j)]] = column;
     }
@@ -66,8 +67,10 @@ std::vector<std::vector<double>> aux_independent(const PolyZonotope &P) {
     const int64_t n = P.dim(), q = P.independent_generators().shape()[1];
     const std::vector<double> g = P.independent_generators().data();
     std::vector<std::vector<double>> out;
+    out.reserve(std::size_t(q));
     for (int64_t j = 0; j < q; ++j) {
         std::vector<double> column;
+        column.reserve(std::size_t(n));
         for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(i * q + j)]);
         out.push_back(column);
     }

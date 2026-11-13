@@ -98,9 +98,9 @@ class ClosedLoop(unittest.TestCase):
         verdict = sys.verify(start(), 0.5, 10, cora.Rng(1), split_depth=3, split_threads=2,
                              poly_method="regression", **options)
         self.assertEqual(verdict, "VERIFIED")
-        # another method is refused
+        # an unknown method is refused
         with self.assertRaises(ValueError):
-            sys.verify(start(), 0.5, 10, cora.Rng(1), poly_method="taylor", **options)
+            sys.verify(start(), 0.5, 10, cora.Rng(1), poly_method="no-such-method", **options)
 
     def test_wrong_inputs_are_refused(self):
         sys = cora.NeurNetContrSys(plant(), network(), 0.05)
