@@ -5,7 +5,8 @@
 // Operations: reach (the homogeneous run), and one method per `linearSys.*` op of the oracle named
 //             as CORA.cpp names CORA's: canonical_form, is_canonical_form, homogeneous_solution,
 //             particular_solution_time_varying, particular_solution_constant, affine_solution,
-//             one_step, one_step_closed_form, post, init_reach, error_solution_adaptive
+//             one_step, one_step_closed_form, taylor_matrices, post, init_reach,
+//             error_solution_adaptive
 // Outputs:    lean zonotopes whose nominal part and error box together enclose the real result
 // Scheme:     CORALean's sound float definitions; the error terms are tuned bounds of their own,
 //             so they differ from CORA's (the nominal parts agree where no error term enters)
@@ -13,7 +14,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   13-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -41,6 +42,15 @@ struct CanonicalForm {
     Interval u;
 };
 
+/// taylor_matrices: the entrywise remainder W and the corrections F, G of CORA's taylorMatrices at
+/// the admissible order eta_e (MatExp.expRemainderEntrywise, intervalCorrectionMatrixEntrywise,
+/// intervalConstCorrectionMatrixEntrywise).
+struct TaylorMatrices {
+    int64_t order;
+    Tensor W;
+    Interval F, G;
+};
+
 class LinearSys {
   public:
     /// The dynamics matrix (n, n) in the current dtype.
@@ -49,6 +59,8 @@ class LinearSys {
     /// x' = A x + B u with y = C x; B (n, m) and C (p, n) are optional (no input; C = I).
     LinearSys(const cora::Tensor &A, const std::optional<cora::Tensor> &B,
               const std::optional<cora::Tensor> &C = std::nullopt);
+
+    // Reach ---------------------------------------------------------------------------------------
 
     /// The reachable sets from X0 over [0, t_final] by the algorithm "standard" in steps of
     /// alg.time_step (t_final / time_step must be an integer); the Taylor series has
@@ -70,6 +82,8 @@ class LinearSys {
     /// The output set C R of a set of the state space (`linearSys.outputSet` with no input).
     Zonotope output_set(const cora::Zonotope &R) const;
 
+    // Solutions and steps -------------------------------------------------------------------------
+
     /// [e^{A dt}] X.
     Zonotope homogeneous_solution(const Zonotope &X, double time_step, int taylor_terms) const;
 
@@ -90,6 +104,10 @@ class LinearSys {
     std::optional<Step> one_step_closed_form(const Zonotope &X, const Zonotope &U,
                                              const cora::Tensor &u, double time_step,
                                              int taylor_terms) const;
+
+    /// CORA's F and G with the entrywise remainder (`linearSys.taylorMatrices`); none if no Taylor
+    /// order within 4096 of taylor_terms encloses e^{|A| dt}.
+    std::optional<TaylorMatrices> taylor_matrices(double time_step, int taylor_terms) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;

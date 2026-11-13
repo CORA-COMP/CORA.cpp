@@ -4,6 +4,10 @@
 // encloses that. F sums the Taylor terms i >= 2 of e^{A dt}, each weighted by where t^i - t is
 // extremal on [0, dt], and adds the remainder of the series past order taylor_terms.
 //
+// With CORACPP_TAYLOR=entrywise, on an (n, n) matrix F is CORALean's entrywise F
+// (priv_taylor_corrections, bit for bit at nearest) at the admissible order; by default, and for
+// batches, gradients and a stiff A whose powers overflow, it is the expm below.
+//
 // Syntax:   Interval F = sys.correction_matrix_state(time_step, taylor_terms);
 // Inputs:   time_step - step size
 //           taylor_terms - order of the Taylor series
@@ -14,10 +18,11 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   13-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
+#include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -46,6 +51,8 @@ Interval LinearSys::correction_matrix_state(double time_step, int taylor_terms) 
         return "correction matrix: taylor_terms must be at least 1, got " +
                std::to_string(taylor_terms);
     });
+    // CORALean's entrywise F (MatExp.intervalCorrectionMatrixEntrywise family) when asked for
+    if (const auto c = priv_taylor_corrections(A(), time_step, taylor_terms)) return c->F;
     const Tensor Aabs = A().abs();
     Tensor Ai = A(), Aiabs = Aabs; // A^i and |A|^i
     Tensor Fneg = A().zeros_like(), Fpos = A().zeros_like();

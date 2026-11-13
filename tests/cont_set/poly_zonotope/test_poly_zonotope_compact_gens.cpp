@@ -28,7 +28,7 @@ int main() {
                                                {2, 6}),
                              Tensor::from_data({0.5, 0.0}, {2, 1}),
                              {{1, 0}, {0, 1}, {1, 0}, {1, 0}, {0, 0}, {2, 1}}, {1, 2},
-                             detail::Verbatim{});
+                             cora::detail::Verbatim{});
         const PolyZonotope C = P.compact_gens();
         check(C.num_dependent() == 4, b + ": one column per exponent column");
         const std::vector<double> g = C.generators().data();
@@ -47,7 +47,7 @@ int main() {
               b + ": compact drops what this keeps");
         // distinct exponents: the set is returned as it is
         const PolyZonotope D(column({0.0}), Tensor::from_data({1.0, 0.0}, {1, 2}),
-                             Tensor::zeros({1, 0}), {{1}, {2}}, {1}, detail::Verbatim{});
+                             Tensor::zeros({1, 0}), {{1}, {2}}, {1}, cora::detail::Verbatim{});
         check(D.compact_gens().num_dependent() == 2,
               b + ": distinct exponents (and a zero column) stay");
     });
