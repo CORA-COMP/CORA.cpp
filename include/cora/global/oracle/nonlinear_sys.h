@@ -54,6 +54,13 @@ struct LinReachResult {
     std::optional<cora::Tensor> abstrerr; ///< the error the next step starts from (the loop only)
 };
 
+/// One step of alg lin from a polynomial zonotope: the sets over the step and at its end, with
+/// the identifiers of their factors, and the error the next step starts from.
+struct PolyLinReachResult {
+    PolyZonotope time_interval, time_point;
+    cora::Tensor abstrerr;
+};
+
 /// VerrorDyn and its true error (the largest magnitude of its box).
 struct AbstrErrResult {
     Zonotope V;
@@ -96,6 +103,14 @@ class NonlinearSys {
                                             const alg::Linearization &alg,
                                             const std::optional<cora::Tensor> &abstrerr = {},
                                             bool with_abstrerr = false) const;
+
+    /// One step of alg lin from the polynomial zonotope R (nonlinearSys.linReachPoly): CORA's loop
+    /// from abstrerr (none: zero), at the closed-form linear step; with `reduce` the sets that
+    /// post leaves (reduced to alg.zonotope_order). None if the step or the loop fails.
+    std::optional<PolyLinReachResult>
+    lin_reach_poly(const std::optional<Zonotope> &U, const PolyZonotope &R,
+                   const alg::Linearization &alg, const std::optional<cora::Tensor> &abstrerr = {},
+                   bool reduce = false) const;
 
     /// The windows of alg lin from X0 with the input set U to t_final (nonlinearSys.reach), one per
     /// step of alg.linear_step; none if a step fails.

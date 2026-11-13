@@ -8,6 +8,11 @@
 // center c of the representation, which is a point of the set (all factors zero); the region of
 // the Hessian still joins the box with it (priv_abstrerr_lin).
 //
+// With a linear step of CORALean's, tensor order 2 and error_bound = loop the step is CORALean's
+// linReachPolyLoopFloat, bit for bit at nearest (priv_lin_loop): [e^{A dt}] R keeps the factors,
+// the hull of R and [e^{A dt}] R + Pu is enclose with one new factor, [F] R and the input solutions
+// join as independent generators; the Hessian is read over zonotope(Rmax).
+//
 // Syntax:   PolyNonlinearStep s = priv_lin_reach_poly(sys, R, error, U, alg);
 // Inputs:   R - the polynomial zonotope at the start of the step, error - the bound of the step
 //           before, U - the input set (uncentered, optional), alg - the options of "lin"
@@ -21,14 +26,82 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
+#include "cont_dynamics/nonlinear_sys/private/priv_lin_loop.h"
+#include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
 
+#include <algorithm>
 #include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+// The linear step ---------------------------------------------------------------------------------
+
+/// CORALean's polyOneStepFloat at the closed-form linear step of the affine system at x*: both
+/// sets of one step of x' = A x + u, u in V, from the polynomial zonotope R, shifted back by x*.
+class PolyStepper {
+  public:
+    PolyStepper(const Tensor &A, const Tensor &xs, const PolyZonotope &R,
+                const alg::Linearization &alg)
+        : stepper_(A, alg.time_step, std::max(2, alg.taylor_terms)), xs_(xs),
+          X_(priv_poly_plus(R, Zonotope(xs * -1.0, xs.zeros_like({xs.size(0), 0})))) {
+        if (!stepper_.admissible())
+            CORA_FAIL(Error::not_converged,
+                      "cora: no admissible Taylor order for the linearized system (the time_step "
+                      "may be too large)");
+    }
+
+    /// The sets over the step and at its end for the input set V.
+    std::pair<PolyZonotope, PolyZonotope> operator()(const Zonotope &V) const {
+        // the constant input is the center of V, the time-varying one V without it
+        const Tensor &u = V.center();
+        const Zonotope Vc(u.zeros_like(), V.generators());
+        const Zonotope point(u, u.zeros_like({u.size(0), 0}));
+        const Zonotope PU = stepper_.input_solution(Vc);
+        const Zonotope Pu = stepper_.input_solution(point);
+        const Zonotope C_input = point.linear_map(stepper_.G());
+        // Htp = [e^{A dt}] X + Pu and the curvature [F] X
+        const PolyZonotope Htp = priv_poly_plus(priv_poly_interval_map(stepper_.e_adt(), X_), Pu);
+        const PolyZonotope C_state = priv_poly_interval_map(stepper_.F(), X_);
+        const PolyZonotope Hti = priv_poly_plus(priv_poly_enclose_shared(X_, Htp), C_state);
+        // Rtp = Htp + PU and Rti = (Hti + PU) + [G] u, back in the coordinates of the state
+        const PolyZonotope Rtp = priv_poly_plus(Htp, PU);
+        const PolyZonotope Rti = priv_poly_plus(priv_poly_plus(Hti, PU), C_input);
+        return {back(Rti), back(Rtp)};
+    }
+
+  private:
+    PolyZonotope back(const PolyZonotope &Z) const {
+        return priv_poly_plus(Z, Zonotope(xs_, xs_.zeros_like({xs_.size(0), 0})));
+    }
+    ClosedFormStepper stepper_;
+    Tensor xs_;
+    PolyZonotope X_;
+};
+
+// The step ----------------------------------------------------------------------------------------
+
+/// The step of CORALean's linReachPolyLoopFloat: CORA's loop of linReach.m on a polynomial
+/// zonotope (priv_lin_loop), the Hessian read over zonotope(Rmax).
+PolyNonlinearStep aux_lean_step(const NonlinearSys &sys, const PolyZonotope &R, const Tensor &error,
+                                const std::optional<Zonotope> &U, const alg::Linearization &alg) {
+    auto out = priv_lin_loop<PolyZonotope>(
+        sys, R.center(), error, U, alg,
+        [&](const AdaptiveLinearization &L) { return PolyStepper(L.J.A, L.xs_t, R, alg); },
+        [](const PolyZonotope &Z) { return Z.zonotope(); });
+    return {std::move(out.time_interval), std::move(out.time_point), std::move(out.error)};
+}
+
+} // namespace
 
 
 // ===========================================  MAIN  =========================================== //
@@ -54,6 +127,10 @@ PolyStepPieces::PolyStepPieces(const NonlinearSys &sys, const PolyZonotope &R,
 PolyNonlinearStep priv_lin_reach_poly(const NonlinearSys &sys, const PolyZonotope &R,
                                       const Tensor &error, const std::optional<Zonotope> &U,
                                       const alg::Linearization &alg) {
+    // CORALean's loop at tensor order 2 with a linear step of CORALean's, bit for bit at nearest
+    if (alg.linear_step != alg::LinearStep::cora && alg.tensor_order == 2 &&
+        alg.error_bound == alg::ErrorBound::loop)
+        return aux_lean_step(sys, R, error, U, alg);
     const double dt = alg.time_step;
     const int eta = alg.taylor_terms;
     PolyStepPieces s(sys, R, U, dt, eta);

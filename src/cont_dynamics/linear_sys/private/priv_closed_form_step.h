@@ -83,6 +83,13 @@ class ClosedFormStepper {
     /// One step from X under the input set U and the constant input u (n, 1).
     ClosedFormStep step(const Zonotope &X, const Zonotope &U, const Tensor &u) const;
 
+    /// The matrices of the step, [e^{A dt}], [F] and [G], and the solution of the input set V
+    /// (CORALean's inputSolutionEntrywiseFloat): what a step from a polynomial zonotope is made of.
+    const Interval &e_adt() const;
+    const Interval &F() const;
+    const Interval &G() const;
+    Zonotope input_solution(const Zonotope &V) const;
+
   private:
     struct Matrices;
     std::unique_ptr<Matrices> m_;

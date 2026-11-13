@@ -32,6 +32,7 @@
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
+#include "cont_dynamics/nonlinear_sys/private/priv_lin_loop.h"
 
 #include <algorithm>
 #include <cmath>
@@ -155,52 +156,14 @@ NonlinearStep aux_region_step(const NonlinearSys &sys, const Zonotope &R,
     return {S.first, S.second, priv_column(like, err.hi)};
 }
 
-/// The step as CORALean's linReachLoopFloat: CORA's loop of linReach.m, accepted when the error is
-/// at most the applied one entry by entry (floats, not their quotient); NaN repeats, fuel fails.
+/// The step as CORALean's linReachLoopFloat: CORA's loop of linReach.m (priv_lin_loop).
 NonlinearStep aux_loop_step(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
                             const std::optional<Zonotope> &U, const alg::Linearization &alg) {
-    constexpr double enlarge = 1.1; // 2476979795053773 * 2^-51
-    constexpr int fuel = 10000;
-    const Tensor &like = R.center();
-    const int64_t n = sys.dim(), m = sys.input_dim();
-    const std::optional<Zonotope> Uz =
-        m > 0 ? std::optional<Zonotope>(
-                    U ? *U : Zonotope(like.zeros_like({m, 1}), like.zeros_like({m, 0})))
-              : std::nullopt;
-    // x*, A, B and f(x*, u*) + B (U - u*), as the region step
-    const AdaptiveLinearization L = priv_linearize_adaptive(sys, Uz, like, alg.time_step);
-    const Vec us = Uz ? Uz->center().data() : Vec{};
-    const std::optional<Box> Ub = Uz ? std::optional<Box>(priv_zonotope_box(*Uz)) : std::nullopt;
-    // U joined with the expansion point
-    const std::optional<Box> Uh = Ub ? std::optional<Box>(priv_hull(*Ub, us)) : std::nullopt;
-    const LeanStepper step(L.J.A, L.xs_t, R, alg);
-
-    Vec abstrerr = error.data();
-    for (int pass = 0; pass < fuel; ++pass) {
-        // the applied error, and the time-interval set of the step with it in the input
-        Box applied{Vec(abstrerr.size()), Vec(abstrerr.size())};
-        for (std::size_t i = 0; i < abstrerr.size(); ++i) {
-            applied.hi[i] = enlarge * abstrerr[i];
-            applied.lo[i] = -applied.hi[i];
-        }
-        const Zonotope Rmax = step(L.Vbase + priv_box_zonotope(like, applied)).first;
-        // the Hessian remainder over Rmax joined with x*, its magnitude
-        const Box Xh = priv_hull(priv_zonotope_box(Rmax), L.xs);
-        const Zonotope Verror = priv_box_zonotope(
-            like, priv_hessian_remainder(priv_hessian(sys, like, Xh, Uh), {}, Xh, Uh, L.xs, us, n));
-        const Vec true_error = priv_norm_mag(priv_zonotope_box(Verror));
-        priv_check_exploded(priv_column(like, true_error));
-        bool holds = true;
-        for (std::size_t i = 0; i < true_error.size(); ++i)
-            holds = holds && true_error[i] <= applied.hi[i];
-        if (holds) {
-            // the sets with the accepted remainder in the input
-            const FloatStep S = step(L.Vbase + Verror);
-            return {S.first, S.second, priv_column(like, true_error)};
-        }
-        abstrerr = true_error;
-    }
-    CORA_FAIL(Error::not_converged, "cora: the error loop of the step did not converge");
+    auto out = priv_lin_loop<Zonotope>(
+        sys, R.center(), error, U, alg,
+        [&](const AdaptiveLinearization &L) { return LeanStepper(L.J.A, L.xs_t, R, alg); },
+        [](const Zonotope &Z) { return Z; });
+    return {std::move(out.time_interval), std::move(out.time_point), std::move(out.error)};
 }
 
 /// The step with a linear step of CORALean's (alg.linear_step): the guess of the error enters the
