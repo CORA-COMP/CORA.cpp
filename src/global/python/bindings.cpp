@@ -4268,19 +4268,69 @@ Activation activation_of(const std::string &name) {
               "NeuralNetwork: the activation must be identity, relu, sigmoid or tanh, got " + name);
 }
 
-/// The method of the network's line over an activation from its name.
-PolyMethod poly_method_of(const std::string &name) {
-    if (name != "singh" && name != "regression")
-        CORA_FAIL(Error::wrong_value, "poly_method must be 'singh' or 'regression', got " + name);
-    return name == "singh" ? PolyMethod::singh : PolyMethod::regression;
-}
-
 /// The error of the regression line from its name.
 RegressionError regression_error_of(const std::string &name) {
     if (name != "extremum" && name != "bracket")
         CORA_FAIL(Error::wrong_value,
                   "regression_error must be 'extremum' or 'bracket', got " + name);
     return name == "extremum" ? RegressionError::extremum : RegressionError::bracket;
+}
+
+/// The method of the polynomial over an activation from its name.
+PolyMethod poly_method_of(const std::string &name) {
+    static const std::vector<std::pair<std::string, PolyMethod>> methods{
+        {"singh", PolyMethod::singh},
+        {"regression", PolyMethod::regression},
+        {"ridgeregression", PolyMethod::ridge_regression},
+        {"bernstein", PolyMethod::bernstein},
+        {"taylor", PolyMethod::taylor},
+        {"bounds", PolyMethod::bounds},
+        {"throw-catch", PolyMethod::throw_catch}};
+    for (const auto &[key, method] : methods)
+        if (key == name) return method;
+    CORA_FAIL(Error::wrong_value,
+              "poly_method must be 'singh', 'regression', 'ridgeregression', 'bernstein', "
+              "'taylor', 'bounds' or 'throw-catch', got " +
+                  name);
+}
+
+/// The orders per layer of a list: an int, a list of ints (one per neuron), or None per layer.
+std::vector<std::vector<int>> nn_orders_of(const py::object &orders) {
+    std::vector<std::vector<int>> out;
+    if (orders.is_none()) return out;
+    for (const py::handle layer : orders) {
+        if (layer.is_none())
+            out.emplace_back();
+        else if (py::isinstance<py::int_>(layer))
+            out.push_back({py::cast<int>(layer)});
+        else
+            out.push_back(py::cast<std::vector<int>>(layer));
+    }
+    return out;
+}
+
+/// The options of the network's evaluation from keyword arguments.
+NnOptions nn_options_of(const py::kwargs &kwargs) {
+    NnOptions options;
+    // a keyword that is given and not None sets its field
+    const auto read = [&](const char *key, auto &field) {
+        if (kwargs.contains(key) && !kwargs[key].is_none())
+            field = py::cast<std::decay_t<decltype(field)>>(kwargs[key]);
+    };
+    read("add_approx_error_to_gi", options.add_approx_error_to_gi);
+    read("num_generators", options.num_generators);
+    read("max_gens_post", options.max_gens_post);
+    read("do_pre_order_reduction", options.do_pre_order_reduction);
+    read("use_approx_error", options.use_approx_error);
+    if (kwargs.contains("remove_gi") && !kwargs["remove_gi"].is_none())
+        options.remove_gi = py::cast<bool>(kwargs["remove_gi"]);
+    if (kwargs.contains("poly_method"))
+        options.poly_method = poly_method_of(py::cast<std::string>(kwargs["poly_method"]));
+    if (kwargs.contains("regression_error"))
+        options.regression_error =
+            regression_error_of(py::cast<std::string>(kwargs["regression_error"]));
+    if (kwargs.contains("orders")) options.orders = nn_orders_of(kwargs["orders"]);
+    return options;
 }
 
 /// The options of the plant's alg "lin" and of the network from keyword arguments.
@@ -4354,23 +4404,24 @@ void bind_neural_network(py::module_ &m) {
         // the outputs at points, the enclosure of the outputs over a set, and the pairs
         .def(
             "evaluate",
-            [](const NeuralNetwork &nn, const py::object &x, const std::string &poly_method,
-               const std::string &regression_error) -> py::object {
+            [](const NeuralNetwork &nn, const py::object &x,
+               const py::kwargs &kwargs) -> py::object {
                 if (py::isinstance<Zonotope>(x))
-                    return py::cast(
-                        nn.evaluate(py::cast<Zonotope>(x),
-                                    {.poly_method = poly_method_of(poly_method),
-                                     .regression_error = regression_error_of(regression_error)}));
+                    return py::cast(nn.evaluate(py::cast<Zonotope>(x), nn_options_of(kwargs)));
+                if (py::isinstance<PolyZonotope>(x))
+                    return py::cast(nn.evaluate(py::cast<PolyZonotope>(x), nn_options_of(kwargs)));
                 const Tensor y = nn.evaluate(tensor_of(x, "the points"));
                 const bool one = py::hasattr(x, "ndim") && py::cast<int>(x.attr("ndim")) == 1;
                 return one ? vector(y) : matrix(y);
             },
-            py::arg("x"), py::arg("poly_method") = "singh",
-            py::arg("regression_error") = "extremum",
-            "The outputs at a point (in,) or the columns of (in, N); for a zonotope, "
-            "a zonotope that contains the outputs of every point, the line of each activation by "
-            "poly_method 'singh' or 'regression' (regression_error 'extremum': CORA's exact "
-            "extremum (CORALean's float extremum), or 'bracket': CORALean's derivative bracket)")
+            py::arg("x"),
+            "The outputs at a point (in,) or the columns of (in, N); for a zonotope or polynomial "
+            "zonotope, a set that contains the outputs of every point. Keywords: poly_method "
+            "('singh', 'regression', and for a polynomial zonotope 'ridgeregression', "
+            "'bernstein', 'taylor', 'bounds', 'throw-catch'), regression_error ('extremum' or "
+            "'bracket'), add_approx_error_to_gi, and for a polynomial zonotope orders (per layer: "
+            "None, an int, or a list with one int per neuron), num_generators, max_gens_post, "
+            "do_pre_order_reduction, remove_gi, use_approx_error")
         // the Jacobian at a point
         .def(
             "sensitivity",
@@ -4382,17 +4433,54 @@ void bind_neural_network(py::module_ &m) {
         // the pairs (x, N(x)) of a set, the input rows kept
         .def(
             "evaluate_with_input",
-            [](const NeuralNetwork &nn, const py::object &X, bool add_approx_error_to_gi,
-               const std::string &poly_method) -> py::object {
-                const NnOptions options{.add_approx_error_to_gi = add_approx_error_to_gi,
-                                        .poly_method = poly_method_of(poly_method)};
+            [](const NeuralNetwork &nn, const py::object &X,
+               const py::kwargs &kwargs) -> py::object {
                 if (py::isinstance<PolyZonotope>(X))
-                    return py::cast(nn.evaluate_with_input(py::cast<PolyZonotope>(X), options));
-                return py::cast(nn.evaluate_with_input(py::cast<Zonotope>(X), options));
+                    return py::cast(
+                        nn.evaluate_with_input(py::cast<PolyZonotope>(X), nn_options_of(kwargs)));
+                return py::cast(
+                    nn.evaluate_with_input(py::cast<Zonotope>(X), nn_options_of(kwargs)));
             },
-            py::arg("X"), py::arg("add_approx_error_to_gi") = true,
-            py::arg("poly_method") = "singh",
-            "The set of the pairs (x, N(x)) of a zonotope or polynomial zonotope X");
+            py::arg("X"),
+            "The set of the pairs (x, N(x)) of a zonotope or polynomial zonotope X (keywords as "
+            "evaluate)")
+        // the approximation errors of the activations, and one step of refine on the orders
+        .def(
+            "approx_errors",
+            [](const NeuralNetwork &nn, const PolyZonotope &X, const py::kwargs &kwargs) {
+                return nn.approx_errors(X, nn_options_of(kwargs));
+            },
+            py::arg("X"),
+            "Per layer, the radius of the approximation error of each neuron when X goes through "
+            "the network (CORA's refine_heu); empty for a layer without a nonlinear activation")
+        .def("refinable_layers", &NeuralNetwork::refinable_layers,
+             "The indices of the layers with a nonlinear activation (CORA's getRefinableLayers)")
+        .def(
+            "refine",
+            [](const NeuralNetwork &nn, const py::object &orders,
+               const std::vector<std::vector<double>> &heuristic, int max_order,
+               const std::string &type, const std::string &heuristic_name, double gamma) {
+                // the type and the heuristic by name
+                RefineOptions options{.max_order = max_order, .gamma = gamma};
+                if (type != "all" && type != "layer" && type != "neuron")
+                    CORA_FAIL(Error::wrong_value,
+                              "refine: type must be 'all', 'layer' or 'neuron'");
+                options.type = type == "all"     ? RefineType::all
+                               : type == "layer" ? RefineType::layer
+                                                 : RefineType::neuron;
+                if (heuristic_name != "approx_error" && heuristic_name != "layer_bias" &&
+                    heuristic_name != "all")
+                    CORA_FAIL(Error::wrong_value,
+                              "refine: heuristic must be 'approx_error', 'layer_bias' or 'all'");
+                options.heuristic = heuristic_name == "approx_error" ? RefineHeuristic::approx_error
+                                    : heuristic_name == "layer_bias" ? RefineHeuristic::layer_bias
+                                                                     : RefineHeuristic::all;
+                return nn.refine(nn_orders_of(orders), heuristic, options);
+            },
+            py::arg("orders"), py::arg("heuristic"), py::arg("max_order") = 5,
+            py::arg("type") = "layer", py::arg("heuristic_name") = "approx_error",
+            py::arg("gamma") = 0.1,
+            "The orders (one list per neuron for every layer) after one step of CORA's refine");
 
     // the neural network controlled system: reach, simulate and verify with keyword options
     py::class_<NeurNetContrSys>(m, "NeurNetContrSys",

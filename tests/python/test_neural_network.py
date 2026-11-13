@@ -84,7 +84,7 @@ class Evaluate(unittest.TestCase):
             lambda v: torch_forward(parameters, v[:, None])[:, 0], x)
         self.assertTrue(torch.allclose(net.sensitivity(x), reference, atol=1e-10))
         with self.assertRaises(ValueError):
-            net.evaluate(X, poly_method="taylor")
+            net.evaluate(X, poly_method="foo")
 
     def test_the_bracket_error_contains_the_outputs(self):
         net = cora.NeuralNetwork(layers([2, 10, 10, 3]), ["tanh", "sigmoid", "identity"])
