@@ -1,9 +1,9 @@
 // test_neural_network_regression - the regression line of an activation, and the sensitivity
 //
 // The line of poly_method regression (CORA's least-squares polynomial of order 1 with the error
-// of computeApproxError) encloses the activation over the whole range, and its error is the
-// exact maximum of the difference to the activation, which a fine grid reproduces. A range of one
-// point takes the tangent.
+// of computeApproxError, CORALean's float definition of it) encloses the activation over the whole
+// range, and its error is the maximum of the difference to the activation, which a fine grid
+// reproduces. A range of one point takes the value at the point.
 //
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA: nn/layers/nonlinear/nnLeakyReLULayer.m

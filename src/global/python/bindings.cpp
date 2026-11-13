@@ -4370,7 +4370,7 @@ void bind_neural_network(py::module_ &m) {
             "The outputs at a point (in,) or the columns of (in, N); for a zonotope, "
             "a zonotope that contains the outputs of every point, the line of each activation by "
             "poly_method 'singh' or 'regression' (regression_error 'extremum': CORA's exact "
-            "extremum, or 'bracket': CORALean's derivative bracket)")
+            "extremum (CORALean's float extremum), or 'bracket': CORALean's derivative bracket)")
         // the Jacobian at a point
         .def(
             "sensitivity",

@@ -4,14 +4,14 @@
 // y in slope x + offset +- radius (CORA's poly_method "singh" or "regression", order 1): singh is
 // the tightest parallelogram [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2], regression the
 // least-squares line through 20 equidistant points of [l, u] shifted by the middle of its
-// difference to the activation, whose bounds are exact (the ends and where f'(x) = slope). The
-// line maps (c, G, GI) exactly, so the factors and the exponents never change; the radius is a
-// new independent generator per neuron, or a new factor. The order of the operations is that of
-// CORALean's Layer.activation, bit for bit at nearest for singh (test_lean_nn_evaluate): the
-// slope, the box [offset - radius, offset + radius] as a zonotope whose middle is added to the
-// center and whose reach is the generator. evaluate_with_input carries the input
-// rows along, so the output depends on the same factors as the input. All neurons are handled at
-// once by tensor operations.
+// difference to the activation, whose bounds are those of the ends and of the enclosed points
+// where f'(x) = slope (RegressionError::extremum, CORALean's float definition) or the derivative
+// bracket's (RegressionError::bracket). The line maps (c, G, GI) exactly, so the factors and the
+// exponents never change; the radius is a new independent generator per neuron, or a new factor.
+// The order of the operations is that of CORALean's Layer.activation, bit for bit at nearest for
+// all three (test_lean_nn_evaluate): the slope, the box [offset - radius, offset + radius] as a
+// zonotope whose middle is added to the center and whose reach is the generator.
+// evaluate_with_input carries the input rows along. All neurons go at once by tensor operations.
 //
 // Syntax:   y = nn.evaluate(x);   Y = nn.evaluate(X);   XY = nn.evaluate_with_input(X);
 // Inputs:   x - points, columns (in, N)
@@ -56,23 +56,6 @@ namespace {
 struct Line {
     Tensor slope, offset, radius;
 };
-
-/// The derivative of the activation at the values y = a(x) (relu: at x, which y = max(x, 0) tells
-/// apart from the sign, so the ReLU takes y > 0).
-Tensor aux_derivative(Activation activation, const Tensor &y) {
-    const Tensor one = y.ones_like();
-    switch (activation) {
-    case Activation::identity:
-        return one;
-    case Activation::relu:
-        return Tensor::where(y.greater(y.zeros_like()), one, y.zeros_like());
-    case Activation::sigmoid:
-        return y.multiply(one - y);
-    case Activation::tanh:
-        return one - y.multiply(y);
-    }
-    CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
-}
 
 /// The values of the activation at the points.
 Tensor aux_apply(Activation activation, const Tensor &x) {
@@ -143,12 +126,12 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
 
 // The regression line, CORALean's ----------------------------------------------------------------
 
-/// The sigmoid's line at the clamped regression slope with the bracket's error (CORALean's
-/// sigmoidRegressionRelaxation, bit for bit at nearest); the slope-zero line where it is tighter.
-Line aux_line_sigmoid_bracket(const Tensor &l, const Tensor &u) {
+/// The least-squares slope through 20 points of [l, u] (CORALean's regressionSlope, bit for bit at
+/// nearest): the step h, the points x_i = l + i h, the middles y_i of the enclosure, the weights
+/// w_i = 2 i - 19, their sum with y_i from the right, the quotient; zero where u <= l.
+Tensor aux_regression_slope(const Tensor &l, const Tensor &u) {
     constexpr int64_t kPoints = 20;
     const Tensor zero = l.zeros_like(), one = l.ones_like();
-    // the slope: x_i = l + i h, y_i the enclosure's middle, w_i = 2 i - 19, S nested right
     std::vector<double> index(kPoints), weight(kPoints);
     for (int64_t i = 0; i < kPoints; ++i) {
         index[std::size_t(i)] = double(i);
@@ -160,9 +143,17 @@ Line aux_line_sigmoid_bracket(const Tensor &l, const Tensor &u) {
     const Tensor T = Y.multiply(Tensor::like(l, weight, {1, kPoints}));
     Tensor S = zero;
     for (int64_t i = kPoints - 1; i >= 0; --i) S = T.slice(-1, i, i + 1) + S;
-    const Tensor width = u - l, empty = u.less_equal(l);
-    const Tensor denominator = Tensor::where(empty, one, width * 70.0);
-    const Tensor m = Tensor::where(empty, zero, S.divide(denominator));
+    const Tensor empty = u.less_equal(l);
+    const Tensor denominator = Tensor::where(empty, one, (u - l) * 70.0);
+    return Tensor::where(empty, zero, S.divide(denominator));
+}
+
+/// The sigmoid's line at the clamped regression slope with the bracket's error (CORALean's
+/// sigmoidRegressionRelaxation, bit for bit at nearest); the slope-zero line where it is tighter.
+Line aux_line_sigmoid_bracket(const Tensor &l, const Tensor &u) {
+    const Tensor zero = l.zeros_like();
+    const Tensor width = u - l;
+    const Tensor m = aux_regression_slope(l, u);
     // the derivative bracket and the clamped slope
     const Tensor f_lo_l = aux_sigmoid_lo(l), f_hi_l = aux_sigmoid_hi(l);
     const Tensor d_lo = f_lo_l.maximum(zero).multiply(aux_sigmoid_lo(u.negative()).maximum(zero));
@@ -182,14 +173,68 @@ Line aux_line_sigmoid_bracket(const Tensor &l, const Tensor &u) {
             Tensor::where(use, error, error0)};
 }
 
-/// The line over [l, u] by the regression slope with the bracket's error (CORALean's
-/// Layer.sigmoidRegression and Layer.tanhRegression); the ReLU's line is Singh's.
-Line aux_line_bracket(Activation activation, const Tensor &l, const Tensor &u) {
+/// The sigmoid's line at the regression slope with the error of the extremum of sigma(t) - m t
+/// (CORALean's sigmoidRegressionExactRelaxation, bit for bit at nearest): the bounds over the ends
+/// and the boxes of the stationary points +-2 artanh sqrt(1 - 4 m) in [l, u].
+Line aux_line_sigmoid_extremum(const Tensor &l, const Tensor &u) {
+    const Tensor zero = l.zeros_like(), one = l.ones_like();
+    const Tensor m = aux_regression_slope(l, u);
+    // bounds of sigma(t) - m t on [a, b]: sigma at one end, m t at the other
+    const auto upper = [&](const Tensor &a, const Tensor &b) {
+        return aux_sigmoid_hi(b) - (m.multiply(a)).minimum(m.multiply(b));
+    };
+    const auto lower = [&](const Tensor &a, const Tensor &b) {
+        return aux_sigmoid_lo(a) - (m.multiply(a)).maximum(m.multiply(b));
+    };
+    Tensor hi = upper(l, l).maximum(upper(u, u));
+    Tensor lo = lower(l, l).minimum(lower(u, u));
+    // the stationary points exist for 0 < m <= 1/4 only; 4 m is the repeated sum m + (m + (m + m))
+    const Tensor four_m = m + (m + (m + m));
+    const Tensor exists =
+        Tensor::where(m.less_equal(zero), zero, Tensor::where(one.less(four_m), zero, one));
+    // artanh of the root from below (capped below one) and above, rounded the machine's way
+    constexpr double kCap = 1.0 - 0x1p-52;
+    // sqrtDown is the radicand over sqrtUp (the machine's root), zero where that is not positive
+    const Tensor radicand = one - four_m;
+    const Tensor root = radicand.sqrt();
+    const Tensor root_down =
+        Tensor::where(zero.less(root), radicand.maximum(0.0).divide(root), zero);
+    const Tensor s_lo = root_down.maximum(0.0).minimum(kCap);
+    const Tensor artanh_lo = ((one + s_lo).divide(one - s_lo)).maximum(1.0).log() * 0.5;
+    const Tensor t_lo = Tensor::where(zero.less(one + s_lo), artanh_lo + artanh_lo, zero);
+    const Tensor artanh_hi = ((one + root).divide(one - root)).log() * 0.5;
+    const Tensor t_hi = artanh_hi + artanh_hi;
+    const Tensor hi_exists = zero.less(one - root);
+    // the part of [a, b] that holds t0 (the two ends in either order), folded into hi and lo
+    const auto fold = [&](const Tensor &a, const Tensor &b, bool negate) {
+        const Tensor lowest = t_lo.minimum(t_hi), highest = t_lo.maximum(t_hi);
+        const Tensor from = Tensor::where(hi_exists, a.maximum(lowest), a.maximum(t_lo));
+        const Tensor to = Tensor::where(hi_exists, b.minimum(highest), b);
+        const Tensor take = Tensor::where(exists.greater(zero), from.less_equal(to), zero);
+        const Tensor box_lo = negate ? to.negative() : from, box_hi = negate ? from.negative() : to;
+        hi = Tensor::where(take, hi.maximum(upper(box_lo, box_hi)), hi);
+        lo = Tensor::where(take, lo.minimum(lower(box_lo, box_hi)), lo);
+    };
+    fold(l, u, false);
+    fold(u.negative(), l.negative(), true);
+    const Tensor offset = (lo + hi) * 0.5;
+    return {m, offset, (hi - offset).maximum(offset - lo)};
+}
+
+/// The line over [l, u] by the regression slope with CORALean's error, the extremum's
+/// (Layer.sigmoidRegressionExact, Layer.tanhRegressionExact) or the bracket's
+/// (Layer.sigmoidRegression, Layer.tanhRegression); the ReLU's line is Singh's.
+Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u,
+                         RegressionError error) {
+    const auto sigmoid = [&](const Tensor &a, const Tensor &b) {
+        return error == RegressionError::extremum ? aux_line_sigmoid_extremum(a, b)
+                                                  : aux_line_sigmoid_bracket(a, b);
+    };
     switch (activation) {
     case Activation::sigmoid:
-        return aux_line_sigmoid_bracket(l, u);
+        return sigmoid(l, u);
     case Activation::tanh: {
-        const Line s = aux_line_sigmoid_bracket(l + l, u + u);
+        const Line s = sigmoid(l + l, u + u);
         const Tensor four = (s.slope + s.slope) + (s.slope + s.slope);
         return {four, (s.offset + s.offset) + (-1.0), s.radius + s.radius};
     }
@@ -198,72 +243,10 @@ Line aux_line_bracket(Activation activation, const Tensor &l, const Tensor &u) {
     }
 }
 
-/// The least-squares line through 20 points of [l, u] with the exact error of the fit; where
-/// l == u the tangent (CORA's computeApproxPoly), and the extremes of f - p lie at the ends and at
-/// f' = m in closed form (tanh as CORA, sigmoid 2 atanh(sqrt(1 - 4m)), the ReLU at 0 and the ends).
-Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u) {
-    const Tensor zero = l.zeros_like(), one = l.ones_like();
-    if (activation == Activation::identity) return {one, zero, zero};
-    constexpr int64_t kPoints = 20; // 10 (order + 1) of CORA's computeApproxPoly
-    // the points x_k = l + (u - l) k / 19, and the fit y = m x + t by the normal equations
-    std::vector<double> grid(kPoints);
-    for (int64_t k = 0; k < kPoints; ++k) grid[std::size_t(k)] = double(k) / double(kPoints - 1);
-    const Tensor X = l + (u - l).multiply(Tensor::like(l, grid, {1, kPoints}));
-    const Tensor Y = aux_apply(activation, X);
-    const Tensor dx = X - X.mean(-1, true), dy = Y - Y.mean(-1, true);
-    const Tensor point = u.equal(l);
-    const Tensor var = Tensor::where(point, one, dx.multiply(dx).sum(-1, true));
-    const Tensor m_fit = dx.multiply(dy).sum(-1, true).divide(var);
-    // the tangent of a range of one point: the derivative from the value
-    const Tensor fl = aux_apply(activation, l);
-    const Tensor m = Tensor::where(point, aux_derivative(activation, fl), m_fit);
-    const Tensor t = Tensor::where(point, fl - aux_derivative(activation, fl).multiply(l),
-                                   Y.mean(-1, true) - m_fit.multiply(X.mean(-1, true)));
-    // the difference between the activation and the line, at the ends and where the slope is m
-    Tensor diff_max, diff_min;
-    if (activation == Activation::relu) {
-        // p - relu(x) of a piecewise linear function: at l, 0 and u
-        const Tensor p_l = m.multiply(l) + t, p_u = m.multiply(u) + t - u;
-        // outside the crossing the neuron is exact: the line is the activation itself
-        const Tensor cross =
-            Tensor::where(l.less(zero), Tensor::where(u.greater(zero), one, zero), zero);
-        const Tensor lo = p_l.minimum(t).minimum(p_u), hi = p_l.maximum(t).maximum(p_u);
-        const Tensor mid = (lo + hi) * 0.5, rad = (hi - lo) * 0.5;
-        const Tensor negative = u.less_equal(zero), positive = l.greater_equal(zero);
-        const Tensor exact = Tensor::where(cross.greater(zero), zero, one);
-        // the line shifts by the middle of p - f, so that |f - p'| <= radius
-        const Tensor slope = Tensor::where(negative, zero, Tensor::where(positive, one, m));
-        const Tensor offset = Tensor::where(exact, zero, t - mid);
-        return {slope, offset, Tensor::where(exact, zero, rad)};
-    }
-    // tanh and sigmoid: the points where f'(x) = m, +-x*, and the ends
-    const bool is_tanh = activation == Activation::tanh;
-    Tensor x_star;
-    if (is_tanh) {
-        x_star = (one - m).maximum(0.0).sqrt().atanh();
-    } else {
-        x_star = (one - m * 4.0).maximum(0.0).sqrt().atanh() * 2.0;
-    }
-    Tensor candidates[] = {l, u, x_star, x_star.negative()};
-    diff_max = diff_min = Tensor();
-    for (const Tensor &c : candidates) {
-        // a candidate outside the range, or not finite, counts as the end l
-        const Tensor x = Tensor::where(c.greater_equal(l), Tensor::where(c.less_equal(u), c, l), l);
-        const Tensor d = aux_apply(activation, x) - (m.multiply(x) + t);
-        diff_max = diff_max.defined() ? diff_max.maximum(d) : d;
-        diff_min = diff_min.defined() ? diff_min.minimum(d) : d;
-    }
-    // f - p in [diff_min, diff_max]: the line moves up by the middle, the error is the radius
-    const Tensor mid = (diff_max + diff_min) * 0.5, rad = (diff_max - diff_min) * 0.5;
-    return {m, Tensor::where(point, t, t + mid), Tensor::where(point, zero, rad)};
-}
-
 /// The line of the activation over [l, u] by the method.
 Line aux_line(Activation activation, const Tensor &l, const Tensor &u, const NnOptions &options) {
     if (options.poly_method == PolyMethod::singh) return aux_line_singh(activation, l, u);
-    return options.regression_error == RegressionError::bracket
-               ? aux_line_bracket(activation, l, u)
-               : aux_line_regression(activation, l, u);
+    return aux_line_regression(activation, l, u, options.regression_error);
 }
 
 // The rows of a set -------------------------------------------------------------------------------

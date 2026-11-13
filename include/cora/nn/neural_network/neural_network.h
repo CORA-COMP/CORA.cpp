@@ -41,9 +41,8 @@ enum class Activation { identity, relu, sigmoid, tanh };
 /// points with the error that bounds its difference to the activation over the range.
 enum class PolyMethod { singh, regression };
 
-/// The error of the regression line: extremum, the exact extremum of the difference to the
-/// activation (CORA's); bracket, the derivative bracket of the range with the slope clamped into it
-/// (CORALean's Layer.sigmoidRegression, bit for bit at nearest, sound for any slope, looser).
+/// The error of the regression line, CORALean's float definitions: extremum (CORA's), that of the
+/// ends and the stationary points; bracket, the looser one of the derivative bracket.
 enum class RegressionError { extremum, bracket };
 
 /// What evaluate_with_input does with the error of the activations (CORA's options.nn).

@@ -83,38 +83,43 @@ NnLayer NnLayer::tanh() {
 
 // The evaluations ----------------------------------------------------------------------------
 
-Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z, const std::string &poly_method) {
+Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z, const std::string &poly_method,
+                        const std::string &regression_error) {
     std::string dtype;
     const Json j = aux_layer(layer, dtype);
-    return ask("nnLayer.evaluateZonotope",
-               {{"layer", Wire(j, dtype)}, {"Z", Z}, {"poly_method", poly_method}})
-        .get<Zonotope>("Z");
+    std::vector<Operand> args{{"layer", Wire(j, dtype)}, {"Z", Z}, {"poly_method", poly_method}};
+    if (!regression_error.empty()) args.push_back({"regression_error", regression_error});
+    return ask("nnLayer.evaluateZonotope", args).get<Zonotope>("Z");
 }
 
 Zonotope evaluate_network(const std::vector<NnLayer> &layers, const Zonotope &Z,
-                          const std::string &poly_method) {
+                          const std::string &poly_method, const std::string &regression_error) {
     Json list = Json::array();
     std::string dtype;
     for (const NnLayer &layer : layers) list.push(aux_layer(layer, dtype));
-    return ask("neuralNetwork.evaluate",
-               {{"layers", Wire(list, dtype)}, {"Z", Z}, {"poly_method", poly_method}})
-        .get<Zonotope>("Z");
+    std::vector<Operand> args{
+        {"layers", Wire(list, dtype)}, {"Z", Z}, {"poly_method", poly_method}};
+    if (!regression_error.empty()) args.push_back({"regression_error", regression_error});
+    return ask("neuralNetwork.evaluate", args).get<Zonotope>("Z");
 }
 
 // the polynomial zonotope through the layers, the errors in the box or in independent generators
 NnPolyResult evaluate_network_poly(const std::vector<NnLayer> &layers, const cora::Tensor &c,
                                    const cora::Tensor &G, const cora::Tensor &GI,
-                                   const std::string &poly_method, const std::string &error_form) {
+                                   const std::string &poly_method, const std::string &error_form,
+                                   const std::string &regression_error) {
     // the layers and the set in wire form
     Json list = Json::array();
     std::string dtype;
     for (const NnLayer &layer : layers) list.push(aux_layer(layer, dtype));
     Json P = Json::object();
     P.set("c", Tensor(c).to_json()).set("G", Tensor(G).to_json()).set("GI", Tensor(GI).to_json());
-    const Reply r = ask("neuralNetwork.evaluate", {{"layers", Wire(list, dtype)},
-                                                   {"P", Wire(P, dtype)},
-                                                   {"poly_method", poly_method},
-                                                   {"errorForm", error_form}});
+    std::vector<Operand> args{{"layers", Wire(list, dtype)},
+                              {"P", Wire(P, dtype)},
+                              {"poly_method", poly_method},
+                              {"errorForm", error_form}};
+    if (!regression_error.empty()) args.push_back({"regression_error", regression_error});
+    const Reply r = ask("neuralNetwork.evaluate", args);
     const Reply out = r.member("P");
     return {out.get<Tensor>("c").gather(), out.get<Tensor>("G").gather(),
             out.get<Tensor>("GI").gather()};
