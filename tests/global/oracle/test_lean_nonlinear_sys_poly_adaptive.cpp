@@ -1,11 +1,12 @@
 // test_lean_nonlinear_sys_poly_adaptive - poly-adaptive against CORALean's reachPolyAdaptiveFloat
 //
 // The ops nonlinearSys.linReachPolyAdaptivePass and nonlinearSys.reachPolyAdaptive at nearest, on
-// the van der Pol oscillator with an input (the system of the oracle's fixture 3201) and a small
-// quadratic system whose third-order tensor is empty. The values that tuning reads off a pass (the
-// point of linearization xs, the matrix A, the zero generators of the error) are the oracle's bit
-// for bit, as are the first step sizes of a run, the true error and the radius of the solutions of
-// the errors (the abstraction error is CORALean's operation for operation, priv_poly_quad.cpp). The
+// the van der Pol oscillator with an input (the system of the oracle's fixture 3201) and a
+// quadratic system of two states whose third-order tensor is empty (three states took the oracle
+// 130 s a pass and run the same functions). The values that tuning reads off a pass (the point of
+// linearization xs, the matrix A, the zero generators of the error) are the oracle's bit for bit,
+// as are the first step sizes of a run, the true error and the radius of the solutions of the
+// errors (the abstraction error is CORALean's operation for operation, priv_poly_quad.cpp). The
 // boxes of the window and of the end set (PolyZonotope.interval, error box included) agree to 1e-5
 // only: CORALean keeps the center shift of zonotopeEven in the error box of VerrorDyn, where it is
 // part of the varying input, and CORA.cpp's zonotopes have no error box (docs/oracle-requests.md).
@@ -43,10 +44,10 @@ NonlinearSys van_der_pol() {
 NonlinearSys quadratic() {
     return NonlinearSys(
         [](const std::vector<Expr> &x, const std::vector<Expr> &) {
-            return std::vector<Expr>{-x[0] + 0.5 * x[1] * x[2], -x[1] + 0.3 * x[0] * x[0] - x[2],
-                                     x[1] - 0.8 * x[2] - 0.2 * x[0] * x[1]};
+            return std::vector<Expr>{-x[0] + 0.5 * x[1] * x[1],
+                                     -x[1] + 0.3 * x[0] * x[0] - 0.2 * x[0] * x[1]};
         },
-        3, 1);
+        2, 1);
 }
 
 /// A system with its start set, input set, step size and whether its third derivatives vanish.
@@ -63,8 +64,7 @@ std::vector<Case> cases() {
              Zonotope(Tensor({1.75, 1.25}), Tensor({{0.03125, 0.0}, {0.0, 0.03125}})),
              Zonotope(Tensor({0.0}), Tensor({{0.015625}})), 1.0 / 1024, false},
             {"quadratic", quadratic(),
-             Zonotope(Tensor({1.0, 0.5, 0.2}),
-                      Tensor({{0.05, 0.0, 0.0}, {0.0, 0.05, 0.0}, {0.0, 0.0, 0.05}})),
+             Zonotope(Tensor({1.0, 0.5}), Tensor({{0.05, 0.0}, {0.0, 0.05}})),
              Zonotope(Tensor({0.0}), Tensor::zeros({1, 0})), 0.002, true}};
 }
 
