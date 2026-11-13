@@ -608,7 +608,7 @@ enclosed by CORA's `poly_method` "singh" of order 1 (the tightest parallelogram 
 [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and tanh); on a polynomial zonotope the
 factors and exponents stay. QUAD, Docking, NAV and CartPole use CORA's `poly_method` "regression" of
 order 1: the least-squares line through 20 points of the range of the neuron and, as its error, the
-exact maximum of the difference to the activation. The Unicycle, Double Pendulum less-robust and NAV
+exact maximum of the difference to the activation. `NnOptions::regression_error = RegressionError::bracket` (CORALean's `Layer.sigmoidRegression`: the slope clamped into the derivative bracket, the error the bracket's; bit-exact against the oracle) is sound for any slope but looser: with `CORACPP_NN_REGRESSION=bracket` QUAD, NAV standard, CartPole (both sets) and the Docking polygon row end UNKNOWN (NAV robust verifies, 1.94 s instead of 0.35 s), so CORA's exact extremum stays the default. The Unicycle, Double Pendulum less-robust and NAV
 start from zonotopes, the others from polynomial zonotopes, as the scripts. The sets, the boxes and the sets over the
 steps agree with MATLAB CORA's to five digits over 50 control periods (TORA reach-tanh, checked at
 t = 0.5, 1, ..., 5).
@@ -799,9 +799,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 <!-- BEGIN bit-exact -->
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
-| ACC-safe-distance | 30/60 | 30 | 11 |
-| Airplane-continuous | 30/60 | 30 | 11 |
-| Attitude_Control-avoid | 30/62 | 32 | 15 |
+| ACC-safe-distance | 31/60 | 29 | 11 |
+| Airplane-continuous | 31/60 | 29 | 11 |
+| Attitude_Control-avoid | 31/62 | 31 | 15 |
 | BRKDC01 | 6/12 | 6 | 5 |
 | BRKNC01 | 35/52 | 17 | 10 |
 | BRKNP01 | 28/44 | 16 | 10 |
@@ -812,19 +812,19 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF02 | 3/8 | 5 | 4 |
 | CBF03 | 3/8 | 5 | 4 |
 | CVDP23 | 39/70 | 31 | 11 |
-| CartPole-reach | 31/62 | 31 | 11 |
-| CartPole-reach-report | 31/62 | 31 | 11 |
+| CartPole-reach | 32/62 | 30 | 11 |
+| CartPole-reach-report | 32/62 | 30 | 11 |
 | DTN01 | 23/36 | 13 | 6 |
 | DTN02 | 23/36 | 13 | 6 |
 | DTN03 | 22/35 | 13 | 6 |
 | DTN04 | 23/36 | 13 | 6 |
 | DTN05 | 23/36 | 13 | 6 |
 | DTN06 | 24/37 | 13 | 6 |
-| Docking-constraint | 21/51 | 30 | 9 |
-| Docking-constraint-polygon | 30/60 | 30 | 11 |
-| Double_Pendulum-less-robust | 31/56 | 25 | 11 |
-| Double_Pendulum-less-robust-script | 19/41 | 22 | 9 |
-| Double_Pendulum-more-robust | 30/60 | 30 | 11 |
+| Docking-constraint | 22/51 | 29 | 9 |
+| Docking-constraint-polygon | 31/60 | 29 | 11 |
+| Double_Pendulum-less-robust | 32/56 | 24 | 11 |
+| Double_Pendulum-less-robust-script | 20/41 | 21 | 9 |
+| Double_Pendulum-more-robust | 31/60 | 29 | 11 |
 | GRBX01 | 34/52 | 18 | 10 |
 | GRBX02 | 35/56 | 21 | 10 |
 | HEAT01 | 3/8 | 5 | 4 |
@@ -840,14 +840,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W01 | 8/25 | 17 | 5 |
 | LOVO25 | 33/76 | 43 | 12 |
 | LOVO25-script | 36/83 | 47 | 14 |
-| NAV-robust | 24/48 | 24 | 13 |
-| NAV-standard | 27/52 | 25 | 13 |
+| NAV-robust | 25/48 | 23 | 13 |
+| NAV-standard | 28/52 | 24 | 13 |
 | PLAA01_BND42 | 25/35 | 10 | 9 |
 | PLAA01_BND50 | 25/35 | 10 | 9 |
 | PLAD01_BND30 | 11/17 | 6 | 5 |
 | PLAD01_BND42 | 11/17 | 6 | 5 |
 | PLAN01 | 34/45 | 11 | 9 |
-| QUAD-reach | 31/62 | 31 | 11 |
+| QUAD-reach | 32/62 | 30 | 11 |
 | RAND01 | 7/13 | 6 | 4 |
 | RAND02 | 7/13 | 6 | 4 |
 | RND01 | 7/13 | 6 | 4 |
@@ -871,20 +871,20 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRNA01 | 26/40 | 14 | 7 |
 | SRU01 | 33/47 | 14 | 8 |
 | SRU02 | 48/67 | 19 | 11 |
-| Single_Pendulum-reach | 30/60 | 30 | 11 |
-| TORA-reach-sigmoid | 31/61 | 30 | 11 |
-| TORA-reach-tanh | 30/60 | 30 | 11 |
-| TORA-remain | 31/61 | 30 | 11 |
+| Single_Pendulum-reach | 31/60 | 29 | 11 |
+| TORA-reach-sigmoid | 32/61 | 29 | 11 |
+| TORA-reach-tanh | 31/60 | 29 | 11 |
+| TORA-remain | 32/61 | 29 | 11 |
 | TRAF22 | 19/25 | 6 | 7 |
 | TSPS25 | 20/32 | 12 | 6 |
-| Unicycle-reach | 19/41 | 22 | 9 |
-| Unicycle-reach-disturbance | 19/41 | 22 | 9 |
-| VCAS-middle-19.5 | 8/24 | 16 | 4 |
-| VCAS-middle-22.5 | 8/24 | 16 | 4 |
-| VCAS-middle-25.5 | 3/10 | 7 | 0 |
-| VCAS-middle-28.5 | 3/10 | 7 | 0 |
-| VCAS-worst-19.5 | 8/24 | 16 | 4 |
-| VCAS-worst-22.5 | 3/10 | 7 | 0 |
-| VCAS-worst-25.5 | 3/10 | 7 | 0 |
-| VCAS-worst-28.5 | 3/10 | 7 | 0 |
+| Unicycle-reach | 20/41 | 21 | 9 |
+| Unicycle-reach-disturbance | 20/41 | 21 | 9 |
+| VCAS-middle-19.5 | 9/24 | 15 | 4 |
+| VCAS-middle-22.5 | 9/24 | 15 | 4 |
+| VCAS-middle-25.5 | 4/10 | 6 | 0 |
+| VCAS-middle-28.5 | 4/10 | 6 | 0 |
+| VCAS-worst-19.5 | 9/24 | 15 | 4 |
+| VCAS-worst-22.5 | 4/10 | 6 | 0 |
+| VCAS-worst-25.5 | 4/10 | 6 | 0 |
+| VCAS-worst-28.5 | 4/10 | 6 | 0 |
 <!-- END bit-exact -->

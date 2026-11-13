@@ -4275,6 +4275,14 @@ PolyMethod poly_method_of(const std::string &name) {
     return name == "singh" ? PolyMethod::singh : PolyMethod::regression;
 }
 
+/// The error of the regression line from its name.
+RegressionError regression_error_of(const std::string &name) {
+    if (name != "extremum" && name != "bracket")
+        CORA_FAIL(Error::wrong_value,
+                  "regression_error must be 'extremum' or 'bracket', got " + name);
+    return name == "extremum" ? RegressionError::extremum : RegressionError::bracket;
+}
+
 /// The options of the plant's alg "lin" and of the network from keyword arguments.
 ClosedLoopOptions closed_loop_options(const py::kwargs &kwargs) {
     ClosedLoopOptions options;
@@ -4290,6 +4298,9 @@ ClosedLoopOptions closed_loop_options(const py::kwargs &kwargs) {
     read("add_approx_error_to_gi", options.nn.add_approx_error_to_gi);
     if (kwargs.contains("poly_method"))
         options.nn.poly_method = poly_method_of(py::cast<std::string>(kwargs["poly_method"]));
+    if (kwargs.contains("regression_error"))
+        options.nn.regression_error =
+            regression_error_of(py::cast<std::string>(kwargs["regression_error"]));
     return options;
 }
 
@@ -4343,19 +4354,23 @@ void bind_neural_network(py::module_ &m) {
         // the outputs at points, the enclosure of the outputs over a set, and the pairs
         .def(
             "evaluate",
-            [](const NeuralNetwork &nn, const py::object &x,
-               const std::string &poly_method) -> py::object {
+            [](const NeuralNetwork &nn, const py::object &x, const std::string &poly_method,
+               const std::string &regression_error) -> py::object {
                 if (py::isinstance<Zonotope>(x))
-                    return py::cast(nn.evaluate(py::cast<Zonotope>(x),
-                                                {.poly_method = poly_method_of(poly_method)}));
+                    return py::cast(
+                        nn.evaluate(py::cast<Zonotope>(x),
+                                    {.poly_method = poly_method_of(poly_method),
+                                     .regression_error = regression_error_of(regression_error)}));
                 const Tensor y = nn.evaluate(tensor_of(x, "the points"));
                 const bool one = py::hasattr(x, "ndim") && py::cast<int>(x.attr("ndim")) == 1;
                 return one ? vector(y) : matrix(y);
             },
             py::arg("x"), py::arg("poly_method") = "singh",
+            py::arg("regression_error") = "extremum",
             "The outputs at a point (in,) or the columns of (in, N); for a zonotope, "
             "a zonotope that contains the outputs of every point, the line of each activation by "
-            "poly_method 'singh' or 'regression'")
+            "poly_method 'singh' or 'regression' (regression_error 'extremum': CORA's exact "
+            "extremum, or 'bracket': CORALean's derivative bracket)")
         // the Jacobian at a point
         .def(
             "sensitivity",

@@ -33,7 +33,7 @@
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   11-November-2026
+// Last update:   13-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -141,6 +141,63 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
 
+// The regression line, CORALean's ----------------------------------------------------------------
+
+/// The sigmoid's line at the clamped regression slope with the bracket's error (CORALean's
+/// sigmoidRegressionRelaxation, bit for bit at nearest); the slope-zero line where it is tighter.
+Line aux_line_sigmoid_bracket(const Tensor &l, const Tensor &u) {
+    constexpr int64_t kPoints = 20;
+    const Tensor zero = l.zeros_like(), one = l.ones_like();
+    // the slope: x_i = l + i h, y_i the enclosure's middle, w_i = 2 i - 19, S nested right
+    std::vector<double> index(kPoints), weight(kPoints);
+    for (int64_t i = 0; i < kPoints; ++i) {
+        index[std::size_t(i)] = double(i);
+        weight[std::size_t(i)] = double(2 * i - (kPoints - 1));
+    }
+    const Tensor h = (u - l).divide(one * double(kPoints - 1));
+    const Tensor X = l + h.multiply(Tensor::like(l, index, {1, kPoints}));
+    const Tensor Y = (aux_sigmoid_lo(X) + aux_sigmoid_hi(X)) * 0.5;
+    const Tensor T = Y.multiply(Tensor::like(l, weight, {1, kPoints}));
+    Tensor S = zero;
+    for (int64_t i = kPoints - 1; i >= 0; --i) S = T.slice(-1, i, i + 1) + S;
+    const Tensor width = u - l, empty = u.less_equal(l);
+    const Tensor denominator = Tensor::where(empty, one, width * 70.0);
+    const Tensor m = Tensor::where(empty, zero, S.divide(denominator));
+    // the derivative bracket and the clamped slope
+    const Tensor f_lo_l = aux_sigmoid_lo(l), f_hi_l = aux_sigmoid_hi(l);
+    const Tensor d_lo = f_lo_l.maximum(zero).multiply(aux_sigmoid_lo(u.negative()).maximum(zero));
+    const Tensor d_hi = aux_sigmoid_hi(u).multiply(aux_sigmoid_hi(l.negative()));
+    const Tensor lambda = d_lo.maximum(d_hi.minimum(m));
+    // the error of the bracket
+    const Tensor lo = (f_lo_l - lambda.multiply(l)) + (d_lo - lambda).multiply(width);
+    const Tensor hi = (f_hi_l - lambda.multiply(l)) + (d_hi - lambda).multiply(width);
+    const Tensor offset = (lo + hi) * 0.5;
+    const Tensor error = (hi - offset).maximum(offset - lo);
+    // the slope-zero line
+    const Tensor f_hi_u = aux_sigmoid_hi(u);
+    const Tensor offset0 = (f_lo_l + f_hi_u) * 0.5;
+    const Tensor error0 = (f_hi_u - offset0).maximum(offset0 - f_lo_l);
+    const Tensor use = error.less_equal(error0);
+    return {Tensor::where(use, lambda, zero), Tensor::where(use, offset, offset0),
+            Tensor::where(use, error, error0)};
+}
+
+/// The line over [l, u] by the regression slope with the bracket's error (CORALean's
+/// Layer.sigmoidRegression and Layer.tanhRegression); the ReLU's line is Singh's.
+Line aux_line_bracket(Activation activation, const Tensor &l, const Tensor &u) {
+    switch (activation) {
+    case Activation::sigmoid:
+        return aux_line_sigmoid_bracket(l, u);
+    case Activation::tanh: {
+        const Line s = aux_line_sigmoid_bracket(l + l, u + u);
+        const Tensor four = (s.slope + s.slope) + (s.slope + s.slope);
+        return {four, (s.offset + s.offset) + (-1.0), s.radius + s.radius};
+    }
+    default:
+        return aux_line_singh(activation, l, u);
+    }
+}
+
 /// The least-squares line through 20 points of [l, u] with the exact error of the fit; where
 /// l == u the tangent (CORA's computeApproxPoly), and the extremes of f - p lie at the ends and at
 /// f' = m in closed form (tanh as CORA, sigmoid 2 atanh(sqrt(1 - 4m)), the ReLU at 0 and the ends).
@@ -202,10 +259,14 @@ Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u
 }
 
 /// The line of the activation over [l, u] by the method.
-Line aux_line(Activation activation, const Tensor &l, const Tensor &u, PolyMethod method) {
-    return method == PolyMethod::regression ? aux_line_regression(activation, l, u)
-                                            : aux_line_singh(activation, l, u);
+Line aux_line(Activation activation, const Tensor &l, const Tensor &u, const NnOptions &options) {
+    if (options.poly_method == PolyMethod::singh) return aux_line_singh(activation, l, u);
+    return options.regression_error == RegressionError::bracket
+               ? aux_line_bracket(activation, l, u)
+               : aux_line_regression(activation, l, u);
 }
+
+// The rows of a set -------------------------------------------------------------------------------
 
 /// The rows of a set that goes through the layers: the center, the dependent generators with the
 /// mask of those with only even exponents (1, h), the independent generators, and the factors that
@@ -217,17 +278,20 @@ struct Rows {
 
 // The layers on a set -----------------------------------------------------------------------------
 
-/// The bounds of every row (CORA's bound_approx).
+/// The bounds of every row (CORA's bound_approx), summed as CORALean's PolyZonotope.interval: the
+/// center, then the reach of G, then that of GI, each rounded on its own (a column of only even
+/// exponents contributes half its reach, shifted by half the column).
 std::pair<Tensor, Tensor> aux_bounds(const Rows &r) {
     const Tensor odd = r.even.ones_like() - r.even;
     const Tensor shift = r.G.multiply(r.even).sum(-1, true) * 0.5;
-    const Tensor radius = r.G.abs().multiply(r.even).sum(-1, true) * 0.5 +
-                          r.G.abs().multiply(odd).sum(-1, true) + r.GI.abs().sum(-1, true);
+    const Tensor reach_G =
+        r.G.abs().multiply(r.even).sum(-1, true) * 0.5 + r.G.abs().multiply(odd).sum(-1, true);
+    const Tensor reach_GI = r.GI.abs().sum(-1, true);
     const Tensor mid = r.c + shift;
-    return {mid - radius, mid + radius};
+    return {(mid - reach_G) - reach_GI, (mid + reach_G) + reach_GI};
 }
 
-/// The columns of diag(radius) with a positive radius (all of them: keep_zero).
+/// The columns of diag(radius) with a positive radius (all of them with keep_zero).
 Tensor aux_error_columns(const Tensor &radius, bool keep_zero) {
     const Tensor D = radius.diag();
     if (keep_zero) return D;
@@ -242,14 +306,14 @@ Tensor aux_error_columns(const Tensor &radius, bool keep_zero) {
 /// activation. keep_zero keeps the (zero) generator of a neuron without error.
 Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 const std::vector<Activation> &activations, Rows r, bool errors_in_gi,
-                bool keep_zero, PolyMethod method) {
+                bool keep_zero, const NnOptions &options) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
         r.c = layers[k].W.matmul(r.c) + layers[k].b;
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);
         // the range of every neuron, the line over it, and the set it maps to
         const auto [l, u] = aux_bounds(r);
-        const Line line = aux_line(activations[k], l, u, method);
+        const Line line = aux_line(activations[k], l, u, options);
         // CORALean's Layer.activation: the slope map (+ 0.0: -0 times a zero slope is +0), the box
         const Tensor lo = line.offset - line.radius, hi = line.offset + line.radius;
         const Tensor middle = (lo + hi) * 0.5, reach = (hi - middle).maximum(middle - lo);
@@ -313,7 +377,7 @@ Zonotope NeuralNetwork::evaluate(const Zonotope &X, const NnOptions &options) co
     // the layers on the set, its generators independent; a zero generator stays for an exact neuron
     const Tensor none = X.generators().slice(-1, 0, 0);
     const Rows r = aux_layers(layers_, activations_, aux_rows(X.center(), none, X.generators(), {}),
-                              true, true, options.poly_method);
+                              true, true, options);
     return {r.c, r.GI};
 }
 
@@ -338,7 +402,7 @@ PolyZonotope NeuralNetwork::evaluate_with_input(const PolyZonotope &X,
     const Rows r =
         aux_layers(layers_, activations_,
                    aux_rows(X.center(), X.generators(), X.independent_generators(), X.exponents()),
-                   options.add_approx_error_to_gi, false, options.poly_method);
+                   options.add_approx_error_to_gi, false, options);
     // the input rows keep their generators, and are zero in the generators the errors added
     const int64_t n = input_dim(), h = X.num_dependent(), q = X.independent_generators().shape()[1];
     const Tensor zeros_G = X.center().zeros_like({n, r.G.shape()[1] - h});

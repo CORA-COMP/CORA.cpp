@@ -7,6 +7,7 @@
 // CORA: nn/layers/nonlinear/nnSigmoidLayer.m
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
 // CORA: nn/@neuralNetwork/evaluate_.m
+// CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // PROPERTY: nn/@neuralNetwork/evaluate.m
 // CORA authors: Tobias Ladner, Lukas Koller, Sebastian Sigl
 // Authors:       Tobias Ladner

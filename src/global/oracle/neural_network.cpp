@@ -101,6 +101,25 @@ Zonotope evaluate_network(const std::vector<NnLayer> &layers, const Zonotope &Z,
         .get<Zonotope>("Z");
 }
 
+// the polynomial zonotope through the layers, the errors in the box or in independent generators
+NnPolyResult evaluate_network_poly(const std::vector<NnLayer> &layers, const cora::Tensor &c,
+                                   const cora::Tensor &G, const cora::Tensor &GI,
+                                   const std::string &poly_method, const std::string &error_form) {
+    // the layers and the set in wire form
+    Json list = Json::array();
+    std::string dtype;
+    for (const NnLayer &layer : layers) list.push(aux_layer(layer, dtype));
+    Json P = Json::object();
+    P.set("c", Tensor(c).to_json()).set("G", Tensor(G).to_json()).set("GI", Tensor(GI).to_json());
+    const Reply r = ask("neuralNetwork.evaluate", {{"layers", Wire(list, dtype)},
+                                                   {"P", Wire(P, dtype)},
+                                                   {"poly_method", poly_method},
+                                                   {"errorForm", error_form}});
+    const Reply out = r.member("P");
+    return {out.get<Tensor>("c").gather(), out.get<Tensor>("G").gather(),
+            out.get<Tensor>("GI").gather()};
+}
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
