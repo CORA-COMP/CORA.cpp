@@ -117,10 +117,13 @@ inline constexpr double kPowerIteration = 1e-15;    ///< relative change that en
 inline constexpr double kTiny = 1e-300;             ///< keeps a denominator or a range off zero
 inline constexpr double kOdeRelTol = 1e-3; ///< relative tolerance of the step control (ode45)
 inline constexpr double kOdeAbsTol = 1e-6; ///< absolute tolerance of the step control (ode45)
+inline constexpr double kActivationFitTol = 1e-4; ///< error of an activation's fit: grid slack
+inline constexpr double kRidgeLambda = 1e-3;      ///< ridge regression of an activation's fit
 
 // Powers and pieces -------------------------------------------------------------------------------
 
 inline constexpr int64_t kPowerProduct = 64; ///< integer powers up to this many factors: products
+inline constexpr int64_t kMaxPowerGenerators = int64_t{1} << 24; ///< most generators of the powers
 inline constexpr int64_t kMaxPieces = int64_t{1} << 24; ///< most boxes that partition returns
 inline constexpr int64_t kVertexCandidates = int64_t{1} << 20; ///< most bases that vertices try
 inline constexpr int64_t kSubsetBlock = int64_t{1} << 22;      ///< entries per block of volume

@@ -6,12 +6,11 @@
 // least-squares line through 20 equidistant points of [l, u] shifted by the middle of its
 // difference to the activation, whose bounds are those of the ends and of the enclosed points
 // where f'(x) = slope (RegressionError::extremum, CORALean's float definition) or the derivative
-// bracket's (RegressionError::bracket). The line maps (c, G, GI) exactly, so the factors and the
-// exponents never change; the radius is a new independent generator per neuron, or a new factor.
-// The order of the operations is that of CORALean's Layer.activation, bit for bit at nearest for
-// all three (test_lean_nn_evaluate): the slope, the box [offset - radius, offset + radius] as a
-// zonotope whose middle is added to the center and whose reach is the generator.
-// evaluate_with_input carries the input rows along. All neurons go at once by tensor operations.
+// bracket's (RegressionError::bracket). The line maps (c, G, GI) exactly; the radius is a new
+// independent generator per neuron, or a new factor.
+// The order of the operations is that of CORALean's Layer.activation, bit for bit at nearest
+// (test_lean_nn_evaluate). evaluate_with_input carries the input rows along. All neurons go at
+// once by tensor operations; a layer of order above 1 goes neuron by neuron (priv_poly_layer.cpp).
 //
 // Syntax:   y = nn.evaluate(x);   Y = nn.evaluate(X);   XY = nn.evaluate_with_input(X);
 // Inputs:   x - points, columns (in, N)
@@ -30,6 +29,7 @@
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
+// CORA: nn/@neuralNetwork/getRefinableLayers.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
@@ -39,6 +39,7 @@
 #include "cora/global/tensor/tolerance.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"
+#include "nn/neural_network/private/priv_layers.h"
 
 #include <algorithm>
 
@@ -52,10 +53,7 @@ namespace {
 
 // The line of an activation -----------------------------------------------------------------------
 
-/// The line of an activation over a range: y in slope x + offset +- radius.
-struct Line {
-    Tensor slope, offset, radius;
-};
+using Line = PrivLine;
 
 /// The values of the activation at the points.
 Tensor aux_apply(Activation activation, const Tensor &x) {
@@ -246,18 +244,14 @@ Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u
 /// The line of the activation over [l, u] by the method.
 Line aux_line(Activation activation, const Tensor &l, const Tensor &u, const NnOptions &options) {
     if (options.poly_method == PolyMethod::singh) return aux_line_singh(activation, l, u);
-    return aux_line_regression(activation, l, u, options.regression_error);
+    if (options.poly_method == PolyMethod::regression)
+        return aux_line_regression(activation, l, u, options.regression_error);
+    CORA_FAIL(Error::not_supported, "evaluate: this poly_method is for polynomial zonotopes");
 }
 
 // The rows of a set -------------------------------------------------------------------------------
 
-/// The rows of a set that goes through the layers: the center, the dependent generators with the
-/// mask of those with only even exponents (1, h), the independent generators, and the factors that
-/// the errors added (their generators are the last columns of G).
-struct Rows {
-    Tensor c, G, GI, even;
-    int64_t new_factors = 0;
-};
+using Rows = PrivRows;
 
 // The layers on a set -----------------------------------------------------------------------------
 
@@ -285,15 +279,62 @@ Tensor aux_error_columns(const Tensor &radius, bool keep_zero) {
     return D.take(positive, -1);
 }
 
+// The layers of order k, tracked rows -------------------------------------------------------------
+
+/// The tracked exponents and identifiers after count new factors, whose generators were appended.
+void aux_track_factors(Rows &r, int64_t count) {
+    const std::size_t p = r.ids.size(), c = std::size_t(count);
+    for (std::vector<int> &column : r.E) column.resize(p + c, 0);
+    if (!r.ids.empty())
+        r.last_id = std::max(r.last_id, *std::max_element(r.ids.begin(), r.ids.end()));
+    for (std::size_t j = 0; j < c; ++j) {
+        std::vector<int> column(p + c, 0);
+        column[p + j] = 1;
+        r.E.push_back(column);
+        r.ids.push_back(++r.last_id);
+    }
+}
+
+/// The orders of the neurons of layer k (CORA's layer.order): none given is 1, one value is that of
+/// every neuron, one per neuron is taken as it is, any other count takes the largest.
+std::vector<int> aux_orders(const NnOptions &options, std::size_t k, int64_t neurons) {
+    const std::vector<int> given =
+        k < options.orders.size() ? options.orders[k] : std::vector<int>{};
+    if (given.empty()) return std::vector<int>(std::size_t(neurons), 1);
+    if (int64_t(given.size()) == neurons) return given;
+    return std::vector<int>(std::size_t(neurons), *std::max_element(given.begin(), given.end()));
+}
+
+/// Whether the layer is evaluated neuron by neuron: an order above 1, a limit on the generators,
+/// or a poly_method that is not a line.
+bool aux_is_poly_layer(Activation activation, const std::vector<int> &orders,
+                       const NnOptions &options) {
+    if (activation == Activation::identity) return false;
+    const bool line_method =
+        options.poly_method == PolyMethod::singh || options.poly_method == PolyMethod::regression;
+    return !line_method || options.num_generators > 0 ||
+           *std::max_element(orders.begin(), orders.end()) > 1;
+}
+
 /// The layers of the network on the rows: an exact map, then the line and the error of the
-/// activation. keep_zero keeps the (zero) generator of a neuron without error.
+/// activation. keep_zero keeps the (zero) generator of a neuron without error. errors, if given,
+/// receives per layer the radius of each neuron's error (empty for the identity).
 Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 const std::vector<Activation> &activations, Rows r, bool errors_in_gi,
-                bool keep_zero, const NnOptions &options) {
+                bool keep_zero, const NnOptions &options,
+                std::vector<std::vector<double>> *errors = nullptr) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
         r.c = layers[k].W.matmul(r.c) + layers[k].b;
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);
+        // a layer of order k goes neuron by neuron on tracked rows
+        const std::vector<int> orders = aux_orders(options, k, layers[k].W.shape()[0]);
+        if (r.track && aux_is_poly_layer(activations[k], orders, options)) {
+            std::vector<double> d;
+            priv_layer_poly(r, activations[k], orders, errors_in_gi, options, &d);
+            if (errors) errors->push_back(d);
+            continue;
+        }
         // the range of every neuron, the line over it, and the set it maps to
         const auto [l, u] = aux_bounds(r);
         const Line line = aux_line(activations[k], l, u, options);
@@ -304,15 +345,23 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
         r.G = line.slope.multiply(r.G) + 0.0;
         r.GI = line.slope.multiply(r.GI) + 0.0;
         // the identity has no error
-        if (activations[k] == Activation::identity) continue;
+        if (activations[k] == Activation::identity) {
+            if (errors) errors->emplace_back();
+            continue;
+        }
+        if (errors) errors->push_back(reach.data());
+        if (!options.use_approx_error) continue;
         // the error, as independent generators or as new factors
         const Tensor D = aux_error_columns(reach, keep_zero);
+        const int64_t count = D.shape().back();
         if (errors_in_gi) {
             r.GI = Tensor::concat({r.GI, D}, -1);
+            if (r.track) r.gi_src.insert(r.gi_src.end(), std::size_t(count), -1);
         } else {
             r.G = Tensor::concat({r.G, D}, -1);
             r.even = Tensor::concat({r.even, D.slice(-2, 0, 1).zeros_like()}, -1);
-            r.new_factors += D.shape().back();
+            r.new_factors += count;
+            if (r.track) aux_track_factors(r, count);
         }
     }
     return r;
@@ -320,18 +369,179 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
 
 /// The rows of a column set with the dependent generators G (exponents E) and the independent GI.
 Rows aux_rows(const Tensor &c, const Tensor &G, const Tensor &GI, const Exponents &E) {
-    std::vector<double> even;
-    for (const std::vector<int> &column : E)
-        even.push_back(std::all_of(column.begin(), column.end(), [](int e) { return e % 2 == 0; })
-                           ? 1.0
-                           : 0.0);
-    return {c, G, GI, Tensor::like(c, even, {1, static_cast<int64_t>(even.size())}), 0};
+    Rows r;
+    r.c = c;
+    r.G = G;
+    r.GI = GI;
+    r.even = priv_even_mask(c, E);
+    return r;
+}
+
+/// The rows of a polynomial zonotope that track their exponents and factors, for the layers of
+/// order k.
+Rows aux_tracked_rows(const PolyZonotope &X) {
+    Rows r = aux_rows(X.center(), X.generators(), X.independent_generators(), X.exponents());
+    r.track = true;
+    r.E = X.exponents();
+    r.ids = X.ids();
+    r.last_id = X.ids().empty() ? 0 : *std::max_element(X.ids().begin(), X.ids().end());
+    for (int64_t j = 0; j < X.independent_generators().shape()[1]; ++j) r.gi_src.push_back(j);
+    return r;
+}
+
+/// The set with its independent generators made dependent, each with a factor of its own.
+PolyZonotope aux_restructured(const PolyZonotope &X) {
+    const int64_t q = X.independent_generators().shape()[1];
+    if (q == 0) return X;
+    // the factors of the independent generators follow the old ones
+    std::vector<int64_t> ids = X.ids();
+    const int64_t first = ids.empty() ? 1 : *std::max_element(ids.begin(), ids.end()) + 1;
+    for (int64_t j = 0; j < q; ++j) ids.push_back(first + j);
+    Exponents E = X.exponents();
+    for (std::vector<int> &column : E) column.resize(ids.size(), 0);
+    for (int64_t j = 0; j < q; ++j) {
+        std::vector<int> column(ids.size(), 0);
+        column[X.ids().size() + std::size_t(j)] = 1;
+        E.push_back(column);
+    }
+    return {X.center(), Tensor::concat({X.generators(), X.independent_generators()}, 1),
+            X.independent_generators().slice(-1, 0, 0), E, ids};
+}
+
+/// Whether any layer needs the rows tracked (an order above 1, a limit on the generators, or a
+/// poly_method of another kind than a line).
+bool aux_needs_tracking(const std::vector<NeuralNetwork::Layer> &layers,
+                        const std::vector<Activation> &activations, const NnOptions &options) {
+    for (std::size_t k = 0; k < layers.size(); ++k)
+        if (aux_is_poly_layer(activations[k], aux_orders(options, k, layers[k].W.shape()[0]),
+                              options))
+            return true;
+    return false;
+}
+
+// The pairs ---------------------------------------------------------------------------------------
+
+/// The rows of the pairs: the input rows of X beside the output rows of the layers, which depend
+/// on the same factors; the generators with the same exponents are one column.
+PolyZonotope aux_joint(const PolyZonotope &X, const Rows &r) {
+    // the factors of X, then those that only the layers added
+    std::vector<int64_t> ids = X.ids();
+    for (const int64_t id : r.ids)
+        if (std::find(ids.begin(), ids.end(), id) == ids.end()) ids.push_back(id);
+    const auto widen = [&](const Exponents &E, const std::vector<int64_t> &own) {
+        Exponents out;
+        for (const std::vector<int> &column : E) {
+            std::vector<int> wide(ids.size(), 0);
+            for (std::size_t i = 0; i < own.size(); ++i)
+                wide[std::size_t(std::find(ids.begin(), ids.end(), own[i]) - ids.begin())] =
+                    column[i];
+            out.push_back(wide);
+        }
+        return out;
+    };
+    Exponents E = widen(X.exponents(), X.ids());
+    const Exponents Er = widen(r.E, r.ids);
+    E.insert(E.end(), Er.begin(), Er.end());
+    // the dependent generators side by side, each block zero in the rows of the other
+    const int64_t n = X.dim(), m = r.c.shape()[0], hx = X.num_dependent(), hr = r.G.shape()[1];
+    const Tensor zero_x = X.center().zeros_like({n, hr}), zero_r = r.c.zeros_like({m, hx});
+    const Tensor G = Tensor::concat(
+        {Tensor::concat({X.generators(), zero_x}, 1), Tensor::concat({zero_r, r.G}, 1)}, 0);
+    // the independent generators: those of X with the image of each, then the ones of the layers
+    const int64_t q = X.independent_generators().shape()[1], qr = r.GI.shape()[1];
+    std::vector<int64_t> extra;
+    std::vector<Tensor> images(std::size_t(q), r.c.zeros_like({m, 1}));
+    for (int64_t j = 0; j < qr; ++j) {
+        if (r.gi_src[std::size_t(j)] >= 0)
+            images[std::size_t(r.gi_src[std::size_t(j)])] = r.GI.slice(-1, j, j + 1);
+        else
+            extra.push_back(j);
+    }
+    Tensor GI =
+        Tensor::concat({X.independent_generators(), r.c.zeros_like({n, int64_t(extra.size())})}, 1);
+    Tensor below = q > 0 ? Tensor::concat(images, 1) : r.c.zeros_like({m, 0});
+    if (!extra.empty()) below = Tensor::concat({below, r.GI.take(extra, -1)}, 1);
+    GI = Tensor::concat({GI, below}, 0);
+    return {Tensor::concat({X.center(), r.c}, 0), G, GI, E, ids};
+}
+
+/// The options of a set evaluation: an order is at least 1.
+void aux_check_options(const NnOptions &options) {
+    for (const std::vector<int> &layer : options.orders)
+        for (const int order : layer)
+            if (order < 1)
+                CORA_FAIL(Error::wrong_value,
+                          "evaluate: the order of a neuron must be at least 1, got " +
+                              std::to_string(order));
+    if (options.num_generators < 0)
+        CORA_FAIL(Error::wrong_value, "evaluate: num_generators must not be negative, got " +
+                                          std::to_string(options.num_generators));
+}
+
+/// The set of the pairs (x, N(x)) of X, collecting the errors of the activations if asked.
+PolyZonotope aux_evaluate(const std::vector<NeuralNetwork::Layer> &layers,
+                          const std::vector<Activation> &activations, const PolyZonotope &X,
+                          const NnOptions &options, std::vector<std::vector<double>> *errors) {
+    // the rows that track their factors, if a layer is of order k
+    if (aux_needs_tracking(layers, activations, options)) {
+        const bool remove_gi = options.remove_gi.value_or(!options.add_approx_error_to_gi);
+        const PolyZonotope Xs = remove_gi ? aux_restructured(X) : X;
+        const Rows r = aux_layers(layers, activations, aux_tracked_rows(Xs),
+                                  options.add_approx_error_to_gi, false, options, errors);
+        return aux_joint(Xs, r);
+    }
+    const Rows r =
+        aux_layers(layers, activations,
+                   aux_rows(X.center(), X.generators(), X.independent_generators(), X.exponents()),
+                   options.add_approx_error_to_gi, false, options, errors);
+    // the input rows keep their generators, and are zero in the generators the errors added
+    const int64_t n = X.dim(), h = X.num_dependent(), q = X.independent_generators().shape()[1];
+    const Tensor zeros_G = X.center().zeros_like({n, r.G.shape()[1] - h});
+    const Tensor zeros_GI = X.center().zeros_like({n, r.GI.shape()[1] - q});
+    // the new factors follow the old ones, with identifiers beyond all of them
+    std::vector<int64_t> ids = X.ids();
+    const int64_t first = ids.empty() ? 1 : *std::max_element(ids.begin(), ids.end()) + 1;
+    for (int64_t j = 0; j < r.new_factors; ++j) ids.push_back(first + j);
+    Exponents E = X.exponents();
+    for (std::vector<int> &column : E) column.resize(ids.size(), 0);
+    for (int64_t j = 0; j < r.new_factors; ++j) {
+        std::vector<int> column(ids.size(), 0);
+        column[X.ids().size() + std::size_t(j)] = 1;
+        E.push_back(column);
+    }
+    return {Tensor::concat({X.center(), r.c}, 0),
+            Tensor::concat({Tensor::concat({X.generators(), zeros_G}, 1), r.G}, 0),
+            Tensor::concat({Tensor::concat({X.independent_generators(), zeros_GI}, 1), r.GI}, 0), E,
+            ids};
 }
 
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
+
+// The layers of order k ---------------------------------------------------------------------------
+
+std::pair<Tensor, Tensor> priv_bounds(const PrivRows &r) {
+    detail::Entry entry;
+    return aux_bounds(r);
+}
+
+PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
+                   const NnOptions &options) {
+    detail::Entry entry;
+    return aux_line(activation, l, u, options);
+}
+
+Tensor priv_even_mask(const Tensor &like, const Exponents &E) {
+    detail::Entry entry;
+    std::vector<double> even;
+    for (const std::vector<int> &column : E)
+        even.push_back(std::all_of(column.begin(), column.end(), [](int e) { return e % 2 == 0; })
+                           ? 1.0
+                           : 0.0);
+    return Tensor::like(like, even, {1, static_cast<int64_t>(even.size())});
+}
 
 // Points ------------------------------------------------------------------------------------------
 
@@ -357,6 +567,11 @@ Zonotope NeuralNetwork::evaluate(const Zonotope &X, const NnOptions &options) co
         return "evaluate: the set has the dimension " + std::to_string(X.dim()) +
                ", the network takes " + std::to_string(input_dim());
     });
+    CORA_CHECK(
+        options.poly_method == PolyMethod::singh || options.poly_method == PolyMethod::regression,
+        Error::not_supported, [] {
+            return std::string("evaluate: a zonotope takes the poly_method singh or regression");
+        });
     // the layers on the set, its generators independent; a zero generator stays for an exact neuron
     const Tensor none = X.generators().slice(-1, 0, 0);
     const Rows r = aux_layers(layers_, activations_, aux_rows(X.center(), none, X.generators(), {}),
@@ -382,29 +597,31 @@ PolyZonotope NeuralNetwork::evaluate_with_input(const PolyZonotope &X,
         return "evaluate_with_input: the set has the dimension " + std::to_string(X.dim()) +
                ", the network takes " + std::to_string(input_dim());
     });
-    const Rows r =
-        aux_layers(layers_, activations_,
-                   aux_rows(X.center(), X.generators(), X.independent_generators(), X.exponents()),
-                   options.add_approx_error_to_gi, false, options);
-    // the input rows keep their generators, and are zero in the generators the errors added
-    const int64_t n = input_dim(), h = X.num_dependent(), q = X.independent_generators().shape()[1];
-    const Tensor zeros_G = X.center().zeros_like({n, r.G.shape()[1] - h});
-    const Tensor zeros_GI = X.center().zeros_like({n, r.GI.shape()[1] - q});
-    // the new factors follow the old ones, with identifiers beyond all of them
-    std::vector<int64_t> ids = X.ids();
-    const int64_t first = ids.empty() ? 1 : *std::max_element(ids.begin(), ids.end()) + 1;
-    for (int64_t j = 0; j < r.new_factors; ++j) ids.push_back(first + j);
-    Exponents E = X.exponents();
-    for (std::vector<int> &column : E) column.resize(ids.size(), 0);
-    for (int64_t j = 0; j < r.new_factors; ++j) {
-        std::vector<int> column(ids.size(), 0);
-        column[X.ids().size() + std::size_t(j)] = 1;
-        E.push_back(column);
-    }
-    return {Tensor::concat({X.center(), r.c}, 0),
-            Tensor::concat({Tensor::concat({X.generators(), zeros_G}, 1), r.G}, 0),
-            Tensor::concat({Tensor::concat({X.independent_generators(), zeros_GI}, 1), r.GI}, 0), E,
-            ids};
+    // the options are valid, and the layers run on the set
+    aux_check_options(options);
+    return aux_evaluate(layers_, activations_, X, options, nullptr);
+}
+
+std::vector<std::vector<double>> NeuralNetwork::approx_errors(const PolyZonotope &X,
+                                                              const NnOptions &options) const {
+    detail::Entry entry;
+    CORA_CHECK(X.dim() == input_dim(), Error::dimension_mismatch, [&] {
+        return "approx_errors: the set has the dimension " + std::to_string(X.dim()) +
+               ", the network takes " + std::to_string(input_dim());
+    });
+    aux_check_options(options);
+    std::vector<std::vector<double>> errors;
+    aux_evaluate(layers_, activations_, X, options, &errors);
+    return errors;
+}
+
+std::vector<int64_t> NeuralNetwork::refinable_layers() const {
+    detail::Entry entry;
+    // the layers with a nonlinear activation
+    std::vector<int64_t> out;
+    for (std::size_t k = 0; k < activations_.size(); ++k)
+        if (activations_[k] != Activation::identity) out.push_back(int64_t(k));
+    return out;
 }
 
 PolyZonotope NeuralNetwork::evaluate(const PolyZonotope &X, const NnOptions &options) const {
