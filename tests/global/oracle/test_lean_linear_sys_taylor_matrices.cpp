@@ -8,7 +8,8 @@
 // are not served). CORA.cpp's priv_entrywise_corrections is compared, for W as well, and the public
 // methods under CORACPP_TAYLOR=entrywise.
 //
-// ORACLE: contDynamics/@linearSys/taylorMatrices.m
+// The row taylorMatrices stays `ported` (no ORACLE tag): the default is CORA's expm path, which the
+// benchmarks run; this test compares the opt-in path only.
 // Authors:       Claude Sonnet 5.5
 // Written:       13-November-2026
 // Last update:   ---
