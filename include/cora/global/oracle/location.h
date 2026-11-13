@@ -52,8 +52,12 @@ struct Location {
     static std::vector<std::vector<int64_t>>
     guard_groups(const std::vector<std::vector<int64_t>> &hits);
 
-    /// One basis per entry of `enclose`; only "box" has a float definition (`location.calcBasis`).
-    static std::vector<cora::Tensor> calc_basis(int64_t n, const std::vector<std::string> &enclose);
+    /// One basis per entry of `enclose`, "box" or "pca" (`location.calcBasis`); "flow" has no float
+    /// definition. "pca" takes the sets R of the crossing and, for a hyperplane guard, its normal.
+    static std::vector<cora::Tensor>
+    calc_basis(int64_t n, const std::vector<std::string> &enclose,
+               const std::vector<cora::Zonotope> &R = {},
+               const std::optional<cora::Tensor> &normal = std::nullopt);
 
     /// The indices of the sets that are not certified to have no outward flow through the
     /// hyperplane normal'x = d (`location.checkFlow`).
