@@ -4,12 +4,12 @@
 // the step sizes agree with the oracle's to 1e-6 (relative), and the sets lie in the oracle's,
 // tighter by at most 2e-2. The sets are not bit for bit because the linear step is CORA's oneStep
 // here and CORALean's interval-matrix exponential bounds its remainders more coarsely, and the
-// time is accumulated in doubles here and exactly there. The run is short because the oracle is
-// slow (the Robertson reaction is covered by the passes) and stops before the tensor order 3,
-// whose quadratic map is CORA's here and the coarser polynomial-zonotope one there (the step
-// sizes drift apart after it). With linear_step = closed_form (the oracle's linearStep =
-// closedForm) the linear step is the oracle's, and the sets agree to 1e-9 (relative) from both
-// sides: what remains is the time, accumulated in doubles here.
+// time is accumulated in doubles here and exactly there. The run is the first 10 of its 26 steps
+// (1 with closed_form, whose oracle takes 40-60 s a step): the steps do not depend on where the run
+// stops, the oracle is slow, and the Robertson reaction is covered by the passes. It stays before
+// the tensor order 3, whose quadratic map is CORA's here and the coarser polynomial-zonotope one
+// there. With linear_step = closed_form (the oracle's linearStep = closedForm) the linear step
+// is the oracle's, and the sets agree to 1e-9 (relative) from both sides.
 //
 // CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 // CORA authors: Mark Wetzlinger
@@ -59,30 +59,32 @@ void aux_inside(const std::string &what, const Zonotope &mine, const lean::Zonot
     test::check(ok, what + ": inside the oracle's box and close to it");
 }
 
-/// The run of CORA.cpp against the oracle's: steps and sets.
+/// The run of CORA.cpp against the oracle's first `count` steps: steps and sets.
 void aux_compare(const std::string &name, const NonlinearSys &sys, const Zonotope &R0,
-                 const Zonotope &U, double t_final, alg::LinearStep step) {
+                 const Zonotope &U, double t_final, alg::LinearStep step, int count) {
     alg::LinearizationAdaptive alg;
     alg.linear_step = step;
     const double gap = step == alg::LinearStep::closed_form ? kClosed : kSets;
     const ReachProblem problem{R0, U, t_final};
     const ReachSet mine = sys.reach(problem, alg);
-    const lean::AdaptiveRun theirs =
-        lean::NonlinearSys(sys).reach_adaptive(lean::Zonotope(R0), lean::Zonotope(U), t_final, alg);
+    const lean::AdaptiveRun theirs = lean::NonlinearSys(sys).reach_adaptive(
+        lean::Zonotope(R0), lean::Zonotope(U), t_final, alg, count);
     test::oracle::op_name() = name;
-    // the same steps, then their sizes and sets
-    test::check(mine.time_interval.size() == theirs.steps.size(), name + ": the same steps");
-    if (mine.time_interval.size() != theirs.steps.size()) return;
+    // the same first steps, then their sizes and sets
+    const auto K = static_cast<std::size_t>(count);
+    test::check(theirs.steps.size() == K && mine.time_interval.size() >= K,
+                name + ": the same steps");
+    if (theirs.steps.size() != K || mine.time_interval.size() < K) return;
     bool same = true;
     for (std::size_t k = 0; k < theirs.steps.size(); ++k) {
         const double step = mine.time[k + 1] - mine.time[k];
         same = same && std::abs(step - theirs.steps[k]) <= kAgreement * theirs.steps[k];
     }
     test::check(same, name + ": the step sizes of the oracle");
-    test::check(std::abs(mine.time.back() - theirs.t) <= kAgreement, name + ": the end time");
+    test::check(std::abs(mine.time[K] - theirs.t) <= kAgreement, name + ": the end time");
     for (std::size_t k = 0; k < theirs.steps.size(); ++k)
         aux_inside(name, mine.time_interval[k], theirs.time_interval[k], gap);
-    aux_inside(name, mine.time_point.back(), theirs.time_point, gap);
+    aux_inside(name, mine.time_point[K], theirs.time_point, gap);
 }
 
 } // namespace
@@ -97,7 +99,8 @@ int main() {
     for (const alg::LinearStep step : {alg::LinearStep::cora, alg::LinearStep::closed_form})
         aux_compare(step == alg::LinearStep::cora ? "van der Pol" : "van der Pol closed form",
                     van_der_pol(), Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.0}, {0.0, 0.05}})),
-                    Zonotope(Tensor({0.0}), Tensor({{0.1}})), 0.015, step);
+                    Zonotope(Tensor({0.0}), Tensor({{0.1}})), 0.015, step,
+                    step == alg::LinearStep::cora ? 10 : 1);
     return test::finish("lean nonlinearSys reach adaptive");
 }
 

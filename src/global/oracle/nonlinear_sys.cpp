@@ -98,8 +98,8 @@ std::vector<Operand> NonlinearSys::system() const {
 // The run -----------------------------------------------------------------------------------------
 
 AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional<Zonotope> &U,
-                                         double t_final,
-                                         const alg::LinearizationAdaptive &alg) const {
+                                         double t_final, const alg::LinearizationAdaptive &alg,
+                                         int max_steps) const {
     // the start set, the input set and the options of the algorithm
     std::vector<Operand> request = system();
     request.push_back({"R0", R0});
@@ -114,11 +114,17 @@ AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional
                                                  {"zetaK", alg.zeta_k},
                                                  {"fuel", alg.fuel}})
         request.push_back(o);
+    if (max_steps > 0) request.push_back({"maxSteps", max_steps});
     aux_linear_step(request, alg.linear_step);
     // the steps with their tensor orders, the end and the sets
     const Reply r = ask("nonlinearSys.reachAdaptive", request);
-    return {r.get<std::vector<double>>("steps"), r.get<std::vector<int64_t>>("tensorOrders"),
-            r.get<double>("t"), r.get<Zonotope>("timePoint"),
+    // the time is exact in the oracle and not a double in the middle of a run: the sum of the steps
+    const std::vector<double> steps = r.get<std::vector<double>>("steps");
+    double t = 0;
+    if (max_steps > 0)
+        for (const double h : steps) t += h;
+    return {steps, r.get<std::vector<int64_t>>("tensorOrders"),
+            max_steps > 0 ? t : r.get<double>("t"), r.get<Zonotope>("timePoint"),
             r.get<std::vector<Zonotope>>("timeInterval")};
 }
 

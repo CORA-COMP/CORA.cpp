@@ -83,9 +83,11 @@ class NonlinearSys {
     /// The system of sys's expressions.
     explicit NonlinearSys(const cora::NonlinearSys &sys);
 
-    /// CORA's lin-adaptive from R0 with the input set U (none: no input) to t_final.
+    /// CORA's lin-adaptive from R0 with the input set U (none: no input) to t_final, or the first
+    /// max_steps steps of it (0: all; then t is the sum of the steps); they do not depend on
+    /// max_steps.
     AdaptiveRun reach_adaptive(const Zonotope &R0, const std::optional<Zonotope> &U, double t_final,
-                               const alg::LinearizationAdaptive &alg) const;
+                               const alg::LinearizationAdaptive &alg, int max_steps = 0) const;
 
     /// One step of alg lin from R with the input set U (none: no input) and the options alg; the
     /// loop (alg.error_bound) starts from abstrerr (none: zero) and with_abstrerr asks for its
