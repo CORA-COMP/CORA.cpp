@@ -144,15 +144,30 @@ std::optional<Set> priv_guard_intersect_zono_girard(const std::vector<Set> &R,
 std::optional<Set> priv_guard_intersect_nondet_guard(const std::vector<Set> &R,
                                                      const Polytope &guard,
                                                      const std::vector<Tensor> &B, alg::CutBox box,
-                                                     int fm_passes);
+                                                     int fm_passes, bool dense = false);
 std::optional<Set> priv_guard_intersect_con_zonotope(const std::vector<Set> &R,
                                                      const Polytope &guard,
                                                      const std::vector<Tensor> &B, int guard_order,
-                                                     alg::CutBox box, int fm_passes);
+                                                     alg::CutBox box, int fm_passes,
+                                                     bool dense = false);
 
 /// The box of a cut of a set by a polytope guard by the method (see alg::CutBox); empty if the
 /// cut has no point.
 Interval priv_box_cut(const ConZonotope::Cut &cut, alg::CutBox box, int fm_passes);
+
+/// A box as the vectors of its lower and its upper ends.
+using Box = std::pair<std::vector<double>, std::vector<double>>;
+
+/// The zonotope of a box, or of [lo, hi] (the vectors like `like`); dense keeps a generator per
+/// axis, a flat axis too, as CORALean's Interval.zonotope (CORA's drops the axes without a radius).
+Zonotope priv_box_zonotope(const Interval &box, bool dense);
+Zonotope priv_box_zonotope(const std::vector<double> &lo, const std::vector<double> &hi,
+                           const Tensor &like, bool dense);
+
+/// The box [-r, r] of (I - B B') x over the states x of the sets R (CORALean's
+/// Location.orthDefectFloat), for a basis that is orthogonal only up to rounding; none where
+/// B B' = I exactly.
+std::optional<Zonotope> priv_defect(const Tensor &basis, const std::vector<Set> &R, bool dense);
 
 /// The zonotopes of a set: itself, or those of a bundle.
 std::vector<Zonotope> priv_zonotopes(const Set &S);

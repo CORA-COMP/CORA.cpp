@@ -72,10 +72,10 @@ std::optional<Set> aux_enclose(const Location &loc, const std::vector<Set> &P,
             if constexpr (std::is_same_v<M, alg::ZonoGirard>) {
                 return priv_guard_intersect_zono_girard(P, guard, B, dense);
             } else if constexpr (std::is_same_v<M, alg::NondetGuard>) {
-                return priv_guard_intersect_nondet_guard(P, guard, B, m.box, m.fm_passes);
+                return priv_guard_intersect_nondet_guard(P, guard, B, m.box, m.fm_passes, dense);
             } else {
                 return priv_guard_intersect_con_zonotope(P, guard, B, m.guard_order, m.box,
-                                                         m.fm_passes);
+                                                         m.fm_passes, dense);
             }
         },
         method);

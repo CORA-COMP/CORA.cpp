@@ -87,6 +87,7 @@ if(NOT MSVC)
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/nonlinear_sys/private/priv_tune_adaptive.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_set/zonotope/reduce_adaptive.cpp"
                               "${CMAKE_SOURCE_DIR}/src/hybrid_dynamics/location/private/priv_calc_basis.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/hybrid_dynamics/location/private/priv_defect.cpp"
                               "${CMAKE_SOURCE_DIR}/src/hybrid_dynamics/location/private/priv_guard_intersect_zono_girard.cpp"
                               PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
   # the facet normals of a zonotope (determinants and lengths) are CORALean's roundings too
