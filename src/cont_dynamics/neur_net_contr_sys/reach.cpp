@@ -3,7 +3,8 @@
 // Per control period [t, t + dt]: the network is enclosed over the current set X together with its
 // input, (x, N(x)) (NeuralNetwork::evaluate_with_input, CORA's evaluate_ and aux_appendU2X), and
 // the extended system is reached from that set with init_reach and post of the plant's algorithm,
-// the step size cut to the period (the last step of a period may be shorter, as CORA's tVec). The
+// the step size cut to the period (the last step of a period may be shorter, as CORA's tVec; the
+// others all of the size time_step, which CORA's differences of tVec only approximate). The
 // first step is reduced to zonotope_order as CORA's aux_reachability does. The sets are projected
 // to the plant's states; the set at the end of the period starts the next. After every step the
 // set over it is checked against the specification, and the run stops at a violation, or when
@@ -29,6 +30,8 @@
 #include "cora/cont_dynamics/neur_net_contr_sys/neur_net_contr_sys.h"
 #include "global/format.h"
 
+#include <cmath>
+
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
@@ -48,6 +51,14 @@ std::vector<double> aux_grid(double t0, double t1, double h) {
     for (int i = 0; i < steps; ++i) t.push_back(t0 + i * h);
     t.push_back(t1);
     return t;
+}
+
+/// The size of step i: h itself, so that a period of whole steps has equal steps and no drift of
+/// the differences of t0 + i h (as CORALean's N steps of one size); a shorter last step only if h
+/// does not divide the period.
+double aux_step(const std::vector<double> &t, std::size_t i, double h) {
+    const double rest = t[i + 1] - t[i];
+    return std::abs(rest - h) <= numerics::kStepCount * h ? h : rest;
 }
 
 // The sets of the extended system -----------------------------------------------------------------
@@ -139,7 +150,7 @@ bool aux_period(const NeurNetContrSys &sys, const S &X, const std::optional<Zono
     std::optional<Step> step;
     for (std::size_t i = 0; i + 1 < inner.size(); ++i) {
         // the first step starts from the joint set, the others from the step before
-        alg.time_step = inner[i + 1] - inner[i];
+        alg.time_step = aux_step(inner, i, options.plant.time_step);
         step = i == 0 ? aux_first(sys.closed_loop(), R0, U, alg)
                       : aux_next(sys.closed_loop(), *step, U, alg);
         R.time_interval.push_back(aux_project(step->time_interval, sys.dim()));
