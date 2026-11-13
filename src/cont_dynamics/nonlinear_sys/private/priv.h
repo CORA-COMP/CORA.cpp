@@ -130,7 +130,8 @@ PolyZonotope priv_poly_construct(const PolyZonotope &Z);
 Zonotope priv_poly_zonotope_fold(const PolyZonotope &Z);
 
 /// CORA's reduce(pZ, 'girard', order) as CORALean's reduceCora: past order * n generators the
-/// shortest are boxed into the independent part; the factors no generator reads are dropped.
+/// shortest are boxed into the independent part, the zero independent generators stay (the
+/// constructor of PolyZonotope drops them); the factors no generator reads are dropped.
 PolyZonotope priv_poly_reduce_cora(const PolyZonotope &Z, int order);
 
 /// One step from the polynomial zonotope R (CORA's linReach with alg "poly").

@@ -27,6 +27,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv.h"
 #include "cont_dynamics/neur_net_contr_sys/private/priv_holds.h"
+#include "cont_dynamics/nonlinear_sys/private/priv.h"
 #include "cora/cont_dynamics/neur_net_contr_sys/neur_net_contr_sys.h"
 #include "global/format.h"
 
@@ -100,6 +101,13 @@ NonlinearStep aux_first(const NonlinearSys &sys, const Zonotope &R0,
 PolyNonlinearStep aux_first(const NonlinearSys &sys, const PolyZonotope &R0,
                             const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     PolyNonlinearStep step = sys.init_reach(R0, U, alg);
+    // CORALean's step reduces as its reduceCora does (it keeps the zero independent generators)
+    if (alg.linear_step != alg::LinearStep::cora && alg.tensor_order == 2 &&
+        alg.error_bound == alg::ErrorBound::loop) {
+        step.time_interval = priv_poly_reduce_cora(step.time_interval, alg.zonotope_order);
+        step.time_point = priv_poly_reduce_cora(step.time_point, alg.zonotope_order);
+        return step;
+    }
     step.time_interval = step.time_interval.reduce(alg.zonotope_order);
     step.time_point = step.time_point.reduce(alg.zonotope_order);
     return step;

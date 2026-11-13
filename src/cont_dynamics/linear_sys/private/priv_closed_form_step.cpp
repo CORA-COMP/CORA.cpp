@@ -296,11 +296,13 @@ ClosedFormStepper::ClosedFormStepper(const Tensor &A, double time_step, int tayl
     if (halvings) m_ = std::make_unique<Matrices>(A, time_step, *enclosed, *halvings);
 }
 
+// the matrices stay behind the pointer
 ClosedFormStepper::~ClosedFormStepper() = default;
 ClosedFormStepper::ClosedFormStepper(ClosedFormStepper &&) noexcept = default;
 
 bool ClosedFormStepper::admissible() const { return m_ != nullptr; }
 
+// the matrices of the step and the input solution, for a step from a polynomial zonotope
 const Interval &ClosedFormStepper::e_adt() const { return m_->e_adt; }
 const Interval &ClosedFormStepper::F() const { return m_->F; }
 const Interval &ClosedFormStepper::G() const { return m_->G; }

@@ -117,10 +117,10 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/linearSys/linearSys` | ported | float | 68 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKDC01, BRKNC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, CVDP23, CartPole-reach, CartPole-reach-report, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-more-robust, GRBX01, GRBX02, HEAT01, HEAT02, HEAT03, HEAT04, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, LALO20_W001, LALO20_W005, LOVO25, LOVO25-script, PLAD01_BND30, PLAD01_BND42, QUAD-reach, RAND01, RAND02, RND01, RND02, RND03, RND04, RND05, RND06, ROBE25_1, ROBE25_2, ROBE25_3, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TSPS25 |
 | `contDynamics/linearSys/taylorMatrices` | ported | float | 59 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKDC01, BRKNC01, CVDP23, CartPole-reach, CartPole-reach-report, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, GRBX01, GRBX02, HEAT03, HEAT04, LALO20_W001, LALO20_W005, LOVO25, LOVO25-script, NAV-robust, NAV-standard, PLAD01_BND30, PLAD01_BND42, QUAD-reach, RND02, RND04, RND05, RND06, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/polytope/dim` | ported | out-of-scope | 43 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKNC01, BRKNP01, CVDP23, CartPole-reach, CartPole-reach-report, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, GRBX01, GRBX02, LOVO25, LOVO25-script, NAV-robust, NAV-standard, QUAD-reach, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
+| `contDynamics/linearSys/taylorMatrices` | ported | float | 38 | BRKDC01, BRKNC01, CVDP23, CartPole-reach-report, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, Docking-constraint-polygon, Double_Pendulum-less-robust, GRBX01, GRBX02, HEAT03, HEAT04, LOVO25, LOVO25-script, PLAD01_BND30, PLAD01_BND42, RND02, RND04, RND05, RND06, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, TORA-reach-sigmoid, TORA-remain, TSPS25 |
 | `contDynamics/contDynamics/derivatives` | ported | out-of-scope | 31 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, LOVO25-script, NAV-robust, NAV-standard, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/contSet/reorder` | untested | out-of-scope | 31 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, CartPole-reach, CartPole-reach-report, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/contDynamics/contDynamics` | untested | out-of-scope | 28 | BRKDC01, CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, HEAT03, HEAT04, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, RAND01, RAND02, RND01, RND02, RND03, RND04, RND05, RND06 |
-| `contSet/contSet/compact` | ported | out-of-scope | 28 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKNP01, CVDP23, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25 |
 | `contSet/contSet/representsa_emptyObject` | ported | out-of-scope | 27 | Attitude_Control-avoid, BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25-script, NAV-robust, NAV-standard, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `contSet/polytope/isemptyobject` | untested | out-of-scope | 27 | Attitude_Control-avoid, BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25-script, NAV-robust, NAV-standard, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `nn/layers/computeApproxPoly` | untested | float | 27 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance, VCAS-middle-19.5, VCAS-middle-22.5, VCAS-middle-25.5, VCAS-middle-28.5, VCAS-worst-19.5, VCAS-worst-22.5, VCAS-worst-25.5, VCAS-worst-28.5 |
@@ -136,31 +136,32 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `hybridDynamics/transition/transition` | ported | float | 25 | BRKNC01, BRKNP01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, LOVO25-script, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `hybridDynamics/location/guardIntersect` | property | float | 24 | BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, LOVO25-script, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
 | `hybridDynamics/location/guardIntersect_levelSet` | untested | bound | 24 | BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, LOVO25, LOVO25-script, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contSet/contSet/representsa` | ported | out-of-scope | 22 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, BRKNP01, CVDP23, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-more-robust, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TSPS25 |
+| `contDynamics/nonlinearSys/linReach_adaptive` | untested | float | 22 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, Docking-constraint, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, NAV-robust, NAV-standard, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-tanh, TRAF22, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/contSet/project` | ported | out-of-scope | 21 | BRKDC01, BRKNC01, GRBX01, GRBX02, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
 | `contDynamics/linearSys/verify` | ported | float | 20 | CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, RND01, RND02, RND03, RND04, RND05, RND06 |
 | `contDynamics/nonlinearSys/simulate` | ported | - | 20 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LOVO25, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/contDynamics/simulateRandom` | ported | out-of-scope | 19 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/neurNetContrSys/neurNetContrSys` | ported | float | 19 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/neurNetContrSys/simulate` | ported | float | 19 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
+| `contSet/contSet/compact` | ported | out-of-scope | 19 | BRKNP01, CVDP23, CartPole-reach-report, Docking-constraint-polygon, Double_Pendulum-less-robust, LALO20_W001, LALO20_W005, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, TORA-reach-sigmoid, TORA-remain, TRAF22, TSPS25 |
 | `contSet/zonotope/randPoint_` | ported | out-of-scope | 19 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/neurNetContrSys/verify` | ported | float | 18 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint-polygon, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/conZonotope/conZonotope` | ported | float | 16 | Attitude_Control-avoid, BRKNC01, GRBX01, GRBX02, LOVO25, LOVO25-script, NAV-robust, NAV-standard, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
 | `contSet/conZonotope/dim` | ported | out-of-scope | 16 | Attitude_Control-avoid, BRKNC01, GRBX01, GRBX02, LOVO25, LOVO25-script, NAV-robust, NAV-standard, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
 | `contSet/conZonotope/generators` | ported | out-of-scope | 16 | Attitude_Control-avoid, BRKNC01, GRBX01, GRBX02, LOVO25, LOVO25-script, NAV-robust, NAV-standard, SPRE22, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
-| `contDynamics/nonlinearSys/linReach_adaptive` | untested | float | 13 | Double_Pendulum-less-robust-script, LALO20_W001, LALO20_W005, LALO20_W01, NAV-robust, NAV-standard, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, TRAF22, Unicycle-reach, Unicycle-reach-disturbance |
+| `contDynamics/nonlinearSys/reach_adaptive` | property | float | 15 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, Docking-constraint, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, Single_Pendulum-reach, TORA-reach-tanh |
+| `contSet/contSet/representsa` | ported | out-of-scope | 13 | BRKNP01, CVDP23, CartPole-reach-report, Docking-constraint-polygon, Double_Pendulum-less-robust, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, TORA-reach-sigmoid, TORA-remain, TSPS25 |
 | `contSet/conZonotope/interval` | property | bound | 8 | LOVO25-script, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
-| `contDynamics/nonlinearSys/reach_adaptive` | property | float | 6 | LALO20_W001, LALO20_W005, LALO20_W01, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contSet/conZonotope/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/dim` | ported | out-of-scope | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/supportFunc_` | property | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contSet/zonoBundle/zonoBundle` | ported | float | 6 | BRKNC01, GRBX01, GRBX02, SRA07, SRA08, SRU02 |
 | `contDynamics/linearSys/errorSolution_adaptive` | property | float | 5 | LALO20_W001, LALO20_W005, ROBE25_1, ROBE25_2, ROBE25_3 |
 | `contDynamics/linearSys/reach` | ported | float | 5 | BRKDC01, HEAT03, HEAT04, PLAD01_BND30, PLAD01_BND42 |
-| `nn/neuralNetwork/calcSensitivity` | property | float | 5 | CartPole-reach, CartPole-reach-report, Double_Pendulum-less-robust, NAV-standard, QUAD-reach |
 | `contDynamics/linParamSys/initReach` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `contDynamics/linParamSys/linParamSys` | ported | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `contDynamics/linParamSys/post` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
+| `nn/neuralNetwork/calcSensitivity` | property | float | 4 | CartPole-reach-report, Double_Pendulum-less-robust, NAV-standard, QUAD-reach |
 | `others/intervalMatrix/exponentialRemainder` | property | proved | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `others/intervalMatrix/interval` | property | out-of-scope | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
 | `others/matZonotope/matZonotope` | property | float | 4 | BRKNP01, PLAA01_BND42, PLAA01_BND50, PLAN01 |
@@ -214,23 +215,23 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 - `include/cora/cont_set/dimension_set.h`: 2 instances
 - `include/cora/cont_set/set.h`: 70 instances
-- `include/cora/global/tensor/tolerance.h`: 52 instances
+- `include/cora/global/tensor/tolerance.h`: 51 instances
 - `include/cora/hybrid_dynamics/region.h`: 12 instances
 - `src/cont_dynamics/linear_sys/input_solution.cpp`: 22 instances
-- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 18 instances
+- `src/cont_dynamics/linear_sys/private/priv_block.cpp`: 9 instances
 - `src/cont_dynamics/linear_sys/private/priv_canonical_input.cpp`: 20 instances
 - `src/cont_dynamics/linear_sys/private/priv_closed_form_step.h`: 14 instances
-- `src/cont_dynamics/linear_sys/private/priv_float_scalars.h`: 15 instances
-- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 27 instances
+- `src/cont_dynamics/linear_sys/private/priv_float_scalars.h`: 24 instances
+- `src/cont_dynamics/linear_sys/private/priv_inverse.cpp`: 18 instances
 - `src/cont_dynamics/linear_sys/private/priv_krylov_lyapunov.cpp`: 4 instances
 - `src/cont_dynamics/linear_sys/private/priv_krylov_rounding.h`: 6 instances
 - `src/cont_dynamics/linear_sys/private/priv_krylov_windows.cpp`: 6 instances
 - `src/cont_dynamics/linear_sys/private/priv_lyapunov_solve.cpp`: 4 instances
-- `src/cont_dynamics/linear_sys/private/priv_steps.cpp`: 18 instances
+- `src/cont_dynamics/linear_sys/private/priv_steps.cpp`: 9 instances
 - `src/cont_dynamics/linear_sys/private/priv_steps.h`: 2 instances
 - `src/cont_dynamics/linear_sys/private/priv_verify_ra_krylov.cpp`: 4 instances
 - `src/cont_dynamics/linear_sys/validate.cpp`: 5 instances
-- `src/cont_dynamics/nonlinear_sys/private/priv_adaptive.h`: 13 instances
+- `src/cont_dynamics/nonlinear_sys/private/priv_adaptive.h`: 22 instances
 - `src/cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h`: 1 instance
 - `src/cont_set/con_zonotope/cut.cpp`: 3 instances
 - `src/cont_set/con_zonotope/interval_cert.cpp`: 2 instances
@@ -248,12 +249,12 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - `src/cont_set/zono_bundle/private/priv_linear_programs.cpp`: 3 instances
 - `src/cont_set/zono_bundle/private/priv_members_refusal.cpp`: 6 instances
 - `src/cont_set/zonotope/private/priv_host_zonotope.cpp`: 2 instances
-- `src/cont_set/zonotope/private/priv_select_generators.cpp`: 45 instances
+- `src/cont_set/zonotope/private/priv_select_generators.cpp`: 33 instances
 - `src/cont_set/zonotope/private/priv_zonotope_norm.cpp`: 1 instance
-- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 18 instances
+- `src/cont_set/zonotope/private/priv_zonotope_of_point.cpp`: 9 instances
 - `src/global/backend/eigen.cpp`: 88 instances
 - `src/global/backend/host_tensor.cpp`: 88 instances
-- `src/global/error.cpp`: 5 instances
+- `src/global/error.cpp`: 4 instances
 - `src/global/expr.cpp`: 31 instances
 - `src/global/rng.cpp`: 27 instances
 - `src/global/settings.cpp`: 88 instances
@@ -262,9 +263,9 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - `src/global/tensor/fused.cpp`: 71 instances
 - `src/global/tensor/ops.cpp`: 76 instances
 - `src/global/tensor/tensor.cpp`: 88 instances
-- `src/global/tensor/tolerance.cpp`: 58 instances
+- `src/global/tensor/tolerance.cpp`: 57 instances
 - `src/global/threads.cpp`: 42 instances
-- `src/global/within_tol.cpp`: 33 instances
+- `src/global/within_tol.cpp`: 24 instances
 - `src/hybrid_dynamics/location/private/priv.h`: 24 instances
 - `src/hybrid_dynamics/location/private/priv_box_cut.cpp`: 2 instances
 - `src/hybrid_dynamics/location/private/priv_sets.cpp`: 25 instances
@@ -287,21 +288,21 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
   and transition steps), and `guardIntersect` follows CORALean's dual bound, not CORA's dichotomic search.
 - Nonlinear (TRAF22, SPRE22): the `lin` step at tensor order 2 is CORALean's `linReachFloat` (the region
   step, bit for bit: `test_lean_nonlinear_sys_lin_reach`). AINNCS instances on polynomial zonotopes
-  step CORA's loop (`priv_lin_reach_poly`), which the oracle does not serve: their `initReach`, `post` and
-  `linReach` are `oracle` on the zonotope step only, not on the instance's own path.
+  step CORALean's `linReachPolyLoopFloat` (`priv_lin_reach_poly`, bit for bit:
+  `test_lean_nonlinear_sys_lin_reach_poly`), reduced by `reduceCora` in `post`.
 
 ## Private CORA steps that the instances run
 
 A private step (`private/priv_*.m`) is no row of the inventory; its file is tagged and shows here.
 
-- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 18 instances
+- `contDynamics/@contDynamics/private/priv_abstrerr_lin.m`: 9 instances
 - `contDynamics/@contDynamics/private/priv_abstrerr_poly.m`: 1 instance
 - `contDynamics/@contDynamics/private/priv_precompStatError.m`: 1 instance
 - `contDynamics/@linParamSys/private/priv_inputSolution.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_inputTie.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_mappingMatrix.m`: 4 instances
 - `contDynamics/@linParamSys/private/priv_tie.m`: 4 instances
-- `contDynamics/@linearSys/private/priv_expmRemainder.m`: 42 instances
+- `contDynamics/@linearSys/private/priv_expmRemainder.m`: 33 instances
 - `contDynamics/@linearSys/private/priv_exponential_Krylov_projected_linSysInput.m`: 2 instances
 - `contDynamics/@linearSys/private/priv_initReach_Krylov.m`: 2 instances
 - `contDynamics/@linearSys/private/priv_inputSolution_Krylov.m`: 2 instances
@@ -319,11 +320,11 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 - `contDynamics/@nonlinDASys/private/priv_linError_mixed_noInt.m`: 1 instance
 - `contDynamics/@nonlinDASys/private/priv_linError_mixed_noInt_comp.m`: 1 instance
 - `contDynamics/@nonlinDASys/private/priv_linearize.m`: 1 instance
-- `contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m`: 13 instances
+- `contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m`: 22 instances
 - `contDynamics/@nonlinearSys/private/priv_precompStatError_adaptive.m`: 1 instance
 - `contSet/@conZonotope/private/priv_ksi_iterative.m`: 2 instances
 - `contSet/@conZonotope/private/priv_ksi_optimizer.m`: 2 instances
-- `contSet/@polyZonotope/private/priv_reduceAdaptive.m`: 1 instance
+- `contSet/@polyZonotope/private/priv_reduceAdaptive.m`: 10 instances
 - `contSet/@polytope/private/priv_compact_1D.m`: 39 instances
 - `contSet/@polytope/private/priv_compact_2D.m`: 39 instances
 - `contSet/@polytope/private/priv_compact_alignedEq.m`: 39 instances

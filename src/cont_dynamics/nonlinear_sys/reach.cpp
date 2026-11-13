@@ -242,7 +242,8 @@ PolyNonlinearStep NonlinearSys::post(const PolyNonlinearStep &step,
     if (entry.check()) validate_poly_step("post", step.time_point, step.error, U, alg);
     // the same step and reduction for "lin"; CORALean's step reduces as its reduceCora does
     const PolyNonlinearStep next = aux_poly_step(*this, step.time_point, step.error, U, alg);
-    if (alg.linear_step != alg::LinearStep::cora && alg.tensor_order == 2)
+    if (alg.linear_step != alg::LinearStep::cora && alg.tensor_order == 2 &&
+        alg.error_bound == alg::ErrorBound::loop)
         return {priv_poly_reduce_cora(next.time_interval, alg.zonotope_order),
                 priv_poly_reduce_cora(next.time_point, alg.zonotope_order), next.error};
     return {next.time_interval.reduce(alg.zonotope_order),

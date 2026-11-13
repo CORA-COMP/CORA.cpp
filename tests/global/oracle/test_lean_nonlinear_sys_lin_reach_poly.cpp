@@ -1,14 +1,14 @@
-// test_lean_nonlinear_sys_lin_reach_poly - one step of alg lin from a polynomial zonotope against
-// the CORALean oracle, bit for bit
+// test_lean_nonlinear_sys_lin_reach_poly - alg lin from a polynomial zonotope against the oracle
 //
 // The step of NonlinearSys::init_reach and post with a polynomial zonotope and alg lin at a linear
 // step of CORALean's is CORALean's linReachPolyLoopFloat: the Hessian remainder over the zonotope
 // of the time-interval set of a pass with the applied error in its input, accepted when the error
 // is at most the applied one, the sets of one closed-form step from the polynomial zonotope, whose
 // enclosure keeps the factors. Both sets, their exponents and identifiers and the error the next
-// step starts from are the oracle's, bit for bit at nearest, in the order of the first occurrences
-// of the merged columns (columnOrder first), on van der Pol with a cubic start set, an autonomous
-// pendulum, TORA, ACC and a three-state system with products, over one to three steps in a row.
+// step starts from are the oracle's, bit for bit at nearest, in CORA's order of the merged columns,
+// on van der Pol with a cubic start set, an autonomous pendulum, TORA, ACC and a three-state system
+// with products, over one to four steps in a row; post reduces as CORA's reduce (the oracle's
+// reduce flag), also past rho * n generators.
 //
 // ORACLE: contDynamics/@contDynamics/linReach.m
 // ORACLE: contDynamics/@nonlinearSys/initReach.m
@@ -35,6 +35,7 @@ namespace {
 
 using Vars = std::vector<Expr>;
 
+// the plants: van der Pol with an input, the pendulum, TORA, ACC and a three-state system
 NonlinearSys van_der_pol() {
     return NonlinearSys(
         [](const Vars &x, const Vars &u) {
@@ -43,11 +44,13 @@ NonlinearSys van_der_pol() {
         2, 1);
 }
 
+// the pendulum has no input
 NonlinearSys pendulum() {
     return NonlinearSys(
         [](const Vars &x, const Vars &) { return Vars{x[1], -sin(x[0]) - 0.25 * x[1]}; }, 2, 0);
 }
 
+// TORA with the force as the input
 NonlinearSys tora() {
     return NonlinearSys(
         [](const Vars &x, const Vars &u) {
@@ -56,6 +59,7 @@ NonlinearSys tora() {
         4, 1);
 }
 
+// ACC: the car and its lead, the acceleration of the ego car the input
 NonlinearSys acc() {
     constexpr double mu = 0x1p-13;
     return NonlinearSys(
@@ -66,6 +70,7 @@ NonlinearSys acc() {
         6, 1);
 }
 
+// a three-state system with products
 NonlinearSys lotka() {
     return NonlinearSys(
         [](const Vars &x, const Vars &) {
@@ -99,6 +104,7 @@ void aux_chain(const std::string &name, const NonlinearSys &sys, const PolyZonot
     const alg::Linearization alg = aux_alg(dt, eta, rho);
     std::optional<lean::Zonotope> lean_U;
     if (U) lean_U = lean::Zonotope(*U);
+    // both sides start from the same set and the same error
     PolyNonlinearStep mine{R, R, Tensor()};
     PolyZonotope from = R;
     std::optional<Tensor> error;

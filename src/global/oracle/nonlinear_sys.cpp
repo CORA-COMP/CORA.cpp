@@ -142,8 +142,7 @@ NonlinearSys::lin_reach_poly(const std::optional<Zonotope> &U, const PolyZonotop
                                                  {"taylorTerms", alg.taylor_terms},
                                                  {"zonotopeOrder", alg.zonotope_order},
                                                  {"enlarge", 1.1},
-                                                 {"reduce", reduce},
-                                                 {"columnOrder", "first"}})
+                                                 {"reduce", reduce}})
         request.push_back(o);
     if (abstrerr) request.push_back({"abstrerr", Tensor::from(*abstrerr)});
     // a failed step is an error of the oracle: no step

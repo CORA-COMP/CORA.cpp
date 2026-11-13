@@ -89,8 +89,9 @@ time steps where its check fails. Region against loop (one run each, load 7 to 1
 inputs lie in [-0.502, 0.503] x [-8.488, 0.483] against [-0.499, 0.500] x [-8.488, 0.483]), SPRE22 2.65 s (steps 0.05 / 0.025 / 0.05)
 against 1.04 s (the script's 0.2 / 0.05 / 0.2, [f]), Double Pendulum less-robust 62 s (0.005) against 45 s (0.01), NAV standard
 5.1 s against 4.7 s, NAV robust 0.34 s and 0.34 s, Unicycle 0.45 s and 0.45 s, Double Pendulum more-robust 0.11 s and 0.11 s; the
-verdicts are the same. The AINNCS instances on polynomial zonotopes (ACC, TORA, ...) step CORA's loop either way (`linReachFloat`
-is zonotope-only).
+verdicts are the same. The AINNCS instances on polynomial zonotopes (ACC, TORA, ...) step CORALean's `linReachPolyLoopFloat` at
+`ErrorBound::loop` (bit for bit: `test_lean_nonlinear_sys_lin_reach_poly`) and CORA's own loop at `region` (`linReachFloat`
+is zonotope-only); against the step before, no verdict changed and no time grew by more than 6 % (CartPole 2.4 s and 1.4 s, QUAD 1.83 s and 1.94 s).
 `LinearStep::coralean` takes CORALean's step instead, bit for bit
 (`test_lean_linear_sys_float_step`), at a price: TRAF22 and SPRE22 take 1.9x as long (SPRE22 needs a
 time step of 0.04 instead of 0.05 to verify), ROBE25 4.8x, 1.6x and 2.6x (with `zeta_z` and
