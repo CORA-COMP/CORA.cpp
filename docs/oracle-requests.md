@@ -370,13 +370,13 @@ Moved to `oracle` against the pinned oracle: `zonotope/zonoBundle`, `interval/zo
 `zonotope/matZonotope` (`test_lean_conversions`: the conversion of the oracle from the same operand,
 centre, generators and bounds equal bit for bit), `linearSys/outputSet` (`C R`, the oracle's with no
 input), and, by the runs that already compare bit for bit, `location/reach`, `contDynamics/reach`
-(the windows of `NonlinearSys::reach`), `nonlinearSys/linearize` and the constructors of
-the hybrid automaton, location, transition and linear reset (`test_lean_hybrid_automaton_reach`),
-`specification` (`test_lean_specification_check`) and `linearSys` (`test_lean_linear_sys_canonical_form`).
+(the windows of `NonlinearSys::reach`) and `nonlinearSys/linearize`.
 CORALean has no wire format for a constructor (`experiments/oracle/README.md`, "Float rows not
-served"), so a constructor row is `oracle` when a run hands the oracle the operands the constructor
-stored (its matrices, kind, sets) and the answers agree bit for bit; what the oracle never reads
-(`c`, `D`, `k`, `E`, `F` of a linear system) is not covered.
+served"). A constructor row is `oracle` only if a run hands the oracle every field the constructor
+stores: `specification` (type and set, `test_lean_specification_check`) and `nonlinearSys` (n, m, f,
+`test_lean_nonlinear_sys_lin_reach`). The rows `linearSys` (c, D, k, E, F are never read),
+`hybridAutomaton` and `location` (the names are never read), `transition` and `linearReset` (the
+input matrix of the reset is never read) stay `ported`.
 
 The oracle serves these, but CORA.cpp computes another set from the same operand, so the rows stay
 `ported` or `property`:

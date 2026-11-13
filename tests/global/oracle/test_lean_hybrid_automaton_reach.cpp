@@ -12,11 +12,7 @@
 // (minutes).
 //
 // ORACLE: hybridDynamics/@hybridAutomaton/reach.m
-// ORACLE: hybridDynamics/@hybridAutomaton/hybridAutomaton.m
-// ORACLE: hybridDynamics/@location/location.m
 // ORACLE: hybridDynamics/@location/reach.m
-// ORACLE: hybridDynamics/@transition/transition.m
-// ORACLE: hybridDynamics/@linearReset/linearReset.m
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---
@@ -169,7 +165,6 @@ std::vector<Spec> aux_flow_specs(double flow, bool bounded) {
 
 // ===========================================  MAIN  =========================================== //
 
-// The constructors are exercised too: what they store is an operand of the oracle's run.
 int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("hybridAutomaton.reach", [](test::oracle::Random &rnd) {
