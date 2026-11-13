@@ -71,8 +71,8 @@ WHY = """## What keeps the rows of each family from `oracle`
   and transition steps), and `guardIntersect` follows CORALean's dual bound, not CORA's dichotomic search.
 - Nonlinear (TRAF22, SPRE22): the `lin` step at tensor order 2 is CORALean's `linReachFloat` (the region
   step, bit for bit: `test_lean_nonlinear_sys_lin_reach`). AINNCS instances on polynomial zonotopes
-  step CORA's loop (`priv_lin_reach_poly`), which the oracle does not serve: their `initReach`, `post` and
-  `linReach` are `oracle` on the zonotope step only, not on the instance's own path.
+  step CORALean's `linReachPolyLoopFloat` (`priv_lin_reach_poly`, bit for bit:
+  `test_lean_nonlinear_sys_lin_reach_poly`), reduced by `reduceCora` in `post`.
 """
 
 

@@ -117,6 +117,22 @@ PolyNonlinearStep priv_lin_reach_poly(const NonlinearSys &sys, const PolyZonotop
                                       const Tensor &error, const std::optional<Zonotope> &U,
                                       const alg::Linearization &alg);
 
+/// The enclosure of the segments between the points of A and B, which have the factors and the
+/// exponents of A (CORALean's encloseShared): the factors of A and one new one.
+PolyZonotope priv_poly_enclose_shared(const PolyZonotope &A, const PolyZonotope &B);
+
+/// CORA's constructor as CORALean's construct in the order of the first occurrences: zero
+/// generators dropped, generators of equal exponents added.
+PolyZonotope priv_poly_construct(const PolyZonotope &Z);
+
+/// CORA's zonotope(pZ) as CORALean's zonotopeFold: even generators halved, constant ones and the
+/// other halves added into the center.
+Zonotope priv_poly_zonotope_fold(const PolyZonotope &Z);
+
+/// CORA's reduce(pZ, 'girard', order) as CORALean's reduceCora: past order * n generators the
+/// shortest are boxed into the independent part; the factors no generator reads are dropped.
+PolyZonotope priv_poly_reduce_cora(const PolyZonotope &Z, int order);
+
 /// One step from the polynomial zonotope R (CORA's linReach with alg "poly").
 PolyNonlinearStep priv_poly_reach(const NonlinearSys &sys, const PolyZonotope &R,
                                   const Tensor &error, const std::optional<Zonotope> &U,

@@ -466,14 +466,14 @@ PolyZonotope priv_poly_interval_map(const Interval &M, const PolyZonotope &Z) {
         for (int64_t l = 0; l < a.q; ++l)
             GI[std::size_t(i * (a.q + m) + l)] = dot(i, [&](int64_t k) { return a.gi(k, l); });
     }
-    // the free box of Z: c -+ the row sums of both blocks, subtracted in turn
+    // the free box of Z: c -+ the row sum of the magnitudes of [G GI], one sum added upward
     Vec blo(static_cast<std::size_t>(n)), bhi(static_cast<std::size_t>(n));
     for (int64_t k = 0; k < n; ++k) {
-        double rg = 0, rgi = 0;
-        for (int64_t l = a.h; l-- > 0;) rg = std::abs(a.g(k, l)) + rg;
-        for (int64_t l = a.q; l-- > 0;) rgi = std::abs(a.gi(k, l)) + rgi;
-        blo[std::size_t(k)] = (a.c[std::size_t(k)] - rg) - rgi;
-        bhi[std::size_t(k)] = (a.c[std::size_t(k)] + rg) + rgi;
+        double r = 0;
+        for (int64_t l = a.q; l-- > 0;) r = std::abs(a.gi(k, l)) + r;
+        for (int64_t l = a.h; l-- > 0;) r = std::abs(a.g(k, l)) + r;
+        blo[std::size_t(k)] = a.c[std::size_t(k)] - r;
+        bhi[std::size_t(k)] = a.c[std::size_t(k)] + r;
     }
     // [M - mid(M)] times that box, as a zonotope of its stored center and a diagonal of radii
     for (int64_t i = 0; i < m; ++i) {

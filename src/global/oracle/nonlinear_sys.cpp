@@ -130,6 +130,33 @@ AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional
 
 // The step ----------------------------------------------------------------------------------------
 
+std::optional<PolyLinReachResult>
+NonlinearSys::lin_reach_poly(const std::optional<Zonotope> &U, const PolyZonotope &R,
+                             const alg::Linearization &alg,
+                             const std::optional<cora::Tensor> &abstrerr, bool reduce) const {
+    // the set, the input set and the options of the step
+    std::vector<Operand> request = system();
+    request.push_back({"R", R});
+    if (U) request.push_back({"U", *U});
+    for (const Operand &o : std::vector<Operand>{{"timeStep", alg.time_step},
+                                                 {"taylorTerms", alg.taylor_terms},
+                                                 {"zonotopeOrder", alg.zonotope_order},
+                                                 {"enlarge", 1.1},
+                                                 {"reduce", reduce},
+                                                 {"columnOrder", "first"}})
+        request.push_back(o);
+    if (abstrerr) request.push_back({"abstrerr", Tensor::from(*abstrerr)});
+    // a failed step is an error of the oracle: no step
+    try {
+        const Reply r = ask("nonlinearSys.linReachPoly", request);
+        return PolyLinReachResult{r.get<PolyZonotope>("timeInterval"),
+                                  r.get<PolyZonotope>("timePoint"),
+                                  r.get<Tensor>("abstrerr").gather()};
+    } catch (const std::runtime_error &) {
+        return std::nullopt;
+    }
+}
+
 std::optional<LinReachResult> NonlinearSys::lin_reach(const std::optional<Zonotope> &U,
                                                       const Zonotope &R,
                                                       const alg::Linearization &alg,

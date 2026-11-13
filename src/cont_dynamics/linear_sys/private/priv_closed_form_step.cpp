@@ -301,6 +301,14 @@ ClosedFormStepper::ClosedFormStepper(ClosedFormStepper &&) noexcept = default;
 
 bool ClosedFormStepper::admissible() const { return m_ != nullptr; }
 
+const Interval &ClosedFormStepper::e_adt() const { return m_->e_adt; }
+const Interval &ClosedFormStepper::F() const { return m_->F; }
+const Interval &ClosedFormStepper::G() const { return m_->G; }
+
+Zonotope ClosedFormStepper::input_solution(const Zonotope &V) const {
+    return aux_input_solution(m_->terms, m_->remainder, V);
+}
+
 // The step ----------------------------------------------------------------------------------------
 
 ClosedFormStep ClosedFormStepper::step(const Zonotope &X, const Zonotope &U,
