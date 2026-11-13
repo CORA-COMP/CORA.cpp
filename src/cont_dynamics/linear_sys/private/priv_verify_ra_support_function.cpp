@@ -158,7 +158,7 @@ std::vector<double> aux_mul_rows(const std::vector<double> &x, int64_t n, double
     constexpr int64_t kRows = 8;
     std::vector<double> out(n * n, 0.0);
     const int64_t blocks = (n + kRows - 1) / kRows;
-    const int threads = threads_for(blocks, n * n);
+    [[maybe_unused]] const int threads = threads_for(blocks, n * n);
 #pragma omp parallel for num_threads(threads) schedule(dynamic) if (threads > 1)
     for (int64_t blk = 0; blk < blocks; ++blk) {
         [[maybe_unused]] const FlushDenormals flush; // the flag is per thread
@@ -454,7 +454,7 @@ std::vector<double> aux_propagate(const std::vector<double> &l0, const Banded &D
     const int64_t block = n < 128 ? n : (n * 8 < 32000 ? 16 : 4);
     std::vector<double> lt(std::size_t(N + 1) * n, 0.0);
     std::copy(l0.begin(), l0.end(), lt.begin());
-    const int threads = threads_for(n, static_cast<long long>(D.val.size()));
+    [[maybe_unused]] const int threads = threads_for(n, static_cast<long long>(D.val.size()));
 #pragma omp parallel num_threads(threads) if (threads > 1)
     {
         [[maybe_unused]] const FlushDenormals flush; // the flag is per thread
