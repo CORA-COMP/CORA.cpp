@@ -6,12 +6,12 @@
 // + [-l, l] as input (oneStepFloat), with the linear step of CORALean's reachFloatInput (coralean)
 // and of the closed form (closed_form). Both sets of the step are the oracle's bit for bit at
 // nearest on van der Pol with an input, the Robertson reaction, and the recorded steps of TORA,
-// ACC and TRAF22 (data/nonlinear_lin_steps.txt, dumped from CORA.cpp: the sets and inputs that
-// init_reach and post received); a step whose region check fails fails in both. Several steps in
-// a row (post) are the oracle's reach windows. error_bound = loop is CORALean's linReachLoopFloat,
-// bit for bit in the sets and the error the next step starts from: from the error 0 and from an
-// error of the step before (post), in reach, and on x' = x^2 at 1/8, where only the loop succeeds.
-// TRAF22 is its car (five states): the closed loop of ten states is too slow for the oracle.
+// ACC and TRAF22's car (data/nonlinear_lin_steps.txt: the sets that init_reach and post received);
+// a step whose region check fails fails in both. Several steps in a row (post) are the oracle's
+// reach windows. error_bound = loop is CORALean's linReachLoopFloat, bit for bit in the sets and
+// the error the next step starts from (also from an error of the step before, and on x' = x^2).
+// Short horizon: the oracle's closed form takes minutes on three states, so it runs on van der Pol
+// only; of the recorded steps three of TORA, two of ACC and one of TRAF22 (loop: 20 s) run.
 //
 // ORACLE: contDynamics/@contDynamics/linReach.m
 // ORACLE: contDynamics/@contDynamics/reach.m
@@ -264,19 +264,19 @@ int main() {
         const Zonotope rob_R(Tensor({1.0, 0.0, 0.0}),
                              Tensor({{1e-3, 0.0, 0.0}, {0.0, 1e-4, 0.0}, {0.0, 0.0, 1e-4}}));
         aux_compare("Robertson", robertson(), rob_R, Zonotope(Tensor({0.0}), Tensor::zeros({1, 0})),
-                    0.001);
+                    0.001, 4, 50, true, false);
         // a time step too large for the region: the step fails in both
         aux_compare("van der Pol, large step", van_der_pol(), vdp_R(), vdp_U(), 3.0, 4, 50, false);
         // CORA's loop from the error of the step before (rho large: post reduces nothing)
         aux_compare("van der Pol, from an error", van_der_pol(), vdp_R(), vdp_U(), 0.03125, 4, 1000,
-                    true, true, Tensor::from_data({0.0, 0x1p-20}, {2, 1}));
+                    true, false, Tensor::from_data({0.0, 0x1p-20}, {2, 1}));
         // x' = x^2 at a time step of 1/8: the region check fails, the loop succeeds
         aux_compare("x' = x^2", square(), Zonotope(Tensor({1.5}), Tensor({{0.5}})), std::nullopt,
                     0.125, 6, 10);
         // the recorded steps
-        aux_recorded("TORA", 6, false, true, [](const Record &) { return tora(); });
-        aux_recorded("ACC", 4, false, false, [](const Record &) { return acc(); });
-        aux_recorded("TRAF22", 6, true, false,
+        aux_recorded("TORA", 3, false, false, [](const Record &) { return tora(); });
+        aux_recorded("ACC", 2, false, false, [](const Record &) { return acc(); });
+        aux_recorded("TRAF22", 1, true, false,
                      [](const Record &r) { return traf22_car(r.params); });
     });
     oracle::run("nonlinearSys.reach", [&](oracle::Random &) {

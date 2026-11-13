@@ -10,6 +10,9 @@
 // whose sums are in another order than CORALean's; at order 3 the quadratic map is CORA's and the
 // sets lie inside the oracle's.
 //
+// Short horizon: the closed-form step runs on van der Pol only; the oracle needs 25 minutes for it
+// on Robertson's three states (the code does not depend on the dimension).
+//
 // CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
@@ -116,6 +119,8 @@ int main() {
         // the passes of both systems: the error of the window, then the orders of its terms
         aux_run("nonlinearSys.linReachAdaptivePass", [&] {
             for (Case &c : cases()) {
+                // the oracle's closed form takes 25 minutes on Robertson (see the header)
+                if (closed && c.sys.dim() > 2) continue;
                 const lean::NonlinearSys oracle(c.sys);
                 const std::optional<Zonotope> U = c.U;
                 const std::optional<lean::Zonotope> lean_input = lean::Zonotope(c.U);
