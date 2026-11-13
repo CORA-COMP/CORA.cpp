@@ -27,22 +27,35 @@ namespace cora {
 
 Zonotope PolyZonotope::zonotope() const {
     detail::Entry entry;
-    const int64_t h = num_dependent();
-    // a constant generator joins the center, an even one is split into center and half generator
-    std::vector<int64_t> keep, even, constant;
+    const int64_t n = dim(), h = num_dependent();
+    // an odd generator stays, an even one is halved, a constant one joins the center whole
+    std::vector<int64_t> keep, even;
+    std::vector<char> constant(std::size_t(h), 0);
     for (int64_t j = 0; j < h; ++j) {
         const std::vector<int> &col = E_[std::size_t(j)];
         if (std::all_of(col.begin(), col.end(), [](int e) { return e == 0; }))
-            constant.push_back(j);
+            constant[std::size_t(j)] = 1;
         else
             (priv_is_even(col) ? even : keep).push_back(j);
     }
-    if (even.empty() && constant.empty()) return {c_, Tensor::concat({G_, GI_}, -1)};
-    Tensor c = c_;
-    if (!constant.empty()) c = c + priv_columns(G_, constant).sum(-1, true);
-    const Tensor G_even = even.empty() ? G_.zeros_like({dim(), 0}) : priv_columns(G_, even) * 0.5;
-    if (!even.empty()) c = c + G_even.sum(-1, true);
-    return {c, Tensor::concat({priv_columns(G_, keep), G_even, GI_}, -1)};
+    if (even.empty() && keep.size() == std::size_t(h)) return {c_, Tensor::concat({G_, GI_}, -1)};
+    // the center takes the shift 0.5 * sum(Gquad), added from the last column to the first
+    const std::vector<double> g = G_.data(), cv = c_.data();
+    std::vector<double> shifted(static_cast<std::size_t>(n), 0.0);
+    for (int64_t i = 0; i < n; ++i) {
+        double shift = 0.0;
+        for (int64_t j = h; j-- > 0;) {
+            const double x = g[std::size_t(i * h + j)];
+            shift = (constant[std::size_t(j)]           ? x
+                     : priv_is_even(E_[std::size_t(j)]) ? 0.5 * x
+                                                        : 0.0) +
+                    shift;
+        }
+        shifted[std::size_t(i)] = cv[std::size_t(i)] + shift;
+    }
+    const Tensor G_even = even.empty() ? G_.zeros_like({n, 0}) : priv_columns(G_, even) * 0.5;
+    return {Tensor::like(c_, shifted, {n, 1}),
+            Tensor::concat({priv_columns(G_, keep), G_even, GI_}, -1)};
 }
 
 } // namespace cora

@@ -30,6 +30,7 @@
 #include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/oracle/oracle.h"
+#include "cora/global/oracle/poly_zonotope.h"
 #include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
@@ -306,6 +307,26 @@ inline bool agree(const std::string &what, const cora::IntervalMatrix &a, const 
 inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
     const bool center = agree(what + ".c", a.center(), b.center()); // both are reported
     return agree(what + ".G", a.generators(), b.generators()) && center;
+}
+
+/// The oracle's polynomial zonotope against CORA.cpp's: c, G, GI in their order, then the
+/// exponent columns and the identifiers, exactly; the error box is not compared (at nearest it is
+/// empty).
+inline bool agree(const std::string &what, const cora::PolyZonotope &a,
+                  const lean::PolyZonotope &b) {
+    const cora::PolyZonotope other = b.gather();
+    bool same = agree(what + ".c", a.center(), other.center()); // all are reported
+    same = agree(what + ".G", a.generators(), other.generators()) && same;
+    same = agree(what + ".GI", a.independent_generators(), other.independent_generators()) && same;
+    if (a.exponents() != other.exponents()) {
+        std::cerr << "  " << what << ": the exponent columns differ\n";
+        same = false;
+    }
+    if (a.ids() != other.ids()) {
+        std::cerr << "  " << what << ": the identifiers differ\n";
+        same = false;
+    }
+    return same;
 }
 
 /// The nominal part of the oracle's set (c, G and the equalities); its error boxes are not

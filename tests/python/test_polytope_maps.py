@@ -7,6 +7,8 @@ Written:       06-November-2026
 Last update:   ---
 Reviewed:      ---
 """
+# CORA: contSet/@emptySet/polytope.m
+# CORA: contSet/@fullspace/polytope.m
 # CORA: contSet/@polytope/isBounded.m
 # CORA: contSet/@polytope/isFullDim.m
 # CORA: contSet/@polytope/isIntersecting_.m

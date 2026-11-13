@@ -226,6 +226,21 @@ generators).
 | `polyZonotope.zonotope`, `polyZonotope.interval` | `Conversion/Float/Operations` | `pZ` | zonotope, box |
 | `nonlinearSys.reachPoly` | `NonlinearSys.FloatHessModel.linReachFloat` at `poly` (`LinReachFloat.lean`), `abstrErrPolyFloat` | the system (`f`, `n`, `m`), `X0` (a polynomial zonotope), `U`, `tFinal`, `timeStep`, `taylorTerms`, the orders | `timeInterval`, `timePoint` (polynomial zonotopes); CORALean's `poly` is its own variant (second-order Lagrange form), so a bit-exact test would need an op that follows `priv_poly_reach` |
 
+### Served in CORALean !936: the operations of CORA's polyZonotope
+
+The ops `polyZonotope.constructor`, `plus` (`Q`, `Z`, `I` or `v`), `mtimes`, `zonotope`, `interval`,
+`reduce` (`girard`), `enclose`, `dim`, and `zonotope.polyZonotope`, `interval.polyZonotope` follow CORA's
+algorithm; their request is `{"c", "G", "GI", "Exp", "E", "id"}` (`Exp` the p x h exponent matrix). They are
+tested bit for bit by `test_lean_poly_zonotope` (random sets with repeated and zero columns, and the sets of
+the ACC network). Equal exponent columns are ordered as CORA's `removeRedundantExponents` does (the hash of
+`RandStream('mt19937ar', 'Seed', 0)`, which `std::mt19937` reproduces), a sum of three or more equal
+columns is added from the last column to the first, as CORALean's `compactGens`. Open:
+
+| op | what stays oracle debt |
+|---|---|
+| `polyZonotope.enclose` | unequal numbers of independent generators (CORA's `Gadd` is not halved, CORALean's layout is `Zonotope.linComb`'s); other identifiers with a constant dependent generator (the oracle refuses) |
+| `polyZonotope.zonotope`, `interval`, `reduce` | a constant (all-zero exponent) column: CORA halves it, CORALean and CORA.cpp move it whole into the center |
+
 ## Level sets and Taylor models (PR "nln-levelset-a")
 
 CORALean has float definitions of the Taylor-model arithmetic and of the level-set queries; the

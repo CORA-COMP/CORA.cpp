@@ -40,6 +40,12 @@ Tensor aux_independent(const PolyZonotope &A, const PolyZonotope &B) {
     return Z1.enclose(Z2).generators();
 }
 
+/// The set with the independent generators as CORA's zonotope enclose gives them, the zero column
+/// of the center difference included (the constructor drops it).
+PolyZonotope aux_keep_independent(const PolyZonotope &body, const Tensor &GI) {
+    return {body.center(), body.generators(), GI, body.exponents(), body.ids(), detail::Verbatim{}};
+}
+
 /// The matrix of columns with zeros below the p rows of E.
 Exponents aux_with_row(const Exponents &E, int value, std::size_t count) {
     Exponents out;
@@ -81,7 +87,8 @@ PolyZonotope PolyZonotope::enclose(const PolyZonotope &S) const {
         E.push_back(std::move(last));
         std::vector<int64_t> id = id_;
         id.push_back(new_id);
-        return {(c_ + S.c_) * 0.5, G, GI, std::move(E), std::move(id)};
+        const PolyZonotope body((c_ + S.c_) * 0.5, G, GI, std::move(E), std::move(id));
+        return aux_keep_independent(body, GI);
     }
     // other factors: [c, G] of each set on t = 0 and t = 1, over the union of the identifiers
     const MergedIds ids = priv_merge_ids(id_, S.id_);
@@ -98,7 +105,8 @@ PolyZonotope PolyZonotope::enclose(const PolyZonotope &S) const {
     for (const std::vector<int> &col : aux_with_row(E2, 1, E2.size())) E.push_back(col);
     std::vector<int64_t> id = ids.id;
     id.push_back(new_id);
-    return priv_fold_constants({c_.zeros_like(), G, GI, std::move(E), std::move(id)});
+    return aux_keep_independent(
+        priv_fold_constants({c_.zeros_like(), G, GI, std::move(E), std::move(id)}), GI);
 }
 
 } // namespace cora

@@ -13,7 +13,9 @@
 #include "cont_set/poly_zonotope/private/priv.h"
 
 #include <algorithm>
-#include <unordered_map>
+#include <cstdint>
+#include <numeric>
+#include <random>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -21,6 +23,29 @@ namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// The hash vector ---------------------------------------------------------------------------
+
+std::vector<double> priv_hash_vector(std::size_t p) {
+    // rand(1, p) of RandStream('mt19937ar', 'Seed', 0): std::mt19937 seeded 5489, two words each
+    static const std::vector<double> table = [] {
+        std::mt19937 gen(5489);
+        std::vector<double> v(256);
+        for (double &x : v) {
+            const uint32_t a = gen() >> 5, b = gen() >> 6;
+            x = (double(a) * 67108864.0 + double(b)) / 9007199254740992.0;
+        }
+        return v;
+    }();
+    if (p <= table.size()) return {table.begin(), table.begin() + std::ptrdiff_t(p)};
+    std::mt19937 gen(5489);
+    std::vector<double> v(p);
+    for (double &x : v) {
+        const uint32_t a = gen() >> 5, b = gen() >> 6;
+        x = (double(a) * 67108864.0 + double(b)) / 9007199254740992.0;
+    }
+    return v;
+}
 
 // The columns -----------------------------------------------------------------------------------
 
@@ -87,6 +112,7 @@ MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
                    : a < b;
     });
     std::vector<int64_t> first(std::size_t(h), -1); // the first column of the group of j
+    bool repeated = false;
     for (std::size_t r = 0; r < order.size();) {
         std::size_t end = r;
         while (end < order.size() && hash[std::size_t(order[end])] == hash[std::size_t(order[r])])
@@ -103,41 +129,77 @@ MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
             if (lead == j)
                 leaders.push_back(j);
             else
-                changed = true;
+                repeated = true;
             first[std::size_t(j)] = lead;
         }
         r = end;
     }
-    if (!changed) return {G, E};
-    // the groups in the order of their first column, the columns of a group added in order
-    std::vector<int64_t> slot(std::size_t(h), -1);
-    Exponents kept;
-    for (const int64_t j : live)
-        if (first[std::size_t(j)] == j) {
-            slot[std::size_t(j)] = int64_t(kept.size());
-            kept.push_back(E[std::size_t(j)]);
-        }
-    const auto k = int64_t(kept.size());
-    if (k == 0) return {G.zeros_like({n, 0}), {}};
-    std::vector<double> merged(std::size_t(n * k), 0.0);
-    for (const int64_t j : live) {
-        const auto t = std::size_t(slot[std::size_t(first[std::size_t(j)])]);
-        for (int64_t i = 0; i < n; ++i)
-            merged[std::size_t(i) * std::size_t(k) + t] += g[std::size_t(i * h + j)];
+    if (!repeated && !changed) return {G, E};
+    // no two columns equal: CORA returns the columns as they are, the zero ones removed
+    if (!repeated) {
+        Exponents kept;
+        for (const int64_t j : live) kept.push_back(E[std::size_t(j)]);
+        return {priv_columns(G, live), std::move(kept)};
     }
-    // generators that cancel in the sum (x and -x) go too
+    // the groups, the columns of each in order: the leaders by their first column
+    std::vector<int64_t> leaders;
+    std::vector<std::vector<int64_t>> members;
+    std::vector<std::size_t> slot(std::size_t(h), 0);
+    for (const int64_t j : live) {
+        if (first[std::size_t(j)] == j) {
+            slot[std::size_t(j)] = leaders.size();
+            leaders.push_back(j);
+            members.emplace_back();
+        }
+        members[slot[std::size_t(first[std::size_t(j)])]].push_back(j);
+    }
+    // CORA: columns of a single exponent vector first, then the sums, each by hash (stable)
+    const std::vector<double> hash_vec = priv_hash_vector(E[std::size_t(live[0])].size());
+    std::vector<double> key(leaders.size());
+    for (std::size_t t = 0; t < leaders.size(); ++t) {
+        double sum = 0.0;
+        const std::vector<int> &col = E[std::size_t(leaders[t])];
+        for (std::size_t i = 0; i < col.size(); ++i) {
+            const double term = hash_vec[i] * double(col[i]);
+            sum = i == 0 ? term : sum + term;
+        }
+        key[t] = sum;
+    }
+    std::vector<std::size_t> rank(leaders.size());
+    std::iota(rank.begin(), rank.end(), std::size_t(0));
+    // ties by the place of the first column, which makes the sort stable
+    std::sort(rank.begin(), rank.end(), [&](std::size_t a, std::size_t b) {
+        const bool multiple_a = members[a].size() > 1, multiple_b = members[b].size() > 1;
+        if (multiple_a != multiple_b) return !multiple_a;
+        return key[a] != key[b] ? key[a] < key[b] : a < b;
+    });
+    // a group adds up from its last column to the first (CORALean's compactGens, not MATLAB's)
+    const auto k = int64_t(leaders.size());
+    std::vector<double> merged(std::size_t(n * k), 0.0);
+    Exponents E_out;
+    for (std::size_t t = 0; t < rank.size(); ++t) {
+        const std::vector<int64_t> &group = members[rank[t]];
+        E_out.push_back(E[std::size_t(leaders[rank[t]])]);
+        for (int64_t i = 0; i < n; ++i) {
+            double sum = 0.0;
+            for (std::size_t m = group.size(); m-- > 0;)
+                sum = g[std::size_t(i * h + group[m])] + sum;
+            merged[std::size_t(i) * std::size_t(k) + t] = sum;
+        }
+    }
+    // sums that cancelled (x and -x) go too, as the second pass of CORA's constructor removes them
     std::vector<int64_t> nonzero;
-    for (int64_t j = 0; j < k; ++j)
+    for (int64_t t = 0; t < k; ++t)
         for (int64_t i = 0; i < n; ++i)
-            if (merged[std::size_t(i * k + j)] != 0.0) {
-                nonzero.push_back(j);
+            if (merged[std::size_t(i * k + t)] != 0.0) {
+                nonzero.push_back(t);
                 break;
             }
     const Tensor all = Tensor::like(G, merged, {n, k});
-    if (int64_t(nonzero.size()) == k) return {all, std::move(kept)};
-    Exponents E_out;
-    for (const int64_t j : nonzero) E_out.push_back(kept[std::size_t(j)]);
-    return {priv_columns(all, nonzero), std::move(E_out)};
+    if (int64_t(nonzero.size()) == k) return {all, std::move(E_out)};
+    Exponents kept;
+    for (const int64_t t : nonzero) kept.push_back(E_out[std::size_t(t)]);
+    return {priv_columns(all, nonzero), std::move(kept)};
 }
 
 // The identifiers -------------------------------------------------------------------------------

@@ -25,6 +25,7 @@
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/mat_zonotope.h"
+#include "cora/global/oracle/poly_zonotope.h"
 #include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
@@ -61,6 +62,7 @@ struct Wire {
     Wire(const ConZonotope &cz);
     Wire(const MatZonotope &A);
     Wire(const ZonoBundle &bundle);
+    Wire(const PolyZonotope &P);
     Wire(const Polytope &P);
     Wire(const Ellipsoid &E);
     Wire(const Capsule &C);
