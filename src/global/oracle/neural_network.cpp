@@ -89,6 +89,7 @@ Json layers_json(const std::vector<NnLayer> &layers, std::string &dtype) {
     return list;
 }
 
+// one layer on the zonotope, the regression error only when one is asked for
 Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z, const std::string &poly_method,
                         const std::string &regression_error) {
     std::string dtype;
@@ -98,6 +99,7 @@ Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z, const std::stri
     return ask("nnLayer.evaluateZonotope", args).get<Zonotope>("Z");
 }
 
+// the layers in order on the zonotope
 Zonotope evaluate_network(const std::vector<NnLayer> &layers, const Zonotope &Z,
                           const std::string &poly_method, const std::string &regression_error) {
     std::string dtype;

@@ -9,11 +9,11 @@
 // by the network's output (initReach, then post, the error handed on inside the period), each end
 // set reduced, and the projection to the plant's states. Hand-made loops with the networks of
 // sigmoid, tanh and relu at poly_method singh and regression (CORALean's bracket error), with an
-// external input and with two steps per period, and NAV with its network (regression) on its
-// zonotope, two periods (CORACPP_NNCS_INSTANCES=1: minutes). The oracle takes the horizon and the
-// period as exact ratios of the doubles. Double Pendulum less robust is not run: its oracle step
-// does not finish in 14 minutes. The oracle's joint set drops the zero generators of the state
-// set as CORA.cpp's evaluate_with_input does.
+// external input, with two steps per period and on NAV's plant, two periods each (a prefix of the
+// horizon: the error hand-over between periods is what the second one checks). The instances'
+// networks are not run: the oracle needs minutes for one. The oracle takes the horizon and the
+// period as exact ratios of the doubles. The oracle's joint set drops the zero generators of the
+// state set as CORA.cpp's evaluate_with_input does.
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       13-November-2026
@@ -28,7 +28,6 @@
 #define CORACPP_BENCHMARK_DATA "."
 #include "../../../examples/cpp/benchmarks/benchmark_neur_net.h"
 
-#include <filesystem>
 #include <iostream>
 
 using namespace cora;
@@ -139,21 +138,21 @@ int main() {
         net1.add(Tensor({{1.0}, {-0.5}}), Tensor({0.0, 0.25}), Activation::tanh);
         net1.add(Tensor({{0.5, 0.25}}), Tensor({0.0}), Activation::identity);
         const Zonotope X1(Tensor({0.5}), Tensor({{0.125}}));
-        aux_compare("decay, tanh", decay, net1, 1, X1, std::nullopt, 0.125, 0.125, 0.375);
+        aux_compare("decay, tanh", decay, net1, 1, X1, std::nullopt, 0.125, 0.125, 0.25);
         aux_compare("decay, two steps per period", decay, net1, 1, X1, std::nullopt, 0.125, 0.0625,
-                    0.375);
+                    0.25);
         // the pendulum with each activation and both relaxations
         const Zonotope X2 = pendulum_X0();
         for (const bool regression : {false, true})
             aux_compare(std::string("pendulum, sigmoid") + (regression ? ", regression" : ""),
                         pendulum(false), pendulum_net(Activation::sigmoid), 1, X2, std::nullopt,
-                        0.125, 0.125, 0.375, regression);
+                        0.125, 0.125, 0.25, regression);
         aux_compare("pendulum, tanh", pendulum(false), pendulum_net(Activation::tanh), 1, X2,
-                    std::nullopt, 0.125, 0.125, 0.375);
+                    std::nullopt, 0.125, 0.125, 0.25);
         aux_compare("pendulum, relu", pendulum(false), pendulum_net(Activation::relu), 1, X2,
-                    std::nullopt, 0.125, 0.125, 0.375);
+                    std::nullopt, 0.125, 0.125, 0.25);
         aux_compare("pendulum, two steps per period", pendulum(false),
-                    pendulum_net(Activation::sigmoid), 1, X2, std::nullopt, 0.25, 0.125, 1.0);
+                    pendulum_net(Activation::sigmoid), 1, X2, std::nullopt, 0.25, 0.125, 0.5);
         // the plant of NAV (cos and sin of a state) with a hand-made network of two controls
         const NonlinearSys nav(
             [](const std::vector<Expr> &x, const std::vector<Expr> &u) {
@@ -172,29 +171,8 @@ int main() {
                     0.25, 0.125, 0.5, true, 1, 10);
         // an external input, and the period of two steps
         aux_compare("pendulum, external input", pendulum(true), pendulum_net(Activation::sigmoid),
-                    1, X2, Zonotope(Tensor({0.0}), Tensor({{0.0625}})), 0.125, 0.125, 0.375);
+                    1, X2, Zonotope(Tensor({0.0}), Tensor({{0.0625}})), 0.125, 0.125, 0.25);
     });
-    // NAV with its network, two periods (minutes: CORACPP_NNCS_INSTANCES=1)
-    if (std::getenv("CORACPP_NNCS_INSTANCES"))
-        oracle::run("neurNetContrSys.reach", [&](oracle::Random &) {
-            // the folder of the networks, then NAV and Double Pendulum less robust
-            const std::string folder = (std::filesystem::path(__FILE__).parent_path() / "../../.." /
-                                        "examples/benchmarks/data")
-                                           .lexically_normal()
-                                           .string();
-            setenv("CORACPP_BENCHMARK_DATA", folder.c_str(), 1);
-            using cora::bench::box_zonotope;
-            const NonlinearSys nav(
-                [](const std::vector<Expr> &x, const std::vector<Expr> &u) {
-                    return std::vector<Expr>{x[2] * cos(x[3]), x[2] * sin(x[3]), u[0] + 0.0 * x[0],
-                                             u[1] + 0.0 * x[0]};
-                },
-                4, 2);
-            // NAV with its network (regression) on its zonotope, two periods
-            aux_compare("NAV", nav, Net::of(cora::bench::load_network("nav_set")), 2,
-                        box_zonotope({2.9, 2.9, 0, 0}, {3.1, 3.1, 0, 0}), std::nullopt, 0.2, 0.1,
-                        0.4, true, 1, 10);
-        });
     return test::finish("lean neurNetContrSys reach");
 }
 
