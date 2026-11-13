@@ -27,7 +27,7 @@
 // CORALean's float definition (LinearSys.oneStepClosedFormFloat).
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   12-November-2026
+// Last update:   13-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -53,6 +53,24 @@ std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int
 /// The first count s below 128 with ||dt A / 2^s||, bounded as CORALean's normUpperBound, at most
 /// 1/2 (LinearSys.halvingsFloat); none if there is none.
 std::optional<int> priv_closed_form_halvings(const Tensor &A, double time_step);
+
+/// The entrywise remainder and corrections of CORALean's float definition at the admissible order.
+struct EntrywiseCorrections {
+    int order;     ///< eta_e: the first order from taylor_terms that admits the enclosure
+    Tensor W;      ///< |e^{|A| dt} - series| bound, entry by entry
+    Interval F, G; ///< the state and the constant-input correction, widened by W and dt W
+};
+
+/// MatExp.expRemainderEntrywise, intervalCorrectionMatrixEntrywise and
+/// intervalConstCorrectionMatrixEntrywise of the point matrix A; none without an admissible order.
+std::optional<EntrywiseCorrections> priv_entrywise_corrections(const Tensor &A, double time_step,
+                                                               int taylor_terms);
+
+/// priv_entrywise_corrections where it is asked for (CORACPP_TAYLOR=entrywise), for an (n, n)
+/// matrix without gradient whose matrices are all finite; none otherwise (CORA's expm path
+/// computes them). The last results are kept.
+std::optional<EntrywiseCorrections> priv_taylor_corrections(const Tensor &A, double time_step,
+                                                            int taylor_terms);
 
 /// The matrices of the closed-form step of one system and step size.
 class ClosedFormStepper {

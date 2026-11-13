@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   06-November-2026
+// Last update:   13-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/linear_sys.h"
@@ -178,6 +178,16 @@ std::optional<Step> LinearSys::one_step_closed_form(const Zonotope &X, const Zon
     const auto point = r.get<std::optional<Zonotope>>("timePoint");
     if (!point) return std::nullopt;
     return Step{*point, r.get<Zonotope>("timeInterval")};
+}
+
+std::optional<TaylorMatrices> LinearSys::taylor_matrices(double time_step, int taylor_terms) const {
+    const Reply r = ask_system("linearSys.taylorMatrices",
+                               {{"timeStep", time_step}, {"taylorTerms", taylor_terms}});
+    // all four fields or none
+    const auto order = r.get<std::optional<int64_t>>("order");
+    if (!order) return std::nullopt;
+    return TaylorMatrices{*order, r.get<Tensor>("W"), r.get<Interval>("FEntrywise"),
+                          r.get<Interval>("GEntrywise")};
 }
 
 Step LinearSys::post(const Zonotope &X, double time_step, int taylor_terms) const {
