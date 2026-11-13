@@ -82,6 +82,13 @@ struct Decode<ConZonotope> {
         return ConZonotope::from_json(dt, j);
     }
 };
+// A polynomial zonotope: c, G, GI, the exponents and the identifiers.
+template <>
+struct Decode<PolyZonotope> {
+    static PolyZonotope of(const std::string &dt, const Json &j) {
+        return PolyZonotope::from_json(dt, j);
+    }
+};
 template <>
 struct Decode<MatZonotope> {
     static MatZonotope of(const std::string &dt, const Json &j) {
@@ -229,6 +236,7 @@ Wire::Wire(const ConZonotope &cz) : json(cz.to_json()), dtype(cz.dtype()) {}
 Wire::Wire(const MatZonotope &A) : json(A.to_json()), dtype(A.center().dtype()) {}
 Wire::Wire(const ZonoBundle &bundle)
     : json(bundle.to_json()), dtype(bundle.zonotopes().front().center().dtype()) {}
+Wire::Wire(const PolyZonotope &P) : json(P.to_json()), dtype(P.center().dtype()) {}
 Wire::Wire(const Polytope &P) : json(P.to_json()), dtype(P.dtype()) {}
 Wire::Wire(const Ellipsoid &E) : json(E.to_json()), dtype(E.dtype()) {}
 Wire::Wire(const Capsule &C) : json(C.to_json()), dtype(C.dtype()) {}
@@ -286,6 +294,7 @@ template ConZonotope Reply::get<ConZonotope>(const char *) const;
 template MatZonotope Reply::get<MatZonotope>(const char *) const;
 // the sets of the protocol, and the lists and optionals of them
 template ZonoBundle Reply::get<ZonoBundle>(const char *) const;
+template PolyZonotope Reply::get<PolyZonotope>(const char *) const;
 template Polytope Reply::get<Polytope>(const char *) const;
 template Ellipsoid Reply::get<Ellipsoid>(const char *) const;
 template Capsule Reply::get<Capsule>(const char *) const;

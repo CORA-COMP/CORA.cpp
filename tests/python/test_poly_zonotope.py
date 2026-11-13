@@ -7,6 +7,8 @@ Last update:   ---
 Reviewed:      ---
 """
 # CORA: contSet/@polyZonotope/polyZonotope.m
+# CORA: contSet/@zonotope/polyZonotope.m
+# CORA: contSet/@interval/polyZonotope.m
 # CORA: contSet/@polyZonotope/dim.m
 # CORA: contSet/@polyZonotope/center.m
 # CORA: contSet/@polyZonotope/zonotope.m

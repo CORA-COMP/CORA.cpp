@@ -41,7 +41,8 @@ std::vector<double> aux_point(const PolyZonotope &P, const std::vector<double> &
     return p;
 }
 
-/// c = 1, 2 a + 3 a^2: the halves are 2.75 + 2.5 b + 0.75 b^2 and 0.75 - 0.5 b + 0.75 b^2.
+/// c = 1, 2 a + 3 a^2: the halves are 2.75 + 2.5 b + 0.75 b^2 and 0.75 - 0.5 b + 0.75 b^2, the
+/// merged b^2 first (CORA's order of the hash).
 PolyZonotope aux_known() {
     return {
         column({1.0}), Tensor::from_data({2, 3}, {1, 2}), Tensor::zeros({1, 0}), {{1}, {2}}, {1}};
@@ -77,10 +78,10 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         const auto [P1, P2] = aux_known().split_dep_factor(1);
         check(close(P1.center(), column({2.75})) &&
-                  close(P1.generators(), Tensor::from_data({2.5, 0.75}, {1, 2})),
+                  close(P1.generators(), Tensor::from_data({0.75, 2.5}, {1, 2})),
               b + ": the first half by hand");
         check(close(P2.center(), column({0.75})) &&
-                  close(P2.generators(), Tensor::from_data({-0.5, 0.75}, {1, 2})),
+                  close(P2.generators(), Tensor::from_data({0.75, -0.5}, {1, 2})),
               b + ": the second half by hand");
         split_property(b);
     });

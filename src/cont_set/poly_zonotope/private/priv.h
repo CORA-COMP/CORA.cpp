@@ -28,9 +28,12 @@ struct MergedColumns {
     Exponents E;
 };
 
-/// CORA's removeRedundantExponents: the generators with equal exponents add up (in the place of
-/// the first of them) and zero generators go. CORA orders by a hash of the exponents, this keeps
-/// the order of first occurrence.
+/// CORA's hash vector rand(1, p) of RandStream('mt19937ar', 'Seed', 0), which
+/// removeRedundantExponents multiplies with the exponents to order the columns.
+std::vector<double> priv_hash_vector(std::size_t p);
+
+/// CORA's removeRedundantExponents: equal exponents add up (last column to first), zero generators
+/// go, the columns are in the order of CORA's hash (singles first, then the sums).
 MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E);
 
 /// The identifiers of two sets as one sorted list, and for each set the position of its
