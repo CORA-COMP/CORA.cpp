@@ -25,7 +25,9 @@
 #include "cora/nn/neural_network/neural_network.h"
 #include "testing.h"
 
+#include <algorithm>
 #include <cmath>
+#include <map>
 
 using namespace cora;
 using test::check;
@@ -40,6 +42,37 @@ double aux_f(Activation a, double x) {
     return a == Activation::tanh      ? std::tanh(x)
            : a == Activation::sigmoid ? 1.0 / (1.0 + std::exp(-x))
                                       : std::max(x, 0.0);
+}
+
+/// The generators of a set by exponent, and the independent ones sorted: the order of the columns
+/// is the constructor's, not a property of the set.
+using Columns = std::map<std::vector<int>, std::vector<double>>;
+
+Columns aux_by_exponent(const PolyZonotope &P) {
+    // the column of each exponent
+    Columns out;
+    const int64_t n = P.dim(), h = P.num_dependent();
+    const std::vector<double> g = P.generators().data();
+    for (int64_t j = 0; j < h; ++j) {
+        std::vector<double> column;
+        for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(i * h + j)]);
+        out[P.exponents()[std::size_t(j)]] = column;
+    }
+    return out;
+}
+
+std::vector<std::vector<double>> aux_independent(const PolyZonotope &P) {
+    // the columns of the independent generators, sorted
+    const int64_t n = P.dim(), q = P.independent_generators().shape()[1];
+    const std::vector<double> g = P.independent_generators().data();
+    std::vector<std::vector<double>> out;
+    for (int64_t j = 0; j < q; ++j) {
+        std::vector<double> column;
+        for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(i * q + j)]);
+        out.push_back(column);
+    }
+    std::sort(out.begin(), out.end());
+    return out;
 }
 
 /// The enclosure [lo, hi] of the set of a one-dimensional polynomial zonotope.
@@ -68,8 +101,12 @@ void a_relu_of_order_2_is_the_hand_computed_polynomial(const std::string &b) {
         aux_neuron(Activation::relu, aux_interval_set(-1.0, 3.0), 2, PolyMethod::singh);
     // x = 1 + 2 alpha: the centre, alpha, alpha^2 and the error as an independent generator
     check(test::close(Y.center(), {79.0 / 96.0}), b + ": the centre");
-    check(Y.exponents() == Exponents({{1}, {2}}), b + ": the exponents are alpha and alpha^2");
-    check(test::close(Y.generators(), Tensor({{1.5, 0.75}})), b + ": the generators");
+    const Columns g = aux_by_exponent(Y);
+    check(g.size() == 2 && g.count({1}) && g.count({2}),
+          b + ": the exponents are alpha and alpha^2");
+    check(g.count({1}) && g.count({2}) && test::close(g.at({1})[0], 1.5) &&
+              test::close(g.at({2})[0], 0.75),
+          b + ": the generators");
     check(test::close(Y.independent_generators(), Tensor({{25.0 / 96.0}})), b + ": the error");
 }
 
@@ -91,12 +128,10 @@ void order_1_is_the_line_bit_for_bit(const std::string &b) {
             const PolyZonotope poly = nn.evaluate(X, {.add_approx_error_to_gi = in_gi,
                                                       .poly_method = method,
                                                       .num_generators = 1000000});
-            check(
-                test::close(line.center(), poly.center(), 0) &&
-                    test::close(line.generators(), poly.generators(), 0) &&
-                    test::close(line.independent_generators(), poly.independent_generators(), 0) &&
-                    line.exponents() == poly.exponents() && line.ids() == poly.ids(),
-                b + ": order 1 equals the line (" + (in_gi ? "generators" : "factors") + ")");
+            check(test::close(line.center(), poly.center(), 0) &&
+                      aux_by_exponent(line) == aux_by_exponent(poly) &&
+                      aux_independent(line) == aux_independent(poly) && line.ids() == poly.ids(),
+                  b + ": order 1 equals the line (" + (in_gi ? "generators" : "factors") + ")");
         }
     }
 }

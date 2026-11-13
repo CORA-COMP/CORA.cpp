@@ -55,8 +55,9 @@ class OrderK(unittest.TestCase):
         Y = neuron("relu").evaluate(interval_set(-1.0, 3.0), poly_method="singh", orders=[2])
         # the centre, the exponents, the generators and the error
         np.testing.assert_allclose(Y.c, [79.0 / 96.0])
-        np.testing.assert_array_equal(Y.E, [[1, 2]])
-        np.testing.assert_allclose(Y.G, [[1.5, 0.75]])
+        by_exponent = {int(e): g for e, g in zip(Y.E[0], Y.G[0], strict=True)}
+        self.assertEqual(sorted(by_exponent), [1, 2])
+        np.testing.assert_allclose([by_exponent[1], by_exponent[2]], [1.5, 0.75])
         np.testing.assert_allclose(Y.GI, [[25.0 / 96.0]])
 
     def test_order_1_is_the_line_bit_for_bit(self):
@@ -69,8 +70,10 @@ class OrderK(unittest.TestCase):
         for in_gi in (True, False):
             line = net.evaluate(X, add_approx_error_to_gi=in_gi)
             poly = net.evaluate(X, add_approx_error_to_gi=in_gi, num_generators=1000000)
-            for part in ("c", "G", "GI", "E"):
-                np.testing.assert_array_equal(getattr(line, part), getattr(poly, part))
+            np.testing.assert_array_equal(line.c, poly.c)
+            # the order of the generators is the constructor's: compare the columns sorted
+            for a, b in ((line.GI, poly.GI), (np.vstack([line.G, line.E]), np.vstack([poly.G, poly.E]))):
+                np.testing.assert_array_equal(a[:, np.lexsort(a[::-1])], b[:, np.lexsort(b[::-1])])
 
     def test_every_method_encloses_the_activation(self):
         for activation in ("sigmoid", "tanh"):
