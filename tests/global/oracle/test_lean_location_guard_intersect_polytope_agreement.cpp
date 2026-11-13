@@ -76,7 +76,7 @@ int main() {
         const Polytope guard = aux_guard(rnd, x0, n, true);
         const std::vector<Tensor> bases = {Tensor::eye(n), rnd.matrix(n, n)};
         aux_check_hulls(
-            priv_guard_intersect_nondet_guard(reach, guard, bases, alg::CutBox::cert, 0),
+            priv_guard_intersect_nondet_guard(reach, guard, bases, alg::CutBox::cert, 0, true),
             lean::Location::guard_intersect_nondet_guard(bases, sets.front(), sets, guard, 0,
                                                          "cert"));
     });
@@ -90,7 +90,7 @@ int main() {
         const Polytope guard = aux_guard(rnd, x0, n, true);
         const std::vector<Tensor> bases = {Tensor::eye(n), rnd.matrix(n, n)};
         aux_check_hulls(
-            priv_guard_intersect_con_zonotope(reach, guard, bases, 1, alg::CutBox::cert, 0),
+            priv_guard_intersect_con_zonotope(reach, guard, bases, 1, alg::CutBox::cert, 0, true),
             lean::Location::guard_intersect_con_zonotope(bases, sets.front(), sets, guard, 1, 0,
                                                          "cert"));
     });

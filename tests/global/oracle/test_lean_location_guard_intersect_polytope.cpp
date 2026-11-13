@@ -13,13 +13,15 @@
 // ORACLE: hybridDynamics/@location/guardIntersect_conZonotope.m
 // Authors:       Claude Sonnet 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   12-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/global/oracle/location.h"
 #include "hybrid_dynamics/location/private/priv.h"
 #include "oracle_testing.h"
+
+#include <cmath>
 
 using namespace cora;
 
@@ -65,6 +67,18 @@ void aux_dyadic(std::vector<Zonotope> &sets, std::vector<Set> &reach, Polytope &
     bases = {Tensor::eye(2), Tensor::from_data({0.0, 1.0, 1.0, 0.0}, {2, 2})};
 }
 
+/// The identity, a random matrix (a defect far from rounding) and, in the plane, a rotation
+/// computed in floats (B B' = I up to rounding, as a pca basis).
+std::vector<Tensor> aux_bases(test::oracle::Random &rnd, int64_t n) {
+    std::vector<Tensor> bases = {Tensor::eye(n), rnd.matrix(n, n)};
+    if (n == 2) {
+        const double c = std::ldexp(3024443490356641.0, -52),
+                     s = std::ldexp(3336937394871383.0, -52);
+        bases.push_back(Tensor::from_data({c, s, s, -c}, {2, 2}));
+    }
+    return bases;
+}
+
 } // namespace
 
 
@@ -81,11 +95,11 @@ int main() {
                 std::vector<Set> reach;
                 aux_sets(rnd, x0, n, sets, reach);
                 const Polytope guard = aux_guard(rnd, x0, n, hyperplane);
-                const std::vector<Tensor> bases = {Tensor::eye(n), rnd.matrix(n, n)};
+                const std::vector<Tensor> bases = aux_bases(rnd, n);
                 // no pass, one, and several (the oracle's cost grows like (factors)^k)
                 for (const int k : {0, 2}) {
-                    const std::optional<Set> mine =
-                        priv_guard_intersect_nondet_guard(reach, guard, bases, alg::CutBox::fm, k);
+                    const std::optional<Set> mine = priv_guard_intersect_nondet_guard(
+                        reach, guard, bases, alg::CutBox::fm, k, true);
                     const lean::ZonoBundle theirs = lean::Location::guard_intersect_nondet_guard(
                         bases, sets.front(), sets, guard, k);
                     test::check(mine.has_value(), "nondetGuard: the cut is not empty");
@@ -103,11 +117,11 @@ int main() {
                 std::vector<Set> reach;
                 aux_sets(rnd, x0, n, sets, reach);
                 const Polytope guard = aux_guard(rnd, x0, n, hyperplane);
-                const std::vector<Tensor> bases = {Tensor::eye(n), rnd.matrix(n, n)};
+                const std::vector<Tensor> bases = aux_bases(rnd, n);
                 for (const int k : {0, 2}) {
                     // reduced to order 1 first: n + 2 generators of n dimensions are order > 1
                     const std::optional<Set> mine = priv_guard_intersect_con_zonotope(
-                        reach, guard, bases, 1, alg::CutBox::fm, k);
+                        reach, guard, bases, 1, alg::CutBox::fm, k, true);
                     const lean::ZonoBundle theirs = lean::Location::guard_intersect_con_zonotope(
                         bases, sets.front(), sets, guard, 1, k);
                     test::check(mine.has_value(), "conZonotope: the cut is not empty");
@@ -125,7 +139,7 @@ int main() {
         std::vector<Tensor> bases;
         aux_dyadic(sets, reach, guard, bases);
         const std::optional<Set> cert =
-            priv_guard_intersect_nondet_guard(reach, guard, bases, alg::CutBox::cert, 0);
+            priv_guard_intersect_nondet_guard(reach, guard, bases, alg::CutBox::cert, 0, true);
         test::check(cert.has_value(), "nondetGuard cert: the cut is not empty");
         if (cert)
             test::oracle::check(cert->as<ZonoBundle>(),
@@ -133,7 +147,7 @@ int main() {
                                     bases, sets.front(), sets, guard, 0, "cert"));
         // both boxes: the certificates cut with two passes
         const std::optional<Set> both =
-            priv_guard_intersect_nondet_guard(reach, guard, bases, alg::CutBox::both, 2);
+            priv_guard_intersect_nondet_guard(reach, guard, bases, alg::CutBox::both, 2, true);
         test::check(both.has_value(), "nondetGuard both: the cut is not empty");
         if (both)
             test::oracle::check(both->as<ZonoBundle>(),
@@ -148,7 +162,7 @@ int main() {
         std::vector<Tensor> bases;
         aux_dyadic(sets, reach, guard, bases);
         const std::optional<Set> cert =
-            priv_guard_intersect_con_zonotope(reach, guard, bases, 1, alg::CutBox::cert, 0);
+            priv_guard_intersect_con_zonotope(reach, guard, bases, 1, alg::CutBox::cert, 0, true);
         test::check(cert.has_value(), "conZonotope cert: the cut is not empty");
         if (cert)
             test::oracle::check(cert->as<ZonoBundle>(),
@@ -156,7 +170,7 @@ int main() {
                                     bases, sets.front(), sets, guard, 1, 0, "cert"));
         // both boxes: the certificates cut with two passes
         const std::optional<Set> both =
-            priv_guard_intersect_con_zonotope(reach, guard, bases, 1, alg::CutBox::both, 2);
+            priv_guard_intersect_con_zonotope(reach, guard, bases, 1, alg::CutBox::both, 2, true);
         test::check(both.has_value(), "conZonotope both: the cut is not empty");
         if (both)
             test::oracle::check(both->as<ZonoBundle>(),
