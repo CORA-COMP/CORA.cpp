@@ -129,10 +129,14 @@ class Operations(unittest.TestCase):
         P = cora.PolyZonotope(np.array([1.0]), np.array([[2.0, 3.0]]), np.zeros((1, 0)),
                               np.array([[1, 2]]), [1])
         P1, P2 = P.split_dep_factor(1)
+        # the column order is CORA's hash order, so compare the terms by exponent
+        def terms(Q):
+            e, g = np.asarray(Q.E).ravel().tolist(), np.asarray(Q.G).ravel().tolist()
+            return sorted(zip(e, g, strict=True))
         np.testing.assert_allclose(np.asarray(P1.c).ravel(), [2.75])
-        np.testing.assert_allclose(np.asarray(P1.G), [[2.5, 0.75]])
+        self.assertEqual(terms(P1), [(1, 2.5), (2, 0.75)])
         np.testing.assert_allclose(np.asarray(P2.c).ravel(), [0.75])
-        np.testing.assert_allclose(np.asarray(P2.G), [[-0.5, 0.75]])
+        self.assertEqual(terms(P2), [(1, -0.5), (2, 0.75)])
         L1, L2 = P.split_longest_gen()
         np.testing.assert_allclose(np.asarray(L1.G), np.asarray(P1.G))
         with self.assertRaises(cora.errors.WrongValue):
