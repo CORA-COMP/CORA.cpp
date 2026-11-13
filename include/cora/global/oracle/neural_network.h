@@ -37,13 +37,16 @@ struct NnLayer {
     static NnLayer tanh();
 };
 
-/// The layer on the zonotope.
+/// The layer on the zonotope; regression_error ("bracket" or "extremum", empty: the oracle's
+/// default) applies to poly_method "regression" only.
 Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z,
-                        const std::string &poly_method = "singh");
+                        const std::string &poly_method = "singh",
+                        const std::string &regression_error = "");
 
 /// The layers in order on the zonotope.
 Zonotope evaluate_network(const std::vector<NnLayer> &layers, const Zonotope &Z,
-                          const std::string &poly_method = "singh");
+                          const std::string &poly_method = "singh",
+                          const std::string &regression_error = "");
 
 /// The exact parts of a polynomial zonotope: the center, the dependent and independent generators.
 struct NnPolyResult {
@@ -54,7 +57,8 @@ struct NnPolyResult {
 /// error of each activation in the box ("box") or in independent generators ("GI").
 NnPolyResult evaluate_network_poly(const std::vector<NnLayer> &layers, const cora::Tensor &c,
                                    const cora::Tensor &G, const cora::Tensor &GI,
-                                   const std::string &poly_method, const std::string &error_form);
+                                   const std::string &poly_method, const std::string &error_form,
+                                   const std::string &regression_error = "");
 
 } // namespace cora::lean
 

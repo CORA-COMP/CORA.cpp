@@ -120,7 +120,7 @@ inline ClosedLoopOptions loop_options(double time_step, int tensor_order, int ta
                .intermediate_order = intermediate_order,
                .error_bound = cora::bench::error_bound()};
     o.nn.poly_method = method;
-    // CORACPP_NN_REGRESSION = extremum | bracket: CORA's or CORALean's error of the regression line
+    // CORACPP_NN_REGRESSION = extremum | bracket: the error of the regression line
     if (const char *error = std::getenv("CORACPP_NN_REGRESSION"))
         o.nn.regression_error =
             std::string(error) == "bracket" ? RegressionError::bracket : RegressionError::extremum;

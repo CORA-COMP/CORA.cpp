@@ -12,13 +12,13 @@
 // zonotope. Hand-made networks of every activation kind, then the networks of the AINNCS
 // instances ACC, TORA (relu, tanh, sigmoid) and Docking on the instances' initial sets, the wide
 // ones (TORA relu 100, Docking 256) by their first layers: the oracle takes minutes for all.
-// The same at poly_method "regression" with CORALean's error (the clamped least-squares slope and
-// the derivative bracket, RegressionError::bracket): hand-made layers on narrow, wide and
+// The same at poly_method "regression" with CORALean's errors, "bracket" (the derivative bracket)
+// and "extremum" (the ends and the stationary points): hand-made layers on narrow, wide and
 // one-point ranges, and the networks of QUAD, NAV, CartPole and Docking (first layers) on their
 // initial sets. The polynomial zonotope in the GI form (add_approx_error_to_GI, a generator per
-// neuron also of radius 0) is checked on the same hand-made and instance networks.
-// CORA's own regression error (the exact extremum) has no float definition: computeApproxPoly
-// is tested by test_neural_network_regression.
+// neuron also of radius 0) is checked on the same hand-made and instance networks. The extremum
+// is also checked on narrow boxes around 0 (the slope is about 1/4) and on boxes whose end lies
+// at the stationary point, a few ulps inside and outside.
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
@@ -30,6 +30,7 @@
 #include "oracle_testing.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -122,29 +123,34 @@ NeuralNetwork aux_narrow(const NeuralNetwork &nn, std::size_t k, int64_t width) 
             std::vector<Activation>(nn.activations().begin(), nn.activations().begin() + k)};
 }
 
-/// CORA.cpp's and the oracle's output set of the network on Z, at the poly_method.
-void aux_check_network(const NeuralNetwork &nn, const Zonotope &Z, bool regression = false) {
+/// The options of a method: "" is singh, "bracket" and "extremum" are regression with CORALean's
+/// error of that name.
+NnOptions aux_options(const std::string &error) {
     NnOptions options;
-    options.poly_method = regression ? PolyMethod::regression : PolyMethod::singh;
-    options.regression_error = RegressionError::bracket;
+    options.poly_method = error.empty() ? PolyMethod::singh : PolyMethod::regression;
+    options.regression_error =
+        error == "extremum" ? RegressionError::extremum : RegressionError::bracket;
+    return options;
+}
+
+/// CORA.cpp's and the oracle's output set of the network on Z, at the method of the error name.
+void aux_check_network(const NeuralNetwork &nn, const Zonotope &Z, const std::string &error = "") {
     const std::vector<lean::NnLayer> layers = aux_lean_layers(nn);
-    const lean::Zonotope Y =
-        lean::evaluate_network(layers, lean::Zonotope(Z), regression ? "regression" : "singh");
-    oracle::check(nn.evaluate(Z, options),
+    const lean::Zonotope Y = lean::evaluate_network(layers, lean::Zonotope(Z),
+                                                    error.empty() ? "singh" : "regression", error);
+    oracle::check(nn.evaluate(Z, aux_options(error)),
                   aux_without_bias_generators(Y, layers, Z.generators().shape()[1]));
 }
 
 /// CORA.cpp's and the oracle's polynomial zonotope (c, G, GI) of the network, the errors as
 /// independent generators (the oracle's errorForm GI; its linear layers add zero generators).
 void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tensor &c,
-                  const Tensor &G, const Tensor &GI, bool regression) {
-    NnOptions options;
-    options.poly_method = regression ? PolyMethod::regression : PolyMethod::singh;
-    options.regression_error = RegressionError::bracket;
+                  const Tensor &G, const Tensor &GI, const std::string &error) {
+    NnOptions options = aux_options(error);
     options.add_approx_error_to_gi = true;
     const std::vector<lean::NnLayer> layers = aux_lean_layers(nn);
-    const lean::NnPolyResult Y =
-        lean::evaluate_network_poly(layers, c, G, GI, regression ? "regression" : "singh", "GI");
+    const lean::NnPolyResult Y = lean::evaluate_network_poly(
+        layers, c, G, GI, error.empty() ? "singh" : "regression", "GI", error);
     // the factors 1..h with the identity exponents
     const int64_t h = G.shape()[1];
     Exponents E(std::size_t(h), std::vector<int>(std::size_t(h), 0));
@@ -170,6 +176,38 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
     oracle::check(label + " c", out.center(), Y.c);
     oracle::check(label + " G", out.generators(), nonzero(Y.G));
     oracle::check(label + " GI", out.independent_generators(), nonzero(Y.GI));
+}
+
+/// CORA.cpp's and the oracle's output set of one layer of the activation on Z.
+void aux_check_layer(const std::string &name, Activation activation, const Zonotope &Z,
+                     const std::string &error) {
+    const int64_t n = Z.center().shape()[0];
+    const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
+    const lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
+                                : name == "sigmoid" ? lean::NnLayer::sigmoid()
+                                                    : lean::NnLayer::tanh();
+    oracle::check(name + " " + error, nn.evaluate(Z, aux_options(error)),
+                  lean::evaluate_layer(layer, lean::Zonotope(Z), "regression", error));
+}
+
+/// The upper end u of the box [l, u] at which the stationary point t0 of the regression line
+/// reaches u (in double arithmetic, by bisection), 0 where there is none; the tanh's box is the
+/// sigmoid's at twice the ends.
+double aux_edge(double l, bool tanh) {
+    const double scale = tanh ? 2.0 : 1.0;
+    const auto sigma = [](double t) { return 1.0 / (1.0 + std::exp(-t)); };
+    // t0(u) - u: positive while the stationary point lies beyond the end
+    const auto gap = [&](double u) {
+        const double a = scale * l, b = scale * u;
+        double sum = 0.0;
+        for (int i = 0; i < 20; ++i) sum += (2 * i - 19) * sigma(a + i * (b - a) / 19.0);
+        const double m = sum / (70.0 * (b - a));
+        return 2.0 * std::atanh(std::sqrt(std::max(0.0, 1.0 - 4.0 * m))) - b;
+    };
+    double lo = 1e-3, hi = 10.0;
+    if (!(gap(lo) > 0.0) || !(gap(hi) < 0.0)) return 0.0;
+    for (int i = 0; i < 200; ++i) (gap(0.5 * (lo + hi)) > 0.0 ? lo : hi) = 0.5 * (lo + hi);
+    return 0.5 * (lo + hi);
 }
 
 } // namespace
@@ -229,7 +267,9 @@ int main() {
         aux_check_network(aux_prefix(bench::load_network("docking"), 2),
                           box_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}));
     });
-    // regression with CORALean's error: one layer on ranges from a point to 60 wide (the clamp)
+    const std::vector<std::string> errors{"bracket", "extremum"};
+
+    // regression with CORALean's errors: one layer on ranges from a point to 60 wide
     oracle::run("nnLayer.evaluateZonotope", [&](oracle::Random &rnd) {
         for (const auto &[name, activation] : kinds) {
             const int n = 8, m = 5;
@@ -237,34 +277,59 @@ int main() {
                 Tensor::from_data({0.0, 1e-9, 1e-3, 0.05, 0.3, 3.0, 30.0, 0.7}, {n, 1});
             const Tensor G = widths.diag().matmul(rnd.matrix(n, m));
             const Zonotope Z(rnd.vector(n) * 2.0, G);
-            const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
-            const lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
-                                        : name == "sigmoid" ? lean::NnLayer::sigmoid()
-                                                            : lean::NnLayer::tanh();
-            NnOptions options;
-            options.poly_method = PolyMethod::regression;
-            options.regression_error = RegressionError::bracket;
-            oracle::check("regression " + name, nn.evaluate(Z, options),
-                          lean::evaluate_layer(layer, lean::Zonotope(Z), "regression"));
+            for (const std::string &error : errors) aux_check_layer(name, activation, Z, error);
+        }
+    });
+
+    // narrow boxes around 0 (4 m near 1) and the stationary point at an end, a few ulps off
+    oracle::run("nnLayer.evaluateZonotope", [&](oracle::Random &) {
+        for (const auto &[name, activation] : kinds) {
+            if (activation == Activation::relu) continue;
+            std::vector<double> lo, hi;
+            for (const double w : {1e-300, 1e-100, 1e-20, 1e-12, 1e-9, 1e-6, 1e-3, 0.1, 1.0})
+                for (const auto &[a, b] : std::vector<std::pair<double, double>>{
+                         {-w, w}, {0.0, w}, {-w, 0.0}, {w, 2 * w}, {-2 * w, -w}, {-w, 3 * w}})
+                    lo.push_back(a), hi.push_back(b);
+            // the box [l, u] whose stationary point t0 is u, then at its neighbours
+            for (const double l : {-0.3, -1.0, -3.0, -8.0, -20.0}) {
+                const double u = aux_edge(l, activation == Activation::tanh);
+                if (u <= l) continue;
+                for (const int ulps : {0, 1, -1, 2, -2, 5, -5, 1000, -1000}) {
+                    double v = u;
+                    for (int i = 0; i < std::abs(ulps); ++i)
+                        v = std::nextafter(v, ulps > 0 ? 1e300 : -1e300);
+                    lo.push_back(l), hi.push_back(v);
+                    // and the mirror image, where it is -t0 at the lower end
+                    lo.push_back(-v), hi.push_back(-l);
+                }
+            }
+            const Zonotope Z = cora::bench::box_zonotope(lo, hi);
+            for (const std::string &error : errors) aux_check_layer(name, activation, Z, error);
         }
     });
 
     // networks of several layers at regression, and in the GI form of a polynomial zonotope
     oracle::run("neuralNetwork.evaluate", [&](oracle::Random &rnd) {
+        // a random network of each activation kind with a random zonotope and its GI form
         for (const auto &[name, activation] : kinds) {
             const NeuralNetwork nn = aux_random_network(
                 rnd, {3, 6, 5, 2}, {activation, activation, Activation::identity});
             const Zonotope Z(rnd.vector(3), rnd.matrix(3, 4) * 0.3);
-            aux_check_network(nn, Z, true);
-            for (const bool regression : {false, true})
-                aux_check_gi(name + (regression ? " regression" : " singh"), nn, Z.center(),
-                             rnd.matrix(3, 3) * 0.2, rnd.matrix(3, 2) * 0.1, regression);
+            const Tensor G = rnd.matrix(3, 3) * 0.2, GI = rnd.matrix(3, 2) * 0.1;
+            aux_check_gi(name + " singh", nn, Z.center(), G, GI, "");
+            for (const std::string &error : errors) {
+                aux_check_network(nn, Z, error);
+                aux_check_gi(name + " " + error, nn, Z.center(), G, GI, error);
+            }
         }
         const NeuralNetwork mixed = aux_random_network(
             rnd, {4, 7, 7, 3}, {Activation::relu, Activation::tanh, Activation::sigmoid});
-        aux_check_network(mixed, Zonotope(rnd.vector(4), rnd.matrix(4, 9) * 0.2), true);
-        aux_check_gi("mixed", mixed, rnd.vector(4), rnd.matrix(4, 3) * 0.2, rnd.matrix(4, 2) * 0.1,
-                     true);
+        const Zonotope Z(rnd.vector(4), rnd.matrix(4, 9) * 0.2);
+        const Tensor c = rnd.vector(4), G = rnd.matrix(4, 3) * 0.2, GI = rnd.matrix(4, 2) * 0.1;
+        for (const std::string &error : errors) {
+            aux_check_network(mixed, Z, error);
+            aux_check_gi("mixed " + error, mixed, c, G, GI, error);
+        }
     });
 
     // the networks of QUAD, NAV, CartPole and Docking at regression, on the initial sets
@@ -279,20 +344,22 @@ int main() {
         std::vector<double> lo(12, 0.0), hi(12, 0.0);
         for (int i = 0; i < 6; ++i) lo[std::size_t(i)] = -0.4, hi[std::size_t(i)] = 0.4;
         const Zonotope quad = box_zonotope(lo, hi);
-        aux_check_network(aux_prefix(bench::load_network("quad"), 2), quad, true);
-        aux_check_gi("quad", aux_prefix(bench::load_network("quad"), 2), quad.center(),
-                     quad.generators(), Tensor::zeros({12, 1}), true);
         const Zonotope nav = box_zonotope({2.9, 2.9, 0, 0}, {3.1, 3.1, 0, 0});
-        aux_check_network(bench::load_network("nav_point"), nav, true);
-        aux_check_gi("nav", bench::load_network("nav_set"), nav.center(), nav.generators(),
-                     Tensor::zeros({4, 1}), true);
         const Zonotope cart = box_zonotope({-0.04, -0.02, -0.04, -0.02}, {0.04, 0.02, 0.04, 0.02});
-        aux_check_network(bench::load_network("cartpole"), cart, true);
-        aux_check_gi("cartpole", bench::load_network("cartpole"), cart.center(), cart.generators(),
-                     Tensor::zeros({4, 1}), true);
         // the first three layers, cut to 32 neurons: the tanh of the third is the first activation
         const Zonotope docking = box_zonotope({70, 70, -0.14, -0.14}, {106, 106, 0.14, 0.14});
-        aux_check_network(aux_narrow(bench::load_network("docking"), 3, 32), docking, true);
+        for (const std::string &error : errors) {
+            aux_check_network(aux_prefix(bench::load_network("quad"), 2), quad, error);
+            aux_check_gi("quad " + error, aux_prefix(bench::load_network("quad"), 2), quad.center(),
+                         quad.generators(), Tensor::zeros({12, 1}), error);
+            aux_check_network(bench::load_network("nav_point"), nav, error);
+            aux_check_gi("nav " + error, bench::load_network("nav_set"), nav.center(),
+                         nav.generators(), Tensor::zeros({4, 1}), error);
+            aux_check_network(bench::load_network("cartpole"), cart, error);
+            aux_check_gi("cartpole " + error, bench::load_network("cartpole"), cart.center(),
+                         cart.generators(), Tensor::zeros({4, 1}), error);
+            aux_check_network(aux_narrow(bench::load_network("docking"), 3, 32), docking, error);
+        }
     });
     return test::finish("lean nn evaluate");
 }

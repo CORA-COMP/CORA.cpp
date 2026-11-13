@@ -610,7 +610,7 @@ enclosed by CORA's `poly_method` "singh" of order 1 (the tightest parallelogram 
 [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and tanh); on a polynomial zonotope the
 factors and exponents stay. QUAD, Docking, NAV and CartPole use CORA's `poly_method` "regression" of
 order 1: the least-squares line through 20 points of the range of the neuron and, as its error, the
-exact maximum of the difference to the activation. `NnOptions::regression_error = RegressionError::bracket` (CORALean's `Layer.sigmoidRegression`: the slope clamped into the derivative bracket, the error the bracket's; bit-exact against the oracle) is sound for any slope but looser: with `CORACPP_NN_REGRESSION=bracket` QUAD, NAV standard, CartPole (both sets) and the Docking polygon row end UNKNOWN (NAV robust verifies, 1.94 s instead of 0.35 s), so CORA's exact extremum stays the default. The Unicycle, Double Pendulum less-robust and NAV
+extremum of the difference to the activation over the ends and the stationary points: `NnOptions::regression_error = RegressionError::extremum` (CORALean's `Layer.sigmoidRegressionExact` and `Layer.tanhRegressionExact`, bit-exact against the oracle at `nearest`, sound for any slope), the default. It is CORA's own error with the stationary points enclosed instead of computed, and a ReLU takes Singh's line as in CORALean. It is 13 to 48% faster than the earlier port of CORA's closed form on NAV standard, CartPole (both sets) and the Docking polygon row (155 s to 94 s), and 12% slower on QUAD (1.80 s to 2.01 s, the median of three runs); every verdict is unchanged. `RegressionError::bracket` (CORALean's `Layer.sigmoidRegression`: the slope clamped into the derivative bracket, the error the bracket's; bit-exact against the oracle) is sound for any slope but looser: with `CORACPP_NN_REGRESSION=bracket` QUAD, NAV standard, CartPole (both sets) and the Docking polygon row end UNKNOWN (NAV robust verifies, 1.94 s instead of 0.35 s). The Unicycle, Double Pendulum less-robust and NAV
 start from zonotopes, the others from polynomial zonotopes, as the scripts. The sets, the boxes and the sets over the
 steps agree with MATLAB CORA's to five digits over 50 control periods (TORA reach-tanh, checked at
 t = 0.5, 1, ..., 5).
@@ -633,13 +633,13 @@ t = 0.5, 1, ..., 5).
 - *The plant reach*: `NonlinearSys` alg "lin" on the extended system, with the Hessian region joined
   with the linearization point (the repair of `priv_abstrerr_lin`); the sets stay sound at tensor order 3,
   looser than CORA's on polynomial zonotopes.
-- *The regression line* (`computeApproxPoly` "regression", `computeApproxError`): sound in exact arithmetic.
-  The extremes of `f(x) - (m x + t)` over `[l, u]` lie at the ends and where `f'(x) = m`; tanh has them
-  in closed form in CORA, the sigmoid is sampled there with a Lipschitz tolerance (sound, looser) and
-  CORA.cpp takes the closed form `2 atanh(sqrt(1 - 4m))` for it; the ReLU is piecewise linear, so its
-  extremes are at `l`, 0 and `u`. A test compares each radius with a grid of 20000 points
-  (`test_neural_network_regression`), and CORALean's `sigmoidPolyRelaxation_encloses` and
-  `tanhPolyRelaxation_encloses` state the same for any fit with a certified error.
+- *The regression line* (`computeApproxPoly` "regression", `computeApproxError`): sound for any slope, in the float
+  definition of CORALean (`sigmoidRegressionExactRelaxation`). The extremes of `f(x) - (m x + t)` over `[l, u]`
+  lie at the ends and where `f'(x) = m`; tanh has them in closed form in CORA, the sigmoid is sampled there with a
+  Lipschitz tolerance (sound, looser). CORA.cpp and CORALean take the closed form `2 atanh(sqrt(1 - 4m))` for both,
+  with the stationary points enclosed by rounded roots and logarithms, so it holds for the slope the floats gave
+  (`Layer.sigmoidRegressionExact_encloses`). A test compares each radius with a grid of 20000 points
+  (`test_neural_network_regression`) and the sets bit for bit with the oracle (`test_lean_nn_evaluate`).
 - *The splitting of `verify`* (`splitR0`): sound. The pieces are the halves of the box of the initial set
   (tested to cover it), VERIFIED needs every leaf verified, and a piece is split at most `depth - 1` times as CORA
   does; the depth-first search with the early stop gives CORA's verdict. FALSIFIED still needs a simulated run.
