@@ -37,6 +37,9 @@ struct NnLayer {
     static NnLayer tanh();
 };
 
+/// The layers as the wire's list, and in `dtype` the scalar type of their weights.
+Json layers_json(const std::vector<NnLayer> &layers, std::string &dtype);
+
 /// The layer on the zonotope; regression_error ("bracket" or "extremum", empty: the oracle's
 /// default) applies to poly_method "regression" only.
 Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z,

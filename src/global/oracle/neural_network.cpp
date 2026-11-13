@@ -83,6 +83,12 @@ NnLayer NnLayer::tanh() {
 
 // The evaluations ----------------------------------------------------------------------------
 
+Json layers_json(const std::vector<NnLayer> &layers, std::string &dtype) {
+    Json list = Json::array();
+    for (const NnLayer &layer : layers) list.push(aux_layer(layer, dtype));
+    return list;
+}
+
 Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z, const std::string &poly_method,
                         const std::string &regression_error) {
     std::string dtype;
@@ -94,9 +100,8 @@ Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z, const std::stri
 
 Zonotope evaluate_network(const std::vector<NnLayer> &layers, const Zonotope &Z,
                           const std::string &poly_method, const std::string &regression_error) {
-    Json list = Json::array();
     std::string dtype;
-    for (const NnLayer &layer : layers) list.push(aux_layer(layer, dtype));
+    const Json list = layers_json(layers, dtype);
     std::vector<Operand> args{
         {"layers", Wire(list, dtype)}, {"Z", Z}, {"poly_method", poly_method}};
     if (!regression_error.empty()) args.push_back({"regression_error", regression_error});
@@ -109,9 +114,8 @@ NnPolyResult evaluate_network_poly(const std::vector<NnLayer> &layers, const cor
                                    const std::string &poly_method, const std::string &error_form,
                                    const std::string &regression_error) {
     // the layers and the set in wire form
-    Json list = Json::array();
     std::string dtype;
-    for (const NnLayer &layer : layers) list.push(aux_layer(layer, dtype));
+    const Json list = layers_json(layers, dtype);
     Json P = Json::object();
     P.set("c", Tensor(c).to_json()).set("G", Tensor(G).to_json()).set("GI", Tensor(GI).to_json());
     std::vector<Operand> args{{"layers", Wire(list, dtype)},
