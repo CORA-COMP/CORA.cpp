@@ -127,7 +127,7 @@ ClosedLoopVerdict aux_docking_run(Rng &rng, bool polygon) {
     const ClosedLoopTrajectories traj = sys.simulate_random(
         X0.zonotope(), std::nullopt, 40.0, options.plant.time_step, out.simulations, 0.5, rng);
     // the smallest margin of the constraint over the samples is printed in verbose mode
-    const bool verbose = std::getenv("CORACPP_BENCHMARK_VERBOSE") != nullptr;
+    const bool verbose = cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE");
     double worst = 1e9, worst_time = 0;
     for (std::size_t k = 0; k < traj.x.size(); ++k) {
         const std::vector<double> x = traj.x[k].data();

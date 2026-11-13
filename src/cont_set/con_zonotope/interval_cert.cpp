@@ -149,26 +149,35 @@ ConZonotope::Cut aux_cut(const ConZonotope &cz) {
 
 // The programs ------------------------------------------------------------------------------------
 
-/// The multipliers of max s e_i'(c + G x) over the rows and the unit box, from the dual solution
-/// of min -s G_i'x; none if the program has no solution.
-std::optional<ConZonotope::CertWeights> aux_dual(const Host &H, int64_t i, double s) {
-    ConZonotope::CertWeights w;
-    w.y.assign(std::size_t(H.m), 0.0);
-    w.zu.assign(std::size_t(H.p), 0.0);
-    w.zl.assign(std::size_t(H.p), 0.0);
-    // without factors there is no program: the weights stay zero
-    if (H.h == 0) return w;
-    // the program min -s G_i'x over the rows, the equalities and the unit box
+/// The program min f'x over the rows, the equalities and the unit box; its cost is set per call.
+LinProg aux_program(const Host &H) {
     LinProg lp;
     lp.n = int(H.h);
-    for (int64_t j = 0; j < H.h; ++j) lp.f.push_back(-s * H.G[std::size_t(i * H.h + j)]);
     lp.Aineq = H.C;
     lp.bineq = H.d;
     lp.Aeq = H.A;
     lp.beq = H.b;
     lp.lb.assign(std::size_t(H.h), -1.0);
     lp.ub.assign(std::size_t(H.h), 1.0);
-    const LinProgResult r = linprog(lp);
+    return lp;
+}
+
+/// The cost -s G_i'x of the program for max s e_i'(c + G x).
+Vec aux_cost(const Host &H, int64_t i, double s) {
+    Vec f;
+    for (int64_t j = 0; j < H.h; ++j) f.push_back(-s * H.G[std::size_t(i * H.h + j)]);
+    return f;
+}
+
+/// The multipliers of max s e_i'(c + G x) over the rows and the unit box, from the dual solution
+/// of min -s G_i'x; none if the program has no solution.
+std::optional<ConZonotope::CertWeights> aux_dual(const Host &H, const LinProgResult &r) {
+    ConZonotope::CertWeights w;
+    w.y.assign(std::size_t(H.m), 0.0);
+    w.zu.assign(std::size_t(H.p), 0.0);
+    w.zl.assign(std::size_t(H.p), 0.0);
+    // without factors there is no program: the weights stay zero
+    if (H.h == 0) return w;
     if (r.status != LinProgResult::Status::optimal) return std::nullopt;
     // the equality multiplier is free, split in its two halves; a non-number stays 0 (looser)
     for (std::size_t k = 0; k < r.dual_ineq.size(); ++k)
@@ -193,10 +202,22 @@ std::optional<ConZonotope::Certificate> ConZonotope::Cut::certificate() const {
     CORA_CHECK(c.ndim() == 2, Error::not_supported,
                [] { return std::string("certificate: a single set, not a batch"); });
     const Host H = aux_host_cut(*this);
-    // both ends of every coordinate, from a program each
+    // both ends of every coordinate, from a program each; the programs differ in their cost only
+    std::vector<LinProgResult> solved;
+    if (H.h > 0) {
+        std::vector<Vec> costs;
+        for (int64_t i = 0; i < H.n; ++i) {
+            costs.push_back(aux_cost(H, i, 1.0));
+            costs.push_back(aux_cost(H, i, -1.0));
+        }
+        solved = linprog_costs(aux_program(H), costs);
+    }
+    // the multipliers of each end, in the order of the costs
     Certificate w;
     for (int64_t i = 0; i < H.n; ++i) {
-        auto up = aux_dual(H, i, 1.0), lo = aux_dual(H, i, -1.0);
+        const std::size_t k = std::size_t(2 * i);
+        auto up = aux_dual(H, H.h > 0 ? solved[k] : LinProgResult{});
+        auto lo = aux_dual(H, H.h > 0 ? solved[k + 1] : LinProgResult{});
         if (!up || !lo) return std::nullopt;
         w.up.push_back(std::move(*up));
         w.lo.push_back(std::move(*lo));

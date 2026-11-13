@@ -23,7 +23,7 @@ on a shared machine.
   not verified, F falsified); `(ARCH23)` where the report has no such instance, `(script: 0)` where
   the report verifies with another setup than CORA's script.
 - **CORA.cpp [s]**: wall clock, core preset, one run each, the programs run one at a time on 16 CPUs
-  that other jobs share (AFF and NLN: 09-November-2026, AINNCS: 11-November-2026, RND02, RND04-06, HEAT03 and HEAT04: 12-November-2026).
+  that other jobs share (AFF and NLN: 09-November-2026, AINNCS: 11-November-2026, RND02, RND04-06, HEAT03 and HEAT04: 12-November-2026; BRKNC01 and CVDP23: 13-November-2026, NATIVE=OFF, machine load 13).
 - **oracle check (rows)**: the rows of CORA the instance executes that are bit-exact against
   CORALean's `nearest` oracle, of those that can be (`coverage/benchmarks.md`, table at the end), and
   the rows tested by properties only.
@@ -159,7 +159,7 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 | GRBX01 | 1 | 1 | 0.03 | 34/52 bit-exact, 10 property | - | 2.28 | 2.28 (CORA) | 76.0 |
 | GRBX02 | 1 | 1 | 0.037 | 35/56 bit-exact, 10 property | - | 2.44 | 2.44 (CORA) | 65.9 |
 | BRKDC01 | 1 | 1 | 0.037 | 6/12 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.70 |
-| BRKNC01 | 1 | 1 | 4.83 | 35/52 bit-exact, 7 property | - | 32.07 | 0.17 (JuliaReach) | 0.035 |
+| BRKNC01 | 1 | 1 | 2.37 | 35/52 bit-exact, 7 property | - | 32.07 | 0.17 (JuliaReach) | 0.072 |
 | BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.001 | 28/44 bit-exact, 10 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
 
 [a] DTN01-06: JuliaReach's ARCH-COMP 2025 repeatability code (0.005-0.127 s) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %.
@@ -356,7 +356,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | ROBE25 (1) | 1 | 1 | 29.1 | 11/20 bit-exact, 3 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
 | ROBE25 (2) | 1 | 1 | 437 | 11/20 bit-exact, 3 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
 | ROBE25 (3) | 1 | 1 | 93.8 | 11/20 bit-exact, 3 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
-| CVDP23 | 1 | 1 | 60 | 39/70 bit-exact, 11 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.007 |
+| CVDP23 | 1 | 1 | 11.7 | 39/70 bit-exact, 11 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.034 |
 | LALO20 W001 | 1 | 1 | 2.07 | 11/20 bit-exact, 3 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
 | LALO20 W005 | 1 | 1 | 14.3 | 11/20 bit-exact, 3 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
 | LALO20 W01 | 1 | 1 | 261 | 8/25 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.95 |
@@ -449,7 +449,7 @@ x5 = b as a constant state, three locations that only split the analysis at the 
 boxes of the initial set, each a polynomial zonotope (`PolyZonotope(Interval)`). The program runs
 the options of the script (`timeStep` 0.005, `taylorTerms` 3, `zonotopeOrder` 100, `tensorOrder` 3,
 `errorOrder` 10, `intermediateOrder` 50, guards by `zonoGirard` with PCA) with `alg::Polynomialization`
-and verifies y1, y2 < 2.75 for all 13: the time is that of the 13 runs together, as the script's. The
+and verifies y1, y2 < 2.75 for all 13: the time is that of the 13 runs together, as the script's, on 8 threads (the boxes are independent; 61.6 s on one, machine load 13 on 13-November-2026). The
 sets of a location are polynomial zonotopes; the guards act on their enclosing zonotopes and the
 set that leaves is turned back into a polynomial zonotope, as CORA's `guardIntersect` does
 (docs/cora-differences.md). MATLAB CORA v2026.1.0 (R2024b, this machine, `CHECKS_ENABLED` off) verifies it in
@@ -724,7 +724,7 @@ build/core/benchmarks/benchmark_linear_verify_fast_arch23_iss [ISSF01_ISS01 ...]
 build/core/benchmarks/benchmark_hybrid_reach_arch23_rendezvous [SRA01 ...]   # CORACPP_BENCHMARK_VERBOSE=1: the branches
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_trafficscenario         # TRAF22
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_robertson [ROBE25_1 ...] # CORACPP_BENCHMARK_VERBOSE=1: step sizes
-build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   # CVDP23, about a minute
+build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol                   # CVDP23, about 12 s on 8 threads
 build/core/benchmarks/benchmark_nonlinear_reach_arch23_laubloomis [LALO20_W001 ...]
 build/core/benchmarks/benchmark_nonlinear_das_reach_arch23_powersystem         # TSPS25, about a minute
 build/core/benchmarks/benchmark_hybrid_reach_arch23_lotkavolterra               # LOVO25, CORACPP_BENCHMARK_VERBOSE=1: the branches

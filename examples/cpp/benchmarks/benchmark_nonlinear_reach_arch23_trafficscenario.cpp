@@ -241,7 +241,7 @@ bool aux_run(const std::string &name) {
               << h[0] << ", " << h[1] << "] x [" << h[2] << ", " << h[3] << "]  (MATLAB CORA: 1)"
               << '\n';
     // with CORACPP_BENCHMARK_VERBOSE: the first time-interval set and the last set, to compare
-    if (std::getenv("CORACPP_BENCHMARK_VERBOSE"))
+    if (cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE"))
         for (const Zonotope *Z : {&R.front().front(), &X}) {
             const Interval I = Z->interval();
             std::cerr << "    center " << Z->center().matrix_transpose().data().size() << ":";

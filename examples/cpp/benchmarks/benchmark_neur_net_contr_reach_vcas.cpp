@@ -111,7 +111,8 @@ bool aux_simulate(bool middle, double hdot0, const std::vector<NeuralNetwork> &n
             // the report's rule: 0 only if the advisory is the previous one and hdot complies
             const bool complies = a.comply_lo <= x[1] && x[1] <= a.comply_hi;
             const double acc =
-                (next == adv || std::getenv("CORACPP_VCAS_RULE")) && complies ? 0.0 : choice;
+                (next == adv || cora::bench::env_flag("CORACPP_VCAS_RULE")) && complies ? 0.0
+                                                                                        : choice;
             x[0] += -x[1] - 0.5 * acc;
             x[1] += acc;
             x[2] -= 1;
@@ -195,7 +196,7 @@ ClosedLoopVerdict aux_vcas(bool middle, double hdot0, Rng &rng) {
         out.verdict = Verdict::falsified;
         return out;
     }
-    return aux_reach(middle, hdot0, nets, std::getenv("CORACPP_VCAS_RULE") != nullptr);
+    return aux_reach(middle, hdot0, nets, cora::bench::env_flag("CORACPP_VCAS_RULE"));
 }
 
 std::vector<AinncsInstance> aux_instances() {

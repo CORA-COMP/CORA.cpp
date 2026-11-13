@@ -55,6 +55,24 @@ LinProgResult aux_solve(const HostConZonotope &H, const std::vector<double> &f) 
     return linprog(lp);
 }
 
+/// The programs min f'x over |x|_inf <= 1, A x = b for each of the costs (they share phase 1).
+std::vector<LinProgResult> aux_solve_costs(const HostConZonotope &H,
+                                           const std::vector<std::vector<double>> &costs) {
+    if (H.m == 0) {
+        std::vector<LinProgResult> out;
+        out.reserve(costs.size());
+        for (const std::vector<double> &f : costs) out.push_back(aux_solve(H, f));
+        return out;
+    }
+    LinProg lp;
+    lp.n = int(H.m);
+    lp.Aeq = H.A;
+    lp.beq = H.b;
+    lp.lb.assign(std::size_t(H.m), -1.0);
+    lp.ub.assign(std::size_t(H.m), 1.0);
+    return linprog_costs(lp, costs);
+}
+
 /// The cost G'd of the function d'(c + G x), the generator part.
 std::vector<double> aux_cost(const HostConZonotope &H, const std::vector<double> &d) {
     std::vector<double> f(std::size_t(H.m), 0.0);
@@ -87,10 +105,11 @@ std::optional<std::pair<double, double>> priv_range(const HostConZonotope &H,
     double offset = 0.0;
     for (int64_t i = 0; i < H.n; ++i) offset += d[i] * H.c[i];
     std::vector<double> f = aux_cost(H, d);
-    const LinProgResult lower = aux_solve(H, f);
+    std::vector<double> neg = f;
+    for (double &x : neg) x = -x;
+    const std::vector<LinProgResult> both = aux_solve_costs(H, {f, neg});
+    const LinProgResult &lower = both[0], &upper = both[1];
     if (lower.status != LinProgResult::Status::optimal) return std::nullopt;
-    for (double &x : f) x = -x;
-    const LinProgResult upper = aux_solve(H, f);
     if (upper.status != LinProgResult::Status::optimal) return std::nullopt;
     return std::pair{offset + lower.fval, offset - upper.fval};
 }
@@ -120,12 +139,20 @@ bool priv_is_empty(const HostConZonotope &H) {
 
 std::pair<std::vector<double>, std::vector<double>> priv_factor_ranges(const HostConZonotope &H) {
     std::vector<double> lo(std::size_t(H.m)), hi(std::size_t(H.m));
+    // the unit costs of both ends of every factor, solved together
+    std::vector<std::vector<double>> costs;
+    costs.reserve(std::size_t(2 * H.m));
     for (int64_t j = 0; j < H.m; ++j) {
         std::vector<double> f(std::size_t(H.m), 0.0);
         f[j] = 1.0;
-        lo[j] = aux_solve(H, f).fval;
+        costs.push_back(f);
         f[j] = -1.0;
-        hi[j] = -aux_solve(H, f).fval;
+        costs.push_back(f);
+    }
+    const std::vector<LinProgResult> solved = aux_solve_costs(H, costs);
+    for (int64_t j = 0; j < H.m; ++j) {
+        lo[j] = solved[std::size_t(2 * j)].fval;
+        hi[j] = -solved[std::size_t(2 * j + 1)].fval;
     }
     return {lo, hi};
 }

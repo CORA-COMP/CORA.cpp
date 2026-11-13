@@ -107,7 +107,7 @@ bool aux_run(const std::string &name) {
     std::cerr << "  " << R.time_interval.size() << " sets, width of s at t = 40: " << width
               << (verified ? " (verified: below" : " (not verified: not below")
               << " the 1e-5 of ARCH 2026)\n";
-    if (std::getenv("CORACPP_BENCHMARK_VERBOSE")) aux_print_details(R);
+    if (cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE")) aux_print_details(R);
     return verified;
 }
 

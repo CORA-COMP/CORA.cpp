@@ -53,13 +53,13 @@ std::vector<int64_t> aux_ids(int64_t p) {
 Tensor aux_nonzero_columns(const Tensor &GI) {
     const int64_t n = GI.shape()[0], q = GI.shape()[1];
     const std::vector<double> g = GI.data();
+    // one pass over the rows marks the columns with a nonzero entry
+    std::vector<char> live(std::size_t(q), 0);
+    for (int64_t i = 0; i < n; ++i)
+        for (int64_t j = 0; j < q; ++j) live[std::size_t(j)] |= g[std::size_t(i * q + j)] != 0.0;
     std::vector<int64_t> keep;
     for (int64_t j = 0; j < q; ++j)
-        for (int64_t i = 0; i < n; ++i)
-            if (g[std::size_t(i * q + j)] != 0.0) {
-                keep.push_back(j);
-                break;
-            }
+        if (live[std::size_t(j)]) keep.push_back(j);
     return int64_t(keep.size()) == q ? GI : priv_columns(GI, keep);
 }
 
