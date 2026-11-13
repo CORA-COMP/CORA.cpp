@@ -156,9 +156,19 @@ Mat aux_scaled(const Mat &W, double r) {
 /// The input solution of V: the orders 0 to eta, one box each, then the remainder, added in turn.
 Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &remainder,
                             const Zonotope &V) {
-    Zonotope S = V.linear_map(terms[0]);
-    for (std::size_t i = 1; i < terms.size(); ++i) S = S.plus(V.linear_map(terms[i]));
-    return S.plus(V.linear_map(remainder));
+    // the boxes added in turn: the centers one after the other, the generators side by side
+    Zonotope first = V.linear_map(terms[0]);
+    Tensor center = first.center();
+    std::vector<Tensor> generators{first.generators()};
+    generators.reserve(terms.size() + 1);
+    const auto add = [&](const Interval &box) {
+        const Zonotope Z = V.linear_map(box);
+        center = center + Z.center();
+        generators.push_back(Z.generators());
+    };
+    for (std::size_t i = 1; i < terms.size(); ++i) add(terms[i]);
+    add(remainder);
+    return {std::move(center), Tensor::concat(generators, -1)};
 }
 
 } // namespace

@@ -20,13 +20,14 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   13-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/error.h"
 #include "cora/global/tensor/tolerance.h"
+#include "cora/global/threads.h"
 
 #include <algorithm>
 #include <array>
@@ -36,6 +37,9 @@
 #include <optional>
 #if defined(__SSE2__) || defined(_M_X64)
 #include <xmmintrin.h>
+#endif
+#ifdef _OPENMP
+#include <omp.h>
 #endif
 #include <stdexcept>
 
@@ -79,6 +83,13 @@ struct Expmat {
     // A by rows (CSR) when it is sparse: the powers then cost n nnz(A) instead of n^3.
     bool sparse_a = false;
     Csr a;
+};
+
+/// A matrix by rows, each stored from its first to its last nonzero column.
+struct Banded {
+    int64_t n = 0;
+    std::vector<int64_t> lo, hi, offset; // the columns [lo, hi) of row k start at val[offset[k]]
+    std::vector<double> val;
 };
 
 /// An interval matrix as its center and radius.
@@ -138,18 +149,73 @@ void aux_init_sparse(Expmat &E, const Tensor &A) {
     }
 }
 
+/// x B / d for a dense x (n, n); `empty(k)` says row k of B has no entries and `add(k, xik, row)`
+/// adds x_ik times it to a row of the result. Each entry adds its products in the order of k, but
+/// a block of 8 rows reads a row of B once, from the cache, and the blocks run in parallel.
+template <class Empty, class Add>
+std::vector<double> aux_mul_rows(const std::vector<double> &x, int64_t n, double d,
+                                 const Empty &empty, const Add &add) {
+    constexpr int64_t kRows = 8;
+    std::vector<double> out(n * n, 0.0);
+    const int64_t blocks = (n + kRows - 1) / kRows;
+    const int threads = threads_for(blocks, n * n);
+#pragma omp parallel for num_threads(threads) schedule(dynamic) if (threads > 1)
+    for (int64_t blk = 0; blk < blocks; ++blk) {
+        [[maybe_unused]] const FlushDenormals flush; // the flag is per thread
+        const int64_t i0 = blk * kRows, i1 = std::min(n, i0 + kRows);
+        for (int64_t k = 0; k < n; ++k) {
+            if (empty(k)) continue;
+            for (int64_t i = i0; i < i1; ++i) {
+                const double xik = x[i * n + k];
+                if (xik != 0) add(k, xik, &out[i * n]);
+            }
+        }
+        for (int64_t e = i0 * n; e < i1 * n; ++e) out[e] /= d;
+    }
+    return out;
+}
+
 /// x B / d for a dense x (n, n) and a sparse B; B's rows skip the zero entries of x.
 std::vector<double> aux_mul_csr(const std::vector<double> &x, const Csr &B, int64_t n, double d) {
-    std::vector<double> out(n * n, 0.0);
-    for (int64_t i = 0; i < n; ++i)
-        for (int64_t k = 0; k < n; ++k) {
-            const double xik = x[i * n + k];
-            if (xik == 0) continue;
+    return aux_mul_rows(
+        x, n, d, [&](int64_t k) { return B.row_ptr[k] == B.row_ptr[k + 1]; },
+        [&](int64_t k, double xik, double *row) {
             for (int64_t q = B.row_ptr[k]; q < B.row_ptr[k + 1]; ++q)
-                out[i * n + B.col_idx[q]] += xik * B.val[q];
-        }
-    for (double &v : out) v /= d;
-    return out;
+                row[B.col_idx[q]] += xik * B.val[q];
+        });
+}
+
+/// The rows of the (n, n) matrix m by band; the stored share of the entries is the density.
+Banded aux_banded(const std::vector<double> &m, int64_t n) {
+    Banded b;
+    b.n = n;
+    b.lo.assign(n, 0);
+    b.hi.assign(n, 0);
+    b.offset.assign(n + 1, 0);
+    for (int64_t k = 0; k < n; ++k) {
+        const double *row = &m[k * n];
+        int64_t lo = 0, hi = n;
+        while (lo < hi && row[lo] == 0) ++lo;
+        while (hi > lo && row[hi - 1] == 0) --hi;
+        if (lo == hi) lo = hi = 0;
+        b.lo[k] = lo;
+        b.hi[k] = hi;
+        b.val.insert(b.val.end(), row + lo, row + hi);
+        b.offset[k + 1] = static_cast<int64_t>(b.val.size());
+    }
+    return b;
+}
+
+/// x B / d for a dense x (n, n) and B by band: contiguous rows, which the compiler vectorizes;
+/// the zeros inside a band add zeros to the entries.
+std::vector<double> aux_mul_band(const std::vector<double> &x, const Banded &B, int64_t n,
+                                 double d) {
+    return aux_mul_rows(
+        x, n, d, [&](int64_t k) { return B.lo[k] == B.hi[k]; },
+        [&](int64_t k, double xik, double *row) {
+            const double *v = &B.val[B.offset[k]] - B.lo[k];
+            for (int64_t j = B.lo[k]; j < B.hi[k]; ++j) row[j] += xik * v[j];
+        });
 }
 
 /// X A / d for a dense X (n, n) on the host.
@@ -206,7 +272,10 @@ Tensor aux_expm(const Tensor &A, const Expmat &E, double time_step) {
     // Square back up to e^{A time_step}; sparse products while they are cheaper than a dense one.
     int squared = 0;
     while (squared < s && aux_sparse_square_wins(sum, n)) {
-        sum = aux_mul_csr(sum, aux_csr(sum, n), n, 1.0);
+        const Csr c = aux_csr(sum, n);
+        const Banded b = aux_banded(sum, n);
+        sum = b.val.size() < 3 * c.val.size() ? aux_mul_band(sum, b, n, 1.0)
+                                              : aux_mul_csr(sum, c, n, 1.0);
         ++squared;
     }
     Tensor result = Tensor::like(A, sum, {n, n});
@@ -375,19 +444,72 @@ Tensor aux_extreme_x0(const Zonotope &R0, const std::vector<double> &ltg, std::s
     return R0.center() + R0.generators().matmul(Tensor::like(R0.center(), sgn, {m0, 1}));
 }
 
+// Propagation of the directions -------------------------------------------------------------------
+
+/// The rows l_0 = l0, l_{k+1} = l_k D for k < N of one direction, row-major (N + 1, n), each
+/// entry summed as the backend's dense product (1, n) x (n, n) sums it: blocks of rows of D,
+/// the terms of a block in order from zero, the blocks added in order; zero terms are skipped.
+std::vector<double> aux_propagate(const std::vector<double> &l0, const Banded &D, int N) {
+    const int64_t n = D.n;
+    const int64_t block = n < 128 ? n : (n * 8 < 32000 ? 16 : 4);
+    std::vector<double> lt(std::size_t(N + 1) * n, 0.0);
+    std::copy(l0.begin(), l0.end(), lt.begin());
+    const int threads = threads_for(n, static_cast<long long>(D.val.size()));
+#pragma omp parallel num_threads(threads) if (threads > 1)
+    {
+        [[maybe_unused]] const FlushDenormals flush; // the flag is per thread
+#ifdef _OPENMP
+        const int64_t t = omp_get_thread_num(), nt = omp_get_num_threads();
+#else
+        const int64_t t = 0, nt = 1;
+#endif
+        const int64_t c0 = n * t / nt, c1 = n * (t + 1) / nt;
+        std::vector<double> sum(c1 - c0);
+        // one step: every thread sums its own columns of the next row from the row before
+        for (int step = 0; step < N; ++step) {
+            const double *x = &lt[std::size_t(step) * n];
+            double *y = &lt[std::size_t(step + 1) * n];
+            // the block size of Eigen's gemv: 16 rows of D (4 from n = 4000, all below n = 128)
+            for (int64_t k0 = 0; k0 < n; k0 += block) {
+                std::fill(sum.begin(), sum.end(), 0.0);
+                for (int64_t k = k0; k < std::min(n, k0 + block); ++k) {
+                    const double xk = x[k];
+                    const int64_t j0 = std::max(c0, D.lo[k]), j1 = std::min(c1, D.hi[k]);
+                    if (xk == 0 || j0 >= j1) continue;
+                    const double *v = &D.val[D.offset[k] - D.lo[k]];
+                    for (int64_t j = j0; j < j1; ++j) sum[j - c0] += xk * v[j];
+                }
+                for (int64_t j = c0; j < c1; ++j) y[j] += sum[j - c0];
+            }
+            // the next row needs this one whole
+#pragma omp barrier
+        }
+    }
+    return lt;
+}
+
 // Propagation -------------------------------------------------------------------------------------
 
 /// Propagates the directions for N steps and gathers the distances of the affine solution
 /// (time points) and of the curvature enlargement (time intervals) to every halfspace.
 Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &ds, bool isu,
               const Tensor &Delta, const Tensor &Pu, const Tensor &u, const IntMat &F,
-              const IntMat &G, int N) {
+              const IntMat &G, int N, bool host_rows) {
     const int S = static_cast<int>(ds.size());
     const int64_t m0 = R0.generators().shape()[1];
     Pass pass;
-    std::vector<Tensor> rows{l_t};
-    for (int k = 0; k < N; ++k) rows.push_back(rows.back().matmul(Delta));
-    pass.LT = Tensor::concat(rows, -2);
+    const int64_t n = Delta.shape()[0];
+    // one direction of a sparse system on Eigen: the banded rows of Delta on the host, in threads
+    const bool host = host_rows && Delta.products_as_eigen();
+    const Banded D = (S == 1 && n >= 128 && host) ? aux_banded(Delta.data(), n) : Banded{};
+    const bool wide = !D.val.empty() && threads_for(n, static_cast<long long>(D.val.size())) > 1;
+    if (!D.val.empty() && (wide || double(D.val.size()) < 0.6 * double(n) * double(n))) {
+        pass.LT = Tensor::like(l_t, aux_propagate(l_t.data(), D, N), {N + 1, n});
+    } else {
+        std::vector<Tensor> rows{l_t};
+        for (int k = 0; k < N; ++k) rows.push_back(rows.back().matmul(Delta));
+        pass.LT = Tensor::concat(rows, -2);
+    }
     const std::vector<double> ltc = pass.LT.matmul(R0.center()).data();
     pass.ltg = pass.LT.matmul(R0.generators()).data();
 
@@ -514,7 +636,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
         }
 
         // The affine solution at the time points: a positive distance is a hit.
-        const Pass pass = aux_pass(R0, l_t, ds, isu, Delta, Pu, u, F, G, N);
+        const Pass pass = aux_pass(R0, l_t, ds, isu, Delta, Pu, u, F, G, N, E.sparse_a);
         for (int k = 1; k <= N; ++k)
             for (int s = 0; s < S; ++s)
                 if (pass.affine_tp[std::size_t(k) * S + s] > 0) {

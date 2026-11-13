@@ -321,6 +321,8 @@ int64_t Tensor::size(int axis) const { return impl_->shape[detail::axis_of(axis,
 
 const char *Tensor::backend_name() const { return aux_backend_name(impl_->backend); }
 
+bool Tensor::products_as_eigen() const { return impl_->backend == backend_id::eigen; }
+
 double Tensor::item() const {
     if (numel() != 1)
         CORA_FAIL(Error::wrong_value,
