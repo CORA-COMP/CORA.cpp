@@ -679,11 +679,7 @@ Tensor::Ptr HostTensor<T>::take(const Tensor::Impl &idx, int axis) const {
             if (l < 0 || l >= e.len)
                 CORA_FAIL(Error::wrong_value, "CoraTensor::take: the index " + std::to_string(l) +
                                                   " is outside 0.." + std::to_string(e.len - 1));
-            // a single entry per index (the last axis) is copied without a call
-            if (e.inner == 1)
-                r->p[o * k + j] = p[o * e.len + l];
-            else
-                std::copy_n(p + (o * e.len + l) * e.inner, e.inner, r->p + (o * k + j) * e.inner);
+            std::copy_n(p + (o * e.len + l) * e.inner, e.inner, r->p + (o * k + j) * e.inner);
         }
     return r;
 }

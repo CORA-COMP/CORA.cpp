@@ -217,11 +217,11 @@ void shared_phase_one() {
         LinProg lp;
         lp.n = n;
         // random rows, equalities and the unit box
-        lp.Aineq.assign(std::size_t(rows * n), 0.0);
+        lp.Aineq.assign(std::size_t(rows) * std::size_t(n), 0.0);
         lp.bineq.assign(std::size_t(rows), 0.0);
         for (double &x : lp.Aineq) rng.uniform(&x, 1, -0.5, 0.5);
         for (double &x : lp.bineq) rng.uniform(&x, 1, 0.5, 1.5);
-        lp.Aeq.assign(std::size_t(2 * n), 0.0);
+        lp.Aeq.assign(2 * std::size_t(n), 0.0);
         for (double &x : lp.Aeq) rng.uniform(&x, 1, -0.5, 0.5);
         lp.beq = {0.1, -0.05};
         lp.lb.assign(std::size_t(n), -1.0);

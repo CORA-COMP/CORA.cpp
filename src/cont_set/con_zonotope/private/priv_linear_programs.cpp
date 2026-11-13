@@ -60,6 +60,7 @@ std::vector<LinProgResult> aux_solve_costs(const HostConZonotope &H,
                                            const std::vector<std::vector<double>> &costs) {
     if (H.m == 0) {
         std::vector<LinProgResult> out;
+        out.reserve(costs.size());
         for (const std::vector<double> &f : costs) out.push_back(aux_solve(H, f));
         return out;
     }
@@ -140,6 +141,7 @@ std::pair<std::vector<double>, std::vector<double>> priv_factor_ranges(const Hos
     std::vector<double> lo(std::size_t(H.m)), hi(std::size_t(H.m));
     // the unit costs of both ends of every factor, solved together
     std::vector<std::vector<double>> costs;
+    costs.reserve(std::size_t(2 * H.m));
     for (int64_t j = 0; j < H.m; ++j) {
         std::vector<double> f(std::size_t(H.m), 0.0);
         f[j] = 1.0;

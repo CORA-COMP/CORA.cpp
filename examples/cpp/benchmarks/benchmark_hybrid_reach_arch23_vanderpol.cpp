@@ -147,6 +147,7 @@ bool aux_run(const std::string &name) {
     const int previous = max_threads();
     if (threads > 1) set_num_threads(1);
     std::vector<std::thread> pool;
+    pool.reserve(std::size_t(threads));
     for (int t = 0; t < threads; ++t) pool.emplace_back(work);
     for (std::thread &th : pool) th.join();
     if (threads > 1) set_num_threads(previous);
