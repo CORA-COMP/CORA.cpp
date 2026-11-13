@@ -363,15 +363,18 @@ read against the pinned oracle's op and kept out of `oracle`; each stays until t
 | `contSet/interval/polyZonotope`, `contSet/zonotope/polyZonotope`, `polyZonotope/*` | none | the oracle has no polynomial zonotope codec until the poly-adaptive branch merges; then the generator order of the constructor (see above) decides | the ops of the section above |
 | `nn/layers/computeApproxPoly`, `nn/layers/nnLeakyReLULayer`, `nn/layers/nnSShapeLayer` | `nnLayer.evaluateZonotope`, `nnLayer.evaluatePolyZonotope` | the oracle serves ReLU, sigmoid and tanh at `poly_method` `singh` and at `regression`, with `regression_error` `extremum` (CORALean's float extremum, CORA.cpp's `RegressionError::extremum`, the default) and `bracket` (`RegressionError::bracket`), on a zonotope and on a polynomial zonotope with `errorForm` `GI` (`test_lean_nn_evaluate`); CORA.cpp has neither the leaky ReLU nor the S-shape layer | none for these layers |
 
-## Taylor matrices (PR "oracle/taylor-matrices", CORALean MR "oracle/taylor-matrices")
+## Taylor matrices (PR "oracle/taylor-matrices", CORALean MR !938)
 
-`linearSys/taylorMatrices` is `oracle`: the op `linearSys.taylorMatrices` serves CORA's entrywise
+`linearSys/taylorMatrices` stays `ported`. The op `linearSys.taylorMatrices` serves CORA's entrywise
 matrices at the admissible order `eta_e` of `oneStepClosedForm` (`order`, `W`, `FEntrywise`,
 `GEntrywise`; `null` when no order below `taylorTerms + 4096` admits the enclosure of `e^{|A| dt}`).
-`LinearSys::correction_matrix_state` and `correction_matrix_input` compute them bit for bit under
-`CORACPP_TAYLOR=entrywise` (`test_lean_linear_sys_taylor_matrices`), and keep CORA's `expm` remainder
-by default and for batches, gradients and a stiff matrix whose powers overflow: the row is bit-exact
-on the opt-in path only (`docs/cora-differences.md`, `taylorMatrices.m`, for why it is not the default).
+`LinearSys::correction_matrix_state` and `correction_matrix_input` are bit-exact against it under
+`CORACPP_TAYLOR=entrywise` (`test_lean_linear_sys_taylor_matrices`, no `ORACLE` tag), but the benchmarks
+run the default, CORA's `expm` remainder (also for batches, gradients and a stiff matrix whose powers
+overflow), and a row counts only for the path it compares (#125). The entrywise path is not the
+default: TSPS25 aborts with it (the wider `F` makes the linearization error exceed `max_error_x` or
+`max_error_y`, where CORA splits the set and that split is not ported), DTN01 to DTN03 and CVDP23 take
+1.3x as long (`docs/cora-differences.md`, `taylorMatrices.m`).
 
 ## Float rows batch (PR "oracle/float-rows")
 
