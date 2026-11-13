@@ -58,6 +58,10 @@ MatZonotope::MatZonotope(const cora::MatZonotope &A)
 MatZonotope::MatZonotope(Tensor c, std::vector<Tensor> G, Interval E)
     : c_(std::move(c)), G_(std::move(G)), E_(std::move(E)) {}
 
+MatZonotope MatZonotope::from_zonotope(const Zonotope &Z) {
+    return aux_set("zonotope.matZonotope", {{"Z", Z}});
+}
+
 // Operations ---------------------------------------------------------------------------------
 
 Tensor MatZonotope::center_value() const {

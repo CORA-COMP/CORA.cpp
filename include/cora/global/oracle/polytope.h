@@ -79,6 +79,11 @@ class Polytope {
     /// A box as a polytope (`interval.polytope`).
     static Polytope from_interval(const Interval &I);
 
+    /// The empty set and the full space of R^n as polytopes (`emptySet.polytope`,
+    /// `fullspace.polytope`).
+    static Polytope from_empty_set(int64_t n);
+    static Polytope from_fullspace(int64_t n);
+
     /// A zonotope as its facets (`zonotope.polytope`); p is the steps of the oracle's root.
     static Polytope from_zonotope(const Zonotope &Z, int p = 20);
 

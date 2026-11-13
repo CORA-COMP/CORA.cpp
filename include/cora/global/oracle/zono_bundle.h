@@ -71,6 +71,11 @@ class ZonoBundle {
 
     static ZonoBundle empty(int64_t n);
 
+    /// A zonotope and a box as a bundle of one member (`zonotope.zonoBundle`,
+    /// `interval.zonoBundle`).
+    static ZonoBundle from_zonotope(const Zonotope &Z);
+    static ZonoBundle from_interval(const Interval &I);
+
     /// The constrained zonotope of the bundle (`zonoBundle.conZonotope`).
     ConZonotope con_zonotope() const;
 

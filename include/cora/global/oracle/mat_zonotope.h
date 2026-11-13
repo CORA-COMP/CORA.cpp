@@ -75,6 +75,9 @@ class MatZonotope {
     /// The nominal part as a cora::MatZonotope and the error as a cora::Interval (double, exact).
     std::pair<cora::MatZonotope, cora::Interval> gather() const;
 
+    /// A zonotope as an n x 1 matrix zonotope (`zonotope.matZonotope`).
+    static MatZonotope from_zonotope(const Zonotope &Z);
+
     Json to_json() const;
     static MatZonotope from_json(const std::string &dtype, const Json &j);
 

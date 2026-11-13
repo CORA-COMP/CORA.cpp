@@ -12,6 +12,7 @@
 // (minutes).
 //
 // ORACLE: hybridDynamics/@hybridAutomaton/reach.m
+// ORACLE: hybridDynamics/@location/reach.m
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
 // Last update:   ---

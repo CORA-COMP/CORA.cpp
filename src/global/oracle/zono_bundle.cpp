@@ -126,6 +126,15 @@ ZonoBundle ZonoBundle::lift(int64_t N, const std::vector<int64_t> &dims) const {
 
 ZonoBundle ZonoBundle::empty(int64_t n) { return aux_set("zonoBundle.empty", {{"n", n}}); }
 
+// the bundle of one member from a zonotope or a box
+ZonoBundle ZonoBundle::from_zonotope(const Zonotope &Z) {
+    return aux_set("zonotope.zonoBundle", {{"Z", Z}});
+}
+
+ZonoBundle ZonoBundle::from_interval(const Interval &I) {
+    return aux_set("interval.zonoBundle", {{"I", I}});
+}
+
 ConZonotope ZonoBundle::con_zonotope() const {
     return ask("zonoBundle.conZonotope", {{"zB", *this}}).get<ConZonotope>("cZ");
 }
