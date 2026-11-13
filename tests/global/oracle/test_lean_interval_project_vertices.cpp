@@ -32,6 +32,7 @@ std::vector<Corner> aux_corners(const Tensor &V) {
     const std::vector<double> d = V.data();
     const std::size_t k = d.size() / 2;
     std::vector<Corner> corners;
+    corners.reserve(k);
     for (std::size_t i = 0; i < k; ++i) corners.push_back({d[i], d[k + i]});
     std::sort(corners.begin(), corners.end());
     return corners;
