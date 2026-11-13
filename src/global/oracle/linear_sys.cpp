@@ -115,6 +115,13 @@ bool LinearSys::is_canonical_form() const {
     return ask_system("linearSys.isCanonicalForm", {}).get<bool>("value");
 }
 
+Zonotope LinearSys::output_set(const cora::Zonotope &R) const {
+    // no input and no noise: their sets have no dimension
+    const cora::Tensor none = R.center().zeros_like({0, 1});
+    const Zonotope empty(none, R.center().zeros_like({0, 0}));
+    return ask_system("linearSys.outputSet", {{"R", Zonotope(R)}, {"U", empty}}).get<Zonotope>("Z");
+}
+
 // the solutions of a step take the set, the step size and the order
 Zonotope LinearSys::homogeneous_solution(const Zonotope &X, double time_step,
                                          int taylor_terms) const {

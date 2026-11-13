@@ -3,6 +3,12 @@
 // Bit for bit at nearest. The identity input matrix is
 // not compared for is_canonical_form: the oracle has no noise matrix on the wire.
 //
+// The constructor is exercised by the same runs for the matrices the oracle reads (A, B, C and
+// their defaults): the canonical form and the test for it agree only if the constructor stored them
+// as given (CORALean has no wire format for the constructor itself; c, D, k, E, F are not
+// compared).
+//
+// ORACLE: contDynamics/@linearSys/linearSys.m
 // ORACLE: contDynamics/@linearSys/canonicalForm.m
 // ORACLE: contDynamics/@linearSys/isCanonicalForm.m
 // Authors:       Claude Sonnet 5.5

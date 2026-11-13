@@ -14,6 +14,9 @@
 // TRAF22 is its car (five states): the closed loop of ten states is too slow for the oracle.
 //
 // ORACLE: contDynamics/@contDynamics/linReach.m
+// ORACLE: contDynamics/@contDynamics/reach.m
+// ORACLE: contDynamics/@nonlinearSys/linearize.m
+// ORACLE: contDynamics/@nonlinearSys/nonlinearSys.m
 // ORACLE: contDynamics/@nonlinearSys/initReach.m
 // ORACLE: contDynamics/@nonlinearSys/post.m
 // Authors:       Claude Sonnet 5.5
@@ -183,6 +186,12 @@ void aux_chain(const std::string &name, const NonlinearSys &sys, const Zonotope 
                       (*theirs)[std::size_t(k)]);
         if (k + 1 < steps) step = sys.post(step, U, alg);
     }
+    // and the whole run of reach: the same windows, step by step
+    const ReachSet run = sys.reach({.initial_set = R, .input_set = U, .t_final = dt * steps}, alg);
+    test::check(int(run.time_interval.size()) == steps, name + ": the steps of reach");
+    for (int k = 0; k < steps && k < int(run.time_interval.size()); ++k)
+        oracle::check(name + " reach window " + std::to_string(k),
+                      run.time_interval[std::size_t(k)], (*theirs)[std::size_t(k)]);
 }
 
 /// What a recorded step carries besides its sets: the dimensions, the options, the parameters.
@@ -242,6 +251,7 @@ void aux_recorded(const std::string &name, int count, bool car, bool closed_form
 
 // ===========================================  MAIN  =========================================== //
 
+// linearize and the constructor are exercised too: the oracle runs the dynamics as stored.
 int main() {
     if (!oracle::available()) return 0;
     // the sets are made inside a pass, on its backend

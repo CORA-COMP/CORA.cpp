@@ -192,6 +192,14 @@ Polytope Polytope::from_interval(const Interval &I) {
     return aux_set(ask("interval.polytope", {{"I", I}}));
 }
 
+Polytope Polytope::from_empty_set(int64_t n) {
+    return aux_set(ask("emptySet.polytope", {{"n", n}}));
+}
+
+Polytope Polytope::from_fullspace(int64_t n) {
+    return aux_set(ask("fullspace.polytope", {{"n", n}}));
+}
+
 Polytope Polytope::from_zonotope(const Zonotope &Z, int p) {
     return aux_set(ask("zonotope.polytope", {{"Z", Z}, {"p", int64_t(p)}}));
 }

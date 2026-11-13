@@ -67,6 +67,9 @@ class LinearSys {
     /// Whether B = I and C = I.
     bool is_canonical_form() const;
 
+    /// The output set C R of a set of the state space (`linearSys.outputSet` with no input).
+    Zonotope output_set(const cora::Zonotope &R) const;
+
     /// [e^{A dt}] X.
     Zonotope homogeneous_solution(const Zonotope &X, double time_step, int taylor_terms) const;
 

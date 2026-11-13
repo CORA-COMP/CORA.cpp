@@ -9,7 +9,13 @@
 // polytope of several rows is proved clear only by a separating row, while CORA.cpp is exact: that
 // case is the property test test_specification_check_agreement.
 //
+// The constructor is exercised by the same runs: the oracle is told the kind (safe or unsafe set)
+// and the halfspaces the specification was built with, and its verdict agrees only if the
+// constructor stored the type and the set as built (CORALean has no wire format for the
+// constructor itself).
+//
 // ORACLE: specification/@specification/check.m
+// ORACLE: specification/@specification/specification.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
 // Last update:   ---
