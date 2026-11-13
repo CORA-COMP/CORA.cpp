@@ -377,6 +377,9 @@ class Tensor {
     Device device_id() const { return impl_->device; }
     /// The backend's name: "eigen", "lean" or "torch".
     const char *backend_name() const;
+    /// Whether matmul sums as Eigen's dense kernels do (the Eigen backend), so that a host loop
+    /// can reproduce a product bit for bit.
+    bool products_as_eigen() const;
     std::vector<double> data() const { return impl_->data(); } ///< Host values, row-major.
     /// The entry of a tensor of one entry.
     double item() const;

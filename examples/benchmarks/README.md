@@ -23,7 +23,7 @@ on a shared machine.
   not verified, F falsified); `(ARCH23)` where the report has no such instance, `(script: 0)` where
   the report verifies with another setup than CORA's script.
 - **CORA.cpp [s]**: wall clock, core preset, one run each, the programs run one at a time on 16 CPUs
-  that other jobs share (AFF and NLN: 09-November-2026, AINNCS: 11-November-2026, RND02, RND04-06, HEAT03 and HEAT04: 12-November-2026; BRKNC01 and CVDP23: 13-November-2026, NATIVE=OFF, machine load 13).
+  that other jobs share (AFF and NLN: 09-November-2026, AINNCS: 11-November-2026, RND02, RND04-06, HEAT03 and HEAT04: 12-November-2026; BRKNC01 and CVDP23: 13-November-2026, NATIVE=OFF, machine load 13; CBC02, CBC03 and ROBE25 (2): 13-November-2026, NATIVE=OFF, load 15 to 18).
 - **oracle check (rows)**: the rows of CORA the instance executes that are bit-exact against
   CORALean's `nearest` oracle, of those that can be (`coverage/benchmarks.md`, table at the end), and
   the rows tested by properties only.
@@ -117,8 +117,8 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 | HEAT03 | 1 | 1 | 3.45 | 11/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 6.32 |
 | HEAT04 | 1 | 1 | 580 | 11/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 2.06 |
 | CBC01 | 1 | 1 | 0.162 | 3/8 bit-exact, 0 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
-| CBC02 | 1 | 1 | 3.88 | 3/8 bit-exact, 0 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
-| CBC03 | 1 | 1 | 44.5 | 3/8 bit-exact, 0 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
+| CBC02 | 1 | 1 | 2.52 | 3/8 bit-exact, 0 property | - | 3.68 | 0.8 (JuliaReach) | 0.32 |
+| CBC03 | 1 | 1 | 18.5 | 3/8 bit-exact, 0 property | - | 37.27 | 3.74 (JuliaReach) | 0.20 |
 | CBF01 | 1 | 1 | 0.255 | 3/8 bit-exact, 0 property | - | 0.4 | 0.4 (CORA) | 1.57 |
 | CBF02 | 1 | 1 | 4.51 | 3/8 bit-exact, 0 property | - | 5.38 | 5.38 (CORA) | 1.19 |
 | CBF03 | 1 | 1 | 66.5 | 3/8 bit-exact, 0 property | - | 67.79 | 67.79 (CORA) | 1.02 |
@@ -356,7 +356,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | TRAF22 | 1 | 1 | 1.0 | 19/25 bit-exact, 1 property | 138 | 152 | 152 (CORA) [a] | 163 |
 | SPRE22 | 1 | 1 | 0.989 | 39/55 bit-exact, 5 property | 34.3 | 37 | 37 (CORA) | 37.4 |
 | ROBE25 (1) | 1 | 1 | 29.1 | 11/20 bit-exact, 3 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
-| ROBE25 (2) | 1 | 1 | 437 | 11/20 bit-exact, 3 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
+| ROBE25 (2) | 1 | 1 | 70.1 | 11/20 bit-exact, 3 property | 225.7 | 239 | 92 (JuliaReach) [b] | 1.31 |
 | ROBE25 (3) | 1 | 1 | 93.8 | 11/20 bit-exact, 3 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
 | CVDP23 | 1 | 1 | 11.7 | 39/70 bit-exact, 11 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.034 |
 | LALO20 W001 | 1 | 1 | 2.07 | 11/20 bit-exact, 3 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
