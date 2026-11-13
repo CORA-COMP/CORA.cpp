@@ -358,11 +358,20 @@ read against the pinned oracle's op and kept out of `oracle`; each stays until t
 | `conZonotope/supportFunc_`, `zonoBundle/supportFunc_` | `conZonotope.supportFunc`, `zonoBundle.supportFunc` | an upper bound from a checked dual certificate, CORA's value is the optimum of the linear program | none |
 | `conZonotope/isFullDim`, `conZonotope/rescale` | `conZonotope.isFullDim` | certified one way; `ConZonotope.rescale` takes the ranges of the factors as arguments, CORA finds them by linear programs or Gauss-Jordan | an op `conZonotope.rescale` with the ranges, to test the scaling alone |
 | `polytope/constraints`, `polytope/polytope` | none | `VPolytope.hPolytope` encloses the vertices along given directions `Aq`; CORA computes the facets of the hull | a facet enumeration in CORALean |
-| `linearSys/taylorMatrices` | `linearSys.taylorMatrices` | the remainder: CORALean bounds it by a norm (`intervalCorrectionMatrix`) or, in `oneStepClosedForm`, by an enclosure of `e^{\|A\| dt}` (`expRemainderEntrywise`); CORA's `W` is `\|expm(\|A\| dt) - series\|` in floats | covered by the closed-form step (`correction_matrix_state` taking `expRemainderEntrywise`), another branch |
 | `linearSys/errorSolution_adaptive`, `linearSys/reach` | `linearSys.errorSolution_adaptive`, `linearSys.reach` | CORALean's step is the interval-matrix one (`reachFloat`, `errorSolutionAdaptiveFloat`), tested by tolerance in `test_lean_linear_sys_steps_agreement` | the closed-form step |
 | `linearSys/verify` | none | `verifyFloat` is Alg. 3 with the reach function, the inner approximation and the distances as arguments; no concrete instance serves as an op | an op that instantiates it with CORA's support-function routines |
 | `contSet/interval/polyZonotope`, `contSet/zonotope/polyZonotope`, `polyZonotope/*` | none | the oracle has no polynomial zonotope codec until the poly-adaptive branch merges; then the generator order of the constructor (see above) decides | the ops of the section above |
 | `nn/layers/computeApproxPoly`, `nn/layers/nnLeakyReLULayer`, `nn/layers/nnSShapeLayer` | `nnLayer.evaluateZonotope`, `nnLayer.evaluatePolyZonotope` | the oracle serves ReLU, sigmoid and tanh at `poly_method` `singh` and at `regression`, with `regression_error` `extremum` (CORALean's float extremum, CORA.cpp's `RegressionError::extremum`, the default) and `bracket` (`RegressionError::bracket`), on a zonotope and on a polynomial zonotope with `errorForm` `GI` (`test_lean_nn_evaluate`); CORA.cpp has neither the leaky ReLU nor the S-shape layer | none for these layers |
+
+## Taylor matrices (PR "oracle/taylor-matrices", CORALean MR "oracle/taylor-matrices")
+
+`linearSys/taylorMatrices` is `oracle`: the op `linearSys.taylorMatrices` serves CORA's entrywise
+matrices at the admissible order `eta_e` of `oneStepClosedForm` (`order`, `W`, `FEntrywise`,
+`GEntrywise`; `null` when no order below `taylorTerms + 4096` admits the enclosure of `e^{|A| dt}`).
+`LinearSys::correction_matrix_state` and `correction_matrix_input` compute them bit for bit under
+`CORACPP_TAYLOR=entrywise` (`test_lean_linear_sys_taylor_matrices`), and keep CORA's `expm` remainder
+by default and for batches, gradients and a stiff matrix whose powers overflow: the row is bit-exact
+on the opt-in path only (`docs/cora-differences.md`, `taylorMatrices.m`, for why it is not the default).
 
 ## Float rows batch (PR "oracle/float-rows")
 
@@ -385,7 +394,6 @@ The oracle serves these, but CORA.cpp computes another set from the same operand
 |---|---|---|
 | `zonotope/and_` | `zonotope.and` | CORA.cpp's `intersect(Z2, "averaging")` (CORA's `priv_andAveraging`) differs from the oracle's on random zonotopes in the centre and the generators; an op that follows `priv_andAveraging` would close it |
 | `polytope/conZonotope`, `polytope/zonoBundle` | `polytope.conZonotope`, `polytope.zonoBundle` | the oracle's conversions of a vertex polytope give a bundle of one member and a constrained zonotope with one constraint row (5 vertices: G 2x5, A 1x5); CORA.cpp's give one zonotope per facet row (5 members) and Scott et al.'s construction (G 2x7, A 5x7) |
-| `linearSys/taylorMatrices` | `linearSys.taylorMatrices` | CORA.cpp's `correction_matrix_state` takes the remainder from `expm`, which the lean backend does not have; the matrices `FloatStepper` computes are CORALean's, but `reach` does not use them |
 
 `emptySet/polytope`, `fullspace/polytope`, `interval/project` and `interval/vertices_` have bit-exact
 oracle tests (`test_lean_conversions`, `test_lean_interval_project_vertices`), but are `untested` rows

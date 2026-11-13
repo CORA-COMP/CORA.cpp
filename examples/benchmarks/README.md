@@ -110,57 +110,64 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 4.5e-6 and 7.3e-6). The benchmark programs read the step from `CORACPP_LINEAR_STEP`
 (`closed_form`, the default, `cora`, `coralean`).
 
+The correction matrices `F` and `G` of `LinearSys` (CORA's `taylorMatrices`) are CORA's by default (`expm` for the
+remainder). `CORACPP_TAYLOR=entrywise` takes CORALean's entrywise definition bit for bit (`test_lean_linear_sys_taylor_matrices`;
+`docs/cora-differences.md`). It is not the default: on the AFF, hybrid and nonlinear programs (one run each, load 5 to 17) every verdict
+equals CORA's except TSPS25, whose linearization error then exceeds `max_error_x`/`max_error_y` (CORA splits there, and the split is not
+ported), and DTN01 to DTN03 take 1.33x to 1.38x as long (0.60 to 0.82 s, 0.72 to 0.96 s, 1.05 to 1.42 s) and CVDP23 1.32x (12.3 to 16.3 s,
+18 500 matrices); all others are within 0.85x to 1.13x (BRKNC01, which keeps CORA's matrices, ran 1.6 s against 2.4 s: noise). BRKDC01 and BRKNC01 keep CORA's matrices (`eta_e` = 439, the powers overflow).
+
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| HEAT01 | 1 | 1 | 0.064 | 3/8 bit-exact, 0 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
-| HEAT02 | 1 | 1 | 3.39 | 3/8 bit-exact, 0 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
-| HEAT03 | 1 | 1 | 3.45 | 11/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 6.32 |
-| HEAT04 | 1 | 1 | 580 | 11/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 2.06 |
-| CBC01 | 1 | 1 | 0.162 | 3/8 bit-exact, 0 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
-| CBC02 | 1 | 1 | 3.88 | 3/8 bit-exact, 0 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
-| CBC03 | 1 | 1 | 44.5 | 3/8 bit-exact, 0 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
-| CBF01 | 1 | 1 | 0.255 | 3/8 bit-exact, 0 property | - | 0.4 | 0.4 (CORA) | 1.57 |
-| CBF02 | 1 | 1 | 4.51 | 3/8 bit-exact, 0 property | - | 5.38 | 5.38 (CORA) | 1.19 |
-| CBF03 | 1 | 1 | 66.5 | 3/8 bit-exact, 0 property | - | 67.79 | 67.79 (CORA) | 1.02 |
-| ISSC01_ISS02 | 1 (ARCH23) | 1 | 0.153 | 3/8 bit-exact, 0 property | - | - | - | - |
-| ISSC01_ISU02 | 0 (ARCH23) | 0 | 0.522 | 3/8 bit-exact, 0 property | - | - | - | - |
-| ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.628 | 3/8 bit-exact, 0 property | - | - | - | - |
-| ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.194 | 3/8 bit-exact, 0 property | - | - | - | - |
-| RAND01 | 1 (ARCH23) | 1 | 0.0023 | 7/13 bit-exact, 0 property | - | - | - | - |
-| RAND02 | 0 (ARCH23) | 0 | 0.015 | 7/13 bit-exact, 0 property | - | - | - | - |
-| RND01 | 1 | 1 | 0.022 | 7/13 bit-exact, 0 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
-| RND02 | 1 | 1 | 0.244 | 7/14 bit-exact, 0 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.73 |
-| RND03 | 1 | 1 | 29.8 | 7/13 bit-exact, 0 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
-| RND04 | 1 | 1 | 1.14 | 7/14 bit-exact, 0 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 6.82 |
-| RND05 | 1 | 1 | 6.5 | 7/14 bit-exact, 0 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 7.06 |
-| RND06 | 1 | 1 | 26.6 | 7/14 bit-exact, 0 property | - | 26.70 | 26.70 (CORA) [c] | 1.00 |
-| SRNA01 | 1 | 1 | 0.473 | 26/40 bit-exact, 4 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
-| SRA01 | 1 | 1 | 0.204 | 31/45 bit-exact, 4 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
-| SRA02 | 1 | 1 | 0.102 | 40/56 bit-exact, 5 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
-| SRA03 | 1 | 1 | 0.178 | 40/56 bit-exact, 5 property | - | 27.4 | 1.79 (JuliaReach) | 10.1 |
-| SRA04 | 1 | 1 | 0.484 | 32/46 bit-exact, 4 property | - | 39.05 | 39.05 (CORA) | 80.7 |
-| SRA05 | 1 | 1 | 0.464 | 40/56 bit-exact, 5 property | - | 67.33 | 67.33 (CORA) | 145 |
-| SRA06 | 1 | 1 | 0.472 | 40/56 bit-exact, 5 property | - | 71.46 | 71.46 (CORA) | 151 |
-| SRA07 | 1 | 1 | 2.49 | 48/67 bit-exact, 7 property | - | 120 | 120 (CORA) | 48.2 |
-| SRA08 | 1 | 1 | 5.27 | 48/67 bit-exact, 7 property | - | 239 | 239 (CORA) | 45.4 |
-| SRU01 | 0 | 0 | 0.413 | 33/47 bit-exact, 4 property | - | 25.86 | 11.79 (JuliaReach) | 28.5 |
-| SRU02 | 0 | 0 | 5.93 | 48/67 bit-exact, 7 property | - | 244 | 20 (JuliaReach) | 3.37 |
-| DTN01 | 1 | 1 | 0.652 | 23/36 bit-exact, 4 property | - | 9.69 | 9.69 (CORA) [a] | 14.9 |
-| DTN02 | 1 | 1 | 0.753 | 23/36 bit-exact, 4 property | - | 10.43 | 10.43 (CORA) [a] | 13.9 |
-| DTN03 | 1 | 1 | 1.11 | 22/35 bit-exact, 4 property | - | 10.27 | 10.27 (CORA) [a] | 9.25 |
-| DTN04 | 1 | 1 | 24.2 | 23/36 bit-exact, 4 property | - | 48.29 | 48.29 (CORA) [a] | 2 |
-| DTN05 | 1 | 1 | 41.6 | 23/36 bit-exact, 4 property | - | 90.76 | 90.76 (CORA) [a] | 2.18 |
-| DTN06 | 1 | 1 | 116 | 24/37 bit-exact, 4 property | - | 227 | 227 (CORA) [a] | 1.96 |
-| PLAA01_BND42 | 1 | 1 | 10.5 | 25/35 bit-exact, 7 property | - | 25.02 | 25.02 (CORA) | 2.38 |
-| PLAA01_BND50 | 1 | 1 | 4.19 | 25/35 bit-exact, 7 property | - | 7.77 | 7.77 (CORA) | 1.85 |
-| PLAD01_BND30 | 1 | 1 | 0.306 | 11/17 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.2 |
-| PLAD01_BND42 | 1 | 1 | 0.066 | 11/17 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.76 |
-| PLAN01 | 1 (script: 0) | 0 | 47.9 | 34/45 bit-exact, 8 property | 173 | 162 | 162 (CORA) | - |
-| GRBX01 | 1 | 1 | 0.127 [h] | 34/52 bit-exact, 10 property | - | 2.28 | 2.28 (CORA) | 18 |
-| GRBX02 | 1 | 1 | 0.157 [h] | 35/56 bit-exact, 10 property | - | 2.44 | 2.44 (CORA) | 15.5 |
-| BRKDC01 | 1 | 1 | 0.037 | 6/12 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.70 |
-| BRKNC01 | 1 | 1 | 2.37 | 35/52 bit-exact, 7 property | - | 32.07 | 0.17 (JuliaReach) | 0.072 |
-| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.001 | 28/44 bit-exact, 10 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
+| HEAT01 | 1 | 1 | 0.064 | 4/8 bit-exact, 0 property | - | 0.13 | 0.04 (JuliaReach) | 0.62 |
+| HEAT02 | 1 | 1 | 3.39 | 4/8 bit-exact, 0 property | - | 3.04 | 2.6 (JuliaReach) | 0.77 |
+| HEAT03 | 1 | 1 | 3.45 | 12/17 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 6.32 |
+| HEAT04 | 1 | 1 | 580 | 12/17 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 2.06 |
+| CBC01 | 1 | 1 | 0.162 | 4/8 bit-exact, 0 property | - | 0.28 | 0.05 (JuliaReach) | 0.31 |
+| CBC02 | 1 | 1 | 3.88 | 4/8 bit-exact, 0 property | - | 3.68 | 0.8 (JuliaReach) | 0.21 |
+| CBC03 | 1 | 1 | 44.5 | 4/8 bit-exact, 0 property | - | 37.27 | 3.74 (JuliaReach) | 0.084 |
+| CBF01 | 1 | 1 | 0.255 | 4/8 bit-exact, 0 property | - | 0.4 | 0.4 (CORA) | 1.57 |
+| CBF02 | 1 | 1 | 4.51 | 4/8 bit-exact, 0 property | - | 5.38 | 5.38 (CORA) | 1.19 |
+| CBF03 | 1 | 1 | 66.5 | 4/8 bit-exact, 0 property | - | 67.79 | 67.79 (CORA) | 1.02 |
+| ISSC01_ISS02 | 1 (ARCH23) | 1 | 0.153 | 4/8 bit-exact, 0 property | - | - | - | - |
+| ISSC01_ISU02 | 0 (ARCH23) | 0 | 0.522 | 4/8 bit-exact, 0 property | - | - | - | - |
+| ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.628 | 4/8 bit-exact, 0 property | - | - | - | - |
+| ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.194 | 4/8 bit-exact, 0 property | - | - | - | - |
+| RAND01 | 1 (ARCH23) | 1 | 0.0023 | 8/13 bit-exact, 0 property | - | - | - | - |
+| RAND02 | 0 (ARCH23) | 0 | 0.015 | 8/13 bit-exact, 0 property | - | - | - | - |
+| RND01 | 1 | 1 | 0.022 | 8/13 bit-exact, 0 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.7 |
+| RND02 | 1 | 1 | 0.244 | 9/14 bit-exact, 0 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.73 |
+| RND03 | 1 | 1 | 29.8 | 8/13 bit-exact, 0 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.25 |
+| RND04 | 1 | 1 | 1.14 | 9/14 bit-exact, 0 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 6.82 |
+| RND05 | 1 | 1 | 6.5 | 9/14 bit-exact, 0 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 7.06 |
+| RND06 | 1 | 1 | 26.6 | 9/14 bit-exact, 0 property | - | 26.70 | 26.70 (CORA) [c] | 1.00 |
+| SRNA01 | 1 | 1 | 0.473 | 29/40 bit-exact, 2 property | - | 51.87 | 1.09 (JuliaReach) | 2.30 |
+| SRA01 | 1 | 1 | 0.204 | 34/45 bit-exact, 2 property | - | 10.94 | 1.17 (JuliaReach) | 5.74 |
+| SRA02 | 1 | 1 | 0.102 | 43/56 bit-exact, 3 property | - | 17.49 | 1.24 (JuliaReach) | 12.2 |
+| SRA03 | 1 | 1 | 0.178 | 43/56 bit-exact, 3 property | - | 27.4 | 1.79 (JuliaReach) | 10.1 |
+| SRA04 | 1 | 1 | 0.484 | 35/46 bit-exact, 2 property | - | 39.05 | 39.05 (CORA) | 80.7 |
+| SRA05 | 1 | 1 | 0.464 | 43/56 bit-exact, 3 property | - | 67.33 | 67.33 (CORA) | 145 |
+| SRA06 | 1 | 1 | 0.472 | 43/56 bit-exact, 3 property | - | 71.46 | 71.46 (CORA) | 151 |
+| SRA07 | 1 | 1 | 2.49 | 51/67 bit-exact, 5 property | - | 120 | 120 (CORA) | 48.2 |
+| SRA08 | 1 | 1 | 5.27 | 51/67 bit-exact, 5 property | - | 239 | 239 (CORA) | 45.4 |
+| SRU01 | 0 | 0 | 0.413 | 36/47 bit-exact, 2 property | - | 25.86 | 11.79 (JuliaReach) | 28.5 |
+| SRU02 | 0 | 0 | 5.93 | 51/67 bit-exact, 5 property | - | 244 | 20 (JuliaReach) | 3.37 |
+| DTN01 | 1 | 1 | 0.652 | 25/36 bit-exact, 2 property | - | 9.69 | 9.69 (CORA) [a] | 14.9 |
+| DTN02 | 1 | 1 | 0.753 | 25/36 bit-exact, 2 property | - | 10.43 | 10.43 (CORA) [a] | 13.9 |
+| DTN03 | 1 | 1 | 1.11 | 24/35 bit-exact, 2 property | - | 10.27 | 10.27 (CORA) [a] | 9.25 |
+| DTN04 | 1 | 1 | 24.2 | 25/36 bit-exact, 2 property | - | 48.29 | 48.29 (CORA) [a] | 2 |
+| DTN05 | 1 | 1 | 41.6 | 25/36 bit-exact, 2 property | - | 90.76 | 90.76 (CORA) [a] | 2.18 |
+| DTN06 | 1 | 1 | 116 | 26/37 bit-exact, 2 property | - | 227 | 227 (CORA) [a] | 1.96 |
+| PLAA01_BND42 | 1 | 1 | 10.5 | 26/35 bit-exact, 6 property | - | 25.02 | 25.02 (CORA) | 2.38 |
+| PLAA01_BND50 | 1 | 1 | 4.19 | 26/35 bit-exact, 6 property | - | 7.77 | 7.77 (CORA) | 1.85 |
+| PLAD01_BND30 | 1 | 1 | 0.306 | 12/17 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.2 |
+| PLAD01_BND42 | 1 | 1 | 0.066 | 12/17 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.76 |
+| PLAN01 | 1 (script: 0) | 0 | 47.9 | 35/45 bit-exact, 7 property | 173 | 162 | 162 (CORA) | - |
+| GRBX01 | 1 | 1 | 0.127 [h] | 36/52 bit-exact, 5 property | - | 2.28 | 2.28 (CORA) | 18 |
+| GRBX02 | 1 | 1 | 0.157 [h] | 37/56 bit-exact, 8 property | - | 2.44 | 2.44 (CORA) | 15.5 |
+| BRKDC01 | 1 | 1 | 0.037 | 7/12 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.70 |
+| BRKNC01 | 1 | 1 | 2.37 | 37/52 bit-exact, 4 property | - | 32.07 | 0.17 (JuliaReach) | 0.072 |
+| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.001 | 29/44 bit-exact, 8 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
 
 [a] DTN01-06: JuliaReach's ARCH-COMP 2025 repeatability code (0.005-0.127 s) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %.
 
@@ -353,17 +360,17 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TRAF22 | 1 | 1 | 1.0 | 19/25 bit-exact, 1 property | 138 | 152 | 152 (CORA) [a] | 163 |
-| SPRE22 | 1 | 1 | 0.989 | 39/55 bit-exact, 5 property | 34.3 | 37 | 37 (CORA) | 37.4 |
+| TRAF22 | 1 | 1 | 1.0 | 22/26 bit-exact, 0 property | 138 | 152 | 152 (CORA) [a] | 163 |
+| SPRE22 | 1 | 1 | 0.989 | 44/56 bit-exact, 2 property | 34.3 | 37 | 37 (CORA) | 37.4 |
 | ROBE25 (1) | 1 | 1 | 29.1 | 11/20 bit-exact, 3 property | 137.5 | 151 | 25 (JuliaReach) [b] | 0.86 |
 | ROBE25 (2) | 1 | 1 | 437 | 11/20 bit-exact, 3 property | 225.7 | 239 | 92 (JuliaReach) [b] | 0.21 |
 | ROBE25 (3) | 1 | 1 | 93.8 | 11/20 bit-exact, 3 property | 338.7 | 310 | 217 (JuliaReach) [b] | 2.31 |
-| CVDP23 | 1 | 1 | 11.7 | 39/70 bit-exact, 11 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.034 |
+| CVDP23 | 1 | 1 | 11.7 | 45/70 bit-exact, 8 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.034 |
 | LALO20 W001 | 1 | 1 | 2.07 | 11/20 bit-exact, 3 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 4.49 |
 | LALO20 W005 | 1 | 1 | 14.3 | 11/20 bit-exact, 3 property | 21.9 | 17 | 17 (CORA) [c] | 1.19 |
 | LALO20 W01 | 1 | 1 | 261 | 8/25 bit-exact, 6 property | 208 | 248 | 248 (CORA) [c] | 0.95 |
-| TSPS25 | 1 | 1 | 65 | 20/32 bit-exact, 4 property | 312 | 299 | 299 (CORA) | 4.60 |
-| LOVO25 | 1 | 1 [e] | 3.72 | 33/76 bit-exact, 12 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
+| TSPS25 | 1 | 1 | 65 | 22/32 bit-exact, 3 property | 312 | 299 | 299 (CORA) | 4.60 |
+| LOVO25 | 1 | 1 [e] | 3.72 | 38/76 bit-exact, 9 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.58 |
 
 [a] TRAF22: JuliaReach's ARCH-COMP 2025 repeatability code (32 s) holds the disturbances w constant (w' = 0), where the report lets them vary arbitrarily over time.
 
@@ -801,11 +808,11 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 <!-- BEGIN bit-exact -->
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
-| ACC-safe-distance | 35/60 | 25 | 11 |
-| Airplane-continuous | 35/60 | 25 | 11 |
-| Attitude_Control-avoid | 35/62 | 27 | 15 |
-| BRKDC01 | 6/12 | 6 | 5 |
-| BRKNC01 | 36/52 | 16 | 10 |
+| ACC-safe-distance | 36/60 | 24 | 11 |
+| Airplane-continuous | 36/60 | 24 | 11 |
+| Attitude_Control-avoid | 36/62 | 26 | 15 |
+| BRKDC01 | 7/12 | 5 | 5 |
+| BRKNC01 | 37/52 | 15 | 10 |
 | BRKNP01 | 29/44 | 15 | 10 |
 | CBC01 | 4/8 | 4 | 4 |
 | CBC02 | 4/8 | 4 | 4 |
@@ -813,74 +820,74 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF01 | 4/8 | 4 | 4 |
 | CBF02 | 4/8 | 4 | 4 |
 | CBF03 | 4/8 | 4 | 4 |
-| CVDP23 | 44/70 | 26 | 11 |
-| CartPole-reach | 36/62 | 26 | 11 |
-| CartPole-reach-report | 36/62 | 26 | 11 |
-| DTN01 | 24/36 | 12 | 6 |
-| DTN02 | 24/36 | 12 | 6 |
-| DTN03 | 23/35 | 12 | 6 |
-| DTN04 | 24/36 | 12 | 6 |
-| DTN05 | 24/36 | 12 | 6 |
-| DTN06 | 25/37 | 12 | 6 |
-| Docking-constraint | 25/51 | 26 | 9 |
-| Docking-constraint-polygon | 35/60 | 25 | 11 |
-| Double_Pendulum-less-robust | 36/56 | 20 | 11 |
-| Double_Pendulum-less-robust-script | 23/41 | 18 | 9 |
-| Double_Pendulum-more-robust | 35/60 | 25 | 11 |
-| GRBX01 | 35/52 | 17 | 10 |
-| GRBX02 | 36/56 | 20 | 10 |
+| CVDP23 | 45/70 | 25 | 11 |
+| CartPole-reach | 37/62 | 25 | 11 |
+| CartPole-reach-report | 37/62 | 25 | 11 |
+| DTN01 | 25/36 | 11 | 6 |
+| DTN02 | 25/36 | 11 | 6 |
+| DTN03 | 24/35 | 11 | 6 |
+| DTN04 | 25/36 | 11 | 6 |
+| DTN05 | 25/36 | 11 | 6 |
+| DTN06 | 26/37 | 11 | 6 |
+| Docking-constraint | 26/51 | 25 | 9 |
+| Docking-constraint-polygon | 36/60 | 24 | 11 |
+| Double_Pendulum-less-robust | 37/56 | 19 | 11 |
+| Double_Pendulum-less-robust-script | 24/42 | 18 | 9 |
+| Double_Pendulum-more-robust | 36/60 | 24 | 11 |
+| GRBX01 | 36/52 | 16 | 10 |
+| GRBX02 | 37/56 | 19 | 10 |
 | HEAT01 | 4/8 | 4 | 4 |
 | HEAT02 | 4/8 | 4 | 4 |
-| HEAT03 | 11/17 | 6 | 4 |
-| HEAT04 | 11/17 | 6 | 4 |
+| HEAT03 | 12/17 | 5 | 4 |
+| HEAT04 | 12/17 | 5 | 4 |
 | ISSC01_ISS02 | 4/8 | 4 | 4 |
 | ISSC01_ISU02 | 4/8 | 4 | 4 |
 | ISSF01_ISS01 | 4/8 | 4 | 4 |
 | ISSF01_ISU01 | 4/8 | 4 | 4 |
-| LALO20_W001 | 13/20 | 7 | 5 |
-| LALO20_W005 | 13/20 | 7 | 5 |
+| LALO20_W001 | 14/21 | 7 | 5 |
+| LALO20_W005 | 14/21 | 7 | 5 |
 | LALO20_W01 | 10/25 | 15 | 5 |
-| LOVO25 | 37/76 | 39 | 12 |
-| LOVO25-script | 40/83 | 43 | 14 |
-| NAV-robust | 28/48 | 20 | 13 |
-| NAV-standard | 31/52 | 21 | 13 |
+| LOVO25 | 38/76 | 38 | 12 |
+| LOVO25-script | 41/83 | 42 | 14 |
+| NAV-robust | 29/49 | 20 | 13 |
+| NAV-standard | 32/53 | 21 | 13 |
 | PLAA01_BND42 | 26/35 | 9 | 9 |
 | PLAA01_BND50 | 26/35 | 9 | 9 |
-| PLAD01_BND30 | 11/17 | 6 | 5 |
-| PLAD01_BND42 | 11/17 | 6 | 5 |
+| PLAD01_BND30 | 12/17 | 5 | 5 |
+| PLAD01_BND42 | 12/17 | 5 | 5 |
 | PLAN01 | 35/45 | 10 | 9 |
-| QUAD-reach | 36/62 | 26 | 11 |
+| QUAD-reach | 37/62 | 25 | 11 |
 | RAND01 | 8/13 | 5 | 4 |
 | RAND02 | 8/13 | 5 | 4 |
 | RND01 | 8/13 | 5 | 4 |
-| RND02 | 8/14 | 6 | 4 |
+| RND02 | 9/14 | 5 | 4 |
 | RND03 | 8/13 | 5 | 4 |
-| RND04 | 8/14 | 6 | 4 |
-| RND05 | 8/14 | 6 | 4 |
-| RND06 | 8/14 | 6 | 4 |
-| ROBE25_1 | 13/20 | 7 | 5 |
-| ROBE25_2 | 13/20 | 7 | 5 |
-| ROBE25_3 | 13/20 | 7 | 5 |
-| SPRE22 | 43/55 | 12 | 11 |
-| SRA01 | 33/45 | 12 | 8 |
-| SRA02 | 42/56 | 14 | 10 |
-| SRA03 | 42/56 | 14 | 10 |
-| SRA04 | 34/46 | 12 | 8 |
-| SRA05 | 42/56 | 14 | 10 |
-| SRA06 | 42/56 | 14 | 10 |
-| SRA07 | 50/67 | 17 | 11 |
-| SRA08 | 50/67 | 17 | 11 |
-| SRNA01 | 28/40 | 12 | 7 |
-| SRU01 | 35/47 | 12 | 8 |
-| SRU02 | 50/67 | 17 | 11 |
-| Single_Pendulum-reach | 35/60 | 25 | 11 |
-| TORA-reach-sigmoid | 36/61 | 25 | 11 |
-| TORA-reach-tanh | 35/60 | 25 | 11 |
-| TORA-remain | 36/61 | 25 | 11 |
-| TRAF22 | 21/25 | 4 | 7 |
-| TSPS25 | 21/32 | 11 | 6 |
-| Unicycle-reach | 23/41 | 18 | 9 |
-| Unicycle-reach-disturbance | 23/41 | 18 | 9 |
+| RND04 | 9/14 | 5 | 4 |
+| RND05 | 9/14 | 5 | 4 |
+| RND06 | 9/14 | 5 | 4 |
+| ROBE25_1 | 14/21 | 7 | 5 |
+| ROBE25_2 | 14/21 | 7 | 5 |
+| ROBE25_3 | 14/21 | 7 | 5 |
+| SPRE22 | 44/56 | 12 | 11 |
+| SRA01 | 34/45 | 11 | 8 |
+| SRA02 | 43/56 | 13 | 10 |
+| SRA03 | 43/56 | 13 | 10 |
+| SRA04 | 35/46 | 11 | 8 |
+| SRA05 | 43/56 | 13 | 10 |
+| SRA06 | 43/56 | 13 | 10 |
+| SRA07 | 51/67 | 16 | 11 |
+| SRA08 | 51/67 | 16 | 11 |
+| SRNA01 | 29/40 | 11 | 7 |
+| SRU01 | 36/47 | 11 | 8 |
+| SRU02 | 51/67 | 16 | 11 |
+| Single_Pendulum-reach | 36/60 | 24 | 11 |
+| TORA-reach-sigmoid | 37/61 | 24 | 11 |
+| TORA-reach-tanh | 36/60 | 24 | 11 |
+| TORA-remain | 37/61 | 24 | 11 |
+| TRAF22 | 22/26 | 4 | 7 |
+| TSPS25 | 22/32 | 10 | 6 |
+| Unicycle-reach | 24/42 | 18 | 9 |
+| Unicycle-reach-disturbance | 24/42 | 18 | 9 |
 | VCAS-middle-19.5 | 9/24 | 15 | 4 |
 | VCAS-middle-22.5 | 9/24 | 15 | 4 |
 | VCAS-middle-25.5 | 4/10 | 6 | 0 |
