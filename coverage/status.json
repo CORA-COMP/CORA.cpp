@@ -1006,7 +1006,7 @@
   "contDynamics/linearSysDT/simulateConstrained": "todo",
   "contDynamics/neurNetContrSys/display": "todo",
   "contDynamics/neurNetContrSys/neurNetContrSys": "ported",
-  "contDynamics/neurNetContrSys/reach": "property",
+  "contDynamics/neurNetContrSys/reach": "oracle",
   "contDynamics/neurNetContrSys/simulate": "ported",
   "contDynamics/neurNetContrSys/verify": "ported",
   "contDynamics/nonlinDASys/consistentInitialState": "ported",
