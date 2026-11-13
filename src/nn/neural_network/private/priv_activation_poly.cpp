@@ -259,7 +259,8 @@ Poly aux_taylor(Activation a, double l, double u, int order) {
         // (x - c)^i f^(i)(c) / i! into the coefficients x^i .. x^0
         const double df = aux_df(a, i, c) / factorial;
         for (int k = 0; k <= i; ++k)
-            coeffs[std::size_t(order - i + k)] += aux_choose(i, k) * std::pow(-c, k) * df;
+            coeffs[std::size_t(order - i) + std::size_t(k)] +=
+                aux_choose(i, k) * std::pow(-c, k) * df;
     }
     return coeffs;
 }
@@ -325,6 +326,7 @@ Poly aux_throw_catch(Activation a, double l, double u, int order) {
 Poly aux_fit(Activation a, double l, double u, int order, double ridge) {
     const std::vector<double> x = aux_linspace(l, u, 10 * (std::size_t(order) + 1));
     std::vector<double> y;
+    y.reserve(x.size());
     for (const double xi : x) y.push_back(aux_f(a, xi));
     return aux_least_squares(x, y, order, ridge);
 }

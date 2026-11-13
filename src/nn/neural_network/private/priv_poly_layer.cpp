@@ -149,8 +149,9 @@ Column aux_reduce(Host &h, double nr_gen) {
                 len[j] += (even(j) ? 0.25 : 1.0) * g * g;
         std::vector<std::size_t> order_of(P + Q);
         std::iota(order_of.begin(), order_of.end(), std::size_t{0});
-        std::stable_sort(order_of.begin(), order_of.end(),
-                         [&](std::size_t a, std::size_t b) { return len[a] > len[b]; });
+        std::sort(order_of.begin(), order_of.end(), [&](std::size_t a, std::size_t b) {
+            return len[a] != len[b] ? len[a] > len[b] : a < b;
+        });
         // the removed ones into the shift and the box
         std::vector<bool> removed(P + Q, false);
         for (std::size_t k = std::min(keep, P + Q); k < P + Q; ++k) removed[order_of[k]] = true;
@@ -187,13 +188,17 @@ Column aux_reduce(Host &h, double nr_gen) {
         if (std::any_of(h.E.begin(), h.E.end(),
                         [&](const std::vector<int> &col) { return col[r] > 0; }))
             used.push_back(r);
+    // the exponents of the used factors only
     Exponents E;
+    E.reserve(h.E.size());
     for (const std::vector<int> &col : h.E) {
         std::vector<int> kept;
+        kept.reserve(used.size());
         for (const std::size_t r : used) kept.push_back(col[r]);
         E.push_back(kept);
     }
     std::vector<int64_t> ids;
+    ids.reserve(used.size());
     for (const std::size_t r : used) ids.push_back(h.ids[r]);
     h.last_id = std::max(h.last_id, h.ids.empty() ? int64_t{0}
                                                   : *std::max_element(h.ids.begin(), h.ids.end()));

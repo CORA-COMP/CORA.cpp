@@ -70,6 +70,7 @@ NeuralNetwork::refine(const std::vector<std::vector<int>> &orders,
     });
     // the orders of every neuron, and the heuristic of the refinable layers
     std::vector<std::vector<int>> out;
+    out.reserve(layers_.size());
     for (std::size_t k = 0; k < layers_.size(); ++k)
         out.push_back(aux_expand(k < orders.size() ? orders[k] : std::vector<int>{},
                                  layers_[k].W.shape()[0]));
@@ -102,8 +103,10 @@ NeuralNetwork::refine(const std::vector<std::vector<int>> &orders,
             if (*std::max_element(o.begin(), o.end()) < options.max_order && norm > 0)
                 rows.emplace_back(norm, std::size_t(k));
         }
-        std::stable_sort(rows.begin(), rows.end(),
-                         [](const auto &a, const auto &b) { return a.first > b.first; });
+        // largest norm first, the earlier layer on ties
+        std::sort(rows.begin(), rows.end(), [](const auto &a, const auto &b) {
+            return a.first != b.first ? a.first > b.first : a.second < b.second;
+        });
         if (!rows.empty())
             for (int &order : out[rows.front().second]) ++order;
         return out;
@@ -114,8 +117,9 @@ NeuralNetwork::refine(const std::vector<std::vector<int>> &orders,
         for (std::size_t j = 0; j < out[std::size_t(k)].size(); ++j)
             if (out[std::size_t(k)][j] < options.max_order && heu[std::size_t(k)][j] > 0)
                 rows.push_back({heu[std::size_t(k)][j], std::size_t(k), j});
-    std::stable_sort(rows.begin(), rows.end(), [](const Candidate &a, const Candidate &b) {
-        return a.heuristic > b.heuristic;
+    std::sort(rows.begin(), rows.end(), [](const Candidate &a, const Candidate &b) {
+        if (a.heuristic != b.heuristic) return a.heuristic > b.heuristic;
+        return a.layer != b.layer ? a.layer < b.layer : a.neuron < b.neuron;
     });
     if (rows.empty()) return out;
     const double largest = rows.front().heuristic;
