@@ -6,8 +6,9 @@
 // hybrid automaton has three locations on both sides of the plane c'x = d (the dynamics are the
 // same in all of them, the plane only splits the analysis); the initial set is split into 13 boxes,
 // each a polynomial zonotope, and the specification is x2 < 2.75 and x4 < 2.75 for all of them.
-// Algorithm "poly" with tensor order 3, guards by zonoGirard and PCA. The 13 runs are timed
-// together.
+// Algorithm "poly" with tensor order 3, guards by zonoGirard and PCA. The 13 runs are independent:
+// they run on up to 8 threads (one each, the pools inside an operation at one thread) and are
+// timed together, wall clock; MATLAB CORA runs them one after the other.
 //
 // Syntax:   build/core/benchmarks/benchmark_hybrid_reach_arch23_vanderpol [CVDP23]
 // Outputs:  one line 'benchmark,instance,result,time', as the MATLAB script
@@ -19,6 +20,11 @@
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
+
+#include <atomic>
+#include <exception>
+#include <mutex>
+#include <thread>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -95,30 +101,61 @@ alg::HybridStandard aux_alg() {
     return a;
 }
 
-/// Runs the 13 boxes in turn and prints the line of the script: the verdict is all of them.
+/// Reaches one box of the initial set; with CORACPP_BENCHMARK_VERBOSE, each branch is listed.
+bool aux_reach_box(const HybridAutomaton &HA, const alg::HybridStandard &a,
+                   const std::vector<HybridSpecification> &specs, const Interval &box) {
+    HybridReachProblem problem;
+    problem.initial_poly_set = PolyZonotope(box);
+    problem.start_location = 0;
+    problem.t_final = 7;
+    const HybridReachSet R = HA.reach(problem, a, specs);
+    if (cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE"))
+        for (const LocationReachSet &b : R.branches)
+            std::cerr << "    location " << b.location << ": " << b.time_interval.size()
+                      << " sets from " << b.time_point_times.front()[0] << " to "
+                      << b.time_point_times.back()[1] << '\n';
+    return R.verified;
+}
+
+/// Runs the 13 boxes (they are independent, on up to 8 threads, the pools inside an operation at
+/// one thread) and prints the line of the script: the verdict is all of them.
 bool aux_run(const std::string &name) {
     if (name != "CVDP23") CORA_FAIL(Error::wrong_value, "vanderpol: unknown instance " + name);
     const HybridAutomaton HA = aux_automaton();
     const alg::HybridStandard a = aux_alg();
     const std::vector<HybridSpecification> specs = aux_specs();
+    const std::vector<Interval> boxes = aux_initial_sets();
     const auto start = std::chrono::steady_clock::now();
+    // the threads take the next box until none is left (a failure is raised after the join)
+    std::vector<char> verified(boxes.size(), 0);
+    std::atomic<std::size_t> next{0};
+    std::exception_ptr failure;
+    std::mutex mutex;
+    const auto work = [&] {
+        for (std::size_t i = next++; i < boxes.size(); i = next++) {
+            try {
+                verified[i] = aux_reach_box(HA, a, specs, boxes[i]);
+            } catch (...) {
+                const std::lock_guard lock(mutex);
+                if (!failure) failure = std::current_exception();
+            }
+        }
+    };
+    // one thread per box up to 8, the pools inside an operation at one thread meanwhile
+    const int threads =
+        int(std::min<std::size_t>({boxes.size(), std::size_t(max_threads()), std::size_t(8)}));
+    const int previous = max_threads();
+    if (threads > 1) set_num_threads(1);
+    std::vector<std::thread> pool;
+    for (int t = 0; t < threads; ++t) pool.emplace_back(work);
+    for (std::thread &th : pool) th.join();
+    if (threads > 1) set_num_threads(previous);
+    if (failure) std::rethrow_exception(failure);
     bool all_verified = true;
-    std::size_t index = 0;
-    for (const Interval &box : aux_initial_sets()) {
-        HybridReachProblem problem;
-        problem.initial_poly_set = PolyZonotope(box);
-        problem.start_location = 0;
-        problem.t_final = 7;
-        const HybridReachSet R = HA.reach(problem, a, specs);
-        std::cerr << "  split " << ++index << "/13: " << (R.verified ? "verified" : "not verified")
+    for (std::size_t i = 0; i < boxes.size(); ++i) {
+        std::cerr << "  split " << i + 1 << "/13: " << (verified[i] ? "verified" : "not verified")
                   << '\n';
-        all_verified = all_verified && R.verified;
-        // with CORACPP_BENCHMARK_VERBOSE, each branch: its location, sets and times
-        if (std::getenv("CORACPP_BENCHMARK_VERBOSE"))
-            for (const LocationReachSet &b : R.branches)
-                std::cerr << "    location " << b.location << ": " << b.time_interval.size()
-                          << " sets from " << b.time_point_times.front()[0] << " to "
-                          << b.time_point_times.back()[1] << '\n';
+        all_verified = all_verified && verified[i];
     }
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
     cora::bench::print_line("CVDP23", "", all_verified, wall.count());

@@ -4,7 +4,8 @@
 // of set computations (a few hundred variables); the matrices are row-major on the host.
 //
 // Syntax:     LinProgResult r = linprog(lp);
-// Operations: linprog (linprog.cpp)
+//             std::vector<LinProgResult> rs = linprog_costs(lp, {f1, f2});
+// Operations: linprog, linprog_costs (linprog.cpp)
 // See also:   contDynamics/linear_sys/private/priv_verify_ra_zonotope.cpp
 //
 // Authors:       Tobias Ladner
@@ -44,6 +45,12 @@ struct LinProgResult {
 
 /// The minimizer and minimal value of the program, or the reason there is none.
 LinProgResult linprog(const LinProg &lp);
+
+/// The programs of lp (its cost f is not used) with each of the costs, one result per cost. The
+/// results are those of linprog with that cost; the constraints are prepared (and phase 1 of the
+/// simplex method run) once, which the costs share.
+std::vector<LinProgResult> linprog_costs(const LinProg &lp,
+                                         const std::vector<std::vector<double>> &costs);
 
 } // namespace cora
 

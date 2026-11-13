@@ -126,7 +126,7 @@ bool aux_run(const std::string &name) {
         std::cerr << "  [" << t_start << ", " << t_final << "], dt " << dt << ": " << r.steps
                   << " steps, " << r.seconds << " s\n";
         // CORACPP_BENCHMARK_VERBOSE=1: the end set of the run (center and widths), as MATLAB prints
-        if (std::getenv("CORACPP_BENCHMARK_VERBOSE")) {
+        if (cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE")) {
             std::cerr << std::setprecision(12) << "    center:";
             for (const double v : R.center().data()) std::cerr << " " << v;
             std::cerr << "\n    widths:";

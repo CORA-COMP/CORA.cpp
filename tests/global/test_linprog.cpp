@@ -208,6 +208,51 @@ void multipliers() {
     }
 }
 
+/// linprog_costs gives, for each cost, the very result of linprog with that cost (bit for bit,
+/// the multipliers too), on programs with inequalities, equalities and bounds.
+void shared_phase_one() {
+    Rng rng(7);
+    for (int trial = 0; trial < 20; ++trial) {
+        const int n = 4 + trial % 5, rows = 3 + trial % 4;
+        LinProg lp;
+        lp.n = n;
+        // random rows, equalities and the unit box
+        lp.Aineq.assign(std::size_t(rows * n), 0.0);
+        lp.bineq.assign(std::size_t(rows), 0.0);
+        for (double &x : lp.Aineq) rng.uniform(&x, 1, -0.5, 0.5);
+        for (double &x : lp.bineq) rng.uniform(&x, 1, 0.5, 1.5);
+        lp.Aeq.assign(std::size_t(2 * n), 0.0);
+        for (double &x : lp.Aeq) rng.uniform(&x, 1, -0.5, 0.5);
+        lp.beq = {0.1, -0.05};
+        lp.lb.assign(std::size_t(n), -1.0);
+        lp.ub.assign(std::size_t(n), 1.0);
+        std::vector<std::vector<double>> costs(4, std::vector<double>(std::size_t(n)));
+        for (auto &f : costs)
+            for (double &x : f) rng.uniform(&x, 1, -0.5, 0.5);
+        // together and one by one
+        const std::vector<LinProgResult> together = linprog_costs(lp, costs);
+        bool same = together.size() == costs.size();
+        for (std::size_t k = 0; same && k < costs.size(); ++k) {
+            lp.f = costs[k];
+            const LinProgResult one = linprog(lp);
+            same = one.status == together[k].status && one.x == together[k].x &&
+                   one.dual_ineq == together[k].dual_ineq && one.dual_eq == together[k].dual_eq &&
+                   (one.fval == together[k].fval ||
+                    (std::isnan(one.fval) && std::isnan(together[k].fval)));
+        }
+        check(same, "costs together equal one by one " + std::to_string(trial));
+    }
+    // an infeasible program is infeasible for every cost
+    LinProg none;
+    none.n = 1;
+    none.Aeq = {1.0};
+    none.beq = {5.0};
+    none.lb = {0.0};
+    none.ub = {1.0};
+    for (const LinProgResult &r : linprog_costs(none, {{1.0}, {-1.0}}))
+        check(r.status == Status::infeasible, "infeasible for every cost");
+}
+
 } // namespace
 
 
@@ -217,6 +262,7 @@ int main() {
     known_programs();
     random_planar_programs();
     multipliers();
+    shared_phase_one();
     return test::finish("linprog");
 }
 

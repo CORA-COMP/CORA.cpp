@@ -146,7 +146,7 @@ make_verify(const NonlinearSys &plant, const std::string &net, double dt, const 
             const TimedSpecifications &specs, const VerifySplit &split = {}, int64_t points = 20) {
     return [=](Rng &rng) {
         const NeurNetContrSys sys(plant, load_network(net), dt);
-        if (std::getenv("CORACPP_BENCHMARK_VERBOSE")) {
+        if (cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE")) {
             const ClosedLoopReach<S> R = sys.reach(X0, U, t_final, options);
             for (std::size_t k = 0; k < R.time_point.size(); ++k) {
                 const Interval box = R.time_point[k].interval();

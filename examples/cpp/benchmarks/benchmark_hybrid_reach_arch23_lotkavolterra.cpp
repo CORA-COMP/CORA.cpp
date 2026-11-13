@@ -207,7 +207,7 @@ bool aux_run_script(const std::string &name) {
         CORA_FAIL(Error::wrong_value, "lotkaVolterra: R1 has " +
                                           std::to_string(R1.branches.size()) + " branches, not 3");
     // with CORACPP_BENCHMARK_VERBOSE, the branches of R1: location, parent and sets
-    if (std::getenv("CORACPP_BENCHMARK_VERBOSE"))
+    if (cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE"))
         for (const LocationReachSet &b : R1.branches)
             std::cerr << "    R1: location " << b.location << " (parent " << b.parent << "), "
                       << b.time_interval.size() << " sets\n";

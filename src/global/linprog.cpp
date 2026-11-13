@@ -6,6 +6,7 @@
 // pivots, which cannot cycle.
 //
 // Syntax:   LinProgResult r = linprog(lp);
+//           std::vector<LinProgResult> rs = linprog_costs(lp, {f1, f2});
 // Inputs:   lp - the program: cost, inequality and equality constraints, bounds
 // Outputs:  r - status (Optimal, Infeasible, Unbounded), the minimizer x and the value fval
 // See also: contDynamics/linear_sys/private/priv_verify_ra_zonotope.cpp
@@ -24,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -47,7 +49,7 @@ struct VarMap {
 struct Standard {
     int m = 0, N = 0;
     std::vector<double> M; // (m, N) row-major
-    std::vector<double> r, c;
+    std::vector<double> r;
     std::vector<int> basis;    // slack column with +1 of the row, or -1
     std::vector<char> flipped; // the row was multiplied by -1 (its right-hand side was negative)
 };
@@ -55,22 +57,30 @@ struct Standard {
 // Simplex -----------------------------------------------------------------------------------------
 
 /// Pivots the tableau T (rows of width W) on entry (row, col). The tableaus are sparse (slacks,
-/// bound rows): only the nonzero entries of the pivot row are updated, which leaves every
-/// nonzero value unchanged (a zero entry only subtracts f * 0).
+/// bound rows): only the nonzero entries of the pivot row are updated, as runs of columns.
 void aux_pivot(std::vector<double> &T, int m, int W, int row, int col) {
     double *prow = &T[std::size_t(row) * W];
     const double p = prow[col];
-    std::vector<int> nz;
+    // the runs [first, last) of nonzero entries of the pivot row (buffer kept per thread)
+    thread_local std::vector<std::pair<int, int>> runs;
+    runs.clear();
     for (int j = 0; j < W; ++j) {
         prow[j] /= p;
-        if (prow[j] != 0) nz.push_back(j);
+        if (prow[j] == 0) continue;
+        if (!runs.empty() && runs.back().second == j)
+            ++runs.back().second;
+        else
+            runs.emplace_back(j, j + 1);
     }
+    // every row with an entry in the column loses its multiple of the (nonzero) pivot row
+    const double *__restrict pr = prow;
     for (int i = 0; i < m; ++i) {
         if (i == row) continue;
-        double *irow = &T[std::size_t(i) * W];
+        double *__restrict irow = &T[std::size_t(i) * W];
         const double f = irow[col];
         if (f == 0) continue;
-        for (const int j : nz) irow[j] -= f * prow[j];
+        for (const auto &[first, last] : runs)
+            for (int j = first; j < last; ++j) irow[j] -= f * pr[j];
         irow[col] = 0;
     }
 }
@@ -163,14 +173,8 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
     s.N = n_var + m_ineq + static_cast<int>(bound_rows.size());
     s.M.assign(std::size_t(s.m) * s.N, 0.0);
     s.r.assign(s.m, 0.0);
-    s.c.assign(s.N, 0.0);
     s.basis.assign(s.m, -1);
     s.flipped.assign(std::size_t(s.m), 0);
-    for (int j = 0; j < n; ++j) {
-        const double fj = lp.f.empty() ? 0.0 : lp.f[j];
-        if (map[j].c1 >= 0) s.c[map[j].c1] += fj * map[j].s1;
-        if (map[j].c2 >= 0) s.c[map[j].c2] += fj * map[j].s2;
-    }
     auto fill_row = [&](int row, const double *a, double rhs) {
         for (int j = 0; j < n; ++j) {
             if (map[j].c1 >= 0) s.M[std::size_t(row) * s.N + map[j].c1] += a[j] * map[j].s1;
@@ -212,46 +216,52 @@ Standard aux_standard_form(const LinProg &lp, std::vector<VarMap> &map) {
 } // namespace
 
 
-// ===========================================  MAIN  =========================================== //
+namespace {
 
-// Linear programs ---------------------------------------------------------------------------------
+// The phases --------------------------------------------------------------------------------------
 
-LinProgResult linprog(const LinProg &lp) {
-    if (lp.n <= 0)
-        CORA_FAIL(Error::wrong_value, "linprog: the program needs at least one variable");
+// The program up to the end of phase 1: it does not depend on the cost.
+struct Prepared {
     std::vector<VarMap> map;
-    const Standard s = aux_standard_form(lp, map);
-    LinProgResult result;
+    Standard s;
+    int n_art = 0, W = 0;
+    std::vector<double> T;
+    std::vector<int> basis, start; ///< start: the unit column of each row, where B^-1 sits
+    bool feasible = false;
+};
 
-    // Tableau ---------------------------------------------------------------------------------
+/// The standard form and the tableau after phase 1 (the cost f is not used).
+Prepared aux_prepare(const LinProg &lp) {
+    Prepared P;
+    P.s = aux_standard_form(lp, P.map);
+    const Standard &s = P.s;
     // Tableau with one artificial column per row that has no basic slack, then the rhs.
-    int n_art = 0;
-    for (int i = 0; i < s.m; ++i) n_art += s.basis[i] < 0;
-    const int W = s.N + n_art + 1;
-    std::vector<double> T(std::size_t(std::max(s.m, 1)) * W, 0.0);
-    std::vector<int> basis(s.m);
-    std::vector<int> start(s.m); // the unit column of each row at the start: B^-1 sits there
-    std::vector<double> phase1(s.N + n_art, 0.0);
+    for (int i = 0; i < s.m; ++i) P.n_art += s.basis[i] < 0;
+    const int W = P.W = s.N + P.n_art + 1;
+    P.T.assign(std::size_t(std::max(s.m, 1)) * W, 0.0);
+    std::vector<double> &T = P.T;
+    P.basis.assign(s.m, 0);
+    P.start.assign(s.m, 0);
+    std::vector<int> &basis = P.basis;
+    std::vector<double> phase1(s.N + P.n_art, 0.0);
     int art = s.N;
+    // each row: the standard form and rhs, then its basic column (the slack, else an artificial)
     for (int i = 0; i < s.m; ++i) {
         for (int j = 0; j < s.N; ++j) T[std::size_t(i) * W + j] = s.M[std::size_t(i) * s.N + j];
         T[std::size_t(i) * W + W - 1] = s.r[i];
         if (s.basis[i] >= 0) {
             basis[i] = s.basis[i];
-            start[i] = s.basis[i];
+            P.start[i] = s.basis[i];
         } else {
             T[std::size_t(i) * W + art] = 1.0;
             phase1[art] = 1.0;
-            start[i] = art;
+            P.start[i] = art;
             basis[i] = art++;
         }
     }
-    // The basis columns must be unit columns: clear them in the other rows.
-    for (int i = 0; i < s.m; ++i) aux_pivot(T, s.m, W, i, basis[i]);
-
-    // Phase 1: drive the artificial variables to zero.
-    std::vector<char> all(s.N + n_art, 1);
-    if (n_art > 0) {
+    // Phase 1 (the basis columns are unit columns already): drive the artificials to zero.
+    if (P.n_art > 0) {
+        std::vector<char> all(s.N + P.n_art, 1);
         if (aux_simplex(T, basis, s.m, W, phase1, all) == 2)
             CORA_FAIL(Error::special_error, "linprog: the simplex method did not finish (phase 1)");
         double infeasibility = 0, scale = 1;
@@ -259,7 +269,7 @@ LinProgResult linprog(const LinProg &lp) {
             if (basis[i] >= s.N) infeasibility += std::abs(T[std::size_t(i) * W + W - 1]);
             scale = std::max(scale, std::abs(s.r[i]));
         }
-        if (infeasibility > numerics::kSimplexFeasible * scale) return result;
+        if (infeasibility > numerics::kSimplexFeasible * scale) return P;
         // Basic artificials at zero leave if a real column replaces them, else the row is dropped.
         for (int i = 0; i < s.m; ++i) {
             if (basis[i] < s.N) continue;
@@ -271,10 +281,25 @@ LinProgResult linprog(const LinProg &lp) {
                 }
         }
     }
+    P.feasible = true;
+    return P;
+}
 
-    // Phase 2: the cost over the real columns only.
+/// Phase 2 for the cost f on a copy of the prepared tableau.
+LinProgResult aux_optimize(const LinProg &lp, const Prepared &P, const std::vector<double> &f) {
+    LinProgResult result;
+    const Standard &s = P.s;
+    const int W = P.W, n_art = P.n_art;
+    std::vector<double> T = P.T;
+    std::vector<int> basis = P.basis;
+    // the cost of the standard form
     std::vector<double> cost(s.N + n_art, 0.0);
-    std::copy(s.c.begin(), s.c.end(), cost.begin());
+    for (int j = 0; j < lp.n; ++j) {
+        const double fj = f.empty() ? 0.0 : f[j];
+        if (P.map[j].c1 >= 0) cost[P.map[j].c1] += fj * P.map[j].s1;
+        if (P.map[j].c2 >= 0) cost[P.map[j].c2] += fj * P.map[j].s2;
+    }
+    // Phase 2: the cost over the real columns only.
     std::vector<char> real(s.N + n_art, 0);
     std::fill(real.begin(), real.begin() + s.N, 1);
     const int status = aux_simplex(T, basis, s.m, W, cost, real);
@@ -291,23 +316,44 @@ LinProgResult linprog(const LinProg &lp) {
     result.x.assign(lp.n, 0.0);
     result.fval = 0;
     for (int j = 0; j < lp.n; ++j) {
-        double v = map[j].offset;
-        if (map[j].c1 >= 0) v += map[j].s1 * y[map[j].c1];
-        if (map[j].c2 >= 0) v += map[j].s2 * y[map[j].c2];
+        double v = P.map[j].offset;
+        if (P.map[j].c1 >= 0) v += P.map[j].s1 * y[P.map[j].c1];
+        if (P.map[j].c2 >= 0) v += P.map[j].s2 * y[P.map[j].c2];
         result.x[j] = v;
-        if (!lp.f.empty()) result.fval += lp.f[j] * v;
+        if (!f.empty()) result.fval += f[j] * v;
     }
     // A row's multiplier is -pi (+pi if flipped), pi = c_B' B^-1 read at the starting unit column.
     const int m_ineq = lp.Aineq.empty() ? 0 : static_cast<int>(lp.bineq.size());
     const int m_eq = lp.Aeq.empty() ? 0 : static_cast<int>(lp.beq.size());
     for (int k = 0; k < m_ineq + m_eq; ++k) {
         double pi = 0.0;
-        for (int i = 0; i < s.m; ++i) pi += cost[basis[i]] * T[std::size_t(i) * W + start[k]];
+        for (int i = 0; i < s.m; ++i) pi += cost[basis[i]] * T[std::size_t(i) * W + P.start[k]];
         const double lambda = s.flipped[std::size_t(k)] ? pi : -pi;
         (k < m_ineq ? result.dual_ineq : result.dual_eq).push_back(lambda);
     }
     result.status = LinProgResult::Status::optimal;
     return result;
+}
+
+} // namespace
+
+
+// ===========================================  MAIN  =========================================== //
+
+// Linear programs ---------------------------------------------------------------------------------
+
+LinProgResult linprog(const LinProg &lp) { return linprog_costs(lp, {lp.f}).front(); }
+
+std::vector<LinProgResult> linprog_costs(const LinProg &lp,
+                                         const std::vector<std::vector<double>> &costs) {
+    if (lp.n <= 0)
+        CORA_FAIL(Error::wrong_value, "linprog: the program needs at least one variable");
+    const Prepared P = aux_prepare(lp);
+    std::vector<LinProgResult> out;
+    out.reserve(costs.size());
+    for (const std::vector<double> &f : costs)
+        out.push_back(P.feasible ? aux_optimize(lp, P, f) : LinProgResult{});
+    return out;
 }
 
 } // namespace cora

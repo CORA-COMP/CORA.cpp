@@ -8,6 +8,8 @@
 // linear_step() reads the linear step of the nonlinear algorithms from CORACPP_LINEAR_STEP (cora,
 // closed_form, coralean) for the programs that run a lin or lin-adaptive instance, and
 // error_bound() the error of a lin step at tensor order 2 from CORACPP_ERROR_BOUND (loop, region).
+// env_flag(name) reads an on/off switch such as CORACPP_BENCHMARK_VERBOSE by its value: unset,
+// empty and "0" are off.
 //
 // Syntax:   return cora::bench::run_family(argc, argv, {"A01", "A02"}, run_one);
 //           cora::bench::require_memory_gb(24);   // in run_one, before the work
@@ -41,6 +43,12 @@ inline void print_line(const std::string &benchmark, const std::string &instance
                        double seconds) {
     std::cout << benchmark << "," << instance << "," << verified << "," << seconds << '\n'
               << std::flush;
+}
+
+/// Whether the on/off variable `name` is on: unset, empty and "0" are off (never just "set").
+inline bool env_flag(const char *name) {
+    const char *value = std::getenv(name);
+    return value && *value && std::string(value) != "0";
 }
 
 /// The linear step of the nonlinear algorithms: CORACPP_LINEAR_STEP = closed_form (default), cora

@@ -46,6 +46,12 @@ std::vector<int64_t> priv_least_equal_column(const Exponents &E) {
 Tensor priv_columns(const Tensor &G, const std::vector<int64_t> &index) {
     const int64_t n = G.shape()[0];
     if (index.empty()) return G.zeros_like({n, 0});
+    // all columns in their order: the tensor itself
+    if (int64_t(index.size()) == G.shape()[1]) {
+        int64_t next = 0;
+        if (std::all_of(index.begin(), index.end(), [&](int64_t j) { return j == next++; }))
+            return G;
+    }
     return G.take(index, -1);
 }
 

@@ -14,6 +14,8 @@
 
 #include "cont_set/zonotope/private/priv.h"
 
+#include <algorithm>
+
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
@@ -26,6 +28,12 @@ Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &colum
         Shape shape = G.shape();
         shape.back() = 0;
         return G.zeros_like(shape);
+    }
+    // all columns in their order: the tensor itself
+    if (int64_t(columns.size()) == G.shape().back()) {
+        int64_t next = 0;
+        if (std::all_of(columns.begin(), columns.end(), [&](int64_t j) { return j == next++; }))
+            return G;
     }
     return G.take(columns, -1);
 }
