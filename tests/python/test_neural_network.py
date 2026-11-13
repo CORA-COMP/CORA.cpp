@@ -9,6 +9,7 @@ Reviewed:      ---
 # CORA: nn/@neuralNetwork/evaluate.m
 # CORA: nn/@neuralNetwork/evaluate_.m
 # CORA: nn/layers/nonlinear/nnReLULayer.m
+# CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 # CORA: nn/@neuralNetwork/neuralNetwork.m
 # CORA: nn/@neuralNetwork/calcSensitivity.m
 
@@ -84,6 +85,21 @@ class Evaluate(unittest.TestCase):
         self.assertTrue(torch.allclose(net.sensitivity(x), reference, atol=1e-10))
         with self.assertRaises(ValueError):
             net.evaluate(X, poly_method="taylor")
+
+    def test_the_bracket_error_contains_the_outputs(self):
+        net = cora.NeuralNetwork(layers([2, 10, 10, 3]), ["tanh", "sigmoid", "identity"])
+        X = cora.Zonotope(torch.tensor([0.3, -0.2], dtype=torch.float64),
+                          0.2 * torch.eye(2, dtype=torch.float64))
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
+        for error in ("extremum", "bracket"):
+            box = net.evaluate(X, poly_method="regression", regression_error=error).interval()
+            inside = (y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()
+            self.assertTrue(bool(inside))
+        with self.assertRaises(ValueError):
+            net.evaluate(X, poly_method="regression", regression_error="exact")
+        # the polynomial zonotope keeps its factors and is enclosed by the zonotope's pairs
+        P = cora.PolyZonotope(X)
+        self.assertEqual(net.evaluate_with_input(P).dim, 5)
 
     def test_a_batch_of_sets_is_one_call(self):
         parameters = layers([2, 6, 2])

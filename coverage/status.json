@@ -1160,7 +1160,7 @@
   "nn/layers/backpropZonotopeBatch": "todo",
   "nn/layers/computeApproxPoly": "untested",
   "nn/layers/evaluateConZonotope": "todo",
-  "nn/layers/evaluatePolyZonotope": "untested",
+  "nn/layers/evaluatePolyZonotope": "oracle",
   "nn/layers/evaluatePolyZonotopeNeuron": "todo",
   "nn/layers/evaluateTaylm": "todo",
   "nn/layers/evaluateZonotopeBatch": "todo",
