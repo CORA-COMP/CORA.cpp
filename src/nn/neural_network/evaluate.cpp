@@ -205,8 +205,7 @@ Line aux_line_sigmoid_extremum(const Tensor &l, const Tensor &u) {
     const Tensor artanh_hi = ((one + root).divide(one - root)).log() * 0.5;
     const Tensor t_hi = artanh_hi + artanh_hi;
     const Tensor hi_exists = zero.less(one - root);
-    // the part of [a, b] that holds t0, the two computed ends taken in either order, folded into
-    // hi and lo where there is one
+    // the part of [a, b] that holds t0 (the two ends in either order), folded into hi and lo
     const auto fold = [&](const Tensor &a, const Tensor &b, bool negate) {
         const Tensor lowest = t_lo.minimum(t_hi), highest = t_lo.maximum(t_hi);
         const Tensor from = Tensor::where(hi_exists, a.maximum(lowest), a.maximum(t_lo));
