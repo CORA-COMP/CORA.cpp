@@ -814,7 +814,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF03 | 4/8 | 4 | 4 |
 | CVDP23 | 54/70 | 16 | 11 |
 | CartPole-reach | 34/50 | 16 | 9 |
-| CartPole-reach-report | 47/63 | 16 | 11 |
+| CartPole-reach-report | 38/55 | 17 | 9 |
 | DTN01 | 24/36 | 12 | 6 |
 | DTN02 | 24/36 | 12 | 6 |
 | DTN03 | 23/35 | 12 | 6 |
@@ -822,8 +822,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | DTN05 | 24/36 | 12 | 6 |
 | DTN06 | 25/37 | 12 | 6 |
 | Docking-constraint | 26/43 | 17 | 7 |
-| Docking-constraint-polygon | 46/61 | 15 | 11 |
-| Double_Pendulum-less-robust | 41/57 | 16 | 11 |
+| Docking-constraint-polygon | - | not measured | - |
+| Double_Pendulum-less-robust | 31/47 | 16 | 9 |
 | Double_Pendulum-less-robust-script | 28/43 | 15 | 9 |
 | Double_Pendulum-more-robust | 34/50 | 16 | 9 |
 | GRBX01 | 35/52 | 17 | 10 |
