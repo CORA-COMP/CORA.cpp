@@ -157,17 +157,15 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 | PLAD01_BND30 | 1 | 1 | 0.302 | 11/17 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.4 |
 | PLAD01_BND42 | 1 | 1 | 0.0695 | 11/17 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.72 |
 | PLAN01 | 1 (script: 0) | 0 | 49.4 | 34/45 bit-exact, 8 property | 173 | 162 | 162 (CORA) | - |
-| GRBX01 | 1 | 1 | 0.102 [h] | 34/52 bit-exact, 10 property | - | 2.28 | 2.28 (CORA) | 22.3 |
-| GRBX02 | 1 | 1 | 0.123 [h] | 35/56 bit-exact, 10 property | - | 2.44 | 2.44 (CORA) | 19.8 |
+| GRBX01 | 1 | 1 | 0.102 [b] | 34/52 bit-exact, 10 property | - | 2.28 | 2.28 (CORA) | 22.3 |
+| GRBX02 | 1 | 1 | 0.123 [b] | 35/56 bit-exact, 10 property | - | 2.44 | 2.44 (CORA) | 19.8 |
 | BRKDC01 | 1 | 1 | 0.0381 | 6/12 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.63 |
 | BRKNC01 | 1 | 1 | 2.65 | 35/52 bit-exact, 7 property | - | 32.07 | 0.17 (JuliaReach) | 0.0641 |
-| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.00127 | 28/44 bit-exact, 10 property | 438 | 52.2 | 52.2 (CORA) [b] | - |
+| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.00127 | 28/44 bit-exact, 10 property | 438 | 52.2 | 16.99 (JuliaReach) | - |
 
-[a] DTN01-06: JuliaReach's ARCH-COMP 2025 repeatability code (0.005-0.127 s) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %.
+[a] DTN01-06: JuliaReach's ARCH-COMP 2026 repeatability code (0.005-0.127 s, `powertrain_benchmark.jl`) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %; the report does not mention it.
 
-[b] BRKNP01: JuliaReach's ARCH-COMP 2025 repeatability code (16.99 s) does not enforce the property (`validate=false`) and runs to t = 0.1, where the report verifies x < x0 up to t = 0.08.
-
-[h] GRBX01-02: 5 stays and 172 sets (2 and 61 before). The pca box in the direction of the guard normal is a point, and the SVD basis of the earlier runs gave it ends inverted by 1e-19, so a crossing was dropped as an empty cut; CORALean's Jacobi basis (`Location.calcBasisPcaFloat`) does not at `nearest`, which is rounding noise, not a property of the instance.
+[b] GRBX01-02: 5 stays and 172 sets (2 and 61 before). The pca box in the direction of the guard normal is a point, and the SVD basis of the earlier runs gave it ends inverted by 1e-19, so a crossing was dropped as an empty cut; CORALean's Jacobi basis (`Location.calcBasisPcaFloat`) does not at `nearest`, which is rounding noise, not a property of the instance.
 
 [c] RND01-06: the report's instances are created on the server, these are the files of CORA's package (RND06: our own), so the ARCH26 columns are indicative and the speedups stay out of the summary.
 
@@ -366,15 +364,15 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | TSPS25 | 1 | 1 | 62.1 | 20/32 bit-exact, 4 property | 312 | 299 | 299 (CORA) | 4.82 |
 | LOVO25 | 1 | 1 [e] | 4.28 | 33/76 bit-exact, 12 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.25 |
 
-[a] TRAF22: JuliaReach's ARCH-COMP 2025 repeatability code (32 s) holds the disturbances w constant (w' = 0), where the report lets them vary arbitrarily over time.
+[a] TRAF22: JuliaReach's ARCH-COMP 2026 repeatability code (32 s, `vehicle.jl`) holds the disturbances w constant (w' = 0), where the problem lets them vary arbitrarily over time, as the report states (p. 58).
 
 [f] SPRE22: CORA.cpp runs the script's time steps 0.2 / 0.05 / 0.2 with CORA's loop (CORALean's `linReachLoopFloat`); CORALean's region step (`CORACPP_ERROR_BOUND=region`) fails its region check there and needs 0.05 / 0.025 / 0.05, with which it takes 2.65 s.
 
 [b] ROBE25: KeYmaera X (0.2 s) proves that x + y + z is preserved, not the width bound.
 
-[c] LALO20: JuliaReach's ARCH-COMP 2025 repeatability code (0.7-1.1 s) has x7' = 1.8 x6 - 1.6 x2 x7, where the report has 1.5 x2 x7, and KeYmaera X (12.8 s) and PRoTECT (4.4 s) prove other properties (t in [0, 0.1] and t in [0, inf)). W01 gives the verdict 1 with the sound step (the largest x4 is 4.995, the limit 5).
+[c] LALO20: JuliaReach's ARCH-COMP 2026 repeatability code (0.7-1.1 s, `laubloomis.jl`) has x7' = 1.8 x6 - 1.6 x2 x7, where the report has 1.5 x2 x7 and does not mention it, and KeYmaera X (12.8 s) and PRoTECT (4.4 s) prove other properties (t in [0, 0.1] and t in [0, inf)). W01 gives the verdict 1 with the sound step (the largest x4 is 4.995, the limit 5).
 
-[d] LOVO25: JuliaReach's ARCH-COMP 2025 repeatability code (1.6 s) integrates the flow without the hybrid automaton and checks only the area, not the crossing counts, and KeYmaera X (1.7 s) proves invariance only.
+[d] LOVO25: JuliaReach's ARCH-COMP 2026 repeatability code (1.6 s, `lotka_volterra_benchmark.jl`) integrates the flow without the hybrid automaton and checks only the area, not the crossing counts, though the report says the crossings are handled (p. 71), and KeYmaera X (1.7 s) proves invariance only.
 
 [e] LOVO25: a sound verdict, not CORA's script (which writes `res = true`; it runs as `LOVO25-script`, 0.09 s, area 8.92e-3, MATLAB 11.4 s). The automaton (with a jump back out of `inside`) is reached from 8 pieces of the initial box with no restart and no cut; 7 pieces give one final branch with 2 jumps, and the piece with the tangential arc (x1 near 1.288 to 1.291) makes CORA's linearization error explode in the jumps in and out, so the flow alone encloses it. The area of all sets at x3 = 3.64 is below 1e-2 and none is in `inside`; exactly 2 and exactly 4 crossings are shown by simulated trajectories (x1 = 1.2891 and 1.288). The CORA time column is the script's.
 
@@ -586,17 +584,17 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | CartPole* reach | V | V | 1.47 | 28/62 bit-exact, 9 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 154 |
 | CartPole reach, the report's set | - | V | 32.7 | 28/62 bit-exact, 9 property | - | - | - [g] | - |
 
-[a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback, as the report states, instead of sample-and-hold control.
+[a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback, as the report states (p. 89), instead of sample-and-hold control.
 
-[b] Single Pendulum: CROWN-Reach's public code (commit 7b90f30, 0.647 s) checks an empty unsafe set (x1 <= 0 and x1 >= 1 at once) instead of theta outside [0, 1].
+[b] Single Pendulum: CROWN-Reach's ARCH-COMP 2026 repeatability code (0.647 s, `single_pendulum.cpp:124`) checks an empty unsafe set (x1 <= 0 and x1 >= 1 at once) instead of theta outside [0, 1]; the report does not mention it.
 
-[c] Attitude Control: CROWN-Reach's public code (commit 7b90f30, 3.237 s) has an empty unsafe box (x4 >= -0.4 and x4 <= -0.6, where the report has x4 in [-0.7, -0.6]).
+[c] Attitude Control: CROWN-Reach's ARCH-COMP 2026 repeatability code (3.237 s, `attitude_control.cpp:147`) has an empty unsafe box (x4 >= -0.4 and x4 <= -0.6, where the report has x4 in [-0.7, -0.6]); the report does not mention it.
 
 [d] Double Pendulum less-robust: CORA.cpp runs the script's time step 0.01 with CORA's loop (45 s at load 7, 56 s at load 11; the script row 0.14 s); CORALean's region step (`CORACPP_ERROR_BOUND=region`) fails its region check at 0.01 and needs 0.005 (62 s and 0.18 s); CORA.cpp splits the initial set (depth 14: 3103 pieces reached, 1552 leaves, up to 12 splits deep, 8 threads), as CROWN-Reach does with 5 x 5 x 3 x 3 uniform pieces; the script without splitting is UNKNOWN for CORA and CORA.cpp (the second row), CORA's 5.604 s is for that UNKNOWN. JuliaReach verifies it in 824.729 s.
 
 [e] VCAS middle: JuliaReach (0.022, 0.001, 0.000, 0.000 s) analyses the discrete-time plant at the time points only, which the best-tool column does not count.
 
-[f] Docking: CORA (95.038 s) and JuliaReach (7.489 s) end UNKNOWN on the whole initial set, and JuliaReach verifies only the smaller set [70, 106]^2 x [-0.14, 0.14]^2 (7 s); so does the script's check of CORA.cpp (first row). The second row verifies the whole set, by a polytope inside the constraint and 507 pieces of the initial set; no other tool has a verdict, so there is no best time.
+[f] Docking: CORA (95.038 s) and JuliaReach (7.489 s) end UNKNOWN on the whole initial set, and JuliaReach verifies only the smaller set [70, 106]^2 x [-0.14, 0.14]^2 (7 s), as the report states (p. 121); so does the script's check of CORA.cpp (first row). The second row verifies the whole set, by a polytope inside the constraint and 507 pieces of the initial set; no other tool has a verdict, so there is no best time.
 
 [g] CartPole: only CORA ran it, on the initial set of 0.4 times the radius of the report's (the `*`); the second row is the report's set `[-0.1, 0.1] x [-0.05, 0.05] x [-0.1, 0.1] x [-0.05, 0.05]`, which no tool ran: it needs `depth` 16 (1023 pieces, 512 leaves, 15 splits deep, 8 threads; depths 12 to 15 end UNKNOWN after the sets of a piece explode).
 
