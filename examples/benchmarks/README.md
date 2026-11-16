@@ -800,9 +800,9 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 <!-- BEGIN bit-exact -->
 | instance | bit-exact vs CORALean | not bit-exact | out of scope (CORALean or CORA.cpp) |
 |---|---|---|---|
-| ACC-safe-distance | 34/50 | 16 | 9 |
-| Airplane-continuous | 34/50 | 16 | 9 |
-| Attitude_Control-avoid | 34/52 | 18 | 13 |
+| ACC-safe-distance | 39/50 | 11 | 9 |
+| Airplane-continuous | 39/50 | 11 | 9 |
+| Attitude_Control-avoid | 39/52 | 13 | 13 |
 | BRKDC01 | 6/12 | 6 | 5 |
 | BRKNC01 | 36/52 | 16 | 10 |
 | BRKNP01 | 29/44 | 15 | 10 |
@@ -813,19 +813,19 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF02 | 4/8 | 4 | 4 |
 | CBF03 | 4/8 | 4 | 4 |
 | CVDP23 | 54/70 | 16 | 11 |
-| CartPole-reach | 34/50 | 16 | 9 |
-| CartPole-reach-report | 38/55 | 17 | 9 |
+| CartPole-reach | 39/50 | 11 | 9 |
+| CartPole-reach-report | 43/55 | 12 | 9 |
 | DTN01 | 24/36 | 12 | 6 |
 | DTN02 | 24/36 | 12 | 6 |
 | DTN03 | 23/35 | 12 | 6 |
 | DTN04 | 24/36 | 12 | 6 |
 | DTN05 | 24/36 | 12 | 6 |
 | DTN06 | 25/37 | 12 | 6 |
-| Docking-constraint | 26/43 | 17 | 7 |
+| Docking-constraint | 31/43 | 12 | 7 |
 | Docking-constraint-polygon | - | not measured | - |
-| Double_Pendulum-less-robust | 31/47 | 16 | 9 |
-| Double_Pendulum-less-robust-script | 28/43 | 15 | 9 |
-| Double_Pendulum-more-robust | 34/50 | 16 | 9 |
+| Double_Pendulum-less-robust | 36/47 | 11 | 9 |
+| Double_Pendulum-less-robust-script | 33/43 | 10 | 9 |
+| Double_Pendulum-more-robust | 39/50 | 11 | 9 |
 | GRBX01 | 35/52 | 17 | 10 |
 | GRBX02 | 36/56 | 20 | 10 |
 | HEAT01 | 4/8 | 4 | 4 |
@@ -841,14 +841,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W01 | 18/25 | 7 | 5 |
 | LOVO25 | 47/76 | 29 | 12 |
 | LOVO25-script | 50/83 | 33 | 14 |
-| NAV-robust | 33/50 | 17 | 13 |
-| NAV-standard | 36/54 | 18 | 13 |
+| NAV-robust | 38/50 | 12 | 13 |
+| NAV-standard | 41/54 | 13 | 13 |
 | PLAA01_BND42 | 26/35 | 9 | 9 |
 | PLAA01_BND50 | 26/35 | 9 | 9 |
 | PLAD01_BND30 | 11/17 | 6 | 5 |
 | PLAD01_BND42 | 11/17 | 6 | 5 |
 | PLAN01 | 35/45 | 10 | 9 |
-| QUAD-reach | 38/55 | 17 | 9 |
+| QUAD-reach | 43/55 | 12 | 9 |
 | RAND01 | 8/13 | 5 | 4 |
 | RAND02 | 8/13 | 5 | 4 |
 | RND01 | 8/13 | 5 | 4 |
@@ -872,20 +872,20 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRNA01 | 28/40 | 12 | 7 |
 | SRU01 | 35/47 | 12 | 8 |
 | SRU02 | 50/67 | 17 | 11 |
-| Single_Pendulum-reach | 34/50 | 16 | 9 |
-| TORA-reach-sigmoid | 48/63 | 15 | 11 |
-| TORA-reach-tanh | 34/50 | 16 | 9 |
-| TORA-remain | 48/63 | 15 | 11 |
+| Single_Pendulum-reach | 39/50 | 11 | 9 |
+| TORA-reach-sigmoid | 53/63 | 10 | 11 |
+| TORA-reach-tanh | 39/50 | 11 | 9 |
+| TORA-remain | 53/63 | 10 | 11 |
 | TRAF22 | 21/26 | 5 | 7 |
 | TSPS25 | 21/32 | 11 | 6 |
-| Unicycle-reach | 28/43 | 15 | 9 |
-| Unicycle-reach-disturbance | 28/43 | 15 | 9 |
-| VCAS-middle-19.5 | 16/25 | 9 | 4 |
-| VCAS-middle-22.5 | 16/25 | 9 | 4 |
-| VCAS-middle-25.5 | 4/11 | 7 | 0 |
-| VCAS-middle-28.5 | 4/11 | 7 | 0 |
-| VCAS-worst-19.5 | 16/25 | 9 | 4 |
-| VCAS-worst-22.5 | 4/11 | 7 | 0 |
-| VCAS-worst-25.5 | 4/11 | 7 | 0 |
-| VCAS-worst-28.5 | 4/11 | 7 | 0 |
+| Unicycle-reach | 33/43 | 10 | 9 |
+| Unicycle-reach-disturbance | 33/43 | 10 | 9 |
+| VCAS-middle-19.5 | 21/25 | 4 | 4 |
+| VCAS-middle-22.5 | 21/25 | 4 | 4 |
+| VCAS-middle-25.5 | 9/11 | 2 | 0 |
+| VCAS-middle-28.5 | 9/11 | 2 | 0 |
+| VCAS-worst-19.5 | 21/25 | 4 | 4 |
+| VCAS-worst-22.5 | 9/11 | 2 | 0 |
+| VCAS-worst-25.5 | 9/11 | 2 | 0 |
+| VCAS-worst-28.5 | 9/11 | 2 | 0 |
 <!-- END bit-exact -->

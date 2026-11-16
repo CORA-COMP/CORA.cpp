@@ -1,14 +1,18 @@
 """test_neural_network - NeuralNetwork in Python: points, the zonotope enclosure and its gradients.
 
 CORA authors: Tobias Ladner, Lukas Koller
-Authors:       Tobias Ladner
+Authors:       Tobias Ladner, Claude Opus 5.5
 Written:       02-November-2026
-Last update:   ---
+Last update:   16-November-2026
 Reviewed:      ---
 """
 # CORA: nn/@neuralNetwork/evaluate.m
 # CORA: nn/@neuralNetwork/evaluate_.m
 # CORA: nn/layers/nonlinear/nnReLULayer.m
+# CORA: nn/layers/nonlinear/nnLeakyReLULayer.m
+# CORA: nn/layers/nonlinear/nnSigmoidLayer.m
+# CORA: nn/layers/nonlinear/nnTanhLayer.m
+# CORA: nn/layers/nonlinear/nnSShapeLayer.m
 # CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 # CORA: nn/@neuralNetwork/neuralNetwork.m
 # CORA: nn/@neuralNetwork/calcSensitivity.m
@@ -95,6 +99,9 @@ class Evaluate(unittest.TestCase):
             box = net.evaluate(X, poly_method="regression", regression_error=error).interval()
             inside = (y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()
             self.assertTrue(bool(inside))
+        # and Singh's line of the S-shaped layers
+        box = net.evaluate(X, poly_method="singh").interval()
+        self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
         with self.assertRaises(ValueError):
             net.evaluate(X, poly_method="regression", regression_error="exact")
         # the polynomial zonotope keeps its factors and is enclosed by the zonotope's pairs
