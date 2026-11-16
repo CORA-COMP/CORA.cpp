@@ -9,6 +9,7 @@
 name: line-coverage
 
 on:
+  workflow_dispatch:  # a measurement on its own, for the baseline
   workflow_call:
     inputs:
       base:
