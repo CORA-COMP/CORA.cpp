@@ -1106,7 +1106,7 @@
   "hybridDynamics/location/display": "todo",
   "hybridDynamics/location/eq": "todo",
   "hybridDynamics/location/eventFcn": "todo",
-  "hybridDynamics/location/guardIntersect": "property",
+  "hybridDynamics/location/guardIntersect": "oracle",
   "hybridDynamics/location/guardIntersect_conZonotope": "oracle",
   "hybridDynamics/location/guardIntersect_hyperplaneMap": "todo",
   "hybridDynamics/location/guardIntersect_levelSet": "untested",

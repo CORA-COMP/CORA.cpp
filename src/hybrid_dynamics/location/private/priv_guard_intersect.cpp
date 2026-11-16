@@ -5,8 +5,7 @@
 // A hyperplane guard crossed by time-interval sets keeps only the sets whose flow may point into
 // it (checkFlow; a failure keeps them all; `certified`: CORALean's strict, certified filter). The
 // method then encloses the intersection per basis of calcBasis; empty intersections are dropped. A
-// level set guard has one method of its own: the union of the boxes of the sets, contracted to the
-// guard, intersected with it (LevelSet::intersect).
+// level set guard has one method of its own (priv_guard_intersect_level_set).
 //
 // Syntax:   std::vector<GuardIntersection> G = priv_guard_intersect(loc, hits, R, U, method);
 //           std::vector<GuardGroup> groups = priv_guard_groups(hits);
@@ -16,14 +15,13 @@
 //           U - the input set in the state space (B U + c)
 //           method - alg::ZonoGirard, alg::NondetGuard or alg::ConZonotopeGuard
 // Outputs:  G - per crossing the transition, the first and the last set index, and the set
-// See also: priv_calc_basis, priv_check_flow, priv_guard_intersect_zono_girard
+// See also: priv_calc_basis, priv_check_flow, priv_guard_intersect_level_set
 //
 // CORA: hybridDynamics/@location/guardIntersect.m
-// CORA: hybridDynamics/@location/guardIntersect_levelSet.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -79,26 +77,6 @@ std::optional<Set> aux_enclose(const Location &loc, const std::vector<Set> &P,
             }
         },
         method);
-}
-
-/// CORA's guardIntersect_levelSet: the union of the boxes of the sets, each contracted to the
-/// guard (kept as it is where that fails, as CORA's try), as a polynomial zonotope, intersected
-/// with the guard; none if that is empty.
-std::optional<Set> aux_enclose_level_set(const std::vector<Set> &P, const LevelSet &guard) {
-    std::optional<Interval> box;
-    for (const Set &S : P) {
-        Interval I = S->interval();
-        try {
-            // domain tightening needs equalities; an empty contraction keeps the box as well
-            if (const std::optional<Interval> tight = guard.tighten_domain(I)) I = *tight;
-        } catch (const Error &) {
-            I = S->interval(); // CORA's try: the box stays as it is
-        }
-        box = box ? box->unite(I) : I;
-    }
-    const std::optional<PolyZonotope> R = guard.intersect(PolyZonotope(*box));
-    if (!R) return std::nullopt;
-    return Set(*R);
 }
 
 } // namespace
@@ -160,7 +138,7 @@ std::vector<GuardIntersection> priv_guard_intersect(const Location &loc, const G
                 if (P.empty()) continue;
             }
             // the only method of a level set is the one of Kochdumper et al. (HSCC 2020)
-            if (std::optional<Set> S = aux_enclose_level_set(P, *level))
+            if (std::optional<Set> S = priv_guard_intersect_level_set(P, *level))
                 out.push_back({group.transition, group.sets.front(), group.sets.back(), *S});
             continue;
         }

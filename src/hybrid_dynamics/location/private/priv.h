@@ -151,6 +151,9 @@ std::optional<Set> priv_guard_intersect_con_zonotope(const std::vector<Set> &R,
                                                      alg::CutBox box, int fm_passes,
                                                      bool dense = false);
 
+/// The enclosure of a level set guard crossing (CORA's guardIntersect_levelSet); none if empty.
+std::optional<Set> priv_guard_intersect_level_set(const std::vector<Set> &R, const LevelSet &guard);
+
 /// The box of a cut of a set by a polytope guard by the method (see alg::CutBox); empty if the
 /// cut has no point.
 Interval priv_box_cut(const ConZonotope::Cut &cut, alg::CutBox box, int fm_passes);

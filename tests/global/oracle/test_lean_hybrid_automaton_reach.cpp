@@ -9,13 +9,14 @@
 // check_flow on, the guard x1 = 0 of the invariant x1 >= 0 is crossed by a flow that leaves (kept),
 // enters (the group is dropped) or is tangential (kept), and a guard no invariant row bounds is not
 // filtered. With CORACPP_ORACLE_SLOW the rendezvous instances SRA01, SRNA01 and SRU01 run as well
-// (minutes).
+// (minutes). A child's sets start from guardIntersect (groups, checkFlow, calcBasis, the method).
 //
 // ORACLE: hybridDynamics/@hybridAutomaton/reach.m
 // ORACLE: hybridDynamics/@location/reach.m
-// Authors:       Claude Sonnet 5.5
+// ORACLE: hybridDynamics/@location/guardIntersect.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "../../../examples/cpp/benchmarks/benchmark_rendezvous_model.h"
