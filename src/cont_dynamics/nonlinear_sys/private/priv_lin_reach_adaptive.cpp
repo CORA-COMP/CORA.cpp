@@ -16,9 +16,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive_step.h"
@@ -101,9 +101,8 @@ AdaptiveState aux_next_tensor_order(const Tune &c, const AdaptiveState &st, cons
     const Tensor B = aux_B(c, like, P.xs, us);
     const Zonotope V =
         priv_abstr_err_adaptive(c.sys, other_order, P.A, B, P.xs, P.Rmax, c.U, c.alg.zeta_z);
-    const Zonotope Rerror =
-        LinearSys(P.A).error_solution_adaptive(V, std::nullopt, time_step, 0.0, c.alg.taylor_terms);
-    const double other = priv_norm_up(priv_row_sums(Rerror));
+    const double other =
+        priv_norm_up(priv_error_radius_float(P.A, time_step, c.alg.taylor_terms, V));
     const double ratio = st.tensor_order == 2 ? other / abstrerr : abstrerr / other;
     const bool switches = st.tensor_order == 2 ? ratio <= c.alg.zeta_k : !(ratio <= c.alg.zeta_k);
     if (!switches) return st;

@@ -18,9 +18,9 @@
 // See also: priv_adaptive.h, reach.cpp
 //
 // CORA.cpp only: the declarations of the private functions of the poly-adaptive algorithm.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -42,12 +42,12 @@ namespace cora {
 struct PolyAdaptiveState {
     /// The state before the first step (linReachPolyAdaptiveInit): at t0 from R0.
     PolyAdaptiveState(const PolyZonotope &R0, int64_t n, double t0)
-        : t(t0), R(R0), Rti(R0), err_adm_horizon(std::size_t(n), 0.0),
+        : t(ExactTime(t0)), R(R0), Rti(R0), err_adm_horizon(std::size_t(n), 0.0),
           err_adm_deltatopt(std::size_t(n), 0.0), orders(std::size_t(n), -1),
           zero_width(std::size_t(n), 0) {}
 
     int i = 1;
-    double t = 0;
+    ExactTime t; ///< exact, as CORALean's rational time
     PolyZonotope R, Rti;
     double time_step = 0, finitehorizon = 0, varphi = 0;
     Vec err_adm_horizon, err_adm_deltatopt;

@@ -17,15 +17,17 @@
 // See also: reach.cpp
 //
 // CORA.cpp only: the declarations of the private functions of the adaptive algorithm.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
+#include "global/exact_time.h"
 
+#include <algorithm>
 #include <functional>
 #include <optional>
 #include <vector>
@@ -44,12 +46,12 @@ using Vec = std::vector<double>;
 struct AdaptiveState {
     /// The state before the first step (linReachAdaptiveInit): at t0 from R0 in n dimensions.
     AdaptiveState(const Zonotope &R0, int64_t n, double t0)
-        : t(t0), R(R0), Rti(R0), err_adm_horizon(std::size_t(n), 0.0),
+        : t(ExactTime(t0)), R(R0), Rti(R0), err_adm_horizon(std::size_t(n), 0.0),
           err_adm_deltatopt(std::size_t(n), 0.0), orders(std::size_t(n), -1),
           zero_width(std::size_t(n), 0) {}
 
     int i = 1;
-    double t = 0;
+    ExactTime t; ///< exact, as CORALean's rational time
     Zonotope R, Rti;
     double time_step = 0, finitehorizon = 0, varphi = 0;
     Vec err_adm_horizon, err_adm_deltatopt;
@@ -60,6 +62,23 @@ struct AdaptiveState {
     double kappa_deltat = 0, kappa_abstrerr = 0;
     Vec steps; ///< the step sizes, latest first
 };
+
+/// The radius (the row sums of |G|) of the solution of x' = A x + v, v in V, from 0 over dt at the
+/// order eta: CORALean's errorSolutionAdaptiveFloat, which the tuning reads
+/// (priv_error_radius_float.cpp).
+Vec priv_error_radius_float(const Tensor &A, double dt, int eta, const Zonotope &V);
+
+/// Whether the main loop takes another step (CORALean's reachAdaptiveFloat, exactly): more than
+/// kHorizonEnd of the time is left, and it is at most 10^9 times the last ten steps (CORA's
+/// aux_checkForAbortion: the step sizes have not converged to 0).
+inline bool priv_adaptive_continues(const Vec &steps, const ExactTime &t, double t_final) {
+    const ExactTime left = ExactTime(t_final) - t;
+    ExactTime last;
+    for (std::size_t k = 0; k < std::min<std::size_t>(10, steps.size()); ++k)
+        last = last + steps[k];
+    return ExactTime(numerics::kHorizonEnd) < left &&
+           (steps.empty() || !(last.times(1000000000U) < left));
+}
 
 /// One linearization at a fixed step size: the sets with the error and what the tuning reads of it.
 struct AdaptivePass {

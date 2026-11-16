@@ -147,15 +147,14 @@ an older oracle makes the tests skip them.
 |---|---|---|
 | `nonlinearSys.varphiTotalAdaptive`, `varphiEstAdaptive`, `optimalDeltatAdaptive` | `test_lean_nonlinear_sys_adaptive_tuning` | bit for bit |
 | `zonotope.reduce` with method `adaptive` | `test_lean_nonlinear_sys_adaptive_tuning` | bit for bit |
-| `nonlinearSys.abstrErrAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | bit for bit at tensor order 2; order 3 inside the oracle's box (quadMap, see the differences) |
+| `nonlinearSys.abstrErrAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | bit for bit at the tensor orders 2 and 3 (order 3: CORA's quadMap of a zonotope, CORALean's `quadMapTriFiltered`, MR oracle/bitexact-4) |
 | `nonlinearSys.ordersAdaptive` | `test_lean_nonlinear_sys_adaptive_pass` | exact |
-| `nonlinearSys.linReachAdaptivePass` | `test_lean_nonlinear_sys_adaptive_pass` | with `linear_step = coralean`: `xs`, `A`, the zero generators and, at tensor order 2, the sets (`Rmax`, the window, the end set) bit for bit; at order 3 the sets inside the oracle's, 5e-3 tighter at most (quadMap) |
+| `nonlinearSys.linReachAdaptivePass` | `test_lean_nonlinear_sys_adaptive_pass` | bit for bit with `linear_step = coralean` and `closed_form`, at the tensor orders 2 and 3: `xs`, `A`, the sets (`Rmax`, the window, the end set), the true error, the error radius (`errorSolutionAdaptiveFloat`) and the zero generators; the closed form on van der Pol only (the oracle's takes 25 minutes on Robertson) |
 | `linearSys.reach` with an input set (the linear step of `lin` and `lin-adaptive`) | `test_lean_linear_sys_float_step` | bit for bit: the window and the end set of one step, for random systems, orders 4 and 6, reductions to 1 and 10 generators per dimension, a Robertson-like and a van der Pol-like linearization |
 | `zonotope.mtimesInterval` | `test_lean_linear_sys_float_step` | bit for bit |
 | `linearSys.oneStepClosedForm` (CORA's `oneStep` in closed form, `LinearSys.oneStepClosedFormFloat`, CORALean !911, tight `[e^{A dt}]` !913, entrywise `W` at the order `eta_e + 8` !917) | `test_lean_linear_sys_closed_form_step` | bit for bit: the end set and the window of one step, for random systems of 3 states at the orders 2, 4, 10 and of 5 at order 4, the oracle's self-test system with and without input generators, a stiff system whose order is raised, one for which the oracle answers `null` (no order below `eta + 4096`), Jacobians of the Robertson reaction (stiff, with zeros) at four step sizes, a stiff two-state system that conserves x + y (fixtures 3090 to 3093), sparse generators, and matrices of norms from 0.01 to 40 (the halvings `s` of `[e^{A dt}]`); `halvingsFloat` is `none` only where the order search has already failed, so that case is not separate. Beyond a scale of about 100 the powers of `|A| dt` overflow and the oracle prints a number out of range, which the client refuses (oracle debt: print the infinity) |
-| `nonlinearSys.reachAdaptive` | `test_lean_nonlinear_sys_reach_adaptive` | the same steps and tensor orders while the order is 2; the sets as in a pass |
-
-Not covered yet: `nonlinearSys.linReachAdaptive` (the state-passing step; `reachAdaptive` runs it).
+| `nonlinearSys.reachAdaptive` | `test_lean_nonlinear_sys_reach_adaptive` | bit for bit with the default `closed_form`: the first two steps of van der Pol (times, tensor orders, the sets over them and at the end; the time exact, `ExactTime`); `linear_step = cora` (eigen) the steps to 1e-6 and the sets inside the oracle's |
+| `nonlinearSys.linReachAdaptive` | `test_lean_nonlinear_sys_reach_adaptive` | bit for bit: the last step of the van der Pol run (`ratUp` of the exact time left) from CORA.cpp's state before it, the time sent exactly as `m*2^-1074` |
 
 ## Nonlinear systems, alg "poly-adaptive"
 

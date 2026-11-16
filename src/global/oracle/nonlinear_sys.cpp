@@ -10,6 +10,7 @@
 
 #include "cora/global/oracle/nonlinear_sys.h"
 #include "cora/global/error.h"
+#include "global/exact_time.h"
 
 #include <stdexcept>
 #include <string>
@@ -118,14 +119,60 @@ AdaptiveRun NonlinearSys::reach_adaptive(const Zonotope &R0, const std::optional
     aux_linear_step(request, alg.linear_step);
     // the steps with their tensor orders, the end and the sets
     const Reply r = ask("nonlinearSys.reachAdaptive", request);
-    // the time is exact in the oracle and not a double in the middle of a run: the sum of the steps
+    // the time is exact in the oracle, generally not a double: the exact sum of the steps, rounded
     const std::vector<double> steps = r.get<std::vector<double>>("steps");
-    double t = 0;
-    if (max_steps > 0)
-        for (const double h : steps) t += h;
-    return {steps, r.get<std::vector<int64_t>>("tensorOrders"),
-            max_steps > 0 ? t : r.get<double>("t"), r.get<Zonotope>("timePoint"),
-            r.get<std::vector<Zonotope>>("timeInterval")};
+    ExactTime t;
+    for (const double h : steps) t = t + h;
+    return {steps, r.get<std::vector<int64_t>>("tensorOrders"), t.nearest(),
+            r.get<Zonotope>("timePoint"), r.get<std::vector<Zonotope>>("timeInterval")};
+}
+
+// One adaptive step -------------------------------------------------------------------------------
+
+AdaptiveStepResult NonlinearSys::lin_reach_adaptive(const std::optional<Zonotope> &U,
+                                                    const Zonotope &R, const AdaptiveStepState &st,
+                                                    double t_final,
+                                                    const alg::LinearizationAdaptive &alg) const {
+    // the orders as naturals, null for Inf
+    Json orders = Json::array();
+    for (const int64_t q : st.orders) orders.push(q < 0 ? Json() : Json(q));
+    // the set, the input set, the options and the state of the step
+    std::vector<Operand> request = system();
+    request.push_back({"R", R});
+    if (U) request.push_back({"U", *U});
+    for (const Operand &o :
+         std::vector<Operand>{{"tFinal", t_final},
+                              {"taylorTerms", alg.taylor_terms},
+                              {"zonotopeOrder", alg.zonotope_order},
+                              {"redFactor", alg.zeta_z},
+                              {"decrFactor", alg.decr_factor},
+                              {"zetaphi", aux_gains(alg)},
+                              {"zetaK", alg.zeta_k},
+                              {"fuel", alg.fuel},
+                              // the state
+                              {"i", st.i},
+                              {"t", st.t},
+                              {"timeStep", st.time_step},
+                              {"finitehorizon", st.finitehorizon},
+                              {"varphi", st.varphi},
+                              {"errAdmHorizon", Tensor::from(st.err_adm_horizon)},
+                              {"errAdmDeltatopt", Tensor::from(st.err_adm_deltatopt)},
+                              {"tensorOrder", st.tensor_order},
+                              {"orders", Wire(orders, "")},
+                              {"minorder", st.minorder},
+                              {"zeroWidthDim", st.zero_width},
+                              {"kappaDeltat", st.kappa_deltat},
+                              {"kappaAbstrerr", st.kappa_abstrerr}})
+        request.push_back(o);
+    // the step sizes so far, latest first
+    Json steps = Json::array();
+    for (const double h : st.steps) steps.push(Tensor::encode(h));
+    request.push_back({"steps", Wire(steps, "")});
+    aux_linear_step(request, alg.linear_step);
+    const Reply r = ask("nonlinearSys.linReachAdaptive", request);
+    return {r.get<double>("timeStep"),    r.get<double>("finitehorizon"),
+            r.get<double>("varphi"),      r.get<int64_t>("tensorOrder"),
+            r.get<Zonotope>("timePoint"), r.get<Zonotope>("timeInterval")};
 }
 
 // The step ----------------------------------------------------------------------------------------

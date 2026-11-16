@@ -10,15 +10,15 @@ never become `oracle`: it has a column of its own and is left out of the bit-exa
 are the plumbing rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 87 instances, 2026 of 2273 rows (89.1%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 87 instances, 2066 of 2273 rows (90.9%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
 | instance | rows | oracle | property | ported | untested | todo | out of scope | CORALean out of scope | plumbing | bit-exact |
 |---|---|---|---|---|---|---|---|---|---|---|
-| ACC-safe-distance | 59 | 40 | 1 | 16 | 2 | 0 | 0 | 9 | 9 | 36/41 |
-| Airplane-continuous | 59 | 40 | 1 | 16 | 2 | 0 | 0 | 9 | 9 | 36/41 |
-| Attitude_Control-avoid | 65 | 40 | 2 | 20 | 3 | 0 | 0 | 13 | 10 | 36/42 |
+| ACC-safe-distance | 59 | 42 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 38/41 |
+| Airplane-continuous | 59 | 42 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 38/41 |
+| Attitude_Control-avoid | 65 | 42 | 1 | 20 | 2 | 0 | 0 | 13 | 10 | 38/42 |
 | BRKDC01 | 17 | 7 | 0 | 9 | 1 | 0 | 0 | 5 | 4 | 7/8 |
 | BRKNC01 | 61 | 38 | 3 | 19 | 1 | 0 | 0 | 10 | 11 | 37/40 |
 | BRKNP01 | 54 | 29 | 8 | 16 | 1 | 0 | 0 | 10 | 11 | 27/33 |
@@ -29,19 +29,19 @@ Over the 87 instances, 2026 of 2273 rows (89.1%) that they execute and that can 
 | CBF02 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
 | CBF03 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
 | CVDP23 | 80 | 56 | 2 | 20 | 2 | 0 | 0 | 11 | 12 | 52/57 |
-| CartPole-reach | 59 | 40 | 1 | 16 | 2 | 0 | 0 | 9 | 9 | 36/41 |
-| CartPole-reach-report | 64 | 44 | 2 | 16 | 2 | 0 | 0 | 9 | 9 | 40/46 |
+| CartPole-reach | 59 | 42 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 38/41 |
+| CartPole-reach-report | 64 | 46 | 1 | 16 | 1 | 0 | 0 | 9 | 9 | 42/46 |
 | DTN01 | 41 | 26 | 1 | 13 | 1 | 0 | 0 | 6 | 9 | 25/26 |
 | DTN02 | 41 | 26 | 1 | 13 | 1 | 0 | 0 | 6 | 9 | 25/26 |
 | DTN03 | 40 | 25 | 1 | 13 | 1 | 0 | 0 | 6 | 9 | 24/25 |
 | DTN04 | 41 | 26 | 1 | 13 | 1 | 0 | 0 | 6 | 9 | 25/26 |
 | DTN05 | 41 | 26 | 1 | 13 | 1 | 0 | 0 | 6 | 9 | 25/26 |
 | DTN06 | 42 | 27 | 1 | 13 | 1 | 0 | 0 | 6 | 9 | 26/27 |
-| Docking-constraint | 50 | 32 | 2 | 15 | 1 | 0 | 0 | 7 | 7 | 30/36 |
+| Docking-constraint | 50 | 34 | 1 | 15 | 0 | 0 | 0 | 7 | 7 | 32/36 |
 | Docking-constraint-polygon | not measured: over 3600 s under coverage | | | | | | | | | |
-| Double_Pendulum-less-robust | 56 | 37 | 1 | 16 | 2 | 0 | 0 | 9 | 9 | 33/38 |
-| Double_Pendulum-less-robust-script | 52 | 34 | 0 | 16 | 2 | 0 | 0 | 9 | 9 | 30/34 |
-| Double_Pendulum-more-robust | 59 | 40 | 1 | 16 | 2 | 0 | 0 | 9 | 9 | 36/41 |
+| Double_Pendulum-less-robust | 56 | 38 | 1 | 16 | 1 | 0 | 0 | 9 | 9 | 34/38 |
+| Double_Pendulum-less-robust-script | 52 | 35 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 31/34 |
+| Double_Pendulum-more-robust | 59 | 42 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 38/41 |
 | GRBX01 | 61 | 37 | 4 | 19 | 1 | 0 | 0 | 10 | 11 | 36/40 |
 | GRBX02 | 65 | 38 | 7 | 19 | 1 | 0 | 0 | 10 | 11 | 37/44 |
 | HEAT01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
@@ -52,19 +52,19 @@ Over the 87 instances, 2026 of 2273 rows (89.1%) that they execute and that can 
 | ISSC01_ISU02 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
 | ISSF01_ISS01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
 | ISSF01_ISU01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| LALO20_W001 | 26 | 14 | 2 | 9 | 1 | 0 | 0 | 5 | 5 | 13/16 |
-| LALO20_W005 | 26 | 14 | 2 | 9 | 1 | 0 | 0 | 5 | 5 | 13/16 |
-| LALO20_W01 | 30 | 18 | 2 | 8 | 2 | 0 | 0 | 5 | 5 | 16/20 |
+| LALO20_W001 | 26 | 16 | 1 | 9 | 0 | 0 | 0 | 5 | 5 | 15/16 |
+| LALO20_W005 | 26 | 16 | 1 | 9 | 0 | 0 | 0 | 5 | 5 | 15/16 |
+| LALO20_W01 | 30 | 20 | 1 | 8 | 1 | 0 | 0 | 5 | 5 | 18/20 |
 | LOVO25 | 88 | 49 | 3 | 34 | 2 | 0 | 0 | 12 | 15 | 46/61 |
 | LOVO25-script | 97 | 52 | 5 | 37 | 3 | 0 | 0 | 14 | 15 | 49/68 |
-| NAV-robust | 63 | 39 | 1 | 20 | 3 | 0 | 0 | 13 | 10 | 35/40 |
-| NAV-standard | 67 | 42 | 2 | 20 | 3 | 0 | 0 | 13 | 10 | 38/44 |
+| NAV-robust | 63 | 40 | 1 | 20 | 2 | 0 | 0 | 13 | 10 | 36/40 |
+| NAV-standard | 67 | 43 | 2 | 20 | 2 | 0 | 0 | 13 | 10 | 39/44 |
 | PLAA01_BND42 | 44 | 26 | 6 | 11 | 1 | 0 | 0 | 9 | 6 | 25/29 |
 | PLAA01_BND50 | 44 | 26 | 6 | 11 | 1 | 0 | 0 | 9 | 6 | 25/29 |
 | PLAD01_BND30 | 22 | 12 | 0 | 9 | 1 | 0 | 0 | 5 | 4 | 12/13 |
 | PLAD01_BND42 | 22 | 12 | 0 | 9 | 1 | 0 | 0 | 5 | 4 | 12/13 |
 | PLAN01 | 54 | 35 | 7 | 11 | 1 | 0 | 0 | 9 | 6 | 34/39 |
-| QUAD-reach | 64 | 44 | 2 | 16 | 2 | 0 | 0 | 9 | 9 | 40/46 |
+| QUAD-reach | 64 | 46 | 1 | 16 | 1 | 0 | 0 | 9 | 9 | 42/46 |
 | RAND01 | 17 | 8 | 0 | 8 | 1 | 0 | 0 | 4 | 6 | 6/7 |
 | RAND02 | 17 | 8 | 0 | 8 | 1 | 0 | 0 | 4 | 6 | 6/7 |
 | RND01 | 17 | 8 | 0 | 8 | 1 | 0 | 0 | 4 | 6 | 6/7 |
@@ -73,10 +73,10 @@ Over the 87 instances, 2026 of 2273 rows (89.1%) that they execute and that can 
 | RND04 | 18 | 9 | 0 | 8 | 1 | 0 | 0 | 4 | 6 | 7/8 |
 | RND05 | 18 | 9 | 0 | 8 | 1 | 0 | 0 | 4 | 6 | 7/8 |
 | RND06 | 18 | 9 | 0 | 8 | 1 | 0 | 0 | 4 | 6 | 7/8 |
-| ROBE25_1 | 26 | 14 | 2 | 9 | 1 | 0 | 0 | 5 | 5 | 13/16 |
-| ROBE25_2 | 26 | 14 | 2 | 9 | 1 | 0 | 0 | 5 | 5 | 13/16 |
-| ROBE25_3 | 26 | 14 | 2 | 9 | 1 | 0 | 0 | 5 | 5 | 13/16 |
-| SPRE22 | 66 | 45 | 1 | 17 | 3 | 0 | 0 | 11 | 11 | 42/44 |
+| ROBE25_1 | 26 | 16 | 1 | 9 | 0 | 0 | 0 | 5 | 5 | 15/16 |
+| ROBE25_2 | 26 | 16 | 1 | 9 | 0 | 0 | 0 | 5 | 5 | 15/16 |
+| ROBE25_3 | 26 | 16 | 1 | 9 | 0 | 0 | 0 | 5 | 5 | 15/16 |
+| SPRE22 | 66 | 46 | 1 | 17 | 2 | 0 | 0 | 11 | 11 | 43/44 |
 | SRA01 | 52 | 35 | 1 | 14 | 2 | 0 | 0 | 8 | 10 | 33/34 |
 | SRA02 | 65 | 44 | 2 | 17 | 2 | 0 | 0 | 10 | 11 | 42/44 |
 | SRA03 | 65 | 44 | 2 | 17 | 2 | 0 | 0 | 10 | 11 | 42/44 |
@@ -88,14 +88,14 @@ Over the 87 instances, 2026 of 2273 rows (89.1%) that they execute and that can 
 | SRNA01 | 46 | 30 | 1 | 13 | 2 | 0 | 0 | 7 | 10 | 28/29 |
 | SRU01 | 54 | 37 | 1 | 14 | 2 | 0 | 0 | 8 | 10 | 35/36 |
 | SRU02 | 77 | 52 | 4 | 19 | 2 | 0 | 0 | 11 | 12 | 50/54 |
-| Single_Pendulum-reach | 59 | 40 | 1 | 16 | 2 | 0 | 0 | 9 | 9 | 36/41 |
+| Single_Pendulum-reach | 59 | 42 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 38/41 |
 | TORA-reach-sigmoid | 74 | 54 | 0 | 19 | 1 | 0 | 0 | 11 | 10 | 50/53 |
-| TORA-reach-tanh | 59 | 40 | 1 | 16 | 2 | 0 | 0 | 9 | 9 | 36/41 |
+| TORA-reach-tanh | 59 | 42 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 38/41 |
 | TORA-remain | 74 | 54 | 0 | 19 | 1 | 0 | 0 | 11 | 10 | 50/53 |
-| TRAF22 | 33 | 22 | 0 | 10 | 1 | 0 | 0 | 7 | 4 | 21/22 |
+| TRAF22 | 33 | 23 | 0 | 10 | 0 | 0 | 0 | 7 | 4 | 22/22 |
 | TSPS25 | 38 | 22 | 3 | 13 | 0 | 0 | 0 | 6 | 5 | 22/27 |
-| Unicycle-reach | 52 | 34 | 0 | 16 | 2 | 0 | 0 | 9 | 9 | 30/34 |
-| Unicycle-reach-disturbance | 52 | 34 | 0 | 16 | 2 | 0 | 0 | 9 | 9 | 30/34 |
+| Unicycle-reach | 52 | 35 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 31/34 |
+| Unicycle-reach-disturbance | 52 | 35 | 0 | 16 | 1 | 0 | 0 | 9 | 9 | 31/34 |
 | VCAS-middle-19.5 | 29 | 21 | 0 | 8 | 0 | 0 | 0 | 4 | 5 | 20/20 |
 | VCAS-middle-22.5 | 29 | 21 | 0 | 8 | 0 | 0 | 0 | 4 | 5 | 20/20 |
 | VCAS-middle-25.5 | 11 | 9 | 0 | 2 | 0 | 0 | 0 | 0 | 1 | 9/10 |
@@ -114,7 +114,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/contDynamics/derivatives` | ported | out-of-scope | 30 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, LOVO25-script, NAV-robust, NAV-standard, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
 | `nn/neuralNetwork/getRefinableLayers` | ported | float | 26 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance, VCAS-middle-19.5, VCAS-middle-22.5, VCAS-middle-25.5, VCAS-middle-28.5, VCAS-worst-19.5, VCAS-worst-22.5, VCAS-worst-25.5, VCAS-worst-28.5 |
 | `contSet/zonotope/isIntersecting_` | property | float | 25 | Attitude_Control-avoid, BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, NAV-robust, NAV-standard, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contDynamics/nonlinearSys/linReach_adaptive` | untested | float | 24 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, NAV-robust, NAV-standard, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-tanh, TRAF22, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/contSet/project` | ported | out-of-scope | 21 | BRKDC01, BRKNC01, GRBX01, GRBX02, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, PLAN01, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
 | `contDynamics/linearSys/verify` | ported | float | 20 | CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, RND01, RND02, RND03, RND04, RND05, RND06 |
 | `contDynamics/nonlinearSys/simulate` | ported | - | 19 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LOVO25, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
@@ -122,7 +121,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/neurNetContrSys/simulate` | ported | float | 18 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contSet/zonotope/randPoint_` | ported | out-of-scope | 18 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/neurNetContrSys/verify` | ported | float | 17 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
-| `contDynamics/nonlinearSys/reach_adaptive` | property | float | 16 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, Single_Pendulum-reach, TORA-reach-tanh |
 | `contSet/contSet/compact` | ported | out-of-scope | 16 | BRKNP01, CVDP23, LALO20_W001, LALO20_W005, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, ROBE25_1, ROBE25_2, ROBE25_3, TORA-reach-sigmoid, TORA-remain, TRAF22, TSPS25 |
 | `contSet/contSet/representsa` | ported | out-of-scope | 10 | BRKNP01, CVDP23, LOVO25, LOVO25-script, PLAA01_BND42, PLAA01_BND50, PLAN01, TORA-reach-sigmoid, TORA-remain, TSPS25 |
 | `contSet/conZonotope/interval` | property | bound | 8 | LOVO25-script, SRA02, SRA03, SRA05, SRA06, SRA07, SRA08, SRU02 |
@@ -309,21 +307,21 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 ## Per instance, the rows that are not bit-exact
 
-<details><summary>ACC-safe-distance: 36/41</summary>
+<details><summary>ACC-safe-distance: 38/41</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
-
-</details>
-
-<details><summary>Airplane-continuous: 36/41</summary>
-
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
-<details><summary>Attitude_Control-avoid: 36/42</summary>
+<details><summary>Airplane-continuous: 38/41</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+
+</details>
+
+<details><summary>Attitude_Control-avoid: 38/42</summary>
+
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
@@ -387,15 +385,15 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>CartPole-reach: 36/41</summary>
+<details><summary>CartPole-reach: 38/41</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
-<details><summary>CartPole-reach-report: 40/46</summary>
+<details><summary>CartPole-reach-report: 42/46</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
@@ -435,27 +433,27 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>Docking-constraint: 30/36</summary>
+<details><summary>Docking-constraint: 32/36</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/splitDepFactor` (property), `contSet/polyZonotope/splitLongestGen` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
-
-</details>
-
-<details><summary>Double_Pendulum-less-robust: 33/38</summary>
-
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/splitDepFactor` (property), `contSet/polyZonotope/splitLongestGen` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
-<details><summary>Double_Pendulum-less-robust-script: 30/34</summary>
+<details><summary>Double_Pendulum-less-robust: 34/38</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
-<details><summary>Double_Pendulum-more-robust: 36/41</summary>
+<details><summary>Double_Pendulum-less-robust-script: 31/34</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+
+</details>
+
+<details><summary>Double_Pendulum-more-robust: 38/41</summary>
+
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
@@ -519,21 +517,21 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>LALO20_W001: 13/16</summary>
+<details><summary>LALO20_W001: 15/16</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>LALO20_W005: 13/16</summary>
-
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>LALO20_W01: 16/20</summary>
+<details><summary>LALO20_W005: 15/16</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/initReach_adaptive` (untested), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+
+</details>
+
+<details><summary>LALO20_W01: 18/20</summary>
+
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/initReach_adaptive` (untested), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
@@ -549,15 +547,15 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>NAV-robust: 35/40</summary>
+<details><summary>NAV-robust: 36/40</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
-<details><summary>NAV-standard: 38/44</summary>
+<details><summary>NAV-standard: 39/44</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
@@ -591,9 +589,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>QUAD-reach: 40/46</summary>
+<details><summary>QUAD-reach: 42/46</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/calcSensitivity` (property), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
@@ -645,27 +643,27 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>ROBE25_1: 13/16</summary>
+<details><summary>ROBE25_1: 15/16</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>ROBE25_2: 13/16</summary>
-
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>ROBE25_3: 13/16</summary>
+<details><summary>ROBE25_2: 15/16</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>SPRE22: 42/44</summary>
+<details><summary>ROBE25_3: 15/16</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/errorSolution_adaptive` (property), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+
+</details>
+
+<details><summary>SPRE22: 43/44</summary>
+
+`contDynamics/contDynamics/derivatives` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported)
 
 </details>
 
@@ -735,9 +733,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>Single_Pendulum-reach: 36/41</summary>
+<details><summary>Single_Pendulum-reach: 38/41</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
@@ -747,9 +745,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>TORA-reach-tanh: 36/41</summary>
+<details><summary>TORA-reach-tanh: 38/41</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/reach_adaptive` (property), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
@@ -759,9 +757,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>TRAF22: 21/22</summary>
+<details><summary>TRAF22: 22/22</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/vertices` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/vertices` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
@@ -771,15 +769,15 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>Unicycle-reach: 30/34</summary>
+<details><summary>Unicycle-reach: 31/34</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 
-<details><summary>Unicycle-reach-disturbance: 30/34</summary>
+<details><summary>Unicycle-reach-disturbance: 31/34</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/linReach_adaptive` (untested), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `nn/neuralNetwork/getRefinableLayers` (ported), `nn/neuralNetwork/neuralNetwork` (ported)
 
 </details>
 

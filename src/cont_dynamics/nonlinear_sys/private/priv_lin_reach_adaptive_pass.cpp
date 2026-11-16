@@ -7,7 +7,8 @@
 // (priv_abstr_err_adaptive) and, if it exceeds the admissible one, enlarged by 1.1 and the step
 // repeated; it ends when the error is admissible, or gives up when the ratio to the admissible one
 // does not fall after three passes. Then the sets are those with the error in the input, and the
-// radius of its solution is what the tuning reads (CORALean's linReachAdaptivePassFloat).
+// radius of its solution (priv_error_radius_float) is what the tuning reads (CORALean's
+// linReachAdaptivePassFloat).
 //
 // Syntax:   auto P = priv_lin_reach_adaptive_pass(sys, kappa, U, alg, time_step, R, error_adm);
 // Inputs:   see the declarations in priv_adaptive.h
@@ -16,9 +17,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -123,12 +124,17 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
     // the sets with the error in the input, and the radius of the solution of the error
     const auto S = step(Vbase + *Verror);
     if (!S) return std::nullopt;
-    const Zonotope Rerror =
-        lin.error_solution_adaptive(*Verror, std::nullopt, dt, 0.0, alg.taylor_terms);
+
     const Vec error_radius = priv_row_sums(*Verror);
     std::vector<char> gzero(static_cast<std::size_t>(n));
     for (std::size_t i = 0; i < gzero.size(); ++i) gzero[i] = error_radius[i] <= 0;
-    return AdaptivePass{S->first, S->second, J.A, xs, *Rmax, true_error, priv_row_sums(Rerror),
+    return AdaptivePass{S->first,
+                        S->second,
+                        J.A,
+                        xs,
+                        *Rmax,
+                        true_error,
+                        priv_error_radius_float(J.A, dt, alg.taylor_terms, *Verror),
                         gzero};
 }
 
