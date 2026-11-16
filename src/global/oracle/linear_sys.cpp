@@ -190,6 +190,16 @@ std::optional<TaylorMatrices> LinearSys::taylor_matrices(double time_step, int t
                           r.get<Interval>("GEntrywise")};
 }
 
+std::optional<TaylorMatrices> LinearSys::taylor_matrices_cora(double time_step,
+                                                              int taylor_terms) const {
+    const Reply r = ask_system("linearSys.taylorMatrices",
+                               {{"timeStep", time_step}, {"taylorTerms", taylor_terms}});
+    // all three fields or none
+    const auto W = r.get<std::optional<Tensor>>("WCora");
+    if (!W) return std::nullopt;
+    return TaylorMatrices{taylor_terms, *W, r.get<Interval>("FCora"), r.get<Interval>("GCora")};
+}
+
 Step LinearSys::post(const Zonotope &X, double time_step, int taylor_terms) const {
     const Reply r = ask_system("linearSys.post",
                                {{"X", X}, {"timeStep", time_step}, {"taylorTerms", taylor_terms}});

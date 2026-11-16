@@ -4,9 +4,10 @@
 // encloses that. G sums the Taylor terms A^(i-1) dt^i / i! for i >= 2, each weighted by where
 // t^i - t is extremal on [0, dt], and adds the remainder of the series past taylor_terms times dt.
 //
-// With CORACPP_TAYLOR=entrywise, on an (n, n) matrix G is CORALean's entrywise G
-// (priv_taylor_corrections, bit for bit at nearest) at the admissible order; by default, and for
-// batches, gradients and a stiff A whose powers overflow, it is the expm below.
+// On an (n, n) matrix G is CORALean's taylorMatricesFloat (priv_taylor_corrections, bit for
+// bit at nearest): the remainder from e^{|A| dt} by scaling and squaring, which CORA takes from
+// expm, unsound by rounding; CORACPP_TAYLOR=entrywise takes the entrywise G at the admissible
+// order. Batches, gradients and a stiff A whose powers overflow keep CORA's expm below.
 //
 // Syntax:   Interval G = sys.correction_matrix_input(time_step, taylor_terms);
 // Inputs:   time_step - step size
@@ -16,9 +17,9 @@
 //
 // CORA: contDynamics/@linearSys/taylorMatrices.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   13-November-2026
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -40,7 +41,7 @@ Interval LinearSys::correction_matrix_input(double time_step, int taylor_terms) 
         return "correction matrix: taylor_terms must be at least 1, got " +
                std::to_string(taylor_terms);
     });
-    // CORALean's entrywise G (MatExp.intervalCorrectionMatrixEntrywise family) when asked for
+    // CORALean's taylorMatricesFloat (or the entrywise matrices when asked for)
     if (const auto c = priv_taylor_corrections(A(), time_step, taylor_terms)) return c->G;
     Tensor Ai = A(); // A^(i-1)
     Tensor Gneg = A().zeros_like(), Gpos = A().zeros_like();

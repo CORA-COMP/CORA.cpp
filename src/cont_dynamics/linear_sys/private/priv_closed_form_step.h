@@ -27,7 +27,7 @@
 // CORALean's float definition (LinearSys.oneStepClosedFormFloat).
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   13-November-2026
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -36,6 +36,8 @@
 
 #include <memory>
 #include <optional>
+#include <utility>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -54,6 +56,11 @@ std::optional<int> priv_closed_form_order(const Tensor &A, double time_step, int
 /// 1/2 (LinearSys.halvingsFloat); none if there is none.
 std::optional<int> priv_closed_form_halvings(const Tensor &A, double time_step);
 
+/// [e^{a r}] of the host matrix a (n, n), LinearSys.expSquaringFloat: the Taylor enclosure of order
+/// 16 at a r / 2^s, squared s times; the lower and the upper ends.
+std::pair<std::vector<double>, std::vector<double>>
+priv_exp_squaring(const std::vector<double> &a, std::size_t n, double r, int halvings);
+
 /// The entrywise remainder and corrections of CORALean's float definition at the admissible order.
 struct EntrywiseCorrections {
     int order;     ///< eta_e: the first order from taylor_terms that admits the enclosure
@@ -66,9 +73,14 @@ struct EntrywiseCorrections {
 std::optional<EntrywiseCorrections> priv_entrywise_corrections(const Tensor &A, double time_step,
                                                                int taylor_terms);
 
-/// priv_entrywise_corrections where it is asked for (CORACPP_TAYLOR=entrywise), for an (n, n)
-/// matrix without gradient whose matrices are all finite; none otherwise (CORA's expm path
-/// computes them). The last results are kept.
+/// LinearSys.taylorMatricesFloat: CORA's taylorMatrices at the order taylor_terms, e^{|A| dt} of
+/// the remainder W by scaling and squaring (the halvings of |A| dt); none without halvings.
+std::optional<EntrywiseCorrections> priv_squaring_corrections(const Tensor &A, double time_step,
+                                                              int taylor_terms);
+
+/// priv_squaring_corrections, or priv_entrywise_corrections where it is asked for
+/// (CORACPP_TAYLOR=entrywise), for an (n, n) matrix without gradient whose matrices are all
+/// finite; none otherwise (CORA's expm path computes them). The last results are kept.
 std::optional<EntrywiseCorrections> priv_taylor_corrections(const Tensor &A, double time_step,
                                                             int taylor_terms);
 

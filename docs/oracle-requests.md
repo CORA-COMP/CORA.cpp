@@ -378,18 +378,18 @@ read against the pinned oracle's op and kept out of `oracle`; each stays until t
 | `linearSys/verify` | none | `verifyFloat` is Alg. 3 with the reach function, the inner approximation and the distances as arguments; no concrete instance serves as an op | an op that instantiates it with CORA's support-function routines |
 | `contSet/interval/polyZonotope`, `contSet/zonotope/polyZonotope`, `polyZonotope/*` | none | the oracle has no polynomial zonotope codec until the poly-adaptive branch merges; then the generator order of the constructor (see above) decides | the ops of the section above |
 
-## Taylor matrices (PR "oracle/taylor-matrices", CORALean MR !938)
+## Taylor matrices (PR "oracle/taylor-matrices", CORALean MR !938; PR "oracle/bitexact-3", CORALean MR !944)
 
-`linearSys/taylorMatrices` stays `ported`. The op `linearSys.taylorMatrices` serves CORA's entrywise
-matrices at the admissible order `eta_e` of `oneStepClosedForm` (`order`, `W`, `FEntrywise`,
-`GEntrywise`; `null` when no order below `taylorTerms + 4096` admits the enclosure of `e^{|A| dt}`).
-`LinearSys::correction_matrix_state` and `correction_matrix_input` are bit-exact against it under
-`CORACPP_TAYLOR=entrywise` (`test_lean_linear_sys_taylor_matrices`, no `ORACLE` tag), but the benchmarks
-run the default, CORA's `expm` remainder (also for batches, gradients and a stiff matrix whose powers
-overflow), and a row counts only for the path it compares (#125). The entrywise path is not the
-default: TSPS25 aborts with it (the wider `F` makes the linearization error exceed `max_error_x` or
-`max_error_y`, where CORA splits the set and that split is not ported), DTN01 to DTN03 and CVDP23 take
-1.3x as long (`docs/cora-differences.md`, `taylorMatrices.m`).
+`linearSys/taylorMatrices` is `oracle`. The default path, which the benchmarks run, is bit-exact:
+`LinearSys::correction_matrix_state`, `correction_matrix_input` and `expm_remainder` are CORALean's
+`LinearSys.taylorMatricesFloat` (the oracle's `WCora`, `FCora`, `GCora`). That is CORA's algorithm at
+`taylorTerms`, with `e^{|A| dt}` of the remainder enclosed by scaling and squaring where CORA uses
+`expm`, and CORA's correction coefficient bounded from below (`corrCoeffLowTight`, CORALean MR for
+`oracle/bitexact-3b`), so `F` and `G` agree with MATLAB CORA to 1e-13. Not bit-exact, and CORA's `expm` path instead: a batch, a gradient, no halving count below 128,
+and matrices that overflow (each commented in `priv_taylor_corrections`). `CORACPP_TAYLOR=entrywise`
+takes the entrywise matrices at the admissible order `eta_e` (`order`, `W`, `FEntrywise`,
+`GEntrywise`), also bit-exact, but not the default: TSPS25 aborts with it, and DTN01 to DTN03 and
+CVDP23 take 1.3x as long.
 
 ## Float rows batch (PR "oracle/float-rows")
 

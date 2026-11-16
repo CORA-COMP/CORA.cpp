@@ -109,6 +109,10 @@ class LinearSys {
     /// order within 4096 of taylor_terms encloses e^{|A| dt}.
     std::optional<TaylorMatrices> taylor_matrices(double time_step, int taylor_terms) const;
 
+    /// CORA's taylorMatrices at the order asked for, the remainder W from e^{|A| dt} by scaling
+    /// and squaring (WCora, FCora, GCora; none without halvings).
+    std::optional<TaylorMatrices> taylor_matrices_cora(double time_step, int taylor_terms) const;
+
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;
 
