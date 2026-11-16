@@ -5,6 +5,10 @@
 // one of its last block. G is the block matrix [|C| t / 2, 0, 0; S t / 2, (|C| + S) t / 2, 0; 0, I,
 // I]. CORA forms the spectral projector for the eigenvalue 1 from the eigenvectors of G and G';
 // here the same limit comes from the block structure by two solves (no eigendecomposition).
+// The check B x < x, x = (I - B)^-1 1 > 0 (Collatz-Wielandt) is sound at nearest, u the unit
+// roundoff: B_up = fl(B (1 + 16 u)) is above the true (|C| + S) t / 2 (5 roundings of at most
+// 5.1 u), and fl(B_up x) (1 + 4 n u) >= B_up x because a sum of n nonnegative products loses at
+// most gamma_n; a NaN fails every comparison.
 //
 // Syntax:   Tensor B = A.expm_absolute_bound(t);
 // Inputs:   t >= 0 - the time
@@ -29,11 +33,14 @@ namespace cora {
 
 namespace {
 
-/// True if the spectral radius of the nonnegative B is below 1 (every member of a batch).
+/// True if the spectral radius of the nonnegative B (n x n, every member of a batch) is below 1.
 bool aux_spectral_radius_below_one(const Tensor &B, const Tensor &I) {
-    // B x < x for an x > 0 implies it (Collatz-Wielandt); x = (I - B)^-1 1, verified after solving
-    const Tensor x = (I - B).solve(B.ones_like().max(-1, true));
-    return x.min().item() > 0 && B.matmul(x).less(x).min().item() > 0;
+    const double u = machine_eps() / 2;
+    const int64_t n = B.shape()[B.ndim() - 1];
+    const Tensor B_up = B * (1.0 + 16 * u);
+    const Tensor x = (I - B_up).solve(B.ones_like().max(-1, true));
+    const Tensor y = B_up.matmul(x) * (1.0 + 4 * double(n) * u);
+    return x.min().item() > 0 && y.less(x).min().item() > 0;
 }
 
 } // namespace
