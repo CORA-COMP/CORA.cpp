@@ -132,7 +132,7 @@ std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &orig_dir, const Tens
     detail::Entry entry;
     CORA_CHECK(
         is_column(orig_dir, dim()) && is_column(aux_dir, dim()), Error::dimension_mismatch, [&] {
-            // the directions are columns of the dimension
+            // both directions must be (dim, 1) columns, or the split is undefined
             return "split: the directions must be columns of " + std::to_string(dim()) + " entries";
         });
     // the split direction is not zero

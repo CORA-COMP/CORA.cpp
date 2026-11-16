@@ -45,7 +45,7 @@ std::string priv_cubic_map_problem(const std::vector<std::vector<Tensor>> &T,
             if (k < 0 || k >= columns)
                 return "ind has the entry " + std::to_string(k) + ", outside [0, " +
                        std::to_string(columns) + ")";
-    // no offending index
+    // every list of ind has the right size and all its entries are columns of T
     return "";
 }
 

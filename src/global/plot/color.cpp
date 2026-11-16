@@ -121,7 +121,7 @@ Color cora_color(const std::string &identifier, int num_colors, int cidx, double
     else if (variant != "none")
         CORA_FAIL(Error::wrong_value, "cora_color: unknown color variant '" + variant +
                                           "'; use \":light\" or \":dark\"");
-    // the color of the variant
+    // the base color, or its mix with white (light) or black (dark)
     return c;
 }
 

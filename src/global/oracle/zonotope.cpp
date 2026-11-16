@@ -268,7 +268,7 @@ std::pair<Zonotope, Zonotope> Zonotope::split_first_gen() const {
     return aux_halves("zonotope.splitFirstGen", {{"Z", *this}});
 }
 std::pair<Zonotope, Zonotope> Zonotope::split_longest_gen() const {
-    // the halves of the split
+    // the oracle returns the two halves of the split along the longest generator
     return aux_halves("zonotope.splitLongestGen", {{"Z", *this}});
 }
 

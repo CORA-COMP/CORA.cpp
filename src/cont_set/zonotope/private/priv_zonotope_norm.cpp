@@ -60,7 +60,7 @@ ZonotopeNorm priv_zonotope_norm_minimizer(const HostZonotope &Z, const std::vect
 }
 
 double priv_zonotope_norm(const HostZonotope &Z, const std::vector<double> &p) {
-    // the value of the minimizer
+    // the norm is the optimal value s, the first variable of the program
     return priv_zonotope_norm_minimizer(Z, p).value;
 }
 

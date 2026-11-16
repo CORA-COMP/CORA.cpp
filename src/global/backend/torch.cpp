@@ -268,7 +268,7 @@ struct TorchTensor : Tensor::Impl {
     Ptr concat(std::span<const Impl *const> parts, int axis) const override {
         std::vector<torch::Tensor> all;
         for (const Impl *r : parts) all.push_back(of(*r));
-        // all parts are concatenated along the axis
+        // torch::cat takes the parts as a list of tensors
         return wrap(torch::cat(all, axis));
     }
     Ptr argsort(int axis, bool descending) const override {
