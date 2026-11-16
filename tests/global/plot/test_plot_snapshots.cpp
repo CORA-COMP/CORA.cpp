@@ -44,7 +44,7 @@ Figure over_time_figure() {
     use_cora_colors("CORA:contDynamics");
     Figure fig;
     plot_over_time(fig, oscillator(), 0, {.label = "reachable set"});
-    // the over-time figure
+    // the axis labels that the snapshot must carry
     fig.xlabel = "$t$";
     fig.ylabel = "$x_1$";
     use_cora_colors("CORA:default");
@@ -66,7 +66,7 @@ FigureGrid group_figure() {
     phase.title = "phase plane";
     plot_over_time(grid.at(0, 1), R, 0);
     grid.at(0, 1).ylabel = "$x_1$";
-    // the second row
+    // the second row plots x_2 over time, as the first plots x_1
     plot_over_time(grid.at(1, 0), R, 1);
     grid.at(1, 0).xlabel = "$t$";
     grid.at(1, 0).ylabel = "$x_2$";
@@ -88,7 +88,7 @@ Figure three_dimensional_figure() {
     fig.xlabel = "$x_1$";
     fig.ylabel = "$x_2$";
     fig.zlabel = "$x_3$";
-    // the figure
+    // all three axes are labelled, so the snapshot has their labels
     return fig;
 }
 
@@ -111,7 +111,7 @@ void snapshots_of_the_layers() {
 
 void snapshots_of_the_tikz_text() {
     const std::string here = __FILE__;
-    // tikz snapshots
+    // the tikz text of each figure must equal its stored snapshot file
     check_snapshot(zonotope_figure().tikz(), test::snapshot_path(here, "zonotope.tikz"),
                    "zonotope tikz");
     check_snapshot(over_time_figure().tikz(), test::snapshot_path(here, "over_time.tikz"),

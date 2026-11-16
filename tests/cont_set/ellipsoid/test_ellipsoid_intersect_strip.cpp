@@ -96,7 +96,7 @@ void intersect_strip_property(const std::string &b) {
             if (S.shape()[1] > 0)
                 check(R.Q().numel() > 0 && test::all_inside(R, S, 1e-9),
                       b + ": Liu: the points in both sets are in the result");
-            // the result is not used further
+            // r is not used in the checks above: the cast to void silences the unused warning
             static_cast<void>(r);
         }
     }

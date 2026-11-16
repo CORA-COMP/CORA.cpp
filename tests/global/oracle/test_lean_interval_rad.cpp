@@ -39,7 +39,7 @@ int main() {
             test::oracle::check("interval.radius", I.radius(), root);
         }
     });
-    // the result
+    // the exit status is nonzero if any check failed
     return test::finish("lean interval rad");
 }
 

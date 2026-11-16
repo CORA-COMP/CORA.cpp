@@ -82,7 +82,7 @@ class Geometry(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    # run the tests
+    # the file also runs as a script, not only under ctest
     unittest.main()
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

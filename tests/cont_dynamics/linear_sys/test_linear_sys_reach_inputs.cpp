@@ -63,7 +63,7 @@ void matches_matlab_cora(const std::string &b) {
         const ReachSet R =
             sys.reach({.initial_set = in.X0, .input_set = in.U, .t_final = in.t_final()},
                       test::lin::algorithm(algorithm, s.time_step, s.taylor_terms));
-        // the numbers of steps
+        // the horizon is 5 steps: 5 time intervals and 6 time points (the start and every step end)
         check(R.time_interval.size() == 5 && R.time_point.size() == 6,
               what + ": the number of steps");
 

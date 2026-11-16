@@ -784,7 +784,7 @@ def main():
     check_test_files(issues_by_file)
     # shell, CMake and .def files
     check_layout_of_other_files(issues_by_file)
-    # the checks of the tree
+    # the Python files, their tests, clones, build jobs and portable types
     check_python_files(issues_by_file)
     check_python_tests_cover_the_api(issues_by_file)
     check_clones(issues_by_file)
@@ -809,7 +809,7 @@ def main():
     if issues_by_file:
         print(f"{sum(len(v) for v in issues_by_file.values())} issues in {len(issues_by_file)} files")
         return 1
-    # all conventions hold
+    # no issue was collected: exit status 0 tells CI that the tree conforms
     print("all conventions hold")
     return 0
 

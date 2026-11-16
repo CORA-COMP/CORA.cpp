@@ -62,7 +62,7 @@ class ZonotopeOperators(unittest.TestCase):
         torch.testing.assert_close((box() - v).center, torch.tensor([0.0, 3.0], dtype=torch.float64))
 
     def test_an_interval_matrix_widens(self):
-        # an interval matrix times a zonotope
+        # a [-1, 1] matrix mixes the two dimensions: 2 generators of the box become 4
         M = cora.Interval.matrix(-torch.ones(2, 2, dtype=torch.float64),
                                  torch.ones(2, 2, dtype=torch.float64))
         self.assertEqual(tuple((M * box()).generators.shape), (2, 4))
@@ -106,7 +106,7 @@ class IntervalOperators(unittest.TestCase):
         J = cora.Tensor([[0.0, 1.0], [1.0, 0.0]]) * self.I
         torch.testing.assert_close(J.inf, torch.tensor([0.0, -1.0], dtype=torch.float64))
 
-    # an interval matrix times a zonotope
+    # the same widening for a zonotope with generators: 2 become 4
     def test_an_interval_matrix_times_a_zonotope(self):
         M = cora.Interval.matrix(-torch.ones(2, 2, dtype=torch.float64),
                                  torch.ones(2, 2, dtype=torch.float64))

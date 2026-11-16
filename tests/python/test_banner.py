@@ -58,7 +58,7 @@ class Banner(unittest.TestCase):
         self.assertIn("broken on purpose", result.stderr)
 
 
-# run the tests
+# the file also runs as a script, not only under ctest
 if __name__ == "__main__":
     unittest.main()
 

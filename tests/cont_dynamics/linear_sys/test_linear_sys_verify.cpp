@@ -56,7 +56,7 @@ const std::vector<double> Anil{0, 1, 0, 0};
 struct Expected {
     bool verified;
     int iterations;
-    // the expected result
+    // what a falsification reports: its time step, step count, time and start point
     double time_step;
     int num_steps;
     double fals_t; // -1: no falsification

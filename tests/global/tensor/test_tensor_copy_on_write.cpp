@@ -65,7 +65,7 @@ void a_shared_tensor_is_copied_first() {
     const Tensor other = t;
     t = std::move(t) + 1.0;
     check(aux_address(t) != aux_address(other), "a shared t gets new memory");
-    // the other holder still sees the values
+    // t was moved from and reassigned, and the other holder is untouched
     check(test::close(other, Tensor::ones({10, 10}), 0), "the other holder still sees ones");
 }
 

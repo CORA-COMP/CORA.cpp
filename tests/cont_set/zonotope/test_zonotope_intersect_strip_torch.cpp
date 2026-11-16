@@ -37,7 +37,7 @@ int main() {
                             Zonotope(x[0], x[1]).intersect_strip(x[2], x[3], x[4], x[5]));
                     },
                     {Z[0], Z[1], C, phi, y, lambda});
-    // the gradient check
+    // the exit status is nonzero if any gradient check above failed
     return test::finish("zonotope intersect_strip (torch)");
 }
 

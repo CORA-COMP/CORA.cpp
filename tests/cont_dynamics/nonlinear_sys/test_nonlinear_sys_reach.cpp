@@ -162,7 +162,7 @@ void forced_simulations_stay_in_the_enclosures(const std::string &b) {
     }
 }
 
-// wrong arguments are described
+// each invalid argument makes reach throw instead of running
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinearSys sys = van_der_pol();
     const Zonotope X0 = van_der_pol_start();
@@ -181,7 +181,7 @@ void wrong_arguments_are_described(const std::string &b) {
           }),
           b + ": a set of another dimension");
     check(test::throws([&] {
-              // a refused option
+              // zonotope_order = 0 is not a valid reduction order
               sys.reach(
                   {.initial_set = X0, .t_final = 1.0},
                   alg::Linearization{.time_step = 0.01, .taylor_terms = 4, .zonotope_order = 0});

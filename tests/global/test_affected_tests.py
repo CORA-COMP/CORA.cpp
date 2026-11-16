@@ -47,7 +47,7 @@ TREE = {
 
 def pick(*changed):
     result = at.select(list(changed), sorted(TREE), TREE.__getitem__)
-    # the tests are a set of names
+    # a selection other than ALL or NONE is a regex that matches exactly the listed names
     if result in ("ALL", "NONE"):
         return result
     prefix, suffix = "^(", ")" + at.BACKEND_COPY + "$"

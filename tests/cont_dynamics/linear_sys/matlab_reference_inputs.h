@@ -76,7 +76,7 @@ inline const InputSystem &standard_inputs() {
                        {0.6767148687346064, -0.11779158883553048, 0.99128301428451782}};
         return s;
     }();
-    // the inputs of the system
+    // the system is built once, on the first call, and shared by every test afterwards
     return inputs;
 }
 
@@ -119,7 +119,7 @@ inline const InputSystem &wrapping_free_inputs() {
                        {0.70807438016074231, -0.062111801014582524, 1.1781553170125107}};
         return s;
     }();
-    // the inputs of the system
+    // the system is built once, on the first call, and shared by every test afterwards
     return inputs;
 }
 

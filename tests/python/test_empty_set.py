@@ -207,7 +207,7 @@ class EmptySet(unittest.TestCase):
         fig, ax = plt.subplots()
         cora.plot(cora.EmptySet(2), ax=ax)
         self.assertEqual([len(p.get_path().vertices) for p in ax.patches], [0])
-        # the registry lists the pairs
+        # close the figure, so that matplotlib does not keep one per test
         plt.close(fig)
 
     def test_the_registry_lists_the_pairs(self):

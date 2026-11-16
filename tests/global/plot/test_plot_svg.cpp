@@ -182,7 +182,7 @@ void filled_sets_are_translucent(const std::string &b) {
     figure().clear();
     plot(initial_set());
     check(figure().layers()[0].face_alpha == 1, b + ": an initial set is opaque white");
-    // restore the default colors
+    // the scheme is global state: the later tests expect the default colors
     use_cora_colors("CORA:default");
 }
 
@@ -254,7 +254,7 @@ void plot_rejects_bad_dimensions(const std::string &b) {
     check(test::throws([] { plot(Tensor({{1, 2}, {3, 4}}), {0, 5}); }), b + ": points too");
 }
 
-// save writes the file
+// the file at the path holds the figure's SVG, and an unwritable path is reported
 void save_writes_the_file(const std::string &b) {
     figure().clear();
     plot(initial_set());
