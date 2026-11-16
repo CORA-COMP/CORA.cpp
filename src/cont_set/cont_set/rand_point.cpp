@@ -30,6 +30,7 @@ Tensor ContSet::rand_point(int64_t N, Rng &rng) const {
     CORA_CHECK(N >= 0, Error::wrong_value, [&] {
         return "rand_point: the number of points must be nonnegative, got " + std::to_string(N);
     });
+    entry.release();
     return rand_point_impl(N, rng);
 }
 

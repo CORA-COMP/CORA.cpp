@@ -38,6 +38,7 @@ Set ContSet::project(const std::vector<int64_t> &dims) const {
             return "project: the dimension " + std::to_string(d) + " is outside 0.." +
                    std::to_string(dim() - 1) + " (dimensions are 0-based)";
         });
+    entry.release();
     return project_impl(dims);
 }
 

@@ -664,6 +664,8 @@ Set dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2) {
     detail::Entry entry;
     const Refusal r = refusal(op, S1, S2);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    // the class's own operation is then the outermost, as for a direct call: it checks too
+    entry.release();
     return lookup(op, S1, S2);
 }
 
@@ -672,6 +674,7 @@ bool dispatch(BinaryOp op, const ContSet &S1, const ContSet &S2, Tol tol) {
     detail::Entry entry;
     const Refusal r = refusal(op, S1, S2, tol);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    entry.release();
     return lookup(op, S1, S2, tol);
 }
 

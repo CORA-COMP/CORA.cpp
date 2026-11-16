@@ -26,6 +26,7 @@ namespace cora {
 bool ContSet::is_full_dim(Tol tol) const {
     detail::Entry entry;
     static_cast<void>(resolve_tol(entry, tol, center_impl().dtype(), "is_full_dim"));
+    entry.release();
     return is_full_dim_impl(tol);
 }
 

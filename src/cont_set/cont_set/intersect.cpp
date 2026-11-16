@@ -25,6 +25,7 @@ Set intersect(const ContSet &S1, const ContSet &S2) {
     detail::Entry entry;
     const detail::Refusal r = detail::refusal(BinaryOp::intersect, S1, S2);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    entry.release();
     return detail::intersect_impl(S1, S2);
 }
 

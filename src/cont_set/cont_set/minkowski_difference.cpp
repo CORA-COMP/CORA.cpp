@@ -32,6 +32,7 @@ Set ContSet::minkowski_difference(const ContSet &S2, const std::optional<std::st
         return "minkowski_difference: the sets differ in dimension, " + std::to_string(dim()) +
                " and " + std::to_string(S2.dim());
     });
+    entry.release();
     return minkowski_difference_impl(S2, type);
 }
 

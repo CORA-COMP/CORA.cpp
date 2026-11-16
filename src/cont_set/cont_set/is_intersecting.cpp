@@ -26,6 +26,7 @@ bool is_intersecting(const ContSet &S1, const ContSet &S2, Tol tol) {
     detail::Entry entry;
     const detail::Refusal r = detail::refusal(BinaryOp::is_intersecting, S1, S2, tol);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    entry.release();
     return detail::is_intersecting_impl(S1, S2, tol);
 }
 

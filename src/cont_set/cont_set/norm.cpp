@@ -32,6 +32,7 @@ Tensor ContSet::norm(Tensor::Norm type, const std::string &mode) const {
     CORA_CHECK(mode == "exact" || mode == "ub" || mode == "ub_convex", Error::wrong_value, [&] {
         return "norm: the mode must be 'exact', 'ub' or 'ub_convex', got '" + mode + "'";
     });
+    entry.release();
     return norm_impl(type, mode);
 }
 

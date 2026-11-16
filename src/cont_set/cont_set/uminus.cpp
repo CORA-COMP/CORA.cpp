@@ -26,6 +26,7 @@ namespace cora {
 
 Set ContSet::uminus() const {
     detail::Entry entry;
+    entry.release();
     return uminus_impl();
 }
 

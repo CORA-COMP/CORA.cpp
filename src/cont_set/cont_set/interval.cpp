@@ -26,6 +26,7 @@ namespace cora {
 
 Interval ContSet::interval() const {
     detail::Entry entry;
+    entry.release();
     return interval_impl();
 }
 

@@ -32,11 +32,13 @@ Set ContSet::enlarge(const Tensor &factor) const {
         return "enlarge: the factor must be a number or a column of the set's dimension " +
                std::to_string(dim()) + ", got the shape " + shape_text(factor.shape());
     });
+    entry.release();
     return enlarge_impl(factor);
 }
 
 Set ContSet::enlarge(double factor) const {
     detail::Entry entry;
+    entry.release();
     return enlarge_impl(center_impl().full_like({1, 1}, factor));
 }
 

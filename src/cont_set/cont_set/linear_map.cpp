@@ -31,6 +31,7 @@ Set ContSet::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(dim()) +
                " columns, the dimension of the set, got the shape " + shape_text(M.shape());
     });
+    entry.release();
     return linear_map_impl(M);
 }
 

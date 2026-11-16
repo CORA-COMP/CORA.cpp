@@ -41,6 +41,7 @@ Set ContSet::compact(const std::optional<std::string> &method, Tol tol) const {
             return "compact: the method '" + *method + "' is not one of the class's";
         });
     }
+    entry.release();
     return compact_impl(method, tol);
 }
 

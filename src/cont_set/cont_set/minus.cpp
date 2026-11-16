@@ -31,6 +31,7 @@ Set ContSet::minus(const Tensor &p) const {
         return "minus: the vector must be a column of the set's dimension " +
                std::to_string(dim()) + ", got the shape " + shape_text(p.shape());
     });
+    entry.release();
     return translate_impl(-p);
 }
 
@@ -41,6 +42,7 @@ Set ContSet::minus(const Tensor &p, const ContSet &S) {
                std::to_string(S.dim()) + ", got the shape " + shape_text(p.shape());
     });
     // -S + p: the matrix -I maps, the vector translates
+    entry.release();
     return S.linear_map_impl(-p.eye_like(S.dim()))->translate_impl(p);
 }
 
