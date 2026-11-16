@@ -64,6 +64,10 @@ class PolyZonotope {
     /// M * P for a matrix M.
     PolyZonotope linear_map(const cora::Tensor &M) const;
 
+    /// The polynomial of each coordinate by the powers of its row (CORA's
+    /// evaluatePolyZonotopeNeuron after the fit): coeffs is (n, k + 1), lowest degree first.
+    PolyZonotope eval_powers(const cora::Tensor &coeffs) const;
+
     /// CORA's reduce(P, 'girard', order) and enclose(P, Q).
     PolyZonotope reduce(int order) const;
     PolyZonotope enclose(const PolyZonotope &Q) const;

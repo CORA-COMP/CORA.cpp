@@ -31,6 +31,10 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
         j.set("W", W.to_json()).set("b", b.to_json());
     } else if (layer.kind == "leakyRelu") {
         j.set("alpha", Tensor::encode(layer.alpha));
+    } else if (layer.kind == "poly") {
+        const Tensor C(layer.W), d(layer.b);
+        dtype = C.dtype();
+        j.set("coeffs", C.to_json()).set("d", d.to_json());
     } else if (layer.kind == "sigmoid" || layer.kind == "tanh") {
         j.set("k", int64_t(layer.k));
     } else if (layer.kind != "relu") {
@@ -81,6 +85,15 @@ NnLayer NnLayer::tanh() {
     return layer;
 }
 
+// the fit of order k given: its coefficients and its errors
+NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
+    NnLayer layer;
+    layer.kind = "poly";
+    layer.W = coeffs;
+    layer.b = d;
+    return layer;
+}
+
 // The evaluations ----------------------------------------------------------------------------
 
 Json layers_json(const std::vector<NnLayer> &layers, std::string &dtype) {
@@ -97,6 +110,15 @@ Zonotope evaluate_layer(const NnLayer &layer, const Zonotope &Z, const std::stri
     std::vector<Operand> args{{"layer", Wire(j, dtype)}, {"Z", Z}, {"poly_method", poly_method}};
     if (!regression_error.empty()) args.push_back({"regression_error", regression_error});
     return ask("nnLayer.evaluateZonotope", args).get<Zonotope>("Z");
+}
+
+// the layer "poly" on the polynomial zonotope, its errors as independent generators
+PolyZonotope evaluate_layer(const NnLayer &layer, const PolyZonotope &P) {
+    std::string dtype;
+    const Json j = aux_layer(layer, dtype);
+    return ask("nnLayer.evaluatePolyZonotope",
+               {{"layer", Wire(j, dtype)}, {"P", P}, {"errorForm", std::string("GI")}})
+        .get<PolyZonotope>("P");
 }
 
 // the layers in order on the zonotope

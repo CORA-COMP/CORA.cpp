@@ -4,9 +4,9 @@
 //
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "nn/neural_network/private/priv_activation_poly.h"
@@ -17,6 +17,7 @@
 #include <cmath>
 #include <map>
 #include <numeric>
+#include <ranges>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -207,29 +208,30 @@ Column aux_reduce(Host &h, double nr_gen) {
     return d;
 }
 
-/// The generators of equal exponents added (the first one's place), and those that are zero
-/// dropped.
+/// The generators of equal exponents added in the first one's place, nested to the right from
+/// zero (g1 + (g2 + (... + 0)), CORALean's compactGens), and those that are zero dropped.
 void aux_merge(Host &h) {
-    // the first column of each exponent takes the others' generators
+    // the columns of each exponent, in the order of their first occurrence
     std::map<std::vector<int>, std::size_t> place;
+    std::vector<std::vector<std::size_t>> members;
+    for (std::size_t j = 0; j < h.G.size(); ++j) {
+        const auto [it, fresh] = place.emplace(h.E[j], members.size());
+        if (fresh) members.emplace_back();
+        members[it->second].push_back(j);
+    }
+    // each sum from the last member to the first, the nonzero ones kept
     std::vector<Column> G;
     Exponents E;
-    for (std::size_t j = 0; j < h.G.size(); ++j) {
-        const auto [it, fresh] = place.emplace(h.E[j], G.size());
-        if (fresh) {
-            G.push_back(h.G[j]);
-            E.push_back(h.E[j]);
-            continue;
-        }
-        for (std::size_t i = 0; i < h.G[j].size(); ++i) G[it->second][i] += h.G[j][i];
+    for (const std::vector<std::size_t> &cols : members) {
+        Column sum(std::size_t(h.n), 0.0);
+        for (const std::size_t j : std::ranges::reverse_view(cols))
+            for (std::size_t i = 0; i < sum.size(); ++i) sum[i] = h.G[j][i] + sum[i];
+        if (std::all_of(sum.begin(), sum.end(), [](double v) { return v == 0.0; })) continue;
+        G.push_back(sum);
+        E.push_back(h.E[cols.front()]);
     }
-    h.G.clear();
-    h.E.clear();
-    for (std::size_t j = 0; j < G.size(); ++j) {
-        if (std::all_of(G[j].begin(), G[j].end(), [](double v) { return v == 0.0; })) continue;
-        h.G.push_back(G[j]);
-        h.E.push_back(E[j]);
-    }
+    h.G = G;
+    h.E = E;
 }
 
 /// The independent generators that are zero dropped.
@@ -305,7 +307,7 @@ void priv_layer_poly(PrivRows &r, Activation activation, const std::vector<int> 
     }
     // the polynomial of every neuron on its row
     h = aux_load(r);
-    // the output generators have the layout of the largest degree
+    // the output generators have the layout of the largest degree (a lower one's are zero)
     const int64_t n = h.n, hd = int64_t(h.G.size()), q = int64_t(h.GI.size());
     std::vector<Column> G(std::size_t(priv_power_dep_size(hd, degree)),
                           Column(std::size_t(n), 0.0));
@@ -319,9 +321,10 @@ void priv_layer_poly(PrivRows &r, Activation activation, const std::vector<int> 
         for (const Column &col : h.GI) gi_row.push_back(col[std::size_t(i)]);
         const PrivNeuron y =
             priv_eval_poly(h.c[std::size_t(i)], g_row, gi_row, approx[std::size_t(i)].coeffs);
-        h.c[std::size_t(i)] = y.c;
-        for (std::size_t k = 0; k < y.G.size(); ++k) G[k][std::size_t(i)] = y.G[k];
-        for (std::size_t k = 0; k < y.GI.size(); ++k) GI[k][std::size_t(i)] = y.GI[k];
+        // + 0.0: a zero coefficient times a negative generator is -0, the oracle's zero is +0
+        h.c[std::size_t(i)] = y.c + 0.0;
+        for (std::size_t k = 0; k < y.G.size(); ++k) G[k][std::size_t(i)] = y.G[k] + 0.0;
+        for (std::size_t k = 0; k < y.GI.size(); ++k) GI[k][std::size_t(i)] = y.GI[k] + 0.0;
         d[std::size_t(i)] = approx[std::size_t(i)].d;
     }
     // the exponents of the powers, the generators in their layout

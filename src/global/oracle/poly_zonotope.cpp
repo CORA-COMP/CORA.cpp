@@ -109,6 +109,10 @@ PolyZonotope PolyZonotope::linear_map(const cora::Tensor &M) const {
     return aux_set("polyZonotope.mtimes", {{"M", Tensor::from(M)}, {"P", *this}});
 }
 
+PolyZonotope PolyZonotope::eval_powers(const cora::Tensor &coeffs) const {
+    return aux_set("polyZonotope.evalPowers", {{"P", *this}, {"coeffs", Tensor::from(coeffs)}});
+}
+
 PolyZonotope PolyZonotope::reduce(int order) const {
     return aux_set("polyZonotope.reduce", {{"P", *this}, {"order", order}, {"method", "girard"}});
 }
