@@ -1161,7 +1161,7 @@
   "nn/layers/computeApproxPoly": "oracle",
   "nn/layers/evaluateConZonotope": "todo",
   "nn/layers/evaluatePolyZonotope": "oracle",
-  "nn/layers/evaluatePolyZonotopeNeuron": "property",
+  "nn/layers/evaluatePolyZonotopeNeuron": "oracle",
   "nn/layers/evaluateTaylm": "todo",
   "nn/layers/evaluateZonotopeBatch": "todo",
   "nn/layers/findRegionPolys": "todo",

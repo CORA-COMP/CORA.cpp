@@ -419,36 +419,14 @@ oracle tests (`test_lean_conversions`, `test_lean_interval_project_vertices`), b
 
 ## Neural networks, polynomials of order k (PR "nn/order-k", CORA.cpp#112)
 
-CORALean has the float polynomial evaluation: `PolyZonotope.evalPoly` (`EvalPoly.lean`, Horner's rule
-by `mul` and a centre shift, rounded as they round, coordinatewise) and `Layer.activationPoly`
-(`ActivationPoly.lean`: `absorbRounding` first, so the independent generators become dependent ones
-and the cross terms are kept, then each neuron's fit through `evalPoly`, then the box of the error).
-The oracle serves `nnLayer.evaluatePolyZonotope` at order 1 only (`poly_method` `singh` and
-`regression`, `errorForm` `GI`), and no op for the polynomial evaluation. The order-k path
-(`priv_poly_layer.cpp`, `priv_poly_power.cpp`, `priv_activation_poly.cpp`) is tested by properties
-(`test_neural_network_order_k`: enclosure of sampled outputs for every `poly_method`, orders 1 to 4,
-sets with even exponents and independent generators, a limit on the generators; a hand-computed ReLU
-of order 2; order 1 through the neuron-wise path equal to the vectorised line bit for bit).
-
-| op (proposed) | CORALean definition | request fields | reply |
-|---|---|---|---|
-| `polyZonotope.evalPoly` | `PolyZonotope.evalPoly` | `pZ` (`c`, `G`, `E`, `id` and the independent part as CORALean holds it), `coeffs`: one coefficient list per neuron, lowest degree first, padded to a common degree | `pZ` of the polynomial on the set |
-| `nnLayer.evaluatePolyZonotope` at order k | `Layer.activationPoly` of a `LayerRelaxation` | the layer's `W`, `b`, the set `X`, per neuron `coeffs` (lowest degree first) and the error radius `d` of CORA.cpp's fit | `Y` |
-
-Neither compares bit for bit once served, only by containment: `evalPoly` is Horner's rule where CORA
-(and CORA.cpp) form the powers `x^i = x^{i1} x^{i2}` with all generators of the powers they are made
-of, and the error `d` of CORA's fit (`minMaxDiffOrder`: the grid maximum widened by a Lipschitz
-bound) is not CORALean's certified `sigmoidPolyRelaxation`. A bit-exact test needs an op that
-follows the squaring recursion with CORA.cpp's layout: `PolyZonotope.evalPowers`, the powers of one
-neuron's set `[G, G^2, ..., G^k]` and `[GI, GI^2, ..., GI^k]`, with the full cross term of a
-dependent and an independent generator (CORA halves it for all-even exponents, see
-`docs/cora-differences.md`). Not formalized either: `reducePolyZono` (the reduction at
-`num_generators`, with the shift `g / 2` of an all-even generator), CORA's `refine` (CORALean has
-`Schedule.refineLayer`), and the fits of `ridgeregression`, `bernstein`, `taylor`, `bounds` and
-`throw-catch` (CORALean takes the coefficients as data).
-
-The coverage rows `nnActivationLayer`, `evaluatePolyZonotopeNeuron`, `refine` and `getRefinableLayers`
-are oracle debt until then; `computeApproxPoly` is `oracle` at order 1 (below).
+The powers of a neuron and the layer of order k are served (`polyZonotope.evalPowers`, the layer
+`poly` of `nnLayer.evaluatePolyZonotope`, PR "oracle/order-k") and tested bit for bit by
+`test_lean_nn_order_k`, so `evaluatePolyZonotopeNeuron` is `oracle`. Still not formalized, so still
+oracle debt: the fits of order k (`regression`, `ridgeregression`, `bernstein`, `taylor`, `bounds`,
+`throw-catch`) and their errors (`minMaxDiffOrder`), which the oracle takes as data from CORA.cpp
+(row `nnActivationLayer`, `property`); `reducePolyZono` (the reduction at `num_generators`, with the
+shift `g / 2` of an all-even generator); CORA's `refine` (CORALean has `Schedule.refineLayer`) and
+`getRefinableLayers`.
 
 ## Activation layers at order 1 (PR "oracle/bitexact-1")
 
