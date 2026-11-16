@@ -63,7 +63,8 @@ void bound_of_random_sets(const std::string &b) {
     check(close(second, T.expm_absolute_bound(0.7), 1e-12), b + ": a batch");
 }
 
-/// A matrix that is not square is refused; with the checks off a valid call gives the same.
+/// A matrix that is not square or whose bound diverges is refused; with the checks off a valid call
+/// gives the same.
 void checks_and_their_switch() {
     check(test::raises(
               [&] { IntervalMatrix(test::matrix({1, 2, 3}, 1, 3)).expm_absolute_bound(1.0); },
@@ -71,6 +72,39 @@ void checks_and_their_switch() {
           "expm_absolute_bound: not square");
     check(test::raises([&] { test::example().expm_absolute_bound(-1.0); }, Error::wrong_value),
           "expm_absolute_bound: a negative time");
+    // (|C| + S) t / 2 = 1: the spectral radius is not below 1; 0.9 stays accepted
+    check(test::raises(
+              [&] {
+                  IntervalMatrix(test::matrix({1.0}, 1, 1), test::matrix({1.0}, 1, 1))
+                      .expm_absolute_bound(1.0);
+              },
+              Error::wrong_value),
+          "expm_absolute_bound: the spectral radius of B2 is 1");
+    // The off-diagonal 1.2 twice: the spectral radius is 1.2
+    check(test::raises(
+              [&] {
+                  IntervalMatrix(test::matrix({0.0, 2.4, 2.4, 0.0}, 2, 2),
+                                 test::matrix({0.0, 0.0, 0.0, 0.0}, 2, 2))
+                      .expm_absolute_bound(1.0);
+              },
+              Error::wrong_value),
+          "expm_absolute_bound: a spectral radius above 1");
+    // Row sums above 1 but the spectral radius below it (triangular): accepted
+    check(close(IntervalMatrix(test::matrix({0.0, 2.4, 0.0, 0.0}, 2, 2),
+                               test::matrix({0.0, 0.0, 0.0, 0.0}, 2, 2))
+                    .expm_absolute_bound(1.0),
+                std::vector<double>(4, 0.0), 1e-12),
+          "expm_absolute_bound: a nilpotent B2 is accepted");
+    // true radius 1 + 3e-17, computed 1 - 1e-16: the plain B x < x passes, the margins refuse it
+    const IntervalMatrix near_one(Interval(test::matrix({-0.528244331532636}, 1, 1),
+                                           test::matrix({1.8056955812214623}, 1, 1)));
+    check(
+        test::raises([&] { near_one.expm_absolute_bound(1.1076064098507128); }, Error::wrong_value),
+        "expm_absolute_bound: a true radius above 1 that rounds to below 1");
+    // 1 - 1e-12 is far above the rounding margins: still accepted
+    const IntervalMatrix below_one(test::matrix({1.0}, 1, 1), test::matrix({1.0 - 2e-12}, 1, 1));
+    check(!test::raises([&] { below_one.expm_absolute_bound(1.0); }, Error::wrong_value),
+          "expm_absolute_bound: a radius just below 1 is accepted");
     const IntervalMatrix A(test::matrix({0.5}, 1, 1), test::matrix({0.5}, 1, 1));
     const Tensor on = A.expm_absolute_bound(1.0);
     ChecksScope off(false);
