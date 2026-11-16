@@ -9,6 +9,8 @@ A row that CORALean marks out of scope (`coralean-status.json`), or that CORA.cp
 never become `oracle`: it has a column of its own and is left out of the bit-exact denominator.
 A header counts a row only if the .cpp file that implements it executed a line.
 
+Over the 87 instances, 1944 of 2295 rows (84.7%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+
 ## Per instance
 
 | instance | rows | oracle | property | ported | untested | todo | out of scope | CORALean out of scope | bit-exact |

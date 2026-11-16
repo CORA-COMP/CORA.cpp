@@ -42,6 +42,7 @@ import coverage as cov  # noqa: E402
 REPO = HERE.parents[1]
 STATUSES = cov.STATUSES + (cov.OUT,)
 BEGIN, END = "<!-- BEGIN bit-exact -->", "<!-- END bit-exact -->"
+OVERALL_BEGIN, OVERALL_END = "<!-- BEGIN overall -->", "<!-- END overall -->"
 # The text that coverage/benchmarks.md starts with
 HEADER = """# What the benchmarks run, and how much of it is bit-exact against CORALean
 
@@ -77,6 +78,12 @@ WHY = """## What keeps the rows of each family from `oracle`
   `test_lean_nonlinear_sys_lin_reach_poly`), reduced by `reduceCora` in `post`.
 """
 
+
+# The rows of the README tables whose name differs from the instance of the benchmark program.
+ROW_NAMES = {"Unicycle reach, with the report's disturbance w": "Unicycle-reach-disturbance",
+             "Double Pendulum less-robust, the script (no splitting)": "Double_Pendulum-less-robust-script",
+             "Docking constraint, polytope and splitting": "Docking-constraint-polygon",
+             "CartPole reach, the report's set": "CartPole-reach-report"}
 
 # Plumbing rows (no operation to compare): constructors and accessors, counted apart (coverage/README.md).
 PLUMBING_METHODS = {"dim", "generators", "numgens", "isemptyobject", "representsa_emptyObject",
@@ -169,16 +176,19 @@ def summarize(measured, status, groups, root, lean=None):
         steps = sorted({tag for file in entry["files"] if file.endswith(".cpp")
                         for tag in private_steps(root, file)})
         done = sum(states[key] == "oracle" for key in plumbing)
+        # the rows that only a property test backs, of those that can be bit-exact
+        excluded = set(plumbing) | set(beyond)
+        weaker = sum(v == "property" for key, v in states.items() if key not in excluded)
         out[name] = {"rows": states, "only": only, "counts": counts, "total": len(rows),
                      "oracle": counts["oracle"] - done, "lean_out": len(beyond), "steps": steps,
-                     "plumbing": len(plumbing),
+                     "plumbing": len(plumbing), "property": weaker,
                      "eligible": len(rows) - counts[cov.OUT] - len(beyond) - len(plumbing)}
     return out
 
 
 def render_markdown(summary, lean):
     """coverage/benchmarks.md."""
-    lines = [HEADER, "## Per instance", "",
+    lines = [HEADER, render_overall(summary), "", "## Per instance", "",
              "| instance | rows | oracle | property | ported | untested | todo | out of scope | "
              "CORALean out of scope | plumbing | bit-exact |",
              "|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -246,14 +256,50 @@ def render_table(summary):
     return "\n".join(lines)
 
 
-def splice(readme, table):
-    """The README with the table between its markers (the markers are added at the end if missing)."""
-    block = f"{BEGIN}\n{table}\n{END}"
-    if BEGIN in readme and END in readme:
-        head, _, rest = readme.partition(BEGIN)
-        _, _, tail = rest.partition(END)
+def splice(readme, table, begin=BEGIN, end=END):
+    """The README with the text between its markers (the markers are added at the end if missing)."""
+    block = f"{begin}\n{table}\n{end}"
+    if begin in readme and end in readme:
+        head, _, rest = readme.partition(begin)
+        _, _, tail = rest.partition(end)
         return head + block + tail
     return readme.rstrip("\n") + "\n\n" + block + "\n"
+
+
+def render_overall(summary):
+    """The sentence of the README summary that quotes the bit-exact share over all instances."""
+    done = [s for s in summary.values() if "skipped" not in s]
+    x, y = sum(s["oracle"] for s in done), sum(s["eligible"] for s in done)
+    return (f"Over the {len(done)} instances, {x} of {y} rows ({100 * x / y:.1f}%) that they execute and "
+            "that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed "
+            "per instance; constructors and accessors are left out, see `coverage/README.md`).")
+
+
+def readme_instance(name, keys):
+    """The key of `benchmarks.json` that a row of the README tables names, or None."""
+    squeeze = lambda text: re.sub(r"[^a-z0-9]", "", text.lower())  # noqa: E731
+    name = ROW_NAMES.get(name, name)
+    return next((k for k in keys if squeeze(k) == squeeze(name)), None)
+
+
+def fill_main_tables(readme, summary):
+    """The README with the column `oracle check (rows)` of its main tables filled from the summary,
+    cell by cell (the other columns stay); a row of the table that no instance matches is left."""
+    out, column = [], None
+    for line in readme.split("\n"):
+        cells = line.split("|")
+        if line.startswith("| instance |") and "oracle check (rows)" in line:
+            column = [c.strip() for c in cells].index("oracle check (rows)")
+        elif not line.startswith("|"):
+            column = None
+        elif column is not None and not line.startswith("|---") and len(cells) > column:
+            key = readme_instance(cells[1].strip(), summary)
+            s = summary.get(key, {})
+            if "rows" in s:
+                cells[column] = f" {s['oracle']}/{s['eligible']} bit-exact, {s['property']} property "
+                line = "|".join(cells)
+        out.append(line)
+    return "\n".join(out)
 
 
 # Measuring ---------------------------------------------------------------------------------------
@@ -351,9 +397,9 @@ def main():
     expected = {
         data: json.dumps({"instances": measured}, indent=1, sort_keys=True) + "\n",
         root / "coverage" / "benchmarks.md": render_markdown(summary, lean),
-        root / "examples" / "benchmarks" / "README.md": splice(
-            (root / "examples" / "benchmarks" / "README.md").read_text(encoding="utf-8"),
-            render_table(summary)),
+        root / "examples" / "benchmarks" / "README.md": splice(splice(fill_main_tables(
+            (root / "examples" / "benchmarks" / "README.md").read_text(encoding="utf-8"), summary),
+            render_table(summary)), render_overall(summary), OVERALL_BEGIN, OVERALL_END),
     }
     if args.check:
         stale = [p.relative_to(root).as_posix() for p, text in expected.items()
