@@ -80,7 +80,7 @@ class Construction(unittest.TestCase):
 
 
 class Conversions(unittest.TestCase):
-    # the zonotope of the matrices
+    # the matrices flatten column-major to the center and generators of a zonotope
     def test_zonotope(self):
         Z = EXAMPLE.zonotope()
         np.testing.assert_array_equal(Z.center, [1, 3, 2, 4])
@@ -264,7 +264,7 @@ class Exponential(unittest.TestCase):
             EXAMPLE.expm_one_param(1.0, 3)
 
 
-# gradients
+# the class below differentiates the operations through torch autograd
 class Gradients(unittest.TestCase):
     """Autograd through the operations equals central differences."""
 

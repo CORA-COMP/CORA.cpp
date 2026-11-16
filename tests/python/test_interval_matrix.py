@@ -212,7 +212,7 @@ class Exponential(unittest.TestCase):
 
 
 class SumsAndQueries(unittest.TestCase):
-    # sums and queries
+    # the tests of this class run on the eigen backend
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
 

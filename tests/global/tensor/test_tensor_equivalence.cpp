@@ -421,7 +421,7 @@ int main() {
                           std::string(info.name) + " on " + b + ", result " + std::to_string(i));
         }
     }
-    // the result
+    // the exit status is nonzero if any check failed
     return test::finish("tensor equivalence");
 }
 

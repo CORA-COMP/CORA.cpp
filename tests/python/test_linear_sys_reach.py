@@ -125,7 +125,7 @@ class ReachSet(unittest.TestCase):
         torch.testing.assert_close(cpu.time_interval[-1].generators, gpu.time_interval[-1].generators.cpu())
 
 
-# gradients through the objects
+# the custom and the autograd derivative of reach must agree for every algorithm
 class Gradients(unittest.TestCase):
     def test_gradcheck_through_the_objects(self):
         for lin_alg in ALGORITHMS:

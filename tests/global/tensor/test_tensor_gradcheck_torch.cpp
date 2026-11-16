@@ -62,7 +62,7 @@ void gradcheck(const std::string &op, const Fn &f, const std::vector<torch::Tens
             }
             plus[k].view(-1)[j] += h;
             minus[k].view(-1)[j] -= h;
-            // the numeric and the analytic gradient
+            // the central difference of the weighted loss, compared below with autograd
             const double numeric = (aux_loss(f, plus, weights).item<double>() -
                                     aux_loss(f, minus, weights).item<double>()) /
                                    (2 * h);

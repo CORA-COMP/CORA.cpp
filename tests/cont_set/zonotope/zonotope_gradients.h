@@ -63,7 +63,7 @@ inline void gradcheck(const std::string &name, const Function &f,
             }
             plus[k].view(-1)[j] += h;
             minus[k].view(-1)[j] -= h;
-            // the numeric and the analytic gradient
+            // the central difference of the weighted sum, compared below with the autograd gradient
             const double numeric = (weighted_sum(f, plus, weights).item<double>() -
                                     weighted_sum(f, minus, weights).item<double>()) /
                                    (2 * h);

@@ -236,7 +236,7 @@ class Embedding(unittest.TestCase):
             cora.Interval.origin(0)
 
 
-# gradients
+# the class below differentiates the operations through torch autograd
 class Gradients(unittest.TestCase):
     """Autograd through the operations equals central differences (piecewise ones off their kinks)."""
 

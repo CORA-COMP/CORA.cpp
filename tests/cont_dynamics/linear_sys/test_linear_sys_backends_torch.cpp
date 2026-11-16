@@ -47,7 +47,7 @@ double max_diff(const std::vector<double> &a, const std::vector<double> &b) {
     if (a.size() != b.size()) return 1e300;
     double worst = 0.0;
     for (std::size_t i = 0; i < a.size(); ++i) worst = std::max(worst, std::abs(a[i] - b[i]));
-    // the largest absolute difference
+    // worst is the largest entrywise gap; 1e300 above stands for a size mismatch
     return worst;
 }
 

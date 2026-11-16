@@ -51,7 +51,7 @@ inline std::string dump_layers(const cora::Figure &fig) {
             out << "\n";
         }
     }
-    // the text
+    // the snapshot text is what the file stores and what check_snapshot compares
     return out.str();
 }
 
