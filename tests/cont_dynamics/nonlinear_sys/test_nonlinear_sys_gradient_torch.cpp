@@ -23,6 +23,15 @@ using test::check;
 
 namespace {
 
+/// CORA's step and loop: the only differentiable linearization (the default one computes on host
+/// numbers and refuses a tensor that needs gradients).
+alg::Linearization cora_linearization() {
+    return {.time_step = 0.02,
+            .taylor_terms = 4,
+            .linear_step = alg::LinearStep::cora,
+            .error_bound = alg::ErrorBound::loop};
+}
+
 NonlinearSys van_der_pol() {
     return NonlinearSys(
         [](const std::vector<Expr> &x) {
@@ -32,14 +41,11 @@ NonlinearSys van_der_pol() {
 }
 
 /// The support along d of every set of the reachable tube, summed.
-torch::Tensor reach_loss(const torch::Tensor &c, const torch::Tensor &G, const torch::Tensor &d) {
+torch::Tensor reach_loss(const torch::Tensor &c, const torch::Tensor &G, const torch::Tensor &d,
+                         const alg::Linearization &algorithm) {
     const ReachSet R = van_der_pol().reach(
         {.initial_set = Zonotope(from_torch(c.unsqueeze(-1)), from_torch(G)), .t_final = 0.2},
-        // CORA's step and loop: the default closed form and region compute on host numbers
-        alg::Linearization{.time_step = 0.02,
-                           .taylor_terms = 4,
-                           .linear_step = alg::LinearStep::cora,
-                           .error_bound = alg::ErrorBound::loop});
+        algorithm);
     const Tensor direction = from_torch(d.unsqueeze(-1));
     torch::Tensor total = torch::zeros({}, c.options());
     for (const Zonotope &Z : R.time_point)
@@ -86,13 +92,26 @@ void reach_is_differentiable() {
     const torch::Tensor d = torch::tensor({0.6, -0.8}, opts);
     const torch::Tensor c0 = torch::tensor({1.4, 2.3}, opts);
     const torch::Tensor G0 = torch::tensor({{0.05, 0.01}, {-0.02, 0.06}}, opts);
-    const double c_error =
-        gradient_error([&](const torch::Tensor &c) { return reach_loss(c, G0, d); }, c0);
-    const double g_error =
-        gradient_error([&](const torch::Tensor &G) { return reach_loss(c0, G, d); }, G0);
+    const double c_error = gradient_error(
+        [&](const torch::Tensor &c) { return reach_loss(c, G0, d, cora_linearization()); }, c0);
+    const double g_error = gradient_error(
+        [&](const torch::Tensor &G) { return reach_loss(c0, G, d, cora_linearization()); }, G0);
     check(c_error < 1e-5, "reach: the gradient in the center is off by " + std::to_string(c_error));
     check(g_error < 1e-5,
           "reach: the gradient in the generators is off by " + std::to_string(g_error));
+}
+
+/// The default linearization computes on host numbers: it refuses to lose the gradient silently.
+void default_linearization_refuses_gradients() {
+    const torch::TensorOptions opts = torch::TensorOptions().dtype(torch::kDouble);
+    const torch::Tensor c = torch::tensor({1.4, 2.3}, opts).requires_grad_(true);
+    const torch::Tensor G = torch::tensor({{0.05, 0.01}, {-0.02, 0.06}}, opts);
+    const torch::Tensor d = torch::tensor({0.6, -0.8}, opts);
+    check(
+        test::raises(
+            [&] { reach_loss(c, G, d, alg::Linearization{.time_step = 0.02, .taylor_terms = 4}); },
+            Error::not_supported),
+        "reach: the default linearization refuses a start set that needs gradients");
 }
 
 void simulate_is_differentiable() {
@@ -110,6 +129,7 @@ void simulate_is_differentiable() {
 int main() {
     const BackendScope backend_scope("torch");
     reach_is_differentiable();
+    default_linearization_refuses_gradients();
     simulate_is_differentiable();
     return test::finish("nonlinearSys gradient");
 }
