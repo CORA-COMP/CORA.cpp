@@ -24,6 +24,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
 #include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
 
@@ -58,32 +59,6 @@ std::optional<int> aux_halvings(const Mat &A, std::size_t n, double dt) {
     return std::nullopt;
 }
 
-/// [e^{A dt}] by scaling and squaring (expSquaringFloat Δt Δt 16 s): the Taylor sum of order 16 of
-/// A dt / 2^s, the powers by left multiplication and the newest term added to the running sum,
-/// widened by the remainder bound in every entry, then squared s times.
-std::pair<Mat, Mat> aux_exp_squaring(const Mat &A, std::size_t n, double dt, int halvings) {
-    // the Taylor sum of A dt / 2^s
-    const Mat M = priv_float_dense_scale(priv_float_halved(dt, halvings), A);
-    Mat P = priv_float_dense_identity(n), S = priv_float_dense_scale(1.0, P);
-    for (int k = 0; k < 16; ++k) {
-        P = priv_float_dense_matmul(M, P, n);
-        const Mat term = priv_float_dense_scale(1.0 / priv_float_factorial(k + 1), P);
-        for (std::size_t e = 0; e < S.size(); ++e) S[e] = term[e] + S[e];
-    }
-    const double R = priv_float_remainder_bound(priv_float_dense_norm(M, n), 16);
-    Mat inf(S), sup(S);
-    for (std::size_t e = 0; e < S.size(); ++e) {
-        inf[e] -= R;
-        sup[e] += R;
-    }
-    for (int i = 0; i < halvings; ++i) {
-        auto squared = priv_float_interval_matmul(inf, sup, inf, sup, n);
-        inf = std::move(squared.first);
-        sup = std::move(squared.second);
-    }
-    return {std::move(inf), std::move(sup)};
-}
-
 /// The zonotope of the host data: center c (n) and the generators G (n, h) row-major.
 Zonotope aux_zonotope(const Tensor &like, const Vec &c, const Vec &G, std::size_t n,
                       std::size_t h) {
@@ -111,7 +86,7 @@ std::optional<PolySeries> PolySeries::make(const Tensor &A, double dt, int taylo
     const auto box = [&](const std::pair<Mat, Mat> &b) {
         return Interval(Tensor::like(A, b.first, shape), Tensor::like(A, b.second, shape));
     };
-    Interval e_adt = box(aux_exp_squaring(a, n, dt, *halvings));
+    Interval e_adt = box(priv_exp_squaring(a, n, dt, *halvings));
     // the powers of [A, A] by left multiplication
     std::vector<Mat> powers{priv_float_dense_identity(n)};
     for (int i = 1; i <= *eta; ++i) powers.push_back(priv_float_dense_matmul(a, powers.back(), n));

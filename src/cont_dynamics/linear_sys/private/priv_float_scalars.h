@@ -61,6 +61,16 @@ inline double priv_float_corr_coeff_low(int i) {
     return -(q * q);
 }
 
+/// -(q e^x) with q = (i - 1) / i and x = min(0, -log i / (i - 1)): CORALean's corrCoeffLowTight,
+/// CORA's coefficient i^(-i/(i-1)) - i^(-1/(i-1)) to within rounding; past order 1024 the above.
+inline double priv_float_corr_coeff_low_tight(int i) {
+    if (i < 2 || i > 1024) return priv_float_corr_coeff_low(i);
+    const double d = std::max(1.0, double(i));
+    const double q = double(i - 1) / d;
+    const double x = std::min(0.0, -(std::log(d) / double(i - 1)));
+    return -(q * std::exp(x));
+}
+
 // The interval matrices ---------------------------------------------------------------------------
 
 /// The largest row sum of the magnitudes of the entries, each sum nested to the right, floored at

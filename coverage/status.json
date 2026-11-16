@@ -984,7 +984,7 @@
   "contDynamics/linearSys/reachInner": "todo",
   "contDynamics/linearSys/simulate": "ported",
   "contDynamics/linearSys/sparse": "todo",
-  "contDynamics/linearSys/taylorMatrices": "ported",
+  "contDynamics/linearSys/taylorMatrices": "oracle",
   "contDynamics/linearSys/trajectoryError": "ported",
   "contDynamics/linearSys/verify": "ported",
   "contDynamics/linearSysDT/computeGO": "todo",

@@ -1,18 +1,18 @@
-// test_lean_linear_sys_taylor_matrices - CORA's taylorMatrices F and G against CORALean
+// test_lean_linear_sys_taylor_matrices - CORA's taylorMatrices E, F and G against CORALean
 //
-// The correction matrices F and G of LinearSys (correction_matrix_state, correction_matrix_input)
-// are CORALean's entrywise matrices (the oracle's linearSys.taylorMatrices: FEntrywise,
-// GEntrywise, with the remainder W and the order eta_e) bit for bit at nearest, for random
-// systems of two to six states at several step sizes and orders, a nilpotent, a zero and a stiff
-// matrix, and where no order admits the enclosure (the oracle answers null, the entrywise matrices
-// are not served). CORA.cpp's priv_entrywise_corrections is compared, for W as well, and the public
-// methods under CORACPP_TAYLOR=entrywise.
+// By default the remainder W of LinearSys (expm_remainder) and the correction matrices F and G
+// (correction_matrix_state, correction_matrix_input) are CORALean's taylorMatricesFloat (the
+// oracle's WCora, FCora, GCora): e^{|A| dt} by scaling and squaring at the order asked for, bit
+// for bit at nearest, for random systems of two to six states at several step sizes and orders
+// (1 included), a nilpotent, a zero and a stiff matrix (scales up to 1e6, |A| dt up to about 40).
+// Under CORACPP_TAYLOR=entrywise the matrices are the entrywise ones at the admissible order (the
+// oracle's FEntrywise, GEntrywise; null where no order admits the enclosure).
 //
-// The row taylorMatrices stays `ported` (no ORACLE tag): the default is CORA's expm path, which the
-// benchmarks run; this test compares the opt-in path only.
-// Authors:       Claude Sonnet 5.5
+// ORACLE: contDynamics/@linearSys/taylorMatrices.m
+// ORACLE: contDynamics/@linearSys/private/priv_expmRemainder.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -20,6 +20,7 @@
 #include "cora/global/oracle/linear_sys.h"
 #include "oracle_testing.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #include <utility>
@@ -51,6 +52,28 @@ void aux_compare(const std::string &name, const Tensor &A, double dt, int eta) {
                         theirs->G);
 }
 
+/// W, F and G at the order asked for, CORA.cpp's default against the oracle's taylorMatricesFloat.
+void aux_compare_cora(const std::string &name, const Tensor &A, double dt, int eta) {
+    const std::optional<lean::TaylorMatrices> theirs =
+        lean::LinearSys(A).taylor_matrices_cora(dt, eta);
+    const std::optional<EntrywiseCorrections> mine = priv_squaring_corrections(A, dt, eta);
+    test::check(mine.has_value() == theirs.has_value(), name + ": the same halvings");
+    if (!mine || !theirs) return;
+    test::oracle::check(name + " W", mine->W, theirs->W);
+    test::oracle::check(name + " F", mine->F, theirs->F);
+    test::oracle::check(name + " G", mine->G, theirs->G);
+    // the public methods, where the powers stay finite (else they keep CORA's expm)
+    for (const Tensor &T : {mine->W, mine->F.inf(), mine->F.sup(), mine->G.inf(), mine->G.sup()})
+        for (const double x : T.data())
+            if (!std::isfinite(x)) return;
+    const LinearSys sys(A);
+    test::oracle::check(name + " expm_remainder", sys.expm_remainder(dt, eta).sup(), theirs->W);
+    test::oracle::check(name + " correction_matrix_state", sys.correction_matrix_state(dt, eta),
+                        theirs->F);
+    test::oracle::check(name + " correction_matrix_input", sys.correction_matrix_input(dt, eta),
+                        theirs->G);
+}
+
 } // namespace
 
 
@@ -58,6 +81,29 @@ void aux_compare(const std::string &name, const Tensor &A, double dt, int eta) {
 
 int main() {
     if (!test::oracle::available()) return 0;
+    // the default: CORA's matrices with the remainder by squaring
+    test::oracle::run("linearSys.taylorMatrices", [](test::oracle::Random &rnd) {
+        for (const int64_t n : {2, 3, 4, 6})
+            for (const int eta : {1, 2, 4, 7})
+                for (const double dt : {0.01, 0.1, 0.5})
+                    aux_compare_cora("cora n" + std::to_string(n) + " eta" + std::to_string(eta) +
+                                         " dt" + std::to_string(dt),
+                                     rnd.matrix(n, n), dt, eta);
+        aux_compare_cora("cora self-test", Tensor({{-1.0, 0.0}, {0.5, -2.0}}), 0.25, 4);
+        aux_compare_cora("cora nilpotent",
+                         Tensor({{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 0.0}}), 0.125, 2);
+        aux_compare_cora("cora zero", Tensor({{0.0, 0.0}, {0.0, 0.0}}), 0.1, 3);
+        aux_compare_cora("cora fixture 9003", Tensor({{-1000.0, 0.0}, {0.5, -2.0}}), 0.015625, 4);
+        // stiff: |A| dt up to about 40 (beyond about 700 e^{|A| dt} is out of the doubles' range)
+        for (const auto &[scale, dt] : std::vector<std::pair<double, double>>{
+                 {3.0, 0.01}, {12.0, 0.01}, {1e3, 0.01}, {1e6, 1e-5}}) {
+            const Tensor A = rnd.matrix(3, 3) * scale;
+            for (const int eta : {2, 4})
+                aux_compare_cora("cora stiff " + std::to_string(scale) + " eta" +
+                                     std::to_string(eta),
+                                 A, dt, eta);
+        }
+    });
     // the public methods take CORALean's matrices only when asked
     setenv("CORACPP_TAYLOR", "entrywise", 1);
     test::oracle::run("linearSys.taylorMatrices", [](test::oracle::Random &rnd) {
