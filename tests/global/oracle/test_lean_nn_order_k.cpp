@@ -12,6 +12,7 @@
 // oracle keeps the generators that are zero (the padded powers, the merged columns that cancel,
 // the errors of radius 0), CORA.cpp drops them: they are dropped from its answer before the
 // comparison, every other column is compared in its order.
+// Only the oracle's zero columns go (their exponents with them): a zero column of CORA.cpp fails.
 //
 // Authors:       Claude Opus 5.5
 // Written:       16-November-2026
