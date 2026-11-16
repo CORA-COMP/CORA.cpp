@@ -75,7 +75,7 @@ jobs:
       preset: core
       ccache_key: -sanitizers
       free_disk: true
-      build_type: RelWithDebInfo
+      build_type: Release  # no debug info: with it the sanitizer build filled the runner's disk
       cxx_flags: -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
 
   # clang-format, ruff and clang-tidy over the whole tree (a pull request checks only what it changes).
