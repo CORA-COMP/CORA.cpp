@@ -377,7 +377,6 @@ read against the pinned oracle's op and kept out of `oracle`; each stays until t
 | `linearSys/errorSolution_adaptive`, `linearSys/reach` | `linearSys.errorSolution_adaptive`, `linearSys.reach` | CORALean's step is the interval-matrix one (`reachFloat`, `errorSolutionAdaptiveFloat`), tested by tolerance in `test_lean_linear_sys_steps_agreement` | the closed-form step |
 | `linearSys/verify` | none | `verifyFloat` is Alg. 3 with the reach function, the inner approximation and the distances as arguments; no concrete instance serves as an op | an op that instantiates it with CORA's support-function routines |
 | `contSet/interval/polyZonotope`, `contSet/zonotope/polyZonotope`, `polyZonotope/*` | none | the oracle has no polynomial zonotope codec until the poly-adaptive branch merges; then the generator order of the constructor (see above) decides | the ops of the section above |
-| `nn/layers/computeApproxPoly`, `nn/layers/nnLeakyReLULayer`, `nn/layers/nnSShapeLayer` | `nnLayer.evaluateZonotope`, `nnLayer.evaluatePolyZonotope` | the oracle serves ReLU, sigmoid and tanh at `poly_method` `singh` and at `regression`, with `regression_error` `extremum` (CORALean's float extremum, CORA.cpp's `RegressionError::extremum`, the default) and `bracket` (`RegressionError::bracket`), on a zonotope and on a polynomial zonotope with `errorForm` `GI` (`test_lean_nn_evaluate`); CORA.cpp has neither the leaky ReLU nor the S-shape layer | none for these layers |
 
 ## Taylor matrices (PR "oracle/taylor-matrices", CORALean MR !938)
 
@@ -448,5 +447,16 @@ dependent and an independent generator (CORA halves it for all-even exponents, s
 `Schedule.refineLayer`), and the fits of `ridgeregression`, `bernstein`, `taylor`, `bounds` and
 `throw-catch` (CORALean takes the coefficients as data).
 
-The coverage rows `computeApproxPoly`, `nnActivationLayer`, `evaluatePolyZonotopeNeuron`, `refine` and
-`getRefinableLayers` are oracle debt until then (`nnLeakyReLULayer` and `nnSShapeLayer` stay `untested`).
+The coverage rows `nnActivationLayer`, `evaluatePolyZonotopeNeuron`, `refine` and `getRefinableLayers`
+are oracle debt until then; `computeApproxPoly` is `oracle` at order 1 (below).
+
+## Activation layers at order 1 (PR "oracle/bitexact-1")
+
+`nnLeakyReLULayer`, `nnSShapeLayer`, `nnSigmoidLayer`, `nnTanhLayer` and `computeApproxPoly` are
+`oracle` by `test_lean_nn_evaluate`, which runs the order-1 lines of `evaluate.cpp`, the path of every
+AINNCS instance (`coverage/benchmarks.json`: none executes `priv_activation_poly.cpp`). CORA's ReLU is
+`nnLeakyReLULayer` at alpha 0, whose `computeApproxPoly` is the ReLU's line (also checked against the
+oracle's `leakyRelu` at alpha 0); sigmoid and tanh are `nnSShapeLayer`'s (`getDerBounds` is the
+bracket's derivative bracket, `computeApproxPolyCustom` Singh's line); `computeApproxPoly` at order 1
+is the regression line through 20 points. The output rows of `evaluate_with_input` (the closed loop's
+call) are checked against the oracle's set too. The order-k path stays as above.

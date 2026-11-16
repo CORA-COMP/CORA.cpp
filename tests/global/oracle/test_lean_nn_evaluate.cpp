@@ -3,9 +3,12 @@
 // ORACLE: nn/@neuralNetwork/evaluate.m
 // ORACLE: nn/@neuralNetwork/evaluate_.m
 // ORACLE: nn/layers/nonlinear/nnReLULayer.m
+// ORACLE: nn/layers/nonlinear/nnLeakyReLULayer.m
 // ORACLE: nn/layers/nonlinear/nnSigmoidLayer.m
 // ORACLE: nn/layers/nonlinear/nnTanhLayer.m
+// ORACLE: nn/layers/nonlinear/nnSShapeLayer.m
 // ORACLE: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
+// ORACLE: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 //
 // The oracle's nnLayer.evaluateZonotope and neuralNetwork.evaluate at poly_method "singh" (order
 // 1): a layer is the exact map by the slope and the box of the offset and the error added as a
@@ -22,7 +25,7 @@
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       12-November-2026
-// Last update:   13-November-2026
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -176,6 +179,13 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
     oracle::check(label + " c", out.center(), Y.c);
     oracle::check(label + " G", out.generators(), nonzero(Y.G));
     oracle::check(label + " GI", out.independent_generators(), nonzero(Y.GI));
+    // the pairs of evaluate_with_input, the closed loop's call: below the input rows, the same set
+    const PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(c, G, GI, E, ids), options);
+    const int64_t n = c.shape()[0], m = Y.c.shape()[0];
+    oracle::check(label + " pairs c", XY.center().slice(0, n, n + m), Y.c);
+    oracle::check(label + " pairs G", nonzero(XY.generators().slice(0, n, n + m)), nonzero(Y.G));
+    oracle::check(label + " pairs GI", nonzero(XY.independent_generators().slice(0, n, n + m)),
+                  nonzero(Y.GI));
 }
 
 /// CORA.cpp's and the oracle's output set of one layer of the activation on Z.
@@ -216,6 +226,7 @@ double aux_edge(double l, bool tanh) {
 // ===========================================  MAIN  =========================================== //
 
 int main() {
+    // order 1 only: no benchmark runs order k (docs/oracle-requests.md, activation layers)
     if (!oracle::available() || !oracle::serves("neuralNetwork.evaluate")) return 0;
     const std::vector<std::pair<std::string, Activation>> kinds{
         {"relu", Activation::relu}, {"sigmoid", Activation::sigmoid}, {"tanh", Activation::tanh}};
@@ -233,6 +244,11 @@ int main() {
                 options.poly_method = PolyMethod::singh;
                 oracle::check(name, nn.evaluate(Z, options),
                               lean::evaluate_layer(layer, lean::Zonotope(Z), "singh"));
+                // CORA's ReLU is nnLeakyReLULayer at alpha 0, whose computeApproxPoly is this line
+                if (activation == Activation::relu)
+                    oracle::check("leaky relu 0", nn.evaluate(Z, options),
+                                  lean::evaluate_layer(lean::NnLayer::leaky_relu(0.0),
+                                                       lean::Zonotope(Z), "singh"));
             }
         }
     });
