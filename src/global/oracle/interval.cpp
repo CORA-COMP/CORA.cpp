@@ -171,7 +171,7 @@ Interval Interval::enclose(const Interval &I2) const {
     return aux_pair("interval.enclose", *this, I2);
 }
 Interval Interval::cart_prod(const Interval &I2) const {
-    // the product of two boxes
+    // the oracle's cartProd is the Cartesian product of the two boxes
     return aux_pair("interval.cartProd", *this, I2);
 }
 

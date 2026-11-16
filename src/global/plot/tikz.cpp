@@ -148,7 +148,7 @@ std::string aux_style(Writer &w, const Figure::Layer &l) {
     if (l.dashed) o.emplace_back("dashed");
     std::string text;
     for (std::size_t i = 0; i < o.size(); ++i) text += (i ? ", " : "") + o[i];
-    // the options joined by commas
+    // the pgfplots option list, as the options in order
     return text;
 }
 

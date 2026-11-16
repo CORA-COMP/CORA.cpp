@@ -172,7 +172,7 @@ double aux_containment_check_inner(const InnerSet &R, const Poly &P) {
         if (r.status != LinProgResult::Status::optimal) return kNaN;
         dist = std::max(dist, aux_row_dot(P, i, c0) - P.b[i] - r.fval);
     }
-    // the largest violation over the rows
+    // no program failed (that returned NaN above): the distance is the largest row violation
     return dist;
 }
 

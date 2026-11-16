@@ -136,7 +136,7 @@ int aux_simplex(std::vector<double> &T, std::vector<int> &basis, int m, int W,
         aux_pivot(T, m, W, leave, enter);
         basis[leave] = enter;
     }
-    // the iteration limit is reached
+    // no pivot ended the loop within the iteration limit: status 2
     return 2;
 }
 

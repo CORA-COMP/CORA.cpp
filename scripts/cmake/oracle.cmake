@@ -1,6 +1,14 @@
 # oracle - the CORALean oracle that the lean tests, examples and Python package run against
+#
 # Included by CMakeLists.txt. CORACPP_ORACLE is OFF, DOWNLOAD (the release pinned in
 # scripts/coralean.cmake) or a command that starts the oracle; the tests skip what needs it when OFF.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set(CORACPP_ORACLE "OFF" CACHE STRING "The CORALean oracle: OFF, DOWNLOAD, or the command that starts it")
 
@@ -34,3 +42,5 @@ if(NOT CORACPP_ORACLE STREQUAL "OFF")
   set(coracpp_oracle_env "CORACPP_ORACLE=${command}")
   message(STATUS "CORALean oracle: ${command}")
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

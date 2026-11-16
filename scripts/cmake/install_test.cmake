@@ -1,8 +1,16 @@
 # install_test - installs the build into BUILD/install-test and builds and runs a tiny consumer
+#
 # against it (tests/install/consumer), with the flags of the build (a sanitized static library
 # needs its runtime at the link); the ctest install/consumer.
 #
 #   cmake -DBUILD=build -DSOURCE=. -DGENERATOR=Ninja -DCXX=g++ -DCXX_FLAGS= -DCONFIG=Release -P install_test.cmake
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       02-November-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set(prefix "${BUILD}/install-test/prefix")
 set(consumer "${BUILD}/install-test/consumer")
@@ -19,6 +27,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -S "${SOURCE}/tests/install/consumer"
 if(NOT configured EQUAL 0)
   message(FATAL_ERROR "install/consumer: find_package(CORA) failed against ${prefix}")
 endif()
+# the consumer is built and run: the installed package must work end to end
 execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" --config "${CONFIG}"
                 COMMAND_ERROR_IS_FATAL ANY)
 file(GLOB_RECURSE program "${consumer}/consumer" "${consumer}/consumer.exe")
@@ -28,3 +37,5 @@ message("${out}")
 if(NOT ran EQUAL 0)
   message(FATAL_ERROR "install/consumer: the program failed")
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -7,8 +7,17 @@
 # The oracle the `*lean*` tests run against is the one the build was configured with
 # (`scripts/build.sh -DCORACPP_ORACLE=...`); one that does not serve an op skips its test, naming the op.
 # The build directory is $CORACPP_BUILD (scripts/with_env.sh sets it), else ./build.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 exec ctest --test-dir "${CORACPP_BUILD:-$ROOT/build}" --output-on-failure "$@"
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

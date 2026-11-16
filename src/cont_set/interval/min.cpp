@@ -45,7 +45,7 @@ Interval Interval::min(const Tensor &Y) const {
 
 Tensor Interval::min() const {
     detail::Entry entry;
-    // the lower bound
+    // the smallest value of the box in each entry is its infimum
     return inf_;
 }
 

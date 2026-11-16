@@ -11,6 +11,13 @@
 //              result), sum (at most k*n*u times the same operation on |operands|, n its length),
 //              norm (at most k*n*u times the largest entry, n the matrix size, well-conditioned)
 // Read by tensor_ops() (C++ and Python), docs/tensor.md and the conventions test.
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       03-November-2026
+// Last update:   ---
+// Reviewed:      ---
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 // Construction ------------------------------------------------------------------------------------
 CORA_TENSOR_OP(like, core, not_differentiable, exact, 0, "host values as a tensor of the backend, device and dtype of another")
@@ -124,3 +131,5 @@ CORA_TENSOR_OP(interval_matmul, fused, piecewise, sum, 2, "the bounds of I M for
 CORA_TENSOR_OP(matmul_interval, fused, piecewise, sum, 2, "the bounds of M I for an interval matrix I (CORA's mtimes)")
 CORA_TENSOR_OP(girard_split, fused, not_differentiable, exact, 0, "the generators by Girard's score |g|_1 - |g|_inf, the k kept and the rest")
 CORA_TENSOR_OP(abs_sum, fused, piecewise, sum, 1, "sum(|x|) along the last axis, kept (the radius of a zonotope)")
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

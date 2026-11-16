@@ -9,6 +9,13 @@
 # Afterwards: scripts/with_env.sh scripts/build.sh     builds inside the environment
 #
 # Linux and WSL2 only. Set CORACPP_ENV to use another environment name.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       29-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set -euo pipefail
 
@@ -72,3 +79,5 @@ esac
 
 echo "[setup] done. Try: scripts/with_env.sh scripts/build.sh example_linear_reach_01_5dim"
 echo "[setup] VS Code: open this folder (in WSL: 'WSL: Reopen Folder in WSL'), open an example, press F5"
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

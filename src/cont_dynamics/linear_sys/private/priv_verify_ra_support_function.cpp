@@ -552,7 +552,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
         if (isu) c = (c + lw[r * nw + 2]) + std::abs(lw[r * nw + 3]);
         pass.Cbloat[r] = c;
     }
-    // the pass holds what the step needs
+    // per row the bound is the center term, the absolute generator sums and the particular terms
     return pass;
 }
 

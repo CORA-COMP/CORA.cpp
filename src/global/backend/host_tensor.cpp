@@ -705,7 +705,7 @@ Tensor::Ptr HostTensor<T>::take_along_axis(const Tensor::Impl &idx, int axis) co
                                               std::to_string(len - 1));
         r->p[io] = p[ixx + l * axis_stride];
     });
-    // the concatenated result
+    // every index was in range, so the result is filled
     return r;
 }
 
@@ -862,7 +862,7 @@ std::array<Tensor::Ptr, 3> HostTensor<T>::svd() const {
         Map<T>(S->p + z * k, k, 1) = svd.singularValues();
         Map<T>(V->p + z * m * k, m, k) = svd.matrixV();
     }
-    // the factors of the decomposition
+    // U, the singular values S and V, each with the batch of A in front
     return {U, S, V};
 }
 

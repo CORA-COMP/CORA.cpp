@@ -117,7 +117,7 @@ Tensor aux_concat(It first, It last, int axis) {
             CORA_FAIL(Error::dimension_mismatch, "CoraTensor::concat: the parts differ in rank");
         impls[i] = &it->impl();
     }
-    // the parts concatenated along the axis
+    // the backend concatenates the parts after the rank and pair checks
     return Tensor(head.impl().concat({impls, count}, a));
 }
 

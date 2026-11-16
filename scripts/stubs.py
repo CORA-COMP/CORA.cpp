@@ -203,7 +203,7 @@ def class_stub(cls, module):
 
 
 def submodules(module):
-    # the submodules of a module
+    # the attributes that are modules named inside this one (cora.errors inside cora)
     return sorted(n for n, v in vars(module).items()
                   if isinstance(v, types.ModuleType) and v.__name__.startswith(module.__name__ + "."))
 

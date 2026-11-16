@@ -556,6 +556,62 @@ def check_function_docs(lines, lang, issues):
                               f"{MAX_DOC_LINES}: move the explanation into the docstring of the file or a comment")
 
 
+# ------------------------------------------------------------ shell, CMake and .def files
+
+# Shell, CMake and .def files: docstring, BEGIN/END markers, a comment per 20 lines of code (not in .def)
+
+
+def other_sign(path):
+    """The comment sign of a shell, CMake or .def file, or None for any other file."""
+    name, ext = os.path.basename(path), os.path.splitext(path)[1]
+    if name == "CMakeLists.txt" or ext in (".sh", ".cmake"):
+        return "#"
+    return "//" if ext == ".def" else None
+
+
+def check_other_file(path, lines):
+    """The problems of a shell, CMake or .def file: the library layout less AUXILIARY, MAIN, the
+    function docs and the block comment limit (a build flag needs a few lines); a .def table needs no comments."""
+    sign, issues = other_sign(path), []
+    start = 1 if lines and lines[0].startswith("#!") else 0
+    block = []
+    for line in lines[start:]:
+        if not line.startswith(sign):
+            break
+        block.append(line[len(sign) + 1:] if line.startswith(sign + " ") else line[len(sign):])
+    # the docstring is checked as that of a C++ file
+    check_docstring(path, ["// " + b if b else "//" for b in block], "cpp", issues)
+    lang = "cpp" if sign == "//" else "py"
+    # exactly one BEGIN CODE and one END OF CODE line, in the comment style of the file
+    at = marker_lines(lines, lang)
+    for name in ("BEGIN", "END"):
+        if len(at[name]) != 1:
+            issues.append(f"exactly one {name} marker line is expected: {marker(name, lang)}")
+    if len(at["BEGIN"]) != 1 or len(at["END"]) != 1:
+        return issues
+    begin, end = at["BEGIN"][0], at["END"][0]
+    # BEGIN above END, nothing after END, only the docstring above BEGIN
+    if begin > end or any(line.strip() for line in lines[end + 1:]):
+        issues.append("BEGIN CODE comes first, END OF CODE last; nothing but empty lines follows it")
+    elif any(line.strip() and not line.startswith(sign) for line in lines[start:begin]):
+        issues.append("code above BEGIN CODE: only the docstring belongs there")
+    for i in (begin, end):
+        if (i > 0 and lines[i - 1] != "") or (i + 1 < len(lines) and lines[i + 1] != ""):
+            issues.append("a marker line should have an empty line above and below")
+            break
+    # a comment resets the run of code lines; a run over the limit is reported once
+    run = 0
+    for i in range(begin + 1, end if sign == "#" else begin):
+        if lines[i].lstrip().startswith(sign):
+            run = 0
+        elif lines[i].strip():
+            run += 1
+            if run == MAX_CODE_RUN + 1:
+                issues.append(f"line {i - MAX_CODE_RUN + 1}: more than {MAX_CODE_RUN} lines of code "
+                              "without a comment; add a line saying what the next step does")
+    return issues
+
+
 def check_file(path, lines):
     """All layout checks of one C++ or Python file (path relative to the repository)."""
     lang = language(path)

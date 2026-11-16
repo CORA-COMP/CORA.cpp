@@ -287,7 +287,6 @@ zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
         }
         row[2 * m] = (c1.p[i] - c2.p[i]) * T(0.5);
     }
-    // the center and the generators
     return {c, G};
 }
 

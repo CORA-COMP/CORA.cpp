@@ -716,6 +716,20 @@ def check_layout_of_the_rest(issues_by_file):
                     issues_by_file.setdefault(rel(path), []).extend(found)
 
 
+def check_layout_of_other_files(issues_by_file):
+    """The layout of the shell, CMake and .def files (layout.check_other_file): docstring, author
+    block, the BEGIN CODE and END OF CODE markers, a comment per 20 lines of code."""
+    # the files by pattern; a build directory is skipped
+    patterns = ("CMakeLists.txt", "*/CMakeLists.txt", "benchmarks/*/CMakeLists.txt", "tests/*/*/CMakeLists.txt",
+                "scripts/**/*.sh", "scripts/**/*.cmake", "include/**/*.def", "src/**/*.def")
+    for path in sorted({p for pattern in patterns for p in files(pattern)}):
+        if "/build" in rel(path) or rel(path).startswith("build"):
+            continue
+        found = layout.check_other_file(rel(path), read_lines(path))
+        if found:
+            issues_by_file.setdefault(rel(path), []).extend(found)
+
+
 def check_test_labels(issues_by_file):
     """Every ctest test has a label of its kind: CMake adds each through `cora_add_test(name label
     ...)`, which refuses an empty label; a bare add_test outside that function has none."""
@@ -768,6 +782,8 @@ def main():
             issues_by_file[rel(path)] = found
     check_tests_exist(issues_by_file)
     check_test_files(issues_by_file)
+    # shell, CMake and .def files
+    check_layout_of_other_files(issues_by_file)
     # the checks of the tree
     check_python_files(issues_by_file)
     check_python_tests_cover_the_api(issues_by_file)

@@ -4,6 +4,14 @@
 // error.h turns the rows into the enum Error::Id, error.cpp into the table of names.
 //
 // the identifiers of CORA's error messages (global/functions/helper/.../CORAerror.m)
+//
+// Authors:       Claude Sonnet 5.5
+// Written:       06-November-2026
+// Last update:   ---
+// Reviewed:      ---
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
 CORA_ERROR(wrong_input_in_constructor, "CORA:wrongInputInConstructor", "a constructor got arguments it cannot build from")
 CORA_ERROR(no_input_in_set_constructor, "CORA:noInputInSetConstructor", "a set constructor got no arguments")
 CORA_ERROR(dimension_mismatch, "CORA:dimensionMismatch", "operands of different dimensions or sizes")
@@ -37,3 +45,5 @@ CORA_ERROR(out_of_memory, "CORA:outOfMemory", "the computation needs more memory
 CORA_ERROR(noops, "CORA:noops", "no implementation for this pair of classes")
 CORA_ERROR(install, "CORA:install", "a dependency is missing from the installation")
 CORA_ERROR(report_to_dev, "CORA:reportToDev", "an internal inconsistency: please report it")
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //

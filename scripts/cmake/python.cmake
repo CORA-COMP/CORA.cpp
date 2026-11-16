@@ -1,5 +1,13 @@
 # python - the cora Python package: the compiled module and the Python files beside it
+#
 # Included by CMakeLists.txt; the variables and options are its.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # ------------------------------------------- Python -----------------------------------------------
 # The cora package: the compiled module and the Python files beside it, in <build>/cora. Put the
@@ -10,6 +18,7 @@
 set(python_ok OFF)
 if(NOT CORACPP_PYTHON STREQUAL "OFF" AND Python3_Development.Module_FOUND)
   # the package imports numpy, and the build imports the package to write its type stubs
+  # the module carries the file name extension of the Python found
   execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import numpy"
                   RESULT_VARIABLE numpy_result OUTPUT_QUIET ERROR_QUIET)
   if(numpy_result EQUAL 0)
@@ -31,6 +40,7 @@ if(python_ok)
       set(python_torch ON)
     endif()
   endif()
+  # pybind11 from the Python, else a fetched copy; with torch_python the bindings come from torch
   if(NOT python_torch)
     execute_process(COMMAND "${Python3_EXECUTABLE}" -m pybind11 --cmakedir
                     OUTPUT_VARIABLE pybind11_dir ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -50,6 +60,7 @@ if(python_ok)
   execute_process(COMMAND "${Python3_EXECUTABLE}" -c
                   "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
                   OUTPUT_VARIABLE extension_suffix OUTPUT_STRIP_TRAILING_WHITESPACE)
+  # the module, linked to the library, and to torch_python or the headers of pybind11
   add_library(_cora MODULE "${CMAKE_SOURCE_DIR}/src/global/python/bindings.cpp")
   target_link_libraries(_cora PRIVATE cora Python3::Module)
   target_include_directories(_cora PRIVATE "${CMAKE_SOURCE_DIR}/src")
@@ -60,12 +71,14 @@ if(python_ok)
   else()
     target_link_libraries(_cora PRIVATE pybind11::headers)
   endif()
+  # the module is built into build/cora, next to the Python files copied there
   set(module_directory "${CMAKE_BINARY_DIR}/cora")
   set_target_properties(_cora PROPERTIES PREFIX "" SUFFIX "${extension_suffix}" CXX_VISIBILITY_PRESET hidden
     LIBRARY_OUTPUT_DIRECTORY "${module_directory}" RUNTIME_OUTPUT_DIRECTORY "${module_directory}"
     LIBRARY_OUTPUT_DIRECTORY_DEBUG "${module_directory}" LIBRARY_OUTPUT_DIRECTORY_RELEASE "${module_directory}"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${module_directory}" RUNTIME_OUTPUT_DIRECTORY_RELEASE "${module_directory}")
 
+  # the Python files of the package are copied beside the module when they change
   file(GLOB python_files CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/global/python/cora/*.py")
   set(copied)
   foreach(file IN LISTS python_files)
@@ -103,3 +116,5 @@ if(python_ok)
                "CORACPP_BUILD=${CMAKE_BINARY_DIR}" "CORACPP_ENV=none")
   cora_run_environment(python)
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

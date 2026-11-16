@@ -1,10 +1,16 @@
 #!/bin/bash
-# coracpp_lib.sh — shared by the tool scripts; builtins only in ask(), since
-# run_instance.sh calls it inside the measured region.
+# coracpp_lib - shared by the tool scripts; builtins only in ask(), since run_instance.sh calls it in the measured region
 #
 # Sets: HERE (this directory), ROOT (the repository), CORACPP (the binary), SRV_DIR, PORT;
 # ask() sets REPLY.
 # The tool scripts run under `set -u`, so nothing here may read an unset variable.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       01-October-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 : "${HERE:=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 ROOT="$(cd "$HERE/../.." && pwd)"
@@ -31,3 +37,5 @@ ask() {
     exec 3>&-
     return 0
 }
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

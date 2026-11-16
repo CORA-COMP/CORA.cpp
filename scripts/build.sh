@@ -10,6 +10,13 @@
 #                                                         the tests against another CORALean oracle (CONTRIBUTING.md)
 # The build directory is $CORACPP_BUILD (scripts/with_env.sh sets it: .coracpp-build, else ./build).
 # Run the tests with: scripts/with_env.sh scripts/test.sh -j4
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set -euo pipefail
 
@@ -49,3 +56,5 @@ if [ ${#TARGETS[@]} -gt 0 ]; then
 else
     cmake --build "$BUILD" --parallel "$JOBS"
 fi
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

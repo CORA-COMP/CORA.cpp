@@ -1,5 +1,13 @@
 # dependencies - Eigen, the virtual environment, the Python found and the compiler flags of cora_flags
+#
 # Included by CMakeLists.txt; the variables and options are its.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # ------------------------------------------ dependencies -------------------------------------------
 
@@ -37,6 +45,7 @@ if(CORACPP_VENV)
   set(Python3_EXECUTABLE "${venv_python}")
   set(Python3_FIND_VIRTUALENV ONLY)
 endif()
+# the Python found (or the virtual environment just created) is the one the build uses
 find_package(Python3 COMPONENTS Interpreter Development.Module)
 
 add_library(cora_flags INTERFACE)
@@ -96,3 +105,5 @@ if(UNIX AND DEFINED ENV{CONDA_PREFIX})
   target_include_directories(cora_flags SYSTEM INTERFACE "$ENV{CONDA_PREFIX}/include")
   target_link_options(cora_flags INTERFACE "-L$ENV{CONDA_PREFIX}/lib" "-Wl,-rpath,$ENV{CONDA_PREFIX}/lib")
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

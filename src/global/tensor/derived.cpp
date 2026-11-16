@@ -330,7 +330,7 @@ Tensor Tensor::block_diag(const std::vector<Tensor> &blocks) {
         rows.push_back(concat(parts, -1));
         before += m;
     }
-    // the rows stacked in order
+    // each row holds one block between zeros; the rows are stacked along the rows axis
     return concat(rows, -2);
 }
 

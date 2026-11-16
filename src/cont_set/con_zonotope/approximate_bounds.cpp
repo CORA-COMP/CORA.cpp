@@ -191,7 +191,7 @@ Bounds aux_union(const Tensor &c, const Tensor &G, const Tensor &dr, const Tenso
         }
         s = {Tensor::stack(l, 0), Tensor::stack(u_, 0), Tensor::stack(bl, 0), Tensor::stack(bu, 0)};
     }
-    // the four bounds are reduced
+    // the lower bounds l and bl take the smallest member, the upper ones u and bu the largest
     return {aux_reduce(s.l, true), aux_reduce(s.u, false), aux_reduce(s.bl, true),
             aux_reduce(s.bu, false)};
 }

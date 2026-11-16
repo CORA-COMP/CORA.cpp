@@ -1,5 +1,13 @@
 # benchmarks - the ARCH-COMP AFF benchmarks (examples/cpp/benchmarks), one program per family
+#
 # Included by CMakeLists.txt; the variables and functions are its.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # ------------------------------------------ benchmarks --------------------------------------------
 # Each program reaches or verifies the instances of its family and prints the line of MATLAB CORA's
@@ -19,6 +27,7 @@ endforeach()
 # the instances of each program, the first a smoke test of under a second (if the family has one)
 set(benchmark_instances_benchmark_linear_verify_arch23_rand RAND01 RAND02)
 set(benchmark_instances_benchmark_linear_verify_arch26_rnd RND01 RND02 RND03 RND04 RND05 RND06)
+# the instances of each benchmark program (the label `benchmark` has one test per instance)
 set(benchmark_instances_benchmark_linear_verify_fast_arch23_beam CBC01 CBC02 CBC03 CBF01 CBF02 CBF03)
 set(benchmark_instances_benchmark_linear_verify_fast_arch23_heat3d HEAT01 HEAT02)
 set(benchmark_instances_benchmark_linear_verify_fast_arch23_iss
@@ -31,6 +40,7 @@ set(benchmark_instances_benchmark_hybrid_reach_arch23_brake BRKDC01 BRKNC01 BRKN
 set(benchmark_instances_benchmark_linear_param_reach_arch23_platoon
     PLAD01_BND42 PLAA01_BND42 PLAA01_BND50 PLAD01_BND30 PLAN01)
 set(benchmark_instances_benchmark_linear_reach_arch23_heat3d HEAT03 HEAT04)
+# the nonlinear and neural-network benchmarks
 set(benchmark_instances_benchmark_nonlinear_reach_arch23_trafficscenario TRAF22)
 set(benchmark_instances_benchmark_hybrid_reach_arch23_spacecraft SPRE22)
 set(benchmark_instances_benchmark_nonlinear_reach_arch23_robertson ROBE25_1 ROBE25_2 ROBE25_3)
@@ -44,6 +54,7 @@ set(benchmark_instances_benchmark_neur_net_contr_reach_tora TORA-remain)
 set(benchmark_instances_benchmark_neur_net_contr_reach_tora_heterogeneous_tanh TORA-reach-tanh)
 set(benchmark_instances_benchmark_neur_net_contr_reach_tora_heterogeneous_sigmoid TORA-reach-sigmoid)
 set(benchmark_instances_benchmark_neur_net_contr_reach_single_pendulum Single_Pendulum-reach)
+# the controllers of the pendulums, the aircraft, the quadrotor and the spacecraft
 set(benchmark_instances_benchmark_neur_net_contr_reach_double_pendulum_less_robust
     Double_Pendulum-less-robust-script Double_Pendulum-less-robust)
 set(benchmark_instances_benchmark_neur_net_contr_reach_double_pendulum_more_robust Double_Pendulum-more-robust)
@@ -91,3 +102,5 @@ foreach(family IN ITEMS linear hybrid nonlinear)
   set_tests_properties(sound_verdict/${family} PROPERTIES TIMEOUT 3600 SKIP_RETURN_CODE 77)
   cora_run_environment(sound_verdict/${family})
 endforeach()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

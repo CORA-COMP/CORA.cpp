@@ -3,6 +3,13 @@
 # Run by the custom targets of scripts/cmake/library.cmake: cmake -DCOVERS=<a|b|...> -DSTAMP=<file>
 # -DLABEL=<text> [-DBOLD=ON] -P progress_stamp.cmake. COVERS are the object files, or the stamps of
 # the folders below, that this line reports; the line is printed if one is newer than STAMP.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       13-October-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set(changed OFF)
 if(NOT EXISTS "${STAMP}")
@@ -17,6 +24,7 @@ else()
   endforeach()
 endif()
 
+# report once: the stamp is touched, so the line is printed only after the next rebuild
 if(changed)
   if(BOLD)
     set(style --bold)
@@ -26,3 +34,5 @@ if(changed)
   file(MAKE_DIRECTORY "${folder}")
   file(TOUCH "${STAMP}")
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

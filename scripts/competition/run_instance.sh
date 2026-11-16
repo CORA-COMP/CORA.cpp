@@ -1,12 +1,19 @@
 #!/bin/bash
-
-# run_instance.sh — run one instance and report the verdict.
-#   args: v1 <benchmark> <instance> <params> [further catalog columns...] <results file>
+# run_instance - runs one instance and reports the verdict
+#
+# Syntax:   run_instance.sh v1 <benchmark> <instance> <params> [further catalog columns...] <results file>
 #
 # Everything here is timed, so it only hands params to the warm daemon (started by
 # prepare_instance.sh) and waits for the verdict. The daemon runs the whole instance:
 # generate the inputs, then repeat the operation params.repetition times. Without a
 # daemon, the instance runs in a fresh process instead.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       01-October-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set -u
 
@@ -34,3 +41,5 @@ case $? in
         cat "$SRV_DIR/job.log"
         exit 1 ;;
 esac
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

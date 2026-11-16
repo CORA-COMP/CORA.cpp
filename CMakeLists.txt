@@ -1,4 +1,4 @@
-# CORA.cpp - the library, its tests and examples, the Python package, the competition binary
+# CMakeLists - the library, its tests and examples, the Python package, the competition binary
 #
 #   cmake -S . -B build && cmake --build build --parallel       configure and build everything
 #   ctest --test-dir build -j4 --output-on-failure              conventions, C++ tests, examples, Python tests
@@ -11,6 +11,13 @@
 # CORACPP_NATIVE=ON (-march=native), CORACPP_BLAS=OFF (external BLAS), CORACPP_PYTHON=AUTO|ON|OFF
 # (the Python package), CORACPP_COMPETITION=OFF (needs GLPK, Linux). The library needs the compiler and
 # Eigen (found, else fetched); the Python package needs the Python development files and numpy.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -27,6 +34,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # the Python module is a shared object
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# the switches of the build, then the settings of libtorch, the virtual environment and Python
 option(CORACPP_NATIVE "Compile for this CPU (-march=native; /arch:AVX2 with MSVC)" ON)
 option(CORACPP_WERROR "Warnings are errors (the presets and CI set it; -DCORACPP_WERROR=OFF opts out locally)" OFF)
 option(CORACPP_BLAS "Let Eigen call an external BLAS (changes which library does the arithmetic)" OFF)
@@ -245,3 +253,5 @@ include(scripts/cmake/python.cmake)
 include(scripts/cmake/benchmarks.cmake)
 
 include(scripts/cmake/competition.cmake)
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

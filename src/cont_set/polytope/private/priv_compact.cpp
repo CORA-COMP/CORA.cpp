@@ -263,7 +263,7 @@ std::pair<Rows, Row> priv_equality_to_inequality(const HostH &H) {
         A.push_back(negated);
         b.push_back(-H.be[i]);
     }
-    // the rows as A x <= b
+    // each equality enters twice, as a x <= b and as -a x <= -b
     return {A, b};
 }
 
