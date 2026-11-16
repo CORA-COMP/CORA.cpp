@@ -38,6 +38,7 @@ jobs:
         continue-on-error: true
         with:
           key: line-coverage
+          max-size: 750M
       # the oracle archive (about 50 MB), fetched once per pinned version
       - uses: actions/cache@v4
         with:
