@@ -97,6 +97,34 @@ class BackingReport(unittest.TestCase):
         self.assertEqual((s["oracle"], s["total"], s["lean_out"], s["eligible"]), (1, 2, 1, 1))
         self.assertIn("| A | 1/1 | 0 | 1 |", bench.render_table({"A": s}))
 
+    # constructors and accessors have nothing to compare bit for bit
+    def test_plumbing_rows_leave_the_denominator(self):
+        for key in ["contSet/zonotope/zonotope", "contSet/contSet/contSet", "contSet/zonotope/dim",
+                    "contSet/zonotope/generators", "contSet/polytope/isemptyobject",
+                    "contSet/contSet/representsa_emptyObject", "contSet/contSet/reorder"]:
+            self.assertTrue(bench.is_plumbing(key), key)
+        for key in ["contSet/zonotope/plus", "contDynamics/linearSys/reach", "contSet/zonotope"]:
+            self.assertFalse(bench.is_plumbing(key), key)
+        # the bit-exact center is no plumbing; the plumbing row is neither in numerator nor denominator
+        status = {**STATUS, "contSet/zonotope/zonotope": "oracle"}
+        groups = {**GROUPS, "contSet": {"zonotope": ["center", "plus", "zonotope"]}}
+        (self.root / "src" / "ctor.cpp").write_text(
+            "// ctor - x\n//\n// CORA: contSet/@zonotope/zonotope.m\n\nint x;\n", encoding="utf-8")
+        s = bench.summarize({"A": {"files": ["src/plus.cpp", "src/ctor.cpp"]}}, status, groups, self.root)["A"]
+        self.assertEqual((s["total"], s["plumbing"], s["eligible"], s["oracle"]), (2, 1, 1, 1))
+
+    # the column of the main tables is the summary, cell by cell
+    def test_the_main_tables_are_filled_from_the_summary(self):
+        measured = {"A": {"files": ["src/plus.cpp", "src/center.cpp"]}, "B-c": {"skipped": "x"}}
+        summary = bench.summarize(measured, STATUS, GROUPS, self.root)
+        readme = ("| instance | expected | oracle check (rows) | CORA [s] |\n|---|---|---|---|\n"
+                  "| A | 1 | 9/9 bit-exact, 9 property | 5 |\n| B c | 1 | old | 6 |\n\ntext | x | y |\n")
+        filled = bench.fill_main_tables(readme, summary).split("\n")
+        self.assertEqual(filled[2], "| A | 1 | 1/2 bit-exact, 1 property | 5 |")
+        self.assertEqual(filled[3], "| B c | 1 | old | 6 |")
+        self.assertEqual(filled[5], "text | x | y |")
+        self.assertIn("Over the 1 instances, 1 of 2 rows (50.0%)", bench.render_overall(summary))
+
     # a private step has no row, but it is listed
     def test_private_steps_are_listed(self):
         (self.root / "src" / "priv_x.cpp").write_text(
