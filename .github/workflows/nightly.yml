@@ -120,6 +120,18 @@ jobs:
       ccache_key: -oracle
       oracle: true
 
+  # The oracle tests of an unoptimised build (-O0): a result must not depend on the optimisation level (#47).
+  oracle-debug:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: core
+      build_type: Debug
+      ccache_key: -oracle-debug
+      labels: oracle
+      oracle: true
+
   # The oracle pinned in scripts/coralean.cmake against the newest published tag: fails when the pin is behind.
   oracle-pin:
     needs: changed
@@ -145,7 +157,7 @@ jobs:
   # One issue per failed night: the open `nightly` issue gets a comment instead of a second issue.
   report:
     if: failure() && github.event_name == 'schedule'
-    needs: [changed, install, sanitizers, quality, competition, oracle, oracle-pin, backing-report, benchmarks]
+    needs: [changed, install, sanitizers, quality, competition, oracle, oracle-debug, oracle-pin, backing-report, benchmarks]
     runs-on: ubuntu-24.04
     permissions:
       issues: write
