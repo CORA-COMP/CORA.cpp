@@ -69,7 +69,7 @@ ClosedLoopTrajectories NeurNetContrSys::simulate(const Tensor &x0, const std::op
     const int64_t N = x0.shape()[1];
     ClosedLoopTrajectories out;
     out.x = {x0};
-    out.time = {0.0};
+    out.time.assign(1, 0.0);
     Tensor x = x0;
     const std::vector<double> periods = aux_grid(0.0, t_final, dt_);
     for (std::size_t p = 0; p + 1 < periods.size(); ++p) {

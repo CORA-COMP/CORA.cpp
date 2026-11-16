@@ -158,7 +158,7 @@ class ReachSet(unittest.TestCase):
         self.assertEqual(np.asarray(Z.reduce_adaptive(0.05).generators).shape, (2, 4))
         # everything boxed: the box of Z
         self.assertTrue(np.allclose(np.asarray(Z.reduce_adaptive(1.0).generators), [[1.8, 0.0], [0.0, 1.41]]))
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(cora.errors.WrongValue):
             Z.reduce_adaptive(-1.0)
 
     def test_reduce_pca_boxes_the_generators(self):

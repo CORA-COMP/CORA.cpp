@@ -44,8 +44,8 @@ std::optional<Set> priv_guard_intersect_nondet_guard(const std::vector<Set> &R,
         const Tensor Bt = basis.matrix_transpose();
         std::optional<Interval> I;
         for (const Set &S : R) {
-            const Interval box = S->linear_map(Bt)->interval();
-            if (!box.is_empty()) I = I ? I->unite(box) : box;
+            const Interval hull = S->linear_map(Bt)->interval();
+            if (!hull.is_empty()) I = I ? I->unite(hull) : hull;
         }
         if (!I) return std::nullopt;
         const std::optional<Zonotope> defect = priv_defect(basis, R, dense);

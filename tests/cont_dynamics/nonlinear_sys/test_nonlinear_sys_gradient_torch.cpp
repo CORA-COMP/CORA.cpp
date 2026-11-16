@@ -35,7 +35,11 @@ NonlinearSys van_der_pol() {
 torch::Tensor reach_loss(const torch::Tensor &c, const torch::Tensor &G, const torch::Tensor &d) {
     const ReachSet R = van_der_pol().reach(
         {.initial_set = Zonotope(from_torch(c.unsqueeze(-1)), from_torch(G)), .t_final = 0.2},
-        alg::Linearization{.time_step = 0.02, .taylor_terms = 4});
+        // CORA's step and loop: the default closed form and region compute on host numbers
+        alg::Linearization{.time_step = 0.02,
+                           .taylor_terms = 4,
+                           .linear_step = alg::LinearStep::cora,
+                           .error_bound = alg::ErrorBound::loop});
     const Tensor direction = from_torch(d.unsqueeze(-1));
     torch::Tensor total = torch::zeros({}, c.options());
     for (const Zonotope &Z : R.time_point)

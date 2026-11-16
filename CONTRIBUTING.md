@@ -106,7 +106,8 @@ it, and `ctest` (`coverage`, the first test) fails when it is stale.
 - `scripts/coverage/benchmarks.py` records which rows each ARCH-COMP instance executes (gcov, preset
   `coverage`) and how many are `oracle`: `coverage/benchmarks.md` and a table in `examples/benchmarks/README.md`.
   After a change of a status run `python scripts/coverage/benchmarks.py --render-only`; the nightly
-  measures again with `--check` and fails on a stale report.
+  runs `--check`, which renders the committed measurement (no build) and fails on a stale report or a
+  measured file that is gone. `--check --remeasure` runs every instance again (hours; on demand).
 
 ## Examples
 
