@@ -75,8 +75,8 @@ void aux_cora_step() {
     if (theirs.steps.size() != K || mine.time_interval.size() < K) return;
     bool same = true;
     for (std::size_t k = 0; k < K; ++k) {
-        const double step = mine.time[k + 1] - mine.time[k];
-        same = same && std::abs(step - theirs.steps[k]) <= kAgreement * theirs.steps[k];
+        const double size = mine.time[k + 1] - mine.time[k];
+        same = same && std::abs(size - theirs.steps[k]) <= kAgreement * theirs.steps[k];
     }
     test::check(same, "cora: the step sizes of the oracle");
     for (std::size_t k = 0; k < K; ++k)

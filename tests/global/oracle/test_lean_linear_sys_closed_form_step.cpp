@@ -88,14 +88,18 @@ int main() {
                             rnd.zonotope(3, 2), rnd.zonotope(3, 2), rnd.vector(3), 1.0, eta);
         }
     });
-    // the Jacobian of a Robertson reaction: stiff, so e^{|A| dt} is far wider than e^{A dt}
-    test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {
-        const Tensor A = Tensor({{-0.4, 0.0, 0.01}, {0.4, -3000.0, -0.01}, {0.0, 3000.0, 0.0}});
-        for (const double dt : {1e-4, 1e-3, 1e-2})
-            for (const int eta : {2, 4, 10})
-                aux_compare("Robertson dt" + std::to_string(dt) + " eta" + std::to_string(eta), A,
-                            rnd.zonotope(3, 2), rnd.zonotope(3, 2), rnd.vector(3), dt, eta);
-    });
+    // the Jacobian of a Robertson reaction: stiff; on torch its squarings amplify the rounding
+    test::oracle::run(
+        "linearSys.oneStepClosedForm",
+        [](test::oracle::Random &rnd) {
+            const Tensor A = Tensor({{-0.4, 0.0, 0.01}, {0.4, -3000.0, -0.01}, {0.0, 3000.0, 0.0}});
+            for (const double dt : {1e-4, 1e-3, 1e-2})
+                for (const int eta : {2, 4, 10})
+                    aux_compare("Robertson dt" + std::to_string(dt) + " eta" + std::to_string(eta),
+                                A, rnd.zonotope(3, 2), rnd.zonotope(3, 2), rnd.vector(3), dt, eta);
+        },
+        test::oracle::Tolerance{1e-8,
+                                "the stiff exponential is squared s times: torch's matmul order"});
     // a stiff two-state system conserving x + y (fixtures 3090 to 3093)
     test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &) {
         const Tensor A = Tensor({{-2621.0 / 65536.0, 1300.0}, {2621.0 / 65536.0, -1300.0}});
