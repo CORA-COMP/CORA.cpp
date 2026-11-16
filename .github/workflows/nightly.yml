@@ -120,6 +120,14 @@ jobs:
       ccache_key: -oracle
       oracle: true
 
+  # Line coverage of the library by the unit and the oracle tests, per suite: the totals must not fall (coverage/lines.json).
+  line-coverage:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
+    uses: ./.github/workflows/line-coverage.yml
+    with:
+      ratchet: true
+
   # The oracle tests of an unoptimised build (-O0): a result must not depend on the optimisation level (#47).
   oracle-debug:
     needs: changed
@@ -157,7 +165,7 @@ jobs:
   # One issue per failed night: the open `nightly` issue gets a comment instead of a second issue.
   report:
     if: failure() && github.event_name == 'schedule'
-    needs: [changed, install, sanitizers, quality, competition, oracle, oracle-debug, oracle-pin, backing-report, benchmarks]
+    needs: [changed, install, sanitizers, quality, competition, oracle, oracle-debug, oracle-pin, line-coverage, backing-report, benchmarks]
     runs-on: ubuntu-24.04
     permissions:
       issues: write

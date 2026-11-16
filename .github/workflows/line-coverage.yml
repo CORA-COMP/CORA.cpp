@@ -1,0 +1,75 @@
+# line-coverage - line coverage of src/ and include/ by the unit and the oracle tests (called by ci.yml, nightly.yml)
+#
+# The preset `coverage` (GCC --coverage, -O2) builds the test programs of the labels unit and oracle;
+# scripts/coverage/lines.py runs each label on its own, reads the counters with gcov and reports per
+# suite and combined. With `base` (pull requests) the lines that the change adds must be covered by at
+# least `min` percent; with `ratchet` (the nightly) the totals must not fall below coverage/lines.json.
+# The benchmarks and the examples are not measured.
+
+name: line-coverage
+
+on:
+  workflow_call:
+    inputs:
+      base:
+        description: the commit to compare the added lines with (pull requests), empty for none
+        type: string
+        default: ""
+      min:
+        description: the share of the added lines that must be covered, in percent
+        type: string
+        default: "90"
+      ratchet:
+        description: compare the totals with coverage/lines.json
+        type: boolean
+        default: false
+
+jobs:
+  line-coverage:
+    runs-on: ubuntu-24.04
+    env:
+      CORACPP_REQUIRE_ORACLE: 1
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: hendrikmuhs/ccache-action@v1.2.24
+        continue-on-error: true
+        with:
+          key: line-coverage
+      # the oracle archive (about 50 MB), fetched once per pinned version
+      - uses: actions/cache@v4
+        with:
+          path: build/coverage/coralean
+          key: coralean-${{ hashFiles('scripts/coralean.cmake') }}
+      - name: configure
+        env:
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        run: cmake --preset coverage -DCORACPP_ORACLE=DOWNLOAD
+      # the test programs of the two suites only: the examples and the benchmarks are not built
+      - name: build
+        run: |
+          ctest --test-dir build/coverage -N -L '^(unit|oracle)$' | sed -nE 's/^ *Test +#[0-9]+: //p' \
+            | sed -E 's#.*/##; s/:.*$//' | sort -u > wanted.txt
+          cmake --build build/coverage --target help | sed -nE 's/^\.\.\. //p' | sort -u > targets.txt
+          cmake --build build/coverage --parallel "$(nproc)" --target $(comm -12 wanted.txt targets.txt | tr '\n' ' ')
+      - name: unit
+        run: |
+          mkdir -p cov
+          python3 scripts/coverage/lines.py run --build-dir build/coverage --suite unit --out cov/unit.json
+      - name: oracle
+        run: python3 scripts/coverage/lines.py run --build-dir build/coverage --suite oracle --out cov/oracle.json
+      - name: report
+        if: ${{ !cancelled() }}
+        run: python3 scripts/coverage/lines.py report cov/unit.json cov/oracle.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: the lines that the change adds
+        if: ${{ inputs.base != '' }}
+        run: python3 scripts/coverage/lines.py changed cov/unit.json cov/oracle.json --base "${{ inputs.base }}" --min "${{ inputs.min }}"
+      - name: the ratchet
+        if: ${{ inputs.ratchet }}
+        run: python3 scripts/coverage/lines.py ratchet cov/unit.json cov/oracle.json
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: line-coverage
+          path: cov/*.json

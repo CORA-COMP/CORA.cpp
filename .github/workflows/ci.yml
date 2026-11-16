@@ -134,6 +134,14 @@ jobs:
       oracle: true
       labels: python
 
+  # the lines that the pull request adds must be covered by the unit and the oracle tests (90%)
+  line-coverage:
+    needs: checks
+    if: github.event_name == 'pull_request' && needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.perf == 'true'
+    uses: ./.github/workflows/line-coverage.yml
+    with:
+      base: ${{ github.event.pull_request.base.sha }}
+
   instructions:
     needs: checks
     if: github.event_name == 'pull_request' && needs.checks.outputs.perf == 'true'
@@ -165,7 +173,7 @@ jobs:
   # documentation-only change skips the builds), a failure otherwise.
   ci-gate:
     if: always()
-    needs: [checks, tidy, linux-core, linux-python, instructions]
+    needs: [checks, tidy, linux-core, linux-python, line-coverage, instructions]
     runs-on: ubuntu-24.04
     steps:
       - env:
