@@ -21,3 +21,10 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 `ctest` runs `coverage.py --check` first: a row may not fall below the status in `status.json`
 (`--accept-drop <row>` records a drop), and no row may become **oracle debt**, `ported` or
 `property` while CORALean has it (`--accept-debt`). `coverage.py --summary` prints the totals.
+
+**Plumbing rows.** The benchmark report (`benchmarks.py`) counts the bit-exact rows of an instance
+against the rows that can be: a row with no operation to compare is left out of the denominator and
+of the numerator, as the rows that CORALean marks out of scope are. The rule is `is_plumbing` in the
+script: the constructor of a class (the method is named as the class), and `dim`, `generators`,
+`numgens`, `isemptyobject`, `representsa_emptyObject`, `reorder`. They have a column of their own
+in `benchmarks.md`; the status of the row in `status.json` does not change.

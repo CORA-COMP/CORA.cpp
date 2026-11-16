@@ -97,6 +97,22 @@ class BackingReport(unittest.TestCase):
         self.assertEqual((s["oracle"], s["total"], s["lean_out"], s["eligible"]), (1, 2, 1, 1))
         self.assertIn("| A | 1/1 | 0 | 1 |", bench.render_table({"A": s}))
 
+    # constructors and accessors have nothing to compare bit for bit
+    def test_plumbing_rows_leave_the_denominator(self):
+        for key in ["contSet/zonotope/zonotope", "contSet/contSet/contSet", "contSet/zonotope/dim",
+                    "contSet/zonotope/generators", "contSet/polytope/isemptyobject",
+                    "contSet/contSet/representsa_emptyObject", "contSet/contSet/reorder"]:
+            self.assertTrue(bench.is_plumbing(key), key)
+        for key in ["contSet/zonotope/plus", "contDynamics/linearSys/reach", "contSet/zonotope"]:
+            self.assertFalse(bench.is_plumbing(key), key)
+        # the bit-exact center is no plumbing; the plumbing row is neither in numerator nor denominator
+        status = {**STATUS, "contSet/zonotope/zonotope": "oracle"}
+        groups = {**GROUPS, "contSet": {"zonotope": ["center", "plus", "zonotope"]}}
+        (self.root / "src" / "ctor.cpp").write_text(
+            "// ctor - x\n//\n// CORA: contSet/@zonotope/zonotope.m\n\nint x;\n", encoding="utf-8")
+        s = bench.summarize({"A": {"files": ["src/plus.cpp", "src/ctor.cpp"]}}, status, groups, self.root)["A"]
+        self.assertEqual((s["total"], s["plumbing"], s["eligible"], s["oracle"]), (2, 1, 1, 1))
+
     # a private step has no row, but it is listed
     def test_private_steps_are_listed(self):
         (self.root / "src" / "priv_x.cpp").write_text(
