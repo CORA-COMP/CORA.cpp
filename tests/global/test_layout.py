@@ -155,6 +155,51 @@ class Comments(unittest.TestCase):
         self.fails(PY_MODULE.replace("    # the sum\n", docstring), "docstring of 4", "plus.py")
 
 
+# shell, CMake and .def files
+SH = ("#!/usr/bin/env bash\n# run - runs a thing\n#\n# Authors:       Claude Sonnet 5.5\n"
+      "# Written:       01-October-2026\n# Last update:   ---\n# Reviewed:      ---\n\n"
+      + layout.marker("BEGIN", "py") + "\n\nset -e\necho hi\n\n" + layout.marker("END", "py") + "\n")
+
+
+class OtherFiles(unittest.TestCase):
+    # the problems of a file, one of which must contain the message
+    def fails(self, text, message, name="scripts/run.sh"):
+        found = layout.check_other_file(name, text.split("\n"))
+        self.assertTrue(any(message in issue for issue in found), found)
+
+    def test_a_file_in_the_layout_passes(self):
+        self.assertEqual(layout.check_other_file("scripts/run.sh", SH.split("\n")), [])
+        cmake = SH.replace("#!/usr/bin/env bash\n", "").replace("run - runs", "run - sets")
+        self.assertEqual(layout.check_other_file("scripts/cmake/run.cmake", cmake.split("\n")), [])
+        # CMakeLists.txt is named by its stem
+        text = cmake.replace("run - sets", "CMakeLists - sets")
+        self.assertEqual(layout.check_other_file("CMakeLists.txt", text.split("\n")), [])
+
+    def test_the_docstring_and_the_author_block(self):
+        self.fails(SH.replace("# run - runs a thing", "# runs a thing"), "should start with 'run - ")
+        self.fails(SH.replace("# Authors:       Claude Sonnet 5.5\n", ""), "author block")
+
+    # the markers: one END, no code above BEGIN
+    def test_the_markers(self):
+        self.fails(SH.replace(layout.marker("END", "py") + "\n", ""), "exactly one END")
+        self.fails(SH.replace("\n\n" + layout.marker("BEGIN", "py"), "\nset -u\n\n" + layout.marker("BEGIN", "py")),
+                   "code above BEGIN CODE")
+
+    def test_a_run_of_code_needs_a_comment(self):
+        many = "".join(f"echo {k}\n" for k in range(21))
+        self.fails(SH.replace("echo hi\n", many), "without a comment")
+        self.assertEqual(layout.check_other_file("scripts/run.sh", SH.replace(
+            "echo hi\n", many.replace("echo 10\n", "# half\necho 10\n")).split("\n")), [])
+
+    # the rows of a table are its content
+    def test_a_def_table_has_no_density_rule(self):
+        rows = "".join(f"ROW({k})\n" for k in range(40))
+        text = ("// t - a table\n//\n// Authors:       Claude Sonnet 5.5\n// Written:       01-October-2026\n"
+                "// Last update:   ---\n// Reviewed:      ---\n\n" + layout.marker("BEGIN", "cpp") + "\n\n" + rows
+                + "\n" + layout.marker("END", "cpp") + "\n")
+        self.assertEqual(layout.check_other_file("include/t.def", text.split("\n")), [])
+
+
 class Waivers(unittest.TestCase):
     def test_a_waiver_needs_a_reason(self):
         # waivers need reasons

@@ -1,5 +1,13 @@
 # library - the target cora, built per folder of src/ so that the build reports each folder when done
+#
 # Included by CMakeLists.txt; lib_sources is its.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       01-October-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # A folder of src/ is a group: src/<top>/<class>/ for a class folder, src/<top>/ otherwise. Each
 # group is an object library; once its objects are built, a stamp prints "ok <group>", and the top
@@ -10,6 +18,7 @@ else()
   set(done_mark "✔")
 endif()
 
+# the library is built per folder of src/ (one level below a top folder, private/ aside)
 set(group_names "")
 foreach(source IN LISTS lib_sources)
   file(RELATIVE_PATH relative "${CMAKE_SOURCE_DIR}/src" "${source}")
@@ -23,6 +32,7 @@ foreach(source IN LISTS lib_sources)
       set(leaf "${top}/${second}")
     endif()
   endif()
+  # every source joins the group of its leaf folder; a new group remembers its top folder
   string(MAKE_C_IDENTIFIER "${leaf}" id)
   list(APPEND group_${id}_sources "${source}")
   if(NOT leaf IN_LIST group_names)
@@ -62,6 +72,7 @@ function(cora_report name covers stamp label bold previous)
   endif()
 endfunction()
 
+# the folders become targets in a fixed order, so that the progress lines read the same each time
 list(SORT group_names)
 set(tops "")
 foreach(leaf IN LISTS group_names)
@@ -79,6 +90,7 @@ foreach(top IN LISTS tops)
     if(NOT group_${id}_top STREQUAL top)
       continue()
     endif()
+    # one object library per group, with the include paths and flags of the library
     add_library(cora_${id} OBJECT ${group_${id}_sources})
     target_include_directories(cora_${id} PUBLIC "${CMAKE_SOURCE_DIR}/include" "${CMAKE_BINARY_DIR}/include"
                                PRIVATE "${CMAKE_SOURCE_DIR}/src")
@@ -89,6 +101,7 @@ foreach(top IN LISTS tops)
     list(APPEND object_expressions "$<TARGET_OBJECTS:cora_${id}>")
 
     # a class folder is indented under its top folder, whose summary follows
+    # the label of the progress line of this folder: a top folder alone, its files, or a subfolder
     if(NOT top IN_LIST top_names)
       set(label "${done_mark} ${leaf}/")
     elseif(leaf STREQUAL top)
@@ -96,6 +109,7 @@ foreach(top IN LISTS tops)
     else()
       set(label "  ${done_mark} ${leaf}/")
     endif()
+    # a progress line per group, printed when its objects were rebuilt
     set(stamp "${CMAKE_BINARY_DIR}/progress/${id}.stamp")
     cora_report(cora_done_${id} "$<JOIN:$<TARGET_OBJECTS:cora_${id}>,|>" "${stamp}" "${label}" OFF
                 "${previous}")
@@ -112,6 +126,7 @@ foreach(top IN LISTS tops)
 endforeach()
 add_custom_target(cora_progress DEPENDS ${previous})
 
+# the library is the union of the object libraries; it waits for the progress lines
 add_library(cora STATIC ${object_expressions})
 add_dependencies(cora cora_progress)
 target_include_directories(cora PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
@@ -121,3 +136,5 @@ if(CORACPP_HAS_TORCH)
   # installed, libtorch is CORA::torch, which CORAConfig.cmake defines from the recorded torch path
   target_link_libraries(cora PUBLIC "$<BUILD_INTERFACE:cora_torch>" "$<INSTALL_INTERFACE:CORA::torch>")
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

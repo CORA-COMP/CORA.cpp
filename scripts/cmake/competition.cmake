@@ -1,5 +1,13 @@
 # competition - the CORA-COMP harness (needs GLPK)
+#
 # Included by CMakeLists.txt; the variables and options are its.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # ---------------------------------------- the competition -----------------------------------------
 # scripts/competition/ is the CORA-COMP harness and its sets; it builds on the library, needs GLPK.
@@ -20,6 +28,7 @@ if(CORACPP_COMPETITION)
   target_include_directories(coracomp PUBLIC "${CMAKE_SOURCE_DIR}/scripts/competition")
   target_link_libraries(coracomp PUBLIC cora "${GLPK_LIBRARY}")
 
+  # the binary of the competition tool, and the tests of the library it is built from
   add_executable(coracpp "${CMAKE_SOURCE_DIR}/scripts/competition/main.cpp")
   target_link_libraries(coracpp PRIVATE coracomp)
 
@@ -35,3 +44,5 @@ if(CORACPP_COMPETITION)
     cora_add_test(competition/${name} competition COMMAND ${name})
   endforeach()
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

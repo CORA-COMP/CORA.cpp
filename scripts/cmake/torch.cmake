@@ -1,5 +1,13 @@
 # torch - libtorch from the torch package of the Python found (target cora_torch)
+#
 # Included by CMakeLists.txt; the variables and options are its.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       30-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 # libtorch: the directory of the torch package and the C++ ABI it was built with, asked of Python.
 # The package's own CMake config is not used: it needs the CUDA toolkit when torch is a CUDA build.
@@ -26,6 +34,7 @@ if(NOT CORACPP_TORCH STREQUAL "OFF")
     FetchContent_MakeAvailable(libtorch)
     set(torch_dir "${libtorch_SOURCE_DIR}")
   endif()
+  # without a download the package of the Python found gives the directory and the C++11 ABI
   if(NOT torch_dir AND Python3_EXECUTABLE)
     execute_process(
       COMMAND "${Python3_EXECUTABLE}" -c
@@ -74,3 +83,5 @@ if(NOT CORACPP_TORCH STREQUAL "OFF")
     message(STATUS "libtorch: not found, Eigen only")
   endif()
 endif()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

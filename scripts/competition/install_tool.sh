@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# install_tool.sh — run once on the worker to install CORA.cpp.
+# install_tool - runs once on the worker to install CORA.cpp
 #
 # Installs a compiler, Eigen and GLPK if the image lacks them, builds the tool, and runs
 # every operation once, so a broken setup fails the install rather than the instances.
@@ -10,8 +9,15 @@
 # a CUDA build. Without it the tool is the Eigen CPU one and gpu instances report
 # unsupported, so an image without torch still installs.
 #
-# Argument:
-# - $1: interface version string, e.g. "v1"
+# Syntax:   install_tool.sh [version]
+# Inputs:   version - the interface version string, "v1" by default
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       01-October-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set -e
 
@@ -95,3 +101,5 @@ cmake --build "$ROOT/build" --parallel "$(nproc)" --target coracpp
 
 # The instances may run as another user than the install.
 chmod -R a+rX "$ROOT"
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

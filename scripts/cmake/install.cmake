@@ -1,8 +1,16 @@
 # install - the installable package: headers, the library and the CMake config of find_package(CORA)
+#
 # Included by CMakeLists.txt after the library; the variables are its.
 #
 #   cmake --install build --prefix /opt/cora
 #   find_package(CORA REQUIRED)   target_link_libraries(app PRIVATE CORA::cora)    (in a project)
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       02-November-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -47,3 +55,5 @@ cora_add_test(install/consumer unit
               COMMAND "${CMAKE_COMMAND}" "-DBUILD=${CMAKE_BINARY_DIR}" "-DSOURCE=${CMAKE_SOURCE_DIR}"
                       "-DGENERATOR=${CMAKE_GENERATOR}" "-DCXX=${CMAKE_CXX_COMPILER}" "-DCXX_FLAGS=${CMAKE_CXX_FLAGS}"
                       "-DCONFIG=$<CONFIG>" -P "${CMAKE_SOURCE_DIR}/scripts/cmake/install_test.cmake")
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

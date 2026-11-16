@@ -11,6 +11,13 @@
 # The environment is entered by hand rather than with `conda activate`: its bin first on PATH, its
 # lib first on the library path (torch would otherwise load the system's older libstdc++ and
 # numpy could not), and its compiler as CXX.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       29-September-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set -euo pipefail
 
@@ -38,6 +45,7 @@ if [ "$ENV_NAME" != "none" ]; then
         exit 1
     fi
 
+    # the environment is entered by its variables, as `conda activate` sets them
     export CONDA_PREFIX="$PREFIX"
     export PATH="$PREFIX/bin:$PATH"
     export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -54,3 +62,5 @@ export CORACPP_BUILD="${CORACPP_BUILD:-${BUILD_DIR:-$ROOT/build}}"
 export PYTHONPATH="$CORACPP_BUILD${PYTHONPATH:+:$PYTHONPATH}"
 
 exec "$@"
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #

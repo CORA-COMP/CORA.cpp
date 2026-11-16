@@ -41,6 +41,12 @@ checks it for all of them (rules in `scripts/ci/layout.py`, tests in `tests/glob
    comment per 20 lines of code; a `///` doc comment of a function is at most 3 lines.
 4. Names: classes PascalCase; functions, arguments, variables and files snake_case (docs/naming.md).
 
+Shell scripts (`.sh`), CMake files (`.cmake`, `CMakeLists.txt`) and `.def` tables follow 1 to 3 with
+three differences: the header is the comment block at the top (after a shebang) and has no CORA tag,
+there is only `BEGIN CODE` and `END OF CODE` (no `AUXILIARY` or `MAIN`: they split functions from
+the operation, which these files do not have), and a comment block may run to several lines, since
+the reason for a build flag takes them. A `.def` table needs no comment per 20 rows.
+
 There is no list of exempt files or names. A rule that needs an exception takes a structural
 property of the code, or a waiver in the file with its reason: `// NOLINT(rule): reason`, or
 `NOLINTBEGIN(rule): reason` to `NOLINTEND(rule)` (`#` in Python), for the rules `naming`,

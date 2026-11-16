@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 # instruction_counts - builds the library at a base commit and at HEAD, and compares the instruction
+#
 # counts of benchmarks/micro between them (scripts/ci/instruction_counts.py)
 #
 # Syntax:   scripts/ci/instruction_counts.sh <base commit> [threshold in percent]
 # Needs:    valgrind (or perf), cmake, a compiler; ccache is used when found. Work goes to build/ic-*.
 # Each build uses its own commit's micro-benchmarks (an API change must not break the base build);
 # the benchmarks are compared by name.
+#
+# Authors:       Claude Sonnet 5.5
+# Written:       02-November-2026
+# Last update:   ---
+# Reviewed:      ---
+
+# -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 set -euo pipefail
 
@@ -29,6 +37,7 @@ build() {
     cmake --build "$WORK/$name-micro" --parallel "$JOBS"
 }
 
+# a fresh work directory; the base commit is checked out beside HEAD and removed on exit
 rm -rf "$WORK"
 git -C "$ROOT" worktree prune
 mkdir -p "$WORK"
@@ -42,3 +51,5 @@ build "$WORK/base-source" base
 build "$ROOT" head
 (cd "$ROOT" && python3 "$ROOT/scripts/ci/instruction_counts.py" --threshold "$THRESHOLD" \
     --base "$WORK/base-micro/micro" --head "$WORK/head-micro/micro" --accept-from "$BASE")
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #
