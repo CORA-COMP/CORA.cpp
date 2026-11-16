@@ -29,6 +29,7 @@ std::vector<std::vector<Point3>> ContSet::vertices_3d() const {
         return "vertices_3d: needs a three-dimensional set of vectors, this one has " +
                std::to_string(dim()) + " dimensions; project it first, e.g. S.project({0, 1, 2})";
     });
+    entry.release();
     return vertices_3d_impl();
 }
 

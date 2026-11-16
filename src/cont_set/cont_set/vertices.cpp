@@ -30,6 +30,7 @@ std::vector<Polygon> ContSet::vertices() const {
         return "vertices: needs a two-dimensional set of vectors, this one has " +
                std::to_string(dim()) + " dimensions; project it first, e.g. S.project({0, 1})";
     });
+    entry.release();
     return vertices_impl();
 }
 

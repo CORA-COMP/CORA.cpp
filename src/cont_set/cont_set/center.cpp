@@ -23,6 +23,7 @@ namespace cora {
 
 Tensor ContSet::center() const {
     detail::Entry entry;
+    entry.release();
     return center_impl();
 }
 

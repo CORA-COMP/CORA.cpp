@@ -26,6 +26,7 @@ namespace cora {
 
 std::string ContSet::display() const {
     detail::Entry entry;
+    entry.release();
     return display_impl();
 }
 

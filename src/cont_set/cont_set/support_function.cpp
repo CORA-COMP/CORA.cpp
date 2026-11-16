@@ -33,6 +33,7 @@ Tensor ContSet::support_function(const Tensor &d) const {
         return "support_function: the direction must be a column of the set's dimension " +
                std::to_string(dim()) + ", got the shape " + shape_text(d.shape());
     });
+    entry.release();
     return support_function_impl(d);
 }
 

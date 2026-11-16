@@ -38,11 +38,14 @@ Set ContSet::times(const Tensor &factor) const {
         return "times: the factor must be a number or a column of the set's dimension " +
                std::to_string(dim()) + ", got the shape " + shape_text(factor.shape());
     });
+    // what the generic entry owns is checked: the class checks the rest
+    entry.release();
     return times_impl(factor);
 }
 
 Set ContSet::times(double factor) const {
     detail::Entry entry;
+    entry.release();
     return times_impl(center_impl().full_like({1, 1}, factor));
 }
 

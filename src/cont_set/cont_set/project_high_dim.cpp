@@ -59,6 +59,7 @@ Set ContSet::project_high_dim(int64_t N, const std::vector<int64_t> &proj) const
     detail::Entry entry;
     const detail::Refusal r = detail::project_high_dim_refusal(dim(), N, proj);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    entry.release();
     return project_high_dim_impl(N, proj);
 }
 

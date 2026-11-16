@@ -71,6 +71,7 @@ Set ContSet::lift(int64_t N, const std::optional<std::vector<int64_t>> &proj) co
         std::iota(positions.begin(), positions.end(), int64_t{0});
     const detail::Refusal r = detail::project_high_dim_refusal(dim(), N, positions, "lift");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    entry.release();
     return lift_impl(N, positions);
 }
 

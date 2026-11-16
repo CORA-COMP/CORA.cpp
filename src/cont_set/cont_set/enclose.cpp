@@ -32,6 +32,7 @@ Set ContSet::enclose(const ContSet &S2) const {
         return "enclose: the sets differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S2.dim());
     });
+    entry.release();
     return enclose_impl(S2);
 }
 

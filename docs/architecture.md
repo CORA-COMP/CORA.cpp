@@ -15,7 +15,10 @@ the unchecked implementation. For a set operation that is the protected virtual
 `<operation>_impl`, which corresponds to CORA's `supportFunc_` behind `supportFunc`.
 - `detail::Entry` counts the public entries active on the thread. Only the outermost one checks,
   so an operation that the library calls from inside another one never validates again (CORA's
-  `and`/`and_` split).
+  `and`/`and_` split). A generic entry (`ContSet::enclose`, `detail::dispatch`) that has checked
+  what it owns calls `entry.release()` before it hands over to the class, so the class's own entry
+  is outermost and checks as for a direct call; with the checks off nothing checks, and the input
+  is trusted.
 - `CORA_CHECK(cond, Error::id, [&] { return message; })` builds its message only on failure.
 - `CORA_FAIL(id, message)` raises a failure that is not an input error (an option switch with
   no branch left, an algorithm that cannot go on), whether the checks are on or off.

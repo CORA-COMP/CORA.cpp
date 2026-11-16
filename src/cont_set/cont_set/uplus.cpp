@@ -26,6 +26,7 @@ namespace cora {
 
 Set ContSet::uplus() const {
     detail::Entry entry;
+    entry.release();
     return uplus_impl();
 }
 

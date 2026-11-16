@@ -29,6 +29,7 @@ Set ContSet::reduce(int order) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "reduce: the order must be at least 1, got " + std::to_string(order);
     });
+    entry.release();
     return reduce_impl(order);
 }
 

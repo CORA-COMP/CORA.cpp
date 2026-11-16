@@ -24,6 +24,7 @@ namespace cora {
 
 bool ContSet::is_bounded() const {
     detail::Entry entry;
+    entry.release();
     return is_bounded_impl();
 }
 

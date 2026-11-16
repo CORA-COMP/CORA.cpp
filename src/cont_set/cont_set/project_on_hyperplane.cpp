@@ -45,6 +45,7 @@ Set ContSet::project_on_hyperplane(const Tensor &c, const Tensor &d) const {
     // the constraint with a unit normal, as normalizeConstraints
     const Tensor unit = c.divide(length), offset = d.divide(length);
     const Tensor A = unit.eye_like(dim()) - unit.matmul(unit.matrix_transpose());
+    entry.release();
     return linear_map_impl(A)->translate_impl(unit.multiply(offset));
 }
 

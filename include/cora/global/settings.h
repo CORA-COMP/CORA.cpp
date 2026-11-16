@@ -48,22 +48,35 @@ namespace detail {
 inline thread_local int entry_depth = 0;
 
 /// The guard of a public entry point: counts the depth, and check() says whether this entry is
-/// the outermost one with checks on. Empty with CORACPP_CHECKS=OFF.
+/// the outermost one with checks on. Empty with CORACPP_CHECKS=OFF. A generic entry calls
+/// release() when it has checked what it owns: the class's own entry is then outermost.
 class Entry {
   public:
     Entry() noexcept {
         if constexpr (checks_compiled) active_ = ++entry_depth == 1 && checks_enabled();
     }
     ~Entry() {
-        if constexpr (checks_compiled) --entry_depth;
+        if constexpr (checks_compiled)
+            if (!released_) --entry_depth;
     }
     Entry(const Entry &) = delete;
     Entry &operator=(const Entry &) = delete;
 
     bool check() const noexcept { return checks_compiled && active_; }
 
+    /// Ends this entry before its function returns: the depth is back to what it was.
+    void release() noexcept {
+        if constexpr (checks_compiled) {
+            if (released_) return;
+            --entry_depth;
+            released_ = true;
+            active_ = false;
+        }
+    }
+
   private:
     bool active_ = false;
+    [[maybe_unused]] bool released_ = false;
 };
 
 /// The guard of a validate() of an option struct: checks whenever the checks are on, at any
