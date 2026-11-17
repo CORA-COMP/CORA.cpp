@@ -113,7 +113,7 @@ bool ConZonotope::isequal(const Zonotope &Z, Tol tol) const {
     CORA_CHECK(c_.ndim() == 2 && Z.center().ndim() == 2, Error::not_supported,
                [] { return std::string("isequal: it supports single sets, not a batch"); });
     // a zonotope equals a set that has no constraints and is that zonotope
-    return Z.dim() == dim() && !priv_is_empty(priv_host_con_zonotope(*this)) && A_.numel() == 0 &&
+    return Z.dim() == dim() && !priv_is_empty(priv_host_con_zonotope(*this)) && A().numel() == 0 &&
            Zonotope(c_, G_).isequal(Z, tol_value);
 }
 

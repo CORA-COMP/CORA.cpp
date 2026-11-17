@@ -98,7 +98,7 @@ Zonotope ConZonotope::zonotope(const std::string &method) const {
     });
     CORA_CHECK(c_.ndim() == 2, Error::not_supported,
                [] { return std::string("zonotope: it supports a single set, not a batch"); });
-    if (A_.shape()[A_.ndim() - 2] == 0) return {c_, G_};
+    if (A().shape()[A().ndim() - 2] == 0) return {c_, G_};
     CORA_CHECK(!priv_is_empty(priv_host_con_zonotope(*this)), Error::empty_set, [] {
         return std::string("zonotope: the set is empty and CORA.cpp has no empty zonotope");
     });

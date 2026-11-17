@@ -53,12 +53,12 @@ Eliminated aux_eliminate(const HostConZonotope &H, double eps) {
     e.M.resize(std::size_t(p * w));
     double norm_inf = 0.0;
     for (int64_t i = 0; i < p; ++i) {
-        double row = std::abs(H.b[i]);
+        double row = std::abs(H.b()[i]);
         for (int64_t j = 0; j < m; ++j) {
-            e.M[i * w + j] = H.A[i * m + j];
-            row += std::abs(H.A[i * m + j]);
+            e.M[i * w + j] = H.A()[i * m + j];
+            row += std::abs(H.A()[i * m + j]);
         }
-        e.M[i * w + m] = H.b[i];
+        e.M[i * w + m] = H.b()[i];
         norm_inf = std::max(norm_inf, row);
     }
     const double tol = double(std::max(p, w)) * eps * norm_inf;
@@ -157,11 +157,11 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
     const HostConZonotope H = priv_host_con_zonotope(*this);
     CORA_CHECK(!priv_is_empty(H), Error::empty_set,
                [] { return std::string("rescale: the set is empty"); });
-    CORA_CHECK(A_.numel() != 0, Error::special_error,
+    CORA_CHECK(A().numel() != 0, Error::special_error,
                [] { return std::string("rescale: no constraints left!"); });
 
     // the ranges of the factors, of a set whose generators and constraints may be permuted
-    Tensor G = G_, A = A_, b = b_;
+    Tensor G = G_, A = this->A(), b = this->b();
     std::vector<double> lo, hi;
     if (method == "exact") {
         std::tie(lo, hi) = priv_factor_ranges(H);
@@ -174,8 +174,8 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
             rhs[i] = e.M[i * w + m];
         }
         G = G_.take(e.order, -1);
-        A = Tensor::like(A_, a, {p, m});
-        b = Tensor::like(b_, rhs, {p, 1});
+        A = Tensor::like(this->A(), a, {p, m});
+        b = Tensor::like(this->b(), rhs, {p, 1});
         if (!aux_iterate(e.M, p, m, lo, hi))
             CORA_FAIL(Error::empty_set, "rescale: the set is empty");
     }

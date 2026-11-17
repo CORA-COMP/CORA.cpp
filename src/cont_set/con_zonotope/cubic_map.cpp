@@ -71,7 +71,7 @@ ConZonotope ConZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     std::vector<int64_t> linear;
     linear.reserve(static_cast<std::size_t>(m));
     for (int64_t j = 0; j < m; ++j) linear.push_back(j);
-    return {Z.center(), Z.generators(), aux_scatter(A_, linear, total), b_};
+    return {Z.center(), Z.generators(), aux_scatter(A(), linear, total), b()};
 }
 
 ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz3,

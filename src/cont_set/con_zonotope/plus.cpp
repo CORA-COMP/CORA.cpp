@@ -52,7 +52,7 @@ ConZonotope ConZonotope::plus(const Tensor &v) const {
                    return "plus: the point must be a column of " + std::to_string(dim()) +
                           " entries, got the shape " + shape_text(v.shape());
                });
-    return {c_ + v, G_, A_, b_};
+    return {c_ + v, G_, F_};
 }
 
 Set ConZonotope::translate_impl(const Tensor &v) const { return plus(v); }

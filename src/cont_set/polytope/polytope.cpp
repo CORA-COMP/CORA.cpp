@@ -6,6 +6,7 @@
 // agree).
 //
 // Syntax:   Polytope P(A, b);   Polytope P(A, b, Ae, be);   Polytope P(V);   Polytope P(I);
+//           Polytope F = Polytope::equalities(Ae, be);
 // Inputs:   A (..., m, n), b (..., m, 1), Ae (..., k, n), be (..., k, 1) - A x <= b, Ae x = be
 //           V (..., n, p) - the vertices, p = 0 for none, finite unless n = 1
 //           I - a box (n, 1) bounds
@@ -15,9 +16,9 @@
 // CORA: contSet/@polytope/polytope.m
 // CORA: contSet/@interval/polytope.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -163,6 +164,24 @@ Polytope::Polytope(const Tensor &A, Tensor b)
     : Polytope(A, std::move(b),
                A.defined() && A.ndim() >= 2 ? zeros_block(A, 0, A.shape().back()) : Tensor(),
                A.defined() && A.ndim() >= 2 ? zeros_block(A, 0, 1) : Tensor()) {}
+
+// equalities only: an equality block without rows serves as the empty inequality block
+Polytope Polytope::equalities(Tensor Ae, Tensor be) {
+    detail::Entry entry;
+    CORA_CHECK(Ae.defined() && be.defined() && Ae.ndim() >= 2 && be.ndim() >= 2,
+               Error::wrong_input_in_constructor, [] {
+                   return std::string("Polytope: the equalities must be matrices (..., k, n) and "
+                                      "(..., k, 1)");
+               });
+    const bool none = aux_rows(Ae) == 0;
+    Tensor A = none ? Ae : zeros_block(Ae, 0, Ae.shape().back());
+    Tensor b = none ? be : zeros_block(be, 0, 1);
+    const detail::Refusal refusal = entry.check() ? aux_h_refusal(A, b, Ae, be) : std::nullopt;
+    CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
+    CORA_CHECK(!aux_has_inf(be), Error::wrong_input_in_constructor,
+               [] { return std::string("Polytope: the equality offsets must be finite"); });
+    return Polytope(Parts{std::move(A), std::move(b), std::move(Ae), std::move(be), Tensor()});
+}
 
 Polytope::Polytope(Parts parts)
     : ContSet(kClassId), A_(std::move(parts.A)), b_(std::move(parts.b)), Ae_(std::move(parts.Ae)),

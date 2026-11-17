@@ -45,12 +45,12 @@ std::vector<Point3> aux_points(const Tensor &V) {
 // ===========================================  MAIN  =========================================== //
 
 std::vector<Polygon> ConZonotope::vertices_impl() const {
-    if (A_.shape()[A_.ndim() - 2] == 0) return Zonotope(c_, G_).vertices();
+    if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_).vertices();
     return {priv_hull_polygon(priv_vertex_candidates(*this))};
 }
 
 std::vector<std::vector<Point3>> ConZonotope::vertices_3d_impl() const {
-    if (A_.shape()[A_.ndim() - 2] == 0) return Zonotope(c_, G_).vertices_3d();
+    if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_).vertices_3d();
     std::vector<Point3> corners;
     // the corners of the faces of the hull of the candidates are its vertices, each listed once
     for (const std::vector<Point3> &face : hull_faces(aux_points(priv_vertex_candidates(*this))))

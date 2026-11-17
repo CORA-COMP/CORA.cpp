@@ -91,9 +91,9 @@ bool aux_meets_con_zonotope(const HostH &H, const ConZonotope &cz) {
     }
     for (int64_t i = 0; i < Z.p; ++i) {
         Row row(width, 0.0);
-        for (std::size_t j = 0; j < m; ++j) row[1 + n + j] = Z.A[std::size_t(i) * m + j];
+        for (std::size_t j = 0; j < m; ++j) row[1 + n + j] = Z.A()[std::size_t(i) * m + j];
         lp.Aeq.insert(lp.Aeq.end(), row.begin(), row.end());
-        lp.beq.push_back(Z.b[std::size_t(i)]);
+        lp.beq.push_back(Z.b()[std::size_t(i)]);
     }
     lp.lb.assign(width, -kInf);
     const LinProgResult r = linprog(lp);

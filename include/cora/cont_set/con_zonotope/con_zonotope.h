@@ -28,6 +28,7 @@
 
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 
@@ -40,7 +41,6 @@
 
 namespace cora {
 
-class Polytope;
 class Rng;
 class ZonoBundle;
 
@@ -53,6 +53,10 @@ class ConZonotope : public ContSet {
     ConZonotope(const Tensor &c, const Tensor &G);
     ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b);
 
+    /// The set c + G x of the factors x in the unit box and in the polytope F = {x | A x = b}
+    /// (CORALean's coefficient polytope): equalities only, of the batch shape of c.
+    ConZonotope(Tensor c, Tensor G, Polytope F);
+
     /// A zonotope or a box as a constrained zonotope without constraints (CORA's conversions).
     explicit ConZonotope(const Zonotope &Z);
     explicit ConZonotope(const Interval &I);
@@ -62,11 +66,18 @@ class ConZonotope : public ContSet {
     static ConZonotope from_matrix(const Tensor &Z, const std::optional<Tensor> &A = std::nullopt,
                                    const std::optional<Tensor> &b = std::nullopt);
 
-    /// The stored center c, generators G, constraint matrix A and offset b.
+    /// The stored center c, generators G, constraint matrix A and offset b; A and b are the
+    /// equalities of the factor polytope.
     const Tensor &c() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
-    const Tensor &A() const noexcept { return A_; }
-    const Tensor &b() const noexcept { return b_; }
+    const Tensor &A() const { return F_.Ae(); }
+    const Tensor &b() const { return F_.be(); }
+
+    /// The factor polytope {x | A x = b} (without the unit box, which every factor keeps).
+    const Polytope &factor_polytope() const noexcept { return F_; }
+
+    /// The linear programs over the factors: the factor polytope in the unit box. Not a batch.
+    Polytope::LinearPrograms factor_programs() const;
 
     /// A random set (CORA's generateRandom): dimension (default that of center, else 1..10),
     /// center, nr_generators (default 2 n) and nr_constraints (default random); a random point of
@@ -390,7 +401,11 @@ class ConZonotope : public ContSet {
     bool is_full_dim_impl(Tol tol) const override;
 
   private:
-    Tensor c_, G_, A_, b_;
+    /// The factor polytope of the checked data c, G, A, b.
+    static Polytope factor_polytope_of(const Tensor &c, const Tensor &G, Tensor A, Tensor b);
+
+    Tensor c_, G_;
+    Polytope F_;
 };
 
 // Operators, as CORA writes them: M * cz maps, s * cz scales, cz + S sums, a column v translates.

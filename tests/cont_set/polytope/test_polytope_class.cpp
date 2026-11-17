@@ -6,7 +6,7 @@
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   07-November-2026
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -136,6 +136,22 @@ void batches(const std::string &b) {
     check(V.V().shape() == Shape{4, 2, 3}, b + ": a batch of vertex polytopes");
 }
 
+/// The equalities alone: no inequality rows, the batch kept, an infinite offset refused.
+void equalities(const std::string &b) {
+    const Polytope line = Polytope::equalities(Tensor({{1.0, 1.0}}), column({1.0}));
+    check(line.A().shape() == Shape{0, 2} && line.Ae().shape() == Shape{1, 2} &&
+              line.contains(column({0.25, 0.75})) && !line.contains(column({0.0, 0.0})),
+          b + ": the line x1 + x2 = 1");
+    const Polytope all = Polytope::equalities(Tensor::zeros({0, 3}), Tensor::zeros({0, 1}));
+    check(all.dim() == 3 && all.A().shape() == Shape{0, 3}, b + ": no rows is R^3");
+    const Polytope batch = Polytope::equalities(Tensor::ones({2, 1, 2}), Tensor::ones({2, 1, 1}));
+    check(batch.A().shape() == Shape{2, 0, 2}, b + ": a batch keeps its batch shape");
+    const double inf = std::numeric_limits<double>::infinity();
+    check(test::raises([&] { Polytope::equalities(Tensor({{1.0, 0.0}}), column({inf})); },
+                       Error::wrong_input_in_constructor),
+          b + ": an infinite offset is refused");
+}
+
 /// Stated property: the halfspaces of random vertices hold the vertices, the halfspace polytope
 /// spans the same box, and a point is in one form exactly when it is in the other.
 void the_forms_agree(const std::string &b) {
@@ -169,6 +185,7 @@ int main() {
         constructor_forms(b);
         from_interval(b);
         batches(b);
+        equalities(b);
         the_forms_agree(b);
     });
     refusals();

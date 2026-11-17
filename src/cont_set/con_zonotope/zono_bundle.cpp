@@ -60,10 +60,10 @@ ZonoBundle ConZonotope::zono_bundle() const {
     detail::Entry entry;
     CORA_CHECK(c_.ndim() == 2, Error::not_supported,
                [] { return std::string("zono_bundle: it supports a single set, not a batch"); });
-    if (A_.shape()[A_.ndim() - 2] == 0) return ZonoBundle::from(Zonotope(c_, G_));
+    if (A().shape()[A().ndim() - 2] == 0) return ZonoBundle::from(Zonotope(c_, G_));
     if (priv_is_empty(priv_host_con_zonotope(*this))) return ZonoBundle::empty(dim());
-    const int64_t m = A_.shape()[1];
-    const Tensor p0 = A_.pinv().matmul(b_), T = null_space(A_);
+    const int64_t m = A().shape()[1];
+    const Tensor p0 = A().pinv().matmul(b()), T = null_space(A());
     const Tensor shift = c_ + G_.matmul(p0);
     const int64_t p = T.shape()[1];
     // no free direction: the constraints fix the factors, and the set is a point

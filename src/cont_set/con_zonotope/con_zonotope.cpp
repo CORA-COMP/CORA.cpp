@@ -2,12 +2,14 @@
 //
 // All entries are finite and share one batch shape.
 //
-// Syntax:   ConZonotope cz(c, G);   ConZonotope cz(c, G, A, b);   ConZonotope cz(Z);
+// Syntax:   ConZonotope cz(c, G);   ConZonotope cz(c, G, A, b);   ConZonotope cz(c, G, F);
+//           ConZonotope cz(Z);   Polytope::LinearPrograms lp = cz.factor_programs();
 //           ConZonotope cz = ConZonotope::from_matrix(Zfull, A, b);
 // Inputs:   c - center (..., n, 1)
 //           G - generators (..., n, m)
 //           A - constraint matrix (..., p, m)
 //           b - constraint offset (..., p, 1)
+//           F - factor polytope {x | A x = b}
 // Outputs:  cz - the set {c + G x | |x|_inf <= 1, A x = b}; no constraints give p = 0
 // See also: empty, Zonotope::Zonotope
 //
@@ -17,7 +19,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -78,17 +80,51 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, c
     return std::nullopt;
 }
 
+/// Why the factor polytope does not fit the center and the generators, if it does not.
+detail::Refusal aux_polytope_refusal(const Tensor &c, const Tensor &G, const Polytope &F) {
+    const auto fail = [](const std::string &text) {
+        return detail::Refusal(
+            std::pair{Error::wrong_input_in_constructor, "ConZonotope: " + text});
+    };
+    if (!F.is_h_rep() || F.A().shape()[F.A().ndim() - 2] != 0)
+        return fail("the factor polytope must be equalities A x = b only");
+    return aux_refusal(c, G, F.Ae(), F.be());
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
-ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
-    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), A_(std::move(A)), b_(std::move(b)) {
+// From the data -----------------------------------------------------------------------------------
+
+// the factor polytope {x | A x = b} of checked data: the equalities, no inequality rows
+Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tensor A, Tensor b) {
     detail::Entry entry;
-    const detail::Refusal refusal = aux_refusal(c_, G_, A_, b_);
+    const detail::Refusal refusal = aux_refusal(c, G, A, b);
+    CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
+    return Polytope::equalities(std::move(A), std::move(b));
+}
+
+ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)),
+      F_(factor_polytope_of(c_, G_, std::move(A), std::move(b))) {}
+
+// the factor polytope as it is, checked against the center and the generators
+ConZonotope::ConZonotope(Tensor c, Tensor G, Polytope F)
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), F_(std::move(F)) {
+    detail::Entry entry;
+    const detail::Refusal refusal = aux_polytope_refusal(c_, G_, F_);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
 }
+
+// the factors in the unit box
+Polytope::LinearPrograms ConZonotope::factor_programs() const {
+    const auto m = std::size_t(G_.shape().back());
+    return F_.linear_programs(std::vector<double>(m, -1.0), std::vector<double>(m, 1.0));
+}
+
+// From other sets --------------------------------------------------------------------------------
 
 ConZonotope::ConZonotope(const Tensor &c, const Tensor &G)
     : ConZonotope(c, G, zeros_block(G, 0, G.shape().back()), zeros_block(c, 0, 1)) {}

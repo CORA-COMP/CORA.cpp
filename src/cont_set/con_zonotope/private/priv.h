@@ -83,10 +83,15 @@ Polygon priv_hull_polygon(const Tensor &V);
 
 // Linear programs ---------------------------------------------------------------------------------
 
-/// A single constrained zonotope on the host: c (n), G (n x m), A (p x m) and b (p), row-major.
+/// A single constrained zonotope on the host: c (n) and G (n x m), row-major, and the programs
+/// of its factor polytope in the unit box, whose equalities are A (p x m) and b (p).
 struct HostConZonotope {
     int64_t n = 0, m = 0, p = 0;
-    std::vector<double> c, G, A, b;
+    std::vector<double> c, G;
+    Polytope::LinearPrograms factors;
+
+    const std::vector<double> &A() const noexcept { return factors.program().Aeq; }
+    const std::vector<double> &b() const noexcept { return factors.program().beq; }
 };
 
 /// The values of a single (unbatched) constrained zonotope on the host.
@@ -110,13 +115,6 @@ bool priv_is_empty(const HostConZonotope &H);
 
 /// The least and the largest value of every factor over the nonempty polytope (2 m programs).
 std::pair<std::vector<double>, std::vector<double>> priv_factor_ranges(const HostConZonotope &H);
-
-/// The center of the largest ball in {x | Aineq x <= bineq, Aeq x = beq} (CORA's polytope center,
-/// 'chebyshev'): the matrices are row-major with k columns; none if the set is empty.
-std::optional<std::vector<double>> priv_chebyshev_center(const std::vector<double> &Aineq,
-                                                         const std::vector<double> &bineq,
-                                                         const std::vector<double> &Aeq,
-                                                         const std::vector<double> &beq, int64_t k);
 
 } // namespace cora
 
