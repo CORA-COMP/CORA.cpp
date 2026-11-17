@@ -16,12 +16,14 @@
     },
     {
       "name": "coverage",
-      "displayName": "C++ only, gcov counters (scripts/coverage/benchmarks.py)",
+      "displayName": "C++ only, gcov counters, -O0 without -g, warnings not errors (linux-core gates them) (scripts/coverage/benchmarks.py)",
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_CXX_FLAGS": "--coverage -O2 -g",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS": "--coverage",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O0 -DNDEBUG",
         "CMAKE_EXE_LINKER_FLAGS": "--coverage",
+        "CORACPP_WERROR": "OFF",
         "CORACPP_TORCH": "OFF",
         "CORACPP_PYTHON": "OFF",
         "CORACPP_NATIVE": "OFF"
@@ -91,7 +93,7 @@
       "environment": { "NINJA_STATUS": "[%p %e s] " }
     },
     { "name": "core", "configurePreset": "core", "inherits": "base" },
-    { "name": "coverage", "configurePreset": "coverage", "inherits": "base", "configuration": "RelWithDebInfo" },
+    { "name": "coverage", "configurePreset": "coverage", "inherits": "base", "configuration": "Release" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
@@ -108,7 +110,7 @@
       "execution": { "jobs": 4 }
     },
     { "name": "core", "configurePreset": "core", "inherits": "base" },
-    { "name": "coverage", "configurePreset": "coverage", "inherits": "base", "configuration": "RelWithDebInfo" },
+    { "name": "coverage", "configurePreset": "coverage", "inherits": "base", "configuration": "Release" },
     { "name": "torch", "configurePreset": "torch", "inherits": "base" },
     { "name": "python", "configurePreset": "python", "inherits": "base" },
     { "name": "python-torch", "configurePreset": "python-torch", "inherits": "base" },
