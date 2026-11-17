@@ -7,10 +7,11 @@
 // whole horizon or a trajectory of R0 and the centre of U hits one. Supported as in the ARCH
 // benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant zonotope U, no offsets.
 //
-// The interval matrices F and G of the curvature term are CORALean's sound ones (with the
-// remainder CORA drops), and the boxes F_r |X0| and G_r |u| enter with the support |l|'v, not
-// CORA's |l'v|. The statistics are the iterations, the last step size and count,
-// computation_time, and the falsifying initial state and time.
+// A homogeneous system with mu t_final <= 1 (mu its balanced log norm) runs CORALean's sound
+// LinearSys.verifySupportFuncFloat, bit for bit on the lean backend: e^{A dt} with a radius, the
+// rows' errors carried, exact times. The others keep CORA's propagation with CORALean's sound F, G
+// and the support |l|'v of the boxes F_r |X0|, G_r |u|. Statistics: the iterations, the last step
+// size and count, computation_time, the falsifying initial state and time.
 //
 // Syntax:   res = priv_verify_ra_support_function(sys, params, specs);
 // Inputs:   sys - linear system;  params - R0, U, t_final
@@ -27,10 +28,12 @@
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_exp_ball.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/error.h"
 #include "cora/global/tensor/tolerance.h"
 #include "cora/global/threads.h"
+#include "global/exact_time.h"
 
 #include <algorithm>
 #include <array>
@@ -353,16 +356,17 @@ std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, 
 
 // Specifications ----------------------------------------------------------------------------------
 
-/// The halfspaces of the specifications as safe sets C y <= d with unit normals: an unsafe
+/// The halfspaces of the specifications as safe sets C y <= d, with unit normals if normalize (the
+/// sound algorithm keeps the rows, so the halfspace is exactly the specification's): an unsafe
 /// set a'y <= b is the safe set -a'y <= -b.
-SpecRows aux_spec_rows(const std::vector<Specification> &specs) {
+SpecRows aux_spec_rows(const std::vector<Specification> &specs, bool normalize = true) {
     SpecRows rows;
-    // A halfspace with a unit normal: scaling does not change which points satisfy it.
+    // a halfspace with a unit normal: scaling does not change which points satisfy it
     auto add = [&](const SpecRow &h, double sign) {
         const std::vector<double> &a = h.a; // a nonzero row of p entries (checked by verify)
         double norm = 0;
         for (double v : a) norm += v * v;
-        norm = std::sqrt(norm);
+        norm = normalize ? std::sqrt(norm) : 1.0;
         for (double v : a) rows.Cs.push_back(sign * v / norm);
         rows.ds.push_back(sign * h.b / norm);
         ++rows.nr;
@@ -412,7 +416,8 @@ Tensor aux_extreme_x0(const Zonotope &R0, const std::vector<double> &ltg, std::s
 /// The rows l_0 = l0, l_{k+1} = l_k D for k < N of one direction, row-major (N + 1, n), each
 /// entry summed as the backend's dense product (1, n) x (n, n) sums it: blocks of rows of D,
 /// the terms of a block in order from zero, the blocks added in order; zero terms are skipped.
-std::vector<double> aux_propagate(const std::vector<double> &l0, const Banded &D, int N) {
+std::vector<double> aux_propagate(const std::vector<double> &l0, const Banded &D, int N,
+                                  bool flush = true) {
     const int64_t n = D.n;
     const int64_t block = n < 128 ? n : (n * 8 < 32000 ? 16 : 4);
     std::vector<double> lt(std::size_t(N + 1) * n, 0.0);
@@ -420,7 +425,8 @@ std::vector<double> aux_propagate(const std::vector<double> &l0, const Banded &D
     [[maybe_unused]] const int threads = threads_for(n, static_cast<long long>(D.val.size()));
 #pragma omp parallel num_threads(threads) if (threads > 1)
     {
-        [[maybe_unused]] const FlushDenormals flush; // the flag is per thread
+        std::optional<FlushDenormals> flushing; // the flag is per thread
+        if (flush) flushing.emplace();
 #ifdef _OPENMP
         const int64_t t = omp_get_thread_num(), nt = omp_get_num_threads();
 #else
@@ -526,6 +532,281 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
     return pass;
 }
 
+// The sound pass of a homogeneous system ----------------------------------------------------------
+
+constexpr int kStepsDiv = 100; // the first step size is t_final / ceil(t_final / (t_final/100))
+constexpr double kBoundLimit = 536870912.0; // 2^29: the largest exponent of the growth bound
+
+using ExactIntervals = std::vector<std::array<ExactTime, 2>>;
+
+/// sum_{j = n-1 .. 0} f(j), each term added in front of the sum of the later ones.
+template <class F>
+double aux_sum_up(int64_t n, const F &f) {
+    double sum = 0;
+    for (int64_t j = n - 1; j >= 0; --j) sum = f(j) + sum;
+    return sum;
+}
+
+/// What a run keeps over its passes: the scales, the growth rate, the initial set's bounds, the
+/// rows C_s C and their errors (0 at nearest).
+struct SoundRun {
+    std::vector<double> s, v, d, E0;
+    double mu = 0, beta_x = 0;
+    Tensor L; // (S, n)
+    int S = 0;
+};
+
+/// The support bounds of X0 = <c, G> along the rows `ltc`, `ltg` (rows of LT times c and G), with
+/// the errors E: (lc + sum_j |lg_j|) + E beta and (lc + sum_j |lg_j|) - E beta.
+struct SupportBounds {
+    std::vector<double> up, down;
+};
+SupportBounds aux_support_bounds(const std::vector<double> &ltc, const std::vector<double> &ltg,
+                                 int64_t m0, const std::vector<double> &E, double beta) {
+    SupportBounds b{std::vector<double>(ltc.size()), std::vector<double>(ltc.size())};
+    for (std::size_t r = 0; r < ltc.size(); ++r) {
+        const double g = aux_sum_up(m0, [&](int64_t j) { return std::abs(ltg[r * m0 + j]); });
+        const double base = ltc[r] + g;
+        b.up[r] = base + E[r] * beta;
+        b.down[r] = base - E[r] * beta;
+    }
+    return b;
+}
+
+/// CORALean's expUp 30 a at nearest: (1 + h + 2h^2)^(2^30) for h = a / 2^30 (halvings exact).
+double aux_exp_up(double a) {
+    constexpr int kDepth = 30;
+    double h = a;
+    for (int i = 0; i < kDepth; ++i) h *= 0.5;
+    double u = (1.0 + h) + (h * h + h * h);
+    for (int i = 0; i < kDepth; ++i) u = u * u;
+    return u;
+}
+
+/// The removal of the times [t0, t1] from the unverified intervals (LinearSys.verifyTimeSetdiff):
+/// exact, and nothing dropped.
+void aux_setdiff_exact(ExactIntervals &U, const ExactTime &t0, const ExactTime &t1) {
+    ExactIntervals kept;
+    for (const auto &iv : U) {
+        if (t1 <= iv[0] || iv[1] <= t0) {
+            kept.push_back(iv);
+            continue;
+        }
+        if (iv[0] < t0) kept.push_back({iv[0], t0});
+        if (t1 < iv[1]) kept.push_back({t1, iv[1]});
+    }
+    U = std::move(kept);
+}
+
+/// The smallest N with N dt >= tf, exactly.
+int64_t aux_steps_to(const ExactTime &tf, double dt) {
+    auto N = static_cast<int64_t>(std::ceil(tf.nearest() / dt));
+    const ExactTime step(dt);
+    while (step.times(static_cast<std::uint32_t>(N)) < tf) ++N;
+    while (N > 0 && tf <= step.times(static_cast<std::uint32_t>(N - 1))) --N;
+    return N;
+}
+
+/// The outcome of a sound pass.
+struct SoundPass {
+    enum class Kind { not_converged, no_bound, falsified, decided } kind = Kind::decided;
+    int64_t k = 0;                       // the falsifying time point
+    int q = 0;                           // and halfspace
+    std::vector<std::vector<char>> flag; // flag[q][k]: step k verified for halfspace q
+    std::vector<double> ltg;             // the rows of LT G, for the falsifying initial state
+};
+
+/// LinearSys.verifySupportPassFloat: N steps of dt; falsification at k dt <= T only.
+SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const Zonotope &R0,
+                         double dt, int64_t N, const ExactTime &T, bool host_rows) {
+    SoundPass out;
+    const int64_t n = A.shape()[0];
+    const int S = run.S;
+    // the correction matrix F and the exponential with its radius, at dt
+    const std::optional<VerifyCorrection> F = priv_verify_correction_state(*E.powers, E.scales, dt);
+    if (!F) {
+        out.kind = SoundPass::Kind::not_converged;
+        return out;
+    }
+    const std::optional<VerifyExpBall> ball = priv_verify_exp_ball(A, E.scales, dt);
+    if (!ball) {
+        out.kind = SoundPass::Kind::not_converged;
+        return out;
+    }
+    // F = [Fc +- Fr] and the products the curvature term needs
+    const std::size_t nn = std::size_t(n) * n;
+    std::vector<double> Fc(nn), Fr(nn), Fm(nn);
+    for (std::size_t e = 0; e < nn; ++e) {
+        Fc[e] = F->inf[e] + (F->sup[e] - F->inf[e]) * 0.5;
+        Fr[e] = std::max(F->sup[e] - Fc[e], Fc[e] - F->inf[e]);
+        Fm[e] = std::abs(Fc[e]) + Fr[e];
+    }
+    // the boxes F_c c, F_c G and F_r v, and beta_f >= |F| v / s
+    const Tensor Fct = Tensor::like(A, Fc, {n, n});
+    const Tensor wc = Fct.matmul(R0.center()), WG = Fct.matmul(R0.generators());
+    const Tensor vt = Tensor::like(A, run.v, {n, 1});
+    const Tensor wr = Tensor::like(A, Fr, {n, n}).matmul(vt);
+    const std::vector<double> fv = Tensor::like(A, Fm, {n, n}).matmul(vt).data();
+    double beta_f = 0;
+    for (int64_t i = 0; i < n; ++i) beta_f = std::max(beta_f, fv[i] / run.s[i]);
+    // the growth bound over N dt
+    const double a = std::max(run.mu, 0.0) * (double(N) * dt);
+    if (!(a <= kBoundLimit)) {
+        out.kind = SoundPass::Kind::no_bound;
+        return out;
+    }
+    const double Y = aux_exp_up(a);
+    // the rows l_k (k * S + q), propagated by D
+    const Tensor &D = ball->D;
+    const int64_t nd = D.shape()[0];
+    const bool host = host_rows && D.products_as_eigen();
+    const Banded Db = (S == 1 && nd >= 128 && host) ? aux_banded(D.data(), nd) : Banded{};
+    Tensor LT;
+    if (!Db.val.empty() && (threads_for(nd, static_cast<long long>(Db.val.size())) > 1 ||
+                            double(Db.val.size()) < 0.6 * double(nd) * double(nd))) {
+        LT = Tensor::like(run.L, aux_propagate(run.L.data(), Db, static_cast<int>(N), false),
+                          {N + 1, n});
+    } else {
+        std::vector<Tensor> rows{run.L};
+        for (int64_t k = 0; k < N; ++k) rows.push_back(rows.back().matmul(D));
+        LT = Tensor::concat(rows, -2);
+    }
+    // the parts of the supports along every row: c, G, F_c c, F_c G, F_r v and the scales
+    const int64_t m0 = R0.generators().shape()[1];
+    const std::vector<double> ltc = LT.matmul(R0.center()).data();
+    out.ltg = LT.matmul(R0.generators()).data();
+    const Tensor LTabs = LT.abs();
+    const std::vector<double> lw = LT.matmul(wc).data(), lg1 = LT.matmul(WG).data();
+    const std::vector<double> lr = LTabs.matmul(wr).data();
+    const std::vector<double> wn = LTabs.matmul(Tensor::like(A, run.s, {n, 1})).data();
+    // the error sums acc_k = E0 + sum_{j<k} ||l_j||_s r and the errors Y acc_k
+    const std::size_t rows = std::size_t(N + 1) * S;
+    std::vector<double> err(rows);
+    {
+        std::vector<double> acc = run.E0;
+        for (int64_t k = 0; k <= N; ++k)
+            for (int q = 0; q < S; ++q) {
+                const std::size_t r = std::size_t(k) * S + q;
+                err[r] = Y * acc[q];
+                acc[q] = acc[q] + wn[r] * ball->r;
+            }
+    }
+    const SupportBounds sb = aux_support_bounds(ltc, out.ltg, m0, err, run.beta_x);
+    // falsification: the first time point k dt <= T, in order, whose lower distance is above 0
+    const ExactTime step(dt);
+    for (int64_t k = 1; k <= N; ++k)
+        for (int q = 0; q < S; ++q)
+            if (0 < sb.down[std::size_t(k) * S + q] - run.d[q] &&
+                step.times(static_cast<std::uint32_t>(k)) <= T) {
+                out.kind = SoundPass::Kind::falsified;
+                out.k = k;
+                out.q = q;
+                return out;
+            }
+    // the steps: the larger end plus the curvature term below 0
+    const int64_t mw = WG.shape()[1];
+    out.flag.assign(S, std::vector<char>(N, 0));
+    for (int64_t k = 0; k < N; ++k)
+        for (int q = 0; q < S; ++q) {
+            const std::size_t r = std::size_t(k) * S + q, next = r + S;
+            const double t2 = aux_sum_up(mw, [&](int64_t j) { return std::abs(lg1[r * mw + j]); });
+            const double cb = ((lw[r] + t2) + lr[r]) + err[r] * beta_f;
+            const double a0 = sb.up[r] - run.d[q], a1 = sb.up[next] - run.d[q];
+            out.flag[q][k] = (std::max(a0, a1) + cb) < 0;
+        }
+    return out;
+}
+
+// The passes --------------------------------------------------------------------------------------
+
+/// LinearSys.verifySupportFuncFloat at nearest for a homogeneous system.
+VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, double t_final,
+                              const SpecRows &rows, Expmat &E,
+                              std::chrono::steady_clock::time_point start) {
+    VerifyResult res;
+    auto finish = [&]() {
+        res.computation_time = priv_seconds_since(start);
+        return res;
+    };
+    const Tensor &A = sys.A();
+    const int64_t n = A.shape()[0];
+    // the run's constants: the scales, the log norm, |c| + sum_j |g_j|, the rows C_s C
+    SoundRun run;
+    run.S = rows.nr;
+    run.s = E.scales;
+    run.mu = priv_verify_log_norm_up(A.data(), run.s, n);
+    run.d = rows.ds;
+    // |c| + sum_j |g_j| and its largest scaled entry
+    const std::vector<double> c = R0.center().data(), G = R0.generators().data();
+    const int64_t m0 = R0.generators().shape()[1];
+    run.v.resize(n);
+    for (int64_t i = 0; i < n; ++i) {
+        run.v[i] =
+            std::abs(c[i]) + aux_sum_up(m0, [&](int64_t j) { return std::abs(G[i * m0 + j]); });
+        run.beta_x = std::max(run.beta_x, run.v[i] / run.s[i]);
+    }
+    const Tensor Cs = Tensor::like(A, rows.Cs, {run.S, int64_t(rows.Cs.size()) / run.S});
+    run.L = sys.C() ? Cs.matmul(*sys.C()) : Cs;
+    run.E0.assign(run.S, 0.0); // the bracket of C_s C is a point at nearest
+    // the initial set
+    {
+        const std::vector<double> lc = run.L.matmul(R0.center()).data();
+        const std::vector<double> lg = run.L.matmul(R0.generators()).data();
+        const SupportBounds b0 = aux_support_bounds(lc, lg, m0, run.E0, run.beta_x);
+        for (int q = 0; q < run.S; ++q)
+            if (0 < b0.down[q] - run.d[q]) {
+                res.falsification = Falsification{aux_extreme_x0(R0, lg, q), 0.0};
+                return finish();
+            }
+    }
+    double dt = aux_time_step(t_final / kStepsDiv, t_final);
+    const ExactTime T(t_final);
+    ExactTime tf = T;
+    std::vector<ExactIntervals> unsat(run.S, ExactIntervals{{ExactTime(), T}});
+    while (true) {
+        // a pass of dt to tf: falsified, undecided, or its verified steps removed
+        ++res.iterations;
+        const int64_t N = aux_steps_to(tf, dt);
+        res.time_step = dt;
+        res.num_steps = static_cast<int>(N);
+        const SoundPass pass = aux_sound_pass(A, E, run, R0, dt, N, T, E.sparse_a);
+        if (pass.kind == SoundPass::Kind::not_converged) {
+            dt *= kShrinkNonconverged;
+            continue;
+        }
+        if (pass.kind == SoundPass::Kind::no_bound) return finish();
+        if (pass.kind == SoundPass::Kind::falsified) {
+            const ExactTime t = ExactTime(dt).times(static_cast<std::uint32_t>(pass.k));
+            res.falsification = Falsification{
+                aux_extreme_x0(R0, pass.ltg, std::size_t(pass.k) * run.S + pass.q), t.nearest()};
+            return finish();
+        }
+        // the verified steps leave the unverified times
+        bool all_verified = true;
+        ExactTime last;
+        for (int q = 0; q < run.S; ++q) {
+            ExactTime t0;
+            const ExactTime step(dt);
+            for (int64_t k = 0; k < N; ++k) {
+                const ExactTime t1 = t0 + step;
+                if (pass.flag[q][k]) aux_setdiff_exact(unsat[q], t0, t1);
+                t0 = t1;
+            }
+            // what is left, and its latest end: the next pass's horizon
+            for (const auto &iv : unsat[q]) {
+                all_verified = false;
+                if (last < iv[1]) last = iv[1];
+            }
+        }
+        if (all_verified) break;
+        tf = last;
+        dt *= kShrinkFixed;
+        if (dt < numerics::kMinTimeStep) return finish();
+    }
+    res.verified = true;
+    return finish();
+}
+
 } // namespace
 
 
@@ -535,7 +816,6 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
                                              const Zonotope &U, double t_final,
                                              const std::vector<Specification> &specs) {
     const auto start = std::chrono::steady_clock::now();
-    [[maybe_unused]] const FlushDenormals flush; // a no-op off x86
     VerifyResult res;
     auto finish = [&]() {
         res.computation_time = priv_seconds_since(start);
@@ -561,6 +841,11 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     E.powers.emplace(A.data(), A.shape()[0]);
     E.scales = priv_verify_balance_scales(A.data(), A.shape()[0]);
     aux_init_sparse(E, A);
+    // a homogeneous system whose log norm bounds the growth: the sound algorithm (others, #45)
+    if (!isu && !is_u &&
+        std::max(priv_verify_log_norm_up(A.data(), E.scales, A.shape()[0]), 0.0) * t_final <= 1.0)
+        return aux_verify_sound(sys, R0, t_final, aux_spec_rows(specs, false), E, start);
+    [[maybe_unused]] const FlushDenormals flush; // a no-op off x86
     if (isu || is_u) E.Ainv = priv_inverse(A);
 
     // Initial set ---------------------------------------------------------------------------------

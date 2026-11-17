@@ -61,6 +61,22 @@ struct VerifyCorrection {
     std::optional<std::pair<int64_t, Interval>> F, G;
 };
 
+/// exp_ball: CORALean's MatExp.expBallFloat at the scales of MatExp.balanceScalesFloat, the
+/// matrix D and the balanced radius r of e^{A dt} (empty where none).
+struct VerifyExpBall {
+    Tensor D;
+    double r;
+};
+
+/// verify_support_func: the verdict of CORALean's LinearSys.verifySupportFuncFloat and CORA's
+/// statistics; a falsification at the time point fals_step * time_step of halfspace fals_spec.
+struct VerifySupportRun {
+    bool verified = false, falsified = false;
+    int64_t iterations = 0, num_steps = 0;
+    double time_step = 0;
+    std::optional<int64_t> fals_step, fals_spec;
+};
+
 class LinearSys {
   public:
     /// The dynamics matrix (n, n) in the current dtype.
@@ -125,6 +141,15 @@ class LinearSys {
     /// CORALean's MatExp.verifyCorrectionStateFloat and verifyCorrectionInputFloat at the scales
     /// of MatExp.balanceScalesFloat.
     VerifyCorrection verify_correction(double time_step) const;
+
+    /// CORALean's MatExp.expBallFloat of A at dt (`linearSys.expBall`).
+    std::optional<VerifyExpBall> exp_ball(double time_step) const;
+
+    /// CORALean's LinearSys.verifySupportFuncFloat of x' = A x from <x0, G0> against the
+    /// halfspaces (Cs C x)_q <= d_q over [0, t_final] (C = I without one), at most `fuel` passes.
+    VerifySupportRun verify_support_func(const cora::Tensor &x0, const cora::Tensor &G0,
+                                         const cora::Tensor &Cs, const cora::Tensor &d,
+                                         double t_final, double min_step, int fuel) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;
