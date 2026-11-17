@@ -20,6 +20,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <limits>
@@ -59,7 +60,7 @@ double Polytope::distance(const Polytope &S) const {
     if (is_intersecting(S, "exact", numerics::kPolytopeDistance)) return 0.0;
     // the origin against {x - y | x in P, y in S}
     const Tensor &like = is_h_rep() ? A_ : V_;
-    const Polytope difference = plus(S.linear_map(priv_identity(like, dim()) * -1.0));
+    const Polytope difference = plus(S.linear_map(identity_block(like, dim()) * -1.0));
     return priv_distance_to_polytope(priv_host_h(difference.constraints()),
                                      Row(std::size_t(dim()), 0.0));
 }

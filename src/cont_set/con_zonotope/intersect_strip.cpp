@@ -25,6 +25,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -45,7 +46,7 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
     widths.back() = k;
     const Tensor rows = Tensor::concat({CG, -phi.diag().broadcast_to(widths)}, -1);
     const Tensor A = Tensor::concat(
-        {Tensor::concat({cz.A(), priv_zeros(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
+        {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
          rows},
         -2);
     return {Z.center(), Z.generators(), A, Tensor::concat({cz.b(), y - C.matmul(cz.c())}, -2)};

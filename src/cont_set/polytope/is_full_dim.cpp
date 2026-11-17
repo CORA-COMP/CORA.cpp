@@ -23,6 +23,7 @@
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/linprog.h"
 #include "cora/global/within_tol.h"
+#include "global/blocks.h"
 
 #include <algorithm>
 #include <cmath>
@@ -156,12 +157,12 @@ std::pair<bool, Tensor> aux_vertex_span(const Tensor &V, double tol) {
     // a line has an interior if its two ends differ (an end at infinity does)
     if (n == 1) {
         const bool full = V.numel() > 0 && !within_tol(V.min().item(), V.max().item(), tol);
-        return {full, full ? priv_identity(V, 1) : priv_zeros(V, 1, 0)};
+        return {full, full ? identity_block(V, 1) : zeros_block(V, 1, 0)};
     }
     const Tensor centered = V - V.mean(-1, true);
     const int64_t rank = centered.shape().back() == 0 ? 0 : centered.matrix_rank(tol);
-    if (rank == n) return {true, priv_identity(V, n)};
-    if (rank == 0) return {false, priv_zeros(V, n, 0)};
+    if (rank == n) return {true, identity_block(V, n)};
+    if (rank == 0) return {false, zeros_block(V, n, 0)};
     return {false, centered.svd()[0].slice(-1, 0, rank)};
 }
 
@@ -182,11 +183,11 @@ std::pair<bool, Tensor> Polytope::is_full_dim_subspace(Tol tol_arg) const {
     if (n == 1) {
         // two vertices (or a half-line) have an interior, a point or nothing has none
         const bool full = aux_vertices_1d(*this).size() == 2;
-        return {full, full ? priv_identity(A_, 1) : priv_zeros(A_, 1, 0)};
+        return {full, full ? identity_block(A_, 1) : zeros_block(A_, 1, 0)};
     }
-    if (priv_polytope_is_empty(*this)) return {false, priv_zeros(A_, n, 0)};
+    if (priv_polytope_is_empty(*this)) return {false, zeros_block(A_, n, 0)};
     const Rows span = aux_halfspace_span(*this);
-    if (int64_t(span.size()) == n) return {true, priv_identity(A_, n)};
+    if (int64_t(span.size()) == n) return {true, identity_block(A_, n)};
     // the vectors of the span are the columns of the basis
     return {false, priv_points_tensor(A_, n, span)};
 }

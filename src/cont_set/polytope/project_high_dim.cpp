@@ -20,6 +20,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 
 #include <algorithm>
 
@@ -36,7 +37,7 @@ Tensor aux_zero_rows(const Tensor &like, int64_t N, const std::vector<int64_t> &
     std::vector<int64_t> missing;
     for (int64_t k = 0; k < N; ++k)
         if (std::find(dims.begin(), dims.end(), k) == dims.end()) missing.push_back(k);
-    return priv_identity(like, N).take(missing, -2);
+    return identity_block(like, N).take(missing, -2);
 }
 
 } // namespace
@@ -59,7 +60,7 @@ Polytope Polytope::project_high_dim(int64_t N, const std::vector<int64_t> &dims)
         parts.A = priv_place(A_, N, dims, -1);
         parts.b = b_;
         parts.Ae = Tensor::concat({priv_place(Ae_, N, dims, -1), zeros}, -2);
-        parts.be = Tensor::concat({be_, priv_zeros(be_, zeros.shape()[zeros.ndim() - 2], 1)}, -2);
+        parts.be = Tensor::concat({be_, zeros_block(be_, zeros.shape()[zeros.ndim() - 2], 1)}, -2);
     }
     if (is_v_rep()) parts.V = priv_place(V_, N, dims, -2);
     return Polytope(std::move(parts));

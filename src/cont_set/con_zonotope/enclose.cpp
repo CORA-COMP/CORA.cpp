@@ -21,6 +21,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -73,7 +74,7 @@ ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
     const bool second_shorter = cz2.generators().shape().back() <= cz.generators().shape().back();
     const Tensor &A = second_shorter ? cz2.A() : cz.A();
     const int64_t more = Z.generators().shape().back() - A.shape().back();
-    const Tensor padded = Tensor::concat({A, priv_zeros(A, A.shape()[A.ndim() - 2], more)}, -1);
+    const Tensor padded = Tensor::concat({A, zeros_block(A, A.shape()[A.ndim() - 2], more)}, -1);
     return {Z.center(), Z.generators(), padded, cz.b()};
 }
 

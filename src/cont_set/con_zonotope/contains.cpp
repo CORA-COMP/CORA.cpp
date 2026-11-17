@@ -24,6 +24,7 @@
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/within_tol.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -102,7 +103,7 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         return within_tol(P, point.broadcast_to(P.shape()), tol).min().item() == 1.0;
     }
     const Tensor extended_center =
-        Tensor::concat({compacted.c(), priv_zeros(compacted.c(), p, 1)}, -2);
+        Tensor::concat({compacted.c(), zeros_block(compacted.c(), p, 1)}, -2);
     const Tensor extended_generators = Tensor::concat({compacted.generators(), compacted.A()}, -2);
     const Tensor offsets = compacted.b().broadcast_to({p, N});
     return Zonotope(extended_center, extended_generators)

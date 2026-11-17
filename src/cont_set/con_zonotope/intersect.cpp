@@ -22,6 +22,7 @@
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/tensor/tolerance.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -83,12 +84,12 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
         const int64_t p = out.A().shape()[0];
         const Tensor slack = out.c().full_like({1, 1}, 0.5 * (lb - ub));
         const Tensor A =
-            Tensor::concat({Tensor::concat({out.A(), priv_zeros(out.c(), p, 1)}, -1),
+            Tensor::concat({Tensor::concat({out.A(), zeros_block(out.c(), p, 1)}, -1),
                             Tensor::concat({a_row.matmul(out.generators()), slack}, -1)},
                            -2);
         const Tensor b = Tensor::concat(
             {out.b(), out.c().full_like({1, 1}, 0.5 * (ub + lb)) - a_row.matmul(out.c())}, -2);
-        const Tensor G = Tensor::concat({out.generators(), priv_zeros(out.c(), n, 1)}, -1);
+        const Tensor G = Tensor::concat({out.generators(), zeros_block(out.c(), n, 1)}, -1);
         out = ConZonotope(out.c(), G, A, b);
     }
     return out;

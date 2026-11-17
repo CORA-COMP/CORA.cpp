@@ -20,6 +20,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -68,7 +69,7 @@ detail::Refusal aux_point_refusal(const Tensor &p) {
 /// The point as a polytope: the equalities I x = p.
 Polytope aux_point(const Tensor &p) {
     const int64_t n = p.shape()[p.ndim() - 2];
-    return {priv_zeros(p, 0, n), priv_zeros(p, 0, 1), priv_identity(p, n), p};
+    return {zeros_block(p, 0, n), zeros_block(p, 0, 1), identity_block(p, n), p};
 }
 
 /// The product: the pairs of vertices if no operand has halfspaces, else the block diagonal.
@@ -76,7 +77,7 @@ Polytope aux_product(const Polytope &P1, const Polytope &P2) {
     if (!P1.is_h_rep() && !P2.is_h_rep()) {
         const int64_t n1 = P1.dim(), n2 = P2.dim(), m1 = P1.V().shape().back(),
                       m2 = P2.V().shape().back();
-        if (m1 * m2 == 0) return Polytope(priv_zeros(P1.V(), n1 + n2, 0));
+        if (m1 * m2 == 0) return Polytope(zeros_block(P1.V(), n1 + n2, 0));
         // [repelem(V1, 1, m2); repmat(V2, 1, m1)]
         std::vector<int64_t> first(std::size_t(m1 * m2)), second(std::size_t(m1 * m2));
         for (int64_t k = 0; k < m1 * m2; ++k) {
@@ -86,8 +87,8 @@ Polytope aux_product(const Polytope &P1, const Polytope &P2) {
         return Polytope(Tensor::concat({P1.V().take(first, -1), P2.V().take(second, -1)}, -2));
     }
     const Polytope::Constraints C1 = P1.constraints(), C2 = P2.constraints();
-    return {priv_block_diag(C1.A, C2.A), Tensor::concat({C1.b, C2.b}, -2),
-            priv_block_diag(C1.Ae, C2.Ae), Tensor::concat({C1.be, C2.be}, -2)};
+    return {Tensor::block_diag({C1.A, C2.A}), Tensor::concat({C1.b, C2.b}, -2),
+            Tensor::block_diag({C1.Ae, C2.Ae}), Tensor::concat({C1.be, C2.be}, -2)};
 }
 
 } // namespace

@@ -19,6 +19,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 
 #include <cmath>
 #include <limits>
@@ -51,7 +52,7 @@ Tensor aux_center_1d(const Polytope &P) {
         v = priv_vertices_1d(priv_host_h(P.constraints()), empty);
     }
     const Tensor like = P.is_h_rep() ? P.A() : P.V();
-    if (v.empty()) return priv_zeros(like, 1, 0);
+    if (v.empty()) return zeros_block(like, 1, 0);
     if (v.size() == 1) return aux_column(P, {v[0]});
     if (std::isinf(v[0]) || std::isinf(v[1])) return aux_column(P, {kNaN});
     return aux_column(P, {(v[0] + v[1]) / 2.0});
@@ -67,7 +68,7 @@ Tensor aux_center_avg(const Polytope &P) {
     }
     const Rows vertices = priv_polytope_vertices(P);
     const int64_t n = P.dim();
-    if (vertices.empty()) return priv_zeros(P.A(), n, 0);
+    if (vertices.empty()) return zeros_block(P.A(), n, 0);
     Row mean(std::size_t(n), 0.0);
     for (const Row &v : vertices)
         for (int64_t i = 0; i < n; ++i) mean[std::size_t(i)] += v[std::size_t(i)];
@@ -117,7 +118,7 @@ Tensor aux_center_chebyshev(const Polytope &P) {
     const HostH H = priv_host_h(P.constraints());
     const std::optional<Row> c =
         H.A.empty() && !H.Ae.empty() ? aux_equalities_only(H) : priv_chebyshev_center(H);
-    if (!c) return priv_zeros(P.is_h_rep() ? P.A() : P.V(), H.n, 0);
+    if (!c) return zeros_block(P.is_h_rep() ? P.A() : P.V(), H.n, 0);
     return aux_column(P, *c);
 }
 
@@ -138,8 +139,8 @@ Tensor Polytope::center(const std::string &method) const {
     const Tensor &like = is_h_rep() ? A_ : V_;
     const int64_t n = dim();
     // R^n has the origin as its center, a set without vertices none
-    if (priv_is_fullspace(*this)) return priv_zeros(like, n, 1);
-    if (priv_has_no_vertices(*this)) return priv_zeros(like, n, 0);
+    if (priv_is_fullspace(*this)) return zeros_block(like, n, 1);
+    if (priv_has_no_vertices(*this)) return zeros_block(like, n, 0);
     if (n == 1) return aux_center_1d(*this);
     return method == "avg" ? aux_center_avg(*this) : aux_center_chebyshev(*this);
 }

@@ -24,6 +24,7 @@
 #include "cont_set/cont_set/private/priv_set_type.h"
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/within_tol.h"
+#include "global/blocks.h"
 
 #include <algorithm>
 #include <cmath>
@@ -152,7 +153,7 @@ bool aux_is_point(const Polytope &P, Tol tol) {
 /// Whether the origin is the set: it contains the origin and its box is smaller than tol.
 bool aux_is_origin(const Polytope &P, double tol) {
     const Tensor &like = P.is_h_rep() ? P.A() : P.V();
-    if (!P.contains(priv_zeros(like, P.dim(), 1), "exact", tol)) return false;
+    if (!P.contains(zeros_block(like, P.dim(), 1), "exact", tol)) return false;
     return P.interval().norm(Tensor::Norm::two).item() <= tol;
 }
 

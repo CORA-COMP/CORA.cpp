@@ -24,6 +24,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/linprog.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <algorithm>
@@ -143,8 +144,8 @@ ConZonotope::Cut aux_cut(const ConZonotope &cz) {
             cz.generators(),
             cz.A(),
             cz.b(),
-            priv_zeros(cz.c(), 0, cz.generators().shape().back()),
-            priv_zeros(cz.c(), 0, 1)};
+            zeros_block(cz.c(), 0, cz.generators().shape().back()),
+            zeros_block(cz.c(), 0, 1)};
 }
 
 // The programs ------------------------------------------------------------------------------------

@@ -21,6 +21,7 @@
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 #include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -62,7 +63,7 @@ ZonoBundle ConZonotope::zono_bundle() const {
     if (A_.shape()[A_.ndim() - 2] == 0) return ZonoBundle::from(Zonotope(c_, G_));
     if (priv_is_empty(priv_host_con_zonotope(*this))) return ZonoBundle::empty(dim());
     const int64_t m = A_.shape()[1];
-    const Tensor p0 = A_.pinv().matmul(b_), T = priv_null_space(A_);
+    const Tensor p0 = A_.pinv().matmul(b_), T = null_space(A_);
     const Tensor shift = c_ + G_.matmul(p0);
     const int64_t p = T.shape()[1];
     // no free direction: the constraints fix the factors, and the set is a point

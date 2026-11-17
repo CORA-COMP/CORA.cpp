@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "cont_set/con_zonotope/private/priv.h"
 #include "cora/cont_set/polytope/polytope.h"
+#include "global/blocks.h"
 
 #include <optional>
 #include <utility>

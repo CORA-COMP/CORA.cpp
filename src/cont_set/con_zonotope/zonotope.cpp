@@ -21,6 +21,7 @@
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/linprog.h"
 #include "cora/global/tensor/tolerance.h"
+#include "global/blocks.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -63,7 +64,7 @@ std::pair<std::vector<double>, std::vector<double>> aux_ranges(const Tensor &T, 
 /// The zonotope of the null space method: the factors p + T y with y in a box.
 Zonotope aux_null_space(const ConZonotope &cz) {
     const Tensor &c = cz.c(), &G = cz.generators();
-    const Tensor p = cz.A().pinv().matmul(cz.b()), T = priv_null_space(cz.A());
+    const Tensor p = cz.A().pinv().matmul(cz.b()), T = null_space(cz.A());
     const int64_t k = T.shape()[1];
     const auto [lb, ub] = aux_ranges(T, p);
     // a box of one point (up to rounding) is that point, as CORA's relative spread test

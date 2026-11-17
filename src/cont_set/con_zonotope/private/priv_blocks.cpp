@@ -1,18 +1,18 @@
-// priv_blocks - the block matrices and the exact set maps that the operations of the class share
+// priv_blocks - the exact set maps that the operations of the class share
 //
-// Syntax:   Tensor Z = priv_zeros(like, rows, cols);   Tensor B = priv_block_diag(A, B);
-//           ConZonotope c = priv_compact(cz);   ConZonotope s = priv_minkowski_sum(cz1, cz2);
+// Syntax:   ConZonotope c = priv_compact(cz);   ConZonotope s = priv_minkowski_sum(cz1, cz2);
 // Inputs:   czs - constrained zonotopes, or their tensors, of one batch shape
-// Outputs:  R - the block matrix, the compacted set, the sum or the intersection
-// See also: con_zonotope.h
+// Outputs:  R - the compacted set, the sum or the intersection
+// See also: con_zonotope.h, global/blocks.h
 //
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <algorithm>
@@ -36,44 +36,6 @@ std::vector<int64_t> aux_positions(const Tensor &keep, int64_t count) {
 
 
 // ===========================================  MAIN  =========================================== //
-
-// Blocks ------------------------------------------------------------------------------------------
-
-Tensor priv_zeros(const Tensor &like, int64_t rows, int64_t cols) {
-    Shape shape = like.shape();
-    shape[shape.size() - 2] = rows;
-    shape.back() = cols;
-    return like.zeros_like(shape);
-}
-
-Tensor priv_full(const Tensor &like, int64_t rows, int64_t cols, double value) {
-    Shape shape = like.shape();
-    shape[shape.size() - 2] = rows;
-    shape.back() = cols;
-    return like.full_like(shape, value);
-}
-
-Tensor priv_identity(const Tensor &like, int64_t k) {
-    Shape shape = like.shape();
-    shape[shape.size() - 2] = k;
-    shape.back() = k;
-    return like.eye_like(k).broadcast_to(shape);
-}
-
-Tensor priv_block_diag(const Tensor &A, const Tensor &B) {
-    const int64_t rows_a = A.shape()[A.ndim() - 2], rows_b = B.shape()[B.ndim() - 2];
-    // the blocks on the diagonal
-    const int64_t cols_a = A.shape().back(), cols_b = B.shape().back();
-    // A with zeros to its right, zeros to the left of B
-    const Tensor top = Tensor::concat({A, priv_zeros(A, rows_a, cols_b)}, -1);
-    const Tensor bottom = Tensor::concat({priv_zeros(B, rows_b, cols_a), B}, -1);
-    return Tensor::concat({top, bottom}, -2);
-}
-
-Tensor priv_select_columns(const Tensor &A, const std::vector<int64_t> &columns) {
-    if (columns.empty()) return priv_zeros(A, A.shape()[A.ndim() - 2], 0);
-    return A.take(columns, -1);
-}
 
 // Pairs and corners -------------------------------------------------------------------------------
 
@@ -110,11 +72,11 @@ std::pair<std::vector<int64_t>, std::vector<int64_t>> priv_nonzero_parts(const C
 
 ConZonotope priv_compact(const ConZonotope &cz) {
     const auto [rows, cols] = priv_nonzero_parts(cz);
-    const Tensor A = priv_select_columns(cz.A(), cols);
+    const Tensor A = select_columns(cz.A(), cols);
     // the constraint rows 0 = 0 go, an infeasible zero row 0 = b stays
-    const Tensor kept_A = rows.empty() ? priv_zeros(A, 0, A.shape().back()) : A.take(rows, -2);
-    const Tensor kept_b = rows.empty() ? priv_zeros(cz.b(), 0, 1) : cz.b().take(rows, -2);
-    return {cz.c(), priv_select_columns(cz.generators(), cols), kept_A, kept_b};
+    const Tensor kept_A = rows.empty() ? zeros_block(A, 0, A.shape().back()) : A.take(rows, -2);
+    const Tensor kept_b = rows.empty() ? zeros_block(cz.b(), 0, 1) : cz.b().take(rows, -2);
+    return {cz.c(), select_columns(cz.generators(), cols), kept_A, kept_b};
 }
 
 // Set maps ----------------------------------------------------------------------------------------
@@ -128,17 +90,17 @@ ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
 
 ConZonotope priv_minkowski_sum(const ConZonotope &cz1, const ConZonotope &cz2) {
     return {cz1.c() + cz2.c(), Tensor::concat({cz1.generators(), cz2.generators()}, -1),
-            priv_block_diag(cz1.A(), cz2.A()), Tensor::concat({cz1.b(), cz2.b()}, -2)};
+            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -2)};
 }
 
 ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const Tensor &Mc,
                            const Tensor &MG) {
     const int64_t n = cz1.dim(), m2 = cz2.generators().shape().back();
     // the factors of both sets, the first set's generators carry the result
-    const Tensor G = Tensor::concat({cz1.generators(), priv_zeros(cz1.generators(), n, m2)}, -1);
+    const Tensor G = Tensor::concat({cz1.generators(), zeros_block(cz1.generators(), n, m2)}, -1);
     // each set keeps its constraints; the images of the generators must agree
     const Tensor rows = Tensor::concat(
-        {priv_block_diag(cz1.A(), cz2.A()), Tensor::concat({MG, -cz2.generators()}, -1)}, -2);
+        {Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({MG, -cz2.generators()}, -1)}, -2);
     const Tensor b = Tensor::concat({cz1.b(), cz2.b(), cz2.c() - Mc}, -2);
     return {cz1.c(), G, rows, b};
 }

@@ -19,6 +19,7 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <cstring>
@@ -144,7 +145,7 @@ Interval ConZonotope::interval_tight(int passes) const {
     CORA_CHECK(passes >= 0, Error::wrong_value, [&] {
         return "interval_tight: passes must be nonnegative, got " + std::to_string(passes);
     });
-    return Cut{c_, G_, A_, b_, priv_zeros(c_, 0, G_.shape()[1]), priv_zeros(c_, 0, 1)}
+    return Cut{c_, G_, A_, b_, zeros_block(c_, 0, G_.shape()[1]), zeros_block(c_, 0, 1)}
         .interval_tight(passes);
 }
 

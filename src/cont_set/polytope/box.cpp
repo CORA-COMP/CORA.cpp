@@ -16,6 +16,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,7 +31,7 @@ Polytope Polytope::box() const {
     if (priv_is_fullspace(*this)) return inf(n);
     const Interval I = interval_impl();
     if (I.is_empty()) return empty(n);
-    const Tensor eye = priv_identity(I.inf(), n);
+    const Tensor eye = identity_block(I.inf(), n);
     return Polytope(Tensor::concat({eye, -eye}, -2), Tensor::concat({I.sup(), -I.inf()}, -2));
 }
 

@@ -17,6 +17,7 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "global/blocks.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -48,7 +49,7 @@ Tensor aux_center_flat(const ConZonotope &cz, const HostConZonotope &H) {
 /// The Chebyshev center in the null space of A for a full-dimensional set, mapped back.
 Tensor aux_center_full(const ConZonotope &cz) {
     const Tensor &A = cz.A();
-    const Tensor N = priv_null_space(A);
+    const Tensor N = null_space(A);
     // no free direction: the factors are the solution of A x = b
     if (N.shape().back() == 0) return cz.c() + cz.generators().matmul(A.lstsq(cz.b()));
     const Tensor x0 = A.pinv().matmul(cz.b());

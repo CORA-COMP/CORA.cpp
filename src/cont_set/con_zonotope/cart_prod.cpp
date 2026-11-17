@@ -16,6 +16,7 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -41,7 +42,7 @@ detail::Refusal aux_refusal(const ConZonotope &cz1, const ConZonotope &cz2) {
 }
 
 /// The point p as a set without generators; it must be a column.
-ConZonotope aux_point(const Tensor &p) { return {p, priv_zeros(p, p.shape()[p.ndim() - 2], 0)}; }
+ConZonotope aux_point(const Tensor &p) { return {p, zeros_block(p, p.shape()[p.ndim() - 2], 0)}; }
 
 /// Why the point is refused, if it is.
 detail::Refusal aux_point_refusal(const Tensor &p) {
@@ -54,8 +55,8 @@ detail::Refusal aux_point_refusal(const Tensor &p) {
 /// The product of two sets: centers stack, generators and constraints on the block diagonal.
 ConZonotope aux_product(const ConZonotope &cz1, const ConZonotope &cz2) {
     return {Tensor::concat({cz1.c(), cz2.c()}, -2),
-            priv_block_diag(cz1.generators(), cz2.generators()), priv_block_diag(cz1.A(), cz2.A()),
-            Tensor::concat({cz1.b(), cz2.b()}, -2)};
+            Tensor::block_diag({cz1.generators(), cz2.generators()}),
+            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -2)};
 }
 
 } // namespace

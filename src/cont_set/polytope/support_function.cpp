@@ -19,6 +19,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 
 #include <limits>
 
@@ -41,7 +42,7 @@ Tensor aux_fullspace(const Tensor &d) {
 
 /// The largest dot product of the direction with the columns of V.
 Tensor aux_vertices(const Tensor &V, const Tensor &d) {
-    if (V.shape().back() == 0) return priv_full(d, 1, 1, -kInf);
+    if (V.shape().back() == 0) return full_block(d, 1, 1, -kInf);
     return d.matrix_transpose().matmul(V).max(-1, true);
 }
 

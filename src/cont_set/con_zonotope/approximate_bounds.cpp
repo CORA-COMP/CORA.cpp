@@ -28,6 +28,7 @@
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/linprog.h"
 #include "cora/global/tensor/tolerance.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <cmath>
@@ -271,7 +272,7 @@ ConZonotope::approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &
         const Tensor radius = dr3 + G3.abs_sum();
         r = {c3 - radius, c3 + radius, c3.full_like({B, m, 1}, -1.0), c3.full_like({B, m, 1}, 1.0)};
     } else {
-        const Tensor padded = Tensor::concat({G3, priv_zeros(G3, n, q - m)}, -1);
+        const Tensor padded = Tensor::concat({G3, zeros_block(G3, n, q - m)}, -1);
         r = aux_union(c3, padded, dr3, shaped(A, p, q), shaped(b, p, 1), num_union_const, options);
         // a member without a point: the factor bounds cross, or the box is not a number
         const Tensor crossed = r.bl.greater(r.bu).any(-2, true);
