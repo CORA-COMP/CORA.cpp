@@ -4,23 +4,25 @@
 // "exact:zonotope" tests the members one by one. A zonotope or a box is inside if every member
 // holds it; a bundle if each member holds it by its facets. CORA asks the polytope of the bundle.
 //
-// "approx" is "exact" for points; it takes no set.
+// "exact:polytope" asks the polytope of the bundle, as CORA does. "approx" is "exact" for points;
+// it takes no set.
 //
 // Syntax:   res = bundle.contains(p);   res = bundle.contains(S, "exact", tol);
 // Inputs:   S - points (n, N), a zonotope, a box or a bundle of the dimension of bundle
-//           method - "exact" (default), "exact:zonotope" or "approx"
+//           method - "exact" (default), "exact:zonotope", "exact:polytope" or "approx"
 //           tol - relaxes the norm of the points and the facet tests; default: the repository one
 // Outputs:  res - true if all points (S) are in the bundle; not for a batch
 // See also: is_intersecting, Zonotope::contains, ConZonotope::contains
 //
 // CORA: contSet/@zonoBundle/contains_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
 
@@ -44,10 +46,6 @@ detail::Refusal aux_refusal(const ZonoBundle &bundle, const std::string &method,
     if (!known)
         return std::pair{Error::no_specific_alg,
                          "contains: no algorithm '" + method + "' for this set"};
-    if (method == "exact:polytope")
-        return std::pair{Error::not_supported,
-                         std::string("contains: the method 'exact:polytope' needs the class "
-                                     "Polytope")};
     if (method == "approx" && !points)
         return std::pair{Error::not_supported,
                          std::string("contains: the method 'approx' is not supported for a set; "
@@ -87,6 +85,7 @@ bool ZonoBundle::contains(const Tensor &p, const std::string &method, Tol tol_ar
     if (!r) r = aux_refusal(*this, method, true);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     if (method == "exact:zonotope") return aux_all_members(*this, p, tol);
+    if (method == "exact:polytope") return polytope().contains(p, "exact", tol);
     return con_zonotope().contains(p, "exact", tol);
 }
 
@@ -98,6 +97,7 @@ bool ZonoBundle::contains(const Zonotope &S, const std::string &method, Tol tol_
     detail::Refusal r = priv_operand_refusal(*this, S.dim(), S.center(), "contains");
     if (!r) r = aux_refusal(*this, method, false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    if (method == "exact:polytope") return polytope().contains(S, "exact", tol);
     return aux_all_members(*this, S, tol);
 }
 
@@ -108,7 +108,9 @@ bool ZonoBundle::contains(const Interval &I, const std::string &method, Tol tol_
     if (!r) r = aux_refusal(*this, method, false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // the empty box is in every set
-    return I.is_empty() || aux_all_members(*this, I, tol);
+    if (I.is_empty()) return true;
+    if (method == "exact:polytope") return polytope().contains(I, "exact", tol);
+    return aux_all_members(*this, I, tol);
 }
 
 bool ZonoBundle::contains(const ZonoBundle &S, const std::string &method, Tol tol_arg) const {
@@ -119,6 +121,7 @@ bool ZonoBundle::contains(const ZonoBundle &S, const std::string &method, Tol to
     if (!r) r = aux_refusal(*this, method, false);
     if (!r) r = priv_batch_refusal(S.zonotopes().front().center(), "contains");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
+    if (method == "exact:polytope") return polytope().contains(S, "exact", tol);
     const ConZonotope inner = S.con_zonotope();
     for (const Zonotope &Z : Z_)
         if (!priv_con_zonotope_in_zonotope(inner, Z, tol)) return false;
