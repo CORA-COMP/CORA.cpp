@@ -81,6 +81,11 @@ class Polytope : public ContSet {
     /// for n <= 8; vertices are not ported, so none are held here.
     static Polytope inf(int64_t n = 0);
 
+    /// {x | Ae x = be} without inequalities (Ae (..., k, n), be (..., k, 1)), e.g. the factor
+    /// polytope of a constrained zonotope; the offsets must be finite (an input check). A batch is
+    /// fine.
+    static Polytope equalities(Tensor Ae, Tensor be);
+
     /// The origin {0} in n >= 1 dimensions (CORA's polytope.origin): one vertex, no halfspaces
     /// (CORA also stores the simplex x >= 0, sum x <= 0 that holds only the origin).
     static Polytope origin(int64_t n);
@@ -389,9 +394,6 @@ class Polytope : public ContSet {
     Set enclose_impl(const ContSet &S2) const override;
 
   private:
-    // a constrained zonotope builds and reads its factor polytope without the checks of the API
-    friend class ConZonotope;
-
     /// The parts of a polytope that is built by an operation (in either or both forms).
     struct Parts {
         Tensor A, b, Ae, be, V;

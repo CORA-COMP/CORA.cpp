@@ -103,12 +103,7 @@ Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tenso
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(c, G, A, b);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    // no inequality rows (without constraints A and b are such); finite offsets, never empty
-    const bool none = A.shape()[A.ndim() - 2] == 0;
-    Tensor A_ineq = none ? A : zeros_block(A, 0, A.shape().back());
-    Tensor b_ineq = none ? b : zeros_block(b, 0, 1);
-    return Polytope(Polytope::Parts{std::move(A_ineq), std::move(b_ineq), std::move(A),
-                                    std::move(b), Tensor()});
+    return Polytope::equalities(std::move(A), std::move(b));
 }
 
 ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
