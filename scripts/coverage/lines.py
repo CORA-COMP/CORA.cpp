@@ -36,6 +36,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BASELINE = ROOT / "coverage" / "lines.json"
 TOLERANCE = 0.1  # percentage points that a run may lose against the baseline: the tests of threads
 FILE_LIMIT = 70.0  # a file below it counts as thin
+MIN_FILE_LINES = 10  # smaller files are never thin: one gcov line on a class head moves 3 lines to 67%
 
 
 def read_gcov(text, root):
@@ -78,10 +79,12 @@ def merge(measurements):
 
 
 def totals(files):
-    """(executed, executable, thin files) of a map: the lines and the files below FILE_LIMIT."""
+    """(executed, executable, thin files) of a map: the lines, and the files of at least
+    MIN_FILE_LINES lines below FILE_LIMIT."""
     executed = sum(len(b) for _, b in files.values())
     executable = sum(len(a) for a, _ in files.values())
-    thin = sum(1 for a, b in files.values() if a and 100.0 * len(b) / len(a) < FILE_LIMIT)
+    thin = sum(1 for a, b in files.values()
+               if len(a) >= MIN_FILE_LINES and 100.0 * len(b) / len(a) < FILE_LIMIT)
     return executed, executable, thin
 
 
