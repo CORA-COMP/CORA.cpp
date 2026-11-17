@@ -386,6 +386,9 @@ class Polytope : public ContSet {
     Set enclose_impl(const ContSet &S2) const override;
 
   private:
+    // a constrained zonotope builds and reads its factor polytope without the checks of the API
+    friend class ConZonotope;
+
     /// The parts of a polytope that is built by an operation (in either or both forms).
     struct Parts {
         Tensor A, b, Ae, be, V;

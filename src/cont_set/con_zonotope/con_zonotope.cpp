@@ -80,14 +80,6 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, c
     return std::nullopt;
 }
 
-/// The factor polytope {x | A x = b} of checked data: the equalities, no inequality rows.
-Polytope aux_factor_polytope(const Tensor &c, const Tensor &G, const Tensor &A, const Tensor &b) {
-    detail::Entry entry;
-    const detail::Refusal refusal = aux_refusal(c, G, A, b);
-    CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    return {zeros_block(A, 0, A.shape().back()), zeros_block(b, 0, 1), A, b};
-}
-
 /// Why the factor polytope does not fit the center and the generators, if it does not.
 detail::Refusal aux_polytope_refusal(const Tensor &c, const Tensor &G, const Polytope &F) {
     const auto fail = [](const std::string &text) {
@@ -106,9 +98,21 @@ detail::Refusal aux_polytope_refusal(const Tensor &c, const Tensor &G, const Pol
 
 // From the data -----------------------------------------------------------------------------------
 
-ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
-    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), F_(aux_factor_polytope(c_, G_, A, b)) {
+// the factor polytope {x | A x = b} of checked data: the equalities, no inequality rows
+Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, const Tensor &A,
+                                         const Tensor &b) {
+    detail::Entry entry;
+    const detail::Refusal refusal = aux_refusal(c, G, A, b);
+    CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
+    // no inequality rows: without constraints A and b themselves have none; the entries are
+    // finite, so no offset makes the set empty
+    const bool none = A.shape()[A.ndim() - 2] == 0;
+    return Polytope(Polytope::Parts{none ? A : zeros_block(A, 0, A.shape().back()),
+                                    none ? b : zeros_block(b, 0, 1), A, b, Tensor()});
 }
+
+ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), F_(factor_polytope_of(c_, G_, A, b)) {}
 
 // the factor polytope as it is, checked against the center and the generators
 ConZonotope::ConZonotope(Tensor c, Tensor G, Polytope F)

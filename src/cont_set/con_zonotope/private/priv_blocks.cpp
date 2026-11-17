@@ -85,7 +85,7 @@ ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
                               const std::optional<Tensor> &t) {
     auto [c, G] = Tensor::zonotope_linear_map(M, cz.c(), cz.generators());
     if (t) c = c + *t;
-    return {c, G, cz.A(), cz.b()};
+    return {c, G, cz.factor_polytope()};
 }
 
 ConZonotope priv_minkowski_sum(const ConZonotope &cz1, const ConZonotope &cz2) {

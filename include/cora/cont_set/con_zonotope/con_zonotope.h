@@ -70,8 +70,8 @@ class ConZonotope : public ContSet {
     /// equalities of the factor polytope.
     const Tensor &c() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
-    const Tensor &A() const { return F_.Ae(); }
-    const Tensor &b() const { return F_.be(); }
+    const Tensor &A() const noexcept { return F_.Ae_; }
+    const Tensor &b() const noexcept { return F_.be_; }
 
     /// The factor polytope {x | A x = b} (without the unit box, which every factor keeps).
     const Polytope &factor_polytope() const noexcept { return F_; }
@@ -401,6 +401,10 @@ class ConZonotope : public ContSet {
     bool is_full_dim_impl(Tol tol) const override;
 
   private:
+    /// The factor polytope of the checked data c, G, A, b.
+    static Polytope factor_polytope_of(const Tensor &c, const Tensor &G, const Tensor &A,
+                                       const Tensor &b);
+
     Tensor c_, G_;
     Polytope F_;
 };
