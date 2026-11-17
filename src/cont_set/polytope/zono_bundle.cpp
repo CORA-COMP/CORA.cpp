@@ -18,6 +18,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/gram_schmidt.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -58,7 +59,7 @@ ZonoBundle Polytope::zono_bundle() const {
     const HostH H = priv_host_h(constraints());
     std::vector<Zonotope> strips;
     for (const Row &a : priv_equality_to_inequality(H).first)
-        strips.push_back(aux_strip(V, priv_points_tensor(like, dim(), priv_gram_schmidt(a))));
+        strips.push_back(aux_strip(V, priv_points_tensor(like, dim(), gram_schmidt(a))));
     return ZonoBundle(strips);
 }
 

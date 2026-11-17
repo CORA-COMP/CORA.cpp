@@ -218,34 +218,6 @@ Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, 
     return Tensor::concat({M, zero}, axis).take(source, axis);
 }
 
-Rows priv_gram_schmidt(const Row &a) {
-    const std::size_t n = a.size();
-    // the columns a, then the axes but the one a points to the most
-    std::size_t skip = 0;
-    for (std::size_t i = 1; i < n; ++i)
-        if (std::abs(a[i]) > std::abs(a[skip])) skip = i;
-    Rows B = {a};
-    for (std::size_t i = 0; i < n; ++i) {
-        if (i == skip) continue;
-        Row e(n, 0.0);
-        e[i] = 1.0;
-        B.push_back(e);
-    }
-    // classical Gram-Schmidt on the columns, as CORA's gramSchmidt
-    Rows Q;
-    for (std::size_t j = 0; j < n; ++j) {
-        Row v = B[j];
-        for (const Row &q : Q) {
-            const double r = priv_dot(q, B[j]);
-            for (std::size_t i = 0; i < n; ++i) v[i] -= r * q[i];
-        }
-        const double norm = priv_norm(v);
-        for (double &x : v) x /= norm;
-        Q.push_back(v);
-    }
-    return Q;
-}
-
 // A box -------------------------------------------------------------------------------------------
 
 Polytope priv_polytope_of_interval(const Interval &I) {

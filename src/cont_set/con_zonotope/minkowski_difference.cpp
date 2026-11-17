@@ -22,7 +22,6 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
-#include "cont_set/zonotope/private/priv.h"
 #include "global/blocks.h"
 #include "global/format.h"
 
@@ -55,7 +54,7 @@ std::vector<Tensor> aux_distinct_columns(const Tensor &V) {
 /// Intersect the translates cz - v of every vertex v of S (CORA's 'exact').
 ConZonotope aux_exact(const ConZonotope &cz, const Zonotope &S) {
     // the corners of S are its vertices (CORA lists the vertices; the same translates result)
-    const std::vector<Tensor> vertices = aux_distinct_columns(priv_corners(S));
+    const std::vector<Tensor> vertices = aux_distinct_columns(S.corners());
     ConZonotope result = cz.plus(vertices[0] * -1.0);
     for (std::size_t i = 1; i < vertices.size(); ++i)
         result = result.intersect(cz.plus(vertices[i] * -1.0));
@@ -104,7 +103,7 @@ ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::
     if (type == "inner:vertices") return aux_inner_vertices(cz, S);
     if (type == "inner:Vinod") return aux_inner_vinod(cz, S);
     const Zonotope compacted = S.compact();
-    if (compacted.generators().shape().back() > kMaxCornerGenerators)
+    if (compacted.generators().shape().back() > Zonotope::kMaxCornerGenerators)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: a set of more than 12 generators has too many vertices "
                   "to intersect one by one");

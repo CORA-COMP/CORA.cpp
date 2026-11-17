@@ -19,6 +19,7 @@
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/global/within_tol.h"
+#include "global/gram_schmidt.h"
 
 #include <algorithm>
 #include <cmath>
@@ -50,7 +51,7 @@ double aux_hull_volume(const Tensor &like, const Rows &points, int64_t k) {
     double volume = 0.0;
     for (std::size_t i = 0; i < F.A.size(); ++i) {
         // the vertices on the facet, in coordinates of its hyperplane
-        const Rows frame = priv_gram_schmidt(F.A[i]);
+        const Rows frame = gram_schmidt(F.A[i]);
         const Rows basis(frame.begin() + 1, frame.end());
         Rows facet;
         for (const Row &p : points) {

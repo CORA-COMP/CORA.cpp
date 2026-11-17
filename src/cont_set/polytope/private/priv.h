@@ -190,10 +190,6 @@ Rows priv_polytope_vertices(const Polytope &P);
 /// zeros elsewhere (a copy, no arithmetic).
 Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, int axis);
 
-/// The orthonormal basis (n vectors of n numbers) that Gram-Schmidt makes of a and the axes without
-/// the one a is most aligned with (CORA's gramSchmidt of a column): the first is a / |a|.
-Rows priv_gram_schmidt(const Row &a);
-
 /// The polytope of a box (n, 1) (CORA's interval/polytope.m for the interval's rows).
 Polytope priv_polytope_of_interval(const Interval &I);
 

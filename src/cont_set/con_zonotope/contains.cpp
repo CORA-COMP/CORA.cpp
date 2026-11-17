@@ -22,7 +22,6 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
-#include "cont_set/zonotope/private/priv.h"
 #include "cora/global/within_tol.h"
 #include "global/blocks.h"
 #include "global/format.h"
@@ -78,7 +77,7 @@ detail::Refusal aux_zonotope_refusal(const ConZonotope &cz, const Zonotope &Z,
                          std::string("a linear program per set: it supports a single set, "
                                      "not a batch")};
     if (const detail::Refusal refusal = aux_method_refusal(method)) return refusal;
-    if (Z.compact().generators().shape().back() > kMaxCornerGenerators)
+    if (Z.compact().generators().shape().back() > Zonotope::kMaxCornerGenerators)
         return std::pair{Error::not_supported,
                          std::string("a set of more than 12 generators has too many corners to "
                                      "test one by one")};
@@ -129,7 +128,7 @@ bool ConZonotope::contains(const Zonotope &S, const std::string &method, Tol tol
     const detail::Refusal refusal = aux_zonotope_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a convex set holds a zonotope exactly if it holds its corners
-    return aux_contains_points(*this, priv_corners(S.compact()), tol);
+    return aux_contains_points(*this, S.compact().corners(), tol);
 }
 
 bool ConZonotope::contains(const Interval &I, const std::string &method, Tol tol_arg) const {
@@ -143,7 +142,7 @@ bool ConZonotope::contains(const Interval &I, const std::string &method, Tol tol
     const Zonotope Z = I.zonotope();
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_contains_points(*this, priv_corners(Z.compact()), tol);
+    return aux_contains_points(*this, Z.compact().corners(), tol);
 }
 
 } // namespace cora

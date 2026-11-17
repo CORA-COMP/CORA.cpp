@@ -179,7 +179,7 @@ std::vector<Zonotope> priv_zonotopes(const Set &S);
 Set priv_bundle(std::vector<Zonotope> parts);
 
 /// The orthonormal basis (n, n) that CORA's gramSchmidt makes of the column a and the axes: the
-/// first column is a / |a| (polytope's priv_gram_schmidt as a matrix like a).
+/// first column is a / |a| (global gram_schmidt as a matrix like a).
 Tensor priv_basis_of(const Tensor &a);
 
 /// The unit normal and offset of a hyperplane guard (its first equality).

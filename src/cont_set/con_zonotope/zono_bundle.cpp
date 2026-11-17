@@ -22,6 +22,7 @@
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/polytope/private/priv.h"
 #include "global/blocks.h"
+#include "global/gram_schmidt.h"
 #include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -41,7 +42,7 @@ Zonotope aux_slab(const Tensor &like, const std::vector<double> &a, double lower
     lo[0] = -lower;
     hi[0] = upper;
     // the basis vectors are the columns of B
-    const Rows basis = priv_gram_schmidt(a);
+    const Rows basis = gram_schmidt(a);
     std::vector<double> columns(static_cast<std::size_t>(p * p));
     for (std::size_t i = 0; i < a.size(); ++i)
         for (std::size_t j = 0; j < a.size(); ++j) columns[i * a.size() + j] = basis[j][i];
