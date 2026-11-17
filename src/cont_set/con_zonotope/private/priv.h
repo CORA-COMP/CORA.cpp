@@ -83,12 +83,15 @@ Polygon priv_hull_polygon(const Tensor &V);
 
 // Linear programs ---------------------------------------------------------------------------------
 
-/// A single constrained zonotope on the host: c (n), G (n x m), A (p x m) and b (p), row-major,
-/// and the programs of its factor polytope in the unit box.
+/// A single constrained zonotope on the host: c (n) and G (n x m), row-major, and the programs
+/// of its factor polytope in the unit box, whose equalities are A (p x m) and b (p).
 struct HostConZonotope {
     int64_t n = 0, m = 0, p = 0;
-    std::vector<double> c, G, A, b;
+    std::vector<double> c, G;
     Polytope::LinearPrograms factors;
+
+    const std::vector<double> &A() const noexcept { return factors.program().Aeq; }
+    const std::vector<double> &b() const noexcept { return factors.program().beq; }
 };
 
 /// The values of a single (unbatched) constrained zonotope on the host.

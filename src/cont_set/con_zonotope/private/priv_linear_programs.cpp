@@ -53,14 +53,8 @@ HostConZonotope priv_host_con_zonotope(const ConZonotope &cz) {
     if (cz.c().ndim() != 2)
         CORA_FAIL(Error::not_supported, "ConZonotope: a linear program per set supports a single "
                                         "set, not a batch");
-    return {cz.dim(),
-            cz.generators().shape().back(),
-            cz.A().shape()[0],
-            cz.c().data(),
-            cz.generators().data(),
-            cz.A().data(),
-            cz.b().data(),
-            cz.factor_programs()};
+    return {cz.dim(),      cz.generators().shape().back(), cz.A().shape()[0],
+            cz.c().data(), cz.generators().data(),         cz.factor_programs()};
 }
 
 // Ranges and supports -----------------------------------------------------------------------------

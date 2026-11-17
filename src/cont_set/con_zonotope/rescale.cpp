@@ -53,12 +53,12 @@ Eliminated aux_eliminate(const HostConZonotope &H, double eps) {
     e.M.resize(std::size_t(p * w));
     double norm_inf = 0.0;
     for (int64_t i = 0; i < p; ++i) {
-        double row = std::abs(H.b[i]);
+        double row = std::abs(H.b()[i]);
         for (int64_t j = 0; j < m; ++j) {
-            e.M[i * w + j] = H.A[i * m + j];
-            row += std::abs(H.A[i * m + j]);
+            e.M[i * w + j] = H.A()[i * m + j];
+            row += std::abs(H.A()[i * m + j]);
         }
-        e.M[i * w + m] = H.b[i];
+        e.M[i * w + m] = H.b()[i];
         norm_inf = std::max(norm_inf, row);
     }
     const double tol = double(std::max(p, w)) * eps * norm_inf;

@@ -184,6 +184,9 @@ class Polytope : public ContSet {
         /// set is empty, NaN if the radius has no bound.
         std::optional<std::vector<double>> chebyshev_center() const;
 
+        /// The program without a cost: the rows (row-major) and the box.
+        const LinProg &program() const noexcept { return lp_; }
+
       private:
         LinProg lp_;
     };

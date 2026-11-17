@@ -52,10 +52,10 @@ Echelon aux_echelon(const HostConZonotope &H) {
     double scale = 0.0;
     for (int64_t i = 0; i < p; ++i) {
         for (int64_t j = 0; j < m; ++j) {
-            M[i * width + j] = H.A[i * m + j];
-            scale = std::max(scale, std::abs(H.A[i * m + j]));
+            M[i * width + j] = H.A()[i * m + j];
+            scale = std::max(scale, std::abs(H.A()[i * m + j]));
         }
-        M[i * width + m] = H.b[i];
+        M[i * width + m] = H.b()[i];
     }
     const double tol = numerics::kSimplexPivot * std::max(scale, 1.0);
     // a pivot is the largest entry of the column among the rows not yet used

@@ -402,8 +402,7 @@ class ConZonotope : public ContSet {
 
   private:
     /// The factor polytope of the checked data c, G, A, b.
-    static Polytope factor_polytope_of(const Tensor &c, const Tensor &G, const Tensor &A,
-                                       const Tensor &b);
+    static Polytope factor_polytope_of(const Tensor &c, const Tensor &G, Tensor A, Tensor b);
 
     Tensor c_, G_;
     Polytope F_;
