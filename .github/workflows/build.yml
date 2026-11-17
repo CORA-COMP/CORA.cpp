@@ -45,6 +45,10 @@ on:
         description: remove the runner's preinstalled toolchains first (a sanitizer build fills the disk)
         type: boolean
         default: false
+      build_labels:
+        description: build only the test programs of these ctest labels (and the library they link), empty for everything
+        type: string
+        default: ""
 
 jobs:
   build:
@@ -86,7 +90,20 @@ jobs:
         run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS" $ORACLE
       - name: build
         id: build
-        run: cmake --build --preset ${{ inputs.preset }}
+        env:
+          BUILD_LABELS: ${{ inputs.build_labels }}
+        run: |
+          if [ -z "$BUILD_LABELS" ]; then
+            cmake --build --preset ${{ inputs.preset }}
+          else
+            # the test programs of those labels only (a test is named folder/program[:backend]; examples and benchmarks are not built)
+            labels="^(${BUILD_LABELS// /|})\$"
+            ctest --preset ${{ inputs.preset }} -N -L "$labels" | sed -nE 's/^ *Test +#[0-9]+: //p' \
+              | sed -E 's#.*/##; s/:.*$//' | sort -u > wanted.txt
+            cmake --build --preset ${{ inputs.preset }} --target help | sed -nE 's/^\.\.\. //p' | sort -u > targets.txt
+            echo "building $(comm -12 wanted.txt targets.txt | wc -l) test programs"
+            cmake --build --preset ${{ inputs.preset }} --target $(comm -12 wanted.txt targets.txt | tr '\n' ' ')
+          fi
       - name: test unit
         if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' unit ') }}
         env:
