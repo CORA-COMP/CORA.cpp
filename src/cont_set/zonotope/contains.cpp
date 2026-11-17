@@ -88,7 +88,7 @@ bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
 /// polytope(Z) by 'exact:polymax'): one matrix product, fast for many generators in low dimension.
 bool aux_contains_polymax(const Zonotope &Z, const Zonotope &S, double tol) {
     const auto [C, d] = priv_zonotope_halfspaces(Z);
-    const Tensor support = C.matmul(S.center()) + C.matmul(S.generators()).abs().sum(-1, true);
+    const Tensor support = C.matmul(S.center()) + C.matmul(S.generators()).abs_sum();
     const std::vector<double> b = d.data(), b_ = support.data();
     for (size_t i = 0; i < b.size(); ++i)
         if (b_[i] > b[i] && !within_tol(b[i], b_[i], tol)) return false;

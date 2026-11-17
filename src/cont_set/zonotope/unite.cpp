@@ -50,7 +50,7 @@ Zonotope aux_linprog(const std::vector<Zonotope> &Zs) {
     // the support value of every set along every row of A, and the largest of them
     const auto support = [&](const Tensor &A) {
         const auto of = [&](const Zonotope &Z) {
-            return A.matmul(Z.center()) + A.matmul(Z.generators()).abs().sum(-1, true);
+            return A.matmul(Z.center()) + A.matmul(Z.generators()).abs_sum();
         };
         Tensor d = of(Zs.front());
         for (std::size_t j = 1; j < Zs.size(); ++j) d = d.maximum(of(Zs[j]));

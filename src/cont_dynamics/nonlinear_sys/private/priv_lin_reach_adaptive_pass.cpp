@@ -47,7 +47,7 @@ std::optional<std::pair<Zonotope, Zonotope>> aux_linear_step(const LinearSys &li
                                                              const Tensor &xs, const Zonotope &V,
                                                              const Zonotope &R, double dt) {
     // eta + 2 >= 2 ||A dt||, from the larger of eta and 2
-    const double norm = lin.A().abs().sum(-1, true).max().item() * dt;
+    const double norm = lin.A().abs_sum().max().item() * dt;
     int eta = std::max(taylor_terms, 2);
     while (double(eta + 2) < 2 * norm && eta < 4096) ++eta;
     if (!(double(eta + 2) >= 2 * norm)) return std::nullopt;

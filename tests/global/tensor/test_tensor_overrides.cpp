@@ -6,7 +6,8 @@
 // backend, the operation and its default give the same result within the agreement of ops.def.
 // abs_sum and abs().sum(-1, true) are the same fold on lean, bit for bit; on eigen they differ in
 // the last bits of the odd rows of an odd length (#157): Eigen peels the first entry of a stored
-// row that starts off a packet boundary, but not of the expression |x|.
+// row that starts off a packet boundary, but not of the expression |x|. So an eigen row sum
+// depends on where the row lies in memory: the same row at another offset may sum to other bits.
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026

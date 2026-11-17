@@ -36,11 +36,11 @@ bool PolyZonotope::is_intersecting(const Polytope &P, Tol tol_arg) const {
         return "is_intersecting: the sets differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(P.dim());
     });
-    // the range of every row a'x over the enclosing zonotope: a'c -+ the sum of |a'G|
+    // the range of every row a'x over the enclosing zonotope: the box of its image A Z
     const Zonotope Z = zonotope();
     const auto range = [&](const Tensor &A) {
-        const Tensor mid = A.matmul(Z.center()), rad = A.matmul(Z.generators()).abs().sum(-1, true);
-        return std::pair{(mid - rad).data(), (mid + rad).data()};
+        const Interval box = Z.linear_map(A).interval();
+        return std::pair{box.inf().data(), box.sup().data()};
     };
     if (P.A().shape()[0] > 0) {
         const auto [lo, hi] = range(P.A());

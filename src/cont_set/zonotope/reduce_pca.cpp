@@ -41,7 +41,7 @@ Zonotope Zonotope::reduce_pca() const {
     const Tensor G = G_.take(keep, -1);
     // the axes: the covariance of the points [G, -G] has them; its scale does not matter
     const Tensor U = G.matmul(G.matrix_transpose()).svd()[0];
-    const Tensor box = U.matrix_transpose().matmul(G).abs().sum(-1, true);
+    const Tensor box = U.matrix_transpose().matmul(G).abs_sum();
     return {c_, U.matmul(box.diag())};
 }
 
