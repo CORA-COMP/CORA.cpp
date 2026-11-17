@@ -10,6 +10,11 @@
 // and C++ both give res = 1, 3 iterations, time_step 0.008, 2500 steps (checked by hand, the
 // model file is not part of this repository).
 //
+// Case J (safe y <= 0.6993) differs from MATLAB, which verifies it in 1 iteration (time step 0.05,
+// 100 steps): CORA.cpp's curvature term is sound (|l|'v and the remainder of F; CORA's |l'v| is
+// below the support), the margin is within it, and a second pass at 0.01 over the 4.5 s still
+// unverified decides.
+//
 // CORA: contDynamics/@linearSys/verify.m
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner
@@ -122,9 +127,7 @@ int main() {
     // Without an input set the horizon shrinks to what is not yet verified (iteration 3: 2275).
     matches("A", osc0.verify({R0, none, 5}, {safe({1, 0}, 1.3)}, S),
             {true, 1, 0.050000000000000003, 100, -1, none0});
-    // MATLAB verifies J in 1 iteration (time step 0.05, 100 steps). CORA.cpp's curvature term is
-    // sound (|l|'v and the remainder of F, CORA's |l'v| is below the support), and the margin of
-    // 0.6993 is within it: a second pass at 0.01 over the 4.5 s still unverified decides.
+    // J: a second pass, where MATLAB needs one (the sound curvature term; see the docstring)
     matches("J", osc0.verify({R0, none, 5}, {safe({0, 1}, 0.6993)}, S),
             {true, 2, 0.010000000000000002, 450, -1, none0});
     matches("J2", osc0.verify({R0, none, 5}, {safe({0, 1}, 0.69925)}, S),
