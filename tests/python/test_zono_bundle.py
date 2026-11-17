@@ -152,8 +152,9 @@ class ZonoBundle(unittest.TestCase):
         self.assertFalse(zB.isequal(cora.ZonoBundle([zB.zonotopes[0]])))
         self.assertTrue(cora.isequal(zB, zB))
         self.assertTrue(zB == cora.ZonoBundle(list(reversed(zB.zonotopes))))
-        with self.assertRaises(cora.errors.NotSupported):
-            zB.contains(np.array([0.5, 0.5]), method="exact:polytope")
+        # the polytope of the bundle answers as the exact test does
+        p = np.array([0.5, 0.5])
+        self.assertEqual(zB.contains(p, method="exact:polytope"), zB.contains(p))
         with self.assertRaises(cora.errors.NoSpecificAlg):
             zB.contains(np.array([0.5, 0.5]), method="nothing")
         with self.assertRaises(cora.errors.WrongValue):
