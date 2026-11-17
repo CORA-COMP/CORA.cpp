@@ -6,7 +6,7 @@
 // Syntax:   MatZonotope E = A.expm_independent(max_order);
 // Inputs:   max_order - the order of the series, nonnegative;  A is square
 // Outputs:  E - an enclosure of exp(M) for every matrix M of A, as a matrix zonotope
-// See also: expm, expm_mixed, IntervalMatrix::exponential_remainder
+// See also: expm, expm_mixed, mat_exp::exponential_remainder
 //
 // CORA: matrixSet/@matZonotope/expmInd.m
 // CORA authors: Matthias Althoff
@@ -15,9 +15,10 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"
-#include "matrix_set/interval_matrix/private/priv_factorial.h"
 #include "matrix_set/mat_zonotope/private/priv_from_interval_matrix.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -41,7 +42,7 @@ MatZonotope MatZonotope::expm_independent(int64_t max_order) const {
         power = power * (*this);
         sum = sum + power * (1.0 / priv_factorial(i));
     }
-    const IntervalMatrix remainder = interval_matrix().exponential_remainder(max_order);
+    const Interval remainder = mat_exp::exponential_remainder(interval_matrix(), max_order);
     return sum + priv_from_interval_matrix(remainder);
 }
 

@@ -88,8 +88,8 @@ void the_empty_interval(const std::string &b) {
         check(!E.representsa(type), b + ": the empty interval is not " + type);
 }
 
-/// An unknown type, polygon, a matrix of intervals and a negative tolerance are refused; with the
-/// checks off the result is the same.
+/// An unknown type, polygon and a negative tolerance are refused, a matrix of intervals answers;
+/// with the checks off the result is the same.
 void checks_and_their_switch() {
     const Interval I = box({0, 0}, {1, 2});
     const Interval M(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
@@ -98,8 +98,8 @@ void checks_and_their_switch() {
           "representsa: a type");
     check(test::raises([&] { I.representsa("polygon"); }, Error::not_supported),
           "representsa: polygon");
-    check(test::raises([&] { M.representsa("point"); }, Error::not_supported),
-          "representsa: a matrix of intervals");
+    check(!M.representsa("point") && M.representsa("interval"),
+          "representsa: a matrix of intervals answers as its stacked vector");
     check(test::raises([&] { I.representsa("point", -1.0); }, Error::wrong_value),
           "representsa: a negative tolerance");
     check(!M.representsa("origin") && !M.representsa("emptySet"),

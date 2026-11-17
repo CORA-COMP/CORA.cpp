@@ -87,17 +87,19 @@ void matrix_power_sums_nested(const std::string &b) {
           b + ": the products are summed nested to the right");
 }
 
-/// A matrix that is not square, a negative exponent and a scalar base are refused; the checks off
-/// give the same.
+/// A matrix that is not square and a negative exponent are refused, a 1 x 1 base is a matrix; the
+/// checks off give the same.
 void checks_and_their_switch() {
     const Interval A = upper_triangular();
     const Interval wide(Tensor::from_data({1, 2, 3}, {1, 3}), Tensor::from_data({1, 2, 3}, {1, 3}));
-    check(test::raises([&] { wide.matrix_power(2); }, Error::wrong_value),
+    check(test::raises([&] { wide.matrix_power(2); }, Error::dimension_mismatch),
           "matrix_power: a matrix that is not square");
     check(test::raises([&] { A.matrix_power(-1); }, Error::wrong_value),
           "matrix_power: a negative exponent");
-    const Interval scalar(Tensor::from_data({1}, {1, 1}), Tensor::from_data({2}, {1, 1}));
-    check(test::raises([&] { scalar.matrix_power(2); }, Error::not_supported),
+    // the product [-1, 2] [-1, 2] = [-2, 4] (CORA's intervalMatrix), not the square [0, 4]
+    const Interval scalar(Tensor::from_data({-1}, {1, 1}), Tensor::from_data({2}, {1, 1}));
+    check(close(scalar.matrix_power(2).inf(), std::vector<double>{-2}) &&
+              close(scalar.matrix_power(2).sup(), std::vector<double>{4}),
           "matrix_power: a 1 x 1 base");
     const Tensor on = A.matrix_power(3).sup();
     ChecksScope off(false);

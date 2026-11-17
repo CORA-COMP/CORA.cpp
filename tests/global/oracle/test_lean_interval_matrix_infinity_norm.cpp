@@ -1,4 +1,4 @@
-// test_lean_interval_matrix_infinity_norm - IntervalMatrix::infinity_norm against the CORALean
+// test_lean_interval_matrix_infinity_norm - Interval::infinity_norm against the CORALean
 //
 // oracle
 //
@@ -8,7 +8,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
+#include "cora/cont_set/interval/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
@@ -23,8 +23,8 @@ int main() {
     test::oracle::run("intervalMatrix.infNorm", [](test::oracle::Random &rnd) {
         for (const auto &[m, n] :
              {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}, std::pair{4, 4}}) {
-            const IntervalMatrix A(rnd.box_matrix(m, n));
-            const lean::IntervalMatrix L{lean::Interval(A.interval())};
+            const Interval A = rnd.box_matrix(m, n);
+            const lean::IntervalMatrix L{lean::Interval(A)};
             test::oracle::check(A.infinity_norm(), L.infinity_norm());
         }
     });

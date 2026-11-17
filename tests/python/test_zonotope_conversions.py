@@ -93,11 +93,12 @@ class MatrixSets(unittest.TestCase):
 
     def test_interval_matrix_to_mat_zonotope(self):
         # one generator per entry, the same box
-        A = cora.IntervalMatrix(np.array([[1.0, 2.0], [3.0, 4.0]]), np.array([[0.5, 0.0], [0.0, 1.0]]))
-        M = A.mat_zonotope()
+        A = cora.Interval.from_center_delta(np.array([[1.0, 2.0], [3.0, 4.0]]),
+                                            np.array([[0.5, 0.0], [0.0, 1.0]]))
+        M = cora.MatZonotope.from_interval(A)
         self.assertEqual(M.num_generators, 4)
         np.testing.assert_array_equal(M.center, [[1.0, 2.0], [3.0, 4.0]])
-        np.testing.assert_array_equal(M.interval_matrix().infimum, A.infimum)
+        np.testing.assert_array_equal(M.interval_matrix().inf, A.inf)
 
     def test_mat_zonotope_vertices_volume_and_reduce(self):
         # the corner matrices in order, the volume 8 and the shape kept by reduce

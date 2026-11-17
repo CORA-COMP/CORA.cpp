@@ -1,4 +1,4 @@
-// test_lean_interval_matrix_mat_zonotope - IntervalMatrix::mat_zonotope against the CORALean oracle
+// test_lean_interval_matrix_mat_zonotope - Interval::mat_zonotope against the CORALean oracle
 //
 // Bit for bit: the center matrix and one generator per entry (CORALean numbers them by rows).
 //
@@ -45,10 +45,9 @@ int main() {
     if (!oracle::available()) return 0;
     oracle::run("intervalMatrix.matZonotope", [](oracle::Random &rnd) {
         for (const auto &[m, n] : {std::pair{2, 2}, std::pair{1, 3}, std::pair{3, 2}}) {
-            const IntervalMatrix A(rnd.box_matrix(m, n));
-            const lean::MatZonotope theirs =
-                lean::IntervalMatrix{lean::Interval(A.interval())}.mat_zonotope();
-            oracle::check(row_major(A.mat_zonotope()), theirs);
+            const Interval A = rnd.box_matrix(m, n);
+            const lean::MatZonotope theirs = lean::IntervalMatrix{lean::Interval(A)}.mat_zonotope();
+            oracle::check(row_major(MatZonotope::from_interval(A)), theirs);
         }
     });
     return test::finish("lean interval matrix mat_zonotope");

@@ -6,6 +6,7 @@
 // See also: zonotope display, src/global/format.h
 //
 // CORA: contSet/@interval/display.m
+// CORA: matrixSet/@intervalMatrix/display.m
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
@@ -23,10 +24,15 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 std::string Interval::display_impl() const {
-    std::string text = "interval\n- dimension: " + std::to_string(dim()) + "\n";
     const std::vector<int64_t> shape = inf_.shape();
-    // A box lists its bounds as [inf, sup] per dimension; a matrix shows both bound matrices.
-    if (shape.size() != 2 || shape[1] != 1)
+    // an interval matrix shows both bound matrices, as CORA's intervalMatrix display
+    if (shape.size() == 2 && shape[1] > 1)
+        return "intervalMatrix\n- dimension: " + std::to_string(shape[0]) + "  " +
+               std::to_string(shape[1]) + "\n- infimum:\n" + format_matrix(inf_, "    ") +
+               "- supremum:\n" + format_matrix(sup_, "    ");
+    std::string text = "interval\n- dimension: " + std::to_string(dim()) + "\n";
+    // a box lists its bounds as [inf, sup] per dimension, a batch both bound tensors
+    if (shape.size() != 2)
         return text + "- infimum:\n" + format_matrix(inf_, "    ") + "- supremum:\n" +
                format_matrix(sup_, "    ");
     const std::vector<double> lo = inf_.data(), hi = sup_.data();

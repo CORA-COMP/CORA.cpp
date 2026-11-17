@@ -30,13 +30,12 @@ void expm_mixed_encloses_the_exponentials(const std::string &b) {
     const std::vector<std::tuple<double, int, int>> cases{{1.0, 2, 8}, {0.5, 3, 9}, {2.0, 4, 10}};
     for (const auto &[r, intermediate, maximum] : cases) {
         const auto R = A.expm_mixed(r, intermediate, maximum);
-        const Interval total =
-            R.enclosure.interval_matrix().interval() + R.enclosure_rest.interval();
+        const Interval total = R.enclosure.interval_matrix() + R.enclosure_rest;
         bool inside = true;
         for (int trial = 0; trial < 20; ++trial)
-            inside = inside && IntervalMatrix(total).contains(
-                                   test::exponential(test::member(A, test::coefficients(rng, 2))),
-                                   "exact", 1e-12);
+            inside = inside &&
+                     total.contains(test::exponential(test::member(A, test::coefficients(rng, 2))),
+                                    1e-12);
         check(inside, b + ": exp(M) of every member is inside, r = " + std::to_string(r));
         check(int(R.powers.size()) == intermediate &&
                   int(R.powers2.size()) == maximum - intermediate,

@@ -26,6 +26,7 @@
 
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 #include "cora/cont_dynamics/neur_net_contr_sys/neur_net_contr_sys.h"
 #include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -41,7 +42,6 @@
 #include "cora/global/rng.h"
 #include "cora/global/threads.h"
 #include "cora/hybrid_dynamics/hybrid_automaton/hybrid_automaton.h"
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
@@ -1029,47 +1029,90 @@ void bind_interval(py::module_ &m) {
              "The box itself: an interval has no generators to reduce")
         .def("representsa", &Interval::representsa, py::arg("type"), py::arg("tol") = py::none(),
              "Whether the box is also a set of the CORA type, e.g. 'point', 'origin', 'zonotope'")
+        // CORA's type first ('exact' or 'approx'), then without it
+        .def(
+            "contains",
+            [](const Interval &I, const py::object &p, const std::string &type, Tol tol) {
+                const bool matrix = I.inf().size(-1) > 1;
+                return I.contains(matrix ? tensor_of(p, "the matrix") : vector_of(p, "the point"),
+                                  type, tol);
+            },
+            py::arg("p"), py::arg("type"), py::arg("tol") = py::none(),
+            "Whether p is in the box enlarged by tol; type is 'exact' or 'approx'")
         .def(
             "contains",
             [](const Interval &I, const py::object &p, Tol tol) {
-                return I.contains(vector_of(p, "the point"), tol);
+                // a point of a box, or a matrix of an interval matrix
+                const bool matrix = I.inf().size(-1) > 1;
+                return I.contains(matrix ? tensor_of(p, "the matrix") : vector_of(p, "the point"),
+                                  tol);
             },
             py::arg("p"), py::arg("tol") = py::none(),
-            "Whether p is in the box enlarged by tol per coordinate");
+            "Whether p (a point, or a matrix of an interval matrix) is in the box enlarged by tol")
+        // interval matrices: CORA's intervalMatrix is an Interval of matrix bounds
+        .def_static(
+            "from_center_delta",
+            [](const py::object &center, const py::object &delta) {
+                return Interval::from_center_delta(tensor_of(center, "center"),
+                                                   tensor_of(delta, "delta"));
+            },
+            py::arg("center"), py::arg("delta"),
+            "The interval matrix C +- |D| (CORA's intervalMatrix(C, D))")
+        // a random interval matrix (CORA's intervalMatrix.generateRandom)
+        .def_static(
+            "generate_random_matrix",
+            [](cora::Rng &rng, const std::optional<std::array<int64_t, 2>> &dimension,
+               const py::object &center, const py::object &max_radius) {
+                std::optional<Tensor> c, r;
+                if (!center.is_none()) c = tensor_of(center, "center");
+                // one number is the radius of every entry
+                if (!max_radius.is_none())
+                    r = is_number(max_radius)
+                            ? Tensor::from_data({py::cast<double>(max_radius)}, {1, 1})
+                            : tensor_of(max_radius, "max_radius");
+                return Interval::generate_random_matrix(rng, dimension, c, r);
+            },
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("max_radius") = py::none(),
+            "A random interval matrix: the dimension (rows, cols), a center and the radii")
+        // products, the exact square, the norm and the vertices of an interval matrix
+        .def(
+            "matmul",
+            [](const Interval &A, const py::object &B) {
+                if (py::isinstance<Interval>(B)) return A.matmul(py::cast<Interval>(B));
+                return A.matmul(tensor_of(B, "the matrix"));
+            },
+            py::arg("B"), "[A] [B] or [A] M: the product of interval matrices (CORA's mtimes)")
+        .def("exact_square", &Interval::exact_square, "The entrywise range of M @ M")
+        .def(
+            "infinity_norm", [](const Interval &A) { return scalar(A.infinity_norm()); },
+            "The largest absolute row sum of abs(A)")
+        // the vertices, as a list of matrices per batch member
+        .def(
+            "vertex_matrices",
+            [](const Interval &A) {
+                py::list matrices;
+                for (const Tensor &V : A.vertex_matrices()) matrices.append(matrix(V));
+                return matrices;
+            },
+            "The distinct vertex matrices of an interval matrix, one (K, rows, cols) array per "
+            "batch member");
 }
 
-/// The product of an interval matrix with what Python offers: another set, a zonotope, the empty
-/// set, a matrix or a number (on the right); NotImplemented for anything else.
-py::object interval_matrix_product(const IntervalMatrix &A, const py::object &o) {
-    if (py::isinstance<IntervalMatrix>(o)) return py::cast(A.matmul(py::cast<IntervalMatrix>(o)));
-    if (py::isinstance<Zonotope>(o)) return py::cast(A.matmul(py::cast<Zonotope>(o)));
-    if (py::isinstance<EmptySet>(o)) return py::cast(A.matmul(py::cast<EmptySet>(o)));
-    if (is_number(o)) return py::cast(A.matmul(py::cast<double>(o)));
-    if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.matmul(*M));
-    return not_implemented();
-}
-
-/// The sum of an interval matrix with what Python offers: another interval matrix, a matrix or a
-/// number; NotImplemented for anything else.
-py::object interval_matrix_sum(const IntervalMatrix &A, const py::object &o) {
-    if (py::isinstance<IntervalMatrix>(o)) return py::cast(A.plus(py::cast<IntervalMatrix>(o)));
-    if (is_number(o)) return py::cast(A.plus(py::cast<double>(o)));
-    if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.plus(*M));
-    return not_implemented();
-}
-
-/// The series of expm as the object Python reads: the enclosure, the powers, their first order and
-/// the remainder.
+/// The series of mat_exp.expm as the object Python reads: the enclosure, the powers, their first
+/// order and the remainder; and the two parts of expm_mixed.
 void bind_expm_results(py::module_ &m) {
-    py::class_<ExpmResult>(m, "ExpmResult", "The result of IntervalMatrix.expm")
+    using mat_exp::ExpmMixedResult;
+    using mat_exp::ExpmResult;
+    py::class_<ExpmResult>(m, "ExpmResult", "The result of mat_exp.expm")
         .def_readonly("enclosure", &ExpmResult::enclosure, "The enclosure of the series")
         .def_readonly("powers", &ExpmResult::powers,
-                      "The powers of A, powers[k] of order first_order + k")
+                      "The powers of A that were multiplied, from first_order on")
         .def_readonly("first_order", &ExpmResult::first_order, "The order of powers[0]")
         .def_readonly("remainder", &ExpmResult::remainder, "The remainder box");
-    py::class_<ExpmMixedResult>(m, "ExpmMixedResult", "The result of IntervalMatrix.expm_mixed")
+    py::class_<ExpmMixedResult>(m, "ExpmMixedResult", "The result of mat_exp.expm_mixed")
         .def_readonly("enclosure", &ExpmMixedResult::enclosure,
-                      "The terms to the intermediate order")
+                      "The sum of the terms to the intermediate order")
         .def_readonly("enclosure_rest", &ExpmMixedResult::enclosure_rest, "The rest of the series")
         .def_readonly("powers", &ExpmMixedResult::powers,
                       "The powers of orders 1 to intermediate_order")
@@ -1077,210 +1120,84 @@ void bind_expm_results(py::module_ &m) {
         .def_readonly("remainder", &ExpmMixedResult::remainder, "The remainder box");
 }
 
-void bind_interval_matrix(py::module_ &m) {
+/// An optional initial order and power, given together or not at all.
+bool initial_given(const std::optional<int64_t> &order, const std::optional<Interval> &power,
+                   const char *what) {
+    if (order.has_value() != power.has_value())
+        CORA_FAIL(Error::wrong_value,
+                  std::string(what) + ": give initial_order and initial_power together");
+    return order.has_value();
+}
+
+/// The matrix exponential of an interval matrix: the submodule cora.mat_exp.
+void bind_mat_exp(py::module_ &parent) {
+    // the submodule and the types of its results
+    py::module_ m = parent.def_submodule(
+        "mat_exp", "The matrix exponential of an interval matrix (an Interval of matrix bounds)");
     bind_expm_results(m);
-    // the interval matrix from its center and delta, or from an Interval
-    py::class_<IntervalMatrix>(
-        m, "IntervalMatrix",
-        "An interval matrix {M | inf <= M <= sup}: C +- |D|, a point C, or an Interval")
-        .def(py::init([](const py::object &center, const py::object &delta) {
-                 if (py::isinstance<Interval>(center))
-                     return IntervalMatrix(py::cast<Interval>(center));
-                 if (delta.is_none()) return IntervalMatrix(tensor_of(center, "center"));
-                 return IntervalMatrix(tensor_of(center, "center"), tensor_of(delta, "delta"));
-             }),
-             py::arg("center"), py::arg("delta") = py::none(),
-             "The matrices C +- |D|; C alone is a point matrix; an Interval of matrix bounds is "
-             "kept")
-        .def_property_readonly("interval", &IntervalMatrix::interval, "The bounds, an Interval")
-        .def_property_readonly("rows", &IntervalMatrix::rows, "The number of rows")
-        .def_property_readonly("cols", &IntervalMatrix::cols, "The number of columns")
-        .def_property_readonly(
-            "center", [](const IntervalMatrix &A) { return matrix(A.center()); },
-            "The center matrix (inf + sup) / 2")
-        // the bounds of the interval matrix
-        .def_property_readonly(
-            "infimum", [](const IntervalMatrix &A) { return matrix(A.infimum()); },
-            "The lower bound matrix")
-        .def_property_readonly(
-            "supremum", [](const IntervalMatrix &A) { return matrix(A.supremum()); },
-            "The upper bound matrix")
-        .def_property_readonly(
-            "rad", [](const IntervalMatrix &A) { return matrix(A.rad()); },
-            "The radius matrix (sup - inf) / 2")
-        .def(
-            "abs", [](const IntervalMatrix &A) { return matrix(A.abs()); },
-            "The entrywise largest absolute value max(|inf|, |sup|)")
-        .def("representsa", &IntervalMatrix::representsa, py::arg("type"),
-             py::arg("tol") = py::none(),
-             "Whether the entries, stacked into a vector, are a set of the CORA type, e.g. 'point'")
-        .def(
-            "volume", [](const IntervalMatrix &A) { return scalar(A.volume()); },
-            "The product of the entry widths (0 if one is 0)")
-        .def("mat_zonotope", &IntervalMatrix::mat_zonotope,
-             "The same set as a matrix zonotope: one generator per entry")
-        // the vertices as matrices
-        .def(
-            "vertices",
-            [](const IntervalMatrix &A) {
-                py::list matrices;
-                for (const Tensor &V : A.vertices()) matrices.append(matrix(V));
-                return matrices;
-            },
-            "The distinct vertex matrices, one (K, rows, cols) array per batch member")
-        .def(
-            "dim",
-            [](const IntervalMatrix &A, std::optional<int> rc) -> py::object {
-                if (rc) return py::cast(A.dim(*rc));
-                return py::make_tuple(A.rows(), A.cols());
-            },
-            py::arg("rc") = py::none(),
-            "(rows, cols); with rc = 1 the rows, with rc = 2 the columns")
-        .def_static(
-            "generate_random",
-            [](cora::Rng &rng, const std::optional<std::array<int64_t, 2>> &dimension,
-               const py::object &center, const py::object &max_radius) {
-                // a random interval matrix
-                std::optional<Tensor> c, r;
-                if (!center.is_none()) c = tensor_of(center, "center");
-                if (!max_radius.is_none())
-                    r = is_number(max_radius)
-                            ? Tensor::from_data({py::cast<double>(max_radius)}, {1, 1})
-                            : tensor_of(max_radius, "max_radius");
-                return IntervalMatrix::generate_random(rng, dimension, c, r);
-            },
-            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
-            py::arg("max_radius") = py::none(),
-            "A random interval matrix: the dimension (rows, cols), a center and the radii")
-        .def("expm_taylor_horner_scaling", &IntervalMatrix::expm_taylor_horner_scaling,
-             py::arg("max_order"), py::arg("style"), py::arg("scaling_exponent") = 1,
-             "The exponential by the Taylor series (style 0), Horner (1) or scaling and squaring "
-             "(2); None "
-             "where the series does not converge")
-        .def("expm_different_algorithms", &IntervalMatrix::expm_different_algorithms,
-             py::arg("max_order"), py::arg("style"), py::arg("scaling_exponent") = 1,
-             "As expm_taylor_horner_scaling, and style 4: expm at the step 1")
-        // independent and mixed exponentials
-        .def("expm_independent_mixed", &IntervalMatrix::expm_independent_mixed,
-             py::arg("intermediate_order"), py::arg("max_order"),
-             "The independent-power series in two parts, up to and beyond intermediate_order")
-        .def(
-            "expm_norm_infinity",
-            [](const IntervalMatrix &A, double t) { return scalar(A.expm_norm_infinity(t)); },
-            py::arg("t"), "CORA's closed-form bound of the exponential's remainder norm")
-        .def(
-            "expm_absolute_bound",
-            [](const IntervalMatrix &A, double t) { return matrix(A.expm_absolute_bound(t)); },
-            py::arg("t"), "CORA's matrix bound of the absolute value of the exponential")
-        .def("plus", &interval_matrix_sum, py::arg("other"),
-             "The sum with an interval matrix, a matrix or a number")
-        .def("__add__", &interval_matrix_sum, py::is_operator())
-        .def("__radd__", &interval_matrix_sum, py::is_operator())
-        .def(
-            "powers",
-            [](const IntervalMatrix &A, int64_t max_order, std::optional<int64_t> initial_order,
-               const std::optional<IntervalMatrix> &initial_power) {
-                if (initial_order || initial_power) {
-                    // powers with an initial order
-                    if (!initial_order || !initial_power)
-                        CORA_FAIL(Error::wrong_value,
-                                  "powers: give initial_order and initial_power together");
-                    return A.powers(max_order, *initial_order, *initial_power);
-                }
-                return A.powers(max_order);
-            },
-            py::arg("max_order"), py::arg("initial_order") = py::none(),
-            py::arg("initial_power") = py::none(),
-            "The powers from order initial_order (default 1) to max_order, each times A from the "
-            "right")
-        .def(
-            "contains",
-            [](const IntervalMatrix &A, const py::object &M, const std::string &type, Tol tol) {
-                return A.contains(tensor_of(M, "the matrix"), type, tol);
-            },
-            py::arg("M"), py::arg("type") = "exact", py::arg("tol") = py::none(),
-            "Whether the matrix M is in the set, entry by entry up to tol")
-        .def("exact_square", &IntervalMatrix::exact_square, "The entrywise range of M @ M")
-        // squares and remainders
-        .def("dependent_terms", &IntervalMatrix::dependent_terms, py::arg("r"),
-             "(r^2 A^2, I + A r + A^2 r^2 / 2): the exact square and the second-order terms")
-        .def("exponential_remainder", &IntervalMatrix::exponential_remainder, py::arg("max_order"),
-             "The remainder box of the Taylor series of the matrix exponential")
-        .def(
-            "expm",
-            [](const IntervalMatrix &A, int64_t max_order, std::optional<double> r,
-               std::optional<int64_t> initial_order,
-               const std::optional<IntervalMatrix> &initial_power) {
-                if (initial_order || initial_power) {
-                    if (!initial_order || !initial_power)
-                        CORA_FAIL(Error::wrong_value,
-                                  "expm: give initial_order and initial_power together");
-                    return A.expm(r.value_or(1.0), max_order, *initial_order, *initial_power);
-                }
-                // the exponential with optional start
-                return r ? A.expm(*r, max_order) : A.expm(max_order);
-            },
-            py::arg("max_order") = 10, py::arg("r") = py::none(),
-            py::arg("initial_order") = py::none(), py::arg("initial_power") = py::none(),
-            "The enclosure of exp(M) over the set: the series to max_order with the dependent "
-            "terms")
-        .def(
-            "expm_independent",
-            [](const IntervalMatrix &A, int64_t max_order, std::optional<int64_t> initial_order,
-               const std::optional<IntervalMatrix> &initial_power) {
-                if (initial_order || initial_power) {
-                    if (!initial_order || !initial_power)
-                        CORA_FAIL(
-                            Error::wrong_value,
-                            "expm_independent: give initial_order and initial_power together");
-                    return A.expm_independent(max_order, *initial_order, *initial_power);
-                }
-                // independent exponential series
-                return A.expm_independent(max_order);
-            },
-            py::arg("max_order"), py::arg("initial_order") = py::none(),
-            py::arg("initial_power") = py::none(),
-            "The enclosure of exp(M) with every power evaluated independently")
-        .def("expm_mixed", &IntervalMatrix::expm_mixed, py::arg("r"), py::arg("intermediate_order"),
-             py::arg("max_order"), "The series in two parts, up to and beyond intermediate_order")
-        .def(
-            "infinity_norm", [](const IntervalMatrix &A) { return scalar(A.infinity_norm()); },
-            "The largest absolute row sum of abs(A)")
-        .def(
-            "norm",
-            [](const IntervalMatrix &A, const py::object &type) {
-                return scalar(A.norm(norm_of(type)));
-            },
-            py::arg("type") = 2,
-            "The norm of |center| + rad: 1, inf or 'fro' (2 is refused, as CORA)")
-        .def("matrix_power", &IntervalMatrix::matrix_power, py::arg("exponent"),
-             "The power of a square set: the repeated interval matrix product")
-        .def("__pow__", &IntervalMatrix::matrix_power, py::is_operator())
-        // products of interval matrices
-        .def("matmul", &interval_matrix_product, py::arg("other"),
-             "The product with an interval matrix, a zonotope, the empty set, a matrix or a number")
-        .def("__matmul__", &interval_matrix_product, py::is_operator())
-        .def("__mul__", &interval_matrix_product, py::is_operator())
-        .def(
-            "__rmatmul__",
-            [](const IntervalMatrix &A, const py::object &o) -> py::object {
-                if (const std::optional<Tensor> M = as_tensor(o))
-                    return py::cast(IntervalMatrix::matmul(*M, A));
-                return not_implemented();
-            },
-            py::is_operator())
-        .def(
-            "__rmul__",
-            [](const IntervalMatrix &A, const py::object &o) -> py::object {
-                if (is_number(o)) return py::cast(A.matmul(py::cast<double>(o)));
-                if (const std::optional<Tensor> M = as_tensor(o))
-                    return py::cast(IntervalMatrix::matmul(*M, A));
-                // left products
-                return not_implemented();
-            },
-            py::is_operator())
-        .def("__repr__", &IntervalMatrix::display);
-    m.attr("IntervalMatrix").attr("__array_ufunc__") = py::none(); // numpy defers to the operators
+    using Opt = std::optional<int64_t>;
+    using OptI = std::optional<Interval>;
+    m.def("dependent_terms", &mat_exp::dependent_terms, py::arg("A"), py::arg("r"),
+          "(r^2 A^2, I + A r + A^2 r^2 / 2): the exact square and the second-order terms");
+    m.def("exponential_remainder", &mat_exp::exponential_remainder, py::arg("A"),
+          py::arg("max_order"), "The remainder box of the Taylor series of the matrix exponential");
+    // the powers and the series, each with an optional start
+    m.def(
+        "powers",
+        [](const Interval &A, int64_t max_order, Opt initial_order, const OptI &initial_power) {
+            if (initial_given(initial_order, initial_power, "powers"))
+                return mat_exp::powers(A, max_order, *initial_order, *initial_power);
+            return mat_exp::powers(A, max_order);
+        },
+        py::arg("A"), py::arg("max_order"), py::arg("initial_order") = py::none(),
+        py::arg("initial_power") = py::none(),
+        "The powers from order initial_order (default 1) to max_order, each times A from the "
+        "right");
+    // the enclosures of the exponential
+    m.def(
+        "expm",
+        [](const Interval &A, int64_t max_order, std::optional<double> r, Opt initial_order,
+           const OptI &initial_power) {
+            if (initial_given(initial_order, initial_power, "expm"))
+                return mat_exp::expm(A, r.value_or(1.0), max_order, *initial_order, *initial_power);
+            return r ? mat_exp::expm(A, *r, max_order) : mat_exp::expm(A, max_order);
+        },
+        py::arg("A"), py::arg("max_order") = 10, py::arg("r") = py::none(),
+        py::arg("initial_order") = py::none(), py::arg("initial_power") = py::none(),
+        "The enclosure of exp(M) over the set: the series to max_order with the dependent terms");
+    // every power on its own, without the dependent terms
+    m.def(
+        "expm_independent",
+        [](const Interval &A, int64_t max_order, Opt initial_order, const OptI &initial_power) {
+            if (initial_given(initial_order, initial_power, "expm_independent"))
+                return mat_exp::expm_independent(A, max_order, *initial_order, *initial_power);
+            return mat_exp::expm_independent(A, max_order);
+        },
+        py::arg("A"), py::arg("max_order"), py::arg("initial_order") = py::none(),
+        py::arg("initial_power") = py::none(),
+        "The enclosure of exp(M) with every power evaluated independently");
+    m.def("expm_mixed", &mat_exp::expm_mixed, py::arg("A"), py::arg("r"),
+          py::arg("intermediate_order"), py::arg("max_order"),
+          "The series in two parts, up to and beyond intermediate_order");
+    m.def("expm_independent_mixed", &mat_exp::expm_independent_mixed, py::arg("A"),
+          py::arg("intermediate_order"), py::arg("max_order"),
+          "The independent-power series in two parts, up to and beyond intermediate_order");
+    // CORA's other algorithms and bounds
+    m.def("expm_taylor_horner_scaling", &mat_exp::expm_taylor_horner_scaling, py::arg("A"),
+          py::arg("max_order"), py::arg("style"), py::arg("scaling_exponent") = 1,
+          "The exponential by the Taylor series (style 0), Horner (1) or scaling and squaring (2); "
+          "None where the series does not converge");
+    m.def("expm_different_algorithms", &mat_exp::expm_different_algorithms, py::arg("A"),
+          py::arg("max_order"), py::arg("style"), py::arg("scaling_exponent") = 1,
+          "As expm_taylor_horner_scaling, and style 4: expm at the step 1");
+    m.def(
+        "expm_norm_infinity",
+        [](const Interval &A, double t) { return scalar(mat_exp::expm_norm_infinity(A, t)); },
+        py::arg("A"), py::arg("t"), "CORA's closed-form bound of the exponential's remainder norm");
+    m.def(
+        "expm_absolute_bound",
+        [](const Interval &A, double t) { return matrix(mat_exp::expm_absolute_bound(A, t)); },
+        py::arg("A"), py::arg("t"), "CORA's matrix bound of the absolute value of the exponential");
 }
 
 /// The product of a matrix zonotope with what Python offers on the right: another one, a zonotope,
@@ -1299,7 +1216,7 @@ void bind_mat_zonotope(py::module_ &m) {
         .def_readonly("enclosure", &MatZonotope::ExpmMixedResult::enclosure,
                       "The terms to the intermediate order, a MatZonotope")
         .def_readonly("enclosure_rest", &MatZonotope::ExpmMixedResult::enclosure_rest,
-                      "The rest of the series, an IntervalMatrix")
+                      "The rest of the series, an interval matrix")
         .def_readonly("powers", &MatZonotope::ExpmMixedResult::powers,
                       "The powers of orders 1 to intermediate_order")
         .def_readonly("powers2", &MatZonotope::ExpmMixedResult::powers2,
@@ -1316,6 +1233,7 @@ void bind_mat_zonotope(py::module_ &m) {
                       "The powers of r M, powers[k] of order k + 1")
         .def_readonly("constant_input", &MatZonotope::ExpmOneParamResult::constant_input,
                       "With an input, the zonotope of its terms, else None");
+    // the matrix zonotope itself
     py::class_<MatZonotope>(m, "MatZonotope",
                             "A matrix zonotope {C + sum b_i G_i | |b|_inf <= 1}: a set of matrices")
         .def(py::init([](const py::object &center, const py::object &generators) {
@@ -1328,6 +1246,7 @@ void bind_mat_zonotope(py::module_ &m) {
              py::arg("center") = py::none(), py::arg("generators") = py::none(),
              "The center C (rows, cols) and the generators G (h, rows, cols); C alone has no "
              "generators, nothing is the empty 0 x 0 set")
+        // its parts and conversions
         .def_property_readonly(
             "center", [](const MatZonotope &A) { return matrix(A.center()); }, "The center matrix")
         .def_property_readonly(
@@ -1339,6 +1258,9 @@ void bind_mat_zonotope(py::module_ &m) {
                                "The number of generator matrices h")
         .def("zonotope", &MatZonotope::zonotope,
              "The zonotope of the stacked matrices (column by column)")
+        .def_static("from_interval", &MatZonotope::from_interval, py::arg("A"),
+                    "The interval matrix A (an Interval) as a matrix zonotope: one generator per "
+                    "entry")
         .def("interval_matrix", &MatZonotope::interval_matrix,
              "The box around the set, C +- sum |G_i|")
         // containment of a matrix
@@ -3113,8 +3035,6 @@ void bind_poly_zonotope(py::module_ &m) {
         .def(
             "linear_map",
             [](const PolyZonotope &P, const py::object &M) {
-                if (py::isinstance<IntervalMatrix>(M))
-                    return P.linear_map(py::cast<IntervalMatrix>(M).interval());
                 if (py::isinstance<Interval>(M)) return P.linear_map(py::cast<Interval>(M));
                 return P.linear_map(tensor_of(M, "the matrix"));
             },
@@ -3268,6 +3188,7 @@ void bind_operators(py::module_ &m) {
         return not_implemented();
     });
     method(Z, "__neg__", [](const Zonotope &A) { return -A; });
+    // a number scales the zonotope from either side
     method(Z, "__mul__", [](const Zonotope &A, const py::object &o) -> py::object {
         if (is_number(o)) return py::cast(A * py::cast<double>(o));
         return not_implemented();
@@ -3284,11 +3205,13 @@ void bind_operators(py::module_ &m) {
     // Interval
     const auto interval_sum = [](const Interval &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
+        if (is_number(o)) return py::cast(A + py::cast<double>(o));
         if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A + *v);
         return not_implemented();
     };
     method(I, "__add__", interval_sum);
     method(I, "__radd__", interval_sum);
+    // an interval, a number or a matrix subtracted
     method(I, "__sub__", [](const Interval &A, const py::object &o) -> py::object {
         if (py::isinstance<Interval>(o)) return py::cast(A - py::cast<Interval>(o));
         if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A - *v);
@@ -3333,6 +3256,10 @@ void bind_operators(py::module_ &m) {
     const auto interval_map = [](const Interval &A, const py::object &o) -> py::object {
         if (is_number(o)) return py::cast(A * py::cast<double>(o));
         if (py::isinstance<Zonotope>(o)) return py::cast(A * py::cast<Zonotope>(o));
+        // the products of an interval matrix
+        if (py::isinstance<Interval>(o)) return py::cast(A.matmul(py::cast<Interval>(o)));
+        if (py::isinstance<EmptySet>(o)) return py::cast(py::cast<EmptySet>(o).linear_map(A));
+        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.matmul(*M));
         return not_implemented();
     };
     method(I, "__mul__", interval_map);
@@ -5634,7 +5561,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_ellipsoid(m);
     bind_capsule(m);
     bind_poly_zonotope(m);
-    bind_interval_matrix(m);
+    bind_mat_exp(m);
     bind_mat_zonotope(m);
     // the operators, the problems and the systems
     bind_operators(m);

@@ -28,10 +28,10 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
 #include "cont_dynamics/linear_sys/private/priv_krylov.h"
 #include "cora/global/tensor/tolerance.h"
 #include "cora/global/within_tol.h"
-#include "matrix_set/interval_matrix/private/priv_factorial.h"
 
 #include <cmath>
 

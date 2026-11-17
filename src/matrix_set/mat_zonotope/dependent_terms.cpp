@@ -8,7 +8,7 @@
 // Inputs:   r - the step;  A is square
 // Outputs:  sq - r^2 M^2 for every matrix M of A, as a matrix zonotope
 //           H - I + M r + M^2 r^2 / 2: the center I + C r + sq.C / 2
-// See also: expm_mixed, IntervalMatrix::dependent_terms
+// See also: expm_mixed, mat_exp::dependent_terms
 //
 // CORA: matrixSet/@matZonotope/dependentTerms.m
 // CORA authors: Matthias Althoff, Tobias Ladner

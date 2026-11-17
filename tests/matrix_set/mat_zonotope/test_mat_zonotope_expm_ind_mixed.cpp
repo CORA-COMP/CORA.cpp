@@ -27,13 +27,12 @@ void expm_ind_mixed_encloses(const std::string &b) {
     for (const auto &[intermediate, maximum] :
          std::vector<std::pair<int, int>>{{1, 6}, {2, 8}, {3, 10}}) {
         const auto R = A.expm_ind_mixed(intermediate, maximum);
-        const Interval total =
-            R.enclosure.interval_matrix().interval() + R.enclosure_rest.interval();
+        const Interval total = R.enclosure.interval_matrix() + R.enclosure_rest;
         bool inside = true;
         for (int trial = 0; trial < 20; ++trial)
-            inside = inside && IntervalMatrix(total).contains(
-                                   test::exponential(test::member(A, test::coefficients(rng, 2))),
-                                   "exact", 1e-12);
+            inside = inside &&
+                     total.contains(test::exponential(test::member(A, test::coefficients(rng, 2))),
+                                    1e-12);
         check(inside, b + ": exp(M) of every member is inside, intermediate order " +
                           std::to_string(intermediate));
         check(int(R.powers.size()) == intermediate &&

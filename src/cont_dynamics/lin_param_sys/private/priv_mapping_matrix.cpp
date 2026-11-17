@@ -6,7 +6,7 @@
 // remainder E.
 //
 // Syntax:   LinParamSeries s = priv_mapping_matrix(sys, r, taylor_terms, intermediate_terms);
-//           IntervalMatrix F = priv_tie(s, taylor_terms);
+//           Interval F = priv_tie(s, taylor_terms);
 // Inputs:   sys - the system
 //           r - the step size
 //           taylor_terms - the order of the series
@@ -24,7 +24,7 @@
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
-#include "matrix_set/interval_matrix/private/priv_factorial.h"
+#include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
 
 #include <cmath>
 
@@ -37,9 +37,9 @@ namespace cora {
 namespace {
 
 /// The box [lower, 0] times the interval matrix M (CORA's 1 x 1 intervalMatrix times M).
-IntervalMatrix aux_times_box(double lower, const IntervalMatrix &M) {
+Interval aux_times_box(double lower, const Interval &M) {
     const Tensor lo = M.center().full_like({1, 1}, lower), hi = lo.zeros_like();
-    return IntervalMatrix(M.interval().times(Interval(lo, hi)));
+    return M.times(Interval(lo, hi));
 }
 
 } // namespace
@@ -64,15 +64,15 @@ LinParamSeries priv_mapping_matrix(const LinParamSys &sys, double r, int taylor_
             e.remainder};
 }
 
-IntervalMatrix priv_power(const LinParamSeries &series, int i) {
+Interval priv_power(const LinParamSeries &series, int i) {
     const auto z = static_cast<int>(series.zono_powers.size());
     if (i <= z) return series.zono_powers[std::size_t(i - 1)].interval_matrix();
     return series.int_powers[std::size_t(i - z - 1)];
 }
 
-IntervalMatrix priv_tie(const LinParamSeries &series, int taylor_terms) {
+Interval priv_tie(const LinParamSeries &series, int taylor_terms) {
     // the second order with the box [-1/4, 0], then the orders 3..taylor_terms
-    IntervalMatrix sum = aux_times_box(-0.25, priv_power(series, 2)) * (1 / priv_factorial(2));
+    Interval sum = aux_times_box(-0.25, priv_power(series, 2)) * (1 / priv_factorial(2));
     for (int i = 3; i <= taylor_terms; ++i) {
         const double lower = std::pow(i, -double(i) / (i - 1)) - std::pow(i, -1.0 / (i - 1));
         sum = sum + aux_times_box(lower, priv_power(series, i)) * (1 / priv_factorial(i));

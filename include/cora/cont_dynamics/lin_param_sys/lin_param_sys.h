@@ -22,8 +22,8 @@
 
 #include "cora/cont_dynamics/algorithms.h"
 #include "cora/cont_dynamics/cont_dynamics.h"
+#include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 
 #include <optional>
@@ -39,12 +39,12 @@ enum class ParamType { constant, varying };
 /// What one step size makes of the system and its input (CORA keeps these in the system object:
 /// mappingMatrixSet.zono and .int, F, Rinput, Rtrans and inputCorr).
 struct LinParamMappings {
-    MatZonotope mapping; ///< the series to its matrix-zonotope order, with the rest's center
-    IntervalMatrix mapping_rest; ///< the rest of the series around its center
-    IntervalMatrix correction;   ///< F: the curvature between two time points
-    Zonotope input;              ///< Rinput: the input solution of one step
-    Zonotope translation;        ///< Rtrans: the part of the constant input
-    Zonotope input_correction;   ///< inputCorr: the curvature of the constant input
+    MatZonotope mapping;       ///< the series to its matrix-zonotope order, with the rest's center
+    Interval mapping_rest;     ///< the rest of the series around its center
+    Interval correction;       ///< F: the curvature between two time points
+    Zonotope input;            ///< Rinput: the input solution of one step
+    Zonotope translation;      ///< Rtrans: the part of the constant input
+    Zonotope input_correction; ///< inputCorr: the curvature of the constant input
 };
 
 /// One step of reach (CORA's Rfirst/Rnext): the set over the step, the set at its end if it is

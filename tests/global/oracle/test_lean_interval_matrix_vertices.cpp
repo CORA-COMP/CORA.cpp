@@ -1,4 +1,4 @@
-// test_lean_interval_matrix_vertices - IntervalMatrix::vertices against the CORALean oracle
+// test_lean_interval_matrix_vertices - Interval::vertices against the CORALean oracle
 //
 // The oracle lists the 2^(m n) corner matrices with repetitions; CORA.cpp's distinct ones, sorted
 // as CORA's unique does, are those of the oracle after the same sorting (equal bounds repeat
@@ -10,7 +10,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
+#include "cora/cont_set/interval/interval.h"
 #include "oracle_testing.h"
 
 #include <algorithm>
@@ -50,10 +50,10 @@ int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.vertices", [](test::oracle::Random &rnd) {
         for (const auto &[m, n] : {std::pair{2, 2}, std::pair{1, 3}, std::pair{3, 2}}) {
-            const IntervalMatrix A(rnd.box_matrix(m, n));
-            const lean::IntervalMatrix L{lean::Interval(A.interval())};
+            const Interval A = rnd.box_matrix(m, n);
+            const lean::IntervalMatrix L{lean::Interval(A)};
             const std::vector<std::vector<double>> theirs = aux_sorted(L.vertices(), m, n);
-            const std::vector<double> mine = A.vertices()[0].data();
+            const std::vector<double> mine = A.vertex_matrices()[0].data();
             bool same = mine.size() == theirs.size() * m * n;
             for (std::size_t k = 0; same && k < theirs.size(); ++k)
                 same = std::memcmp(mine.data() + k * m * n, theirs[k].data(),

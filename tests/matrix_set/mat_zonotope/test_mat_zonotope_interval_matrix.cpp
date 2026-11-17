@@ -22,10 +22,10 @@ namespace {
 
 /// C +- (|G1| + |G2|) of the example: [[1, 1], [1, 1]] around [[1, 2], [3, 4]].
 void box_of_the_example(const std::string &b) {
-    const IntervalMatrix box = test::example().interval_matrix();
+    const Interval box = test::example().interval_matrix();
     check(close(box.infimum(), {0, 1, 2, 3}), b + ": the lower bound");
     check(close(box.interval().sup(), {2, 3, 4, 5}), b + ": the upper bound");
-    const IntervalMatrix point = MatZonotope(test::matrix({1, -2}, 1, 2)).interval_matrix();
+    const Interval point = MatZonotope(test::matrix({1, -2}, 1, 2)).interval_matrix();
     check(close(point.infimum(), {1, -2}) && close(point.interval().sup(), {1, -2}),
           b + ": a point matrix is its own box");
 }
@@ -34,11 +34,10 @@ void box_of_the_example(const std::string &b) {
 void box_encloses_and_is_tight(const std::string &b) {
     Rng rng(7);
     const MatZonotope A = test::random_set(rng, 3, 4, 0.5);
-    const IntervalMatrix box = A.interval_matrix();
+    const Interval box = A.interval_matrix();
     bool inside = true;
     for (int trial = 0; trial < 30; ++trial)
-        inside =
-            inside && box.contains(test::member(A, test::coefficients(rng, 4)), "exact", 1e-12);
+        inside = inside && box.contains(test::member(A, test::coefficients(rng, 4)), 1e-12);
     check(inside, b + ": every member is in the box");
     // the corner b_i = sign(G_i[0, 0]) maximizes the entry (0, 0)
     std::vector<double> corner;

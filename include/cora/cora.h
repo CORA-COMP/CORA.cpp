@@ -20,6 +20,7 @@
 #include "cora/cont_dynamics/cont_dynamics.h"
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 #include "cora/cont_dynamics/neur_net_contr_sys/neur_net_contr_sys.h"
 #include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -36,8 +37,8 @@
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-// matrix sets
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
+// matrix sets (an interval matrix is an Interval)
+#include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 // tensors, backends, errors, settings, plotting and the CORALean oracle
 #include "cora/global/backend/eigen.h"
 #include "cora/global/backend/lean.h"

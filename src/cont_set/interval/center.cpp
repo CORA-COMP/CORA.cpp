@@ -8,6 +8,7 @@
 // See also: rad, Zonotope::center
 //
 // CORA: contSet/@interval/center.m
+// CORA: matrixSet/@intervalMatrix/center.m
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner
 // Written:       03-November-2026

@@ -76,7 +76,8 @@ void intersect_is_the_set_intersection(const std::string &b) {
         const Tensor x = I1.rand_point(10, rng);
         for (int k = 0; k < 10; ++k) {
             const Tensor p = x.slice(-1, k, k + 1);
-            const bool in_both = I2.contains(p, 0), in_result = !R.is_empty() && R.contains(p, 0);
+            const bool in_both = I2.contains(p, 0.0),
+                       in_result = !R.is_empty() && R.contains(p, 0.0);
             check(in_both == in_result, b + ": a point of I1 is in R exactly when it is in I2");
         }
     }

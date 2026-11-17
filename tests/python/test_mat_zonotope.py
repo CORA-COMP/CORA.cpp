@@ -88,8 +88,8 @@ class Conversions(unittest.TestCase):
 
     def test_interval_matrix(self):
         B = EXAMPLE.interval_matrix()
-        np.testing.assert_array_equal(B.infimum, [[0, 1], [2, 3]])
-        np.testing.assert_array_equal(B.interval.sup, [[2, 3], [4, 5]])
+        np.testing.assert_array_equal(B.inf, [[0, 1], [2, 3]])
+        np.testing.assert_array_equal(B.sup, [[2, 3], [4, 5]])
         rng = np.random.default_rng(2)
         A = random_set(rng, 3, 4, 0.5)
         box = A.interval_matrix()
@@ -228,8 +228,7 @@ class Exponential(unittest.TestCase):
         rng = np.random.default_rng(7)
         A = random_set(rng, 3, 2, 0.3)
         R = A.expm_mixed(1.0, 3, 9)
-        total = R.enclosure.interval_matrix().interval + R.enclosure_rest.interval
-        box = cora.IntervalMatrix(total)
+        box = R.enclosure.interval_matrix() + R.enclosure_rest
         for _ in range(20):
             self.assertTrue(box.contains(exponential(member(A, rng.uniform(-1, 1, 2))), tol=1e-12))
         self.assertEqual((len(R.powers), len(R.powers2)), (3, 6))
@@ -285,8 +284,8 @@ class Gradients(unittest.TestCase):
             R = f(cora.MatZonotope(c, g))
             if isinstance(R, torch.Tensor):
                 return R
-            if isinstance(R, cora.IntervalMatrix):
-                return torch.stack([R.interval.inf, R.interval.sup])
+            if isinstance(R, cora.Interval):
+                return torch.stack([R.inf, R.sup])
             return torch.cat([R.center.reshape(-1), R.generators.reshape(-1)])
 
         self.assertTrue(torch.autograd.gradcheck(result, (center, generators), atol=1e-5, rtol=1e-4))

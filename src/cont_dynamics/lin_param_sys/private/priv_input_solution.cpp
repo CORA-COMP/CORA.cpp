@@ -25,8 +25,8 @@
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
+#include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
 #include "cora/global/tensor/tolerance.h"
-#include "matrix_set/interval_matrix/private/priv_factorial.h"
 
 #include <cmath>
 
@@ -50,22 +50,22 @@ bool aux_origin_contained(const Zonotope &V, const Tensor &v_trans) {
 }
 
 /// The interval matrix whose every entry is [-v, v].
-IntervalMatrix aux_all(const Tensor &like, int64_t n, double v) {
+Interval aux_all(const Tensor &like, int64_t n, double v) {
     const Tensor ones = like.ones_like({n, n});
-    return IntervalMatrix(Interval(ones * (-1.0), ones).times(like.full_like({1, 1}, v)));
+    return Interval(ones * (-1.0), ones).times(like.full_like({1, 1}, v));
 }
 
 // The curvature of the constant input -------------------------------------------------------------
 
 /// CORA's priv_inputTie: the boxes [(i^(-i/(i-1)) - i^(-1/(i-1))) r, 0] (A r)^(i-1) / i! summed
 /// for i = 2..eta, plus Liou's remainder (reach_set_explosion if the series diverges).
-IntervalMatrix aux_input_tie(const LinParamSys &sys, const LinParamSeries &series, double r,
-                             int taylor_terms) {
-    const auto times_box = [](double lower, const IntervalMatrix &M) {
+Interval aux_input_tie(const LinParamSys &sys, const LinParamSeries &series, double r,
+                       int taylor_terms) {
+    const auto times_box = [](double lower, const Interval &M) {
         const Tensor lo = M.center().full_like({1, 1}, lower);
-        return IntervalMatrix(M.interval().times(Interval(lo, lo.zeros_like())));
+        return M.times(Interval(lo, lo.zeros_like()));
     };
-    IntervalMatrix sum = times_box(-0.25 * r, priv_power(series, 1)) * (1 / priv_factorial(2));
+    Interval sum = times_box(-0.25 * r, priv_power(series, 1)) * (1 / priv_factorial(2));
     for (int i = 3; i <= taylor_terms; ++i) {
         const double lower = (std::pow(i, -double(i) / (i - 1)) - std::pow(i, -1.0 / (i - 1))) * r;
         sum = sum + times_box(lower, priv_power(series, i - 1)) * (1 / priv_factorial(i));
@@ -102,7 +102,8 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
         sys.B() ? U.linear_map(*sys.B()) : Zonotope(c.zeros_like(), c.zeros_like({n, 0}));
     const Tensor v_trans = (sys.B() ? sys.B()->matmul(u_trans) : c.zeros_like()) + c;
     Zonotope input_set = V * r;
-    IntervalMatrix integral(c.eye_like(n) * r);
+    const Tensor start = c.eye_like(n) * r;
+    Interval integral(start, start);
     // the series: the matrix-zonotope powers, then the interval powers
     const auto z = static_cast<int>(series.zono_powers.size());
     for (int i = 1; i <= z; ++i) {
@@ -112,7 +113,7 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
         integral = integral + term.interval_matrix();
     }
     for (int i = z + 1; i <= z + static_cast<int>(series.int_powers.size()); ++i) {
-        const IntervalMatrix term =
+        const Interval term =
             series.int_powers[std::size_t(i - z - 1)] * (r / priv_factorial(i + 1));
         input_set = input_set + term * V;
         integral = integral + term;

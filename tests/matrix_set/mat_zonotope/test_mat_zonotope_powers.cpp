@@ -47,7 +47,7 @@ void powers_from_an_initial_power(const std::string &b) {
         const Tensor M = test::member(Q, test::coefficients(rng, 2));
         Tensor power = M;
         for (std::size_t k = 0; k < R.size(); ++k, power = power.matmul(M))
-            inside = inside && R[k].interval_matrix().contains(power, "exact", 1e-12);
+            inside = inside && R[k].interval_matrix().contains(power, 1e-12);
     }
     check(inside, b + ": the powers of every member are inside");
 }

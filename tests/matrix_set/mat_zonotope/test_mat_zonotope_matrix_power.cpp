@@ -39,12 +39,12 @@ void powers_enclose_the_members(const std::string &b) {
     Rng rng(31);
     const MatZonotope A = test::random_set(rng, 3, 2, 0.4);
     for (const int64_t k : {2, 3, 4}) {
-        const IntervalMatrix box = A.matrix_power(k).interval_matrix();
+        const Interval box = A.matrix_power(k).interval_matrix();
         bool inside = true;
         for (int trial = 0; trial < 20; ++trial) {
             Tensor M = test::member(A, test::coefficients(rng, 2)), power = M;
             for (int64_t i = 1; i < k; ++i) power = power.matmul(M);
-            inside = inside && box.contains(power, "exact", 1e-12);
+            inside = inside && box.contains(power, 1e-12);
         }
         check(inside, b + ": the k-th power of every member is inside, k = " + std::to_string(k));
     }

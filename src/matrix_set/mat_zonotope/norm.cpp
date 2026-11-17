@@ -5,7 +5,7 @@
 // Syntax:   Tensor n = A.norm(Tensor::Norm::fro);
 // Inputs:   type - one, inf or fro; the 2-norm is NP-hard for interval matrices and refused
 // Outputs:  n - the norm of the interval matrix around A (norm(|center| + rad, type)), (..., 1, 1)
-// See also: interval_matrix, IntervalMatrix::norm
+// See also: interval_matrix, Interval::norm
 //
 // CORA: matrixSet/@matZonotope/norm.m
 // CORA authors: Matthias Althoff, Victor Gassmann

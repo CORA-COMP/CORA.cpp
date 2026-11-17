@@ -27,10 +27,10 @@ namespace {
 void points(const std::string &b) {
     const MatZonotope nilpotent(test::matrix({0, 1, 0, 0}, 2, 2)),
         zero(test::matrix({0, 0, 0, 0}, 2, 2));
-    const IntervalMatrix E = nilpotent.expm_independent(5).interval_matrix();
+    const Interval E = nilpotent.expm_independent(5).interval_matrix();
     check(close(E.center(), {1, 1, 0, 1}, 1e-12) && E.interval().rad().max().item() < 1e-12,
           b + ": exp of a nilpotent matrix");
-    const IntervalMatrix I = zero.expm_independent(3).interval_matrix();
+    const Interval I = zero.expm_independent(3).interval_matrix();
     check(close(I.center(), {1, 0, 0, 1}, 1e-12) && I.interval().rad().max().item() < 1e-12,
           b + ": exp(0) = I");
     const MatZonotope low = zero.expm_independent(0);
@@ -43,12 +43,12 @@ void expm_encloses_the_exponentials(const std::string &b) {
     Rng rng(61);
     const MatZonotope A = test::random_set(rng, 3, 2, 0.3);
     for (const int64_t order : {4, 8}) {
-        const IntervalMatrix box = A.expm_independent(order).interval_matrix();
+        const Interval box = A.expm_independent(order).interval_matrix();
         bool inside = true;
         for (int trial = 0; trial < 20; ++trial)
-            inside = inside &&
-                     box.contains(test::exponential(test::member(A, test::coefficients(rng, 2))),
-                                  "exact", 1e-12);
+            inside =
+                inside &&
+                box.contains(test::exponential(test::member(A, test::coefficients(rng, 2))), 1e-12);
         check(inside, b + ": exp(M) of every member is inside, order " + std::to_string(order));
     }
     const MatZonotope order2 = A.expm_independent(2);

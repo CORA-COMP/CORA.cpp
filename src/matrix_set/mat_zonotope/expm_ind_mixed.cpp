@@ -10,7 +10,7 @@
 //           max_order - the order of the series, nonnegative;  A is square
 // Outputs:  R - enclosure: the first part; enclosure_rest: the rest to max_order; powers and
 // powers2 as expm_mixed; remainder the box of the rest See also: expm_mixed,
-// IntervalMatrix::expm_independent
+// mat_exp::expm_independent
 //
 // CORA: matrixSet/@matZonotope/expmIndMixed.m
 // CORA authors: Matthias Althoff
@@ -19,9 +19,10 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "global/format.h"
-#include "matrix_set/interval_matrix/private/priv_factorial.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -50,9 +51,10 @@ MatZonotope::ExpmMixedResult MatZonotope::expm_ind_mixed(int64_t intermediate_or
     for (int64_t order = 1; order <= intermediate_order; ++order)
         first = first + zonotope_powers[std::size_t(order - 1)] * (1.0 / priv_factorial(order));
     // the second part continues the interval matrix series from the next power
-    const IntervalMatrix box = interval_matrix();
-    const IntervalMatrix start = box.matmul(zonotope_powers.back().interval_matrix());
-    const ExpmResult rest = box.expm_independent(max_order, intermediate_order + 1, start);
+    const Interval box = interval_matrix();
+    const Interval start = box.matmul(zonotope_powers.back().interval_matrix());
+    const mat_exp::ExpmResult rest =
+        mat_exp::expm_independent(box, max_order, intermediate_order + 1, start);
     return {first, rest.enclosure, std::move(zonotope_powers), rest.powers, rest.remainder};
 }
 

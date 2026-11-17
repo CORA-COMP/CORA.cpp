@@ -6,7 +6,7 @@
 // Inputs:   C - center, a matrix (..., rows, cols) without NaN
 //           G - generators (..., h, rows, cols) of the same rows, columns and batch
 // Outputs:  A - the matrices C + sum_i b_i G_i with |b|_inf <= 1
-// See also: IntervalMatrix::IntervalMatrix, Zonotope::Zonotope
+// See also: Interval::from_center_delta, Zonotope::Zonotope
 //
 // CORA: matrixSet/@matZonotope/matZonotope.m
 // CORA authors: Matthias Althoff, Tobias Ladner

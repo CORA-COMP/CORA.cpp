@@ -26,10 +26,10 @@ namespace cora {
 /// after them) and the remainder.
 struct LinParamSeries {
     MatZonotope zono;
-    IntervalMatrix rest;
+    Interval rest;
     std::vector<MatZonotope> zono_powers;
-    std::vector<IntervalMatrix> int_powers;
-    IntervalMatrix remainder;
+    std::vector<Interval> int_powers;
+    Interval remainder;
 };
 
 /// The series of the step r (CORA's priv_mappingMatrix): expmOneParam for a constant set with
@@ -38,10 +38,10 @@ LinParamSeries priv_mapping_matrix(const LinParamSys &sys, double r, int taylor_
                                    int intermediate_terms);
 
 /// The power (A r)^i (order i >= 1) of the series as an interval matrix.
-IntervalMatrix priv_power(const LinParamSeries &series, int i);
+Interval priv_power(const LinParamSeries &series, int i);
 
 /// The correction matrix F of the curvature between two time points (CORA's priv_tie).
-IntervalMatrix priv_tie(const LinParamSeries &series, int taylor_terms);
+Interval priv_tie(const LinParamSeries &series, int taylor_terms);
 
 /// The input of one step (CORA's Rinput, Rtrans and inputCorr).
 struct LinParamInput {

@@ -134,18 +134,28 @@ struct, as CORA separates `params` from `options`.
   matrix.
 - Files: `include/cora/cont_set/`, `src/global/python/bindings.cpp`.
 
-**Interval matrices are a class of their own that holds an `Interval`.** CORA's `intervalMatrix` is a
-`matrixSet`, not a `contSet`, and several methods mean something else than the interval's of the same
-name: `abs` is the matrix of the largest absolute values, `contains` takes a matrix, `mtimes` is the
-product of matrices, `norm` is the norm of the matrix of largest entries.
-- `IntervalMatrix` (`include/cora/matrix_set/interval_matrix/`) holds one `Interval` of matrix bounds,
-  CORA's `int` field, and no second representation. The methods that CORA forwards to the interval
-  (`center`, `infimum`, `norm`) call the `Interval`'s, and the products reuse its private
-  `priv_matmul` and `priv_times`.
-- A C++ method cannot mean two things on one class, and a matrix set must not be taken for a set of
-  points (no `ClassId`, no registry pair). An `Interval` with matrix bounds stays what it was
-  (`Interval::matrix_power`, `Interval::linear_map`), so existing code keeps working.
-- Files: `include/cora/matrix_set/interval_matrix/interval_matrix.h`, `src/matrix_set/interval_matrix/`.
+**Matrix sets are sets over matrix-shaped points, as in CORALean.** CORALean has no
+interval-matrix type: an interval matrix is `Interval (Mat n m)`, a set whose points are matrices,
+and its exponential lives with the linear system (`LinearSys.MatExp`). CORA.cpp does the same
+(#157): the element shape (rows, cols) of a set says which space it lives in, a column (n, 1) for
+vectors. An interval matrix is an `Interval` of matrix bounds.
+- `Interval` takes bounds (..., n, m). The methods where CORA's `intervalMatrix` and `interval`
+  differ only in what they accept answer both: `contains` takes a matrix, `representsa` and
+  `volume` take the entries stacked column by column, `display` shows CORA's intervalMatrix text.
+  The matrix products are `Interval::matmul` (and `*`), `exact_square`, `infinity_norm` and
+  `vertex_matrices`; `Interval::from_center_delta(C, D)` is CORA's `intervalMatrix(C, D)`.
+- There is no `IntervalMatrix` alias: CORA's `intervalMatrix(C, D)` takes a center and a delta and
+  `Interval(inf, sup)` takes bounds, so an alias would silently change what such code means.
+- Where CORA's two classes disagree, a matrix keeps the intervalMatrix answer, which CORALean's
+  `Interval (Mat n m)` shares: the 2-norm of a matrix is refused, `matrix_power` multiplies a
+  1 x 1 matrix too (CORA's interval squares a scalar entrywise) and a base that is not square is a
+  dimension mismatch. `abs` stays the interval of absolute values; `abs().sup()` is CORA's `abs`
+  of an intervalMatrix. In Python, `**` stays the elementwise power of every `Interval`.
+- The exponential family (`expm`, `expm_independent`, `expm_mixed`, `dependent_terms`,
+  `exponential_remainder`, `powers` and CORA's other algorithms) is free functions of
+  `cora::mat_exp` on an `Interval`.
+- Files: `include/cora/cont_set/interval/interval.h`, `include/cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h`,
+  `src/cont_dynamics/linear_sys/mat_exp/`.
 
 **One plot core, thin front ends.** `plot` decides everything about a picture once (projection,
 vertices, CORA's colors, the union of overlapping sets, z-order) and puts it into the layers of a
