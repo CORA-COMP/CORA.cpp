@@ -150,8 +150,18 @@ jobs:
       preset: torch
       tests: ${{ needs.checks.outputs.tests }}
       ccache_key: -pr-cold
+      syntax_check: true
       labels: backend-torch gradcheck
       build_labels: backend-torch gradcheck
+
+  torch-full-warm:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: torch
+      tests: ${{ needs.checks.outputs.tests }}
+      labels: backend-torch gradcheck
 
   torch-warm:
     needs: checks
@@ -159,6 +169,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       preset: torch
+      syntax_check: true
       tests: ${{ needs.checks.outputs.tests }}
       labels: backend-torch gradcheck
       build_labels: backend-torch gradcheck

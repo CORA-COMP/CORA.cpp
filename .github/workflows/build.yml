@@ -49,6 +49,10 @@ on:
         description: build only the test programs of these ctest labels (and the library they link), empty for everything
         type: string
         default: ""
+      syntax_check:
+        description: parse every translation unit of tests/ with the configured flags (scripts/ci/syntax_check.py), before the build
+        type: boolean
+        default: false
       cmake_args:
         description: further arguments of the configure step, separated by spaces
         type: string
@@ -93,6 +97,9 @@ jobs:
           ORACLE: ${{ inputs.oracle && '-DCORACPP_ORACLE=DOWNLOAD' || '' }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS" $ORACLE $CMAKE_ARGS
+      - name: syntax check
+        if: inputs.syntax_check
+        run: python3 scripts/ci/syntax_check.py build/${{ inputs.preset }} -j4
       - name: build
         id: build
         env:
