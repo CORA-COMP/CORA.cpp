@@ -141,47 +141,30 @@ jobs:
       oracle: true
       labels: python
 
-  # EXPERIMENT (timing): the libtorch backend, cold ccache, warm ccache (main's) and -O0
-  torch-cold:
+  # EXPERIMENT (timing): the libtorch backend with a precompiled header, at -O3 and -O0
+  torch-pch:
     needs: checks
     if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
     uses: ./.github/workflows/build.yml
     with:
       preset: torch
       tests: ${{ needs.checks.outputs.tests }}
-      ccache_key: -pr-cold
+      ccache_key: -pr-pch
+      pch: true
       syntax_check: true
       labels: backend-torch gradcheck
       build_labels: backend-torch gradcheck
 
-  torch-full-warm:
+  torch-pch-o0:
     needs: checks
     if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
     uses: ./.github/workflows/build.yml
     with:
       preset: torch
       tests: ${{ needs.checks.outputs.tests }}
-      labels: backend-torch gradcheck
-
-  torch-warm:
-    needs: checks
-    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
-    uses: ./.github/workflows/build.yml
-    with:
-      preset: torch
+      ccache_key: -pr-pch-o0
+      pch: true
       syntax_check: true
-      tests: ${{ needs.checks.outputs.tests }}
-      labels: backend-torch gradcheck
-      build_labels: backend-torch gradcheck
-
-  torch-o0:
-    needs: checks
-    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
-    uses: ./.github/workflows/build.yml
-    with:
-      preset: torch
-      tests: ${{ needs.checks.outputs.tests }}
-      ccache_key: -pr-o0
       cmake_args: -DCMAKE_CXX_FLAGS_RELEASE=-O0
       labels: backend-torch gradcheck
       build_labels: backend-torch gradcheck
