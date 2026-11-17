@@ -26,7 +26,7 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Tensor ConZonotope::support_function_impl(const Tensor &d) const {
-    if (A_.shape()[A_.ndim() - 2] == 0) return Zonotope(c_, G_).support_function(d);
+    if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_).support_function(d);
     if (d.ndim() != 2)
         CORA_FAIL(Error::not_supported, "support_function: a constrained set takes one direction");
     const std::optional<PrivSupport> best = priv_support(priv_host_con_zonotope(*this), d.data());

@@ -19,6 +19,8 @@
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/blocks.h"
 
+#include <limits>
+
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
@@ -35,13 +37,7 @@ Tensor aux_point(const ConZonotope &cz, const std::vector<double> &x) {
 
 /// The Chebyshev center of the factors in a set with a flat image: the box and the equalities.
 Tensor aux_center_flat(const ConZonotope &cz, const HostConZonotope &H) {
-    std::vector<double> Aineq(std::size_t(2 * H.m * H.m), 0.0);
-    for (int64_t j = 0; j < H.m; ++j) {
-        Aineq[j * H.m + j] = -1.0;
-        Aineq[(H.m + j) * H.m + j] = 1.0;
-    }
-    const auto x =
-        priv_chebyshev_center(Aineq, std::vector<double>(std::size_t(2 * H.m), 1.0), H.A, H.b, H.m);
+    const auto x = H.factors.chebyshev_center();
     if (!x) CORA_FAIL(Error::solver_issue, "center: the linear program of the center failed");
     return aux_point(cz, *x);
 }
@@ -54,10 +50,13 @@ Tensor aux_center_full(const ConZonotope &cz) {
     if (N.shape().back() == 0) return cz.c() + cz.generators().matmul(A.lstsq(cz.b()));
     const Tensor x0 = A.pinv().matmul(cz.b());
     const int64_t k = N.shape().back();
-    // |x| <= 1 for x = N y + x0 is [N; -N] y <= [1 - x0; 1 + x0]
-    const Tensor rows = Tensor::concat({N, -N}, -2);
-    const Tensor bounds = Tensor::concat({x0.ones_like() - x0, x0.ones_like() + x0}, -2);
-    const auto y = priv_chebyshev_center(rows.data(), bounds.data(), {}, {}, k);
+    // |x| <= 1 for x = N y + x0 is [N; -N] y <= [1 - x0; 1 + x0], a polytope of the y
+    const Polytope Y(Tensor::concat({N, -N}, -2),
+                     Tensor::concat({x0.ones_like() - x0, x0.ones_like() + x0}, -2));
+    constexpr double kInf = std::numeric_limits<double>::infinity();
+    const auto y = Y.linear_programs(std::vector<double>(std::size_t(k), -kInf),
+                                     std::vector<double>(std::size_t(k), kInf))
+                       .chebyshev_center();
     if (!y) CORA_FAIL(Error::solver_issue, "center: the linear program of the center failed");
     const Tensor x = N.matmul(Tensor::like(N, *y, {k, 1})) + x0;
     return cz.c() + cz.generators().matmul(x);
@@ -69,7 +68,7 @@ Tensor aux_center_full(const ConZonotope &cz) {
 // ===========================================  MAIN  =========================================== //
 
 Tensor ConZonotope::center_impl() const {
-    if (A_.shape()[A_.ndim() - 2] == 0) return c_;
+    if (A().shape()[A().ndim() - 2] == 0) return c_;
     const HostConZonotope H = priv_host_con_zonotope(*this);
     // an empty set has no center
     if (priv_is_empty(H)) return c_.zeros_like({H.n, 0});

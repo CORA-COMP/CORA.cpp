@@ -28,9 +28,9 @@ std::string ConZonotope::display_impl() const {
     text += "- center:\n" + format_matrix(c_, "    ");
     text +=
         "- generators (" + std::to_string(G_.shape().back()) + "):\n" + format_matrix(G_, "    ");
-    text += "- constraint matrix A (" + std::to_string(A_.shape()[A_.ndim() - 2]) + " rows):\n";
-    text += format_matrix(A_, "    ");
-    return text + "- constraint offset b:\n" + format_matrix(b_, "    ");
+    text += "- constraint matrix A (" + std::to_string(A().shape()[A().ndim() - 2]) + " rows):\n";
+    text += format_matrix(A(), "    ");
+    return text + "- constraint offset b:\n" + format_matrix(b(), "    ");
 }
 
 } // namespace cora

@@ -65,7 +65,7 @@ std::pair<bool, Tensor> ConZonotope::is_full_dim_subspace(Tol tol_arg) const {
         return std::string("is_full_dim: a rank per set; it supports a single set, not a batch");
     });
     const int64_t n = dim();
-    if (A_.shape()[0] == 0) return aux_span(G_, n, tol);
+    if (A().shape()[0] == 0) return aux_span(G_, n, tol);
     const std::optional<Tensor> free = aux_free_generators(*this);
     // an empty set has no interior
     if (!free) return {false, G_.zeros_like({n, 0})};

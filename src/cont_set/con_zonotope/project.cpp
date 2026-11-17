@@ -22,7 +22,7 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Set ConZonotope::project_impl(const std::vector<int64_t> &dims) const {
-    return ConZonotope(c_.take(dims, -2), G_.take(dims, -2), A_, b_);
+    return ConZonotope(c_.take(dims, -2), G_.take(dims, -2), F_);
 }
 
 } // namespace cora

@@ -38,7 +38,7 @@ Set ConZonotope::linear_map_impl(const Tensor &M) const {
 }
 
 // -cz is (-1) * cz in CORA's uminus: no matrix is needed
-Set ConZonotope::uminus_impl() const { return ConZonotope(c_ * -1.0, G_ * -1.0, A_, b_); }
+Set ConZonotope::uminus_impl() const { return ConZonotope(c_ * -1.0, G_ * -1.0, F_); }
 
 } // namespace cora
 

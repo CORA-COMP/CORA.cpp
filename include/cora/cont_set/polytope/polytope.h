@@ -27,23 +27,25 @@
 
 #pragma once
 
-#include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/global/linprog.h"
 #include "cora/global/rng.h"
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
 
+class ConZonotope;
 class EmptySet;
 class Fullspace;
 
@@ -148,6 +150,46 @@ class Polytope : public ContSet {
                   Tol tol = std::nullopt) const;
     bool contains(const ContSet &S, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
+
+    // Linear programs in a box --------------------------------------------------------------------
+
+    /// The linear programs over the set in the box lb <= x <= ub, prepared on the host for many
+    /// costs; the box stays the bounds of the programs (CORA's CORAlinprog lb, ub), not rows.
+    /// A single polytope in halfspace form (not a batch); lb and ub have n entries each.
+    class LinearPrograms {
+      public:
+        LinearPrograms(const Polytope &P, std::vector<double> lb, std::vector<double> ub);
+
+        /// Whether no point of the set lies in the box (a feasibility program; never without
+        /// rows).
+        bool is_empty() const;
+
+        /// The least and the largest value of f'x (two programs that share phase 1); none if no
+        /// point of the set lies in the box.
+        std::optional<std::pair<double, double>> range(const std::vector<double> &f) const;
+
+        /// The largest value of f'x and a point that takes it; none if there is no point.
+        struct Maximum {
+            double value;
+            std::vector<double> x;
+        };
+        std::optional<Maximum> maximum(const std::vector<double> &f) const;
+
+        /// The least and the largest value of every coordinate (2 n programs that share phase 1)
+        /// over a set that has a point in the box.
+        std::pair<std::vector<double>, std::vector<double>> bounds() const;
+
+        /// The center of the largest ball in the set and the box (CORA's center 'chebyshev', the
+        /// finite sides of the box as rows after the halfspaces, lower sides first); none if the
+        /// set is empty, NaN if the radius has no bound.
+        std::optional<std::vector<double>> chebyshev_center() const;
+
+      private:
+        LinProg lp_;
+    };
+
+    /// The programs of the set in the box (what a constrained zonotope asks of its factors).
+    LinearPrograms linear_programs(std::vector<double> lb, std::vector<double> ub) const;
 
     // Combining with other sets -------------------------------------------------------------------
 
@@ -361,5 +403,8 @@ inline Polytope operator+(const Tensor &v, const Polytope &P) { return P.plus(v)
 inline Polytope operator-(const Polytope &P, const Tensor &v) { return P.minus(v); }
 
 } // namespace cora
+
+// after Polytope is complete: a constrained zonotope holds its factor polytope
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

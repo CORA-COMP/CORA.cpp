@@ -82,8 +82,8 @@ ConZonotope::Cut ConZonotope::cut(const Polytope &P) const {
     const int64_t q = int64_t(r.size());
     return {c_,
             G_,
-            A_,
-            b_,
+            A(),
+            b(),
             q == 0 ? zeros_block(c_, 0, h) : Tensor::like(c_, C, {q, h}),
             q == 0 ? zeros_block(c_, 0, 1) : Tensor::like(c_, d, {q, 1})};
 }
