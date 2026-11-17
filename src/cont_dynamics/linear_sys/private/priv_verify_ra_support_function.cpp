@@ -341,7 +341,7 @@ std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, 
     for (int eta = 1;;) {
         const Tensor add =
             aux_power_tensor(E, A, eta).matmul(GU) * (std::pow(time_step, eta + 1) / (eta + 1));
-        const std::vector<double> add_diag = add.abs_sum().data();
+        const std::vector<double> add_diag = add.abs().sum(-1, true).data();
         bool stop = true;
         for (std::size_t i = 0; i < diag.size(); ++i) {
             stop = stop && add_diag[i] <= machine_eps() * diag[i];
@@ -503,7 +503,8 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
 
     // The curvature term F R0 + G u, evaluated along l_k for k < N.
     const Tensor cx = F.center.matmul(R0.center()), G1x = F.center.matmul(R0.generators());
-    const Tensor G2x = F.rad.matmul(Tensor::concat({R0.center(), R0.generators()}, -1).abs_sum());
+    const Tensor G2x =
+        F.rad.matmul(Tensor::concat({R0.center(), R0.generators()}, -1).abs().sum(-1, true));
     std::vector<Tensor> W{cx, G2x};
     if (isu) {
         W.push_back(G.center.matmul(u));
@@ -916,8 +917,8 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
             }
             // Both sums accumulate over the steps; index k is the solution at t_k.
             std::vector<double> under_pu(std::size_t(N + 1) * S, 0.0);
-            const std::vector<double> d_under = pass.LT.matmul(*under_g).abs_sum().data();
-            const std::vector<double> d_over = pass.LT.matmul(*over_g).abs_sum().data();
+            const std::vector<double> d_under = pass.LT.matmul(*under_g).abs().sum(-1, true).data();
+            const std::vector<double> d_over = pass.LT.matmul(*over_g).abs().sum(-1, true).data();
             for (int k = 1; k <= N; ++k)
                 for (int s = 0; s < S; ++s) {
                     const std::size_t r = std::size_t(k) * S + s, prev = r - S;
