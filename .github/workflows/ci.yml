@@ -32,6 +32,7 @@ jobs:
     outputs:
       tests: ${{ steps.select.outputs.tests }}
       perf: ${{ steps.select.outputs.perf }}
+      build: ${{ steps.select.outputs.build }}
       tested: ${{ steps.tested.outputs.tested }}
     steps:
       - uses: actions/checkout@v7
@@ -92,6 +93,12 @@ jobs:
           else
             echo "perf=false" >> "$GITHUB_OUTPUT"
           fi
+          # the libtorch and the Windows builds run when the library, the tests or the build changed
+          if [ "$affected" = ALL ] || git diff --name-only "$BASE...$HEAD" | grep -qE '^(src|include|tests|cmake)/|(^|/)CMakeLists\.txt$|\.cmake$|^CMakePresets\.json$'; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
           # every test unless the change is documentation only; none for a tree a pull request run tested
           tests=ALL
           if [ "$affected" = NONE ] || [ "$TESTED" = true ]; then tests=NONE; fi
@@ -133,6 +140,50 @@ jobs:
       tests: ${{ needs.checks.outputs.tests }}
       oracle: true
       labels: python
+
+  # EXPERIMENT (timing): the libtorch backend, cold ccache, warm ccache (main's) and -O0
+  torch-cold:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: torch
+      tests: ${{ needs.checks.outputs.tests }}
+      ccache_key: -pr-cold
+      labels: backend-torch gradcheck
+      build_labels: backend-torch gradcheck
+
+  torch-warm:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: torch
+      tests: ${{ needs.checks.outputs.tests }}
+      labels: backend-torch gradcheck
+      build_labels: backend-torch gradcheck
+
+  torch-o0:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      preset: torch
+      tests: ${{ needs.checks.outputs.tests }}
+      ccache_key: -pr-o0
+      cmake_args: -DCMAKE_CXX_FLAGS_RELEASE=-O0
+      labels: backend-torch gradcheck
+      build_labels: backend-torch gradcheck
+
+  windows-core:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      os: windows-latest
+      preset: core
+      tests: ${{ needs.checks.outputs.tests }}
+      labels: unit
 
   # the lines that the pull request adds must be covered by the unit and the oracle tests (90%)
   line-coverage:
