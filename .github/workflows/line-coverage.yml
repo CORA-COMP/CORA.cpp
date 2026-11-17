@@ -39,6 +39,9 @@ jobs:
         with:
           key: line-coverage
           max-size: 750M
+          # saved on main only (the nightly): every save is a new timestamped entry, and the PR entries
+          # had pushed the repository past GitHub's 10 GB cache limit; PRs restore main's newest entry
+          save: ${{ github.ref == 'refs/heads/main' }}
       # the oracle archive (about 50 MB), fetched once per pinned version
       - uses: actions/cache@v4
         with:
