@@ -128,6 +128,11 @@ class ConZonotope : public ContSet {
     bool contains(const Interval &I, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
 
+    /// The least and the largest value of d'x over the set for a direction d (n, 1) (CORA's
+    /// supportFunc_ with 'range'): two linear programs over the factors, with or without
+    /// constraints; the empty box if the set is empty. Not a batch.
+    Interval support_function_range(const Tensor &d) const;
+
     // Combining with other sets -------------------------------------------------------------------
 
     /// Without the constraint rows 0 = 0 and the generators that are zero and appear in no

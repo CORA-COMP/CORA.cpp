@@ -17,7 +17,6 @@
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "cont_set/zono_bundle/private/priv.h"
-#include "cont_set/zonotope/private/priv.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,10 +27,7 @@ namespace cora {
 namespace {
 
 /// The polytope of one member: its facets C x <= d.
-Polytope aux_member(const Zonotope &Z) {
-    const auto [C, d] = priv_zonotope_halfspaces(Z);
-    return {C, d};
-}
+Polytope aux_member(const Zonotope &Z) { return Z.polytope(); }
 
 } // namespace
 

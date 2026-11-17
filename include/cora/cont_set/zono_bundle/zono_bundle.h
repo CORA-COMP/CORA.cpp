@@ -13,7 +13,7 @@
 //             quad_map, reduce, replace, representsa, split, unite, support_function, vertices,
 //             rand_point, project, generate_random (one file each)
 // Not ported: conPolyZono (needs ConPolyZono), convHull_, volume_, encloseTight, shrink and
-//             reduceCombined (need Polytope vertices and volume, and the "methC" reduction)
+//             reduceCombined (not yet: through Polytope's vertices and volume, and "methC")
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
@@ -90,8 +90,8 @@ class ZonoBundle : public ContSet {
     bool is_full_dim(Tol tol = std::nullopt) const;
 
     /// Whether the bundle contains points (n, N) (all), a zonotope, a box or a bundle, up to tol.
-    /// method "exact", "exact:zonotope" or "approx" (as "exact" for points only); not a batch.
-    /// "exact:polytope" needs Polytope.
+    /// method "exact", "exact:zonotope", "exact:polytope" (the polytope of the bundle) or
+    /// "approx" (as "exact" for points only); not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
     bool contains(const Zonotope &S, const std::string &method = "exact",

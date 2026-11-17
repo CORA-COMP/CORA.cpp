@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -73,20 +73,26 @@ void sampled_points(const std::string &b) {
     Tensor x0, y0;
     const ZonoBundle bundle = test::random_zono_bundle(rng, 3, 3, 4, &x0);
     const Tensor points = test::bundle_points(bundle, rng, 10, x0);
-    check(bundle.contains(points) && bundle.contains(points, "exact:zonotope"),
+    check(bundle.contains(points) && bundle.contains(points, "exact:zonotope") &&
+              bundle.contains(points, "exact:polytope"),
           b + ": sampled points");
     const Zonotope other = test::random_zono_bundle(rng, 3, 1, 4, &y0).zonotopes()[0];
-    check(bundle.contains(bundle.intersect(other)), b + ": the intersection with a zonotope");
+    check(bundle.contains(bundle.intersect(other)) &&
+              bundle.contains(bundle.intersect(other), "exact:polytope", 1e-9),
+          b + ": the intersection with a zonotope");
+    // the polytope of the bundle agrees with the members on a far point and a member itself
+    const Tensor far = x0 * 0.0 + 100.0;
+    check(!bundle.contains(far, "exact:polytope") &&
+              bundle.contains(bundle.zonotopes()[0], "exact:polytope") ==
+                  bundle.contains(bundle.zonotopes()[0]),
+          b + ": exact:polytope as exact");
 }
 
-/// Unknown and unavailable methods, a batch and points of another size are refused; the same call
+/// Unknown methods, a batch and points of another size are refused; the same call
 /// with the checks off.
 void checks_and_their_switch() {
     const ZonoBundle bundle = squares();
     const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25}, {0.0}}));
-    check(test::raises([&] { bundle.contains(column({0.5, 0.5}), "exact:polytope"); },
-                       Error::not_supported),
-          "contains: exact:polytope needs Polytope");
     check(test::raises([&] { bundle.contains(Z, "approx"); }, Error::not_supported),
           "contains: approx for a set");
     check(test::raises([&] { bundle.contains(column({0.5, 0.5}), "sampling"); },

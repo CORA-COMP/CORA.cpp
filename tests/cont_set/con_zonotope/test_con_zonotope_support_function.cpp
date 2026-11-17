@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -39,6 +39,19 @@ void support_function_known(const std::string &b) {
     check(test::support(ConZonotope::empty(2), {1, 0}) < -1e300, b + ": the empty set has -Inf");
 }
 
+/// The range of d'x: both ends of the segment, the upper end the support value, empty if empty.
+void support_function_range(const std::string &b) {
+    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {0.0, 1.0}}),
+                              Tensor({{1.0, 1.0}}), column({0.0}));
+    const Interval r = segment.support_function_range(column({0.0, 1.0}));
+    check(close(r.inf().item(), -1.0) && close(r.sup().item(), 1.0), b + ": the segment's range");
+    const Interval h = test::hexagon().support_function_range(column({1.0, -1.0}));
+    check(h.sup().item() == test::support(test::hexagon(), {1, -1}),
+          b + ": the upper end is the support value");
+    check(ConZonotope::empty(2).support_function_range(column({1.0, 0.0})).is_empty(),
+          b + ": the empty set has no range");
+}
+
 /// Stated property: no sampled point is above the value, and it is reached by the farthest one.
 void support_function_property(const std::string &b) {
     Rng rng(73);
@@ -60,6 +73,7 @@ void support_function_property(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         support_function_known(b);
+        support_function_range(b);
         support_function_property(b);
     });
     check(test::raises([] { test::hexagon().support_function(column({1.0})); },
