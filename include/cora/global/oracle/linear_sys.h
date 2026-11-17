@@ -68,6 +68,14 @@ struct VerifyExpBall {
     double r;
 };
 
+/// energy_growth: CORALean's MatExp.energyWeightFloat of A at the rate 1 / t_final (P, empty if A
+/// has not the form) and MatExp.energyGrowthFloat's factor kappa at the balancing scales of A
+/// (empty if the weight is not accepted).
+struct VerifyEnergyGrowth {
+    std::optional<Tensor> P;
+    std::optional<double> kappa;
+};
+
 /// verify_support_func: the verdict of CORALean's LinearSys.verifySupportFuncFloat and CORA's
 /// statistics; a falsification at the time point fals_step * time_step of halfspace fals_spec.
 struct VerifySupportRun {
@@ -144,6 +152,9 @@ class LinearSys {
 
     /// CORALean's MatExp.expBallFloat of A at dt (`linearSys.expBall`).
     std::optional<VerifyExpBall> exp_ball(double time_step) const;
+
+    /// CORALean's energy weight of A and its growth factor (`linearSys.energyGrowth`).
+    VerifyEnergyGrowth energy_growth(double t_final) const;
 
     /// CORALean's LinearSys.verifySupportFuncFloat of x' = A x from <x0, G0> against the
     /// halfspaces (Cs C x)_q <= d_q over [0, t_final] (C = I without one), at most `fuel` passes.

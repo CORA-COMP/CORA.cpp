@@ -7,8 +7,10 @@
 // against the oracle, bit for bit at nearest: e^{A dt} and its radius on random stable systems and
 // a stiff one, and the verdict, the passes, the last step size and count and the falsifying time
 // point of verify on heat-like chains (verified in one to four passes, falsified, a safe and an
-// unsafe specification, an output matrix, a small growth). HEAT01 itself is left out:
-// the oracle takes over half an hour for its 125 states.
+// unsafe specification, an output matrix, a small growth); the energy weight of a second-order
+// system and its growth factor (beams with and without inputs, an undamped one the check rejects,
+// matrices off the form), and verify on a beam. HEAT01 and the ARCH beams are left out: the
+// oracle takes over half an hour for HEAT01's 125 states.
 //
 // ORACLE: contDynamics/@linearSys/private/priv_verifyRA_supportFunc.m
 // Authors:       Claude Opus 5.5
@@ -17,6 +19,7 @@
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_energy.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_exp_ball.h"
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
 #include "cora/global/oracle/linear_sys.h"
@@ -24,6 +27,8 @@
 #include "oracle_testing.h"
 #include "spec_testing.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -103,6 +108,46 @@ Tensor aux_chain(int64_t n, double k) {
     return Tensor::from_data(a, {n, n});
 }
 
+/// A beam of h masses m_i on springs k (fixed ends), damping alpha + beta K, and z inputs pushing
+/// the last mass: [[0, I, 0], [-K, -C, F], [0, 0, 0]] with K = M^-1 K_s.
+Tensor aux_beam(int64_t h, double k, const std::vector<double> &m, double alpha, double beta,
+                int64_t z) {
+    const int64_t n = 2 * h + z;
+    std::vector<double> a(std::size_t(n) * n, 0.0);
+    auto at = [&](int64_t i, int64_t j) -> double & { return a[std::size_t(i * n + j)]; };
+    for (int64_t i = 0; i < h; ++i) {
+        at(i, h + i) = 1.0;
+        const double mi = m[std::size_t(i) % m.size()];
+        for (int64_t j = std::max<int64_t>(0, i - 1); j <= std::min(h - 1, i + 1); ++j) {
+            const double kij = (i == j ? 2.0 * k : -k) / mi;
+            at(h + i, j) = -kij;
+            at(h + i, h + j) = -(i == j ? alpha + beta * kij : beta * kij);
+        }
+    }
+    for (int64_t q = 0; q < z; ++q) at(2 * h - 1 - q, 2 * h + q) = 1.0 / double(q + 1);
+    return Tensor::from_data(a, {n, n});
+}
+
+/// The energy weight and its growth factor, CORA.cpp's against the oracle's.
+void aux_energy(const std::string &name, const Tensor &A, double t_final) {
+    const int64_t n = A.shape()[0];
+    const std::vector<double> a = A.data();
+    const std::optional<EnergyWeight> w = priv_verify_energy_weight(a, n, 1.0 / t_final);
+    const lean::VerifyEnergyGrowth theirs = lean::LinearSys(A).energy_growth(t_final);
+    test::check(w.has_value() == theirs.P.has_value(), name + ": a weight on both or neither");
+    if (w && theirs.P) {
+        std::vector<double> P(std::size_t(n) * n, 0.0);
+        for (int64_t i = 0; i < n; ++i)
+            for (const auto &[j, v] : w->P[std::size_t(i)]) P[std::size_t(i * n + j)] = v;
+        test::oracle::check(name + " P", Tensor::from_data(P, {n, n}), *theirs.P);
+    }
+    const std::vector<double> s = priv_verify_balance_scales(a, n);
+    const std::optional<double> kappa = priv_verify_energy_growth(a, s, n, 1.0 / t_final);
+    test::check(kappa.has_value() == theirs.kappa.has_value(),
+                name + ": accepted by both or neither");
+    if (kappa && theirs.kappa) test::oracle::check(name + " kappa", *kappa, *theirs.kappa);
+}
+
 /// A box about c of radius r in every coordinate.
 Zonotope aux_box(const std::vector<double> &c, double r) {
     const auto n = static_cast<int64_t>(c.size());
@@ -146,6 +191,31 @@ int main() {
         // a small growth (mu > 0, so a growth bound above 1)
         aux_verify("growing", A + Tensor::eye(4) * 0.05, std::nullopt, R0, {{last, 0.26, true}},
                    4.0);
+    });
+    test::oracle::run("linearSys.energyGrowth", [](test::oracle::Random &) {
+        const std::vector<double> m{1.0, 2.0, 1.0, 3.0};
+        aux_energy("beam 3", aux_beam(3, 100.0, m, 0.1, 0.01, 1), 1.0);
+        aux_energy("beam 4 no input", aux_beam(4, 50.0, m, 0.05, 0.02, 0), 2.0);
+        aux_energy("beam 2 two inputs", aux_beam(2, 1e4, {1.0}, 1.0, 1e-3, 2), 0.01);
+        aux_energy("undamped", aux_beam(3, 10.0, m, 0.0, 0.0, 1), 1.0); // rate check fails
+        // one ulp off the form, and no positions at all: no weight
+        Tensor off = aux_beam(3, 100.0, m, 0.1, 0.01, 1);
+        std::vector<double> a = off.data();
+        a[3] = std::nextafter(1.0, 2.0);
+        aux_energy("one ulp off", Tensor::from_data(a, {7, 7}), 1.0);
+        aux_energy("heat", aux_chain(4, 1.0), 1.0);
+    });
+    test::oracle::run("linearSys.verifySupportFunc", [](test::oracle::Random &) {
+        // a beam grows in no log norm; its energy weight bounds the growth
+        const Tensor A = aux_beam(3, 100.0, {1.0, 2.0, 1.0}, 0.1, 0.01, 1);
+        std::vector<double> c(7, 0.0);
+        c[6] = 1.0;
+        std::vector<double> G(7, 0.0);
+        G[0] = 0.01;
+        const Zonotope R0(Tensor::from_data(c, {7, 1}), Tensor::from_data(G, {7, 1}));
+        const std::vector<double> mid{0, 0, 1, 0, 0, 0, 0};
+        aux_verify("beam verified", A, std::nullopt, R0, {{mid, 0.2, true}}, 1.0);
+        aux_verify("beam falsified", A, std::nullopt, R0, {{mid, 0.005, true}}, 1.0);
     });
     return test::finish("lean linearSys verify support");
 }

@@ -219,6 +219,13 @@ std::optional<VerifyExpBall> LinearSys::exp_ball(double time_step) const {
     return VerifyExpBall{*D, r.get<double>("r")};
 }
 
+VerifyEnergyGrowth LinearSys::energy_growth(double t_final) const {
+    // the weight and the factor, each null where there is none
+    const Reply r = ask("linearSys.energyGrowth", {{"A", A_}, {"tFinal", t_final}});
+    return VerifyEnergyGrowth{r.get<std::optional<Tensor>>("P"),
+                              r.get<std::optional<double>>("kappa")};
+}
+
 VerifySupportRun LinearSys::verify_support_func(const cora::Tensor &x0, const cora::Tensor &G0,
                                                 const cora::Tensor &Cs, const cora::Tensor &d,
                                                 double t_final, double min_step, int fuel) const {
