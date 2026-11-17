@@ -8,7 +8,7 @@
 # this very tree (the usual case, a pull request rebased onto main right before it is queued). Any other group
 # (several pull requests, or one based on an older main) runs every test of the group on the main it lands on.
 # `torch-syntax` parses every test against libtorch's headers; the run of backend-torch and gradcheck (`torch-tests`,
-# about an hour) and the Windows build (`windows-core`) run beside the gate. `instructions` compares the micro-benchmarks with the
+# about an hour) and the Windows build (`windows-core`, as linux-core) run beside the gate. `instructions` compares the micro-benchmarks with the
 # base commit's (pull requests only). The whole matrix (every preset, Windows, macOS, sanitizers) is tier 3
 # (nightly.yml), which opens an issue when it fails; merge.yml runs it on demand. Require `ci-gate`.
 
@@ -34,6 +34,7 @@ jobs:
       tests: ${{ steps.select.outputs.tests }}
       perf: ${{ steps.select.outputs.perf }}
       build: ${{ steps.select.outputs.build }}
+      torch: ${{ steps.select.outputs.torch }}
       tested: ${{ steps.tested.outputs.tested }}
     steps:
       - uses: actions/checkout@v7
@@ -100,6 +101,12 @@ jobs:
           else
             echo "build=false" >> "$GITHUB_OUTPUT"
           fi
+          # the run of the libtorch tests (an hour): only when the tensor, the backends or the torch build changed
+          if git diff --name-only "$BASE...$HEAD" | grep -qE '^(src|include/cora)/global/(tensor|backend)/|^scripts/cmake/torch\.cmake$|^CMakePresets\.json$|^\.github/workflows/(ci|build)\.yml$'; then
+            echo "torch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "torch=false" >> "$GITHUB_OUTPUT"
+          fi
           # every test unless the change is documentation only; none for a tree a pull request run tested
           tests=ALL
           if [ "$affected" = NONE ] || [ "$TESTED" = true ]; then tests=NONE; fi
@@ -164,10 +171,11 @@ jobs:
 
   # The test programs of backend-torch (an oracle test's body on libtorch) and gradcheck, built and run:
   # catches a run-time failure on libtorch (#148). The build takes about 57 minutes (cold or warm: a
-  # ccache of 500 MB holds almost none of it), so it is not in `ci-gate`; the nightly runs the same tests.
+  # ccache of 500 MB holds almost none of it), so it is not in `ci-gate` and runs only when the tensor, the backends
+  # or the torch build changed; the nightly runs the same tests.
   torch-tests:
     needs: checks
-    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.torch == 'true'
     uses: ./.github/workflows/build.yml
     with:
       preset: torch
@@ -179,7 +187,7 @@ jobs:
   # `ci-gate`: the build took 17 to 31 minutes.
   windows-core:
     needs: checks
-    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    if: needs.checks.outputs.tests != 'NONE'
     uses: ./.github/workflows/build.yml
     with:
       os: windows-latest
