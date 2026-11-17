@@ -7,7 +7,8 @@
 # whose tree is the tree of its pull request's head, which passed `ci-gate`, is not built again: that run tested
 # this very tree (the usual case, a pull request rebased onto main right before it is queued). Any other group
 # (several pull requests, or one based on an older main) runs every test of the group on the main it lands on.
-# backend-torch and gradcheck need a libtorch build (about 30 minutes), so they run nightly. `instructions` compares the micro-benchmarks with the
+# `torch-syntax` parses every test against libtorch's headers; the run of backend-torch and gradcheck (`torch-tests`,
+# about an hour) and the Windows build (`windows-core`) run beside the gate. `instructions` compares the micro-benchmarks with the
 # base commit's (pull requests only). The whole matrix (every preset, Windows, macOS, sanitizers) is tier 3
 # (nightly.yml), which opens an issue when it fails; merge.yml runs it on demand. Require `ci-gate`.
 
@@ -141,34 +142,41 @@ jobs:
       oracle: true
       labels: python
 
-  # EXPERIMENT (timing): the libtorch backend with a precompiled header, at -O3 and -O0
-  torch-pch:
+  # Every test translation unit parsed against libtorch's headers (-fsyntax-only, no linking): a name
+  # that is ambiguous only once they are included (detail::) fails here (#143, #149). libtorch's header
+  # is precompiled, which makes the parse 2.5 times faster (20 instead of 50 minutes); a ccache cannot
+  # help, so the time is the same warm or cold. In `ci-gate`.
+  torch-syntax:
+    needs: checks
+    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: configure
+        run: cmake --preset torch -DCORACPP_NATIVE=OFF
+      - name: precompiled libtorch header
+        run: |
+          header=$(python3 scripts/ci/syntax_check.py build/torch --make-pch)
+          # the flags of the compiles do not change; -include reads header.gch beside the header
+          cmake --preset torch -DCORACPP_NATIVE=OFF "-DCMAKE_CXX_FLAGS=-include $header"
+      - name: syntax check of the tests
+        run: python3 scripts/ci/syntax_check.py build/torch -j4
+
+  # The test programs of backend-torch (an oracle test's body on libtorch) and gradcheck, built and run:
+  # catches a run-time failure on libtorch (#148). The build takes about 57 minutes (cold or warm: a
+  # ccache of 500 MB holds almost none of it), so it is not in `ci-gate`; the nightly runs the same tests.
+  torch-tests:
     needs: checks
     if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
     uses: ./.github/workflows/build.yml
     with:
       preset: torch
       tests: ${{ needs.checks.outputs.tests }}
-      ccache_key: -pr-pch
-      pch: true
-      syntax_check: true
       labels: backend-torch gradcheck
       build_labels: backend-torch gradcheck
 
-  torch-pch-o0:
-    needs: checks
-    if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
-    uses: ./.github/workflows/build.yml
-    with:
-      preset: torch
-      tests: ${{ needs.checks.outputs.tests }}
-      ccache_key: -pr-pch-o0
-      pch: true
-      syntax_check: true
-      cmake_args: -DCMAKE_CXX_FLAGS_RELEASE=-O0
-      labels: backend-torch gradcheck
-      build_labels: backend-torch gradcheck
-
+  # The core preset with MSVC: a compile error that only MSVC reports (POSIX setenv in a test). Not in
+  # `ci-gate`: the build took 17 to 31 minutes.
   windows-core:
     needs: checks
     if: needs.checks.outputs.tests != 'NONE' && needs.checks.outputs.build == 'true'
@@ -218,7 +226,7 @@ jobs:
   # documentation-only change skips the builds), a failure otherwise.
   ci-gate:
     if: always()
-    needs: [checks, tidy, linux-core, linux-python, line-coverage, instructions]
+    needs: [checks, tidy, linux-core, linux-python, line-coverage, instructions, torch-syntax]
     runs-on: ubuntu-24.04
     steps:
       - env:

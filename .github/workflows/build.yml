@@ -49,18 +49,6 @@ on:
         description: build only the test programs of these ctest labels (and the library they link), empty for everything
         type: string
         default: ""
-      pch:
-        description: precompile libtorch's header and compile everything against it (scripts/ci/syntax_check.py --make-pch)
-        type: boolean
-        default: false
-      syntax_check:
-        description: parse every translation unit of tests/ with the configured flags (scripts/ci/syntax_check.py), before the build
-        type: boolean
-        default: false
-      cmake_args:
-        description: further arguments of the configure step, separated by spaces
-        type: string
-        default: ""
 
 jobs:
   build:
@@ -99,21 +87,7 @@ jobs:
           BUILD_TYPE: ${{ inputs.build_type }}
           CXX_FLAGS: ${{ inputs.cxx_flags }}
           ORACLE: ${{ inputs.oracle && '-DCORACPP_ORACLE=DOWNLOAD' || '' }}
-          CMAKE_ARGS: ${{ inputs.cmake_args }}
-        run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS" $ORACLE $CMAKE_ARGS
-      - name: precompiled header
-        if: inputs.pch
-        env:
-          BUILD_TYPE: ${{ inputs.build_type }}
-          CXX_FLAGS: ${{ inputs.cxx_flags }}
-          CMAKE_ARGS: ${{ inputs.cmake_args }}
-        run: |
-          header=$(python3 scripts/ci/syntax_check.py build/${{ inputs.preset }} --make-pch)
-          # the flags of the compiles do not change; -include reads the precompiled header (header.gch beside it)
-          cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS -include $header" $CMAKE_ARGS
-      - name: syntax check
-        if: inputs.syntax_check
-        run: python3 scripts/ci/syntax_check.py build/${{ inputs.preset }} -j4
+        run: cmake --preset ${{ inputs.preset }} -DCORACPP_NATIVE=OFF ${BUILD_TYPE:+-DCMAKE_BUILD_TYPE=$BUILD_TYPE} "-DCMAKE_CXX_FLAGS=$CXX_FLAGS" $ORACLE
       - name: build
         id: build
         env:
@@ -122,7 +96,7 @@ jobs:
           if [ -z "$BUILD_LABELS" ]; then
             cmake --build --preset ${{ inputs.preset }}
           else
-            # the test programs of those labels only (a test name is folder/program[:backend]; examples and benchmarks are not built)
+            # the test programs of those labels only (a test is named folder/program[:backend]; examples and benchmarks are not built)
             labels="^(${BUILD_LABELS// /|})\$"
             ctest --preset ${{ inputs.preset }} -N -L "$labels" | sed -nE 's/^ *Test +#[0-9]+: //p' \
               | sed -E 's#.*/##; s/:.*$//' | sort -u > wanted.txt
