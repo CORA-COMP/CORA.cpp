@@ -200,6 +200,17 @@ std::optional<TaylorMatrices> LinearSys::taylor_matrices_cora(double time_step,
     return TaylorMatrices{taylor_terms, *W, r.get<Interval>("FCora"), r.get<Interval>("GCora")};
 }
 
+VerifyCorrection LinearSys::verify_correction(double time_step) const {
+    const Reply r = ask_system("linearSys.verifyCorrection", {{"timeStep", time_step}});
+    VerifyCorrection out{r.get<Tensor>("scales"), std::nullopt, std::nullopt};
+    // an order and a matrix, or null for both
+    if (const auto order = r.get<std::optional<int64_t>>("FOrder"))
+        out.F = std::make_pair(*order, r.get<Interval>("F"));
+    if (const auto order = r.get<std::optional<int64_t>>("GOrder"))
+        out.G = std::make_pair(*order, r.get<Interval>("G"));
+    return out;
+}
+
 Step LinearSys::post(const Zonotope &X, double time_step, int taylor_terms) const {
     const Reply r = ask_system("linearSys.post",
                                {{"X", X}, {"timeStep", time_step}, {"taylorTerms", taylor_terms}});
