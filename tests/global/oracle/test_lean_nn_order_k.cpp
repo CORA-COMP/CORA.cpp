@@ -55,7 +55,7 @@ PolyZonotope aux_set(oracle::Random &rnd, const Dims &s) {
     std::vector<int64_t> id(std::size_t(s.p));
     for (int64_t i = 0; i < s.p; ++i) id[std::size_t(i)] = i + 1;
     // small generators, so that the powers stay in range
-    return {rnd.vector(s.n),         rnd.matrix(s.n, s.h) * 0.5, rnd.matrix(s.n, s.q) * 0.25, E, id,
+    return {rnd.vector(s.n),   rnd.matrix(s.n, s.h) * 0.5, rnd.matrix(s.n, s.q) * 0.25, E, id,
             detail::Verbatim{}};
 }
 
