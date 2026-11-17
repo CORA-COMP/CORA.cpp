@@ -533,6 +533,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
 }
 
 // The sound pass of a homogeneous system ----------------------------------------------------------
+// Sound in the nearest model, as the oracle's `nearest`: no rounding terms, so FTZ is no loss.
 
 constexpr int kStepsDiv = 100; // the first step size is t_final / ceil(t_final / (t_final/100))
 constexpr double kBoundLimit = 536870912.0; // 2^29: the largest exponent of the growth bound
