@@ -4,9 +4,9 @@
 //             double v = lean::NonlinearSys::varphi_total_adaptive(alg, varphi, lim, prev, curr);
 // Operations: reach_adaptive, lin_reach (nonlinearSys.linReach), reach (nonlinearSys.reach) and one
 // method per
-//             `nonlinearSys.*Adaptive` op of the oracle: lin_reach_adaptive_pass,
-//             abstr_err_adaptive, orders_adaptive, and the three tuning formulas
-//             optimal_delta_t_adaptive, varphi_total_adaptive, varphi_est_adaptive
+//             `nonlinearSys.*Adaptive` op of the oracle: lin_reach_adaptive,
+//             lin_reach_adaptive_pass, abstr_err_adaptive, orders_adaptive, and the three tuning
+//             formulas optimal_delta_t_adaptive, varphi_total_adaptive, varphi_est_adaptive
 // Outputs:    the oracle's float definitions at a dtype of the unguaranteed ops (nearest)
 // Scheme:     the dynamics go as the tree of the system's expressions; CORALean differentiates it
 // See also:   lean/linear_sys.h, contDynamics/nonlinear_sys/nonlinear_sys.h
@@ -23,6 +23,7 @@
 #include "cora/global/oracle/request.h"
 
 #include <optional>
+#include <string>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -39,6 +40,31 @@ struct AdaptiveRun {
     double t;
     Zonotope time_point;
     std::vector<Zonotope> time_interval;
+};
+
+// The state of a step -----------------------------------------------------------------------------
+
+/// The state lin-adaptive carries from step to step but its set (CORALean's
+/// LinReachAdaptiveState): the time exactly, as the text m*2^e; the orders -1 for Inf; the step
+/// sizes latest first.
+struct AdaptiveStepState {
+    int64_t i = 1;
+    std::string t = "0*2^0";
+    double time_step = 0, finitehorizon = 0, varphi = 0;
+    cora::Tensor err_adm_horizon, err_adm_deltatopt;
+    int64_t tensor_order = 2, minorder = 0;
+    std::vector<int64_t> orders;
+    std::vector<bool> zero_width;
+    double kappa_deltat = 0, kappa_abstrerr = 0;
+    std::vector<double> steps;
+};
+
+/// One step of lin-adaptive: the step size, the tensor order, the gain and the horizon, and the
+/// sets at its end and over it (unreduced).
+struct AdaptiveStepResult {
+    double time_step, finitehorizon, varphi;
+    int64_t tensor_order;
+    Zonotope time_point, time_interval;
 };
 
 /// One pass of the error loop: the sets and what the tuning reads of them.
@@ -91,10 +117,16 @@ class NonlinearSys {
     explicit NonlinearSys(const cora::NonlinearSys &sys);
 
     /// CORA's lin-adaptive from R0 with the input set U (none: no input) to t_final, or the first
-    /// max_steps steps of it (0: all; then t is the sum of the steps); they do not depend on
-    /// max_steps.
+    /// max_steps steps of it (0: all; they do not depend on max_steps); t is the exact sum of the
+    /// steps, rounded to nearest.
     AdaptiveRun reach_adaptive(const Zonotope &R0, const std::optional<Zonotope> &U, double t_final,
                                const alg::LinearizationAdaptive &alg, int max_steps = 0) const;
+
+    /// One step of lin-adaptive to t_final from the set R in the state st
+    /// (nonlinearSys.linReachAdaptive).
+    AdaptiveStepResult lin_reach_adaptive(const std::optional<Zonotope> &U, const Zonotope &R,
+                                          const AdaptiveStepState &st, double t_final,
+                                          const alg::LinearizationAdaptive &alg) const;
 
     /// One step of alg lin from R with the input set U (none: no input) and the options alg; the
     /// loop (alg.error_bound) starts from abstrerr (none: zero) and with_abstrerr asks for its

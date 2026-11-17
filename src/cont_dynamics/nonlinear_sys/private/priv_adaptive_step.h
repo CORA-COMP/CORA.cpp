@@ -19,9 +19,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -116,7 +116,8 @@ StepLoop<State, Pass> priv_horizon_run(const Tune &c, const StepLoop<State, Pass
     out.zeta_p = zeta_p;
     out.horizon = std::make_pair(L.time_step, P);
     out.err_adm = st.err_adm_deltatopt;
-    out.time_step = dt <= c.t_final - st.t ? dt : c.t_final - st.t;
+    const ExactTime left = ExactTime(c.t_final) - st.t;
+    out.time_step = ExactTime(dt) <= left ? dt : left.rat_up();
     return out;
 }
 
@@ -153,7 +154,7 @@ template <class State, class Pass, class Tune>
 State priv_adaptive_step(const Tune &c, const State &st) {
     const double t_final = c.t_final;
     // the finite horizon from the gain of the step before, and the step size of the first pass
-    const double rem = t_final - st.t;
+    const ExactTime rem = ExactTime(t_final) - st.t;
     const double zetaphi = c.zeta_phi[std::size_t(std::min(st.minorder, 2))];
     const double fh = st.finitehorizon * ((1 + st.varphi) - zetaphi);
     double h0 = fh;
@@ -161,8 +162,8 @@ State priv_adaptive_step(const Tune &c, const State &st) {
     if (st.i == 1) {
         h0 = t_final * 0.01;
         first = true;
-    } else if (rem < st.time_step) {
-        h0 = rem;
+    } else if (rem < ExactTime(st.time_step)) {
+        h0 = rem.rat_up();
         last = true;
     } else if (priv_within_tol(fh, st.time_step, numerics::kHorizonMatch)) {
         h0 = st.finitehorizon * 1.1;

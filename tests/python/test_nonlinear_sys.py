@@ -11,6 +11,7 @@ Reviewed:      ---
 # CORA: contDynamics/@contDynamics/reach.m
 # CORA: contDynamics/@contDynamics/simulateRandom.m
 # CORA: contDynamics/@nonlinearSys/initReach.m
+# CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 # CORA: contDynamics/@nonlinearSys/linearize.m
 # CORA: contDynamics/@nonlinearSys/nonlinearSys.m
 # CORA: contDynamics/@nonlinearSys/reach_adaptive.m

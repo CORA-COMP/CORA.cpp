@@ -17,9 +17,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -33,15 +33,6 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-/// Whether the step sizes have converged to 0 (CORA's aux_checkForAbortion): the remaining time
-/// is more than 10^9 times the last ten steps.
-bool aux_abort(const Vec &steps, double t, double t_final) {
-    const std::size_t last = std::min<std::size_t>(10, steps.size());
-    double sum = 0;
-    for (std::size_t k = 0; k < last; ++k) sum = sum + steps[k];
-    return !steps.empty() && 1e9 * sum < t_final - t;
-}
 
 /// Whether the third derivatives of f are all identically zero (CORA's thirdOrderTensorempty).
 bool aux_third_order_empty(const NonlinearSys &sys, const PolyZonotope &X0,
@@ -73,8 +64,7 @@ PolyReachSet priv_reach_poly_adaptive(const NonlinearSys &sys, const PolyReachPr
     R.time.push_back(0.0);
 
     // the steps, each reduced for the next
-    while (numerics::kHorizonEnd < problem.t_final - st.t &&
-           !aux_abort(st.steps, st.t, problem.t_final)) {
+    while (priv_adaptive_continues(st.steps, st.t, problem.t_final)) {
         if (priv_volume_ratio_exceeds(st.R, alg.max_poly_zono_ratio)) st.R = priv_restructure(st.R);
         st = priv_lin_reach_poly_adaptive(sys, U, alg, third_order_empty, problem.t_final, st);
         st.R = priv_reduce_only_dep(priv_reduce_adaptive_poly(st.R, alg.zeta_z),
@@ -82,7 +72,7 @@ PolyReachSet priv_reach_poly_adaptive(const NonlinearSys &sys, const PolyReachPr
         st.Rti = priv_reduce_adaptive_poly(st.Rti, alg.zeta_z * 5);
         R.time_interval.push_back(st.Rti);
         R.time_point.push_back(st.R);
-        R.time.push_back(st.t);
+        R.time.push_back(st.t.nearest());
     }
     return R;
 }

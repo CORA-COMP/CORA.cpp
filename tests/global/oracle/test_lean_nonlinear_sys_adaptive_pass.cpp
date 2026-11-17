@@ -1,24 +1,21 @@
 // test_lean_nonlinear_sys_adaptive_pass - one linearization of lin-adaptive against the oracle
 //
-// The abstraction error and the orders of its terms are computed by the same arithmetic as
-// CORALean's and agree with the oracle bit for bit at nearest (van der Pol with an input, the
-// Robertson reaction). A pass takes a linear step with the error as input; with the option
-// linear_step = coralean it is CORALean's reachFloatInput for one step (priv_float_one_step, bit
-// for bit against the oracle in test_lean_linear_sys_float_step), so the values read off a pass
-// (the point of linearization, the matrix A, the zero generators) are exact and the boxes of its
-// sets (Rmax, the window, the end set) agree to 1e-9 (relative) at order 2 on the default backend,
-// whose sums are in another order than CORALean's; at order 3 the quadratic map is CORA's and the
-// sets lie inside the oracle's.
+// A pass at a fixed step size is CORALean's linReachAdaptivePassFloat bit for bit at nearest on
+// the lean backend, at the tensor orders 2 and 3 (van der Pol with an input, the Robertson
+// reaction), with the linear step of CORALean's reachFloatInput (coralean) and of the closed form
+// (the default): the point of linearization, the matrix A, the sets (Rmax, the window, the end
+// set), the error the loop accepts, the radius of its solution that the tuning reads
+// (priv_error_radius_float, errorSolutionAdaptiveFloat) and the zero generators. The error over
+// Rmax is the oracle's at both orders: at order 3 the quadratic map is CORA's of a zonotope
+// (quadMapCora). The orders of its terms agree for every pattern of zero-width dimensions.
 //
 // Short horizon: the closed-form step runs on van der Pol only; the oracle needs 25 minutes for it
 // on Robertson's three states (the code does not depend on the dimension).
 //
-// CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m
-// CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
-// CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// ORACLE: contDynamics/@nonlinearSys/linReach_adaptive.m
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   16-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -32,8 +29,6 @@ using namespace cora;
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-constexpr double kSets = 5e-3, kError = 0.5, kBox = 1e-9;
 
 NonlinearSys van_der_pol() {
     return NonlinearSys(
@@ -71,38 +66,6 @@ std::vector<Case> cases() {
              Zonotope(Tensor({0.0}), Tensor::zeros({1, 0})), 0.001}};
 }
 
-/// The box of `mine` lies in the oracle's, up to 1e-9 (relative), and is tighter by at most `gap`
-/// (relative): the oracle bounds the linear step and the quadratic map more coarsely.
-void aux_inside(const std::string &what, const Zonotope &mine, const lean::Zonotope &theirs,
-                double gap) {
-    const Interval box = mine.interval();
-    const auto [inf, sup] = theirs.interval().gather();
-    const std::vector<double> a = box.inf().data(), b = inf.data(), c = box.sup().data(),
-                              d = sup.data();
-    bool ok = a.size() == b.size();
-    for (std::size_t i = 0; ok && i < a.size(); ++i) {
-        const double slack = 1e-9 * (1 + std::abs(b[i])), far = gap * (1 + std::abs(b[i]));
-        ok = a[i] >= b[i] - slack && a[i] <= b[i] + far && c[i] <= d[i] + slack &&
-             c[i] >= d[i] - far;
-    }
-    test::check(ok, what + ": inside the oracle's box and close to it");
-}
-
-/// Exactly the oracle's values.
-template <class A, class B>
-void aux_same(const std::string &what, const A &mine, const B &theirs) {
-    test::check(test::oracle::agree(what, mine, theirs), what + ": the oracle's value");
-}
-
-/// The body at nearest on the default backend, for the oracle op `op` (skipped if it lacks it).
-template <class F>
-void aux_run(const std::string &op, F body) {
-    if (!test::oracle::serves(op)) return;
-    test::oracle::op_name() = op;
-    const lean::DTypeScope dtype("nearest");
-    body();
-}
-
 } // namespace
 
 
@@ -110,14 +73,13 @@ void aux_run(const std::string &op, F body) {
 
 int main() {
     if (!test::oracle::available()) return 0;
-    // the linear step of CORALean (the default, CORA's, lies inside the oracle's set)
     for (const alg::LinearStep step : {alg::LinearStep::coralean, alg::LinearStep::closed_form}) {
         alg::LinearizationAdaptive alg;
         alg.linear_step = step;
         const bool closed = step == alg::LinearStep::closed_form;
 
-        // the passes of both systems: the error of the window, then the orders of its terms
-        aux_run("nonlinearSys.linReachAdaptivePass", [&] {
+        // the passes of both systems: the sets, then the error of the window over Rmax
+        test::oracle::run("nonlinearSys.linReachAdaptivePass", [&](test::oracle::Random &) {
             for (Case &c : cases()) {
                 // the oracle's closed form takes 25 minutes on Robertson (see the header)
                 if (closed && c.sys.dim() > 2) continue;
@@ -134,49 +96,38 @@ int main() {
                     const auto theirs =
                         oracle.lin_reach_adaptive_pass(lean_input, lean::Zonotope(c.R), c.dt, kappa,
                                                        priv_column(c.R.center(), adm), alg);
-                    // the sets and the values exactly the oracle's
                     test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
                     if (!mine || !theirs) continue;
-                    aux_same(b + " xs", priv_column(c.R.center(), mine->xs), theirs->xs);
-                    aux_same(b + " A", mine->A, theirs->A);
-                    if (kappa == 2) {
-                        // the boxes agree to rounding (test_lean_linear_sys_float_step)
-                        aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kBox);
-                        aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kBox);
-                        aux_inside(b + " time point", mine->Rtp, theirs->time_point, kBox);
-                    } else {
-                        // the quadratic map of order 3 is CORA's here, so the sets lie inside
-                        aux_inside(b + " Rmax", mine->Rmax, theirs->Rmax, kSets);
-                        aux_inside(b + " time interval", mine->Rti, theirs->time_interval, kSets);
-                        aux_inside(b + " time point", mine->Rtp, theirs->time_point, kSets);
-                    }
+                    // the values and the sets of the pass
+                    const Tensor &like = c.R.center();
+                    test::oracle::check(b + " xs", priv_column(like, mine->xs), theirs->xs);
+                    test::oracle::check(b + " A", mine->A, theirs->A);
+                    test::oracle::check(b + " Rmax", mine->Rmax, theirs->Rmax);
+                    test::oracle::check(b + " time interval", mine->Rti, theirs->time_interval);
+                    test::oracle::check(b + " time point", mine->Rtp, theirs->time_point);
+                    test::oracle::check(b + " true error", priv_column(like, mine->true_error),
+                                        theirs->true_error);
+                    test::oracle::check(b + " abstrerr", priv_column(like, mine->abstrerr),
+                                        theirs->abstrerr);
                     std::vector<bool> gzero(mine->gzero.begin(), mine->gzero.end());
                     test::check(gzero == theirs->g_zero, b + ": the zero generators");
 
-                    // the error of the window over Rmax, from the matrices at the point of the pass
-                    const Jacobians J =
-                        c.sys.jacobian(priv_column(c.R.center(), mine->xs), c.U.center());
                     // the error over Rmax from the point of the pass, against the oracle's
+                    const Jacobians J = c.sys.jacobian(priv_column(like, mine->xs), c.U.center());
                     const Zonotope V = priv_abstr_err_adaptive(c.sys, kappa, J.A, J.B, mine->xs,
                                                                mine->Rmax, U, alg.zeta_z);
                     const auto err =
-                        oracle.abstr_err_adaptive(lean_input, priv_column(c.R.center(), mine->xs),
+                        oracle.abstr_err_adaptive(lean_input, priv_column(like, mine->xs),
                                                   lean::Zonotope(mine->Rmax), kappa, alg.zeta_z);
-                    // order 2 is the oracle's bit for bit; at order 3 the quadratic map is CORA's
-                    if (kappa == 2) {
-                        test::check(test::oracle::agree(b + " VerrorDyn", V, err.V),
-                                    b + ": VerrorDyn is the oracle's");
-                        aux_same(b + " true error",
-                                 priv_column(c.R.center(), priv_norm_mag(priv_zonotope_box(V))),
-                                 err.true_error);
-                    } else {
-                        aux_inside(b + " VerrorDyn", V, err.V, kError);
-                    }
+                    test::oracle::check(b + " VerrorDyn", V, err.V);
+                    test::oracle::check(b + " true error of V",
+                                        priv_column(like, priv_norm_mag(priv_zonotope_box(V))),
+                                        err.true_error);
                 }
             }
         });
         // the orders of the error terms, for the dimensions of zero width and not
-        aux_run("nonlinearSys.ordersAdaptive", [&] {
+        test::oracle::run("nonlinearSys.ordersAdaptive", [&](test::oracle::Random &) {
             for (Case &c : cases()) {
                 const lean::NonlinearSys oracle(c.sys);
                 const int64_t n = c.sys.dim();
