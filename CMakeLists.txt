@@ -93,6 +93,8 @@ if(NOT MSVC)
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_krylov_float.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_krylov_lyapunov.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_verify_correction.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_verify_exp_ball.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/cont_dynamics/linear_sys/private/priv_verify_ra_support_function.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_dynamics/nonlinear_sys/private/priv_tune_adaptive.cpp"
                               "${CMAKE_SOURCE_DIR}/src/cont_set/zonotope/reduce_adaptive.cpp"
                               "${CMAKE_SOURCE_DIR}/src/hybrid_dynamics/location/private/priv_calc_basis.cpp"

@@ -211,7 +211,44 @@ VerifyCorrection LinearSys::verify_correction(double time_step) const {
     return out;
 }
 
+std::optional<VerifyExpBall> LinearSys::exp_ball(double time_step) const {
+    // D and r, or nothing where no halving count or order is found
+    const Reply r = ask("linearSys.expBall", {{"A", A_}, {"timeStep", time_step}});
+    const auto D = r.get<std::optional<Tensor>>("D");
+    if (!D) return std::nullopt;
+    return VerifyExpBall{*D, r.get<double>("r")};
+}
+
+VerifySupportRun LinearSys::verify_support_func(const cora::Tensor &x0, const cora::Tensor &G0,
+                                                const cora::Tensor &Cs, const cora::Tensor &d,
+                                                double t_final, double min_step, int fuel) const {
+    // the output matrix, the identity without one
+    const int64_t n = A_.rows();
+    std::vector<double> eye(std::size_t(n) * n, 0.0);
+    for (int64_t i = 0; i < n; ++i) eye[std::size_t(i) * n + i] = 1.0;
+    const Tensor C = C_ ? *C_ : Tensor(cora::Tensor::like(x0, eye, {n, n}));
+    // the verdict, the statistics, and the falsifying step and halfspace if falsified
+    const Reply r = ask("linearSys.verifySupportFunc", {{"A", A_},
+                                                        {"x0", Tensor(x0)},
+                                                        {"G0", Tensor(G0)},
+                                                        {"Cs", Tensor(Cs)},
+                                                        {"C", C},
+                                                        {"d", Tensor(d)},
+                                                        {"tFinal", t_final},
+                                                        {"minStep", min_step},
+                                                        {"fuel", fuel}});
+    // the reply's fields in VerifySupportRun's order
+    return VerifySupportRun{r.get<bool>("verified"),
+                            r.get<bool>("falsified"),
+                            r.get<int64_t>("iterations"),
+                            r.get<int64_t>("nrSteps"),
+                            r.get<double>("timeStep"),
+                            r.get<std::optional<int64_t>>("falsStep"),
+                            r.get<std::optional<int64_t>>("falsSpec")};
+}
+
 Step LinearSys::post(const Zonotope &X, double time_step, int taylor_terms) const {
+    // the time-point and the time-interval set of one step
     const Reply r = ask_system("linearSys.post",
                                {{"X", X}, {"timeStep", time_step}, {"taylorTerms", taylor_terms}});
     return {r.get<Zonotope>("timePoint"), r.get<Zonotope>("timeInterval")};
