@@ -8,7 +8,7 @@
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <initializer_list>
 #include <iostream>
 #include <string>
@@ -148,6 +149,25 @@ void for_each_device(F body) {
     for (std::size_t i = 0; i < options.size(); ++i) body(options[i], names[i]);
 }
 #endif
+
+/// Sets the environment variable `name` to `value` (POSIX setenv; MSVC has _putenv_s instead, where
+/// an empty value removes the variable).
+inline void set_env(const char *name, const char *value) {
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+}
+
+/// Removes the environment variable `name`.
+inline void unset_env(const char *name) {
+#ifdef _WIN32
+    _putenv_s(name, "");
+#else
+    unsetenv(name);
+#endif
+}
 
 inline int finish(const std::string &what) {
     if (failures == 0) std::cout << "all " << what << " tests passed\n";
