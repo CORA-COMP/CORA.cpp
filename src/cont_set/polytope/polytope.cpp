@@ -22,6 +22,7 @@
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <cmath>
@@ -150,18 +151,18 @@ Polytope::Polytope(Tensor A, Tensor b, Tensor Ae, Tensor be)
             if (batch)
                 CORA_FAIL(Error::not_supported,
                           "Polytope: a batch with an infinite offset is not supported");
-            A_ = keep.empty() ? priv_zeros(A_, 0, A_.shape().back()) : A_.take(keep, -2);
-            b_ = keep.empty() ? priv_zeros(b_, 0, 1) : b_.take(keep, -2);
+            A_ = keep.empty() ? zeros_block(A_, 0, A_.shape().back()) : A_.take(keep, -2);
+            b_ = keep.empty() ? zeros_block(b_, 0, 1) : b_.take(keep, -2);
         }
     }
     // an infeasible offset: the set is empty, and so has no vertices
-    if (aux_infeasible_offset(b_, be_)) V_ = priv_zeros(A_, A_.shape().back(), 0);
+    if (aux_infeasible_offset(b_, be_)) V_ = zeros_block(A_, A_.shape().back(), 0);
 }
 
 Polytope::Polytope(const Tensor &A, Tensor b)
     : Polytope(A, std::move(b),
-               A.defined() && A.ndim() >= 2 ? priv_zeros(A, 0, A.shape().back()) : Tensor(),
-               A.defined() && A.ndim() >= 2 ? priv_zeros(A, 0, 1) : Tensor()) {}
+               A.defined() && A.ndim() >= 2 ? zeros_block(A, 0, A.shape().back()) : Tensor(),
+               A.defined() && A.ndim() >= 2 ? zeros_block(A, 0, 1) : Tensor()) {}
 
 Polytope::Polytope(Parts parts)
     : ContSet(kClassId), A_(std::move(parts.A)), b_(std::move(parts.b)), Ae_(std::move(parts.Ae)),

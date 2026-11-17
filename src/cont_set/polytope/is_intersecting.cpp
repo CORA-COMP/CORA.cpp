@@ -23,6 +23,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/polytope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"
 #include "cora/global/linprog.h"

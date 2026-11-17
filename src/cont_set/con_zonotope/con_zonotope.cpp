@@ -22,6 +22,7 @@
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cont_set/con_zonotope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -90,7 +91,7 @@ ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
 }
 
 ConZonotope::ConZonotope(const Tensor &c, const Tensor &G)
-    : ConZonotope(c, G, priv_zeros(G, 0, G.shape().back()), priv_zeros(c, 0, 1)) {}
+    : ConZonotope(c, G, zeros_block(G, 0, G.shape().back()), zeros_block(c, 0, 1)) {}
 
 ConZonotope::ConZonotope(const Zonotope &Z) : ConZonotope(Z.center(), Z.generators()) {}
 

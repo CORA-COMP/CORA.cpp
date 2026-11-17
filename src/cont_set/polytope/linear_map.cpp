@@ -22,6 +22,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <numeric>
@@ -66,7 +67,7 @@ Polytope aux_decomposed(const Polytope &P, const Tensor &M, int64_t r) {
     const Tensor Ur = usv[0].slice(-1, 0, r), Vr = usv[2].slice(-1, 0, r);
     // the coordinates w = V'x: V_r S_r^-1 scaled, then the ones in the kernel of M
     const Tensor scaled = Vr.divide(usv[1].slice(-2, 0, r).matrix_transpose());
-    const Tensor rotation = r < n ? Tensor::concat({scaled, priv_null_space(M)}, -1) : scaled;
+    const Tensor rotation = r < n ? Tensor::concat({scaled, null_space(M)}, -1) : scaled;
     const Polytope::Constraints C = P.constraints();
     Polytope::Constraints rotated{C.A.matmul(rotation), C.b, C.Ae.matmul(rotation), C.be};
     if (r < n) {
@@ -81,8 +82,8 @@ Polytope aux_decomposed(const Polytope &P, const Tensor &M, int64_t r) {
     const Tensor UrT = Ur.matrix_transpose();
     Tensor Ae = rotated.Ae.matmul(UrT), be = rotated.be;
     if (r < m) {
-        Ae = Tensor::concat({Ae, priv_null_space(M.matrix_transpose()).matrix_transpose()}, -2);
-        be = Tensor::concat({be, priv_zeros(be, m - r, 1)}, -2);
+        Ae = Tensor::concat({Ae, null_space(M.matrix_transpose()).matrix_transpose()}, -2);
+        be = Tensor::concat({be, zeros_block(be, m - r, 1)}, -2);
     }
     return {rotated.A.matmul(UrT), rotated.b, Ae, be};
 }

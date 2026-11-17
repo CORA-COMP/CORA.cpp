@@ -22,6 +22,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"
+#include "global/blocks.h"
 
 #include <algorithm>
 #include <limits>
@@ -139,7 +140,7 @@ ConZonotope ConZonotope::unite(const Interval &I, const std::string &method,
 ConZonotope ConZonotope::unite(const Tensor &p, const std::string &method,
                                std::optional<int> order) const {
     detail::Entry entry;
-    const ConZonotope S(p, priv_zeros(p, p.shape()[p.ndim() - 2], 0));
+    const ConZonotope S(p, zeros_block(p, p.shape()[p.ndim() - 2], 0));
     const detail::Refusal refusal = aux_refusal(*this, {S}, method, order);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_unite(*this, {S});

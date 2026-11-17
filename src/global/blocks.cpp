@@ -1,22 +1,23 @@
-// priv_null_space - an orthonormal basis of the null space of a matrix, as MATLAB's null
+// blocks - an orthonormal basis of the null space of a matrix, as MATLAB's null
 //
 // The threshold is relative to the largest singular value; k = 0 if A has full column rank.
 //
-// Syntax:   Tensor N = priv_null_space(A);
+// Syntax:   Tensor N = null_space(A);
 // Inputs:   A - a matrix (p, m)
 // Outputs:  N - (m, k): the right singular vectors of the singular values at most max(p, m) eps
-// See also: priv_linear_programs, is_full_dim
+// See also: blocks.h
 //
 // CORA.cpp only: MATLAB calls null(A)
 // Authors:       Claude Sonnet 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
-#include "cont_set/con_zonotope/private/priv.h"
+#include "global/blocks.h"
 #include "cora/global/tensor/tolerance.h"
 
 #include <algorithm>
+#include <array>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,10 +26,10 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor priv_null_space(const Tensor &A) {
+Tensor null_space(const Tensor &A) {
     const int64_t p = A.shape()[0], m = A.shape()[1];
     // a wide matrix gets zero rows, so that the factorization has all m right singular vectors
-    const Tensor square = p < m ? Tensor::concat({A, priv_zeros(A, m - p, m)}, 0) : A;
+    const Tensor square = p < m ? Tensor::concat({A, zeros_block(A, m - p, m)}, 0) : A;
     const std::array<Tensor, 3> usv = square.svd();
     const std::vector<double> s = usv[1].data();
     const double largest = s.empty() ? 0.0 : s.front();

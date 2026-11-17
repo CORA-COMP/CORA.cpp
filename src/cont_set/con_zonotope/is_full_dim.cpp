@@ -21,6 +21,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/tensor/tolerance.h"
+#include "global/blocks.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -47,9 +48,9 @@ std::optional<Tensor> aux_free_generators(const ConZonotope &cz) {
     std::vector<int64_t> free;
     for (int64_t j = 0; j < H.m; ++j)
         if (hi[j] - lo[j] > numerics::kFixedFactor) free.push_back(j);
-    const Tensor G = priv_select_columns(cz.generators(), free);
+    const Tensor G = select_columns(cz.generators(), free);
     if (free.empty()) return G;
-    return G.matmul(priv_null_space(priv_select_columns(cz.A(), free)));
+    return G.matmul(null_space(select_columns(cz.A(), free)));
 }
 
 } // namespace

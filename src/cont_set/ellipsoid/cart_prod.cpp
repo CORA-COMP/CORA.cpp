@@ -20,8 +20,8 @@
 // Last update:   ---
 // Reviewed:      ---
 
-#include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/ellipsoid/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -72,13 +72,13 @@ detail::Refusal aux_point_refusal(const Tensor &p) {
 /// The point p as an ellipsoid with Q = 0.
 Ellipsoid aux_point(const Tensor &p) {
     const int64_t n = p.shape()[p.ndim() - 2];
-    return {priv_zeros(p, n, n), p};
+    return {zeros_block(p, n, n), p};
 }
 
 /// The product of two ellipsoids by one point: centers stack, Q on the block diagonal.
 Ellipsoid aux_with_point(const Ellipsoid &E, const Ellipsoid &point, bool point_first) {
     const Ellipsoid &a = point_first ? point : E, &b = point_first ? E : point;
-    return {priv_block_diag(a.Q(), b.Q()), Tensor::concat({a.q(), b.q()}, -2)};
+    return {Tensor::block_diag({a.Q(), b.Q()}), Tensor::concat({a.q(), b.q()}, -2)};
 }
 
 /// The ellipsoid of a box (CORA's interval-to-ellipsoid conversion, outer): the radii below the

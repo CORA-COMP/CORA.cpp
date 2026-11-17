@@ -23,6 +23,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cont_set/zonotope/private/priv.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 #include <set>
@@ -77,7 +78,7 @@ ConZonotope aux_inner_vertices(const ConZonotope &cz, const Zonotope &S) {
 ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
     const int64_t n = cz.dim(), p = cz.A().shape()[0], N = cz.A().shape()[1];
     const Tensor lifted = Tensor::concat({cz.generators(), cz.A()}, -2);
-    const Tensor pick = Tensor::concat({cz.c().eye_like(n), priv_zeros(cz.c(), p, n)}, -2);
+    const Tensor pick = Tensor::concat({cz.c().eye_like(n), zeros_block(cz.c(), p, n)}, -2);
     const Tensor Gamma = lifted.pinv().matmul(pick); // (N, n)
     // the support of the centered S along row i of Gamma: sum_k |Gamma_i . g_k|
     const Tensor support = Gamma.matmul(S.generators()).abs().sum(-1, true); // (N, 1)

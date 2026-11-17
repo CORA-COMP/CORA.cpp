@@ -3,7 +3,7 @@
 // Not for callers of the class: the operations of the class and the sets that convert to it use
 // them. The linear programs of the class run on the host, on one (unbatched) set.
 //
-// Syntax:   Tensor Z = priv_zeros(c, 0, 3);   HostConZonotope H = priv_host_con_zonotope(cz);
+// Syntax:   ConZonotope Z = priv_compact(cz);   HostConZonotope H = priv_host_con_zonotope(cz);
 //           bool empty = priv_is_empty(H);
 // See also: con_zonotope.h
 //
@@ -15,6 +15,7 @@
 #pragma once
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
+#include "global/blocks.h"
 
 #include <optional>
 #include <utility>
@@ -35,22 +36,7 @@ inline std::vector<double> priv_host_rows(const Tensor &T) {
     return T.shape()[0] == 0 ? std::vector<double>{} : T.data();
 }
 
-// Blocks ------------------------------------------------------------------------------------------
-
-/// Zeros (..., rows, cols) with the batch shape and the data of `like`.
-Tensor priv_zeros(const Tensor &like, int64_t rows, int64_t cols);
-
-/// The constant matrix (..., rows, cols) of one value, with the batch shape and the data of `like`.
-Tensor priv_full(const Tensor &like, int64_t rows, int64_t cols, double value);
-
-/// The identity (..., k, k) with the batch shape of `like`.
-Tensor priv_identity(const Tensor &like, int64_t k);
-
-/// The block matrix [[A, 0], [0, B]] (CORA's blkdiag) of two matrices of one batch shape.
-Tensor priv_block_diag(const Tensor &A, const Tensor &B);
-
-/// The columns of A (..., p, m) at the positions of `columns` kept, the others dropped.
-Tensor priv_select_columns(const Tensor &A, const std::vector<int64_t> &columns);
+// Pairs and compaction ---------------------------------------------------------------------------
 
 /// Why a binary operation of two constrained zonotopes is refused, if it is: the sets must have
 /// one batch shape and, if same_dim, one dimension. `operation` names it in the message.
@@ -131,10 +117,6 @@ std::optional<std::vector<double>> priv_chebyshev_center(const std::vector<doubl
                                                          const std::vector<double> &bineq,
                                                          const std::vector<double> &Aeq,
                                                          const std::vector<double> &beq, int64_t k);
-
-/// An orthonormal basis (m, k) of the null space of A (p, m) (MATLAB's null): the right singular
-/// vectors of the singular values up to max(p, m) eps times the largest.
-Tensor priv_null_space(const Tensor &A);
 
 } // namespace cora
 

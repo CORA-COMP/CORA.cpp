@@ -19,6 +19,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -34,10 +35,10 @@ Polytope::Constraints Polytope::constraints() const {
     // no vertex: the empty set, which is the row 0 <= -1
     if (priv_has_no_vertices(*this)) {
         if (n == 0)
-            return {priv_zeros(V_, 0, 0), priv_zeros(V_, 0, 1), priv_zeros(V_, 0, 0),
-                    priv_zeros(V_, 0, 1)};
-        return {priv_zeros(V_, 1, n), priv_zeros(V_, 1, 1) - 1.0, priv_zeros(V_, 0, n),
-                priv_zeros(V_, 0, 1)};
+            return {zeros_block(V_, 0, 0), zeros_block(V_, 0, 1), zeros_block(V_, 0, 0),
+                    zeros_block(V_, 0, 1)};
+        return {zeros_block(V_, 1, n), zeros_block(V_, 1, 1) - 1.0, zeros_block(V_, 0, n),
+                zeros_block(V_, 0, 1)};
     }
     return priv_tensors_h(V_, priv_constraints_of_points(V_, priv_host_points(V_), n));
 }

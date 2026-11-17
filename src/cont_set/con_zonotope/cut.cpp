@@ -21,6 +21,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/cont_set/polytope/polytope.h"
+#include "global/blocks.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -83,8 +84,8 @@ ConZonotope::Cut ConZonotope::cut(const Polytope &P) const {
             G_,
             A_,
             b_,
-            q == 0 ? priv_zeros(c_, 0, h) : Tensor::like(c_, C, {q, h}),
-            q == 0 ? priv_zeros(c_, 0, 1) : Tensor::like(c_, d, {q, 1})};
+            q == 0 ? zeros_block(c_, 0, h) : Tensor::like(c_, C, {q, h}),
+            q == 0 ? zeros_block(c_, 0, 1) : Tensor::like(c_, d, {q, 1})};
 }
 
 ConZonotope::Cut ConZonotope::Cut::linear_map(const Tensor &M) const {

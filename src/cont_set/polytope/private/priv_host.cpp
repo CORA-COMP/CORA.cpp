@@ -15,6 +15,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 
 #include <algorithm>
 #include <cmath>
@@ -213,7 +214,7 @@ Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, 
     const std::vector<int64_t> shape = M.shape();
     const int64_t rows = shape[shape.size() - 2], cols = shape.back();
     // the zero line that the other positions take
-    const Tensor zero = axis == -1 ? priv_zeros(M, rows, 1) : priv_zeros(M, 1, cols);
+    const Tensor zero = axis == -1 ? zeros_block(M, rows, 1) : zeros_block(M, 1, cols);
     return Tensor::concat({M, zero}, axis).take(source, axis);
 }
 
@@ -251,9 +252,9 @@ Polytope priv_polytope_of_interval(const Interval &I) {
     const int64_t n = I.dim();
     if (I.is_empty()) return Polytope::empty(n);
     // x <= sup and -x <= -inf; the rows with an infinite offset are dropped by the constructor
-    const Tensor eye = priv_identity(I.inf(), n);
+    const Tensor eye = identity_block(I.inf(), n);
     // the negative identity as 0 - I, so that its zeros are +0 as in CORALean
-    const Tensor negative = priv_zeros(I.inf(), n, n) - eye;
+    const Tensor negative = zeros_block(I.inf(), n, n) - eye;
     return {Tensor::concat({eye, negative}, -2), Tensor::concat({I.sup(), -I.inf()}, -2)};
 }
 

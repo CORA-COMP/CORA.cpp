@@ -22,6 +22,7 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
+#include "global/blocks.h"
 
 #include <algorithm>
 #include <cmath>
@@ -164,7 +165,7 @@ Tensor Polytope::rand_point(int64_t N, Rng &rng, const std::string &type) const 
         rng.normal(flat.data(), flat.size(), 1.0);
         return Tensor::like(like, flat, {n, N});
     }
-    if (priv_polytope_is_empty(*this)) return priv_zeros(like, n, 0);
+    if (priv_polytope_is_empty(*this)) return zeros_block(like, n, 0);
     // the host form of the set, then the sampler of the type
     Host host;
     host.H = priv_host_h(constraints());
