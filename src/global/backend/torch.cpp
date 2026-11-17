@@ -280,7 +280,11 @@ struct TorchTensor : Tensor::Impl {
     Ptr solve(const Impl &b) const override {
         // torch reads a right-hand side one short of t as a batch of vectors: wrong if shapes agree
         const torch::Tensor &rhs = of(b);
-        return wrap(torch::linalg_solve(t, rhs.dim() + 1 == t.dim() ? rhs.unsqueeze(0) : rhs));
+        auto [x, info] =
+            torch::linalg_solve_ex(t, rhs.dim() + 1 == t.dim() ? rhs.unsqueeze(0) : rhs);
+        // a singular matrix gives NaN, as Eigen's LU does, instead of an exception of torch
+        const torch::Tensor singular = info.gt(0).unsqueeze(-1).unsqueeze(-1);
+        return wrap(torch::where(singular, torch::full_like(x, std::nan("")), x));
     }
     Ptr cholesky() const override { return wrap(torch::linalg_cholesky(t)); }
     std::pair<Ptr, Ptr> qr() const override {

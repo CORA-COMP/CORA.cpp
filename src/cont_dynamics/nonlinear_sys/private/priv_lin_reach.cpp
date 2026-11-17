@@ -250,6 +250,13 @@ priv_error_loop(const Linearized &lin, TaylorLinSys &taylor, const Tensor &error
 NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
                              const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     if (alg.linear_step != alg::LinearStep::cora) {
+        // these steps compute on host numbers: a gradient would silently miss terms
+        if (R.center().requires_grad() || R.generators().requires_grad() ||
+            (U && (U->center().requires_grad() || U->generators().requires_grad())))
+            CORA_FAIL(Error::not_supported,
+                      "linearization: the closed_form, region and coralean steps compute on host "
+                      "numbers and are not differentiable; use linear_step cora and error_bound "
+                      "loop for gradients");
         // CORALean's region at tensor order 2, else CORA's loop with the step of CORALean's
         if (alg.error_bound == alg::ErrorBound::region && alg.tensor_order == 2)
             return aux_region_step(sys, R, U, alg);

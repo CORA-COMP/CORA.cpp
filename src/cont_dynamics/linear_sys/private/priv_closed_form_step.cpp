@@ -15,7 +15,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   13-November-2026
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -215,6 +215,25 @@ Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &
     return {std::move(center), Tensor::concat(generators, -1)};
 }
 
+/// The corrections as host numbers, for the cache: a tensor would keep the backend of its A.
+struct HostCorrections {
+    int order;
+    std::vector<double> W, F_inf, F_sup, G_inf, G_sup;
+};
+
+HostCorrections aux_host(const EntrywiseCorrections &c) {
+    return {c.order,          c.W.data(),       c.F.inf().data(),
+            c.F.sup().data(), c.G.inf().data(), c.G.sup().data()};
+}
+
+/// The cached corrections on the backend, device and dtype of A.
+EntrywiseCorrections aux_on(const Tensor &A, const HostCorrections &h) {
+    const Shape shape{A.size(-1), A.size(-1)};
+    const auto on = [&](const std::vector<double> &v) { return Tensor::like(A, v, shape); };
+    return {h.order, on(h.W), Interval(on(h.F_inf), on(h.F_sup)),
+            Interval(on(h.G_inf), on(h.G_sup))};
+}
+
 } // namespace
 
 
@@ -280,22 +299,20 @@ std::optional<EntrywiseCorrections> priv_taylor_corrections(const Tensor &A, dou
         double dt;
         int terms;
         bool entrywise;
-        std::optional<EntrywiseCorrections> value;
+        std::optional<HostCorrections> value; // host numbers: rebuilt on the backend of each A
     };
     // one cache per thread: a shared one under a lock cost CVDP23 (8 threads) a third of its time
     thread_local std::deque<Entry> recent;
     const std::vector<double> a = A.data();
-    {
-        for (const Entry &e : recent)
-            if (e.dt == time_step && e.terms == taylor_terms && e.entrywise == entrywise &&
-                e.a == a)
-                return e.value;
-    }
+    for (const Entry &e : recent)
+        if (e.dt == time_step && e.terms == taylor_terms && e.entrywise == entrywise && e.a == a)
+            return e.value ? std::optional(aux_on(A, *e.value)) : std::nullopt;
     auto r = entrywise ? priv_entrywise_corrections(A, time_step, taylor_terms)
                        : priv_squaring_corrections(A, time_step, taylor_terms);
     // exception 3: where the powers of A or e^{|A| dt} overflow (a very stiff A), CORA's expm
     if (r && !(aux_finite(r->F) && aux_finite(r->G) && aux_finite(r->W))) r = std::nullopt;
-    recent.push_back({a, time_step, taylor_terms, entrywise, r});
+    recent.push_back(
+        {a, time_step, taylor_terms, entrywise, r ? std::optional(aux_host(*r)) : std::nullopt});
     if (recent.size() > 8) recent.pop_front();
     return r;
 }

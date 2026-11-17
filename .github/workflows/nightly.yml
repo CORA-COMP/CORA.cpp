@@ -75,8 +75,11 @@ jobs:
       preset: core
       ccache_key: -sanitizers
       free_disk: true
-      build_type: RelWithDebInfo
-      cxx_flags: -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
+      build_type: Release  # no debug info: with it the sanitizer build filled the runner's disk
+      # GCC 13 at -O2/-O3 with ASan reports -Wstringop-overread on vector = {x} (a known false positive of
+      # the instrumented memmove; the uninstrumented core build of the same compiler is clean), so only
+      # this build turns that one warning off
+      cxx_flags: -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer -Wno-stringop-overread
 
   # clang-format, ruff and clang-tidy over the whole tree (a pull request checks only what it changes).
   quality:
@@ -187,20 +190,16 @@ jobs:
           fi
 
   # What the benchmarks run, and how much of it is bit-exact against CORALean (coverage/benchmarks.md):
-  # a coverage build runs every instance; a stale report fails the night. Refresh it with
-  # python scripts/coverage/benchmarks.py after a change of a status.
+  # the committed measurement is rendered against the current statuses (seconds, no build); a stale
+  # report fails the night. Refresh it with python scripts/coverage/benchmarks.py --render-only
+  # after a change of a status, and --only <instance> when an instance runs other files.
   backing-report:
     needs: changed
     if: needs.changed.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: hendrikmuhs/ccache-action@v1.2.24
-        with:
-          key: backing-report
       - run: python3 scripts/coverage/benchmarks.py --check
-        env:
-          CMAKE_CXX_COMPILER_LAUNCHER: ccache
       - if: always()
         uses: actions/upload-artifact@v7
         with:

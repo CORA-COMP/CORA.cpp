@@ -271,7 +271,7 @@ int main() {
                                     "examples/benchmarks/data")
                                        .lexically_normal()
                                        .string();
-        setenv("CORACPP_BENCHMARK_DATA", folder.c_str(), 1);
+        test::set_env("CORACPP_BENCHMARK_DATA", folder.c_str());
         using cora::bench::box_zonotope;
         aux_check_network(bench::load_network("acc"),
                           box_zonotope({90, 32, 0, 10, 30, 0}, {110, 32.2, 0, 11, 30.2, 0}));
@@ -355,7 +355,7 @@ int main() {
                                     "examples/benchmarks/data")
                                        .lexically_normal()
                                        .string();
-        setenv("CORACPP_BENCHMARK_DATA", folder.c_str(), 1);
+        test::set_env("CORACPP_BENCHMARK_DATA", folder.c_str());
         using cora::bench::box_zonotope;
         std::vector<double> lo(12, 0.0), hi(12, 0.0);
         for (int i = 0; i < 6; ++i) lo[std::size_t(i)] = -0.4, hi[std::size_t(i)] = 0.4;

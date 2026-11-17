@@ -60,7 +60,13 @@ class Lines(unittest.TestCase):
     def test_a_line_is_executed_if_any_suite_ran_it(self):
         union = lines.merge([{"src/a.cpp": ([1, 2], [1])}, {"src/a.cpp": ([1, 2, 3], [2])}])
         self.assertEqual(union, {"src/a.cpp": ([1, 2, 3], [1, 2])})
-        self.assertEqual(lines.totals(union), (2, 3, 1))
+        # three lines are too few to count as a thin file, however many ran
+        self.assertEqual(lines.totals(union), (2, 3, 0))
+
+    def test_a_file_of_ten_lines_below_the_limit_is_thin(self):
+        ten = list(range(1, 11))
+        self.assertEqual(lines.totals({"src/a.cpp": (ten, ten[:6])}), (6, 10, 1))
+        self.assertEqual(lines.totals({"src/a.cpp": (ten, ten[:7])}), (7, 10, 0))
 
     # a repository with a base commit and a head that adds two lines
     def test_the_lines_a_branch_adds_are_counted(self):

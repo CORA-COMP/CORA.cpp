@@ -105,7 +105,7 @@ int main() {
         }
     });
     // the public methods take CORALean's matrices only when asked
-    setenv("CORACPP_TAYLOR", "entrywise", 1);
+    test::set_env("CORACPP_TAYLOR", "entrywise");
     test::oracle::run("linearSys.taylorMatrices", [](test::oracle::Random &rnd) {
         for (const int64_t n : {2, 3, 4, 6})
             for (const int eta : {1, 2, 4, 7})

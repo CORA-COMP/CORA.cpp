@@ -39,7 +39,7 @@ std::set<std::string> &seen() {
 /// Whether an entry opened here would check; records the hook if so.
 void aux_record(const std::string &hook) {
     // an entry opened inside a hook is outermost exactly if the caller released its own
-    detail::Entry entry;
+    cora::detail::Entry entry;
     if (entry.check()) seen().insert(hook);
 }
 
@@ -233,11 +233,11 @@ void checks_off_and_depth() {
     }
     check(seen().empty(), "the checks off: no hook checks");
     {
-        detail::Entry entry;
+        cora::detail::Entry entry;
         entry.release();
         entry.release();
     }
-    detail::Entry again;
+    cora::detail::Entry again;
     check(again.check(), "after a released entry the next one is the outermost");
 }
 

@@ -177,8 +177,8 @@ Pass aux_pass(const std::vector<Direction> &dirs, size_t groups, int64_t m0,
         // a direction holds the step, or leaves hope that a finer step will
         for (size_t d = 0; d < dirs.size(); ++d) {
             const double margin = steppers[d].next_margin();
-            held[dirs[d].group] |= dirs[d].strict ? margin > 0 : margin >= 0;
-            hope[dirs[d].group] |= !steppers[d].hopeless();
+            if (dirs[d].strict ? margin > 0 : margin >= 0) held[dirs[d].group] = 1;
+            if (!steppers[d].hopeless()) hope[dirs[d].group] = 1;
         }
         if (std::all_of(held.begin(), held.end(), [](char c) { return c != 0; })) continue;
         const bool hopeful = std::all_of(hope.begin(), hope.end(), [](char c) { return c != 0; });
