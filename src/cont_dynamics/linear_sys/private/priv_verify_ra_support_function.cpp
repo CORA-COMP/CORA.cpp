@@ -7,8 +7,10 @@
 // whole horizon or a trajectory of R0 and the centre of U hits one. Supported as in the ARCH
 // benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant zonotope U, no offsets.
 //
-// The statistics are the iterations, the last step size and count, computation_time, and the
-// falsifying initial state and time.
+// The interval matrices F and G of the curvature term are CORALean's sound ones (with the
+// remainder CORA drops), and the boxes F_r |X0| and G_r |u| enter with the support |l|'v, not
+// CORA's |l'v|. The statistics are the iterations, the last step size and count,
+// computation_time, and the falsifying initial state and time.
 //
 // Syntax:   res = priv_verify_ra_support_function(sys, params, specs);
 // Inputs:   sys - linear system;  params - R0, U, t_final
@@ -20,10 +22,11 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   13-November-2026
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/error.h"
 #include "cora/global/tensor/tolerance.h"
@@ -76,9 +79,10 @@ struct Csr {
     std::vector<double> val;
 };
 
-/// A^i / i!, kept over the passes; A^-1 if A is invertible.
+/// A^i / i!, kept over the passes (CORALean's verifyPowerFloat); A^-1 if A is invertible.
 struct Expmat {
-    std::vector<std::vector<double>> Apower; // row-major (n, n), on the host
+    std::optional<VerifyPowers> powers;
+    std::vector<double> scales; // balanceScalesFloat of A, for the remainders of F and G
     std::optional<Tensor> Ainv;
     // A by rows (CSR) when it is sparse: the powers then cost n nnz(A) instead of n^3.
     bool sparse_a = false;
@@ -218,15 +222,6 @@ std::vector<double> aux_mul_band(const std::vector<double> &x, const Banded &B, 
         });
 }
 
-/// X A / d for a dense X (n, n) on the host.
-std::vector<double> aux_times_a(const Expmat &E, const Tensor &A, const std::vector<double> &x,
-                                double d) {
-    const int64_t n = A.shape()[0];
-    if (E.sparse_a) return aux_mul_csr(x, E.a, n, d);
-    const Tensor X = Tensor::like(A, x, {n, n});
-    return (X.matmul(A) * (1.0 / d)).data();
-}
-
 /// The multiplications that square m are cheaper as sparse rows than as a dense product.
 bool aux_sparse_square_wins(const std::vector<double> &m, int64_t n) {
     std::vector<double> row_count(n, 0.0), col_count(n, 0.0);
@@ -283,69 +278,39 @@ Tensor aux_expm(const Tensor &A, const Expmat &E, double time_step) {
     return result;
 }
 
-/// Makes Apower hold A^i / i! up to i = eta (entry i - 1).
-void aux_get_apower(Expmat &E, const Tensor &A, int eta) {
-    while (static_cast<int>(E.Apower.size()) < eta) {
-        const int i = static_cast<int>(E.Apower.size());
-        E.Apower.push_back(aux_times_a(E, A, E.Apower.back(), i + 1));
-    }
-}
-
-/// A^i / i! as a tensor (Apower must reach i).
-Tensor aux_power_tensor(const Expmat &E, const Tensor &A, int i) {
+/// A^i / i! as a tensor.
+Tensor aux_power_tensor(Expmat &E, const Tensor &A, int i) {
     const int64_t n = A.shape()[0];
-    return Tensor::like(A, E.Apower[i - 1], {n, n});
+    return Tensor::like(A, E.powers->power(i), {n, n});
 }
 
-/// The sums of one Taylor term a scaled by f (f < 0) into pos (from the negative part of a) and
-/// neg (from the positive part). If the term no longer changes the sums, rad and center of the
-/// interval matrix [neg, pos] before the term are written; the return value says whether it held.
-bool aux_sum_step(const std::vector<double> &a, double f, std::vector<double> &pos,
-                  std::vector<double> &neg, std::vector<double> &rad, std::vector<double> &center) {
-    const std::size_t nn = a.size();
-    bool converged = true;
-    for (std::size_t i = 0; i < nn && converged; ++i)
-        converged = f * std::min(a[i], 0.0) <= machine_eps() * pos[i] &&
-                    f * std::max(a[i], 0.0) >= machine_eps() * neg[i];
-    for (std::size_t i = 0; i < nn; ++i) {
-        if (converged) {
-            rad[i] = 0.5 * (pos[i] - neg[i]);
-            center[i] = neg[i] + rad[i];
-        }
-        pos[i] += f * std::min(a[i], 0.0);
-        neg[i] += f * std::max(a[i], 0.0);
+/// An interval matrix of CORALean's bounds as CORA's center and radius.
+IntMat aux_center_radius(const Tensor &A, const VerifyCorrection &M) {
+    const int64_t n = A.shape()[0];
+    std::vector<double> rad(M.inf.size()), cen(M.inf.size());
+    for (std::size_t i = 0; i < rad.size(); ++i) {
+        rad[i] = 0.5 * (M.sup[i] - M.inf[i]);
+        cen[i] = M.inf[i] + rad[i];
     }
-    return converged;
+    return {Tensor::like(A, cen, {n, n}), Tensor::like(A, rad, {n, n})};
 }
 
-/// The interval matrices F (state) and G (input, if isu) of the curvature enlargement by Taylor
-/// series until the terms no longer change the sums; false if that takes kMaxEta terms. The
-/// sums run over host arrays in one pass per term, as the terms of a large A are all of n^2.
+/// The interval matrices F (state) and G (input, if isu) of the curvature enlargement: CORALean's
+/// verifyCorrectionStateFloat and verifyCorrectionInputFloat, CORA's Taylor sums with their stop
+/// and a remainder; false if a sum needs more than kMaxEta - 1 terms or its remainder fails.
 bool aux_intmat(const Tensor &A, bool isu, Expmat &E, double time_step, IntMat &F, IntMat &G) {
-    const int64_t n = A.shape()[0];
-    const std::size_t nn = std::size_t(n) * n;
-    std::vector<double> pos_f(nn, 0.0), neg_f(nn, 0.0), rad_f(nn), cen_f(nn);
-    std::vector<double> pos_g, neg_g, rad_g, cen_g;
-    if (isu) pos_g.assign(nn, 0.0), neg_g.assign(nn, 0.0), rad_g.resize(nn), cen_g.resize(nn);
-    bool stop_f = false, stop_g = !isu;
-    for (int eta = 2; !(stop_f && stop_g); ++eta) {
-        aux_get_apower(E, A, eta);
-        const double factor =
-            (std::pow(eta, -double(eta) / (eta - 1)) - std::pow(eta, -1.0 / (eta - 1))) *
-            std::pow(time_step, eta);
-        if (!stop_f) {
-            if (eta == kMaxEta) return false;
-            stop_f = aux_sum_step(E.Apower[eta - 1], factor, pos_f, neg_f, rad_f, cen_f);
-        }
-        if (!stop_g) {
-            // The stored terms carry 1/(eta-1)!, so G needs one more division by eta.
-            if (eta == kMaxEta) return false;
-            stop_g = aux_sum_step(E.Apower[eta - 2], factor / eta, pos_g, neg_g, rad_g, cen_g);
-        }
+    const std::optional<VerifyCorrection> f =
+        priv_verify_correction_state(*E.powers, E.scales, time_step);
+    if (!f) return false;
+    F = aux_center_radius(A, *f);
+    if (!isu) {
+        G = IntMat{A.zeros_like(), A.zeros_like()};
+        return true;
     }
-    F = {Tensor::like(A, cen_f, {n, n}), Tensor::like(A, rad_f, {n, n})};
-    G = isu ? IntMat{Tensor::like(A, cen_g, {n, n}), Tensor::like(A, rad_g, {n, n})}
-            : IntMat{A.zeros_like(), A.zeros_like()};
+    const std::optional<VerifyCorrection> g =
+        priv_verify_correction_input(*E.powers, E.scales, time_step);
+    if (!g) return false;
+    G = aux_center_radius(A, *g);
     return true;
 }
 
@@ -356,7 +321,6 @@ std::optional<Tensor> aux_particular(const Tensor &A, const Tensor &X, Expmat &E
     if (E.Ainv) return E.Ainv->matmul((Delta - A.eye_like()).matmul(X));
     Tensor Asum = A.eye_like() * time_step;
     for (int eta = 2;; ++eta) {
-        aux_get_apower(E, A, eta - 1);
         const Tensor add_term = aux_power_tensor(E, A, eta - 1) * (std::pow(time_step, eta) / eta);
         // Too large a step size diverges; an unbounded loop would never end.
         if (std::isinf(aux_max_all(add_term.abs())) || eta > 1000) return std::nullopt;
@@ -372,7 +336,6 @@ std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, 
     std::vector<Tensor> parts{GU * time_step};
     std::vector<double> diag = parts[0].abs().sum(-1, true).data();
     for (int eta = 1;;) {
-        aux_get_apower(E, A, eta);
         const Tensor add =
             aux_power_tensor(E, A, eta).matmul(GU) * (std::pow(time_step, eta + 1) / (eta + 1));
         const std::vector<double> add_diag = add.abs().sum(-1, true).data();
@@ -541,15 +504,22 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
         W.push_back(G.center.matmul(u));
         W.push_back(G.rad.matmul(u.abs()));
     }
-    const int64_t nw = W.size();
-    const std::vector<double> lw = pass.LT.matmul(Tensor::concat(W, -1)).data();
+    // the boxes F_r |X0| and G_r |u| about the origin have the support |l|' v, not |l' v| (CORA)
+    std::vector<Tensor> Wc{cx}, Wr{G2x};
+    if (isu) {
+        Wc.push_back(W[2]);
+        Wr.push_back(W[3]);
+    }
+    const int64_t nw = static_cast<int64_t>(Wc.size());
+    const std::vector<double> lw = pass.LT.matmul(Tensor::concat(Wc, -1)).data();
+    const std::vector<double> lr = pass.LT.abs().matmul(Tensor::concat(Wr, -1)).data();
     const std::vector<double> lg1 = pass.LT.matmul(G1x).data();
     pass.Cbloat.assign(std::size_t(N) * S, 0.0);
     for (std::size_t r = 0; r < pass.Cbloat.size(); ++r) {
         double sum_abs = 0;
         for (int64_t j = 0; j < m0; ++j) sum_abs += std::abs(lg1[r * m0 + j]);
-        double c = lw[r * nw] + sum_abs + std::abs(lw[r * nw + 1]);
-        if (isu) c = (c + lw[r * nw + 2]) + std::abs(lw[r * nw + 3]);
+        double c = lw[r * nw] + sum_abs + lr[r * nw];
+        if (isu) c = (c + lw[r * nw + 1]) + lr[r * nw + 1];
         pass.Cbloat[r] = c;
     }
     // per row the bound is the center term, the absolute generator sums and the particular terms
@@ -588,7 +558,8 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     const std::vector<double> &ds = rows.ds;
 
     Expmat E;
-    E.Apower.push_back(A.data());
+    E.powers.emplace(A.data(), A.shape()[0]);
+    E.scales = priv_verify_balance_scales(A.data(), A.shape()[0]);
     aux_init_sparse(E, A);
     if (isu || is_u) E.Ainv = priv_inverse(A);
 

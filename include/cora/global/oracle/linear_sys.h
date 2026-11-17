@@ -6,7 +6,7 @@
 //             as CORA.cpp names CORA's: canonical_form, is_canonical_form, homogeneous_solution,
 //             particular_solution_time_varying, particular_solution_constant, affine_solution,
 //             one_step, one_step_closed_form, taylor_matrices, post, init_reach,
-//             error_solution_adaptive
+//             error_solution_adaptive, verify_correction
 // Outputs:    lean zonotopes whose nominal part and error box together enclose the real result
 // Scheme:     CORALean's sound float definitions; the error terms are tuned bounds of their own,
 //             so they differ from CORA's (the nominal parts agree where no error term enters)
@@ -14,7 +14,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   13-November-2026
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -22,6 +22,9 @@
 #include "cora/cont_dynamics/algorithms.h"
 #include "cora/global/oracle/request.h"
 #include "cora/global/oracle/zonotope.h"
+
+#include <optional>
+#include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -49,6 +52,13 @@ struct TaylorMatrices {
     int64_t order;
     Tensor W;
     Interval F, G;
+};
+
+/// verify_correction: the balancing scales of A and the interval matrices F, G of the support
+/// function algorithm of verify with the orders their sums stopped at (empty where none).
+struct VerifyCorrection {
+    Tensor scales;
+    std::optional<std::pair<int64_t, Interval>> F, G;
 };
 
 class LinearSys {
@@ -112,6 +122,9 @@ class LinearSys {
     /// CORA's taylorMatrices at the order asked for, the remainder W from e^{|A| dt} by scaling
     /// and squaring (WCora, FCora, GCora; none without halvings).
     std::optional<TaylorMatrices> taylor_matrices_cora(double time_step, int taylor_terms) const;
+    /// CORALean's MatExp.verifyCorrectionStateFloat and verifyCorrectionInputFloat at the scales
+    /// of MatExp.balanceScalesFloat.
+    VerifyCorrection verify_correction(double time_step) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;
