@@ -54,7 +54,7 @@ def make_pch(entries, build):
     entry = next(e for e in entries if os.sep + "tests" + os.sep in e["file"])
     header = os.path.join(os.path.abspath(build), "torch_pch.h")
     with open(header, "w", encoding="utf-8") as stream:
-        stream.write("#pragma once\n#include <torch/torch.h>\n")
+        stream.write("#include <torch/torch.h>\n")
     arguments = [a for a in syntax_command(entry)[:-1] if a != entry["file"]]
     subprocess.run(arguments + ["-x", "c++-header", header, "-o", header + ".gch"], cwd=entry["directory"], check=True)
     return header
