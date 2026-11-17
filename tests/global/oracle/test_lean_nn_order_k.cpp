@@ -56,7 +56,7 @@ PolyZonotope aux_set(oracle::Random &rnd, const Dims &s) {
     for (int64_t i = 0; i < s.p; ++i) id[std::size_t(i)] = i + 1;
     // small generators, so that the powers stay in range
     return {rnd.vector(s.n),         rnd.matrix(s.n, s.h) * 0.5, rnd.matrix(s.n, s.q) * 0.25, E, id,
-            cora::detail::Verbatim{}};
+            detail::Verbatim{}};
 }
 
 /// Row i of an (n, m) tensor.
@@ -121,7 +121,7 @@ PolyZonotope aux_nonzero(const PolyZonotope &P) {
             aux_columns(P.independent_generators(), keep_gi),
             E,
             P.ids(),
-            cora::detail::Verbatim{}};
+            detail::Verbatim{}};
 }
 
 /// CORA.cpp's powers of every row of the set, as one set: priv_eval_poly row by row.
@@ -146,7 +146,7 @@ PolyZonotope aux_powers(const PolyZonotope &P, const std::vector<std::vector<dou
             aux_tensor(GI, ind),
             priv_power_exponents(P.exponents(), k),
             P.ids(),
-            cora::detail::Verbatim{}};
+            detail::Verbatim{}};
 }
 
 /// Random coefficients of degree k, highest first, one list per row.
@@ -190,7 +190,7 @@ void aux_check_layer(const PolyZonotope &X, Activation activation, const std::ve
     }
     std::vector<double> d;
     priv_layer_poly(r, activation, orders, true, options, &d);
-    const PolyZonotope mine(r.c, r.G, r.GI, r.E, r.ids, cora::detail::Verbatim{});
+    const PolyZonotope mine(r.c, r.G, r.GI, r.E, r.ids, detail::Verbatim{});
     // the oracle's layer on the same fits and errors
     const lean::NnLayer layer = lean::NnLayer::poly(aux_lowest_first(coeffs, degree),
                                                     Tensor::from_data(d, {int64_t(d.size()), 1}));
