@@ -1,4 +1,4 @@
-// test_lean_interval_matrix_norm_bound - IntervalMatrix::norm against the CORALean oracle
+// test_lean_interval_matrix_norm_bound - Interval::norm against the CORALean oracle
 //
 // The norms one and inf are sums and maxima of the same entries: bit for bit on the lean backend.
 // The Frobenius norm is a square root, which the oracle bounds from above by Newton steps:
@@ -11,8 +11,8 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_set/interval/interval.h"
 #include "cora/global/rng.h"
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "oracle_testing.h"
 
 #include <limits>
@@ -37,8 +37,8 @@ int main() {
     cora::Rng rng(4);
     test::oracle::run("intervalMatrix.norm", [&](test::oracle::Random &rnd) {
         for (const auto &[m, n] : {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}}) {
-            const IntervalMatrix A(rnd.box_matrix(m, n));
-            const lean::IntervalMatrix L{lean::Interval(A.interval())};
+            const Interval A = rnd.box_matrix(m, n);
+            const lean::IntervalMatrix L{lean::Interval(A)};
             test::oracle::check(A.norm(Tensor::Norm::one), L.norm("1"));
             test::oracle::check(A.norm(Tensor::Norm::inf), L.norm("inf"));
             const double root = A.norm(Tensor::Norm::fro).data()[0], bound = L.norm("fro");
@@ -49,7 +49,7 @@ int main() {
                 std::vector<double> u(m * n);
                 rng.uniform(u.data(), u.size(), 0.0, 1.0);
                 const Tensor w = Tensor::from_data(u, {m, n});
-                const Tensor M = A.infimum() + (A.interval().sup() - A.infimum()).multiply(w);
+                const Tensor M = A.infimum() + (A.sup() - A.infimum()).multiply(w);
                 const Tensor member_norm = M.matrix_norm(Tensor::Norm::fro);
                 test::check(member_norm.item() <= bound,
                             "intervalMatrix.norm fro: a member below the bound");

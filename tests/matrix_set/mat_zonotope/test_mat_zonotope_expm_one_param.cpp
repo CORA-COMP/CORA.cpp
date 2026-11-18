@@ -63,9 +63,8 @@ void scalar_example(const std::string &b) {
     const auto S = M.expm_one_param(1.0, 2);
     check(close(S.enclosure.center(), {1.25}) && close(S.enclosure.generators(), {1, 0.25}),
           b + ": K = 1.25 + b + 0.25 (2 b^2 - 1)");
-    const IntervalMatrix total(S.enclosure.interval_matrix().interval() + S.remainder.interval());
-    check(total.contains(test::matrix({std::exp(1.0)}, 1, 1), "exact", 1e-12),
-          b + ": exp(1) is enclosed");
+    const Interval total = S.enclosure.interval_matrix() + S.remainder;
+    check(total.contains(test::matrix({std::exp(1.0)}, 1, 1), 1e-12), b + ": exp(1) is enclosed");
 }
 
 /// For every parameter b in [-1, 1] the Taylor polynomial of r M(b) is the matrix of K for the
@@ -94,7 +93,7 @@ void series_for_one_parameter(const std::string &bname) {
                                                      power * std::pow(r, double(k)), 1e-12);
             }
             const Tensor rest = test::exponential(M * r) - taylor(M, r, N);
-            enclosed = enclosed && R.remainder.contains(rest, "exact", 1e-12);
+            enclosed = enclosed && R.remainder.contains(rest, 1e-12);
         }
         check(exact, bname + ": the Taylor polynomial is K for the coefficients, N = " +
                          std::to_string(N));

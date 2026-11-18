@@ -6,6 +6,7 @@
 // See also: Zonotope::interval
 //
 // CORA: contSet/@interval/abs.m
+// CORA: matrixSet/@intervalMatrix/abs.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Tobias Ladner
 // Written:       03-November-2026

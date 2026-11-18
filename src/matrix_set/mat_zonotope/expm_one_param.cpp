@@ -13,7 +13,7 @@
 //           remainder - the remainder box of the interval matrix around A r
 //           powers - the powers (r M)^k as matrix zonotopes, a generator per power of b
 //           constant_input - with u, the zonotope of sum r^k M^(k-1) u / k!, k = 1..max_order
-// See also: expm_independent, IntervalMatrix::exponential_remainder
+// See also: expm_independent, mat_exp::exponential_remainder
 //
 // CORA: matrixSet/@matZonotope/expmOneParam.m
 // CORA starts the l-th generator's sum at the coefficient of b^1 of M^l, not of b^l, and drops
@@ -25,8 +25,9 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
-#include "matrix_set/interval_matrix/private/priv_factorial.h"
 
 #include <cmath>
 
@@ -120,8 +121,9 @@ MatZonotope::ExpmOneParamResult aux_expm(const MatZonotope &A, double r, int64_t
         // the n x 1 matrices of the input terms are the columns of the zonotope
         constant_input = Zonotope(input_center, input_generators.squeeze(-1).matrix_transpose());
     }
-    return {MatZonotope(center, generators), (A * r).interval_matrix().exponential_remainder(N),
-            std::move(powers), std::move(constant_input)};
+    return {MatZonotope(center, generators),
+            mat_exp::exponential_remainder((A * r).interval_matrix(), N), std::move(powers),
+            std::move(constant_input)};
 }
 
 } // namespace

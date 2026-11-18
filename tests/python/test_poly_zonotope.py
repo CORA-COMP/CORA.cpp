@@ -109,7 +109,7 @@ class Operations(unittest.TestCase):
         self.assertEqual(zero.G.shape[1], 0)
         mapped = P.linear_map(2 * np.eye(2))
         np.testing.assert_allclose(mapped.c, [2, 0])
-        widened = P.linear_map(cora.IntervalMatrix(np.eye(2), 0.1 * np.eye(2)))
+        widened = P.linear_map(cora.Interval.from_center_delta(np.eye(2), 0.1 * np.eye(2)))
         self.assertEqual(widened.GI.shape[1], 3)
         self.assertEqual(P.cart_prod(Z).dim, 4)
         self.assertEqual(P.enclose(P.linear_map(np.zeros((2, 2)))).dim, 2)

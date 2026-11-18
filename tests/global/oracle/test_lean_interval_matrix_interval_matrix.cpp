@@ -1,6 +1,4 @@
-// test_lean_interval_matrix_interval_matrix - the constructor IntervalMatrix(C, D) against the
-//
-// oracle
+// test_lean_interval_matrix_interval_matrix - Interval::from_center_delta against the oracle
 //
 // ORACLE: matrixSet/@intervalMatrix/intervalMatrix.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
@@ -8,7 +6,8 @@
 // Last update:   ---
 // Reviewed:      ---
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
+#include "cont_set/interval/interval_matrix_testing.h"
+#include "cora/cont_set/interval/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
@@ -24,7 +23,7 @@ int main() {
         for (const auto &[m, n] : {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}}) {
             // the oracle's constructor at a center and a nonnegative radius of exact doubles
             const Interval box = rnd.box_matrix(m, n);
-            const IntervalMatrix A(box.center(), box.rad());
+            const Interval A = test::interval_matrix(box.center(), box.rad());
             test::oracle::check(A, lean::Interval::interval_matrix(lean::Tensor::from(box.center()),
                                                                    lean::Tensor::from(box.rad())));
         }

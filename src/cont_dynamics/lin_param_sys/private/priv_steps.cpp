@@ -49,7 +49,7 @@ LinParamMappings priv_mappings(const LinParamSys &sys, const Zonotope &U, const 
     // the series, its correction matrix and the input of the step size
     const LinParamSeries series =
         priv_mapping_matrix(sys, r, alg.taylor_terms, alg.intermediate_terms);
-    const IntervalMatrix F = priv_tie(series, alg.taylor_terms);
+    const Interval F = priv_tie(series, alg.taylor_terms);
     LinParamInput in =
         priv_input_solution(sys, series, U, u_trans, r, alg.taylor_terms, alg.zonotope_order);
     // M1 holds the center of the interval part, M2 the rest around it

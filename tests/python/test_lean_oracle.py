@@ -79,9 +79,9 @@ class RoundTrip(unittest.TestCase):
 
     # an interval matrix: its lower bounds
     def test_interval_matrix(self):
-        A = cora.IntervalMatrix(cora.Interval.matrix(*self.bounds(2, 3)))
-        L = cora.lean.IntervalMatrix(cora.lean.Interval(A.interval))
-        same_bits(self, A.infimum, np.asarray(L.infimum().gather(), dtype=np.float64))
+        A = cora.Interval.matrix(*self.bounds(2, 3))
+        L = cora.lean.IntervalMatrix(cora.lean.Interval(A))
+        same_bits(self, A.inf, np.asarray(L.infimum().gather(), dtype=np.float64))
 
     def test_empty_set_and_fullspace(self):
         self.assertEqual(cora.lean.EmptySet.empty(3).dim, cora.EmptySet(3).dim)

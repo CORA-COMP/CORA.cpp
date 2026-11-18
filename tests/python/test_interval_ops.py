@@ -185,8 +185,9 @@ class Arithmetic(unittest.TestCase):
         np.testing.assert_allclose(P4.sup, np.linalg.matrix_power(M, 4), rtol=1e-9)
         with self.assertRaises(cora.errors.WrongValue):
             A.matrix_power(-1)
-        with self.assertRaises(cora.errors.NotSupported):
-            cora.Interval.matrix(np.array([[1.0]]), np.array([[2.0]])).matrix_power(2)
+        # a 1 x 1 base is a matrix: [-1, 2] [-1, 2] = [-2, 4], not the square [0, 4]
+        S = cora.Interval.matrix(np.array([[-1.0]]), np.array([[2.0]])).matrix_power(2)
+        np.testing.assert_allclose([S.inf[0], S.sup[0]], [-2.0, 4.0])
 
     # logarithm
     def test_log(self):

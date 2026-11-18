@@ -6,6 +6,7 @@
 // See also: Interval::sup, infimum
 //
 // CORA: contSet/@interval/supremum.m
+// CORA: matrixSet/@intervalMatrix/supremum.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026

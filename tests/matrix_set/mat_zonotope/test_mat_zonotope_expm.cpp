@@ -27,12 +27,12 @@ void expm_is_the_independent_series(const std::string &b) {
     const MatZonotope A = test::random_set(rng, 3, 2, 0.3);
     check(test::same_set(A.expm(), A.expm_independent(10), 0), b + ": the default order is 10");
     check(test::same_set(A.expm(6), A.expm_independent(6), 0), b + ": the order given");
-    const IntervalMatrix box = A.expm().interval_matrix();
+    const Interval box = A.expm().interval_matrix();
     bool inside = true;
     for (int trial = 0; trial < 20; ++trial)
         inside =
-            inside && box.contains(test::exponential(test::member(A, test::coefficients(rng, 2))),
-                                   "exact", 1e-12);
+            inside &&
+            box.contains(test::exponential(test::member(A, test::coefficients(rng, 2))), 1e-12);
     check(inside, b + ": exp(M) of every member is inside");
     const MatZonotope point(test::matrix({0, 0, 0, 0}, 2, 2));
     check(close(point.expm().center(), {1, 0, 0, 1}, 1e-12), b + ": exp(0) = I");

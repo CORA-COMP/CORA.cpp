@@ -6,9 +6,9 @@
 include/cora/              the public headers (cora/cora.h includes them all; cora/config.h is written by CMake)
   cont_set/                cont_set.h (ContSet), set.h (Set), registry.h (the binary operations)
     zonotope/  con_zonotope/  zono_bundle/  polytope/  ellipsoid/  interval/  empty_set/  fullspace/   the class in its header
-  matrix_set/              interval_matrix/ (CORA's matrixSet: sets of matrices; not a ContSet)
+  matrix_set/              mat_zonotope/ (CORA's matrixSet; an interval matrix is an Interval)
   cont_dynamics/           cont_dynamics.h (ReachSet, the problems), algorithms.h (the alg:: structs)
-    linear_sys/  nonlinear_sys/
+    linear_sys/ (mat_exp/: the matrix exponential)  nonlinear_sys/
   nn/neural_network/  specification/  global/ (tensor, backends, errors, settings, plot, oracle)
 src/                       the implementation, one operation per file, mirroring include/cora/
   cont_set/cont_set/       the checked entries of ContSet; cont_set/registry.cpp the binary registry

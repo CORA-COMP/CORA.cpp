@@ -1,17 +1,20 @@
 // interval - the class of intervals I = {x | inf <= x <= sup}, as CORA's interval
 //
-// A box with column bounds (..., n, 1). As in CORA the bounds may be matrices (..., n, n): an
-// interval matrix is an Interval too, and Zonotope::linear_map takes it. Immutable: every
-// operation returns a new interval.
+// A box with column bounds (..., n, 1). The bounds may be matrices (..., n, m): an interval
+// matrix (CORA's intervalMatrix) is an Interval, as in CORALean (Interval (Mat n m)); its
+// products, square and norms are methods here, its exponential is in linear_sys/mat_exp.
+// Immutable: every operation returns a new interval.
 //
-// Syntax:     Interval I(inf, sup);   Interval I = Interval::generate_random(rng);
-// Operators:  I + I2, I + v, I - I2, I - v, v - I, -I, +I, s * I, M * I, I / s, I <= I2, I < I2, as
-//             in CORA
+// Syntax:     Interval I(inf, sup);   Interval A = Interval::from_center_delta(C, D);
+// Operators:  I + I2, I + v, I + s, I - I2, I - v, v - I, -I, +I, s * I, M * I, I * M, I * I2
+//             (matmul), I / s, I <= I2, I < I2, as in CORA
 // Operations: one file each in src/cont_set/interval/, named as CORA's; the constructor checks its
 //             input (interval.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@interval/interval.m
+// CORA: matrixSet/@intervalMatrix/intervalMatrix.m
+// CORA: matrixSet/@intervalMatrix/interval.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
@@ -24,6 +27,7 @@
 #include "cora/cont_set/set.h"
 #include "cora/global/within_tol.h"
 
+#include <array>
 #include <limits>
 #include <optional>
 #include <string>
@@ -54,6 +58,12 @@ class Interval : public ContSet {
     const Tensor &inf() const noexcept { return inf_; }
     const Tensor &sup() const noexcept { return sup_; }
 
+    using ContSet::dim;
+
+    /// The rows (rc = 1) or the columns (rc = 2) of the bounds, as CORA's intervalMatrix.dim(rc);
+    /// dim() is the rows, a column has one column.
+    int64_t dim(int rc) const;
+
     /// Whether the interval is empty: bounds without columns, as CORA's interval.empty.
     bool is_empty() const { return inf_.shape().back() == 0; }
 
@@ -69,10 +79,43 @@ class Interval : public ContSet {
     /// A batch of intervals of one dimension (and batch shape) as one.
     static Interval stack(const std::vector<Interval> &Is);
 
-    /// Whether the point p (..., n, 1) is in the box enlarged by tol in every coordinate (absolute,
-    /// or relative to the bound, as within_tol); for a batch, whether all points are. tol
+    /// Whether the point p (..., n, 1), or the matrix p (..., n, m) of an interval matrix, is in
+    /// the box enlarged by tol in every entry (as within_tol); for a batch, whether all are. tol
     /// default: the repository tolerance (docs/architecture.md).
     bool contains(const Tensor &p, Tol tol = std::nullopt) const;
+
+    /// The same with CORA's type, 'exact' or 'approx' (both answer exactly, as CORA's
+    /// intervalMatrix does for a box).
+    bool contains(const Tensor &p, const std::string &type, Tol tol = std::nullopt) const;
+
+    // Interval matrices ---------------------------------------------------------------------------
+
+    /// The interval matrix C +- |D|, entrywise [C - |D|, C + |D|] (CORA's intervalMatrix(C, D));
+    /// C and D are matrices (..., rows, cols) of one shape.
+    static Interval from_center_delta(const Tensor &center, const Tensor &delta);
+
+    /// A random interval matrix (CORA's intervalMatrix.generateRandom): dimension {rows, cols}
+    /// (default from center or max_radius, else 1..10 each), center 10 N(0, 1), radii 10 U[0, 1].
+    static Interval generate_random_matrix(Rng &rng,
+                                           std::optional<std::array<int64_t, 2>> dimension = {},
+                                           const std::optional<Tensor> &center = std::nullopt,
+                                           const std::optional<Tensor> &max_radius = std::nullopt);
+
+    /// [A] [B] by the sum of the hulls of the corner products, and [A] M for a matrix of numbers
+    /// (M [A] is linear_map), as CORA's mtimes of interval matrices.
+    Interval matmul(const Interval &B) const;
+    Interval matmul(const Tensor &M) const;
+
+    /// The interval matrix of the entrywise range of M M, M in the set: the exact square.
+    Interval exact_square() const;
+
+    /// The largest absolute row sum of the matrices of the set, norm(abs(A), Inf), (..., 1, 1).
+    Tensor infinity_norm() const;
+
+    /// The distinct matrices with every entry at an end of its interval, one (K, rows, cols) tensor
+    /// per batch member (the batch flattened), as CORA's intervalMatrix vertices; at most 20
+    /// entries.
+    std::vector<Tensor> vertex_matrices() const;
 
     // Construction and combination ----------------------------------------------------------------
 
@@ -209,7 +252,7 @@ class Interval : public ContSet {
 
     /// The k-th power of a square interval matrix (CORA's mpower): the identity for k = 0, else
     /// the product A (A (... A)) of k factors, each entry the sum of the corner hulls. A 1 x 1
-    /// base is Error::not_supported (CORA's power).
+    /// base too (CORALean's matPow): sound but looser than the exact power, which power() gives.
     Interval matrix_power(int64_t exponent) const;
 
     /// The elementwise larger (smaller) of two boxes: [max(inf, inf2), max(sup, sup2)] (CORA's
@@ -236,8 +279,8 @@ class Interval : public ContSet {
     Interval unite(const Tensor &p) const;
 
     /// The norm of the largest member in absolute value: for type two, the 2-norm of
-    /// max(|inf|, |sup|) (the spectral norm for a matrix); else the norm of |center| + rad
-    /// (one, inf, fro). -Inf for an empty interval. Returns (..., 1, 1).
+    /// max(|inf|, |sup|) of a column (refused for a matrix, as CORA's intervalMatrix); else the
+    /// norm of |center| + rad (one, inf, fro). -Inf for an empty interval. Returns (..., 1, 1).
     Tensor norm(Tensor::Norm type = Tensor::Norm::two) const;
 
     // Embedding -----------------------------------------------------------------------------------
@@ -397,10 +440,12 @@ class Interval : public ContSet {
     Tensor inf_, sup_;
 };
 
-// Operators as in CORA: intervals add, a column v translates, a number scales, M * I maps.
+// Operators as in CORA: add, translate, scale, map (M * I) and multiply interval matrices (matmul).
 inline Interval operator+(const Interval &I, const Interval &I2) { return I.plus(I2); }
 inline Interval operator+(const Interval &I, const Tensor &v) { return {I.inf() + v, I.sup() + v}; }
 inline Interval operator+(const Tensor &v, const Interval &I) { return I + v; }
+inline Interval operator+(const Interval &I, double s) { return {I.inf() + s, I.sup() + s}; }
+inline Interval operator+(double s, const Interval &I) { return I + s; }
 inline Interval operator-(const Interval &I, const Interval &I2) { return I.minus(I2); }
 inline Interval operator-(const Interval &I, const Tensor &v) { return I.minus(v); }
 inline Interval operator-(const Tensor &v, const Interval &I) { return Interval::minus(v, I); }
@@ -414,6 +459,8 @@ inline Interval operator*(const Interval &I, double s) { return s * I; }
 inline Interval operator-(const Interval &I) { return I.uminus(); }
 inline Interval operator+(const Interval &I) { return I.uplus(); }
 inline Interval operator*(const Tensor &M, const Interval &I) { return I.linear_map(M); }
+inline Interval operator*(const Interval &I, const Tensor &M) { return I.matmul(M); }
+inline Interval operator*(const Interval &I, const Interval &I2) { return I.matmul(I2); }
 
 } // namespace cora
 

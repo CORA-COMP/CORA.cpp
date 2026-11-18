@@ -1,6 +1,7 @@
 // representsa - whether a box is also a set of another type, as CORA's interval.representsa_
 //
-// A matrix of intervals is supported for "emptySet" and "origin" only. The converted set (CORA's
+// An interval matrix (rows and columns > 1) is decided on its entries stacked into a column, as
+// CORA's intervalMatrix representsa (CORA's interval refuses it). The converted set (CORA's
 // second output) is not returned: use the conversions. "polygon" is refused
 // (Error::not_supported), CORA's switch has no case for it. "capsule" and "ellipsoid": at most
 // one coordinate has a width (CORA counts the zero widths instead, and accepts every box with
@@ -13,18 +14,20 @@
 // See also: is_full_dim, is_bounded
 //
 // CORA: contSet/@interval/representsa_.m
+// CORA: matrixSet/@intervalMatrix/representsa.m
 // CORA: contSet/@contSet/representsa_emptyObject.m
 // CORA: contSet/@contSet/representsa.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"
 
 #include "cont_set/cont_set/private/priv_set_type.h"
+#include "cont_set/interval/private/priv_vec.h"
 #include "global/format.h"
 
 #include <limits>
@@ -66,11 +69,8 @@ bool Interval::representsa(const std::string &type, Tol tol_arg) const {
                [] { return std::string("representsa: the type 'polygon' is not supported"); });
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "representsa");
     if (is_empty()) return !aux_empty_is_not(type);
-    CORA_CHECK(type == "emptySet" || type == "origin" || inf_.size(-1) == 1 || inf_.size(-2) == 1,
-               Error::not_supported, [] {
-                   return std::string("representsa only supports vector interval objects "
-                                      "(except type = 'emptySet', 'origin')");
-               });
+    // an interval matrix is the box of its entries
+    if (inf_.size(-1) > 1 && inf_.size(-2) > 1) return priv_vec(*this).representsa(type, tol);
     const double kInf = std::numeric_limits<double>::infinity();
     const Tensor zero = inf_.zeros_like();
     const Tensor flat = within_tol(rad(), zero, tol); // the coordinates of width zero

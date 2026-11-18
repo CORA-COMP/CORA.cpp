@@ -20,7 +20,7 @@
 
 namespace cora {
 
-MatZonotope priv_from_interval_matrix(const IntervalMatrix &A);
+MatZonotope priv_from_interval_matrix(const Interval &I);
 
 } // namespace cora
 

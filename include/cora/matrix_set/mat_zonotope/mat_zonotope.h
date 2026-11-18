@@ -14,7 +14,7 @@
 // Gradients:  every operation is differentiable except interval_matrix, norm, expm_independent,
 //             expm_mixed, expm_ind_mixed, expm_one_param, vertices, volume and reduce (piecewise)
 //             and contains and representsa (not differentiable: they answer a bool)
-// See also:   cora/matrix_set/interval_matrix/interval_matrix.h, cora/cont_set/zonotope/zonotope.h
+// See also:   cora/cont_set/interval/interval.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: matrixSet/@matZonotope/matZonotope.m
 // CORA: matrixSet/@matZonotope/numgens.m
@@ -26,8 +26,8 @@
 
 #pragma once
 
+#include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 
 #include <optional>
 #include <string>
@@ -49,6 +49,10 @@ class MatZonotope {
     /// The matrices C + sum_i b_i G_i: C is (..., rows, cols), G is (..., h, rows, cols).
     MatZonotope(Tensor center, Tensor generators);
 
+    /// The same set as an interval matrix A (an Interval of matrix bounds): the center matrix and
+    /// one generator per entry, its radius (CORA's intervalMatrix.matZonotope).
+    static MatZonotope from_interval(const Interval &A);
+
     // The parts of the set ------------------------------------------------------------------------
 
     /// The center matrix C.
@@ -66,8 +70,9 @@ class MatZonotope {
     /// (reshape(., [], 1) of CORA), as a zonotope of rows * cols dimensions.
     Zonotope zonotope() const;
 
-    /// The box around the set as an interval matrix: C +- sum_i |G_i|.
-    IntervalMatrix interval_matrix() const;
+    /// The box around the set as an interval matrix (an Interval of matrix bounds): C +- sum_i
+    /// |G_i|.
+    Interval interval_matrix() const;
 
     /// Whether the matrices M are in the set: M is (rows, cols) or (p, rows, cols), all of which
     /// must be inside; type "exact" or "approx", relaxed by tol. Not a batch.
@@ -168,10 +173,10 @@ class MatZonotope {
 /// remainder box.
 struct MatZonotope::ExpmMixedResult {
     MatZonotope enclosure;
-    IntervalMatrix enclosure_rest;
+    Interval enclosure_rest;
     std::vector<MatZonotope> powers;
-    std::vector<IntervalMatrix> powers2;
-    IntervalMatrix remainder;
+    std::vector<Interval> powers2;
+    Interval remainder;
 };
 
 /// The result of expm_one_param: the matrix zonotope of the Taylor terms, the remainder box, the
@@ -179,7 +184,7 @@ struct MatZonotope::ExpmMixedResult {
 /// the zonotope of the input terms.
 struct MatZonotope::ExpmOneParamResult {
     MatZonotope enclosure;
-    IntervalMatrix remainder;
+    Interval remainder;
     std::vector<MatZonotope> powers;
     std::optional<Zonotope> constant_input;
 };

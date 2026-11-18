@@ -1,4 +1,4 @@
-// test_lean_interval_matrix_powers - IntervalMatrix::powers against the CORALean oracle
+// test_lean_interval_matrix_powers - Interval::powers against the CORALean oracle
 //
 // The power of order initial_order + k is the oracle's powers at offset k from the initial power.
 //
@@ -8,7 +8,8 @@
 // Last update:   ---
 // Reviewed:      ---
 
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
+#include "cora/cont_set/interval/interval.h"
 #include "oracle_testing.h"
 
 using namespace cora;
@@ -22,13 +23,13 @@ int main() {
     if (!test::oracle::available()) return 0;
     test::oracle::run("intervalMatrix.powers", [](test::oracle::Random &rnd) {
         for (const int n : {2, 3, 4}) {
-            const IntervalMatrix A(rnd.box_matrix(n, n)), X(rnd.box_matrix(n, n));
-            const lean::IntervalMatrix L{lean::Interval(A.interval())};
+            const Interval A = rnd.box_matrix(n, n), X(rnd.box_matrix(n, n));
+            const lean::IntervalMatrix L{lean::Interval(A)};
             for (const int k : {0, 1, 2, 4}) {
-                test::oracle::check(A.powers(k + 1).back(),
-                                    L.powers(lean::Interval(A.interval()), k));
-                test::oracle::check(A.powers(k + 3, 3, X).back(),
-                                    L.powers(lean::Interval(X.interval()), k));
+                test::oracle::check(mat_exp::powers(A, k + 1).back(),
+                                    L.powers(lean::Interval(A), k));
+                test::oracle::check(mat_exp::powers(A, k + 3, 3, X).back(),
+                                    L.powers(lean::Interval(X), k));
             }
         }
     });

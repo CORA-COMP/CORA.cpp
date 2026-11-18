@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/capsule.h"
 #include "cora/global/oracle/con_zonotope.h"
 #include "cora/global/oracle/fullspace.h"
@@ -35,7 +36,6 @@
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/global/within_tol.h"
-#include "cora/matrix_set/interval_matrix/interval_matrix.h"
 #include "testing.h"
 
 #include <cmath>
@@ -296,11 +296,6 @@ inline bool agree(const std::string &what, const cora::Fullspace &a, const lean:
         std::cerr << "  " << what << ": R^" << a.dim() << " in CORA.cpp, R^" << b.dim()
                   << " in the oracle\n";
     return a.dim() == b.dim();
-}
-
-/// An interval matrix against the oracle's interval matrix: its bounds.
-inline bool agree(const std::string &what, const cora::IntervalMatrix &a, const lean::Interval &b) {
-    return agree(what, a.interval(), b);
 }
 
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).

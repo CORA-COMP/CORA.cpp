@@ -6,6 +6,7 @@
 // See also: linear_map, Zonotope::plus
 //
 // CORA: contSet/@interval/plus.m
+// CORA: matrixSet/@intervalMatrix/plus.m
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner
 // Written:       02-November-2026

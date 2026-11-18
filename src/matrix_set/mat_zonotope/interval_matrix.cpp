@@ -2,7 +2,7 @@
 //
 // The smallest box around the set.
 //
-// Syntax:   IntervalMatrix B = A.interval_matrix();
+// Syntax:   Interval B = A.interval_matrix();
 // Inputs:   -
 // Outputs:  B - the interval matrix [C - D, C + D] with D the sum of the absolute generators
 // See also: norm, zonotope
@@ -23,9 +23,9 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-IntervalMatrix MatZonotope::interval_matrix() const {
+Interval MatZonotope::interval_matrix() const {
     detail::Entry entry;
-    return IntervalMatrix(C_, G_.abs().sum(-3));
+    return Interval::from_center_delta(C_, G_.abs().sum(-3));
 }
 
 } // namespace cora

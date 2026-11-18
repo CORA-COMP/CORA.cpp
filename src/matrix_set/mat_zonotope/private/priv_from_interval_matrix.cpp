@@ -18,14 +18,13 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-MatZonotope priv_from_interval_matrix(const IntervalMatrix &A) {
-    const Interval &I = A.interval();
-    const int64_t n = A.rows(), m = A.cols();
+MatZonotope priv_from_interval_matrix(const Interval &I) {
+    const int64_t n = I.inf().size(-2), m = I.inf().size(-1);
     const Tensor radius = I.rad();
     // generator j holds the radius of the entry j (in column order) at that entry
     const Tensor diagonal = priv_stack_columns(radius).diag();
     const Tensor transposed = diagonal.reshape(priv_replace_tail(diagonal, 2, {n * m, m, n}));
-    return MatZonotope(A.center(), transposed.matrix_transpose());
+    return MatZonotope(I.center(), transposed.matrix_transpose());
 }
 
 } // namespace cora

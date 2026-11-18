@@ -47,17 +47,17 @@ changed, and the reasons are listed below.
 | `fullspace(n)`, `fullspace.Inf(n)` | `Fullspace(n)`, `Fullspace::inf(n)` | `cora.Fullspace(n)`, `cora.Fullspace.inf(n)` |
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
 | `interval(inf, sup)` of matrix bounds | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
-| `intervalMatrix(C, D)`, `intervalMatrix(C)` | `IntervalMatrix(C, D)`, `IntervalMatrix(C)`, `IntervalMatrix(I)` | `cora.IntervalMatrix(C, D)` |
-| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs()`, `A.center`, `A.infimum`, `A.contains(M, type, tol)` |
+| `intervalMatrix(C, D)`, `intervalMatrix(C)` | `Interval::from_center_delta(C, D)`, `Interval(C, C)` | `cora.Interval.from_center_delta(C, D)`, `cora.Interval.matrix(C, C)` |
+| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs().sup()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs().sup`, `A.center`, `A.inf`, `A.contains(M, type, tol)` |
 | `mtimes(A, B)`, `A * B` | `A.matmul(B)`, `A * B`, `M * A`, `A * M`, `s * A`, `A * Z` | `A @ B`, `M @ A`, `A @ M`, `s * A`, `A @ Z` |
-| `mpower(A, k)` | `A.matrix_power(k)` | `A.matrix_power(k)`, `A ** k` |
+| `mpower(A, k)`, `dim(A, rc)` | `A.matrix_power(k)`, `A.dim(rc)` | `A.matrix_power(k)` (`A ** k` is elementwise) |
 | `plus(A, B)`, `A + B` | `A.plus(B)`, `A + B`, `A + M`, `M + A`, `A + s`, `s + A` | `A + B`, `A + M`, `s + A`, `A.plus(B)` |
-| `powers(A, N, k, P)` | `A.powers(N)`, `A.powers(N, k, P)` | `A.powers(N, k, P)` (a list, `[i]` of order `k + i`) |
-| `rad(A)`, `supremum(A)` | `A.rad()`, `A.supremum()` | `A.rad`, `A.supremum` |
-| `representsa(A, type, tol)`, `volume(A)`, `vertices(A)` | `A.representsa(type, tol)`, `A.volume()`, `A.vertices()` | the same |
-| `expm`, `expmInd`, `expmMixed` | `A.expm(...)`, `A.expm_independent(...)`, `A.expm_mixed(r, k, N)` | the same |
+| `powers(A, N, k, P)` | `mat_exp::powers(A, N)`, `mat_exp::powers(A, N, k, P)` | `cora.mat_exp.powers(A, N, k, P)` (a list, `[i]` of order `k + i`) |
+| `expm(A, ...)`, `expmInd`, `expmMixed`, `dependentTerms`, `exponentialRemainder` of an `intervalMatrix` | `mat_exp::expm(A, ...)`, `mat_exp::expm_independent`, `mat_exp::expm_mixed`, `mat_exp::dependent_terms`, `mat_exp::exponential_remainder` | `cora.mat_exp.expm(A, ...)` and the same names |
+| `rad(A)`, `supremum(A)` | `A.rad()`, `A.supremum()` | `A.rad`, `A.sup` |
+| `representsa(A, type, tol)`, `volume(A)`, `vertices(A)` | `A.representsa(type, tol)`, `A.volume()`, `A.vertex_matrices()` | the same |
 | `infNorm(A)`, `norm(A, type)` | `A.infinity_norm()`, `A.norm(type)` | the same |
-| `dependentTerms(A, r)`, `exactSquare(A)`, `exponentialRemainder(A, N)` | `A.dependent_terms(r)`, `A.exact_square()`, `A.exponential_remainder(N)` | the same |
+| `exactSquare(A)`, `generateRandom` | `A.exact_square()`, `Interval::generate_random_matrix(rng, ...)` | the same |
 | `Z.c`, `center(Z)` | `Z.center()` | `Z.center` |
 | `Z.G`, `generators(Z)` | `Z.generators()` | `Z.generators` |
 | `dim(S)` | `S.dim()` | `S.dim` |
@@ -266,7 +266,7 @@ changed, and the reasons are listed below.
   - `and` and `or` are keywords of C++ (alternative tokens), so they are `intersect` and
     `unite`. The operators `&` and `|` stay.
   - `mtimes` is MATLAB's name of an operator, so it is `linear_map` for a set under a matrix and
-    `matmul` for the product of matrices (`IntervalMatrix`); `projectOnHyperplane` takes the
+    `matmul` for the product of matrices (an interval matrix, `MatZonotope`); `projectOnHyperplane` takes the
     constraint of the hyperplane (a normal and an offset), as CORA.cpp has no hyperplane class.
   - `not` is a keyword of C++ (an alternative token), so the complement of `emptySet` and
     `fullspace` is `complement`.

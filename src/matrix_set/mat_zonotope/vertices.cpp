@@ -8,7 +8,7 @@
 // Syntax:   std::vector<Tensor> V = M.vertices();
 // Inputs:   -
 // Outputs:  V - per batch member the matrices (K, rows, cols) at the corners
-// See also: IntervalMatrix::vertices, zonotope
+// See also: Interval::vertex_matrices, zonotope
 //
 // CORA: matrixSet/@matZonotope/vertices.m
 // CORA authors: Matthias Althoff
@@ -18,8 +18,8 @@
 // Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
+#include "global/vertex_matrices.h"
 #include "matrix_set/mat_zonotope/private/priv_stacking.h"
-#include "matrix_set/private/priv_vertex_matrices.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -49,7 +49,7 @@ std::vector<Tensor> MatZonotope::vertices() const {
     for (int64_t j = h - 1; j >= 0; --j)
         sum = sum + S.slice(-1, j, j + 1).multiply(Gt.slice(-2, j, j + 1));
     const Tensor corners = priv_stack_columns(C_).matrix_transpose() + sum;
-    return priv_vertex_matrices(corners, rows(), cols());
+    return vertex_matrices(corners, rows(), cols());
 }
 
 } // namespace cora

@@ -79,7 +79,7 @@ void boundary_point_is_the_exit_of_the_ray(const std::string &b) {
         const Tensor x = I.boundary_point(dir, start);
         check(I.contains(x), b + ": the exit point is in the box");
         const Tensor beyond = x + (x - start) * 1e-3;
-        check(!I.contains(beyond, 0), b + ": beyond the exit point is outside");
+        check(!I.contains(beyond, 0.0), b + ": beyond the exit point is outside");
         // x - start is a positive multiple of dir
         const std::vector<double> d = dir.data(), s = (x - start).data();
         bool parallel = true;

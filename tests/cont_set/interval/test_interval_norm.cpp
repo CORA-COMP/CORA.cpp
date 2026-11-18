@@ -34,7 +34,8 @@ void norm_of_the_largest_member(const std::string &b) {
     check(close(I.norm(Tensor::Norm::fro), std::vector<double>{5.0}), b + ": the Frobenius norm");
     const Interval M(Tensor::from_data({-3, 0, 0, -4}, {2, 2}),
                      Tensor::from_data({1, 0, 0, 2}, {2, 2}));
-    check(close(M.norm(), std::vector<double>{4.0}), b + ": a matrix has the spectral norm");
+    check(test::raises([&] { M.norm(); }, Error::wrong_value),
+          b + ": a matrix has no 2-norm (CORA's intervalMatrix)");
     check(Interval::empty(2).norm().data()[0] == -std::numeric_limits<double>::infinity(),
           b + ": the empty interval has norm -Inf");
     const Tensor N = Interval::stack({I, I}).norm();
