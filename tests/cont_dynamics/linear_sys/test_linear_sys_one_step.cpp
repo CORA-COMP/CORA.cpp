@@ -30,8 +30,7 @@ void the_end_is_the_sum_of_its_parts(const std::string &b) {
     const OneStep s = sys.one_step(initial_set(), U, u, kStep, kTerms);
     const AffineSolution affine = sys.affine_solution(initial_set(), u, kStep, kTerms);
     const Zonotope PU = sys.particular_solution_time_varying(U, kStep, kTerms);
-    check(test::close(s.time_point.center(),
-                      affine.time_point.center() + PU.center(), 1e-15),
+    check(test::close(s.time_point.center(), affine.time_point.center() + PU.center(), 1e-15),
           b + ": the center");
     check(test::close(s.time_varying.generators(), PU.generators(), 0), b + ": PU");
     check(test::close(s.constant.center(), affine.constant.center(), 1e-15), b + ": Pu");
