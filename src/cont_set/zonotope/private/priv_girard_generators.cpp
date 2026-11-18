@@ -28,7 +28,7 @@ namespace cora {
 Tensor priv_girard_generators(const Tensor &G, int64_t keep) {
     // the choice is made on detached values; the result takes its rows from G, with gradients
     const auto [kept, rest] = G.detach().girard_split(keep);
-    const Tensor box = G.take_along_axis(rest, -2).abs().sum(-2).expand_dims(-1).diag();
+    const Tensor box = G.take_along_axis(rest, -2).abs_sum_rows().diag();
     return keep == 0 ? box : Tensor::concat({G.take_along_axis(kept, -2), box}, -2);
 }
 

@@ -712,6 +712,8 @@ Tensor::Ptr HostTensor<T>::take(const Tensor::Impl &idx, int axis) const {
     return r;
 }
 
+// Gathers ----------------------------------------------------------------------------------------
+
 // out[pos] = x[pos with the axis at idx[pos]], idx broadcast over the other axes.
 template <class T>
 Tensor::Ptr HostTensor<T>::take_along_axis(const Tensor::Impl &idx, int axis) const {
@@ -725,12 +727,29 @@ Tensor::Ptr HostTensor<T>::take_along_axis(const Tensor::Impl &idx, int axis) co
     auto r = fresh(out);
     const T *ix = of(idx).p;
     const int64_t len = shape[axis];
+    const auto outside = [&](int64_t l) {
+        CORA_FAIL(Error::wrong_value, "CoraTensor::take_along_axis: the index " +
+                                          std::to_string(l) + " is outside 0.." +
+                                          std::to_string(len - 1));
+    };
+    // whole rows of matrices, one index per row (the generators a reduction keeps): row copies
+    const int64_t nd = shape.size();
+    if (axis == nd - 2 && idx.shape.size() == nd && idx.shape.back() == 1 &&
+        std::equal(shape.begin(), shape.begin() + axis, idx.shape.begin())) {
+        const int64_t rows = idx.shape[axis], n = shape.back();
+        if (rows * n == 0) return r;
+        const int64_t count = out.numel() / (rows * n);
+        for (int64_t z = 0; z < count; ++z)
+            for (int64_t j = 0; j < rows; ++j) {
+                const int64_t l = static_cast<int64_t>(ix[z * rows + j]);
+                if (l < 0 || l >= len) outside(l);
+                std::copy_n(p + (z * len + l) * n, n, r->p + (z * rows + j) * n);
+            }
+        return r;
+    }
     aux_walk<3>(out, st, [&](int64_t ixx, int64_t ii, int64_t io) {
         const int64_t l = static_cast<int64_t>(ix[ii]);
-        if (l < 0 || l >= len)
-            CORA_FAIL(Error::wrong_value, "CoraTensor::take_along_axis: the index " +
-                                              std::to_string(l) + " is outside 0.." +
-                                              std::to_string(len - 1));
+        if (l < 0 || l >= len) outside(l);
         r->p[io] = p[ixx + l * axis_stride];
     });
     // every index was in range, so the result is filled
