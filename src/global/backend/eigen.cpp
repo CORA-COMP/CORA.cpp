@@ -347,7 +347,10 @@ zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const 
         const auto Gz = MapC<T>(G.p + r * m * k, m, k);
         const auto cz = MapC<T>(c.p + r * k, 1, k);
         // the box S |[c; G]|' 1, and c T', G T'
-        Map<T>(reach, 1, k) = cz.cwiseAbs() + Gz.cwiseAbs().colwise().sum();
+        auto sum = Map<T>(reach, 1, k); // the rows of |G| added in order, then |c|
+        sum.setZero();
+        for (int64_t i = 0; i < m; ++i) sum += Gz.row(i).cwiseAbs();
+        sum += cz.cwiseAbs();
         Map<T>(box, n, 1).noalias() = MapC<T>(s, n, k) * MapC<T>(reach, k, 1);
         Map<T>(Tc->p + z * n, 1, n).noalias() = cz * MapC<T>(t, n, k).transpose();
         Map<T> out(TG->p + z * (m + n) * n, m + n, n);
