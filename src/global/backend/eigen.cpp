@@ -213,6 +213,8 @@ Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b) {
     return r;
 }
 
+// Sums --------------------------------------------------------------------------------------------
+
 // All rows of all matrices at once: one Eigen row sum.
 template <class T>
 Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims) {
