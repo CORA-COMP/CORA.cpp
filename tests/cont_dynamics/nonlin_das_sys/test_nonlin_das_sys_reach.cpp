@@ -163,16 +163,14 @@ void the_steps_are_those_of_reach(const std::string &b) {
     const DaeReachSet R = sys.reach(problem, a);
     const DaeStep first = sys.init_reach(problem, a);
     const DaeStep second = sys.post(first, problem, Tensor({1.0}), a);
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_center(first.time_point),
-                      cora::detail::cora_center(R.time_point[1]), 1e-12) &&
-              // layout: #163 step 2
-              test::close(cora::detail::cora_center(second.time_point),
-                          cora::detail::cora_center(R.time_point[2]), 1e-12),
+    check(test::close(first.time_point.center().expand_dims(-1),
+                      R.time_point[1].center().expand_dims(-1), 1e-12) &&
+              test::close(second.time_point.center().expand_dims(-1),
+                          R.time_point[2].center().expand_dims(-1), 1e-12),
           b + ": the steps of reach");
     // with u = 1 in the second step the center moves up by about 1 * dt: x' = -x/2 + 1
-    check(cora::detail::cora_center(second.time_point).item() >
-              cora::detail::cora_center(first.time_point).item(),
+    check(second.time_point.center().expand_dims(-1).item() >
+              first.time_point.center().expand_dims(-1).item(),
           b + ": the constant input of the second step");
 }
 
@@ -234,11 +232,9 @@ void wrong_arguments_are_described(const std::string &b) {
           b + ": a state owned by no subsystem");
     // the same problem with the checks on, then off
     const DaeReachProblem problem{.initial_set = X0, .y0_guess = y_guess, .t_final = 0.1};
-    // layout: #163 step 2
-    const Tensor on = cora::detail::cora_center(sys.reach(problem, a).time_point.back());
+    const Tensor on = (sys.reach(problem, a).time_point.back()).center().expand_dims(-1);
     ChecksScope off(false);
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_center(sys.reach(problem, a).time_point.back()), on, 0),
+    check(test::close((sys.reach(problem, a).time_point.back()).center().expand_dims(-1), on, 0),
           b + ": the same with the checks off");
 }
 

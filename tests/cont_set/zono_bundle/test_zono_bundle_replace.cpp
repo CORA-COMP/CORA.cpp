@@ -24,14 +24,11 @@ int main() {
         const ZonoBundle zono_bundle = test::two_zonotopes();
         const Zonotope W(column({3.0, 3.0}), Tensor({{1.0, 1.0}}));
         const ZonoBundle R = zono_bundle.replace(1, W);
-        // layout: #163 step 2
         check(R.parallel_sets() == 2 &&
-                  close(cora::detail::cora_center(R.zonotopes()[1]), {3, 3}, 0) &&
-                  // layout: #163 step 2
-                  close(cora::detail::cora_center(R.zonotopes()[0]), {0, 0}, 0),
+                  close((R.zonotopes()[1]).center().expand_dims(-1), {3, 3}, 0) &&
+                  close((R.zonotopes()[0]).center().expand_dims(-1), {0, 0}, 0),
               b + ": member 1 replaced, member 0 kept");
-        // layout: #163 step 2
-        check(close(cora::detail::cora_center(zono_bundle.zonotopes()[1]), {1, 0}, 0),
+        check(close((zono_bundle.zonotopes()[1]).center().expand_dims(-1), {1, 0}, 0),
               b + ": the original is unchanged");
     });
     const ZonoBundle zono_bundle = test::two_zonotopes();

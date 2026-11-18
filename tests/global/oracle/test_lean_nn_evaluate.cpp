@@ -141,10 +141,8 @@ void aux_check_network(const NeuralNetwork &nn, const Zonotope &Z, const std::st
     const std::vector<lean::NnLayer> layers = aux_lean_layers(nn);
     const lean::Zonotope Y = lean::evaluate_network(layers, lean::Zonotope(Z),
                                                     error.empty() ? "singh" : "regression", error);
-    oracle::check(
-        nn.evaluate(Z, aux_options(error)),
-        // layout: #163 step 2
-        aux_without_bias_generators(Y, layers, cora::detail::cora_generators(Z).shape()[1]));
+    oracle::check(nn.evaluate(Z, aux_options(error)),
+                  aux_without_bias_generators(Y, layers, Z.nr_generators()));
 }
 
 /// CORA.cpp's and the oracle's polynomial zonotope (c, G, GI) of the network, the errors as
@@ -193,8 +191,7 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
 /// CORA.cpp's and the oracle's output set of one layer of the activation on Z.
 void aux_check_layer(const std::string &name, Activation activation, const Zonotope &Z,
                      const std::string &error) {
-    // layout: #163 step 2
-    const int64_t n = cora::detail::cora_center(Z).shape()[0];
+    const int64_t n = Z.center().expand_dims(-1).shape()[0];
     const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
     const lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
                                 : name == "sigmoid" ? lean::NnLayer::sigmoid()
@@ -297,8 +294,7 @@ int main() {
             const Tensor widths =
                 Tensor::from_data({0.0, 1e-9, 1e-3, 0.05, 0.3, 3.0, 30.0, 0.7}, {n, 1});
             const Tensor G = widths.diag().matmul(rnd.matrix(n, m));
-            // layout: #163 step 2
-            const Zonotope Z = cora::detail::zonotope_of_columns(rnd.vector(n) * 2.0, G);
+            const Zonotope Z = Zonotope((rnd.vector(n) * 2.0).squeeze(-1), G.matrix_transpose());
             for (const std::string &error : errors) aux_check_layer(name, activation, Z, error);
         }
     });
@@ -338,12 +334,10 @@ int main() {
                 rnd, {3, 6, 5, 2}, {activation, activation, Activation::identity});
             const Zonotope Z(rnd.vector(3), rnd.matrix(3, 4).matrix_transpose() * 0.3);
             const Tensor G = rnd.matrix(3, 3) * 0.2, GI = rnd.matrix(3, 2) * 0.1;
-            // layout: #163 step 2
-            aux_check_gi(name + " singh", nn, cora::detail::cora_center(Z), G, GI, "");
+            aux_check_gi(name + " singh", nn, Z.center().expand_dims(-1), G, GI, "");
             for (const std::string &error : errors) {
                 aux_check_network(nn, Z, error);
-                // layout: #163 step 2
-                aux_check_gi(name + " " + error, nn, cora::detail::cora_center(Z), G, GI, error);
+                aux_check_gi(name + " " + error, nn, Z.center().expand_dims(-1), G, GI, error);
             }
         }
         const NeuralNetwork mixed = aux_random_network(
@@ -374,23 +368,17 @@ int main() {
         const Zonotope docking = box_zonotope({70, 70, -0.14, -0.14}, {106, 106, 0.14, 0.14});
         for (const std::string &error : errors) {
             aux_check_network(aux_prefix(bench::load_network("quad"), 2), quad, error);
-            // layout: #163 step 2
             aux_check_gi("quad " + error, aux_prefix(bench::load_network("quad"), 2),
-                         cora::detail::cora_center(quad),
-                         // layout: #163 step 2
-                         cora::detail::cora_generators(quad), Tensor::zeros({12, 1}), error);
+                         quad.center().expand_dims(-1), quad.generators().matrix_transpose(),
+                         Tensor::zeros({12, 1}), error);
             aux_check_network(bench::load_network("nav_point"), nav, error);
-            // layout: #163 step 2
             aux_check_gi("nav " + error, bench::load_network("nav_set"),
-                         cora::detail::cora_center(nav),
-                         // layout: #163 step 2
-                         cora::detail::cora_generators(nav), Tensor::zeros({4, 1}), error);
+                         nav.center().expand_dims(-1), nav.generators().matrix_transpose(),
+                         Tensor::zeros({4, 1}), error);
             aux_check_network(bench::load_network("cartpole"), cart, error);
-            // layout: #163 step 2
             aux_check_gi("cartpole " + error, bench::load_network("cartpole"),
-                         cora::detail::cora_center(cart),
-                         // layout: #163 step 2
-                         cora::detail::cora_generators(cart), Tensor::zeros({4, 1}), error);
+                         cart.center().expand_dims(-1), cart.generators().matrix_transpose(),
+                         Tensor::zeros({4, 1}), error);
             aux_check_network(aux_narrow(bench::load_network("docking"), 3, 32), docking, error);
         }
     });

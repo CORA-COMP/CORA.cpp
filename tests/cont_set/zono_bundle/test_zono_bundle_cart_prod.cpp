@@ -32,12 +32,10 @@ void pairs_of_members(const std::string &b) {
     const std::vector<Zonotope> expected{A1.cart_prod(B1), A1.cart_prod(B2), A2.cart_prod(B1),
                                          A2.cart_prod(B2)};
     for (std::size_t i = 0; i < 4; ++i)
-        // layout: #163 step 2
-        check(close(cora::detail::cora_center(P.zonotopes()[i]),
-                    cora::detail::cora_center(expected[i]), 0) &&
-                  // layout: #163 step 2
-                  close(cora::detail::cora_generators(P.zonotopes()[i]),
-                        cora::detail::cora_generators(expected[i]), 0),
+        check(close((P.zonotopes()[i]).center().expand_dims(-1),
+                    expected[i].center().expand_dims(-1), 0) &&
+                  close((P.zonotopes()[i]).generators().matrix_transpose(),
+                        expected[i].generators().matrix_transpose(), 0),
               b + ": pair " + std::to_string(i));
 }
 
@@ -48,15 +46,14 @@ void one_set_against_every_member(const std::string &b) {
     const Interval I(column({0.0}), column({2.0}));
     check(bundle.cart_prod(I).parallel_sets() == 2 && bundle.cart_prod(I).dim() == 3,
           b + ": a box");
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(bundle.cart_prod(column({7.0})).zonotopes()[1]),
+    check(close((bundle.cart_prod(column({7.0})).zonotopes()[1]).center().expand_dims(-1),
                 {1.0, 2.0, 7.0}, 0),
           b + ": a point behind");
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(
-                    ZonoBundle::cart_prod(column({7.0}), bundle).zonotopes()[0]),
-                {7.0, 1.0, 2.0}, 0),
-          b + ": a point in front");
+    check(
+        close(
+            (ZonoBundle::cart_prod(column({7.0}), bundle).zonotopes()[0]).center().expand_dims(-1),
+            {7.0, 1.0, 2.0}, 0),
+        b + ": a point in front");
     check(bundle.cart_prod(Z).dim() == 4, b + ": a zonotope");
     const Set S = cart_prod(Set(bundle), Set(Z));
     check(S.is<ZonoBundle>() && S.as<ZonoBundle>().dim() == 4, b + ": through the registry");

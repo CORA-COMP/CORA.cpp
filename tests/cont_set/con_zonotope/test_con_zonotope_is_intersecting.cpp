@@ -34,9 +34,7 @@ void is_intersecting_known(const std::string &b) {
     // a zonotope and a constrained zonotope, then a point and the empty set
     const Zonotope Z(column({1.0, 1.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     check(seg.is_intersecting(Z) &&
-              // layout: #163 step 2
-              !seg.is_intersecting(cora::detail::zonotope_of_columns(
-                  column({3.0, 3.0}), cora::detail::cora_generators(Z))),
+              !seg.is_intersecting(Zonotope(column({3.0, 3.0}).squeeze(-1), Z.generators())),
           b + ": a zonotope");
     check(seg.is_intersecting(seg) && !seg.is_intersecting(seg.plus(column({2.0, 0.0}))),
           b + ": a constrained zonotope");

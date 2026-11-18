@@ -33,7 +33,7 @@ int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(43);
     const auto zonotope = [](const Inputs &x) {
-        return cora::detail::zonotope_of_columns(x[0], x[1]);
+        return Zonotope(x[0].squeeze(-1), x[1].matrix_transpose());
     }; // layout: #163 step 2
     const auto S = [](const Zonotope &Z) -> const ContSet & { return Z; };
     test::gradcheck(

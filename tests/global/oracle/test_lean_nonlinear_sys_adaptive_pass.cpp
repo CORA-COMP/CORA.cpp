@@ -95,12 +95,11 @@ int main() {
                         priv_lin_reach_adaptive_pass(c.sys, kappa, U, alg, c.dt, c.R, adm);
                     const auto theirs = oracle.lin_reach_adaptive_pass(
                         lean_input, lean::Zonotope(c.R), c.dt, kappa,
-                        // layout: #163 step 2
-                        priv_column(cora::detail::cora_center(c.R), adm), alg);
+                        priv_column(c.R.center().expand_dims(-1), adm), alg);
                     test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
                     if (!mine || !theirs) continue;
                     // the values and the sets of the pass
-                    const Tensor &like = cora::detail::cora_center(c.R);
+                    const Tensor &like = c.R.center().expand_dims(-1);
                     test::oracle::check(b + " xs", priv_column(like, mine->xs), theirs->xs);
                     test::oracle::check(b + " A", mine->A, theirs->A);
                     test::oracle::check(b + " Rmax", mine->Rmax, theirs->Rmax);
@@ -115,7 +114,7 @@ int main() {
 
                     // the error over Rmax from the point of the pass, against the oracle's
                     const Jacobians J =
-                        c.sys.jacobian(priv_column(like, mine->xs), cora::detail::cora_center(c.U));
+                        c.sys.jacobian(priv_column(like, mine->xs), c.U.center().expand_dims(-1));
                     const Zonotope V = priv_abstr_err_adaptive(c.sys, kappa, J.A, J.B, mine->xs,
                                                                mine->Rmax, U, alg.zeta_z);
                     const auto err =
@@ -136,8 +135,7 @@ int main() {
                 const std::vector<double> adm(std::size_t(n), 0.0);
                 const auto pass = priv_lin_reach_adaptive_pass(c.sys, 2, c.U, alg, c.dt, c.R, adm);
                 if (!pass) continue;
-                // layout: #163 step 2
-                const Tensor xs = priv_column(cora::detail::cora_center(c.R), pass->xs);
+                const Tensor xs = priv_column(c.R.center().expand_dims(-1), pass->xs);
                 // every pattern of zero-width dimensions
                 for (int64_t mask = 0; mask < (int64_t(1) << n); ++mask) {
                     std::vector<bool> zero_width(static_cast<std::size_t>(n));
@@ -146,7 +144,7 @@ int main() {
                     const std::vector<char> flags(zero_width.begin(), zero_width.end());
                     // the orders from the Hessian enclosure at the point of the pass
                     const auto H =
-                        c.sys.hessian_enclosure(Range(xs), Range(cora::detail::cora_center(c.U)));
+                        c.sys.hessian_enclosure(Range(xs), Range(c.U.center().expand_dims(-1)));
                     const std::vector<int> mine = priv_adaptive_orders(
                         pass->A, flags, pass->gzero, H, n, c.sys.input_dim(), 100);
                     // the oracle's orders for the same pattern

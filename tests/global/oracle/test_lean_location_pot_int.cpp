@@ -37,8 +37,7 @@ Polytope aux_guard(test::oracle::Random &rnd, const std::vector<Zonotope> &sets,
     }
     if (!equality) return {A, Tensor::from_data(b, {p, 1})};
     const Tensor Ae = rnd.matrix(1, n);
-    // layout: #163 step 2
-    const Tensor be = Ae.matmul(cora::detail::cora_center(sets.front())) + rnd.uniform(-2.0, 2.0);
+    const Tensor be = Ae.matmul(sets.front().center().expand_dims(-1)) + rnd.uniform(-2.0, 2.0);
     return {A, Tensor::from_data(b, {p, 1}), Ae, be};
 }
 

@@ -39,10 +39,8 @@ void two_squares(const std::string &b) {
 void single_member(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     const ConZonotope cz = ZonoBundle({Z}).con_zonotope();
-    // layout: #163 step 2
-    check(cz.A().shape() == Shape{0, 2} && close(cz.c(), cora::detail::cora_center(Z), 0) &&
-              // layout: #163 step 2
-              close(cz.generators(), cora::detail::cora_generators(Z), 0),
+    check(cz.A().shape() == Shape{0, 2} && close(cz.c(), Z.center().expand_dims(-1), 0) &&
+              close(cz.generators(), Z.generators().matrix_transpose(), 0),
           b + ": a single member has no constraints");
 }
 
@@ -56,9 +54,8 @@ void same_points(const std::string &b) {
     check(cz.contains(inside), b + ": every point of the bundle is in the constrained zonotope");
     // a point of the first member only: the others cut it off
     const Tensor far =
-        // layout: #163 step 2
-        cora::detail::cora_center(bundle.zonotopes()[0]) +
-        cora::detail::cora_generators(bundle.zonotopes()[0]).slice(-1, 0, 1) * 1.0;
+        (bundle.zonotopes()[0]).center().expand_dims(-1) +
+        (bundle.zonotopes()[0]).generators().matrix_transpose().slice(-1, 0, 1) * 1.0;
     check(cz.contains(far) == test::in_every_member(bundle, far), b + ": a boundary point agrees");
     check(!cz.contains(common + common.ones_like() * 100.0), b + ": a far point is outside");
 }

@@ -28,12 +28,10 @@ void permutation(const std::string &b) {
     const ZonoBundle bundle({Z1, Z2});
     const std::vector<int64_t> dims{2, 0, 1};
     const ZonoBundle R = bundle.lift(3, dims);
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(R.zonotopes()[0]), {2.0, 3.0, 1.0}, 0),
+    check(close((R.zonotopes()[0]).center().expand_dims(-1), {2.0, 3.0, 1.0}, 0),
           b + ": state 0 goes to position 2");
-    // layout: #163 step 2
-    check(close(cora::detail::cora_generators(R.zonotopes()[1]),
-                cora::detail::cora_generators(Z2.lift(3, dims)), 0),
+    check(close((R.zonotopes()[1]).generators().matrix_transpose(),
+                Z2.lift(3, dims).generators().matrix_transpose(), 0),
           b + ": member 2");
     const Set S = Set(bundle)->lift(3, dims);
     check(S.is<ZonoBundle>() &&

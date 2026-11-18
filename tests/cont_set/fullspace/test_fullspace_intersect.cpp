@@ -27,9 +27,8 @@ void intersect_returns_the_operand(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     const Interval I(column({0.0, 1.0}), column({2.0, 3.0}));
     const Set SZ = F.intersect(Z), SI = F.intersect(I), SF = F.intersect(Fullspace(2));
-    // layout: #163 step 2
-    check(SZ.is<Zonotope>() && SZ.as<Zonotope>().center().expand_dims(-1).data() ==
-                                   cora::detail::cora_center(Z).data(),
+    check(SZ.is<Zonotope>() &&
+              SZ.as<Zonotope>().center().expand_dims(-1).data() == Z.center().data(),
           b + ": a zonotope");
     check(SI.is<Interval>() && SI.as<Interval>().sup().data() == I.sup().data(), b + ": a box");
     check(SF.is<Fullspace>() && SF->dim() == 2, b + ": the whole space");

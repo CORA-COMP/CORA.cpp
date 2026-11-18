@@ -26,10 +26,8 @@ void the_end_of_the_step_is_e_adt_x(const std::string &b) {
     const HomogeneousSolution H =
         LinearSys(diagonal()).homogeneous_solution(initial_set(), kStep, kTerms);
     const double a = std::exp(-kStep), c = std::exp(-2 * kStep);
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_center(H.time_point), {a, 2 * c}, 1e-15), b + ": center");
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_generators(H.time_point), {a, 0.0, 0.0, 0.5 * c}, 1e-15),
+    check(test::close(H.time_point.center().expand_dims(-1), {a, 2 * c}, 1e-15), b + ": center");
+    check(test::close(H.time_point.generators().matrix_transpose(), {a, 0.0, 0.0, 0.5 * c}, 1e-15),
           b + ": generators");
 }
 
@@ -65,16 +63,14 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises([&] { sys.homogeneous_solution(initial_set(), kStep, 0); },
                        Error::wrong_value),
           b + ": no terms");
-    const Tensor on =
-        // layout: #163 step 2
-        cora::detail::cora_generators(
-            sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval);
+    const Tensor on = (sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval)
+                          .generators()
+                          .matrix_transpose();
     ChecksScope off(false);
-    check(test::close(
-              // layout: #163 step 2
-              cora::detail::cora_generators(
-                  sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval),
-              on, 0),
+    check(test::close((sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval)
+                          .generators()
+                          .matrix_transpose(),
+                      on, 0),
           b + ": the same with the checks off");
 }
 

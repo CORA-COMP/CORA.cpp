@@ -307,9 +307,8 @@ inline bool agree(const std::string &what, const cora::Fullspace &a, const lean:
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).
 inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
     // the oracle reports CORA's columns (n, 1) and (n, m); both parts are reported
-    const bool center = agree(what + ".c", cora::detail::cora_center(a), b.center());
-    // layout: #163 step 2
-    return agree(what + ".G", cora::detail::cora_generators(a), b.generators()) && center;
+    const bool center = agree(what + ".c", a.center().expand_dims(-1), b.center());
+    return agree(what + ".G", a.generators().matrix_transpose(), b.generators()) && center;
 }
 
 /// The oracle's polynomial zonotope against CORA.cpp's: c, G, GI in their order, then the

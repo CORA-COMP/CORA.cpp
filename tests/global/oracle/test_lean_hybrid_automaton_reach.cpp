@@ -136,12 +136,10 @@ std::pair<std::size_t, std::size_t> aux_compare(const HybridAutomaton &HA,
         for (std::size_t k = 0; k < t.time_interval.size() && k < m.time_interval.size(); ++k) {
             const std::string set = name + ".R[" + std::to_string(k) + "]";
             const auto &Z = m.time_interval[k].as<Zonotope>();
-            // layout: #163 step 2
-            test::oracle::check(set + ".c", cora::detail::cora_center(Z),
-                                cora::detail::cora_center(t.time_interval[k]));
-            // layout: #163 step 2
-            test::oracle::check(set + ".G", cora::detail::cora_generators(Z),
-                                cora::detail::cora_generators(t.time_interval[k]));
+            test::oracle::check(set + ".c", Z.center().expand_dims(-1),
+                                t.time_interval[k].center().expand_dims(-1));
+            test::oracle::check(set + ".G", Z.generators().matrix_transpose(),
+                                t.time_interval[k].generators().matrix_transpose());
         }
         sets += t.time_interval.size();
     }

@@ -40,8 +40,7 @@ void constructor_forms(const std::string &b) {
     check(ConZonotope::from_matrix(Tensor({{1.0}, {2.0}})).generators().shape() == Shape{2, 0},
           b + ": a center only: no generators");
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
-    // layout: #163 step 2
-    check(close(ConZonotope(Z).generators(), cora::detail::cora_generators(Z), 0),
+    check(close(ConZonotope(Z).generators(), Z.generators().matrix_transpose(), 0),
           b + ": from a zonotope");
     const Interval I(column({0.0, 1.0}), column({2.0, 5.0}));
     check(close(ConZonotope(I).c(), {1, 3}, 0), b + ": from a box: its center");

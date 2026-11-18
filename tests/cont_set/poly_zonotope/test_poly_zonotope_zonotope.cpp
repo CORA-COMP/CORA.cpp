@@ -50,12 +50,9 @@ int main() {
         const PolyZonotope P(column({0.0}), Tensor::from_data({2.0, 1.0}, {1, 2}),
                              Tensor::from_data({3.0}, {1, 1}), {{2}, {1}}, {1});
         const Zonotope Z = P.zonotope();
-        // layout: #163 step 2
-        check(close(cora::detail::cora_center(Z), {1.0}, 0),
-              b + ": c + half of the even generator");
-        // layout: #163 step 2
-        check(close(cora::detail::cora_generators(Z), {1.0, 1.0, 3.0}, 0) ||
-                  cora::detail::cora_generators(Z).shape()[1] == 3,
+        check(close(Z.center().expand_dims(-1), {1.0}, 0), b + ": c + half of the even generator");
+        check(close(Z.generators().matrix_transpose(), {1.0, 1.0, 3.0}, 0) ||
+                  Z.nr_generators() == 3,
               b + ": the even generator halves, the others stay");
         zonotope_property(b);
     });

@@ -25,20 +25,16 @@ int main() {
         const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
         const ZonoBundle from_zonotope = ZonoBundle::from(Z);
         check(from_zonotope.parallel_sets() == 1 &&
-                  // layout: #163 step 2
-                  close(cora::detail::cora_center(from_zonotope.zonotopes()[0]),
-                        cora::detail::cora_center(Z), 0) &&
-                  // layout: #163 step 2
-                  close(cora::detail::cora_generators(from_zonotope.zonotopes()[0]),
-                        cora::detail::cora_generators(Z), 0),
+                  close((from_zonotope.zonotopes()[0]).center().expand_dims(-1),
+                        Z.center().expand_dims(-1), 0) &&
+                  close((from_zonotope.zonotopes()[0]).generators().matrix_transpose(),
+                        Z.generators().matrix_transpose(), 0),
               b + ": a zonotope is its own member");
         const ZonoBundle from_box =
             ZonoBundle::from(Interval(column({0.0, -1.0}), column({2.0, 1.0})));
-        // layout: #163 step 2
         check(from_box.parallel_sets() == 1 &&
-                  close(cora::detail::cora_center(from_box.zonotopes()[0]), {1, 0}, 0) &&
-                  // layout: #163 step 2
-                  close(cora::detail::cora_generators(from_box.zonotopes()[0]), {1, 0, 0, 1}, 0),
+                  close((from_box.zonotopes()[0]).center().expand_dims(-1), {1, 0}, 0) &&
+                  close((from_box.zonotopes()[0]).generators().matrix_transpose(), {1, 0, 0, 1}, 0),
               b + ": a box is the zonotope of its center and radius");
         check(close(from_box.interval().sup(), {2, 1}, 0), b + ": the box is the same");
     });

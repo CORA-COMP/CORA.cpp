@@ -86,8 +86,7 @@ void aux_verify(const std::string &name, const Tensor &A, const std::optional<Te
     const VerifyResult mine =
         sys.verify({R0, B ? *U : none, t_final}, specs, alg::ReachAvoidSupportFunction{});
     const lean::VerifySupportRun theirs = lean::LinearSys(A, B, C).verify_support_func(
-        // layout: #163 step 2
-        cora::detail::cora_center(R0), cora::detail::cora_generators(R0),
+        R0.center().expand_dims(-1), R0.generators().matrix_transpose(),
         Tensor::from_data(Cs, {S, p}), Tensor::from_data(d, {S, 1}), t_final,
         numerics::kMinTimeStep, kFuel, U);
     test::oracle::check(name + " verified", mine.verified, theirs.verified);

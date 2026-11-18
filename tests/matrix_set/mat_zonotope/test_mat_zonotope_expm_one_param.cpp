@@ -112,8 +112,7 @@ void series_with_an_input(const std::string &bname) {
     const Tensor c = test::matrix({1, -2, 0.5}, 3, 1), g = test::matrix({0.3, 0.1, -0.4}, 3, 1);
     const auto R = A.expm_one_param(r, N, Zonotope(c, g.matrix_transpose()));
     check(R.constant_input.has_value() &&
-              // layout: #163 step 2
-              cora::detail::cora_generators(*R.constant_input).shape() ==
+              R.constant_input->generators().matrix_transpose().shape() ==
                   std::vector<int64_t>({3, N}),
           bname + ": the input's zonotope has N generators");
     bool exact = true;
@@ -129,22 +128,18 @@ void series_with_an_input(const std::string &bname) {
         // a point of the constant input
         const Zonotope &Z = *R.constant_input;
         std::vector<double> coeff = generator_coefficients(b, N);
-        const Tensor point =
-            // layout: #163 step 2
-            cora::detail::cora_center(Z) + cora::detail::cora_generators(Z).matmul(Tensor::like(
-                                               cora::detail::cora_center(Z), coeff, {N, 1}));
+        const Tensor point = Z.center().expand_dims(-1) +
+                             Z.generators().matrix_transpose().matmul(
+                                 Tensor::like(Z.center().expand_dims(-1), coeff, {N, 1}));
         exact = exact && close(point, expected, 1e-12);
     }
     check(exact, bname + ": the input terms for every parameter");
     const auto fixed = A.expm_one_param(r, N, Zonotope(c, c.zeros_like({1, 3})));
     const auto zero_generators = A.expm_one_param(r, N, Zonotope(c, Tensor::zeros({0, 3})));
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(*zero_generators.constant_input),
-                cora::detail::cora_center(*fixed.constant_input), 0) &&
-              // layout: #163 step 2
-              close(cora::detail::cora_generators(*zero_generators.constant_input),
-                    // layout: #163 step 2
-                    cora::detail::cora_generators(*fixed.constant_input), 0) &&
+    check(close(zero_generators.constant_input->center().expand_dims(-1),
+                fixed.constant_input->center().expand_dims(-1), 0) &&
+              close(zero_generators.constant_input->generators().matrix_transpose(),
+                    fixed.constant_input->generators().matrix_transpose(), 0) &&
               test::same_set(fixed.enclosure, R.enclosure, 0),
           bname + ": a zonotope without generators is a column");
     const MatZonotope batch = test::batch_of(A, A);

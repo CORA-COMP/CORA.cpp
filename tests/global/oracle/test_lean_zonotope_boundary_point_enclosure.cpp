@@ -30,10 +30,9 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor dir = rnd.vector(n);
             // from the center, and from a point of the zonotope off the center
-            const Tensor inside = cora::detail::cora_center(Z) +
-                                  cora::detail::cora_generators(Z).slice(-1, 0, 1) * 0.5;
-            // layout: #163 step 2
-            for (const Tensor &start : {cora::detail::cora_center(Z), inside}) {
+            const Tensor inside = Z.center().expand_dims(-1) +
+                                  Z.generators().matrix_transpose().slice(-1, 0, 1) * 0.5;
+            for (const Tensor &start : {Z.center().expand_dims(-1), inside}) {
                 const Tensor x = Z.boundary_point(dir, start);
                 const std::optional<lean::Interval> box = lean::Zonotope(Z).boundary_point(
                     lean::Tensor::from(dir), lean::Tensor::from(start));

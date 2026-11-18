@@ -227,24 +227,20 @@ void aux_recorded(const std::string &name, int count, bool car, bool closed_form
         std::istringstream(line) >> tag >> r.n >> r.m >> N >> M >> r.dt >> r.eta >> r.rho >> p;
         r.params = read(p);
         const std::vector<double> c = read(r.n), G = read(r.n * N);
-        // layout: #163 step 2
-        Zonotope R = cora::detail::zonotope_of_columns(Tensor::from_data(c, {r.n, 1}),
-                                                       Tensor::from_data(G, {r.n, N}));
+        Zonotope R = Zonotope(Tensor::from_data(c, {r.n, 1}).squeeze(-1),
+                              Tensor::from_data(G, {r.n, N}).matrix_transpose());
         const std::vector<double> u_center = read(r.m), u_gens = read(r.m * M);
         std::optional<Zonotope> U;
         if (r.m > 0)
-            U = cora::detail::zonotope_of_columns(Tensor::from_data(u_center, {r.m, 1}),
-                                                  Tensor::from_data(u_gens, {r.m, M}));
+            U = Zonotope(Tensor::from_data(u_center, {r.m, 1}).squeeze(-1),
+                         Tensor::from_data(u_gens, {r.m, M}).matrix_transpose());
         in >> std::ws;
         // the car: the first five states, the first two inputs
         if (car) {
-            // layout: #163 step 2
-            R = cora::detail::zonotope_of_columns(cora::detail::cora_center(R).slice(-2, 0, 5),
-                                                  cora::detail::cora_generators(R).slice(-2, 0, 5));
-            // layout: #163 step 2
-            U = cora::detail::zonotope_of_columns(
-                cora::detail::cora_center(*U).slice(-2, 0, 2),
-                cora::detail::cora_generators(*U).slice(-2, 0, 2));
+            R = Zonotope((R.center().expand_dims(-1).slice(-2, 0, 5)).squeeze(-1),
+                         (R.generators().matrix_transpose().slice(-2, 0, 5)).matrix_transpose());
+            U = Zonotope((U->center().expand_dims(-1).slice(-2, 0, 2)).squeeze(-1),
+                         (U->generators().matrix_transpose().slice(-2, 0, 2)).matrix_transpose());
         }
         aux_compare(name + " step " + std::to_string(index), make(r), R, U, r.dt, r.eta, r.rho,
                     index == 0, closed_form && index == 0);

@@ -48,7 +48,7 @@ void isequal_known(const std::string &b) {
           b + ": points");
     check(square.isequal(Zonotope(column({0.0, 0.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}}))) &&
               square.isequal(Interval(column({-1.0, -1.0}), column({1.0, 1.0}))) &&
-              !seg.isequal(cora::detail::zonotope_of_columns(seg.c(), seg.generators())),
+              !seg.isequal(Zonotope(seg.c().squeeze(-1), seg.generators().matrix_transpose())),
           b + ": a zonotope and a box");
     check(!square.isequal(ConZonotope::origin(3)), b + ": another dimension");
 }

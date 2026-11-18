@@ -30,11 +30,10 @@ void the_support_is_the_sum_of_the_terms(const std::string &b) {
     check(test::close(support(PU, {-1, 0}), std::exp(kStep) - 1, 1e-13), b + ": symmetric");
     check(test::close(support(PU, {0, 1}), 0.0, 1e-13), b + ": nothing in the second state");
     // the first term is dt U: the generators come in the order of the series
-    check(test::close(cora::detail::cora_generators(PU).slice(-1, 0, 1), {kStep, 0.0}, 1e-15),
+    check(test::close(PU.generators().matrix_transpose().slice(-1, 0, 1), {kStep, 0.0}, 1e-15),
           b + ": dt U first");
     // dt U and one block per power of A, then the remainder: the center map and a box of 2 states
-    check(cora::detail::cora_generators(PU).shape().back() == (kTerms + 2) + 2,
-          b + ": one block per term");
+    check(PU.nr_generators() == (kTerms + 2) + 2, b + ": one block per term");
 }
 
 /// The center of U is part of the set: a point u gives the sum of the terms applied to u.
@@ -42,7 +41,7 @@ void the_center_enters(const std::string &b) {
     const Zonotope PU =
         LinearSys(diagonal()).particular_solution_time_varying(point({1.0, 1.0}), kStep, kTerms);
     // sum_i A^i dt^(i+1)/(i+1)! (1, 1) = ((1 - e^-dt) / 1, (1 - e^-2dt) / 2)
-    check(test::close(cora::detail::cora_center(PU),
+    check(test::close(PU.center().expand_dims(-1),
                       {1 - std::exp(-kStep), (1 - std::exp(-2 * kStep)) / 2}, 1e-12),
           b + ": the center");
 }
@@ -68,15 +67,14 @@ void checks_and_their_switch(const std::string &b) {
                        Error::wrong_value),
           b + ": a negative step");
     const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
-    // layout: #163 step 2
     const Tensor on =
-        cora::detail::cora_generators(sys.particular_solution_time_varying(U, kStep, kTerms));
+        sys.particular_solution_time_varying(U, kStep, kTerms).generators().matrix_transpose();
     ChecksScope off(false);
-    // layout: #163 step 2
-    check(test::close(
-              cora::detail::cora_generators(sys.particular_solution_time_varying(U, kStep, kTerms)),
-              on, 0),
-          b + ": the same with the checks off");
+    check(
+        test::close(
+            sys.particular_solution_time_varying(U, kStep, kTerms).generators().matrix_transpose(),
+            on, 0),
+        b + ": the same with the checks off");
 }
 
 } // namespace

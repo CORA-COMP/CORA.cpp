@@ -40,18 +40,14 @@ void first_step() {
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.1}, a);
-    // layout: #163 step 2
     const LinParamStep first =
-        sys.init_reach(R0, U - cora::detail::cora_center(U), cora::detail::cora_center(U), a);
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(R.time_interval[0]),
-                cora::detail::cora_center(first.time_interval), 0) &&
-              // layout: #163 step 2
-              close(cora::detail::cora_generators(R.time_interval[0]),
-                    cora::detail::cora_generators(first.time_interval), 0) &&
-              // layout: #163 step 2
-              close(cora::detail::cora_center(R.time_point[1]),
-                    cora::detail::cora_center(*first.time_point), 0),
+        sys.init_reach(R0, U - U.center().expand_dims(-1), U.center().expand_dims(-1), a);
+    check(close(R.time_interval[0].center().expand_dims(-1),
+                first.time_interval.center().expand_dims(-1), 0) &&
+              close(R.time_interval[0].generators().matrix_transpose(),
+                    first.time_interval.generators().matrix_transpose(), 0) &&
+              close(R.time_point[1].center().expand_dims(-1),
+                    first.time_point->center().expand_dims(-1), 0),
           "init_reach: the first sets of reach");
     check(first.time_interval.contains(R0, "exact", 1e-9), "init_reach: the step starts at R0");
     check(first.mappings.mapping.rows() == 2 && first.mappings.input.dim() == 2,
@@ -73,12 +69,10 @@ void checks_and_their_switch() {
             [&] { sys.init_reach(Zonotope(column({1.0}), Tensor({{1.0}})), U, column({0.0}), a); },
             Error::dimension_mismatch),
         "init_reach: R_init of the dimension of the system");
-    // layout: #163 step 2
     const Tensor on =
-        cora::detail::cora_center(sys.init_reach(R0, U, column({0.0}), a).time_interval);
+        (sys.init_reach(R0, U, column({0.0}), a).time_interval).center().expand_dims(-1);
     ChecksScope off(false);
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(sys.init_reach(R0, U, column({0.0}), a).time_interval),
+    check(close((sys.init_reach(R0, U, column({0.0}), a).time_interval).center().expand_dims(-1),
                 on, 0),
           "init_reach: the same with the checks off");
 }

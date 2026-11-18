@@ -27,10 +27,8 @@ void the_input_matrix_moves_into_the_sets(const std::string &b) {
     const LinearSys sys(diagonal(), B, C);
     const Zonotope U(test::column({1.0, -1.0}), Tensor({{0.5, 0.0}, {0.0, 0.25}}));
     const CanonicalForm cf = sys.canonical_form(U, Tensor({{0.5, 0.0}, {0.5, 1.0}}));
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_center(cf.U), {0.0, 0.0}, 0), b + ": the set is centered");
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_generators(cf.U), {0.5, 0.5, 0.0, 0.75}, 1e-15),
+    check(test::close(cf.U.center().expand_dims(-1), {0.0, 0.0}, 0), b + ": the set is centered");
+    check(test::close(cf.U.generators().matrix_transpose(), {0.5, 0.5, 0.0, 0.75}, 1e-15),
           b + ": generators B G");
     // B (c + u_vec): the columns (1.5, -0.5) and (1, 0)
     check(test::close(cf.u, {0.5, 1.0, -1.5, 0.0}, 1e-15), b + ": a constant input per step");

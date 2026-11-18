@@ -126,8 +126,7 @@ void the_zonotope_order_limits_the_generators(const std::string &b) {
     // CORA reduces in post, so the sets of the first step keep all their generators
     int64_t most = 0;
     for (std::size_t k = 2; k < R.time_point.size(); ++k)
-        // layout: #163 step 2
-        most = std::max(most, cora::detail::cora_generators(R.time_point[k]).shape()[1]);
+        most = std::max(most, R.time_point[k].nr_generators());
     check(most <= 3 * 2, b + ": at most order * n = 6 generators, found " + std::to_string(most));
 }
 
@@ -213,17 +212,15 @@ void checks_and_their_switch() {
               Error::not_supported),
           "reach: an input set");
     const ReachProblem problem{.initial_set = X0, .t_final = 0.5};
-    const Tensor on =
-        // layout: #163 step 2
-        cora::detail::cora_center(
-            sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back());
+    const Tensor on = (sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back())
+                          .center()
+                          .expand_dims(-1);
     ChecksScope off(false);
     // the same with the checks off
-    check(test::close(
-              // layout: #163 step 2
-              cora::detail::cora_center(
-                  sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back()),
-              on, 0),
+    check(test::close((sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back())
+                          .center()
+                          .expand_dims(-1),
+                      on, 0),
           "reach: the same with the checks off");
 }
 

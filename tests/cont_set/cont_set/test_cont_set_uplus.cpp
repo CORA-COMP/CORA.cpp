@@ -34,15 +34,12 @@ void uplus_is_the_identity(const std::string &b) {
     const Interval I(column({-0.0, 0.0}), column({2.0, 3.0}));
     const Set A = static_cast<const ContSet &>(Z).uplus(),
               B = static_cast<const ContSet &>(I).uplus();
-    // layout: #163 step 2
-    check(A.is<Zonotope>() &&
-              test::close(A.as<Zonotope>().center().expand_dims(-1), cora::detail::cora_center(Z),
-                          0) &&
-              // layout: #163 step 2
-              test::close(A.as<Zonotope>().generators().matrix_transpose(),
-                          cora::detail::cora_generators(Z), 0),
-          b + ": a zonotope");
-    // layout: #163 step 2
+    check(
+        A.is<Zonotope>() &&
+            test::close(A.as<Zonotope>().center().expand_dims(-1), Z.center().expand_dims(-1), 0) &&
+            test::close(A.as<Zonotope>().generators().matrix_transpose(),
+                        Z.generators().matrix_transpose(), 0),
+        b + ": a zonotope");
     check(std::signbit(A.as<Zonotope>().center().expand_dims(-1).slice(-2, 0, 1).item()),
           b + ": the sign of -0");
     check(B.is<Interval>() && test::close(B.as<Interval>().inf(), I.inf(), 0) &&

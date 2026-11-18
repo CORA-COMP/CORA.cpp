@@ -36,14 +36,13 @@ int main() {
     oracle::run("zonotope.filterOut", [](oracle::Random &rnd) {
         const Zonotope big = rnd.zonotope(3, 3);
         // a cell inside (small generators, the center moved a little) and a far one
-        const Tensor inside_center = cora::detail::cora_center(big) +
-                                     cora::detail::cora_generators(big).slice(-1, 0, 1) * 0.25;
-        // layout: #163 step 2
-        const Zonotope inside = cora::detail::zonotope_of_columns(
-            inside_center, cora::detail::cora_generators(big) * 0.3);
-        // layout: #163 step 2
-        const Zonotope far = cora::detail::zonotope_of_columns(
-            cora::detail::cora_center(big) + 100.0, rnd.matrix(3, 3).matrix_transpose());
+        const Tensor inside_center = big.center().expand_dims(-1) +
+                                     big.generators().matrix_transpose().slice(-1, 0, 1) * 0.25;
+        const Zonotope inside =
+            Zonotope(inside_center.squeeze(-1),
+                     (big.generators().matrix_transpose() * 0.3).matrix_transpose());
+        const Zonotope far = Zonotope((big.center().expand_dims(-1) + 100.0).squeeze(-1),
+                                      (rnd.matrix(3, 3).matrix_transpose()).matrix_transpose());
         const std::vector<Zonotope> cells{inside, big, far};
         oracle::check(Zonotope::filter_out(cells), lean::Zonotope::filter_out(lifted(cells)));
         const std::vector<Zonotope> apart{big, far};

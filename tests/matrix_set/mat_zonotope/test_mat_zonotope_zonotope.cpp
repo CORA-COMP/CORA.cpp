@@ -24,20 +24,15 @@ namespace {
 /// (1, 0, 0, 1) and (0, 1, 1, 0).
 void stacking_of_the_example(const std::string &b) {
     const Zonotope Z = test::example().zonotope();
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(Z), {1, 3, 2, 4}), b + ": the center, column by column");
-    // layout: #163 step 2
-    check(cora::detail::cora_generators(Z).shape() == std::vector<int64_t>({4, 2}),
+    check(close(Z.center().expand_dims(-1), {1, 3, 2, 4}), b + ": the center, column by column");
+    check(Z.generators().matrix_transpose().shape() == std::vector<int64_t>({4, 2}),
           b + ": four dimensions, two generators");
-    // layout: #163 step 2
-    check(close(cora::detail::cora_generators(Z), {1, 0, 0, 1, 0, 1, 1, 0}),
+    check(close(Z.generators().matrix_transpose(), {1, 0, 0, 1, 0, 1, 1, 0}),
           b + ": the generators, column by column");
     const Zonotope W = MatZonotope(test::matrix({1, 2, 3, 4, 5, 6}, 2, 3)).zonotope();
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(W), {1, 4, 2, 5, 3, 6}),
+    check(close(W.center().expand_dims(-1), {1, 4, 2, 5, 3, 6}),
           b + ": a non-square matrix, column by column");
-    // layout: #163 step 2
-    check(cora::detail::cora_generators(W).shape() == std::vector<int64_t>({6, 0}),
+    check(W.generators().matrix_transpose().shape() == std::vector<int64_t>({6, 0}),
           b + ": without generators");
 }
 
@@ -48,14 +43,12 @@ void members_map_to_points(const std::string &b) {
     const Zonotope Z = A.zonotope();
     const std::vector<double> coeff = test::coefficients(rng, 2);
     const Tensor point =
-        // layout: #163 step 2
-        cora::detail::cora_center(Z) + cora::detail::cora_generators(Z).matmul(Tensor::like(
-                                           cora::detail::cora_center(Z), coeff, {2, 1}));
+        Z.center().expand_dims(-1) + Z.generators().matrix_transpose().matmul(
+                                         Tensor::like(Z.center().expand_dims(-1), coeff, {2, 1}));
     const Tensor stacked = test::member(A, coeff).matrix_transpose().reshape({9, 1});
     check(close(point, stacked, 1e-12), b + ": the stacked member is the zonotope's point");
     const MatZonotope batch = test::batch_of(A, A.transpose());
-    // layout: #163 step 2
-    check(cora::detail::cora_generators(batch.zonotope()).shape() ==
+    check(batch.zonotope().generators().matrix_transpose().shape() ==
               std::vector<int64_t>({2, 9, 2}),
           b + ": a batch");
 }
@@ -63,11 +56,9 @@ void members_map_to_points(const std::string &b) {
 /// zonotope takes no input; with the checks off the result is the same.
 void checks_and_their_switch() {
     const MatZonotope A = test::example();
-    // layout: #163 step 2
-    const Tensor on = cora::detail::cora_center(A.zonotope());
+    const Tensor on = A.zonotope().center().expand_dims(-1);
     ChecksScope off(false);
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(A.zonotope()), on, 0),
+    check(close(A.zonotope().center().expand_dims(-1), on, 0),
           "zonotope: the same with the checks off");
 }
 

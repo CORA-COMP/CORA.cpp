@@ -143,19 +143,14 @@ void operations_resolve_at_the_entry() {
               "... and do within a scope");
     }
     const Zonotope Z(Tensor({{0.0}, {0.0}}), Tensor({{1.0, 0.5}, {0.2, 1.0}, {1e-12, 0.0}}));
-    // layout: #163 step 2
     check(Z.contains(Z) &&
-              Z.contains(cora::detail::zonotope_of_columns(cora::detail::cora_center(Z),
-                                                           cora::detail::cora_generators(Z) * 1.0)),
+              Z.contains(Zonotope(Z.center(),
+                                  (Z.generators().matrix_transpose() * 1.0).matrix_transpose())),
           "zonotope: contains itself and its copy");
-    // layout: #163 step 2
-    check(cora::detail::cora_generators(Z.compact()).shape().back() == 3,
-          "a generator of norm 1e-12 stays by default");
+    check(Z.compact().nr_generators() == 3, "a generator of norm 1e-12 stays by default");
     {
         ToleranceScope scope(1e-10);
-        // layout: #163 step 2
-        check(cora::detail::cora_generators(Z.compact()).shape().back() == 2,
-              "... and goes within a scope");
+        check(Z.compact().nr_generators() == 2, "... and goes within a scope");
     }
     test::raises([&] { I.contains(p, -1.0); }, Error::wrong_value);
     ChecksScope off(false);

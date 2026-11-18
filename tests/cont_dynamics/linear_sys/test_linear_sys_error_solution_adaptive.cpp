@@ -41,10 +41,7 @@ void the_gain_decides_where_to_stop(const std::string &b) {
     const LinearSys sys(diagonal());
     const Zonotope coarse = sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1);
     const Zonotope fine = sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 1e-9);
-    // layout: #163 step 2
-    check(cora::detail::cora_generators(coarse).shape().back() <
-              cora::detail::cora_generators(fine).shape().back(),
-          b + ": a smaller zeta keeps more terms");
+    check(coarse.nr_generators() < fine.nr_generators(), b + ": a smaller zeta keeps more terms");
     // both enclose the exact solution int_0^dt e^{A s} ds Vdyn, whose support along e1 is 1 - e^-dt
     check(support(coarse, {1, 0}) >= 1 - std::exp(-kStep) - 1e-13 &&
               support(fine, {1, 0}) >= 1 - std::exp(-kStep) - 1e-13,
@@ -59,10 +56,8 @@ void the_static_part_is_added(const std::string &b) {
     const Zonotope with = sys.error_solution_adaptive(dynamic_part(), Vstat, kStep, 1e-3, 10);
     const Zonotope without =
         sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 1e-3, 10);
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_center(with),
-                      // layout: #163 step 2
-                      cora::detail::cora_center(without) +
+    check(test::close(with.center().expand_dims(-1),
+                      without.center().expand_dims(-1) +
                           test::column({1 - std::exp(-kStep), (1 - std::exp(-2 * kStep)) / 2}),
                       1e-12),
           b + ": the center moves by the integral of the static part");
@@ -87,16 +82,14 @@ void checks_and_their_switch(const std::string &b) {
                        Error::dimension_mismatch),
           b + ": Vstat of three dimensions");
     // the checks off give the same set
-    const Tensor on =
-        // layout: #163 step 2
-        cora::detail::cora_generators(
-            sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1));
+    const Tensor on = (sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1))
+                          .generators()
+                          .matrix_transpose();
     ChecksScope off(false);
-    check(test::close(
-              // layout: #163 step 2
-              cora::detail::cora_generators(
-                  sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1)),
-              on, 0),
+    check(test::close((sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1))
+                          .generators()
+                          .matrix_transpose(),
+                      on, 0),
           b + ": the same with the checks off");
 }
 

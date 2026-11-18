@@ -33,7 +33,7 @@ void enclosures(const std::string &b) {
     }
     // a point is a zonotope without generators' volume
     check(
-        close(cora::detail::cora_center(Polytope(column({1.0, 2.0})).zonotope()), {1.0, 2.0}, 1e-9),
+        close((Polytope(column({1.0, 2.0})).zonotope()).center().expand_dims(-1), {1.0, 2.0}, 1e-9),
         b + ": a point");
 }
 

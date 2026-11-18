@@ -22,10 +22,8 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         const ZonoBundle O = ZonoBundle::origin(3);
         check(O.dim() == 3 && O.parallel_sets() == 1, b + ": one member of three dimensions");
-        // layout: #163 step 2
-        check(close(cora::detail::cora_center(O.zonotopes()[0]), {0, 0, 0}, 0) &&
-                  // layout: #163 step 2
-                  cora::detail::cora_generators(O.zonotopes()[0]).shape() == Shape{3, 0},
+        check(close((O.zonotopes()[0]).center().expand_dims(-1), {0, 0, 0}, 0) &&
+                  (O.zonotopes()[0]).generators().matrix_transpose().shape() == Shape{3, 0},
               b + ": the center is 0 and there are no generators");
         check(O.representsa("origin"), b + ": it represents the origin");
     });

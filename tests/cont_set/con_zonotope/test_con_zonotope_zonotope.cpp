@@ -24,18 +24,14 @@ namespace {
 /// Without constraints the zonotope itself; the hexagon is inside its zonotope by both methods.
 void zonotope_known(const std::string &b) {
     const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(plain.zonotope()), {1, 2}, 0) &&
-              // layout: #163 step 2
-              close(cora::detail::cora_generators(plain.zonotope()), {1, 0, 0, 2}, 0),
+    check(close(plain.zonotope().center().expand_dims(-1), {1, 2}, 0) &&
+              close(plain.zonotope().generators().matrix_transpose(), {1, 0, 0, 2}, 0),
           b + ": without constraints");
     // a point: the constraints fix both factors
     const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                             Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.5, 0.25}));
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(point.zonotope()), {1.5, 1.25}, 1e-9) &&
-              // layout: #163 step 2
-              cora::detail::cora_generators(point.zonotope()).shape().back() <= 2,
+    check(close(point.zonotope().center().expand_dims(-1), {1.5, 1.25}, 1e-9) &&
+              point.zonotope().nr_generators() <= 2,
           b + ": a point");
 }
 

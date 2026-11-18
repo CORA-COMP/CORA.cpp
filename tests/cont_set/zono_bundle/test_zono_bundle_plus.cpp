@@ -26,33 +26,25 @@ namespace {
 void plus_known(const std::string &b) {
     const ZonoBundle zono_bundle = test::two_zonotopes();
     const ZonoBundle moved = zono_bundle.plus(column({1.0, 2.0}));
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(moved.zonotopes()[0]), {1, 2}, 0) &&
-              // layout: #163 step 2
-              close(cora::detail::cora_center(moved.zonotopes()[1]), {2, 2}, 0),
+    check(close((moved.zonotopes()[0]).center().expand_dims(-1), {1, 2}, 0) &&
+              close((moved.zonotopes()[1]).center().expand_dims(-1), {2, 2}, 0),
           b + ": a point moves the centers");
     const Zonotope W(column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
-    // layout: #163 step 2
-    check(close(cora::detail::cora_generators(zono_bundle.plus(W).zonotopes()[0]),
+    check(close((zono_bundle.plus(W).zonotopes()[0]).generators().matrix_transpose(),
                 {2, 0, 1, 0, 1, 0}, 0),
           b + ": a zonotope joins its generators");
     const ZonoBundle boxed = zono_bundle.plus(Interval(column({0.0, 0.0}), column({2.0, 4.0})));
-    // layout: #163 step 2
-    check(
-        close(cora::detail::cora_center(boxed.zonotopes()[0]), {1, 2}, 0) &&
-            // layout: #163 step 2
-            close(cora::detail::cora_generators(boxed.zonotopes()[0]), {2, 0, 1, 0, 0, 1, 0, 2}, 0),
-        b + ": a box is added as its zonotope");
+    check(close((boxed.zonotopes()[0]).center().expand_dims(-1), {1, 2}, 0) &&
+              close((boxed.zonotopes()[0]).generators().matrix_transpose(),
+                    {2, 0, 1, 0, 0, 1, 0, 2}, 0),
+          b + ": a box is added as its zonotope");
     // a bundle is added pair by pair, the first one varying slowest
     const Zonotope W2(column({5.0, 5.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle pairs = zono_bundle.plus(ZonoBundle({W, W2}));
-    // layout: #163 step 2
     check(pairs.parallel_sets() == 4 &&
-              close(cora::detail::cora_center(pairs.zonotopes()[1]), {5, 5}, 0) &&
-              // layout: #163 step 2
-              close(cora::detail::cora_center(pairs.zonotopes()[2]), {1, 0}, 0) &&
-              // layout: #163 step 2
-              close(cora::detail::cora_center(pairs.zonotopes()[3]), {6, 5}, 0),
+              close((pairs.zonotopes()[1]).center().expand_dims(-1), {5, 5}, 0) &&
+              close((pairs.zonotopes()[2]).center().expand_dims(-1), {1, 0}, 0) &&
+              close((pairs.zonotopes()[3]).center().expand_dims(-1), {6, 5}, 0),
           b + ": a bundle gives the pairs");
     check(zono_bundle.plus(Interval::empty(2)).representsa("emptySet"),
           b + ": the empty box gives the empty set");

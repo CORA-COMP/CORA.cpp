@@ -37,9 +37,8 @@ void reduce_known(const std::string &b) {
           b + ": girard is the default");
     // without constraints it is the zonotope's reduction
     const ConZonotope plain(column({0.0, 0.0}), Tensor({{1.0, 0.0, 3.0}, {0.0, 1.0, 1.0}}));
-    const Zonotope Z = cora::detail::zonotope_of_columns(plain.c(), plain.generators());
-    // layout: #163 step 2
-    check(close(plain.reduce(1).generators(), cora::detail::cora_generators(Z.reduce(1)), 0),
+    const Zonotope Z = Zonotope(plain.c().squeeze(-1), plain.generators().matrix_transpose());
+    check(close(plain.reduce(1).generators(), Z.reduce(1).generators().matrix_transpose(), 0),
           b + ": without constraints: the zonotope's reduce");
     check(close(Set(many)->reduce(1).as<ConZonotope>().generators(), r.generators(), 0),
           b + ": through the set interface");

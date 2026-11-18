@@ -65,12 +65,10 @@ void product_with_other_sets(const std::string &b) {
     const Interval A = test::example();
     const Zonotope Z(test::matrix({1, 1}, 2, 1), test::matrix({1, 0, 0, 1}, 2, 2));
     const Zonotope R = A * Z;
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(R), std::vector<double>{1.5, 3.5}),
-          b + ": the center T c");
-    // layout: #163 step 2
-    check(close(cora::detail::cora_generators(R), test::matrix({1.5, 0, 3, 0, 1.5, 2, 0, 3}, 2, 4)),
-          b + ": the generators [T G, diag(R (|c| + sum|G|))]");
+    check(close(R.center().expand_dims(-1), std::vector<double>{1.5, 3.5}), b + ": the center T c");
+    check(
+        close(R.generators().matrix_transpose(), test::matrix({1.5, 0, 3, 0, 1.5, 2, 0, 3}, 2, 4)),
+        b + ": the generators [T G, diag(R (|c| + sum|G|))]");
     Rng rng(13);
     bool inside = true;
     for (int trial = 0; trial < 30; ++trial)

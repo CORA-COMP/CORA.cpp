@@ -43,14 +43,12 @@ void aux_compare(const std::string &what, const Zonotope &Z, const std::vector<T
         return;
     }
     // the oracle's columns
-    const Zonotope boxed = cora::detail::zonotope_of_columns(
-        theirs.center().gather(), theirs.generators().gather().abs_sum());
-    // layout: #163 step 2
-    test::check(oracle::agree(what + ".c", cora::detail::cora_center(mine), theirs.center()),
+    const Zonotope boxed = Zonotope((theirs.center().gather()).squeeze(-1),
+                                    (theirs.generators().gather().abs_sum()).matrix_transpose());
+    test::check(oracle::agree(what + ".c", mine.center().expand_dims(-1), theirs.center()),
                 what + ": the center");
-    // layout: #163 step 2
-    test::check(oracle::agree(what + ".box", cora::detail::cora_generators(mine),
-                              cora::detail::cora_generators(boxed)),
+    test::check(oracle::agree(what + ".box", mine.generators().matrix_transpose(),
+                              boxed.generators().matrix_transpose()),
                 what + ": the box");
 }
 
@@ -76,9 +74,8 @@ void aux_recorded(const std::string &name) {
         char tag = 0;
         std::istringstream(line) >> tag >> n >> N >> k;
         const std::vector<double> c = read(n), G = read(n * N);
-        // layout: #163 step 2
-        const Zonotope Z = cora::detail::zonotope_of_columns(Tensor::from_data(c, {n, 1}),
-                                                             Tensor::from_data(G, {n, N}));
+        const Zonotope Z = Zonotope(Tensor::from_data(c, {n, 1}).squeeze(-1),
+                                    Tensor::from_data(G, {n, N}).matrix_transpose());
         std::vector<Tensor> Q;
         Q.reserve(size_t(k));
         for (int64_t i = 0; i < k; ++i) Q.push_back(Tensor::from_data(read(n * n), {n, n}));

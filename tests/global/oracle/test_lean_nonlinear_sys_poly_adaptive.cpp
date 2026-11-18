@@ -139,13 +139,11 @@ int main() {
             const auto mine =
                 priv_lin_reach_poly_adaptive_pass(c.sys, U, alg, c.dt, PolyZonotope(c.R), adm);
             const auto theirs = oracle.lin_reach_poly_adaptive_pass(
-                // layout: #163 step 2
-                U, c.R, c.dt, priv_column(cora::detail::cora_center(c.R), adm), alg, c.empty);
+                U, c.R, c.dt, priv_column(c.R.center().expand_dims(-1), adm), alg, c.empty);
             test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
             if (!mine || !theirs) continue;
-            // layout: #163 step 2
             test::check(test::oracle::agree(b + " xs",
-                                            priv_column(cora::detail::cora_center(c.R), mine->xs),
+                                            priv_column(c.R.center().expand_dims(-1), mine->xs),
                                             lean::Tensor(theirs->xs)),
                         b + ": xs agrees with the oracle's");
             test::check(test::oracle::agree(b + " A", mine->A, lean::Tensor(theirs->A)),

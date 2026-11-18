@@ -392,7 +392,7 @@ int main() {
         for (const char *name : {"RND02", "RND04"}) {
             const bench::Instance inst = bench::load_instance(name);
             // A' as the verify forms it
-            const Tensor like = cora::detail::cora_center(*inst.params->initial_set);
+            const Tensor like = inst.params->initial_set->center().expand_dims(-1);
             const LinearSys dual = inst.sys->A_sparse()
                                        ? LinearSys(inst.sys->A_sparse()->transpose(),
                                                    like.zeros_like({inst.sys->dim(), 1}))

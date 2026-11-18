@@ -24,8 +24,7 @@ namespace {
 /// A single member has the zonotope's own center.
 void single_member(const std::string &b) {
     const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
-    // layout: #163 step 2
-    check(close(ZonoBundle({Z}).center(), cora::detail::cora_center(Z), 0),
+    check(close(ZonoBundle({Z}).center(), Z.center().expand_dims(-1), 0),
           b + ": the center of the member");
 }
 

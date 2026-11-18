@@ -31,8 +31,8 @@ void enclose_gradient() {
     test::gradcheck(
         "enclose (M, Zplus)",
         [](const Inputs &x) {
-            return test::parts(
-                test::bundle(x, 0, 2).enclose(x[4], cora::detail::zonotope_of_columns(x[5], x[6])));
+            return test::parts(test::bundle(x, 0, 2).enclose(
+                x[4], Zonotope(x[5].squeeze(-1), x[6].matrix_transpose())));
         },
         test::joined(A, {torch::rand({2, 2}, torch::kDouble) + 0.5, B[0], B[1]}));
 }

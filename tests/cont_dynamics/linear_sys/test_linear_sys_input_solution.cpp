@@ -44,11 +44,9 @@ void checks_and_their_switch() {
               Error::dimension_mismatch),
           "U of two dimensions");
     check(test::raises([&] { sys.input_solution(U, 0.0, 4); }, Error::wrong_value), "time_step 0");
-    // layout: #163 step 2
-    const Tensor on = cora::detail::cora_generators(sys.input_solution(U, 0.1, 4).PU);
+    const Tensor on = (sys.input_solution(U, 0.1, 4).PU).generators().matrix_transpose();
     ChecksScope off(false);
-    // layout: #163 step 2
-    check(test::close(cora::detail::cora_generators(sys.input_solution(U, 0.1, 4).PU), on, 0),
+    check(test::close((sys.input_solution(U, 0.1, 4).PU).generators().matrix_transpose(), on, 0),
           "the same with the checks off");
 }
 

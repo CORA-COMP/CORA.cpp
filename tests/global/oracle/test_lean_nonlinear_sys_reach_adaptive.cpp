@@ -109,8 +109,7 @@ void aux_closed_form() {
 
 /// The state of CORA.cpp before a step, for the oracle.
 lean::AdaptiveStepState aux_lean_state(const AdaptiveState &st) {
-    // layout: #163 step 2
-    const Tensor &like = cora::detail::cora_center(st.R);
+    const Tensor &like = st.R.center().expand_dims(-1);
     lean::AdaptiveStepState out;
     out.i = st.i;
     out.t = st.t.text();

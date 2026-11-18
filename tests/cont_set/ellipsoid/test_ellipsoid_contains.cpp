@@ -76,21 +76,17 @@ void contains_property(const std::string &b) {
                          test::normal_matrix(rng, 3, 4, scale * 0.3).matrix_transpose());
         bool all = true;
         for (int mask = 0; mask < 16; ++mask) {
-            // layout: #163 step 2
-            Tensor v = cora::detail::cora_center(Z);
+            Tensor v = Z.center().expand_dims(-1);
             for (int j = 0; j < 4; ++j)
-                // layout: #163 step 2
-                v = v + cora::detail::cora_generators(Z).slice(1, j, j + 1) *
+                v = v + Z.generators().matrix_transpose().slice(1, j, j + 1) *
                             ((mask >> j) & 1 ? 1.0 : -1.0);
             all = all && E.contains(v);
         }
         check(E.contains(Z) == all, b + ": the search agrees with the vertices");
-        // layout: #163 step 2
-        const Interval I(cora::detail::cora_center(Z) -
-                             cora::detail::cora_generators(Z).abs().sum(1, true) * 0.5,
-                         // layout: #163 step 2
-                         cora::detail::cora_center(Z) +
-                             cora::detail::cora_generators(Z).abs().sum(1, true) * 0.5);
+        const Interval I(Z.center().expand_dims(-1) -
+                             Z.generators().matrix_transpose().abs().sum(1, true) * 0.5,
+                         Z.center().expand_dims(-1) +
+                             Z.generators().matrix_transpose().abs().sum(1, true) * 0.5);
         bool corners = true;
         for (int mask = 0; mask < 8; ++mask) {
             std::vector<double> sel;

@@ -29,19 +29,16 @@ void members_are_appended(const std::string &b) {
     const ZonoBundle bundle({Z1, Z2});
     const ZonoBundle with_bundle = bundle.intersect(ZonoBundle({Z3, Z1}));
     check(with_bundle.parallel_sets() == 4 &&
-              // layout: #163 step 2
-              close(cora::detail::cora_center(with_bundle.zonotopes()[2]),
-                    cora::detail::cora_center(Z3), 0),
+              close((with_bundle.zonotopes()[2]).center().expand_dims(-1),
+                    Z3.center().expand_dims(-1), 0),
           b + ": a bundle: the members of both");
     check(bundle.intersect(Z3).parallel_sets() == 3 &&
-              // layout: #163 step 2
-              close(cora::detail::cora_generators(bundle.intersect(Z3).zonotopes()[2]),
-                    cora::detail::cora_generators(Z3), 0),
+              close((bundle.intersect(Z3).zonotopes()[2]).generators().matrix_transpose(),
+                    Z3.generators().matrix_transpose(), 0),
           b + ": a zonotope: one more member");
     const Interval I(column({-1.0, -1.0}), column({1.0, 3.0}));
-    // layout: #163 step 2
-    check(close(cora::detail::cora_center(bundle.intersect(I).zonotopes()[2]),
-                cora::detail::cora_center(I.zonotope()), 0),
+    check(close((bundle.intersect(I).zonotopes()[2]).center().expand_dims(-1),
+                I.zonotope().center().expand_dims(-1), 0),
           b + ": a box: its zonotope");
     check(bundle.parallel_sets() == 2, b + ": the operand is unchanged");
 }

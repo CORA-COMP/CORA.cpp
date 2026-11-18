@@ -63,20 +63,17 @@ double exact_maximum(const Tensor &A, const Tensor &B, const Tensor &C, const Zo
                      const Zonotope &U, const Tensor &l, double t_final, int n) {
     const Tensor d = C.matrix_transpose().matmul(l);
     const Tensor At = A.matrix_transpose();
-    // layout: #163 step 2
-    const Tensor &G0 = cora::detail::cora_generators(R0), &GU = cora::detail::cora_generators(U);
+    const Tensor &G0 = R0.generators().matrix_transpose(), &GU = U.generators().matrix_transpose();
     double best = -1e300, integral = 0, previous_f = 0;
     for (int i = 0; i <= n; ++i) {
         const double t = t_final * i / n;
         const Tensor z = (At * t).expm().matmul(d);
         const Tensor zb = B.matrix_transpose().matmul(z);
-        // layout: #163 step 2
-        const double f = zb.matrix_transpose().matmul(cora::detail::cora_center(U)).item() +
+        const double f = zb.matrix_transpose().matmul(U.center().expand_dims(-1)).item() +
                          zb.matrix_transpose().matmul(GU).abs().sum().item();
         if (i > 0) integral += 0.5 * (f + previous_f) * t_final / n;
         previous_f = f;
-        // layout: #163 step 2
-        const double h = z.matrix_transpose().matmul(cora::detail::cora_center(R0)).item() +
+        const double h = z.matrix_transpose().matmul(R0.center().expand_dims(-1)).item() +
                          z.matrix_transpose().matmul(G0).abs().sum().item() + integral;
         best = std::max(best, h);
     }
