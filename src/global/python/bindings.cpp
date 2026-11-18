@@ -1469,11 +1469,13 @@ using Indices = std::vector<std::vector<int64_t>>;
 /// A zonotope from CORA's generator columns G (..., n, m): their transpose is a view, so
 /// columns stored column-major are borrowed without a copy. layout: #163 step 2
 Zonotope aux_zonotope_of_columns(const Tensor &c, const Array &G) {
-    const Tensor columns = tensor_of(G, "the generators");
-    if (columns.ndim() < 2) return detail::zonotope_of_columns(c, columns);
     const py::object array = py::isinstance<py::list>(G) || py::isinstance<py::tuple>(G)
                                  ? py::module_::import("numpy").attr("asarray")(G)
                                  : py::object(G);
+    // the dimensions from the object itself: a tensor of the columns would copy them
+    const py::object ndim = py::getattr(array, "ndim", py::none());
+    if (ndim.is_none() || ndim.cast<int>() < 2)
+        return detail::zonotope_of_columns(c, tensor_of(G, "the generators"));
     return {c.squeeze(-1), tensor_of(array.attr("swapaxes")(-1, -2), "the generators")};
 }
 
