@@ -26,12 +26,9 @@ namespace cora {
 
 bool ZonoBundle::is_full_dim(Tol tol_arg) const {
     detail::Entry entry;
-    // layout: #163 step 2
-    const double tol =
-        resolve_tol(entry, tol_arg, detail::cora_center(Z_.front()).dtype(), "is_full_dim");
-    // layout: #163 step 2
+    const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "is_full_dim");
     const detail::Refusal batch =
-        priv_batch_refusal(detail::cora_center(Z_.front()), "is_full_dim");
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "is_full_dim");
     CORA_CHECK(!batch, batch->first, [&] { return batch->second; });
     for (const Zonotope &Z : Z_)
         if (!Z.is_full_dim(tol)) return false;
@@ -41,7 +38,7 @@ bool ZonoBundle::is_full_dim(Tol tol_arg) const {
 bool ZonoBundle::is_full_dim_impl(Tol tol) const {
     // the entry of ContSet checked the tolerance only: a batch cannot be decided, checks on or off
     const detail::Refusal batch =
-        priv_batch_refusal(detail::cora_center(Z_.front()), "is_full_dim");
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "is_full_dim");
     if (batch) CORA_FAIL(batch->first, batch->second);
     return is_full_dim(tol);
 }

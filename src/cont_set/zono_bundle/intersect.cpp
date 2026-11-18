@@ -39,16 +39,15 @@ ZonoBundle aux_appended(const ZonoBundle &bundle, const std::vector<Zonotope> &m
 ZonoBundle ZonoBundle::intersect(const ZonoBundle &S) const {
     detail::Entry entry;
     const detail::Refusal r = priv_operand_refusal(
-        *this, S.dim(), detail::cora_center(S.zonotopes().front()), "intersect");
+        *this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1), "intersect");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     return aux_appended(*this, S.zonotopes());
 }
 
 ZonoBundle ZonoBundle::intersect(const Zonotope &Z) const {
     detail::Entry entry;
-    // layout: #163 step 2
     const detail::Refusal r =
-        priv_operand_refusal(*this, Z.dim(), detail::cora_center(Z), "intersect");
+        priv_operand_refusal(*this, Z.dim(), Z.center().expand_dims(-1), "intersect");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     return aux_appended(*this, {Z});
 }

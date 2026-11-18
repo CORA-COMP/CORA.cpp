@@ -29,9 +29,8 @@ ZonoBundle ZonoBundle::replace(int64_t index, const Zonotope &Z) const {
         return "replace: the index " + std::to_string(index) + " is not in [0, " +
                std::to_string(parallel_sets()) + ")";
     });
-    // layout: #163 step 2
     const detail::Refusal refusal =
-        priv_operand_refusal(*this, Z.dim(), detail::cora_center(Z), "replace");
+        priv_operand_refusal(*this, Z.dim(), Z.center().expand_dims(-1), "replace");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     std::vector<Zonotope> members = Z_;
     members[std::size_t(index)] = Z;

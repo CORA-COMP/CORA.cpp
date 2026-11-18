@@ -30,8 +30,7 @@ namespace {
 
 /// Why the split is refused, if it is: a batch, or an empty set.
 detail::Refusal aux_refusal(const ZonoBundle &bundle) {
-    // layout: #163 step 2
-    if (detail::cora_center(bundle.zonotopes().front()).ndim() != 2)
+    if ((bundle.zonotopes().front()).center().expand_dims(-1).ndim() != 2)
         return std::pair{Error::not_supported,
                          std::string("split: it supports a single set, not a batch")};
     if (priv_bundle_is_empty(bundle))

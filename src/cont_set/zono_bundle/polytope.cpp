@@ -36,8 +36,8 @@ Polytope aux_member(const Zonotope &Z) { return Z.polytope(); }
 
 Polytope ZonoBundle::polytope() const {
     detail::Entry entry;
-    // layout: #163 step 2
-    const detail::Refusal refusal = priv_batch_refusal(detail::cora_center(Z_.front()), "polytope");
+    const detail::Refusal refusal =
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "polytope");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     Polytope P = aux_member(Z_.front());
     for (std::size_t i = 1; i < Z_.size(); ++i) P = P.intersect(aux_member(Z_[i]));

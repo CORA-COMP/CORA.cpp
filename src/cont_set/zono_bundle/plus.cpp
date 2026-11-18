@@ -49,8 +49,7 @@ detail::Refusal aux_refusal(const ZonoBundle &bundle, int64_t n, const Tensor &l
 
 ZonoBundle ZonoBundle::plus(const Zonotope &Z) const {
     detail::Entry entry;
-    // layout: #163 step 2
-    const detail::Refusal refusal = aux_refusal(*this, Z.dim(), detail::cora_center(Z));
+    const detail::Refusal refusal = aux_refusal(*this, Z.dim(), Z.center().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_plus_each(Z_, Z);
 }
@@ -66,9 +65,8 @@ ZonoBundle ZonoBundle::plus(const Interval &I) const {
 
 ZonoBundle ZonoBundle::plus(const ZonoBundle &S) const {
     detail::Entry entry;
-    // layout: #163 step 2
     const detail::Refusal refusal =
-        aux_refusal(*this, S.dim(), detail::cora_center(S.zonotopes().front()));
+        aux_refusal(*this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     std::vector<Zonotope> sums;
     sums.reserve(Z_.size() * S.zonotopes().size());

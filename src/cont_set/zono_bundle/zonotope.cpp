@@ -26,15 +26,14 @@ namespace cora {
 
 Zonotope ZonoBundle::zonotope() const {
     detail::Entry entry;
-    // layout: #163 step 2
-    const detail::Refusal refusal = priv_batch_refusal(detail::cora_center(Z_.front()), "zonotope");
+    const detail::Refusal refusal =
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "zonotope");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the index of the least volume is a host decision; the member itself is returned unchanged
     std::size_t best = 0;
     double least = 0.0;
     for (std::size_t i = 0; i < Z_.size(); ++i) {
-        // layout: #163 step 2
-        const double volume = detail::cora_generators(Z_[i]).abs_sum().prod(-2, true).item();
+        const double volume = Z_[i].generators().matrix_transpose().abs_sum().prod(-2, true).item();
         if (i == 0 || volume < least) {
             best = i;
             least = volume;

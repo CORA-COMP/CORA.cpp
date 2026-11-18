@@ -35,12 +35,9 @@ bool ZonoBundle::representsa(const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     CORA_CHECK(priv_is_set_type(type), Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
-    // layout: #163 step 2
-    const double tol =
-        resolve_tol(entry, tol_arg, detail::cora_center(Z_.front()).dtype(), "representsa");
-    // layout: #163 step 2
+    const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "representsa");
     const detail::Refusal refusal =
-        priv_batch_refusal(detail::cora_center(Z_.front()), "representsa");
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "representsa");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     CORA_CHECK(!priv_type_in(type, {"point", "zonotope", "capsule", "ellipsoid", "conHyperplane",
                                     "parallelotope", "polygon"}),

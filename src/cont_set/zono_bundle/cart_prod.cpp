@@ -49,7 +49,7 @@ ZonoBundle aux_map(const ZonoBundle &bundle, F f) {
 ZonoBundle ZonoBundle::cart_prod(const ZonoBundle &S) const {
     detail::Entry entry;
     const detail::Refusal r = priv_operand_refusal(
-        *this, S.dim(), detail::cora_center(S.zonotopes().front()), "cart_prod", false);
+        *this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1), "cart_prod", false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     std::vector<Zonotope> pairs;
     for (const Zonotope &A : Z_)
@@ -59,9 +59,8 @@ ZonoBundle ZonoBundle::cart_prod(const ZonoBundle &S) const {
 
 ZonoBundle ZonoBundle::cart_prod(const Zonotope &Z) const {
     detail::Entry entry;
-    // layout: #163 step 2
     const detail::Refusal r =
-        priv_operand_refusal(*this, Z.dim(), detail::cora_center(Z), "cart_prod", false);
+        priv_operand_refusal(*this, Z.dim(), Z.center().expand_dims(-1), "cart_prod", false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // the zonotope goes behind every member
     return aux_map(*this, [&](const Zonotope &A) { return A.cart_prod(Z); });

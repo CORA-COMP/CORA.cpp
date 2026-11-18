@@ -45,11 +45,10 @@ detail::Refusal priv_members_refusal(const std::vector<Zonotope> &zonotopes) {
     for (const Zonotope &Z : zonotopes) {
         if (Z.dim() != first.dim())
             return fail("Zonotopes have to be embedded in the same affine space.");
-        // layout: #163 step 2
-        if (aux_batch(detail::cora_center(Z)) != aux_batch(detail::cora_center(first)))
+        if (aux_batch(Z.center().expand_dims(-1)) != aux_batch(first.center().expand_dims(-1)))
             return fail("the zonotopes must have one batch shape, got " +
-                        shape_text(aux_batch(detail::cora_center(Z))) + " and " +
-                        shape_text(aux_batch(detail::cora_center(first))));
+                        shape_text(aux_batch(Z.center().expand_dims(-1))) + " and " +
+                        shape_text(aux_batch(first.center().expand_dims(-1))));
     }
     return std::nullopt;
 }
@@ -62,13 +61,12 @@ detail::Refusal priv_operand_refusal(const ZonoBundle &bundle, int64_t n, const 
         return std::pair{Error::dimension_mismatch, name + ": the sets differ in dimension, " +
                                                         std::to_string(bundle.dim()) + " and " +
                                                         std::to_string(n)};
-    // layout: #163 step 2
-    if (aux_batch(like) != aux_batch(detail::cora_center(bundle.zonotopes().front())))
+    if (aux_batch(like) != aux_batch((bundle.zonotopes().front()).center().expand_dims(-1)))
         return std::pair{
             Error::dimension_mismatch,
             name + ": the sets must have the same batch shape, got " +
-                shape_text(aux_batch(detail::cora_center(bundle.zonotopes().front()))) + " and " +
-                shape_text(aux_batch(like))};
+                shape_text(aux_batch((bundle.zonotopes().front()).center().expand_dims(-1))) +
+                " and " + shape_text(aux_batch(like))};
     return std::nullopt;
 }
 
