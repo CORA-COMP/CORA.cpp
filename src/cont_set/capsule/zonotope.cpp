@@ -32,11 +32,9 @@ Zonotope Capsule::zonotope() const {
     detail::Entry entry;
     CORA_CHECK(!is_empty(), Error::empty_set,
                [] { return std::string("zonotope: the capsule is empty"); });
-    // layout: #163 step 2
-    if (priv_all(r_.equal(r_.zeros_like()))) return detail::zonotope_of_columns(c_, g_);
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(c_,
-                                       Tensor::concat({g_, r_.multiply(c_.eye_like(dim()))}, -1));
+    if (priv_all(r_.equal(r_.zeros_like()))) return Zonotope(c_.squeeze(-1), g_.matrix_transpose());
+    return Zonotope(c_.squeeze(-1),
+                    (Tensor::concat({g_, r_.multiply(c_.eye_like(dim()))}, -1)).matrix_transpose());
 }
 
 } // namespace cora

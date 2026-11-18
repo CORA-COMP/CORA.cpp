@@ -44,8 +44,7 @@ namespace {
 /// CORA's linParamSys test ignores c unless B = 0, as c is not in v_trans there).
 bool aux_origin_contained(const Zonotope &V, const Tensor &v_trans) {
     const Zonotope full = V + v_trans;
-    // layout: #163 step 2
-    const Tensor origin = detail::cora_center(full).zeros_like();
+    const Tensor origin = full.center().expand_dims(-1).zeros_like();
     if (full.representsa("interval", machine_eps())) return full.interval().contains(origin);
     return full.contains(origin);
 }
@@ -100,7 +99,7 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     const Tensor &c = sys.c();
     // the centered inputs V = B U and the constant input B u_trans + c (cora-differences.md)
     const Zonotope V = sys.B() ? U.linear_map(*sys.B())
-                               : detail::zonotope_of_columns(c.zeros_like(), c.zeros_like({n, 0}));
+                               : Zonotope(c.zeros_like().squeeze(-1), c.zeros_like({0, n}));
     const Tensor v_trans = (sys.B() ? sys.B()->matmul(u_trans) : c.zeros_like()) + c;
     Zonotope input_set = V * r;
     const Tensor start = c.eye_like(n) * r;
@@ -125,12 +124,11 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     input_set = input_set + (series.remainder * r) * V_abs;
     integral = integral + series.remainder * r;
     // the constant input, and the sets without zero generators
-    const Zonotope point = detail::zonotope_of_columns(v_trans, v_trans.zeros_like({n, 0}));
+    const Zonotope point = Zonotope(v_trans.squeeze(-1), v_trans.zeros_like({0, n}));
     const double eps = machine_eps();
     const Zonotope trans = (integral * Interval(v_trans, v_trans).zonotope()).compact("zeros", eps);
     input_set = input_set.compact("zeros", eps);
-    // layout: #163 step 2
-    Zonotope correction = detail::zonotope_of_columns(c.zeros_like(), c.zeros_like({n, 0}));
+    Zonotope correction = Zonotope(c.zeros_like().squeeze(-1), c.zeros_like({0, n}));
     if (!aux_origin_contained(V, v_trans))
         correction = aux_input_tie(sys, series, r, taylor_terms) * point;
     return {(input_set + trans).reduce(zonotope_order), trans, correction};

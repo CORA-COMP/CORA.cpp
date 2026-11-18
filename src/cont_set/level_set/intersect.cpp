@@ -148,9 +148,8 @@ std::optional<PolyZonotope> LevelSet::intersect(const PolyZonotope &S) const {
     if (aux_is_point(S)) {
         const Tensor c = S.center() + S.generators().sum(-1, true);
         const double g = fun_han(c).item();
-        // layout: #163 step 2
         if (g < 0 || within_tol(g, 0.0))
-            return PolyZonotope(detail::zonotope_of_columns(c, c.zeros_like({dim(), 0})));
+            return PolyZonotope(Zonotope(c.squeeze(-1), c.zeros_like({0, dim()})));
         return std::nullopt;
     }
     // the box of the set, contracted to the level set

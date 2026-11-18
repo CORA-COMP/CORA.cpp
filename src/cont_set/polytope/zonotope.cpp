@@ -60,9 +60,8 @@ Zonotope Polytope::zonotope(const std::string &method) const {
     const Tensor Y = R.pinv().matmul(V - E.q());
     const Tensor lower = Y.min(-1, true), upper = Y.max(-1, true);
     const Tensor center = (upper + lower) * 0.5, radius = (upper - lower) * 0.5;
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(E.q() + R.matmul(center),
-                                       R.multiply(radius.matrix_transpose()));
+    return Zonotope((E.q() + R.matmul(center)).squeeze(-1),
+                    (R.multiply(radius.matrix_transpose())).matrix_transpose());
 }
 
 } // namespace cora

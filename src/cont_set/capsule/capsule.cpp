@@ -131,19 +131,18 @@ Capsule::Capsule(const Interval &I) : ContSet(kClassId) {
 
 Capsule::Capsule(const Zonotope &Z) : ContSet(kClassId) {
     detail::Entry entry;
-    // layout: #163 step 2
-    CORA_CHECK(detail::cora_center(Z).ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(Z.center().ndim() == 1, Error::not_supported, [] {
         return std::string("Capsule: a zonotope converts one at a time, not as a batch");
     });
     const int64_t n = Z.dim();
     // B: the left singular vectors of [-G, G], completed to n columns
-    const Tensor &G = detail::cora_generators(Z);
+    const Tensor &G = Z.generators().matrix_transpose();
     Tensor B = Tensor::concat({G.negative(), G}, 1).svd()[0];
     if (B.shape().back() < n) B = Tensor::concat({B, G.eye_like(n)}, 1).qr().first;
     const Tensor Bt = B.matrix_transpose();
-    // layout: #163 step 2
-    const Capsule rotated(
-        detail::zonotope_of_columns(Bt.matmul(detail::cora_center(Z)), Bt.matmul(G)).interval());
+    const Capsule rotated(Zonotope((Bt.matmul(Z.center().expand_dims(-1))).squeeze(-1),
+                                   Bt.matmul(G).matrix_transpose())
+                              .interval());
     c_ = B.matmul(rotated.c_);
     g_ = B.matmul(rotated.g_);
     r_ = rotated.r_;

@@ -26,8 +26,8 @@ namespace cora {
 
 Zonotope MatZonotope::zonotope() const {
     detail::Entry entry;
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(priv_stack_columns(C_), priv_stack_generators(G_));
+    return Zonotope(priv_stack_columns(C_).squeeze(-1),
+                    priv_stack_generators(G_).matrix_transpose());
 }
 
 } // namespace cora

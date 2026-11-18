@@ -143,12 +143,11 @@ bool Ellipsoid::contains(const Zonotope &S, const std::string &method, Tol tol_a
     const detail::Refusal refusal = aux_refusal(*this, S.dim(), method, true);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // a zonotope that is a point is decided as a point
-    const Tensor &c = detail::cora_center(S);
+    const Tensor &c = S.center().expand_dims(-1);
     const bool s_point = S.representsa("point");
     if (const auto done = aux_degenerate(*this, false, s_point ? &c : nullptr, tol)) return *done;
     if (s_point) return aux_contains_points(*this, c, tol);
-    // layout: #163 step 2
-    return aux_contains_zonotope(*this, c, detail::cora_generators(S), tol);
+    return aux_contains_zonotope(*this, c, S.generators().matrix_transpose(), tol);
 }
 
 bool Ellipsoid::contains(const Interval &S, const std::string &method, Tol tol_arg) const {

@@ -137,12 +137,10 @@ Ellipsoid::Ellipsoid(const Zonotope &Z, const std::string &mode) : Ellipsoid(Ell
     CORA_CHECK(mode == "outer:exact" || mode == "outer:norm" || mode == "outer:norm_bnd" ||
                    mode == "inner:exact" || mode == "inner:norm",
                Error::wrong_value, [&] { return "Ellipsoid: unknown mode '" + mode + "'"; });
-    // layout: #163 step 2
-    CORA_CHECK(detail::cora_center(Z).ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(Z.center().ndim() == 1, Error::not_supported, [] {
         return std::string("Ellipsoid: a zonotope converts one at a time, not as a batch");
     });
-    // layout: #163 step 2
-    const Tensor &c = detail::cora_center(Z), &G = detail::cora_generators(Z);
+    const Tensor &c = Z.center().expand_dims(-1), &G = Z.generators().matrix_transpose();
     const int64_t n = Z.dim();
     // a point: no generator, or generators of length 0
     if (G.shape().back() == 0 || G.abs().max().item() == 0.0) {

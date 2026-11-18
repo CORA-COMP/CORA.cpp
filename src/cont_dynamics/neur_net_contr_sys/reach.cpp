@@ -66,9 +66,8 @@ double aux_step(const std::vector<double> &t, std::size_t i, double h) {
 
 /// The first n states of a set of the extended system (CORA's project(R, 1:n)).
 Zonotope aux_project(const Zonotope &Z, int64_t n) {
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(detail::cora_center(Z).slice(-2, 0, n),
-                                       detail::cora_generators(Z).slice(-2, 0, n));
+    return Zonotope((Z.center().expand_dims(-1).slice(-2, 0, n)).squeeze(-1),
+                    (Z.generators().matrix_transpose().slice(-2, 0, n)).matrix_transpose());
 }
 
 PolyZonotope aux_project(const PolyZonotope &P, int64_t n) {

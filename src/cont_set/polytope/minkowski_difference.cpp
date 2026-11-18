@@ -84,12 +84,9 @@ Polytope aux_by_vertices(const Polytope &P, const ContSet &S) {
         const Zonotope Z = S.class_id() == ClassId::interval
                                ? static_cast<const Interval &>(S).zonotope()
                                : static_cast<const Zonotope &>(S);
-        // layout: #163 step 2
-        Polytope result = P.minus(detail::cora_center(Z));
-        // layout: #163 step 2
-        for (int64_t k = 0; k < detail::cora_generators(Z).shape().back(); ++k) {
-            // layout: #163 step 2
-            const Tensor g = detail::cora_generators(Z).slice(-1, k, k + 1);
+        Polytope result = P.minus(Z.center().expand_dims(-1));
+        for (int64_t k = 0; k < Z.nr_generators(); ++k) {
+            const Tensor g = Z.generators().matrix_transpose().slice(-1, k, k + 1);
             result = result.plus(g).intersect(result.minus(g));
         }
         return result;

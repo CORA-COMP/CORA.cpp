@@ -51,19 +51,15 @@ ReachSet LinParamSys::reach(const ReachProblem &problem, const alg::LinParamReac
     const Zonotope &R0 = *problem.initial_set;
     // the input set without its center, which is the constant input (CORA's uTrans)
     const int64_t m = B_ ? input_dim() : 1;
-    // layout: #163 step 2
-    Zonotope U = detail::zonotope_of_columns(detail::cora_center(R0).zeros_like({m, 1}),
-                                             detail::cora_center(R0).zeros_like({m, 0}));
-    // layout: #163 step 2
-    Tensor u_trans = detail::cora_center(U);
+    Zonotope U = Zonotope((R0.center().expand_dims(-1).zeros_like({m, 1})).squeeze(-1),
+                          (R0.center().expand_dims(-1).zeros_like({m, 0})).matrix_transpose());
+    Tensor u_trans = U.center().expand_dims(-1);
     if (problem.input_set) {
         U = *problem.input_set;
         bool shifted = false;
-        // layout: #163 step 2
-        for (double v : detail::cora_center(U).data()) shifted = shifted || v != 0;
+        for (double v : U.center().data()) shifted = shifted || v != 0;
         if (shifted) {
-            // layout: #163 step 2
-            u_trans = detail::cora_center(U);
+            u_trans = U.center().expand_dims(-1);
             U = U - u_trans;
         }
     }

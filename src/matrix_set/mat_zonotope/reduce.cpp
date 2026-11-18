@@ -40,10 +40,10 @@ MatZonotope MatZonotope::reduce(int order, const std::string &method) const {
                [] { return std::string("reduce: it supports a single set, not a batch"); });
     const Zonotope Z = zonotope().reduce(order);
     // back to rows x cols: the columns of the stacked vectors are matrices read column by column
-    const int64_t h = detail::cora_generators(Z).shape().back();
-    // layout: #163 step 2
-    return {detail::cora_center(Z).reshape({cols(), rows()}).matrix_transpose(),
-            detail::cora_generators(Z)
+    const int64_t h = Z.nr_generators();
+    return {Z.center().expand_dims(-1).reshape({cols(), rows()}).matrix_transpose(),
+            Z.generators()
+                .matrix_transpose()
                 .matrix_transpose()
                 .reshape({h, cols(), rows()})
                 .matrix_transpose()};

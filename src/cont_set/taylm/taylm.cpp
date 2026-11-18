@@ -134,15 +134,12 @@ std::vector<Taylm> Taylm::from_zonotope_and_box(const Zonotope &Z, const Interva
 std::vector<Taylm> Taylm::from_zonotope(const Zonotope &Z, int max_order) {
     detail::Entry entry;
     aux_check_order(max_order, "Taylm::from_zonotope");
-    // layout: #163 step 2
-    CORA_CHECK(detail::cora_center(Z).ndim() == 2, Error::wrong_value, [] {
+    CORA_CHECK(Z.center().ndim() == 1, Error::wrong_value, [] {
         return std::string("Taylm::from_zonotope: the zonotope must not be a batch");
     });
     // one variable per generator, shared by all coordinates
-    const std::vector<double> c = detail::cora_center(Z).data(),
-                              G = detail::cora_generators(Z).data();
-    // layout: #163 step 2
-    const int64_t n = Z.dim(), p = detail::cora_generators(Z).shape().back();
+    const std::vector<double> c = Z.center().data(), G = Z.generators().matrix_transpose().data();
+    const int64_t n = Z.dim(), p = Z.nr_generators();
     std::vector<Taylm> out;
     for (int64_t i = 0; i < n; ++i) {
         Taylm t(p, max_order);

@@ -47,14 +47,12 @@ Zonotope Ellipsoid::zonotope(const std::string &mode,
                [] { return std::string("zonotope: it supports a single ellipsoid, not a batch"); });
     const Tensor G = priv_range_factor(*this);
     const int64_t rank = G.shape().back(), n = dim();
-    // layout: #163 step 2
-    if (rank == 0) return detail::zonotope_of_columns(q_, G);
+    if (rank == 0) return Zonotope(q_.squeeze(-1), G.matrix_transpose());
     // a full-rank ellipsoid uses the symmetric root U sqrt(D) U'; a degenerate one the range factor
     Tensor generators = G;
     if (rank == n) generators = G.matmul(Q_.svd()[0].matrix_transpose());
     if (mode == "inner:box") generators = generators / std::sqrt(static_cast<double>(rank));
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(q_, generators);
+    return Zonotope(q_.squeeze(-1), generators.matrix_transpose());
 }
 
 } // namespace cora

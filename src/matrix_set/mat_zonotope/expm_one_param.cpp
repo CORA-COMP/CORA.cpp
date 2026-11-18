@@ -114,16 +114,16 @@ MatZonotope::ExpmOneParamResult aux_expm(const MatZonotope &A, double r, int64_t
     }
     std::optional<Zonotope> constant_input;
     if (u) {
-        // layout: #163 step 2
-        const Tensor &c = detail::cora_center(*u);
-        // layout: #163 step 2
-        const Tensor g = detail::cora_generators(*u).size(-1) == 0 ? c.zeros_like()
-                                                                   : detail::cora_generators(*u);
+        const Tensor &c = u->center().expand_dims(-1);
+        const Tensor g = u->generators().matrix_transpose().size(-1) == 0
+                             ? c.zeros_like()
+                             : u->generators().matrix_transpose();
         const auto [input_center, input_generators] =
             aux_taylor_terms(aux_input_coefficients(T, c, g), r, N, Tensor());
         // the n x 1 matrices of the input terms are the columns of the zonotope
-        constant_input = detail::zonotope_of_columns(
-            input_center, input_generators.squeeze(-1).matrix_transpose());
+        constant_input =
+            Zonotope(input_center.squeeze(-1),
+                     (input_generators.squeeze(-1).matrix_transpose()).matrix_transpose());
     }
     return {MatZonotope(center, generators),
             mat_exp::exponential_remainder((A * r).interval_matrix(), N), std::move(powers),
@@ -156,12 +156,12 @@ MatZonotope::expm_one_param(double r, int64_t max_order,
         return "expm_one_param: the input needs " + std::to_string(rows()) + " dimensions, got " +
                std::to_string(u_trans->dim());
     });
-    // layout: #163 step 2
-    CORA_CHECK(
-        !u_trans || detail::cora_generators(*u_trans).size(-1) <= 1, Error::not_supported, [] {
-            return std::string("expm_one_param: an input with more than one generator is not "
-                               "supported, as in CORA the set it gives is meant for one");
-        });
+    CORA_CHECK(!u_trans || u_trans->generators().matrix_transpose().size(-1) <= 1,
+               Error::not_supported, [] {
+                   return std::string(
+                       "expm_one_param: an input with more than one generator is not "
+                       "supported, as in CORA the set it gives is meant for one");
+               });
     // without an input the series is the matrix exponential only
     return aux_expm(*this, r, max_order, u_trans ? &*u_trans : nullptr);
 }
