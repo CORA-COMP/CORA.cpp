@@ -3016,7 +3016,9 @@ void bind_poly_zonotope(py::module_ &m) {
                  } else {
                      ids = py::cast<std::vector<int64_t>>(id);
                  }
-                 return PolyZonotope(center, dependent, generators_from_python(GI, center, "GI"),
+                 // layout: #163 step 2 - Python still gives CORA's generator columns
+                 return PolyZonotope(center, dependent.matrix_transpose(),
+                                     generators_from_python(GI, center, "GI").matrix_transpose(),
                                      std::move(exps), std::move(ids));
              }),
              py::arg("c"), py::arg("G") = py::none(), py::arg("GI") = py::none(),
@@ -3026,11 +3028,15 @@ void bind_poly_zonotope(py::module_ &m) {
         // the stored parts as arrays
         .def_property_readonly(
             "c", [](const PolyZonotope &P) { return vector(P.center()); }, "The center c (n)")
+        // layout: #163 step 2 - the rows seen as CORA's columns
         .def_property_readonly(
-            "G", [](const PolyZonotope &P) { return matrix(P.generators()); },
+            "G", [](const PolyZonotope &P) { return matrix(P.generators().matrix_transpose()); },
             "The dependent generators G (n, h)")
         .def_property_readonly(
-            "GI", [](const PolyZonotope &P) { return matrix(P.independent_generators()); },
+            "GI",
+            [](const PolyZonotope &P) {
+                return matrix(P.independent_generators().matrix_transpose());
+            },
             "The independent generators GI (n, q)")
         // the exponents as the matrix E (p, h) of CORA
         .def_property_readonly(

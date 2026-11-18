@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@polyZonotope/exactPlus.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -37,7 +37,7 @@ PolyZonotope PolyZonotope::exact_plus(const PolyZonotope &S) const {
     Exponents E = priv_extend_exponents(E_, ids.position1, ids.id.size());
     const Exponents E2 = priv_extend_exponents(S.E_, ids.position2, ids.id.size());
     E.insert(E.end(), E2.begin(), E2.end());
-    return {c_ + S.c_, Tensor::concat({G_, S.G_}, -1), Tensor::concat({GI_, S.GI_}, -1),
+    return {c_ + S.c_, Tensor::concat({G_, S.G_}, -2), Tensor::concat({GI_, S.GI_}, -2),
             std::move(E), ids.id};
 }
 

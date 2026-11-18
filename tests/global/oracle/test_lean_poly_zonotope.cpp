@@ -79,7 +79,10 @@ Raw aux_raw(oracle::Random &rnd, const Dims &s, bool repeats) {
     return {rnd.vector(s.n), rnd.matrix(s.n, s.h), rnd.matrix(s.n, s.q), E, id};
 }
 
-PolyZonotope aux_set(const Raw &r) { return {r.c, r.G, r.GI, r.E, r.id}; }
+/// The set of the raw columns, as rows.
+PolyZonotope aux_set(const Raw &r) {
+    return {r.c, r.G.matrix_transpose(), r.GI.matrix_transpose(), r.E, r.id};
+}
 
 /// A set from the oracle's constructor: what the other ops take as their operand.
 lean::PolyZonotope aux_lean(const Raw &r) {

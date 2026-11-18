@@ -71,8 +71,8 @@ Zonotope aux_project(const Zonotope &Z, int64_t n) {
 }
 
 PolyZonotope aux_project(const PolyZonotope &P, int64_t n) {
-    return {P.center().slice(0, 0, n), P.generators().slice(0, 0, n),
-            P.independent_generators().slice(0, 0, n), P.exponents(), P.ids()};
+    return {P.center().slice(0, 0, n), P.generators().slice(-1, 0, n),
+            P.independent_generators().slice(-1, 0, n), P.exponents(), P.ids()};
 }
 
 /// The set of the pairs (x, N(x)) for x in X.

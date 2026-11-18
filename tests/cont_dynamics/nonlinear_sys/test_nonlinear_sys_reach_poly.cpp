@@ -8,9 +8,9 @@
 // PROPERTY: contDynamics/@contDynamics/private/priv_abstrerr_poly.m
 // PROPERTY: contDynamics/@contDynamics/private/priv_precompStatError.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -112,7 +112,7 @@ void the_steps_continue_and_reduce(const std::string &b) {
     const PolyNonlinearStep second = sys.post(first, std::nullopt, a);
     check(first.error.shape() == std::vector<int64_t>({2, 1}), b + ": the error is a column");
     check(second.time_point.num_dependent() +
-                  second.time_point.independent_generators().shape()[1] <=
+                  second.time_point.independent_generators().shape()[0] <=
               20 * 2,
           b + ": at most order * n generators after post");
     check(second.time_interval.interval().inf().data()[0] < 1.4 + 0.2,

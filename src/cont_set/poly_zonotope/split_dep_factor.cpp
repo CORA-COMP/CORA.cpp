@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@polyZonotope/splitDepFactor.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -67,14 +67,13 @@ CORA_FROM_NUMBERS PolyZonotope aux_assemble(const PolyZonotope &base, const Colu
             E.push_back(e);
         }
     }
-    // the columns as an (n, h) matrix, row-major
+    // the generators as rows (h, n)
     const auto h = int64_t(g.size());
-    std::vector<double> G(std::size_t(n * h));
-    for (int64_t j = 0; j < h; ++j)
-        for (int64_t r = 0; r < n; ++r)
-            G[std::size_t(r * h + j)] = g[std::size_t(j)][std::size_t(r)];
-    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(G, {n, h}),
-            base.independent_generators(), std::move(E), base.ids()};
+    std::vector<double> G;
+    G.reserve(std::size_t(n * h));
+    for (const std::vector<double> &row : g) G.insert(G.end(), row.begin(), row.end());
+    return {Tensor::from_data(c, {n}), Tensor::from_data(G, {h, n}), base.independent_generators(),
+            std::move(E), base.ids()};
 }
 
 } // namespace
@@ -96,7 +95,7 @@ std::pair<PolyZonotope, PolyZonotope> PolyZonotope::split_dep_factor(int64_t id)
     const std::vector<double> G = G_.data();
     const auto column = [&](int64_t j) {
         std::vector<double> col(static_cast<std::size_t>(n));
-        for (int64_t r = 0; r < n; ++r) col[std::size_t(r)] = G[std::size_t(r * h + j)];
+        for (int64_t r = 0; r < n; ++r) col[std::size_t(r)] = G[std::size_t(j * n + r)];
         return col;
     };
     // the highest exponent of the factor

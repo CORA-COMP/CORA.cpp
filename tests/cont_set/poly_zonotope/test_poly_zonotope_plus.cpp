@@ -25,8 +25,8 @@ namespace {
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
     return {column({1.0, 0.0}),
-            Tensor::from_data({1, 0, 1, 2}, {2, 2}),
-            Tensor::from_data({0, 1}, {2, 1}),
+            Tensor::from_data({1, 1, 0, 2}, {2, 2}),
+            Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
             {1, 2}};
 }
@@ -51,7 +51,7 @@ int main() {
         const PolyZonotope P = known();
         const Zonotope Z(column({1.0, 1.0}), Tensor::from_data({1, 0}, {1, 2}));
         const PolyZonotope S = P.plus(Z);
-        check(close(S.center(), {2.0, 1.0}, 0) && S.independent_generators().shape()[1] == 2 &&
+        check(close(S.center(), {2.0, 1.0}, 0) && S.independent_generators().shape()[0] == 2 &&
                   S.num_dependent() == P.num_dependent(),
               b + ": a zonotope joins the independent part");
         check(close(P.plus(column({1.0, 1.0})).center(), {2.0, 1.0}, 0), b + ": a point");

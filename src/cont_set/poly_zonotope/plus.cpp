@@ -32,11 +32,7 @@ PolyZonotope PolyZonotope::plus(const Zonotope &Z) const {
     CORA_CHECK(Z.dim() == dim() && Z.center().ndim() == 1, Error::dimension_mismatch, [&] {
         return "plus: the zonotope must be a single set of the dimension " + std::to_string(dim());
     });
-    return {c_ + Z.center().expand_dims(-1),
-            G_,
-            Tensor::concat({GI_, Z.generators().matrix_transpose()}, -1),
-            E_,
-            id_,
+    return {c_ + Z.center(),     G_, Tensor::concat({GI_, Z.generators()}, -2), E_, id_,
             detail::Normalized{}};
 }
 
@@ -51,7 +47,7 @@ PolyZonotope PolyZonotope::plus(const Tensor &v) const {
                    return "plus: the point must be a column of the dimension " +
                           std::to_string(dim());
                });
-    return {c_ + v, G_, GI_, E_, id_, detail::Normalized{}};
+    return {c_ + v.squeeze(-1), G_, GI_, E_, id_, detail::Normalized{}};
 }
 
 PolyZonotope PolyZonotope::plus(const PolyZonotope &S) const {
@@ -78,8 +74,8 @@ PolyZonotope PolyZonotope::plus(const PolyZonotope &S) const {
     }
     // the generators side by side, the exponents of the two sets stay distinct
     return {c_ + S.c_,
-            Tensor::concat({G_, S.G_}, -1),
-            Tensor::concat({GI_, S.GI_}, -1),
+            Tensor::concat({G_, S.G_}, -2),
+            Tensor::concat({GI_, S.GI_}, -2),
             std::move(E),
             std::move(id),
             detail::Normalized{}};

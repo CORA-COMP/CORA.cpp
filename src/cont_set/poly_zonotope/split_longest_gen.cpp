@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@polyZonotope/splitLongestGen.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -38,7 +38,7 @@ std::pair<PolyZonotope, PolyZonotope> PolyZonotope::split_longest_gen() const {
     std::vector<double> sq(static_cast<std::size_t>(h), 0.0);
     for (int64_t j = 0; j < h; ++j)
         for (int64_t r = 0; r < n; ++r)
-            sq[std::size_t(j)] += G[std::size_t(r * h + j)] * G[std::size_t(r * h + j)];
+            sq[std::size_t(j)] += G[std::size_t(j * n + r)] * G[std::size_t(j * n + r)];
     const auto longest = std::size_t(std::max_element(sq.begin(), sq.end()) - sq.begin());
     // its factor of the largest exponent
     const std::vector<int> &e = E_[longest];

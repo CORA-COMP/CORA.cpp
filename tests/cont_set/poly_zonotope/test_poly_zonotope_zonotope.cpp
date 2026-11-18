@@ -24,8 +24,8 @@ namespace {
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
     return {column({1.0, 0.0}),
-            Tensor::from_data({1, 0, 1, 2}, {2, 2}),
-            Tensor::from_data({0, 1}, {2, 1}),
+            Tensor::from_data({1, 1, 0, 2}, {2, 2}),
+            Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
             {1, 2}};
 }
@@ -47,7 +47,7 @@ void zonotope_property(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         // the generator a b has an odd exponent, a has too: both stay; an even one (a^2) is halved
-        const PolyZonotope P(column({0.0}), Tensor::from_data({2.0, 1.0}, {1, 2}),
+        const PolyZonotope P(column({0.0}), Tensor::from_data({2.0, 1.0}, {2, 1}),
                              Tensor::from_data({3.0}, {1, 1}), {{2}, {1}}, {1});
         const Zonotope Z = P.zonotope();
         check(close(Z.center().expand_dims(-1), {1.0}, 0), b + ": c + half of the even generator");

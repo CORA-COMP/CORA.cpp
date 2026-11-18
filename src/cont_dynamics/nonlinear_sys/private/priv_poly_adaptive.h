@@ -20,7 +20,7 @@
 // CORA.cpp only: the declarations of the private functions of the poly-adaptive algorithm.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -129,7 +129,7 @@ PolyZonotope priv_poly_quad_map(const PolyZonotope &Z, const std::vector<Tensor>
 /// The generators and the center shift (zonotopeEven) of the three products with a difference
 /// in CORALean's abstrErrPolyAdaptiveFloat; structurally zero generators are left out.
 struct SecondOrder {
-    Tensor G;
+    Tensor G; // one generator per row
     Vec shift;
 };
 SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdiff,

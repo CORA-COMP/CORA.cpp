@@ -11,9 +11,9 @@
 // CORA: contDynamics/@linearSys/initReach_adaptive.m
 // PROPERTY: contDynamics/@linearSys/initReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -74,7 +74,7 @@ int main() {
         if (!series) return;
         const Tensor zero = Tensor({0.0, 0.0});
         const PolyZonotope X0(Zonotope(zero, Tensor({{0.01, 0.0}, {0.0, 0.01}})));
-        const PolyZonotope Vs(Tensor({0.0, 0.0}), Tensor::zeros({2, 0}), Tensor::zeros({2, 0}), {},
+        const PolyZonotope Vs(Tensor({0.0, 0.0}), Tensor::zeros({0, 2}), Tensor::zeros({0, 2}), {},
                               {});
         for (const bool shifted : {false, true}) {
             // the input box has the radius r = 0.1 about the center

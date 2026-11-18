@@ -3,9 +3,9 @@
 // CORA: contSet/@polyZonotope/mtimes.m
 // PROPERTY: contSet/@polyZonotope/mtimes.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -24,8 +24,8 @@ namespace {
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
     return {column({1.0, 0.0}),
-            Tensor::from_data({1, 0, 1, 2}, {2, 2}),
-            Tensor::from_data({0, 1}, {2, 1}),
+            Tensor::from_data({1, 1, 0, 2}, {2, 2}),
+            Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
             {1, 2}};
 }
@@ -54,11 +54,11 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         const PolyZonotope P = known();
         const PolyZonotope Q = P.linear_map(Tensor::from_data({2, 0, 0, 1}, {2, 2}));
-        check(close(Q.center(), {2.0, 0.0}, 0) && close(Q.generators(), {2.0, 0.0, 1.0, 2.0}, 0) &&
+        check(close(Q.center(), {2.0, 0.0}, 0) && close(Q.generators(), {2.0, 1.0, 0.0, 2.0}, 0) &&
                   Q.exponents() == P.exponents(),
               b + ": exact, the exponents stay");
         const Interval M(Tensor::eye(2) * 0.9, Tensor::eye(2) * 1.1);
-        check(P.linear_map(M).independent_generators().shape()[1] == 3,
+        check(P.linear_map(M).independent_generators().shape()[0] == 3,
               b + ": the width joins the independent part");
         map_property(b);
     });

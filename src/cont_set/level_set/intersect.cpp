@@ -123,7 +123,7 @@ Exponents aux_quadratic_exponents(std::size_t n) {
 /// The point of the set if it has no extent: no independent generator, and no dependent one with
 /// an exponent (CORA's aux_isavector).
 bool aux_is_point(const PolyZonotope &S) {
-    if (S.independent_generators().shape().back() > 0) return false;
+    if (S.independent_generators().shape()[0] > 0) return false;
     const auto zero = [](const std::vector<int> &e) {
         return std::all_of(e.begin(), e.end(), [](int x) { return x == 0; });
     };
@@ -146,7 +146,7 @@ std::optional<PolyZonotope> LevelSet::intersect(const PolyZonotope &S) const {
     });
     // a set with no extent is a point: kept if it fulfills f <= 0 (CORA's "< 0 or within tol")
     if (aux_is_point(S)) {
-        const Tensor c = S.center() + S.generators().sum(-1, true);
+        const Tensor c = (S.center() + S.generators().sum(-2)).expand_dims(-1);
         const double g = fun_han(c).item();
         if (g < 0 || within_tol(g, 0.0))
             return PolyZonotope(Zonotope(c.squeeze(-1), c.zeros_like({0, dim()})));
@@ -201,12 +201,12 @@ std::optional<PolyZonotope> LevelSet::intersect(const PolyZonotope &S) const {
         e[i] = 1;
         E.push_back(e);
     }
-    // the matrix: the row var holds the terms divided by the derivative, the others their box
+    // the rows (h, n): the entry var holds the terms divided by the derivative, the others the box
     const std::size_t h = g_var.size() + others.size();
     std::vector<double> G(n * h, 0.0), c(n);
-    for (std::size_t k = 0; k < g_var.size(); ++k) G[var * h + k] = g_var[k] / D.grad[var];
+    for (std::size_t k = 0; k < g_var.size(); ++k) G[k * n + var] = g_var[k] / D.grad[var];
     for (std::size_t k = 0; k < others.size(); ++k) {
-        G[others[k] * h + g_var.size() + k] = r[others[k]];
+        G[(g_var.size() + k) * n + others[k]] = r[others[k]];
         std::vector<int> e(n, 0);
         e[others[k]] = 1;
         E.push_back(e);
@@ -217,9 +217,9 @@ std::optional<PolyZonotope> LevelSet::intersect(const PolyZonotope &S) const {
     GI[var] = rem.rad() / D.grad[var];
     std::vector<int64_t> ids(n);
     for (std::size_t i = 0; i < n; ++i) ids[i] = int64_t(i) + 1;
-    return PolyZonotope(Tensor::like(I.inf(), c, {int64_t(n), 1}),
-                        Tensor::like(I.inf(), G, {int64_t(n), int64_t(h)}),
-                        Tensor::like(I.inf(), GI, {int64_t(n), 1}), std::move(E), std::move(ids));
+    return PolyZonotope(Tensor::like(I.inf(), c, {int64_t(n)}),
+                        Tensor::like(I.inf(), G, {int64_t(h), int64_t(n)}),
+                        Tensor::like(I.inf(), GI, {1, int64_t(n)}), std::move(E), std::move(ids));
 }
 
 } // namespace cora

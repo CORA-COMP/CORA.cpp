@@ -24,8 +24,8 @@ namespace {
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
     return {column({1.0, 0.0}),
-            Tensor::from_data({1, 0, 1, 2}, {2, 2}),
-            Tensor::from_data({0, 1}, {2, 1}),
+            Tensor::from_data({1, 1, 0, 2}, {2, 2}),
+            Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
             {1, 2}};
 }
@@ -41,7 +41,7 @@ int main() {
         const Zonotope Z(column({5.0}), Tensor::from_data({1.0, 2.0}, {2, 1}));
         const PolyZonotope Q = P.cart_prod(Z);
         check(Q.dim() == 3 && close(Q.center(), {1.0, 0.0, 5.0}, 0), b + ": the centers stack");
-        check(Q.independent_generators().shape()[1] == 3 && Q.num_dependent() == 2,
+        check(Q.independent_generators().shape()[0] == 3 && Q.num_dependent() == 2,
               b + ": the zonotope is independent");
         check(cart_prod(P, Z).is<PolyZonotope>(), b + ": through the registry");
     });

@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@polyZonotope/randPoint_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -31,7 +31,7 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Tensor PolyZonotope::rand_point_impl(int64_t N, Rng &rng) const {
-    const int64_t p = num_factors(), h = num_dependent(), q = GI_.shape()[1];
+    const int64_t p = num_factors(), h = num_dependent(), q = GI_.shape()[0];
     // the factors of every point, and the monomial of every dependent generator
     std::vector<double> a(std::size_t(p * N)), b(std::size_t(q * N));
     rng.uniform(a.data(), a.size(), -1.0, 1.0);
@@ -42,7 +42,10 @@ Tensor PolyZonotope::rand_point_impl(int64_t N, Rng &rng) const {
             for (int64_t k = 0; k < N; ++k)
                 mono[std::size_t(j * N + k)] *=
                     std::pow(a[std::size_t(i * N + k)], E_[std::size_t(j)][std::size_t(i)]);
-    return c_ + G_.matmul(Tensor::like(c_, mono, {h, N})) + GI_.matmul(Tensor::like(c_, b, {q, N}));
+    // the points as columns (n, N): CORA's c + G mono + GI b
+    const Tensor c = c_.expand_dims(-1);
+    return c + G_.matrix_transpose().matmul(Tensor::like(c, mono, {h, N})) +
+           GI_.matrix_transpose().matmul(Tensor::like(c, b, {q, N}));
 }
 
 } // namespace cora

@@ -16,9 +16,9 @@
 // PROPERTY: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // PROPERTY: nn/layers/nonlinear/@nnActivationLayer/nnActivationLayer.m
 // CORA authors: Tobias Ladner, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -52,11 +52,11 @@ Columns aux_by_exponent(const PolyZonotope &P) {
     // the column of each exponent
     Columns out;
     const int64_t n = P.dim(), h = P.num_dependent();
-    const std::vector<double> g = P.generators().data();
+    const std::vector<double> g = P.generators().data(); // one generator per row
     for (int64_t j = 0; j < h; ++j) {
         std::vector<double> column;
         column.reserve(std::size_t(n));
-        for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(i * h + j)]);
+        for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(j * n + i)]);
         out[P.exponents()[std::size_t(j)]] = column;
     }
     return out;
@@ -64,14 +64,14 @@ Columns aux_by_exponent(const PolyZonotope &P) {
 
 std::vector<std::vector<double>> aux_independent(const PolyZonotope &P) {
     // the columns of the independent generators, sorted
-    const int64_t n = P.dim(), q = P.independent_generators().shape()[1];
-    const std::vector<double> g = P.independent_generators().data();
+    const int64_t n = P.dim(), q = P.independent_generators().shape()[0];
+    const std::vector<double> g = P.independent_generators().data(); // one generator per row
     std::vector<std::vector<double>> out;
     out.reserve(std::size_t(q));
     for (int64_t j = 0; j < q; ++j) {
         std::vector<double> column;
         column.reserve(std::size_t(n));
-        for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(i * q + j)]);
+        for (int64_t i = 0; i < n; ++i) column.push_back(g[std::size_t(j * n + i)]);
         out.push_back(column);
     }
     std::sort(out.begin(), out.end());
@@ -94,7 +94,7 @@ PolyZonotope aux_neuron(Activation a, const PolyZonotope &X, int order, PolyMeth
 
 /// x = c + g alpha over alpha in [-1, 1].
 PolyZonotope aux_interval_set(double l, double u) {
-    return PolyZonotope(Tensor({(l + u) / 2}), Tensor({{(u - l) / 2}}), Tensor::zeros({1, 0}),
+    return PolyZonotope(Tensor({(l + u) / 2}), Tensor({{(u - l) / 2}}), Tensor::zeros({0, 1}),
                         {{1}}, {1});
 }
 
@@ -192,7 +192,7 @@ void every_method_encloses_the_activation(const std::string &b) {
 void powers_of_sets_with_even_exponents_and_independent_generators_hold(const std::string &b) {
     Rng rng(6);
     // x = 0.2 + alpha^2 + 0.8 b + 0.5 alpha beta, with alpha in two factors
-    const PolyZonotope X(Tensor({{0.2}}), Tensor({{1.0, 0.5, -0.4}}), Tensor({{0.8}}),
+    const PolyZonotope X(Tensor({{0.2}}), Tensor({{1.0}, {0.5}, {-0.4}}), Tensor({{0.8}}),
                          {{2, 0}, {1, 1}, {0, 3}}, {1, 2});
     int outside = 0;
     for (const Activation a : {Activation::sigmoid, Activation::tanh, Activation::relu})
@@ -219,9 +219,9 @@ void networks_of_order_k_enclose_the_outputs(const std::string &b) {
         {{matrix(5, 3), matrix(5, 1)}, {matrix(4, 5), matrix(4, 1)}, {matrix(2, 4), matrix(2, 1)}},
         {Activation::tanh, Activation::sigmoid, Activation::identity});
     // dependent generators with a shared factor, and independent ones
-    const PolyZonotope X(
-        Tensor({{0.1}, {-0.3}, {0.2}}), Tensor({{0.4, 0.1, 0.0}, {0.0, 0.3, 0.2}, {0.2, 0.0, 0.3}}),
-        Tensor({{0.05}, {0.0}, {0.1}}), {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {1, 2, 3});
+    const PolyZonotope X(Tensor({{0.1}, {-0.3}, {0.2}}),
+                         Tensor({{0.4, 0.0, 0.2}, {0.1, 0.3, 0.0}, {0.0, 0.2, 0.3}}),
+                         Tensor({{0.05, 0.0, 0.1}}), {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {1, 2, 3});
     int outside = 0;
     for (const auto &orders : std::vector<std::vector<std::vector<int>>>{
              {{2}, {2}, {}}, {{3}, {1}, {}}, {{2, 1, 3, 2, 1}, {2, 3, 1, 2}, {}}, {{1}, {3}, {}}}) {
@@ -239,12 +239,12 @@ void networks_of_order_k_enclose_the_outputs(const std::string &b) {
     limited.num_generators = 6;
     const PolyZonotope full = nn.evaluate(X, two), cut = nn.evaluate(X, limited);
     check(aux_outside(nn, X, cut, rng) == 0, b + ": the reduced set encloses the outputs");
-    check(cut.num_dependent() + cut.independent_generators().shape()[1] <
-              full.num_dependent() + full.independent_generators().shape()[1],
+    check(cut.num_dependent() + cut.independent_generators().shape()[0] <
+              full.num_dependent() + full.independent_generators().shape()[0],
           b + ": the limit reduces the generators");
     // a generator with all exponents even in the reduction: alpha^2 + alpha^4 reaches 2
-    const PolyZonotope Z(Tensor({{-1.0}}), Tensor({{1.0, 1.0}}), Tensor::zeros({1, 0}), {{2}, {4}},
-                         {1});
+    const PolyZonotope Z(Tensor({{-1.0}}), Tensor({{1.0}, {1.0}}), Tensor::zeros({0, 1}),
+                         {{2}, {4}}, {1});
     const NeuralNetwork one({{Tensor({{1.0}}), Tensor({0.0})}}, {Activation::tanh});
     const PolyZonotope R = one.evaluate(Z, {.num_generators = 1});
     check(aux_outside(one, Z, R, rng) == 0, b + ": the reduction of even exponents keeps 2");
@@ -254,8 +254,8 @@ void networks_of_order_k_enclose_the_outputs(const std::string &b) {
 void the_pairs_keep_the_input_rows(const std::string &b) {
     // one tanh layer on a set of two dependent factors
     const NeuralNetwork nn({{Tensor({{1.0, 0.5}}), Tensor({0.1})}}, {Activation::tanh});
-    const PolyZonotope X(Tensor({{0.2}, {-0.1}}), Tensor({{0.5, 0.1}, {0.0, 0.4}}),
-                         Tensor({{0.1}, {0.05}}), {{1, 0}, {0, 1}}, {1, 2});
+    const PolyZonotope X(Tensor({{0.2}, {-0.1}}), Tensor({{0.5, 0.0}, {0.1, 0.4}}),
+                         Tensor({{0.1, 0.05}}), {{1, 0}, {0, 1}}, {1, 2});
     for (const bool in_gi : {true, false}) {
         const PolyZonotope XY = nn.evaluate_with_input(X, {.add_approx_error_to_gi = in_gi,
                                                            .poly_method = PolyMethod::regression,

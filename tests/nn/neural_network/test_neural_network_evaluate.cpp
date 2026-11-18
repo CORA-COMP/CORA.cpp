@@ -197,7 +197,7 @@ void the_joint_set_holds_the_pairs(const std::string &b) {
     const PolyZonotope as_factors = nn.evaluate_with_input(P, {.add_approx_error_to_gi = false});
     // the errors as new factors leave no independent generators
     check(as_factors.num_factors() > P.num_factors() &&
-              as_factors.independent_generators().shape()[1] == 0,
+              as_factors.independent_generators().shape()[0] == 0,
           b + ": the errors become new factors");
     // both enclose the pairs: the zonotope enclosure of each holds them
     for (const PolyZonotope *Q : {&in_gi, &as_factors}) {

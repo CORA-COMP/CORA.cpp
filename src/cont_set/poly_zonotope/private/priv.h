@@ -9,9 +9,9 @@
 // CORA: global/functions/helper/sets/contSet/polyZonotope/removeRedundantExponents.m
 // CORA: global/functions/helper/sets/contSet/polyZonotope/mergeExpMatrix.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -32,8 +32,8 @@ struct MergedColumns {
 /// removeRedundantExponents multiplies with the exponents to order the columns.
 std::vector<double> priv_hash_vector(std::size_t p);
 
-/// CORA's removeRedundantExponents: equal exponents add up (last column to first), zero generators
-/// go, the columns are in the order of CORA's hash (singles first, then the sums).
+/// CORA's removeRedundantExponents: equal exponents add up (last row to first), zero generators
+/// go, the generator rows are in the order of CORA's hash (singles first, then the sums).
 MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E);
 
 /// The identifiers of two sets as one sorted list, and for each set the position of its
@@ -52,8 +52,8 @@ Exponents priv_extend_exponents(const Exponents &E, const std::vector<std::size_
 /// Removes the identifiers that no generator uses (all exponents 0): E and id shrink.
 void priv_drop_unused_ids(Exponents &E, std::vector<int64_t> &id);
 
-/// The columns of G (n, h) at the indices, in that order (n, k).
-Tensor priv_columns(const Tensor &G, const std::vector<int64_t> &index);
+/// The rows of G (h, n) at the indices, in that order (k, n).
+Tensor priv_rows(const Tensor &G, const std::vector<int64_t> &index);
 
 /// For each exponent column, the least index of a column equal to it (a column that is the first of
 /// its kind is its own).

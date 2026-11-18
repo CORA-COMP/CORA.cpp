@@ -190,11 +190,10 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
     const int64_t n = X0.dim();
     const Tensor zero = X0.center().zeros_like();
     // the segment [0, u] of the center, V without it (a point has n zero generators)
-    const Tensor &u = V.center().expand_dims(-1);
-    const Zonotope point_zero = Zonotope(zero.squeeze(-1), zero.zeros_like({n, n})),
-                   point_u = Zonotope(u.squeeze(-1), zero.zeros_like({n, n}));
+    const Zonotope point_zero(zero, zero.zeros_like({n, n})),
+        point_u(V.center(), zero.zeros_like({n, n}));
     const Zonotope seg = priv_lin_comb(point_zero, point_u);
-    const Zonotope V0 = Zonotope(zero.squeeze(-1), V.generators());
+    const Zonotope V0(zero, V.generators());
     const Zonotope PuR = series.input_solution(seg).reduce_adaptive(zeta_z);
     const Zonotope PU = series.input_solution(V0).reduce_adaptive(zeta_z);
     // [F] X0, the hull of X0 and [e^{A dt}] X0, the hull of {0} and ([e^{A dt}] - I) X0
@@ -206,7 +205,7 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
     const Tensor eye = X0.center().eye_like(n);
     const Interval e_adt_minus_i(series.e_adt().inf() + eye * -1.0,
                                  series.e_adt().sup() + eye * -1.0);
-    const PolyZonotope origin(zero, zero.zeros_like({n, 0}), zero.zeros_like({n, n}), {}, {},
+    const PolyZonotope origin(zero, zero.zeros_like({0, n}), zero.zeros_like({n, n}), {}, {},
                               detail::Verbatim{});
     const PolyZonotope dhom = priv_reduce_adaptive_poly(
         priv_poly_plus(priv_poly_lin_comb(origin, priv_poly_interval_map(e_adt_minus_i, X0)), FX),
@@ -219,17 +218,15 @@ PolyZonotope priv_poly_point(const PolySeries &series, const Zonotope &V, const 
     const int64_t n = X0.dim();
     const Tensor zero = X0.center().zeros_like();
     // the input: V with the time-varying (independent) part of Vs, its center ũ held
-    const Zonotope Vt =
-        V.plus(Zonotope(zero.squeeze(-1), Vs.independent_generators().matrix_transpose()));
-    const Tensor &u = Vt.center().expand_dims(-1);
-    const Zonotope point_u = Zonotope(u.squeeze(-1), zero.zeros_like({n, n}));
+    const Zonotope Vt = V.plus(Zonotope(zero, Vs.independent_generators()));
+    const Zonotope point_u(Vt.center(), zero.zeros_like({n, n}));
     const Zonotope Pu = priv_interval_map(series.integral(), point_u);
     const Zonotope PU =
-        series.input_solution(Zonotope(zero.squeeze(-1), Vt.generators())).reduce_adaptive(zeta_z);
+        series.input_solution(Zonotope(zero, Vt.generators())).reduce_adaptive(zeta_z);
     // [e^{A dt}] X0 reduced, the integral of the dependent part of Vs, the dependency on X0 kept
     const PolyZonotope e_adt_red =
         priv_reduce_adaptive_poly(priv_poly_interval_map(series.e_adt(), X0), zeta_z);
-    const PolyZonotope dep(Vs.center(), Vs.generators(), zero.zeros_like({n, 0}), Vs.exponents(),
+    const PolyZonotope dep(Vs.center(), Vs.generators(), zero.zeros_like({0, n}), Vs.exponents(),
                            Vs.ids(), detail::Verbatim{});
     const PolyZonotope Ps = priv_poly_interval_map(series.integral(), dep);
     return priv_poly_plus(priv_poly_plus(priv_poly_exact_plus(e_adt_red, Ps).compact_gens(), Pu),

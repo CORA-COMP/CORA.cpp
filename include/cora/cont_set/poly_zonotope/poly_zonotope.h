@@ -1,7 +1,8 @@
 // poly_zonotope - the class of polynomial zonotopes, as CORA's polyZonotope
 //
-// The set is { c + sum_j (prod_i a_i^E(i,j)) G(:,j) + GI b | a_i, b_k in [-1, 1] }: the dependent
-// generators G carry monomials of the factors a_i, the independent generators GI the factors b_k.
+// The set is { c + sum_j (prod_i a_i^E(i,j)) g_j + sum_k b_k gi_k | a_i, b_k in [-1, 1] }: the
+// dependent generators g_j carry monomials of the factors a_i, the independent ones gi_k the
+// factors b_k. Stored batch first as Zonotope (#163): the center c (n), one generator per row.
 // The factors have identifiers id, so that two sets with the same identifier share the factor and
 // keep their dependency. The set is a single one (no batch) of the tensors' backend; the exponents
 // and the identifiers are integers on the host. As in CORA the constructor merges the dependent
@@ -15,9 +16,9 @@
 // CORA: contSet/@polyZonotope/polyZonotope.m
 // CORA: contSet/@polyZonotope/dim.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -55,8 +56,9 @@ class PolyZonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::poly_zonotope;
 
-    /// The set of the center c (n, 1), the dependent generators G (n, h) with the exponents E of
-    /// the factors id (p identifiers), and the independent generators GI (n, q).
+    /// The set of the center c (n), the dependent generator rows G (h, n) with the exponents E of
+    /// the factors id (p identifiers), and the independent generator rows GI (q, n). A center
+    /// given as a column (n, 1) is the vector.
     PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id);
 
     /// As the constructor above for a set whose dependent generators have distinct exponents, which
@@ -64,7 +66,7 @@ class PolyZonotope : public ContSet {
     PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E, std::vector<int64_t> id,
                  detail::Normalized);
 
-    /// As the constructors above for a set whose columns are kept exactly as they are: equal
+    /// As the constructors above for a set whose generators are kept exactly as they are: equal
     /// exponents stay apart, and zero generators stay, dependent and independent.
     PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id,
                  detail::Verbatim);
@@ -76,6 +78,7 @@ class PolyZonotope : public ContSet {
     /// The box as a polynomial zonotope with one dependent generator per dimension.
     explicit PolyZonotope(const Interval &I);
 
+    /// The center c (n) and the generator rows G (h, n) and GI (q, n).
     const Tensor &center() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
     const Tensor &independent_generators() const noexcept { return GI_; }

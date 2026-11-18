@@ -4,9 +4,9 @@
 // Sets:     the center and the generators are standard normal; two factors with exponents 0..3
 // See also: testing.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -30,7 +30,9 @@ inline cora::Tensor normal(cora::Rng &rng, int64_t rows, int64_t cols) {
 /// factors.
 inline cora::PolyZonotope random_poly(cora::Rng &rng, int64_t n) {
     const cora::Exponents E = {{1, 0}, {0, 1}, {2, 1}, {1, 2}};
-    return {normal(rng, n, 1), normal(rng, n, 4), normal(rng, n, 2), E, {1, 2}};
+    // the draws of CORA's columns, as rows
+    const cora::Tensor c = normal(rng, n, 1), G = normal(rng, n, 4), GI = normal(rng, n, 2);
+    return {c, G.matrix_transpose(), GI.matrix_transpose(), E, {1, 2}};
 }
 
 /// Whether every column of the points lies in the zonotope up to a small tolerance.

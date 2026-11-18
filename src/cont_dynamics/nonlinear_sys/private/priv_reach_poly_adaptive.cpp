@@ -37,7 +37,7 @@ namespace {
 /// Whether the third derivatives of f are all identically zero (CORA's thirdOrderTensorempty).
 bool aux_third_order_empty(const NonlinearSys &sys, const PolyZonotope &X0,
                            const std::optional<Zonotope> &U) {
-    const Tensor &x = X0.center();
+    const Tensor x = X0.center().expand_dims(-1);
     const std::optional<Range> u = sys.input_dim() > 0
                                        ? std::optional<Range>(Range(U->center().expand_dims(-1)))
                                        : std::nullopt;

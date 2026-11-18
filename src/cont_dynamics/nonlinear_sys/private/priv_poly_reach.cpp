@@ -19,9 +19,9 @@
 //
 // CORA: contDynamics/@contDynamics/linReach.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -58,7 +58,7 @@ PolyZonotope aux_delta_reach(const LinearSys &sys, TaylorLinSys &taylor, const P
     const PolyZonotope end = R.linear_map(e_at - e_at.eye_like()).plus(Pu);
     // 0 * end: the same factors, no generators
     const Tensor zero = R.center().zeros_like();
-    const PolyZonotope origin(zero, zero.zeros_like({R.dim(), 0}), zero.zeros_like({R.dim(), 0}),
+    const PolyZonotope origin(zero, zero.zeros_like({0, R.dim()}), zero.zeros_like({0, R.dim()}),
                               {}, end.ids());
     const Interval F = sys.correction_matrix_state(dt, eta);
     const PolyZonotope hom = origin.enclose(end).plus(R.zonotope().linear_map(F)).plus(C_input);

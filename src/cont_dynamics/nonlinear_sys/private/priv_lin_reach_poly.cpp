@@ -95,7 +95,7 @@ class PolyStepper {
 PolyNonlinearStep aux_lean_step(const NonlinearSys &sys, const PolyZonotope &R, const Tensor &error,
                                 const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     auto out = priv_lin_loop<PolyZonotope>(
-        sys, R.center(), error, U, alg,
+        sys, R.center().expand_dims(-1), error, U, alg,
         [&](const AdaptiveLinearization &L) { return PolyStepper(L.J.A, L.xs_t, R, alg); },
         [](const PolyZonotope &Z) { return Z.zonotope(); });
     return {std::move(out.time_interval), std::move(out.time_point), std::move(out.error)};
@@ -108,8 +108,8 @@ PolyNonlinearStep aux_lean_step(const NonlinearSys &sys, const PolyZonotope &R, 
 
 PolyStepPieces::PolyStepPieces(const NonlinearSys &sys, const PolyZonotope &R,
                                const std::optional<Zonotope> &U, double dt, int eta)
-    : lin(sys.linearize_impl(R.center(), U, dt)), R_delta(R.plus(lin.x_star * -1.0)),
-      taylor(lin.sys.A()), blocks(priv_one_block(sys.dim())),
+    : lin(sys.linearize_impl(R.center().expand_dims(-1), U, dt)),
+      R_delta(R.plus(lin.x_star * -1.0)), taylor(lin.sys.A()), blocks(priv_one_block(sys.dim())),
       PU(priv_particular_time_varying(lin.sys, taylor, blocks, lin.U, dt, eta)[0]),
       Pu(priv_particular_constant(
           lin.sys, taylor, blocks,

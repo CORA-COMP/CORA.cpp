@@ -74,12 +74,12 @@ Interval aux_free_box(const PolyZonotope &Z) {
     const std::vector<double> c = Z.center().data(), G = Z.generators().data(),
                               GI = Z.independent_generators().data();
     const std::size_t n = c.size(), h = std::size_t(Z.num_dependent()),
-                      q = std::size_t(Z.independent_generators().shape()[1]);
+                      q = std::size_t(Z.independent_generators().shape()[0]);
     std::vector<double> lo(n), hi(n);
     for (std::size_t i = 0; i < n; ++i) {
         double rg = 0, rgi = 0;
-        for (std::size_t l = h; l-- > 0;) rg = std::abs(G[i * h + l]) + rg;
-        for (std::size_t l = q; l-- > 0;) rgi = std::abs(GI[i * q + l]) + rgi;
+        for (std::size_t l = h; l-- > 0;) rg = std::abs(G[l * n + i]) + rg;
+        for (std::size_t l = q; l-- > 0;) rgi = std::abs(GI[l * n + i]) + rgi;
         lo[i] = (c[i] - rg) - rgi;
         hi[i] = (c[i] + rg) + rgi;
     }

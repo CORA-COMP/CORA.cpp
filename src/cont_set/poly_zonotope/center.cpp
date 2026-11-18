@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@polyZonotope/center.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -24,7 +24,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor PolyZonotope::center_impl() const { return c_; }
+Tensor PolyZonotope::center_impl() const { return c_.expand_dims(-1); }
 
 } // namespace cora
 

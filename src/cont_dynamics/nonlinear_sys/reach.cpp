@@ -212,7 +212,7 @@ PolyNonlinearStep NonlinearSys::init_reach(const PolyZonotope &R0, const std::op
     detail::Entry entry;
     if (entry.check()) validate_poly_step("init_reach", R0, std::nullopt, U, alg);
     // CORA starts from the error 0
-    return aux_poly_step(*this, R0, R0.center().zeros_like(), U, alg);
+    return aux_poly_step(*this, R0, R0.center().expand_dims(-1).zeros_like(), U, alg);
 }
 
 // The first step of "lin" from a polynomial zonotope, also with the error 0.
@@ -220,7 +220,7 @@ PolyNonlinearStep NonlinearSys::init_reach(const PolyZonotope &R0, const std::op
                                            const alg::Linearization &alg) const {
     detail::Entry entry;
     if (entry.check()) validate_poly_step("init_reach", R0, std::nullopt, U, alg);
-    return aux_poly_step(*this, R0, R0.center().zeros_like(), U, alg);
+    return aux_poly_step(*this, R0, R0.center().expand_dims(-1).zeros_like(), U, alg);
 }
 
 // CORA's post reduces the sets that initReach returns, and keeps the error.

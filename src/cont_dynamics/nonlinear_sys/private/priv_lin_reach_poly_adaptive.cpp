@@ -18,9 +18,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive_step.h"
@@ -70,8 +70,8 @@ struct Tune {
         // the orders of the error terms from the pattern of A and the Hessian at the point
         PolyAdaptiveState out = st;
         OrdersState o{st.zero_width, st.orders, st.minorder};
-        priv_update_orders(sys, U, st.R.center(), priv_row_sums(st.R.zonotope()), veryfirststep,
-                           P.A, P.xs, P.gzero, third_order_empty ? 1 : 0, o);
+        priv_update_orders(sys, U, st.R.center().expand_dims(-1), priv_row_sums(st.R.zonotope()),
+                           veryfirststep, P.A, P.xs, P.gzero, third_order_empty ? 1 : 0, o);
         out.zero_width = o.zero_width;
         out.orders = o.orders;
         out.minorder = o.minorder;

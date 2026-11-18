@@ -317,9 +317,14 @@ inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::
 inline bool agree(const std::string &what, const cora::PolyZonotope &a,
                   const lean::PolyZonotope &b) {
     const cora::PolyZonotope other = b.gather();
-    bool same = agree(what + ".c", a.center(), other.center()); // all are reported
-    same = agree(what + ".G", a.generators(), other.generators()) && same;
-    same = agree(what + ".GI", a.independent_generators(), other.independent_generators()) && same;
+    // CORA's columns, as the oracle reports them; all are reported
+    bool same = agree(what + ".c", a.center().expand_dims(-1), other.center().expand_dims(-1));
+    same = agree(what + ".G", a.generators().matrix_transpose(),
+                 other.generators().matrix_transpose()) &&
+           same;
+    same = agree(what + ".GI", a.independent_generators().matrix_transpose(),
+                 other.independent_generators().matrix_transpose()) &&
+           same;
     if (a.exponents() != other.exponents()) {
         std::cerr << "  " << what << ": the exponent columns differ\n";
         same = false;

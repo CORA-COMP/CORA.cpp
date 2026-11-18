@@ -39,7 +39,7 @@ namespace cora {
 PolyStatic priv_precomp_stat_error_adaptive(const NonlinearSys &sys, const Vec &xs,
                                             const std::optional<Zonotope> &U, double red_factor,
                                             const PolyZonotope &Rdelta) {
-    const Tensor &like = Rdelta.center();
+    const Tensor like = Rdelta.center().expand_dims(-1);
     const int64_t n = sys.dim(), m = sys.input_dim();
     const double rf = std::sqrt(red_factor);
     // the reduced start set as a polynomial zonotope, and as a zonotope
@@ -82,9 +82,7 @@ Zonotope priv_abstr_err_poly_adaptive(const NonlinearSys &sys, const Vec &xs, co
     const Zonotope rest =
         priv_box_zonotope(like, priv_hessian_remainder(H, Hp.lo, X, Ub, xs, us, n));
     // the generators of the products, then those of the remainder; the shift joins the center
-    const Zonotope sum = Zonotope(
-        rest.center(),
-        Tensor::concat({second.G, rest.generators().matrix_transpose()}, -1).matrix_transpose());
+    const Zonotope sum(rest.center(), Tensor::concat({second.G, rest.generators()}, -2));
     const Zonotope red = sum.reduce_adaptive(rf);
     return Zonotope(
         (red.center().expand_dims(-1) + Tensor::like(like, second.shift, {n, 1})).squeeze(-1),

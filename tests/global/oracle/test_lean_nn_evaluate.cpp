@@ -162,7 +162,10 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
         E[std::size_t(j)][std::size_t(j)] = 1;
         ids.push_back(j + 1);
     }
-    const PolyZonotope out = nn.evaluate(PolyZonotope(c, G, GI, E, ids), options);
+    // the set of the columns, as rows; the results are compared in CORA's columns again
+    const PolyZonotope X(c, G.matrix_transpose(), GI.matrix_transpose(), E, ids);
+    const auto columns = [](const Tensor &rows) { return rows.matrix_transpose(); };
+    const PolyZonotope out = nn.evaluate(X, options);
     // the oracle keeps zero generators, CORA.cpp's polynomial zonotope drops them: so do we
     const auto nonzero = [](const Tensor &M) {
         std::vector<int64_t> keep;
@@ -176,16 +179,17 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
                 }
         return M.take(keep, -1);
     };
-    oracle::check(label + " c", out.center(), Y.c);
-    oracle::check(label + " G", out.generators(), nonzero(Y.G));
-    oracle::check(label + " GI", out.independent_generators(), nonzero(Y.GI));
+    oracle::check(label + " c", out.center().expand_dims(-1), Y.c);
+    oracle::check(label + " G", columns(out.generators()), nonzero(Y.G));
+    oracle::check(label + " GI", columns(out.independent_generators()), nonzero(Y.GI));
     // the pairs of evaluate_with_input, the closed loop's call: below the input rows, the same set
-    const PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(c, G, GI, E, ids), options);
+    const PolyZonotope XY = nn.evaluate_with_input(X, options);
     const int64_t n = c.shape()[0], m = Y.c.shape()[0];
-    oracle::check(label + " pairs c", XY.center().slice(0, n, n + m), Y.c);
-    oracle::check(label + " pairs G", nonzero(XY.generators().slice(0, n, n + m)), nonzero(Y.G));
-    oracle::check(label + " pairs GI", nonzero(XY.independent_generators().slice(0, n, n + m)),
-                  nonzero(Y.GI));
+    oracle::check(label + " pairs c", XY.center().slice(0, n, n + m).expand_dims(-1), Y.c);
+    oracle::check(label + " pairs G", nonzero(columns(XY.generators().slice(-1, n, n + m))),
+                  nonzero(Y.G));
+    oracle::check(label + " pairs GI",
+                  nonzero(columns(XY.independent_generators().slice(-1, n, n + m))), nonzero(Y.GI));
 }
 
 /// CORA.cpp's and the oracle's output set of one layer of the activation on Z.

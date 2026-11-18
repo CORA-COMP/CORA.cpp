@@ -39,16 +39,15 @@ namespace cora {
 
 namespace {
 
-/// The columns of a set as vectors: the center first, then the generators.
+/// The center c (d) and the generator rows G (N, d) of a set as vectors: the center first.
 std::vector<Vec> aux_columns(const Tensor &c, const Tensor &G) {
-    const int64_t d = c.shape()[0], N = G.shape().back();
+    const int64_t d = c.shape()[0], N = G.shape()[0];
     const Vec cv = c.data(), gv = G.data();
-    std::vector<Vec> out(std::size_t(N + 1), Vec(std::size_t(d)));
-    for (int64_t i = 0; i < d; ++i) {
-        out[0][std::size_t(i)] = cv[std::size_t(i)];
-        for (int64_t j = 0; j < N; ++j)
-            out[std::size_t(j + 1)][std::size_t(i)] = gv[std::size_t(i * N + j)];
-    }
+    std::vector<Vec> out(std::size_t(N + 1));
+    out[0] = cv;
+    for (int64_t j = 0; j < N; ++j)
+        out[std::size_t(j + 1)].assign(gv.begin() + std::ptrdiff_t(j * d),
+                                       gv.begin() + std::ptrdiff_t((j + 1) * d));
     return out;
 }
 
@@ -136,14 +135,11 @@ Columns aux_products(const std::vector<Vec> &Q, int64_t d, const std::vector<Vec
     return out;
 }
 
+/// The columns as generator rows (K, m).
 Tensor aux_matrix(const Tensor &like, const Columns &cols) {
     const auto m = int64_t(cols.m), K = int64_t(cols.size());
-    if (K == 0) return like.zeros_like({m, 0});
-    Vec data(std::size_t(m * K));
-    for (int64_t j = 0; j < K; ++j)
-        for (int64_t i = 0; i < m; ++i)
-            data[std::size_t(i * K + j)] = cols.data[std::size_t(j * m + i)];
-    return Tensor::like(like, data, {m, K});
+    if (K == 0) return like.zeros_like({0, m});
+    return Tensor::like(like, cols.data, {K, m});
 }
 
 } // namespace
@@ -172,9 +168,9 @@ PolyZonotope priv_poly_quad_map(const PolyZonotope &Z, const std::vector<Tensor>
         }
     // the image: center 0, no independent generators
     const Tensor &like = Z.center();
-    return {like.zeros_like({m, 1}),
+    return {like.zeros_like({m}),
             aux_matrix(like, prod),
-            like.zeros_like({m, 0}),
+            like.zeros_like({0, m}),
             std::move(E),
             A.ids(),
             detail::Verbatim{}};
@@ -186,10 +182,8 @@ SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdif
                                     const std::vector<Tensor> &Q) {
     const int64_t d = Zdelta.dim(), m = int64_t(Q.size());
     const std::vector<Vec> Qv = aux_matrices(Q);
-    const std::vector<Vec> cd =
-        aux_columns(Zdelta.center().expand_dims(-1), Zdelta.generators().matrix_transpose());
-    const std::vector<Vec> cf =
-        aux_columns(Zdiff.center().expand_dims(-1), Zdiff.generators().matrix_transpose());
+    const std::vector<Vec> cd = aux_columns(Zdelta.center(), Zdelta.generators());
+    const std::vector<Vec> cf = aux_columns(Zdiff.center(), Zdiff.generators());
     Columns gens; // the generators kept whole, in column order
     gens.m = std::size_t(m);
     std::vector<Vec> shift; // the shifts into the center, in column order
@@ -220,7 +214,7 @@ SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdif
     Vec s(static_cast<std::size_t>(m), 0.0);
     for (std::size_t l = shift.size(); l-- > 0;)
         for (std::size_t i = 0; i < s.size(); ++i) s[i] = shift[l][i] + s[i];
-    return {aux_matrix(Zdelta.center().expand_dims(-1), gens), s};
+    return {aux_matrix(Zdelta.center(), gens), s};
 }
 
 } // namespace cora
