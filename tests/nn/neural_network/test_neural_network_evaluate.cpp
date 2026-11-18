@@ -63,8 +63,8 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
     const Zonotope Y = nn.evaluate(X);
     const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b;
     // layout: #163 step 2
-    check(test::close(detail::cora_center(Y), detail::cora_center(want)) &&
-              test::close(detail::cora_generators(Y), detail::cora_generators(want)),
+    check(test::close(cora::detail::cora_center(Y), cora::detail::cora_center(want)) &&
+              test::close(cora::detail::cora_generators(Y), cora::detail::cora_generators(want)),
           b + ": W X + b");
 }
 
@@ -155,7 +155,7 @@ void s_shaped_enclosures_hold_the_outputs(const std::string &b) {
     const Tensor p({{0.3}, {-0.2}, {0.1}});
     const Zonotope point = nn.evaluate(Zonotope(p, p.zeros_like({1, 3})));
     // layout: #163 step 2
-    check(test::close(detail::cora_center(point), nn.evaluate(p)),
+    check(test::close(cora::detail::cora_center(point), nn.evaluate(p)),
           b + ": a point set gives the point");
 }
 

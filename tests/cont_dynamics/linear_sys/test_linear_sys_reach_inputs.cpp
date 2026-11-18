@@ -36,8 +36,8 @@ struct Setup {
     explicit Setup(const InputSystem &s)
         : s(s), A(Tensor::from_data(s.A, {3, 3})), B(Tensor::from_data(s.B, {3, 2})),
           C(Tensor::from_data(s.C, {2, 3})),
-          X0(Tensor::from_data(s.c0, {3, 1}), Tensor::from_data(s.G0, {3, 3})),
-          U(Tensor::from_data(s.c_u, {2, 1}), Tensor::from_data(s.GU, {2, 3})) {}
+          X0(Tensor::from_data(s.c0, {3, 1}), Tensor::from_data(s.G0, {3, 3}).matrix_transpose()),
+          U(Tensor::from_data(s.c_u, {2, 1}), Tensor::from_data(s.GU, {2, 3}).matrix_transpose()) {}
     double t_final() const { return s.time_step * s.steps; }
 };
 

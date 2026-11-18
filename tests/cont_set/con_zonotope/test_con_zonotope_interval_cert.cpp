@@ -58,7 +58,7 @@ void arbitrary_weights(const std::string &b) {
     cora::Rng rng(5);
     const ConZonotope cz = test::random_con_zonotope(rng, 3, 5, 2);
     const Tensor points = test::sample_points(cz, rng, 100);
-    const Interval zono = detail::zonotope_of_columns(cz.c(), cz.generators()).interval();
+    const Interval zono = cora::detail::zonotope_of_columns(cz.c(), cz.generators()).interval();
     for (const double value : {0.0, 1.0, 40.0, -3.0}) {
         const Interval I = cz.interval_cert(aux_weights(3, 0, 2, value));
         check(test::inside_box(points, I, 0.0), b + ": the box holds the points");
@@ -90,7 +90,7 @@ void properties(const std::string &b) {
         check(test::inside_box(points, I, 0.0), b + ": the box holds the points");
         check(close(I.inf(), exact.inf(), 1e-8) && close(I.sup(), exact.sup(), 1e-8),
               b + ": as tight as the exact ranges");
-        const Interval zono = detail::zonotope_of_columns(cz.c(), cz.generators()).interval();
+        const Interval zono = cora::detail::zonotope_of_columns(cz.c(), cz.generators()).interval();
         check(zono.inf().less_equal(I.inf() + 1e-12).min().item() > 0 &&
                   I.sup().less_equal(zono.sup() + 1e-12).min().item() > 0,
               b + ": inside the box of the zonotope");

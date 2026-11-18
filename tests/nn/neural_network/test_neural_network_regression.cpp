@@ -48,11 +48,11 @@ Line aux_line(Activation a, double l, double u) {
     const Zonotope Y =
         nn.evaluate(Zonotope(Tensor({c}), Tensor({{r}})), {.poly_method = PolyMethod::regression});
     // layout: #163 step 2
-    const std::vector<double> g = detail::cora_generators(Y).data();
+    const std::vector<double> g = cora::detail::cora_generators(Y).data();
     // the generators (1, 2): slope r, then the error (a neuron of one point has r = 0)
     const double slope = r > 0 ? g[0] / r : 0.0;
     // layout: #163 step 2
-    return {slope, detail::cora_center(Y).data()[0] - slope * c,
+    return {slope, cora::detail::cora_center(Y).data()[0] - slope * c,
             g.size() > 1 ? std::abs(g[1]) : 0.0};
 }
 

@@ -34,8 +34,8 @@ int main() {
             for (int trial = 0; trial < 3; ++trial) {
                 const Zonotope Z = rnd.zonotope(n, n);
                 // layout: #163 step 2
-                const Tensor G2 = detail::cora_generators(Z) * rnd.uniform(0.2, 0.6);
-                const Zonotope Z2 = detail::zonotope_of_columns(rnd.vector(n) * 0.1, G2);
+                const Tensor G2 = cora::detail::cora_generators(Z) * rnd.uniform(0.2, 0.6);
+                const Zonotope Z2 = cora::detail::zonotope_of_columns(rnd.vector(n) * 0.1, G2);
                 const std::optional<lean::Zonotope> theirs =
                     lean::Zonotope(Z).mink_diff_aligned(lean::Zonotope(Z2), 0.99);
                 if (!theirs) continue;

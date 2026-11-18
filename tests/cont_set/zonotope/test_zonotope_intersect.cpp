@@ -61,7 +61,7 @@ void averaging_weights(const std::string &b) {
     check(close(R.center(), std::vector<double>{2.0 / 3.0, 1.0 / 3.0}, 1e-12),
           b + ": weighted center");
     check(close(R.generators(),
-                std::vector<double>{2.0 / 3, 2.0 / 3, 2.0 / 3, 0, 2.0 / 3, -2.0 / 3, 0, 2.0 / 3},
+                std::vector<double>{2.0 / 3, 2.0 / 3, 2.0 / 3, -2.0 / 3, 2.0 / 3, 0, 0, 2.0 / 3},
                 1e-12),
           b + ": weighted generators");
 }

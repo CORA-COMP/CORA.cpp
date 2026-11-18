@@ -31,14 +31,17 @@ void the_end_is_the_sum_of_its_parts(const std::string &b) {
     const AffineSolution affine = sys.affine_solution(initial_set(), u, kStep, kTerms);
     const Zonotope PU = sys.particular_solution_time_varying(U, kStep, kTerms);
     // layout: #163 step 2
-    check(test::close(detail::cora_center(s.time_point),
-                      detail::cora_center(affine.time_point) + detail::cora_center(PU), 1e-15),
+    check(test::close(cora::detail::cora_center(s.time_point),
+                      cora::detail::cora_center(affine.time_point) + cora::detail::cora_center(PU),
+                      1e-15),
           b + ": the center");
     // layout: #163 step 2
-    check(test::close(detail::cora_generators(s.time_varying), detail::cora_generators(PU), 0),
+    check(test::close(cora::detail::cora_generators(s.time_varying),
+                      cora::detail::cora_generators(PU), 0),
           b + ": PU");
     // layout: #163 step 2
-    check(test::close(detail::cora_center(s.constant), detail::cora_center(affine.constant), 1e-15),
+    check(test::close(cora::detail::cora_center(s.constant),
+                      cora::detail::cora_center(affine.constant), 1e-15),
           b + ": Pu");
     check(test::close(s.state_curvature.interval().sup(), affine.state_curvature.interval().sup(),
                       1e-15),
@@ -87,11 +90,12 @@ void checks_and_their_switch(const std::string &b) {
           b + ": no terms");
     const Tensor on =
         // layout: #163 step 2
-        detail::cora_center(sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval);
+        cora::detail::cora_center(
+            sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval);
     ChecksScope off(false);
     check(
         // layout: #163 step 2
-        test::close(detail::cora_center(
+        test::close(cora::detail::cora_center(
                         sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval),
                     on, 0),
         b + ": the same with the checks off");

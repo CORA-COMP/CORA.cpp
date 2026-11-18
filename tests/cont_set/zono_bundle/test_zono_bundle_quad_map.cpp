@@ -31,9 +31,11 @@ void quad_map_known(const std::string &b) {
     const Zonotope first = zono_bundle.zonotopes()[0].quad_map(Q);
     check(R.dim() == 1 && R.parallel_sets() == 2 &&
               // layout: #163 step 2
-              close(detail::cora_center(R.zonotopes()[0]), detail::cora_center(first), 0) &&
+              close(cora::detail::cora_center(R.zonotopes()[0]), cora::detail::cora_center(first),
+                    0) &&
               // layout: #163 step 2
-              close(detail::cora_generators(R.zonotopes()[0]), detail::cora_generators(first), 0),
+              close(cora::detail::cora_generators(R.zonotopes()[0]),
+                    cora::detail::cora_generators(first), 0),
           b + ": the members are the zonotopes' maps");
 }
 

@@ -30,7 +30,7 @@ void a_matrix_maps_the_zonotope(const std::string &b) {
               close(Z.generators(), box().linear_map(M).generators()),
           b + ": M * Z is linear_map");
     const Interval I(Tensor({{-1.0, -1.0}, {-1.0, -1.0}}), Tensor({{1.0, 1.0}, {1.0, 1.0}}));
-    check((I * box()).generators().shape()[1] == 4,
+    check((I * box()).nr_generators() == 4,
           b + ": an interval matrix widens by one generator each");
 }
 
@@ -48,7 +48,7 @@ void numbers_scale(const std::string &b) {
 
 void sums_and_translations(const std::string &b) {
     const Zonotope S = box() + box();
-    check(close(S.center(), test::vec({2.0, 4.0})) && S.generators().shape()[1] == 4,
+    check(close(S.center(), test::vec({2.0, 4.0})) && S.nr_generators() == 4,
           b + ": Z + Z2 is the Minkowski sum");
     const Tensor v({1.0, -1.0});
     check(close((box() + v).center(), test::vec({2.0, 1.0})) &&

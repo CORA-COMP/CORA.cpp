@@ -62,17 +62,19 @@ namespace {
 void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
     const Zonotope other = theirs.gather().first;
     // layout: #163 step 2
-    const int64_t m = detail::cora_generators(mine).shape().back(),
-                  total = detail::cora_generators(other).shape().back();
+    const int64_t m = cora::detail::cora_generators(mine).shape().back(),
+                  total = cora::detail::cora_generators(other).shape().back();
     test::check(total >= m, "projectOnHyperplane: the generators of the set stay");
     if (total < m) return;
     // layout: #163 step 2
-    oracle::check(detail::cora_center(mine), detail::cora_center(other));
+    oracle::check(cora::detail::cora_center(mine), cora::detail::cora_center(other));
     // layout: #163 step 2
-    oracle::check(detail::cora_generators(mine), detail::cora_generators(other).slice(-1, 0, m));
+    oracle::check(cora::detail::cora_generators(mine),
+                  cora::detail::cora_generators(other).slice(-1, 0, m));
     // layout: #163 step 2
     test::check(total == m ||
-                    detail::cora_generators(other).slice(-1, m, total).abs().max().item() == 0,
+                    cora::detail::cora_generators(other).slice(-1, m, total).abs().max().item() ==
+                        0,
                 "projectOnHyperplane: the other generators are zero at nearest");
 }
 
@@ -303,11 +305,8 @@ int main() {
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             // a scaled copy about the center lies inside (0.1) or outside (3) a random zonotope
             const Zonotope Z = rnd.zonotope(n, m);
-            // layout: #163 step 2
-            const Zonotope inner = detail::zonotope_of_columns(detail::cora_center(Z),
-                                                               detail::cora_generators(Z) * 0.1),
-                           // layout: #163 step 2
-                outer(detail::cora_center(Z), detail::cora_generators(Z) * 3.0);
+            const Zonotope inner(Z.center(), Z.generators() * 0.1),
+                outer(Z.center(), Z.generators() * 3.0);
             for (const Zonotope *S : {&inner, &outer})
                 oracle::check(cora::detail::contains_impl(Z, *S, 0.0),
                               lean::Zonotope(Z).contains(lean::Zonotope(*S), 0.0));

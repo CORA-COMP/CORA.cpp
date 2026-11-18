@@ -31,7 +31,7 @@ void members_and_class(const std::string &b) {
     const ZonoBundle bundle(two_members());
     check(bundle.parallel_sets() == 2 && bundle.dim() == 2, b + ": two members of dimension 2");
     // layout: #163 step 2
-    check(test::close(detail::cora_generators(bundle.zonotopes()[1]), {1.0, 1.0}, 0),
+    check(test::close(cora::detail::cora_generators(bundle.zonotopes()[1]), {1.0, 1.0}, 0),
           b + ": members in order");
     const Set S(bundle);
     check(S.is<ZonoBundle>() && S.class_name() == "ZonoBundle", b + ": a Set holds it");

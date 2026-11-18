@@ -37,12 +37,12 @@ int main() {
             const lean::Zonotope jump = lean::Transition::jump(A, c, X);
             const Tensor jg = jump.generators().gather();
             // layout: #163 step 2
-            const int64_t kept = detail::cora_generators(Y).shape()[1];
+            const int64_t kept = cora::detail::cora_generators(Y).shape()[1];
             // layout: #163 step 2
-            test::oracle::check("transition.jump.c", detail::cora_center(Y),
+            test::oracle::check("transition.jump.c", cora::detail::cora_center(Y),
                                 jump.center().gather());
             // layout: #163 step 2
-            test::oracle::check("transition.jump.G", detail::cora_generators(Y),
+            test::oracle::check("transition.jump.G", cora::detail::cora_generators(Y),
                                 jg.slice(-1, 0, kept));
             test::check(jg.slice(-1, kept, jg.shape()[1]).abs().sum().item() == 0,
                         "transition.jump: the other generators are zero");

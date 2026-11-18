@@ -50,7 +50,7 @@ void linear_combination_encloses_both(const std::string &b) {
           b + ": linear_combination(Z, Z) is Z");
     // two points: the segment between them, the shift its one generator
     const Zonotope p(column({0.0, 2.0}), Tensor::zeros({0, 2})),
-        q(column({4.0, 2.0}), Tensor::zeros({2, 0}));
+        q(column({4.0, 2.0}), Tensor::zeros({0, 2}));
     const Zonotope seg = p.linear_combination(q);
     check(close(seg.center(), {2, 2}) && close(seg.generators(), {-2, 0}),
           b + ": the segment between two points");

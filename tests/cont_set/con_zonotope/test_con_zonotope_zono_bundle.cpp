@@ -27,14 +27,16 @@ void zono_bundle_known(const std::string &b) {
     const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     check(plain.zono_bundle().parallel_sets() == 1 &&
               // layout: #163 step 2
-              close(detail::cora_generators(plain.zono_bundle().zonotopes()[0]), {1, 0, 0, 2}, 0),
+              close(cora::detail::cora_generators(plain.zono_bundle().zonotopes()[0]), {1, 0, 0, 2},
+                    0),
           b + ": without constraints");
     const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                             Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.5, 0.25}));
-    check(point.zono_bundle().parallel_sets() == 1 &&
-              // layout: #163 step 2
-              close(detail::cora_center(point.zono_bundle().zonotopes()[0]), {1.5, 1.25}, 1e-9),
-          b + ": the constraints fix the factors");
+    check(
+        point.zono_bundle().parallel_sets() == 1 &&
+            // layout: #163 step 2
+            close(cora::detail::cora_center(point.zono_bundle().zonotopes()[0]), {1.5, 1.25}, 1e-9),
+        b + ": the constraints fix the factors");
     check(ConZonotope::empty(2).zono_bundle().representsa("emptySet"), b + ": the empty set");
 }
 

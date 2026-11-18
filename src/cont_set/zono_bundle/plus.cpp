@@ -87,9 +87,7 @@ ZonoBundle ZonoBundle::plus(const Tensor &v) const {
                });
     std::vector<Zonotope> moved;
     moved.reserve(Z_.size());
-    // layout: #163 step 2
-    for (const Zonotope &Z : Z_)
-        moved.push_back(detail::zonotope_of_columns(detail::cora_center(Z) + v, detail::cora_generators(Z)));
+    for (const Zonotope &Z : Z_) moved.push_back(Z + v);
     return ZonoBundle(std::move(moved));
 }
 

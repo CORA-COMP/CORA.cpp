@@ -35,7 +35,8 @@ Tensor mat(int rows, int cols, const std::vector<double> &row_major) {
 
 Zonotope zono(const std::vector<double> &c, const std::vector<double> &G, int m) {
     const int n = static_cast<int>(c.size());
-    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(G, {n, m})};
+    return {Tensor::from_data(c, {n, 1}),
+            Tensor::from_data(G, {n, m}).matrix_transpose()}; // G: CORA's columns
 }
 
 struct Rand {
@@ -88,9 +89,9 @@ void adaptive_reach_matches_matlab() {
     TaylorLinSys taylor(r.sys.A());
     AdaptiveSaveData savedata;
     // layout: #163 step 2
-    const Tensor GU = r.sys.B()->matmul(detail::cora_generators(*r.params.input_set));
+    const Tensor GU = r.sys.B()->matmul(cora::detail::cora_generators(*r.params.input_set));
     // layout: #163 step 2
-    const Tensor u_trans = r.sys.B()->matmul(detail::cora_center(*r.params.input_set));
+    const Tensor u_trans = r.sys.B()->matmul(cora::detail::cora_center(*r.params.input_set));
     const AdaptiveParams ap{*r.params.initial_set, GU, u_trans, r.sys.C(), r.params.t_final};
     const double emax = 0.13282709397856149;
     const AdaptiveResult R = priv_reach_adaptive(taylor, ap, {VerifyTime({{0, r.params.t_final}})},
@@ -145,11 +146,12 @@ void adaptive_reach_rand02_matches_matlab() {
     Rand r = rand02();
     TaylorLinSys taylor(r.sys.A());
     AdaptiveSaveData savedata;
-    const AdaptiveParams ap{
-        // layout: #163 step 2
-        *r.params.initial_set, r.sys.B()->matmul(detail::cora_generators(*r.params.input_set)),
-        // layout: #163 step 2
-        r.sys.B()->matmul(detail::cora_center(*r.params.input_set)), r.sys.C(), r.params.t_final};
+    const AdaptiveParams ap{// layout: #163 step 2
+                            *r.params.initial_set,
+                            r.sys.B()->matmul(cora::detail::cora_generators(*r.params.input_set)),
+                            // layout: #163 step 2
+                            r.sys.B()->matmul(cora::detail::cora_center(*r.params.input_set)),
+                            r.sys.C(), r.params.t_final};
     const AdaptiveResult R = priv_reach_adaptive(taylor, ap, {VerifyTime({{0, r.params.t_final}})},
                                                  0.0021200701252661563, true, savedata);
     check(R.internal_checks_ok, "RAND02: the error bookkeeping is consistent");
@@ -246,9 +248,9 @@ void reduction_case_matches_matlab() {
     TaylorLinSys taylor(sys.A());
     AdaptiveSaveData savedata;
     // layout: #163 step 2
-    const AdaptiveParams ap{*params.initial_set, detail::cora_generators(*params.input_set),
+    const AdaptiveParams ap{*params.initial_set, cora::detail::cora_generators(*params.input_set),
                             // layout: #163 step 2
-                            detail::cora_center(*params.input_set), sys.C(), params.t_final};
+                            cora::detail::cora_center(*params.input_set), sys.C(), params.t_final};
     const AdaptiveResult R =
         priv_reach_adaptive(taylor, ap, {VerifyTime({{0, 2.0}})}, 4.940648, true, savedata);
     check(R.time_interval.size() == 5, "3-dim: five steps");
@@ -276,7 +278,8 @@ void reduction_case_matches_matlab() {
             check(test::close(I.sup(), std::vector<double>{sup[i][0], sup[i][1]}, 1e-5),
                   w + "upper");
             // layout: #163 step 2
-            check(detail::cora_generators(*R.time_interval[k]).shape()[1] == 10, w + "generators");
+            check(cora::detail::cora_generators(*R.time_interval[k]).shape()[1] == 10,
+                  w + "generators");
         }
     }
 

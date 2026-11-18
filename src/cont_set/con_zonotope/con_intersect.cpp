@@ -17,6 +17,7 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -33,7 +34,7 @@ ConZonotope ConZonotope::con_intersect(const ConZonotope &cz2, const Tensor &M) 
                    return "con_intersect: M must be (" + std::to_string(cz2.dim()) + ", " +
                           std::to_string(dim()) + "), got the shape " + shape_text(M.shape());
                });
-    const auto [Mc, MG] = Tensor::zonotope_linear_map(M, c_, G_);
+    const auto [Mc, MG] = detail::linear_map_columns(M, c_, G_);
     return priv_agreement(*this, cz2, Mc, MG);
 }
 

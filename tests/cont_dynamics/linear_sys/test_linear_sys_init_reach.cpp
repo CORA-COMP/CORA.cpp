@@ -36,8 +36,8 @@ void the_first_step_is_that_of_reach(const std::string &b) {
                   test::close(got.sup(), want.sup(), 1e-13),
               b + ": the box of the step");
         // layout: #163 step 2
-        check(test::close(detail::cora_center(s.time_point), detail::cora_center(R.time_point[1]),
-                          1e-14),
+        check(test::close(cora::detail::cora_center(s.time_point),
+                          cora::detail::cora_center(R.time_point[1]), 1e-14),
               b + ": the end of the step");
     }
 }
@@ -69,12 +69,12 @@ void checks_and_their_switch(const std::string &b) {
     // the checks off give the same first step
     const Tensor on =
         // layout: #163 step 2
-        detail::cora_center(
+        cora::detail::cora_center(
             sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval);
     ChecksScope off(false);
     check(test::close(
               // layout: #163 step 2
-              detail::cora_center(
+              cora::detail::cora_center(
                   sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval),
               on, 0),
           b + ": the same with the checks off");

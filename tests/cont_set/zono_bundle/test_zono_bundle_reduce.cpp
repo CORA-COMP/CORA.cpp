@@ -28,7 +28,7 @@ void reduce_property(const std::string &b) {
     bool few = R.parallel_sets() == zono_bundle.parallel_sets();
     // layout: #163 step 2
     for (const Zonotope &Z : R.zonotopes())
-        few = few && detail::cora_generators(Z).shape().back() <= 4;
+        few = few && cora::detail::cora_generators(Z).shape().back() <= 4;
     check(few, b + ": at most order * n generators per member");
     check(R.contains(test::bundle_points(zono_bundle, rng, 15, common)),
           b + ": the points are inside");

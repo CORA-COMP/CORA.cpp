@@ -32,9 +32,9 @@ struct Setup {
           B(Tensor::from_data(matlab_reference::standard_inputs().B, {3, 2})),
           C(Tensor::from_data(matlab_reference::standard_inputs().C, {2, 3})),
           X0(Tensor::from_data(matlab_reference::standard_inputs().c0, {3, 1}),
-             Tensor::from_data(matlab_reference::standard_inputs().G0, {3, 3})),
+             Tensor::from_data(matlab_reference::standard_inputs().G0, {3, 3}).matrix_transpose()),
           U(Tensor::from_data(matlab_reference::standard_inputs().c_u, {2, 1}),
-            Tensor::from_data(matlab_reference::standard_inputs().GU, {2, 3})) {}
+            Tensor::from_data(matlab_reference::standard_inputs().GU, {2, 3}).matrix_transpose()) {}
 };
 
 /// The output set is C Z: its center is C c, its generators C G, and its support along d is the
@@ -52,8 +52,8 @@ void maps_every_set_by_c(const std::string &b) {
     const Tensor Ctd = in.C.matrix_transpose().matmul(test::column(d));
     for (std::size_t k = 0; k < R.time_interval.size(); ++k) {
         // layout: #163 step 2
-        check(close(detail::cora_center(Y.time_interval[k]),
-                    in.C.matmul(detail::cora_center(R.time_interval[k]))),
+        check(close(cora::detail::cora_center(Y.time_interval[k]),
+                    in.C.matmul(cora::detail::cora_center(R.time_interval[k]))),
               b + ": the center of a step");
         check(close(Y.time_interval[k].support_function(test::column(d)),
                     R.time_interval[k].support_function(Ctd)),
@@ -62,8 +62,8 @@ void maps_every_set_by_c(const std::string &b) {
     // the output set maps every time point
     for (std::size_t k = 0; k < R.time_point.size(); ++k)
         // layout: #163 step 2
-        check(close(detail::cora_generators(Y.time_point[k]),
-                    in.C.matmul(detail::cora_generators(R.time_point[k]))),
+        check(close(cora::detail::cora_generators(Y.time_point[k]),
+                    in.C.matmul(cora::detail::cora_generators(R.time_point[k]))),
               b + ": a time point");
     check(Y.time_interval[0].dim() == 2, b + ": the output has p dimensions");
 }
@@ -75,10 +75,11 @@ void is_the_state_without_c(const std::string &b) {
                                  alg::Standard{.time_step = 0.2, .taylor_terms = 6});
     const ReachSet Y = sys.output_set(R);
     // layout: #163 step 2
-    check(close(detail::cora_center(Y.time_interval[1]), detail::cora_center(R.time_interval[1])) &&
+    check(close(cora::detail::cora_center(Y.time_interval[1]),
+                cora::detail::cora_center(R.time_interval[1])) &&
               // layout: #163 step 2
-              close(detail::cora_generators(Y.time_point[2]),
-                    detail::cora_generators(R.time_point[2])),
+              close(cora::detail::cora_generators(Y.time_point[2]),
+                    cora::detail::cora_generators(R.time_point[2])),
           b + ": without C the output is the state");
 }
 
@@ -96,10 +97,10 @@ void checks_and_their_switch() {
     check(test::raises([&] { sys.output_set(wrong); }, Error::dimension_mismatch),
           "output_set: a set of three dimensions");
     // layout: #163 step 2
-    const Tensor on = detail::cora_center(sys.output_set(R).time_point.back());
+    const Tensor on = cora::detail::cora_center(sys.output_set(R).time_point.back());
     ChecksScope off(false);
     // layout: #163 step 2
-    check(test::close(detail::cora_center(sys.output_set(R).time_point.back()), on, 0),
+    check(test::close(cora::detail::cora_center(sys.output_set(R).time_point.back()), on, 0),
           "output_set: the same with the checks off");
 }
 

@@ -38,7 +38,7 @@ Zonotope priv_union_linprog(const Zonotope &iterative,
     const Tensor G = G0.multiply(length.ones_like().divide(length)); // unit generators
     const int64_t n = enclosure.dim(), ng = G.shape().back();
     const auto [A, unused] =
-        priv_zonotope_halfspaces({detail::cora_center(enclosure).zeros_like(), G0});
+        priv_zonotope_halfspaces(Zonotope(enclosure.center().zeros_like(), enclosure.generators()));
     const Tensor d = support(A);
 
     // min sum(scal) s.t. A c + |A G| scal >= d, scal >= 0

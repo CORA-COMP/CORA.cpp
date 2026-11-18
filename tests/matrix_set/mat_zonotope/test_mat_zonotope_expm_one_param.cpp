@@ -113,7 +113,8 @@ void series_with_an_input(const std::string &bname) {
     const auto R = A.expm_one_param(r, N, Zonotope(c, g.matrix_transpose()));
     check(R.constant_input.has_value() &&
               // layout: #163 step 2
-              detail::cora_generators(*R.constant_input).shape() == std::vector<int64_t>({3, N}),
+              cora::detail::cora_generators(*R.constant_input).shape() ==
+                  std::vector<int64_t>({3, N}),
           bname + ": the input's zonotope has N generators");
     bool exact = true;
     for (const double b : {-1.0, 0.3, 1.0}) {
@@ -130,20 +131,20 @@ void series_with_an_input(const std::string &bname) {
         std::vector<double> coeff = generator_coefficients(b, N);
         const Tensor point =
             // layout: #163 step 2
-            detail::cora_center(Z) +
-            detail::cora_generators(Z).matmul(Tensor::like(detail::cora_center(Z), coeff, {N, 1}));
+            cora::detail::cora_center(Z) + cora::detail::cora_generators(Z).matmul(Tensor::like(
+                                               cora::detail::cora_center(Z), coeff, {N, 1}));
         exact = exact && close(point, expected, 1e-12);
     }
     check(exact, bname + ": the input terms for every parameter");
-    const auto fixed = A.expm_one_param(r, N, Zonotope(c, c.zeros_like()));
+    const auto fixed = A.expm_one_param(r, N, Zonotope(c, c.zeros_like({1, 3})));
     const auto zero_generators = A.expm_one_param(r, N, Zonotope(c, Tensor::zeros({0, 3})));
     // layout: #163 step 2
-    check(close(detail::cora_center(*zero_generators.constant_input),
-                detail::cora_center(*fixed.constant_input), 0) &&
+    check(close(cora::detail::cora_center(*zero_generators.constant_input),
+                cora::detail::cora_center(*fixed.constant_input), 0) &&
               // layout: #163 step 2
-              close(detail::cora_generators(*zero_generators.constant_input),
+              close(cora::detail::cora_generators(*zero_generators.constant_input),
                     // layout: #163 step 2
-                    detail::cora_generators(*fixed.constant_input), 0) &&
+                    cora::detail::cora_generators(*fixed.constant_input), 0) &&
               test::same_set(fixed.enclosure, R.enclosure, 0),
           bname + ": a zonotope without generators is a column");
     const MatZonotope batch = test::batch_of(A, A);

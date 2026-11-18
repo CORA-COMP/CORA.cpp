@@ -37,7 +37,7 @@ double brute_support(const Zonotope &Z, const std::vector<double> &d) {
         double value = 0.0;
         for (int i = 0; i < n; ++i) {
             double x = c[i];
-            for (int j = 0; j < m; ++j) x += G[i * m + j] * ((corner >> j & 1) ? 1.0 : -1.0);
+            for (int j = 0; j < m; ++j) x += G[j * n + i] * ((corner >> j & 1) ? 1.0 : -1.0);
             value += d[i] * x;
         }
         best = std::max(best, value);

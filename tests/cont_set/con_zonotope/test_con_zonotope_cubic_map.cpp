@@ -45,21 +45,22 @@ void cubic_map_known(const std::string &b) {
     const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope R = plain.cubic_map(T);
     const Zonotope expected =
-        detail::zonotope_of_columns(plain.c(), plain.generators()).cubic_map(T);
+        cora::detail::zonotope_of_columns(plain.c(), plain.generators()).cubic_map(T);
     // layout: #163 step 2
-    check(close(R.c(), detail::cora_center(expected), 0) &&
-              close(R.generators(), detail::cora_generators(expected), 0),
+    check(close(R.c(), cora::detail::cora_center(expected), 0) &&
+              close(R.generators(), cora::detail::cora_generators(expected), 0),
           b + ": without constraints: the zonotope's map");
     // layout: #163 step 2
-    check(R.A().shape() == Shape{0, detail::cora_generators(expected).shape().back()},
+    check(R.A().shape() == Shape{0, cora::detail::cora_generators(expected).shape().back()},
           b + ": and no constraints");
     const ConZonotope constrained(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                                   Tensor({{1.0, 1.0}}), column({0.5}));
     const ConZonotope C = constrained.cubic_map(T);
     // layout: #163 step 2
-    check(close(C.generators(), detail::cora_generators(expected), 0), b + ": the same generators");
+    check(close(C.generators(), cora::detail::cora_generators(expected), 0),
+          b + ": the same generators");
     // layout: #163 step 2
-    check(C.A().shape() == Shape{1, detail::cora_generators(expected).shape().back()} &&
+    check(C.A().shape() == Shape{1, cora::detail::cora_generators(expected).shape().back()} &&
               close(C.A().slice(1, 0, 2), {1, 1}, 0) &&
               close(C.A().slice(1, 2, C.A().shape()[1]).abs().sum(), {0}, 0),
           b + ": the constraints on the linear monomials, zero elsewhere");

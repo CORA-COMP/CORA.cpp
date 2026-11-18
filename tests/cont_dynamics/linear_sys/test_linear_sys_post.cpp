@@ -58,10 +58,11 @@ void checks_and_their_switch(const std::string &b) {
                        Error::wrong_value),
           b + ": a negative step");
     // layout: #163 step 2
-    const Tensor on = detail::cora_center(sys.post(first.state, kStandard).time_interval);
+    const Tensor on = cora::detail::cora_center(sys.post(first.state, kStandard).time_interval);
     ChecksScope off(false);
     // layout: #163 step 2
-    check(test::close(detail::cora_center(sys.post(first.state, kStandard).time_interval), on, 0),
+    check(test::close(cora::detail::cora_center(sys.post(first.state, kStandard).time_interval), on,
+                      0),
           b + ": the same with the checks off");
 }
 

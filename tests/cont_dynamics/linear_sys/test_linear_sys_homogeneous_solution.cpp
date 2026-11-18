@@ -27,9 +27,9 @@ void the_end_of_the_step_is_e_adt_x(const std::string &b) {
         LinearSys(diagonal()).homogeneous_solution(initial_set(), kStep, kTerms);
     const double a = std::exp(-kStep), c = std::exp(-2 * kStep);
     // layout: #163 step 2
-    check(test::close(detail::cora_center(H.time_point), {a, 2 * c}, 1e-15), b + ": center");
+    check(test::close(cora::detail::cora_center(H.time_point), {a, 2 * c}, 1e-15), b + ": center");
     // layout: #163 step 2
-    check(test::close(detail::cora_generators(H.time_point), {a, 0.0, 0.0, 0.5 * c}, 1e-15),
+    check(test::close(cora::detail::cora_generators(H.time_point), {a, 0.0, 0.0, 0.5 * c}, 1e-15),
           b + ": generators");
 }
 
@@ -67,12 +67,12 @@ void checks_and_their_switch(const std::string &b) {
           b + ": no terms");
     const Tensor on =
         // layout: #163 step 2
-        detail::cora_generators(
+        cora::detail::cora_generators(
             sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval);
     ChecksScope off(false);
     check(test::close(
               // layout: #163 step 2
-              detail::cora_generators(
+              cora::detail::cora_generators(
                   sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval),
               on, 0),
           b + ": the same with the checks off");

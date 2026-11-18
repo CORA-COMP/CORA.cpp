@@ -32,12 +32,12 @@ void quad_map_by_hand(const std::string &b) {
     const Zonotope R = Z1.quad_map(Q);
     check(close(R.center(), std::vector<double>{102.5, -16.25}, 1e-13), b + ": the center");
     check(close(R.generators(),
-                std::vector<double>{27.5, 35, 95, 110, 125, -5.75, -9.5, -14, -26, -32}, 1e-13),
+                std::vector<double>{27.5, -5.75, 35, -9.5, 95, -14, 110, -26, 125, -32}, 1e-13),
           b + ": the generators (squares, then the mixed terms)");
     const Zonotope M = Z1.quad_map(Z2, Q);
     check(close(M.center(), std::vector<double>{-43, 3}, 1e-13), b + ": mixed: the center");
     check(close(M.generators(),
-                std::vector<double>{-51, -59, -4, -8, -12, -26, -32, -38, 8.5, 14, -2, 6, 14, 1, 7,
+                std::vector<double>{-51, 8.5, -59, 14, -4, -2, -8, 6, -12, 14, -26, 1, -32, 7, -38,
                                     13},
                 1e-13),
           b + ": mixed: the generators");

@@ -55,15 +55,17 @@ double aux_exit_step(const HostZonotope &Z, const std::vector<double> &dir,
     return -r.fval;
 }
 
+/// The boundary point along dir from the center, which the entry with a start checks.
+Tensor aux_from_center(const Zonotope &Z, const Tensor &dir) {
+    return Z.boundary_point(dir, Z.center().expand_dims(-1)); // the center as a column
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor Zonotope::boundary_point(const Tensor &dir) const {
-    detail::Entry entry;
-    return boundary_point(dir, detail::cora_center(*this));
-}
+Tensor Zonotope::boundary_point(const Tensor &dir) const { return aux_from_center(*this, dir); }
 
 Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
     detail::Entry entry;

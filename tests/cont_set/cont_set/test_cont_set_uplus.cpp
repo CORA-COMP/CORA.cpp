@@ -36,10 +36,11 @@ void uplus_is_the_identity(const std::string &b) {
               B = static_cast<const ContSet &>(I).uplus();
     // layout: #163 step 2
     check(A.is<Zonotope>() &&
-              test::close(A.as<Zonotope>().center().expand_dims(-1), detail::cora_center(Z), 0) &&
+              test::close(A.as<Zonotope>().center().expand_dims(-1), cora::detail::cora_center(Z),
+                          0) &&
               // layout: #163 step 2
               test::close(A.as<Zonotope>().generators().matrix_transpose(),
-                          detail::cora_generators(Z), 0),
+                          cora::detail::cora_generators(Z), 0),
           b + ": a zonotope");
     // layout: #163 step 2
     check(std::signbit(A.as<Zonotope>().center().expand_dims(-1).slice(-2, 0, 1).item()),

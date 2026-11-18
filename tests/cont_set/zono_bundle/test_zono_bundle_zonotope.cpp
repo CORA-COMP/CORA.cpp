@@ -24,19 +24,20 @@ int main() {
         const Zonotope big(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
         const Zonotope small(column({0.5, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.25}}));
         // layout: #163 step 2
-        check(close(detail::cora_generators(ZonoBundle({big, small}).zonotope()),
-                    detail::cora_generators(small), 0),
+        check(close(cora::detail::cora_generators(ZonoBundle({big, small}).zonotope()),
+                    cora::detail::cora_generators(small), 0),
               b + ": the member of volume 0.125 (before 2)");
         // layout: #163 step 2
-        check(close(detail::cora_center(ZonoBundle({small, big}).zonotope()),
-                    detail::cora_center(small), 0),
+        check(close(cora::detail::cora_center(ZonoBundle({small, big}).zonotope()),
+                    cora::detail::cora_center(small), 0),
               b + ": the order does not matter");
         // layout: #163 step 2
-        check(close(detail::cora_generators(ZonoBundle({big, big}).zonotope()),
-                    detail::cora_generators(big), 0),
+        check(close(cora::detail::cora_generators(ZonoBundle({big, big}).zonotope()),
+                    cora::detail::cora_generators(big), 0),
               b + ": a tie gives the first");
         // layout: #163 step 2
-        check(detail::cora_generators(ZonoBundle::origin(2).zonotope()).shape() == Shape{2, 0},
+        check(cora::detail::cora_generators(ZonoBundle::origin(2).zonotope()).shape() ==
+                  Shape{2, 0},
               b + ": a point is its own member");
     });
     const Zonotope Z(column({0.0}), Tensor({{1.0}}));

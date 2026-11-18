@@ -32,7 +32,7 @@ void enclose_gradient() {
         "enclose (M, Zplus)",
         [](const Inputs &x) {
             return test::parts(
-                test::bundle(x, 0, 2).enclose(x[4], detail::zonotope_of_columns(x[5], x[6])));
+                test::bundle(x, 0, 2).enclose(x[4], cora::detail::zonotope_of_columns(x[5], x[6])));
         },
         test::joined(A, {torch::rand({2, 2}, torch::kDouble) + 0.5, B[0], B[1]}));
 }

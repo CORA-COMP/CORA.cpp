@@ -18,6 +18,7 @@
 
 #include "cont_set/capsule/private/priv.h"
 #include "cora/cont_set/capsule/capsule.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -33,7 +34,7 @@ Capsule Capsule::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(dim()) +
                " columns (the dimension of C), got the shape " + shape_text(M.shape());
     });
-    const auto [c, g] = Tensor::zonotope_linear_map(M, c_, g_);
+    const auto [c, g] = detail::linear_map_columns(M, c_, g_);
     const Tensor scaled = r_.multiply(M.matrix_norm(Tensor::Norm::fro));
     // the radius -1 of the empty capsule is a marker, not a length
     return {Unchecked{}, c, g, Tensor::where(priv_empty_mask(r_), r_, scaled)};

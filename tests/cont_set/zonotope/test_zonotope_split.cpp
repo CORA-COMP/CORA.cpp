@@ -87,7 +87,7 @@ void split_by_a_halfspace(const std::string &b) {
     check(close(pieces[0].center(), std::vector<double>{-7, 4}, 1e-14) &&
               close(pieces[1].center(), std::vector<double>{0.5, -3.5}, 1e-14) &&
               close(pieces[0].generators(),
-                    std::vector<double>{4.5, -0.5, 0.5, 1.5, -4.5, -0.5, 0.5, 1.5}, 1e-14),
+                    std::vector<double>{4.5, -4.5, -0.5, -0.5, 0.5, 0.5, 1.5, 1.5}, 1e-14),
           b + ": CORA's example");
     check(example().split(column({1.0, 0.0}), 100.0).size() == 1,
           b + ": a plane that misses: the set");
@@ -111,7 +111,7 @@ void pieces_cover_the_set(const std::string &b) {
                   b + ": a point of Z is in neither piece");
         }
     const Tensor lift = column({1.0, 1.0, 1.0});
-    const auto planes = Z.split(lift, Z.center().matrix_transpose().matmul(lift).item() + 0.1);
+    const auto planes = Z.split(lift, Z.center().expand_dims(-2).matmul(lift).item() + 0.1);
     check(planes.size() == 2, b + ": a plane near the center cuts the set");
     for (int k = 0; k < 40; ++k) {
         const Tensor p = points.slice(-1, k, k + 1);

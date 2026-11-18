@@ -42,17 +42,17 @@ void first_step() {
     const ReachSet R = sys.reach({R0, U, 0.1}, a);
     // layout: #163 step 2
     const LinParamStep first =
-        sys.init_reach(R0, U - detail::cora_center(U), detail::cora_center(U), a);
+        sys.init_reach(R0, U - cora::detail::cora_center(U), cora::detail::cora_center(U), a);
     // layout: #163 step 2
-    check(
-        close(detail::cora_center(R.time_interval[0]), detail::cora_center(first.time_interval),
-              0) &&
-            // layout: #163 step 2
-            close(detail::cora_generators(R.time_interval[0]),
-                  detail::cora_generators(first.time_interval), 0) &&
-            // layout: #163 step 2
-            close(detail::cora_center(R.time_point[1]), detail::cora_center(*first.time_point), 0),
-        "init_reach: the first sets of reach");
+    check(close(cora::detail::cora_center(R.time_interval[0]),
+                cora::detail::cora_center(first.time_interval), 0) &&
+              // layout: #163 step 2
+              close(cora::detail::cora_generators(R.time_interval[0]),
+                    cora::detail::cora_generators(first.time_interval), 0) &&
+              // layout: #163 step 2
+              close(cora::detail::cora_center(R.time_point[1]),
+                    cora::detail::cora_center(*first.time_point), 0),
+          "init_reach: the first sets of reach");
     check(first.time_interval.contains(R0, "exact", 1e-9), "init_reach: the step starts at R0");
     check(first.mappings.mapping.rows() == 2 && first.mappings.input.dim() == 2,
           "init_reach: the mappings of the step");
@@ -74,10 +74,12 @@ void checks_and_their_switch() {
             Error::dimension_mismatch),
         "init_reach: R_init of the dimension of the system");
     // layout: #163 step 2
-    const Tensor on = detail::cora_center(sys.init_reach(R0, U, column({0.0}), a).time_interval);
+    const Tensor on =
+        cora::detail::cora_center(sys.init_reach(R0, U, column({0.0}), a).time_interval);
     ChecksScope off(false);
     // layout: #163 step 2
-    check(close(detail::cora_center(sys.init_reach(R0, U, column({0.0}), a).time_interval), on, 0),
+    check(close(cora::detail::cora_center(sys.init_reach(R0, U, column({0.0}), a).time_interval),
+                on, 0),
           "init_reach: the same with the checks off");
 }
 

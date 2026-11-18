@@ -95,13 +95,13 @@ void product_with_a_zonotope(const std::string &b) {
     const Zonotope Z(test::column({1, 1}), test::matrix({1, 0}, 1, 2));
     const Zonotope P = A.matmul(Z);
     // layout: #163 step 2
-    check(close(detail::cora_center(P), {3, 7}), b + ": the center C c");
+    check(close(cora::detail::cora_center(P), {3, 7}), b + ": the center C c");
     // layout: #163 step 2
-    check(detail::cora_generators(P).shape() == std::vector<int64_t>({2, 3}),
+    check(cora::detail::cora_generators(P).shape() == std::vector<int64_t>({2, 3}),
           b + ": 1 + 1 + 1 generators");
     // layout: #163 step 2
-    check(close(detail::cora_generators(P), {1, 1, 1,   // C g, G1 c, G1 g: first row
-                                             3, 1, 0}), // second row
+    check(close(cora::detail::cora_generators(P), {1, 1, 1,   // C g, G1 c, G1 g: first row
+                                                   3, 1, 0}), // second row
           b + ": the generators C g, G1 c, G1 g");
     Rng rng(23);
     const MatZonotope Q = test::random_set(rng, 3, 2, 0.5);
@@ -117,15 +117,17 @@ void product_with_a_zonotope(const std::string &b) {
     const int64_t count = int64_t(weights.size());
     const Tensor point =
         // layout: #163 step 2
-        detail::cora_center(R) + detail::cora_generators(R).matmul(
-                                     Tensor::like(detail::cora_center(R), weights, {count, 1}));
+        cora::detail::cora_center(R) + cora::detail::cora_generators(R).matmul(Tensor::like(
+                                           cora::detail::cora_center(R), weights, {count, 1}));
     // layout: #163 step 2
-    const Tensor w = detail::cora_center(W) + detail::cora_generators(W).matmul(
-                                                  Tensor::like(detail::cora_center(W), cw, {2, 1}));
+    const Tensor w =
+        cora::detail::cora_center(W) + cora::detail::cora_generators(W).matmul(
+                                           Tensor::like(cora::detail::cora_center(W), cw, {2, 1}));
     const Tensor expected = test::member(Q, cq).matmul(w);
     check(close(point, expected, 1e-12), b + ": the product of a member and a point");
     // layout: #163 step 2
-    check(close(detail::cora_center((Q * W)), detail::cora_center(R), 0), b + ": the operator");
+    check(close(cora::detail::cora_center((Q * W)), cora::detail::cora_center(R), 0),
+          b + ": the operator");
 }
 
 /// Inner dimensions that differ, a batch mismatch and a 1 x 1 scalar factor are refused; with the

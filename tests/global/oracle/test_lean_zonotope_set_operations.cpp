@@ -50,18 +50,18 @@ std::vector<std::vector<double>> aux_sorted_columns(const std::vector<double> &d
 void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &theirs) {
     const Zonotope other = theirs.gather().first;
     // layout: #163 step 2
-    const int64_t n = mine.dim(), m = detail::cora_generators(mine).shape().back();
+    const int64_t n = mine.dim(), m = cora::detail::cora_generators(mine).shape().back();
     // layout: #163 step 2
-    test::check(detail::cora_generators(other).shape().back() == m,
+    test::check(cora::detail::cora_generators(other).shape().back() == m,
                 oracle::op_name() + ": generator count");
     // layout: #163 step 2
-    test::check(oracle::agree(oracle::op_name() + ".c", detail::cora_center(mine),
-                              detail::cora_center(other)),
+    test::check(oracle::agree(oracle::op_name() + ".c", cora::detail::cora_center(mine),
+                              cora::detail::cora_center(other)),
                 oracle::op_name() + ": the same center");
     // layout: #163 step 2
-    test::check(aux_sorted_columns(detail::cora_generators(mine).data(), n, m) ==
+    test::check(aux_sorted_columns(cora::detail::cora_generators(mine).data(), n, m) ==
                     // layout: #163 step 2
-                    aux_sorted_columns(detail::cora_generators(other).data(), n, m),
+                    aux_sorted_columns(cora::detail::cora_generators(other).data(), n, m),
                 oracle::op_name() + ": the same generators, in another order");
 }
 
@@ -96,12 +96,12 @@ int main() {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
             // layout: #163 step 2
-            const Tensor &G = detail::cora_generators(Z);
+            const Tensor &G = cora::detail::cora_generators(Z);
             // a generator of zeros in the middle and at the end
             const Tensor zero = G.slice(-1, 0, 1).zeros_like();
-            const Zonotope Zz = detail::zonotope_of_columns(
+            const Zonotope Zz = cora::detail::zonotope_of_columns(
                 // layout: #163 step 2
-                detail::cora_center(Z),
+                cora::detail::cora_center(Z),
                 Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1));
             oracle::check(Zz.compact("zeros", 0.0), lean::Zonotope(Zz).compact("zeros", 0.0));
         }
@@ -135,11 +135,11 @@ int main() {
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             // half of Z about its center is in Z, one and a half times is not
-            const Zonotope inner = detail::zonotope_of_columns(detail::cora_center(Z),
-                                                               detail::cora_generators(Z) * 0.5);
+            const Zonotope inner = cora::detail::zonotope_of_columns(
+                cora::detail::cora_center(Z), cora::detail::cora_generators(Z) * 0.5);
             // layout: #163 step 2
-            const Zonotope outer = detail::zonotope_of_columns(detail::cora_center(Z),
-                                                               detail::cora_generators(Z) * 1.5);
+            const Zonotope outer = cora::detail::zonotope_of_columns(
+                cora::detail::cora_center(Z), cora::detail::cora_generators(Z) * 1.5);
             oracle::check(Z.contains(inner, "approx:st"),
                           lean::Zonotope(Z).contains(lean::Zonotope(inner)));
             oracle::check(Z.contains(outer, "approx:st"),

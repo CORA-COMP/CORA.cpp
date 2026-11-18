@@ -45,23 +45,23 @@ void second_step() {
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.15}, a);
     // layout: #163 step 2
-    const LinParamStep second =
-        sys.post(sys.init_reach(R0, U - detail::cora_center(U), detail::cora_center(U), a), a);
+    const LinParamStep second = sys.post(
+        sys.init_reach(R0, U - cora::detail::cora_center(U), cora::detail::cora_center(U), a), a);
     // layout: #163 step 2
-    check(
-        close(detail::cora_center(R.time_interval[1]), detail::cora_center(second.time_interval),
-              0) &&
-            // layout: #163 step 2
-            close(detail::cora_generators(R.time_interval[1]),
-                  detail::cora_generators(second.time_interval), 0) &&
-            // layout: #163 step 2
-            close(detail::cora_center(R.time_point[2]), detail::cora_center(*second.time_point), 0),
-        "post: the second sets of reach");
+    check(close(cora::detail::cora_center(R.time_interval[1]),
+                cora::detail::cora_center(second.time_interval), 0) &&
+              // layout: #163 step 2
+              close(cora::detail::cora_generators(R.time_interval[1]),
+                    cora::detail::cora_generators(second.time_interval), 0) &&
+              // layout: #163 step 2
+              close(cora::detail::cora_center(R.time_point[2]),
+                    cora::detail::cora_center(*second.time_point), 0),
+          "post: the second sets of reach");
     a.comp_time_point = false;
     const ReachSet ti = sys.reach({R0, U, 0.15}, a);
     // layout: #163 step 2
-    const LinParamStep next =
-        sys.post(sys.init_reach(R0, U - detail::cora_center(U), detail::cora_center(U), a), a);
+    const LinParamStep next = sys.post(
+        sys.init_reach(R0, U - cora::detail::cora_center(U), cora::detail::cora_center(U), a), a);
     check(ti.time_point.empty() && ti.time_interval.size() == 3 && !next.time_point,
           "post: no time-point sets if they are not computed");
 }
@@ -76,10 +76,10 @@ void checks_and_their_switch() {
     check(test::raises([&] { aux_sys(true).post(first, a); }, Error::dimension_mismatch),
           "post: a step of the system's dimension");
     // layout: #163 step 2
-    const Tensor on = detail::cora_center(aux_sys().post(first, a).time_interval);
+    const Tensor on = cora::detail::cora_center(aux_sys().post(first, a).time_interval);
     ChecksScope off(false);
     // layout: #163 step 2
-    check(close(detail::cora_center(aux_sys().post(first, a).time_interval), on, 0),
+    check(close(cora::detail::cora_center(aux_sys().post(first, a).time_interval), on, 0),
           "post: the same with the checks off");
 }
 

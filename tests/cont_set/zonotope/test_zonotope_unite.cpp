@@ -45,7 +45,7 @@ void unions_by_hand(const std::string &b) {
               std::string(b) + ": " + method + ": it contains both");
     }
     const Zonotope p(column({0.0, 0.0}), Tensor::zeros({0, 2})),
-        q(column({2.0, 0.0}), Tensor::zeros({2, 0}));
+        q(column({2.0, 0.0}), Tensor::zeros({0, 2}));
     const Zonotope S = p.unite(q);
     check(close(S.center(), std::vector<double>{1, 0}, 1e-9) &&
               S.generators().shape() == std::vector<int64_t>({1, 2}) &&

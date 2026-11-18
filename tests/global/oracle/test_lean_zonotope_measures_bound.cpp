@@ -108,8 +108,8 @@ int main() {
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
             // layout: #163 step 2
-            const Zonotope far = detail::zonotope_of_columns(detail::cora_center(Z2) * 40.0,
-                                                             detail::cora_generators(Z2));
+            const Zonotope far = cora::detail::zonotope_of_columns(
+                cora::detail::cora_center(Z2) * 40.0, cora::detail::cora_generators(Z2));
             for (const Zonotope &S : {Z2, far}) {
                 const lean::Certified r = lean::Zonotope(Z).is_intersecting(lean::Zonotope(S));
                 // a proof of disjointness is never contradicted

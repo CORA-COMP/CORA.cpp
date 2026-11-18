@@ -83,7 +83,7 @@ void extreme_points_are_corners(const std::string &b) {
             double dist = 0.0;
             for (int i = 0; i < n; ++i) {
                 double x = c[i];
-                for (int k = 0; k < m; ++k) x += G[i * m + k] * ((corner >> k & 1) ? 1.0 : -1.0);
+                for (int k = 0; k < m; ++k) x += G[k * n + i] * ((corner >> k & 1) ? 1.0 : -1.0);
                 dist += std::abs(points[i * N + j] - x);
             }
             nearest = std::min(nearest, dist);

@@ -82,20 +82,19 @@ void aux_overrides(const std::string &b) {
     const Tensor cr = c.squeeze(-1), Gr = G.matrix_transpose();
     const auto [Mc, MG] = Tensor::zonotope_linear_map(A, cr, Gr);
     // the specifications take the center as a row (1, 6)
-    const auto [ref_c, ref_g] = derived::zonotope_linear_map(A, cr.expand_dims(-2), Gr);
-    aux_agree(b + " zonotope_linear_map c", Mc, ref_c.squeeze(-2), aux_sum_bound(6));
+    const auto [ref_c, ref_g] = derived::zonotope_linear_map(A, cr, Gr);
+    aux_agree(b + " zonotope_linear_map c", Mc, ref_c, aux_sum_bound(6));
     aux_agree(b + " zonotope_linear_map G", MG, ref_g, aux_sum_bound(6));
     const Tensor lo = rnd.matrix(6, 6), hi = lo + rnd.matrix(6, 6).abs();
     const auto [Tc, TG] = Tensor::zonotope_interval_map(lo, hi, cr, Gr);
-    const auto [ref_tc, ref_tg] = derived::zonotope_interval_map(lo, hi, cr.expand_dims(-2), Gr);
-    aux_agree(b + " zonotope_interval_map c", Tc, ref_tc.squeeze(-2), aux_sum_bound(6));
+    const auto [ref_tc, ref_tg] = derived::zonotope_interval_map(lo, hi, cr, Gr);
+    aux_agree(b + " zonotope_interval_map c", Tc, ref_tc, aux_sum_bound(6));
     aux_agree(b + " zonotope_interval_map G", TG, ref_tg, aux_sum_bound(12));
     // a center for every member, (8, 6)
     const Tensor cb = (c.broadcast_to({8, 6, 1}) + G.sum(-1, true)).squeeze(-1);
     const auto [mean_c, mean_g] = Tensor::zonotope_linear_combination(cb, Gr, cb * 0.5, Gr * 3.0);
-    const auto [ref_mc, ref_mg] = derived::zonotope_linear_combination(
-        cb.expand_dims(-2), Gr, cb.expand_dims(-2) * 0.5, Gr * 3.0);
-    aux_agree(b + " zonotope_linear_combination c", mean_c, ref_mc.squeeze(-2), 0);
+    const auto [ref_mc, ref_mg] = derived::zonotope_linear_combination(cb, Gr, cb * 0.5, Gr * 3.0);
+    aux_agree(b + " zonotope_linear_combination c", mean_c, ref_mc, 0);
     aux_agree(b + " zonotope_linear_combination G", mean_g, ref_mg, 0);
     const auto [p, q] = Tensor::interval_matmul(lo, hi, A);
     const auto [dp, dq] = derived::interval_matmul(lo, hi, A);

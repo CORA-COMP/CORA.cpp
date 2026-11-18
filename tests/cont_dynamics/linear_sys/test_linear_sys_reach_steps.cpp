@@ -93,12 +93,13 @@ void checks_and_their_switch() {
     const ReachProblem problem{.initial_set = X0, .t_final = 1};
     const Tensor on =
         // layout: #163 step 2
-        detail::cora_center(sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back());
+        cora::detail::cora_center(
+            sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back());
     ChecksScope off(false);
     // the checks off give the same result
     check(
         // layout: #163 step 2
-        test::close(detail::cora_center(
+        test::close(cora::detail::cora_center(
                         sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back()),
                     on, 0),
         "reach: the same with the checks off");

@@ -21,7 +21,7 @@ using test::check;
 
 namespace {
 
-Zonotope dynamic_part() { return {test::column({0.0, 0.0}), Tensor({{1.0}, {0.5}})}; }
+Zonotope dynamic_part() { return {test::column({0.0, 0.0}), Tensor({{1.0, 0.5}})}; }
 
 /// At a given order the set is the series of the time-varying input solution up to that order.
 void a_given_order_is_the_series(const std::string &b) {
@@ -42,8 +42,8 @@ void the_gain_decides_where_to_stop(const std::string &b) {
     const Zonotope coarse = sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1);
     const Zonotope fine = sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 1e-9);
     // layout: #163 step 2
-    check(detail::cora_generators(coarse).shape().back() <
-              detail::cora_generators(fine).shape().back(),
+    check(cora::detail::cora_generators(coarse).shape().back() <
+              cora::detail::cora_generators(fine).shape().back(),
           b + ": a smaller zeta keeps more terms");
     // both enclose the exact solution int_0^dt e^{A s} ds Vdyn, whose support along e1 is 1 - e^-dt
     check(support(coarse, {1, 0}) >= 1 - std::exp(-kStep) - 1e-13 &&
@@ -60,9 +60,9 @@ void the_static_part_is_added(const std::string &b) {
     const Zonotope without =
         sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 1e-3, 10);
     // layout: #163 step 2
-    check(test::close(detail::cora_center(with),
+    check(test::close(cora::detail::cora_center(with),
                       // layout: #163 step 2
-                      detail::cora_center(without) +
+                      cora::detail::cora_center(without) +
                           test::column({1 - std::exp(-kStep), (1 - std::exp(-2 * kStep)) / 2}),
                       1e-12),
           b + ": the center moves by the integral of the static part");
@@ -89,12 +89,12 @@ void checks_and_their_switch(const std::string &b) {
     // the checks off give the same set
     const Tensor on =
         // layout: #163 step 2
-        detail::cora_generators(
+        cora::detail::cora_generators(
             sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1));
     ChecksScope off(false);
     check(test::close(
               // layout: #163 step 2
-              detail::cora_generators(
+              cora::detail::cora_generators(
                   sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1)),
               on, 0),
           b + ": the same with the checks off");

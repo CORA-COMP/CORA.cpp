@@ -24,16 +24,16 @@ namespace {
 /// State i goes to position dims[i]: member by member, as Zonotope::lift.
 void permutation(const std::string &b) {
     const Zonotope Z1(column({1.0, 2.0, 3.0}), Tensor({{1.0, 2.0, 3.0}})),
-        Z2(column({4.0, 5.0, 6.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}, {2.0, 2.0}}));
+        Z2(column({4.0, 5.0, 6.0}), Tensor({{0.0, 1.0, 2.0}, {1.0, 0.0, 2.0}}));
     const ZonoBundle bundle({Z1, Z2});
     const std::vector<int64_t> dims{2, 0, 1};
     const ZonoBundle R = bundle.lift(3, dims);
     // layout: #163 step 2
-    check(close(detail::cora_center(R.zonotopes()[0]), {2.0, 3.0, 1.0}, 0),
+    check(close(cora::detail::cora_center(R.zonotopes()[0]), {2.0, 3.0, 1.0}, 0),
           b + ": state 0 goes to position 2");
     // layout: #163 step 2
-    check(close(detail::cora_generators(R.zonotopes()[1]),
-                detail::cora_generators(Z2.lift(3, dims)), 0),
+    check(close(cora::detail::cora_generators(R.zonotopes()[1]),
+                cora::detail::cora_generators(Z2.lift(3, dims)), 0),
           b + ": member 2");
     const Set S = Set(bundle)->lift(3, dims);
     check(S.is<ZonoBundle>() &&

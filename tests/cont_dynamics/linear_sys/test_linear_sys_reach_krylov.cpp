@@ -118,13 +118,13 @@ void agrees_with_standard() {
         const Interval Ik = Rk.time_point[k].interval(), Is = Rs.time_point[k].interval();
         worst = std::max({worst, (Ik.inf() - Is.inf()).abs().max().item(),
                           (Ik.sup() - Is.sup()).abs().max().item()});
-        same = std::max(
-            same,
-            // layout: #163 step 2
-            (detail::cora_generators(Rk.time_point[k]) - detail::cora_generators(Rd.time_point[k]))
-                .abs()
-                .max()
-                .item());
+        same = std::max(same,
+                        // layout: #163 step 2
+                        (cora::detail::cora_generators(Rk.time_point[k]) -
+                         cora::detail::cora_generators(Rd.time_point[k]))
+                            .abs()
+                            .max()
+                            .item());
     }
     check(worst < 1e-9, "krylov: the time points of standard, off by " + std::to_string(worst));
     check(same == 0, "krylov: a sparse and a dense A give the same sets");
@@ -146,9 +146,9 @@ void encloses_trajectories() {
     const ReachSet R = sys.reach({.initial_set = R0, .input_set = U, .t_final = 1.0},
                                  alg::Krylov{.time_step = dt});
     // layout: #163 step 2
-    const Eigen::MatrixXd c0 = host_matrix(detail::cora_center(R0).data(), n, 1),
+    const Eigen::MatrixXd c0 = host_matrix(cora::detail::cora_center(R0).data(), n, 1),
                           // layout: #163 step 2
-        g0 = host_matrix(detail::cora_generators(R0).data(), n, 2);
+        g0 = host_matrix(cora::detail::cora_generators(R0).data(), n, 2);
     // the flow of the integrator system [A B u; 0 0] carries the constant input
     Eigen::MatrixXd Aint = Eigen::MatrixXd::Zero(n + 1, n + 1);
     Aint.topLeftCorner(n, n) = A;
@@ -187,9 +187,9 @@ void restarted_windows_enclose_trajectories() {
         sys.reach({.initial_set = R0, .t_final = t_final},
                   alg::Krylov{.time_step = dt, .krylov_error = 1e-8, .krylov_step = 5});
     // layout: #163 step 2
-    const Eigen::MatrixXd c0 = host_matrix(detail::cora_center(R0).data(), n, 1),
+    const Eigen::MatrixXd c0 = host_matrix(cora::detail::cora_center(R0).data(), n, 1),
                           // layout: #163 step 2
-        g0 = host_matrix(detail::cora_generators(R0).data(), n, 2);
+        g0 = host_matrix(cora::detail::cora_generators(R0).data(), n, 2);
     // points of R0 along their exact trajectories, in the directions of the time points
     double worst = 1e9;
     for (int i = 0; i < 20; ++i) {
@@ -231,14 +231,16 @@ void checks_and_their_switch() {
     // the result with the checks on, then off
     const double on =
         // layout: #163 step 2
-        detail::cora_center(sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back())
+        cora::detail::cora_center(
+            sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back())
             .sum()
             .item();
     ChecksScope off(false);
     // the same with the checks off
     check(
         // layout: #163 step 2
-        detail::cora_center(sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back())
+        cora::detail::cora_center(
+            sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back())
                 .sum()
                 .item() == on,
         "krylov: the same with the checks off");

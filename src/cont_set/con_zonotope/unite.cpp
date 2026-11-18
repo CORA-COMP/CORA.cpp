@@ -71,7 +71,8 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
     std::vector<Zonotope> zonotopes;
     for (const ConZonotope &S : sets) {
         const ConZonotope r = S.A().numel() == 0 ? S : S.rescale();
-        zonotopes.push_back(detail::zonotope_of_columns(r.c(), r.generators())); // layout: #163 step 2
+        // layout: #163 step 2
+        zonotopes.push_back(detail::zonotope_of_columns(r.c(), r.generators()));
     }
     const Zonotope iterative = zonotopes.front().unite(
         std::vector<Zonotope>(zonotopes.begin() + 1, zonotopes.end()), "iterative");

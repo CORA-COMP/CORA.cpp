@@ -55,7 +55,7 @@ Zonotope Interval::zonotope() const {
                                                      : Tensor::like(r, G, {n, k}));
     }
     // layout: #163 step 2
-    return detail::zonotope_of_columns(c, priv_select_generators(r.diag(), axes));
+    return detail::zonotope_of_columns(c, priv_select_generators(r.diag(), axes, -1));
 }
 
 } // namespace cora

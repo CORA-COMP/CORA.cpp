@@ -48,7 +48,7 @@ void radius_bounds_the_set(const std::string &b) {
         const double r = Z.radius().item();
         check(r <= Z.generator_length().sum().item() + 1e-12,
               b + ": at most the sum of the lengths");
-        const Tensor points = Z.rand_point(200, rng, "extreme") - Z.center();
+        const Tensor points = Z.rand_point(200, rng, "extreme") - Z.center().expand_dims(-1);
         const Tensor distance = points.vector_norm(Tensor::Norm::two, -2);
         check(distance.max().item() <= r + 1e-12, b + ": a point beyond the radius");
     }

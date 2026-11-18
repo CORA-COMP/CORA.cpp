@@ -59,9 +59,7 @@ CORA_FROM_NUMBERS ZonoBundle ZonoBundle::generate_random(Rng &rng, std::optional
             detail::cora_center(Z) +
             detail::cora_generators(Z).matmul(
                 detail::cora_generators(Z).matrix_transpose().matmul(direction).sign());
-        // layout: #163 step 2
-        members.push_back(detail::zonotope_of_columns(detail::cora_center(Z) + (v - center) * s[0],
-                                                      detail::cora_generators(Z)));
+        members.push_back(Z + (v - center) * s[0]);
     }
     return ZonoBundle(std::move(members));
 }

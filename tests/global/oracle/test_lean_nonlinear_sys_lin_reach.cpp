@@ -228,22 +228,23 @@ void aux_recorded(const std::string &name, int count, bool car, bool closed_form
         r.params = read(p);
         const std::vector<double> c = read(r.n), G = read(r.n * N);
         // layout: #163 step 2
-        Zonotope R = detail::zonotope_of_columns(Tensor::from_data(c, {r.n, 1}),
-                                                 Tensor::from_data(G, {r.n, N}));
+        Zonotope R = cora::detail::zonotope_of_columns(Tensor::from_data(c, {r.n, 1}),
+                                                       Tensor::from_data(G, {r.n, N}));
         const std::vector<double> u_center = read(r.m), u_gens = read(r.m * M);
         std::optional<Zonotope> U;
         if (r.m > 0)
-            U = detail::zonotope_of_columns(Tensor::from_data(u_center, {r.m, 1}),
-                                            Tensor::from_data(u_gens, {r.m, M}));
+            U = cora::detail::zonotope_of_columns(Tensor::from_data(u_center, {r.m, 1}),
+                                                  Tensor::from_data(u_gens, {r.m, M}));
         in >> std::ws;
         // the car: the first five states, the first two inputs
         if (car) {
             // layout: #163 step 2
-            R = detail::zonotope_of_columns(detail::cora_center(R).slice(-2, 0, 5),
-                                            detail::cora_generators(R).slice(-2, 0, 5));
+            R = cora::detail::zonotope_of_columns(cora::detail::cora_center(R).slice(-2, 0, 5),
+                                                  cora::detail::cora_generators(R).slice(-2, 0, 5));
             // layout: #163 step 2
-            U = detail::zonotope_of_columns(detail::cora_center(*U).slice(-2, 0, 2),
-                                            detail::cora_generators(*U).slice(-2, 0, 2));
+            U = cora::detail::zonotope_of_columns(
+                cora::detail::cora_center(*U).slice(-2, 0, 2),
+                cora::detail::cora_generators(*U).slice(-2, 0, 2));
         }
         aux_compare(name + " step " + std::to_string(index), make(r), R, U, r.dt, r.eta, r.rho,
                     index == 0, closed_form && index == 0);

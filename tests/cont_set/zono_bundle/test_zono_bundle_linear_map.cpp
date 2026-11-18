@@ -27,11 +27,11 @@ void linear_map_known(const std::string &b) {
     const ZonoBundle R = zono_bundle.linear_map(M);
     // layout: #163 step 2
     check(R.parallel_sets() == 2 &&
-              close(detail::cora_generators(R.zonotopes()[0]), {2, 0, 0, 2}, 0) &&
+              close(cora::detail::cora_generators(R.zonotopes()[0]), {2, 0, 0, 2}, 0) &&
               // layout: #163 step 2
-              close(detail::cora_center(R.zonotopes()[1]), {1, 0}, 0) &&
+              close(cora::detail::cora_center(R.zonotopes()[1]), {1, 0}, 0) &&
               // layout: #163 step 2
-              close(detail::cora_generators(R.zonotopes()[1]), {1, 1, 0, 2}, 0),
+              close(cora::detail::cora_generators(R.zonotopes()[1]), {1, 1, 0, 2}, 0),
           b + ": the members are M c and M G");
     check(zono_bundle.linear_map(Tensor({{1.0, 1.0}})).dim() == 1,
           b + ": a row map gives one dimension");

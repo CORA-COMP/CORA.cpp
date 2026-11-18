@@ -74,11 +74,11 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
         Tensor A = sys.A().center();
         for (int64_t g = 0; g < G.size(0); ++g) A = A + G.slice(0, g, g + 1).squeeze(0) * b[g];
         // layout: #163 step 2
-        const Tensor x0 =
-            detail::cora_center(R0) + detail::cora_generators(R0).matmul(column({b[2], b[3]}));
+        const Tensor x0 = cora::detail::cora_center(R0) +
+                          cora::detail::cora_generators(R0).matmul(column({b[2], b[3]}));
         // layout: #163 step 2
-        const double u =
-            detail::cora_center(U).item() + detail::cora_generators(U).abs().sum().item() * b[4];
+        const double u = cora::detail::cora_center(U).item() +
+                         cora::detail::cora_generators(U).abs().sum().item() * b[4];
         const Tensor v = sys.B()->matmul(column({u})) + sys.c();
         const auto step = std::size_t(k % 20);
         const double t = (double(step) + 0.5 * (b[5] + 1)) * kDt;
@@ -117,12 +117,13 @@ void checks_and_their_switch() {
           "reach: the curvature of a constant input needs norm(A) r < taylor_terms + 2");
     // layout: #163 step 2
     const Tensor on =
-        detail::cora_center(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back());
+        cora::detail::cora_center(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back());
     ChecksScope off(false);
     // layout: #163 step 2
-    check(close(detail::cora_center(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()), on,
-                0),
-          "reach: the same with the checks off");
+    check(
+        close(cora::detail::cora_center(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()),
+              on, 0),
+        "reach: the same with the checks off");
 }
 
 } // namespace

@@ -93,8 +93,9 @@ int main() {
             Z.linear_map(lean::Tensor::from(Tensor({{0.1, 0.0}, {0.0, 0.1}})));
         const auto [nominal, err] = Zm.gather();
         // layout: #163 step 2
-        test::check(test::close(detail::cora_center(nominal), std::vector<double>{0.1, 0.0}, 1e-15),
-                    "nominal center");
+        test::check(
+            test::close(cora::detail::cora_center(nominal), std::vector<double>{0.1, 0.0}, 1e-15),
+            "nominal center");
         test::check(err.inf().data()[0] <= 0 && err.sup().data()[0] >= 0,
                     "the error box contains 0");
 

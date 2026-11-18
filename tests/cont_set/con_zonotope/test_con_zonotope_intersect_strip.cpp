@@ -41,13 +41,13 @@ void intersect_strip_known(const std::string &b) {
     check(close(S.A(), {0, 1, 0, 1, 0, -0.1}, 1e-15) && close(S.b(), {0.5, 0.5}, 1e-15),
           b + ": the rows of the set, then the strip");
     // the gains of the methods give the strip rows and the center of the zonotope's method
-    const Zonotope Z = detail::zonotope_of_columns(cz.c(), cz.generators());
+    const Zonotope Z = cora::detail::zonotope_of_columns(cz.c(), cz.generators());
     for (const char *method : {"normGen", "alamo-FRad"}) {
         const ConZonotope M = cz.intersect_strip(C, phi, y, method);
         const Zonotope expected = Z.intersect_strip(C, phi, y, method);
         // layout: #163 step 2
-        check(close(M.c(), detail::cora_center(expected), 0) &&
-                  close(M.generators(), detail::cora_generators(expected), 0),
+        check(close(M.c(), cora::detail::cora_center(expected), 0) &&
+                  close(M.generators(), cora::detail::cora_generators(expected), 0),
               b + ": the gain of " + method);
         check(M.A().shape() == Shape{1, 3}, b + ": one strip row");
     }

@@ -42,9 +42,9 @@ void the_linear_system_is_reduced(const std::string &b) {
     check(test::close(lin.y_star, col(0.5 * x_star + 0.5), 1e-9), b + ": y* is consistent");
     check(test::close(lin.sys.A(), col(-0.5), 1e-12), b + ": A_lin = -1/2");
     // the input B_lin (U - center) = [-0.1, 0.1], and f0 = f at the point = -x* + y* = -x*/2 + u*
-    check(test::close(detail::cora_generators(lin.U), Tensor({{0.1}}), 1e-12) &&
+    check(test::close(cora::detail::cora_generators(lin.U), Tensor({{0.1}}), 1e-12) &&
               // layout: #163 step 2
-              test::close(detail::cora_center(lin.U), col(0.0), 1e-12),
+              test::close(cora::detail::cora_center(lin.U), col(0.0), 1e-12),
           b + ": B_lin = 1 maps the centered input set");
     check(test::close(lin.u_const, col(-0.5 * x_star + 0.5), 1e-9), b + ": f0");
     check(test::close(lin.CF_inv, col(1.0), 1e-12) && test::close(lin.F_inv, col(1.0), 1e-12),

@@ -35,7 +35,7 @@ Zonotope separate_set() {
 
 Zonotope coupled_set() {
     return {test::column({1.0, 0.5, -1.0}),
-            Tensor({{0.2, 0.0, 0.1}, {0.0, 0.1, 0.0}, {0.0, 0.0, 0.3}})};
+            Tensor({{0.2, 0.0, 0.0}, {0.0, 0.1, 0.0}, {0.1, 0.0, 0.3}})};
 }
 
 /// The boxes of two sets agree up to tol.
@@ -149,12 +149,12 @@ void checks_and_their_switch(const std::string &b) {
           b + ": time_step 0");
     const Tensor on =
         // layout: #163 step 2
-        detail::cora_center(
+        cora::detail::cora_center(
             sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back());
     ChecksScope off(false);
     check(test::close(
               // layout: #163 step 2
-              detail::cora_center(
+              cora::detail::cora_center(
                   sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back()),
               on, 0),
           b + ": the same with the checks off");

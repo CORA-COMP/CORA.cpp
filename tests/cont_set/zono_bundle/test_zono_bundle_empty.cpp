@@ -24,12 +24,14 @@ void empty_set_data(const std::string &b) {
     const ZonoBundle E = ZonoBundle::empty(3);
     check(E.dim() == 3 && E.parallel_sets() == 2, b + ": dimension 3, two members");
     // layout: #163 step 2
-    check(test::close(detail::cora_center(E.zonotopes()[0]), {0.0, 0.0, 0.0}, 0),
+    check(test::close(cora::detail::cora_center(E.zonotopes()[0]), {0.0, 0.0, 0.0}, 0),
           b + ": the origin");
     // layout: #163 step 2
-    check(test::close(detail::cora_center(E.zonotopes()[1]), {1.0, 0.0, 0.0}, 0), b + ": e_1");
+    check(test::close(cora::detail::cora_center(E.zonotopes()[1]), {1.0, 0.0, 0.0}, 0),
+          b + ": e_1");
     // layout: #163 step 2
-    check(detail::cora_generators(E.zonotopes()[0]).shape() == Shape{3, 0}, b + ": no generators");
+    check(cora::detail::cora_generators(E.zonotopes()[0]).shape() == Shape{3, 0},
+          b + ": no generators");
     check(E.interval().is_empty(), b + ": its box is empty");
     check(E.center().shape() == Shape{3, 0}, b + ": its center has no column");
     check(!E.contains(column({0.0, 0.0, 0.0})) && !E.contains(column({1.0, 0.0, 0.0})),

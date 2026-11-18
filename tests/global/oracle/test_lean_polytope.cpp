@@ -109,7 +109,7 @@ int main() {
         oracle::check(P.contains(inside), lean::Polytope(P).contains(inside));
         oracle::check(P.contains(outside), lean::Polytope(P).contains(outside));
         const Zonotope near(c, rnd.matrix(3, 4).matrix_transpose() * 0.05),
-            far(c, rnd.matrix(3, 4) * 5.0);
+            far(c, rnd.matrix(3, 4).matrix_transpose() * 5.0);
         oracle::check(P.contains(near), lean::Polytope(P).contains(near));
         // hulls
         oracle::check(P.contains(far), lean::Polytope(P).contains(far));

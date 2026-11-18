@@ -26,17 +26,17 @@ void project_known(const std::string &b) {
     const ZonoBundle one = Set(zono_bundle)->project({1}).as<ZonoBundle>();
     check(one.dim() == 1 && one.parallel_sets() == 2 &&
               // layout: #163 step 2
-              close(detail::cora_generators(one.zonotopes()[0]), {0, 1}, 0) &&
+              close(cora::detail::cora_generators(one.zonotopes()[0]), {0, 1}, 0) &&
               // layout: #163 step 2
-              close(detail::cora_center(one.zonotopes()[1]), {0}, 0) &&
+              close(cora::detail::cora_center(one.zonotopes()[1]), {0}, 0) &&
               // layout: #163 step 2
-              close(detail::cora_generators(one.zonotopes()[1]), {0, 1}, 0),
+              close(cora::detail::cora_generators(one.zonotopes()[1]), {0, 1}, 0),
           b + ": the second row of every member");
     const ZonoBundle swapped = Set(zono_bundle)->project({1, 0}).as<ZonoBundle>();
     // layout: #163 step 2
-    check(close(detail::cora_center(swapped.zonotopes()[1]), {0, 1}, 0) &&
+    check(close(cora::detail::cora_center(swapped.zonotopes()[1]), {0, 1}, 0) &&
               // layout: #163 step 2
-              close(detail::cora_generators(swapped.zonotopes()[1]), {0, 1, 1, 1}, 0),
+              close(cora::detail::cora_generators(swapped.zonotopes()[1]), {0, 1, 1, 1}, 0),
           b + ": the rows in the given order");
 }
 

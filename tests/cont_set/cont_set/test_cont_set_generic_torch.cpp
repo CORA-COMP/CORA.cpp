@@ -48,7 +48,7 @@ int main() {
     const Tensor c = Tensor::from_data({1.0, 2.0, 2.0}, {3, 1});
     const Tensor d = Tensor::from_data({0.7}, {1, 1});
     const auto zonotope = [](const Inputs &x) {
-        return detail::zonotope_of_columns(x[0], x[1]);
+        return cora::detail::zonotope_of_columns(x[0], x[1]);
     }; // layout: #163 step 2
     const auto S = [&](const Zonotope &Z) -> const ContSet & { return Z; };
     test::gradcheck(

@@ -87,8 +87,9 @@ void aux_verify(const std::string &name, const Tensor &A, const std::optional<Te
         sys.verify({R0, B ? *U : none, t_final}, specs, alg::ReachAvoidSupportFunction{});
     const lean::VerifySupportRun theirs = lean::LinearSys(A, B, C).verify_support_func(
         // layout: #163 step 2
-        detail::cora_center(R0), detail::cora_generators(R0), Tensor::from_data(Cs, {S, p}),
-        Tensor::from_data(d, {S, 1}), t_final, numerics::kMinTimeStep, kFuel, U);
+        cora::detail::cora_center(R0), cora::detail::cora_generators(R0),
+        Tensor::from_data(Cs, {S, p}), Tensor::from_data(d, {S, 1}), t_final,
+        numerics::kMinTimeStep, kFuel, U);
     test::oracle::check(name + " verified", mine.verified, theirs.verified);
     test::oracle::check(name + " falsified", mine.falsification.has_value(), theirs.falsified);
     test::oracle::check(name + " iterations", int64_t(mine.iterations), theirs.iterations);
@@ -215,7 +216,7 @@ int main() {
         c[6] = 1.0;
         std::vector<double> G(7, 0.0);
         G[0] = 0.01;
-        const Zonotope R0(Tensor::from_data(c, {7, 1}), Tensor::from_data(G, {7, 1}));
+        const Zonotope R0(Tensor::from_data(c, {7, 1}), Tensor::from_data(G, {1, 7}));
         const std::vector<double> mid{0, 0, 1, 0, 0, 0, 0};
         aux_verify("beam verified", A, std::nullopt, R0, {{mid, 0.2, true}}, 1.0);
         aux_verify("beam falsified", A, std::nullopt, R0, {{mid, 0.005, true}}, 1.0);
@@ -227,16 +228,16 @@ int main() {
                         {-2.0, 1.0, -0.1, 0.0},
                         {1.0, -2.0, 0.0, -0.1}});
         const Tensor I = Tensor::eye(4);
-        const Zonotope R0(Tensor::from_data({0, 0, 0, 0}, {4, 1}), A.zeros_like({4, 0}));
+        const Zonotope R0(Tensor::from_data({0, 0, 0, 0}, {4, 1}), A.zeros_like({0, 4}));
         const Zonotope U(Tensor::from_data({0, 0, 0, 0.5}, {4, 1}),
-                         Tensor::from_data({0, 0, 0, 0.3}, {4, 1}));
+                         Tensor::from_data({0, 0, 0, 0.3}, {1, 4}));
         const std::vector<double> first{1, 0, 0, 0};
         aux_verify("forced verified", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, U);
         aux_verify("forced falsified", A, std::nullopt, R0, {{first, 0.01, true}}, 1.0, I, U);
         // the peak lies at the horizon: falsified in the fourth pass
         aux_verify("forced four passes", A, std::nullopt, R0, {{first, 0.028, true}}, 1.0, I, U);
         // a constant force only, a varying one only
-        const Zonotope Uc(U.center(), A.zeros_like({4, 0}));
+        const Zonotope Uc(U.center(), A.zeros_like({0, 4}));
         aux_verify("constant force", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, Uc);
         const Zonotope Uv(A.zeros_like({4, 1}), U.generators());
         aux_verify("varying force", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, Uv);
@@ -255,7 +256,7 @@ int main() {
         std::vector<double> b(6, 0.0);
         b[5] = 1.0;
         const Zonotope Ub(Tensor::from_data({0.4}, {1, 1}), Tensor::from_data({0.2}, {1, 1}));
-        const Zonotope Rb(A.zeros_like({6, 1}), A.zeros_like({6, 0}));
+        const Zonotope Rb(A.zeros_like({6, 1}), A.zeros_like({0, 6}));
         const std::vector<double> mid{0, 1, 0, 0, 0, 0};
         aux_verify("beam forced verified", Ab, std::nullopt, Rb, {{mid, 0.02, true}}, 1.0,
                    Tensor::from_data(b, {6, 1}), Ub);

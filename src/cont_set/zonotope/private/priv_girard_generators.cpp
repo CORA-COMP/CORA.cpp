@@ -1,10 +1,10 @@
 // priv_girard_generators - the generators of a zonotope after Girard's order reduction
 //
-// The box is one axis-aligned generator per row that bounds the rest. A batch reduces member by
-// member.
+// The box is one axis-aligned generator per coordinate that bounds the rest. A batch reduces member
+// by member.
 //
 // Syntax:   Tensor Gred = priv_girard_generators(G, keep);
-// Inputs:   G - generators (..., r, m)
+// Inputs:   G - generators (..., m, r), one per row
 //           keep - how many stay, 0 <= keep <= m
 // Outputs:  Gred - the keep generators of the largest Girard score ||g||_1 - ||g||_inf, then a box
 // See also: Zonotope::reduce, ConZonotope::reduce

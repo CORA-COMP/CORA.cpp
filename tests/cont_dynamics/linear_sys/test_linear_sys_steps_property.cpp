@@ -52,12 +52,12 @@ Case random_case(cora::Rng &rng) {
     const Tensor eye = Tensor::eye(3);
     const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     // a centered input set in the state space, and a constant input u
-    const Zonotope U = detail::zonotope_of_columns(
-        detail::cora_center(X).zeros_like(),
+    const Zonotope U = cora::detail::zonotope_of_columns(
+        cora::detail::cora_center(X).zeros_like(),
         // layout: #163 step 2
-        detail::cora_generators(Zonotope::generate_random(rng, 3, std::nullopt, 2)) * 0.2);
+        cora::detail::cora_generators(Zonotope::generate_random(rng, 3, std::nullopt, 2)) * 0.2);
     // layout: #163 step 2
-    const Tensor u = detail::cora_center(Zonotope::generate_random(rng, 3, std::nullopt, 1));
+    const Tensor u = cora::detail::cora_center(Zonotope::generate_random(rng, 3, std::nullopt, 1));
     return {LinearSys(sys.A(), eye),
             X,
             U,

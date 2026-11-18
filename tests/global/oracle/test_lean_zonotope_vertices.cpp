@@ -35,7 +35,7 @@ Tensor aux_columns(const Zonotope &Z, const Polygon &corners) {
         data[corners.size() + k] = corners[k][1];
     }
     // layout: #163 step 2
-    return Tensor::like(detail::cora_center(Z), data, {2, int64_t(corners.size())});
+    return Tensor::like(cora::detail::cora_center(Z), data, {2, int64_t(corners.size())});
 }
 
 /// The oracle's corners without the two repeated ones: columns 1 .. h of the second half.

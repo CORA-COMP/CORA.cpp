@@ -127,7 +127,7 @@ void the_zonotope_order_limits_the_generators(const std::string &b) {
     int64_t most = 0;
     for (std::size_t k = 2; k < R.time_point.size(); ++k)
         // layout: #163 step 2
-        most = std::max(most, detail::cora_generators(R.time_point[k]).shape()[1]);
+        most = std::max(most, cora::detail::cora_generators(R.time_point[k]).shape()[1]);
     check(most <= 3 * 2, b + ": at most order * n = 6 generators, found " + std::to_string(most));
 }
 
@@ -215,13 +215,13 @@ void checks_and_their_switch() {
     const ReachProblem problem{.initial_set = X0, .t_final = 0.5};
     const Tensor on =
         // layout: #163 step 2
-        detail::cora_center(
+        cora::detail::cora_center(
             sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back());
     ChecksScope off(false);
     // the same with the checks off
     check(test::close(
               // layout: #163 step 2
-              detail::cora_center(
+              cora::detail::cora_center(
                   sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back()),
               on, 0),
           "reach: the same with the checks off");

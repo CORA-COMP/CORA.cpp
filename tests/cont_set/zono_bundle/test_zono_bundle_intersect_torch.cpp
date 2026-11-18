@@ -24,7 +24,7 @@ void intersect_gradient() {
         "intersect",
         [](const Inputs &x) {
             const ZonoBundle R = test::bundle(x, 0, 2).intersect(test::bundle(x, 4, 1));
-            return test::parts(R.intersect(detail::zonotope_of_columns(x[6], x[7])));
+            return test::parts(R.intersect(cora::detail::zonotope_of_columns(x[6], x[7])));
         },
         test::joined(test::random_bundle_parts(2, 2, 3), test::random_bundle_parts(2, 2, 3)));
 }

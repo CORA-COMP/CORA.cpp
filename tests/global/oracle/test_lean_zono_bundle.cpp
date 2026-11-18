@@ -43,9 +43,7 @@ Tensor aux_rows(const Tensor &T, int64_t from, int64_t to) { return T.slice(0, f
 /// The bundle with every member shifted by `offset` (n, 1): the same shape, far from the original.
 ZonoBundle aux_shifted(const ZonoBundle &bundle, const Tensor &offset) {
     std::vector<Zonotope> members;
-    for (const Zonotope &Z : bundle.zonotopes())
-        // layout: #163 step 2
-        members.push_back(detail::zonotope_of_columns(detail::cora_center(Z) + offset, detail::cora_generators(Z)));
+    for (const Zonotope &Z : bundle.zonotopes()) members.push_back(Z + offset);
     return ZonoBundle(std::move(members));
 }
 

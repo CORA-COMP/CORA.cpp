@@ -202,7 +202,8 @@ int main(int argc, char **argv) {
         std::vector<Zonotope> R0;
         if (name == "DTN06")
             for (double s : {0.75, 0.25, -0.25, -0.75})
-                R0.emplace_back(m.center + delta * s, delta.matrix_transpose() * 0.25); // one generator row
+                R0.emplace_back(m.center + delta * s,
+                                delta.matrix_transpose() * 0.25); // one generator row
         else
             R0.emplace_back(m.center, delta.matrix_transpose());
         const auto start = std::chrono::steady_clock::now();

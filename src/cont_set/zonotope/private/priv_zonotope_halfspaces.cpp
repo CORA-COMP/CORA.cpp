@@ -73,7 +73,7 @@ std::pair<Tensor, Tensor> priv_zonotope_halfspaces(const Zonotope &Z_in) {
     if (span == 0) return aux_point(c);
     const Tensor Ut = U.matrix_transpose();
     const Tensor rows = Ut.slice(0, 0, span), flat = U.slice(1, span, n).matrix_transpose();
-    const auto [Cs, ds] = aux_full_dim({rows.matmul(c), rows.matmul(G)});
+    const auto [Cs, ds] = aux_full_dim(detail::zonotope_of_columns(rows.matmul(c), rows.matmul(G)));
     const Tensor shift = flat.matmul(c);
     return {Tensor::concat({Cs.matmul(rows), flat, flat.negative()}, 0),
             Tensor::concat({ds, shift, shift.negative()}, 0)};

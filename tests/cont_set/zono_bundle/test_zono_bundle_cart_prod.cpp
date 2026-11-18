@@ -25,18 +25,19 @@ namespace {
 /// Two bundles give every pair of members, the first bundle's index outer.
 void pairs_of_members(const std::string &b) {
     const Zonotope A1(column({1.0, 2.0}), Tensor({{1.0, 3.0}})),
-        A2(column({0.0, 1.0}), Tensor({{2.0}, {1.0}})), B1(column({5.0}), Tensor({{6.0, 7.0}})),
-        B2(column({9.0}), Tensor({{1.0, 1.0}}));
+        A2(column({0.0, 1.0}), Tensor({{2.0, 1.0}})), B1(column({5.0}), Tensor({{6.0}, {7.0}})),
+        B2(column({9.0}), Tensor({{1.0}, {1.0}}));
     const ZonoBundle P = ZonoBundle({A1, A2}).cart_prod(ZonoBundle({B1, B2}));
     check(P.parallel_sets() == 4 && P.dim() == 3, b + ": four members of dimension 3");
     const std::vector<Zonotope> expected{A1.cart_prod(B1), A1.cart_prod(B2), A2.cart_prod(B1),
                                          A2.cart_prod(B2)};
     for (std::size_t i = 0; i < 4; ++i)
         // layout: #163 step 2
-        check(close(detail::cora_center(P.zonotopes()[i]), detail::cora_center(expected[i]), 0) &&
+        check(close(cora::detail::cora_center(P.zonotopes()[i]),
+                    cora::detail::cora_center(expected[i]), 0) &&
                   // layout: #163 step 2
-                  close(detail::cora_generators(P.zonotopes()[i]),
-                        detail::cora_generators(expected[i]), 0),
+                  close(cora::detail::cora_generators(P.zonotopes()[i]),
+                        cora::detail::cora_generators(expected[i]), 0),
               b + ": pair " + std::to_string(i));
 }
 
@@ -48,11 +49,12 @@ void one_set_against_every_member(const std::string &b) {
     check(bundle.cart_prod(I).parallel_sets() == 2 && bundle.cart_prod(I).dim() == 3,
           b + ": a box");
     // layout: #163 step 2
-    check(close(detail::cora_center(bundle.cart_prod(column({7.0})).zonotopes()[1]),
+    check(close(cora::detail::cora_center(bundle.cart_prod(column({7.0})).zonotopes()[1]),
                 {1.0, 2.0, 7.0}, 0),
           b + ": a point behind");
     // layout: #163 step 2
-    check(close(detail::cora_center(ZonoBundle::cart_prod(column({7.0}), bundle).zonotopes()[0]),
+    check(close(cora::detail::cora_center(
+                    ZonoBundle::cart_prod(column({7.0}), bundle).zonotopes()[0]),
                 {7.0, 1.0, 2.0}, 0),
           b + ": a point in front");
     check(bundle.cart_prod(Z).dim() == 4, b + ": a zonotope");

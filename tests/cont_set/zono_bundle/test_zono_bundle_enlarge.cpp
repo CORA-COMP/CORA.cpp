@@ -23,21 +23,23 @@ namespace {
 /// A number scales the generators, a column scales the rows; the centers stay.
 void scaling(const std::string &b) {
     const Zonotope Z1(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        Z2(column({0.0, 1.0}), Tensor({{1.0}, {2.0}}));
+        Z2(column({0.0, 1.0}), Tensor({{1.0, 2.0}}));
     const ZonoBundle bundle({Z1, Z2});
     const ZonoBundle twice = Set(bundle)->enlarge(2.0).as<ZonoBundle>();
     // layout: #163 step 2
-    check(close(detail::cora_generators(twice.zonotopes()[0]), {2.0, 0.0, 0.0, 2.0}, 0) &&
+    check(close(cora::detail::cora_generators(twice.zonotopes()[0]), {2.0, 0.0, 0.0, 2.0}, 0) &&
               // layout: #163 step 2
-              close(detail::cora_center(twice.zonotopes()[1]), detail::cora_center(Z2), 0),
+              close(cora::detail::cora_center(twice.zonotopes()[1]), cora::detail::cora_center(Z2),
+                    0),
           b + ": a number scales every generator");
     const ZonoBundle per_row = Set(bundle)->enlarge(column({1.0, 3.0})).as<ZonoBundle>();
     // layout: #163 step 2
-    check(close(detail::cora_generators(per_row.zonotopes()[1]), {1.0, 6.0}, 0),
+    check(close(cora::detail::cora_generators(per_row.zonotopes()[1]), {1.0, 6.0}, 0),
           b + ": a column scales rows");
     // layout: #163 step 2
-    check(close(detail::cora_center(per_row.zonotopes()[0]), detail::cora_center(Z1), 0),
-          b + ": the center stays");
+    check(
+        close(cora::detail::cora_center(per_row.zonotopes()[0]), cora::detail::cora_center(Z1), 0),
+        b + ": the center stays");
     check(Set(bundle)->enlarge(1.0).as<ZonoBundle>().parallel_sets() == 2, b + ": the factor 1");
 }
 
@@ -49,7 +51,7 @@ void members_about_their_centers(const std::string &b) {
     const ZonoBundle R = Set(bundle)->enlarge(factor).as<ZonoBundle>();
     for (std::size_t i = 0; i < 3; ++i)
         // layout: #163 step 2
-        check(close(detail::cora_generators(R.zonotopes()[i]),
+        check(close(cora::detail::cora_generators(R.zonotopes()[i]),
                     // layout: #163 step 2
                     bundle.zonotopes()[i]
                         .enlarge(factor)

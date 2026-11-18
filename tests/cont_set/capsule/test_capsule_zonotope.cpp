@@ -27,14 +27,15 @@ void zonotope_known(const std::string &b) {
     const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
     const Zonotope Z = C.zonotope();
     // layout: #163 step 2
-    check(close(detail::cora_center(Z), {1, 2}, 0) &&
-              detail::cora_generators(Z).shape() == Shape({2, 3}),
+    check(close(cora::detail::cora_center(Z), {1, 2}, 0) &&
+              cora::detail::cora_generators(Z).shape() == Shape({2, 3}),
           b + ": c and 1 + n generators");
     // layout: #163 step 2
-    check(close(detail::cora_generators(Z), {3, 0.5, 0, 4, 0, 0.5}, 0), b + ": g, r I");
+    check(close(cora::detail::cora_generators(Z), {3, 0.5, 0, 4, 0, 0.5}, 0), b + ": g, r I");
     check(C.plus(column({0.0, 0.0})).zonotope().dim() == 2, b + ": after plus");
     // layout: #163 step 2
-    check(detail::cora_generators(Capsule(column({1.0, 2.0}), column({3.0, 4.0}), 0.0).zonotope())
+    check(cora::detail::cora_generators(
+              Capsule(column({1.0, 2.0}), column({3.0, 4.0}), 0.0).zonotope())
                   .shape() == Shape({2, 1}),
           b + ": r = 0 adds nothing");
 }
@@ -55,7 +56,7 @@ void checks_and_their_switch() {
     const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
     ChecksScope off(false);
     // layout: #163 step 2
-    check(detail::cora_generators(C.zonotope()).shape() == Shape({2, 3}),
+    check(cora::detail::cora_generators(C.zonotope()).shape() == Shape({2, 3}),
           "zonotope: works with the checks off");
 }
 

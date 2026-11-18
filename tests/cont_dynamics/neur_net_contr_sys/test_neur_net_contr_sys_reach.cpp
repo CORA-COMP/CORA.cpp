@@ -110,8 +110,8 @@ void checks_and_their_switch() {
     ChecksScope off(false);
     const ClosedLoopReach<Zonotope> without = sys.reach(X0(), U(), 0.2, options());
     // layout: #163 step 2
-    check(test::close(detail::cora_center(on.time_point.back()),
-                      detail::cora_center(without.time_point.back()), 0),
+    check(test::close(cora::detail::cora_center(on.time_point.back()),
+                      cora::detail::cora_center(without.time_point.back()), 0),
           "reach: the same with the checks off");
 }
 

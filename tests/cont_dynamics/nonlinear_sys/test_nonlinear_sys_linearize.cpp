@@ -79,8 +79,8 @@ void linearize_by_hand(const std::string &b) {
           b + ": f0 is the constant input");
     check(test::close(lin.sys.A(), {x1, x0, std::cos(x0), 0.0}), b + ": A at x*");
     // layout: #163 step 2
-    check(test::close(detail::cora_center(lin.U), {0.0, 0.0}) &&
-              test::close(detail::cora_generators(lin.U), {0.2, 0.0}),
+    check(test::close(cora::detail::cora_center(lin.U), {0.0, 0.0}) &&
+              test::close(cora::detail::cora_generators(lin.U), {0.2, 0.0}),
           b + ": the input set B (U - u*)");
 }
 

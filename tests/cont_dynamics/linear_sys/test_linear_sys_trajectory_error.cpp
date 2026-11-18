@@ -35,8 +35,7 @@ void at_the_expansion_point_only_the_series_remains(const std::string &b) {
     const TrajectoryError e = LinearSys(matrix()).trajectory_error({zero, zero}, zero, start_set(),
                                                                    kTime, kTime, kTime, kOrder, n);
     // layout: #163 step 2
-    const Zonotope point =
-        detail::zonotope_of_columns(detail::cora_center(start_set()), Tensor::zeros({0, 2}));
+    const Zonotope point = Zonotope(start_set().center(), Tensor::zeros({0, 2}));
     const TrajectoryError p = LinearSys(matrix()).trajectory_error({zero, zero}, zero, point, kTime,
                                                                    kTime, kTime, kOrder, n);
     check(support(p.error, {1, 1}) < 1e-8 && support(p.error, {-1, 1}) < 1e-8,
@@ -45,17 +44,20 @@ void at_the_expansion_point_only_the_series_remains(const std::string &b) {
     const Tensor c_center = (e.c_tilde.inf() + e.c_tilde.sup()) * 0.5;
     check(test::close(c_center, beyond.matrix_transpose().matmul(n), 1e-9), b + ": c_tilde");
     const double d_center = ((e.d_tilde.inf() + e.d_tilde.sup()) * 0.5).item();
-    check(test::close(
-              d_center,
-              // layout: #163 step 2
-              n.matrix_transpose().matmul(beyond).matmul(detail::cora_center(start_set())).item(),
-              1e-9),
+    check(test::close(d_center,
+                      // layout: #163 step 2
+                      n.matrix_transpose()
+                          .matmul(beyond)
+                          .matmul(cora::detail::cora_center(start_set()))
+                          .item(),
+                      1e-9),
           b + ": d_tilde");
     // one value of the flow stands for both
     const TrajectoryError same = LinearSys(matrix()).trajectory_error(
         {zero}, zero, start_set(), kTime, kTime, kTime, kOrder, n);
     // layout: #163 step 2
-    check(test::close(detail::cora_generators(same.error), detail::cora_generators(e.error), 0),
+    check(test::close(cora::detail::cora_generators(same.error),
+                      cora::detail::cora_generators(e.error), 0),
           b + ": one flow value");
 }
 
@@ -89,10 +91,10 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises([&] { call({zero}, 3, test::column({0.0})); }, Error::dimension_mismatch),
           b + ": u of one row");
     // layout: #163 step 2
-    const Tensor on = detail::cora_center(call({zero}, 3, zero).error);
+    const Tensor on = cora::detail::cora_center(call({zero}, 3, zero).error);
     ChecksScope off(false);
     // layout: #163 step 2
-    check(test::close(detail::cora_center(call({zero}, 3, zero).error), on, 0),
+    check(test::close(cora::detail::cora_center(call({zero}, 3, zero).error), on, 0),
           b + ": the same with the checks off");
 }
 

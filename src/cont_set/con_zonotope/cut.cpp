@@ -21,6 +21,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/cont_set/polytope/polytope.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/blocks.h"
 #include "global/format.h"
 
@@ -94,7 +95,7 @@ ConZonotope::Cut ConZonotope::Cut::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(c.shape()[0]) +
                " columns, got the shape " + shape_text(M.shape());
     });
-    auto [c2, G2] = Tensor::zonotope_linear_map(M, c, G);
+    auto [c2, G2] = detail::linear_map_columns(M, c, G);
     return {std::move(c2), std::move(G2), A, b, C, d};
 }
 

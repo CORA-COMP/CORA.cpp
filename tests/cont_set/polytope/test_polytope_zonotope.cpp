@@ -32,8 +32,9 @@ void enclosures(const std::string &b) {
               b + ": it contains the vertices");
     }
     // a point is a zonotope without generators' volume
-    check(close(detail::cora_center(Polytope(column({1.0, 2.0})).zonotope()), {1.0, 2.0}, 1e-9),
-          b + ": a point");
+    check(
+        close(cora::detail::cora_center(Polytope(column({1.0, 2.0})).zonotope()), {1.0, 2.0}, 1e-9),
+        b + ": a point");
 }
 
 /// The zonotope contains the polytope of random sets.

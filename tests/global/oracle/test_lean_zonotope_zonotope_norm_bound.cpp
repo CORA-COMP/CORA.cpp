@@ -67,7 +67,7 @@ int main() {
             const Tensor G =
                 Tensor::concat({rnd.matrix(n - 1, n + 1), Tensor::zeros({1, n + 1})}, -2);
             // layout: #163 step 2
-            const Zonotope flat = detail::zonotope_of_columns(Tensor::zeros({n, 1}), G);
+            const Zonotope flat = cora::detail::zonotope_of_columns(Tensor::zeros({n, 1}), G);
             aux_check(flat, rnd.vector(n), false);
             aux_check(flat, Tensor::concat({rnd.vector(n - 1), Tensor::zeros({1, 1})}, -2), false);
         }

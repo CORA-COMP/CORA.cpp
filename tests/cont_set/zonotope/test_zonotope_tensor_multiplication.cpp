@@ -47,12 +47,14 @@ void the_image_of_the_set_is_enclosed(const std::string &b) {
     const int64_t columns = list.comb.size();
     check(R.nr_generators() == columns, b + ": one column per sorted triple");
     const Tensor points = Z.rand_point(30, rng);
-    const std::vector<double> tensor = M.data(), H = R.generators().data();
+    const std::vector<double> tensor = M.data(),
+                              H = R.generators().matrix_transpose().data(); // as columns
     for (int s = 0; s < 30; ++s) {
         const Tensor point = points.slice(-1, s, s + 1);
         const std::vector<double> x = point.data();
         // the coefficients b of x: G is square
-        const std::vector<double> bv = Z.generators().pinv().matmul(point).data();
+        const std::vector<double> bv =
+            Z.generators().matrix_transpose().pinv().matmul(point).data();
         for (int i = 0; i < n; ++i) {
             double image = 0, enclosed = 0;
             for (int j = 0; j < n; ++j)

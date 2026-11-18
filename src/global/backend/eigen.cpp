@@ -52,6 +52,15 @@ Shape aux_matrix_shape(const Shape &batch, int64_t rows, int64_t cols) {
     return s;
 }
 
+/// The shape of a center (batch..., n) as the row matrices (batch..., 1, n) it is in memory.
+Shape aux_row_shape(const Shape &c) {
+    Shape s;
+    for (int64_t i = 0; i + 1 < c.size(); ++i) s.push_back(c[i]);
+    s.push_back(1);
+    s.push_back(c.back());
+    return s;
+}
+
 /// Below this many multiplications a product is a plain loop: Eigen's setup costs more.
 constexpr int64_t kSmallProduct = 512;
 /// Below this much work (multiplications) Eigen keeps a product on one thread: 2 x its 50000 task.
@@ -243,13 +252,18 @@ Tensor::Ptr expm(const HostTensor<T> &a) {
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_linear_map(const HostTensor<T> &M, const HostTensor<T> &c, const HostTensor<T> &G) {
-    const auto product = [&](const HostTensor<T> &a) -> Tensor::Ptr {
-        const BatchPairs bp = host::batch_pairs(a.shape, M.shape, "zonotope_linear_map");
-        auto r = a.fresh(aux_matrix_shape(bp.batch, aux_rows(a.shape), aux_rows(M.shape)));
-        aux_products_bt(a.p, a.shape, M.p, M.shape, r->p, bp);
+    // a center (..., n) is the rows (..., 1, n) in memory; its image keeps the rank of c
+    const auto product = [&](const HostTensor<T> &a, bool center) -> Tensor::Ptr {
+        const Shape as = center ? aux_row_shape(a.shape) : a.shape;
+        const BatchPairs bp = host::batch_pairs(as, M.shape, "zonotope_linear_map");
+        Shape out = bp.batch;
+        if (!center) out.push_back(aux_rows(as));
+        out.push_back(aux_rows(M.shape));
+        auto r = a.fresh(out);
+        aux_products_bt(a.p, as, M.p, M.shape, r->p, bp);
         return r;
     };
-    return {product(c), product(G)};
+    return {product(c, true), product(G, false)};
 }
 
 // With M+ = max(M, 0), M- = min(M, 0): I M = [inf M+ + sup M-, sup M+ + inf M-]; M I likewise.
@@ -294,7 +308,9 @@ zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const 
     const BatchPairs bp = host::batch_pairs(inf.shape, G.shape, "zonotope_interval_map");
     const int64_t n = aux_rows(inf.shape), k = inf.shape.back(), m = aux_rows(G.shape);
     const int64_t count = bp.batch.numel();
-    auto Tc = c.fresh(aux_matrix_shape(bp.batch, 1, n));
+    Shape tc = bp.batch; // the image of the center (..., n)
+    tc.push_back(n);
+    auto Tc = c.fresh(tc);
     auto TG = G.fresh(aux_matrix_shape(bp.batch, m + n, n));
     T *t = aux_scratch<T>(2 * n * k + k + n), *s = t + n * k, *reach = s + n * k, *box = reach + k;
     const long long work = (long long)count * n * k * (m + 2);

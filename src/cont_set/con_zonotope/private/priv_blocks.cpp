@@ -12,6 +12,7 @@
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/blocks.h"
 #include "global/format.h"
 
@@ -83,7 +84,7 @@ ConZonotope priv_compact(const ConZonotope &cz) {
 
 ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
                               const std::optional<Tensor> &t) {
-    auto [c, G] = Tensor::zonotope_linear_map(M, cz.c(), cz.generators());
+    auto [c, G] = detail::linear_map_columns(M, cz.c(), cz.generators());
     if (t) c = c + *t;
     return {c, G, cz.factor_polytope()};
 }

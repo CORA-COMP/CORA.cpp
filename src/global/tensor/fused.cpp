@@ -48,14 +48,15 @@ void aux_require_bounds(const Tensor &inf, const Tensor &sup, const char *op) {
                   std::string("CoraTensor::") + op + ": the bounds differ in shape");
 }
 
-/// The batch axes (all but the last two) of matrices, broadcast as in numpy; no heap memory.
-Shape aux_common_batch(std::initializer_list<const Tensor *> ts, const char *op) {
+/// The batch axes of centers (..., n) and matrices (..., m, n), broadcast as in numpy; a tensor of
+/// rank r has r - 1 element axes if `vector` holds for it, else 2. No heap memory.
+Shape aux_common_batch(std::initializer_list<std::pair<const Tensor *, bool>> ts, const char *op) {
     int64_t rank = 0;
-    for (const Tensor *t : ts) rank = std::max<int64_t>(rank, t->ndim() - 2);
+    for (const auto &[t, vector] : ts) rank = std::max<int64_t>(rank, t->ndim() - (vector ? 1 : 2));
     Shape out;
     for (int64_t i = 0; i < rank; ++i) out.push_back(1);
-    for (const Tensor *t : ts) {
-        const int64_t r = t->ndim() - 2;
+    for (const auto &[t, vector] : ts) {
+        const int64_t r = t->ndim() - (vector ? 1 : 2);
         for (int64_t i = 0; i < r; ++i) {
             int64_t &o = out[rank - r + i];
             const int64_t d = t->shape()[i];
@@ -68,10 +69,11 @@ Shape aux_common_batch(std::initializer_list<const Tensor *> ts, const char *op)
     return out;
 }
 
-/// t with the batch axes `batch` before its last two, broadcast where they differ.
-Tensor aux_with_batch(const Tensor &t, const Shape &batch) {
+/// t with the batch axes `batch` before its last one (a center) or two, broadcast where they
+/// differ.
+Tensor aux_with_batch(const Tensor &t, const Shape &batch, bool vector = false) {
     Shape target = batch;
-    target.push_back(t.size(-2));
+    if (!vector) target.push_back(t.size(-2));
     target.push_back(t.size(-1));
     return t.shape() == target ? t : t.broadcast_to(target);
 }
@@ -133,7 +135,7 @@ Tensor::Ptr Tensor::Impl::abs_sum() const { return derived::abs_sum(Tensor(self(
 std::pair<Tensor, Tensor> derived::zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                        const Tensor &G) {
     const Tensor Mt = M.matrix_transpose();
-    return {c.matmul(Mt), G.matmul(Mt)};
+    return {c.expand_dims(-2).matmul(Mt).squeeze(-2), G.matmul(Mt)}; // c as a row (..., 1, n)
 }
 
 // T maps the zonotope; the box is R (|c| + sum|G|), R = max(|inf - T|, |sup - T|), as CORALean.
@@ -141,16 +143,17 @@ std::pair<Tensor, Tensor> derived::zonotope_interval_map(const Tensor &inf, cons
                                                          const Tensor &c, const Tensor &G) {
     const Tensor T = (inf + sup) * 0.5;
     const Tensor R = (inf - T).abs().maximum((sup - T).abs());
-    const Tensor reach = c.abs() + G.abs().sum(-2, true);
+    const Tensor cr = c.expand_dims(-2); // the center as a row (..., 1, n)
+    const Tensor reach = cr.abs() + G.abs().sum(-2, true);
     const Tensor box = R.multiply(reach).sum(-1, true);
     const Tensor Tt = T.matrix_transpose();
-    return {c.matmul(Tt), Tensor::concat({G.matmul(Tt), box.diag()}, -2)};
+    return {cr.matmul(Tt).squeeze(-2), Tensor::concat({G.matmul(Tt), box.diag()}, -2)};
 }
 
 std::pair<Tensor, Tensor> derived::zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
                                                                const Tensor &c2, const Tensor &G2) {
     const Tensor mean = (G1 + G2) * 0.5, spread = (G1 - G2) * 0.5, shift = (c1 - c2) * 0.5;
-    return {(c1 + c2) * 0.5, Tensor::concat({mean, spread, shift}, -2)};
+    return {(c1 + c2) * 0.5, Tensor::concat({mean, spread, shift.expand_dims(-2)}, -2)};
 }
 
 // Entry (i, j) sums over q the smaller (larger) of inf_iq m_qj and sup_iq m_qj, as (.., n, q, m).
@@ -179,15 +182,15 @@ Tensor derived::abs_sum(const Tensor &x) { return x.abs().sum(-1, true); }
 
 // The Front End -----------------------------------------------------------------------------------
 
-// The operands checked, then the backend's version on the center as a row (..., 1, n).
+// The operands checked, then the backend's version on the centers (..., n) and generator rows.
 std::pair<Tensor, Tensor> Tensor::zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                       const Tensor &G) {
     detail::check_pair(M, c, "zonotope_linear_map");
     detail::check_pair(M, G, "zonotope_linear_map");
     aux_require_matrix(M, "zonotope_linear_map");
     aux_require_rows(c, G, M.size(-1), "zonotope_linear_map");
-    const auto [Mc, MG] = M.impl().zonotope_linear_map(c.expand_dims(-2).impl(), G.impl());
-    return {Tensor(Mc).squeeze(-2), Tensor(MG)};
+    const auto [Mc, MG] = M.impl().zonotope_linear_map(c.impl(), G.impl());
+    return {Tensor(Mc), Tensor(MG)};
 }
 
 // The bounds agree in shape, the inner sizes of the product match.
@@ -197,9 +200,8 @@ std::pair<Tensor, Tensor> Tensor::zonotope_interval_map(const Tensor &inf, const
     detail::check_pair(inf, c, "zonotope_interval_map");
     detail::check_pair(inf, G, "zonotope_interval_map");
     aux_require_rows(c, G, inf.size(-1), "zonotope_interval_map");
-    const auto [Tc, TG] =
-        inf.impl().zonotope_interval_map(sup.impl(), c.expand_dims(-2).impl(), G.impl());
-    return {Tensor(Tc).squeeze(-2), Tensor(TG)};
+    const auto [Tc, TG] = inf.impl().zonotope_interval_map(sup.impl(), c.impl(), G.impl());
+    return {Tensor(Tc), Tensor(TG)};
 }
 
 std::pair<Tensor, Tensor> Tensor::zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
@@ -215,12 +217,12 @@ std::pair<Tensor, Tensor> Tensor::zonotope_linear_combination(const Tensor &c1, 
                   "CoraTensor::zonotope_linear_combination: needs centers (..., n) and "
                   "generators (..., m, n) alike");
     // the shift (c1 - c2)/2 becomes a generator: all four take one batch, broadcast
-    const Tensor r1 = c1.expand_dims(-2), r2 = c2.expand_dims(-2);
-    const Shape batch = aux_common_batch({&r1, &G1, &r2, &G2}, "zonotope_linear_combination");
-    const Tensor a = aux_with_batch(r1, batch), A = aux_with_batch(G1, batch);
-    const Tensor b = aux_with_batch(r2, batch), B = aux_with_batch(G2, batch);
+    const Shape batch = aux_common_batch({{&c1, true}, {&G1, false}, {&c2, true}, {&G2, false}},
+                                         "zonotope_linear_combination");
+    const Tensor a = aux_with_batch(c1, batch, true), A = aux_with_batch(G1, batch);
+    const Tensor b = aux_with_batch(c2, batch, true), B = aux_with_batch(G2, batch);
     const auto [c, G] = a.impl().zonotope_linear_combination(A.impl(), b.impl(), B.impl());
-    return {Tensor(c).squeeze(-2), Tensor(G)};
+    return {Tensor(c), Tensor(G)};
 }
 
 // The interval products: bounds of one shape, a real matrix M, and matching inner sizes

@@ -24,21 +24,21 @@ namespace {
 /// Member i of the result is the enclosure of member i of both bundles; a zonotope meets every one.
 void member_by_member(const std::string &b) {
     const Zonotope A1(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        A2(column({1.0, 0.0}), Tensor({{1.0}, {1.0}})),
-        B1(column({4.0, 0.0}), Tensor({{1.0}, {0.5}})),
+        A2(column({1.0, 0.0}), Tensor({{1.0, 1.0}})), B1(column({4.0, 0.0}), Tensor({{1.0, 0.5}})),
         B2(column({0.0, 3.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const ZonoBundle R = ZonoBundle({A1, A2}).enclose(ZonoBundle({B1, B2}));
     check(R.parallel_sets() == 2, b + ": two members");
     // layout: #163 step 2
-    check(close(detail::cora_generators(R.zonotopes()[0]), detail::cora_generators(A1.enclose(B1)),
-                0) &&
+    check(close(cora::detail::cora_generators(R.zonotopes()[0]),
+                cora::detail::cora_generators(A1.enclose(B1)), 0) &&
               // layout: #163 step 2
-              close(detail::cora_center(R.zonotopes()[1]), detail::cora_center(A2.enclose(B2)), 0),
+              close(cora::detail::cora_center(R.zonotopes()[1]),
+                    cora::detail::cora_center(A2.enclose(B2)), 0),
           b + ": the members enclosed pairwise");
     const ZonoBundle with_zonotope = ZonoBundle({A1, A2}).enclose(B1);
     // layout: #163 step 2
-    check(close(detail::cora_generators(with_zonotope.zonotopes()[1]),
-                detail::cora_generators(A2.enclose(B1)), 0),
+    check(close(cora::detail::cora_generators(with_zonotope.zonotopes()[1]),
+                cora::detail::cora_generators(A2.enclose(B1)), 0),
           b + ": a zonotope against every member");
     const Set S = Set(ZonoBundle({A1, A2})).get().enclose(Set(ZonoBundle({B1, B2})));
     check(S.is<ZonoBundle>() && S.as<ZonoBundle>().parallel_sets() == 2,
@@ -49,22 +49,21 @@ void member_by_member(const std::string &b) {
 /// zonotope of its box (any number of members).
 void with_a_map(const std::string &b) {
     const Zonotope A1(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        A2(column({1.0, 0.0}), Tensor({{1.0}, {1.0}})),
-        Zp(column({0.5, 0.5}), Tensor({{0.1}, {0.0}}));
+        A2(column({1.0, 0.0}), Tensor({{1.0, 1.0}})), Zp(column({0.5, 0.5}), Tensor({{0.1, 0.0}}));
     const Tensor M({{0.0, -1.0}, {1.0, 0.0}});
     const ZonoBundle bundle({A1, A2});
     const ZonoBundle R = bundle.enclose(M, Zp);
     // layout: #163 step 2
-    check(close(detail::cora_generators(R.zonotopes()[1]),
-                detail::cora_generators(A2.enclose(M, Zp)), 0),
+    check(close(cora::detail::cora_generators(R.zonotopes()[1]),
+                cora::detail::cora_generators(A2.enclose(M, Zp)), 0),
           b + ": M Z + Zplus");
     const ZonoBundle shift({Zp, Zp, Zp});
     const ZonoBundle R2 = bundle.enclose(M, shift);
     // layout: #163 step 2
     check(R2.parallel_sets() == 2 &&
-              close(detail::cora_center(R2.zonotopes()[0]),
+              close(cora::detail::cora_center(R2.zonotopes()[0]),
                     // layout: #163 step 2
-                    detail::cora_center(A1.enclose(M, shift.interval().zonotope())), 0),
+                    cora::detail::cora_center(A1.enclose(M, shift.interval().zonotope())), 0),
           b + ": a bundle shifts as its box");
 }
 

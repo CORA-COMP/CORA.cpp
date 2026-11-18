@@ -36,20 +36,21 @@ void compact_of_a_zonotope(const std::string &b) {
     const Zonotope zeros = S.compact().as<Zonotope>(), all = S.compact("all").as<Zonotope>(),
                    aligned = S.compact("aligned").as<Zonotope>();
     // layout: #163 step 2
-    check(detail::cora_generators(zeros).shape() == std::vector<int64_t>({2, 3}),
+    check(cora::detail::cora_generators(zeros).shape() == std::vector<int64_t>({2, 3}),
           b + ": zeros dropped");
     // layout: #163 step 2
-    check(
-        test::close(detail::cora_generators(zeros), detail::cora_generators(Z.compact("zeros")), 0),
-        b + ": the default");
+    check(test::close(cora::detail::cora_generators(zeros),
+                      cora::detail::cora_generators(Z.compact("zeros")), 0),
+          b + ": the default");
     // layout: #163 step 2
-    check(detail::cora_generators(all).shape() == std::vector<int64_t>({2, 2}),
+    check(cora::detail::cora_generators(all).shape() == std::vector<int64_t>({2, 2}),
           b + ": parallel merged");
     // layout: #163 step 2
-    check(test::close(detail::cora_generators(all), detail::cora_generators(Z.compact("all")), 0),
+    check(test::close(cora::detail::cora_generators(all),
+                      cora::detail::cora_generators(Z.compact("all")), 0),
           b + ": all, as the class");
     // layout: #163 step 2
-    check(test::close(detail::cora_generators(aligned), detail::cora_generators(Z), 0),
+    check(test::close(cora::detail::cora_generators(aligned), cora::detail::cora_generators(Z), 0),
           b + ": aligned keeps them");
     // tol: a generator of length 0.5 is zero for tol 0.6
     const Zonotope small(column({0.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 1.0}, {2, 2}));

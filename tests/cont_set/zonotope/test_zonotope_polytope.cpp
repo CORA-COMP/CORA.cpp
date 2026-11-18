@@ -35,7 +35,8 @@ void facets_bound_the_zonotope(const std::string &b) {
         check(P.contains(Z.rand_point(30, rng, "extreme"), "exact", numerics::kPolytopeFacet) &&
                   P.contains(Z.center().expand_dims(-1)),
               b + ": the zonotope is inside, " + std::to_string(n) + "D");
-        const Tensor outside = Z.center() + Z.generators().abs().sum(-1, true) * 1.1 + 1.0;
+        const Tensor outside =
+            (Z.center() + Z.generators().abs().sum(-2) * 1.1 + 1.0).expand_dims(-1);
         check(!P.contains(outside),
               b + ": a point far away is outside, " + std::to_string(n) + "D");
     }

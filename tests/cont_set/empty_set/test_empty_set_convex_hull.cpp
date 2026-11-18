@@ -35,11 +35,11 @@ void the_hull_is_the_other_set(const std::string &b) {
         for (const Set &H : {E.convex_hull(Set(Z)), convex_hull(E, Z), convex_hull(Z, E)}) {
             // layout: #163 step 2
             check(H.is<Zonotope>() &&
-                      test::close(H.as<Zonotope>().center().expand_dims(-1), detail::cora_center(Z),
-                                  0) &&
+                      test::close(H.as<Zonotope>().center().expand_dims(-1),
+                                  cora::detail::cora_center(Z), 0) &&
                       // layout: #163 step 2
                       test::close(H.as<Zonotope>().generators().matrix_transpose(),
-                                  detail::cora_generators(Z), 0),
+                                  cora::detail::cora_generators(Z), 0),
                   b + ": random zonotope");
         }
     }

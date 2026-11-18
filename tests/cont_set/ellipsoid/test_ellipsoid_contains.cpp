@@ -77,19 +77,20 @@ void contains_property(const std::string &b) {
         bool all = true;
         for (int mask = 0; mask < 16; ++mask) {
             // layout: #163 step 2
-            Tensor v = detail::cora_center(Z);
+            Tensor v = cora::detail::cora_center(Z);
             for (int j = 0; j < 4; ++j)
                 // layout: #163 step 2
-                v = v +
-                    detail::cora_generators(Z).slice(1, j, j + 1) * ((mask >> j) & 1 ? 1.0 : -1.0);
+                v = v + cora::detail::cora_generators(Z).slice(1, j, j + 1) *
+                            ((mask >> j) & 1 ? 1.0 : -1.0);
             all = all && E.contains(v);
         }
         check(E.contains(Z) == all, b + ": the search agrees with the vertices");
         // layout: #163 step 2
-        const Interval I(
-            detail::cora_center(Z) - detail::cora_generators(Z).abs().sum(1, true) * 0.5,
-            // layout: #163 step 2
-            detail::cora_center(Z) + detail::cora_generators(Z).abs().sum(1, true) * 0.5);
+        const Interval I(cora::detail::cora_center(Z) -
+                             cora::detail::cora_generators(Z).abs().sum(1, true) * 0.5,
+                         // layout: #163 step 2
+                         cora::detail::cora_center(Z) +
+                             cora::detail::cora_generators(Z).abs().sum(1, true) * 0.5);
         bool corners = true;
         for (int mask = 0; mask < 8; ++mask) {
             std::vector<double> sel;
