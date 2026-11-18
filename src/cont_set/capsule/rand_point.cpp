@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@capsule/randPoint_.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -49,23 +49,23 @@ Tensor Capsule::rand_point_impl(int64_t N, Rng &rng, const std::string &type) co
     if (is_empty()) CORA_FAIL(Error::empty_set, "rand_point: the capsule is empty");
     // random numbers in the shape (..., k, N), drawn on the host and moved to the tensor's backend
     const auto draw = [&](int64_t rows, double low) {
-        Shape shape = c_.shape();
+        Shape shape = cc().shape();
         shape[shape.size() - 2] = rows;
         shape.back() = N;
         std::vector<double> values(static_cast<std::size_t>(shape.numel()));
         rng.uniform(values.data(), values.size(), low, 1.0);
-        return Tensor::like(c_, values, shape);
+        return Tensor::like(cc(), values, shape);
     };
     // a random direction in the unit cube, normalized
     const Tensor d = draw(dim(), -1.0);
     const Tensor direction = d.divide(priv_norm(d));
     if (type == "standard") {
-        const Tensor axis = g_.multiply(draw(1, -1.0)), ball = r_.multiply(draw(1, 0.0));
-        return c_.add(axis).add(direction.multiply(ball));
+        const Tensor axis = gc().multiply(draw(1, -1.0)), ball = r_.multiply(draw(1, 0.0));
+        return cc().add(axis).add(direction.multiply(ball));
     }
     if (type == "extreme") {
-        const Tensor along = g_.matrix_transpose().matmul(direction).sign();
-        return c_.add(g_.multiply(along)).add(direction.multiply(r_));
+        const Tensor along = gc().matrix_transpose().matmul(direction).sign();
+        return cc().add(gc().multiply(along)).add(direction.multiply(r_));
     }
     CORA_FAIL(Error::no_specific_alg, "rand_point: unknown type '" + type + "'");
 }

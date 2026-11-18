@@ -2928,10 +2928,10 @@ void bind_capsule(py::module_ &m) {
             "A capsule that contains the points (..., n, N): mean, farthest point, largest "
             "distance from the axis")
         .def_property_readonly(
-            "c", [](const Capsule &C) { return vector(C.c()); }, "The stored center c (..., n)")
+            "c", [](const Capsule &C) { return matrix(C.c()); }, "The stored center c (..., n)")
         // the stored center, generator and radius of the capsule
         .def_property_readonly(
-            "generator", [](const Capsule &C) { return vector(C.generator()); },
+            "generator", [](const Capsule &C) { return matrix(C.generator()); },
             "The generator g (..., n)")
         .def_property_readonly(
             "r", [](const Capsule &C) { return scalar(C.r()); },
@@ -3027,7 +3027,7 @@ void bind_poly_zonotope(py::module_ &m) {
              "exponents E (p, h; default the identity) and identifiers id (p; default 1..p)")
         // the stored parts as arrays
         .def_property_readonly(
-            "c", [](const PolyZonotope &P) { return vector(P.center()); }, "The center c (n)")
+            "c", [](const PolyZonotope &P) { return matrix(P.center()); }, "The center c (n)")
         // layout: #163 step 2 - the rows seen as CORA's columns
         .def_property_readonly(
             "G", [](const PolyZonotope &P) { return matrix(P.generators().matrix_transpose()); },

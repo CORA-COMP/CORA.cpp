@@ -49,7 +49,8 @@ detail::Refusal aux_zonotope_refusal(const Capsule &C, const Zonotope &Z) {
 /// nonempty.
 bool aux_points_inside(const Capsule &C, const Tensor &p, double tol) {
     if (p.size(-1) == 0) return true;
-    const Tensor distance = priv_axis_distance(C.c(), C.generator(), p);
+    const Tensor distance =
+        priv_axis_distance(C.c().expand_dims(-1), C.generator().expand_dims(-1), p);
     const Tensor inside = priv_at_most(distance, C.r(), tol);
     return priv_all((1.0 - priv_empty_mask(C.r())).multiply(inside).min(-1, true));
 }
@@ -61,7 +62,7 @@ bool aux_points_inside(const Capsule &C, const Tensor &p, double tol) {
 
 bool Capsule::contains(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "contains");
     const detail::Refusal refusal = priv_points_refusal(*this, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     return aux_points_inside(*this, p, tol);
@@ -69,14 +70,14 @@ bool Capsule::contains(const Tensor &p, Tol tol_arg) const {
 
 bool Capsule::contains(const Capsule &S, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "contains");
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
         return "contains: the capsules differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S.dim());
     });
     // the ends of the axis of S, each with the radius of S
-    const Tensor ends = Tensor::concat({S.c_.add(S.g_), S.c_.subtract(S.g_)}, -1);
-    const Tensor reach = priv_axis_distance(c_, g_, ends).add(S.r_);
+    const Tensor ends = Tensor::concat({S.cc().add(S.gc()), S.cc().subtract(S.gc())}, -1);
+    const Tensor reach = priv_axis_distance(cc(), gc(), ends).add(S.r_);
     const Tensor inside = priv_at_most(reach, r_, tol).min(-1, true);
     // the empty capsule is inside every capsule, and holds only the empty one
     const Tensor mine = priv_empty_mask(r_), theirs = priv_empty_mask(S.r_);
@@ -85,7 +86,7 @@ bool Capsule::contains(const Capsule &S, Tol tol_arg) const {
 
 bool Capsule::contains(const Zonotope &Z, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "contains");
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a convex set holds a zonotope exactly if it holds its corners
@@ -94,7 +95,7 @@ bool Capsule::contains(const Zonotope &Z, Tol tol_arg) const {
 
 bool Capsule::contains(const Interval &I, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "contains");
     CORA_CHECK(I.dim() == dim() && (I.is_empty() || I.inf().shape().back() == 1),
                Error::dimension_mismatch, [&] {
                    return "contains: the interval must be a box of dimension " +

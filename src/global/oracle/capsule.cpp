@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/capsule.h"
@@ -35,8 +35,11 @@ Capsule aux_set(const char *op, std::initializer_list<Operand> operands) {
 // Construction and crossing ------------------------------------------------------------------
 
 // the wire form of an exact capsule is {c, g, r}, r the text of a number
-Capsule::Capsule(const cora::Capsule &C) : dtype_(Tensor(C.c()).dtype()), json_(Json::object()) {
-    json_.set("c", Tensor(C.c()).to_json()).set("g", Tensor(C.generator()).to_json());
+Capsule::Capsule(const cora::Capsule &C)
+    : dtype_(Tensor(C.c().expand_dims(-1)).dtype()), json_(Json::object()) {
+    // CORA's columns (n, 1) of the stored vectors
+    json_.set("c", Tensor(C.c().expand_dims(-1)).to_json())
+        .set("g", Tensor(C.generator().expand_dims(-1)).to_json());
     json_.set("r", Json(Tensor::encode(C.r().item())));
 }
 

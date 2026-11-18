@@ -3,9 +3,9 @@
 // CORA: contSet/@capsule/enclosePoints.m
 // PROPERTY: contSet/@capsule/enclosePoints.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -43,7 +43,7 @@ void enclose_points_known(const std::string &b) {
     // a batch of clouds
     const Tensor clouds = Tensor::from_data({0, 2, 0, 0, 1, 3, 0, 0}, {2, 2, 2});
     const Capsule batch = Capsule::enclose_points(clouds);
-    check(batch.c().shape() == Shape{2, 2, 1} && close(batch.c(), {1, 0, 2, 0}, 0),
+    check(batch.c().shape() == Shape{2, 2} && close(batch.c(), {1, 0, 2, 0}, 0),
           b + ": a batch of clouds");
 }
 

@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@capsule/vertices_.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -30,7 +30,7 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 std::vector<Polygon> Capsule::vertices_impl() const {
-    const std::vector<double> cs = c_.data(), gs = g_.data(), rs = r_.data();
+    const std::vector<double> cs = cc().data(), gs = gc().data(), rs = r_.data();
     constexpr int kPoints = 500; // per half circle, as CORA
     std::vector<Polygon> out;
     for (std::size_t b = 0; b < rs.size(); ++b) {

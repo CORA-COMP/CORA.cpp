@@ -39,13 +39,21 @@ namespace {
 /// Whether every entry of t is finite.
 bool aux_finite(const Tensor &t) { return priv_all(t.detach().isfinite()); }
 
-/// The shape of the radius that goes with a center of this shape: (..., 1, 1).
+/// The shape of the radius that goes with a center (..., n): (..., 1, 1).
 Shape aux_radius_shape(const Tensor &c) {
     std::vector<int64_t> shape = c.shape();
-    if (shape.size() < 2) return Shape{1, 1};
+    if (shape.empty()) return Shape{1, 1};
     shape.back() = 1;
-    shape[shape.size() - 2] = 1;
+    shape.push_back(1);
     return Shape(shape);
+}
+
+/// The vector (..., n) of a center or generator given as a column (..., n, 1): a column when the
+/// radius r (..., 1, 1) has as many dims, or, without a radius tensor, when the last dim is 1.
+Tensor aux_vector(const Tensor &v, const Tensor &r) {
+    if (!v.defined() || v.ndim() < 2 || v.size(-1) != 1) return v;
+    if (r.defined() && v.ndim() != r.ndim()) return v;
+    return v.squeeze(-1);
 }
 
 /// A tensor of the radius' shape like c, filled with value; none for an undefined c, which the
@@ -61,13 +69,12 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &g, const Tensor &r) {
     };
     if (!c.defined() || !g.defined() || !r.defined())
         return wrong_value("the center, the generator and the radius must be tensors");
-    // the center and the generator are columns of at least one row
-    for (const Tensor *column : {&c, &g})
-        if (column->ndim() < 2 || column->shape().back() != 1 ||
-            column->shape()[column->ndim() - 2] < 1)
-            return wrong_value("the center and the generator must be nonempty columns (..., n, 1), "
+    // the center and the generator are vectors of at least one entry
+    for (const Tensor *vector : {&c, &g})
+        if (vector->ndim() < 1 || vector->shape().back() < 1)
+            return wrong_value("the center and the generator must be nonempty vectors (..., n), "
                                "got the shape " +
-                               shape_text(column->shape()));
+                               shape_text(vector->shape()));
     if (c.shape() != g.shape())
         return detail::Refusal(
             std::pair{Error::wrong_input_in_constructor,
@@ -91,20 +98,21 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &g, const Tensor &r) {
 
 // Constructor -------------------------------------------------------------------------------------
 
-Capsule::Capsule(Unchecked, Tensor c, Tensor g, Tensor r)
-    : ContSet(kClassId), c_(std::move(c)), g_(std::move(g)), r_(std::move(r)) {}
+Capsule::Capsule(Unchecked, const Tensor &c, const Tensor &g, Tensor r)
+    : ContSet(kClassId), c_(c.squeeze(-1)), g_(g.squeeze(-1)), r_(std::move(r)) {}
 
-Capsule::Capsule(const Tensor &c, Tensor g, Tensor r)
-    : ContSet(kClassId), c_(c), g_(std::move(g)), r_(std::move(r)) {
+Capsule::Capsule(const Tensor &c, const Tensor &g, Tensor r)
+    : ContSet(kClassId), c_(aux_vector(c, r)), g_(aux_vector(g, r)), r_(std::move(r)) {
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(c_, g_, r_);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
 }
 
-Capsule::Capsule(const Tensor &c, Tensor g, double r)
-    : Capsule(c, std::move(g), aux_radius_like(c, r)) {}
+Capsule::Capsule(const Tensor &c, const Tensor &g, double r)
+    : Capsule(aux_vector(c, Tensor()), aux_vector(g, Tensor()),
+              aux_radius_like(aux_vector(c, Tensor()), r)) {}
 
-Capsule::Capsule(const Tensor &c, Tensor g) : Capsule(c, std::move(g), 0.0) {}
+Capsule::Capsule(const Tensor &c, const Tensor &g) : Capsule(c, g, 0.0) {}
 
 Capsule::Capsule(const Tensor &c) : Capsule(c, c.defined() ? c.zeros_like() : Tensor(), 0.0) {}
 
@@ -124,8 +132,8 @@ Capsule::Capsule(const Interval &I) : ContSet(kClassId) {
     const Tensor on_axis = rad.arange_like(n).reshape({n, 1}).equal(widest);
     const Tensor others =
         rad.multiply(on_axis.multiply(rad.ones_like()).negative().add(rad.ones_like()));
-    c_ = I.center();
-    g_ = rad.multiply(on_axis);
+    c_ = I.center().squeeze(-1);
+    g_ = rad.multiply(on_axis).squeeze(-1);
     r_ = priv_norm(others);
 }
 
@@ -143,8 +151,8 @@ Capsule::Capsule(const Zonotope &Z) : ContSet(kClassId) {
     const Capsule rotated(Zonotope((Bt.matmul(Z.center().expand_dims(-1))).squeeze(-1),
                                    Bt.matmul(G).matrix_transpose())
                               .interval());
-    c_ = B.matmul(rotated.c_);
-    g_ = B.matmul(rotated.g_);
+    c_ = B.matmul(rotated.cc()).squeeze(-1);
+    g_ = B.matmul(rotated.gc()).squeeze(-1);
     r_ = rotated.r_;
 }
 

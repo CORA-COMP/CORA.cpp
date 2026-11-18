@@ -64,10 +64,11 @@ void batches(const std::string &b) {
 /// What the constructor refuses, and the same input with the checks off.
 void refusals() {
     const Tensor c = column({1.0, 2.0}), g = column({3.0, 4.0});
-    check(test::raises([&] { Capsule(Tensor({{1.0, 2.0}})); }, Error::wrong_value),
-          "Capsule: the center is a column");
-    check(test::raises([&] { Capsule(c, Tensor({{1.0, 2.0}})); }, Error::wrong_value),
-          "Capsule: the generator is a column");
+    check(test::raises([&] { Capsule(Tensor::zeros({0})); }, Error::wrong_value),
+          "Capsule: the center is a nonempty vector");
+    check(test::raises([&] { Capsule(c, Tensor({1.0, 2.0, 3.0})); },
+                       Error::wrong_input_in_constructor),
+          "Capsule: the generator has the shape of the center");
     check(test::raises([&] { Capsule(c, column({1.0})); }, Error::wrong_input_in_constructor),
           "Capsule: the generator has the dimension of the center");
     check(test::raises([&] { Capsule(c, g, -0.5); }, Error::wrong_value),

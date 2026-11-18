@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@capsule/volume_.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -38,7 +38,7 @@ Tensor Capsule::volume() const {
     // the clipped radius keeps the empty member's marker out of the powers (and their gradients)
     const Tensor r = r_.maximum(0.0);
     const Tensor ball = r.pow(n) * unit,
-                 cylinder = (r.pow(n - 1) * unit_less).multiply(priv_norm(g_) * 2.0);
+                 cylinder = (r.pow(n - 1) * unit_less).multiply(priv_norm(gc()) * 2.0);
     return Tensor::where(priv_empty_mask(r_), r_.zeros_like(), ball.add(cylinder));
 }
 

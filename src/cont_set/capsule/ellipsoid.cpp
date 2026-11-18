@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@capsule/ellipsoid.m
 // CORA authors: Victor Gassmann, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
@@ -37,11 +37,11 @@ Ellipsoid Capsule::ellipsoid(const std::string &method) const {
                    return "ellipsoid: the method must be 'exact', 'outer' or 'inner', got '" +
                           method + "'";
                });
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(cc().ndim() == 2, Error::not_supported,
                [] { return std::string("ellipsoid: it supports a single capsule, not a batch"); });
     if (is_empty()) return Ellipsoid::empty(dim());
     // CORA ignores the method for a capsule without generator, which is a ball
-    const bool ball = priv_all(g_.equal(g_.zeros_like()));
+    const bool ball = priv_all(gc().equal(gc().zeros_like()));
     if (!ball) {
         CORA_CHECK(method != "exact", Error::no_exact_alg, [] {
             return std::string(
@@ -50,7 +50,7 @@ Ellipsoid Capsule::ellipsoid(const std::string &method) const {
         CORA_FAIL(Error::not_supported, "ellipsoid: the method '" + method +
                                             "' needs the union of two ellipsoids (an SDP)");
     }
-    return {r_.square().multiply(c_.eye_like(dim())), c_};
+    return {r_.square().multiply(cc().eye_like(dim())), cc()};
 }
 
 } // namespace cora

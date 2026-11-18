@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -34,10 +34,12 @@ Capsule Capsule::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(dim()) +
                " columns (the dimension of C), got the shape " + shape_text(M.shape());
     });
-    const auto [c, g] = detail::linear_map_columns(M, c_, g_);
+    // c M' and g M' of the vectors, g as a generator row
+    const auto [c, g] = Tensor::zonotope_linear_map(M, c_, g_.expand_dims(-2));
     const Tensor scaled = r_.multiply(M.matrix_norm(Tensor::Norm::fro));
     // the radius -1 of the empty capsule is a marker, not a length
-    return {Unchecked{}, c, g, Tensor::where(priv_empty_mask(r_), r_, scaled)};
+    return {Unchecked{}, c.expand_dims(-1), g.matrix_transpose(),
+            Tensor::where(priv_empty_mask(r_), r_, scaled)};
 }
 
 Set Capsule::linear_map_impl(const Tensor &M) const { return linear_map(M); }

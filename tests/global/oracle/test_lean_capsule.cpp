@@ -31,9 +31,9 @@
 // ORACLE: contSet/@capsule/reduce.m
 // ORACLE: contSet/@capsule/representsa_.m
 // ORACLE: contSet/@capsule/zonotope.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -132,7 +132,8 @@ int main() {
     oracle::run("capsule.isIntersecting", [](oracle::Random &rnd) {
         for (const double spread : {1.0, 6.0}) {
             const Capsule a = rnd.capsule(3);
-            const Capsule b(a.c() + rnd.vector(3) * spread, rnd.vector(3), rnd.uniform(0.1, 1.0));
+            const Capsule b(a.c().expand_dims(-1) + rnd.vector(3) * spread, rnd.vector(3),
+                            rnd.uniform(0.1, 1.0));
             oracle::check(a.is_intersecting(b), lean::Capsule(a).is_intersecting(b));
         }
     });

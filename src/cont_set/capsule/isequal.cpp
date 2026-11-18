@@ -13,7 +13,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -29,12 +29,12 @@ namespace cora {
 
 bool Capsule::isequal(const Capsule &S, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "isequal");
     if (S.dim() != dim()) return false;
     const auto agree = [&](const Tensor &a, const Tensor &b) {
         return within_tol(a, b, tol).min(-2, true);
     };
-    const Tensor same = agree(c_, S.c_).multiply(agree(g_, S.g_)).multiply(agree(r_, S.r_));
+    const Tensor same = agree(cc(), S.cc()).multiply(agree(gc(), S.gc())).multiply(agree(r_, S.r_));
     const Tensor mine = priv_empty_mask(r_), theirs = priv_empty_mask(S.r_);
     // two empty capsules are equal whatever their other fields hold
     const Tensor both_empty = mine.multiply(theirs);

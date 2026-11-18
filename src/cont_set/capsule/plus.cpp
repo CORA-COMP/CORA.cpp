@@ -15,9 +15,9 @@
 //
 // CORA: contSet/@capsule/plus.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -39,13 +39,13 @@ Capsule Capsule::plus(const Capsule &S) const {
                std::to_string(S.dim());
     });
     // the squared lengths order the generators as the lengths do; on a tie ours stays
-    const Tensor mine = g_.square().sum(-2, true), theirs = S.g_.square().sum(-2, true);
+    const Tensor mine = gc().square().sum(-2, true), theirs = S.gc().square().sum(-2, true);
     const Tensor keep_ours = theirs.less_equal(mine);
-    const Tensor absorbed = Tensor::where(keep_ours, priv_norm(S.g_), priv_norm(g_));
+    const Tensor absorbed = Tensor::where(keep_ours, priv_norm(S.gc()), priv_norm(gc()));
     const Tensor r = r_.add(S.r_).add(absorbed);
     // either operand empty: the sum is empty, marked by the radius -1
     const Tensor empty = priv_empty_mask(r_).maximum(priv_empty_mask(S.r_));
-    return {Unchecked{}, c_.add(S.c_), Tensor::where(keep_ours, g_, S.g_),
+    return {Unchecked{}, cc().add(S.cc()), Tensor::where(keep_ours, gc(), S.gc()),
             Tensor::where(empty, r_.full_like(r_.shape(), -1.0), r)};
 }
 
@@ -55,7 +55,7 @@ Capsule Capsule::plus(const Tensor &v) const {
         return "plus: the vector must be a column of the dimension " + std::to_string(dim()) +
                ", got the shape " + shape_text(v.shape());
     });
-    return {Unchecked{}, c_.add(v), g_, r_};
+    return {Unchecked{}, cc().add(v), gc(), r_};
 }
 
 Capsule Capsule::plus(const Interval &I) const {
@@ -66,7 +66,7 @@ Capsule Capsule::plus(const Interval &I) const {
     });
     // the box widens the radius by that of the ball around it, the 2-norm of its radius
     const Tensor r = r_.add(I.rad().vector_norm(Tensor::Norm::two, -2, true));
-    return {Unchecked{}, c_.add(I.center()), g_, Tensor::where(priv_empty_mask(r_), r_, r)};
+    return {Unchecked{}, cc().add(I.center()), gc(), Tensor::where(priv_empty_mask(r_), r_, r)};
 }
 
 Capsule Capsule::plus(const Zonotope &Z) const { return plus(Z.interval()); }
