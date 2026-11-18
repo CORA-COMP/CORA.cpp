@@ -20,13 +20,14 @@
 // CORA: contSet/@levelSet/tightenDomain.m
 // CORA: specification/syntaxTree.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Zhuoling Li
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
 #include "global/format.h"
+#include "global/scalar_interval.h"
 
 #include <algorithm>
 #include <cmath>
@@ -45,37 +46,10 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
-/// A closed interval of doubles; empty if lo > hi.
-struct Iv {
-    double lo, hi;
-    bool empty() const { return lo > hi; }
-};
+using Iv = detail::ScalarInterval;
 
-Iv aux_meet(const Iv &a, const Iv &b) { return {std::max(a.lo, b.lo), std::min(a.hi, b.hi)}; }
-Iv aux_whole() { return {-kInf, kInf}; }
-Iv aux_neg(const Iv &a) { return {-a.hi, -a.lo}; }
-Iv aux_add(const Iv &a, const Iv &b) { return {a.lo + b.lo, a.hi + b.hi}; }
-Iv aux_sub(const Iv &a, const Iv &b) { return {a.lo - b.hi, a.hi - b.lo}; }
-
-/// The hull of the corner products, a corner 0 * Inf taken as 0.
-Iv aux_mul(const Iv &a, const Iv &b) {
-    double lo = kInf, hi = -kInf;
-    for (const double x : {a.lo, a.hi})
-        for (const double y : {b.lo, b.hi}) {
-            const double v = (x == 0.0 || y == 0.0) ? 0.0 : x * y;
-            lo = std::min(lo, v);
-            hi = std::max(hi, v);
-        }
-    return {lo, hi};
-}
-
-/// a / b for a divisor that excludes 0.
-Iv aux_div(const Iv &a, const Iv &b) { return aux_mul(a, {1.0 / b.hi, 1.0 / b.lo}); }
-
-bool aux_has_zero(const Iv &a) { return a.lo <= 0 && a.hi >= 0; }
-
-/// Widens by one ulp, against the rounding of a root or a logarithm.
-Iv aux_widen(const Iv &a) { return {std::nextafter(a.lo, -kInf), std::nextafter(a.hi, kInf)}; }
+/// a / b for a divisor that excludes 0, a corner 0 * Inf taken as 0.
+Iv aux_div(const Iv &a, const Iv &b) { return detail::times_zero_inf(a, {1.0 / b.hi, 1.0 / b.lo}); }
 
 /// The signed n-th root of x for odd n.
 double aux_root(double x, int n) {
@@ -119,39 +93,36 @@ class Contractor {
     /// Cuts the subtree to the values in `target`; false if it has none.
     bool backward(const Expr &e, const Iv &target) {
         // only the values the subtree takes over the box can reach the target
-        const Iv t = aux_meet(target, forward(e));
+        const Iv t = detail::meet(target, forward(e));
         if (t.empty()) return false;
         const ExprView v = e.view();
         // each operation inverts as far as it soundly can
         switch (v.op) {
         case ExprOp::var: {
             Iv &x = cut_[std::size_t(v.index)];
-            x = aux_meet(x, t);
+            x = detail::meet(x, t);
             return !x.empty();
         }
         case ExprOp::add:
-            return backward(v.a, aux_sub(t, forward(v.b))) &&
-                   backward(v.b, aux_sub(t, forward(v.a)));
+            return backward(v.a, t - forward(v.b)) && backward(v.b, t - forward(v.a));
         case ExprOp::sub:
-            return backward(v.a, aux_add(t, forward(v.b))) &&
-                   backward(v.b, aux_sub(forward(v.a), t));
+            return backward(v.a, t + forward(v.b)) && backward(v.b, forward(v.a) - t);
         case ExprOp::neg:
-            return backward(v.a, aux_neg(t));
+            return backward(v.a, -t);
         case ExprOp::mul:
             return backward(v.a,
-                            aux_has_zero(forward(v.b)) ? aux_whole() : aux_div(t, forward(v.b))) &&
-                   backward(v.b,
-                            aux_has_zero(forward(v.a)) ? aux_whole() : aux_div(t, forward(v.a)));
+                            forward(v.b).has_zero() ? Iv::whole() : aux_div(t, forward(v.b))) &&
+                   backward(v.b, forward(v.a).has_zero() ? Iv::whole() : aux_div(t, forward(v.a)));
         case ExprOp::div:
             // a = t * b; the divisor is left as it is
-            return backward(v.a, aux_mul(t, forward(v.b)));
+            return backward(v.a, detail::times_zero_inf(t, forward(v.b)));
         case ExprOp::pow:
             return backward_power(v, t);
         case ExprOp::rpow:
             return v.value == 0.5 ? backward_sqrt(v, t) : true;
         case ExprOp::exp:
             return t.hi > 0 &&
-                   backward(v.a, aux_widen({std::log(std::max(t.lo, 0.0)), std::log(t.hi)}));
+                   backward(v.a, detail::widen({std::log(std::max(t.lo, 0.0)), std::log(t.hi)}));
         default:
             // constants, sin, cos and tan: nothing to narrow
             return true;
@@ -162,14 +133,14 @@ class Contractor {
     bool backward_power(const ExprView &v, const Iv &t) {
         if (v.index < 1) return true;
         if (v.index % 2 == 1)
-            return backward(v.a, aux_widen({aux_root(t.lo, v.index), aux_root(t.hi, v.index)}));
-        const Iv nonneg = aux_meet(t, {0.0, kInf});
+            return backward(v.a, detail::widen({aux_root(t.lo, v.index), aux_root(t.hi, v.index)}));
+        const Iv nonneg = detail::meet(t, {0.0, kInf});
         if (nonneg.empty()) return false;
         const Iv r =
-            aux_widen({std::pow(nonneg.lo, 1.0 / v.index), std::pow(nonneg.hi, 1.0 / v.index)});
+            detail::widen({std::pow(nonneg.lo, 1.0 / v.index), std::pow(nonneg.hi, 1.0 / v.index)});
         // the operand is in [r.lo, r.hi] or in its mirror; take the hull of what the range allows
         const Iv a = forward(v.a);
-        const Iv pos = aux_meet(a, r), neg = aux_meet(a, aux_neg(r));
+        const Iv pos = detail::meet(a, r), neg = detail::meet(a, -r);
         if (pos.empty() && neg.empty()) return false;
         if (pos.empty()) return backward(v.a, neg);
         if (neg.empty()) return backward(v.a, pos);
@@ -178,9 +149,9 @@ class Contractor {
 
     /// sqrt(a) = t: a in [t.lo^2, t.hi^2] for t >= 0.
     bool backward_sqrt(const ExprView &v, const Iv &t) {
-        const Iv nonneg = aux_meet(t, {0.0, kInf});
+        const Iv nonneg = detail::meet(t, {0.0, kInf});
         if (nonneg.empty()) return false;
-        return backward(v.a, aux_widen({nonneg.lo * nonneg.lo, nonneg.hi * nonneg.hi}));
+        return backward(v.a, detail::widen({nonneg.lo * nonneg.lo, nonneg.hi * nonneg.hi}));
     }
 
     Expr f_;

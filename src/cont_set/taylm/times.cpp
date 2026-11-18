@@ -11,13 +11,14 @@
 // CORA: contSet/@taylm/times.m
 // CORA: contSet/@taylm/mtimes.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
 #include "global/format.h"
+#include "global/scalar_interval.h"
 
 #include <algorithm>
 
@@ -29,21 +30,7 @@ namespace cora {
 
 namespace {
 
-using Bounds = std::array<double, 2>;
-
-/// The product of two intervals: the hull of the corner products (0 * Inf is 0).
-Bounds aux_product(const Bounds &a, const Bounds &b) {
-    double lo = 0, hi = 0;
-    bool first = true;
-    for (const double x : a)
-        for (const double y : b) {
-            const double v = (x == 0.0 || y == 0.0) ? 0.0 : x * y;
-            lo = first ? v : std::min(lo, v);
-            hi = first ? v : std::max(hi, v);
-            first = false;
-        }
-    return {lo, hi};
-}
+using Bounds = detail::ScalarInterval;
 
 /// The degree of a monomial.
 int aux_degree(const Taylm::Monomial &m) {
@@ -77,13 +64,13 @@ Taylm Taylm::times(const Taylm &S) const {
     });
     Taylm out(vars_, max_order_);
     // the cross terms of the remainders with the bounds of the other polynomial part
-    const Bounds p = polynomial_bounds(), q = S.polynomial_bounds();
+    const auto [p_lo, p_hi] = polynomial_bounds();
+    const auto [q_lo, q_hi] = S.polynomial_bounds();
+    const Bounds p = {p_lo, p_hi}, q = {q_lo, q_hi};
     const Bounds r = {rem_lo_, rem_hi_}, s = {S.rem_lo_, S.rem_hi_};
-    Bounds rest = aux_product(p, s);
-    for (const Bounds &b : {aux_product(q, r), aux_product(r, s)}) {
-        rest[0] += b[0];
-        rest[1] += b[1];
-    }
+    Bounds rest = detail::times_zero_inf(p, s);
+    for (const Bounds &b : {detail::times_zero_inf(q, r), detail::times_zero_inf(r, s)})
+        rest = rest + b;
     // the polynomial product, with the terms above max_order bounded and moved to the remainder
     for (const auto &[m1, c1] : terms_)
         for (const auto &[m2, c2] : S.terms_) {
@@ -92,13 +79,11 @@ Taylm Taylm::times(const Taylm &S) const {
             if (aux_degree(m) <= max_order_) {
                 out.terms_[m] += c1 * c2;
             } else {
-                const Bounds b = aux_product(aux_monomial_range(m), {c1 * c2, c1 * c2});
-                rest[0] += b[0];
-                rest[1] += b[1];
+                rest = rest + detail::times_zero_inf(aux_monomial_range(m), {c1 * c2, c1 * c2});
             }
         }
-    out.rem_lo_ = rest[0];
-    out.rem_hi_ = rest[1];
+    out.rem_lo_ = rest.lo;
+    out.rem_hi_ = rest.hi;
     return out;
 }
 
@@ -107,9 +92,9 @@ Taylm Taylm::times(double s) const {
     Taylm out = *this;
     for (auto &term : out.terms_) term.second *= s;
     // s [lo, hi] is [s lo, s hi] or its swap
-    const Bounds b = aux_product({rem_lo_, rem_hi_}, {s, s});
-    out.rem_lo_ = b[0];
-    out.rem_hi_ = b[1];
+    const Bounds b = detail::times_zero_inf({rem_lo_, rem_hi_}, {s, s});
+    out.rem_lo_ = b.lo;
+    out.rem_hi_ = b.hi;
     return out;
 }
 
@@ -119,11 +104,9 @@ std::array<double, 2> Taylm::polynomial_bounds() const {
     detail::Entry entry;
     Bounds sum = {0.0, 0.0};
     for (const auto &[m, c] : terms_) {
-        const Bounds b = aux_product(aux_monomial_range(m), {c, c});
-        sum[0] += b[0];
-        sum[1] += b[1];
+        sum = sum + detail::times_zero_inf(aux_monomial_range(m), {c, c});
     }
-    return sum;
+    return {sum.lo, sum.hi};
 }
 
 } // namespace cora

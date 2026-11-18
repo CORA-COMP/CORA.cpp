@@ -20,15 +20,16 @@
 //
 // CORA: contSet/@levelSet/and_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
+#include "global/scalar_interval.h"
 
 #include <algorithm>
 #include <cmath>
@@ -43,26 +44,7 @@ namespace {
 
 // Intervals of numbers ----------------------------------------------------------------------------
 
-struct Bounds {
-    double lo = 0, hi = 0;
-    double center() const { return 0.5 * (lo + hi); }
-    double rad() const { return 0.5 * (hi - lo); }
-};
-
-Bounds aux_plus(const Bounds &a, const Bounds &b) { return {a.lo + b.lo, a.hi + b.hi}; }
-
-Bounds aux_times(const Bounds &a, const Bounds &b) {
-    const double p[4] = {a.lo * b.lo, a.lo * b.hi, a.hi * b.lo, a.hi * b.hi};
-    return {*std::min_element(p, p + 4), *std::max_element(p, p + 4)};
-}
-
-/// The square of the interval: nonnegative.
-Bounds aux_square(const Bounds &a) {
-    const double lo = a.lo * a.lo, hi = a.hi * a.hi;
-    if (a.lo >= 0) return {lo, hi};
-    if (a.hi <= 0) return {hi, lo};
-    return {0.0, std::max(lo, hi)};
-}
+using Bounds = detail::ScalarInterval;
 
 /// CORA's aux_quadEval: x' Q x for x in the box d, with the cross terms summed first.
 Bounds aux_quad_eval(const std::vector<std::vector<Bounds>> &Q, const std::vector<Bounds> &d) {
@@ -70,8 +52,8 @@ Bounds aux_quad_eval(const std::vector<std::vector<Bounds>> &Q, const std::vecto
     for (std::size_t k = 0; k < d.size(); ++k) {
         Bounds cross;
         for (std::size_t l = k + 1; l < d.size(); ++l)
-            cross = aux_plus(cross, aux_times(aux_plus(Q[k][l], Q[l][k]), d[l]));
-        res = aux_plus(res, aux_plus(aux_times(Q[k][k], aux_square(d[k])), aux_times(cross, d[k])));
+            cross = cross + detail::times(Q[k][l] + Q[l][k], d[l]);
+        res = res + (detail::times(Q[k][k], detail::square(d[k])) + detail::times(cross, d[k]));
     }
     return res;
 }
@@ -191,14 +173,14 @@ std::optional<PolyZonotope> LevelSet::intersect(const PolyZonotope &S) const {
     for (std::size_t i = 0; i < n; ++i) dev[i] = {lo[i] - m[i], hi[i] - m[i]};
     Bounds rem;
     for (std::size_t i = 0; i < n; ++i)
-        rem = aux_plus(rem, aux_times(aux_times({1.0 / 6.0, 1.0 / 6.0}, dev[i]),
-                                      aux_quad_eval(D.third[i], dev)));
+        rem = rem + detail::times(detail::times({1.0 / 6.0, 1.0 / 6.0}, dev[i]),
+                                  aux_quad_eval(D.third[i], dev));
     // the error of the expansion: 2 rad(rem + 1/2 d' H d), too large for the box to gain
     std::vector<std::vector<Bounds>> H(n, std::vector<Bounds>(n));
     for (std::size_t i = 0; i < n; ++i)
         for (std::size_t j = 0; j < n; ++j) H[i][j] = {D.hess[i][j], D.hess[i][j]};
     const Bounds quad = aux_quad_eval(H, dev);
-    const Bounds total = aux_plus(rem, aux_times({0.5, 0.5}, quad));
+    const Bounds total = rem + detail::times({0.5, 0.5}, quad);
     if (2 * total.rad() > 2 * r[var]) return PolyZonotope(I);
     // the dependent generators: quadratic and linear terms in the row var, the deviations elsewhere
     std::vector<double> g_var;
