@@ -77,7 +77,7 @@ class Zonotope : public ContSet {
     int64_t elem_rank() const noexcept { return elem_rank_; }
     Shape elem_shape() const;
     Shape batch_shape() const;
-    int64_t nr_generators() const { return G_.size(-1 - elem_rank_); }
+    int64_t nr_generators() const { return G_.size(static_cast<int>(-1 - elem_rank_)); }
 
     using ContSet::rand_point;
 

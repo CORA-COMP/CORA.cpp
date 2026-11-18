@@ -13,7 +13,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cora.h"
@@ -55,9 +55,15 @@ Work aux_repeat(int calls, F f) {
 
 /// The core and fused tensor operations, one benchmark each, on Eigen.
 void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
+    // the (n, m) matrix of CORA's generator columns: the same numbers on every commit
     const auto matrix = [](int64_t n, int64_t m, uint64_t seed) {
         Rng rng(seed);
-        return Zonotope::generate_random(rng, n, std::nullopt, m).generators();
+        return Zonotope::generate_random(rng, n, std::nullopt, m).generators().matrix_transpose();
+    };
+    // a zonotope as the fused primitives take it (#163): the center (n), one generator per row
+    const auto center = [=](int64_t n, uint64_t seed) { return matrix(n, 1, seed).squeeze(-1); };
+    const auto rows = [=](int64_t n, int64_t m, uint64_t seed) {
+        return matrix(n, m, seed).matrix_transpose();
     };
     table["tensor_matmul_5x5"] = [=] {
         const Tensor A = matrix(5, 5, 5), B = matrix(5, 5, 6);
@@ -83,18 +89,18 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
         return aux_repeat(1000, [=] { return sum_of(A.expm()); });
     };
     table["fused_zonotope_linear_map"] = [=] {
-        const Tensor M = matrix(10, 10, 13), c = matrix(10, 1, 14), G = matrix(10, 40, 15);
+        const Tensor M = matrix(10, 10, 13), c = center(10, 14), G = rows(10, 40, 15);
         return aux_repeat(5000,
                           [=] { return sum_of(Tensor::zonotope_linear_map(M, c, G).second); });
     };
     table["fused_zonotope_interval_map"] = [=] {
         const Tensor lo = matrix(10, 10, 16), hi = lo + matrix(10, 10, 17).abs();
-        const Tensor c = matrix(10, 1, 18), G = matrix(10, 40, 19);
+        const Tensor c = center(10, 18), G = rows(10, 40, 19);
         return aux_repeat(
             5000, [=] { return sum_of(Tensor::zonotope_interval_map(lo, hi, c, G).second); });
     };
     table["fused_zonotope_linear_combination"] = [=] {
-        const Tensor c = matrix(10, 1, 20), G = matrix(10, 40, 21), H = matrix(10, 40, 22);
+        const Tensor c = center(10, 20), G = rows(10, 40, 21), H = rows(10, 40, 22);
         // repeated: the second output of the fused linear combination
         return aux_repeat(
             5000, [=] { return sum_of(Tensor::zonotope_linear_combination(c, G, c, H).second); });
@@ -110,7 +116,7 @@ void aux_tensor_benchmarks(std::map<std::string, Benchmark> &table) {
         return aux_repeat(5000, [=] { return sum_of(Tensor::matmul_interval(M, lo, hi).second); });
     };
     table["fused_girard_split"] = [=] {
-        const Tensor G = matrix(10, 100, 29);
+        const Tensor G = rows(10, 100, 29);
         return aux_repeat(5000, [=] { return sum_of(G.girard_split(20).second); });
     };
     table["fused_abs_sum"] = [=] {

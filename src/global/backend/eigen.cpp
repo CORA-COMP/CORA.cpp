@@ -241,12 +241,14 @@ Tensor::Ptr sum_rows(const HostTensor<T> &a, bool keepdims) {
     out.push_back(cols);
     auto r = a.fresh(out);
     const int64_t count = out.numel() / std::max<int64_t>(cols, 1);
-    for (int64_t z = 0; z < count; ++z)
-        if (rows == 0)
-            std::fill(r->p + z * cols, r->p + (z + 1) * cols, T(0));
-        else
-            Map<T>(r->p + z * cols, 1, cols) =
-                MapC<T>(a.p + z * rows * cols, rows, cols).colwise().sum();
+    // row after row into the sums: one order of the terms wherever a matrix starts in memory
+    for (int64_t z = 0; z < count; ++z) {
+        T *sum = r->p + z * cols;
+        const T *m = a.p + z * rows * cols;
+        std::fill(sum, sum + cols, T(0));
+        for (int64_t i = 0; i < rows; ++i)
+            for (int64_t j = 0; j < cols; ++j) sum[j] += m[i * cols + j];
+    }
     return r;
 }
 
@@ -384,17 +386,26 @@ template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t keep) {
     const int64_t m = aux_rows(G.shape), n = G.shape.back();
     const int64_t count = G.shape.numel() / std::max<int64_t>(n * m, 1);
-    Shape batch(std::vector<int64_t>(G.shape.begin(), G.shape.end() - 2));
+    Shape batch;
+    for (int64_t i = 0; i + 2 < G.shape.size(); ++i) batch.push_back(G.shape[i]);
     auto kept = G.fresh(aux_matrix_shape(batch, keep, 1)),
          rest = G.fresh(aux_matrix_shape(batch, m - keep, 1));
     std::vector<int64_t> order(m);
+    std::vector<T> score(m);
     for (int64_t z = 0; z < count; ++z) {
-        const auto A = MapC<T>(G.p + z * n * m, m, n).cwiseAbs();
-        const Eigen::Matrix<T, Eigen::Dynamic, 1> score =
-            A.rowwise().sum() - A.rowwise().maxCoeff();
+        // the score of each row, its terms in order: one result wherever the matrix starts
+        for (int64_t i = 0; i < m; ++i) {
+            const T *g = G.p + (z * m + i) * n;
+            T sum = T(0), most = n > 0 ? std::abs(g[0]) : T(0);
+            for (int64_t j = 0; j < n; ++j) {
+                sum += std::abs(g[j]);
+                most = std::max(most, std::abs(g[j]));
+            }
+            score[i] = sum - most;
+        }
         std::iota(order.begin(), order.end(), 0);
         std::stable_sort(order.begin(), order.end(),
-                         [&](int64_t a, int64_t b) { return score(a) > score(b); });
+                         [&](int64_t a, int64_t b) { return score[a] > score[b]; });
         for (int64_t j = 0; j < keep; ++j) kept->p[z * keep + j] = T(order[j]);
         for (int64_t j = keep; j < m; ++j) rest->p[z * (m - keep) + j - keep] = T(order[j]);
     }
