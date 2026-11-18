@@ -10,6 +10,7 @@
 // See also: is_full_dim, interval
 //
 // CORA: contSet/@zonotope/volume_.m
+// CORA: matrixSet/@matZonotope/volume.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
@@ -84,6 +85,8 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "volume: the order must be a positive integer, got " + std::to_string(order);
     });
+    // a matrix zonotope as the zonotope of its stacked matrices (CORA's matZonotope.volume)
+    if (elem_rank_ == 2) return stacked().volume(method, order);
     CORA_CHECK(method != "reduce", Error::not_supported, [] {
         return std::string("volume: the method 'reduce' needs the order reduction 'pca', which "
                            "reduce does not have");

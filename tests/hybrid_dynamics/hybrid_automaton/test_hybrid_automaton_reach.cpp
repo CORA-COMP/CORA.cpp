@@ -70,7 +70,7 @@ HybridAutomaton aux_ball(BallFlow kind = BallFlow::linear) {
         return HybridAutomaton("ball", {Location("fall", floor, trans, sys)});
     }
     if (kind == BallFlow::parametric) {
-        const MatZonotope set(A, Tensor({{0.0, 0.001}, {0.0, 0.0}}).expand_dims(0));
+        const Zonotope set = Zonotope::matrix(A, Tensor({{0.0, 0.001}, {0.0, 0.0}}).expand_dims(0));
         const LinParamSys sys(set, Tensor::zeros({2, 1}), column({0.0, -kG}));
         return HybridAutomaton("ball", {Location("fall", floor, trans, sys)});
     }

@@ -14,6 +14,7 @@
 // See also: boundary_point, Interval::contains
 //
 // CORA: contSet/@zonotope/contains_.m
+// CORA: matrixSet/@matZonotope/contains.m
 // CORA: contSet/@zonotope/private/priv_zonotopeContainment_pointContainment.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
 // Authors:       Tobias Ladner, Claude Opus 5.5
@@ -22,6 +23,7 @@
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
+#include "cont_set/zonotope/private/priv_stacking.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
@@ -141,6 +143,18 @@ std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const s
     return std::nullopt;
 }
 
+// Matrices ----------------------------------------------------------------------------------------
+
+/// Whether the matrices M (rows, cols) or (p, rows, cols) are in the matrix zonotope Z: their
+/// stacked columns in the stacked zonotope (CORA's matZonotope.contains), type "exact" or "approx".
+bool aux_contains_matrices(const Zonotope &Z, const Tensor &M, const std::string &type,
+                           double tol) {
+    // the points are the columns of the stacked matrices
+    const Tensor matrices = M.ndim() == 2 ? M.expand_dims(0) : M;
+    const Tensor points = priv_stack_columns(matrices).squeeze(-1).matrix_transpose();
+    return Z.stacked().contains(points, type, tol);
+}
+
 } // namespace
 
 
@@ -149,6 +163,25 @@ std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const s
 bool Zonotope::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
+    // matrices in a matrix zonotope: one set, matrices of its shape, CORA's types
+    if (elem_rank_ == 2) {
+        CORA_CHECK(method == "exact" || method == "approx", Error::wrong_value, [&] {
+            return "contains: the type must be 'exact' or 'approx', got '" + method + "'";
+        });
+        CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+                   [] { return std::string("contains: not supported for a batch of sets"); });
+        // matrices of the shape of the set, one or a list
+        const int64_t rows = c_.size(-2), cols = c_.size(-1);
+        CORA_CHECK((p.ndim() == 2 || p.ndim() == 3) && p.numel() > 0 && p.size(-2) == rows &&
+                       p.size(-1) == cols,
+                   Error::dimension_mismatch, [&] {
+                       return "contains: the matrices must be (" + std::to_string(rows) + ", " +
+                              std::to_string(cols) + ") or (p, rows, cols), got the shape " +
+                              shape_text(p.shape());
+                   });
+        return aux_contains_matrices(*this, p, method, tol);
+    }
+    // points of a vector zonotope: columns (n, N)
     CORA_CHECK(p.ndim() == 2 && p.shape()[0] == dim(), Error::dimension_mismatch, [&] {
         return "contains: the points must be a matrix (" + std::to_string(dim()) +
                ", N) of columns, got the shape " + shape_text(p.shape());

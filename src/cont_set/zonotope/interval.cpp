@@ -6,6 +6,7 @@
 // See also: Interval
 //
 // CORA: contSet/@zonotope/interval.m
+// CORA: matrixSet/@matZonotope/intervalMatrix.m
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026

@@ -6,6 +6,7 @@
 // See also: linear_map, linear_combination
 //
 // CORA: contSet/@zonotope/plus.m
+// CORA: matrixSet/@matZonotope/plus.m
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026

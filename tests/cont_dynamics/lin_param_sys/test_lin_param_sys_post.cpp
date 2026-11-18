@@ -28,11 +28,11 @@ namespace {
 LinParamSys aux_sys(bool three = false) {
     if (three)
         return LinParamSys(
-            MatZonotope(Tensor({{-1.0, 2.0, 0.0}, {-2.0, -1.0, 0.0}, {0.0, 0.0, -1.0}}),
-                        Tensor::zeros({1, 3, 3})),
+            Zonotope::matrix(Tensor({{-1.0, 2.0, 0.0}, {-2.0, -1.0, 0.0}, {0.0, 0.0, -1.0}}),
+                             Tensor::zeros({1, 3, 3})),
             Tensor::ones({3, 1}));
-    const MatZonotope A(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}),
-                        Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0));
+    const Zonotope A = Zonotope::matrix(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}),
+                                        Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0));
     return LinParamSys(A, Tensor({{0.0}, {1.0}}));
 }
 

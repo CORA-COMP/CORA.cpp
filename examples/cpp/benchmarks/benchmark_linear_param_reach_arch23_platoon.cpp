@@ -73,7 +73,7 @@ Zonotope aux_U() { return Interval(column({-9}), column({1})).zonotope(); }
 LinParamSys aux_switching(ParamType type) {
     const Tensor A_c = aux_controlled(), A_n = aux_uncontrolled();
     const Tensor A_mid = (A_c + A_n) * 0.5, A_gen = (A_c - A_n) * 0.5;
-    return LinParamSys(MatZonotope(A_mid, A_gen.expand_dims(0)), aux_B(), std::nullopt, type);
+    return LinParamSys(Zonotope::matrix(A_mid, A_gen.expand_dims(0)), aux_B(), std::nullopt, type);
 }
 
 // The checks --------------------------------------------------------------------------------------

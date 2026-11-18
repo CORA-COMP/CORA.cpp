@@ -121,7 +121,7 @@ bool aux_brknp01() {
     const Cycle c = aux_cycle();
     std::vector<double> spread(25, 0.0);
     spread[0] = 3;
-    const LinParamSys flow(MatZonotope(aux_A(1), matrix(5, 5, spread).expand_dims(0)),
+    const LinParamSys flow(Zonotope::matrix(aux_A(1), matrix(5, 5, spread).expand_dims(0)),
                            column({0, 0, 0, 0, 1}));
     const Location loc("loc1", c.invariant, {Transition(c.guard, c.reset, 0)}, flow);
     const HybridAutomaton HA("brake_BRKNP01", {loc});

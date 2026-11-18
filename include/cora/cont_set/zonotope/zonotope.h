@@ -2,15 +2,16 @@
 //
 // Batch first, as PyTorch: the center c is (batch..., elem...), the generators G are
 // (batch..., h, elem...), one generator per row (#163). A vector zonotope has elem = (n), a matrix
-// zonotope (Zonotope::matrix) elem = (r, c). Points and directions given to or returned by the
-// operations are still columns (..., n, 1) and (n, N), as the other sets take them.
-// Immutable: every operation returns a new zonotope. Not the competition's zonotope
-// (competition/sets): that one is tuned for speed on one library.
+// zonotope (Zonotope::matrix, CORA's matZonotope) elem = (r, c): a set of matrix-shaped points,
+// whose box, sum, reduction, containment and volume are the zonotope's; its exponential is in
+// mat_exp. Points and directions given to or returned by the operations are still columns
+// (..., n, 1) and (n, N), as the other sets take them. Immutable. Not the competition's zonotope.
 //
 // Syntax:     Zonotope Z(c, G);   Zonotope A = Zonotope::matrix(C, G);
 //             Zonotope Z = Zonotope::generate_random(rng);
-// Operators:  M * Z and matmul(M, Z) (NumPy's M @ x for every point x), s * Z, Z + Z2 and Z + I
-//             (plus), Z + v, Z - v, -Z
+// Operators:  M * Z and matmul(M, Z) (NumPy's M @ x for every point x), Z * M and matmul(Z, M),
+//             A * B and matmul(A, B) of a matrix zonotope A, s * Z, Z + Z2 and Z + I (plus),
+//             Z + v, Z - v, -Z
 // Operations: one file each in src/cont_set/zonotope/, named as CORA's @zonotope; the constructor
 //             checks its input (zonotope.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
@@ -18,6 +19,8 @@
 // CORA: contSet/@zonotope/zonotope.m
 // CORA: contSet/@zonotope/dim.m
 // CORA: contSet/@zonotope/generators.m
+// CORA: matrixSet/@matZonotope/matZonotope.m
+// CORA: matrixSet/@matZonotope/numgens.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
@@ -40,7 +43,6 @@
 
 namespace cora {
 
-class MatZonotope;
 class Polytope;
 
 class Zonotope : public ContSet {
@@ -57,6 +59,10 @@ class Zonotope : public ContSet {
     /// The matrix zonotope {C + sum_i b_i G_i | |b|_inf <= 1} of the center C (batch..., r, c) and
     /// the generators G (batch..., h, r, c).
     static Zonotope matrix(Tensor C, Tensor G);
+
+    /// The matrix zonotope of an interval matrix A (an Interval of matrix bounds): the center
+    /// matrix and one generator per entry, column by column (CORA's intervalMatrix.matZonotope).
+    static Zonotope from_interval_matrix(const Interval &A);
 
     /// A random zonotope, as CORA's generateRandom: dimension (default that of center, else
     /// 1..10), center, nr_generators (default 2 dimension), distribution of the lengths
@@ -222,8 +228,26 @@ class Zonotope : public ContSet {
     /// cross products of its generators, in CORALean's order and arithmetic. Not a batch.
     Polytope polytope() const;
 
-    /// The same set as a matrix zonotope of n x 1 matrices (CORA's matZonotope).
-    MatZonotope mat_zonotope() const;
+    /// The same set as a matrix zonotope of n x 1 matrices (CORA's zonotope.matZonotope).
+    Zonotope mat_zonotope() const;
+
+    // Matrix zonotopes ----------------------------------------------------------------------------
+
+    /// The vector zonotope of a matrix zonotope's matrices stacked column by column (CORA's
+    /// matZonotope.zonotope, MATLAB's vec): rows * cols dimensions.
+    Zonotope stacked() const;
+
+    /// A B of two matrix zonotopes, an enclosure: C_A C_B, then G_A(i) C_B, C_A G_B(j) and
+    /// G_A(i) G_B(j), j fastest (CORALean's order). For a vector zonotope B, {A x | x in B}: C c,
+    /// C g_j, G_i c and G_i g_j, the generators of A fastest. A 1 x 1 scalar factor is refused.
+    Zonotope matmul(const Zonotope &B) const;
+
+    /// The transpose of every matrix of a matrix zonotope: exact.
+    Zonotope transpose() const;
+
+    /// The 2^h corner matrices C +- G_1 +- ... +- G_h of a matrix zonotope, one tensor (K, rows,
+    /// cols) per batch member, each once, in ascending lexicographic order. At most 20 generators.
+    std::vector<Tensor> vertex_matrices() const;
 
     /// The Euclidean length of every generator, a row (..., 1, m).
     Tensor generator_length() const;
@@ -463,6 +487,9 @@ inline Zonotope operator*(const Tensor &M, const Zonotope &Z) { return Z.linear_
 inline Zonotope operator*(const Interval &M, const Zonotope &Z) { return Z.linear_map(M); }
 inline Zonotope matmul(const Tensor &M, const Zonotope &Z) { return Z.linear_map(M); }
 inline Zonotope matmul(const Zonotope &Z, const Tensor &M) { return Z.matmul_right(M); }
+inline Zonotope operator*(const Zonotope &A, const Zonotope &B) { return A.matmul(B); }
+inline Zonotope matmul(const Zonotope &A, const Zonotope &B) { return A.matmul(B); }
+inline Zonotope operator*(const Zonotope &A, const Tensor &M) { return A.matmul_right(M); }
 Zonotope operator*(double s, const Zonotope &Z);
 inline Zonotope operator*(const Zonotope &Z, double s) { return s * Z; }
 inline Zonotope operator+(const Zonotope &Z, const Zonotope &Z2) { return Z.plus(Z2); }

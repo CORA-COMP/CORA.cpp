@@ -6,9 +6,9 @@
 //             result
 // Operations: one method per `matZonotope.*` op of the oracle, named as CORA.cpp names CORA's
 //             (mtimes is matmul, mpower is matrix_power, intervalMatrix is interval_matrix)
-// Crossing:   gather() returns the nominal part as a cora::MatZonotope and the error as an
+// Crossing:   gather() returns the nominal part as a matrix cora::Zonotope and the error as an
 //             interval, exactly or throws
-// See also:   lean/zonotope.h, lean/interval_matrix.h, lean/request.h, mat_zonotope/mat_zonotope.h
+// See also:   lean/zonotope.h, lean/interval_matrix.h, lean/request.h, zonotope/zonotope.h
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
@@ -17,9 +17,9 @@
 
 #pragma once
 
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/zonotope.h"
-#include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 
 #include <utility>
 #include <vector>
@@ -30,8 +30,8 @@ namespace cora::lean {
 
 class MatZonotope {
   public:
-    /// An exact matrix zonotope (empty error box) in the current dtype.
-    MatZonotope(const cora::MatZonotope &A);
+    /// An exact matrix zonotope (empty error box) in the current dtype, of a Zonotope::matrix.
+    explicit MatZonotope(const cora::Zonotope &A);
     MatZonotope(Tensor c, std::vector<Tensor> G, Interval E);
 
     /// The center (rows, cols), the generators (rows, cols each), the error box (rows, cols).
@@ -72,8 +72,8 @@ class MatZonotope {
     /// The set of the stacked matrices (column by column) as a zonotope.
     Zonotope zonotope() const;
 
-    /// The nominal part as a cora::MatZonotope and the error as a cora::Interval (double, exact).
-    std::pair<cora::MatZonotope, cora::Interval> gather() const;
+    /// The nominal part as a matrix cora::Zonotope and the error as a cora::Interval (exact).
+    std::pair<cora::Zonotope, cora::Interval> gather() const;
 
     /// A zonotope as an n x 1 matrix zonotope (`zonotope.matZonotope`).
     static MatZonotope from_zonotope(const Zonotope &Z);

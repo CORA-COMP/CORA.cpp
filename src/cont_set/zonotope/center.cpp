@@ -6,6 +6,7 @@
 // See also: generators, ContSet::center
 //
 // CORA: contSet/@zonotope/center.m
+// CORA: matrixSet/@matZonotope/center.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026

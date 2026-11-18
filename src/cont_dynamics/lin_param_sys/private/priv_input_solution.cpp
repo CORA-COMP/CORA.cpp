@@ -71,7 +71,7 @@ Interval aux_input_tie(const LinParamSys &sys, const LinParamSeries &series, dou
         sum = sum + times_box(lower, priv_power(series, i - 1)) * (1 / priv_factorial(i));
     }
     // the remainder of M. L. Liou (1966), with one power less for the constant input
-    const double norm_A = sys.A().norm(Tensor::Norm::inf).item();
+    const double norm_A = sys.A().interval().norm(Tensor::Norm::inf).item();
     const double epsilon = norm_A * r / (taylor_terms + 2);
     const int64_t n = sys.dim();
     if (epsilon >= 1) {
@@ -107,10 +107,9 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     // the series: the matrix-zonotope powers, then the interval powers
     const auto z = static_cast<int>(series.zono_powers.size());
     for (int i = 1; i <= z; ++i) {
-        const MatZonotope term =
-            series.zono_powers[std::size_t(i - 1)] * (r / priv_factorial(i + 1));
+        const Zonotope term = series.zono_powers[std::size_t(i - 1)] * (r / priv_factorial(i + 1));
         input_set = input_set + term * V;
-        integral = integral + term.interval_matrix();
+        integral = integral + term.interval();
     }
     for (int i = z + 1; i <= z + static_cast<int>(series.int_powers.size()); ++i) {
         const Interval term =

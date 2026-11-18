@@ -23,7 +23,8 @@ import numpy as np
 
 def oscillator(kind="constant"):
     """x' = A x + B u + c, A in [-1 2; -2 -1] +- 0.1 I."""
-    A = cora.MatZonotope(np.array([[-1.0, 2.0], [-2.0, -1.0]]), np.array([[[0.1, 0.0], [0.0, 0.1]]]))
+    A = cora.Zonotope.matrix(np.array([[-1.0, 2.0], [-2.0, -1.0]]),
+                             np.array([[[0.1, 0.0], [0.0, 0.1]]]))
     return cora.LinParamSys(A, np.array([[0.0], [1.0]]), np.array([0.5, 0.0]), kind)
 
 

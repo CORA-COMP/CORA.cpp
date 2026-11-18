@@ -8,7 +8,7 @@
 // Inputs:   corners - (..., K, rows * cols)
 //           rows, cols - the shape of a matrix
 // Outputs:  V - one tensor (K', rows, cols) per batch member (the batch flattened)
-// See also: Interval::vertex_matrices, MatZonotope::vertices
+// See also: Interval::vertex_matrices, Zonotope::vertex_matrices
 //
 // CORA.cpp only: CORA's vertices of the matrix sets share MATLAB's unique and vec2mat
 // Authors:       Claude Sonnet 5.5

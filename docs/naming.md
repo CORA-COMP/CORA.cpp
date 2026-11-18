@@ -266,7 +266,7 @@ changed, and the reasons are listed below.
   - `and` and `or` are keywords of C++ (alternative tokens), so they are `intersect` and
     `unite`. The operators `&` and `|` stay.
   - `mtimes` is MATLAB's name of an operator, so it is `linear_map` for a set under a matrix and
-    `matmul` for the product of matrices (an interval matrix, `MatZonotope`); `projectOnHyperplane` takes the
+    `matmul` for the product of matrices (an interval matrix, a matrix zonotope); `projectOnHyperplane` takes the
     constraint of the hyperplane (a normal and an offset), as CORA.cpp has no hyperplane class.
   - `not` is a keyword of C++ (an alternative token), so the complement of `emptySet` and
     `fullspace` is `complement`.

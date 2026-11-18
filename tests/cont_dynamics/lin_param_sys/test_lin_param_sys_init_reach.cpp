@@ -27,8 +27,8 @@ namespace {
 
 /// x' = A x + u + 0.5 e1 with A in [-1 2; -2 -1] +- 0.1 I.
 LinParamSys aux_sys() {
-    const MatZonotope A(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}),
-                        Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0));
+    const Zonotope A = Zonotope::matrix(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}),
+                                        Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0));
     return LinParamSys(A, Tensor({{0.0}, {1.0}}), column({0.5, 0.0}));
 }
 
@@ -48,7 +48,7 @@ void first_step() {
                     first.time_point->center().expand_dims(-1), 0),
           "init_reach: the first sets of reach");
     check(first.time_interval.contains(R0, "exact", 1e-9), "init_reach: the step starts at R0");
-    check(first.mappings.mapping.rows() == 2 && first.mappings.input.dim() == 2,
+    check(first.mappings.mapping.center().size(-2) == 2 && first.mappings.input.dim() == 2,
           "init_reach: the mappings of the step");
 }
 

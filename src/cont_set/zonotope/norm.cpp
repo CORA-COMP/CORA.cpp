@@ -11,6 +11,7 @@
 //
 // CORA: contSet/@zonotope/norm_.m
 // CORA: contSet/@interval/norm_.m
+// CORA: matrixSet/@matZonotope/norm.m
 // CORA authors: Victor Gassmann
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       03-November-2026
@@ -49,6 +50,13 @@ Tensor Zonotope::norm_impl(Tensor::Norm type, const std::string &mode) const {
         CORA_FAIL(Error::not_supported, "norm: the mode '" + mode + "' needs a " +
                                             (mode == "exact" ? "mixed-integer" : "semidefinite") +
                                             " solver");
+    // a matrix zonotope: the norm of its interval matrix (CORA's matZonotope.norm), not the 2-norm
+    if (elem_rank_ == 2) {
+        if (type == Tensor::Norm::two)
+            CORA_FAIL(Error::wrong_value,
+                      "norm: the 2-norm of a matrix zonotope is not supported, use 1 or Inf");
+        return interval_impl().norm(type);
+    }
     // the Frobenius norm of the box, as CORA's norm_ of the interval
     if (type == Tensor::Norm::fro) return interval_impl().norm(type);
     // the largest magnitude of each coordinate

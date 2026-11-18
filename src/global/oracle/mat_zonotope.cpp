@@ -51,9 +51,9 @@ MatZonotope aux_set(const char *op, std::initializer_list<Operand> operands) {
 
 // Construction -------------------------------------------------------------------------------
 
-MatZonotope::MatZonotope(const cora::MatZonotope &A)
+MatZonotope::MatZonotope(const cora::Zonotope &A)
     : c_(Tensor::from(A.center())), G_(aux_generators(A.generators())),
-      E_(aux_zero_box(A.rows(), A.cols(), dtype())) {}
+      E_(aux_zero_box(A.center().size(-2), A.center().size(-1), dtype())) {}
 
 MatZonotope::MatZonotope(Tensor c, std::vector<Tensor> G, Interval E)
     : c_(std::move(c)), G_(std::move(G)), E_(std::move(E)) {}
@@ -128,7 +128,7 @@ MatZonotope MatZonotope::from_json(const std::string &dtype, const Json &j) {
 }
 
 // The generators are stacked as (h, rows, cols); a set without generators has h = 0.
-std::pair<cora::MatZonotope, cora::Interval> MatZonotope::gather() const {
+std::pair<cora::Zonotope, cora::Interval> MatZonotope::gather() const {
     const cora::Tensor c = c_.gather();
     std::vector<cora::Tensor> parts;
     parts.reserve(G_.size());
@@ -136,7 +136,7 @@ std::pair<cora::MatZonotope, cora::Interval> MatZonotope::gather() const {
     const cora::Tensor G =
         parts.empty() ? c.zeros_like({0, c.size(-2), c.size(-1)}) : cora::Tensor::stack(parts, 0);
     const auto [inf, sup] = E_.gather();
-    return {cora::MatZonotope(c, G), cora::Interval(inf, sup)};
+    return {cora::Zonotope::matrix(c, G), cora::Interval(inf, sup)};
 }
 
 MatrixVertices MatZonotope::vertices() const {

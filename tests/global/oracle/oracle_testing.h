@@ -180,10 +180,11 @@ class Random {
     }
 
     /// A matrix zonotope of rows x cols matrices with h generators.
-    cora::MatZonotope mat_zonotope(int64_t rows, int64_t cols, int64_t h) {
+    cora::Zonotope mat_zonotope(int64_t rows, int64_t cols, int64_t h) {
         std::vector<double> data(h * rows * cols);
         for (double &x : data) x = scalar();
-        return {matrix(rows, cols), cora::Tensor::from_data(data, {h, rows, cols})};
+        return cora::Zonotope::matrix(matrix(rows, cols),
+                                      cora::Tensor::from_data(data, {h, rows, cols}));
     }
 
     /// A bundle of k zonotopes of n dimensions and m generators each, all containing one common
@@ -350,8 +351,8 @@ inline bool agree(const std::string &what, const cora::ConZonotope &a, const lea
 }
 
 /// The nominal part of the oracle's matrix zonotope: the center and the generators in their order.
-inline bool agree(const std::string &what, const cora::MatZonotope &a, const lean::MatZonotope &b) {
-    const cora::MatZonotope other = b.gather().first;
+inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::MatZonotope &b) {
+    const cora::Zonotope other = b.gather().first;
     // both compared, so that both mismatches are reported
     const bool center = agree(what + ".C", a.center(), other.center());
     const bool generators = agree(what + ".G", a.generators(), other.generators());

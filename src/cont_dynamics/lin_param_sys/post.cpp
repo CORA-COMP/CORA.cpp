@@ -32,7 +32,7 @@ LinParamStep LinParamSys::post(const LinParamStep &R, const alg::LinParamReach &
     const auto &a = std::get<alg::LinParamStandard>(alg);
     if (entry.check()) a.validate();
     // the step must be one of this system
-    CORA_CHECK(R.time_interval.dim() == dim() && R.mappings.mapping.rows() == dim(),
+    CORA_CHECK(R.time_interval.dim() == dim() && R.mappings.mapping.center().size(-2) == dim(),
                Error::dimension_mismatch, [&] {
                    return "post: the step must be of the dimension " + std::to_string(dim()) +
                           ", got " + std::to_string(R.time_interval.dim());

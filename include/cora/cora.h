@@ -38,7 +38,6 @@
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 // matrix sets (an interval matrix is an Interval)
-#include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 // tensors, backends, errors, settings, plotting and the CORALean oracle
 #include "cora/global/backend/eigen.h"
 #include "cora/global/backend/lean.h"

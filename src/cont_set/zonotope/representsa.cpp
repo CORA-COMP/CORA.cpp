@@ -13,6 +13,7 @@
 //
 // CORA: contSet/@zonotope/representsa_.m
 // CORA: contSet/@contSet/representsa.m
+// CORA: matrixSet/@matZonotope/representsa.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
@@ -54,6 +55,12 @@ bool Zonotope::representsa(const std::string &type, Tol tol_arg) const {
                Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "representsa");
+    // a matrix zonotope as the zonotope of its stacked matrices (CORA's matZonotope.representsa)
+    if (elem_rank_ == 2) {
+        CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+                   [] { return std::string("representsa: not supported for a batch of sets"); });
+        return stacked().representsa(type, tol);
+    }
     CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("representsa: it supports a single zonotope, not a batch");
     });

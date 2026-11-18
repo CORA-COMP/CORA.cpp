@@ -40,10 +40,10 @@ namespace {
 constexpr double kDt = 0.05, kTFinal = 1.0, kTol = 1e-9;
 
 /// The oscillator [-1 2; -2 -1] with h generators of size 0.1 on the diagonal and the corner.
-MatZonotope aux_set(int h) {
+Zonotope aux_set(int h) {
     Tensor G = Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0);
     if (h == 2) G = Tensor::concat({G, Tensor({{0.0, 0.1}, {0.0, 0.0}}).expand_dims(0)}, 0);
-    return MatZonotope(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}), G);
+    return Zonotope::matrix(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}), G);
 }
 
 /// The exact state at t from x0 for the matrix A and the constant input B u + c (augmented
