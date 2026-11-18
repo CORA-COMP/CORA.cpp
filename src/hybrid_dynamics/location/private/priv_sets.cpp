@@ -13,10 +13,11 @@
 // Last update:   09-November-2026
 // Reviewed:      ---
 
-#include "cont_set/polytope/private/priv.h"
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/global/tensor/tolerance.h"
+#include "global/gram_schmidt.h"
 #include "hybrid_dynamics/location/private/priv.h"
 
 #include <cmath>
@@ -84,7 +85,7 @@ bool priv_region_contains(const Region &R, const Tensor &c) {
 }
 
 Tensor priv_basis_of(const Tensor &a) {
-    const Rows Q = priv_gram_schmidt(a.data());
+    const std::vector<std::vector<double>> Q = gram_schmidt(a.data());
     const std::size_t n = Q.size();
     // the vectors are the columns
     std::vector<double> B(n * n);

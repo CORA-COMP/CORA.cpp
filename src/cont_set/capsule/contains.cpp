@@ -21,7 +21,7 @@
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
-#include "cont_set/zonotope/private/priv.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -38,7 +38,7 @@ detail::Refusal aux_zonotope_refusal(const Capsule &C, const Zonotope &Z) {
         return std::pair{Error::dimension_mismatch, "the sets differ in dimension, " +
                                                         std::to_string(C.dim()) + " and " +
                                                         std::to_string(Z.dim())};
-    if (Z.compact().generators().shape().back() > kMaxCornerGenerators)
+    if (Z.compact().generators().shape().back() > Zonotope::kMaxCornerGenerators)
         return std::pair{Error::not_supported,
                          std::string("a set of more than 12 generators has too many corners to "
                                      "test one by one")};
@@ -89,7 +89,7 @@ bool Capsule::contains(const Zonotope &Z, Tol tol_arg) const {
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a convex set holds a zonotope exactly if it holds its corners
-    return aux_points_inside(*this, priv_corners(Z.compact()), tol);
+    return aux_points_inside(*this, Z.compact().corners(), tol);
 }
 
 bool Capsule::contains(const Interval &I, Tol tol_arg) const {
@@ -106,7 +106,7 @@ bool Capsule::contains(const Interval &I, Tol tol_arg) const {
     const Zonotope Z = I.zonotope();
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_points_inside(*this, priv_corners(Z.compact()), tol);
+    return aux_points_inside(*this, Z.compact().corners(), tol);
 }
 
 } // namespace cora

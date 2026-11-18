@@ -41,6 +41,8 @@ class Polytope;
 class Zonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::zonotope;
+    /// The most generators whose corners a containment test enumerates one by one.
+    static constexpr int64_t kMaxCornerGenerators = 12;
 
     /// The zonotope of the center c (..., n, 1) and the generators G (..., n, m).
     Zonotope(Tensor c, Tensor G);
@@ -373,6 +375,10 @@ class Zonotope : public ContSet {
     Zonotope tensor_multiplication_zono(const Tensor &M_center,
                                         const std::vector<Tensor> &M_generators,
                                         const TensorLists &list) const;
+
+    /// The corners c + G s for every sign vector s in {-1, 1}^m, as columns (..., n, 2^m): they
+    /// contain the vertices, so a convex set holds Z if it holds them. At most 30 generators.
+    Tensor corners() const;
 
     /// The vertices c +- sum_j sign(s_i' g_j) g_j for the directions s_i, the columns of S (n,
     /// k), as (..., n, 2k); a subset of the zonotope. Not a batch without S.

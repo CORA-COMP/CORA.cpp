@@ -19,6 +19,7 @@
 
 #include "cont_set/polytope/private/priv.h"
 #include "cora/cont_set/polytope/polytope.h"
+#include "global/gram_schmidt.h"
 #include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -34,7 +35,7 @@ Polytope Zonotope::simplex() const {
                [] { return std::string("simplex: it supports a single zonotope, not a batch"); });
     const int64_t n = dim();
     // the basis orthogonal to the ones vector: column j of its remainder is vertex j of a simplex
-    const Rows B = priv_gram_schmidt(Row(std::size_t(n + 1), 1.0));
+    const Rows B = gram_schmidt(Row(std::size_t(n + 1), 1.0));
     std::vector<double> normals(std::size_t((n + 1) * n));
     for (int64_t j = 0; j <= n; ++j) {
         double norm = 0.0;
