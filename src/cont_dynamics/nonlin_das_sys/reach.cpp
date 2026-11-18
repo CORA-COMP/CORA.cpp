@@ -98,9 +98,8 @@ void aux_validate_problem(const NonlinDASys &sys, const DaeReachProblem &problem
                           std::to_string(problem.t_start) + " and " +
                           std::to_string(problem.t_final);
                });
-    // layout: #163 step 2
-    CORA_CHECK(aux_has_shape(detail::cora_center(*problem.initial_set), n, 1) &&
-                   detail::cora_generators(*problem.initial_set).shape().size() == 2,
+    CORA_CHECK(aux_has_shape(problem.initial_set->center().expand_dims(-1), n, 1) &&
+                   problem.initial_set->generators().matrix_transpose().shape().size() == 2,
                Error::not_supported, [&] {
                    return "reach: the initial set must be one zonotope of the dimension " +
                           std::to_string(n) + "; batches are not supported";
@@ -108,9 +107,8 @@ void aux_validate_problem(const NonlinDASys &sys, const DaeReachProblem &problem
     // the guess of y, the input set and the constant inputs
     CORA_CHECK(aux_has_shape(*problem.y0_guess, p, 1), Error::dimension_mismatch,
                [&] { return "reach: y0_guess must be a column (" + std::to_string(p) + ", 1)"; });
-    // layout: #163 step 2
     CORA_CHECK(!problem.input_set ||
-                   (m > 0 && aux_has_shape(detail::cora_center(*problem.input_set), m, 1)),
+                   (m > 0 && aux_has_shape(problem.input_set->center().expand_dims(-1), m, 1)),
                Error::dimension_mismatch, [&] {
                    return "reach: the input set must be one zonotope of the " + std::to_string(m) +
                           " inputs (the system has " + (m == 0 ? "none" : "them") + ")";
@@ -152,16 +150,14 @@ DaeStep NonlinDASys::init_reach(const DaeReachProblem &problem, const alg::DaeRe
     }
     const alg::DaeLinearization &options = std::get<alg::DaeLinearization>(alg);
     const Zonotope &R0 = *problem.initial_set;
-    // layout: #163 step 2
-    const Tensor u_trans = aux_u_trans(problem, detail::cora_center(R0), m_, 0);
-    // layout: #163 step 2
+    const Tensor u_trans = aux_u_trans(problem, R0.center().expand_dims(-1), m_, 0);
     const Tensor u_star =
-        problem.input_set ? detail::cora_center(*problem.input_set) + u_trans : u_trans;
-    // layout: #163 step 2
-    const Tensor y0 = consistent_initial_state(detail::cora_center(R0), *problem.y0_guess, u_star);
-    // layout: #163 step 2
-    return priv_dae_lin_reach(*this, R0, y0, detail::cora_center(R0).zeros_like(), y0.zeros_like(),
-                              problem.input_set, u_trans, problem.decomposition, options);
+        problem.input_set ? problem.input_set->center().expand_dims(-1) + u_trans : u_trans;
+    const Tensor y0 =
+        consistent_initial_state(R0.center().expand_dims(-1), *problem.y0_guess, u_star);
+    return priv_dae_lin_reach(*this, R0, y0, R0.center().expand_dims(-1).zeros_like(),
+                              y0.zeros_like(), problem.input_set, u_trans, problem.decomposition,
+                              options);
 }
 
 // CORA's post reduces the sets that initReach returns, and keeps the errors.
@@ -181,10 +177,9 @@ DaeStep NonlinDASys::post(const DaeStep &step, const DaeReachProblem &problem,
     }
     // the step from the end of the one before, then both sets are reduced
     const alg::DaeLinearization &options = std::get<alg::DaeLinearization>(alg);
-    // layout: #163 step 2
-    DaeStep next = priv_dae_lin_reach(*this, step.time_point, detail::cora_center(step.algebraic),
-                                      step.error_x, step.error_y, problem.input_set, u_trans,
-                                      problem.decomposition, options);
+    DaeStep next = priv_dae_lin_reach(
+        *this, step.time_point, step.algebraic.center().expand_dims(-1), step.error_x, step.error_y,
+        problem.input_set, u_trans, problem.decomposition, options);
     next.time_point = next.time_point.reduce(options.zonotope_order);
     next.time_interval = next.time_interval.reduce(options.zonotope_order);
     return next;
@@ -213,7 +208,7 @@ DaeReachSet NonlinDASys::reach(const DaeReachProblem &problem, const alg::DaeRea
         R.algebraic.push_back(step.algebraic);
         if (k < steps)
             step = post(step, problem,
-                        aux_u_trans(problem, detail::cora_center(step.time_point), m_, k), alg);
+                        aux_u_trans(problem, step.time_point.center().expand_dims(-1), m_, k), alg);
     }
     return R;
 }

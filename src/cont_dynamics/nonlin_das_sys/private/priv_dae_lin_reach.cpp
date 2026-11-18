@@ -68,15 +68,13 @@ DaeStep priv_dae_lin_reach(const NonlinDASys &sys, const Zonotope &R, const Tens
     const int eta = alg.taylor_terms;
     const int64_t n = sys.dim(), p = sys.constraint_dim(), m = sys.input_dim();
     // the affine system and its step from R - x*
-    const DaeLinearized lin = sys.linearize(detail::cora_center(R), y0, U, u_trans, dt);
+    const DaeLinearized lin = sys.linearize(R.center().expand_dims(-1), y0, U, u_trans, dt);
     AffineStep step = priv_affine_step(lin.sys, R - lin.x_star, lin.U, lin.u_const, dt, eta);
     const Zonotope &R_ti = step.time_interval;
     // the centered input set (CORA's params.U); without one, the input 0
-    const std::optional<Zonotope> U0 = priv_centered_inputs(detail::cora_center(R), m, U);
-    // layout: #163 step 2
-    const Tensor max_x = aux_limit(alg.max_error_x, detail::cora_center(R), n);
-    // layout: #163 step 2
-    const Tensor max_y = aux_limit(alg.max_error_y, detail::cora_center(R), p);
+    const std::optional<Zonotope> U0 = priv_centered_inputs(R.center().expand_dims(-1), m, U);
+    const Tensor max_x = aux_limit(alg.max_error_x, R.center().expand_dims(-1), n);
+    const Tensor max_y = aux_limit(alg.max_error_y, R.center().expand_dims(-1), p);
 
     // the error: guessed, checked over the set it allows, and enlarged until it holds
     Tensor bound_x = error_x, bound_y = error_y, applied_x = error_x, applied_y = error_y;
@@ -87,10 +85,8 @@ DaeStep priv_dae_lin_reach(const NonlinDASys &sys, const Zonotope &R, const Tens
         // a bound that was exceeded becomes 1.1 times the bound found
         if (perf_x_cur > 1) applied_x = bound_x * 1.1;
         if (perf_y_cur > 1) applied_y = bound_y * 1.1;
-        // layout: #163 step 2
-        const Zonotope V_x = detail::zonotope_of_columns(applied_x.zeros_like(), applied_x.diag());
-        // layout: #163 step 2
-        const Zonotope V_y = detail::zonotope_of_columns(applied_y.zeros_like(), applied_y.diag());
+        const Zonotope V_x = Zonotope(applied_x.zeros_like().squeeze(-1), applied_x.diag());
+        const Zonotope V_y = Zonotope(applied_y.zeros_like().squeeze(-1), applied_y.diag());
         // the set the guess allows, and the error over it
         const Zonotope R_all = priv_particular_time_varying(
             lin.sys, step.taylor, step.blocks, V_x + V_y.linear_map(lin.CF_inv), dt, eta)[0];
