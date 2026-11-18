@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   13-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/linear_sys.h"
@@ -228,22 +228,24 @@ VerifyEnergyGrowth LinearSys::energy_growth(double t_final) const {
 
 VerifySupportRun LinearSys::verify_support_func(const cora::Tensor &x0, const cora::Tensor &G0,
                                                 const cora::Tensor &Cs, const cora::Tensor &d,
-                                                double t_final, double min_step, int fuel) const {
+                                                double t_final, double min_step, int fuel,
+                                                const std::optional<Zonotope> &U) const {
     // the output matrix, the identity without one
     const int64_t n = A_.rows();
     std::vector<double> eye(std::size_t(n) * n, 0.0);
     for (int64_t i = 0; i < n; ++i) eye[std::size_t(i) * n + i] = 1.0;
     const Tensor C = C_ ? *C_ : Tensor(cora::Tensor::like(x0, eye, {n, n}));
     // the verdict, the statistics, and the falsifying step and halfspace if falsified
-    const Reply r = ask("linearSys.verifySupportFunc", {{"A", A_},
-                                                        {"x0", Tensor(x0)},
-                                                        {"G0", Tensor(G0)},
-                                                        {"Cs", Tensor(Cs)},
-                                                        {"C", C},
-                                                        {"d", Tensor(d)},
-                                                        {"tFinal", t_final},
-                                                        {"minStep", min_step},
-                                                        {"fuel", fuel}});
+    std::vector<Operand> fields{
+        {"A", A_},        {"x0", Tensor(x0)},  {"G0", Tensor(G0)},    {"Cs", Tensor(Cs)}, {"C", C},
+        {"d", Tensor(d)}, {"tFinal", t_final}, {"minStep", min_step}, {"fuel", fuel}};
+    // the input: B, the center and the generators of U
+    if (B_ && U) {
+        fields.push_back({"B", *B_});
+        fields.push_back({"uc", Tensor(U->center())});
+        fields.push_back({"GU", Tensor(U->generators())});
+    }
+    const Reply r = ask("linearSys.verifySupportFunc", fields);
     // the reply's fields in VerifySupportRun's order
     return VerifySupportRun{r.get<bool>("verified"),
                             r.get<bool>("falsified"),

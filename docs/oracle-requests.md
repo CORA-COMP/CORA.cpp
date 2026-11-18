@@ -374,8 +374,19 @@ read against the pinned oracle's op and kept out of `oracle`; each stays until t
 | `conZonotope/isFullDim`, `conZonotope/rescale` | `conZonotope.isFullDim` | certified one way; `ConZonotope.rescale` takes the ranges of the factors as arguments, CORA finds them by linear programs or Gauss-Jordan | an op `conZonotope.rescale` with the ranges, to test the scaling alone |
 | `polytope/constraints`, `polytope/polytope` | none | `VPolytope.hPolytope` encloses the vertices along given directions `Aq`; CORA computes the facets of the hull | a facet enumeration in CORALean |
 | `linearSys/errorSolution_adaptive`, `linearSys/reach` | `linearSys.errorSolution_adaptive`, `linearSys.reach` | CORALean's step is the interval-matrix one (`reachFloat`, `errorSolutionAdaptiveFloat`), tested by tolerance in `test_lean_linear_sys_steps_agreement` | the closed-form step |
-| `linearSys/verify` | `linearSys.verifyCorrection` (F and G of the support-function algorithm, `test_lean_linear_sys_verify_correction`); `linearSys.expBall` (`e^{AΔt}` and its balanced radius), `linearSys.energyGrowth` (the energy weight of a second-order system and its growth factor, the beams' and the space station's bound) and `linearSys.verifySupportFunc` (the whole algorithm without input, `LinearSys.verifySupportFuncFloat`), `test_lean_linear_sys_verify_support` | with an input: the particular solutions | ops for those, then every supportFunc instance on the sound path |
 | `contSet/interval/polyZonotope`, `contSet/zonotope/polyZonotope`, `polyZonotope/*` | none | the oracle has no polynomial zonotope codec until the poly-adaptive branch merges; then the generator order of the constructor (see above) decides | the ops of the section above |
+
+## Support-function verify (PRs "oracle/verify-1" to "oracle/verify-4", CORALean MRs !948 to !950 and "oracle/verify-4")
+
+`linearSys/verify` is `oracle`: every instance of the support-function algorithm (CBC, CBF, HEAT01/02,
+ISS) runs CORALean's sound `LinearSys.verifySupportFuncFloat`, bit-exact on the lean backend at
+`nearest` (`test_lean_linear_sys_verify_support`). The oracle serves its parts and the whole run:
+`linearSys.verifyCorrection` (F and G, `test_lean_linear_sys_verify_correction`), `linearSys.expBall`
+(`e^{AΔt}` and its balanced radius), `linearSys.energyGrowth` (the energy weight of a second-order
+system and its growth factor) and `linearSys.verifySupportFunc` (the verdict, the passes, the last
+step and the falsifying time; with an input `B`, `uc`, `GU`: the constant input's solution, the outer
+support of the varying input and its inner support for falsification). Departures from CORA, for
+soundness: the step's horizon also shrinks with an input set, and no unverified time is dropped.
 
 ## Taylor matrices (PR "oracle/taylor-matrices", CORALean MR !938; PR "oracle/bitexact-3", CORALean MR !944)
 

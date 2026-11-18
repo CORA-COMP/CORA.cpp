@@ -986,7 +986,7 @@
   "contDynamics/linearSys/sparse": "todo",
   "contDynamics/linearSys/taylorMatrices": "oracle",
   "contDynamics/linearSys/trajectoryError": "ported",
-  "contDynamics/linearSys/verify": "ported",
+  "contDynamics/linearSys/verify": "oracle",
   "contDynamics/linearSysDT/computeGO": "todo",
   "contDynamics/linearSysDT/confSynth_dyn": "todo",
   "contDynamics/linearSysDT/confSynth_gray": "todo",

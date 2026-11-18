@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2102 of 2300 rows (91.4%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2122 of 2300 rows (92.3%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -117,28 +117,28 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| HEAT01 | 1 | 1 | 0.0706 | 2/3 bit-exact, 0 property | - | 0.13 | 0.04 (JuliaReach) | 0.567 |
-| HEAT02 | 1 | 1 | 1.4 | 2/3 bit-exact, 0 property | - | 3.04 | 2.6 (JuliaReach) | 1.86 |
+| HEAT01 | 1 | 1 | 0.0706 | 3/3 bit-exact, 0 property | - | 0.13 | 0.04 (JuliaReach) | 0.567 |
+| HEAT02 | 1 | 1 | 1.4 | 3/3 bit-exact, 0 property | - | 3.04 | 2.6 (JuliaReach) | 1.86 |
 | HEAT03 | 1 | 1 | 2.7 | 14/15 bit-exact, 0 property | - | 21.8 | 21.8 (CORA) | 8.07 |
 | HEAT04 | 1 | 1 | 551 | 14/15 bit-exact, 0 property | - | 1193 | 1193 (CORA) [d] | 2.16 |
-| CBC01 | 1 | 1 | 0.173 | 2/3 bit-exact, 0 property | - | 0.28 | 0.05 (JuliaReach) | 0.289 |
-| CBC02 | 1 | 1 | 1.47 | 2/3 bit-exact, 0 property | - | 3.68 | 0.8 (JuliaReach) | 0.544 |
-| CBC03 | 1 | 1 | 9.8 | 2/3 bit-exact, 0 property | - | 37.27 | 3.74 (JuliaReach) | 0.382 |
-| CBF01 | 1 | 1 | 0.241 | 2/3 bit-exact, 0 property | - | 0.4 | 0.4 (CORA) | 1.66 |
-| CBF02 | 1 | 1 | 2.49 | 2/3 bit-exact, 0 property | - | 5.38 | 5.38 (CORA) | 2.16 |
-| CBF03 | 1 | 1 | 34.2 | 2/3 bit-exact, 0 property | - | 67.79 | 67.79 (CORA) | 1.98 |
-| ISSC01_ISS02 | 1 (ARCH23) | 1 | 0.147 | 2/3 bit-exact, 0 property | - | - | - | - |
-| ISSC01_ISU02 | 0 (ARCH23) | 0 | 0.513 | 2/3 bit-exact, 0 property | - | - | - | - |
-| ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.61 | 2/3 bit-exact, 0 property | - | - | - | - |
-| ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.198 | 2/3 bit-exact, 0 property | - | - | - | - |
-| RAND01 | 1 (ARCH23) | 1 | 0.00242 | 8/9 bit-exact, 0 property | - | - | - | - |
-| RAND02 | 0 (ARCH23) | 0 | 0.0132 | 8/9 bit-exact, 0 property | - | - | - | - |
-| RND01 | 1 | 1 | 0.0249 | 8/9 bit-exact, 0 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.22 |
-| RND02 | 1 | 1 | 0.263 | 7/8 bit-exact, 0 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.6 |
-| RND03 | 1 | 1 | 21.7 | 8/9 bit-exact, 0 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.72 |
-| RND04 | 1 | 1 | 1.98 | 7/8 bit-exact, 0 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 3.93 |
-| RND05 | 1 | 1 | 8.99 | 7/8 bit-exact, 0 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 5.1 |
-| RND06 | 1 | 1 | 33.9 | 7/8 bit-exact, 0 property | - | 26.70 | 26.70 (CORA) [c] | 0.789 |
+| CBC01 | 1 | 1 | 0.173 | 3/3 bit-exact, 0 property | - | 0.28 | 0.05 (JuliaReach) | 0.289 |
+| CBC02 | 1 | 1 | 1.47 | 3/3 bit-exact, 0 property | - | 3.68 | 0.8 (JuliaReach) | 0.544 |
+| CBC03 | 1 | 1 | 9.8 | 3/3 bit-exact, 0 property | - | 37.27 | 3.74 (JuliaReach) | 0.382 |
+| CBF01 | 1 | 1 | 0.241 | 3/3 bit-exact, 0 property | - | 0.4 | 0.4 (CORA) | 1.66 |
+| CBF02 | 1 | 1 | 2.49 | 3/3 bit-exact, 0 property | - | 5.38 | 5.38 (CORA) | 2.16 |
+| CBF03 | 1 | 1 | 34.2 | 3/3 bit-exact, 0 property | - | 67.79 | 67.79 (CORA) | 1.98 |
+| ISSC01_ISS02 | 1 (ARCH23) | 1 | 0.147 | 3/3 bit-exact, 0 property | - | - | - | - |
+| ISSC01_ISU02 | 0 (ARCH23) | 0 | 0.513 | 3/3 bit-exact, 0 property | - | - | - | - |
+| ISSF01_ISS01 | 1 (ARCH23) | 1 | 0.61 | 3/3 bit-exact, 0 property | - | - | - | - |
+| ISSF01_ISU01 | 0 (ARCH23) | 0 | 0.198 | 3/3 bit-exact, 0 property | - | - | - | - |
+| RAND01 | 1 (ARCH23) | 1 | 0.00242 | 9/9 bit-exact, 0 property | - | - | - | - |
+| RAND02 | 0 (ARCH23) | 0 | 0.0132 | 9/9 bit-exact, 0 property | - | - | - | - |
+| RND01 | 1 | 1 | 0.0249 | 9/9 bit-exact, 0 property | 3.88 | 5.72 | 0.18 (JuliaReach) [c] | 7.22 |
+| RND02 | 1 | 1 | 0.263 | 8/8 bit-exact, 0 property | 2882 | 0.42 | 0.42 (CORA) [c] | 1.6 |
+| RND03 | 1 | 1 | 21.7 | 9/9 bit-exact, 0 property | 37.6 | 37.34 | 37.34 (CORA) [c] | 1.72 |
+| RND04 | 1 | 1 | 1.98 | 8/8 bit-exact, 0 property | 6.13 | 7.77 | 7.77 (CORA) [c] | 3.93 |
+| RND05 | 1 | 1 | 8.99 | 8/8 bit-exact, 0 property | 22.99 | 45.86 | 45.86 (CORA) [c] | 5.1 |
+| RND06 | 1 | 1 | 33.9 | 8/8 bit-exact, 0 property | - | 26.70 | 26.70 (CORA) [c] | 0.789 |
 | SRNA01 | 1 | 1 | 0.511 | 30/31 bit-exact, 1 property | - | 51.87 | 1.09 (JuliaReach) | 2.13 |
 | SRA01 | 1 | 1 | 0.206 | 35/36 bit-exact, 1 property | - | 10.94 | 1.17 (JuliaReach) | 5.69 |
 | SRA02 | 1 | 1 | 0.119 | 41/42 bit-exact, 1 property | - | 17.49 | 1.24 (JuliaReach) | 10.4 |
@@ -810,12 +810,12 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | BRKDC01 | 7/8 | 1 | 10 |
 | BRKNC01 | 40/43 | 3 | 22 |
 | BRKNP01 | 28/34 | 6 | 21 |
-| CBC01 | 2/3 | 1 | 9 |
-| CBC02 | 2/3 | 1 | 9 |
-| CBC03 | 2/3 | 1 | 9 |
-| CBF01 | 2/3 | 1 | 9 |
-| CBF02 | 2/3 | 1 | 9 |
-| CBF03 | 2/3 | 1 | 9 |
+| CBC01 | 3/3 | 0 | 9 |
+| CBC02 | 3/3 | 0 | 9 |
+| CBC03 | 3/3 | 0 | 9 |
+| CBF01 | 3/3 | 0 | 9 |
+| CBF02 | 3/3 | 0 | 9 |
+| CBF03 | 3/3 | 0 | 9 |
 | CVDP23 | 53/59 | 6 | 24 |
 | CartPole-reach | 39/42 | 3 | 19 |
 | CartPole-reach-report | 44/48 | 4 | 19 |
@@ -832,14 +832,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | Double_Pendulum-more-robust | 39/42 | 3 | 19 |
 | GRBX01 | 39/43 | 4 | 22 |
 | GRBX02 | 39/43 | 4 | 22 |
-| HEAT01 | 2/3 | 1 | 9 |
-| HEAT02 | 2/3 | 1 | 9 |
+| HEAT01 | 3/3 | 0 | 9 |
+| HEAT02 | 3/3 | 0 | 9 |
 | HEAT03 | 14/15 | 1 | 9 |
 | HEAT04 | 14/15 | 1 | 9 |
-| ISSC01_ISS02 | 2/3 | 1 | 9 |
-| ISSC01_ISU02 | 2/3 | 1 | 9 |
-| ISSF01_ISS01 | 2/3 | 1 | 9 |
-| ISSF01_ISU01 | 2/3 | 1 | 9 |
+| ISSC01_ISS02 | 3/3 | 0 | 9 |
+| ISSC01_ISU02 | 3/3 | 0 | 9 |
+| ISSF01_ISS01 | 3/3 | 0 | 9 |
+| ISSF01_ISU01 | 3/3 | 0 | 9 |
 | LALO20_W001 | 15/16 | 1 | 11 |
 | LALO20_W005 | 15/16 | 1 | 11 |
 | LALO20_W01 | 18/20 | 2 | 11 |
@@ -853,14 +853,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | PLAD01_BND42 | 14/15 | 1 | 10 |
 | PLAN01 | - | not measured | - |
 | QUAD-reach | 44/48 | 4 | 19 |
-| RAND01 | 8/9 | 1 | 11 |
-| RAND02 | 8/9 | 1 | 11 |
-| RND01 | 8/9 | 1 | 11 |
-| RND02 | 7/8 | 1 | 11 |
-| RND03 | 8/9 | 1 | 11 |
-| RND04 | 7/8 | 1 | 11 |
-| RND05 | 7/8 | 1 | 11 |
-| RND06 | 7/8 | 1 | 11 |
+| RAND01 | 9/9 | 0 | 11 |
+| RAND02 | 9/9 | 0 | 11 |
+| RND01 | 9/9 | 0 | 11 |
+| RND02 | 8/8 | 0 | 11 |
+| RND03 | 9/9 | 0 | 11 |
+| RND04 | 8/8 | 0 | 11 |
+| RND05 | 8/8 | 0 | 11 |
+| RND06 | 8/8 | 0 | 11 |
 | ROBE25_1 | 15/16 | 1 | 11 |
 | ROBE25_2 | 15/16 | 1 | 11 |
 | ROBE25_3 | 15/16 | 1 | 11 |

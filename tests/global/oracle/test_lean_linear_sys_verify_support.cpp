@@ -1,21 +1,22 @@
 // test_lean_linear_sys_verify_support - verify's sound support function algorithm against CORALean
 //
-// A homogeneous system whose balanced logarithmic norm bounds the growth of e^{tA} (the heat
-// equation's case) runs CORALean's LinearSys.verifySupportFuncFloat: the exponential as a matrix
-// and a balanced radius (MatExp.expBallFloat), the directions with their error carried by the
-// growth bound, CORA's distances from above and below, and the exact unverified times. Here
-// against the oracle, bit for bit at nearest: e^{A dt} and its radius on random stable systems and
-// a stiff one, and the verdict, the passes, the last step size and count and the falsifying time
-// point of verify on heat-like chains (verified in one to four passes, falsified, a safe and an
-// unsafe specification, an output matrix, a small growth); the energy weight of a second-order
-// system and its growth factor (beams with and without inputs, an undamped one the check rejects,
-// matrices off the form), and verify on a beam. HEAT01 and the ARCH beams are left out: the
-// oracle takes over half an hour for HEAT01's 125 states.
+// A system whose balanced logarithmic norm or energy weight bounds the growth of e^{tA} runs
+// CORALean's LinearSys.verifySupportFuncFloat: the exponential as a matrix and a balanced radius,
+// the directions with their error carried by the growth bound, CORA's distances from above and
+// below with the input's terms, and the exact unverified times. Here against the oracle, bit for
+// bit at nearest: e^{A dt} and its radius on random stable systems and a stiff one; the verdict,
+// the passes, the last step size and count and the falsifying time of verify on heat-like chains
+// (one to four passes, falsified, safe and unsafe rows, an output matrix, a small growth); the
+// energy weight of beams (an undamped one the check rejects, matrices off the form); verify on a
+// beam, and with inputs: a constant and a varying force, each alone, two inputs through a dense B
+// with a band of an output (falsified in the third pass), a forced beam. HEAT01 and the ARCH
+// beams are left out: the oracle takes over half an hour for HEAT01's 125 states.
 //
+// ORACLE: contDynamics/@linearSys/verify.m
 // ORACLE: contDynamics/@linearSys/private/priv_verifyRA_supportFunc.m
 // Authors:       Claude Opus 5.5
 // Written:       17-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
@@ -62,9 +63,12 @@ struct Row {
     bool safe;
 };
 
-/// verify of x' = A x (y = C x) from R0 against the rows, CORA.cpp's against the oracle's.
+/// verify of x' = A x + B u, u in U (y = C x) from R0 against the rows, CORA.cpp's against the
+/// oracle's; no input without B.
 void aux_verify(const std::string &name, const Tensor &A, const std::optional<Tensor> &C,
-                const Zonotope &R0, const std::vector<Row> &rows, double t_final) {
+                const Zonotope &R0, const std::vector<Row> &rows, double t_final,
+                const std::optional<Tensor> &B = std::nullopt,
+                const std::optional<Zonotope> &U = std::nullopt) {
     const int64_t n = A.shape()[0];
     const int64_t p = C ? C->shape()[0] : n;
     std::vector<Specification> specs;
@@ -75,17 +79,15 @@ void aux_verify(const std::string &name, const Tensor &A, const std::optional<Te
         for (double v : r.a) Cs.push_back(r.safe ? v : -v);
         d.push_back(r.safe ? r.b : -r.b);
     }
-    // CORA.cpp's verify without input, and the oracle's run on the same rows
+    // CORA.cpp's verify, and the oracle's run on the same rows
     const auto S = static_cast<int64_t>(rows.size());
-    const LinearSys sys(A, A.zeros_like({n, 1}), C);
+    const LinearSys sys(A, B ? *B : A.zeros_like({n, 1}), C);
     const Zonotope none(A.zeros_like({1, 1}), A.zeros_like({1, 0}));
     const VerifyResult mine =
-        sys.verify({R0, none, t_final}, specs, alg::ReachAvoidSupportFunction{});
-    const lean::VerifySupportRun theirs =
-        lean::LinearSys(A, std::nullopt, C)
-            .verify_support_func(R0.center(), R0.generators(), Tensor::from_data(Cs, {S, p}),
-                                 Tensor::from_data(d, {S, 1}), t_final, numerics::kMinTimeStep,
-                                 kFuel);
+        sys.verify({R0, B ? *U : none, t_final}, specs, alg::ReachAvoidSupportFunction{});
+    const lean::VerifySupportRun theirs = lean::LinearSys(A, B, C).verify_support_func(
+        R0.center(), R0.generators(), Tensor::from_data(Cs, {S, p}), Tensor::from_data(d, {S, 1}),
+        t_final, numerics::kMinTimeStep, kFuel, U);
     test::oracle::check(name + " verified", mine.verified, theirs.verified);
     test::oracle::check(name + " falsified", mine.falsification.has_value(), theirs.falsified);
     test::oracle::check(name + " iterations", int64_t(mine.iterations), theirs.iterations);
@@ -216,6 +218,48 @@ int main() {
         const std::vector<double> mid{0, 0, 1, 0, 0, 0, 0};
         aux_verify("beam verified", A, std::nullopt, R0, {{mid, 0.2, true}}, 1.0);
         aux_verify("beam falsified", A, std::nullopt, R0, {{mid, 0.005, true}}, 1.0);
+    });
+    test::oracle::run("linearSys.verifySupportFunc", [](test::oracle::Random &) {
+        // two masses pushed by a constant and a varying force on the last velocity (CBF's form)
+        const Tensor A({{0.0, 0.0, 1.0, 0.0},
+                        {0.0, 0.0, 0.0, 1.0},
+                        {-2.0, 1.0, -0.1, 0.0},
+                        {1.0, -2.0, 0.0, -0.1}});
+        const Tensor I = Tensor::eye(4);
+        const Zonotope R0(Tensor::from_data({0, 0, 0, 0}, {4, 1}), A.zeros_like({4, 0}));
+        const Zonotope U(Tensor::from_data({0, 0, 0, 0.5}, {4, 1}),
+                         Tensor::from_data({0, 0, 0, 0.3}, {4, 1}));
+        const std::vector<double> first{1, 0, 0, 0};
+        aux_verify("forced verified", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, U);
+        aux_verify("forced falsified", A, std::nullopt, R0, {{first, 0.01, true}}, 1.0, I, U);
+        // the peak lies at the horizon: falsified in the fourth pass
+        aux_verify("forced four passes", A, std::nullopt, R0, {{first, 0.028, true}}, 1.0, I, U);
+        // a constant force only, a varying one only
+        const Zonotope Uc(U.center(), A.zeros_like({4, 0}));
+        aux_verify("constant force", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, Uc);
+        const Zonotope Uv(A.zeros_like({4, 1}), U.generators());
+        aux_verify("varying force", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, Uv);
+        // two inputs through a dense B, an initial box, a safe band of an output (ISS's form)
+        const Tensor B({{0.0, 0.0}, {0.0, 0.0}, {0.5, -0.25}, {0.125, 0.75}});
+        const Zonotope U2(Tensor::from_data({0.1, -0.1}, {2, 1}),
+                          Tensor({{0.05, 0.0}, {0.0, 0.05}}));
+        const Zonotope X0 = aux_box({0.01, 0, 0, 0}, 0.01);
+        const Tensor C({{0.0, 1.0, 0.0, 0.0}});
+        aux_verify("band verified", A, C, X0, {{{1}, 0.2, true}, {{-1}, 0.2, true}}, 1.0, B, U2);
+        aux_verify("band three passes", A, C, X0, {{{1}, 0.0515, true}, {{-1}, 0.0515, true}}, 1.0,
+                   B, U2);
+        aux_verify("band falsified", A, C, X0, {{{1}, 0.05, true}, {{-1}, 0.05, true}}, 1.0, B, U2);
+        // a beam of three masses with its force through B
+        const Tensor Ab = aux_beam(3, 100.0, {1.0, 2.0, 1.0}, 0.1, 0.01, 0);
+        std::vector<double> b(6, 0.0);
+        b[5] = 1.0;
+        const Zonotope Ub(Tensor::from_data({0.4}, {1, 1}), Tensor::from_data({0.2}, {1, 1}));
+        const Zonotope Rb(A.zeros_like({6, 1}), A.zeros_like({6, 0}));
+        const std::vector<double> mid{0, 1, 0, 0, 0, 0};
+        aux_verify("beam forced verified", Ab, std::nullopt, Rb, {{mid, 0.02, true}}, 1.0,
+                   Tensor::from_data(b, {6, 1}), Ub);
+        aux_verify("beam forced falsified", Ab, std::nullopt, Rb, {{mid, 0.001, true}}, 1.0,
+                   Tensor::from_data(b, {6, 1}), Ub);
     });
     return test::finish("lean linearSys verify support");
 }

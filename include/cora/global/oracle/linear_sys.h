@@ -14,7 +14,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -156,11 +156,13 @@ class LinearSys {
     /// CORALean's energy weight of A and its growth factor (`linearSys.energyGrowth`).
     VerifyEnergyGrowth energy_growth(double t_final) const;
 
-    /// CORALean's LinearSys.verifySupportFuncFloat of x' = A x from <x0, G0> against the
-    /// halfspaces (Cs C x)_q <= d_q over [0, t_final] (C = I without one), at most `fuel` passes.
+    /// CORALean's LinearSys.verifySupportFuncFloat of x' = A x + B u, u in U (no input without B
+    /// or U), from <x0, G0> against the halfspaces (Cs C x)_q <= d_q over [0, t_final] (C = I
+    /// without one), at most `fuel` passes.
     VerifySupportRun verify_support_func(const cora::Tensor &x0, const cora::Tensor &G0,
                                          const cora::Tensor &Cs, const cora::Tensor &d,
-                                         double t_final, double min_step, int fuel) const;
+                                         double t_final, double min_step, int fuel,
+                                         const std::optional<Zonotope> &U = std::nullopt) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;

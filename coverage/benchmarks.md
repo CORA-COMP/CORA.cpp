@@ -10,7 +10,7 @@ never become `oracle`: it has a column of its own and is left out of the bit-exa
 are the plumbing rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 86 instances, 2102 of 2300 rows (91.4%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2122 of 2300 rows (92.3%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
@@ -22,12 +22,12 @@ Over the 86 instances, 2102 of 2300 rows (91.4%) that they execute and that can 
 | BRKDC01 | 18 | 7 | 1 | 9 | 1 | 0 | 0 | 6 | 4 | 7/8 |
 | BRKNC01 | 65 | 41 | 4 | 19 | 1 | 0 | 0 | 11 | 11 | 40/43 |
 | BRKNP01 | 55 | 30 | 8 | 16 | 1 | 0 | 0 | 10 | 11 | 28/34 |
-| CBC01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| CBC02 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| CBC03 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| CBF01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| CBF02 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| CBF03 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
+| CBC01 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| CBC02 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| CBC03 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| CBF01 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| CBF02 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| CBF03 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
 | CVDP23 | 83 | 57 | 4 | 20 | 2 | 0 | 0 | 12 | 12 | 53/59 |
 | CartPole-reach | 61 | 43 | 1 | 16 | 1 | 0 | 0 | 10 | 9 | 39/42 |
 | CartPole-reach-report | 67 | 48 | 2 | 16 | 1 | 0 | 0 | 10 | 9 | 44/48 |
@@ -44,14 +44,14 @@ Over the 86 instances, 2102 of 2300 rows (91.4%) that they execute and that can 
 | Double_Pendulum-more-robust | 61 | 43 | 1 | 16 | 1 | 0 | 0 | 10 | 9 | 39/42 |
 | GRBX01 | 65 | 40 | 5 | 19 | 1 | 0 | 0 | 11 | 11 | 39/43 |
 | GRBX02 | 65 | 40 | 5 | 19 | 1 | 0 | 0 | 11 | 11 | 39/43 |
-| HEAT01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| HEAT02 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
+| HEAT01 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| HEAT02 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
 | HEAT03 | 24 | 14 | 1 | 8 | 1 | 0 | 0 | 5 | 4 | 14/15 |
 | HEAT04 | 24 | 14 | 1 | 8 | 1 | 0 | 0 | 5 | 4 | 14/15 |
-| ISSC01_ISS02 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| ISSC01_ISU02 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| ISSF01_ISS01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
-| ISSF01_ISU01 | 12 | 4 | 0 | 7 | 1 | 0 | 0 | 4 | 5 | 2/3 |
+| ISSC01_ISS02 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| ISSC01_ISU02 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| ISSF01_ISS01 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
+| ISSF01_ISU01 | 12 | 5 | 0 | 6 | 1 | 0 | 0 | 4 | 5 | 3/3 |
 | LALO20_W001 | 27 | 16 | 2 | 9 | 0 | 0 | 0 | 6 | 5 | 15/16 |
 | LALO20_W005 | 27 | 16 | 2 | 9 | 0 | 0 | 0 | 6 | 5 | 15/16 |
 | LALO20_W01 | 31 | 20 | 2 | 8 | 1 | 0 | 0 | 6 | 5 | 18/20 |
@@ -65,14 +65,14 @@ Over the 86 instances, 2102 of 2300 rows (91.4%) that they execute and that can 
 | PLAD01_BND42 | 25 | 14 | 1 | 9 | 1 | 0 | 0 | 6 | 4 | 14/15 |
 | PLAN01 | not measured: failed or over 900 s | | | | | | | | | |
 | QUAD-reach | 67 | 48 | 2 | 16 | 1 | 0 | 0 | 10 | 9 | 44/48 |
-| RAND01 | 20 | 10 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 8/9 |
-| RAND02 | 20 | 10 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 8/9 |
-| RND01 | 20 | 10 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 8/9 |
-| RND02 | 19 | 9 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 7/8 |
-| RND03 | 20 | 10 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 8/9 |
-| RND04 | 19 | 9 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 7/8 |
-| RND05 | 19 | 9 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 7/8 |
-| RND06 | 19 | 9 | 1 | 8 | 1 | 0 | 0 | 5 | 6 | 7/8 |
+| RAND01 | 20 | 11 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 9/9 |
+| RAND02 | 20 | 11 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 9/9 |
+| RND01 | 20 | 11 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 9/9 |
+| RND02 | 19 | 10 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 8/8 |
+| RND03 | 20 | 11 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 9/9 |
+| RND04 | 19 | 10 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 8/8 |
+| RND05 | 19 | 10 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 8/8 |
+| RND06 | 19 | 10 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 8/8 |
 | ROBE25_1 | 27 | 16 | 2 | 9 | 0 | 0 | 0 | 6 | 5 | 15/16 |
 | ROBE25_2 | 27 | 16 | 2 | 9 | 0 | 0 | 0 | 6 | 5 | 15/16 |
 | ROBE25_3 | 27 | 16 | 2 | 9 | 0 | 0 | 0 | 6 | 5 | 15/16 |
@@ -115,7 +115,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/contDynamics/derivatives` | ported | out-of-scope | 30 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CVDP23, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LALO20_W001, LALO20_W005, LALO20_W01, LOVO25, LOVO25-script, NAV-robust, NAV-standard, QUAD-reach, ROBE25_1, ROBE25_2, ROBE25_3, SPRE22, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, TRAF22, TSPS25, Unicycle-reach, Unicycle-reach-disturbance |
 | `nn/neuralNetwork/getRefinableLayers` | ported | float | 26 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance, VCAS-middle-19.5, VCAS-middle-22.5, VCAS-middle-25.5, VCAS-middle-28.5, VCAS-worst-19.5, VCAS-worst-22.5, VCAS-worst-25.5, VCAS-worst-28.5 |
 | `contSet/zonotope/isIntersecting_` | property | float | 25 | Attitude_Control-avoid, BRKNC01, CVDP23, DTN01, DTN02, DTN03, DTN04, DTN05, DTN06, GRBX01, GRBX02, NAV-robust, NAV-standard, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRNA01, SRU01, SRU02 |
-| `contDynamics/linearSys/verify` | ported | float | 20 | CBC01, CBC02, CBC03, CBF01, CBF02, CBF03, HEAT01, HEAT02, ISSC01_ISS02, ISSC01_ISU02, ISSF01_ISS01, ISSF01_ISU01, RAND01, RAND02, RND01, RND02, RND03, RND04, RND05, RND06 |
 | `contSet/contSet/project` | ported | out-of-scope | 20 | BRKDC01, BRKNC01, GRBX01, GRBX02, PLAA01_BND42, PLAA01_BND50, PLAD01_BND30, PLAD01_BND42, SPRE22, SRA01, SRA02, SRA03, SRA04, SRA05, SRA06, SRA07, SRA08, SRU01, SRU02, TRAF22 |
 | `contDynamics/nonlinearSys/simulate` | ported | - | 19 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, LOVO25, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
 | `contDynamics/contDynamics/simulateRandom` | ported | out-of-scope | 18 | ACC-safe-distance, Airplane-continuous, Attitude_Control-avoid, CartPole-reach, CartPole-reach-report, Docking-constraint, Double_Pendulum-less-robust, Double_Pendulum-less-robust-script, Double_Pendulum-more-robust, NAV-robust, NAV-standard, QUAD-reach, Single_Pendulum-reach, TORA-reach-sigmoid, TORA-reach-tanh, TORA-remain, Unicycle-reach, Unicycle-reach-disturbance |
@@ -232,10 +231,10 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 
 ## What keeps the rows of each family from `oracle`
 
-- Linear verify (CBC, CBF, HEAT01/02, ISS, RAND): the oracle serves no `linearSys.verify` (CORALean's
-  `verifyFloat` takes the reach function and the distance routines as arguments), and its reach is
-  CORALean's algorithm, not CORA's step (the tests compare by tolerance: `property`). The classes
-  `zonotope`, `contSet`, `polytope` are constructors and accessors: no op to compare.
+- Linear verify (CBC, CBF, HEAT01/02, ISS): `linearSys/verify` is CORALean's sound support-function
+  run (`linearSys.verifySupportFunc`); RAND's `priv_verifyRA_zonotope` reach is CORALean's algorithm,
+  not CORA's step. The classes `zonotope`, `contSet`, `polytope` are constructors and accessors: no op
+  to compare.
 - HEAT03, HEAT04, RND02, RND04-06: the subspaces are CORALean's float definitions (bit-exact, `test_lean_krylov`); the
   restart windows, their lifting and the assembly of `linearSys/reach` and of the support function bound are not
   (docs/oracle-requests.md).
@@ -338,39 +337,39 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>CBC01: 2/3</summary>
+<details><summary>CBC01: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>CBC02: 2/3</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>CBC03: 2/3</summary>
+<details><summary>CBC02: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>CBF01: 2/3</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>CBF02: 2/3</summary>
+<details><summary>CBC03: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>CBF03: 2/3</summary>
+<details><summary>CBF01: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+
+</details>
+
+<details><summary>CBF02: 3/3</summary>
+
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+
+</details>
+
+<details><summary>CBF03: 3/3</summary>
+
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
@@ -464,15 +463,15 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>HEAT01: 2/3</summary>
+<details><summary>HEAT01: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>HEAT02: 2/3</summary>
+<details><summary>HEAT02: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
@@ -488,27 +487,27 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>ISSC01_ISS02: 2/3</summary>
+<details><summary>ISSC01_ISS02: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
-
-</details>
-
-<details><summary>ISSC01_ISU02: 2/3</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>ISSF01_ISS01: 2/3</summary>
+<details><summary>ISSC01_ISU02: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
-<details><summary>ISSF01_ISU01: 2/3</summary>
+<details><summary>ISSF01_ISS01: 3/3</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
+
+</details>
+
+<details><summary>ISSF01_ISU01: 3/3</summary>
+
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported)
 
 </details>
 
@@ -584,51 +583,51 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>RAND01: 8/9</summary>
+<details><summary>RAND01: 9/9</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
-
-</details>
-
-<details><summary>RAND02: 8/9</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
 
 </details>
 
-<details><summary>RND01: 8/9</summary>
+<details><summary>RAND02: 9/9</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
-
-</details>
-
-<details><summary>RND02: 7/8</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
 
 </details>
 
-<details><summary>RND03: 8/9</summary>
+<details><summary>RND01: 9/9</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
-
-</details>
-
-<details><summary>RND04: 7/8</summary>
-
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
 
 </details>
 
-<details><summary>RND05: 7/8</summary>
+<details><summary>RND02: 8/8</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
 
 </details>
 
-<details><summary>RND06: 7/8</summary>
+<details><summary>RND03: 9/9</summary>
 
-`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contDynamics/linearSys/verify` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+
+</details>
+
+<details><summary>RND04: 8/8</summary>
+
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+
+</details>
+
+<details><summary>RND05: 8/8</summary>
+
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
+
+</details>
+
+<details><summary>RND06: 8/8</summary>
+
+`contDynamics/contDynamics/contDynamics` (untested), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property)
 
 </details>
 
