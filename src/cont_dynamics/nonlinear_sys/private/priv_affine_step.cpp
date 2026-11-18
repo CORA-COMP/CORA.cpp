@@ -31,11 +31,10 @@ namespace cora {
 AffineStep priv_affine_step(const LinearSys &sys, const Zonotope &R_delta, const Zonotope &U,
                             const Tensor &u_const, double time_step, int taylor_terms) {
     // the powers of A are shared by every solution of the step
-    const int64_t n = detail::cora_center(R_delta).shape()[0];
+    const int64_t n = R_delta.center().expand_dims(-1).shape()[0];
     TaylorLinSys taylor(sys.A());
     Blocks blocks = priv_one_block(n);
-    // layout: #163 step 2
-    const Zonotope u = detail::zonotope_of_columns(u_const, u_const.zeros_like({n, 0}));
+    const Zonotope u = Zonotope(u_const.squeeze(-1), u_const.zeros_like({0, n}));
     BlockStep step = priv_one_step(sys, taylor, blocks, R_delta, U, u, time_step, taylor_terms);
     return {std::move(taylor), std::move(blocks), std::move(step.time_interval[0]),
             std::move(step.time_point[0])};
@@ -44,9 +43,8 @@ AffineStep priv_affine_step(const LinearSys &sys, const Zonotope &R_delta, const
 std::optional<Zonotope> priv_centered_inputs(const Tensor &like, int64_t m,
                                              const std::optional<Zonotope> &U) {
     if (m == 0) return std::nullopt;
-    // layout: #163 step 2
-    return U ? *U - detail::cora_center(*U)
-             : detail::zonotope_of_columns(like.zeros_like({m, 1}), like.zeros_like({m, 0}));
+    return U ? *U - U->center().expand_dims(-1)
+             : Zonotope(like.zeros_like({m}), like.zeros_like({0, m}));
 }
 
 void priv_check_exploded(const Tensor &error) {

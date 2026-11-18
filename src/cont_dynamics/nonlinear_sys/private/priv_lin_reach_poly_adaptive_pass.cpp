@@ -83,9 +83,8 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     const std::optional<PolySeries> errser = PolySeries::make(J.A, dt, alg.taylor_terms, false);
     const Zonotope Rdyn = errser->input_solution(Vdyn);
     const PolyZonotope Rstat = priv_poly_interval_map(errser->integral(), S.Vstat);
-    // layout: #163 step 2
     const Tensor GI =
-        Tensor::concat({detail::cora_generators(Rdyn), Rstat.independent_generators()}, -1);
+        Tensor::concat({Rdyn.generators().matrix_transpose(), Rstat.independent_generators()}, -1);
     const int64_t q = GI.shape()[1];
     const Vec gi = GI.data();
     Vec abstrerr(static_cast<std::size_t>(n));

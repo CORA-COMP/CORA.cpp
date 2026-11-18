@@ -170,8 +170,7 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
                 dz.push_back(std::move(e));
         const Tensor l = aux_second_order(sys.hessian_enclosure(x_box, u_box), dz, n);
         aux_check_finite(l);
-        // layout: #163 step 2
-        return {l, detail::zonotope_of_columns(l.zeros_like(), l.diag())};
+        return {l, Zonotope(l.zeros_like().squeeze(-1), l.diag())};
     }
     // tensorOrder 3: the quadratic term as a set, the cubic remainder as a box
     const Zonotope R_red = R.reduce(alg.error_order);

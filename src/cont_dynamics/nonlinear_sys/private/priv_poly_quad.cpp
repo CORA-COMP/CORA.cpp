@@ -186,12 +186,10 @@ SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdif
                                     const std::vector<Tensor> &Q) {
     const int64_t d = Zdelta.dim(), m = int64_t(Q.size());
     const std::vector<Vec> Qv = aux_matrices(Q);
-    // layout: #163 step 2
     const std::vector<Vec> cd =
-        aux_columns(detail::cora_center(Zdelta), detail::cora_generators(Zdelta));
-    // layout: #163 step 2
+        aux_columns(Zdelta.center().expand_dims(-1), Zdelta.generators().matrix_transpose());
     const std::vector<Vec> cf =
-        aux_columns(detail::cora_center(Zdiff), detail::cora_generators(Zdiff));
+        aux_columns(Zdiff.center().expand_dims(-1), Zdiff.generators().matrix_transpose());
     Columns gens; // the generators kept whole, in column order
     gens.m = std::size_t(m);
     std::vector<Vec> shift; // the shifts into the center, in column order
@@ -222,8 +220,7 @@ SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdif
     Vec s(static_cast<std::size_t>(m), 0.0);
     for (std::size_t l = shift.size(); l-- > 0;)
         for (std::size_t i = 0; i < s.size(); ++i) s[i] = shift[l][i] + s[i];
-    // layout: #163 step 2
-    return {aux_matrix(detail::cora_center(Zdelta), gens), s};
+    return {aux_matrix(Zdelta.center().expand_dims(-1), gens), s};
 }
 
 } // namespace cora

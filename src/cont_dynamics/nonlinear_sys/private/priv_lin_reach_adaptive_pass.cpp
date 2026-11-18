@@ -52,10 +52,9 @@ std::optional<std::pair<Zonotope, Zonotope>> aux_linear_step(const LinearSys &li
     while (double(eta + 2) < 2 * norm && eta < 4096) ++eta;
     if (!(double(eta + 2) >= 2 * norm)) return std::nullopt;
     // the constant input is the center of V, the time-varying one V without it
-    const Tensor &v = detail::cora_center(V);
+    const Tensor &v = V.center().expand_dims(-1);
     const int64_t n = lin.dim();
-    // layout: #163 step 2
-    const Zonotope point = detail::zonotope_of_columns(v, v.zeros_like({n, 0}));
+    const Zonotope point = Zonotope(v.squeeze(-1), v.zeros_like({0, n}));
     const BlockStep s =
         priv_one_step(lin, taylor, priv_one_block(n), R - xs, V - v, point, dt, eta);
     return std::make_pair(s.time_interval[0] + xs, s.time_point[0] + xs);
@@ -73,8 +72,7 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
                                                          const alg::LinearizationAdaptive &alg,
                                                          double dt, const Zonotope &R,
                                                          const Vec &error_adm) {
-    // layout: #163 step 2
-    const Tensor &like = detail::cora_center(R);
+    const Tensor &like = R.center().expand_dims(-1);
     const int64_t n = sys.dim();
     const AdaptiveLinearization L = priv_linearize_adaptive(sys, U, like, dt);
     const Vec &xs = L.xs;
@@ -96,8 +94,8 @@ std::optional<AdaptivePass> priv_lin_reach_adaptive_pass(const NonlinearSys &sys
     const auto step = [&](const Zonotope &V) -> std::optional<std::pair<Zonotope, Zonotope>> {
         if (closed_form) {
             // the constant input is the center of V, the time-varying one V without it
-            const ClosedFormStep S =
-                closed_stepper->step(R - xs_t, V - detail::cora_center(V), detail::cora_center(V));
+            const ClosedFormStep S = closed_stepper->step(R - xs_t, V - V.center().expand_dims(-1),
+                                                          V.center().expand_dims(-1));
             return std::make_pair(S.time_interval + xs_t, S.time_point + xs_t);
         }
         if (!lean) return aux_linear_step(lin, taylor, alg.taylor_terms, xs_t, V, R, dt);

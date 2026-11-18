@@ -114,11 +114,10 @@ PolyZonotope priv_poly_enclose_shared(const PolyZonotope &A, const PolyZonotope 
     id.push_back((id.empty() ? 0 : *std::max_element(id.begin(), id.end())) + 1);
     // the independent parts as zonotopes of the center 0, combined
     const Tensor zero = A.center().zeros_like();
-    // layout: #163 step 2
-    const Zonotope Z = priv_lin_comb(detail::zonotope_of_columns(zero, A.independent_generators()),
-                                     detail::zonotope_of_columns(zero, B.independent_generators()));
-    // layout: #163 step 2
-    Tensor GI = detail::cora_generators(Z);
+    const Zonotope Z =
+        priv_lin_comb(Zonotope(zero.squeeze(-1), A.independent_generators().matrix_transpose()),
+                      Zonotope(zero.squeeze(-1), B.independent_generators().matrix_transpose()));
+    Tensor GI = Z.generators().matrix_transpose();
     const int64_t q = A.independent_generators().shape()[1];
     // as many generators in both: [(G1 + G2)/2, (c1 - c2)/2, (G1 - G2)/2], the center in the middle
     if (q == B.independent_generators().shape()[1])

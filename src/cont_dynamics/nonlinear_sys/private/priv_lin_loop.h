@@ -49,13 +49,11 @@ LinLoopStep<Set> priv_lin_loop(const NonlinearSys &sys, const Tensor &like, cons
     // without an input set the input is the origin
     const std::optional<Zonotope> Uz =
         m > 0 ? std::optional<Zonotope>(U ? *U
-                                          : detail::zonotope_of_columns(like.zeros_like({m, 1}),
-                                                                        like.zeros_like({m, 0})))
+                                          : Zonotope(like.zeros_like({m}), like.zeros_like({0, m})))
               : std::nullopt;
     // x*, A, B and f(x*, u*) + B (U - u*), and U joined with the expansion point
     const AdaptiveLinearization L = priv_linearize_adaptive(sys, Uz, like, alg.time_step);
-    // layout: #163 step 2
-    const Vec us = Uz ? detail::cora_center(*Uz).data() : Vec{};
+    const Vec us = Uz ? Uz->center().expand_dims(-1).data() : Vec{};
     const std::optional<Box> Ub = Uz ? std::optional<Box>(priv_zonotope_box(*Uz)) : std::nullopt;
     const std::optional<Box> Uh = Ub ? std::optional<Box>(priv_hull(*Ub, us)) : std::nullopt;
     const auto step = make_step(L);

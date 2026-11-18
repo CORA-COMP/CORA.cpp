@@ -98,8 +98,8 @@ void NonlinearSys::validate_inputs(const char *op, const std::optional<Zonotope>
         return std::string(op) + ": the system has no inputs; leave the input set empty";
     });
     // and it is one zonotope of the m inputs
-    CORA_CHECK(!U || (detail::cora_center(*U).shape() == std::vector<int64_t>({m_, 1}) &&
-                      detail::cora_generators(*U).shape().size() == 2),
+    CORA_CHECK(!U || (U->center().expand_dims(-1).shape() == std::vector<int64_t>({m_, 1}) &&
+                      U->generators().matrix_transpose().shape().size() == 2),
                Error::dimension_mismatch, [&] {
                    return std::string(op) + ": the input set must be one zonotope of the " +
                           std::to_string(m_) + " inputs";
@@ -109,9 +109,8 @@ void NonlinearSys::validate_inputs(const char *op, const std::optional<Zonotope>
 void NonlinearSys::validate_sets(const char *op, const Zonotope &R,
                                  const std::optional<Zonotope> &U) const {
     detail::Validation entry;
-    // layout: #163 step 2
-    CORA_CHECK(detail::cora_center(R).shape() == std::vector<int64_t>({n_, 1}) &&
-                   detail::cora_generators(R).shape().size() == 2,
+    CORA_CHECK(R.center().expand_dims(-1).shape() == std::vector<int64_t>({n_, 1}) &&
+                   R.generators().matrix_transpose().shape().size() == 2,
                Error::not_supported, [&] {
                    return std::string(op) + ": the set of a nonlinear system is one zonotope of " +
                           "the dimension " + std::to_string(n_) + "; batches are not supported";
@@ -130,8 +129,7 @@ NonlinearStep NonlinearSys::init_reach(const Zonotope &R0, const std::optional<Z
     }
     // CORA starts from the error 0
     const alg::Linearization &options = aux_fixed(alg, "init_reach");
-    // layout: #163 step 2
-    return priv_lin_reach(*this, R0, detail::cora_center(R0).zeros_like(), U, options);
+    return priv_lin_reach(*this, R0, R0.center().expand_dims(-1).zeros_like(), U, options);
 }
 
 // CORA's post reduces the sets that initReach returns, and keeps the error.

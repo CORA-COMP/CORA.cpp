@@ -341,10 +341,9 @@ PolyZonotope priv_poly_plus(const PolyZonotope &Z1, const PolyZonotope &Z2) {
 }
 
 PolyZonotope priv_poly_plus(const PolyZonotope &Z, const Zonotope &Z2) {
-    // layout: #163 step 2
-    return {Z.center() + detail::cora_center(Z2),
+    return {Z.center() + Z2.center().expand_dims(-1),
             Z.generators(),
-            Tensor::concat({Z.independent_generators(), detail::cora_generators(Z2)}, -1),
+            Tensor::concat({Z.independent_generators(), Z2.generators().matrix_transpose()}, -1),
             Z.exponents(),
             Z.ids(),
             detail::Verbatim{}};

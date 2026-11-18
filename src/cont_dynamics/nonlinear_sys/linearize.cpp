@@ -34,8 +34,7 @@ Linearized NonlinearSys::linearize(const Zonotope &R, const std::optional<Zonoto
     CORA_CHECK(time_step > 0 && time_step < 1e300, Error::wrong_value, [&] {
         return "linearize: time_step must be positive and finite, got " + std::to_string(time_step);
     });
-    // layout: #163 step 2
-    return linearize_impl(detail::cora_center(R), U, time_step);
+    return linearize_impl(R.center().expand_dims(-1), U, time_step);
 }
 
 Linearized NonlinearSys::linearize_impl(const Tensor &center, const std::optional<Zonotope> &U,
@@ -44,15 +43,14 @@ Linearized NonlinearSys::linearize_impl(const Tensor &center, const std::optiona
     const Tensor &c = center;
     const std::optional<Tensor> u_star =
         m_ == 0 ? std::nullopt
-                : std::optional<Tensor>(U ? detail::cora_center(*U) : c.zeros_like({m_, 1}));
+                : std::optional<Tensor>(U ? U->center().expand_dims(-1) : c.zeros_like({m_, 1}));
     const Tensor x_star = c + dynamics(c, u_star) * (0.5 * time_step);
     const Tensor f0 = dynamics(x_star, u_star);
     const Jacobians J = jacobian(x_star, u_star);
     // the input of the affine system: B (U - u*) around its center, and the constant part
-    Zonotope BU = detail::zonotope_of_columns(c.zeros_like({n_, 1}), c.zeros_like({n_, 0}));
+    Zonotope BU = Zonotope(c.zeros_like({n_}), c.zeros_like({0, n_}));
     if (m_ > 0 && U) BU = (*U - *u_star).linear_map(J.B);
-    // layout: #163 step 2
-    const Tensor u_center = detail::cora_center(BU);
+    const Tensor u_center = BU.center().expand_dims(-1);
     return {
         x_star,       u_star ? *u_star : c.zeros_like({0, 1}), f0, LinearSys(J.A), BU - u_center,
         f0 + u_center};

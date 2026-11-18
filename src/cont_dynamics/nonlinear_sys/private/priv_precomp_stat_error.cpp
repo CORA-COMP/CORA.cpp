@@ -35,9 +35,7 @@ PolyStaticError priv_precomp_stat_error(const NonlinearSys &sys, const PolyZonot
     // the reduced sets, with the static input 0 as a point set of dimension m
     const PolyZonotope Rred = Rdelta.reduce(alg.error_order);
     const Zonotope Rdelta_z = Rdelta.zonotope().reduce(alg.error_order);
-    // layout: #163 step 2
-    const Zonotope Ustat =
-        detail::zonotope_of_columns(lin.x_star.zeros_like({m, 1}), lin.x_star.zeros_like({m, 0}));
+    const Zonotope Ustat = Zonotope(lin.x_star.zeros_like({m}), lin.x_star.zeros_like({0, m}));
     const PolyZonotope Z = has_inputs ? Rred.cart_prod(Ustat) : Rred;
     const Zonotope Zdelta = has_inputs ? Rdelta_z.cart_prod(Ustat) : Rdelta_z;
     // the Hessians at the expansion point, and 1/2 quadMap(Z, H)

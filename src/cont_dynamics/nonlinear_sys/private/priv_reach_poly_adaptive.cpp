@@ -38,8 +38,9 @@ namespace {
 bool aux_third_order_empty(const NonlinearSys &sys, const PolyZonotope &X0,
                            const std::optional<Zonotope> &U) {
     const Tensor &x = X0.center();
-    const std::optional<Range> u =
-        sys.input_dim() > 0 ? std::optional<Range>(Range(detail::cora_center(*U))) : std::nullopt;
+    const std::optional<Range> u = sys.input_dim() > 0
+                                       ? std::optional<Range>(Range(U->center().expand_dims(-1)))
+                                       : std::nullopt;
     const auto T = sys.third_order_enclosure(Range(x), u);
     return std::none_of(T.begin(), T.end(), [](const auto &e) { return e.has_value(); });
 }
@@ -54,10 +55,7 @@ PolyReachSet priv_reach_poly_adaptive(const NonlinearSys &sys, const PolyReachPr
     const PolyZonotope &X0 = *problem.initial_set;
     const int64_t n = sys.dim(), m = sys.input_dim();
     std::optional<Zonotope> U = problem.input_set;
-    // layout: #163 step 2
-    if (m > 0 && !U)
-        U = detail::zonotope_of_columns(X0.center().zeros_like({m, 1}),
-                                        X0.center().zeros_like({m, 0}));
+    if (m > 0 && !U) U = Zonotope(X0.center().zeros_like({m}), X0.center().zeros_like({0, m}));
     const bool third_order_empty = aux_third_order_empty(sys, X0, U);
 
     // the state before the first step (linReachPolyAdaptiveInit)

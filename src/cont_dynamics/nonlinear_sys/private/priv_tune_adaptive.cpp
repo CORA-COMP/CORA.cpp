@@ -110,8 +110,7 @@ void priv_update_orders(const NonlinearSys &sys, const std::optional<Zonotope> &
     if (!(veryfirststep || changed)) return;
     // the Hessian at the linearization point gives the orders of the error terms
     const int64_t n = sys.dim(), m = sys.input_dim();
-    // layout: #163 step 2
-    const Vec us = m > 0 ? detail::cora_center(*U).data() : Vec{};
+    const Vec us = m > 0 ? U->center().expand_dims(-1).data() : Vec{};
     const auto H = sys.hessian_enclosure(Range(priv_column(like, xs)),
                                          m > 0 ? std::optional<Range>(Range(priv_column(like, us)))
                                                : std::nullopt);
