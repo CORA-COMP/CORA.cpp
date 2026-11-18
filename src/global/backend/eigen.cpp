@@ -383,13 +383,12 @@ zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
     return {c, G};
 }
 
-// The Girard score sum_j |g_j| - max_j |g_j| of each row of the (m, n) matrix g: the terms of a row
-// in order, so one result wherever the matrix starts; kBlock rows side by side, as independent
-// sums.
+// Girard's score |g|_1 - |g|_inf of each row of g (m, n), its terms in order at any alignment.
 template <class T>
 void aux_girard_scores(const T *g, int64_t m, int64_t n, T *score) {
     constexpr int64_t kBlock = 8;
     int64_t i = 0;
+    // kBlock rows side by side: independent sums, each in the order of its row
     for (; i + kBlock <= m; i += kBlock) {
         T sum[kBlock] = {}, most[kBlock] = {};
         for (int64_t j = 0; j < n; ++j)
@@ -400,6 +399,7 @@ void aux_girard_scores(const T *g, int64_t m, int64_t n, T *score) {
             }
         for (int64_t r = 0; r < kBlock; ++r) score[i + r] = sum[r] - most[r];
     }
+    // the rows left over, one at a time
     for (; i < m; ++i) {
         T sum = T(0), most = T(0);
         for (int64_t j = 0; j < n; ++j) {

@@ -342,8 +342,7 @@ void aux_require_matrix(const Shape &s, const char *op, bool square) {
                   std::string("CoraTensor::") + op + ": needs square matrices, got " + aux_text(s));
 }
 
-// The matrices of a batch transposed, (..., r, c) to (..., c, r): tiles of kTile x kTile, so that
-// both the reads and the writes stay in cache lines.
+// The matrices of a batch transposed, (..., r, c) to (..., c, r), in tiles that stay in cache.
 template <class T>
 Tensor::Ptr aux_transpose_matrices(const HostTensor<T> &a) {
     constexpr int64_t kTile = 16;
