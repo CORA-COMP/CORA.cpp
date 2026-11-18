@@ -53,9 +53,8 @@ bool Zonotope::representsa(const std::string &type, Tol tol_arg) const {
     CORA_CHECK(std::find(std::begin(kTypes), std::end(kTypes), type) != std::end(kTypes),
                Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
-    const double tol =
-        resolve_tol(entry, tol_arg, detail::cora_center(*this).dtype(), "representsa");
-    CORA_CHECK(detail::cora_center(*this).ndim() == 2, Error::not_supported, [] {
+    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "representsa");
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("representsa: it supports a single zonotope, not a batch");
     });
     CORA_CHECK(type != "conHyperplane" && type != "ellipsoid" && type != "polygon",
@@ -64,15 +63,19 @@ bool Zonotope::representsa(const std::string &type, Tol tol_arg) const {
                           "' is not supported";
                });
     // CORA judges the zonotope without its zero generators
-    const Zonotope Z = compact("zeros", machine_eps(detail::cora_center(*this).dtype()));
+    const Zonotope Z = compact("zeros", machine_eps(c_.dtype()));
     const int64_t n = Z.dim(), gens = Z.nr_generators();
     const auto norm_of_radius = [&] {
-        return detail::cora_generators(Z).abs_sum().vector_norm(Tensor::Norm::two, -2, true).item();
+        return Z.generators()
+            .matrix_transpose()
+            .abs_sum()
+            .vector_norm(Tensor::Norm::two, -2, true)
+            .item();
     };
     // the special types first, then the sets that every zonotope is and the ones that none is
     if (type == "origin")
-        return (gens == 0 && aux_all(within_tol(detail::cora_center(Z),
-                                                detail::cora_center(Z).zeros_like(), tol))) ||
+        return (gens == 0 && aux_all(within_tol(Z.center().expand_dims(-1),
+                                                Z.center().expand_dims(-1).zeros_like(), tol))) ||
                Z.interval().norm().item() <= tol;
     if (type == "point") return gens == 0 || norm_of_radius() <= tol;
     if (type == "capsule") return n == 1 || gens <= 1;

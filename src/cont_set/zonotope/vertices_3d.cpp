@@ -105,8 +105,7 @@ std::vector<Point3> aux_corners(const Point3 &c, const std::vector<Point3> &g) {
 // ===========================================  MAIN  =========================================== //
 
 std::vector<std::vector<Point3>> Zonotope::vertices_3d_impl() const {
-    const std::vector<double> cs = detail::cora_center(*this).data(),
-                              Gs = detail::cora_generators(*this).data();
+    const std::vector<double> cs = c_.data(), Gs = G_.matrix_transpose().data();
     const int64_t m = nr_generators();
     const std::size_t batch = cs.size() / 3;
     std::vector<std::vector<Point3>> out;

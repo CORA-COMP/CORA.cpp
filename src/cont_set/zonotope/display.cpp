@@ -27,9 +27,9 @@ std::string Zonotope::display_impl() const {
     text += "- dimension: " + std::to_string(dim()) + "\n";
     // a vector zonotope shows CORA's columns, a matrix zonotope its matrices
     const bool vector = elem_rank_ == 1;
-    text += "- center:\n" + format_matrix(vector ? detail::cora_center(*this) : c_, "    ");
+    text += "- center:\n" + format_matrix(vector ? c_.expand_dims(-1) : c_, "    ");
     text += "- generators (" + std::to_string(nr_generators()) + "):\n" +
-            format_matrix(vector ? detail::cora_generators(*this) : G_, "    ");
+            format_matrix(vector ? G_.matrix_transpose() : G_, "    ");
     return text;
 }
 

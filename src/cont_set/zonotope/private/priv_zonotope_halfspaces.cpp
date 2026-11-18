@@ -34,7 +34,7 @@ namespace {
 /// zonotope (CORA's aux_polytope_fullDim), the normals in the order of CORALean's hPolytopeFacets:
 /// the reverse of CORA's.
 std::pair<Tensor, Tensor> aux_full_dim(const Zonotope &Z) {
-    const Tensor &c = detail::cora_center(Z), &G = detail::cora_generators(Z);
+    const Tensor &c = Z.center().expand_dims(-1), &G = Z.generators().matrix_transpose();
     const Tensor facets = priv_zonotope_facet_normals(Z);
     std::vector<int64_t> reversed(std::size_t(facets.shape()[0]));
     for (std::size_t i = 0; i < reversed.size(); ++i)
@@ -57,8 +57,8 @@ std::pair<Tensor, Tensor> aux_point(const Tensor &c) {
 // ===========================================  MAIN  =========================================== //
 
 std::pair<Tensor, Tensor> priv_zonotope_halfspaces(const Zonotope &Z_in) {
-    const Zonotope Z = Z_in.compact("zeros", machine_eps(detail::cora_center(Z_in).dtype()));
-    const Tensor &c = detail::cora_center(Z), &G = detail::cora_generators(Z);
+    const Zonotope Z = Z_in.compact("zeros", machine_eps(Z_in.center().dtype()));
+    const Tensor &c = Z.center().expand_dims(-1), &G = Z.generators().matrix_transpose();
     const int64_t n = Z.dim(), m = G.shape().back();
     if (m == 0) return aux_point(c);
     if (Z.is_full_dim(numerics::kDegenerateZonotope)) return aux_full_dim(Z);
@@ -73,7 +73,8 @@ std::pair<Tensor, Tensor> priv_zonotope_halfspaces(const Zonotope &Z_in) {
     if (span == 0) return aux_point(c);
     const Tensor Ut = U.matrix_transpose();
     const Tensor rows = Ut.slice(0, 0, span), flat = U.slice(1, span, n).matrix_transpose();
-    const auto [Cs, ds] = aux_full_dim(detail::zonotope_of_columns(rows.matmul(c), rows.matmul(G)));
+    const auto [Cs, ds] =
+        aux_full_dim(Zonotope(rows.matmul(c).squeeze(-1), rows.matmul(G).matrix_transpose()));
     const Tensor shift = flat.matmul(c);
     return {Tensor::concat({Cs.matmul(rows), flat, flat.negative()}, 0),
             Tensor::concat({ds, shift, shift.negative()}, 0)};

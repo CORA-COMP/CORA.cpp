@@ -92,7 +92,7 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
     });
 
     // in one dimension the zonotope is the segment c +- sum |G| (layout: #163 step 2, columns)
-    const Tensor c = detail::cora_center(*this);
+    const Tensor c = c_.expand_dims(-1);
     if (dim() == 1) {
         const Tensor r = G_.abs().sum(-2, true);
         return d[0] < 0 ? c - r : c + r;

@@ -31,9 +31,9 @@ namespace cora {
 
 Zonotope priv_union_linprog(const Zonotope &iterative,
                             const std::function<Tensor(const Tensor &)> &support) {
-    const DType dtype = detail::cora_center(iterative).dtype();
+    const DType dtype = iterative.center().dtype();
     const Zonotope enclosure = iterative.compact("zeros", machine_eps(dtype));
-    const Tensor &G0 = detail::cora_generators(enclosure);
+    const Tensor &G0 = enclosure.generators().matrix_transpose();
     const Tensor length = G0.square().sum(-2, true).sqrt();
     const Tensor G = G0.multiply(length.ones_like().divide(length)); // unit generators
     const int64_t n = enclosure.dim(), ng = G.shape().back();
@@ -64,7 +64,7 @@ Zonotope priv_union_linprog(const Zonotope &iterative,
     const Tensor c = Tensor::like(G, std::vector<double>(r.x.begin(), r.x.begin() + n), {n, 1});
     // the scaling of the generators is the second part of the solution
     const Tensor scal = Tensor::like(G, std::vector<double>(r.x.begin() + n, r.x.end()), {1, ng});
-    return detail::zonotope_of_columns(c, G.multiply(scal));
+    return Zonotope(c.squeeze(-1), G.multiply(scal).matrix_transpose());
 }
 
 } // namespace cora

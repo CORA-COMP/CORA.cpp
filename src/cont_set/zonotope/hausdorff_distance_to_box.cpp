@@ -77,7 +77,7 @@ Tensor aux_exact(const Tensor &G) {
 
 // Bounds from the generators ----------------------------------------------------------------------
 
-/// 2 |sum_k |detail::cora_generators(*this).k| without the largest entry of each generator|_2
+/// 2 |sum_k |g_k| without the largest entry of each generator|_2
 /// (CORA's aux_dH2box_wgreedy).
 Tensor aux_wgreedy(const Tensor &G) {
     const int64_t n = G.shape()[G.ndim() - 2];
@@ -117,10 +117,10 @@ Tensor Zonotope::hausdorff_distance_to_box(const std::optional<std::string> &cho
         return std::string("hausdorff_distance_to_box: method 'ell' (a row reduced echelon form "
                            "for the parallelepipeds) is not supported");
     });
-    if (method == "exact") return aux_exact(detail::cora_generators(*this));
+    if (method == "exact") return aux_exact(G_.matrix_transpose());
     if (method == "naive") return interval().rad().vector_norm(Tensor::Norm::two, -2, true);
-    if (method == "wgreedy") return aux_wgreedy(detail::cora_generators(*this));
-    if (method == "wopt") return aux_wopt(detail::cora_generators(*this));
+    if (method == "wgreedy") return aux_wgreedy(G_.matrix_transpose());
+    if (method == "wopt") return aux_wopt(G_.matrix_transpose());
     CORA_FAIL(Error::report_to_dev, "hausdorff_distance_to_box: a method without a branch");
 }
 

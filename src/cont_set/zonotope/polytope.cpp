@@ -30,7 +30,7 @@ namespace cora {
 
 Polytope Zonotope::polytope() const {
     detail::Entry entry;
-    CORA_CHECK(detail::cora_center(*this).ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("polytope: it supports a single zonotope, not a batch"); });
     const auto [C, d] = priv_zonotope_halfspaces(*this);
     return {C, d};

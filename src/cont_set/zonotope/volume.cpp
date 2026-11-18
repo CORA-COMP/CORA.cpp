@@ -89,15 +89,14 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
                            "reduce does not have");
     });
     const int64_t n = dim(), m = nr_generators();
-    Shape shape = detail::cora_center(*this).shape();
+    Shape shape = c_.expand_dims(-1).shape();
     shape[shape.size() - 2] = 1;
-    const Tensor zero = detail::cora_center(*this).zeros_like(shape);
+    const Tensor zero = c_.expand_dims(-1).zeros_like(shape);
     if (m < n) return zero;
-    const Tensor deficient = aux_rank_deficient(detail::cora_generators(*this));
+    const Tensor deficient = aux_rank_deficient(G_.matrix_transpose());
     // the exact or the Gram volume, zero if the generators are deficient
-    const Tensor value = method == "exact"
-                             ? aux_sum_of_determinants(detail::cora_generators(*this))
-                             : aux_gram_volume(detail::cora_generators(*this), deficient);
+    const Tensor value = method == "exact" ? aux_sum_of_determinants(G_.matrix_transpose())
+                                           : aux_gram_volume(G_.matrix_transpose(), deficient);
     // 2^n is a power of two: the scaling is exact
     return Tensor::where(deficient, zero, value * std::ldexp(1.0, int(n)));
 }

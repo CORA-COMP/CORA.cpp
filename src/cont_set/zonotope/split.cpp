@@ -53,21 +53,22 @@ Tensor aux_unit(const Tensor &dir) {
     return dir.divide(dir.vector_norm(Tensor::Norm::two, -2, true));
 }
 
-/// The generators without their part along the unit vector u, and the generator with the sum of
-/// the absolute parts, alignedVal * u (CORA's loop over the generators).
+/// The generator rows without their part along the unit vector u (n, 1), and the generator (n)
+/// with the sum of the absolute parts, alignedVal * u (CORA's loop over the generators).
 std::pair<Tensor, Tensor> aux_decompose(const Tensor &G, const Tensor &u) {
-    const Tensor aligned = u.matrix_transpose().matmul(G); // (1, m): the part of each along u
-    return {G - u.matmul(aligned), u.multiply(aligned.abs_sum())};
+    const Tensor aligned = G.matmul(u); // (m, 1): the part of each along u
+    return {G - aligned.matmul(u.matrix_transpose()),
+            u.multiply(aligned.abs().sum(-2, true)).squeeze(-1)};
 }
 
-/// The pieces of the cut at the fraction beta in (-1, 1) of the new generator, all as CORA's
-/// columns.
+/// The pieces of the cut at the fraction beta in (-1, 1) of the new generator: the center (n),
+/// the generator rows G (m, n) and the new generator (n).
 std::pair<Zonotope, Zonotope> aux_cut(const Tensor &c, const Tensor &G, const Tensor &new_gen,
                                       double beta) {
     const Tensor g1 = new_gen * (0.5 * (beta + 1)), g2 = new_gen * (0.5 * (beta - 1));
     const Tensor shifted = c + new_gen * beta;
-    return {detail::zonotope_of_columns(shifted - g1, Tensor::concat({g1, G}, -1)),
-            detail::zonotope_of_columns(shifted - g2, Tensor::concat({g2, G}, -1))};
+    return {Zonotope(shifted - g1, Tensor::concat({g1.expand_dims(-2), G}, -2)),
+            Zonotope(shifted - g2, Tensor::concat({g2.expand_dims(-2), G}, -2))};
 }
 
 } // namespace
@@ -125,9 +126,8 @@ std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &dir) const {
     });
     CORA_CHECK(dir.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: dir must not be zero"); });
-    // layout: the cut works on CORA's columns
-    const auto [rest, new_gen] = aux_decompose(detail::cora_generators(*this), aux_unit(dir));
-    return aux_cut(detail::cora_center(*this), rest, new_gen, 0.0);
+    const auto [rest, new_gen] = aux_decompose(G_, aux_unit(dir));
+    return aux_cut(c_, rest, new_gen, 0.0);
 }
 
 std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &orig_dir, const Tensor &aux_dir) const {
@@ -162,13 +162,13 @@ std::vector<Zonotope> Zonotope::split(const Tensor &a, double d) const {
     });
     CORA_CHECK(a.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: a must not be zero"); });
-    // the plane's position along the new generator, in its units (layout: on CORA's columns)
-    const Tensor c = detail::cora_center(*this);
-    const auto [rest, new_gen] = aux_decompose(detail::cora_generators(*this), aux_unit(a));
+    // the plane's position along the new generator, in its units
+    const auto [rest, new_gen] = aux_decompose(G_, aux_unit(a));
     const Tensor at = a.matrix_transpose();
-    const double beta = (d - at.matmul(c).item()) / at.matmul(new_gen).item();
+    const double beta =
+        (d - at.matmul(c_.expand_dims(-1)).item()) / at.matmul(new_gen.expand_dims(-1)).item();
     if (!(std::abs(beta) < 1)) return {*this};
-    const auto [lower, upper] = aux_cut(c, rest, new_gen, beta);
+    const auto [lower, upper] = aux_cut(c_, rest, new_gen, beta);
     return {lower, upper};
 }
 

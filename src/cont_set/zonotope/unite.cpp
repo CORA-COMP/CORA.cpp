@@ -50,8 +50,8 @@ Zonotope aux_linprog(const std::vector<Zonotope> &Zs) {
     // the support value of every set along every row of A, and the largest of them
     const auto support = [&](const Tensor &A) {
         const auto of = [&](const Zonotope &Z) {
-            return A.matmul(detail::cora_center(Z)) +
-                   A.matmul(detail::cora_generators(Z)).abs_sum();
+            return A.matmul(Z.center().expand_dims(-1)) +
+                   A.matmul(Z.generators().matrix_transpose()).abs_sum();
         };
         Tensor d = of(Zs.front());
         for (std::size_t j = 1; j < Zs.size(); ++j) d = d.maximum(of(Zs[j]));
@@ -65,8 +65,8 @@ Zonotope aux_linprog(const std::vector<Zonotope> &Zs) {
 Zonotope aux_parallelotope(const std::vector<Zonotope> &Zs) {
     std::vector<Tensor> columns;
     for (const Zonotope &Z : Zs) {
-        columns.push_back(detail::cora_generators(Z));
-        columns.push_back(detail::cora_generators(Z).negative());
+        columns.push_back(Z.generators().matrix_transpose());
+        columns.push_back(Z.generators().matrix_transpose().negative());
     }
     const Tensor V = Tensor::concat(columns, -1);
     const Tensor covariance = V.matmul(V.matrix_transpose()) * (1.0 / double(V.shape().back() - 1));
@@ -96,7 +96,7 @@ Zonotope aux_unite(const Zonotope &Z, std::vector<Zonotope> Zs, const Interval *
         return std::string("unite: reducing the order needs the reduction methods 'methC' and "
                            "'pca', which are not supported");
     });
-    CORA_CHECK(detail::cora_center(Z).ndim() == 2, Error::not_supported,
+    CORA_CHECK(Z.center().ndim() == 1, Error::not_supported,
                [] { return std::string("unite: it supports a single zonotope, not a batch"); });
     if (box) {
         CORA_CHECK(box->is_bounded() && box->inf().shape().back() == 1, Error::wrong_value,
@@ -106,11 +106,10 @@ Zonotope aux_unite(const Zonotope &Z, std::vector<Zonotope> Zs, const Interval *
     // this set first, as CORA's cell array
     std::vector<Zonotope> all{Z};
     for (const Zonotope &Z2 : Zs) {
-        CORA_CHECK(Z2.dim() == Z.dim() && detail::cora_center(Z2).ndim() == 2,
-                   Error::dimension_mismatch, [&] {
-                       return "unite: the sets must be single and of dimension " +
-                              std::to_string(Z.dim()) + ", got " + std::to_string(Z2.dim());
-                   });
+        CORA_CHECK(Z2.dim() == Z.dim() && Z2.center().ndim() == 1, Error::dimension_mismatch, [&] {
+            return "unite: the sets must be single and of dimension " + std::to_string(Z.dim()) +
+                   ", got " + std::to_string(Z2.dim());
+        });
         all.push_back(Z2);
     }
     if (all.size() == 1) return Z;

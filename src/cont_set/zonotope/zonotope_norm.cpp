@@ -31,7 +31,7 @@ namespace {
 
 /// Why the call is refused, if it is: a batch, or a point that is not a column of the dimension.
 Refusal aux_refusal(const Zonotope &Z, const Tensor &p) {
-    if (detail::cora_center(Z).ndim() != 2)
+    if (Z.center().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("a linear program per zonotope: it supports a single "
                                      "zonotope, not a batch")};
@@ -58,7 +58,7 @@ Tensor Zonotope::zonotope_norm(const Tensor &p) const {
     detail::Entry entry;
     const Refusal refusal = aux_refusal(*this, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "zonotope_norm: " + refusal->second; });
-    return Tensor::like(detail::cora_generators(*this), {aux_solve(*this, p).value}, {1, 1});
+    return Tensor::like(G_, {aux_solve(*this, p).value}, {1, 1});
 }
 
 std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) const {
@@ -67,8 +67,8 @@ std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) con
     CORA_CHECK(!refusal, refusal->first,
                [&] { return "zonotope_norm_minimizer: " + refusal->second; });
     const ZonotopeNorm solution = aux_solve(*this, p);
-    const double tol = resolve_tol(Tol{}, detail::cora_center(*this).dtype());
-    if (within_tol(detail::cora_center(*this), detail::cora_center(*this).zeros_like(), tol)
+    const double tol = resolve_tol(Tol{}, c_.dtype());
+    if (within_tol(c_.expand_dims(-1), c_.expand_dims(-1).zeros_like(), tol)
             .all(-2)
             .all(-1)
             .item() == 0.0)
@@ -76,8 +76,8 @@ std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) con
                              "zonotope is not zero-centered");
     // the norm and the minimizing factors
     const int64_t m = int64_t(solution.minimizer.size());
-    return {Tensor::like(detail::cora_generators(*this), {solution.value}, {1, 1}),
-            Tensor::like(detail::cora_generators(*this), solution.minimizer, {m, 1})};
+    return {Tensor::like(G_, {solution.value}, {1, 1}),
+            Tensor::like(G_, solution.minimizer, {m, 1})};
 }
 
 } // namespace cora

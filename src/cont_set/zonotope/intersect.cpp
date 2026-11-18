@@ -38,7 +38,7 @@ namespace {
 Zonotope aux_intersect_boxes(const Zonotope &Z1, const Zonotope &Z2) {
     const Interval I1 = Z1.interval(), I2 = Z2.interval();
     const Tensor lower = I1.inf().maximum(I2.inf()), upper = I1.sup().minimum(I2.sup());
-    if ((lower - upper).detach().max().item() > resolve_tol({}, detail::cora_center(Z1).dtype()))
+    if ((lower - upper).detach().max().item() > resolve_tol({}, Z1.center().dtype()))
         CORA_FAIL(Error::empty_set,
                   "intersect: the boxes do not intersect and CORA.cpp has no empty set yet");
     return Interval(lower.minimum(upper), lower.maximum(upper)).zonotope();
@@ -48,25 +48,24 @@ Zonotope aux_intersect_boxes(const Zonotope &Z1, const Zonotope &Z2) {
 /// weights proportional to 1 / trace(G G'), summing to 1.
 Zonotope aux_average(const Zonotope &Z1, const Zonotope &Z2) {
     const auto trace = [](const Zonotope &Z) {
-        return detail::cora_generators(Z)
-            .matmul(detail::cora_generators(Z).matrix_transpose())
-            .trace();
+        return Z.generators().matrix_transpose().matmul(Z.generators()).trace();
     };
     const Tensor t1 = trace(Z1), t2 = trace(Z2);
     const Tensor inverse_sum = (1.0 / t1) + (1.0 / t2);
     const Tensor w1 = 1.0 / t1.multiply(inverse_sum), w2 = 1.0 / t2.multiply(inverse_sum);
     const Tensor total = w1 + w2;
-    const Tensor c = w1.multiply(detail::cora_center(Z1))
-                         .add(w2.multiply(detail::cora_center(Z2)))
+    const Tensor c = w1.multiply(Z1.center().expand_dims(-1))
+                         .add(w2.multiply(Z2.center().expand_dims(-1)))
                          .divide(total);
-    const Tensor G = Tensor::concat(
-        {w1.multiply(detail::cora_generators(Z1)), w2.multiply(detail::cora_generators(Z2))}, -1);
-    return detail::zonotope_of_columns(c, (1.0 / total).multiply(G));
+    const Tensor G = Tensor::concat({w1.multiply(Z1.generators().matrix_transpose()),
+                                     w2.multiply(Z2.generators().matrix_transpose())},
+                                    -1);
+    return Zonotope(c.squeeze(-1), ((1.0 / total).multiply(G)).matrix_transpose());
 }
 
 /// An enclosure of the intersection of Z1 and Z2: exact for boxes, else by the method.
 Zonotope aux_intersect(const Zonotope &Z1, const Zonotope &Z2, const std::string &method) {
-    const double tol = resolve_tol({}, detail::cora_center(Z1).dtype());
+    const double tol = resolve_tol({}, Z1.center().dtype());
     if (priv_is_box(Z1, tol) && priv_is_box(Z2, tol)) return aux_intersect_boxes(Z1, Z2);
     if (method == "averaging") return aux_average(Z1, Z2);
     CORA_FAIL(Error::not_supported, "intersect: method 'conZonotope' for zonotopes that are not "

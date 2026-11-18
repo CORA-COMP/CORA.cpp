@@ -94,7 +94,7 @@ void aux_normalize(std::vector<double> &v) {
 
 Tensor priv_zonotope_facet_normals(const Zonotope &Z) {
     const HostZonotope H = priv_host_zonotope(Z);
-    const Tensor &G = detail::cora_generators(Z);
+    const Tensor &G = Z.generators().matrix_transpose();
     if (H.n == 1) return Tensor::like(G, {1.0}, {1, 1});
     const int64_t k = H.n - 1;
     // the subsets of k generators in lexicographic order, CORA's

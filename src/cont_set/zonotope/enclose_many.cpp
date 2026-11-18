@@ -42,11 +42,10 @@ std::pair<Zonotope, Tensor> Zonotope::enclose_many(const std::vector<Zonotope> &
                ", 1), got the shape " + shape_text(direction.shape());
     });
     for (const Zonotope &Z : Zs)
-        CORA_CHECK(Z.dim() == n && detail::cora_center(Z).ndim() == 2, Error::dimension_mismatch,
-                   [&] {
-                       return "enclose_many: the zonotopes must be single sets of one dimension, " +
-                              std::to_string(n);
-                   });
+        CORA_CHECK(Z.dim() == n && Z.center().ndim() == 1, Error::dimension_mismatch, [&] {
+            return "enclose_many: the zonotopes must be single sets of one dimension, " +
+                   std::to_string(n);
+        });
     const Tensor length = direction.vector_norm(Tensor::Norm::two, -2, true);
     CORA_CHECK(length.detach().item() > 0, Error::wrong_value,
                [] { return std::string("enclose_many: the direction must not be zero"); });

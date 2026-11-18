@@ -79,7 +79,7 @@ Tensor Zonotope::dominant_directions(std::optional<int> length1, std::optional<i
                            "it supports a single zonotope, not a batch");
     });
     // the choice is made on detached values; the result takes its columns from G, with gradients
-    const Tensor G = aux_nonzero_generators(detail::cora_generators(*this)); // CORA's columns
+    const Tensor G = aux_nonzero_generators(G_.matrix_transpose()); // CORA's columns
 
     const Tensor Gd = G.detach();
     const int64_t count = G.shape().back();

@@ -58,7 +58,7 @@ Zonotope aux_prepared(const Zonotope &Z, double tol) {
     const Zonotope compacted = Z.compact();
     const int64_t m = compacted.nr_generators();
     if (m > 0 && compacted.generators().matrix_rank(tol) == Z.dim()) return compacted;
-    const Tensor c = detail::cora_center(compacted);
+    const Tensor c = compacted.center().expand_dims(-1);
     const Tensor r = c.full_like(c.shape(), tol);
     return compacted.plus(Interval(r.negative(), r));
 }
@@ -90,8 +90,8 @@ bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
 bool aux_contains_polymax(const Zonotope &Z, const Zonotope &S, double tol) {
     const auto [C, d] = priv_zonotope_halfspaces(Z);
     // layout: the product with CORA's columns
-    const Tensor support =
-        C.matmul(detail::cora_center(S)) + C.matmul(detail::cora_generators(S)).abs_sum();
+    const Tensor support = C.matmul(S.center().expand_dims(-1)) +
+                           C.matmul(S.generators().matrix_transpose()).abs_sum();
     const std::vector<double> b = d.data(), b_ = support.data();
     for (size_t i = 0; i < b.size(); ++i)
         if (b_[i] > b[i] && !within_tol(b[i], b_[i], tol)) return false;
@@ -102,7 +102,8 @@ bool aux_contains_polymax(const Zonotope &Z, const Zonotope &S, double tol) {
 bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::string &method,
                            double tol) {
     const Zonotope inner = S.compact();
-    if (inner.nr_generators() == 0) return aux_contains_matrix(Z, detail::cora_center(inner), tol);
+    if (inner.nr_generators() == 0)
+        return aux_contains_matrix(Z, inner.center().expand_dims(-1), tol);
     const Zonotope compacted = Z.compact();
     if (compacted.nr_generators() == 0) return false; // a point holds no set
     if (priv_is_box(compacted, tol)) { // a box contains S iff it contains the box around S

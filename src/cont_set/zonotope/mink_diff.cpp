@@ -82,13 +82,13 @@ std::optional<std::vector<double>> aux_solve(const std::vector<double> &f, const
 /// first half d of a set of offsets is d - C c + C c2 (CORA's delta_d).
 Tensor aux_scalings(const std::string &method, const Zonotope &minuend, const Zonotope &subtrahend,
                     const Tensor &C, const Tensor &K_new) {
-    const Tensor &Gm = detail::cora_generators(minuend);
+    const Tensor &Gm = minuend.generators().matrix_transpose();
     const int64_t k = C.shape()[0], m = Gm.shape().back(), n = C.shape()[1];
     const Tensor A_abs = C.matmul(Gm).abs();
     const HostMatrix A = aux_host(A_abs);
     const auto slack = [&](const Tensor &d) {
-        return d.slice(0, 0, k) - C.matmul(detail::cora_center(minuend)) +
-               C.matmul(detail::cora_center(subtrahend));
+        return d.slice(0, 0, k) - C.matmul(minuend.center().expand_dims(-1)) +
+               C.matmul(subtrahend.center().expand_dims(-1));
     };
     if (method == "approx") return A_abs.pinv().matmul(slack(K_new)).matrix_transpose();
     const auto row = [&](const std::vector<double> &alpha) {
@@ -141,10 +141,13 @@ Zonotope aux_mink_diff_zono(const Zonotope &minuend, const Zonotope &subtrahend,
                             const std::string &method) {
     const Zonotope compacted = minuend.compact();
     const Tensor C = priv_zonotope_facet_normals(compacted);
-    const Tensor &Gm = detail::cora_generators(minuend), &cm = detail::cora_center(minuend);
-    const Tensor &Gs = detail::cora_generators(subtrahend), &cs = detail::cora_center(subtrahend);
+    const Tensor &Gm = minuend.generators().matrix_transpose(),
+                 &cm = minuend.center().expand_dims(-1);
+    const Tensor &Gs = subtrahend.generators().matrix_transpose(),
+                 &cs = subtrahend.center().expand_dims(-1);
     // the offsets of the facets of the minuend, and what the subtrahend takes off them
-    const Tensor Cc = C.matmul(cm), width = C.matmul(detail::cora_generators(compacted)).abs_sum();
+    const Tensor Cc = C.matmul(cm),
+                 width = C.matmul(compacted.generators().matrix_transpose()).abs_sum();
     const Tensor K = Tensor::concat({Cc + width, Cc.negative() + width}, 0);
     const Tensor H = Tensor::concat({C, C.negative()}, 0);
     Tensor delta_K = H.matmul(cs);
@@ -156,7 +159,8 @@ Zonotope aux_mink_diff_zono(const Zonotope &minuend, const Zonotope &subtrahend,
     // CORA drops the generators that came out exactly zero
     const Tensor values = scaled.detach();
     const Tensor kept = values.not_equal(values.zeros_like()).any(-2);
-    return detail::zonotope_of_columns(cm - cs, priv_select_generators(scaled, kept.nonzero(), -1));
+    return Zonotope((cm - cs).squeeze(-1),
+                    (priv_select_generators(scaled, kept.nonzero(), -1)).matrix_transpose());
 }
 
 // The options -------------------------------------------------------------------------------------
@@ -175,7 +179,7 @@ Refusal aux_refusal(const std::string &method) {
 /// CORA's minkDiff of two zonotopes, after the checks.
 Zonotope aux_mink_diff(const Zonotope &minuend, const Zonotope &subtrahend,
                        const std::string &method) {
-    if (subtrahend.nr_generators() == 0) return minuend - detail::cora_center(subtrahend);
+    if (subtrahend.nr_generators() == 0) return minuend - subtrahend.center().expand_dims(-1);
     if (!minuend.is_full_dim()) {
         if (subtrahend.is_full_dim())
             aux_empty("the difference of a flat set and a full-dimensional one is empty");
@@ -190,10 +194,12 @@ Zonotope aux_mink_diff(const Zonotope &minuend, const Zonotope &subtrahend,
     if (used == "inner:RaghuramanKoeln" || used == "outer:scaling")
         CORA_FAIL(Error::not_supported, "mink_diff: the method '" + used + "' is not supported");
     if (used != "exact") return aux_mink_diff_zono(minuend, subtrahend, used);
-    if (aux_are_aligned(detail::cora_generators(minuend), detail::cora_generators(subtrahend)))
-        return detail::zonotope_of_columns(
-            detail::cora_center(minuend) - detail::cora_center(subtrahend),
-            detail::cora_generators(minuend) - detail::cora_generators(subtrahend));
+    if (aux_are_aligned(minuend.generators().matrix_transpose(),
+                        subtrahend.generators().matrix_transpose()))
+        return Zonotope(
+            (minuend.center().expand_dims(-1) - subtrahend.center().expand_dims(-1)).squeeze(-1),
+            (minuend.generators().matrix_transpose() - subtrahend.generators().matrix_transpose())
+                .matrix_transpose());
     if (minuend.dim() != 2)
         CORA_FAIL(Error::wrong_value, "mink_diff: no exact algorithm found: the sets have to be "
                                       "2-dimensional or aligned");
@@ -220,12 +226,10 @@ Zonotope Zonotope::mink_diff(const Zonotope &subtrahend, const std::string &meth
     });
     const Refusal refusal = aux_refusal(method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "mink_diff: " + refusal->second; });
-    CORA_CHECK(
-        detail::cora_center(*this).ndim() == 2 && detail::cora_center(subtrahend).ndim() == 2,
-        Error::not_supported, [] {
-            return std::string("mink_diff: facets of one zonotope at a time; it supports single "
-                               "zonotopes, not a batch");
-        });
+    CORA_CHECK(c_.ndim() == 1 && subtrahend.center().ndim() == 1, Error::not_supported, [] {
+        return std::string("mink_diff: facets of one zonotope at a time; it supports single "
+                           "zonotopes, not a batch");
+    });
     return aux_mink_diff(*this, subtrahend, method);
 }
 
@@ -240,7 +244,7 @@ Zonotope Zonotope::mink_diff(const Interval &subtrahend, const std::string &meth
                });
     const Refusal refusal = aux_refusal(method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "mink_diff: " + refusal->second; });
-    CORA_CHECK(detail::cora_center(*this).ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("mink_diff: facets of one zonotope at a time; it supports a single "
                            "zonotope, not a batch");
     });

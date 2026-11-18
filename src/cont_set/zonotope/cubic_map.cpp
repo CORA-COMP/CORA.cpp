@@ -42,9 +42,9 @@ Shape aux_shape(const Tensor &like, std::initializer_list<int64_t> tail) {
     return shape;
 }
 
-/// [c G]: the center as the first column.
+/// [c G]: the center as the first column, then the generators as columns.
 Tensor aux_full(const Zonotope &Z) {
-    return Tensor::concat({detail::cora_center(Z), detail::cora_generators(Z)}, -1);
+    return Tensor::concat({Z.center().expand_dims(-2), Z.generators()}, -2).matrix_transpose();
 }
 
 /// The columns of T that enter output i: ind[i], or all of them.
@@ -146,7 +146,9 @@ Zonotope aux_from_rows(const std::vector<std::vector<Tensor>> &T,
     rows.reserve(T.size());
     for (std::size_t i = 0; i < T.size(); ++i) rows.push_back(row(T[i], indices[i]));
     const Tensor all = Tensor::concat(rows, -2);
-    return detail::zonotope_of_columns(all.slice(-1, 0, 1), all.slice(-1, 1, all.shape().back()));
+    // the output columns [c G] as a center and generator rows
+    return {all.slice(-1, 0, 1).squeeze(-1),
+            all.slice(-1, 1, all.shape().back()).matrix_transpose()};
 }
 
 } // namespace

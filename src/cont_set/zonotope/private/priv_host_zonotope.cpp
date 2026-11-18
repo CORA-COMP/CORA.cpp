@@ -24,7 +24,8 @@ namespace cora {
 
 HostZonotope priv_host_zonotope(const Zonotope &Z) {
     // the linear programs read CORA's n x m matrix of generator columns
-    return {Z.dim(), Z.nr_generators(), Z.center().data(), detail::cora_generators(Z).data()};
+    return {Z.dim(), Z.nr_generators(), Z.center().data(),
+            Z.generators().matrix_transpose().data()};
 }
 
 } // namespace cora

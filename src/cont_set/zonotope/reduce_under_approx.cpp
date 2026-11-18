@@ -144,27 +144,28 @@ Zonotope Zonotope::reduce_under_approx(const std::string &method, double order) 
     CORA_CHECK(!std::isnan(order) && order > 0, Error::wrong_value, [&] {
         return "reduce_under_approx: the order must be positive, got " + format_number(order);
     });
-    CORA_CHECK(detail::cora_center(*this).ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("reduce_under_approx: it supports a single zonotope, not a batch");
     });
     // CORA reduces only when order * n generators would be fewer than there are
-    const Zonotope Z = compact("zeros", machine_eps(detail::cora_center(*this).dtype()));
+    const Zonotope Z = compact("zeros", machine_eps(c_.dtype()));
     const int64_t n = Z.dim(), m = Z.nr_generators();
     if (!(double(n) * order < double(m))) return Z;
 
     if (method == "yang")
-        return detail::zonotope_of_columns(detail::cora_center(Z),
-                                           aux_yang(detail::cora_generators(Z), order));
+        return Zonotope((Z.center().expand_dims(-1)).squeeze(-1),
+                        (aux_yang(Z.generators().matrix_transpose(), order)).matrix_transpose());
     if (method == "raghuraman") {
         const int64_t kept = int64_t(std::floor(order * double(n)));
         CORA_CHECK(kept >= 1, Error::wrong_value, [&] {
             return "reduce_under_approx: the order " + format_number(order) +
                    " leaves no generator";
         });
-        const auto [big, small] = aux_by_length(detail::cora_generators(Z), kept);
-        return detail::zonotope_of_columns(
-            detail::cora_center(Z),
-            detail::cora_generators(Z).matmul(aux_raghuraman_pattern(big, small)));
+        const auto [big, small] = aux_by_length(Z.generators().matrix_transpose(), kept);
+        return Zonotope(
+            (Z.center().expand_dims(-1)).squeeze(-1),
+            (Z.generators().matrix_transpose().matmul(aux_raghuraman_pattern(big, small)))
+                .matrix_transpose());
     }
     // kochdumper: the shortest generators, signed by their first coordinate, become one
     const int64_t kept = int64_t(std::floor(order * double(n) - 1));
@@ -172,10 +173,10 @@ Zonotope Zonotope::reduce_under_approx(const std::string &method, double order) 
         return "reduce_under_approx: the order " + format_number(order) +
                " leaves no generator for the sum";
     });
-    const auto [big, small] = aux_by_length(detail::cora_generators(Z), kept);
+    const auto [big, small] = aux_by_length(Z.generators().matrix_transpose(), kept);
     const Tensor merged = small.multiply(small.slice(-2, 0, 1).sign()).sum(-1, true);
-    return detail::zonotope_of_columns(detail::cora_center(Z),
-                                       kept == 0 ? merged : Tensor::concat({big, merged}, -1));
+    return Zonotope((Z.center().expand_dims(-1)).squeeze(-1),
+                    (kept == 0 ? merged : Tensor::concat({big, merged}, -1)).matrix_transpose());
 }
 
 } // namespace cora

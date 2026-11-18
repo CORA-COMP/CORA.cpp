@@ -37,7 +37,7 @@ std::pair<Tensor, Tensor> Zonotope::minnorm() const {
     });
     // CORA's polytope(Z - c), on CORA's columns: no zero generators; a flat one has a facet at c
     const Zonotope compacted = compact();
-    const Tensor G = detail::cora_generators(compacted), c = detail::cora_center(*this);
+    const Tensor G = compacted.generators().matrix_transpose(), c = c_.expand_dims(-1);
     if (G.shape().back() == 0 || G.matrix_rank(resolve_tol({}, G.dtype())) < dim())
         return {c.zeros_like({1, 1}), c};
     const Tensor C = priv_zonotope_facet_normals(compacted);
