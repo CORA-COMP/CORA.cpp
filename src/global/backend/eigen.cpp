@@ -119,6 +119,19 @@ void aux_products(const T *a, const Shape &sa, const T *b, const Shape &sb, T *o
     host::parallel_for(bp.batch.numel(), work, product);
 }
 
+/// C = A B' for an inner size K fixed at compile time: each entry 0 + a_0 b_0 + ... + a_{K-1}
+/// b_{K-1} in order, as the loop of any K.
+template <class T, int K>
+void aux_dots_bt(const T *__restrict A, const T *__restrict B, T *__restrict C, int64_t n,
+                 int64_t m) {
+    for (int64_t i = 0; i < n; ++i)
+        for (int64_t j = 0; j < m; ++j) {
+            T sum = T(0);
+            for (int q = 0; q < K; ++q) sum += A[i * K + q] * B[j * K + q];
+            C[i * m + j] = sum;
+        }
+}
+
 /// C = A B' of one pair, (n, k) times (m, k)': a small product is the dot products of the rows.
 template <class T>
 void aux_product_bt(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t m) {
@@ -126,6 +139,26 @@ void aux_product_bt(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t 
         Map<T>(C, n, m).noalias() = MapC<T>(A, n, k) * MapC<T>(B, m, k).transpose();
         return;
     }
+    // the inner size known to the compiler: the same sums, unrolled
+    switch (k) {
+    case 2: // a zonogon
+        return aux_dots_bt<T, 2>(A, B, C, n, m);
+    case 3:
+        return aux_dots_bt<T, 3>(A, B, C, n, m);
+    case 4:
+        return aux_dots_bt<T, 4>(A, B, C, n, m);
+    case 5:
+        return aux_dots_bt<T, 5>(A, B, C, n, m);
+    case 6:
+        return aux_dots_bt<T, 6>(A, B, C, n, m);
+    case 7:
+        return aux_dots_bt<T, 7>(A, B, C, n, m);
+    case 8:
+        return aux_dots_bt<T, 8>(A, B, C, n, m);
+    default:
+        break;
+    }
+    // any other inner size: the same loop at run time
     for (int64_t i = 0; i < n; ++i)
         for (int64_t j = 0; j < m; ++j) {
             T sum = T(0);
@@ -159,6 +192,15 @@ host::BatchPairs aux_pairs(const Shape &a, const Shape &b, const char *op) {
         CORA_FAIL(Error::dimension_mismatch,
                   std::string("CoraTensor::") + op + ": the inner sizes of the product differ");
     return bp;
+}
+
+/// sum = |a_0| + (|a_1| + (... + (|a_{m-1}| + 0))) over the m rows (m, n) of a, CORALean's order;
+/// plain loops on unaliased pointers, as the rows are short and Eigen's per-row setup is not.
+template <class T>
+void aux_abs_rows(const T *__restrict a, int64_t m, int64_t n, T *__restrict sum) {
+    std::fill(sum, sum + n, T(0));
+    for (int64_t i = m; i-- > 0;)
+        for (int64_t j = 0; j < n; ++j) sum[j] = std::abs(a[i * n + j]) + sum[j];
 }
 
 /// Memory of this thread for the temporaries of a kernel, reused from call to call so that a
@@ -346,12 +388,9 @@ zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const 
         }
         const auto Gz = MapC<T>(G.p + r * m * k, m, k);
         const auto cz = MapC<T>(c.p + r * k, 1, k);
-        // the box S |[c; G]|' 1, and c T', G T'
-        // CORALean's order: |c| + (|g_0| + (|g_1| + ... + (|g_{m-1}| + 0))), the rows from the last
-        auto sum = Map<T>(reach, 1, k);
-        sum.setZero();
-        for (int64_t i = m; i-- > 0;) sum = Gz.row(i).cwiseAbs() + sum;
-        sum = cz.cwiseAbs() + sum;
+        // the box S |[c; G]|' 1, and c T', G T'; |c| + (|g_0| + (... + 0)), CORALean's order
+        aux_abs_rows(G.p + r * m * k, m, k, reach);
+        for (int64_t j = 0; j < k; ++j) reach[j] = std::abs(c.p[r * k + j]) + reach[j];
         Map<T>(box, n, 1).noalias() = MapC<T>(s, n, k) * MapC<T>(reach, k, 1);
         Map<T>(Tc->p + z * n, 1, n).noalias() = cz * MapC<T>(t, n, k).transpose();
         Map<T> out(TG->p + z * (m + n) * n, m + n, n);
@@ -452,6 +491,19 @@ Tensor::Ptr abs_sum(const HostTensor<T> &a) {
     return r;
 }
 
+// |a_0| + (|a_1| + (... + 0)) over the rows of each matrix, as lean adds them, as a column.
+template <class T>
+Tensor::Ptr abs_sum_rows(const HostTensor<T> &a) {
+    const int64_t m = aux_rows(a.shape), n = a.shape.back();
+    Shape out(a.shape);
+    out[out.size() - 2] = n;
+    out.back() = 1;
+    auto r = a.fresh(out);
+    const int64_t count = out.numel() / std::max<int64_t>(n, 1);
+    for (int64_t z = 0; z < count; ++z) aux_abs_rows(a.p + z * m * n, m, n, r->p + z * n);
+    return r;
+}
+
 // The kernels of both dtypes.
 #define CORA_EIGEN_KERNELS(T)                                                                      \
     template Tensor::Ptr matmul(const HostTensor<T> &, const HostTensor<T> &);                     \
@@ -473,6 +525,9 @@ Tensor::Ptr abs_sum(const HostTensor<T> &a) {
 CORA_EIGEN_KERNELS(double)
 CORA_EIGEN_KERNELS(float)
 #undef CORA_EIGEN_KERNELS
+// the sum over the rows, of both dtypes
+template Tensor::Ptr abs_sum_rows(const HostTensor<double> &);
+template Tensor::Ptr abs_sum_rows(const HostTensor<float> &);
 
 } // namespace host::eigen
 

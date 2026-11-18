@@ -26,7 +26,7 @@ Zonotope Zonotope::box() const {
     CORA_CHECK(elem_rank_ == 1, Error::not_supported,
                [] { return std::string("box: not for a matrix zonotope"); });
     // the radius, summed over the generators, as one axis generator per dimension
-    return {c_, G_.abs().sum(-2).expand_dims(-1).diag()};
+    return {c_, G_.abs_sum_rows().diag()};
 }
 
 

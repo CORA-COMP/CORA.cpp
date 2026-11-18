@@ -291,6 +291,8 @@ void fused() {
               },
               {aux_randn({4, 2}), aux_away({4, 2}), aux_away({3, 4})});
     gradcheck("abs_sum", [](const V &v) { return V{v[0].abs_sum()}; }, {aux_away({2, 3, 5})});
+    gradcheck("abs_sum_rows", [](const V &v) { return V{v[0].abs_sum_rows()}; },
+              {aux_away({2, 5, 3})});
 }
 
 } // namespace

@@ -310,6 +310,7 @@ class Tensor {
         virtual std::pair<Ptr, Ptr> matmul_interval(const Impl &inf, const Impl &sup) const;
         virtual std::pair<Ptr, Ptr> girard_split(int64_t keep) const;
         virtual Ptr abs_sum() const;
+        virtual Ptr abs_sum_rows() const;
     };
 
     /// Makes the tensors of one backend from host numbers.
@@ -631,6 +632,9 @@ class Tensor {
     std::pair<Tensor, Tensor> girard_split(int64_t keep) const;
     /// sum(|x|) along the last axis, kept: (..., n, m) -> (..., n, 1).
     Tensor abs_sum() const;
+    /// sum(|x|) over the rows of each matrix, as a column: (..., m, n) -> (..., n, 1); the radius
+    /// of a zonotope of generator rows.
+    Tensor abs_sum_rows() const;
 
   private:
     Tensor binary(Binary op, const Tensor &o) const &;

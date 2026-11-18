@@ -38,8 +38,9 @@ Zonotope Zonotope::plus(const Zonotope &Z2) const {
     const Tensor c = c_ + Z2.center();
     const int64_t axis = c.ndim() - elem_rank_;
     const auto widen = [&](const Tensor &G) {
-        Shape s(std::vector<int64_t>(c.shape().begin(), c.shape().begin() + axis));
-        for (int64_t i = G.ndim() - elem_rank_ - 1; i < G.ndim(); ++i) s.push_back(G.size(int(i)));
+        Shape s;
+        for (int64_t i = 0; i < axis; ++i) s.push_back(c.shape()[i]);
+        for (int64_t i = G.ndim() - elem_rank_ - 1; i < G.ndim(); ++i) s.push_back(G.shape()[i]);
         return G.shape() == s ? G : G.broadcast_to(s);
     };
     return {c, Tensor::concat({widen(G_), widen(Z2.generators())}, int(axis)), elem_rank_};

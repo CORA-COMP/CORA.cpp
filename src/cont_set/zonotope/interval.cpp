@@ -22,9 +22,12 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Interval Zonotope::interval_impl() const {
-    const Tensor r = G_.abs().sum(-1 - int(elem_rank_)); // the radius: the sum of |G| over h
-    // layout: #163 step 2 - the box of a vector zonotope has column bounds (..., n, 1)
-    if (elem_rank_ == 1) return {(c_ - r).expand_dims(-1), (c_ + r).expand_dims(-1)};
+    // the box of a vector zonotope has column bounds (..., n, 1): its radius is one fused sum
+    if (elem_rank_ == 1) {
+        const Tensor c = c_.expand_dims(-1), r = G_.abs_sum_rows();
+        return {c - r, c + r};
+    }
+    const Tensor r = G_.abs().sum(-3); // the radius: the sum of |G| over h
     return {c_ - r, c_ + r};
 }
 

@@ -984,6 +984,12 @@ Tensor::Ptr HostTensor<T>::abs_sum() const {
     return Impl::abs_sum();
 }
 
+template <class T>
+Tensor::Ptr HostTensor<T>::abs_sum_rows() const {
+    if (backend == backend_id::eigen) return eigen::abs_sum_rows(*this);
+    return Impl::abs_sum_rows();
+}
+
 template struct HostTensor<double>;
 template struct HostTensor<float>;
 

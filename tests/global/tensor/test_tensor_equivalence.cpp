@@ -379,6 +379,7 @@ std::map<std::string, Case> aux_cases() {
                              return V{kept, rest};
                          }};
     c["abs_sum"] = {9, [](O &o) { return V{o.batch(2, 4, 9).abs_sum()}; }};
+    c["abs_sum_rows"] = {9, [](O &o) { return V{o.batch(2, 9, 4).abs_sum_rows()}; }};
     return c;
 }
 

@@ -60,6 +60,7 @@ std::pair<Tensor, Tensor> interval_matmul(const Tensor &inf, const Tensor &sup, 
 std::pair<Tensor, Tensor> matmul_interval(const Tensor &M, const Tensor &inf, const Tensor &sup);
 std::pair<Tensor, Tensor> girard_split(const Tensor &G, int64_t keep);
 Tensor abs_sum(const Tensor &x);
+Tensor abs_sum_rows(const Tensor &x);
 
 } // namespace derived
 

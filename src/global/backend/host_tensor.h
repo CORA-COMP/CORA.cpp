@@ -122,6 +122,7 @@ struct HostTensor : Tensor::Impl {
                                         const Tensor::Impl &sup) const override;
     std::pair<Ptr, Ptr> girard_split(int64_t keep) const override;
     Ptr abs_sum() const override;
+    Ptr abs_sum_rows() const override;
 };
 
 /// The kernels of the eigen backend (eigen.cpp), for HostTensor of that backend.
@@ -154,6 +155,8 @@ template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t keep);
 template <class T>
 Tensor::Ptr abs_sum(const HostTensor<T> &a);
+template <class T>
+Tensor::Ptr abs_sum_rows(const HostTensor<T> &a);
 } // namespace eigen
 
 // Batches -----------------------------------------------------------------------------------------

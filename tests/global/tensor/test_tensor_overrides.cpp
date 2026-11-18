@@ -124,7 +124,8 @@ Tensor aux_adversarial(test::oracle::Random &rnd, int64_t rows, int64_t len) {
 }
 
 /// The fused row sum of |x| against abs().sum(-1, true) on every length up to 70, adversarial
-/// magnitudes, batches, an empty axis and non-finite numbers: bit for bit on lean only.
+/// magnitudes, batches, an empty axis and non-finite numbers: bit for bit on lean only. The sum
+/// over the rows against CORALean's fold: bit for bit on lean and eigen.
 void aux_abs_sum_bits(const std::string &b) {
     test::oracle::Random rnd(29);
     const auto bound = [&](int64_t len) { return b == "lean" ? 0.0 : aux_sum_bound(len); };
@@ -142,6 +143,16 @@ void aux_abs_sum_bits(const std::string &b) {
         Tensor::from_data({1, -inf, 2, inf, -inf, 3, nan, 1, 0, 1e308, 1e308, -1e308}, {4, 3});
     if (b == "lean")
         aux_agree(b + " abs_sum non-finite", odd.abs_sum(), odd.abs().sum(-1, true), 0);
+    // abs_sum_rows adds the rows from the last, as lean's fold: the same bits on lean and eigen
+    for (int64_t m = 1; m <= 40; ++m) {
+        const Tensor y = aux_adversarial(rnd, m, 7);
+        const std::vector<double> d = y.data();
+        std::vector<double> ref(7, 0.0);
+        for (int64_t j = 0; j < 7; ++j)
+            for (int64_t i = m; i-- > 0;) ref[j] = std::abs(d[i * 7 + j]) + ref[j];
+        aux_agree(b + " abs_sum_rows " + std::to_string(m), y.abs_sum_rows(),
+                  Tensor::from_data(ref, {7, 1}), b == "torch" ? aux_sum_bound(m) : 0.0);
+    }
 }
 
 } // namespace

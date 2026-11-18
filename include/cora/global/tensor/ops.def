@@ -131,5 +131,6 @@ CORA_TENSOR_OP(interval_matmul, fused, piecewise, sum, 2, "the bounds of I M for
 CORA_TENSOR_OP(matmul_interval, fused, piecewise, sum, 2, "the bounds of M I for an interval matrix I (CORA's mtimes)")
 CORA_TENSOR_OP(girard_split, fused, not_differentiable, exact, 0, "the generator rows by Girard's score |g|_1 - |g|_inf, the k kept and the rest")
 CORA_TENSOR_OP(abs_sum, fused, piecewise, sum, 1, "sum(|x|) along the last axis, kept (the radius of a zonotope)")
+CORA_TENSOR_OP(abs_sum_rows, fused, piecewise, sum, 1, "sum(|x|) over the rows of each matrix, as a column: (..., m, n) to (..., n, 1)")
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

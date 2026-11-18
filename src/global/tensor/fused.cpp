@@ -130,6 +130,10 @@ std::pair<Tensor::Ptr, Tensor::Ptr> Tensor::Impl::girard_split(int64_t keep) con
 
 Tensor::Ptr Tensor::Impl::abs_sum() const { return derived::abs_sum(Tensor(self())).ptr(); }
 
+Tensor::Ptr Tensor::Impl::abs_sum_rows() const {
+    return derived::abs_sum_rows(Tensor(self())).ptr();
+}
+
 // The Specifications ------------------------------------------------------------------------------
 
 std::pair<Tensor, Tensor> derived::zonotope_linear_map(const Tensor &M, const Tensor &c,
@@ -179,6 +183,8 @@ std::pair<Tensor, Tensor> derived::girard_split(const Tensor &G, int64_t keep) {
 }
 
 Tensor derived::abs_sum(const Tensor &x) { return x.abs().sum(-1, true); }
+
+Tensor derived::abs_sum_rows(const Tensor &x) { return x.abs().sum(-2).expand_dims(-1); }
 
 // The Front End -----------------------------------------------------------------------------------
 
@@ -262,6 +268,13 @@ std::pair<Tensor, Tensor> Tensor::girard_split(int64_t keep) const {
 Tensor Tensor::abs_sum() const {
     if (ndim() < 1) CORA_FAIL(Error::dimension_mismatch, "CoraTensor::abs_sum: needs an axis");
     return Tensor(impl_->abs_sum());
+}
+
+Tensor Tensor::abs_sum_rows() const {
+    if (ndim() < 2)
+        CORA_FAIL(Error::dimension_mismatch,
+                  "CoraTensor::abs_sum_rows: needs a matrix (..., m, n)");
+    return Tensor(impl_->abs_sum_rows());
 }
 
 } // namespace cora

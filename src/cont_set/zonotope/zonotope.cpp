@@ -24,6 +24,13 @@ namespace cora {
 
 namespace {
 
+/// The axes [from, to) of a shape, without a heap vector (these run on every set operation).
+Shape aux_axes(const Shape &s, int64_t from, int64_t to) {
+    Shape part;
+    for (int64_t i = from; i < to; ++i) part.push_back(s[i]);
+    return part;
+}
+
 /// Whether G (batch..., h, elem...) fits the center c (batch..., elem...).
 bool aux_fits(const Shape &c, const Shape &G, int64_t elem_rank) {
     if (G.size() != c.size() + 1 || c.size() < elem_rank) return false;
@@ -70,17 +77,17 @@ Zonotope::Zonotope(Tensor c, Tensor G, int64_t elem_rank)
 
 // the element and the batch dims of the center
 Shape Zonotope::elem_shape() const {
-    const Shape &s = c_.shape();
-    return Shape(std::vector<int64_t>(s.begin() + (s.size() - elem_rank_), s.end()));
+    return aux_axes(c_.shape(), c_.ndim() - elem_rank_, c_.ndim());
 }
 
-Shape Zonotope::batch_shape() const {
-    const Shape &s = c_.shape();
-    return Shape(std::vector<int64_t>(s.begin(), s.begin() + (s.size() - elem_rank_)));
-}
+Shape Zonotope::batch_shape() const { return aux_axes(c_.shape(), 0, c_.ndim() - elem_rank_); }
 
 // a matrix zonotope has as many dimensions as entries
-int64_t Zonotope::dim_impl() const { return elem_shape().numel(); }
+int64_t Zonotope::dim_impl() const {
+    int64_t n = 1;
+    for (int64_t i = c_.ndim() - elem_rank_; i < c_.ndim(); ++i) n *= c_.shape()[i];
+    return n;
+}
 
 } // namespace cora
 
