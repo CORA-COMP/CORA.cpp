@@ -245,11 +245,11 @@ Tensor::Ptr sum_rows(const HostTensor<T> &a, bool keepdims) {
     const int64_t count = out.numel() / std::max<int64_t>(cols, 1);
     // row after row into the sums: one order of the terms wherever a matrix starts in memory
     for (int64_t z = 0; z < count; ++z) {
-        T *sum = r->p + z * cols;
+        // each entry its own sum, so the vector adds give the same bits at any alignment
+        auto sum = Map<T>(r->p + z * cols, 1, cols);
         const T *m = a.p + z * rows * cols;
-        std::fill(sum, sum + cols, T(0));
-        for (int64_t i = 0; i < rows; ++i)
-            for (int64_t j = 0; j < cols; ++j) sum[j] += m[i * cols + j];
+        sum.setZero();
+        for (int64_t i = 0; i < rows; ++i) sum += MapC<T>(m + i * cols, 1, cols);
     }
     return r;
 }
@@ -383,6 +383,34 @@ zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
     return {c, G};
 }
 
+// The Girard score sum_j |g_j| - max_j |g_j| of each row of the (m, n) matrix g: the terms of a row
+// in order, so one result wherever the matrix starts; kBlock rows side by side, as independent
+// sums.
+template <class T>
+void aux_girard_scores(const T *g, int64_t m, int64_t n, T *score) {
+    constexpr int64_t kBlock = 8;
+    int64_t i = 0;
+    for (; i + kBlock <= m; i += kBlock) {
+        T sum[kBlock] = {}, most[kBlock] = {};
+        for (int64_t j = 0; j < n; ++j)
+            for (int64_t r = 0; r < kBlock; ++r) {
+                const T a = std::abs(g[(i + r) * n + j]);
+                sum[r] += a;
+                most[r] = a > most[r] ? a : most[r];
+            }
+        for (int64_t r = 0; r < kBlock; ++r) score[i + r] = sum[r] - most[r];
+    }
+    for (; i < m; ++i) {
+        T sum = T(0), most = T(0);
+        for (int64_t j = 0; j < n; ++j) {
+            const T a = std::abs(g[i * n + j]);
+            sum += a;
+            most = a > most ? a : most;
+        }
+        score[i] = sum - most;
+    }
+}
+
 // The scores of all rows at once, then a stable sort per matrix.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t keep) {
@@ -395,17 +423,7 @@ std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t
     std::vector<int64_t> order(m);
     T *score = aux_scratch<T>(m);
     for (int64_t z = 0; z < count; ++z) {
-        // the score of each row, its terms in order: one result wherever the matrix starts
-        for (int64_t i = 0; i < m; ++i) {
-            const T *g = G.p + (z * m + i) * n;
-            T sum = T(0), most = T(0);
-            for (int64_t j = 0; j < n; ++j) {
-                const T a = std::abs(g[j]);
-                sum += a;
-                most = a > most ? a : most;
-            }
-            score[i] = sum - most;
-        }
+        aux_girard_scores(G.p + z * m * n, m, n, score);
         std::iota(order.begin(), order.end(), 0);
         std::stable_sort(order.begin(), order.end(),
                          [&](int64_t a, int64_t b) { return score[a] > score[b]; });

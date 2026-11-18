@@ -8,9 +8,9 @@
 // See also: derived.h, tensor.cpp, fused.cpp, docs/tensor.md
 //
 // CORA.cpp only: Tensor replaces MATLAB's matrices.
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "global/tensor/derived.h"
@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <numeric>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -239,11 +240,11 @@ Tensor Tensor::stack(const std::vector<Tensor> &parts, int axis) {
 
 Tensor Tensor::matrix_transpose() const {
     aux_require_matrix(*this, "matrix_transpose");
-    std::vector<int> axes;
-    axes.reserve(ndim());
-    for (int d = 0; d < ndim(); ++d) axes.push_back(d);
+    // the axes are valid by construction: straight to the backend, without the checks
+    std::vector<int> axes(static_cast<std::size_t>(ndim()));
+    std::iota(axes.begin(), axes.end(), 0);
     std::swap(axes[ndim() - 1], axes[ndim() - 2]);
-    return permute_dims(axes);
+    return Tensor(impl().permute_dims(axes));
 }
 
 // Views through reshape.

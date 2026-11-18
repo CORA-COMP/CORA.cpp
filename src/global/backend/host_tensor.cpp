@@ -342,6 +342,28 @@ void aux_require_matrix(const Shape &s, const char *op, bool square) {
                   std::string("CoraTensor::") + op + ": needs square matrices, got " + aux_text(s));
 }
 
+// The matrices of a batch transposed, (..., r, c) to (..., c, r): tiles of kTile x kTile, so that
+// both the reads and the writes stay in cache lines.
+template <class T>
+Tensor::Ptr aux_transpose_matrices(const HostTensor<T> &a) {
+    constexpr int64_t kTile = 16;
+    const int64_t r = a.shape[a.shape.size() - 2], c = a.shape.back();
+    Shape out = a.shape;
+    std::swap(out[out.size() - 1], out[out.size() - 2]);
+    auto t = a.fresh(out);
+    const int64_t count = a.shape.numel() / std::max<int64_t>(r * c, 1);
+    for (int64_t z = 0; z < count; ++z) {
+        const T *src = a.p + z * r * c;
+        T *dst = t->p + z * r * c;
+        for (int64_t i0 = 0; i0 < r; i0 += kTile)
+            for (int64_t j0 = 0; j0 < c; j0 += kTile)
+                for (int64_t i = i0; i < std::min(i0 + kTile, r); ++i)
+                    for (int64_t j = j0; j < std::min(j0 + kTile, c); ++j)
+                        dst[j * r + i] = src[i * c + j];
+    }
+    return t;
+}
+
 } // namespace
 
 
@@ -632,6 +654,10 @@ Tensor::Ptr HostTensor<T>::reshape(const Shape &s) const {
 // A copy that walks the source by permuted strides.
 template <class T>
 Tensor::Ptr HostTensor<T>::permute_dims(const std::vector<int> &axes) const {
+    const int64_t nd = static_cast<int64_t>(axes.size());
+    bool last_two = nd >= 2 && axes[nd - 1] == nd - 2 && axes[nd - 2] == nd - 1;
+    for (int64_t d = 0; last_two && d + 2 < nd; ++d) last_two = axes[d] == d;
+    if (last_two) return aux_transpose_matrices(*this);
     const Shape st = strides_of(shape);
     Shape out, strides;
     for (const int a : axes) {
