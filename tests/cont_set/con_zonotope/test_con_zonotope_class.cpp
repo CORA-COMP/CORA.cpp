@@ -37,11 +37,11 @@ void constructor_forms(const std::string &b) {
     check(close(legacy.generators(), constrained.generators(), 0) &&
               close(legacy.c(), constrained.c(), 0),
           b + ": from_matrix splits the first column");
-    check(ConZonotope::from_matrix(Tensor({{1.0}, {2.0}})).generators().shape() == Shape{2, 0},
+    check(ConZonotope::from_matrix(Tensor({{1.0}, {2.0}})).generators().shape() == Shape{0, 2},
           b + ": a center only: no generators");
+    // the conversions keep the center and the generator rows
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
-    check(close(ConZonotope(Z).generators(), Z.generators().matrix_transpose(), 0),
-          b + ": from a zonotope");
+    check(close(ConZonotope(Z).generators(), Z.generators(), 0), b + ": from a zonotope");
     const Interval I(column({0.0, 1.0}), column({2.0, 5.0}));
     check(close(ConZonotope(I).c(), {1, 3}, 0), b + ": from a box: its center");
     check(close(ConZonotope(I).generators(), {1, 0, 0, 2}, 0), b + ": from a box: its radius");
@@ -58,6 +58,7 @@ void refusals() {
           "ConZonotope: the center is a column");
     check(test::raises([&] { ConZonotope(column({1.0}), G); }, Error::wrong_input_in_constructor),
           "ConZonotope: the rows of G are the dimension");
+    // the constraints must fit the generators
     check(test::raises([&] { ConZonotope(column({1.0, 2.0}), G, Tensor({{1.0}}), column({1.0})); },
                        Error::wrong_input_in_constructor),
           "ConZonotope: A has a column per generator");
@@ -85,9 +86,10 @@ void refusals() {
 /// The batch: sets with a leading axis share one batch shape.
 void batches(const std::string &b) {
     const Tensor c = Tensor::zeros({3, 2, 1}), G = Tensor::ones({3, 2, 4});
-    const ConZonotope cz(c, G, Tensor::zeros({3, 1, 4}), Tensor::zeros({3, 1, 1}));
+    const ConZonotope cz(c, G.matrix_transpose(), Tensor::zeros({3, 1, 4}),
+                         Tensor::zeros({3, 1, 1}));
     check(cz.dim() == 2 && cz.A().shape() == Shape{3, 1, 4}, b + ": a batch of three sets");
-    check(test::raises([&] { ConZonotope(c, Tensor::ones({2, 2, 4})); },
+    check(test::raises([&] { ConZonotope(c, Tensor::ones({2, 2, 4}).matrix_transpose()); },
                        Error::wrong_input_in_constructor),
           b + ": one batch shape");
 }

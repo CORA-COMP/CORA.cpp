@@ -7,9 +7,9 @@
 //           so the set is nonempty
 // See also: testing.h
 //
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -40,14 +40,14 @@ inline cora::ConZonotope random_con_zonotope(cora::Rng &rng, int n, int m, int p
     const auto tensor = [](const std::vector<double> &v, int64_t r, int64_t k) {
         return cora::Tensor::from_data(v, {r, k});
     };
-    return {tensor(c, n, 1), tensor(G, n, m), tensor(A, p, m), tensor(b, p, 1)};
+    return {tensor(c, n, 1), tensor(G, n, m).matrix_transpose(), tensor(A, p, m), tensor(b, p, 1)};
 }
 
 /// The hexagon {(a, b) | |a| <= 1, |b| <= 1, |a + b| <= 1} as x = G xi with xi_1 + xi_2 + xi_3 = 0
 /// (a = -xi_2, b = -xi_1): the vertices are (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1).
 inline cora::ConZonotope hexagon() {
     return {cora::Tensor::from_data({0.0, 0.0}, {2, 1}),
-            cora::Tensor::from_data({1.0, 0.0, 1.0, 0.0, 1.0, 1.0}, {2, 3}),
+            cora::Tensor::from_data({1.0, 0.0, 0.0, 1.0, 1.0, 1.0}, {3, 2}),
             cora::Tensor::from_data({1.0, 1.0, 1.0}, {1, 3}),
             cora::Tensor::from_data({0.0}, {1, 1})};
 }
@@ -55,9 +55,9 @@ inline cora::ConZonotope hexagon() {
 /// N points of the set (n, N): the free factors are uniform in the box, the others follow from
 /// the constraints [I B] x = b (the set must be of the form of random_con_zonotope), by rejection.
 inline cora::Tensor sample_points(const cora::ConZonotope &cz, cora::Rng &rng, int N) {
-    const int64_t n = cz.dim(), m = cz.generators().shape().back(), p = cz.A().shape()[0];
-    const std::vector<double> c = cz.c().data(), G = cz.generators().data(), A = cz.A().data(),
-                              b = cz.b().data();
+    const int64_t n = cz.dim(), m = cz.nr_generators(), p = cz.A().shape()[0];
+    const std::vector<double> c = cz.c().data(), G = cz.generators().matrix_transpose().data(),
+                              A = cz.A().data(), b = cz.b().data();
     std::vector<double> points;
     std::vector<std::vector<double>> columns;
     while (int(columns.size()) < N) {

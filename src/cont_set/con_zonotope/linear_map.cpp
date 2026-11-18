@@ -11,7 +11,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"

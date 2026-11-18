@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/empty.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -23,7 +23,8 @@ namespace {
 /// The empty set has the dimension, no generators and a constraint no factor satisfies.
 void empty_set_data() {
     const ConZonotope E = ConZonotope::empty(3);
-    check(E.dim() == 3 && E.generators().shape() == Shape{3, 0}, "empty: dimension, no generators");
+    check(E.dim() == 3 && E.generators().matrix_transpose().shape() == Shape{3, 0},
+          "empty: dimension, no generators");
     check(close(E.A(), Tensor::ones({1, 0}), 0) && close(E.b(), {1}, 0),
           "empty: the constraint 0 = 1");
     check(ConZonotope::empty().dim() == 0, "empty: the dimension 0 by default");

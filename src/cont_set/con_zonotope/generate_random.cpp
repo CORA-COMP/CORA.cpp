@@ -68,7 +68,7 @@ CORA_FROM_NUMBERS ConZonotope ConZonotope::generate_random(Rng &rng,
     rng.uniform(x0.data(), x0.size(), -1.0, 1.0);
     rng.uniform(A.data(), A.size(), -5.0, 5.0);
     const Tensor Ae = Tensor::like(Z.center().expand_dims(-1), A, {p, m});
-    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose(), Ae,
+    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose(), Ae,
             Ae.matmul(Tensor::like(Z.center().expand_dims(-1), x0, {m, 1}))};
 }
 

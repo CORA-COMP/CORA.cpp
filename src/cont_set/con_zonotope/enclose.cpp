@@ -36,7 +36,7 @@ namespace {
 /// and the factors that only the longer set has must not appear in its constraints (CORA drops
 /// them, which would not enclose).
 std::string aux_problem(const ConZonotope &cz, const ConZonotope &cz2) {
-    const int64_t g1 = cz.generators().shape().back(), g2 = cz2.generators().shape().back();
+    const int64_t g1 = cz.nr_generators(), g2 = cz2.nr_generators();
     const int64_t g = std::min(g1, g2), p = cz.A().shape()[cz.A().ndim() - 2];
     const int64_t p2 = cz2.A().shape()[cz2.A().ndim() - 2];
     const std::string image =
@@ -70,13 +70,13 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &cz2) {
 /// set with fewer generators (they agree on the common factors), padded with zeros.
 ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
     const Zonotope Z =
-        Zonotope(cz.c().squeeze(-1), cz.generators().matrix_transpose())
-            .enclose(Zonotope(cz2.c().squeeze(-1), cz2.generators().matrix_transpose()));
-    const bool second_shorter = cz2.generators().shape().back() <= cz.generators().shape().back();
+        Zonotope(cz.c(), cz.generators()).enclose(Zonotope(cz2.c(), cz2.generators()));
+    const bool second_shorter = cz2.nr_generators() <= cz.nr_generators();
     const Tensor &A = second_shorter ? cz2.A() : cz.A();
     const int64_t more = Z.nr_generators() - A.shape().back();
     const Tensor padded = Tensor::concat({A, zeros_block(A, A.shape()[A.ndim() - 2], more)}, -1);
-    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose(), padded, cz.b()};
+    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose(),
+            padded, cz.b()};
 }
 
 } // namespace

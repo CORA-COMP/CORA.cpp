@@ -1909,16 +1909,21 @@ void bind_con_zonotope(py::module_ &m) {
                                      "The constrained zonotope {c + G x : |x|_inf <= 1, A x = b}.")
         .def(py::init([](const py::object &c, const py::object &G, const py::object &A,
                          const py::object &b) {
+                 // constraints are given together or not at all
                  if (A.is_none() != b.is_none())
                      CORA_FAIL(Error::wrong_input_in_constructor,
                                "ConZonotope: give the constraint matrix and the offset together");
-                 if (A.is_none()) return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"));
-                 // constraints are given together or not at all
-                 return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"),
-                                    tensor_of(A, "A"), vector_of(b, "b"));
+                 if (A.is_none())
+                     return ConZonotope(vector_of(c, "the center"),
+                                        tensor_of(G, "G").matrix_transpose());
+                 // layout: #163 step 2 - Python still gives CORA's generator columns
+                 return ConZonotope(vector_of(c, "the center"),
+                                    tensor_of(G, "G").matrix_transpose(), tensor_of(A, "A"),
+                                    vector_of(b, "b"));
              }),
              py::arg("c"), py::arg("G"), py::arg("A") = py::none(), py::arg("b") = py::none(),
              "center c (..., n), generators G (..., n, m) and the constraints A x = b")
+        // the conversions of the other sets
         .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope as a constrained zonotope")
         .def(py::init<const Interval &>(), py::arg("I"), "A box as a constrained zonotope")
         .def_static(
@@ -1937,10 +1942,15 @@ void bind_con_zonotope(py::module_ &m) {
         // the empty set is a constrained zonotope without generators
         .def_static("empty", &ConZonotope::empty, py::arg("n") = 0,
                     "The empty set of n dimensions: no generators and the constraint 0 = 1")
+        // the stored data, the generators as CORA's columns
         .def_property_readonly(
-            "c", [](const ConZonotope &Z) { return vector(Z.c()); }, "The stored center c (..., n)")
+            "c", [](const ConZonotope &Z) { return vector(Z.c().expand_dims(-1)); },
+            "The stored center c (..., n)")
         .def_property_readonly(
-            "generators", [](const ConZonotope &Z) { return matrix(Z.generators()); },
+            "generators",
+            [](const ConZonotope &Z) {
+                return Array(matrix(Z.generators()).attr("swapaxes")(-1, -2));
+            },
             "The generators (..., n, m)")
         .def_property_readonly(
             "A", [](const ConZonotope &Z) { return matrix(Z.A()); },
@@ -1948,6 +1958,7 @@ void bind_con_zonotope(py::module_ &m) {
         .def_property_readonly(
             "b", [](const ConZonotope &Z) { return vector(Z.b()); },
             "The constraint offset (..., p)")
+        // properties
         .def("is_bounded", &ConZonotope::is_bounded, "Always true")
         .def("is_full_dim", &ConZonotope::is_full_dim, py::arg("tol") = py::none(),
              "Whether the set has a nonempty interior")

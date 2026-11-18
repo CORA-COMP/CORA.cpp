@@ -54,8 +54,9 @@ void aux_check_con_zonotope(const ConZonotope &mine, const lean::ConZonotope &th
     const ConZonotope their = theirs.nominal();
     const auto [A, b_ineq] = theirs.inequalities();
     const int64_t pe = their.A().shape()[0], n = mine.dim();
-    oracle::check("conZonotope.c", mine.c(), their.c());
-    oracle::check("conZonotope.G", mine.generators(), their.generators());
+    oracle::check("conZonotope.c", mine.c().expand_dims(-1), their.c().expand_dims(-1));
+    oracle::check("conZonotope.G", mine.generators().matrix_transpose(),
+                  their.generators().matrix_transpose());
     oracle::check("conZonotope.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));
     oracle::check("conZonotope.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n));
     oracle::check("conZonotope.-A", -aux_rows(mine.A(), pe, pe + n), aux_rows(A, n, 2 * n));

@@ -34,7 +34,8 @@ void minkowski_difference_known(const std::string &b) {
     check(big.minkowski_difference(Set(Z)).as<ConZonotope>().isequal(
               ConZonotope(column({-1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))),
           b + ": a zonotope with a center");
-    check(close(big.minkowski_difference(column({1.0, 1.0})).c(), {-1, -1}, 0), b + ": a point");
+    check(close(big.minkowski_difference(column({1.0, 1.0})).c().expand_dims(-1), {-1, -1}, 0),
+          b + ": a point");
     // a subtrahend that does not fit: the exact difference has no point, the Vinod scaling is empty
     const Interval wide(column({-3.0, -3.0}), column({3.0, 3.0}));
     check(big.minkowski_difference(Set(wide), "inner:Vinod")

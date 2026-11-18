@@ -7,9 +7,9 @@
 //           same set whichever method and box are used
 //
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -52,14 +52,16 @@ void methods(const std::string &b) {
     check(same_set(eq.con_zonotope(), eq, rng), b + ": with an equality");
     check(same_set(eq.con_zonotope("exact:vertices"), eq, rng), b + ": vertices: with an equality");
     const ConZonotope cz = tri.con_zonotope();
-    check(close(cz.c(), {1, 1}, 1e-9) && cz.generators().shape() == Shape{2, 5},
+    check(close(cz.c().expand_dims(-1), {1, 1}, 1e-9) &&
+              cz.generators().matrix_transpose().shape() == Shape{2, 5},
           b + ": center, generators");
 }
 
 /// The special sets: empty, R^n, unbounded, a point.
 void special(const std::string &b) {
     check(!Polytope::empty(2).con_zonotope().contains(column({0.0, 0.0})), b + ": the empty set");
-    check(close(Polytope(column({1.0, 2.0})).con_zonotope().c(), {1, 2}, 1e-9), b + ": a point");
+    check(close(Polytope(column({1.0, 2.0})).con_zonotope().c().expand_dims(-1), {1, 2}, 1e-9),
+          b + ": a point");
 }
 
 /// What is refused.
@@ -78,7 +80,7 @@ void refusals() {
     check(test::raises([&] { open.con_zonotope("exact:vertices"); }, Error::special_error),
           "con_zonotope: vertices of an unbounded set");
     ChecksScope off(false);
-    check(close(sq.con_zonotope().c(), {0.5, 0.5}, 1e-9),
+    check(close(sq.con_zonotope().c().expand_dims(-1), {0.5, 0.5}, 1e-9),
           "con_zonotope: the same with the checks off");
 }
 

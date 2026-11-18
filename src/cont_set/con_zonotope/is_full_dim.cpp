@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@conZonotope/isFullDim.m
 // CORA authors: Niklas Kochdumper, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -48,7 +48,7 @@ std::optional<Tensor> aux_free_generators(const ConZonotope &cz) {
     std::vector<int64_t> free;
     for (int64_t j = 0; j < H.m; ++j)
         if (hi[j] - lo[j] > numerics::kFixedFactor) free.push_back(j);
-    const Tensor G = select_columns(cz.generators(), free);
+    const Tensor G = select_columns(cz.generators().matrix_transpose(), free);
     if (free.empty()) return G;
     return G.matmul(null_space(select_columns(cz.A(), free)));
 }
@@ -61,14 +61,14 @@ std::optional<Tensor> aux_free_generators(const ConZonotope &cz) {
 std::pair<bool, Tensor> ConZonotope::is_full_dim_subspace(Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_full_dim");
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("is_full_dim: a rank per set; it supports a single set, not a batch");
     });
     const int64_t n = dim();
-    if (A().shape()[0] == 0) return aux_span(G_, n, tol);
+    if (A().shape()[0] == 0) return aux_span(G_.matrix_transpose(), n, tol);
     const std::optional<Tensor> free = aux_free_generators(*this);
     // an empty set has no interior
-    if (!free) return {false, G_.zeros_like({n, 0})};
+    if (!free) return {false, G_.matrix_transpose().zeros_like({n, 0})};
     return aux_span(*free, n, tol);
 }
 

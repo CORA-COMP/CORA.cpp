@@ -19,7 +19,7 @@
 // CORA.cpp only: CORALean's float definition checks the dual solutions of CORA's programs
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -140,12 +140,12 @@ Interval aux_box(const Host &H, const ConZonotope::Certificate &w, const Tensor 
 
 /// The set as a cut without rows.
 ConZonotope::Cut aux_cut(const ConZonotope &cz) {
-    return {cz.c(),
-            cz.generators(),
+    return {cz.c().expand_dims(-1),
+            cz.generators().matrix_transpose(),
             cz.A(),
             cz.b(),
-            zeros_block(cz.c(), 0, cz.generators().shape().back()),
-            zeros_block(cz.c(), 0, 1)};
+            zeros_block(cz.c().expand_dims(-1), 0, cz.nr_generators()),
+            zeros_block(cz.c().expand_dims(-1), 0, 1)};
 }
 
 // The programs ------------------------------------------------------------------------------------

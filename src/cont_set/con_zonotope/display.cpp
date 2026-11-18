@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@conZonotope/display.m
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -25,9 +25,9 @@ namespace cora {
 std::string ConZonotope::display_impl() const {
     std::string text = "constrained zonotope\n";
     text += "- dimension: " + std::to_string(dim()) + "\n";
-    text += "- center:\n" + format_matrix(c_, "    ");
-    text +=
-        "- generators (" + std::to_string(G_.shape().back()) + "):\n" + format_matrix(G_, "    ");
+    text += "- center:\n" + format_matrix(c_.expand_dims(-1), "    ");
+    text += "- generators (" + std::to_string(G_.size(-2)) + "):\n" +
+            format_matrix(G_.matrix_transpose(), "    ");
     text += "- constraint matrix A (" + std::to_string(A().shape()[A().ndim() - 2]) + " rows):\n";
     text += format_matrix(A(), "    ");
     return text + "- constraint offset b:\n" + format_matrix(b(), "    ");

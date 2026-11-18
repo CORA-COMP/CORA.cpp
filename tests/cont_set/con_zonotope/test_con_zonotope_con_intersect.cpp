@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/conIntersect.m
 // PROPERTY: contSet/@conZonotope/conIntersect.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -26,7 +26,8 @@ void con_intersect_known(const std::string &b) {
     const ConZonotope A(column({1.0}), Tensor({{1.0}}));
     const ConZonotope B(column({2.0}), Tensor({{1.0}}));
     const ConZonotope R = A.con_intersect(B, Tensor({{2.0}}));
-    check(close(R.c(), {1}, 0) && close(R.generators(), {1, 0}, 0),
+    check(close(R.c().expand_dims(-1), {1}, 0) &&
+              close(R.generators().matrix_transpose(), {1, 0}, 0),
           b + ": the first set's c and G");
     check(close(R.A(), {2, -1}, 0) && close(R.b(), {0}, 0),
           b + ": the row M G x - G2 x2 = c2 - M c");
@@ -35,7 +36,8 @@ void con_intersect_known(const std::string &b) {
     // the constraints of both sets stay, first set's rows first
     const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         column({1.0}));
-    const ConZonotope D(column({0.0}), Tensor({{1.0, 1.0}}), Tensor({{1.0, -1.0}}), column({0.0}));
+    const ConZonotope D(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
+                        column({0.0}));
     const ConZonotope R2 = C.con_intersect(D, Tensor({{1.0, 0.0}}));
     check(close(R2.A(), {1, 1, 0, 0, 0, 0, 1, -1, 1, 0, -1, -1}, 0),
           b + ": the rows: C, D, agreement");

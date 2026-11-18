@@ -122,7 +122,7 @@ std::optional<Zonotope> aux_tighten(const Zonotope &Z, const Polytope &P) {
     } catch (const Error &) { // CORA falls back to the linear programs
         tight = cz.rescale("exact");
     }
-    return Zonotope(tight.c().squeeze(-1), tight.generators().matrix_transpose());
+    return Zonotope(tight.c(), tight.generators());
 }
 
 } // namespace

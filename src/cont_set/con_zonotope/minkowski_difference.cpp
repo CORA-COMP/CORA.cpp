@@ -76,8 +76,9 @@ ConZonotope aux_inner_vertices(const ConZonotope &cz, const Zonotope &S) {
 /// direction each factor has in the pseudoinverse of [G; A].
 ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
     const int64_t n = cz.dim(), p = cz.A().shape()[0], N = cz.A().shape()[1];
-    const Tensor lifted = Tensor::concat({cz.generators(), cz.A()}, -2);
-    const Tensor pick = Tensor::concat({cz.c().eye_like(n), zeros_block(cz.c(), p, n)}, -2);
+    const Tensor lifted = Tensor::concat({cz.generators().matrix_transpose(), cz.A()}, -2);
+    const Tensor pick = Tensor::concat(
+        {cz.c().expand_dims(-1).eye_like(n), zeros_block(cz.c().expand_dims(-1), p, n)}, -2);
     const Tensor Gamma = lifted.pinv().matmul(pick); // (N, n)
     // the support of the centered S along row i of Gamma: sum_k |Gamma_i . g_k|
     const Tensor support = Gamma.matmul(S.generators().matrix_transpose()).abs_sum(); // (N, 1)
@@ -85,7 +86,8 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
     for (const double v : s)
         if (v > 1.0) return ConZonotope::empty(n);
     const Tensor D = (support.ones_like() - support).reshape({1, N});
-    return {cz.c() - S.center().expand_dims(-1), cz.generators().multiply(D), cz.A().multiply(D),
+    return {cz.c().expand_dims(-1) - S.center().expand_dims(-1),
+            (cz.generators().matrix_transpose().multiply(D)).matrix_transpose(), cz.A().multiply(D),
             cz.b()};
 }
 
@@ -98,7 +100,7 @@ ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::
         CORA_FAIL(Error::wrong_value, "minkowski_difference: the type must be exact, "
                                       "inner:vertices or inner:Vinod, got '" +
                                           type + "'");
-    if (cz.c().ndim() != 2 || S.center().ndim() != 1)
+    if (cz.c().ndim() != 1 || S.center().ndim() != 1)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: it supports single sets, not a batch");
     if (type == "inner:vertices") return aux_inner_vertices(cz, S);

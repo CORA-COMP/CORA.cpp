@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/interval.m
 // PROPERTY: contSet/@conZonotope/interval.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -36,7 +36,7 @@ void interval_known(const std::string &b) {
     check(none.interval().is_empty(), b + ": no point: the empty box");
     check(Set(segment)->interval().sup().shape() == Shape{2, 1}, b + ": through the set interface");
     // zero generators and zero rows do not change the box
-    const ConZonotope padded(column({0.0, 0.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}}),
+    const ConZonotope padded(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{1.0, 1.0, 0.0}, {0.0, 0.0, 0.0}}), column({1.0, 0.0}));
     check(close(padded.interval().sup(), {1, 1}, 1e-9),
           b + ": zero generators and rows are dropped");
@@ -52,7 +52,7 @@ void interval_property(const std::string &b) {
         const Tensor points = test::sample_points(cz, rng, 200);
         check(test::inside_box(points, I), b + ": every sampled point is in the box");
         // never larger than the box of the zonotope that forgets the constraints
-        const Interval loose = ConZonotope(cz.c(), cz.generators()).interval();
+        const Interval loose = ConZonotope(cz.c().expand_dims(-1), cz.generators()).interval();
         check(test::inside_box(I.inf(), loose) && test::inside_box(I.sup(), loose),
               b + ": inside the box of the zonotope");
     }
@@ -60,11 +60,11 @@ void interval_property(const std::string &b) {
 
 /// A batch with constraints is refused; with the checks off a valid call gives the same box.
 void checks_and_their_switch() {
-    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}),
+    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
                             Tensor::ones({2, 1, 2}), Tensor::zeros({2, 1, 1}));
     check(test::raises([&] { batch.interval(); }, Error::not_supported),
           "interval: a batch with constraints");
-    const ConZonotope plain(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}));
+    const ConZonotope plain(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose());
     check(plain.interval().sup().shape() == Shape{2, 1, 1},
           "interval: a batch without constraints");
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),

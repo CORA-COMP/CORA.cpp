@@ -8,7 +8,7 @@
 // CORA.cpp only: tests LinearPrograms, the programs CORA's conZonotope hands to CORAlinprog
 // Authors:       Claude Opus 5.5
 // Written:       17-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -77,7 +77,7 @@ void same_programs() {
     Rng rng(7);
     for (int k = 0; k < 10; ++k) {
         const ConZonotope cz = ConZonotope::generate_random(rng, 2 + k % 3);
-        const int64_t m = cz.generators().shape().back();
+        const int64_t m = cz.nr_generators();
         const Polytope::LinearPrograms lp = cz.factor_programs();
         LinProg direct;
         direct.n = int(m);

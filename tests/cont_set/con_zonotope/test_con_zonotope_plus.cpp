@@ -26,27 +26,31 @@ namespace {
 void plus_known(const std::string &b) {
     const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         column({0.5}));
-    const ConZonotope s(column({10.0, 20.0}), Tensor({{2.0}, {3.0}}), Tensor({{4.0}}),
-                        column({1.0}));
+    const ConZonotope s(column({10.0, 20.0}), Tensor({{2.0, 3.0}}), Tensor({{4.0}}), column({1.0}));
     const ConZonotope r = a.plus(s);
-    check(close(r.c(), {11, 22}, 0), b + ": the centers add");
-    check(close(r.generators(), {1, 0, 2, 0, 1, 3}, 0), b + ": the generators join");
+    check(close(r.c().expand_dims(-1), {11, 22}, 0), b + ": the centers add");
+    check(close(r.generators().matrix_transpose(), {1, 0, 2, 0, 1, 3}, 0),
+          b + ": the generators join");
     check(close(r.A(), {1, 1, 0, 0, 0, 4}, 0) && close(r.b(), {0.5, 1}, 0),
           b + ": the constraints on the block diagonal");
-    check(close(a.plus(column({1.0, 1.0})).c(), {2, 3}, 0), b + ": a point moves the center");
+    check(close(a.plus(column({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0),
+          b + ": a point moves the center");
     const Zonotope Z(column({1.0, 1.0}), Tensor({{1.0, 0.0}}));
-    check(close(a.plus(Z).generators(), {1, 0, 1, 0, 1, 0}, 0) && a.plus(Z).A().shape()[1] == 3,
+    check(close(a.plus(Z).generators().matrix_transpose(), {1, 0, 1, 0, 1, 0}, 0) &&
+              a.plus(Z).A().shape()[1] == 3,
           b + ": a zonotope joins as a set without constraints");
     // a box is a set without constraints whose generators are its radius
     const Interval I(column({0.0, 0.0}), column({2.0, 4.0}));
-    check(close(a.plus(I).c(), {2, 4}, 0), b + ": a box adds its center");
-    check(close((a + column({1.0, 1.0})).c(), {2, 3}, 0) &&
-              close((column({1.0, 1.0}) + a).c(), {2, 3}, 0) &&
-              close((a - column({1.0, 1.0})).c(), {0, 1}, 0),
+    check(close(a.plus(I).c().expand_dims(-1), {2, 4}, 0), b + ": a box adds its center");
+    check(close((a + column({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0) &&
+              close((column({1.0, 1.0}) + a).c().expand_dims(-1), {2, 3}, 0) &&
+              close((a - column({1.0, 1.0})).c().expand_dims(-1), {0, 1}, 0),
           b + ": the operators");
     const ConZonotope negated = Set(a)->uminus().as<ConZonotope>();
-    check(close(negated.c(), {-1, -2}, 0) &&
-              close(negated.generators(), a.generators() * -1.0, 0) && close(negated.A(), a.A(), 0),
+    check(close(negated.c().expand_dims(-1), {-1, -2}, 0) &&
+              close(negated.generators().matrix_transpose(),
+                    a.generators().matrix_transpose() * -1.0, 0) &&
+              close(negated.A(), a.A(), 0),
           b + ": uminus negates the center and the generators");
 }
 
@@ -71,11 +75,13 @@ void checks_and_batches() {
     check(test::raises([&] { a.plus(one); }, Error::dimension_mismatch), "plus: dimensions");
     check(test::raises([&] { a.plus(column({1.0})); }, Error::dimension_mismatch),
           "plus: a point of another dimension");
-    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 2, 1}));
+    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 1, 2}));
     check(test::raises([&] { a.plus(batch); }, Error::dimension_mismatch), "plus: batch shapes");
-    check(batch.plus(batch).c().shape() == Shape{2, 2, 1}, "plus: a batch adds member by member");
+    check(batch.plus(batch).c().expand_dims(-1).shape() == Shape{2, 2, 1},
+          "plus: a batch adds member by member");
     ChecksScope off(false);
-    check(a.plus(a).generators().shape() == Shape{2, 4}, "plus: the same with the checks off");
+    check(a.plus(a).generators().matrix_transpose().shape() == Shape{2, 4},
+          "plus: the same with the checks off");
 }
 
 } // namespace

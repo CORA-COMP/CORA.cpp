@@ -27,7 +27,8 @@ void two_squares(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
     const ZonoBundle bundle({Zonotope(column({1.0, 1.0}), I2), Zonotope(column({2.0, 2.0}), I2)});
     const ConZonotope cz = bundle.con_zonotope();
-    check(cz.generators().shape() == Shape{2, 4}, b + ": the generators of both members");
+    check(cz.generators().matrix_transpose().shape() == Shape{2, 4},
+          b + ": the generators of both members");
     check(cz.A().shape() == Shape{2, 4}, b + ": one equality per dimension");
     const Interval box = cz.interval();
     check(close(box.inf(), {1.0, 1.0}) && close(box.sup(), {2.0, 2.0}), b + ": the box [1, 2]^2");
@@ -39,8 +40,9 @@ void two_squares(const std::string &b) {
 void single_member(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     const ConZonotope cz = ZonoBundle({Z}).con_zonotope();
-    check(cz.A().shape() == Shape{0, 2} && close(cz.c(), Z.center().expand_dims(-1), 0) &&
-              close(cz.generators(), Z.generators().matrix_transpose(), 0),
+    check(cz.A().shape() == Shape{0, 2} &&
+              close(cz.c().expand_dims(-1), Z.center().expand_dims(-1), 0) &&
+              close(cz.generators().matrix_transpose(), Z.generators().matrix_transpose(), 0),
           b + ": a single member has no constraints");
 }
 

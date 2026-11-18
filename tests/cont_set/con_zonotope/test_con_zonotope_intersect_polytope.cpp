@@ -8,7 +8,7 @@
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -44,7 +44,8 @@ void property(const std::string &b) {
     cora::Rng rng(7);
     for (int k = 0; k < 4; ++k) {
         const ConZonotope A = test::random_con_zonotope(rng, 2, 4, 1);
-        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}), A.c() + column({0.2, 0.1}));
+        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}),
+                         A.c().expand_dims(-1) + column({0.2, 0.1}));
         const ConZonotope R = A.intersect(P);
         const Tensor points = test::sample_points(A, rng, 60);
         for (int64_t j = 0; j < points.shape()[1]; ++j) {

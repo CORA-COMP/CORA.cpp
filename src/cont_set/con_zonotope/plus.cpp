@@ -12,7 +12,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -52,7 +52,7 @@ ConZonotope ConZonotope::plus(const Tensor &v) const {
                    return "plus: the point must be a column of " + std::to_string(dim()) +
                           " entries, got the shape " + shape_text(v.shape());
                });
-    return {c_ + v, G_, F_};
+    return {c_.expand_dims(-1) + v, G_, F_};
 }
 
 Set ConZonotope::translate_impl(const Tensor &v) const { return plus(v); }

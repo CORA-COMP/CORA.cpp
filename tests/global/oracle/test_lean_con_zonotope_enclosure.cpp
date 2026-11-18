@@ -20,7 +20,7 @@
 // CORA authors: Dmitry Grebenyuk, Matthias Althoff, Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   07-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -43,7 +43,8 @@ namespace {
 /// The result of an operation that builds another form of the set: its center agrees and its box
 /// lies in the oracle's box.
 void aux_check_hull(const ConZonotope &mine, const lean::ConZonotope &theirs) {
-    oracle::check(oracle::op_name() + ".c", mine.c(), theirs.nominal().c());
+    oracle::check(oracle::op_name() + ".c", mine.c().expand_dims(-1),
+                  theirs.nominal().c().expand_dims(-1));
     oracle::check_inside(mine.interval(), theirs.interval());
 }
 

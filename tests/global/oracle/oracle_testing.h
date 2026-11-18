@@ -175,7 +175,7 @@ class Random {
                 b[i] += A[i * m + j] * xi[j];
             }
         }
-        return {vector(n), matrix(n, m), cora::Tensor::from_data(A, {p, m}),
+        return {vector(n), matrix(n, m).matrix_transpose(), cora::Tensor::from_data(A, {p, m}),
                 cora::Tensor::from_data(b, {p, 1})};
     }
 
@@ -335,8 +335,11 @@ inline bool agree(const std::string &what, const cora::PolyZonotope &a,
 /// compared.
 inline bool agree(const std::string &what, const cora::ConZonotope &a, const lean::ConZonotope &b) {
     const cora::ConZonotope other = b.nominal();
-    bool same = agree(what + ".c", a.c(), other.c()); // all are reported
-    same = agree(what + ".G", a.generators(), other.generators()) && same;
+    bool same =
+        agree(what + ".c", a.c().expand_dims(-1), other.c().expand_dims(-1)); // all are reported
+    same = agree(what + ".G", a.generators().matrix_transpose(),
+                 other.generators().matrix_transpose()) &&
+           same;
     same = agree(what + ".A", a.A(), other.A()) && same;
     return agree(what + ".b", a.b(), other.b()) && same;
 }

@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/isFullDim.m
 // PROPERTY: contSet/@conZonotope/isFullDim.m
 // CORA authors: Niklas Kochdumper, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -25,10 +25,10 @@ namespace {
 void full_dim_known(const std::string &b) {
     const ConZonotope plain(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(plain.is_full_dim(), b + ": the unit square");
-    check(!ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {1.0, 2.0}})).is_full_dim(),
+    check(!ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {2.0, 2.0}})).is_full_dim(),
           b + ": parallel generators span a line");
     // the third factor is fixed to zero: the square stays full-dimensional
-    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}}),
+    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
     check(square.is_full_dim(), b + ": a fixed factor does not matter");
     // the segment x = xi on xi1 + xi2 = 1 in the plane
@@ -36,14 +36,14 @@ void full_dim_known(const std::string &b) {
                               Tensor({{1.0, 1.0}}), column({1.0}));
     check(!segment.is_full_dim(), b + ": a segment in the plane");
     // a segment on a line: x = xi1 + 2 xi2 with xi1 = xi2 has the interval [-3, 3]
-    const ConZonotope line(column({0.0}), Tensor({{1.0, 2.0}}), Tensor({{1.0, -1.0}}),
+    const ConZonotope line(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, -1.0}}),
                            column({0.0}));
     check(line.is_full_dim(), b + ": a segment in a line is full-dimensional");
     // CORA's rank test says true: x = xi1 + 2 xi2 with xi1 + xi2 = 2 is the point 3
-    const ConZonotope pinned(column({0.0}), Tensor({{1.0, 2.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope pinned(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 1.0}}),
                              column({2.0}));
     check(!pinned.is_full_dim(), b + ": the box pins it to the point 3 (CORA: true)");
-    const ConZonotope none(column({0.0}), Tensor({{1.0, 2.0}}), Tensor({{1.0, 0.0}}),
+    const ConZonotope none(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 0.0}}),
                            column({5.0}));
     check(!none.is_full_dim(), b + ": a set without a point has no interior (CORA: true)");
 
@@ -72,7 +72,7 @@ void full_dim_property(const std::string &b) {
 /// A batch with constraints and a negative tol are refused; the same valid call with the checks
 /// off.
 void checks_and_their_switch() {
-    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}));
+    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose());
     check(test::raises([&] { batch.is_full_dim(); }, Error::not_supported), "is_full_dim: a batch");
     check(test::raises([&] { batch.is_full_dim(-1.0); }, Error::wrong_value),
           "is_full_dim: tol < 0");

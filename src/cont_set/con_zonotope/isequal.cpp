@@ -65,9 +65,9 @@ bool aux_equal(const ConZonotope &cz, const ConZonotope &S, double tol) {
     const bool point = box.representsa("point", tol), point_S = box_S.representsa("point", tol);
     if (point || point_S)
         return point && point_S && within_tol(box.inf(), box_S.inf(), tol).min().item() == 1.0;
-    if (within_tol(cz.c(), S.c(), tol).min().item() == 1.0 &&
-        aux_same_columns(Tensor::concat({cz.generators(), cz.A()}, -2),
-                         Tensor::concat({S.generators(), S.A()}, -2), tol) &&
+    if (within_tol(cz.c().expand_dims(-1), S.c().expand_dims(-1), tol).min().item() == 1.0 &&
+        aux_same_columns(Tensor::concat({cz.generators().matrix_transpose(), cz.A()}, -2),
+                         Tensor::concat({S.generators().matrix_transpose(), S.A()}, -2), tol) &&
         aux_same_columns(Tensor::concat({cz.A(), cz.b()}, -1), Tensor::concat({S.A(), S.b()}, -1),
                          tol))
         return true;
@@ -79,7 +79,7 @@ bool aux_equal(const ConZonotope &cz, const ConZonotope &S, double tol) {
 
 /// Why two sets are refused: a batch (a linear program per set).
 detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &S) {
-    if (cz.c().ndim() == 2 && S.c().ndim() == 2) return std::nullopt;
+    if (cz.c().ndim() == 1 && S.c().ndim() == 1) return std::nullopt;
     return std::pair{Error::not_supported,
                      std::string("isequal: it supports single sets, not a batch")};
 }
@@ -110,11 +110,11 @@ bool ConZonotope::isequal(const ConZonotope &S, Tol tol) const {
 bool ConZonotope::isequal(const Zonotope &Z, Tol tol) const {
     detail::Entry entry;
     const double tol_value = resolve_tol(entry, tol, c_.dtype(), "isequal");
-    CORA_CHECK(c_.ndim() == 2 && Z.center().ndim() == 1, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1 && Z.center().ndim() == 1, Error::not_supported,
                [] { return std::string("isequal: it supports single sets, not a batch"); });
     // a zonotope equals a set that has no constraints and is that zonotope
     return Z.dim() == dim() && !priv_is_empty(priv_host_con_zonotope(*this)) && A().numel() == 0 &&
-           Zonotope(c_.squeeze(-1), G_.matrix_transpose()).isequal(Z, tol_value);
+           Zonotope(c_, G_).isequal(Z, tol_value);
 }
 
 bool ConZonotope::isequal(const Interval &I, Tol tol) const {

@@ -11,9 +11,9 @@
 // ORACLE: contSet/@conZonotope/isBounded.m
 // ORACLE: contSet/@zonotope/conZonotope.m
 // ORACLE: contSet/@interval/conZonotope.m
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -51,8 +51,9 @@ int main() {
         const ConZonotope their = theirs.nominal();
         const auto [A, b_ineq] = theirs.inequalities();
         const int64_t pe = their.A().shape()[0], n = mine.dim();
-        oracle::check("and.c", mine.c(), their.c());
-        oracle::check("and.G", mine.generators(), their.generators());
+        oracle::check("and.c", mine.c().expand_dims(-1), their.c().expand_dims(-1));
+        oracle::check("and.G", mine.generators().matrix_transpose(),
+                      their.generators().matrix_transpose());
         oracle::check("and.Ae", aux_rows(mine.A(), 0, pe), their.A());
         oracle::check("and.be", aux_rows(mine.b(), 0, pe), their.b());
         oracle::check("and.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));

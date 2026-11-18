@@ -28,8 +28,8 @@ void intersect_strip_known(const std::string &b) {
     const Tensor C({{1.0, 0.0}}), phi = column({0.1}), y = column({0.5}),
                                   lambda = column({1.0, 0.0});
     const ConZonotope R = cz.intersect_strip(C, phi, y, lambda);
-    check(close(R.c(), {0.5, 0}, 1e-15), b + ": center c + L (y - C c)");
-    check(close(R.generators(), {0, 0, 0.1, 0, 1, 0}, 1e-15),
+    check(close(R.c().expand_dims(-1), {0.5, 0}, 1e-15), b + ": center c + L (y - C c)");
+    check(close(R.generators().matrix_transpose(), {0, 0, 0.1, 0, 1, 0}, 1e-15),
           b + ": generators [(I - L C) G, L diag(phi)]");
     check(close(R.A(), {1, 0, -0.1}, 1e-15) && close(R.b(), {0.5}, 1e-15), b + ": the strip row");
     check(close(R.interval().inf(), {0.4, -1}, 1e-9) && close(R.interval().sup(), {0.6, 1}, 1e-9),
@@ -41,12 +41,13 @@ void intersect_strip_known(const std::string &b) {
     check(close(S.A(), {0, 1, 0, 1, 0, -0.1}, 1e-15) && close(S.b(), {0.5, 0.5}, 1e-15),
           b + ": the rows of the set, then the strip");
     // the gains of the methods give the strip rows and the center of the zonotope's method
-    const Zonotope Z = Zonotope(cz.c().squeeze(-1), cz.generators().matrix_transpose());
+    const Zonotope Z = Zonotope(cz.c(), cz.generators());
     for (const char *method : {"normGen", "alamo-FRad"}) {
         const ConZonotope M = cz.intersect_strip(C, phi, y, method);
         const Zonotope expected = Z.intersect_strip(C, phi, y, method);
-        check(close(M.c(), expected.center().expand_dims(-1), 0) &&
-                  close(M.generators(), expected.generators().matrix_transpose(), 0),
+        check(close(M.c().expand_dims(-1), expected.center().expand_dims(-1), 0) &&
+                  close(M.generators().matrix_transpose(), expected.generators().matrix_transpose(),
+                        0),
               b + ": the gain of " + method);
         check(M.A().shape() == Shape{1, 3}, b + ": one strip row");
     }
@@ -65,7 +66,7 @@ void intersect_strip_property(const std::string &b) {
     for (int k = 0; k < 4; ++k) {
         const ConZonotope A = test::random_con_zonotope(rng, 3, 5, 2);
         const Tensor C({{1.0, 0.5, -0.5}, {0.0, 1.0, 1.0}}), phi = column({1.0, 1.5});
-        const Tensor y = C.matmul(A.c()) + column({0.2, -0.1});
+        const Tensor y = C.matmul(A.c().expand_dims(-1)) + column({0.2, -0.1});
         const Tensor points = test::sample_points(A, rng, 120);
         for (const char *method : {"normGen"}) {
             const ConZonotope R = A.intersect_strip(C, phi, y, method);
@@ -80,8 +81,8 @@ void intersect_strip_property(const std::string &b) {
             check(inside > 0, b + ": the strips meet the set");
         }
         // a given gain
-        const ConZonotope G =
-            A.intersect_strip(C, phi, y, test::random_con_zonotope(rng, 3, 2, 0).generators());
+        const ConZonotope G = A.intersect_strip(
+            C, phi, y, test::random_con_zonotope(rng, 3, 2, 0).generators().matrix_transpose());
         check(G.dim() == 3, b + ": a given gain");
     }
 }

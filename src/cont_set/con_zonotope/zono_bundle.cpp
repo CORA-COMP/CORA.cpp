@@ -59,14 +59,13 @@ Zonotope aux_slab(const Tensor &like, const std::vector<double> &a, double lower
 
 ZonoBundle ConZonotope::zono_bundle() const {
     detail::Entry entry;
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("zono_bundle: it supports a single set, not a batch"); });
-    if (A().shape()[A().ndim() - 2] == 0)
-        return ZonoBundle::from(Zonotope(c_.squeeze(-1), G_.matrix_transpose()));
+    if (A().shape()[A().ndim() - 2] == 0) return ZonoBundle::from(Zonotope(c_, G_));
     if (priv_is_empty(priv_host_con_zonotope(*this))) return ZonoBundle::empty(dim());
     const int64_t m = A().shape()[1];
     const Tensor p0 = A().pinv().matmul(b()), T = null_space(A());
-    const Tensor shift = c_ + G_.matmul(p0);
+    const Tensor shift = c_.expand_dims(-1) + G_.matrix_transpose().matmul(p0);
     const int64_t p = T.shape()[1];
     // no free direction: the constraints fix the factors, and the set is a point
     if (p == 0) return ZonoBundle::from(Zonotope(shift.squeeze(-1), G_.zeros_like({0, dim()})));
@@ -78,10 +77,10 @@ ZonoBundle ConZonotope::zono_bundle() const {
     std::vector<Zonotope> slabs;
     slabs.reserve(static_cast<std::size_t>(m));
     for (int64_t i = 0; i < m; ++i)
-        slabs.push_back(aux_slab(c_,
+        slabs.push_back(aux_slab(c_.expand_dims(-1),
                                  std::vector<double>(a.begin() + i * p, a.begin() + (i + 1) * p),
                                  u[std::size_t(m + i)], u[std::size_t(i)], std::sqrt(double(m))));
-    return ZonoBundle(std::move(slabs)).linear_map(G_.matmul(T)).plus(shift);
+    return ZonoBundle(std::move(slabs)).linear_map(G_.matrix_transpose().matmul(T)).plus(shift);
 }
 
 } // namespace cora

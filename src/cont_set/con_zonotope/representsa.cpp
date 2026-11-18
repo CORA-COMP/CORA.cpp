@@ -39,7 +39,7 @@ bool ConZonotope::representsa(const std::string &type, Tol tol_arg) const {
     CORA_CHECK(priv_is_set_type(type), Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "representsa");
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("representsa: it supports a single set, not a batch"); });
     CORA_CHECK(type != "conHyperplane" && type != "capsule" && type != "ellipsoid" &&
                    type != "levelSet" && type != "parallelotope" && type != "polygon",
@@ -53,9 +53,7 @@ bool ConZonotope::representsa(const std::string &type, Tol tol_arg) const {
     if (type == "hyperplane") return dim() == 1 && interval().representsa("point", tol);
     // a set without constraints is the zonotope of its generators
     if (type == "zonotope") return A().numel() == 0;
-    if (type == "interval")
-        return A().numel() == 0 &&
-               Zonotope(c_.squeeze(-1), G_.matrix_transpose()).representsa(type, tol);
+    if (type == "interval") return A().numel() == 0 && Zonotope(c_, G_).representsa(type, tol);
     // conZonotope, polytope, polyZonotope, zonoBundle, convexSet and conPolyZono
     return true;
 }

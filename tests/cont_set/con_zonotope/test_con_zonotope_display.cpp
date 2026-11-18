@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/display.m
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -32,7 +32,7 @@ int main() {
     std::ostringstream out;
     out << cz;
     check(out.str() == text, "display: operator<< prints the same text");
-    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::ones({2, 2, 3}));
+    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::ones({2, 2, 3}).matrix_transpose());
     check(batch.display().find("batch of shape") != std::string::npos, "display: a batch: shapes");
     // display takes no input; with the checks off the text is the same
     ChecksScope off(false);

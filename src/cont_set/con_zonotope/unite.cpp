@@ -52,7 +52,7 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const std::vector<ConZonotope
         return std::pair{Error::not_supported,
                          std::string("unite: reducing the order needs the reduction methods "
                                      "'methC' and 'pca', which are not supported")};
-    if (cz.c().ndim() != 2)
+    if (cz.c().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("unite: it supports single sets, not a batch")};
     for (const ConZonotope &S : others)
@@ -71,7 +71,7 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
     std::vector<Zonotope> zonotopes;
     for (const ConZonotope &S : sets) {
         const ConZonotope r = S.A().numel() == 0 ? S : S.rescale();
-        zonotopes.emplace_back(r.c().squeeze(-1), r.generators().matrix_transpose());
+        zonotopes.emplace_back(r.c(), r.generators());
     }
     const Zonotope iterative = zonotopes.front().unite(
         std::vector<Zonotope>(zonotopes.begin() + 1, zonotopes.end()), "iterative");
@@ -93,7 +93,7 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
         return Tensor::like(A, d, {k, 1});
     };
     const Zonotope Z = priv_union_linprog(iterative, support);
-    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose()};
+    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose()};
 }
 
 } // namespace
@@ -140,7 +140,7 @@ ConZonotope ConZonotope::unite(const Interval &I, const std::string &method,
 ConZonotope ConZonotope::unite(const Tensor &p, const std::string &method,
                                std::optional<int> order) const {
     detail::Entry entry;
-    const ConZonotope S(p, zeros_block(p, p.shape()[p.ndim() - 2], 0));
+    const ConZonotope S(p, zeros_block(p, 0, p.shape()[p.ndim() - 2]));
     const detail::Refusal refusal = aux_refusal(*this, {S}, method, order);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_unite(*this, {S});

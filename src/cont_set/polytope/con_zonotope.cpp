@@ -17,9 +17,9 @@
 // CORA: contSet/@polytope/private/priv_conZonotope_supportFunc.m
 // CORA: contSet/@polytope/private/priv_conZonotope_vertices.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -47,7 +47,7 @@ ConZonotope aux_around_box(const Tensor &lo, const Tensor &hi, const Tensor &A_a
                            const Tensor &b_all, const Tensor &sigma) {
     const int64_t n = lo.shape()[0], rows = A_all.shape()[0];
     const Tensor c = (lo + hi) * 0.5, G = ((hi - lo) * 0.5).diag();
-    return {c, Tensor::concat({G, G.zeros_like({n, rows})}, -1),
+    return {c, (Tensor::concat({G, G.zeros_like({n, rows})}, -1)).matrix_transpose(),
             Tensor::concat({A_all.matmul(G), ((sigma - b_all) * 0.5).diag()}, -1),
             (b_all + sigma) * 0.5 - A_all.matmul(c)};
 }

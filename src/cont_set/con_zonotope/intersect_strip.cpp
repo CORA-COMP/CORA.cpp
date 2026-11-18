@@ -43,7 +43,7 @@ namespace {
 ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tensor &C,
                             const Tensor &phi, const Tensor &y) {
     const int64_t k = C.shape()[0];
-    const Tensor CG = C.matmul(cz.generators());
+    const Tensor CG = C.matmul(cz.generators().matrix_transpose());
     Shape widths = CG.shape();
     widths.back() = k;
     const Tensor rows = Tensor::concat({CG, -phi.diag().broadcast_to(widths)}, -1);
@@ -51,8 +51,8 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
         {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
          rows},
         -2);
-    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose(), A,
-            Tensor::concat({cz.b(), y - C.matmul(cz.c())}, -2)};
+    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose(), A,
+            Tensor::concat({cz.b(), y - C.matmul(cz.c().expand_dims(-1))}, -2)};
 }
 
 // Refusals ----------------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ detail::Refusal aux_method_refusal(const ConZonotope &cz, const Tensor &C,
                                      "observer: pass a StripObserver")};
     if (method == "alamo-FRad" && C.shape()[0] != 1)
         return std::pair{Error::special_error, "'" + method + "' is for a single strip"};
-    if (method == "bravo" && cz.c().ndim() != 2)
+    if (method == "bravo" && cz.c().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("'bravo' chooses among candidates per set; it supports a "
                                      "single set, not a batch")};
@@ -91,8 +91,7 @@ ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, con
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = aux_method_refusal(*this, C, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    const Zonotope Z =
-        Zonotope(c_.squeeze(-1), G_.matrix_transpose()).intersect_strip(C, phi, y, method);
+    const Zonotope Z = Zonotope(c_, G_).intersect_strip(C, phi, y, method);
     // CORA's 'bravo' returns the zonotope around the strip, without the constraints
     if (method == "bravo") return ConZonotope(Z);
     return aux_with_strips(*this, Z, C, phi, y);
@@ -105,9 +104,7 @@ ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, con
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = priv_gain_refusal(dim(), C, lambda);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    return aux_with_strips(
-        *this, Zonotope(c_.squeeze(-1), G_.matrix_transpose()).intersect_strip(C, phi, y, lambda),
-        C, phi, y);
+    return aux_with_strips(*this, Zonotope(c_, G_).intersect_strip(C, phi, y, lambda), C, phi, y);
 }
 
 ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
@@ -117,9 +114,7 @@ ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, con
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = priv_observer_refusal(dim(), aux);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    return aux_with_strips(
-        *this, Zonotope(c_.squeeze(-1), G_.matrix_transpose()).intersect_strip(C, phi, y, aux), C,
-        phi, y);
+    return aux_with_strips(*this, Zonotope(c_, G_).intersect_strip(C, phi, y, aux), C, phi, y);
 }
 
 } // namespace cora

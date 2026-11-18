@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/vertices_.m
 // PROPERTY: contSet/@conZonotope/vertices_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -34,7 +34,7 @@ void vertices_known(const std::string &b) {
     check(hex.size() == 6 && aux_has(hex, 1, 0) && aux_has(hex, 1, -1) && aux_has(hex, 0, -1) &&
               aux_has(hex, -1, 0) && aux_has(hex, -1, 1) && aux_has(hex, 0, 1),
           b + ": the hexagon");
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {0.0, 1.0}}),
+    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({0.0}));
     const Polygon ends = Set(segment)->vertices()[0];
     check(ends.size() == 2 && aux_has(ends, 0, 1) && aux_has(ends, 0, -1), b + ": a segment");

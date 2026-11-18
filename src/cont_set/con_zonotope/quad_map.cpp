@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -36,7 +36,9 @@ ConZonotope aux_rescaled(const ConZonotope &cz) {
 }
 
 /// [c G]: the center as the first column.
-Tensor aux_full(const ConZonotope &cz) { return Tensor::concat({cz.c(), cz.generators()}, -1); }
+Tensor aux_full(const ConZonotope &cz) {
+    return Tensor::concat({cz.c().expand_dims(-1), cz.generators().matrix_transpose()}, -1);
+}
 
 /// The output of the mixed map from M = [c1 G1]' Q [c2 G2]: the center M(0, 0), then the first
 /// row, the first column and the rest in MATLAB's column-major order.
@@ -58,7 +60,7 @@ ConZonotope aux_outputs(const std::vector<QuadRow> &rows, const Tensor &A, const
         centers.push_back(row.first);
         generators.push_back(row.second);
     }
-    return {Tensor::concat(centers, -2), Tensor::concat(generators, -2), A, b};
+    return {Tensor::concat(centers, -2), Tensor::concat(generators, -2).matrix_transpose(), A, b};
 }
 
 } // namespace
@@ -73,7 +75,7 @@ ConZonotope ConZonotope::quad_map(const std::vector<Tensor> &Q) const {
     const ConZonotope cz = aux_rescaled(*this);
     // M = [c G]' Q [c G] for every output; the squares and mixed terms are its entries
     const Tensor full = aux_full(cz), full_t = full.matrix_transpose();
-    const int64_t N = cz.generators().shape().back(), p = cz.A().shape()[cz.A().ndim() - 2];
+    const int64_t N = cz.nr_generators(), p = cz.A().shape()[cz.A().ndim() - 2];
     std::vector<QuadRow> rows;
     rows.reserve(Q.size());
     for (const Tensor &Qi : Q)
@@ -93,7 +95,7 @@ ConZonotope ConZonotope::quad_map(const ConZonotope &cz2, const std::vector<Tens
     const ConZonotope first = aux_rescaled(*this), second = aux_rescaled(cz2);
     // M = [c1 G1]' Q [c2 G2] for every output
     const Tensor full = aux_full(first), full2 = aux_full(second), full_t = full.matrix_transpose();
-    const int64_t N1 = first.generators().shape().back(), N2 = second.generators().shape().back();
+    const int64_t N1 = first.nr_generators(), N2 = second.nr_generators();
     const int64_t p1 = first.A().shape()[first.A().ndim() - 2];
     const int64_t p2 = second.A().shape()[second.A().ndim() - 2];
     std::vector<QuadRow> rows;

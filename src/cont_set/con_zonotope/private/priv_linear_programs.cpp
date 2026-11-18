@@ -13,7 +13,7 @@
 // CORA.cpp only: MATLAB hands its matrices to CORAlinprog as they are
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -50,11 +50,15 @@ double aux_offset(const HostConZonotope &H, const std::vector<double> &d) {
 
 HostConZonotope priv_host_con_zonotope(const ConZonotope &cz) {
     // the programs run on one set; a batch has no single constraint matrix
-    if (cz.c().ndim() != 2)
+    if (cz.c().ndim() != 1)
         CORA_FAIL(Error::not_supported, "ConZonotope: a linear program per set supports a single "
                                         "set, not a batch");
-    return {cz.dim(),      cz.generators().shape().back(), cz.A().shape()[0],
-            cz.c().data(), cz.generators().data(),         cz.factor_programs()};
+    return {cz.dim(),
+            cz.nr_generators(),
+            cz.A().shape()[0],
+            cz.c().data(),
+            cz.generators().matrix_transpose().data(),
+            cz.factor_programs()};
 }
 
 // Ranges and supports -----------------------------------------------------------------------------

@@ -9,7 +9,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -22,7 +22,8 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Set ConZonotope::project_impl(const std::vector<int64_t> &dims) const {
-    return ConZonotope(c_.take(dims, -2), G_.take(dims, -2), F_);
+    return ConZonotope(c_.expand_dims(-1).take(dims, -2),
+                       (G_.matrix_transpose().take(dims, -2)).matrix_transpose(), F_);
 }
 
 } // namespace cora

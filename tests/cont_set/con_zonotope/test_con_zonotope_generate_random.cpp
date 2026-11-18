@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/generateRandom.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -21,17 +21,17 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         Rng rng(79);
         const ConZonotope cz = ConZonotope::generate_random(rng, 3, std::nullopt, 6, 2);
-        check(cz.dim() == 3 && cz.generators().shape() == Shape{3, 6} &&
+        check(cz.dim() == 3 && cz.generators().matrix_transpose().shape() == Shape{3, 6} &&
                   cz.A().shape() == Shape{2, 6},
               b + ": the sizes");
         check(!cz.representsa("emptySet"), b + ": the constraints have a solution in the box");
         const ConZonotope plain = ConZonotope::generate_random(rng, 2, std::nullopt, 3, 0);
-        check(plain.A().shape()[0] == 0 && plain.generators().shape() == Shape{2, 3},
+        check(plain.A().shape()[0] == 0 &&
+                  plain.generators().matrix_transpose().shape() == Shape{2, 3},
               b + ": no constraints");
         const ConZonotope centered =
             ConZonotope::generate_random(rng, std::nullopt, Tensor::from_data({1.0, 2.0}, {2, 1}));
-        check(centered.dim() == 2 && centered.generators().shape().back() == 4,
-              b + ": the center gives n");
+        check(centered.dim() == 2 && centered.nr_generators() == 4, b + ": the center gives n");
         const ConZonotope any = ConZonotope::generate_random(rng);
         check(any.dim() >= 1 && any.dim() <= 10, b + ": the defaults");
     });

@@ -14,9 +14,9 @@
 // ORACLE: contSet/@conZonotope/isequal.m
 // ORACLE: contSet/@conZonotope/isIntersecting_.m
 // ORACLE: contSet/@conZonotope/representsa_.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -62,8 +62,10 @@ int main() {
     });
     oracle::run("conZonotope.isIntersecting", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
-        const ConZonotope near = a.plus(Tensor::like(a.c(), {0.1, 0.0, 0.0}, {3, 1}));
-        const ConZonotope far = a.plus(Tensor::like(a.c(), {1000.0, 0.0, 0.0}, {3, 1}));
+        const ConZonotope near =
+            a.plus(Tensor::like(a.c().expand_dims(-1), {0.1, 0.0, 0.0}, {3, 1}));
+        const ConZonotope far =
+            a.plus(Tensor::like(a.c().expand_dims(-1), {1000.0, 0.0, 0.0}, {3, 1}));
         oracle::check(a.is_intersecting(near), lean::ConZonotope(a).is_intersecting(near));
         oracle::check(a.is_intersecting(far), lean::ConZonotope(a).is_intersecting(far));
     });
@@ -71,7 +73,7 @@ int main() {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
         // the offset of the first row is out of the box: no factor vector
         const Tensor b = a.b() + Tensor::like(a.b(), {5.0, 0.0}, {2, 1});
-        const ConZonotope none(a.c(), a.generators(), a.A(), b);
+        const ConZonotope none(a.c().expand_dims(-1), a.generators(), a.A(), b);
         oracle::check(a.representsa("emptySet"), lean::ConZonotope(a).representsa_empty());
         oracle::check(none.representsa("emptySet"), lean::ConZonotope(none).representsa_empty());
     });

@@ -13,7 +13,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -29,7 +29,7 @@ namespace {
 
 /// Why the split is refused, if it is: a batch, or an empty set.
 detail::Refusal aux_refusal(const ConZonotope &cz) {
-    if (cz.c().ndim() != 2)
+    if (cz.c().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("split: it supports a single set, not a batch")};
     if (priv_is_empty(priv_host_con_zonotope(cz)))

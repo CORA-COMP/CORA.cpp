@@ -41,7 +41,7 @@ void contains_known(const std::string &b) {
     check(!segment.contains(Interval(column({0.0, 0.0}), column({1.0, 1.0}))),
           b + ": a box is not in a segment");
     // the box [-1, 1]^2 as a constrained zonotope with a trivial constraint
-    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}}),
+    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
     check(square.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.0}))),
           b + ": a box in a square");
@@ -52,7 +52,7 @@ void contains_known(const std::string &b) {
     check(square.contains(column({1.0 + 1e-9, 0.0}), "exact", 1e-6), b + ": a tolerance admits it");
     check(!square.contains(column({1.001, 0.0})), b + ": and the default tolerance does not");
     // a set that is a point: the points within tol
-    const ConZonotope point(column({2.0, 3.0}), Tensor({{0.0}, {0.0}}));
+    const ConZonotope point(column({2.0, 3.0}), Tensor({{0.0, 0.0}}));
     check(point.contains(column({2.0, 3.0 + 1e-10}), "exact", 1e-8) &&
               !point.contains(column({2.0, 3.1})),
           b + ": a point holds the points within tol");
@@ -100,7 +100,7 @@ void checks_and_their_switch() {
     check(test::raises(
               [&] {
                   // a batch of sets is not supported
-                  ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 1}))
+                  ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 1}).matrix_transpose())
                       .contains(column({0.0}));
               },
               Error::not_supported),

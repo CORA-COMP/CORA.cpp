@@ -56,7 +56,7 @@ Tensor aux_extreme(const ConZonotope &cz, int64_t N, Rng &rng) {
         for (const double v : d) norm += v * v;
         for (double &v : d) v /= std::sqrt(norm);
         const std::optional<PrivSupport> best = priv_support(H, d);
-        if (!best) return cz.c().zeros_like({H.n, 0});
+        if (!best) return cz.c().expand_dims(-1).zeros_like({H.n, 0});
         points.insert(points.end(), best->point.begin(), best->point.end());
     }
     // the points were listed one after the other: transpose to columns
@@ -64,7 +64,7 @@ Tensor aux_extreme(const ConZonotope &cz, int64_t N, Rng &rng) {
     for (int64_t j = 0; j < N; ++j)
         for (int64_t i = 0; i < H.n; ++i)
             columns[std::size_t(i * N + j)] = points[std::size_t(j * H.n + i)];
-    return Tensor::like(cz.c(), columns, {H.n, N});
+    return Tensor::like(cz.c().expand_dims(-1), columns, {H.n, N});
 }
 
 } // namespace
@@ -84,8 +84,7 @@ Tensor ConZonotope::rand_point_impl(int64_t N, Rng &rng) const {
 }
 
 Tensor ConZonotope::rand_point_impl(int64_t N, Rng &rng, const std::string &type) const {
-    if (A().shape()[A().ndim() - 2] == 0)
-        return Zonotope(c_.squeeze(-1), G_.matrix_transpose()).rand_point(N, rng, type);
+    if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_).rand_point(N, rng, type);
     if (type == "extreme") return aux_extreme(*this, N, rng);
     // the candidates are points of the set, and so are their convex combinations
     const Tensor V = priv_vertex_candidates(*this);
