@@ -58,7 +58,8 @@ class Series {
     Interval correction() const {
         Tensor lo = point_.inf().zeros_like(), hi = lo;
         for (int i = eta_; i >= 2; --i) {
-            const double c = priv_float_corr_coeff_low(i) * priv_float_taylor_coeff(r_, i).second;
+            const double c =
+                priv_float_corr_coeff_low_tight(i) * priv_float_taylor_coeff(r_, i).second;
             const Interval T = priv_float_smul(powers_[std::size_t(i)], c, 0.0);
             lo = T.inf().minimum(lo.zeros_like()) + lo;
             hi = T.sup().maximum(hi.zeros_like()) + hi;

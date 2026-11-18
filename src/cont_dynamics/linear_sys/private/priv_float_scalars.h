@@ -61,14 +61,16 @@ inline double priv_float_corr_coeff_low(int i) {
     return -(q * q);
 }
 
-/// -(q e^x) with q = (i - 1) / i and x = min(0, -log i / (i - 1)): CORALean's corrCoeffLowTight,
-/// CORA's coefficient i^(-i/(i-1)) - i^(-1/(i-1)) to within rounding; past order 1024 the above.
+/// The larger of -(q q) and -(q e^x), q = (i - 1) / i, x = min(0, -log i / (i - 1)): CORALean's
+/// corrCoeffLowTight. -(q e^x) is CORA's coefficient i^(-i/(i-1)) - i^(-1/(i-1)) to within
+/// rounding, and the larger of two lower bounds is one; past order 1024 only -(q q).
 inline double priv_float_corr_coeff_low_tight(int i) {
-    if (i < 2 || i > 1024) return priv_float_corr_coeff_low(i);
+    const double bernoulli = priv_float_corr_coeff_low(i);
+    if (i < 2 || i > 1024) return bernoulli;
     const double d = std::max(1.0, double(i));
     const double q = double(i - 1) / d;
     const double x = std::min(0.0, -(std::log(d) / double(i - 1)));
-    return -(q * std::exp(x));
+    return std::max(bernoulli, -(q * std::exp(x)));
 }
 
 // The interval matrices ---------------------------------------------------------------------------
