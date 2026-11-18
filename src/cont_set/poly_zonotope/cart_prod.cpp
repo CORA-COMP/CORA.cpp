@@ -27,19 +27,15 @@ namespace cora {
 
 PolyZonotope PolyZonotope::cart_prod(const Zonotope &Z) const {
     detail::Entry entry;
-    // layout: #163 step 2
-    CORA_CHECK(detail::cora_center(Z).ndim() == 2, Error::dimension_mismatch,
+    CORA_CHECK(Z.center().ndim() == 1, Error::dimension_mismatch,
                [] { return std::string("cart_prod: the zonotope must be a single set"); });
-    // layout: #163 step 2
-    const int64_t n = dim(), n2 = Z.dim(), q = GI_.shape()[1],
-                  q2 = detail::cora_generators(Z).shape()[1];
+    const int64_t n = dim(), n2 = Z.dim(), q = GI_.shape()[1], q2 = Z.nr_generators();
     // zeros below the dependent generators; the independent ones on the block diagonal
     const Tensor G = Tensor::concat({G_, G_.zeros_like({n2, G_.shape()[1]})}, -2);
     const Tensor top = Tensor::concat({GI_, GI_.zeros_like({n, q2})}, -1);
-    // layout: #163 step 2
-    const Tensor bottom = Tensor::concat({GI_.zeros_like({n2, q}), detail::cora_generators(Z)}, -1);
-    // layout: #163 step 2
-    return {Tensor::concat({c_, detail::cora_center(Z)}, -2),
+    const Tensor bottom =
+        Tensor::concat({GI_.zeros_like({n2, q}), Z.generators().matrix_transpose()}, -1);
+    return {Tensor::concat({c_, Z.center().expand_dims(-1)}, -2),
             G,
             Tensor::concat({top, bottom}, -2),
             E_,

@@ -54,6 +54,17 @@ void quad_property(const std::string &b) {
     }
 }
 
+/// No dependent generators: the image is the quadratic map of the zonotope (c, GI).
+void independent_only() {
+    const PolyZonotope P(column({1.0, 0.0}), Tensor::zeros({2, 0}),
+                         Tensor::from_data({0.5, 1.0}, {2, 1}), {}, {});
+    const std::vector<Tensor> Q = {Tensor::from_data({0, 1, 0, 0}, {2, 2}), Tensor::eye(2)};
+    const Zonotope image = P.quad_map(Q).zonotope(), expected = P.zonotope().quad_map(Q);
+    check(P.quad_map(Q).num_dependent() == 0 && test::close(image.center(), expected.center(), 0) &&
+              test::close(image.generators(), expected.generators(), 0),
+          "quad_map: no dependent generators");
+}
+
 } // namespace
 
 
@@ -76,6 +87,7 @@ int main() {
     check(
         test::raises([] { known().quad_map({Tensor::zeros({3, 3})}); }, Error::dimension_mismatch),
         "quad_map: size");
+    independent_only();
     ChecksScope off(false);
     check(known().quad_map({Tensor::eye(2)}).dim() == 1, "quad_map: valid with the checks off");
     return test::finish("poly_zonotope quad_map");

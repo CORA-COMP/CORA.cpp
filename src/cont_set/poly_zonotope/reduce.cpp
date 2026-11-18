@@ -77,10 +77,9 @@ PolyZonotope PolyZonotope::reduce(int order) const {
         const PolyZonotope rest(c_.zeros_like(), priv_columns(G_, boxed_dep),
                                 priv_columns(GI_, boxed_ind), exponents_of(boxed_dep), id_);
         const Zonotope box = rest.zonotope().reduce(1);
-        // layout: #163 step 2
         out = PolyZonotope(
-            c_ + detail::cora_center(box), priv_columns(G_, kept_dep),
-            Tensor::concat({priv_columns(GI_, kept_ind), detail::cora_generators(box)}, -1),
+            c_ + box.center().expand_dims(-1), priv_columns(G_, kept_dep),
+            Tensor::concat({priv_columns(GI_, kept_ind), box.generators().matrix_transpose()}, -1),
             exponents_of(kept_dep), id_);
     }
     // the factors that no generator uses go

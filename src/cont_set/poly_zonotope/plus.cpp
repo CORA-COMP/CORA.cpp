@@ -29,15 +29,12 @@ namespace cora {
 PolyZonotope PolyZonotope::plus(const Zonotope &Z) const {
     detail::Entry entry;
     // a single set of the dimension of this one
-    CORA_CHECK(Z.dim() == dim() && detail::cora_center(Z).ndim() == 2, Error::dimension_mismatch,
-               [&] {
-                   return "plus: the zonotope must be a single set of the dimension " +
-                          std::to_string(dim());
-               });
-    // layout: #163 step 2
-    return {c_ + detail::cora_center(Z),
+    CORA_CHECK(Z.dim() == dim() && Z.center().ndim() == 1, Error::dimension_mismatch, [&] {
+        return "plus: the zonotope must be a single set of the dimension " + std::to_string(dim());
+    });
+    return {c_ + Z.center().expand_dims(-1),
             G_,
-            Tensor::concat({GI_, detail::cora_generators(Z)}, -1),
+            Tensor::concat({GI_, Z.generators().matrix_transpose()}, -1),
             E_,
             id_,
             detail::Normalized{}};

@@ -38,9 +38,8 @@ Zonotope PolyZonotope::zonotope() const {
         else
             (priv_is_even(col) ? even : keep).push_back(j);
     }
-    // layout: #163 step 2
     if (even.empty() && keep.size() == std::size_t(h))
-        return detail::zonotope_of_columns(c_, Tensor::concat({G_, GI_}, -1));
+        return Zonotope(c_.squeeze(-1), Tensor::concat({G_, GI_}, -1).matrix_transpose());
     // the center takes the shift 0.5 * sum(Gquad), added from the last column to the first
     const std::vector<double> g = G_.data(), cv = c_.data();
     std::vector<double> shifted(static_cast<std::size_t>(n), 0.0);
@@ -56,9 +55,8 @@ Zonotope PolyZonotope::zonotope() const {
         shifted[std::size_t(i)] = cv[std::size_t(i)] + shift;
     }
     const Tensor G_even = even.empty() ? G_.zeros_like({n, 0}) : priv_columns(G_, even) * 0.5;
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(Tensor::like(c_, shifted, {n, 1}),
-                                       Tensor::concat({priv_columns(G_, keep), G_even, GI_}, -1));
+    return Zonotope(Tensor::like(c_, shifted, {n, 1}).squeeze(-1),
+                    (Tensor::concat({priv_columns(G_, keep), G_even, GI_}, -1)).matrix_transpose());
 }
 
 } // namespace cora

@@ -139,10 +139,9 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vect
 // The conversions ---------------------------------------------------------------------------------
 
 PolyZonotope::PolyZonotope(const Zonotope &Z)
-    : PolyZonotope(detail::cora_center(Z), detail::cora_generators(Z),
-                   detail::cora_center(Z).zeros_like({Z.dim(), 0}),
-                   aux_identity(detail::cora_generators(Z).shape().back()),
-                   aux_ids(detail::cora_generators(Z).shape().back())) {}
+    : PolyZonotope(Z.center().expand_dims(-1), Z.generators().matrix_transpose(),
+                   Z.center().expand_dims(-1).zeros_like({Z.dim(), 0}),
+                   aux_identity(Z.nr_generators()), aux_ids(Z.nr_generators())) {}
 
 PolyZonotope::PolyZonotope(const Interval &I) : PolyZonotope(I.zonotope()) {}
 

@@ -36,11 +36,9 @@ namespace {
 /// The independent generators of the enclosure of the independent parts (CORA: zonotope enclose).
 Tensor aux_independent(const PolyZonotope &A, const PolyZonotope &B) {
     const Tensor zero = A.center().zeros_like();
-    // layout: #163 step 2
-    const Zonotope Z1 = detail::zonotope_of_columns(zero, A.independent_generators()),
-                   Z2 = detail::zonotope_of_columns(zero, B.independent_generators());
-    // layout: #163 step 2
-    return detail::cora_generators(Z1.enclose(Z2));
+    const Zonotope Z1 = Zonotope(zero.squeeze(-1), A.independent_generators().matrix_transpose()),
+                   Z2 = Zonotope(zero.squeeze(-1), B.independent_generators().matrix_transpose());
+    return Z1.enclose(Z2).generators().matrix_transpose();
 }
 
 /// The set with the independent generators as CORA's zonotope enclose gives them, the zero column
