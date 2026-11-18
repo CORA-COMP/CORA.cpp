@@ -7,7 +7,8 @@
 // whole horizon or a trajectory of R0 and the centre of U hits one. Supported as in the ARCH
 // benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant zonotope U, no offsets.
 //
-// A homogeneous system with mu t_final <= 1 (mu its balanced log norm) runs CORALean's sound
+// A homogeneous system whose growth is bounded (an accepted energy weight of a second-order system,
+// priv_verify_energy.h, or mu t_final <= 1, mu its balanced log norm) runs CORALean's sound
 // LinearSys.verifySupportFuncFloat, bit for bit on the lean backend: e^{A dt} with a radius, the
 // rows' errors carried, exact times. The others keep CORA's propagation with CORALean's sound F, G
 // and the support |l|'v of the boxes F_r |X0|, G_r |u|. Statistics: the iterations, the last step
@@ -28,6 +29,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_energy.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_exp_ball.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cora/global/error.h"
@@ -548,11 +550,11 @@ double aux_sum_up(int64_t n, const F &f) {
     return sum;
 }
 
-/// What a run keeps over its passes: the scales, the growth rate, the initial set's bounds, the
-/// rows C_s C and their errors (0 at nearest).
+/// What a run keeps over its passes: the scales, the growth bound kappa e^{t mu}, the initial set's
+/// bounds, the rows C_s C and their errors (0 at nearest).
 struct SoundRun {
     std::vector<double> s, v, d, E0;
-    double mu = 0, beta_x = 0;
+    double kappa = 1, mu = 0, beta_x = 0;
     Tensor L; // (S, n)
     int S = 0;
 };
@@ -656,7 +658,9 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
         out.kind = SoundPass::Kind::no_bound;
         return out;
     }
-    const double Y = aux_exp_up(a);
+    // Y = max(1, kappa e^{mu+ N dt}), with CORALean's maximum
+    const double ky = run.kappa * aux_exp_up(a);
+    const double Y = 1.0 <= ky ? ky : (ky < 1.0 ? 1.0 : 1.0 + ky);
     // the rows l_k (k * S + q), propagated by D
     const Tensor &D = ball->D;
     const int64_t nd = D.shape()[0];
@@ -722,7 +726,7 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
 
 /// LinearSys.verifySupportFuncFloat at nearest for a homogeneous system.
 VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, double t_final,
-                              const SpecRows &rows, Expmat &E,
+                              const SpecRows &rows, Expmat &E, std::optional<double> kappa,
                               std::chrono::steady_clock::time_point start) {
     VerifyResult res;
     auto finish = [&]() {
@@ -731,11 +735,12 @@ VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, double t
     };
     const Tensor &A = sys.A();
     const int64_t n = A.shape()[0];
-    // the run's constants: the scales, the log norm, |c| + sum_j |g_j|, the rows C_s C
+    // the run's constants: the scales, the growth bound, |c| + sum_j |g_j|, the rows C_s C
     SoundRun run;
     run.S = rows.nr;
     run.s = E.scales;
-    run.mu = priv_verify_log_norm_up(A.data(), run.s, n);
+    run.kappa = kappa.value_or(1.0);
+    run.mu = kappa ? 1.0 / t_final : priv_verify_log_norm_up(A.data(), run.s, n);
     run.d = rows.ds;
     // |c| + sum_j |g_j| and its largest scaled entry
     const std::vector<double> c = R0.center().data(), G = R0.generators().data();
@@ -842,10 +847,15 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     E.powers.emplace(A.data(), A.shape()[0]);
     E.scales = priv_verify_balance_scales(A.data(), A.shape()[0]);
     aux_init_sparse(E, A);
-    // a homogeneous system whose log norm bounds the growth: the sound algorithm (others, #45)
-    if (!isu && !is_u &&
-        std::max(priv_verify_log_norm_up(A.data(), E.scales, A.shape()[0]), 0.0) * t_final <= 1.0)
-        return aux_verify_sound(sys, R0, t_final, aux_spec_rows(specs, false), E, start);
+    // a homogeneous system with a growth bound: the sound algorithm (others, #45)
+    if (!isu && !is_u) {
+        const int64_t n = A.shape()[0];
+        const std::vector<double> a = A.data();
+        const std::optional<double> kappa =
+            priv_verify_energy_growth(a, E.scales, n, 1.0 / t_final);
+        if (kappa || std::max(priv_verify_log_norm_up(a, E.scales, n), 0.0) * t_final <= 1.0)
+            return aux_verify_sound(sys, R0, t_final, aux_spec_rows(specs, false), E, kappa, start);
+    }
     [[maybe_unused]] const FlushDenormals flush; // a no-op off x86
     if (isu || is_u) E.Ainv = priv_inverse(A);
 
