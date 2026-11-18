@@ -138,7 +138,7 @@ std::vector<Mat> aux_powers(const Mat &a, std::size_t n, int eta) {
 /// [F]: the orders 2 to eta of the state correction, widened by W.
 std::pair<Mat, Mat> aux_state_correction(std::size_t n, double r, int eta,
                                          const std::vector<Mat> &powers, const Mat &W,
-                                         double (*coeff)(int) = priv_float_corr_coeff_low) {
+                                         double (*coeff)(int) = priv_float_corr_coeff_low_tight) {
     std::vector<std::pair<Mat, Mat>> f_terms;
     for (int i = 2; i <= eta; ++i) {
         const double c = coeff(i) * priv_float_taylor_coeff(r, i).second;
@@ -151,7 +151,7 @@ std::pair<Mat, Mat> aux_state_correction(std::size_t n, double r, int eta,
 /// coefficient, widened by r W.
 std::pair<Mat, Mat> aux_input_correction(std::size_t n, double r, int eta,
                                          const std::vector<Mat> &powers, const Mat &scaled_w,
-                                         double (*coeff)(int) = priv_float_corr_coeff_low) {
+                                         double (*coeff)(int) = priv_float_corr_coeff_low_tight) {
     std::vector<std::pair<Mat, Mat>> g_terms;
     for (int i = 0; i < eta; ++i) {
         const double c = coeff(i + 2) * priv_float_taylor_coeff(r, i + 2).second;
@@ -262,7 +262,7 @@ std::optional<EntrywiseCorrections> priv_entrywise_corrections(const Tensor &A, 
     const std::optional<int> order = priv_closed_form_order(A, time_step, taylor_terms);
     if (!order) return std::nullopt;
     return aux_corrections(A, time_step, *order, aux_entrywise_remainder(A, time_step, *order),
-                           priv_float_corr_coeff_low);
+                           priv_float_corr_coeff_low_tight);
 }
 
 std::optional<EntrywiseCorrections> priv_squaring_corrections(const Tensor &A, double time_step,

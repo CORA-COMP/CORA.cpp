@@ -105,7 +105,7 @@ std::optional<PolySeries> PolySeries::make(const Tensor &A, double dt, int taylo
     // [F], the orders 2 to eta each spanning the interval between it and 0, then the remainder
     Mat lo(n * n, 0.0), hi(n * n, 0.0);
     for (int i = *eta; i >= 2; --i) {
-        const double c = priv_float_corr_coeff_low(i) * priv_float_taylor_coeff(dt, i).second;
+        const double c = priv_float_corr_coeff_low_tight(i) * priv_float_taylor_coeff(dt, i).second;
         const auto [t_lo, t_hi] = priv_float_dense_box_scale(c, 0.0, powers[std::size_t(i)]);
         for (std::size_t e = 0; e < n * n; ++e) {
             lo[e] = std::min(t_lo[e], 0.0) + lo[e];
