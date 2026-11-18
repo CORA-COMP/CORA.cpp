@@ -34,9 +34,7 @@ ReachSet priv_reach_adaptive(const NonlinearSys &sys, const ReachProblem &proble
     const Zonotope &X0 = *problem.initial_set;
     const int64_t n = sys.dim(), m = sys.input_dim();
     std::optional<Zonotope> U = problem.input_set;
-    if (m > 0 && !U)
-        U = Zonotope((X0.center().expand_dims(-1).zeros_like({m, 1})).squeeze(-1),
-                     (X0.center().expand_dims(-1).zeros_like({m, 0})).matrix_transpose());
+    if (m > 0 && !U) U = Zonotope(X0.center().zeros_like({m}), X0.center().zeros_like({0, m}));
 
     // the state before the first step (linReachAdaptiveInit)
     AdaptiveState st(X0, n, 0.0);

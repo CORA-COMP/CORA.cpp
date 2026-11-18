@@ -121,9 +121,7 @@ MatZonotope::ExpmOneParamResult aux_expm(const MatZonotope &A, double r, int64_t
         const auto [input_center, input_generators] =
             aux_taylor_terms(aux_input_coefficients(T, c, g), r, N, Tensor());
         // the n x 1 matrices of the input terms are the columns of the zonotope
-        constant_input =
-            Zonotope(input_center.squeeze(-1),
-                     (input_generators.squeeze(-1).matrix_transpose()).matrix_transpose());
+        constant_input = Zonotope(input_center.squeeze(-1), input_generators.squeeze(-1));
     }
     return {MatZonotope(center, generators),
             mat_exp::exponential_remainder((A * r).interval_matrix(), N), std::move(powers),

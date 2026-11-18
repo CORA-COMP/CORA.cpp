@@ -113,9 +113,7 @@ PolyStepPieces::PolyStepPieces(const NonlinearSys &sys, const PolyZonotope &R,
       PU(priv_particular_time_varying(lin.sys, taylor, blocks, lin.U, dt, eta)[0]),
       Pu(priv_particular_constant(
           lin.sys, taylor, blocks,
-          Zonotope(lin.u_const.squeeze(-1),
-                   (lin.u_const.zeros_like({sys.dim(), 0})).matrix_transpose()),
-          dt, eta)),
+          Zonotope(lin.u_const.squeeze(-1), lin.u_const.zeros_like({0, sys.dim()})), dt, eta)),
       R_tp(R_delta.linear_map(taylor.e_adt(dt)).plus(Pu.time_point[0]).plus(PU)),
       R_ti(R_delta.enclose(R_delta.linear_map(taylor.e_adt(dt)).plus(Pu.time_point[0]))
                .plus(R_delta.linear_map(lin.sys.correction_matrix_state(dt, eta)))

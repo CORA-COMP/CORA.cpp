@@ -42,11 +42,7 @@ MatZonotope MatZonotope::reduce(int order, const std::string &method) const {
     // back to rows x cols: the columns of the stacked vectors are matrices read column by column
     const int64_t h = Z.nr_generators();
     return {Z.center().expand_dims(-1).reshape({cols(), rows()}).matrix_transpose(),
-            Z.generators()
-                .matrix_transpose()
-                .matrix_transpose()
-                .reshape({h, cols(), rows()})
-                .matrix_transpose()};
+            Z.generators().reshape({h, cols(), rows()}).matrix_transpose()};
 }
 
 } // namespace cora
