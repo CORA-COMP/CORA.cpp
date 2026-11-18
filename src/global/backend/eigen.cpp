@@ -63,6 +63,9 @@ Shape aux_row_shape(const Shape &c) {
 
 /// Below this many multiplications a product is a plain loop: Eigen's setup costs more.
 constexpr int64_t kSmallProduct = 512;
+/// At most this inner size a product is a plain loop too: Eigen's kernels run along the inner axis,
+/// slow on the tall (h, n) generator rows of a low-dimensional set.
+constexpr int64_t kShortInner = 8;
 /// Below this much work (multiplications) Eigen keeps a product on one thread: 2 x its 50000 task.
 constexpr long long kSerialWork = 100000;
 
@@ -70,8 +73,20 @@ constexpr long long kSerialWork = 100000;
 /// weighted by a row of A: no setup cost.
 template <class T>
 void aux_product(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t m) {
-    if (n * k * m > kSmallProduct) {
+    if (n * k * m > kSmallProduct && k > kShortInner) {
         Map<T>(C, n, m).noalias() = MapC<T>(A, n, k) * MapC<T>(B, k, m);
+        return;
+    }
+    if (m == 1) {     // a matrix times a vector: one dot product per row, summed in a register
+        if (k == 2) { // a zonogon's rows, unrolled for the compiler: 0 + x is x, the same sums
+            for (int64_t i = 0; i < n; ++i) C[i] = A[2 * i] * B[0] + A[2 * i + 1] * B[1];
+            return;
+        }
+        for (int64_t i = 0; i < n; ++i) {
+            T sum = T(0);
+            for (int64_t q = 0; q < k; ++q) sum += A[i * k + q] * B[q];
+            C[i] = sum;
+        }
         return;
     }
     for (int64_t i = 0; i < n; ++i) {
@@ -107,7 +122,7 @@ void aux_products(const T *a, const Shape &sa, const T *b, const Shape &sb, T *o
 /// C = A B' of one pair, (n, k) times (m, k)': a small product is the dot products of the rows.
 template <class T>
 void aux_product_bt(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t m) {
-    if (n * k * m > kSmallProduct) {
+    if (n * k * m > kSmallProduct && k > kShortInner) {
         Map<T>(C, n, m).noalias() = MapC<T>(A, n, k) * MapC<T>(B, m, k).transpose();
         return;
     }
@@ -220,7 +235,8 @@ Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims) {
 template <class T>
 Tensor::Ptr sum_rows(const HostTensor<T> &a, bool keepdims) {
     const int64_t rows = aux_rows(a.shape), cols = a.shape.back();
-    Shape out(std::vector<int64_t>(a.shape.begin(), a.shape.end() - 2));
+    Shape out; // the batch axes, then the kept axis
+    for (int64_t i = 0; i + 2 < a.shape.size(); ++i) out.push_back(a.shape[i]);
     if (keepdims) out.push_back(1);
     out.push_back(cols);
     auto r = a.fresh(out);

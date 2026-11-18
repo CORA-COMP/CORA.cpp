@@ -102,35 +102,35 @@ MatZonotope MatZonotope::matmul(double s) const {
 // the zonotope that encloses {M z}: the generators of the product are the three kinds of CORA
 Zonotope MatZonotope::matmul(const Zonotope &Z) const {
     detail::Entry entry;
-    // layout: #163 step 2
-    const Tensor &c = detail::cora_center(Z), &g = detail::cora_generators(Z);
+    // the center (..., n) and the generator rows (..., k, n) of Z
+    const Tensor &c = Z.center(), &g = Z.generators();
     // the dimension of the zonotope, the scalar expansion of a 1 x 1 set, and the batches
-    CORA_CHECK(cols() == c.size(-2) || aux_scalar(*this), Error::dimension_mismatch, [&] {
+    CORA_CHECK(cols() == c.size(-1) || aux_scalar(*this), Error::dimension_mismatch, [&] {
         return "matmul: the zonotope needs " + std::to_string(cols()) + " dimensions, got " +
-               std::to_string(c.size(-2));
+               std::to_string(c.size(-1));
     });
-    CORA_CHECK(cols() == c.size(-2), Error::not_supported, [] {
+    CORA_CHECK(cols() == c.size(-1), Error::not_supported, [] {
         return std::string("matmul: a 1 x 1 matrix zonotope as a scalar factor is not supported");
     });
-    CORA_CHECK(priv_replace_tail(C_, 2, {}) == priv_replace_tail(c, 2, {}),
+    CORA_CHECK(priv_replace_tail(C_, 2, {}) == priv_replace_tail(c, 1, {}),
                Error::dimension_mismatch, [&] {
                    return "matmul: the batches differ, " + shape_text(C_.shape()) + " and " +
                           shape_text(c.shape());
                });
-    const int64_t h = num_generators(), k = g.size(-1);
-    // G_i c as the columns (..., n, h)
-    const Tensor on_center = G_.matmul(c.expand_dims(-3)).squeeze(-1).matrix_transpose();
-    // G_i g_j as the columns (..., n, k h), the generators of A varying fastest
-    const Tensor each_g = g.matrix_transpose().expand_dims(-1).expand_dims(-3);
+    const int64_t h = num_generators(), k = g.size(-2);
+    const Tensor column = c.expand_dims(-1); // (..., n, 1)
+    // G_i c as the rows (..., h, r)
+    const Tensor on_center = G_.matmul(column.expand_dims(-3)).squeeze(-1);
+    // G_i g_j as the rows (..., k h, r), the generators of A varying fastest
+    const Tensor each_g = g.expand_dims(-1).expand_dims(-3);
     const Tensor on_generators = G_.expand_dims(-4).matmul(each_g).squeeze(-1);
-    const Tensor mixed = on_generators.reshape(priv_replace_tail(on_generators, 3, {k * h, rows()}))
-                             .matrix_transpose();
-    // a part without columns is left out: not every backend joins empty tensors
-    std::vector<Tensor> columns_of_g{C_.matmul(g)};
+    const Tensor mixed =
+        on_generators.reshape(priv_replace_tail(on_generators, 3, {k * h, rows()}));
+    // C g as the rows g C' (the same products); an empty part is left out (not every backend)
+    std::vector<Tensor> rows_of_g{g.matmul(C_.matrix_transpose())};
     for (const Tensor &part : {on_center, mixed})
-        if (part.size(-1) > 0) columns_of_g.push_back(part);
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(C_.matmul(c), Tensor::concat(columns_of_g, -1));
+        if (part.size(-2) > 0) rows_of_g.push_back(part);
+    return {C_.matmul(column).squeeze(-1), Tensor::concat(rows_of_g, -2)};
 }
 
 } // namespace cora
