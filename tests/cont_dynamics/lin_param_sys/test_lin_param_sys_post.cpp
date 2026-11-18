@@ -46,13 +46,12 @@ void second_step() {
     const ReachSet R = sys.reach({R0, U, 0.15}, a);
     const LinParamStep second = sys.post(
         sys.init_reach(R0, U - U.center().expand_dims(-1), U.center().expand_dims(-1), a), a);
-    check(close(R.time_interval[1].center().expand_dims(-1),
-                second.time_interval.center().expand_dims(-1), 0) &&
-              close(R.time_interval[1].generators().matrix_transpose(),
-                    second.time_interval.generators().matrix_transpose(), 0) &&
+    check(close(R.time_interval[1].center(), second.time_interval.center(), 0) &&
+              close(R.time_interval[1].generators(), second.time_interval.generators(), 0) &&
               close(R.time_point[2].center().expand_dims(-1),
                     second.time_point->center().expand_dims(-1), 0),
           "post: the second sets of reach");
+    // without the time-point sets
     a.comp_time_point = false;
     const ReachSet ti = sys.reach({R0, U, 0.15}, a);
     const LinParamStep next = sys.post(
@@ -70,9 +69,9 @@ void checks_and_their_switch() {
     const LinParamStep first = aux_sys().init_reach(R0, U, column({0.0}), a);
     check(test::raises([&] { aux_sys(true).post(first, a); }, Error::dimension_mismatch),
           "post: a step of the system's dimension");
-    const Tensor on = (aux_sys().post(first, a).time_interval).center().expand_dims(-1);
+    const Tensor on = (aux_sys().post(first, a).time_interval).center();
     ChecksScope off(false);
-    check(close((aux_sys().post(first, a).time_interval).center().expand_dims(-1), on, 0),
+    check(close((aux_sys().post(first, a).time_interval).center(), on, 0),
           "post: the same with the checks off");
 }
 

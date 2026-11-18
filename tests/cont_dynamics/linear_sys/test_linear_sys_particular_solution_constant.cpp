@@ -81,14 +81,11 @@ void checks_and_their_switch(const std::string &b) {
           b + ": a batch of systems");
     // the checks off give the same end of the step
     const Tensor on =
-        (sys.particular_solution_constant(point({1.0, 1.0}), kStep, kTerms).time_point)
-            .center()
-            .expand_dims(-1);
+        (sys.particular_solution_constant(point({1.0, 1.0}), kStep, kTerms).time_point).center();
     ChecksScope off(false);
     check(
         test::close((sys.particular_solution_constant(point({1.0, 1.0}), kStep, kTerms).time_point)
-                        .center()
-                        .expand_dims(-1),
+                        .center(),
                     on, 0),
         b + ": the same with the checks off");
 }

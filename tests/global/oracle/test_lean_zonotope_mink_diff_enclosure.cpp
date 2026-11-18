@@ -40,6 +40,7 @@ int main() {
                     lean::Zonotope(Z).mink_diff_aligned(lean::Zonotope(Z2), 0.99);
                 if (!theirs) continue;
                 ++certified;
+                // the oracle certified a difference: it must lie in CORA.cpp's
                 const Zonotope mine = Z.mink_diff(Z2, "exact");
                 test::check(mine.contains(theirs->gather().first, "exact", 1e-9),
                             "zonotope.minkDiff: the oracle's difference lies in CORA.cpp's");

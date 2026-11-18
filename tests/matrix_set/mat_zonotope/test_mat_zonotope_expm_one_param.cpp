@@ -115,6 +115,7 @@ void series_with_an_input(const std::string &bname) {
               R.constant_input->generators().matrix_transpose().shape() ==
                   std::vector<int64_t>({3, N}),
           bname + ": the input's zonotope has N generators");
+    // for every parameter value: the series of the member, term by term
     bool exact = true;
     for (const double b : {-1.0, 0.3, 1.0}) {
         const Tensor M = test::member(A, {b}), u = c + g * b;
@@ -134,6 +135,7 @@ void series_with_an_input(const std::string &bname) {
         exact = exact && close(point, expected, 1e-12);
     }
     check(exact, bname + ": the input terms for every parameter");
+    // an input without generators gives the same sets as one with a zero generator
     const auto fixed = A.expm_one_param(r, N, Zonotope(c, c.zeros_like({1, 3})));
     const auto zero_generators = A.expm_one_param(r, N, Zonotope(c, Tensor::zeros({0, 3})));
     check(close(zero_generators.constant_input->center().expand_dims(-1),

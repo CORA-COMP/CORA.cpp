@@ -62,8 +62,7 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
     const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Zonotope Y = nn.evaluate(X);
     const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b;
-    check(test::close(Y.center().expand_dims(-1), want.center().expand_dims(-1)) &&
-              test::close(Y.generators().matrix_transpose(), want.generators().matrix_transpose()),
+    check(test::close(Y.center(), want.center()) && test::close(Y.generators(), want.generators()),
           b + ": W X + b");
 }
 

@@ -63,14 +63,12 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises([&] { sys.homogeneous_solution(initial_set(), kStep, 0); },
                        Error::wrong_value),
           b + ": no terms");
-    const Tensor on = (sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval)
-                          .generators()
-                          .matrix_transpose();
+    const Tensor on =
+        (sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval).generators();
     ChecksScope off(false);
-    check(test::close((sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval)
-                          .generators()
-                          .matrix_transpose(),
-                      on, 0),
+    check(test::close(
+              (sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval).generators(),
+              on, 0),
           b + ": the same with the checks off");
 }
 

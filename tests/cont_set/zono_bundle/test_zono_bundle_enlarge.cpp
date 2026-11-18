@@ -26,15 +26,13 @@ void scaling(const std::string &b) {
         Z2(column({0.0, 1.0}), Tensor({{1.0, 2.0}}));
     const ZonoBundle bundle({Z1, Z2});
     const ZonoBundle twice = Set(bundle)->enlarge(2.0).as<ZonoBundle>();
-    check(
-        close((twice.zonotopes()[0]).generators().matrix_transpose(), {2.0, 0.0, 0.0, 2.0}, 0) &&
-            close((twice.zonotopes()[1]).center().expand_dims(-1), Z2.center().expand_dims(-1), 0),
-        b + ": a number scales every generator");
+    check(close((twice.zonotopes()[0]).generators().matrix_transpose(), {2.0, 0.0, 0.0, 2.0}, 0) &&
+              close((twice.zonotopes()[1]).center(), Z2.center(), 0),
+          b + ": a number scales every generator");
     const ZonoBundle per_row = Set(bundle)->enlarge(column({1.0, 3.0})).as<ZonoBundle>();
     check(close((per_row.zonotopes()[1]).generators().matrix_transpose(), {1.0, 6.0}, 0),
           b + ": a column scales rows");
-    check(close((per_row.zonotopes()[0]).center().expand_dims(-1), Z1.center().expand_dims(-1), 0),
-          b + ": the center stays");
+    check(close((per_row.zonotopes()[0]).center(), Z1.center(), 0), b + ": the center stays");
     check(Set(bundle)->enlarge(1.0).as<ZonoBundle>().parallel_sets() == 2, b + ": the factor 1");
 }
 
@@ -45,13 +43,8 @@ void members_about_their_centers(const std::string &b) {
     const Tensor factor = column({0.5, 2.0, 3.0});
     const ZonoBundle R = Set(bundle)->enlarge(factor).as<ZonoBundle>();
     for (std::size_t i = 0; i < 3; ++i)
-        check(close((R.zonotopes()[i]).generators().matrix_transpose(),
-                    bundle.zonotopes()[i]
-                        .enlarge(factor)
-                        .as<Zonotope>()
-                        .generators()
-                        .matrix_transpose(),
-                    0),
+        check(close((R.zonotopes()[i]).generators(),
+                    bundle.zonotopes()[i].enlarge(factor).as<Zonotope>().generators(), 0),
               b + ": member " + std::to_string(i));
 }
 

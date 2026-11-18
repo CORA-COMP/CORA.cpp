@@ -29,16 +29,13 @@ void members_are_appended(const std::string &b) {
     const ZonoBundle bundle({Z1, Z2});
     const ZonoBundle with_bundle = bundle.intersect(ZonoBundle({Z3, Z1}));
     check(with_bundle.parallel_sets() == 4 &&
-              close((with_bundle.zonotopes()[2]).center().expand_dims(-1),
-                    Z3.center().expand_dims(-1), 0),
+              close((with_bundle.zonotopes()[2]).center(), Z3.center(), 0),
           b + ": a bundle: the members of both");
     check(bundle.intersect(Z3).parallel_sets() == 3 &&
-              close((bundle.intersect(Z3).zonotopes()[2]).generators().matrix_transpose(),
-                    Z3.generators().matrix_transpose(), 0),
+              close((bundle.intersect(Z3).zonotopes()[2]).generators(), Z3.generators(), 0),
           b + ": a zonotope: one more member");
     const Interval I(column({-1.0, -1.0}), column({1.0, 3.0}));
-    check(close((bundle.intersect(I).zonotopes()[2]).center().expand_dims(-1),
-                I.zonotope().center().expand_dims(-1), 0),
+    check(close((bundle.intersect(I).zonotopes()[2]).center(), I.zonotope().center(), 0),
           b + ": a box: its zonotope");
     check(bundle.parallel_sets() == 2, b + ": the operand is unchanged");
 }

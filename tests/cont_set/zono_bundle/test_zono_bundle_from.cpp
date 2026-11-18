@@ -25,10 +25,8 @@ int main() {
         const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
         const ZonoBundle from_zonotope = ZonoBundle::from(Z);
         check(from_zonotope.parallel_sets() == 1 &&
-                  close((from_zonotope.zonotopes()[0]).center().expand_dims(-1),
-                        Z.center().expand_dims(-1), 0) &&
-                  close((from_zonotope.zonotopes()[0]).generators().matrix_transpose(),
-                        Z.generators().matrix_transpose(), 0),
+                  close((from_zonotope.zonotopes()[0]).center(), Z.center(), 0) &&
+                  close((from_zonotope.zonotopes()[0]).generators(), Z.generators(), 0),
               b + ": a zonotope is its own member");
         const ZonoBundle from_box =
             ZonoBundle::from(Interval(column({0.0, -1.0}), column({2.0, 1.0})));

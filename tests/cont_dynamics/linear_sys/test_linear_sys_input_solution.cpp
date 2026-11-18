@@ -44,9 +44,9 @@ void checks_and_their_switch() {
               Error::dimension_mismatch),
           "U of two dimensions");
     check(test::raises([&] { sys.input_solution(U, 0.0, 4); }, Error::wrong_value), "time_step 0");
-    const Tensor on = (sys.input_solution(U, 0.1, 4).PU).generators().matrix_transpose();
+    const Tensor on = (sys.input_solution(U, 0.1, 4).PU).generators();
     ChecksScope off(false);
-    check(test::close((sys.input_solution(U, 0.1, 4).PU).generators().matrix_transpose(), on, 0),
+    check(test::close((sys.input_solution(U, 0.1, 4).PU).generators(), on, 0),
           "the same with the checks off");
 }
 

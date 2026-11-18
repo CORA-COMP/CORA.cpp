@@ -42,10 +42,8 @@ void first_step() {
     const ReachSet R = sys.reach({R0, U, 0.1}, a);
     const LinParamStep first =
         sys.init_reach(R0, U - U.center().expand_dims(-1), U.center().expand_dims(-1), a);
-    check(close(R.time_interval[0].center().expand_dims(-1),
-                first.time_interval.center().expand_dims(-1), 0) &&
-              close(R.time_interval[0].generators().matrix_transpose(),
-                    first.time_interval.generators().matrix_transpose(), 0) &&
+    check(close(R.time_interval[0].center(), first.time_interval.center(), 0) &&
+              close(R.time_interval[0].generators(), first.time_interval.generators(), 0) &&
               close(R.time_point[1].center().expand_dims(-1),
                     first.time_point->center().expand_dims(-1), 0),
           "init_reach: the first sets of reach");
@@ -69,11 +67,9 @@ void checks_and_their_switch() {
             [&] { sys.init_reach(Zonotope(column({1.0}), Tensor({{1.0}})), U, column({0.0}), a); },
             Error::dimension_mismatch),
         "init_reach: R_init of the dimension of the system");
-    const Tensor on =
-        (sys.init_reach(R0, U, column({0.0}), a).time_interval).center().expand_dims(-1);
+    const Tensor on = (sys.init_reach(R0, U, column({0.0}), a).time_interval).center();
     ChecksScope off(false);
-    check(close((sys.init_reach(R0, U, column({0.0}), a).time_interval).center().expand_dims(-1),
-                on, 0),
+    check(close((sys.init_reach(R0, U, column({0.0}), a).time_interval).center(), on, 0),
           "init_reach: the same with the checks off");
 }
 

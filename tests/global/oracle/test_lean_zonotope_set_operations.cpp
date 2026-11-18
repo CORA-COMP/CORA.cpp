@@ -104,6 +104,7 @@ int main() {
     oracle::run("zonotope.constrSat", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
+            // constraints just above and just below the support of Z
             const Tensor C = rnd.matrix(3, n);
             const Tensor sup = Z.linear_map(C).interval().sup();
             for (const double margin : {1e-3, -1e-3}) {
@@ -130,10 +131,9 @@ int main() {
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             // half of Z about its center is in Z, one and a half times is not
-            const Zonotope inner =
-                Zonotope(Z.center(), (Z.generators().matrix_transpose() * 0.5).matrix_transpose());
-            const Zonotope outer =
-                Zonotope(Z.center(), (Z.generators().matrix_transpose() * 1.5).matrix_transpose());
+            const Zonotope inner = Zonotope(Z.center(), Z.generators() * 0.5);
+            const Zonotope outer = Zonotope(Z.center(), Z.generators() * 1.5);
+            // both answers agree with the oracle
             oracle::check(Z.contains(inner, "approx:st"),
                           lean::Zonotope(Z).contains(lean::Zonotope(inner)));
             oracle::check(Z.contains(outer, "approx:st"),

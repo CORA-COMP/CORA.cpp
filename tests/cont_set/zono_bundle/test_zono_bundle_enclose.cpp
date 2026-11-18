@@ -28,14 +28,11 @@ void member_by_member(const std::string &b) {
         B2(column({0.0, 3.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const ZonoBundle R = ZonoBundle({A1, A2}).enclose(ZonoBundle({B1, B2}));
     check(R.parallel_sets() == 2, b + ": two members");
-    check(close((R.zonotopes()[0]).generators().matrix_transpose(),
-                A1.enclose(B1).generators().matrix_transpose(), 0) &&
-              close((R.zonotopes()[1]).center().expand_dims(-1),
-                    A2.enclose(B2).center().expand_dims(-1), 0),
+    check(close((R.zonotopes()[0]).generators(), A1.enclose(B1).generators(), 0) &&
+              close((R.zonotopes()[1]).center(), A2.enclose(B2).center(), 0),
           b + ": the members enclosed pairwise");
     const ZonoBundle with_zonotope = ZonoBundle({A1, A2}).enclose(B1);
-    check(close((with_zonotope.zonotopes()[1]).generators().matrix_transpose(),
-                A2.enclose(B1).generators().matrix_transpose(), 0),
+    check(close((with_zonotope.zonotopes()[1]).generators(), A2.enclose(B1).generators(), 0),
           b + ": a zonotope against every member");
     const Set S = Set(ZonoBundle({A1, A2})).get().enclose(Set(ZonoBundle({B1, B2})));
     check(S.is<ZonoBundle>() && S.as<ZonoBundle>().parallel_sets() == 2,
@@ -50,14 +47,13 @@ void with_a_map(const std::string &b) {
     const Tensor M({{0.0, -1.0}, {1.0, 0.0}});
     const ZonoBundle bundle({A1, A2});
     const ZonoBundle R = bundle.enclose(M, Zp);
-    check(close((R.zonotopes()[1]).generators().matrix_transpose(),
-                A2.enclose(M, Zp).generators().matrix_transpose(), 0),
+    check(close((R.zonotopes()[1]).generators(), A2.enclose(M, Zp).generators(), 0),
           b + ": M Z + Zplus");
     const ZonoBundle shift({Zp, Zp, Zp});
     const ZonoBundle R2 = bundle.enclose(M, shift);
     check(R2.parallel_sets() == 2 &&
-              close((R2.zonotopes()[0]).center().expand_dims(-1),
-                    (A1.enclose(M, shift.interval().zonotope())).center().expand_dims(-1), 0),
+              close((R2.zonotopes()[0]).center(),
+                    (A1.enclose(M, shift.interval().zonotope())).center(), 0),
           b + ": a bundle shifts as its box");
 }
 

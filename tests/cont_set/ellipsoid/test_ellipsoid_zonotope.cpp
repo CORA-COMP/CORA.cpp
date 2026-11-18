@@ -37,6 +37,7 @@ void zonotope_known(const std::string &b) {
     check(close(E.zonotope("inner:box").generators().matrix_transpose(),
                 {2 / std::sqrt(2.0), 0, 0, 1 / std::sqrt(2.0)}, 1e-13),
           b + ": inner");
+    // a full ellipsoid: the symmetric root; a flat one and a point
     const Ellipsoid R(Tensor({{2.0, 1.0}, {1.0, 2.0}}));
     const Tensor G = R.zonotope().generators().matrix_transpose();
     check(close(G.matmul(G.matrix_transpose()), R.Q(), 1e-12) &&

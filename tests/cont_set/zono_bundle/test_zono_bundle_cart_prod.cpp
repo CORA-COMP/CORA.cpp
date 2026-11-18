@@ -32,10 +32,8 @@ void pairs_of_members(const std::string &b) {
     const std::vector<Zonotope> expected{A1.cart_prod(B1), A1.cart_prod(B2), A2.cart_prod(B1),
                                          A2.cart_prod(B2)};
     for (std::size_t i = 0; i < 4; ++i)
-        check(close((P.zonotopes()[i]).center().expand_dims(-1),
-                    expected[i].center().expand_dims(-1), 0) &&
-                  close((P.zonotopes()[i]).generators().matrix_transpose(),
-                        expected[i].generators().matrix_transpose(), 0),
+        check(close((P.zonotopes()[i]).center(), expected[i].center(), 0) &&
+                  close((P.zonotopes()[i]).generators(), expected[i].generators(), 0),
               b + ": pair " + std::to_string(i));
 }
 

@@ -67,14 +67,10 @@ void checks_and_their_switch(const std::string &b) {
                        Error::wrong_value),
           b + ": a negative step");
     const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
-    const Tensor on =
-        sys.particular_solution_time_varying(U, kStep, kTerms).generators().matrix_transpose();
+    const Tensor on = sys.particular_solution_time_varying(U, kStep, kTerms).generators();
     ChecksScope off(false);
-    check(
-        test::close(
-            sys.particular_solution_time_varying(U, kStep, kTerms).generators().matrix_transpose(),
-            on, 0),
-        b + ": the same with the checks off");
+    check(test::close(sys.particular_solution_time_varying(U, kStep, kTerms).generators(), on, 0),
+          b + ": the same with the checks off");
 }
 
 } // namespace

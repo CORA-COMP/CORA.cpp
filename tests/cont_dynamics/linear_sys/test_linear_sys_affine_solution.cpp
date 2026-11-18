@@ -70,12 +70,9 @@ void checks_and_their_switch(const std::string &b) {
     check(
         test::raises([&] { sys.affine_solution(initial_set(), u, kStep, 0); }, Error::wrong_value),
         b + ": no terms");
-    const Tensor on =
-        (sys.affine_solution(initial_set(), u, kStep, kTerms).time_point).center().expand_dims(-1);
+    const Tensor on = (sys.affine_solution(initial_set(), u, kStep, kTerms).time_point).center();
     ChecksScope off(false);
-    check(test::close((sys.affine_solution(initial_set(), u, kStep, kTerms).time_point)
-                          .center()
-                          .expand_dims(-1),
+    check(test::close((sys.affine_solution(initial_set(), u, kStep, kTerms).time_point).center(),
                       on, 0),
           b + ": the same with the checks off");
 }

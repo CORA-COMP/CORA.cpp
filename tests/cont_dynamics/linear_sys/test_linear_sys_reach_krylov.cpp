@@ -113,6 +113,7 @@ void agrees_with_standard() {
     const ReachSet Rd = dense.reach({.initial_set = R0, .t_final = 1.0}, krylov);
     const ReachSet Rs = dense.output_set(
         dense.reach({.initial_set = R0, .t_final = 1.0}, alg::Standard{.time_step = 0.05}));
+    // the largest gap to the standard algorithm, and between the sparse and the dense A
     double worst = 0, same = 0;
     for (size_t k = 0; k < Rk.time_point.size(); ++k) {
         const Interval Ik = Rk.time_point[k].interval(), Is = Rs.time_point[k].interval();

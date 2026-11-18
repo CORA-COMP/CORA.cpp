@@ -72,10 +72,8 @@ void is_the_state_without_c(const std::string &b) {
     const ReachSet R = sys.reach({.initial_set = in.X0, .input_set = in.U, .t_final = 0.6},
                                  alg::Standard{.time_step = 0.2, .taylor_terms = 6});
     const ReachSet Y = sys.output_set(R);
-    check(close(Y.time_interval[1].center().expand_dims(-1),
-                R.time_interval[1].center().expand_dims(-1)) &&
-              close(Y.time_point[2].generators().matrix_transpose(),
-                    R.time_point[2].generators().matrix_transpose()),
+    check(close(Y.time_interval[1].center(), R.time_interval[1].center()) &&
+              close(Y.time_point[2].generators(), R.time_point[2].generators()),
           b + ": without C the output is the state");
 }
 
@@ -92,9 +90,9 @@ void checks_and_their_switch() {
         Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     check(test::raises([&] { sys.output_set(wrong); }, Error::dimension_mismatch),
           "output_set: a set of three dimensions");
-    const Tensor on = (sys.output_set(R).time_point.back()).center().expand_dims(-1);
+    const Tensor on = (sys.output_set(R).time_point.back()).center();
     ChecksScope off(false);
-    check(test::close((sys.output_set(R).time_point.back()).center().expand_dims(-1), on, 0),
+    check(test::close((sys.output_set(R).time_point.back()).center(), on, 0),
           "output_set: the same with the checks off");
 }
 

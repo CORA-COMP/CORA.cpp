@@ -67,10 +67,9 @@ void checks_and_their_switch() {
     check(test::raises([] { Interval::empty(2).zonotope(); }, Error::not_supported),
           "zonotope: the empty interval");
     const Interval I(column({0.0, 1.0}), column({2.0, 3.0}));
-    const Tensor on = I.zonotope().generators().matrix_transpose();
+    const Tensor on = I.zonotope().generators();
     ChecksScope off(false);
-    check(close(I.zonotope().generators().matrix_transpose(), on, 0),
-          "zonotope: the same with the checks off");
+    check(close(I.zonotope().generators(), on, 0), "zonotope: the same with the checks off");
 }
 
 } // namespace

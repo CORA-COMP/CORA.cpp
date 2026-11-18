@@ -109,8 +109,7 @@ void checks_and_their_switch() {
     const ClosedLoopReach<Zonotope> on = sys.reach(X0(), U(), 0.2, options());
     ChecksScope off(false);
     const ClosedLoopReach<Zonotope> without = sys.reach(X0(), U(), 0.2, options());
-    check(test::close(on.time_point.back().center().expand_dims(-1),
-                      without.time_point.back().center().expand_dims(-1), 0),
+    check(test::close(on.time_point.back().center(), without.time_point.back().center(), 0),
           "reach: the same with the checks off");
 }
 

@@ -147,14 +147,12 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises([&] { sys.reach(problem, alg::FromStart{.time_step = 0.0}); },
                        Error::wrong_value),
           b + ": time_step 0");
-    const Tensor on = (sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back())
-                          .center()
-                          .expand_dims(-1);
+    const Tensor on =
+        (sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back()).center();
     ChecksScope off(false);
-    check(test::close((sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back())
-                          .center()
-                          .expand_dims(-1),
-                      on, 0),
+    check(test::close(
+              (sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back()).center(),
+              on, 0),
           b + ": the same with the checks off");
 }
 

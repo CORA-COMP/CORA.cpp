@@ -212,15 +212,13 @@ void checks_and_their_switch() {
               Error::not_supported),
           "reach: an input set");
     const ReachProblem problem{.initial_set = X0, .t_final = 0.5};
-    const Tensor on = (sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back())
-                          .center()
-                          .expand_dims(-1);
+    // the center of the last set, with the checks on and off
+    const Tensor on =
+        (sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back()).center();
     ChecksScope off(false);
-    // the same with the checks off
-    check(test::close((sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back())
-                          .center()
-                          .expand_dims(-1),
-                      on, 0),
+    check(test::close(
+              (sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back()).center(),
+              on, 0),
           "reach: the same with the checks off");
 }
 

@@ -120,8 +120,7 @@ void product_with_a_zonotope(const std::string &b) {
                                          Tensor::like(W.center().expand_dims(-1), cw, {2, 1}));
     const Tensor expected = test::member(Q, cq).matmul(w);
     check(close(point, expected, 1e-12), b + ": the product of a member and a point");
-    check(close(((Q * W)).center().expand_dims(-1), R.center().expand_dims(-1), 0),
-          b + ": the operator");
+    check(close(((Q * W)).center(), R.center(), 0), b + ": the operator");
 }
 
 /// Inner dimensions that differ, a batch mismatch and a 1 x 1 scalar factor are refused; with the

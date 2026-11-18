@@ -34,8 +34,7 @@ void minus_shifts_the_set(const std::string &b) {
               test::close(A.as<Interval>().sup(), {0.0, 1.0}),
           b + ": a box minus a vector");
     check(test::close(B.as<Zonotope>().center().expand_dims(-1), {0.0, -1.0}) &&
-              test::close(B.as<Zonotope>().generators().matrix_transpose(),
-                          Z.generators().matrix_transpose()),
+              test::close(B.as<Zonotope>().generators(), Z.generators()),
           b + ": a zonotope minus a vector");
     const Set C = ContSet::minus(p, I), D = ContSet::minus(p, Z);
     check(test::close(C.as<Interval>().inf(), {0.0, -1.0}) &&

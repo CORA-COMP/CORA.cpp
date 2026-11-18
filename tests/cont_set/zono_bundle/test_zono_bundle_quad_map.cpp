@@ -29,12 +29,10 @@ void quad_map_known(const std::string &b) {
     const std::vector<Tensor> Q{Tensor({{1.0, 0.0}, {0.0, 1.0}})};
     const ZonoBundle R = zono_bundle.quad_map(Q);
     const Zonotope first = zono_bundle.zonotopes()[0].quad_map(Q);
-    check(
-        R.dim() == 1 && R.parallel_sets() == 2 &&
-            close((R.zonotopes()[0]).center().expand_dims(-1), first.center().expand_dims(-1), 0) &&
-            close((R.zonotopes()[0]).generators().matrix_transpose(),
-                  first.generators().matrix_transpose(), 0),
-        b + ": the members are the zonotopes' maps");
+    check(R.dim() == 1 && R.parallel_sets() == 2 &&
+              close((R.zonotopes()[0]).center(), first.center(), 0) &&
+              close((R.zonotopes()[0]).generators(), first.generators(), 0),
+          b + ": the members are the zonotopes' maps");
 }
 
 /// Stated property: x' Q x of every point of the bundle is in the image.

@@ -82,14 +82,12 @@ void checks_and_their_switch(const std::string &b) {
                        Error::dimension_mismatch),
           b + ": Vstat of three dimensions");
     // the checks off give the same set
-    const Tensor on = (sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1))
-                          .generators()
-                          .matrix_transpose();
+    const Tensor on =
+        (sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1)).generators();
     ChecksScope off(false);
-    check(test::close((sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1))
-                          .generators()
-                          .matrix_transpose(),
-                      on, 0),
+    check(test::close(
+              (sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1)).generators(),
+              on, 0),
           b + ": the same with the checks off");
 }
 

@@ -23,14 +23,11 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         const Zonotope big(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
         const Zonotope small(column({0.5, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.25}}));
-        check(close((ZonoBundle({big, small}).zonotope()).generators().matrix_transpose(),
-                    small.generators().matrix_transpose(), 0),
+        check(close((ZonoBundle({big, small}).zonotope()).generators(), small.generators(), 0),
               b + ": the member of volume 0.125 (before 2)");
-        check(close((ZonoBundle({small, big}).zonotope()).center().expand_dims(-1),
-                    small.center().expand_dims(-1), 0),
+        check(close((ZonoBundle({small, big}).zonotope()).center(), small.center(), 0),
               b + ": the order does not matter");
-        check(close((ZonoBundle({big, big}).zonotope()).generators().matrix_transpose(),
-                    big.generators().matrix_transpose(), 0),
+        check(close((ZonoBundle({big, big}).zonotope()).generators(), big.generators(), 0),
               b + ": a tie gives the first");
         check((ZonoBundle::origin(2).zonotope()).generators().matrix_transpose().shape() ==
                   Shape{2, 0},

@@ -37,17 +37,12 @@ void compact_of_a_zonotope(const std::string &b) {
                    aligned = S.compact("aligned").as<Zonotope>();
     check(zeros.generators().matrix_transpose().shape() == std::vector<int64_t>({2, 3}),
           b + ": zeros dropped");
-    check(test::close(zeros.generators().matrix_transpose(),
-                      Z.compact("zeros").generators().matrix_transpose(), 0),
-          b + ": the default");
+    check(test::close(zeros.generators(), Z.compact("zeros").generators(), 0), b + ": the default");
     check(all.generators().matrix_transpose().shape() == std::vector<int64_t>({2, 2}),
           b + ": parallel merged");
-    check(test::close(all.generators().matrix_transpose(),
-                      Z.compact("all").generators().matrix_transpose(), 0),
+    check(test::close(all.generators(), Z.compact("all").generators(), 0),
           b + ": all, as the class");
-    check(
-        test::close(aligned.generators().matrix_transpose(), Z.generators().matrix_transpose(), 0),
-        b + ": aligned keeps them");
+    check(test::close(aligned.generators(), Z.generators(), 0), b + ": aligned keeps them");
     // tol: a generator of length 0.5 is zero for tol 0.6
     const Zonotope small(column({0.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 1.0}, {2, 2}));
     check(

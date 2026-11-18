@@ -91,15 +91,13 @@ void checks_and_their_switch() {
               Error::wrong_value),
           "reach: time_step 0");
     const ReachProblem problem{.initial_set = X0, .t_final = 1};
-    const Tensor on = (sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back())
-                          .center()
-                          .expand_dims(-1);
+    const Tensor on =
+        (sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back()).center();
     ChecksScope off(false);
     // the checks off give the same result
-    check(test::close((sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back())
-                          .center()
-                          .expand_dims(-1),
-                      on, 0),
+    check(test::close(
+              (sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back()).center(), on,
+              0),
           "reach: the same with the checks off");
 }
 

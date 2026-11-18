@@ -30,16 +30,11 @@ void the_end_is_the_sum_of_its_parts(const std::string &b) {
     const OneStep s = sys.one_step(initial_set(), U, u, kStep, kTerms);
     const AffineSolution affine = sys.affine_solution(initial_set(), u, kStep, kTerms);
     const Zonotope PU = sys.particular_solution_time_varying(U, kStep, kTerms);
-    check(test::close(s.time_point.center().expand_dims(-1),
-                      affine.time_point.center().expand_dims(-1) + PU.center().expand_dims(-1),
-                      1e-15),
+    check(test::close(s.time_point.center(),
+                      affine.time_point.center() + PU.center(), 1e-15),
           b + ": the center");
-    check(test::close(s.time_varying.generators().matrix_transpose(),
-                      PU.generators().matrix_transpose(), 0),
-          b + ": PU");
-    check(test::close(s.constant.center().expand_dims(-1), affine.constant.center().expand_dims(-1),
-                      1e-15),
-          b + ": Pu");
+    check(test::close(s.time_varying.generators(), PU.generators(), 0), b + ": PU");
+    check(test::close(s.constant.center(), affine.constant.center(), 1e-15), b + ": Pu");
     check(test::close(s.state_curvature.interval().sup(), affine.state_curvature.interval().sup(),
                       1e-15),
           b + ": the state curvature");
@@ -85,14 +80,12 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises([&] { sys.one_step(initial_set(), origin(2), u, kStep, 0); },
                        Error::wrong_value),
           b + ": no terms");
-    const Tensor on = (sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval)
-                          .center()
-                          .expand_dims(-1);
+    const Tensor on =
+        (sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval).center();
     ChecksScope off(false);
-    check(test::close((sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval)
-                          .center()
-                          .expand_dims(-1),
-                      on, 0),
+    check(test::close(
+              (sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval).center(), on,
+              0),
           b + ": the same with the checks off");
 }
 

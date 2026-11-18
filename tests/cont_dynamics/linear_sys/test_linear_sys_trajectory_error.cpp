@@ -52,9 +52,7 @@ void at_the_expansion_point_only_the_series_remains(const std::string &b) {
     // one value of the flow stands for both
     const TrajectoryError same = LinearSys(matrix()).trajectory_error(
         {zero}, zero, start_set(), kTime, kTime, kTime, kOrder, n);
-    check(test::close(same.error.generators().matrix_transpose(),
-                      e.error.generators().matrix_transpose(), 0),
-          b + ": one flow value");
+    check(test::close(same.error.generators(), e.error.generators(), 0), b + ": one flow value");
 }
 
 /// A wider time interval and a difference of the flow values widen the error set.
@@ -86,9 +84,9 @@ void checks_and_their_switch(const std::string &b) {
           b + ": three flow values");
     check(test::raises([&] { call({zero}, 3, test::column({0.0})); }, Error::dimension_mismatch),
           b + ": u of one row");
-    const Tensor on = (call({zero}, 3, zero).error).center().expand_dims(-1);
+    const Tensor on = (call({zero}, 3, zero).error).center();
     ChecksScope off(false);
-    check(test::close((call({zero}, 3, zero).error).center().expand_dims(-1), on, 0),
+    check(test::close((call({zero}, 3, zero).error).center(), on, 0),
           b + ": the same with the checks off");
 }
 

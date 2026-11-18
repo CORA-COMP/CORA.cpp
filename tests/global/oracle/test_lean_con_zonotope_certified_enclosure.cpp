@@ -44,6 +44,7 @@ int main() {
                          outside =
                              Z.center().expand_dims(-1) +
                              Z.generators().matrix_transpose().matmul(rnd.vector(m).sign()) * 3.0;
+            // a point the oracle proves inside is inside
             for (const Tensor &p : {Z.center().expand_dims(-1), near, inside, outside}) {
                 const bool theirs_proved = theirs.contains(p);
                 proved += theirs_proved;

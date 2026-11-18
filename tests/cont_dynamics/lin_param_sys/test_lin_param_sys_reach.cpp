@@ -113,13 +113,10 @@ void checks_and_their_switch() {
     const Zonotope away(column({0.75}), Tensor({{0.25}}));
     check(test::raises([&] { sys.reach({R0, away, 5.0}, stiff); }, Error::reach_set_explosion),
           "reach: the curvature of a constant input needs norm(A) r < taylor_terms + 2");
-    const Tensor on =
-        (sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()).center().expand_dims(-1);
+    const Tensor on = (sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()).center();
     ChecksScope off(false);
-    check(
-        close((sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()).center().expand_dims(-1),
-              on, 0),
-        "reach: the same with the checks off");
+    check(close((sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()).center(), on, 0),
+          "reach: the same with the checks off");
 }
 
 } // namespace

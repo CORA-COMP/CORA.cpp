@@ -56,10 +56,9 @@ void members_map_to_points(const std::string &b) {
 /// zonotope takes no input; with the checks off the result is the same.
 void checks_and_their_switch() {
     const MatZonotope A = test::example();
-    const Tensor on = A.zonotope().center().expand_dims(-1);
+    const Tensor on = A.zonotope().center();
     ChecksScope off(false);
-    check(close(A.zonotope().center().expand_dims(-1), on, 0),
-          "zonotope: the same with the checks off");
+    check(close(A.zonotope().center(), on, 0), "zonotope: the same with the checks off");
 }
 
 } // namespace

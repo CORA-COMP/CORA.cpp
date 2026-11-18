@@ -83,6 +83,7 @@ void contains_property(const std::string &b) {
             all = all && E.contains(v);
         }
         check(E.contains(Z) == all, b + ": the search agrees with the vertices");
+        // the box of half the generators: its corners decide as well
         const Interval I(Z.center().expand_dims(-1) -
                              Z.generators().matrix_transpose().abs().sum(1, true) * 0.5,
                          Z.center().expand_dims(-1) +
