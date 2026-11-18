@@ -393,15 +393,16 @@ std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t
     auto kept = G.fresh(aux_matrix_shape(batch, keep, 1)),
          rest = G.fresh(aux_matrix_shape(batch, m - keep, 1));
     std::vector<int64_t> order(m);
-    std::vector<T> score(m);
+    T *score = aux_scratch<T>(m);
     for (int64_t z = 0; z < count; ++z) {
         // the score of each row, its terms in order: one result wherever the matrix starts
         for (int64_t i = 0; i < m; ++i) {
             const T *g = G.p + (z * m + i) * n;
-            T sum = T(0), most = n > 0 ? std::abs(g[0]) : T(0);
+            T sum = T(0), most = T(0);
             for (int64_t j = 0; j < n; ++j) {
-                sum += std::abs(g[j]);
-                most = std::max(most, std::abs(g[j]));
+                const T a = std::abs(g[j]);
+                sum += a;
+                most = a > most ? a : most;
             }
             score[i] = sum - most;
         }

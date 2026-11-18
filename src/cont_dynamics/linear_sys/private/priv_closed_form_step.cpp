@@ -200,24 +200,19 @@ EntrywiseCorrections aux_corrections(const Tensor &A, double r, int order, const
 /// The input solution of V: the orders 0 to eta, one box each, then the remainder, added in turn.
 Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &remainder,
                             const Zonotope &V) {
-    // the boxes added in turn: the centers one after the other, the generators side by side
+    // the boxes added in turn: the centers one after the other, the generator rows stacked
     Zonotope first = V.linear_map(terms[0]);
-    // layout: #163 step 2
-    Tensor center = detail::cora_center(first);
-    // layout: #163 step 2
-    std::vector<Tensor> generators{detail::cora_generators(first)};
+    Tensor center = first.center();
+    std::vector<Tensor> generators{first.generators()};
     generators.reserve(terms.size() + 1);
     const auto add = [&](const Interval &box) {
         const Zonotope Z = V.linear_map(box);
-        // layout: #163 step 2
-        center = center + detail::cora_center(Z);
-        // layout: #163 step 2
-        generators.push_back(detail::cora_generators(Z));
+        center = center + Z.center();
+        generators.push_back(Z.generators());
     };
     for (std::size_t i = 1; i < terms.size(); ++i) add(terms[i]);
     add(remainder);
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(center, Tensor::concat(generators, -1));
+    return {center, Tensor::concat(generators, -2)};
 }
 
 /// The corrections as host numbers, for the cache: a tensor would keep the backend of its A.
@@ -384,7 +379,7 @@ ClosedFormStep ClosedFormStepper::step(const Zonotope &X, const Zonotope &U,
                                        const Tensor &u) const {
     const Matrices &m = *m_;
     // the constant input is a point set
-    const Zonotope point = detail::zonotope_of_columns(u, u.zeros_like({u.size(0), 0}));
+    const Zonotope point(u, u.zeros_like({0, u.size(0)}));
     const Zonotope Pu = aux_input_solution(m.terms, m.remainder, point);
     const Zonotope PU = aux_input_solution(m.terms, m.remainder, U);
     // Htp = [e^{A dt}] X + Pu, Hti = hull(X, Htp) + [F] X

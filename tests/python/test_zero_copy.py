@@ -7,7 +7,7 @@ trip of a 1000 x 1000 array against one copy of it.
 
 Authors:       Tobias Ladner
 Written:       03-November-2026
-Last update:   ---
+Last update:   18-November-2026
 Reviewed:      ---
 """
 import time
@@ -34,7 +34,8 @@ class ZeroCopy(unittest.TestCase):
         self.enterContext(cora.backend("eigen"))
         rng = np.random.default_rng(3)
         self.c = rng.standard_normal(1000)
-        self.G = rng.standard_normal((1000, 1000))
+        # CORA's columns, stored column-major: the generator rows in memory (#163 step 2: rows)
+        self.G = np.asfortranarray(rng.standard_normal((1000, 1000)))
 
     def test_what_comes_in_comes_back(self):
         Z = cora.Zonotope(self.c, self.G)

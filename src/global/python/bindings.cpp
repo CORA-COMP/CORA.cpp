@@ -1466,12 +1466,22 @@ std::vector<std::vector<Tensor>> matrices_of(const py::list &T) {
 
 using Indices = std::vector<std::vector<int64_t>>;
 
+/// A zonotope from CORA's generator columns G (..., n, m): their transpose is a view, so
+/// columns stored column-major are borrowed without a copy. layout: #163 step 2
+Zonotope aux_zonotope_of_columns(const Tensor &c, const Array &G) {
+    const Tensor columns = tensor_of(G, "the generators");
+    if (columns.ndim() < 2) return detail::zonotope_of_columns(c, columns);
+    const py::object array = py::isinstance<py::list>(G) || py::isinstance<py::tuple>(G)
+                                 ? py::module_::import("numpy").attr("asarray")(G)
+                                 : py::object(G);
+    return {c.squeeze(-1), tensor_of(array.attr("swapaxes")(-1, -2), "the generators")};
+}
+
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
         .def(py::init([](const Array &c, const Array &G) {
                  // layout: #163 step 2 - Python still gives CORA's generator columns
-                 return detail::zonotope_of_columns(vector_of(c, "the center"),
-                                                    tensor_of(G, "the generators"));
+                 return aux_zonotope_of_columns(vector_of(c, "the center"), G);
              }),
              py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
         // the list filter and the conversions of a zonotope
@@ -1501,7 +1511,11 @@ void bind_zonotope(py::module_ &m) {
             "center", [](const Zonotope &Z) { return vector(detail::cora_center(Z)); },
             "The center c (..., n)")
         .def_property_readonly(
-            "generators", [](const Zonotope &Z) { return matrix(detail::cora_generators(Z)); },
+            // layout: #163 step 2 - the rows seen as CORA's columns, a view without a copy
+            "generators",
+            [](const Zonotope &Z) {
+                return Array(matrix(Z.generators()).attr("swapaxes")(-1, -2));
+            },
             "The generator matrix G (..., n, m)")
         // points and maps
         .def(
