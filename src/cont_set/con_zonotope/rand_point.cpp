@@ -84,9 +84,8 @@ Tensor ConZonotope::rand_point_impl(int64_t N, Rng &rng) const {
 }
 
 Tensor ConZonotope::rand_point_impl(int64_t N, Rng &rng, const std::string &type) const {
-    // layout: #163 step 2
     if (A().shape()[A().ndim() - 2] == 0)
-        return detail::zonotope_of_columns(c_, G_).rand_point(N, rng, type);
+        return Zonotope(c_.squeeze(-1), G_.matrix_transpose()).rand_point(N, rng, type);
     if (type == "extreme") return aux_extreme(*this, N, rng);
     // the candidates are points of the set, and so are their convex combinations
     const Tensor V = priv_vertex_candidates(*this);

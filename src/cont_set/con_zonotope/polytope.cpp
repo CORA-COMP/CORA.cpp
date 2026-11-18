@@ -32,8 +32,8 @@ Polytope ConZonotope::polytope() const {
     CORA_CHECK(c_.ndim() == 2, Error::not_supported,
                [] { return std::string("polytope: it supports a single set, not a batch"); });
     // the facets of the lifted zonotope, cut at 0 in the constraint coordinates
-    const Zonotope lifted = detail::zonotope_of_columns(Tensor::concat({c_, b() * -1.0}, -2),
-                                                        Tensor::concat({G_, A()}, -2));
+    const Zonotope lifted = Zonotope((Tensor::concat({c_, b() * -1.0}, -2)).squeeze(-1),
+                                     (Tensor::concat({G_, A()}, -2)).matrix_transpose());
     const auto [C, d] = priv_zonotope_halfspaces(lifted);
     return {C.slice(-1, 0, dim()), d};
 }

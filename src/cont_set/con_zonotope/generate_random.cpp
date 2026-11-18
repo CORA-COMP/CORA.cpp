@@ -67,11 +67,9 @@ CORA_FROM_NUMBERS ConZonotope ConZonotope::generate_random(Rng &rng,
     std::vector<double> x0(static_cast<std::size_t>(m)), A(static_cast<std::size_t>(p * m));
     rng.uniform(x0.data(), x0.size(), -1.0, 1.0);
     rng.uniform(A.data(), A.size(), -5.0, 5.0);
-    // layout: #163 step 2
-    const Tensor Ae = Tensor::like(detail::cora_center(Z), A, {p, m});
-    // layout: #163 step 2
-    return {detail::cora_center(Z), detail::cora_generators(Z), Ae,
-            Ae.matmul(Tensor::like(detail::cora_center(Z), x0, {m, 1}))};
+    const Tensor Ae = Tensor::like(Z.center().expand_dims(-1), A, {p, m});
+    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose(), Ae,
+            Ae.matmul(Tensor::like(Z.center().expand_dims(-1), x0, {m, 1}))};
 }
 
 } // namespace cora

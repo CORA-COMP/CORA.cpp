@@ -63,10 +63,8 @@ ConZonotope aux_exact(const ConZonotope &cz, const Zonotope &S) {
 
 /// Translate by the center of S and, for each generator g, intersect cz + g with cz - g.
 ConZonotope aux_inner_vertices(const ConZonotope &cz, const Zonotope &S) {
-    // layout: #163 step 2
-    ConZonotope result = cz.plus(detail::cora_center(S) * -1.0);
-    // layout: #163 step 2
-    const Tensor &G = detail::cora_generators(S);
+    ConZonotope result = cz.plus(S.center().expand_dims(-1) * -1.0);
+    const Tensor &G = S.generators().matrix_transpose();
     for (int64_t i = 0; i < G.shape().back(); ++i) {
         const Tensor g = G.slice(-1, i, i + 1);
         result = result.plus(g).intersect(result.plus(g * -1.0));
@@ -82,13 +80,12 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
     const Tensor pick = Tensor::concat({cz.c().eye_like(n), zeros_block(cz.c(), p, n)}, -2);
     const Tensor Gamma = lifted.pinv().matmul(pick); // (N, n)
     // the support of the centered S along row i of Gamma: sum_k |Gamma_i . g_k|
-    const Tensor support = Gamma.matmul(detail::cora_generators(S)).abs_sum(); // (N, 1)
+    const Tensor support = Gamma.matmul(S.generators().matrix_transpose()).abs_sum(); // (N, 1)
     const std::vector<double> s = support.data();
     for (const double v : s)
         if (v > 1.0) return ConZonotope::empty(n);
     const Tensor D = (support.ones_like() - support).reshape({1, N});
-    // layout: #163 step 2
-    return {cz.c() - detail::cora_center(S), cz.generators().multiply(D), cz.A().multiply(D),
+    return {cz.c() - S.center().expand_dims(-1), cz.generators().multiply(D), cz.A().multiply(D),
             cz.b()};
 }
 
@@ -101,8 +98,7 @@ ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::
         CORA_FAIL(Error::wrong_value, "minkowski_difference: the type must be exact, "
                                       "inner:vertices or inner:Vinod, got '" +
                                           type + "'");
-    // layout: #163 step 2
-    if (cz.c().ndim() != 2 || detail::cora_center(S).ndim() != 2)
+    if (cz.c().ndim() != 2 || S.center().ndim() != 1)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: it supports single sets, not a batch");
     if (type == "inner:vertices") return aux_inner_vertices(cz, S);

@@ -69,15 +69,14 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &cz2) {
 /// The enclosure: the zonotope part is that of Zonotope::enclose, the constraints those of the
 /// set with fewer generators (they agree on the common factors), padded with zeros.
 ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
-    const Zonotope Z = detail::zonotope_of_columns(cz.c(), cz.generators())
-                           .enclose(detail::zonotope_of_columns(cz2.c(), cz2.generators()));
+    const Zonotope Z =
+        Zonotope(cz.c().squeeze(-1), cz.generators().matrix_transpose())
+            .enclose(Zonotope(cz2.c().squeeze(-1), cz2.generators().matrix_transpose()));
     const bool second_shorter = cz2.generators().shape().back() <= cz.generators().shape().back();
     const Tensor &A = second_shorter ? cz2.A() : cz.A();
-    // layout: #163 step 2
-    const int64_t more = detail::cora_generators(Z).shape().back() - A.shape().back();
+    const int64_t more = Z.nr_generators() - A.shape().back();
     const Tensor padded = Tensor::concat({A, zeros_block(A, A.shape()[A.ndim() - 2], more)}, -1);
-    // layout: #163 step 2
-    return {detail::cora_center(Z), detail::cora_generators(Z), padded, cz.b()};
+    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose(), padded, cz.b()};
 }
 
 } // namespace

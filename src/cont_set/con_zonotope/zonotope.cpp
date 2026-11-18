@@ -83,8 +83,8 @@ Zonotope aux_null_space(const ConZonotope &cz) {
     }
     const Tensor center = Tensor::like(c, mid, {k, 1}), radius = Tensor::like(c, rad, {1, k});
     const Tensor offset = p + T.matmul(center);
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(c + G.matmul(offset), G.matmul(T.multiply(radius)));
+    return Zonotope((c + G.matmul(offset)).squeeze(-1),
+                    (G.matmul(T.multiply(radius))).matrix_transpose());
 }
 
 } // namespace
@@ -99,15 +99,13 @@ Zonotope ConZonotope::zonotope(const std::string &method) const {
     });
     CORA_CHECK(c_.ndim() == 2, Error::not_supported,
                [] { return std::string("zonotope: it supports a single set, not a batch"); });
-    // layout: #163 step 2
-    if (A().shape()[A().ndim() - 2] == 0) return detail::zonotope_of_columns(c_, G_);
+    if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_.squeeze(-1), G_.matrix_transpose());
     CORA_CHECK(!priv_is_empty(priv_host_con_zonotope(*this)), Error::empty_set, [] {
         return std::string("zonotope: the set is empty and CORA.cpp has no empty zonotope");
     });
     if (method == "nullSpace") return aux_null_space(*this);
     const ConZonotope reduced = reduce(int(G_.shape().back() / dim()) + 1);
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(reduced.c(), reduced.generators());
+    return Zonotope(reduced.c().squeeze(-1), reduced.generators().matrix_transpose());
 }
 
 } // namespace cora

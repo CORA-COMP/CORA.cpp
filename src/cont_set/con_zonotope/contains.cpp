@@ -72,8 +72,7 @@ detail::Refusal aux_zonotope_refusal(const ConZonotope &cz, const Zonotope &Z,
         return std::pair{Error::dimension_mismatch, "the sets differ in dimension, " +
                                                         std::to_string(cz.dim()) + " and " +
                                                         std::to_string(Z.dim())};
-    // layout: #163 step 2
-    if (cz.c().ndim() != 2 || detail::cora_center(Z).ndim() != 2)
+    if (cz.c().ndim() != 2 || Z.center().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("a linear program per set: it supports a single set, "
                                      "not a batch")};
@@ -106,8 +105,7 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         Tensor::concat({compacted.c(), zeros_block(compacted.c(), p, 1)}, -2);
     const Tensor extended_generators = Tensor::concat({compacted.generators(), compacted.A()}, -2);
     const Tensor offsets = compacted.b().broadcast_to({p, N});
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(extended_center, extended_generators)
+    return Zonotope(extended_center.squeeze(-1), extended_generators.matrix_transpose())
         .contains(Tensor::concat({P, offsets}, -2), "exact", tol);
 }
 

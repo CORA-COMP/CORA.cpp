@@ -25,8 +25,8 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Interval ConZonotope::interval_impl() const {
-    // layout: #163 step 2
-    if (A().shape()[A().ndim() - 2] == 0) return detail::zonotope_of_columns(c_, G_).interval();
+    if (A().shape()[A().ndim() - 2] == 0)
+        return Zonotope(c_.squeeze(-1), G_.matrix_transpose()).interval();
     // CORA drops the zero generators first; the ranges do not change
     const HostConZonotope H = priv_host_con_zonotope(priv_compact(*this));
     std::vector<double> inf(std::size_t(H.n)), sup(std::size_t(H.n));

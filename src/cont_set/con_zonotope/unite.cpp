@@ -71,8 +71,7 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
     std::vector<Zonotope> zonotopes;
     for (const ConZonotope &S : sets) {
         const ConZonotope r = S.A().numel() == 0 ? S : S.rescale();
-        // layout: #163 step 2
-        zonotopes.push_back(detail::zonotope_of_columns(r.c(), r.generators()));
+        zonotopes.emplace_back(r.c().squeeze(-1), r.generators().matrix_transpose());
     }
     const Zonotope iterative = zonotopes.front().unite(
         std::vector<Zonotope>(zonotopes.begin() + 1, zonotopes.end()), "iterative");
@@ -94,8 +93,7 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
         return Tensor::like(A, d, {k, 1});
     };
     const Zonotope Z = priv_union_linprog(iterative, support);
-    // layout: #163 step 2
-    return {detail::cora_center(Z), detail::cora_generators(Z)};
+    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose()};
 }
 
 } // namespace

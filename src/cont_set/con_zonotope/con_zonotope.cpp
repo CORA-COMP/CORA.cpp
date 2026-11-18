@@ -129,9 +129,8 @@ Polytope::LinearPrograms ConZonotope::factor_programs() const {
 ConZonotope::ConZonotope(const Tensor &c, const Tensor &G)
     : ConZonotope(c, G, zeros_block(G, 0, G.shape().back()), zeros_block(c, 0, 1)) {}
 
-// layout: #163 step 2
 ConZonotope::ConZonotope(const Zonotope &Z)
-    : ConZonotope(detail::cora_center(Z), detail::cora_generators(Z)) {}
+    : ConZonotope(Z.center().expand_dims(-1), Z.generators().matrix_transpose()) {}
 
 ConZonotope::ConZonotope(const Interval &I) : ConZonotope(I.zonotope()) {}
 

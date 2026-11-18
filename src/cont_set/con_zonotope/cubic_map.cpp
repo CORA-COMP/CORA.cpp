@@ -65,17 +65,14 @@ ConZonotope ConZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     detail::Entry entry;
     const std::string problem = priv_cubic_map_problem(T, ind, dim());
     CORA_CHECK(problem.empty(), Error::wrong_value, [&] { return "cubic_map: " + problem; });
-    // layout: #163 step 2
-    const Zonotope Z = detail::zonotope_of_columns(c_, G_).cubic_map(T, ind);
-    // layout: #163 step 2
-    const int64_t m = G_.shape().back(), total = detail::cora_generators(Z).shape().back();
+    const Zonotope Z = Zonotope(c_.squeeze(-1), G_.matrix_transpose()).cubic_map(T, ind);
+    const int64_t m = G_.shape().back(), total = Z.nr_generators();
     // the monomials of the factors alone are the first generators
     std::vector<int64_t> linear;
     linear.reserve(static_cast<std::size_t>(m));
     for (int64_t j = 0; j < m; ++j) linear.push_back(j);
-    // layout: #163 step 2
-    return {detail::cora_center(Z), detail::cora_generators(Z), aux_scatter(A(), linear, total),
-            b()};
+    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose(),
+            aux_scatter(A(), linear, total), b()};
 }
 
 ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz3,
@@ -88,12 +85,12 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
         return "cubic_map: the sets differ in dimension, " + std::to_string(dim()) + ", " +
                std::to_string(cz2.dim()) + " and " + std::to_string(cz3.dim());
     });
-    // layout: #163 step 2
-    const Zonotope Z = detail::zonotope_of_columns(c_, G_).cubic_map(
-        detail::zonotope_of_columns(cz2.c(), cz2.generators()),
-        detail::zonotope_of_columns(cz3.c(), cz3.generators()), T, ind);
-    // layout: #163 step 2
-    const int64_t total = detail::cora_generators(Z).shape().back();
+    // the map of the three sets without their constraints
+    const Zonotope Z =
+        Zonotope(c_.squeeze(-1), G_.matrix_transpose())
+            .cubic_map(Zonotope(cz2.c().squeeze(-1), cz2.generators().matrix_transpose()),
+                       Zonotope(cz3.c().squeeze(-1), cz3.generators().matrix_transpose()), T, ind);
+    const int64_t total = Z.nr_generators();
     const std::array<const ConZonotope *, 3> sets{this, &cz2, &cz3};
     // the factors of the three sets are stacked
     const std::array<int64_t, 3> sizes{G_.shape().back(), cz2.generators().shape().back(),
@@ -104,8 +101,7 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
         A.push_back(aux_scatter(sets[s]->A(), aux_linear_positions(sizes, s), total));
         b.push_back(sets[s]->b());
     }
-    // layout: #163 step 2
-    return {detail::cora_center(Z), detail::cora_generators(Z), Tensor::concat(A, -2),
+    return {Z.center().expand_dims(-1), Z.generators().matrix_transpose(), Tensor::concat(A, -2),
             Tensor::concat(b, -2)};
 }
 

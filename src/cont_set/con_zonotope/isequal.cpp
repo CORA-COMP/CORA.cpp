@@ -110,12 +110,11 @@ bool ConZonotope::isequal(const ConZonotope &S, Tol tol) const {
 bool ConZonotope::isequal(const Zonotope &Z, Tol tol) const {
     detail::Entry entry;
     const double tol_value = resolve_tol(entry, tol, c_.dtype(), "isequal");
-    // layout: #163 step 2
-    CORA_CHECK(c_.ndim() == 2 && detail::cora_center(Z).ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 2 && Z.center().ndim() == 1, Error::not_supported,
                [] { return std::string("isequal: it supports single sets, not a batch"); });
     // a zonotope equals a set that has no constraints and is that zonotope
     return Z.dim() == dim() && !priv_is_empty(priv_host_con_zonotope(*this)) && A().numel() == 0 &&
-           detail::zonotope_of_columns(c_, G_).isequal(Z, tol_value);
+           Zonotope(c_.squeeze(-1), G_.matrix_transpose()).isequal(Z, tol_value);
 }
 
 bool ConZonotope::isequal(const Interval &I, Tol tol) const {

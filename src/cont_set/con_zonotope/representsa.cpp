@@ -53,9 +53,9 @@ bool ConZonotope::representsa(const std::string &type, Tol tol_arg) const {
     if (type == "hyperplane") return dim() == 1 && interval().representsa("point", tol);
     // a set without constraints is the zonotope of its generators
     if (type == "zonotope") return A().numel() == 0;
-    // layout: #163 step 2
     if (type == "interval")
-        return A().numel() == 0 && detail::zonotope_of_columns(c_, G_).representsa(type, tol);
+        return A().numel() == 0 &&
+               Zonotope(c_.squeeze(-1), G_.matrix_transpose()).representsa(type, tol);
     // conZonotope, polytope, polyZonotope, zonoBundle, convexSet and conPolyZono
     return true;
 }
