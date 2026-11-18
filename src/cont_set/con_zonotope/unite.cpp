@@ -93,7 +93,7 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
         return Tensor::like(A, d, {k, 1});
     };
     const Zonotope Z = priv_union_linprog(iterative, support);
-    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose()};
+    return {Z.center(), Z.generators()};
 }
 
 } // namespace

@@ -1352,26 +1352,13 @@ std::vector<std::vector<Tensor>> matrices_of(const py::list &T) {
 
 using Indices = std::vector<std::vector<int64_t>>;
 
-/// A zonotope from CORA's generator columns G (..., n, m): their transpose is a view, so
-/// columns stored column-major are borrowed without a copy. layout: #163 step 2
-Zonotope aux_zonotope_of_columns(const Tensor &c, const Array &G) {
-    const py::object array = py::isinstance<py::list>(G) || py::isinstance<py::tuple>(G)
-                                 ? py::module_::import("numpy").attr("asarray")(G)
-                                 : py::object(G);
-    // the dimensions from the object itself: a tensor of the columns would copy them
-    const py::object ndim = py::getattr(array, "ndim", py::none());
-    if (ndim.is_none() || ndim.cast<int>() < 2)
-        return detail::zonotope_of_columns(c, tensor_of(G, "the generators"));
-    return {c.squeeze(-1), tensor_of(array.attr("swapaxes")(-1, -2), "the generators")};
-}
-
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
         .def(py::init([](const Array &c, const Array &G) {
-                 // layout: #163 step 2 - Python still gives CORA's generator columns
-                 return aux_zonotope_of_columns(vector_of(c, "the center"), G);
+                 return Zonotope(vector_of(c, "the center"), tensor_of(G, "the generators"));
              }),
-             py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
+             py::arg("center"), py::arg("generators"),
+             "center (..., n) and generators (..., m, n), one generator per row")
         // the list filter and the conversions of a zonotope
         .def_static("filter_out", &Zonotope::filter_out, py::arg("zonotopes"),
                     "The indices (0-based) of the zonotopes that no other zonotope contains")
@@ -1422,19 +1409,11 @@ void bind_zonotope(py::module_ &m) {
             "their lengths ('uniform', 'exp' or 'gamma')")
         // the center and the generators of the zonotope
         .def_property_readonly(
-            "center",
-            [](const Zonotope &Z) {
-                return Z.elem_rank() == 2 ? matrix(Z.center()) : vector(detail::cora_center(Z));
-            },
+            "center", [](const Zonotope &Z) { return matrix(Z.center()); },
             "The center c (..., n), of a matrix zonotope C (..., rows, cols)")
         .def_property_readonly(
-            // layout: #163 step 2 - the rows seen as CORA's columns, a view without a copy
-            "generators",
-            [](const Zonotope &Z) {
-                if (Z.elem_rank() == 2) return matrix(Z.generators());
-                return Array(matrix(Z.generators()).attr("swapaxes")(-1, -2));
-            },
-            "The generator matrix G (..., n, m), of a matrix zonotope (..., h, rows, cols)")
+            "generators", [](const Zonotope &Z) { return matrix(Z.generators()); },
+            "The generators (..., m, n), one per row; of a matrix zonotope (..., h, rows, cols)")
         // points and maps
         .def(
             "rand_point",
@@ -1823,22 +1802,20 @@ ConZonotope con_zonotope_of(const py::handle &o) {
 void bind_con_zonotope(py::module_ &m) {
     py::class_<ConZonotope, ContSet>(m, "ConZonotope",
                                      "The constrained zonotope {c + G x : |x|_inf <= 1, A x = b}.")
-        .def(py::init([](const py::object &c, const py::object &G, const py::object &A,
-                         const py::object &b) {
-                 // constraints are given together or not at all
-                 if (A.is_none() != b.is_none())
-                     CORA_FAIL(Error::wrong_input_in_constructor,
-                               "ConZonotope: give the constraint matrix and the offset together");
-                 if (A.is_none())
-                     return ConZonotope(vector_of(c, "the center"),
-                                        tensor_of(G, "G").matrix_transpose());
-                 // layout: #163 step 2 - Python still gives CORA's generator columns
-                 return ConZonotope(vector_of(c, "the center"),
-                                    tensor_of(G, "G").matrix_transpose(), tensor_of(A, "A"),
-                                    vector_of(b, "b"));
-             }),
-             py::arg("c"), py::arg("G"), py::arg("A") = py::none(), py::arg("b") = py::none(),
-             "center c (..., n), generators G (..., n, m) and the constraints A x = b")
+        .def(
+            py::init([](const py::object &c, const py::object &G, const py::object &A,
+                        const py::object &b) {
+                // constraints are given together or not at all
+                if (A.is_none() != b.is_none())
+                    CORA_FAIL(Error::wrong_input_in_constructor,
+                              "ConZonotope: give the constraint matrix and the offset together");
+                if (A.is_none()) return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"));
+                // the set with its constraints
+                return ConZonotope(vector_of(c, "the center"), tensor_of(G, "G"), tensor_of(A, "A"),
+                                   vector_of(b, "b"));
+            }),
+            py::arg("c"), py::arg("G"), py::arg("A") = py::none(), py::arg("b") = py::none(),
+            "center c (..., n), generators G (..., m, n), one per row, and the constraints A x = b")
         // the conversions of the other sets
         .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope as a constrained zonotope")
         .def(py::init<const Interval &>(), py::arg("I"), "A box as a constrained zonotope")
@@ -1858,16 +1835,12 @@ void bind_con_zonotope(py::module_ &m) {
         // the empty set is a constrained zonotope without generators
         .def_static("empty", &ConZonotope::empty, py::arg("n") = 0,
                     "The empty set of n dimensions: no generators and the constraint 0 = 1")
-        // the stored data, the generators as CORA's columns
+        // the stored data, one generator per row
         .def_property_readonly(
-            "c", [](const ConZonotope &Z) { return vector(Z.c().expand_dims(-1)); },
-            "The stored center c (..., n)")
+            "c", [](const ConZonotope &Z) { return matrix(Z.c()); }, "The stored center c (..., n)")
         .def_property_readonly(
-            "generators",
-            [](const ConZonotope &Z) {
-                return Array(matrix(Z.generators()).attr("swapaxes")(-1, -2));
-            },
-            "The generators (..., n, m)")
+            "generators", [](const ConZonotope &Z) { return matrix(Z.generators()); },
+            "The generators (..., m, n), one per row")
         .def_property_readonly(
             "A", [](const ConZonotope &Z) { return matrix(Z.A()); },
             "The constraint matrix (..., p, m)")
@@ -2907,8 +2880,8 @@ Exponents exponents_from_python(const py::object &E, std::size_t generators) {
 
 /// The tensor of an optional generator matrix: none is a matrix without columns.
 Tensor generators_from_python(const py::object &G, const Tensor &c, const char *what) {
-    // a missing matrix has the rows of the center and no column
-    return G.is_none() ? c.zeros_like({c.shape()[0], 0}) : tensor_of(G, what);
+    // a missing matrix has no row and the dimension of the center (a column (n, 1))
+    return G.is_none() ? c.zeros_like({0, c.shape()[0]}) : tensor_of(G, what);
 }
 
 void bind_poly_zonotope(py::module_ &m) {
@@ -2922,7 +2895,7 @@ void bind_poly_zonotope(py::module_ &m) {
                          const py::object &E, const py::object &id) {
                  const Tensor center = vector_of(c, "the center");
                  const Tensor dependent = generators_from_python(G, center, "G");
-                 const auto h = std::size_t(dependent.shape()[1]);
+                 const auto h = std::size_t(dependent.shape()[0]);
                  // the exponents, and the identifiers 1..p unless they are given
                  Exponents exps = exponents_from_python(E, h);
                  std::vector<int64_t> ids;
@@ -2932,28 +2905,22 @@ void bind_poly_zonotope(py::module_ &m) {
                  } else {
                      ids = py::cast<std::vector<int64_t>>(id);
                  }
-                 // layout: #163 step 2 - Python still gives CORA's generator columns
-                 return PolyZonotope(center, dependent.matrix_transpose(),
-                                     generators_from_python(GI, center, "GI").matrix_transpose(),
+                 return PolyZonotope(center, dependent, generators_from_python(GI, center, "GI"),
                                      std::move(exps), std::move(ids));
              }),
              py::arg("c"), py::arg("G") = py::none(), py::arg("GI") = py::none(),
              py::arg("E") = py::none(), py::arg("id") = py::none(),
-             "center c (n), dependent generators G (n, h), independent generators GI (n, q), "
+             "center c (n), dependent generators G (h, n), independent generators GI (q, n), "
              "exponents E (p, h; default the identity) and identifiers id (p; default 1..p)")
         // the stored parts as arrays
         .def_property_readonly(
             "c", [](const PolyZonotope &P) { return matrix(P.center()); }, "The center c (n)")
-        // layout: #163 step 2 - the rows seen as CORA's columns
         .def_property_readonly(
-            "G", [](const PolyZonotope &P) { return matrix(P.generators().matrix_transpose()); },
-            "The dependent generators G (n, h)")
+            "G", [](const PolyZonotope &P) { return matrix(P.generators()); },
+            "The dependent generators G (h, n), one per row")
         .def_property_readonly(
-            "GI",
-            [](const PolyZonotope &P) {
-                return matrix(P.independent_generators().matrix_transpose());
-            },
-            "The independent generators GI (n, q)")
+            "GI", [](const PolyZonotope &P) { return matrix(P.independent_generators()); },
+            "The independent generators GI (q, n), one per row")
         // the exponents as the matrix E (p, h) of CORA
         .def_property_readonly(
             "E",
@@ -3043,6 +3010,43 @@ void bind_poly_zonotope(py::module_ &m) {
     m.attr("PolyZonotope").attr("__array_ufunc__") = py::none();
 }
 
+/// The error of * with a matrix or a set: * scales by a number, @ maps.
+[[noreturn]] void aux_star_refused(const char *name) {
+    CORA_FAIL(Error::noops, std::string("cora: * multiplies a ") + name +
+                                " by a number only; use M @ S (or S @ M) for a linear map");
+}
+
+/// The products of a set class: M @ S maps (map(S, M)), S @ M maps the points x to x M (M' x),
+/// and * scales by a number from either side; * with an array or a set is refused, naming @.
+template <class T, class Map, class Scale>
+void bind_products(const py::object &cls, const char *name, Map map, Scale scale) {
+    const auto set = [&cls](const char *op, auto f) {
+        cls.attr(op) = py::cpp_function(f, py::is_method(cls));
+    };
+    set("__rmatmul__", [map](const T &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> M = as_tensor(o)) return map(A, *M);
+        return not_implemented();
+    });
+    set("__matmul__", [map](const T &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> M = as_tensor(o)) return map(A, M->matrix_transpose());
+        return not_implemented();
+    });
+    // a number from either side; an array or a set is a mistake for @
+    const auto product = [scale, name](const T &A, const py::object &o) -> py::object {
+        if (is_number(o)) return scale(A, py::cast<double>(o));
+        if (as_tensor(o) || py::isinstance<ContSet>(o)) aux_star_refused(name);
+        return not_implemented();
+    };
+    set("__mul__", product);
+    set("__rmul__", product);
+}
+
+/// A set scaled by a number in its own class (ContSet::times).
+template <class T>
+py::object aux_scaled(const T &A, double s) {
+    return object_of(static_cast<const ContSet &>(A).times(s));
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
@@ -3074,15 +3078,10 @@ void bind_operators(py::module_ &m) {
         if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.minus(*v));
         return not_implemented();
     });
-    // a matrix maps the set from the left
-    method(P, "__rmul__", [](const Polytope &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
-        return not_implemented();
-    });
-    method(P, "__rmatmul__", [](const Polytope &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
-        return not_implemented();
-    });
+    // a matrix maps the set, a number scales it
+    bind_products<Polytope>(
+        P, "Polytope", [](const Polytope &A, const Tensor &M) { return py::cast(M * A); },
+        aux_scaled<Polytope>);
 
     // ConZonotope: a point shifts it, a matrix or number maps it
     const auto con_zonotope_sum = [](const ConZonotope &A, const py::object &o) -> py::object {
@@ -3096,17 +3095,11 @@ void bind_operators(py::module_ &m) {
         if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A - *v);
         return not_implemented();
     });
-    const auto con_zonotope_product = [](const ConZonotope &A, const py::object &o) -> py::object {
-        if (is_number(o)) {
-            const double s = py::cast<double>(o);
+    bind_products<ConZonotope>(
+        CZ, "ConZonotope", [](const ConZonotope &A, const Tensor &M) { return py::cast(M * A); },
+        [](const ConZonotope &A, double s) {
             return py::cast(ConZonotope(A.c() * s, A.generators() * s, A.A(), A.b()));
-        }
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
-        return not_implemented();
-    };
-    method(CZ, "__rmul__", con_zonotope_product);
-    // the right operators of the constrained zonotope
-    method(CZ, "__rmatmul__", con_zonotope_product);
+        });
 
     // ZonoBundle: a point shifts it, a set adds to it, a matrix or number maps it
     const py::object ZB = m.attr("ZonoBundle");
@@ -3118,15 +3111,12 @@ void bind_operators(py::module_ &m) {
     };
     method(ZB, "__add__", bundle_sum);
     method(ZB, "__radd__", bundle_sum);
-    const auto bundle_product = [](const ZonoBundle &A, const py::object &o) -> py::object {
-        if (is_number(o))
-            return py::cast(A.linear_map(A.zonotopes().front().center().eye_like(A.dim()) *
-                                         py::cast<double>(o)));
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.linear_map(*M));
-        return not_implemented();
-    };
-    method(ZB, "__rmul__", bundle_product);
-    method(ZB, "__rmatmul__", bundle_product);
+    bind_products<ZonoBundle>(
+        ZB, "ZonoBundle",
+        [](const ZonoBundle &A, const Tensor &M) { return py::cast(A.linear_map(M)); },
+        [](const ZonoBundle &A, double s) {
+            return py::cast(A.linear_map(A.zonotopes().front().center().eye_like(A.dim()) * s));
+        });
 
     // Zonotope
     const auto zonotope_sum = [](const Zonotope &A, const py::object &o) -> py::object {
@@ -3141,19 +3131,10 @@ void bind_operators(py::module_ &m) {
         return not_implemented();
     });
     method(Z, "__neg__", [](const Zonotope &A) { return -A; });
-    // a number scales the zonotope from either side
-    method(Z, "__mul__", [](const Zonotope &A, const py::object &o) -> py::object {
-        if (is_number(o)) return py::cast(A * py::cast<double>(o));
-        return not_implemented();
-    });
-    const auto zonotope_product = [](const Zonotope &A, const py::object &o) -> py::object {
-        if (is_number(o)) return py::cast(py::cast<double>(o) * A);
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
-        // a number or a matrix scales the zonotope
-        return not_implemented();
-    };
-    method(Z, "__rmul__", zonotope_product);
-    method(Z, "__rmatmul__", zonotope_product);
+    // M @ Z maps, Z @ M is the points times M (matmul_right), a number scales
+    bind_products<Zonotope>(
+        Z, "Zonotope", [](const Zonotope &A, const Tensor &M) { return py::cast(M * A); },
+        [](const Zonotope &A, double s) { return py::cast(s * A); });
     // a matrix zonotope times a matrix zonotope, a zonotope or a matrix
     method(Z, "__matmul__", [](const Zonotope &A, const py::object &o) -> py::object {
         if (py::isinstance<Zonotope>(o)) return py::cast(A.matmul(py::cast<Zonotope>(o)));
@@ -3213,8 +3194,11 @@ void bind_operators(py::module_ &m) {
     });
     method(I, "__neg__", [](const Interval &A) { return -A; });
     method(I, "__pos__", [](const Interval &A) { return +A; });
+    // an interval matrix times a matrix, an interval matrix or a set (the interval product)
+    bind_products<Interval>(
+        I, "Interval", [](const Interval &A, const Tensor &M) { return py::cast(M * A); },
+        [](const Interval &A, double s) { return py::cast(s * A); });
     const auto interval_map = [](const Interval &A, const py::object &o) -> py::object {
-        if (is_number(o)) return py::cast(A * py::cast<double>(o));
         if (py::isinstance<Zonotope>(o)) return py::cast(A * py::cast<Zonotope>(o));
         // the products of an interval matrix
         if (py::isinstance<Interval>(o)) return py::cast(A.matmul(py::cast<Interval>(o)));
@@ -3222,21 +3206,8 @@ void bind_operators(py::module_ &m) {
         if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.matmul(*M));
         return not_implemented();
     };
-    method(I, "__mul__", interval_map);
     method(I, "__matmul__", interval_map);
-    const auto interval_product = [](const Interval &A, const py::object &o) -> py::object {
-        if (is_number(o)) return py::cast(py::cast<double>(o) * A);
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
-        return not_implemented();
-    };
-    method(I, "__rmul__", interval_product);
-    method(I, "__rmatmul__", interval_product);
 
-    // Capsule: a matrix maps it
-    const auto capsule_product = [](const Capsule &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
-        return not_implemented();
-    };
     // Capsule and Ellipsoid: a vector or a set adds
     const auto capsule_sum = [](const Capsule &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
@@ -3252,24 +3223,18 @@ void bind_operators(py::module_ &m) {
     };
     method(m.attr("Ellipsoid"), "__add__", ellipsoid_sum);
     method(m.attr("Ellipsoid"), "__radd__", ellipsoid_sum);
-    // a matrix maps an ellipsoid
-    const auto ellipsoid_product = [](const Ellipsoid &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.linear_map(*M));
-        return not_implemented();
-    };
-    method(m.attr("Ellipsoid"), "__rmul__", ellipsoid_product);
-    method(m.attr("Ellipsoid"), "__rmatmul__", ellipsoid_product);
-    method(m.attr("Capsule"), "__rmul__", capsule_product);
-    method(m.attr("Capsule"), "__rmatmul__", capsule_product);
+    // a matrix maps an ellipsoid or a capsule, a number scales it
+    bind_products<Ellipsoid>(
+        m.attr("Ellipsoid"), "Ellipsoid",
+        [](const Ellipsoid &A, const Tensor &M) { return py::cast(A.linear_map(M)); },
+        aux_scaled<Ellipsoid>);
+    bind_products<Capsule>(
+        m.attr("Capsule"), "Capsule",
+        [](const Capsule &A, const Tensor &M) { return py::cast(M * A); }, aux_scaled<Capsule>);
     // EmptySet
-    const auto empty_set_product = [](const EmptySet &A, const py::object &o) -> py::object {
-        if (is_number(o)) return py::cast(py::cast<double>(o) * A);
-        if (py::isinstance<Interval>(o)) return py::cast(py::cast<Interval>(o) * A);
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(*M * A);
-        return not_implemented();
-    };
-    method(E, "__rmul__", empty_set_product);
-    method(E, "__rmatmul__", empty_set_product);
+    bind_products<EmptySet>(
+        E, "EmptySet", [](const EmptySet &A, const Tensor &M) { return py::cast(M * A); },
+        [](const EmptySet &A, double s) { return py::cast(s * A); });
     // Fullspace: a point shifts it, a number or matrix maps it
     const auto fullspace_sum = [](const Fullspace &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
@@ -3278,14 +3243,16 @@ void bind_operators(py::module_ &m) {
     };
     method(F, "__add__", fullspace_sum);
     method(F, "__radd__", fullspace_sum);
-    const auto fullspace_product = [](const Fullspace &A, const py::object &o) -> py::object {
-        if (is_number(o))
-            return object_of(A.linear_map(Tensor::from_data({py::cast<double>(o)}, {1, 1})));
-        if (const std::optional<Tensor> M = as_tensor(o)) return object_of(*M * A);
-        return not_implemented();
-    };
-    method(F, "__rmul__", fullspace_product);
-    method(F, "__rmatmul__", fullspace_product);
+    // PolyZonotope: a matrix maps it, a number scales it
+    bind_products<PolyZonotope>(
+        m.attr("PolyZonotope"), "PolyZonotope",
+        [](const PolyZonotope &A, const Tensor &M) { return py::cast(A.linear_map(M)); },
+        aux_scaled<PolyZonotope>);
+    bind_products<Fullspace>(
+        F, "Fullspace", [](const Fullspace &A, const Tensor &M) { return object_of(M * A); },
+        [](const Fullspace &A, double s) {
+            return object_of(A.linear_map(Tensor::from_data({s}, {1, 1})));
+        });
 }
 
 // Dynamics ----------------------------------------------------------------------------------------

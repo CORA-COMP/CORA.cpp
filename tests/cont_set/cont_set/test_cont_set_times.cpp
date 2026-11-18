@@ -35,9 +35,7 @@ void times_scales(const std::string &b) {
     const Tensor f = column({2.0, -1.0});
     const Set A = static_cast<const ContSet &>(Z).times(f),
               B = static_cast<const ContSet &>(I).times(f);
-    // layout: #163 step 2
     check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center().expand_dims(-1), {2.0, -2.0}) &&
-              // layout: #163 step 2
               test::close(A.as<Zonotope>().generators().matrix_transpose(), {1.0, 0.0, -0.2, -0.5}),
           b + ": a zonotope by a column");
     check(B.is<Interval>() && test::close(B.as<Interval>().inf(), {-2.0, -3.0}) &&
@@ -45,9 +43,7 @@ void times_scales(const std::string &b) {
           b + ": a box by a column");
     const Set C = static_cast<const ContSet &>(Z).times(3.0),
               D = static_cast<const ContSet &>(I).times(-2.0);
-    // layout: #163 step 2
     check(test::close(C.as<Zonotope>().center().expand_dims(-1), {3.0, 6.0}) &&
-              // layout: #163 step 2
               test::close(C.as<Zonotope>().generators().matrix_transpose(), {1.5, 0.0, 0.6, 1.5}),
           b + ": a zonotope by a number");
     check(test::close(D.as<Interval>().inf(), {-4.0, -6.0}) &&

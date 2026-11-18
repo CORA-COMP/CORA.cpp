@@ -72,7 +72,7 @@ def random_set(rng, n, m, p):
     B = 0.3 * rng.standard_normal((p, m - p))
     xi = rng.uniform(-0.5, 0.5, m)
     A = np.hstack([np.eye(p), B])
-    return con_zonotope(rng.standard_normal(n), rng.standard_normal((n, m)), A, A @ xi)
+    return con_zonotope(rng.standard_normal(n), rng.standard_normal((m, n)), A, A @ xi)
 
 
 def sample(cZ, rng, count):
@@ -84,7 +84,7 @@ def sample(cZ, rng, count):
         xi = rng.uniform(-1, 1, m)
         xi[:p] = b - A[:, p:] @ xi[p:]
         if np.all(np.abs(xi) <= 1):
-            points.append(c + G @ xi)
+            points.append(c + xi @ G)
     return np.array(points).T
 
 
@@ -110,7 +110,7 @@ class ConZonotope(unittest.TestCase):
         legacy = cora.ConZonotope.from_matrix(np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
                                               np.array([[1.0, 1.0]]), np.array([1.0]))
         np.testing.assert_array_equal(legacy.generators, S.generators)
-        self.assertEqual(cora.ConZonotope.from_matrix(np.array([[1.0], [2.0]])).generators.shape, (2, 0))
+        self.assertEqual(cora.ConZonotope.from_matrix(np.array([[1.0], [2.0]])).generators.shape, (0, 2))
         from_zonotope = cora.ConZonotope(cora.Zonotope(np.array([1.0, 2.0]), np.eye(2)))
         np.testing.assert_array_equal(from_zonotope.generators, np.eye(2))
         from_box = cora.ConZonotope(cora.Interval(np.array([0.0, 1.0]), np.array([2.0, 5.0])))
@@ -148,11 +148,11 @@ class ConZonotope(unittest.TestCase):
         res, basis = S.is_full_dim_subspace()
         self.assertFalse(res)
         np.testing.assert_allclose(np.abs(basis), [[np.sqrt(0.5)], [np.sqrt(0.5)]], atol=1e-9)
-        square = con_zonotope([0.0, 0.0], [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], [[0.0, 0.0, 1.0]], [0.0])
+        square = con_zonotope([0.0, 0.0], [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]], [[0.0, 0.0, 1.0]], [0.0])
         self.assertTrue(square.is_full_dim())
         np.testing.assert_allclose(square.center, [0.0, 0.0], atol=1e-9)
         # CORA's rank test says true for a set that the box pins to a point
-        pinned = con_zonotope([0.0], [[1.0, 2.0]], [[1.0, 1.0]], [2.0])
+        pinned = con_zonotope([0.0], [[1.0], [2.0]], [[1.0, 1.0]], [2.0])
         self.assertFalse(pinned.is_full_dim())
         np.testing.assert_allclose(pinned.interval().inf, [3.0])
         none = con_zonotope([0.0], [[1.0]], [[1.0]], [3.0])
@@ -161,11 +161,11 @@ class ConZonotope(unittest.TestCase):
             S.is_full_dim(-1.0)
 
     def test_compact(self):
-        cZ = con_zonotope([1.0, 2.0], [[1.0, 0.0, 2.0], [0.0, 0.0, 3.0]],
+        cZ = con_zonotope([1.0, 2.0], [[1.0, 0.0], [0.0, 0.0], [2.0, 3.0]],
                           [[0.0, 0.0, 0.0], [1.0, 0.0, 1.0]], [0.0, 1.0])
         for method in ("zeros", "all"):
             c = cZ.compact(method)
-            np.testing.assert_array_equal(c.generators, [[1.0, 2.0], [0.0, 3.0]])
+            np.testing.assert_array_equal(c.generators, [[1.0, 0.0], [2.0, 3.0]])
             np.testing.assert_array_equal(c.A, [[1.0, 1.0]])
         np.testing.assert_array_equal(cZ.compact("aligned").generators, cZ.generators)
         with self.assertRaises(cora.errors.WrongValue):
@@ -193,17 +193,17 @@ class ConZonotope(unittest.TestCase):
         with self.assertRaises(cora.errors.DimensionMismatch):
             a.con_intersect(b, np.array([[1.0, 2.0]]))
         with self.assertRaises(cora.errors.DimensionMismatch):
-            a.intersect(con_zonotope([1.0, 2.0], [[1.0], [1.0]]))
+            a.intersect(con_zonotope([1.0, 2.0], [[1.0, 1.0]]))
 
     def test_enclose_and_convex_hull(self):
         # enclose with a matrix and a vector
         A = con_zonotope([0.0], [[1.0]])
         R = A.enclose(np.array([[2.0]]), np.array([4.0]))
         np.testing.assert_array_equal(R.c, [2.0])
-        np.testing.assert_array_equal(R.generators, [[1.5, -2.0, -0.5]])
+        np.testing.assert_array_equal(R.generators, [[1.5], [-2.0], [-0.5]])
         self.assertEqual(A.enclose(A.enclose(np.array([[2.0]]), np.array([4.0]))).dim, 1)
         with self.assertRaises(cora.errors.SpecialError):
-            con_zonotope([0.0], [[1.0, 1.0]], [[1.0, 1.0]], [1.0]).enclose(A)
+            con_zonotope([0.0], [[1.0], [1.0]], [[1.0, 1.0]], [1.0]).enclose(A)
         a, b = con_zonotope([0.5], [[0.5]]), con_zonotope([2.5], [[0.5]])
         for method in ("exact", "exact:Raghuraman", "exact:Kochdumper"):
             H = a.convex_hull(b, method)
@@ -224,7 +224,7 @@ class ConZonotope(unittest.TestCase):
         self.assertTrue(S.contains(np.array([0.5, 0.5])))
         self.assertTrue(S.contains(np.array([[0.5, 1.0], [0.5, 0.0]])))
         self.assertFalse(S.contains(np.array([0.5, 0.6])))
-        self.assertTrue(S.contains(cora.Zonotope(np.array([0.5, 0.5]), np.array([[0.25], [-0.25]]))))
+        self.assertTrue(S.contains(cora.Zonotope(np.array([0.5, 0.5]), np.array([[0.25, -0.25]]))))
         self.assertFalse(S.contains(cora.Interval(np.array([0.0, 0.0]), np.array([1.0, 1.0]))))
         self.assertTrue(np.array([0.5, 0.5]) in S)
         self.assertTrue(S.contains(np.array([0.5, 0.5 + 1e-9]), tol=1e-6))
@@ -296,11 +296,11 @@ class ConZonotope(unittest.TestCase):
     def test_origin_plus_and_linear_map(self):
         O = cora.ConZonotope.origin(2)
         np.testing.assert_array_equal(O.c, [0.0, 0.0])
-        self.assertEqual(O.generators.shape, (2, 0))
+        self.assertEqual(O.generators.shape, (0, 2))
         with self.assertRaises(cora.errors.WrongValue):
             cora.ConZonotope.origin(0)
         a = segment()
-        s = con_zonotope([10.0, 20.0], [[2.0], [3.0]], [[4.0]], [1.0])
+        s = con_zonotope([10.0, 20.0], [[2.0, 3.0]], [[4.0]], [1.0])
         R = a.plus(s)
         np.testing.assert_array_equal(R.c, [10.0, 20.0])
         np.testing.assert_array_equal(R.A, [[1.0, 1.0, 0.0], [0.0, 0.0, 4.0]])
@@ -309,13 +309,13 @@ class ConZonotope(unittest.TestCase):
         # sums with points and sets
         np.testing.assert_array_equal((np.array([1.0, 1.0]) + a).c, [1.0, 1.0])
         np.testing.assert_array_equal((a - np.array([1.0, 1.0])).c, [-1.0, -1.0])
-        self.assertEqual(a.plus(cora.Zonotope(np.zeros(2), np.eye(2))).generators.shape, (2, 4))
-        self.assertEqual((a + cora.Interval(np.zeros(2), np.ones(2))).generators.shape, (2, 4))
+        self.assertEqual(a.plus(cora.Zonotope(np.zeros(2), np.eye(2))).generators.shape, (4, 2))
+        self.assertEqual((a + cora.Interval(np.zeros(2), np.ones(2))).generators.shape, (4, 2))
         with self.assertRaises(cora.errors.DimensionMismatch):
             a.plus(con_zonotope([0.0], [[1.0]]))
         M = np.array([[2.0, 0.0], [0.0, 3.0], [1.0, 1.0]])
         L = a.linear_map(M)
-        np.testing.assert_array_equal(L.generators, M)
+        np.testing.assert_array_equal(L.generators, M.T)
         np.testing.assert_array_equal((M @ a).c, [0.0, 0.0, 0.0])
         np.testing.assert_array_equal((2 * a).generators, 2 * a.generators)
         np.testing.assert_array_equal((-a).generators, -a.generators)
@@ -330,7 +330,7 @@ class ConZonotope(unittest.TestCase):
 
     # projection, lift and reduce
     def test_project_lift_and_reduce(self):
-        a = con_zonotope([1.0, 2.0, 3.0], [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]], [[1.0, 1.0]], [0.5])
+        a = con_zonotope([1.0, 2.0, 3.0], [[1.0, 0.0, 2.0], [0.0, 1.0, 2.0]], [[1.0, 1.0]], [0.5])
         P = a.project([2, 0])
         np.testing.assert_array_equal(P.c, [3.0, 1.0])
         np.testing.assert_array_equal(P.A, a.A)
@@ -340,9 +340,9 @@ class ConZonotope(unittest.TestCase):
         np.testing.assert_array_equal(L.c, [3.0, 1.0, 2.0])
         with self.assertRaises(cora.errors.WrongValue):
             a.lift(3, [1, 1, 0])
-        many = con_zonotope([3.0], [[1.0, -2.0, 0.5]], [[1.0, 1.0, 1.0]], [0.5])
+        many = con_zonotope([3.0], [[1.0], [-2.0], [0.5]], [[1.0, 1.0, 1.0]], [0.5])
         r = many.reduce(1)
-        np.testing.assert_array_equal(r.generators, [[3.5, 0.0]])
+        np.testing.assert_array_equal(r.generators, [[3.5], [0.0]])
         np.testing.assert_array_equal(r.A, [[0.0, 3.0]])
         np.testing.assert_array_equal(many.reduce(1, "girard").generators, r.generators)
         with self.assertRaises(cora.errors.NotSupported):
@@ -353,14 +353,14 @@ class ConZonotope(unittest.TestCase):
         rng = np.random.default_rng(52)
         A = random_set(rng, 2, 7, 2)
         R = A.reduce(2)
-        self.assertEqual(R.generators.shape, (2, 6))
+        self.assertEqual(R.generators.shape, (6, 2))
         self.assertTrue(R.contains(sample(A, rng, 10), tol=1e-7))
 
     def test_quad_map_and_rescale(self):
         unit = con_zonotope([0.0], [[1.0]])
         q = unit.quad_map([np.array([[1.0]])])
         np.testing.assert_array_equal(q.c, [0.5])
-        np.testing.assert_array_equal(q.generators, [[0.5, 0.0]])
+        np.testing.assert_array_equal(q.generators, [[0.5], [0.0]])
         with self.assertRaises(cora.errors.DimensionMismatch):
             unit.quad_map([np.eye(2)])
         rng = np.random.default_rng(53)
@@ -404,7 +404,7 @@ class ConZonotope(unittest.TestCase):
         self.assertTrue(S == swapped)
         self.assertFalse(S.isequal(con_zonotope([0.0, 0.0], np.eye(2), [[1.0, 1.0]], [0.5])))
         square = con_zonotope([0.0, 0.0], np.eye(2))
-        pinned = con_zonotope([0.0, 0.0], [[1.0, 0.0, 5.0], [0.0, 1.0, 5.0]], [[0.0, 0.0, 1.0]], [0.0])
+        pinned = con_zonotope([0.0, 0.0], [[1.0, 0.0], [0.0, 1.0], [5.0, 5.0]], [[0.0, 0.0, 1.0]], [0.0])
         self.assertTrue(square.isequal(pinned))
         self.assertTrue(square.isequal(cora.Interval(-np.ones(2), np.ones(2))))
         self.assertFalse(S.isequal(box))

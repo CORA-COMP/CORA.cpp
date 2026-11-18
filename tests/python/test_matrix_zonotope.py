@@ -89,7 +89,7 @@ class Conversions(unittest.TestCase):
     def test_stacked(self):
         Z = EXAMPLE.stacked()
         np.testing.assert_array_equal(Z.center, [1, 3, 2, 4])
-        np.testing.assert_array_equal(Z.generators, [[1, 0], [0, 1], [0, 1], [1, 0]])
+        np.testing.assert_array_equal(Z.generators, [[1, 0, 0, 1], [0, 1, 1, 0]])
 
     def test_interval(self):
         B = EXAMPLE.interval()
@@ -168,10 +168,10 @@ class Products(unittest.TestCase):
 
     def test_product_with_a_zonotope(self):
         A = cora.Zonotope.matrix(np.array([[1.0, 2.0], [3.0, 4.0]]), np.array([np.eye(2)]))
-        Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0], [0.0]]))
+        Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0, 0.0]]))
         P = A @ Z
         np.testing.assert_array_equal(P.center, [3, 7])
-        np.testing.assert_array_equal(P.generators, [[1, 1, 1], [3, 1, 0]])
+        np.testing.assert_array_equal(P.generators, [[1, 3], [1, 1], [1, 0]])
 
     def test_checks(self):
         with self.assertRaises(cora.errors.DimensionMismatch):
@@ -262,10 +262,10 @@ class Exponential(unittest.TestCase):
             np.testing.assert_allclose(member(R.enclosure, np.array(coeff)), taylor, atol=1e-12)
             self.assertTrue(R.remainder.contains(exponential(r * M) - taylor, tol=1e-12))
         c, g = np.array([1.0, -2.0, 0.5]), np.array([0.3, 0.1, -0.4])
-        U = cora.mat_exp.expm_one_param(S, r, N, cora.Zonotope(c, g[:, None]))
+        U = cora.mat_exp.expm_one_param(S, r, N, cora.Zonotope(c, g[None, :]))
         V = cora.mat_exp.expm_one_param(S, r, N, c)
-        self.assertEqual(U.constant_input.generators.shape, (3, N))
-        self.assertEqual(V.constant_input.generators.shape, (3, N))
+        self.assertEqual(U.constant_input.generators.shape, (N, 3))
+        self.assertEqual(V.constant_input.generators.shape, (N, 3))
         with self.assertRaises(cora.errors.WrongValue):
             cora.mat_exp.expm_one_param(EXAMPLE, 1.0, 3)
 

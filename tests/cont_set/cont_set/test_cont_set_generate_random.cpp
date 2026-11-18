@@ -30,7 +30,6 @@ void the_class_and_the_dimension(const std::string &b) {
     check(I.is<Interval>() && I.get().dim() == 3, b + ": a box of dimension 3");
     const Set Z = ContSet::generate_random(rng, 4, {"zonotope"});
     check(Z.is<Zonotope>() && Z.get().dim() == 4 &&
-              // layout: #163 step 2
               Z.as<Zonotope>().generators().matrix_transpose().shape().back() == 8,
           b + ": a zonotope with 2 n generators");
     int boxes = 0, zonotopes = 0, high = 0;

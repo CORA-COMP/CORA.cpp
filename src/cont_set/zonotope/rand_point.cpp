@@ -60,7 +60,7 @@ Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng) const {
 }
 
 Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng, const std::string &type) const {
-    // layout: #163 step 2 - the points are columns (..., n, N)
+    // the points are columns (..., n, N), as every set returns them
     const Tensor c = c_.expand_dims(-1), G = G_.matrix_transpose();
     if (type == "standard") return c + G.matmul(aux_factors(c, G, N, rng, false));
     if (type == "extreme") return c + G.matmul(aux_factors(c, G, N, rng, true));

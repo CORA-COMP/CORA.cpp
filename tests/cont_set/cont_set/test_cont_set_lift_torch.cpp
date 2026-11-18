@@ -34,7 +34,7 @@ int main() {
     torch::manual_seed(43);
     const auto zonotope = [](const Inputs &x) {
         return Zonotope(x[0].squeeze(-1), x[1].matrix_transpose());
-    }; // layout: #163 step 2
+    };
     const auto S = [](const Zonotope &Z) -> const ContSet & { return Z; };
     test::gradcheck(
         "lift",
@@ -43,6 +43,7 @@ int main() {
                 S(zonotope(x)).lift(3, std::vector<int64_t>{2, 0, 1}).as<Zonotope>());
         },
         test::random_zonotope(3, 4));
+    // the norms of every type
     for (const Tensor::Norm type : {Tensor::Norm::one, Tensor::Norm::two, Tensor::Norm::inf})
         test::gradcheck(
             "norm", [&](const Inputs &x) { return Inputs{S(zonotope(x)).norm(type)}; },

@@ -153,7 +153,7 @@ Zonotope Zonotope::reduce_under_approx(const std::string &method, double order) 
     if (!(double(n) * order < double(m))) return Z;
 
     if (method == "yang")
-        return Zonotope((Z.center().expand_dims(-1)).squeeze(-1),
+        return Zonotope(Z.center(),
                         (aux_yang(Z.generators().matrix_transpose(), order)).matrix_transpose());
     if (method == "raghuraman") {
         const int64_t kept = int64_t(std::floor(order * double(n)));
@@ -162,10 +162,9 @@ Zonotope Zonotope::reduce_under_approx(const std::string &method, double order) 
                    " leaves no generator";
         });
         const auto [big, small] = aux_by_length(Z.generators().matrix_transpose(), kept);
-        return Zonotope(
-            (Z.center().expand_dims(-1)).squeeze(-1),
-            (Z.generators().matrix_transpose().matmul(aux_raghuraman_pattern(big, small)))
-                .matrix_transpose());
+        return Zonotope(Z.center(), (Z.generators().matrix_transpose().matmul(
+                                         aux_raghuraman_pattern(big, small)))
+                                        .matrix_transpose());
     }
     // kochdumper: the shortest generators, signed by their first coordinate, become one
     const int64_t kept = int64_t(std::floor(order * double(n) - 1));
@@ -175,7 +174,7 @@ Zonotope Zonotope::reduce_under_approx(const std::string &method, double order) 
     });
     const auto [big, small] = aux_by_length(Z.generators().matrix_transpose(), kept);
     const Tensor merged = small.multiply(small.slice(-2, 0, 1).sign()).sum(-1, true);
-    return Zonotope((Z.center().expand_dims(-1)).squeeze(-1),
+    return Zonotope(Z.center(),
                     (kept == 0 ? merged : Tensor::concat({big, merged}, -1)).matrix_transpose());
 }
 

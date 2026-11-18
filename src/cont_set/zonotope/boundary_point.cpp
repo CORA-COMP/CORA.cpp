@@ -91,7 +91,7 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
         return std::string("boundary_point: start has to be a point of the zonotope");
     });
 
-    // in one dimension the zonotope is the segment c +- sum |G| (layout: #163 step 2, columns)
+    // in one dimension the zonotope is the segment c +- sum |G| (as columns)
     const Tensor c = c_.expand_dims(-1);
     if (dim() == 1) {
         const Tensor r = G_.abs().sum(-2, true);

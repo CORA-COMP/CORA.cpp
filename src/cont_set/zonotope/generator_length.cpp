@@ -23,7 +23,7 @@ namespace cora {
 
 Tensor Zonotope::generator_length() const {
     detail::Entry entry;
-    // layout: #163 step 2 - a row (..., 1, m), as before
+    // a row (..., 1, m), one length per generator
     return G_.vector_norm(Tensor::Norm::two, -1).expand_dims(-2);
 }
 

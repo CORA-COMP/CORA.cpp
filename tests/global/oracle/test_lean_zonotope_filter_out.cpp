@@ -39,8 +39,8 @@ int main() {
         const Tensor inside_center = big.center().expand_dims(-1) +
                                      big.generators().matrix_transpose().slice(-1, 0, 1) * 0.25;
         const Zonotope inside = Zonotope(inside_center.squeeze(-1), big.generators() * 0.3);
-        const Zonotope far = Zonotope((big.center().expand_dims(-1) + 100.0).squeeze(-1),
-                                      (rnd.matrix(3, 3).matrix_transpose()).matrix_transpose());
+        const Zonotope far =
+            Zonotope((big.center().expand_dims(-1) + 100.0).squeeze(-1), rnd.matrix(3, 3));
         const std::vector<Zonotope> cells{inside, big, far};
         oracle::check(Zonotope::filter_out(cells), lean::Zonotope::filter_out(lifted(cells)));
         const std::vector<Zonotope> apart{big, far};

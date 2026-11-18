@@ -42,7 +42,7 @@ def zonotope(c, G):
 
 def example():
     """CORA's example of split: the center (-4, 1) and three generators."""
-    return zonotope([-4, 1], [[-3, -2, -1], [2, 3, 4]])
+    return zonotope([-4, 1], [[-3, 2], [-2, 3], [-1, 4]])
 
 
 # ============================================  MAIN  ============================================ #
@@ -51,7 +51,7 @@ class Origin(unittest.TestCase):
     def test_origin(self):
         Z = cora.Zonotope.origin(3)
         np.testing.assert_array_equal(Z.center, np.zeros(3))
-        self.assertEqual(Z.generators.shape, (3, 0))
+        self.assertEqual(Z.generators.shape, (0, 3))
 
     def test_errors(self):
         for n in (0, -1):
@@ -61,12 +61,12 @@ class Origin(unittest.TestCase):
 
 class Measures(unittest.TestCase):
     def test_radius(self):
-        Z = zonotope([0, 0], [[1, 3], [2, 1]])
+        Z = zonotope([0, 0], [[1, 2], [3, 1]])
         self.assertAlmostEqual(Z.radius(), 5)  # the box radius (4, 3)
         self.assertEqual(cora.Zonotope.origin(2).radius(), 0)
 
     def test_rank(self):
-        Z = zonotope([1, 5, -1], [[2, 0, 4], [6, 0, 0], [4, 0, 8]])
+        Z = zonotope([1, 5, -1], [[2, 6, 4], [0, 0, 0], [4, 0, 8]])
         self.assertEqual(Z.rank(), 2)
         self.assertEqual(cora.Zonotope.origin(2).rank(), 0)
         thin = zonotope([0, 0], [[1, 0], [0, 1e-9]])
@@ -78,9 +78,9 @@ class Measures(unittest.TestCase):
 
     # the special sets a zonotope can represent
     def test_representsa(self):
-        origin, seg = cora.Zonotope.origin(2), zonotope([0, 0], [[1], [0]])
-        box, tilted = zonotope([0, 0], [[1, 0], [0, 2]]), zonotope([0, 0], [[1, 0], [1, 2]])
-        hexagon = zonotope([0, 0], [[1, 0, 1], [0, 1, 1]])
+        origin, seg = cora.Zonotope.origin(2), zonotope([0, 0], [[1, 0]])
+        box, tilted = zonotope([0, 0], [[1, 0], [0, 2]]), zonotope([0, 0], [[1, 1], [0, 2]])
+        hexagon = zonotope([0, 0], [[1, 0], [0, 1], [1, 1]])
         self.assertTrue(origin.representsa("origin", 0) and not seg.representsa("origin", 0))
         self.assertTrue(origin.representsa("point") and not seg.representsa("point"))
         self.assertTrue(seg.representsa("capsule") and not hexagon.representsa("capsule"))
@@ -92,7 +92,7 @@ class Measures(unittest.TestCase):
             self.assertFalse(hexagon.representsa(kind), kind)
 
     def test_representsa_errors(self):
-        Z = zonotope([0, 0], [[1], [0]])
+        Z = zonotope([0, 0], [[1, 0]])
         with self.assertRaises(cora.errors.WrongValue):
             # classes that are refused
             Z.representsa("circle")
@@ -104,10 +104,10 @@ class Measures(unittest.TestCase):
 class Embedding(unittest.TestCase):
     def test_project(self):
         # the third and the first coordinate, in that order
-        Z = zonotope([1, 2, 3], [[1, 0], [0, 3], [2, 2]])
+        Z = zonotope([1, 2, 3], [[1, 0, 2], [0, 3, 2]])
         R = Z.project([2, 0])
         np.testing.assert_array_equal(R.center, [3, 1])
-        np.testing.assert_array_equal(R.generators, [[2, 2], [1, 0]])
+        np.testing.assert_array_equal(R.generators, [[2, 1], [2, 0]])
         # a dimension the set does not have
         with self.assertRaises(cora.errors.WrongValue):
             Z.project([0, 3])
@@ -116,17 +116,17 @@ class Embedding(unittest.TestCase):
         Z = zonotope([1, 2], [[1, 0], [0, 3]])
         R = Z.project_high_dim(4, [3, 1])
         np.testing.assert_array_equal(R.center, [0, 2, 0, 1])
-        np.testing.assert_array_equal(R.generators, [[0, 0], [0, 3], [0, 0], [1, 0]])
+        np.testing.assert_array_equal(R.generators, [[0, 0, 0, 1], [0, 3, 0, 0]])
         with self.assertRaises(cora.errors.WrongValue):
             Z.project_high_dim(1, [0, 0])
         with self.assertRaises(cora.errors.WrongValue):
             Z.project_high_dim(3, [0, 3])
 
     def test_rotate(self):
-        Z = zonotope([1, 0, 5], [[1, 0], [0, 2], [2, 0]])
+        Z = zonotope([1, 0, 5], [[1, 0, 2], [0, 2, 0]])
         R = Z.rotate([0, 1], np.pi / 2)
         np.testing.assert_allclose(R.center, [0, 1, 5], atol=1e-15)
-        np.testing.assert_allclose(R.generators, [[0, -2], [1, 0], [2, 0]], atol=1e-15)
+        np.testing.assert_allclose(R.generators, [[0, 1, 2], [-2, 0, 0]], atol=1e-15)
         for dims in ([0], [0, 0], [0, 3], [-1, 1]):
             # rotation with invalid dims
             with self.assertRaises(cora.errors.WrongValue):
@@ -138,18 +138,19 @@ class QuadMap(unittest.TestCase):
     Q = [np.array([[1.0, -2.0], [-3.0, 4.0]]), np.array([[0.5, 0.0], [2.0, -1.0]])]
 
     def test_by_hand(self):
-        Z1 = zonotope([-4, 1], [[-3, -2], [2, 3]])
+        Z1 = zonotope([-4, 1], [[-3, 2], [-2, 3]])
         Z2 = zonotope([1, -3], [[4, 2], [2, -1]])
         R = Z1.quad_map(self.Q)
         np.testing.assert_allclose(R.center, [102.5, -16.25])
         # quadratic maps
-        np.testing.assert_allclose(R.generators, [[27.5, 35, 95, 110, 125], [-5.75, -9.5, -14, -26, -32]])
+        np.testing.assert_allclose(R.generators,
+                                   [[27.5, -5.75], [35, -9.5], [95, -14], [110, -26], [125, -32]])
         M = Z1.quad_map(Z2, self.Q)
         np.testing.assert_allclose(M.center, [-43, 3])
-        np.testing.assert_allclose(M.generators[:, :4], [[-51, -59, -4, -8], [8.5, 14, -2, 6]])
+        np.testing.assert_allclose(M.generators[:4], [[-51, 8.5], [-59, 14], [-4, -2], [-8, 6]])
 
     def test_errors(self):
-        Z = zonotope([1, 2], [[1], [0.5]])
+        Z = zonotope([1, 2], [[1, 0.5]])
         with self.assertRaises(cora.errors.DimensionMismatch):
             Z.quad_map([])
         with self.assertRaises(cora.errors.DimensionMismatch):
@@ -189,7 +190,7 @@ class Splits(unittest.TestCase):
     def test_by_a_direction(self):
         one, two = example().split(np.array([1.0, 1.0]))
         np.testing.assert_allclose((one.center, two.center), ([-5.25, -0.25], [-2.75, 2.25]))
-        np.testing.assert_allclose(one.generators, [[1.25, -2.5, -2.5, -2.5], [1.25, 2.5, 2.5, 2.5]])
+        np.testing.assert_allclose(one.generators, [[1.25, 1.25], [-2.5, 2.5], [-2.5, 2.5], [-2.5, 2.5]])
         p, q = example().split(np.array([1.0, 0.0]), np.array([1.0, 1.0]))
         r, s = example().split(np.array([0.0, 1.0]))
         np.testing.assert_allclose(p.center, r.center)
@@ -203,10 +204,10 @@ class Splits(unittest.TestCase):
         self.assertEqual(len(example().split(np.array([1.0, 0.0]), 100.0)), 1)
 
     def test_first_and_longest_generator(self):
-        Z = zonotope([1, 1], [[1, 0.1, 0], [0, 0.1, 3]])
+        Z = zonotope([1, 1], [[1, 0], [0.1, 0.1], [0, 3]])
         lower, upper = Z.split_first_gen()
         np.testing.assert_allclose((lower.center, upper.center), ([1, -0.5], [1, 2.5]))
-        np.testing.assert_allclose(upper.generators, [[1, 0.1, 0], [0, 0.1, 1.5]])
+        np.testing.assert_allclose(upper.generators, [[1, 0], [0.1, 0.1], [0, 1.5]])
         first, second = Z.split_longest_gen()
         np.testing.assert_allclose((first.center, second.center), ([1, 2.5], [1, -0.5]))
 
@@ -226,17 +227,17 @@ class Splits(unittest.TestCase):
 
 
 class ReduceUnderApprox(unittest.TestCase):
-    Z = zonotope([1, 0], [[1, 3, -2, 3, -1, 0, 2, 3], [2, -1, 1, 0, 3, -2, 1, 2]])
+    Z = zonotope([1, 0], [[1, 2], [3, -1], [-2, 1], [3, 0], [-1, 3], [0, -2], [2, 1], [3, 2]])
 
     def test_by_hand(self):
         for name in ("kochdumper", "sum"):
-            np.testing.assert_allclose(self.Z.reduce_under_approx(name, 1).generators, [[3, 12], [2, -2]])
-        np.testing.assert_allclose(self.Z.reduce_under_approx("raghuraman", 1).generators, [[2, 5], [4, 0]])
+            np.testing.assert_allclose(self.Z.reduce_under_approx(name, 1).generators, [[3, 2], [12, -2]])
+        np.testing.assert_allclose(self.Z.reduce_under_approx("raghuraman", 1).generators, [[2, 4], [5, 0]])
 
     def test_nothing_to_reduce(self):
         # the under-approximation
-        Z = zonotope([0, 0], [[1, 0, 2], [0, 0, 1]])
-        np.testing.assert_array_equal(Z.reduce_under_approx("yang", 1).generators, [[1, 2], [0, 1]])
+        Z = zonotope([0, 0], [[1, 0], [0, 0], [2, 1]])
+        np.testing.assert_array_equal(Z.reduce_under_approx("yang", 1).generators, [[1, 0], [2, 1]])
 
     def test_errors(self):
         for name in ("sadraddini", "scale", "boxLP", "boxCone", "boxWetzlinger", "nlp", "cluster"):

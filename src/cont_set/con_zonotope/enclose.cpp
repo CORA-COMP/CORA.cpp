@@ -75,8 +75,7 @@ ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
     const Tensor &A = second_shorter ? cz2.A() : cz.A();
     const int64_t more = Z.nr_generators() - A.shape().back();
     const Tensor padded = Tensor::concat({A, zeros_block(A, A.shape()[A.ndim() - 2], more)}, -1);
-    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose(),
-            padded, cz.b()};
+    return {Z.center(), Z.generators(), padded, cz.b()};
 }
 
 } // namespace

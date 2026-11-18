@@ -89,7 +89,7 @@ class Generic(unittest.TestCase):
         self.assertTrue(cora.ContSet.is_bounded(self.I) and cora.ContSet.is_bounded(self.Z))
         self.assertFalse(cora.Interval.unbounded(2).is_bounded())
         self.assertTrue(cora.ContSet.is_full_dim(self.Z))
-        self.assertFalse(cora.ContSet.is_full_dim(zonotope([0.0, 0.0], [[1.0], [1.0]])))
+        self.assertFalse(cora.ContSet.is_full_dim(zonotope([0.0, 0.0], [[1.0, 1.0]])))
         thin = box([0.0], [1e-4])
         self.assertTrue(thin.is_full_dim())
         self.assertFalse(thin.is_full_dim(tol=1e-3))
@@ -101,7 +101,7 @@ class Generic(unittest.TestCase):
         R = cora.ContSet.linear_map(self.I, M)
         # generic linear maps and enlarge
         self.assertEqual((R.inf.tolist(), R.sup.tolist()), ([-1.0, 0.0], [3.0, 2.0]))
-        self.assertEqual(cora.ContSet.linear_map(self.Z, M).generators.tolist(), [[0.5, 0.5], [0.0, 0.5]])
+        self.assertEqual(cora.ContSet.linear_map(self.Z, M).generators.tolist(), [[0.5, 0.0], [0.5, 0.5]])
         E = cora.ContSet.enlarge(self.Z, np.array([2.0, 3.0]))
         self.assertEqual(E.center.tolist(), [1.0, 0.0])
         self.assertEqual(E.generators.tolist(), [[1.0, 0.0], [0.0, 1.5]])
@@ -116,7 +116,7 @@ class Generic(unittest.TestCase):
     def test_reduce_decompose_and_embedding(self):
         Z = cora.Zonotope.generate_random(cora.Rng(5), 2, nr_generators=7)
         R = cora.ContSet.reduce(Z, 1)
-        self.assertEqual(np.asarray(R.generators).shape[1], 2)
+        self.assertEqual(np.asarray(R.generators).shape[0], 2)
         self.assertEqual(cora.ContSet.reduce(self.I, 3).sup.tolist(), self.I.sup.tolist())
         with self.assertRaises(cora.errors.WrongValue):
             cora.ContSet.reduce(self.I, 0)
@@ -170,7 +170,7 @@ class Generic(unittest.TestCase):
         S = cora.generate_random(rng, 3, ["interval"])
         self.assertTrue(isinstance(S, cora.Interval) and S.dim == 3)
         Z = cora.generate_random(rng, 4, ["zonotope"])
-        self.assertEqual(np.asarray(Z.generators).shape, (4, 8))
+        self.assertEqual(np.asarray(Z.generators).shape, (8, 4))
         classes = {type(cora.generate_random(rng)) for _ in range(40)}
         self.assertEqual(classes, {cora.Interval, cora.Zonotope})
         with self.assertRaises(cora.errors.NotSupported):
@@ -219,12 +219,12 @@ class Generic(unittest.TestCase):
             self.assertEqual(cora.ContSet.times(self.I, np.ones(2)).sup.tolist(), [1.0, 2.0])
 
     def test_compact(self):
-        Z = zonotope([0.0, 0.0], [[1.0, 0.0, 2.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
-        self.assertEqual(np.asarray(cora.ContSet.compact(Z).generators).shape, (2, 3))
+        Z = zonotope([0.0, 0.0], [[1.0, 0.0], [0.0, 0.0], [2.0, 0.0], [0.0, 1.0]])
+        self.assertEqual(np.asarray(cora.ContSet.compact(Z).generators).shape, (3, 2))
         # compact by method
         self.assertEqual(np.asarray(cora.ContSet.compact(Z, "all").generators).shape, (2, 2))
-        self.assertEqual(np.asarray(cora.ContSet.compact(Z, "aligned").generators).shape, (2, 4))
-        self.assertEqual(np.asarray(cora.ContSet.compact(Z, "zeros", 1.5).generators).shape, (2, 1))
+        self.assertEqual(np.asarray(cora.ContSet.compact(Z, "aligned").generators).shape, (4, 2))
+        self.assertEqual(np.asarray(cora.ContSet.compact(Z, "zeros", 1.5).generators).shape, (1, 2))
         self.assertEqual(cora.ContSet.compact(self.I, "anything", -1.0).sup.tolist(), [1.0, 2.0])
         self.assertIsInstance(cora.ContSet.compact(cora.EmptySet(2)), cora.EmptySet)
         self.assertIsInstance(cora.ContSet.compact(cora.Fullspace(2)), cora.Fullspace)

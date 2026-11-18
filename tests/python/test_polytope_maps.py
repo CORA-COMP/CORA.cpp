@@ -97,7 +97,7 @@ class PolytopeMaps(unittest.TestCase):
 
     # a matrix scales the area
     def test_the_linear_map_scales(self):
-        P = (2.0 * np.eye(2)) * square()
+        P = (2.0 * np.eye(2)) @ square()
         self.assertAlmostEqual(P.volume(), 4.0, places=8)
 
     # a projection keeps the chosen coordinates; the high-dimensional set pads zeros

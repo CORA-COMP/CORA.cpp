@@ -1,6 +1,6 @@
 """example_zonotope_01 - a zonotope that is rotated and shrunk again and again
 
-Operators as in CORA: A * Z maps the zonotope, and print(Z) shows it. A plain plot(Z) takes the
+Operators as in NumPy: A @ Z maps the zonotope, and print(Z) shows it. A plain plot(Z) takes the
 next color of CORA's order, so every copy has its own (blue, red, yellow, ...).
 
 Syntax:   PYTHONPATH=build python examples/python/example_zonotope_01.py [--save FILE]
@@ -52,7 +52,7 @@ print(Z)
 plt.figure()
 for i in range(100):
     plot(Z)
-    Z = A * Z
+    Z = A @ Z
 
 if args.save:
     plt.savefig(args.save, dpi=130, bbox_inches="tight")

@@ -49,7 +49,7 @@ int main() {
     const Tensor d = Tensor::from_data({0.7}, {1, 1});
     const auto zonotope = [](const Inputs &x) {
         return Zonotope(x[0].squeeze(-1), x[1].matrix_transpose());
-    }; // layout: #163 step 2
+    };
     const auto S = [&](const Zonotope &Z) -> const ContSet & { return Z; };
     test::gradcheck(
         "linear_map", [&](const Inputs &x) { return aux_parts(S(zonotope(x)).linear_map(M)); },

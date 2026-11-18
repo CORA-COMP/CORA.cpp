@@ -80,7 +80,7 @@ class Subclass(unittest.TestCase):
 
     def test_a_registered_pair_is_used_both_ways(self):
         def plus_box_zonotope(box, Z):
-            return cora.Zonotope(box.c + Z.center, np.hstack([np.diag(box.r), Z.generators]))
+            return cora.Zonotope(box.c + Z.center, np.vstack([np.diag(box.r), Z.generators]))
 
         cora.register_binary("plus", Box, cora.Zonotope, plus_box_zonotope)
         self.assertIn(("plus", "Box", "Zonotope"), cora.binary_pairs())

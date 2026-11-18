@@ -44,7 +44,7 @@ def diamond():
 
 
 def random_zonotope(rng, n=3, m=4):
-    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (n, m)))
+    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (m, n)))
 
 
 def support(Z, rng, count=40):
@@ -58,9 +58,9 @@ def support(Z, rng, count=40):
 
 class Entrywise(unittest.TestCase):
     def test_abs_and_box_and_center(self):
-        Z = zonotope([1, -2], [[1, -3, 0.5], [-2, 0.5, 0]])
+        Z = zonotope([1, -2], [[1, -2], [-3, 0.5], [0.5, 0]])
         np.testing.assert_array_equal(Z.abs().center, [1, 2])
-        np.testing.assert_array_equal(Z.abs().generators, [[1, 3, 0.5], [2, 0.5, 0]])
+        np.testing.assert_array_equal(Z.abs().generators, [[1, 2], [3, 0.5], [0.5, 0]])
         np.testing.assert_array_equal(Z.box().center, Z.center)
         np.testing.assert_array_equal(Z.box().generators, [[4.5, 0], [0, 2.5]])
         np.testing.assert_array_equal(Z.center, [1, -2])
@@ -70,16 +70,16 @@ class Entrywise(unittest.TestCase):
 
 class Compact(unittest.TestCase):
     def test_zeros_and_tolerance(self):
-        Z = zonotope([1, 2], [[1, 0, 1e-20, 0.5], [0, 0, 0, 0.5]])
-        np.testing.assert_array_equal(Z.compact().generators, [[1, 0.5], [0, 0.5]])
-        self.assertEqual(Z.compact("zeros", 0.0).generators.shape[1], 3)
-        self.assertEqual(Z.compact("zeros", 0.8).generators.shape[1], 1)
+        Z = zonotope([1, 2], [[1, 0], [0, 0], [1e-20, 0], [0.5, 0.5]])
+        np.testing.assert_array_equal(Z.compact().generators, [[1, 0], [0.5, 0.5]])
+        self.assertEqual(Z.compact("zeros", 0.0).generators.shape[0], 3)
+        self.assertEqual(Z.compact("zeros", 0.8).generators.shape[0], 1)
 
     # "all" merges the generators of one direction
     def test_all_merges_aligned_generators(self):
-        Z = zonotope([0, 0], [[-0.5, 1, 2, 0], [0, 0, 0, 3]])
+        Z = zonotope([0, 0], [[-0.5, 0], [1, 0], [2, 0], [0, 3]])
         np.testing.assert_allclose(Z.compact("all").generators, [[-3.5, 0], [0, 3]])
-        np.testing.assert_allclose(zonotope([0], [[1, -2, 0]]).compact("all").generators, [[3]])
+        np.testing.assert_allclose(zonotope([0], [[1], [-2], [0]]).compact("all").generators, [[3]])
         np.testing.assert_array_equal(Z.compact("aligned").generators, Z.generators)
 
     def test_errors(self):
@@ -92,21 +92,21 @@ class Compact(unittest.TestCase):
 
 class Combining(unittest.TestCase):
     def test_cart_prod_of_each_kind(self):
-        Z = zonotope([1, 2], [[1, 2], [3, 4]])
-        P = Z.cart_prod(zonotope([5], [[6, 7, 8]]))
+        Z = zonotope([1, 2], [[1, 3], [2, 4]])
+        P = Z.cart_prod(zonotope([5], [[6], [7], [8]]))
         np.testing.assert_array_equal(P.center, [1, 2, 5])
-        np.testing.assert_array_equal(P.generators, [[1, 2, 0, 0, 0], [3, 4, 0, 0, 0], [0, 0, 6, 7, 8]])
+        np.testing.assert_array_equal(P.generators, [[1, 3, 0], [2, 4, 0], [0, 0, 6], [0, 0, 7], [0, 0, 8]])
         # Cartesian products
-        self.assertEqual(Z.cart_prod(np.array([9.0])).generators.shape, (3, 2))
+        self.assertEqual(Z.cart_prod(np.array([9.0])).generators.shape, (2, 3))
         self.assertEqual(Z.cart_prod(cora.Interval(np.array([0.0, -1.0]), np.array([2.0, 1.0]))).dim, 4)
         self.assertEqual(cora.cart_prod(Z, Z).dim, 4)
 
     def test_enclose_and_convex_hull(self):
         Z = zonotope([0, 0], [[1, 0], [0, 1]])
-        Z2 = zonotope([2, 0], [[1], [0]])
+        Z2 = zonotope([2, 0], [[1, 0]])
         E = Z.enclose(Z2)
         np.testing.assert_array_equal(E.center, [1, 0])
-        np.testing.assert_array_equal(E.generators, [[1, -1, 0, 0], [0, 0, 0, 1]])
+        np.testing.assert_array_equal(E.generators, [[1, 0], [-1, 0], [0, 0], [0, 1]])
         rng = np.random.default_rng(4)
         A, B = random_zonotope(rng, 3, 5), random_zonotope(rng, 3, 3)
         box = cora.Interval(np.array([-1.0, 0.0, 0.5]), np.array([2.0, 1.0, 3.0]))
@@ -130,7 +130,7 @@ class Combining(unittest.TestCase):
         B = zonotope([0, 1], [[2, 0], [0, 2]])
         M = A.intersect(B, "averaging")
         np.testing.assert_allclose(M.center, [2 / 3, 1 / 3])
-        np.testing.assert_allclose(M.generators[0], [2 / 3, 2 / 3, 2 / 3, 0])
+        np.testing.assert_allclose(M.generators[:, 0], [2 / 3, 2 / 3, 2 / 3, 0])
         with self.assertRaises(cora.errors.NotSupported):
             A.intersect(A)
         # an empty intersection
@@ -153,14 +153,14 @@ class CubicMap(unittest.TestCase):
         Z = zonotope([1], [[0.5]])
         R = Z.cubic_map([[np.array([[2.0]])]])
         np.testing.assert_allclose(R.center, [2.75])
-        np.testing.assert_allclose(R.generators, [[3.0, 0.75, 0.25]])
+        np.testing.assert_allclose(R.generators, [[3.0], [0.75], [0.25]])
         M = Z.cubic_map(zonotope([2], [[1]]), zonotope([3], [[0.5]]), [[np.array([[1.0]])]])
         np.testing.assert_allclose(M.center, [6])
         # the cubic map
-        np.testing.assert_allclose(M.generators, [[3, 3, 1.5, 1, 0.5, 0.5, 0.25]])
+        np.testing.assert_allclose(M.generators, [[3], [3], [1.5], [1], [0.5], [0.5], [0.25]])
 
     def test_errors(self):
-        Z = zonotope([1, 0], [[0.5], [0.2]])
+        Z = zonotope([1, 0], [[0.5, 0.2]])
         with self.assertRaises(ValueError):
             Z.cubic_map([])
         with self.assertRaises(ValueError):
@@ -169,7 +169,7 @@ class CubicMap(unittest.TestCase):
 
 class Measures(unittest.TestCase):
     def test_hausdorff_distance_to_box_methods(self):
-        Z = zonotope([0, 0], [[1], [1]])
+        Z = zonotope([0, 0], [[1, 1]])
         self.assertAlmostEqual(Z.hausdorff_distance_to_box("naive"), np.sqrt(2))
         self.assertAlmostEqual(Z.hausdorff_distance_to_box("wgreedy"), 2.0)
         self.assertAlmostEqual(Z.hausdorff_distance_to_box("wopt"), np.sqrt(2))
@@ -182,13 +182,13 @@ class Measures(unittest.TestCase):
             Z.hausdorff_distance_to_box("ell")
 
     def test_dominant_directions(self):
-        Z = zonotope([0, 0], [[1, 0, 0.1], [0, 2, 0.1]])
+        Z = zonotope([0, 0], [[1, 0], [0, 2], [0.1, 0.1]])
         np.testing.assert_array_equal(Z.dominant_directions(), [[0, 1], [2, 0]])
         np.testing.assert_array_equal(Z.dominant_directions(2, 1), [[0, 1], [2, 0]])
         rng = np.random.default_rng(4)
         Z = random_zonotope(rng, 3, 9)
         P = Z.dominant_directions()
-        radius = np.abs(np.linalg.inv(P) @ Z.generators).sum(axis=1)
+        radius = np.abs(np.linalg.inv(P) @ Z.generators.T).sum(axis=1)
         for x in rng.standard_normal((30, 3)):
             self.assertGreaterEqual(x @ Z.center + np.abs(P.T @ x) @ radius, Z.support_function(x) - 1e-9)
         with self.assertRaises(ValueError):

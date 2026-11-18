@@ -57,7 +57,7 @@ fig[1, 0].set_xlabel("$t$")
 fig[1, 0].set_ylabel("$x_2$")
 
 # A three-dimensional set in the last one, whose axes were made with projection "3d".
-Z = cora.Zonotope(cora.zeros(3), cora.Tensor([[1, 0, 0.5], [0, 1, 0.5], [0, 0, 1]]))
+Z = cora.Zonotope(cora.zeros(3), cora.Tensor([[1, 0, 0], [0, 1, 0], [0.5, 0.5, 1]]))
 cora.plot(Z, (0, 1, 2), ax=fig[1, 1], face_color="CORA:blue")
 fig[1, 1].set_xlabel("$x_1$")
 fig[1, 1].set_ylabel("$x_2$")

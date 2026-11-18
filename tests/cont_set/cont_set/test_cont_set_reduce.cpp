@@ -33,7 +33,6 @@ void reduce_keeps_the_class_and_encloses(const std::string &b) {
     const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 7);
     const ContSet &S = Z;
     const Set R = S.reduce(1);
-    // layout: #163 step 2
     check(R.is<Zonotope>() && R.as<Zonotope>().generators().matrix_transpose().shape().back() == 2,
           b + ": two generators remain");
     for (int k = 0; k < 6; ++k) {

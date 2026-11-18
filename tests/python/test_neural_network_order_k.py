@@ -55,7 +55,7 @@ class OrderK(unittest.TestCase):
         Y = neuron("relu").evaluate(interval_set(-1.0, 3.0), poly_method="singh", orders=[2])
         # the centre, the exponents, the generators and the error
         np.testing.assert_allclose(Y.c, [79.0 / 96.0])
-        by_exponent = {int(e): g for e, g in zip(Y.E[0], Y.G[0], strict=True)}
+        by_exponent = {int(e): g for e, g in zip(Y.E[0], Y.G[:, 0], strict=True)}
         self.assertEqual(sorted(by_exponent), [1, 2])
         np.testing.assert_allclose([by_exponent[1], by_exponent[2]], [1.5, 0.75])
         np.testing.assert_allclose(Y.GI, [[25.0 / 96.0]])
@@ -72,7 +72,9 @@ class OrderK(unittest.TestCase):
             poly = net.evaluate(X, add_approx_error_to_gi=in_gi, num_generators=1000000)
             np.testing.assert_array_equal(line.c, poly.c)
             # the order of the generators is the constructor's: compare the columns sorted
-            for a, b in ((line.GI, poly.GI), (np.vstack([line.G, line.E]), np.vstack([poly.G, poly.E]))):
+            pairs = ((line.GI.T, poly.GI.T),
+                     (np.vstack([line.G.T, line.E]), np.vstack([poly.G.T, poly.E])))
+            for a, b in pairs:
                 np.testing.assert_array_equal(a[:, np.lexsort(a[::-1])], b[:, np.lexsort(b[::-1])])
 
     def test_every_method_encloses_the_activation(self):
@@ -85,7 +87,7 @@ class OrderK(unittest.TestCase):
 
     def test_sets_with_even_exponents_and_independent_generators_hold(self):
         # x = 0.2 + a^2 + 0.5 a b - 0.4 b^3 + 0.8 t: CORA's square of such a set misses its top
-        X = cora.PolyZonotope(np.array([0.2]), np.array([[1.0, 0.5, -0.4]]), np.array([[0.8]]),
+        X = cora.PolyZonotope(np.array([0.2]), np.array([[1.0], [0.5], [-0.4]]), np.array([[0.8]]),
                               np.array([[2, 1, 0], [0, 1, 3]]), [1, 2])
         # every activation at the orders 2 to 4
         for activation in ("sigmoid", "tanh", "relu"):
@@ -100,13 +102,13 @@ class OrderK(unittest.TestCase):
         net = cora.NeuralNetwork([(rng.normal(size=(5, 3)), rng.normal(size=5)),
                                   (rng.normal(size=(2, 5)), rng.normal(size=2))],
                                  ["tanh", "identity"])
-        X = cora.PolyZonotope(np.zeros(3), 0.3 * np.eye(3), 0.05 * np.ones((3, 1)),
+        X = cora.PolyZonotope(np.zeros(3), 0.3 * np.eye(3), 0.05 * np.ones((1, 3)),
                               np.eye(3, dtype=int), [1, 2, 3])
         # the same order with and without the limit
         full = net.evaluate(X, orders=[2], poly_method="regression")
         cut = net.evaluate(X, orders=[2], num_generators=6, poly_method="regression")
         self.assertEqual(outside(net, X, cut), 0)
-        self.assertLess(cut.G.shape[1] + cut.GI.shape[1], full.G.shape[1] + full.GI.shape[1])
+        self.assertLess(cut.G.shape[0] + cut.GI.shape[0], full.G.shape[0] + full.GI.shape[0])
 
 
 class Refine(unittest.TestCase):

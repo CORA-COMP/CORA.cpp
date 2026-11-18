@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 
 
 Z = cora.Zonotope(cora.zeros(3),
-                  cora.Tensor([[1, 0, 0.5, 0.2], [0, 1, 0.5, -0.3], [0, 0, 1, 0.4]]))
+                  cora.Tensor([[1, 0, 0], [0, 1, 0], [0.5, 0.5, 1], [0.2, -0.3, 0.4]]))
 I = cora.Interval(cora.Tensor([-1.5, -1, -0.5]), cora.Tensor([0.5, 1.5, 2]))
 
 # One Dimension -----------------------------------------------------------------------------

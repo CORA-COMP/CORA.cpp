@@ -51,7 +51,7 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
         {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
          rows},
         -2);
-    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose(), A,
+    return {Z.center(), Z.generators(), A,
             Tensor::concat({cz.b(), y - C.matmul(cz.c().expand_dims(-1))}, -2)};
 }
 

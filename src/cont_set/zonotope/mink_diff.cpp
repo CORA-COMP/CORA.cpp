@@ -197,7 +197,7 @@ Zonotope aux_mink_diff(const Zonotope &minuend, const Zonotope &subtrahend,
     if (aux_are_aligned(minuend.generators().matrix_transpose(),
                         subtrahend.generators().matrix_transpose()))
         return Zonotope(
-            (minuend.center().expand_dims(-1) - subtrahend.center().expand_dims(-1)).squeeze(-1),
+            minuend.center() - subtrahend.center(),
             (minuend.generators().matrix_transpose() - subtrahend.generators().matrix_transpose())
                 .matrix_transpose());
     if (minuend.dim() != 2)

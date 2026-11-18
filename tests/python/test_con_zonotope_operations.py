@@ -32,7 +32,7 @@ import numpy as np
 
 def hexagon():
     """The set {(a, b) | |a| <= 1, |b| <= 1, |a + b| <= 1}: a cube cut by a plane, in the plane."""
-    return cora.ConZonotope(np.zeros(2), np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]]),
+    return cora.ConZonotope(np.zeros(2), np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]),
                             np.array([[1.0, 1.0, 1.0]]), np.array([0.0]))
 
 
@@ -49,7 +49,7 @@ class ConZonotopeOperations(unittest.TestCase):
         # the dimension is the rows of the center, the generators are as given
         H = hexagon()
         self.assertEqual(H.dim, 2)
-        np.testing.assert_array_equal(H.generators, [[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]])
+        np.testing.assert_array_equal(H.generators, [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
 
     def test_support_function(self):
         # the formula without constraints, a linear program with them, -Inf if empty
@@ -106,7 +106,7 @@ class ConZonotopeOperations(unittest.TestCase):
         # the sizes, the constraint count and the dimension of a center
         rng = cora.Rng(96)
         cz = cora.ConZonotope.generate_random(rng, dimension=3, nr_generators=6, nr_constraints=2)
-        self.assertEqual((cz.dim, cz.generators.shape, cz.A.shape), (3, (3, 6), (2, 6)))
+        self.assertEqual((cz.dim, cz.generators.shape, cz.A.shape), (3, (6, 3), (2, 6)))
         self.assertFalse(cz.representsa("emptySet"))
         plain = cora.ConZonotope.generate_random(rng, dimension=2, nr_generators=3, nr_constraints=0)
         self.assertEqual(plain.A.shape[0], 0)

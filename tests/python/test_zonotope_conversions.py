@@ -59,9 +59,9 @@ class ZonotopeConversions(unittest.TestCase):
 
     def test_dim_and_generators(self):
         # the dimension and the generators as given
-        Z = zonotope([1.0, 2.0, 3.0], [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]])
+        Z = zonotope([1.0, 2.0, 3.0], [[1.0, 0.0, 2.0], [0.0, 1.0, 2.0]])
         self.assertEqual(Z.dim, 3)
-        np.testing.assert_array_equal(Z.generators, [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]])
+        np.testing.assert_array_equal(Z.generators, [[1.0, 0.0, 2.0], [0.0, 1.0, 2.0]])
 
     def test_polytope_and_vertices(self):
         # the rectangle [0, 2] x [-1, 5]: four facets and four corners, counter-clockwise
@@ -81,9 +81,9 @@ class ZonotopeConversions(unittest.TestCase):
         P = Z.simplex()
         self.assertEqual(P.A.shape, (4, 3))
         self.assertTrue(P.contains(Z.rand_point(20, rng, "extreme")))
-        M = zonotope([1.0, 2.0], [[1.0, 0.0, 3.0], [0.0, 2.0, 4.0]]).mat_zonotope()
+        M = zonotope([1.0, 2.0], [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]]).mat_zonotope()
         self.assertEqual((M.elem_rank, M.center.shape, M.generators.shape), (2, (2, 1), (3, 2, 1)))
-        np.testing.assert_array_equal(M.stacked().generators, [[1.0, 0.0, 3.0], [0.0, 2.0, 4.0]])
+        np.testing.assert_array_equal(M.stacked().generators, [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]])
 
 
 class MatrixSets(unittest.TestCase):

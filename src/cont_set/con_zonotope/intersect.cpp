@@ -45,8 +45,7 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &S) {
 
 /// The intersection of two sets: the agreement rows of the images c + G x, without zeros.
 ConZonotope aux_intersection(const ConZonotope &cz, const ConZonotope &S) {
-    return priv_compact(
-        priv_agreement(cz, S, cz.c().expand_dims(-1), cz.generators().matrix_transpose()));
+    return priv_compact(priv_agreement(cz, S, cz.c(), cz.generators()));
 }
 
 /// The rows of R (rows, cols) as row-major host values; zero rows give none.
@@ -68,8 +67,7 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
         const Tensor A =
             Tensor::concat({cz.A(), H.Ae.matmul(cz.generators().matrix_transpose())}, -2);
         const Tensor b = Tensor::concat({cz.b(), H.be - H.Ae.matmul(cz.c().expand_dims(-1))}, -2);
-        out = ConZonotope(cz.c().expand_dims(-1),
-                          (cz.generators().matrix_transpose()).matrix_transpose(), A, b);
+        out = ConZonotope(cz.c(), cz.generators(), A, b);
     }
     // a constrained hyperplane takes the bounds from the set so far, else from the set after Ae
     const HostConZonotope base = priv_host_con_zonotope(out);
@@ -94,9 +92,10 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
             Tensor::concat({out.b(), out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (ub + lb)) -
                                          a_row.matmul(out.c().expand_dims(-1))},
                            -2);
-        const Tensor G = Tensor::concat(
-            {out.generators().matrix_transpose(), zeros_block(out.c().expand_dims(-1), n, 1)}, -1);
-        out = ConZonotope(out.c().expand_dims(-1), G.matrix_transpose(), A, b);
+        // the new factor s scales no generator
+        const Tensor G =
+            Tensor::concat({out.generators(), zeros_block(out.generators(), 1, n)}, -2);
+        out = ConZonotope(out.c(), G, A, b);
     }
     return out;
 }

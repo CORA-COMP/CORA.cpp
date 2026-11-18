@@ -58,7 +58,7 @@ class TestMatlab(unittest.TestCase):
         first = int(counts[0])
         self.assertTrue(
             np.allclose(centers[0], sets[0].center) and
-            np.allclose(generators[:, :first], sets[0].generators)
+            np.allclose(generators[:, :first], sets[0].generators.T)
         )
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

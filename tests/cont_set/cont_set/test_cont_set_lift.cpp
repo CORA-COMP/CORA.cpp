@@ -46,7 +46,6 @@ void lift_by_class(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0, 3.0}),
                      Tensor::from_data({1.0, 0.0, 0.0, 0.0, 2.0, 0.0}, {2, 3}));
     const Set P = static_cast<const ContSet &>(Z).lift(3, std::vector<int64_t>{1, 2, 0});
-    // layout: #163 step 2
     check(P.is<Zonotope>() &&
               test::close(P.as<Zonotope>().center().expand_dims(-1), {3.0, 1.0, 2.0}),
           b + ": a zonotope is permuted");

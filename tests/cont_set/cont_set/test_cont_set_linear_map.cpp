@@ -35,10 +35,8 @@ void the_image_of_any_set(const std::string &b) {
               test::close(RI.as<Interval>().sup(), {3.0, 2.0}),
           b + ": the hull of the image of a box");
     const Set RZ = static_cast<const ContSet &>(Z).linear_map(M);
-    // layout: #163 step 2
     check(RZ.is<Zonotope>() &&
               test::close(RZ.as<Zonotope>().center().expand_dims(-1), {1.0, 0.0}) &&
-              // layout: #163 step 2
               test::close(RZ.as<Zonotope>().generators().matrix_transpose(), {0.5, 0.5, 0.0, 0.5}),
           b + ": the image of a zonotope");
     const Tensor row = Tensor::from_data({1.0, -1.0}, {1, 2});

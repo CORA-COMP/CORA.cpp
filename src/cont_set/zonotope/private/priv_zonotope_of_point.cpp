@@ -21,7 +21,7 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Zonotope priv_zonotope_of_point(const Tensor &p) {
-    // layout: #163 step 2 - the point is a column (..., n, 1)
+    // the point is a column (..., n, 1)
     Shape shape = p.shape();
     shape[shape.size() - 2] = 0;
     shape.back() = p.size(-2);

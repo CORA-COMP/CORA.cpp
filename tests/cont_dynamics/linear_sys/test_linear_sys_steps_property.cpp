@@ -52,12 +52,8 @@ Case random_case(cora::Rng &rng) {
     const Tensor eye = Tensor::eye(3);
     const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     // a centered input set in the state space, and a constant input u
-    const Zonotope U = Zonotope(
-        (X.center().expand_dims(-1).zeros_like()).squeeze(-1),
-        ( // layout: #163 step 2
-            Zonotope::generate_random(rng, 3, std::nullopt, 2).generators().matrix_transpose() *
-            0.2)
-            .matrix_transpose());
+    const Zonotope U(X.center().zeros_like(),
+                     Zonotope::generate_random(rng, 3, std::nullopt, 2).generators() * 0.2);
     const Tensor u = Zonotope::generate_random(rng, 3, std::nullopt, 1).center().expand_dims(-1);
     return {LinearSys(sys.A(), eye),
             X,

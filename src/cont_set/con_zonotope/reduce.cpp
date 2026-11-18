@@ -44,7 +44,7 @@ ConZonotope ConZonotope::reduce(int order, const std::string &method) const {
 
     // the zonotope [G; A] with the center [c; -b] is reduced; its rows are read back
     const Tensor lifted = Tensor::concat({cz.generators().matrix_transpose(), cz.A()}, -2);
-    // layout: #163 step 2 - the Girard reduction takes one generator per row
+    // the Girard reduction takes one generator per row
     const Tensor reduced =
         priv_girard_generators(lifted.matrix_transpose(), (order - 1) * n).matrix_transpose();
     return {cz.c().expand_dims(-1), reduced.slice(-2, 0, n).matrix_transpose(),

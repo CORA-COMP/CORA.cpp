@@ -35,7 +35,7 @@ F64 = dict(dtype=torch.float64)
 def system(n=3, m=4, seed=0):
     g = torch.Generator().manual_seed(seed)
     A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
-    return A, torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
+    return A, torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
 
 
 # ============================================  MAIN  ============================================ #
@@ -70,7 +70,7 @@ class Simulate(unittest.TestCase):
 
     def test_a_batch_of_sets(self):
         A, _, _ = system()
-        c, G = torch.randn(4, 3, **F64), torch.randn(4, 3, 2, **F64)
+        c, G = torch.randn(4, 3, **F64), torch.randn(4, 2, 3, **F64)
         Z = cora.Zonotope(c, G)
         x = cora.LinearSys(A).simulate(Z.rand_point(6, cora.Rng(0)), time_step=0.1, t_final=0.5)
         self.assertEqual(tuple(x.shape), (6, 4, 3, 6))

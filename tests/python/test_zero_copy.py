@@ -34,8 +34,8 @@ class ZeroCopy(unittest.TestCase):
         self.enterContext(cora.backend("eigen"))
         rng = np.random.default_rng(3)
         self.c = rng.standard_normal(1000)
-        # CORA's columns, stored column-major: the generator rows in memory (#163 step 2: rows)
-        self.G = np.asfortranarray(rng.standard_normal((1000, 1000)))
+        # one generator per row, stored row-major as the set keeps it
+        self.G = rng.standard_normal((1000, 1000))
 
     def test_what_comes_in_comes_back(self):
         Z = cora.Zonotope(self.c, self.G)
@@ -45,7 +45,7 @@ class ZeroCopy(unittest.TestCase):
         self.assertFalse(Z.generators.flags.writeable)
 
     def test_a_result_is_handed_over_without_a_copy(self):
-        Z = cora.Zonotope(self.c[:3], self.G[:3, :4].copy())
+        Z = cora.Zonotope(self.c[:3], self.G[:4, :3].copy())
         W = Z + Z
         self.assertTrue(np.shares_memory(W.generators, W.generators))
         self.assertFalse(np.shares_memory(W.generators, Z.generators))
@@ -54,7 +54,7 @@ class ZeroCopy(unittest.TestCase):
         self.assertTrue(points.flags.writeable)
 
     def test_only_a_strided_or_foreign_array_is_copied(self):
-        Gt = self.G[:5, :5].T  # Fortran order: copied once, with the same values
+        Gt = self.G[:5, :5].T  # strided: copied once, with the same values
         Z = cora.Zonotope(self.c[:5], Gt)
         self.assertFalse(np.shares_memory(Z.generators, Gt))
         np.testing.assert_array_equal(Z.generators, Gt)
@@ -81,11 +81,11 @@ class ZeroCopy(unittest.TestCase):
 
     @unittest.skipUnless(torch is not None and cora.has_torch, "needs torch")
     def test_a_torch_tensor_stays_itself(self):
-        G = torch.randn(3, 4, dtype=torch.float64, requires_grad=True)
+        G = torch.randn(4, 3, dtype=torch.float64, requires_grad=True)
         Z = cora.Zonotope(torch.zeros(3, dtype=torch.float64), G)
         self.assertEqual(Z.generators.data_ptr(), G.data_ptr())
         Z.generators.sum().backward()
-        self.assertTrue(torch.equal(G.grad, torch.ones(3, 4, dtype=torch.float64)))
+        self.assertTrue(torch.equal(G.grad, torch.ones(4, 3, dtype=torch.float64)))
 
 
 if __name__ == "__main__":

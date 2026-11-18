@@ -34,10 +34,8 @@ void uminus_negates(const std::string &b) {
     const Interval I(column({-1.0, 0.0}), column({2.0, 3.0}));
     const Set A = static_cast<const ContSet &>(Z).uminus(),
               B = static_cast<const ContSet &>(I).uminus();
-    // layout: #163 step 2
     check(
         A.is<Zonotope>() && test::close(A.as<Zonotope>().center().expand_dims(-1), {-1.0, 0.0}) &&
-            // layout: #163 step 2
             test::close(A.as<Zonotope>().generators().matrix_transpose(), {-0.5, -0.0, -0.2, -0.5}),
         b + ": a zonotope");
     check(B.is<Interval>() && test::close(B.as<Interval>().inf(), {-2.0, -3.0}) &&

@@ -47,7 +47,7 @@ def zonotope(c, G):
 def two_zonotopes():
     """The box [-2, 2] x [-1, 1] and a hexagon in [-1, 3] x [-1, 1]: their boxes meet in [-1, 2] x [-1, 1]."""
     return cora.ZonoBundle([zonotope([0.0, 0.0], [[2.0, 0.0], [0.0, 1.0]]),
-                            zonotope([1.0, 0.0], [[1.0, 1.0], [0.0, 1.0]])])
+                            zonotope([1.0, 0.0], [[1.0, 0.0], [1.0, 1.0]])])
 
 
 def common_point_bundle(rng, n, k, m):
@@ -55,8 +55,8 @@ def common_point_bundle(rng, n, k, m):
     x0 = rng.standard_normal(n)
     members = []
     for _ in range(k):
-        G = rng.standard_normal((n, m))
-        members.append(zonotope(x0 - G @ rng.uniform(-1, 1, m), G))
+        G = rng.standard_normal((m, n))
+        members.append(zonotope(x0 - rng.uniform(-1, 1, m) @ G, G))
     return cora.ZonoBundle(members), x0
 
 
@@ -77,7 +77,7 @@ class Conversions(unittest.TestCase):
         self.assertTrue(O.representsa("origin"))
         with self.assertRaises(cora.errors.WrongValue):
             cora.ZonoBundle.origin(0)
-        Z = zonotope([1.0, 2.0], [[1.0, 0.0], [0.5, 1.0]])
+        Z = zonotope([1.0, 2.0], [[1.0, 0.5], [0.0, 1.0]])
         fromZ = cora.ZonoBundle(Z)
         self.assertEqual(fromZ.parallel_sets, 1)
         np.testing.assert_array_equal(fromZ.zonotopes[0].generators, Z.generators)
@@ -112,7 +112,7 @@ class MapsAndSums(unittest.TestCase):
         R = zB.linear_map(M)
         np.testing.assert_array_equal(R.zonotopes[0].generators, [[2.0, 0.0], [0.0, 2.0]])
         np.testing.assert_array_equal((M @ zB).zonotopes[1].center, [1.0, 0.0])
-        np.testing.assert_array_equal((2.0 * zB).zonotopes[1].generators, [[2.0, 2.0], [0.0, 2.0]])
+        np.testing.assert_array_equal((2.0 * zB).zonotopes[1].generators, [[2.0, 0.0], [2.0, 2.0]])
         with self.assertRaises(cora.errors.DimensionMismatch):
             zB.linear_map(np.ones((1, 3)))
 
@@ -122,10 +122,10 @@ class MapsAndSums(unittest.TestCase):
         np.testing.assert_array_equal(zB.plus(np.array([1.0, 2.0])).zonotopes[1].center, [2.0, 2.0])
         np.testing.assert_array_equal((zB + np.array([1.0, 2.0])).zonotopes[0].center, [1.0, 2.0])
         np.testing.assert_array_equal((np.array([1.0, 2.0]) + zB).zonotopes[0].center, [1.0, 2.0])
-        W = zonotope([0.0, 0.0], [[1.0], [0.0]])
-        self.assertEqual(zB.plus(W).zonotopes[0].generators.shape, (2, 3))
+        W = zonotope([0.0, 0.0], [[1.0, 0.0]])
+        self.assertEqual(zB.plus(W).zonotopes[0].generators.shape, (3, 2))
         self.assertEqual((zB + cora.Interval(np.zeros(2), np.ones(2))).parallel_sets, 2)
-        W2 = zonotope([5.0, 5.0], [[1.0], [1.0]])
+        W2 = zonotope([5.0, 5.0], [[1.0, 1.0]])
         pairs = zB.plus(cora.ZonoBundle([W, W2]))
         self.assertEqual(pairs.parallel_sets, 4)
         np.testing.assert_array_equal(pairs.zonotopes[3].center, [6.0, 5.0])
@@ -148,11 +148,11 @@ class MapsAndSums(unittest.TestCase):
         rng = np.random.default_rng(91)
         big, x0 = common_point_bundle(rng, 2, 3, 7)
         reduced = big.reduce(2)
-        self.assertTrue(all(Z.generators.shape[1] <= 4 for Z in reduced.zonotopes))
+        self.assertTrue(all(Z.generators.shape[0] <= 4 for Z in reduced.zonotopes))
         self.assertTrue(reduced.contains(x0))
         with self.assertRaises(cora.errors.NotSupported):
             big.reduce(1, "pca")
-        W = zonotope([3.0, 3.0], [[1.0], [1.0]])
+        W = zonotope([3.0, 3.0], [[1.0, 1.0]])
         replaced = zB.replace(1, W)
         np.testing.assert_array_equal(replaced.zonotopes[1].center, [3.0, 3.0])
         np.testing.assert_array_equal(replaced.zonotopes[0].center, [0.0, 0.0])

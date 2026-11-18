@@ -21,7 +21,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-// layout: #163 step 2 - points are still columns
+// points are columns (..., n, 1), as every set takes them
 Tensor priv_point_row(const Tensor &v, const Zonotope &Z) {
     if (Z.elem_rank() != 1 || v.ndim() < 2 || v.size(-1) != 1 || v.size(-2) != Z.dim()) return v;
     // a one-dimensional set takes (..., 1, 1) as a column only beyond the rank of its center

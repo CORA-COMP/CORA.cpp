@@ -33,12 +33,9 @@ void decompose_projects_each_block(const std::string &b) {
               test::close(parts[1].as<Interval>().inf(), {2.0}),
           b + ": the blocks of a box");
     const std::vector<Set> zs = static_cast<const ContSet &>(Z).decompose({{1, 2}, {0, 0}});
-    // layout: #163 step 2
     check(zs.size() == 2 &&
               test::close(zs[0].as<Zonotope>().center().expand_dims(-1), {2.0, 3.0}) &&
-              // layout: #163 step 2
               test::close(zs[1].as<Zonotope>().center().expand_dims(-1), {1.0}) &&
-              // layout: #163 step 2
               zs[0].as<Zonotope>().generators().matrix_transpose().shape()[0] == 2,
           b + ": the blocks of a zonotope");
     const std::vector<Set> one = static_cast<const ContSet &>(I).decompose({{0, 2}});

@@ -31,10 +31,10 @@ def tensor(data):
 
 
 def zonotope(c, G):
-    """zonotope - the zonotope with center c (n) and generators G (n, m); MATLAB hands a scalar or
-    a row for n = 1 or m = 1, the shapes are restored here."""
+    """zonotope - the zonotope with center c (n) and CORA's generator columns G (n, m); MATLAB
+    hands a scalar or a row for n = 1 or m = 1, the shapes are restored here."""
     c = c.reshape(-1)
-    return Zonotope(c, G.reshape(c.shape[-1], -1))
+    return Zonotope(c, G.reshape(c.shape[-1], -1).T)
 
 
 def interval(inf, sup):
@@ -85,8 +85,8 @@ def zonotopes(sets):
     """zonotopes - (centers (N, n), generators (n, sum m) side by side, counts (N,)) of N
     zonotopes: one call instead of a few per set, as MATLAB pays for every crossing."""
     centers = np.stack([np.asarray(Z.center) for Z in sets])
-    generators = np.concatenate([np.asarray(Z.generators) for Z in sets], axis=1)
-    counts = np.array([np.asarray(Z.generators).shape[1] for Z in sets], dtype=float)
+    generators = np.concatenate([np.asarray(Z.generators).T for Z in sets], axis=1)
+    counts = np.array([np.asarray(Z.generators).shape[0] for Z in sets], dtype=float)
     return centers, generators, counts
 
 # NOLINTEND(naming)

@@ -144,8 +144,7 @@ void adaptive_reach_rand02_matches_matlab() {
     Rand r = rand02();
     TaylorLinSys taylor(r.sys.A());
     AdaptiveSaveData savedata;
-    const AdaptiveParams ap{// layout: #163 step 2
-                            *r.params.initial_set,
+    const AdaptiveParams ap{*r.params.initial_set,
                             r.sys.B()->matmul(r.params.input_set->generators().matrix_transpose()),
                             r.sys.B()->matmul(r.params.input_set->center().expand_dims(-1)),
                             r.sys.C(), r.params.t_final};

@@ -34,14 +34,11 @@ void the_embedding(const std::string &b) {
               test::close(RI.as<Interval>().sup(), {4.0, 0.0, 2.0, 0.0}),
           b + ": a box");
     const Set RZ = static_cast<const ContSet &>(Z).project_high_dim(4, {2, 0});
-    check(
-        // layout: #163 step 2
-        RZ.is<Zonotope>() &&
-            test::close(RZ.as<Zonotope>().center().expand_dims(-1), {2.0, 0.0, 1.0, 0.0}) &&
-            // layout: #163 step 2
-            test::close(RZ.as<Zonotope>().generators().matrix_transpose(),
-                        {0.0, 0.25, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0}),
-        b + ": a zonotope");
+    check(RZ.is<Zonotope>() &&
+              test::close(RZ.as<Zonotope>().center().expand_dims(-1), {2.0, 0.0, 1.0, 0.0}) &&
+              test::close(RZ.as<Zonotope>().generators().matrix_transpose(),
+                          {0.0, 0.25, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0}),
+          b + ": a zonotope");
     check(static_cast<const ContSet &>(Z).project_high_dim(2, {0, 1}).get().dim() == 2,
           b + ": the same dimension");
 }

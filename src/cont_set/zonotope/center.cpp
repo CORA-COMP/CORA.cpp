@@ -22,7 +22,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-// layout: #163 step 2 - the generic center is a column, as every other set's
+// the generic center is a column, as every other set's
 Tensor Zonotope::center_impl() const { return elem_rank_ == 1 ? c_.expand_dims(-1) : c_; }
 
 

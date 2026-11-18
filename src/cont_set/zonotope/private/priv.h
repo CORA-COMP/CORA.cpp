@@ -46,7 +46,7 @@ Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &
 
 Tensor priv_girard_generators(const Tensor &G, int64_t keep);
 
-/// A point v for Z: a column (..., n, 1) as a row (..., n), a row as it is (layout: #163 step 2).
+/// A point v for Z: a column (..., n, 1) as a row (..., n), a row as it is.
 Tensor priv_point_row(const Tensor &v, const Zonotope &Z);
 
 /// The shape of the batch of `like` followed by (rows, cols).

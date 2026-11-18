@@ -92,12 +92,9 @@ int main() {
             const Tensor &G = Z.generators().matrix_transpose();
             // a generator of zeros in the middle and at the end
             const Tensor zero = G.slice(-1, 0, 1).zeros_like();
-            const Zonotope Zz =
-                Zonotope(( // layout: #163 step 2
-                             Z.center().expand_dims(-1))
-                             .squeeze(-1),
-                         (Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1))
-                             .matrix_transpose());
+            const Zonotope Zz = Zonotope(
+                Z.center(), (Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1))
+                                .matrix_transpose());
             oracle::check(Zz.compact("zeros", 0.0), lean::Zonotope(Zz).compact("zeros", 0.0));
         }
     });

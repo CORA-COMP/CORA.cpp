@@ -71,8 +71,7 @@ ConZonotope ConZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     std::vector<int64_t> linear;
     linear.reserve(static_cast<std::size_t>(m));
     for (int64_t j = 0; j < m; ++j) linear.push_back(j);
-    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose(),
-            aux_scatter(A(), linear, total), b()};
+    return {Z.center(), Z.generators(), aux_scatter(A(), linear, total), b()};
 }
 
 ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz3,
@@ -98,8 +97,7 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
         A.push_back(aux_scatter(sets[s]->A(), aux_linear_positions(sizes, s), total));
         b.push_back(sets[s]->b());
     }
-    return {Z.center().expand_dims(-1), (Z.generators().matrix_transpose()).matrix_transpose(),
-            Tensor::concat(A, -2), Tensor::concat(b, -2)};
+    return {Z.center(), Z.generators(), Tensor::concat(A, -2), Tensor::concat(b, -2)};
 }
 
 } // namespace cora

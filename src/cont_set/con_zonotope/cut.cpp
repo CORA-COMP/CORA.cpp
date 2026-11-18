@@ -97,8 +97,9 @@ ConZonotope::Cut ConZonotope::Cut::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(c.shape()[0]) +
                " columns, got the shape " + shape_text(M.shape());
     });
-    auto [c2, G2] = detail::linear_map_columns(M, c, G);
-    return {std::move(c2), std::move(G2), A, b, C, d};
+    // the cut keeps CORA's columns: c (n, 1) and G (n, h)
+    const auto [c2, G2] = Tensor::zonotope_linear_map(M, c.squeeze(-1), G.matrix_transpose());
+    return {c2.expand_dims(-1), G2.matrix_transpose(), A, b, C, d};
 }
 
 } // namespace cora

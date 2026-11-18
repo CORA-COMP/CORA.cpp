@@ -501,23 +501,6 @@ Zonotope operator-(const Zonotope &Z, const Tensor &v);
 /// -Z as CORA's uminus: centre and generators negated, like ContSet::uminus.
 Zonotope operator-(const Zonotope &Z);
 
-namespace detail { // layout: #163 step 2 - CORA's columns, for the code not yet batch first
-/// The center as a column (batch..., n, 1).
-inline Tensor cora_center(const Zonotope &Z) { return Z.center().expand_dims(-1); }
-/// The generators as columns (batch..., n, h).
-inline Tensor cora_generators(const Zonotope &Z) { return Z.generators().matrix_transpose(); }
-/// The vector zonotope of a center column (batch..., n, 1) and generator columns (batch..., n, h).
-inline Zonotope zonotope_of_columns(const Tensor &c, const Tensor &G) {
-    return {c.squeeze(-1), G.matrix_transpose()};
-}
-/// Tensor::zonotope_linear_map on CORA's columns: (M c, M G) of c (batch..., n, 1), G (..., n, m).
-inline std::pair<Tensor, Tensor> linear_map_columns(const Tensor &M, const Tensor &c,
-                                                    const Tensor &G) {
-    const auto [Mc, MG] = Tensor::zonotope_linear_map(M, c.squeeze(-1), G.matrix_transpose());
-    return {Mc.expand_dims(-1), MG.matrix_transpose()};
-}
-} // namespace detail
-
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

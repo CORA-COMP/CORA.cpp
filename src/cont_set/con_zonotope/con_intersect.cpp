@@ -34,7 +34,8 @@ ConZonotope ConZonotope::con_intersect(const ConZonotope &cz2, const Tensor &M) 
                    return "con_intersect: M must be (" + std::to_string(cz2.dim()) + ", " +
                           std::to_string(dim()) + "), got the shape " + shape_text(M.shape());
                });
-    const auto [Mc, MG] = detail::linear_map_columns(M, c_.expand_dims(-1), G_.matrix_transpose());
+    // the agreement of M c + M G x with the second set
+    const auto [Mc, MG] = Tensor::zonotope_linear_map(M, c_, G_);
     return priv_agreement(*this, cz2, Mc, MG);
 }
 
