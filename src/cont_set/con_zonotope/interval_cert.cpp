@@ -17,9 +17,9 @@
 // See also: interval, interval_tight, cut
 //
 // CORA.cpp only: CORALean's float definition checks the dual solutions of CORA's programs
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -151,7 +151,15 @@ ConZonotope::Cut aux_cut(const ConZonotope &cz) {
 // The programs ------------------------------------------------------------------------------------
 
 /// The program min f'x over the rows, the equalities and the unit box; its cost is set per call.
-LinProg aux_program(const Host &H) {
+/// The factor programs of the cut set: its rows C y <= d and A y = b in the box [-1, 1]^h, asked of
+/// Polytope's programs; by hand if d holds +Inf, which the Polytope drops with its multiplier.
+LinProg aux_program(const ConZonotope::Cut &K, const Host &H) {
+    const bool all_finite =
+        std::none_of(H.d.begin(), H.d.end(), [](double x) { return std::isinf(x) && x > 0; });
+    if (all_finite) {
+        const std::vector<double> lb(std::size_t(H.h), -1.0), ub(std::size_t(H.h), 1.0);
+        return Polytope::LinearPrograms(Polytope(K.C, K.d, K.A, K.b), lb, ub).program();
+    }
     LinProg lp;
     lp.n = int(H.h);
     lp.Aineq = H.C;
@@ -211,7 +219,7 @@ std::optional<ConZonotope::Certificate> ConZonotope::Cut::certificate() const {
             costs.push_back(aux_cost(H, i, 1.0));
             costs.push_back(aux_cost(H, i, -1.0));
         }
-        solved = linprog_costs(aux_program(H), costs);
+        solved = linprog_costs(aux_program(*this, H), costs);
     }
     // the multipliers of each end, in the order of the costs
     Certificate w;

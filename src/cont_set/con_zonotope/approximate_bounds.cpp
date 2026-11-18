@@ -20,9 +20,9 @@
 //
 // CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
 // CORA authors: Lukas Koller
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -82,21 +82,25 @@ std::pair<Tensor, Tensor> aux_fourier_motzkin(const Tensor &A, const Tensor &b, 
 
 // Linear programs ---------------------------------------------------------------------------------
 
+/// The factor programs of member i: its rows A y <= b in the box [-1, 1]^q, as Polytope's
+/// programs (a row with the offset +Inf, which the Polytope drops, bounds nothing).
+LinProg aux_member_program(const Tensor &A, const Tensor &b, int64_t i) {
+    const int64_t p = A.shape()[1], q = A.shape()[2];
+    const Tensor Ai = A.slice(0, i, i + 1).reshape({p, q}),
+                 bi = b.slice(0, i, i + 1).reshape({p, 1});
+    const std::vector<double> lb(std::size_t(q), -1.0), ub(std::size_t(q), 1.0);
+    return Polytope::LinearPrograms(Polytope(Ai, bi), lb, ub).program();
+}
+
 /// The bounds by a linear program per bound, for every member of the batch.
 Bounds aux_exact(const Tensor &c, const Tensor &G, const Tensor &A, const Tensor &b,
                  const Tensor &dr) {
-    const int64_t B = c.shape()[0], n = c.shape()[1], q = A.shape()[2], p = A.shape()[1];
-    const std::vector<double> host_c = c.data(), host_G = G.data(), host_A = A.data();
-    const std::vector<double> host_b = b.data();
+    const int64_t B = c.shape()[0], n = c.shape()[1], q = A.shape()[2];
+    const std::vector<double> host_c = c.data(), host_G = G.data();
     std::vector<double> l(std::size_t(B * n), kNaN), u(std::size_t(B * n), kNaN),
         bl(std::size_t(B * q), kNaN), bu(std::size_t(B * q), kNaN);
     for (int64_t i = 0; i < B; ++i) {
-        LinProg lp;
-        lp.n = int(q);
-        lp.Aineq.assign(host_A.begin() + i * p * q, host_A.begin() + (i + 1) * p * q);
-        lp.bineq.assign(host_b.begin() + i * p, host_b.begin() + (i + 1) * p);
-        lp.lb.assign(std::size_t(q), -1.0);
-        lp.ub.assign(std::size_t(q), 1.0);
+        LinProg lp = aux_member_program(A, b, i);
         const auto minimum = [&](const std::vector<double> &f, double &value) {
             lp.f = f;
             const LinProgResult r = linprog(lp);
@@ -135,6 +139,8 @@ Bounds aux_exact(const Tensor &c, const Tensor &G, const Tensor &A, const Tensor
     const Tensor lt = Tensor::like(c, l, {B, n, 1}), ut = Tensor::like(c, u, {B, n, 1});
     return {lt - dr, ut + dr, Tensor::like(c, bl, {B, q, 1}), Tensor::like(c, bu, {B, q, 1})};
 }
+
+// The method --------------------------------------------------------------------------------------
 
 /// The bounds of one batch of sets by the method of the options.
 Bounds aux_bound(const Tensor &c, const Tensor &G, const Tensor &dr, const Tensor &A,
