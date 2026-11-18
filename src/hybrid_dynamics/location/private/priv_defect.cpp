@@ -36,9 +36,7 @@ namespace {
 /// The box of a zonotope, c -/+ the sum of the absolute generators (summed from the last one)
 /// (CORALean's Zonotope.interval, without an error box).
 Box aux_box_of(const Zonotope &Z) {
-    // layout: #163 step 2
-    const std::vector<double> c = detail::cora_center(Z).data(),
-                              g = detail::cora_generators(Z).data();
+    const std::vector<double> c = Z.center().data(), g = Z.generators().matrix_transpose().data();
     const std::size_t n = c.size(), h = g.size() / (n == 0 ? 1 : n);
     Box box{std::vector<double>(n), std::vector<double>(n)};
     for (std::size_t i = 0; i < n; ++i) {
@@ -125,9 +123,8 @@ std::vector<double> aux_radius(const std::vector<double> &mag, const Box &X) {
 Zonotope priv_box_zonotope(const Interval &box, bool dense) {
     if (!dense) return box.zonotope();
     const Tensor center = box.center();
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(center,
-                                       (box.sup() - center).maximum(center - box.inf()).diag());
+    return Zonotope(center.squeeze(-1),
+                    ((box.sup() - center).maximum(center - box.inf()).diag()).matrix_transpose());
 }
 
 Zonotope priv_box_zonotope(const std::vector<double> &lo, const std::vector<double> &hi,

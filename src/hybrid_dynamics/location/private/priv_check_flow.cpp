@@ -94,17 +94,14 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
     const bool inputs = sys.input_dim() > 0;
     const Zonotope Ubox = U.interval().zonotope();
     const Zonotope Z = inputs ? R.cart_prod(Ubox) : R;
-    // layout: #163 step 2
     const std::optional<Tensor> uc =
-        inputs ? std::optional<Tensor>(detail::cora_center(Ubox)) : std::nullopt;
+        inputs ? std::optional<Tensor>(Ubox.center().expand_dims(-1)) : std::nullopt;
     // the value and the linear part at the center
     const Tensor a_t = a.matrix_transpose();
-    // layout: #163 step 2
-    const Jacobians J = sys.jacobian(detail::cora_center(R), uc);
+    const Jacobians J = sys.jacobian(R.center().expand_dims(-1), uc);
     const Tensor AB = inputs ? Tensor::concat({J.A, J.B}, -1) : J.A;
-    // layout: #163 step 2
-    double bound = a_t.matmul(sys.dynamics(detail::cora_center(R), uc)).item() +
-                   a_t.matmul(AB).matmul(detail::cora_generators(Z)).abs().sum().item();
+    double bound = a_t.matmul(sys.dynamics(R.center().expand_dims(-1), uc)).item() +
+                   a_t.matmul(AB).matmul(Z.generators().matrix_transpose()).abs().sum().item();
     // the remainder by the Hessian over the box of Z
     const Interval box = Z.interval();
     const int64_t n = sys.dim(), m = sys.input_dim(), dz = n + m;
@@ -113,8 +110,7 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
         inputs ? std::optional<Range>(Range(box.inf().slice(-2, n, dz), box.sup().slice(-2, n, dz)))
                : std::nullopt;
     const std::vector<std::optional<Range>> H = sys.hessian_enclosure(x_box, u_box);
-    // layout: #163 step 2
-    const std::vector<double> g = detail::cora_generators(Z).abs_sum().data(), w = a.data();
+    const std::vector<double> g = Z.generators().matrix_transpose().abs_sum().data(), w = a.data();
     for (int64_t i = 0; i < n; ++i)
         for (int64_t j = 0; j < dz; ++j)
             for (int64_t k = 0; k < dz; ++k)
@@ -146,14 +142,12 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
     const Tensor &A = priv_flow_matrix(loc, "checkFlow");
     const Tensor P = A.eye_like() - a.matmul(a.matrix_transpose());
     const int64_t n = A.shape()[0];
-    // layout: #163 step 2
-    const std::vector<double> flow = A.data(), uc = detail::cora_center(U_state).data(),
-                              nv = a.data();
+    const std::vector<double> flow = A.data(), uc = U_state.center().data(), nv = a.data();
     for (const Zonotope &Z : priv_zonotopes(S)) {
         // the set projected onto the hyperplane
         const Zonotope proj = Z.linear_map(P) + a * d;
         // the fast test: the flow at the center, summed from the last term as sumUp
-        const std::vector<double> m = detail::cora_center(proj).data();
+        const std::vector<double> m = proj.center().data();
         double outward = 0;
         for (int64_t i = n - 1; i >= 0; --i) {
             double row = 0;
@@ -184,7 +178,7 @@ double aux_level_flow_at(const NonlinearSys &sys, const LevelSet &guard, double 
                          const Tensor &c, const Zonotope &U_state) {
     const std::vector<double> x = c.data();
     const std::vector<double> f =
-        (sys.input_dim() == 0 ? sys.dynamics(c) : sys.dynamics(c, detail::cora_center(U_state)))
+        (sys.input_dim() == 0 ? sys.dynamics(c) : sys.dynamics(c, U_state.center().expand_dims(-1)))
             .data();
     double flow = 0;
     // sum_j dg/dx_j f_j

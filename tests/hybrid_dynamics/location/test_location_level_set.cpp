@@ -100,6 +100,18 @@ void the_flow_decides(const std::string &b) {
     check(priv_check_flow(loc, guard, top, U).size() == 2, b + ": a set that may move out stays");
 }
 
+/// A hyperplane guard of a nonlinear flow: where the center flow is not outward, the bound over
+/// the projected set decides. The flow (1 + u, 0) with |u| <= 0.1 crosses x = 1 only rightward.
+void the_flow_bound_on_a_hyperplane(const std::string &b) {
+    const Location loc = particle(false);
+    const Zonotope U(column({0.0}), Tensor({{0.1}}));
+    const std::vector<Set> sets{box_at(0.95, 0.0)};
+    check(priv_check_flow_outward(loc, column({1.0, 0.0}), 1.0, sets, U, false).size() == 1,
+          b + ": the set moving out through x = 1 is kept");
+    check(priv_check_flow_outward(loc, column({-1.0, 0.0}), -1.0, sets, U, false).empty(),
+          b + ": no point of the set moves left: the bound drops it");
+}
+
 /// A set that reaches a level set guard is enclosed by a thin set around the circle at x = 1.
 void the_enclosure_is_around_the_circle(const std::string &b) {
     const Location fly = particle(true, 1);
@@ -144,6 +156,7 @@ int main() {
         the_invariant_ends_the_reach(b);
         the_circle_is_hit_by_the_crossing_sets(b);
         the_flow_decides(b);
+        the_flow_bound_on_a_hyperplane(b);
         the_enclosure_is_around_the_circle(b);
     });
     construction();
