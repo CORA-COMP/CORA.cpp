@@ -79,7 +79,7 @@ double aux_vecnorm(const std::vector<double> &v) {
 }
 
 /// MATLAB's vecnorm(sum(abs(M), 2)): the 2-norm of the row sums of |M|.
-double aux_row_sum_norm(const Tensor &M) { return aux_vecnorm(M.abs().sum(-1, true).data()); }
+double aux_row_sum_norm(const Tensor &M) { return aux_vecnorm(M.abs_sum().data()); }
 
 /// The matrix M (r, c) as its columns.
 Cols aux_columns(const Tensor &M) {
@@ -200,13 +200,13 @@ Tensor aux_particular_constant(TaylorLinSys &taylor, const Tensor &u, double tim
 bool aux_pu(TaylorLinSys &taylor, const Tensor &GU, double time_step, Tensor &G_zero,
             Tensor &G_infty, Tensor &A_sum_error) {
     G_zero = GU * time_step;
-    std::vector<double> PUdiag = G_zero.abs().sum(-1, true).data();
+    std::vector<double> PUdiag = G_zero.abs_sum().data();
     std::vector<Tensor> parts;
     A_sum_error = taylor.A().zeros_like();
     for (int eta = 1;; ++eta) {
         const Tensor add_term = taylor.Apower(eta) * taylor.dtoverfac(time_step, eta + 1);
         const Tensor add_g = add_term.matmul(GU);
-        const std::vector<double> add_diag = add_g.abs().sum(-1, true).data();
+        const std::vector<double> add_diag = add_g.abs_sum().data();
         // A step size that is too large converges too late.
         if (eta == kMaxEta) return false;
         bool stop = true;
@@ -234,7 +234,7 @@ double aux_reduce(TaylorLinSys &taylor, double t, SetState &set, const Chosen &c
     const Tensor e_atk = *taylor.read_e_adt(t);
 
     // The part of later terms is always boxed: it adds no error.
-    set.G_PUtotal_infty = set.G_PUtotal_infty + e_atk.matmul(ch.PUinf).abs().sum(-1, true);
+    set.G_PUtotal_infty = set.G_PUtotal_infty + e_atk.matmul(ch.PUinf).abs_sum();
 
     // The new part e^{A tk} PU_zero, without its axis-aligned generators (girard metric 0).
     Cols G = aux_columns(e_atk.matmul(ch.PUzero));
@@ -342,7 +342,7 @@ double aux_eps_f(const Interval &F, const Zonotope &startset, Tensor &box_c, Ten
     // The generators of F startset: F_c G and one axis-aligned generator per dimension.
     const Tensor rad_part =
         Frad.matmul(Tensor::concat({startset.center(), startset.generators()}, -1).abs_sum());
-    box_g = Fc.matmul(startset.generators()).abs().sum(-1, true) + rad_part;
+    box_g = Fc.matmul(startset.generators()).abs_sum() + rad_part;
     return 2 * aux_vecnorm((box_g + box_c.abs()).data());
 }
 
@@ -433,8 +433,8 @@ bool aux_errors(const Problem &P, int k, int kIter, LinErrorBound &errs, bool fu
         // The time dependency that is lost by adding the particular solution: e^{A tk} PU.
         aux_set(errs.idv_pu_tauk, k, kIter,
                 !P.is_u ? 0.0
-                        : aux_vecnorm((e_atk.matmul(set.PUzero[kIter]).abs().sum(-1, true) +
-                                       e_atk.matmul(set.PUinf[kIter]).abs().sum(-1, true))
+                        : aux_vecnorm((e_atk.matmul(set.PUzero[kIter]).abs_sum() +
+                                       e_atk.matmul(set.PUinf[kIter]).abs_sum())
                                           .data()));
         aux_set(errs.seq_nonacc, k, kIter,
                 errs.idv_lin_comb[k][kIter] + errs.idv_pu_tauk[k][kIter] + errs.idv_f[k][kIter] +

@@ -57,7 +57,7 @@ Tensor aux_unit(const Tensor &dir) {
 /// the absolute parts, alignedVal * u (CORA's loop over the generators).
 std::pair<Tensor, Tensor> aux_decompose(const Tensor &G, const Tensor &u) {
     const Tensor aligned = u.matrix_transpose().matmul(G); // (1, m): the part of each along u
-    return {G - u.matmul(aligned), u.multiply(aligned.abs().sum(-1, true))};
+    return {G - u.matmul(aligned), u.multiply(aligned.abs_sum())};
 }
 
 /// The pieces of the cut at the fraction beta in (-1, 1) of the new generator.

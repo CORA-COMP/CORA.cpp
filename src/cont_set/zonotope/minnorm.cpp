@@ -42,7 +42,7 @@ std::pair<Tensor, Tensor> Zonotope::minnorm() const {
         return {c_.zeros_like({1, 1}), c_};
     const Tensor C = priv_zonotope_facet_normals(compacted);
     // the offset of each facet of Z - c: sum |C G|, and the nearest one (the first on a tie)
-    const Tensor offsets = C.matmul(G).abs().sum(-1, true);
+    const Tensor offsets = C.matmul(G).abs_sum();
     const Tensor nearest = offsets.argmin(0);
     const Tensor b = offsets.take(nearest, 0);
     const Tensor value = b.square().sqrt();

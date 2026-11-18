@@ -81,7 +81,7 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
     const Tensor pick = Tensor::concat({cz.c().eye_like(n), zeros_block(cz.c(), p, n)}, -2);
     const Tensor Gamma = lifted.pinv().matmul(pick); // (N, n)
     // the support of the centered S along row i of Gamma: sum_k |Gamma_i . g_k|
-    const Tensor support = Gamma.matmul(S.generators()).abs().sum(-1, true); // (N, 1)
+    const Tensor support = Gamma.matmul(S.generators()).abs_sum(); // (N, 1)
     const std::vector<double> s = support.data();
     for (const double v : s)
         if (v > 1.0) return ConZonotope::empty(n);

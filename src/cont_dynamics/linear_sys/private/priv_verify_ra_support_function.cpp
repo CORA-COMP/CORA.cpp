@@ -339,7 +339,7 @@ std::optional<Tensor> aux_particular(const Tensor &A, const Tensor &X, Expmat &E
 /// [dt G, A dt^2/2 G, ...]; empty if the series needs kMaxEta terms.
 std::optional<Tensor> aux_over_pu(const Tensor &A, const Tensor &GU, Expmat &E, double time_step) {
     std::vector<Tensor> parts{GU * time_step};
-    std::vector<double> diag = parts[0].abs().sum(-1, true).data();
+    std::vector<double> diag = parts[0].abs_sum().data();
     for (int eta = 1;;) {
         const Tensor add =
             aux_power_tensor(E, A, eta).matmul(GU) * (std::pow(time_step, eta + 1) / (eta + 1));

@@ -143,7 +143,7 @@ Zonotope aux_mink_diff_zono(const Zonotope &minuend, const Zonotope &subtrahend,
     const Tensor &Gm = minuend.generators(), &cm = minuend.center();
     const Tensor &Gs = subtrahend.generators(), &cs = subtrahend.center();
     // the offsets of the facets of the minuend, and what the subtrahend takes off them
-    const Tensor Cc = C.matmul(cm), width = C.matmul(compacted.generators()).abs().sum(-1, true);
+    const Tensor Cc = C.matmul(cm), width = C.matmul(compacted.generators()).abs_sum();
     const Tensor K = Tensor::concat({Cc + width, Cc.negative() + width}, 0);
     const Tensor H = Tensor::concat({C, C.negative()}, 0);
     Tensor delta_K = H.matmul(cs);

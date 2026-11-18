@@ -40,7 +40,7 @@ std::pair<Tensor, Tensor> aux_full_dim(const Zonotope &Z) {
     for (std::size_t i = 0; i < reversed.size(); ++i)
         reversed[i] = int64_t(reversed.size() - 1 - i);
     const Tensor C0 = facets.take(reversed, 0);
-    const Tensor shift = C0.matmul(c), spread = C0.matmul(G).abs().sum(-1, true);
+    const Tensor shift = C0.matmul(c), spread = C0.matmul(G).abs_sum();
     return {Tensor::concat({C0, C0.negative()}, 0),
             Tensor::concat({shift + spread, shift.negative() + spread}, 0)};
 }

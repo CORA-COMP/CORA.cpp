@@ -4,10 +4,14 @@
 // core operations (global/tensor/derived.h). A backend may replace one by its own (eigen: expm and
 // the fused primitives; torch: expm, sort, diag, the norms and the interval products). On every
 // backend, the operation and its default give the same result within the agreement of ops.def.
+// abs_sum and abs().sum(-1, true) are the same fold on lean, bit for bit; on eigen they differ in
+// the last bits of the odd rows of an odd length (#157): Eigen peels the first entry of a stored
+// row that starts off a packet boundary, but not of the expression |x|. So an eigen row sum
+// depends on where the row lies in memory: the same row at another offset may sum to other bits.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   17-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
@@ -104,6 +108,39 @@ void aux_overrides(const std::string &b) {
     aux_agree(b + " abs_sum", G.abs_sum(), derived::abs_sum(G), aux_sum_bound(11));
 }
 
+/// Mixed magnitudes, so that the order of the sum shows in the bits: a normal number scaled by
+/// 2^k for k in [-60, 60], with every seventh entry a subnormal and every eleventh a signed zero.
+Tensor aux_adversarial(test::oracle::Random &rnd, int64_t rows, int64_t len) {
+    std::vector<double> data(rows * len);
+    for (std::size_t i = 0; i < data.size(); ++i) {
+        const double x = rnd.scalar();
+        const int k = static_cast<int>(rnd.uniform(-60, 60));
+        data[i] = i % 11 == 3 ? -0.0 : i % 7 == 2 ? x * 1e-310 : std::ldexp(x, k);
+    }
+    return Tensor::from_data(data, {rows, len});
+}
+
+/// The fused row sum of |x| against abs().sum(-1, true) on every length up to 70, adversarial
+/// magnitudes, batches, an empty axis and non-finite numbers: bit for bit on lean only.
+void aux_abs_sum_bits(const std::string &b) {
+    test::oracle::Random rnd(29);
+    const auto bound = [&](int64_t len) { return b == "lean" ? 0.0 : aux_sum_bound(len); };
+    for (int64_t len = 0; len <= 70; ++len) {
+        const Tensor x = rnd.matrix(9, len), y = aux_adversarial(rnd, 9, len);
+        const std::string at = " " + std::to_string(len);
+        aux_agree(b + " abs_sum normal" + at, x.abs_sum(), x.abs().sum(-1, true), bound(len));
+        aux_agree(b + " abs_sum mixed" + at, y.abs_sum(), y.abs().sum(-1, true), bound(len));
+    }
+    const Tensor batch = aux_adversarial(rnd, 4 * 7, 13).reshape({4, 7, 13});
+    aux_agree(b + " abs_sum batch", batch.abs_sum(), batch.abs().sum(-1, true), bound(13));
+    const double inf = std::numeric_limits<double>::infinity();
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const Tensor odd =
+        Tensor::from_data({1, -inf, 2, inf, -inf, 3, nan, 1, 0, 1e308, 1e308, -1e308}, {4, 3});
+    if (b == "lean")
+        aux_agree(b + " abs_sum non-finite", odd.abs_sum(), odd.abs().sum(-1, true), 0);
+}
+
 } // namespace
 
 
@@ -115,6 +152,7 @@ int main() {
     for (const std::string &b : all) {
         const BackendScope scope(b);
         aux_overrides(b);
+        aux_abs_sum_bits(b);
     }
     return test::finish("tensor overrides");
 }

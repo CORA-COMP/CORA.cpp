@@ -109,7 +109,7 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
         inputs ? std::optional<Range>(Range(box.inf().slice(-2, n, dz), box.sup().slice(-2, n, dz)))
                : std::nullopt;
     const std::vector<std::optional<Range>> H = sys.hessian_enclosure(x_box, u_box);
-    const std::vector<double> g = Z.generators().abs().sum(-1, true).data(), w = a.data();
+    const std::vector<double> g = Z.generators().abs_sum().data(), w = a.data();
     for (int64_t i = 0; i < n; ++i)
         for (int64_t j = 0; j < dz; ++j)
             for (int64_t k = 0; k < dz; ++k)

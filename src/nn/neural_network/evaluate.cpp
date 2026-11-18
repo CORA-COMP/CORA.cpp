@@ -263,7 +263,7 @@ std::pair<Tensor, Tensor> aux_bounds(const Rows &r) {
     const Tensor shift = r.G.multiply(r.even).sum(-1, true) * 0.5;
     const Tensor reach_G =
         r.G.abs().multiply(r.even).sum(-1, true) * 0.5 + r.G.abs().multiply(odd).sum(-1, true);
-    const Tensor reach_GI = r.GI.abs().sum(-1, true);
+    const Tensor reach_GI = r.GI.abs_sum();
     const Tensor mid = r.c + shift;
     return {(mid - reach_G) - reach_GI, (mid + reach_G) + reach_GI};
 }
