@@ -661,12 +661,12 @@ std::optional<SoundInputBoxes> aux_input_boxes(Expmat &E, const SoundRun &run, i
     if (in.has_u || in.has_m) {
         constexpr int kOrders = 75; // the search's fuel: orders 0 to 74
         const double eps = machine_eps();
-        // the nonzeros of u0 and of each column of M
+        // the nonzeros of u0 and of each column of M, from the last index down
         std::vector<int64_t> nzu;
-        for (int64_t j = 0; j < n; ++j)
+        for (int64_t j = n - 1; j >= 0; --j)
             if (in.u0[j] != 0) nzu.push_back(j);
         std::vector<std::vector<int64_t>> nzm(k);
-        for (int64_t j = 0; j < n; ++j)
+        for (int64_t j = n - 1; j >= 0; --j)
             for (int64_t c = 0; c < k; ++c)
                 if (in.M[std::size_t(j) * k + c] != 0) nzm[c].push_back(j);
         std::vector<double> S(n, 0.0), wsum(n, 0.0);
@@ -682,14 +682,13 @@ std::optional<SoundInputBoxes> aux_input_boxes(Expmat &E, const SoundRun &run, i
             std::vector<double> tw(n, 0.0), tv(nk, 0.0), a(n);
             for (int64_t l = 0; l < n; ++l) {
                 double sum = 0;
-                for (auto it = nzu.rbegin(); it != nzu.rend(); ++it)
-                    sum = entry(l, *it) * in.u0[*it] + sum;
+                for (const int64_t j : nzu) sum = entry(l, j) * in.u0[j] + sum;
                 tw[l] = sum;
                 double rs = 0; // sumUp over the columns of |[P_i M]_lc|, from the last
                 for (int64_t c = k - 1; c >= 0; --c) {
                     double v = 0;
-                    for (auto it = nzm[c].rbegin(); it != nzm[c].rend(); ++it)
-                        v = entry(l, *it) * in.M[std::size_t(*it) * k + c] + v;
+                    for (const int64_t j : nzm[c])
+                        v = entry(l, j) * in.M[std::size_t(j) * k + c] + v;
                     tv[std::size_t(l) * k + c] = v;
                     rs = std::abs(v) + rs;
                 }
@@ -919,7 +918,8 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
         const std::vector<double> LTd = LT.data();
         [[maybe_unused]] const int threads = threads_for(static_cast<int64_t>(steps), n);
 #pragma omp parallel for num_threads(threads) schedule(static) if (threads > 1)
-        for (std::size_t r = 0; r < steps; ++r) {
+        for (int64_t ri = 0; ri < static_cast<int64_t>(steps); ++ri) {
+            const auto r = static_cast<std::size_t>(ri);
             const double *x = &LTd[r * n];
             const double e = err[r];
             const std::array<double, 2> wd = aux_box_dot(x, inb->w_lo, inb->w_hi, n);
